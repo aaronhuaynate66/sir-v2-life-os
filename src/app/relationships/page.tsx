@@ -1,160 +1,205 @@
-'use client'
-// SIR V2 — /relationships
-// Personas, relaciones, alertas relacionales
-import { useMemo, useState } from 'react'
-import { AppShell } from '@/components/layout/AppShell'
+Actúa como Staff Engineer cuidadoso. Claude Chrome se cortó mientras ejecutabas Fase 3 de SIR V2.
+
+Proyecto:
+aaronhuaynate66/sir-v2-life-os
+
+Objetivo:
+Continuar desde donde se quedó SIN rehacer ni malograr lo avanzado.
+
+REGLAS CRÍTICAS:
+- NO rehagas desde cero.
+- NO borres archivos existentes.
+- NO rediseñes las páginas ya creadas.
+- NO cambies la arquitectura.
+- NO agregues backend.
+- NO agregues Supabase.
+- NO agregues IA real.
+- NO cambies stores existentes salvo que sea necesario para corregir imports/tipos.
+- Haz una recuperación quirúrgica.
+
+==================================================
+ESTADO YA VERIFICADO
+==================================================
+
+Ya existen y deben conservarse:
+
+src/components/layout/AppShell.tsx
+src/components/layout/Nav.tsx
+
+Ya existen y deben conservarse:
+
+src/app/self/page.tsx
+src/app/relationships/page.tsx
+src/app/goals/page.tsx
+src/app/finance/page.tsx
+src/app/signals/page.tsx
+
+Estas páginas ya usan stores y engines.
+
+Problema probable:
+Las páginas importan:
+
 import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
-import { useRelationshipStore } from '@/stores/useRelationshipStore'
-import { detectRelationshipAlerts } from '@/engines/relationship'
-import type { Person, PersonCategory, EnergyImpact } from '@/types'
 
-const CATEGORY_LABEL: Record<PersonCategory, string> = {
-  inner_circle: 'Circulo interno', close: 'Cercano', network: 'Red', peripheral: 'Periferico'
-}
-const ENERGY_LABEL: Record<EnergyImpact, string> = {
-  energizing: 'Energizante', draining: 'Drenante', neutral: 'Neutro'
-}
-const ENERGY_VARIANT: Record<EnergyImpact, 'ok' | 'bad' | 'default'> = {
-  energizing: 'ok', draining: 'bad', neutral: 'default'
-}
+Pero parece faltar:
 
-function daysSince(iso: string): number {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
-}
+src/components/ui/index.ts
+src/components/ui/Card.tsx
+src/components/ui/Badge.tsx
+src/components/ui/Button.tsx
+src/components/ui/Input.tsx
+src/components/ui/Select.tsx
+src/components/ui/Textarea.tsx
+src/components/ui/SectionHeader.tsx
+src/components/ui/EmptyState.tsx
 
-export default function RelationshipsPage() {
-  const { people, relationships, addPerson, updatePerson } = useRelationshipStore()
-  const relAlerts = useMemo(() => detectRelationshipAlerts(people, relationships), [people, relationships])
+==================================================
+PASO 1 — DIAGNÓSTICO
+==================================================
 
-  const [adding, setAdding] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
+Antes de modificar:
 
-  const [name, setName] = useState('')
-  const [alias, setAlias] = useState('')
-  const [relationship, setRelationship] = useState('friend')
-  const [category, setCategory] = useState<PersonCategory>('close')
-  const [energy, setEnergy] = useState<EnergyImpact>('neutral')
-  const [trust, setTrust] = useState('7')
-  const [importance, setImportance] = useState('7')
-  const [location, setLocation] = useState('')
-  const [notes, setNotes] = useState('')
+1. Ejecuta:
+   git status
 
-  function resetForm() {
-    setName(''); setAlias(''); setRelationship('friend'); setCategory('close')
-    setEnergy('neutral'); setTrust('7'); setImportance('7'); setLocation(''); setNotes('')
-    setAdding(false); setEditId(null)
-  }
+2. Lista:
+   src/components/
+   src/components/ui/
+   src/components/layout/
+   src/app/
+   src/app/self/
+   src/app/relationships/
+   src/app/goals/
+   src/app/finance/
+   src/app/signals/
 
-  function savePerson() {
-    if (!name.trim()) return
-    const now = new Date().toISOString()
-    if (editId) {
-      updatePerson(editId, { name, alias: alias || undefined, relationship: relationship as Person['relationship'], category, energyImpact: energy, trustLevel: parseInt(trust), importanceScore: parseInt(importance), location: location || undefined, notes: notes || undefined, updatedAt: now })
-    } else {
-      const newP: Person = { id: `p_${Date.now()}`, name, alias: alias || undefined, relationship: relationship as Person['relationship'], category, importanceScore: parseInt(importance), energyImpact: energy, trustLevel: parseInt(trust), lastContact: now, contactFrequency: 'monthly', location: location || undefined, tags: [], notes: notes || undefined, createdAt: now, updatedAt: now }
-      addPerson(newP)
-    }
-    resetForm()
-  }
+3. Ejecuta:
+   npm run type-check
 
-  function startEdit(p: Person) {
-    setEditId(p.id); setName(p.name); setAlias(p.alias || ''); setRelationship(p.relationship)
-    setCategory(p.category); setEnergy(p.energyImpact); setTrust(String(p.trustLevel))
-    setImportance(String(p.importanceScore)); setLocation(p.location || ''); setNotes(p.notes || '')
-    setAdding(true)
-  }
+4. Si falla por imports de '@/components/ui', confirma exactamente qué componentes faltan.
 
-  const sorted = [...people].sort((a, b) => b.importanceScore - a.importanceScore)
+==================================================
+PASO 2 — CORREGIR SOLO LO FALTANTE
+==================================================
 
-  return (
-    <AppShell>
-      <SectionHeader
-        title="Relaciones"
-        subtitle="Personas que importan en tu vida"
-        action={<Button onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Agregar persona'}</Button>}
-      />
+Si faltan componentes UI, crea SOLO estos archivos:
 
-      {/* Alertas */}
-      {relAlerts.length > 0 && (
-        <Card className="mb-4 border-[#2a2a2a]">
-          <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Alertas — {relAlerts.length}</div>
-          <div className="space-y-2">
-            {relAlerts.slice(0, 4).map((a, i) => (
-              <div key={i} className="flex gap-3 items-start">
-                <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${a.urgency === 'immediate' ? 'bg-[#ef4444]' : 'bg-[#f59e0b]'}`} />
-                <div>
-                  <div className="text-xs text-[#f5f5f5]">{a.personName}</div>
-                  <div className="text-[11px] text-[#444]">{a.message}</div>
-                  <div className="text-[10px] text-[#333] mt-0.5">{a.suggestedAction}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+src/components/ui/Card.tsx
+src/components/ui/Badge.tsx
+src/components/ui/Button.tsx
+src/components/ui/Input.tsx
+src/components/ui/Select.tsx
+src/components/ui/Textarea.tsx
+src/components/ui/SectionHeader.tsx
+src/components/ui/EmptyState.tsx
+src/components/ui/index.ts
 
-      {/* Formulario */}
-      {adding && (
-        <Card className="mb-4 border-[#2a2a2a]">
-          <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">{editId ? 'Editar persona' : 'Nueva persona'}</div>
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <Input placeholder="Nombre" value={name} onChange={e => setName(e.target.value)} />
-            <Input placeholder="Apodo (opcional)" value={alias} onChange={e => setAlias(e.target.value)} />
-            <Select value={relationship} onChange={e => setRelationship(e.target.value)}>
-              {['friend','family','romantic','professional','mentor','mentee','acquaintance'].map(r => <option key={r} value={r}>{r}</option>)}
-            </Select>
-            <Select value={category} onChange={e => setCategory(e.target.value as PersonCategory)}>
-              {(['inner_circle','close','network','peripheral'] as PersonCategory[]).map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
-            </Select>
-            <Select value={energy} onChange={e => setEnergy(e.target.value as EnergyImpact)}>
-              {(['energizing','neutral','draining'] as EnergyImpact[]).map(e => <option key={e} value={e}>{ENERGY_LABEL[e]}</option>)}
-            </Select>
-            <Input placeholder="Ubicacion" value={location} onChange={e => setLocation(e.target.value)} />
-            <div className="flex gap-2">
-              <Input type="number" min="1" max="10" placeholder="Confianza" value={trust} onChange={e => setTrust(e.target.value)} />
-              <Input type="number" min="1" max="10" placeholder="Importancia" value={importance} onChange={e => setImportance(e.target.value)} />
-            </div>
-            <Input placeholder="Notas" value={notes} onChange={e => setNotes(e.target.value)} />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ok" onClick={savePerson}>{editId ? 'Guardar cambios' : '+ Agregar'}</Button>
-            <Button variant="ghost" onClick={resetForm}>Cancelar</Button>
-          </div>
-        </Card>
-      )}
+Requisitos:
+- TypeScript estricto.
+- Sin any.
+- Componentes simples.
+- Estilo dark, premium, sobrio.
+- Compatibles con className.
+- Compatibles con props HTML estándar.
+- No instalar librerías externas.
 
-      {/* Lista de personas */}
-      {sorted.length === 0 ? (
-        <EmptyState message="Sin personas. Agrega a alguien importante." action={<Button onClick={() => setAdding(true)}>+ Agregar primera persona</Button>} />
-      ) : (
-        <div className="space-y-2">
-          {sorted.map((p) => {
-            const rel = relationships.find(r => r.personId === p.id)
-            const days = daysSince(p.lastContact)
-            return (
-              <Card key={p.id} className="flex justify-between items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-sm font-medium text-[#f5f5f5]">{p.name}</span>
-                    {p.alias && <span className="text-[10px] text-[#333] font-mono">({p.alias})</span>}
-                    <Badge label={CATEGORY_LABEL[p.category]} variant="muted" />
-                    <Badge label={ENERGY_LABEL[p.energyImpact]} variant={ENERGY_VARIANT[p.energyImpact]} />
-                  </div>
-                  <div className="flex gap-4 text-[11px] text-[#444] flex-wrap">
-                    <span>Confianza: <span className="text-[#f5f5f5] font-mono">{p.trustLevel}/10</span></span>
-                    <span>Importancia: <span className="text-[#f5f5f5] font-mono">{p.importanceScore}/10</span></span>
-                    <span>Ultimo contacto: <span className={`font-mono ${days > 30 ? 'text-[#ef4444]' : days > 14 ? 'text-[#f59e0b]' : 'text-[#22c55e]'}`}>{days}d</span></span>
-                    {p.location && <span className="text-[#333]">{p.location}</span>}
-                  </div>
-                  {rel?.nextAction && <div className="text-[10px] text-[#333] mt-1">siguiente: {rel.nextAction}</div>}
-                  {p.notes && <div className="text-[10px] text-[#2a2a2a] mt-0.5 truncate">{p.notes}</div>}
-                </div>
-                <Button variant="ghost" onClick={() => startEdit(p)} className="flex-shrink-0">Editar</Button>
-              </Card>
-            )
-          })}
-        </div>
-      )}
-    </AppShell>
-  )
-}
+Definiciones mínimas:
+
+Card:
+- wrapper div con border, bg oscuro, rounded, padding.
+- props: children, className.
+
+Badge:
+- props: label, variant.
+- variants: default, muted, ok, warn, bad, info.
+
+Button:
+- button estándar.
+- props HTML de button.
+- variants: default, ghost, ok, warn, bad.
+- soportar className.
+
+Input:
+- input estándar.
+- props HTML de input.
+- soportar className.
+
+Select:
+- select estándar.
+- props HTML de select.
+- soportar className.
+
+Textarea:
+- textarea estándar.
+- props HTML de textarea.
+- soportar className.
+
+SectionHeader:
+- props: title, subtitle?, action?
+- layout simple.
+
+EmptyState:
+- props: message, action?
+- estado vacío sobrio.
+
+index.ts:
+- exportar todos los componentes.
+
+==================================================
+PASO 3 — VALIDAR PÁGINAS EXISTENTES
+==================================================
+
+Después de crear los componentes:
+
+1. No rediseñes las páginas.
+2. Corrige solo errores TypeScript mínimos si aparecen.
+3. Verifica que estas rutas compilen:
+   - /dashboard
+   - /self
+   - /relationships
+   - /goals
+   - /finance
+   - /signals
+
+==================================================
+PASO 4 — OPCIONAL SOLO SI FALTA
+==================================================
+
+Si /dashboard todavía no usa AppShell, NO lo reescribas completo.
+Solo déjalo para una fase posterior, salvo que sea necesario para build.
+
+==================================================
+PASO 5 — VALIDACIÓN FINAL
+==================================================
+
+Ejecuta:
+
+npm run type-check
+npm run lint
+npm run build
+
+Si falla:
+- corrige el error mínimo necesario;
+- no uses any;
+- no desactives TypeScript;
+- no borres funcionalidad;
+- no cambies la visión.
+
+==================================================
+ENTREGA FINAL
+==================================================
+
+Responde con:
+
+1. Estado inicial encontrado
+2. Componentes UI faltantes encontrados
+3. Archivos creados
+4. Archivos modificados
+5. Errores corregidos
+6. Resultado de type-check
+7. Resultado de lint
+8. Resultado de build
+9. Qué queda pendiente de Fase 3
+
+IMPORTANTE:
+Esta es una recuperación quirúrgica. No repitas la Fase 3 desde cero.
