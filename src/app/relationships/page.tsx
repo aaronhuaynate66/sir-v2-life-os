@@ -77,8 +77,6 @@ export default function RelationshipsPage() {
 
   const alerts = detectRelationshipAlerts(people, relationships)
 
-  // ── Form helpers ──────────────────────────────────────────────────────────
-
   function openAdd() {
     setEditingId(null)
     setForm(EMPTY_FORM)
@@ -111,9 +109,7 @@ export default function RelationshipsPage() {
 
   function handleSubmit() {
     if (!form.name.trim()) return
-
     const now = new Date().toISOString()
-
     if (editingId) {
       const patch: Partial<Person> = {
         name: form.name.trim(),
@@ -150,26 +146,21 @@ export default function RelationshipsPage() {
       }
       addPerson(newPerson)
     }
-
     handleCancel()
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <AppShell>
-      {/* Header */}
       <SectionHeader
         title="Relaciones"
         subtitle={`${people.length} personas · ${alerts.length} alertas`}
         action={
-          <Button variant="primary" onClick={openAdd}>
+          <Button variant="ok" onClick={openAdd}>
             + Agregar persona
           </Button>
         }
       />
 
-      {/* Alerts */}
       {alerts.length > 0 && (
         <div className="mb-6 space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-[#888] mb-2">
@@ -183,7 +174,7 @@ export default function RelationshipsPage() {
                   <p className="text-xs text-[#888] mt-0.5">{alert.message}</p>
                   {alert.suggestedAction && (
                     <p className="text-xs text-[#3b82f6] mt-1">
-                      → {alert.suggestedAction}
+                      {`→ ${alert.suggestedAction}`}
                     </p>
                   )}
                 </div>
@@ -194,123 +185,141 @@ export default function RelationshipsPage() {
         </div>
       )}
 
-      {/* Form */}
       {showForm && (
         <Card className="mb-6">
           <h2 className="text-sm font-semibold text-white mb-4">
             {editingId ? 'Editar persona' : 'Nueva persona'}
           </h2>
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Nombre *"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Nombre completo"
-            />
-            <Input
-              label="Alias"
-              value={form.alias}
-              onChange={(e) => setForm({ ...form, alias: e.target.value })}
-              placeholder="Apodo o alias"
-            />
-            <Select
-              label="Tipo de relación"
-              value={form.relationship}
-              onChange={(e) =>
-                setForm({ ...form, relationship: e.target.value as RelationshipType })
-              }
-              options={[
-                { value: 'family', label: 'Familia' },
-                { value: 'friend', label: 'Amigo/a' },
-                { value: 'romantic', label: 'Pareja' },
-                { value: 'professional', label: 'Profesional' },
-                { value: 'mentor', label: 'Mentor' },
-                { value: 'mentee', label: 'Pupilo' },
-                { value: 'acquaintance', label: 'Conocido/a' },
-              ]}
-            />
-            <Select
-              label="Categoría"
-              value={form.category}
-              onChange={(e) =>
-                setForm({ ...form, category: e.target.value as PersonCategory })
-              }
-              options={[
-                { value: 'inner_circle', label: 'Círculo íntimo' },
-                { value: 'close', label: 'Cercano/a' },
-                { value: 'network', label: 'Red' },
-                { value: 'peripheral', label: 'Periférico/a' },
-              ]}
-            />
-            <Select
-              label="Impacto energético"
-              value={form.energyImpact}
-              onChange={(e) =>
-                setForm({ ...form, energyImpact: e.target.value as EnergyImpact })
-              }
-              options={[
-                { value: 'energizing', label: 'Energizante' },
-                { value: 'neutral', label: 'Neutral' },
-                { value: 'draining', label: 'Drenante' },
-              ]}
-            />
-            <Input
-              label="Último contacto"
-              type="date"
-              value={form.lastContact}
-              onChange={(e) => setForm({ ...form, lastContact: e.target.value })}
-            />
-            <Input
-              label={`Confianza: ${form.trustLevel}/10`}
-              type="range"
-              min={1}
-              max={10}
-              value={form.trustLevel}
-              onChange={(e) =>
-                setForm({ ...form, trustLevel: Number(e.target.value) })
-              }
-            />
-            <Input
-              label={`Importancia: ${form.importanceScore}/10`}
-              type="range"
-              min={1}
-              max={10}
-              value={form.importanceScore}
-              onChange={(e) =>
-                setForm({ ...form, importanceScore: Number(e.target.value) })
-              }
-            />
-            <Input
-              label="Frecuencia de contacto"
-              value={form.contactFrequency}
-              onChange={(e) => setForm({ ...form, contactFrequency: e.target.value })}
-              placeholder="Ej: semanal, mensual"
-            />
-            <Input
-              label="Ubicación"
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-              placeholder="Ciudad o país"
-            />
+            <div>
+              <label className="block text-xs text-[#888] mb-1">Nombre *</label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Nombre completo"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">Alias</label>
+              <Input
+                value={form.alias}
+                onChange={(e) => setForm({ ...form, alias: e.target.value })}
+                placeholder="Apodo o alias"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">Tipo de relación</label>
+              <Select
+                value={form.relationship}
+                onChange={(e) =>
+                  setForm({ ...form, relationship: e.target.value as RelationshipType })
+                }
+              >
+                <option value="family">Familia</option>
+                <option value="friend">Amigo/a</option>
+                <option value="romantic">Pareja</option>
+                <option value="professional">Profesional</option>
+                <option value="mentor">Mentor</option>
+                <option value="mentee">Pupilo</option>
+                <option value="acquaintance">Conocido/a</option>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">Categoría</label>
+              <Select
+                value={form.category}
+                onChange={(e) =>
+                  setForm({ ...form, category: e.target.value as PersonCategory })
+                }
+              >
+                <option value="inner_circle">Círculo íntimo</option>
+                <option value="close">Cercano/a</option>
+                <option value="network">Red</option>
+                <option value="peripheral">Periférico/a</option>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">Impacto energético</label>
+              <Select
+                value={form.energyImpact}
+                onChange={(e) =>
+                  setForm({ ...form, energyImpact: e.target.value as EnergyImpact })
+                }
+              >
+                <option value="energizing">Energizante</option>
+                <option value="neutral">Neutral</option>
+                <option value="draining">Drenante</option>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">Último contacto</label>
+              <Input
+                type="date"
+                value={form.lastContact}
+                onChange={(e) => setForm({ ...form, lastContact: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">
+                Confianza: {form.trustLevel}/10
+              </label>
+              <Input
+                type="range"
+                min={1}
+                max={10}
+                value={form.trustLevel}
+                onChange={(e) =>
+                  setForm({ ...form, trustLevel: Number(e.target.value) })
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">
+                Importancia: {form.importanceScore}/10
+              </label>
+              <Input
+                type="range"
+                min={1}
+                max={10}
+                value={form.importanceScore}
+                onChange={(e) =>
+                  setForm({ ...form, importanceScore: Number(e.target.value) })
+                }
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">Frecuencia de contacto</label>
+              <Input
+                value={form.contactFrequency}
+                onChange={(e) => setForm({ ...form, contactFrequency: e.target.value })}
+                placeholder="Ej: semanal, mensual"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#888] mb-1">Ubicación</label>
+              <Input
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="Ciudad o país"
+              />
+            </div>
           </div>
           <div className="mt-4 flex gap-2 justify-end">
             <Button variant="ghost" onClick={handleCancel}>
               Cancelar
             </Button>
-            <Button variant="primary" onClick={handleSubmit}>
+            <Button variant="ok" onClick={handleSubmit}>
               {editingId ? 'Guardar cambios' : 'Agregar'}
             </Button>
           </div>
         </Card>
       )}
 
-      {/* People list */}
       {people.length === 0 ? (
         <EmptyState
-          title="Sin personas registradas"
-          description="Agrega tu primera persona para comenzar a mapear tus relaciones."
+          message="Sin personas registradas. Agrega tu primera persona para mapear tus relaciones."
           action={
-            <Button variant="primary" onClick={openAdd}>
+            <Button variant="ok" onClick={openAdd}>
               + Agregar persona
             </Button>
           }
@@ -343,7 +352,7 @@ export default function RelationshipsPage() {
                           {person.trustLevel}/10
                         </span>
                       </span>
-                      <span className="text-xs text-[#888]">
+                      <span className="text-xs text-[#888] flex items-center gap-1">
                         Energía:{' '}
                         <Badge
                           variant={energyColor(person.energyImpact)}
@@ -372,14 +381,12 @@ export default function RelationshipsPage() {
                   <div className="flex gap-2 shrink-0">
                     <Button
                       variant="ghost"
-                      size="sm"
                       onClick={() => openEdit(person)}
                     >
                       Editar
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
                       onClick={() => removePerson(person.id)}
                     >
                       ✕
@@ -393,4 +400,4 @@ export default function RelationshipsPage() {
       )}
     </AppShell>
   )
-       }
+}
