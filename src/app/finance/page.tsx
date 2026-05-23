@@ -1,158 +1,205 @@
-'use client'
-// SIR V2 — /finance
-// Movimientos, balance, estabilidad, alertas
-import { useMemo, useState } from 'react'
-import { AppShell } from '@/components/layout/AppShell'
+Actúa como Staff Engineer cuidadoso. Claude Chrome se cortó mientras ejecutabas Fase 3 de SIR V2.
+
+Proyecto:
+aaronhuaynate66/sir-v2-life-os
+
+Objetivo:
+Continuar desde donde se quedó SIN rehacer ni malograr lo avanzado.
+
+REGLAS CRÍTICAS:
+- NO rehagas desde cero.
+- NO borres archivos existentes.
+- NO rediseñes las páginas ya creadas.
+- NO cambies la arquitectura.
+- NO agregues backend.
+- NO agregues Supabase.
+- NO agregues IA real.
+- NO cambies stores existentes salvo que sea necesario para corregir imports/tipos.
+- Haz una recuperación quirúrgica.
+
+==================================================
+ESTADO YA VERIFICADO
+==================================================
+
+Ya existen y deben conservarse:
+
+src/components/layout/AppShell.tsx
+src/components/layout/Nav.tsx
+
+Ya existen y deben conservarse:
+
+src/app/self/page.tsx
+src/app/relationships/page.tsx
+src/app/goals/page.tsx
+src/app/finance/page.tsx
+src/app/signals/page.tsx
+
+Estas páginas ya usan stores y engines.
+
+Problema probable:
+Las páginas importan:
+
 import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
-import { useFinanceStore } from '@/stores/useFinanceStore'
-import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
-import type { MovementType, FinancialCategory, FinancialMovement } from '@/types'
 
-const TYPE_LABEL: Record<MovementType, string> = {
-  income: 'Ingreso', expense: 'Gasto', investment: 'Inversion', transfer: 'Transferencia', debt: 'Deuda'
-}
-const TYPE_COLOR: Record<MovementType, string> = {
-  income: 'text-[#22c55e]', expense: 'text-[#ef4444]', investment: 'text-[#3b82f6]',
-  transfer: 'text-[#f59e0b]', debt: 'text-[#ef4444]'
-}
-const TYPE_SIGN: Record<MovementType, string> = {
-  income: '+', expense: '-', investment: '-', transfer: '', debt: '-'
-}
-const CAT_LABEL: Record<FinancialCategory, string> = {
-  housing: 'Vivienda', food: 'Alimentacion', transport: 'Transporte', health: 'Salud',
-  entertainment: 'Entretenimiento', investment: 'Inversion', business: 'Negocio',
-  personal: 'Personal', debt: 'Deuda', other: 'Otro'
-}
+Pero parece faltar:
 
-const LIQUIDITY_MONTHS = 2.5
+src/components/ui/index.ts
+src/components/ui/Card.tsx
+src/components/ui/Badge.tsx
+src/components/ui/Button.tsx
+src/components/ui/Input.tsx
+src/components/ui/Select.tsx
+src/components/ui/Textarea.tsx
+src/components/ui/SectionHeader.tsx
+src/components/ui/EmptyState.tsx
 
-export default function FinancePage() {
-  const { financialMovements, addFinancialMovement, removeFinancialMovement } = useFinanceStore()
+==================================================
+PASO 1 — DIAGNÓSTICO
+==================================================
 
-  const fin = useMemo(() => analyzeFinancialStability(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
-  const alerts = useMemo(() => detectFinancialAlerts(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
+Antes de modificar:
 
-  const [type, setType] = useState<MovementType>('expense')
-  const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('USD')
-  const [category, setCategory] = useState<FinancialCategory>('other')
-  const [description, setDescription] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [recurrent, setRecurrent] = useState(false)
-  const [filterType, setFilterType] = useState<MovementType | 'all'>('all')
+1. Ejecuta:
+   git status
 
-  function addMovement() {
-    const amt = parseFloat(amount)
-    if (isNaN(amt) || amt <= 0) return
-    const m: FinancialMovement = {
-      id: `f_${Date.now()}`, type, amount: amt, currency, category,
-      description: description || TYPE_LABEL[type], date, recurrent, tags: []
-    }
-    addFinancialMovement(m)
-    setAmount(''); setDescription('')
-  }
+2. Lista:
+   src/components/
+   src/components/ui/
+   src/components/layout/
+   src/app/
+   src/app/self/
+   src/app/relationships/
+   src/app/goals/
+   src/app/finance/
+   src/app/signals/
 
-  const sorted = [...financialMovements].sort((a, b) => b.date.localeCompare(a.date))
-  const filtered = filterType === 'all' ? sorted : sorted.filter(m => m.type === filterType)
+3. Ejecuta:
+   npm run type-check
 
-  return (
-    <AppShell>
-      <SectionHeader title="Finanzas" subtitle="Flujo de caja, estabilidad y alertas" />
+4. Si falla por imports de '@/components/ui', confirma exactamente qué componentes faltan.
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'Estabilidad', value: fin.stability.toFixed(1), unit: '/10', variant: fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad' },
-          { label: 'Balance mensual', value: fin.monthlyBalance >= 0 ? '+' + fin.monthlyBalance.toFixed(0) : fin.monthlyBalance.toFixed(0), unit: ' USD', variant: fin.monthlyBalance >= 0 ? 'ok' : 'bad' },
-          { label: 'Tasa ahorro', value: fin.savingsRate.toFixed(0), unit: '%', variant: fin.savingsRate >= 20 ? 'ok' : fin.savingsRate >= 10 ? 'warn' : 'bad' },
-          { label: 'Riesgo', value: fin.riskLevel, unit: '', variant: fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad' },
-        ].map((s) => (
-          <Card key={s.label} className="flex flex-col gap-1">
-            <div className="text-[9px] font-mono text-[#333] uppercase tracking-widest">{s.label}</div>
-            <div className={`text-xl font-mono font-bold ${s.variant === 'ok' ? 'text-[#22c55e]' : s.variant === 'warn' ? 'text-[#f59e0b]' : 'text-[#ef4444]'}`}>
-              {s.value}<span className="text-sm text-[#333]">{s.unit}</span>
-            </div>
-          </Card>
-        ))}
-      </div>
+==================================================
+PASO 2 — CORREGIR SOLO LO FALTANTE
+==================================================
 
-      {/* Alertas */}
-      {alerts.length > 0 && (
-        <Card className="mb-4 border-[#2a2a2a]">
-          <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-2">Alertas — {alerts.length}</div>
-          {alerts.map((a, i) => (
-            <div key={i} className="flex gap-2 items-start py-1 border-b border-[#1a1a1a] last:border-0">
-              <span className={`text-xs mt-0.5 ${a.severity === 'high' ? 'text-[#ef4444]' : 'text-[#f59e0b]'}`}>!</span>
-              <div>
-                <div className="text-xs text-[#555]">{a.message}</div>
-                {a.suggestion && <div className="text-[10px] text-[#333] mt-0.5">{a.suggestion}</div>}
-              </div>
-            </div>
-          ))}
-        </Card>
-      )}
+Si faltan componentes UI, crea SOLO estos archivos:
 
-      {/* Registrar movimiento */}
-      <Card className="mb-4">
-        <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Registrar movimiento</div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
-          <Select value={type} onChange={e => setType(e.target.value as MovementType)}>
-            {(Object.keys(TYPE_LABEL) as MovementType[]).map(t => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
-          </Select>
-          <Select value={category} onChange={e => setCategory(e.target.value as FinancialCategory)}>
-            {(Object.keys(CAT_LABEL) as FinancialCategory[]).map(c => <option key={c} value={c}>{CAT_LABEL[c]}</option>)}
-          </Select>
-          <div className="flex gap-1">
-            <Input type="number" min="0" step="0.01" placeholder="Monto" value={amount} onChange={e => setAmount(e.target.value)} />
-            <Input placeholder="USD" value={currency} onChange={e => setCurrency(e.target.value)} className="w-16" />
-          </div>
-          <Input placeholder="Descripcion" value={description} onChange={e => setDescription(e.target.value)} className="col-span-2" />
-          <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
-        </div>
-        <div className="flex items-center gap-4 mb-2">
-          <label className="flex items-center gap-2 text-xs text-[#444] cursor-pointer">
-            <input type="checkbox" checked={recurrent} onChange={e => setRecurrent(e.target.checked)} className="accent-[#333]" />
-            Recurrente
-          </label>
-        </div>
-        <Button onClick={addMovement} variant="default">+ Registrar</Button>
-      </Card>
+src/components/ui/Card.tsx
+src/components/ui/Badge.tsx
+src/components/ui/Button.tsx
+src/components/ui/Input.tsx
+src/components/ui/Select.tsx
+src/components/ui/Textarea.tsx
+src/components/ui/SectionHeader.tsx
+src/components/ui/EmptyState.tsx
+src/components/ui/index.ts
 
-      {/* Filtro */}
-      <div className="flex gap-2 mb-3 flex-wrap">
-        {(['all', ...Object.keys(TYPE_LABEL)] as (MovementType | 'all')[]).map(t => (
-          <button key={t} onClick={() => setFilterType(t)}
-            className={`text-[10px] font-mono px-2 py-1 rounded border transition-colors ${filterType === t ? 'border-[#333] text-[#f5f5f5]' : 'border-[#1a1a1a] text-[#333] hover:border-[#222] hover:text-[#555]'}`}>
-            {t === 'all' ? 'Todos' : TYPE_LABEL[t]}
-          </button>
-        ))}
-      </div>
+Requisitos:
+- TypeScript estricto.
+- Sin any.
+- Componentes simples.
+- Estilo dark, premium, sobrio.
+- Compatibles con className.
+- Compatibles con props HTML estándar.
+- No instalar librerías externas.
 
-      {/* Lista */}
-      {filtered.length === 0 ? (
-        <EmptyState message="Sin movimientos." />
-      ) : (
-        <div className="space-y-1">
-          {filtered.slice(0, 50).map((m) => (
-            <div key={m.id} className="flex justify-between items-center py-2 border-b border-[#1a1a1a] last:border-0 group">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex flex-col">
-                  <span className="text-xs text-[#f5f5f5]">{m.description}</span>
-                  <div className="flex gap-2 mt-0.5">
-                    <Badge label={CAT_LABEL[m.category]} variant="muted" />
-                    {m.recurrent && <Badge label="recurrente" variant="info" />}
-                    <span className="text-[9px] text-[#222] font-mono">{m.date}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-sm font-mono ${TYPE_COLOR[m.type]}`}>{TYPE_SIGN[m.type]}{m.amount.toFixed(0)} {m.currency}</span>
-                <button onClick={() => removeFinancialMovement(m.id)} className="text-[10px] text-[#1a1a1a] hover:text-[#ef4444] opacity-0 group-hover:opacity-100 transition-opacity">x</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </AppShell>
-  )
-}
+Definiciones mínimas:
+
+Card:
+- wrapper div con border, bg oscuro, rounded, padding.
+- props: children, className.
+
+Badge:
+- props: label, variant.
+- variants: default, muted, ok, warn, bad, info.
+
+Button:
+- button estándar.
+- props HTML de button.
+- variants: default, ghost, ok, warn, bad.
+- soportar className.
+
+Input:
+- input estándar.
+- props HTML de input.
+- soportar className.
+
+Select:
+- select estándar.
+- props HTML de select.
+- soportar className.
+
+Textarea:
+- textarea estándar.
+- props HTML de textarea.
+- soportar className.
+
+SectionHeader:
+- props: title, subtitle?, action?
+- layout simple.
+
+EmptyState:
+- props: message, action?
+- estado vacío sobrio.
+
+index.ts:
+- exportar todos los componentes.
+
+==================================================
+PASO 3 — VALIDAR PÁGINAS EXISTENTES
+==================================================
+
+Después de crear los componentes:
+
+1. No rediseñes las páginas.
+2. Corrige solo errores TypeScript mínimos si aparecen.
+3. Verifica que estas rutas compilen:
+   - /dashboard
+   - /self
+   - /relationships
+   - /goals
+   - /finance
+   - /signals
+
+==================================================
+PASO 4 — OPCIONAL SOLO SI FALTA
+==================================================
+
+Si /dashboard todavía no usa AppShell, NO lo reescribas completo.
+Solo déjalo para una fase posterior, salvo que sea necesario para build.
+
+==================================================
+PASO 5 — VALIDACIÓN FINAL
+==================================================
+
+Ejecuta:
+
+npm run type-check
+npm run lint
+npm run build
+
+Si falla:
+- corrige el error mínimo necesario;
+- no uses any;
+- no desactives TypeScript;
+- no borres funcionalidad;
+- no cambies la visión.
+
+==================================================
+ENTREGA FINAL
+==================================================
+
+Responde con:
+
+1. Estado inicial encontrado
+2. Componentes UI faltantes encontrados
+3. Archivos creados
+4. Archivos modificados
+5. Errores corregidos
+6. Resultado de type-check
+7. Resultado de lint
+8. Resultado de build
+9. Qué queda pendiente de Fase 3
+
+IMPORTANTE:
+Esta es una recuperación quirúrgica. No repitas la Fase 3 desde cero.
