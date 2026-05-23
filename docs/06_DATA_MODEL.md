@@ -58,7 +58,7 @@ interface Goal {
   milestones: Milestone[]
   relatedGoals: string[]
   relatedPersons: string[]
-  peacImpact: number           // impacto esperado en paz si se logra
+  peaceImpact: number           // impacto esperado en paz si se logra
   obstacles: string[]
   nextAction: string
   createdAt: Date
