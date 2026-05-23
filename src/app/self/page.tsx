@@ -1,177 +1,205 @@
-'use client'
-// SIR V2 — /self
-// Estado biologico, metricas, sueno
-import { useMemo, useState } from 'react'
-import { AppShell } from '@/components/layout/AppShell'
+Actúa como Staff Engineer cuidadoso. Claude Chrome se cortó mientras ejecutabas Fase 3 de SIR V2.
+
+Proyecto:
+aaronhuaynate66/sir-v2-life-os
+
+Objetivo:
+Continuar desde donde se quedó SIN rehacer ni malograr lo avanzado.
+
+REGLAS CRÍTICAS:
+- NO rehagas desde cero.
+- NO borres archivos existentes.
+- NO rediseñes las páginas ya creadas.
+- NO cambies la arquitectura.
+- NO agregues backend.
+- NO agregues Supabase.
+- NO agregues IA real.
+- NO cambies stores existentes salvo que sea necesario para corregir imports/tipos.
+- Haz una recuperación quirúrgica.
+
+==================================================
+ESTADO YA VERIFICADO
+==================================================
+
+Ya existen y deben conservarse:
+
+src/components/layout/AppShell.tsx
+src/components/layout/Nav.tsx
+
+Ya existen y deben conservarse:
+
+src/app/self/page.tsx
+src/app/relationships/page.tsx
+src/app/goals/page.tsx
+src/app/finance/page.tsx
+src/app/signals/page.tsx
+
+Estas páginas ya usan stores y engines.
+
+Problema probable:
+Las páginas importan:
+
 import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
-import { useSelfStore } from '@/stores/useSelfStore'
-import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
-import type { MetricCategory, HealthMetricType } from '@/types'
 
-const METRIC_CATS: MetricCategory[] = ['energy', 'mood', 'stress', 'focus', 'motivation', 'confidence']
-const HEALTH_TYPES: HealthMetricType[] = ['weight', 'heart_rate', 'steps', 'calories', 'hydration', 'blood_pressure', 'custom']
+Pero parece faltar:
 
-const CAT_LABEL: Record<MetricCategory, string> = {
-  energy: 'Energia', mood: 'Animo', stress: 'Estres', focus: 'Enfoque', motivation: 'Motivacion', confidence: 'Confianza'
-}
+src/components/ui/index.ts
+src/components/ui/Card.tsx
+src/components/ui/Badge.tsx
+src/components/ui/Button.tsx
+src/components/ui/Input.tsx
+src/components/ui/Select.tsx
+src/components/ui/Textarea.tsx
+src/components/ui/SectionHeader.tsx
+src/components/ui/EmptyState.tsx
 
-export default function SelfPage() {
-  const { selfMetrics, sleepRecords, healthMetrics, addSelfMetric, addSleepRecord, addHealthMetric } = useSelfStore()
+==================================================
+PASO 1 — DIAGNÓSTICO
+==================================================
 
-  const [mCat, setMCat] = useState<MetricCategory>('energy')
-  const [mVal, setMVal] = useState('')
-  const [mNote, setMNote] = useState('')
+Antes de modificar:
 
-  const [sHours, setSHours] = useState('')
-  const [sQual, setSQual] = useState('7')
-  const [sBed, setSBed] = useState('23:00')
-  const [sWake, setSWake] = useState('07:00')
+1. Ejecuta:
+   git status
 
-  const [hType, setHType] = useState<HealthMetricType>('weight')
-  const [hVal, setHVal] = useState('')
-  const [hUnit, setHUnit] = useState('kg')
+2. Lista:
+   src/components/
+   src/components/ui/
+   src/components/layout/
+   src/app/
+   src/app/self/
+   src/app/relationships/
+   src/app/goals/
+   src/app/finance/
+   src/app/signals/
 
-  const bio = useMemo(() => analyzeBiologicalState(sleepRecords, selfMetrics), [sleepRecords, selfMetrics])
-  const sleepTrend = useMemo(() => analyzeSleepTrend(sleepRecords.slice(-7)), [sleepRecords])
+3. Ejecuta:
+   npm run type-check
 
-  const recentMetrics = [...selfMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 12)
-  const lastSleep = [...sleepRecords].sort((a, b) => b.date.localeCompare(a.date))[0]
+4. Si falla por imports de '@/components/ui', confirma exactamente qué componentes faltan.
 
-  function addMetric() {
-    const v = parseFloat(mVal)
-    if (isNaN(v) || v < 1 || v > 10) return
-    addSelfMetric({ id: `m_${Date.now()}`, category: mCat, value: v, timestamp: new Date().toISOString(), notes: mNote || undefined })
-    setMVal(''); setMNote('')
-  }
+==================================================
+PASO 2 — CORREGIR SOLO LO FALTANTE
+==================================================
 
-  function addSleep() {
-    const h = parseFloat(sHours)
-    if (isNaN(h) || h < 0 || h > 24) return
-    const today = new Date().toISOString().split('T')[0]
-    addSleepRecord({ id: `sl_${Date.now()}`, date: today, bedtime: sBed, wakeTime: sWake, duration: h, quality: parseInt(sQual) })
-    setSHours('')
-  }
+Si faltan componentes UI, crea SOLO estos archivos:
 
-  function addHealth() {
-    const v = parseFloat(hVal)
-    if (isNaN(v)) return
-    addHealthMetric({ id: `h_${Date.now()}`, type: hType, value: v, unit: hUnit, timestamp: new Date().toISOString() })
-    setHVal('')
-  }
+src/components/ui/Card.tsx
+src/components/ui/Badge.tsx
+src/components/ui/Button.tsx
+src/components/ui/Input.tsx
+src/components/ui/Select.tsx
+src/components/ui/Textarea.tsx
+src/components/ui/SectionHeader.tsx
+src/components/ui/EmptyState.tsx
+src/components/ui/index.ts
 
-  const energyColor = bio.energyLevel >= 7 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'
-  const sleepColor = sleepTrend.averageDuration >= 7 ? 'ok' : sleepTrend.averageDuration >= 5 ? 'warn' : 'bad'
+Requisitos:
+- TypeScript estricto.
+- Sin any.
+- Componentes simples.
+- Estilo dark, premium, sobrio.
+- Compatibles con className.
+- Compatibles con props HTML estándar.
+- No instalar librerías externas.
 
-  return (
-    <AppShell>
-      <SectionHeader title="Self" subtitle="Estado biologico y metricas personales" />
+Definiciones mínimas:
 
-      {/* Estado biologico summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'Energia', value: bio.energyLevel.toFixed(1), unit: '/10', variant: energyColor },
-          { label: 'Sueno prom.', value: sleepTrend.averageDuration.toFixed(1), unit: 'h', variant: sleepColor },
-          { label: 'Calidad sueno', value: sleepTrend.averageQuality.toFixed(1), unit: '/10', variant: sleepTrend.averageQuality >= 6 ? 'ok' : 'warn' },
-          { label: 'Deuda sueno', value: bio.sleepDebt.toFixed(1), unit: 'h', variant: bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad' },
-        ].map((s) => (
-          <Card key={s.label} className="flex flex-col gap-1">
-            <div className="text-[9px] font-mono text-[#333] uppercase tracking-widest">{s.label}</div>
-            <div className={`text-2xl font-mono font-bold ${s.variant === 'ok' ? 'text-[#22c55e]' : s.variant === 'warn' ? 'text-[#f59e0b]' : 'text-[#ef4444]'}`}>
-              {s.value}<span className="text-sm text-[#333]">{s.unit}</span>
-            </div>
-          </Card>
-        ))}
-      </div>
+Card:
+- wrapper div con border, bg oscuro, rounded, padding.
+- props: children, className.
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Registrar metrica */}
-        <Card>
-          <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Registrar metrica</div>
-          <div className="space-y-2">
-            <Select value={mCat} onChange={e => setMCat(e.target.value as MetricCategory)}>
-              {METRIC_CATS.map(c => <option key={c} value={c}>{CAT_LABEL[c]}</option>)}
-            </Select>
-            <Input type="number" min="1" max="10" step="0.5" placeholder="Valor (1–10)" value={mVal} onChange={e => setMVal(e.target.value)} />
-            <Input type="text" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
-            <Button onClick={addMetric} className="w-full">+ Registrar</Button>
-          </div>
-        </Card>
+Badge:
+- props: label, variant.
+- variants: default, muted, ok, warn, bad, info.
 
-        {/* Registrar sueno */}
-        <Card>
-          <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Registrar sueno</div>
-          <div className="space-y-2">
-            <Input type="number" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} />
-            <div className="flex gap-2">
-              <Input type="time" value={sBed} onChange={e => setSBed(e.target.value)} />
-              <Input type="time" value={sWake} onChange={e => setSWake(e.target.value)} />
-            </div>
-            <Input type="number" min="1" max="10" placeholder="Calidad (1–10)" value={sQual} onChange={e => setSQual(e.target.value)} />
-            <Button onClick={addSleep} className="w-full">+ Registrar sueno</Button>
-          </div>
-        </Card>
-      </div>
+Button:
+- button estándar.
+- props HTML de button.
+- variants: default, ghost, ok, warn, bad.
+- soportar className.
 
-      {/* Ultimas metricas */}
-      <Card className="mb-4">
-        <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Ultimas metricas</div>
-        {recentMetrics.length === 0 ? (
-          <EmptyState message="Sin metricas. Registra tu primer valor." />
-        ) : (
-          <div className="space-y-1">
-            {recentMetrics.map((m) => (
-              <div key={m.id} className="flex justify-between items-center py-1.5 border-b border-[#1a1a1a] last:border-0">
-                <div className="flex items-center gap-2">
-                  <Badge label={CAT_LABEL[m.category] || m.category} variant="muted" />
-                  {m.notes && <span className="text-[10px] text-[#333]">{m.notes}</span>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-mono ${m.value >= 7 ? 'text-[#22c55e]' : m.value >= 4 ? 'text-[#f59e0b]' : 'text-[#ef4444]'}`}>{m.value}/10</span>
-                  <span className="text-[9px] text-[#222]">{new Date(m.timestamp).toLocaleDateString('es', { day: '2-digit', month: '2-digit' })}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+Input:
+- input estándar.
+- props HTML de input.
+- soportar className.
 
-      {/* Ultimo sueno */}
-      {lastSleep && (
-        <Card className="mb-4">
-          <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Ultima noche</div>
-          <div className="flex gap-6 flex-wrap">
-            <div><div className="text-[9px] text-[#333] font-mono">Fecha</div><div className="text-sm font-mono text-[#f5f5f5]">{lastSleep.date}</div></div>
-            <div><div className="text-[9px] text-[#333] font-mono">Duracion</div><div className="text-sm font-mono text-[#f5f5f5]">{lastSleep.duration}h</div></div>
-            <div><div className="text-[9px] text-[#333] font-mono">Calidad</div><div className="text-sm font-mono text-[#f5f5f5]">{lastSleep.quality}/10</div></div>
-            <div><div className="text-[9px] text-[#333] font-mono">Dormir / Despertar</div><div className="text-sm font-mono text-[#f5f5f5]">{lastSleep.bedtime} → {lastSleep.wakeTime}</div></div>
-          </div>
-        </Card>
-      )}
+Select:
+- select estándar.
+- props HTML de select.
+- soportar className.
 
-      {/* Salud basica */}
-      <Card>
-        <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Salud basica</div>
-        <div className="flex gap-2 mb-3">
-          <Select value={hType} onChange={e => setHType(e.target.value as HealthMetricType)} className="flex-1">
-            {HEALTH_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </Select>
-          <Input type="number" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24" />
-          <Input type="text" placeholder="Unidad" value={hUnit} onChange={e => setHUnit(e.target.value)} className="w-16" />
-          <Button onClick={addHealth}>+ Agregar</Button>
-        </div>
-        {healthMetrics.length === 0 ? (
-          <div className="text-[10px] text-[#222] font-mono">Sin registros de salud.</div>
-        ) : (
-          <div className="space-y-1">
-            {[...healthMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 8).map((h) => (
-              <div key={h.id} className="flex justify-between py-1 border-b border-[#1a1a1a] last:border-0">
-                <span className="text-xs text-[#555]">{h.type}</span>
-                <span className="text-xs font-mono text-[#f5f5f5]">{h.value} {h.unit}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-    </AppShell>
-  )
-}
+Textarea:
+- textarea estándar.
+- props HTML de textarea.
+- soportar className.
+
+SectionHeader:
+- props: title, subtitle?, action?
+- layout simple.
+
+EmptyState:
+- props: message, action?
+- estado vacío sobrio.
+
+index.ts:
+- exportar todos los componentes.
+
+==================================================
+PASO 3 — VALIDAR PÁGINAS EXISTENTES
+==================================================
+
+Después de crear los componentes:
+
+1. No rediseñes las páginas.
+2. Corrige solo errores TypeScript mínimos si aparecen.
+3. Verifica que estas rutas compilen:
+   - /dashboard
+   - /self
+   - /relationships
+   - /goals
+   - /finance
+   - /signals
+
+==================================================
+PASO 4 — OPCIONAL SOLO SI FALTA
+==================================================
+
+Si /dashboard todavía no usa AppShell, NO lo reescribas completo.
+Solo déjalo para una fase posterior, salvo que sea necesario para build.
+
+==================================================
+PASO 5 — VALIDACIÓN FINAL
+==================================================
+
+Ejecuta:
+
+npm run type-check
+npm run lint
+npm run build
+
+Si falla:
+- corrige el error mínimo necesario;
+- no uses any;
+- no desactives TypeScript;
+- no borres funcionalidad;
+- no cambies la visión.
+
+==================================================
+ENTREGA FINAL
+==================================================
+
+Responde con:
+
+1. Estado inicial encontrado
+2. Componentes UI faltantes encontrados
+3. Archivos creados
+4. Archivos modificados
+5. Errores corregidos
+6. Resultado de type-check
+7. Resultado de lint
+8. Resultado de build
+9. Qué queda pendiente de Fase 3
+
+IMPORTANTE:
+Esta es una recuperación quirúrgica. No repitas la Fase 3 desde cero.
