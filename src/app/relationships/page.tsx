@@ -94,9 +94,9 @@ export default function RelationshipsPage() {
       energyImpact: person.energyImpact,
       trustLevel: person.trustLevel,
       lastContact: person.lastContact ?? '',
-      contactFrequency: person.contactFrequency ?? '',
+      contactFrequency: person.contactFrequency,
       location: person.location ?? '',
-      notes: person.notes ?? '',
+      notes: person.notes,
     })
     setShowForm(true)
   }
@@ -120,9 +120,9 @@ export default function RelationshipsPage() {
         energyImpact: form.energyImpact,
         trustLevel: form.trustLevel,
         lastContact: form.lastContact || undefined,
-        contactFrequency: form.contactFrequency.trim() || undefined,
+        contactFrequency: form.contactFrequency,
         location: form.location.trim() || undefined,
-        notes: form.notes.trim() || undefined,
+        notes: form.notes,
         updatedAt: now,
       }
       updatePerson(editingId, patch)
@@ -137,9 +137,9 @@ export default function RelationshipsPage() {
         energyImpact: form.energyImpact,
         trustLevel: form.trustLevel,
         lastContact: form.lastContact || undefined,
-        contactFrequency: form.contactFrequency.trim() || undefined,
+        contactFrequency: form.contactFrequency,
         location: form.location.trim() || undefined,
-        notes: form.notes.trim() || undefined,
+        notes: form.notes,
         tags: [],
         createdAt: now,
         updatedAt: now,
