@@ -1,197 +1,205 @@
-'use client'
-// SIR V2 — /goals
-// Objetivos, progreso, impacto en paz
-import { useMemo, useState } from 'react'
-import { AppShell } from '@/components/layout/AppShell'
+Actúa como Staff Engineer cuidadoso. Claude Chrome se cortó mientras ejecutabas Fase 3 de SIR V2.
+
+Proyecto:
+aaronhuaynate66/sir-v2-life-os
+
+Objetivo:
+Continuar desde donde se quedó SIN rehacer ni malograr lo avanzado.
+
+REGLAS CRÍTICAS:
+- NO rehagas desde cero.
+- NO borres archivos existentes.
+- NO rediseñes las páginas ya creadas.
+- NO cambies la arquitectura.
+- NO agregues backend.
+- NO agregues Supabase.
+- NO agregues IA real.
+- NO cambies stores existentes salvo que sea necesario para corregir imports/tipos.
+- Haz una recuperación quirúrgica.
+
+==================================================
+ESTADO YA VERIFICADO
+==================================================
+
+Ya existen y deben conservarse:
+
+src/components/layout/AppShell.tsx
+src/components/layout/Nav.tsx
+
+Ya existen y deben conservarse:
+
+src/app/self/page.tsx
+src/app/relationships/page.tsx
+src/app/goals/page.tsx
+src/app/finance/page.tsx
+src/app/signals/page.tsx
+
+Estas páginas ya usan stores y engines.
+
+Problema probable:
+Las páginas importan:
+
 import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
-import { useGoalStore } from '@/stores/useGoalStore'
-import { buildGoalDashboard } from '@/engines/goal'
-import type { GoalCategory, GoalPriority, Goal } from '@/types'
 
-const CAT_LABEL: Record<GoalCategory, string> = {
-  financial: 'Financiero', personal: 'Personal', relational: 'Relacional', health: 'Salud',
-  career: 'Carrera', spiritual: 'Espiritual', creative: 'Creativo'
-}
-const PRIO_LABEL: Record<GoalPriority, string> = {
-  critical: 'Critico', high: 'Alto', medium: 'Medio', low: 'Bajo'
-}
-const PRIO_VARIANT: Record<GoalPriority, 'bad' | 'warn' | 'info' | 'muted'> = {
-  critical: 'bad', high: 'warn', medium: 'info', low: 'muted'
-}
-const STATUS_COLORS: Record<Goal['status'], string> = {
-  active: 'text-[#22c55e]', paused: 'text-[#f59e0b]', completed: 'text-[#3b82f6]', abandoned: 'text-[#333]'
-}
+Pero parece faltar:
 
-export default function GoalsPage() {
-  const { goals, addGoal, updateGoal, updateGoalProgress, completeGoal, pauseGoal } = useGoalStore()
-  const dash = useMemo(() => buildGoalDashboard(goals), [goals])
+src/components/ui/index.ts
+src/components/ui/Card.tsx
+src/components/ui/Badge.tsx
+src/components/ui/Button.tsx
+src/components/ui/Input.tsx
+src/components/ui/Select.tsx
+src/components/ui/Textarea.tsx
+src/components/ui/SectionHeader.tsx
+src/components/ui/EmptyState.tsx
 
-  const [adding, setAdding] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [progressId, setProgressId] = useState<string | null>(null)
-  const [progressVal, setProgressVal] = useState('')
+==================================================
+PASO 1 — DIAGNÓSTICO
+==================================================
 
-  const [title, setTitle] = useState('')
-  const [desc, setDesc] = useState('')
-  const [cat, setCat] = useState<GoalCategory>('personal')
-  const [prio, setPrio] = useState<GoalPriority>('medium')
-  const [targetDate, setTargetDate] = useState('')
-  const [nextAction, setNextAction] = useState('')
-  const [peaceImpact, setPeaceImpact] = useState('5')
+Antes de modificar:
 
-  function resetForm() {
-    setTitle(''); setDesc(''); setCat('personal'); setPrio('medium')
-    setTargetDate(''); setNextAction(''); setPeaceImpact('5')
-    setAdding(false); setEditId(null)
-  }
+1. Ejecuta:
+   git status
 
-  function saveGoal() {
-    if (!title.trim()) return
-    const now = new Date().toISOString()
-    if (editId) {
-      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction: nextAction || undefined, peaceImpact: parseInt(peaceImpact) })
-    } else {
-      const g: Goal = { id: `g_${Date.now()}`, title, description: desc, category: cat, priority: prio, status: 'active', progress: 0, milestones: [], relatedGoals: [], relatedPersons: [], peaceImpact: parseInt(peaceImpact), obstacles: [], nextAction: nextAction || undefined, targetDate: targetDate || undefined, createdAt: now, updatedAt: now }
-      addGoal(g)
-    }
-    resetForm()
-  }
+2. Lista:
+   src/components/
+   src/components/ui/
+   src/components/layout/
+   src/app/
+   src/app/self/
+   src/app/relationships/
+   src/app/goals/
+   src/app/finance/
+   src/app/signals/
 
-  function startEdit(g: Goal) {
-    setEditId(g.id); setTitle(g.title); setDesc(g.description)
-    setCat(g.category); setPrio(g.priority); setTargetDate(g.targetDate || '')
-    setNextAction(g.nextAction || ''); setPeaceImpact(String(g.peaceImpact))
-    setAdding(true)
-  }
+3. Ejecuta:
+   npm run type-check
 
-  function saveProgress() {
-    if (!progressId) return
-    const v = parseInt(progressVal)
-    if (isNaN(v) || v < 0 || v > 100) return
-    updateGoalProgress(progressId, v)
-    setProgressId(null); setProgressVal('')
-  }
+4. Si falla por imports de '@/components/ui', confirma exactamente qué componentes faltan.
 
-  const activeGoals = goals.filter(g => g.status === 'active').sort((a, b) => {
-    const po = { critical: 0, high: 1, medium: 2, low: 3 }
-    return po[a.priority] - po[b.priority]
-  })
-  const otherGoals = goals.filter(g => g.status !== 'active')
+==================================================
+PASO 2 — CORREGIR SOLO LO FALTANTE
+==================================================
 
-  return (
-    <AppShell>
-      <SectionHeader
-        title="Objetivos"
-        subtitle="Direccion, paz e impacto en vida"
-        action={<Button onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Nuevo objetivo'}</Button>}
-      />
+Si faltan componentes UI, crea SOLO estos archivos:
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'Activos', value: String(dash.totalActive) },
-          { label: 'Criticos', value: String(dash.criticalGoals.length) },
-          { label: 'Completados', value: String(goals.filter(g => g.status === 'completed').length) },
-          { label: 'Progreso prom.', value: activeGoals.length ? Math.round(activeGoals.reduce((s, g) => s + g.progress, 0) / activeGoals.length) + '%' : '-' },
-        ].map((s) => (
-          <Card key={s.label} className="flex flex-col gap-1">
-            <div className="text-[9px] font-mono text-[#333] uppercase tracking-widest">{s.label}</div>
-            <div className="text-2xl font-mono font-bold text-[#f5f5f5]">{s.value}</div>
-          </Card>
-        ))}
-      </div>
+src/components/ui/Card.tsx
+src/components/ui/Badge.tsx
+src/components/ui/Button.tsx
+src/components/ui/Input.tsx
+src/components/ui/Select.tsx
+src/components/ui/Textarea.tsx
+src/components/ui/SectionHeader.tsx
+src/components/ui/EmptyState.tsx
+src/components/ui/index.ts
 
-      {/* Formulario */}
-      {adding && (
-        <Card className="mb-4 border-[#2a2a2a]">
-          <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">{editId ? 'Editar objetivo' : 'Nuevo objetivo'}</div>
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <Input placeholder="Titulo" value={title} onChange={e => setTitle(e.target.value)} className="col-span-2" />
-            <Input placeholder="Descripcion" value={desc} onChange={e => setDesc(e.target.value)} className="col-span-2" />
-            <Select value={cat} onChange={e => setCat(e.target.value as GoalCategory)}>
-              {(Object.keys(CAT_LABEL) as GoalCategory[]).map(c => <option key={c} value={c}>{CAT_LABEL[c]}</option>)}
-            </Select>
-            <Select value={prio} onChange={e => setPrio(e.target.value as GoalPriority)}>
-              {(Object.keys(PRIO_LABEL) as GoalPriority[]).map(p => <option key={p} value={p}>{PRIO_LABEL[p]}</option>)}
-            </Select>
-            <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
-            <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} />
-            <Input placeholder="Siguiente accion" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ok" onClick={saveGoal}>{editId ? 'Guardar' : '+ Agregar objetivo'}</Button>
-            <Button variant="ghost" onClick={resetForm}>Cancelar</Button>
-          </div>
-        </Card>
-      )}
+Requisitos:
+- TypeScript estricto.
+- Sin any.
+- Componentes simples.
+- Estilo dark, premium, sobrio.
+- Compatibles con className.
+- Compatibles con props HTML estándar.
+- No instalar librerías externas.
 
-      {/* Activos */}
-      {activeGoals.length === 0 && !adding ? (
-        <EmptyState message="Sin objetivos activos." action={<Button onClick={() => setAdding(true)}>+ Crear primer objetivo</Button>} />
-      ) : (
-        <div className="space-y-2 mb-6">
-          {activeGoals.map((g) => (
-            <Card key={g.id}>
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-sm font-medium text-[#f5f5f5]">{g.title}</span>
-                    <Badge label={PRIO_LABEL[g.priority]} variant={PRIO_VARIANT[g.priority]} />
-                    <Badge label={CAT_LABEL[g.category]} variant="muted" />
-                  </div>
-                  {g.description && <p className="text-xs text-[#444] mb-2">{g.description}</p>}
-                  {/* Progress bar */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="flex-1 h-1 bg-[#1a1a1a] rounded-full">
-                      <div className="h-1 rounded-full bg-[#22c55e] transition-all" style={{ width: `${g.progress}%` }} />
-                    </div>
-                    <span className="text-xs font-mono text-[#444] w-8">{g.progress}%</span>
-                  </div>
-                  {progressId === g.id && (
-                    <div className="flex gap-2 mb-2">
-                      <Input type="number" min="0" max="100" placeholder="% nuevo progreso" value={progressVal} onChange={e => setProgressVal(e.target.value)} className="w-40" />
-                      <Button variant="ok" onClick={saveProgress}>Guardar</Button>
-                      <Button variant="ghost" onClick={() => setProgressId(null)}>x</Button>
-                    </div>
-                  )}
-                  <div className="flex gap-4 text-[10px] text-[#333] flex-wrap">
-                    {g.nextAction && <span>siguiente: <span className="text-[#555]">{g.nextAction}</span></span>}
-                    {g.targetDate && <span>fecha: <span className="text-[#555]">{g.targetDate}</span></span>}
-                    <span>paz: <span className="text-[#555]">+{g.peaceImpact}</span></span>
-                  </div>
-                </div>
-                <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
-                  <Button variant="ghost" onClick={() => { setProgressId(g.id === progressId ? null : g.id); setProgressVal(String(g.progress)) }}>%</Button>
-                  <Button variant="ghost" onClick={() => startEdit(g)}>Editar</Button>
-                  <Button variant="ok" onClick={() => completeGoal(g.id)}>Completar</Button>
-                  <Button variant="ghost" onClick={() => pauseGoal(g.id)}>Pausar</Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+Definiciones mínimas:
 
-      {/* Otros */}
-      {otherGoals.length > 0 && (
-        <div>
-          <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Historial</div>
-          <div className="space-y-1">
-            {otherGoals.map((g) => (
-              <div key={g.id} className="flex justify-between items-center py-2 border-b border-[#1a1a1a] last:border-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#444]">{g.title}</span>
-                  <Badge label={CAT_LABEL[g.category]} variant="muted" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[10px] font-mono ${STATUS_COLORS[g.status]}`}>{g.status}</span>
-                  <Button variant="ghost" onClick={() => updateGoal(g.id, { status: 'active' })}>Reactivar</Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </AppShell>
-  )
-}
+Card:
+- wrapper div con border, bg oscuro, rounded, padding.
+- props: children, className.
+
+Badge:
+- props: label, variant.
+- variants: default, muted, ok, warn, bad, info.
+
+Button:
+- button estándar.
+- props HTML de button.
+- variants: default, ghost, ok, warn, bad.
+- soportar className.
+
+Input:
+- input estándar.
+- props HTML de input.
+- soportar className.
+
+Select:
+- select estándar.
+- props HTML de select.
+- soportar className.
+
+Textarea:
+- textarea estándar.
+- props HTML de textarea.
+- soportar className.
+
+SectionHeader:
+- props: title, subtitle?, action?
+- layout simple.
+
+EmptyState:
+- props: message, action?
+- estado vacío sobrio.
+
+index.ts:
+- exportar todos los componentes.
+
+==================================================
+PASO 3 — VALIDAR PÁGINAS EXISTENTES
+==================================================
+
+Después de crear los componentes:
+
+1. No rediseñes las páginas.
+2. Corrige solo errores TypeScript mínimos si aparecen.
+3. Verifica que estas rutas compilen:
+   - /dashboard
+   - /self
+   - /relationships
+   - /goals
+   - /finance
+   - /signals
+
+==================================================
+PASO 4 — OPCIONAL SOLO SI FALTA
+==================================================
+
+Si /dashboard todavía no usa AppShell, NO lo reescribas completo.
+Solo déjalo para una fase posterior, salvo que sea necesario para build.
+
+==================================================
+PASO 5 — VALIDACIÓN FINAL
+==================================================
+
+Ejecuta:
+
+npm run type-check
+npm run lint
+npm run build
+
+Si falla:
+- corrige el error mínimo necesario;
+- no uses any;
+- no desactives TypeScript;
+- no borres funcionalidad;
+- no cambies la visión.
+
+==================================================
+ENTREGA FINAL
+==================================================
+
+Responde con:
+
+1. Estado inicial encontrado
+2. Componentes UI faltantes encontrados
+3. Archivos creados
+4. Archivos modificados
+5. Errores corregidos
+6. Resultado de type-check
+7. Resultado de lint
+8. Resultado de build
+9. Qué queda pendiente de Fase 3
+
+IMPORTANTE:
+Esta es una recuperación quirúrgica. No repitas la Fase 3 desde cero.
