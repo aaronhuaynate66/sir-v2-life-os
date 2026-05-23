@@ -1,73 +1,4 @@
 'use client'
-// SIR V2 — /signals
-// Senales activas, manual, resolver, fuentes
-import { useMemo, useState } from 'react'
-import { AppShell } from '@/components/layout/AppShell'
-import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
-import { useSignalStore } from '@/stores/useSignalStore'
-import { buildSignalContext } from '@/engines/signal'
-import type { SignalSource, SignalType, SignalUrgency, Signal } from '@/types'
-
-const SOURCE_LABEL: Record<SignalSource, string> = {
-  linkedin: 'LinkedIn', instagram: 'Instagram', calendar: 'Calendario',
-  biological: 'Biologico', financial: 'Financiero', relational: 'Relacional', manual: 'Manual'
-}
-const TYPE_LABEL: Record<SignalType, string> = {
-  opportunity: 'Oportunidad', warning: 'Advertencia', pattern: 'Patron', timing: 'Timing',
-  emotional: 'Emocional', relational: 'Relacional', biological: 'Biologico', financial: 'Financiero'
-}
-const URGENCY_VARIANT: Record<SignalUrgency, 'bad' | 'warn' | 'default' | 'muted'> = {
-  immediate: 'bad', soon: 'warn', monitor: 'default', archive: 'muted'
-}
-const URGENCY_LABEL: Record<SignalUrgency, string> = {
-  immediate: 'Inmediata', soon: 'Pronto', monitor: 'Monitorear', archive: 'Archivar'
-}
-
-export default function SignalsPage() {
-  const { signals, addSignal, resolveSignal, removeSignal } = useSignalStore()
-  const ctx = useMemo(() => buildSignalContext(signals), [signals])
-
-  const [source, setSource] = useState<SignalSource>('manual')
-  const [type, setType] = useState<SignalType>('pattern')
-  const [urgency, setUrgency] = useState<SignalUrgency>('soon')
-  const [content, setContent] = useState('')
-  const [meaning, setMeaning] = useState('')
-  const [action, setAction] = useState('')
-  const [filterSource, setFilterSource] = useState<SignalSource | 'all'>('all')
-  const [showResolved, setShowResolved] = useState(false)
-
-  function submit() {
-    if (!content.trim()) return
-    const s: Signal = {
-      id: `sig_${Date.now()}`, source, type, content, strength: 5, urgency,
-      relatedPersons: [], relatedGoals: [],
-      meaning: meaning || content,
-      actionRequired: !!action,
-      suggestedAction: action || undefined,
-      detectedAt: new Date().toISOString(),
-      resolved: false
-    }
-    addSignal(s)
-    setContent(''); setMeaning(''); setAction('')
-  }
-
-  const allSignals: Signal[] = [...signals].sort((a, b) => {
-    const uOrder: Record<SignalUrgency, number> = { immediate: 0, soon: 1, monitor: 2, archive: 3 }
-    return uOrder[a.urgency] - uOrder[b.urgency]
-  })
-
-  const visible = allSignals.filter(s => {
-    if (!showResolved && s.resolved) return false
-    if (filterSource !== 'all' && s.source !== filterSource) return false
-    return true
-  })
-
-  const active = allSignals.filter(s => !s.resolved)
-  const bySource = (Object.keys(SOURCE_LABEL) as SignalSource[]).map(src => ({
-    src, count: active.filter(s => s.source === src).length
-  })).filter(x => x.count > 0)
-
-  return (
     <AppShell>
       <SectionHeader title="Senales" subtitle="Patrones, timing y contexto activo" />
 
@@ -91,7 +22,7 @@ export default function SignalsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Activas', value: String(ctx.activeSignals.filter(s => !s.resolved).length) },
-          { label: 'Criticas', value: String(ctx.criticalCount) },
+          { label: 'Criticas', value: String(ctx.activeSignals.filter(s => s.urgency === 'immediate').length) },
           { label: 'Con accion', value: String(active.filter(s => s.actionRequired).length) },
           { label: 'Resueltas', value: String(allSignals.filter(s => s.resolved).length) },
         ].map((s) => (
@@ -147,21 +78,3 @@ export default function SignalsPage() {
                     <Badge label={TYPE_LABEL[s.type]} variant="muted" />
                     <Badge label={URGENCY_LABEL[s.urgency]} variant={URGENCY_VARIANT[s.urgency]} />
                     {s.actionRequired && <Badge label="accion requerida" variant="warn" />}
-                  </div>
-                  <p className="text-xs text-[#f5f5f5] mb-1">{s.content}</p>
-                  {s.meaning && s.meaning !== s.content && <p className="text-[11px] text-[#444]">{s.meaning}</p>}
-                  {s.suggestedAction && <p className="text-[10px] text-[#333] mt-1">accion: {s.suggestedAction}</p>}
-                  <p className="text-[9px] text-[#222] mt-1 font-mono">{new Date(s.detectedAt).toLocaleDateString('es')}</p>
-                </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  {!s.resolved && <Button variant="ok" onClick={() => resolveSignal(s.id)}>Resolver</Button>}
-                  <Button variant="danger" onClick={() => removeSignal(s.id)}>x</Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </AppShell>
-  )
-}
