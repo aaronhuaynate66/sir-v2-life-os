@@ -6,6 +6,7 @@ export { useGoalStore } from './useGoalStore'
 export { useFinanceStore } from './useFinanceStore'
 export { useSignalStore } from './useSignalStore'
 export { useRecommendationStore } from './useRecommendationStore'
+export { useMemoryStore } from './useMemoryStore'
 export { STORAGE_KEYS } from './storage'
 export type { StorageKey } from './storage'
 export type {
