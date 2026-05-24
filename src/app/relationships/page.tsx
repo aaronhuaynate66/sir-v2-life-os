@@ -11,8 +11,9 @@ import {
   SectionHeader,
   EmptyState,
 } from '@/components/ui'
-import { useRelationshipStore } from '@/stores'
+import { useRelationshipStore, useMemoryStore } from '@/stores'
 import { detectRelationshipAlerts } from '@/engines/relationship'
+import { createPersonAddedMemory } from '@/engines/memory'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -70,6 +71,7 @@ function urgencyColor(
 export default function RelationshipsPage() {
   const { people, relationships, addPerson, updatePerson, removePerson } =
     useRelationshipStore()
+  const { addMemory } = useMemoryStore()
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -145,6 +147,7 @@ export default function RelationshipsPage() {
         updatedAt: now,
       }
       addPerson(newPerson)
+      addMemory(createPersonAddedMemory(newPerson))
     }
     handleCancel()
   }
