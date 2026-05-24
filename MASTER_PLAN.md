@@ -13,8 +13,8 @@
 | Repositorio | `aaronhuaynate66/sir-v2-life-os` |
 | Stack | Next.js 15 · TypeScript · Zustand · Tailwind CSS |
 | Branch principal | `main` |
-| Estado global | 🟡 EN PROGRESO — R4 Memory System activo |
-| Última actualización | 2026-05-23 |
+| Estado global | 🟡 EN PROGRESO — R5 Context Engine Real activo |
+| Última actualización | 2026-05-24 |
 
 ---
 
@@ -22,12 +22,12 @@
 
 ```
 Releases totales : 10 (R0 → R9)
-Releases cerrados : 4  (R0, R1, R2, R3)
-Releases activos  : 1  (R4)
-Releases pendientes: 4  (R5, R6, R7, R8)
+Releases cerrados : 5  (R0, R1, R2, R3, R4)
+Releases activos  : 1  (R5)
+Releases pendientes: 3  (R6, R7, R8)
 Releases futuros  : 1  (R9)
 
-Progreso global   : ████████░░░░░░░░░░░░  ~40%
+Progreso global   : ██████████░░░░░░░░░░  ~50%
 ```
 
 ---
@@ -71,8 +71,8 @@ gantt
 | R1 | Arquitectura Cognitiva | ✅ Cerrado | Types, engines base, 12 engines skeleton |
 | R2 | Estado Persistente | ✅ Cerrado | Zustand stores con persist, fixtures, CRUD |
 | R3 | Vistas Operativas | ✅ Cerrado | /dashboard, /relationships, /goals, /finance, /signals, /memory read-only |
-| R4 | Memory System | 🟡 Activo | Memory store, engine, fixtures, context |
-| R5 | Context Engine Real | ⬜ Pendiente | ContextSnapshot real con todas las fuentes |
+| R4 | Memory System | ✅ Cerrado | Memory store, engine, fixtures, context, captura automática |
+| R5 | Context Engine Real | 🔄 Activo | ContextSnapshot real con todas las fuentes |
 | R6 | Recommendation Engine Real | ⬜ Pendiente | Recomendaciones basadas en context real |
 | R7 | AI Brain | ⬜ Pendiente | Integración OpenAI/Claude vía OpenRouter |
 | R8 | Integraciones Reales | ⬜ Pendiente | Calendar, financiero, health, LinkedIn |
@@ -82,7 +82,7 @@ gantt
 
 ## 5. Progreso por Release
 
-### R4 — Memory System (Activo)
+### R4 — Memory System (✅ Cerrado)
 
 | Microtarea | Descripción | Estado |
 |-----------|-------------|--------|
@@ -90,15 +90,19 @@ gantt
 | R4A.2 | fixtureMemories — 5 memorias de ejemplo | ✅ Cerrado |
 | R4A.3 | /memory solo lectura — vista con búsqueda y filtro | ✅ Cerrado |
 | R4A.4 | buildMemoryContext — engine de análisis | ✅ Cerrado |
-| R4A.5 | Memory Context en /memory — panel resumen en UI | 🟡 En progreso |
-| R4B.1 | helpers createXMemory — factories tipadas por tipo | ⬜ Pendiente |
-| R4B.2 | Auto Memory Capture — captura automática desde stores | ⬜ Pendiente |
+| R4A.5 | Memory Context en /memory — panel resumen en UI | ✅ Cerrado |
+| R4B.1 | helpers createXMemory — factories tipadas por tipo | ✅ Cerrado |
+| R4B.2 | Auto Memory Capture — /relationships → memoria | ✅ Cerrado |
+| R4B.3 | Auto Memory Capture — /signals → memoria | ✅ Cerrado |
+| R4B.4 | Auto Memory Capture — /self → memoria | ✅ Cerrado |
+| R4B.5 | Auto Memory Capture — /finance → memoria | ✅ Cerrado |
+| R4B.6 | Auto Memory Capture — /goals → memoria | ✅ Cerrado |
 
 ```
-R4 Progress: ████████░░░░░░░░░░░░  ~57%  (4/7 microtareas)
+R4 Progress: ████████████████████  100%  (11/11 microtareas)
 ```
 
-### Releases Previos (Cerrados)
+### Releases Previos Releases Previos (Cerrados)
 
 ```
 R0 Progress: ████████████████████  100%
@@ -113,9 +117,8 @@ R3 Progress: ████████████████████  100%
 
 | # | Bloqueante | Impacto | Acción requerida |
 |---|-----------|---------|-----------------|
-| B1 | R4A.5 no iniciado aún | R4 no cierra sin panel de contexto en /memory | Iniciar microtarea R4A.5 |
-| B2 | R4B.1 / R4B.2 sin spec formal | R4 no puede cerrarse sin captura automática | Escribir spec detallada de R4B |
-| B3 | R5 (Context Engine Real) no especificado | Bloquea R6 y R7 en cadena | Definir spec de ContextSnapshot real |
+| B1 | R5 (Context Engine Real) no especificado | Bloquea R6 y R7 en cadena | Definir spec de ContextSnapshot real |
+| B2 | Sin integración real de datos (R8) | Todo el sistema opera con fixtures | Planificar R8 cuando R7 esté cerrado || B3 | R5 (Context Engine Real) no especificado | Bloquea R6 y R7 en cadena | Definir spec de ContextSnapshot real |
 | B4 | Sin integración real de datos (R8) | Todo el sistema opera con fixtures | Planificar R8 cuando R7 esté cerrado |
 
 ---
@@ -224,22 +227,20 @@ npm run type-check && npm run lint && npm run build
 ## 12. Siguiente Acción Inmediata
 
 ```
-🎯 ACCIÓN: R4A.5 — Integrar MemoryContext en /memory
+🎯 ACCIÓN: R5.1 — Definir ContextSnapshot real
 ```
 
 **Qué hacer:**
-- Importar `buildMemoryContext` desde `@/engines/memory`
-- Llamarlo en `src/app/memory/page.tsx` con memorias del store
-- Mostrar panel de resumen: totalMemories, memoriesByType, averageImportance, criticalEntities
-- No modificar engine ni store — solo UI de la página
-- Validar: `npm run type-check && npm run lint && npm run build`
+- Definir estructura `ContextSnapshot` en `src/types`
+- Implementar `buildContextSnapshot()` en `src/engines/context`
+- Conectar todos los stores como fuentes: goals, relationships, signals, finance, self, memory
+- Retornar snapshot tipado sin any
 
-**Criterio de cierre de R4:**
-- [ ] R4A.5 Cerrado
-- [ ] R4B.1 Cerrado
-- [ ] R4B.2 Cerrado
+**Criterio de cierre de R5:**
+- [ ] R5.1 ContextSnapshot definido y tipado
+- [ ] buildContextSnapshot implementado y exportado
 - [ ] CI verde en todas las microtareas
 
 ---
 
-*Última actualización: 2026-05-23 · Maintainer: @aaronhuaynate66*
+*Última actualización: 2026-05-24 · Maintainer: @aaronhuaynate66*
