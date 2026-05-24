@@ -24,14 +24,15 @@ export function createPersonAddedMemory(person: Person): Memory {
 
 // ─── createSignalAddedMemory ──────────────────────────────
 
+function signalUrgencyToImportance(urgency: Signal['urgency']): number {
+  if (urgency === 'immediate') return 9
+  if (urgency === 'soon') return 7
+  if (urgency === 'monitor') return 5
+  return 3
+}
+
 export function createSignalAddedMemory(signal: Signal): Memory {
   const now = new Date().toISOString()
-  const urgencyImportance: Record<string, number> = {
-    critical: 9,
-    high: 7,
-    medium: 5,
-    low: 3,
-  }
   return {
     id: crypto.randomUUID(),
     type: 'predictive',
@@ -39,10 +40,10 @@ export function createSignalAddedMemory(signal: Signal): Memory {
     content: `${signal.content}${signal.meaning ? ` Significado: ${signal.meaning}` : ''}${signal.suggestedAction ? ` Accion sugerida: ${signal.suggestedAction}` : ''}`,
     entities: [...signal.relatedPersons, ...signal.relatedGoals],
     emotionalCharge: Math.min(10, Math.round(signal.strength * 10)),
-    importance: urgencyImportance[signal.urgency] ?? 5,
+    importance: signalUrgencyToImportance(signal.urgency),
     timestamp: signal.detectedAt,
     lastAccessed: now,
-    decayRate: signal.urgency === 'critical' ? 0.02 : 0.1,
+    decayRate: signal.urgency === 'immediate' ? 0.02 : 0.1,
     tags: ['senal', signal.source, signal.type, signal.urgency],
     relatedMemories: [],
   }
@@ -71,23 +72,21 @@ export function createSleepMemory(record: SleepRecord): Memory {
 
 // ─── createSelfMetricMemory ────────────────────────────────────────
 
+function metricCategoryToEmotional(category: SelfMetric['category']): number {
+  if (category === 'mood' || category === 'motivation' || category === 'confidence') return 6
+  if (category === 'stress') return 4
+  return 5
+}
+
 export function createSelfMetricMemory(metric: SelfMetric): Memory {
   const now = new Date().toISOString()
-  const categoryEmotional: Record<string, number> = {
-    energy: 5,
-    mood: 6,
-    stress: 4,
-    focus: 5,
-    motivation: 6,
-    confidence: 6,
-  }
   return {
     id: crypto.randomUUID(),
     type: 'temporal',
     title: `Metrica de ${metric.category}: ${metric.value}/10`,
     content: `Registro de ${metric.category} con valor ${metric.value}/10.${metric.note ? ` Nota: ${metric.note}` : ''}`,
     entities: [],
-    emotionalCharge: categoryEmotional[metric.category] ?? 5,
+    emotionalCharge: metricCategoryToEmotional(metric.category),
     importance: metric.value <= 3 || metric.value >= 9 ? 7 : 4,
     timestamp: metric.timestamp,
     lastAccessed: now,
@@ -99,15 +98,15 @@ export function createSelfMetricMemory(metric: SelfMetric): Memory {
 
 // ─── createFinancialMovementMemory ───────────────────────────
 
+function movementTypeToImportance(type: FinancialMovement['type']): number {
+  if (type === 'investment' || type === 'debt') return 8
+  if (type === 'income') return 7
+  if (type === 'expense') return 5
+  return 4
+}
+
 export function createFinancialMovementMemory(movement: FinancialMovement): Memory {
   const now = new Date().toISOString()
-  const typeImportance: Record<string, number> = {
-    income: 7,
-    expense: 5,
-    investment: 8,
-    transfer: 4,
-    debt: 8,
-  }
   return {
     id: crypto.randomUUID(),
     type: 'semantic',
@@ -115,7 +114,7 @@ export function createFinancialMovementMemory(movement: FinancialMovement): Memo
     content: `${movement.description}. Tipo: ${movement.type}, categoria: ${movement.category}, monto: ${movement.amount} ${movement.currency}.${movement.recurrent ? ` Recurrente${movement.recurrentPeriod ? ` (${movement.recurrentPeriod})` : ''}.` : ''}${movement.relatedGoal ? ` Objetivo relacionado: ${movement.relatedGoal}.` : ''}`,
     entities: movement.relatedGoal ? [movement.relatedGoal] : [],
     emotionalCharge: movement.type === 'income' || movement.type === 'investment' ? 7 : movement.type === 'debt' ? 3 : 5,
-    importance: typeImportance[movement.type] ?? 5,
+    importance: movementTypeToImportance(movement.type),
     timestamp: new Date(movement.date).toISOString(),
     lastAccessed: now,
     decayRate: 0.1,
