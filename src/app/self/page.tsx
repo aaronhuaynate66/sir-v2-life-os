@@ -3,13 +3,16 @@ import { useMemo, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
 import { useSelfStore } from '@/stores/useSelfStore'
+import { useMemoryStore } from '@/stores'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
+import { createSelfMetricMemory, createSleepMemory } from '@/engines/memory'
 import type { MetricCategory, HealthMetricType } from '@/types'
 const METRIC_CATS: MetricCategory[] = ['energy','mood','stress','focus','motivation','confidence']
 const HEALTH_TYPES: HealthMetricType[] = ['weight','heart_rate','steps','calories','hydration','blood_pressure','custom']
 const CAT_LABEL: Record<MetricCategory,string> = {energy:'Energia',mood:'Animo',stress:'Estres',focus:'Enfoque',motivation:'Motivacion',confidence:'Confianza'}
 export default function SelfPage() {
   const {selfMetrics,sleepRecords,healthMetrics,addSelfMetric,addSleepRecord,addHealthMetric}=useSelfStore()
+  const { addMemory } = useMemoryStore()
   const [mCat,setMCat]=useState<MetricCategory>('energy')
   const [mVal,setMVal]=useState('')
   const [mNote,setMNote]=useState('')
@@ -24,8 +27,8 @@ export default function SelfPage() {
   const sleepTrend=useMemo(()=>analyzeSleepTrend(sleepRecords.slice(-7)),[sleepRecords])
   const recentMetrics=[...selfMetrics].sort((a,b)=>b.timestamp.localeCompare(a.timestamp)).slice(0,12)
   const lastSleep=[...sleepRecords].sort((a,b)=>b.date.localeCompare(a.date))[0]
-  function addMetric(){const v=parseFloat(mVal);if(isNaN(v)||v<1||v>10)return;addSelfMetric({id:'m_'+Date.now(),category:mCat,value:v,timestamp:new Date().toISOString(),note:mNote||undefined});setMVal('');setMNote('')}
-  function addSleep(){const h=parseFloat(sHours);if(isNaN(h)||h<0||h>24)return;addSleepRecord({id:'sl_'+Date.now(),date:new Date().toISOString().split('T')[0],bedtime:sBed,wakeTime:sWake,duration:h,quality:parseInt(sQual)});setSHours('')}
+  function addMetric(){const v=parseFloat(mVal);if(isNaN(v)||v<1||v>10)return;const metric={id:'m_'+Date.now(),category:mCat,value:v,timestamp:new Date().toISOString(),note:mNote||undefined};addSelfMetric(metric);addMemory(createSelfMetricMemory(metric));setMVal('');setMNote('')}
+  function addSleep(){const h=parseFloat(sHours);if(isNaN(h)||h<0||h>24)return;const sleepRecord={id:'sl_'+Date.now(),date:new Date().toISOString().split('T')[0],bedtime:sBed,wakeTime:sWake,duration:h,quality:parseInt(sQual)};addSleepRecord(sleepRecord);addMemory(createSleepMemory(sleepRecord));setSHours('')}
   function addHealth(){const v=parseFloat(hVal);if(isNaN(v))return;addHealthMetric({id:'h_'+Date.now(),type:hType,value:v,unit:hUnit,timestamp:new Date().toISOString()});setHVal('')}
   const eC=bio.energyLevel>=7?'ok':bio.energyLevel>=4?'warn':'bad'
   const sC=sleepTrend.averageDuration>=7?'ok':sleepTrend.averageDuration>=5?'warn':'bad'
