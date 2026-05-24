@@ -5,6 +5,7 @@ import { useState, useMemo } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, Badge, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
 import { useMemoryStore } from '@/stores'
+import { buildMemoryContext } from '@/engines/memory'
 import type { MemoryType } from '@/types'
 
 const TYPE_LABEL: Record<MemoryType, string> = {
@@ -35,27 +36,30 @@ export default function MemoryPage() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<MemoryType | 'all'>('all')
 
+  const allMemories = useMemo(() => getRecentMemories(50), [getRecentMemories])
+
+  const memoryContext = useMemo(() => buildMemoryContext(allMemories), [allMemories])
+
   const memories = useMemo(() => {
     if (search.trim()) return queryMemories(search.trim())
     if (typeFilter !== 'all') return getMemoriesByType(typeFilter)
-    return getRecentMemories(50)
-  }, [search, typeFilter, getRecentMemories, queryMemories, getMemoriesByType])
-
-  const total = getRecentMemories(50).length
+    return allMemories
+  }, [search, typeFilter, allMemories, queryMemories, getMemoriesByType])
 
   return (
     <AppShell>
       <SectionHeader
         title="Memoria"
-        subtitle={`${total} memoria${total !== 1 ? 's' : ''} en el sistema`}
+        subtitle={`${memoryContext.totalMemories} memoria${memoryContext.totalMemories !== 1 ? 's' : ''} en el sistema`}
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+      {/* Context Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         {[
-          { label: 'Total', value: String(total) },
-          { label: 'Mostrando', value: String(memories.length) },
-          { label: 'Filtro', value: typeFilter === 'all' ? 'Todos' : TYPE_LABEL[typeFilter] },
+          { label: 'Total', value: String(memoryContext.totalMemories) },
+          { label: 'Imp. Promedio', value: memoryContext.totalMemories > 0 ? memoryContext.averageImportance.toFixed(1) : '—' },
+          { label: 'Carga Emoc.', value: memoryContext.totalMemories > 0 ? memoryContext.averageEmotionalCharge.toFixed(1) : '—' },
+          { label: 'Top / Recientes', value: `${memoryContext.topMemories.length} / ${memoryContext.recentMemories.length}` },
         ].map((s) => (
           <Card key={s.label} className="flex flex-col gap-1">
             <div className="text-[9px] font-mono text-[#333] uppercase tracking-widest">{s.label}</div>
@@ -63,6 +67,36 @@ export default function MemoryPage() {
           </Card>
         ))}
       </div>
+
+      {/* Distribution by type */}
+      {Object.keys(memoryContext.memoriesByType).length > 0 && (
+        <div className="mb-4">
+          <div className="text-[9px] font-mono text-[#333] uppercase tracking-widest mb-2">Distribucion por tipo</div>
+          <div className="flex flex-wrap gap-2">
+            {(Object.entries(memoryContext.memoriesByType) as [MemoryType, number][]).map(([type, count]) => (
+              <div key={type} className="flex items-center gap-1.5">
+                <Badge label={TYPE_LABEL[type]} variant={TYPE_VARIANT[type]} />
+                <span className="text-xs font-mono text-[#666]">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Critical entities */}
+      {memoryContext.criticalEntities.length > 0 && (
+        <div className="mb-6">
+          <div className="text-[9px] font-mono text-[#333] uppercase tracking-widest mb-2">Entidades criticas</div>
+          <div className="flex flex-wrap gap-2">
+            {memoryContext.criticalEntities.slice(0, 5).map(({ entityId, count }) => (
+              <Card key={entityId} className="flex items-center gap-2 px-2 py-1">
+                <span className="text-xs font-mono text-[#f5f5f5]">{entityId}</span>
+                <span className="text-[9px] font-mono text-[#333]">{'×'}{count}</span>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="flex gap-2 mb-4 flex-wrap">
@@ -87,6 +121,13 @@ export default function MemoryPage() {
             <option key={t} value={t}>{TYPE_LABEL[t]}</option>
           ))}
         </Select>
+      </div>
+
+      {/* Mostrando info */}
+      <div className="text-[9px] font-mono text-[#333] mb-3">
+        Mostrando {memories.length} de {memoryContext.totalMemories}
+        {typeFilter !== 'all' && ` · Filtro: ${TYPE_LABEL[typeFilter as MemoryType]}`}
+        {search.trim() && ` · Busqueda: "${search.trim()}"`}
       </div>
 
       {/* Lista de memorias */}
@@ -117,34 +158,21 @@ export default function MemoryPage() {
                   </span>
                 </div>
               </div>
-
               {/* Content */}
-              <div className="text-xs text-[#555] font-mono leading-relaxed">
+              <div className="text-xs font-mono text-[#888] leading-relaxed line-clamp-2">
                 {memory.content}
               </div>
-
-              {/* Meta */}
-              <div className="flex items-center gap-3 text-[9px] font-mono text-[#333]">
-                <span>
-                  {'Carga: '}
-                  <span className={memory.emotionalCharge >= 0 ? 'text-[#4a4]' : 'text-[#a44]'}>
-                    {memory.emotionalCharge > 0 ? '+' : ''}{memory.emotionalCharge.toFixed(1)}
-                  </span>
-                </span>
-                {memory.entities.length > 0 && (
-                  <span>{'Entidades: '}{memory.entities.join(', ')}</span>
-                )}
-              </div>
-
-              {/* Tags */}
-              {memory.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+              {/* Tags + Entities */}
+              {(memory.tags.length > 0 || memory.entities.length > 0) && (
+                <div className="flex flex-wrap gap-1 mt-0.5">
                   {memory.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-[9px] font-mono text-[#333] border border-[#1a1a1a] px-1.5 py-0.5 rounded"
-                    >
-                      {'#'}{tag}
+                    <span key={tag} className="text-[9px] font-mono text-[#444] bg-[#111] px-1.5 py-0.5 rounded">
+                      #{tag}
+                    </span>
+                  ))}
+                  {memory.entities.map((entity) => (
+                    <span key={entity} className="text-[9px] font-mono text-[#555] bg-[#0a0a0a] border border-[#222] px-1.5 py-0.5 rounded">
+                      @{entity}
                     </span>
                   ))}
                 </div>
