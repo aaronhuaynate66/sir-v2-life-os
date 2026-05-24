@@ -57,3 +57,5 @@ export const fixtureRecommendation: Recommendation = {
 }
 
 export const allFixtures = { people: fixturePeople, relationships: fixtureRelationships, goals: fixtureGoals, signals: fixtureSignals, sleepRecords: fixtureSleepRecords, metrics: fixtureMetrics, financialMovements: fixtureFinancialMovements, recommendation: fixtureRecommendation }
+
+export { fixtureMemories } from './memories'
