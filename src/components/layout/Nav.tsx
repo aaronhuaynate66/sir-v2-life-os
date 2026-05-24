@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/goals', label: 'Objetivos', short: 'GO' },
   { href: '/finance', label: 'Finanzas', short: 'FI' },
   { href: '/signals', label: 'Senales', short: 'SG' },
+  { href: '/memory', label: 'Memoria', short: 'ME' },
 ] as const
 
 export function Nav() {
