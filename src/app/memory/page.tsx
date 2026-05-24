@@ -41,19 +41,19 @@ export default function MemoryPage() {
     return getRecentMemories(50)
   }, [search, typeFilter, getRecentMemories, queryMemories, getMemoriesByType])
 
-  const recentCount = getRecentMemories(50).length
+  const total = getRecentMemories(50).length
 
   return (
     <AppShell>
       <SectionHeader
         title="Memoria"
-        subtitle={`${recentCount} memoria${recentCount !== 1 ? 's' : ''} en el sistema`}
+        subtitle={`${total} memoria${total !== 1 ? 's' : ''} en el sistema`}
       />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         {[
-          { label: 'Total', value: String(recentCount) },
+          { label: 'Total', value: String(total) },
           { label: 'Mostrando', value: String(memories.length) },
           { label: 'Filtro', value: typeFilter === 'all' ? 'Todos' : TYPE_LABEL[typeFilter] },
         ].map((s) => (
@@ -92,8 +92,7 @@ export default function MemoryPage() {
       {/* Lista de memorias */}
       {memories.length === 0 ? (
         <EmptyState
-          title="Sin memorias"
-          description={search ? `No hay resultados para "${search}"` : 'No hay memorias en el sistema aun.'}
+          message={search ? `Sin resultados para "${search}"` : 'No hay memorias en el sistema aun.'}
         />
       ) : (
         <div className="flex flex-col gap-3">
@@ -112,7 +111,7 @@ export default function MemoryPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <Badge variant={TYPE_VARIANT[memory.type]}>{TYPE_LABEL[memory.type]}</Badge>
+                  <Badge label={TYPE_LABEL[memory.type]} variant={TYPE_VARIANT[memory.type]} />
                   <span className="text-[9px] font-mono text-[#333]">
                     I:{memory.importance}/10
                   </span>
@@ -124,16 +123,16 @@ export default function MemoryPage() {
                 {memory.content}
               </div>
 
-              {/* Emotional charge */}
+              {/* Meta */}
               <div className="flex items-center gap-3 text-[9px] font-mono text-[#333]">
                 <span>
-                  Carga emocional:{' '}
+                  {'Carga: '}
                   <span className={memory.emotionalCharge >= 0 ? 'text-[#4a4]' : 'text-[#a44]'}>
                     {memory.emotionalCharge > 0 ? '+' : ''}{memory.emotionalCharge.toFixed(1)}
                   </span>
                 </span>
                 {memory.entities.length > 0 && (
-                  <span>Entidades: {memory.entities.join(', ')}</span>
+                  <span>{'Entidades: '}{memory.entities.join(', ')}</span>
                 )}
               </div>
 
@@ -145,7 +144,7 @@ export default function MemoryPage() {
                       key={tag}
                       className="text-[9px] font-mono text-[#333] border border-[#1a1a1a] px-1.5 py-0.5 rounded"
                     >
-                      #{tag}
+                      {'#'}{tag}
                     </span>
                   ))}
                 </div>
