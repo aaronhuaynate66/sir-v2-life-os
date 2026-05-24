@@ -4,7 +4,9 @@ import { useMemo, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
 import { useFinanceStore } from '@/stores/useFinanceStore'
+import { useMemoryStore } from '@/stores'
 import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
+import { createFinancialMovementMemory } from '@/engines/memory'
 import type { MovementType, FinancialCategory, FinancialMovement } from '@/types'
 
 const TYPE_LABEL: Record<MovementType, string> = {
@@ -26,6 +28,7 @@ const LIQUIDITY_MONTHS = 2.5
 
 export default function FinancePage() {
   const { financialMovements, addFinancialMovement, removeFinancialMovement } = useFinanceStore()
+  const { addMemory } = useMemoryStore()
   const fin = useMemo(() => analyzeFinancialStability(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
   const alerts = useMemo(() => detectFinancialAlerts(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
   const [type, setType] = useState<MovementType>('expense')
@@ -45,6 +48,7 @@ export default function FinancePage() {
       description: description || TYPE_LABEL[type], date, recurrent, tags: []
     }
     addFinancialMovement(m)
+    addMemory(createFinancialMovementMemory(m))
     setAmount(''); setDescription('')
   }
 
