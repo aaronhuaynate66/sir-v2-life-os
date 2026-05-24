@@ -5,6 +5,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Memory } from '@/types'
+import { fixtureMemories } from '@/data/fixtures'
 
 interface MemoryState {
     memories: Memory[]
@@ -25,7 +26,7 @@ interface MemoryActions {
 export type MemoryStore = MemoryState & MemoryActions
 
 const INITIAL_STATE: MemoryState = {
-    memories: [],
+    memories: fixtureMemories,
 }
 
 export const useMemoryStore = create<MemoryStore>()(
