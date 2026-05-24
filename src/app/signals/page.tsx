@@ -5,7 +5,9 @@ import { useMemo, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
 import { useSignalStore } from '@/stores/useSignalStore'
+import { useMemoryStore } from '@/stores'
 import { buildSignalContext } from '@/engines/signal'
+import { createSignalAddedMemory } from '@/engines/memory'
 import type { SignalSource, SignalType, SignalUrgency, Signal } from '@/types'
 
 const SOURCE_LABEL: Record<SignalSource, string> = {
@@ -25,6 +27,7 @@ const URGENCY_LABEL: Record<SignalUrgency, string> = {
 
 export default function SignalsPage() {
   const { signals, addSignal, resolveSignal, removeSignal } = useSignalStore()
+  const { addMemory } = useMemoryStore()
   const ctx = useMemo(() => buildSignalContext(signals), [signals])
 
   const [source, setSource] = useState<SignalSource>('manual')
@@ -48,6 +51,7 @@ export default function SignalsPage() {
       resolved: false
     }
     addSignal(s)
+    addMemory(createSignalAddedMemory(s))
     setContent(''); setMeaning(''); setAction('')
   }
 
