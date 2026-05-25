@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T21:38:40Z`  
+Última actualización: `2026-05-25T22:05:20Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-████████████████████████████████████░░░░ 19/21 issues cerrados (90%)
+███████████████████████████████████░░░░░ 19/22 issues cerrados (86%)
 ```
 
-✅ Cerrados: 19 | 🔄 En progreso: 0 | ⬜ Pendientes: 2 | 🚨 Bloqueantes: 0
+✅ Cerrados: 19 | 🔄 En progreso: 0 | ⬜ Pendientes: 3 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -132,6 +132,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 | #22 | [Line endings LF<->CRLF entre Windows local y CI Linux](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) | deuda-tecnica | ⬜ Abierto |
 | #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ⬜ Abierto |
 | #30 | [Race condition: sync-roadmap workflow falla en closing-en-cascada de issues](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) | deuda-tecnica | ✅ Cerrado |
+| #33 | [UI muestra valores stale al primer mount (Zustand persist hydration delay)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) | deuda-tecnica, fase-2 | ⬜ Abierto |
 
 ---
 
@@ -156,6 +157,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 - ✅ [#26](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) Snapshot: peaceMode tipado como string generico (perdio type safety)
 - ✅ [#27](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) Snapshot: dedup de duplicados triviales en addSnapshot
 - ✅ [#28](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) Snapshot: documentar scope debug-only del RichContextDebugPanel
+- ⬜ [#33](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) UI muestra valores stale al primer mount (Zustand persist hydration delay)
 
 ### Memory Longitudinal
 
