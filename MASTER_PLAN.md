@@ -2,11 +2,11 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T21:26:24Z`  
+Última actualización: `2026-05-25T21:26:57Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `039dff6`
+**Hash del último commit humano:** `039db6b`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-█████████████████████████████░░░░░░░░░░░ 15/21 issues cerrados (71%)
+██████████████████████████████░░░░░░░░░░ 16/21 issues cerrados (76%)
 ```
 
-✅ Cerrados: 15 | 🔄 En progreso: 0 | ⬜ Pendientes: 6 | 🚨 Bloqueantes: 0
+✅ Cerrados: 16 | 🔄 En progreso: 0 | ⬜ Pendientes: 5 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -131,7 +131,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 |---|-------|--------|--------|
 | #22 | [Line endings LF<->CRLF entre Windows local y CI Linux](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) | deuda-tecnica | ⬜ Abierto |
 | #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ⬜ Abierto |
-| #30 | [Race condition: sync-roadmap workflow falla en closing-en-cascada de issues](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) | deuda-tecnica | ⬜ Abierto |
+| #30 | [Race condition: sync-roadmap workflow falla en closing-en-cascada de issues](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) | deuda-tecnica | ✅ Cerrado |
 
 ---
 
@@ -181,7 +181,7 @@ _(sin issues en esta categoría)_
 
 - ⬜ [#22](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) Line endings LF<->CRLF entre Windows local y CI Linux
 - ⬜ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
-- ⬜ [#30](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) Race condition: sync-roadmap workflow falla en closing-en-cascada de issues
+- ✅ [#30](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) Race condition: sync-roadmap workflow falla en closing-en-cascada de issues
 
 ---
 
@@ -221,6 +221,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `039db6b` | aaronhuaynate66 | fix(infra): rebase before push in sync-roadmap to avoid race condition (#31) | 2026-05-25 |
 | `039dff6` | aaronhuaynate66 | Session 8: Snapshot History Hardening (#29) | 2026-05-25 |
 | `18b7d22` | aaronhuaynate66 | Session 7: Living Roadmap System (#24) | 2026-05-25 |
 | `476b76f` | aaronhuaynate66 | Session 6: Context Snapshot History (#7) | 2026-05-25 |
@@ -230,7 +231,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `579eb8d` | aaronhuaynate66 | feat(context): add RichContextDebugPanel consumer (R5.1D) (#3) | 2026-05-25 |
 | `599d5eb` | aaronhuaynate66 | chore(tooling): commit lockfile and approve native builds (#2) | 2026-05-25 |
 | `c602144` | aaronhuaynate66 | fix(hooks): stabilize useRichContext hook (R5.1C) (#1) | 2026-05-25 |
-| `3937527` | aaronhuaynate66 | feat(hooks): R5.1C — crear useRichContext hook con stores y engines | 2026-05-25 |
 
 ---
 
