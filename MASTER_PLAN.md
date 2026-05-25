@@ -2,11 +2,11 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T19:23:39Z`  
+Última actualización: `2026-05-25T19:26:43Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `18b7d22`
+**Hash del último commit humano:** `039dff6`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-██████████████████████░░░░░░░░░░░░░░░░░░ 11/20 issues cerrados (55%)
+██████████████████████████████░░░░░░░░░░ 15/20 issues cerrados (75%)
 ```
 
-✅ Cerrados: 11 | 🔄 En progreso: 0 | ⬜ Pendientes: 9 | 🚨 Bloqueantes: 0
+✅ Cerrados: 15 | 🔄 En progreso: 0 | ⬜ Pendientes: 5 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -30,7 +30,7 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 |------|---------|--------|----------|
 | Fase 0 - Fundamentos | Setup | ✅ Completado | ░░░░░░░░░░ 0% |
 | Fase 1 - Stores y dominio | Dominio inicial | ✅ Completado | ██████████ 100% |
-| Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ██████░░░░ 59% |
+| Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ████████░░ 82% |
 | Fase 3 - Memory Longitudinal | Historia profunda | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 | Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 | Fase 5 - IA Basica | Capa cognitiva | ⬜ Pendiente | ░░░░░░░░░░ 0% |
@@ -71,7 +71,7 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 **Gate de salida:** Snapshot agregado + history persistido + cero hydration warnings
 
 ```
-████████████████████████░░░░░░░░░░░░░░░░ 10/17 issues cerrados (59%)
+█████████████████████████████████░░░░░░░ 14/17 issues cerrados (82%)
 ```
 
 | # | Issue | Labels | Estado | Cerrado |
@@ -89,10 +89,10 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 | #19 | [Bug UX: form financiero del dashboard tiene min=0 (impide gastos negativos)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/19) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
 | #20 | [memory.totalMemories no aumenta con mutaciones desde /dashboard](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/20) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
 | #21 | [signals.topSignalIds no ordena por importancia](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/21) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
-| #25 | [Snapshot: trigger 'initial' para captura baseline (no 'manual')](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/25) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
-| #26 | [Snapshot: peaceMode tipado como string generico (perdio type safety)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
-| #27 | [Snapshot: dedup de duplicados triviales en addSnapshot](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
-| #28 | [Snapshot: documentar scope debug-only del RichContextDebugPanel](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
+| #25 | [Snapshot: trigger 'initial' para captura baseline (no 'manual')](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/25) | deuda-tecnica, fase-2 | ✅ Cerrado | 2026-05-25 |
+| #26 | [Snapshot: peaceMode tipado como string generico (perdio type safety)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) | deuda-tecnica, fase-2 | ✅ Cerrado | 2026-05-25 |
+| #27 | [Snapshot: dedup de duplicados triviales en addSnapshot](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) | deuda-tecnica, fase-2 | ✅ Cerrado | 2026-05-25 |
+| #28 | [Snapshot: documentar scope debug-only del RichContextDebugPanel](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) | deuda-tecnica, fase-2 | ✅ Cerrado | 2026-05-25 |
 
 ### Fase 3 - Memory Longitudinal
 
@@ -151,10 +151,10 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 - ⬜ [#19](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/19) Bug UX: form financiero del dashboard tiene min=0 (impide gastos negativos)
 - ⬜ [#20](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/20) memory.totalMemories no aumenta con mutaciones desde /dashboard
 - ⬜ [#21](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/21) signals.topSignalIds no ordena por importancia
-- ⬜ [#25](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/25) Snapshot: trigger 'initial' para captura baseline (no 'manual')
-- ⬜ [#26](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) Snapshot: peaceMode tipado como string generico (perdio type safety)
-- ⬜ [#27](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) Snapshot: dedup de duplicados triviales en addSnapshot
-- ⬜ [#28](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) Snapshot: documentar scope debug-only del RichContextDebugPanel
+- ✅ [#25](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/25) Snapshot: trigger 'initial' para captura baseline (no 'manual')
+- ✅ [#26](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) Snapshot: peaceMode tipado como string generico (perdio type safety)
+- ✅ [#27](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) Snapshot: dedup de duplicados triviales en addSnapshot
+- ✅ [#28](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) Snapshot: documentar scope debug-only del RichContextDebugPanel
 
 ### Memory Longitudinal
 
@@ -219,6 +219,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `039dff6` | aaronhuaynate66 | Session 8: Snapshot History Hardening (#29) | 2026-05-25 |
 | `18b7d22` | aaronhuaynate66 | Session 7: Living Roadmap System (#24) | 2026-05-25 |
 | `476b76f` | aaronhuaynate66 | Session 6: Context Snapshot History (#7) | 2026-05-25 |
 | `2a5b497` | aaronhuaynate66 | fix(context): relational.activeAlerts as string[] + dashboard clock hydration safety (R5.1F) (#6) | 2026-05-25 |
@@ -228,7 +229,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `599d5eb` | aaronhuaynate66 | chore(tooling): commit lockfile and approve native builds (#2) | 2026-05-25 |
 | `c602144` | aaronhuaynate66 | fix(hooks): stabilize useRichContext hook (R5.1C) (#1) | 2026-05-25 |
 | `3937527` | aaronhuaynate66 | feat(hooks): R5.1C — crear useRichContext hook con stores y engines | 2026-05-25 |
-| `9eb9265` | aaronhuaynate66 | feat(context): R5.1B — agregar export * from './builder' en index.ts | 2026-05-25 |
 
 ---
 
