@@ -92,13 +92,14 @@ export type SnapshotTriggerReason =
     | 'new_opportunity'
     | 'mode_recovery'
     | 'manual'
+    | 'initial'
 
 export interface SnapshotSummary {
     id: string
     timestamp: string
     date: string
     peaceScore: number
-    peaceMode: string
+    peaceMode: RichContextSnapshot['peace']['mode']
     summary: string[]
     risks: string[]
     opportunities: string[]
