@@ -16,6 +16,8 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
+import { useMemoryStore } from '@/stores'
+import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { RichContextDebugPanel } from '@/components/context/RichContextDebugPanel'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
 
@@ -58,6 +60,7 @@ export default function DashboardPage() {
   const { financialMovements, addFinancialMovement, resetToFixtures: resetFinance, clearAll: clearFinance } = useFinanceStore()
   const { signals, addSignal, resolveSignal, resetToFixtures: resetSignal, clearAll: clearSignal } = useSignalStore()
   const { recommendations, completeRecommendation, dismissRecommendation, resetToFixtures: resetRec, clearAll: clearRec } = useRecommendationStore()
+  const { addMemory } = useMemoryStore()
   const [sleepHours, setSleepHours] = useState('')
   const [energyVal, setEnergyVal] = useState('')
   const [stressVal, setStressVal] = useState('')
@@ -82,10 +85,10 @@ export default function DashboardPage() {
   const modeBadge: Record<string, string> = { normal: 'text-[#22c55e] border-[#22c55e]/30 bg-[#22c55e]/10', focused: 'text-[#3b82f6] border-[#3b82f6]/30 bg-[#3b82f6]/10', recovery: 'text-[#ef4444] border-[#ef4444]/30 bg-[#ef4444]/10', strategic: 'text-[#d4af37] border-[#d4af37]/30 bg-[#d4af37]/10' }
   const modeLabel: Record<string, string> = { normal: 'OPERATIVO', focused: 'ENFOCADO', recovery: 'RECUPERACION', strategic: 'ESTRATEGICO' }
   const peaceColor = peace.total >= 7 ? 'text-[#22c55e]' : peace.total >= 4 ? 'text-[#f59e0b]' : 'text-[#ef4444]'
-  function handleAddSleep() { const h = parseFloat(sleepHours); if (isNaN(h) || h < 0 || h > 24) return; addSleepRecord({ id: `sl_${Date.now()}`, date: new Date().toISOString().split('T')[0], bedtime: '23:00', wakeTime: '07:00', duration: h, quality: h >= 7 ? 8 : h >= 5 ? 5 : 3 }); setSleepHours('') }
-  function handleAddEnergy() { const e = parseInt(energyVal), s = parseInt(stressVal); if (!isNaN(e) && e >= 1 && e <= 10) addSelfMetric({ id: `m_e_${Date.now()}`, category: 'energy', value: e, timestamp: new Date().toISOString() }); if (!isNaN(s) && s >= 1 && s <= 10) addSelfMetric({ id: `m_s_${Date.now()}`, category: 'stress', value: s, timestamp: new Date().toISOString() }); setEnergyVal(''); setStressVal('') }
-  function handleAddFinance() { const amt = parseFloat(finAmount); if (isNaN(amt) || amt <= 0) return; addFinancialMovement({ id: `f_${Date.now()}`, type: finType, amount: amt, currency: 'USD', category: 'other', description: finDesc || 'Movimiento rapido', date: new Date().toISOString().split('T')[0], recurrent: false, tags: [] }); setFinAmount(''); setFinDesc('') }
-  function handleAddSignal() { if (!signalContent.trim()) return; addSignal({ id: `sig_${Date.now()}`, source: 'manual', type: 'pattern', content: signalContent, strength: 5, urgency: 'soon', relatedPersons: [], relatedGoals: [], meaning: signalContent, actionRequired: false, detectedAt: new Date().toISOString(), resolved: false }); setSignalContent('') }
+  function handleAddSleep() { const h = parseFloat(sleepHours); if (isNaN(h) || h < 0 || h > 24) return; const record = { id: `sl_${Date.now()}`, date: new Date().toISOString().split('T')[0], bedtime: '23:00', wakeTime: '07:00', duration: h, quality: h >= 7 ? 8 : h >= 5 ? 5 : 3 }; addSleepRecord(record); addMemory(createSleepMemory(record)); setSleepHours('') }
+  function handleAddEnergy() { const e = parseInt(energyVal), s = parseInt(stressVal); if (!isNaN(e) && e >= 1 && e <= 10) { const m = { id: `m_e_${Date.now()}`, category: 'energy' as const, value: e, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) } if (!isNaN(s) && s >= 1 && s <= 10) { const m = { id: `m_s_${Date.now()}`, category: 'stress' as const, value: s, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) } setEnergyVal(''); setStressVal('') }
+  function handleAddFinance() { const amt = parseFloat(finAmount); if (isNaN(amt) || amt <= 0) return; const movement = { id: `f_${Date.now()}`, type: finType, amount: amt, currency: 'USD', category: 'other' as const, description: finDesc || 'Movimiento rapido', date: new Date().toISOString().split('T')[0], recurrent: false, tags: [] }; addFinancialMovement(movement); addMemory(createFinancialMovementMemory(movement)); setFinAmount(''); setFinDesc('') }
+  function handleAddSignal() { if (!signalContent.trim()) return; const sig = { id: `sig_${Date.now()}`, source: 'manual' as const, type: 'pattern' as const, content: signalContent, strength: 5, urgency: 'soon' as const, relatedPersons: [], relatedGoals: [], meaning: signalContent, actionRequired: false, detectedAt: new Date().toISOString(), resolved: false }; addSignal(sig); addMemory(createSignalAddedMemory(sig)); setSignalContent('') }
   function handleResetAll() { resetSelf(); resetRelationship(); resetGoal(); resetFinance(); resetSignal(); resetRec() }
   function handleClearAll() { clearSelf(); clearRelationship(); clearGoal(); clearFinance(); clearSignal(); clearRec() }
   return (
