@@ -121,12 +121,15 @@ function buildGoals(goals: Goal[]): ContextGoalState {
 function buildSignals(signals: Signal[]): ContextSignalState {
   const active = signals.filter(s => !s.resolved)
   const immediate = active.filter(s => s.urgency === 'immediate')
+  // Ranking consistente con /signals (immediate > soon > monitor > archive).
+  const urgencyRank: Record<Signal['urgency'], number> = { immediate: 0, soon: 1, monitor: 2, archive: 3 }
+  const sortedActive = [...active].sort((a, b) => urgencyRank[a.urgency] - urgencyRank[b.urgency])
   const notes: string[] = []
   if (immediate.length > 0) notes.push(`${immediate.length} senal(es) inmediata(s) activa(s)`)
   return {
     activeSignals: active.length,
     immediateSignals: immediate.length,
-    topSignalIds: active.slice(0, 3).map(s => s.id),
+    topSignalIds: sortedActive.slice(0, 3).map(s => s.id),
     notes,
   }
 }
