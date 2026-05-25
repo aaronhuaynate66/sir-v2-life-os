@@ -23,7 +23,7 @@ export interface ContextFinancialState {
 }
 
 export interface ContextRelationalState {
-    activeAlerts: number
+    activeAlerts: string[]
     highPriorityPeople: string[]
     drainingRelationships: string[]
     energizingRelationships: string[]

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { calculatePeaceScore, evaluateRecoveryMode, detectPeaceThreats } from '@/engines/peace'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
@@ -46,7 +46,10 @@ function Row({ label, value, status }: { label: string; value: string; status?: 
 }
 
 export default function DashboardPage() {
-  const now = new Date()
+  const [now, setNow] = useState<Date | null>(null)
+  useEffect(() => {
+    setNow(new Date())
+  }, [])
   const { sleepRecords, selfMetrics, addSleepRecord, addSelfMetric, resetToFixtures: resetSelf, clearAll: clearSelf } = useSelfStore()
   const { people, relationships, resetToFixtures: resetRelationship, clearAll: clearRelationship } = useRelationshipStore()
   const { goals, resetToFixtures: resetGoal, clearAll: clearGoal } = useGoalStore()
@@ -66,7 +69,7 @@ export default function DashboardPage() {
   const relAlerts = useMemo(() => detectRelationshipAlerts(people, relationships), [people, relationships])
   const signalCtx = useMemo(() => buildSignalContext(signals), [signals])
   const goalsDash = useMemo(() => buildGoalDashboard(goals), [goals])
-  const timing = getCurrentTimingWindow(bio, now.getHours())
+  const timing = getCurrentTimingWindow(bio, now?.getHours() ?? 0)
   const peace = useMemo(() => calculatePeaceScore({ biologicalState: bio, financialState: { stabilityScore: fin.stability, monthlyBalance: fin.monthlyBalance, liquidityMonths: 2.5, activeAlerts: finAlerts.map(a => a.message), timestamp: new Date().toISOString() }, goals, moodScore: 6.5, relationshipAlertCount: relAlerts.length }), [bio, fin, finAlerts, relAlerts, goals])
   const recovery = useMemo(() => evaluateRecoveryMode(peace), [peace])
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
@@ -87,8 +90,8 @@ export default function DashboardPage() {
       {recovery.active && (<div className="fixed top-0 inset-x-0 z-50 bg-[#ef4444]/10 border-b border-[#ef4444]/20 px-6 py-2"><div className="max-w-5xl mx-auto flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-[#ef4444] animate-pulse" /><span className="text-xs text-[#ef4444] font-mono">RECOVERY MODE &mdash; {recovery.reason}</span></div></div>)}
       <div className="max-w-5xl mx-auto px-6 py-8">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-between items-start mb-8">
-          <div><div className="text-[10px] text-[#333] font-mono uppercase tracking-widest mb-1">SIR V2 &mdash; Life Operating System</div><h1 className="text-lg font-medium">Mission Control</h1><div className="text-xs text-[#444] mt-1 capitalize">{now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
-          <div className="text-right flex flex-col items-end gap-2"><div className="text-2xl font-mono text-[#2a2a2a]">{now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</div><Badge label={modeLabel[mode] || 'OPERATIVO'} color={modeBadge[mode] || modeBadge.normal} /></div>
+          <div><div className="text-[10px] text-[#333] font-mono uppercase tracking-widest mb-1">SIR V2 &mdash; Life Operating System</div><h1 className="text-lg font-medium">Mission Control</h1><div className="text-xs text-[#444] mt-1 capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</div></div>
+          <div className="text-right flex flex-col items-end gap-2"><div className="text-2xl font-mono text-[#2a2a2a]">{now ? now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</div><Badge label={modeLabel[mode] || 'OPERATIVO'} color={modeBadge[mode] || modeBadge.normal} /></div>
         </motion.div>
         <Card className="mb-6 border-[#1a1a1a]"><div className="flex justify-between items-center"><div><div className="text-[10px] text-[#2a2a2a] uppercase tracking-widest font-mono mb-1">Mision</div><div className="text-[#555]">Conseguir Paz.</div></div><div className="text-right"><div className="text-[10px] text-[#2a2a2a] uppercase tracking-widest font-mono mb-1">Ventana actual</div><div className={`text-xs ${timing.type === 'peak' ? 'text-[#22c55e]' : timing.type === 'avoid' ? 'text-[#f59e0b]' : 'text-[#444]'}`}>{timing.description}</div></div></div></Card>
         <div className="grid grid-cols-12 gap-4">

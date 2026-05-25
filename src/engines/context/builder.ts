@@ -95,7 +95,7 @@ function buildRelational(
     notes.push('Hay alertas relacionales inmediatas')
   }
   return {
-    activeAlerts: alerts.length,
+    activeAlerts: alerts.map(a => a.message),
     highPriorityPeople: highPriority,
     drainingRelationships: draining,
     energizingRelationships: energizing,
