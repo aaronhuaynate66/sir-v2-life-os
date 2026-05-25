@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T22:08:48Z`  
+Última actualización: `2026-05-25T22:20:08Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-██████████████████████████████████████░░ 21/22 issues cerrados (95%)
+█████████████████████████████████████░░░ 21/23 issues cerrados (91%)
 ```
 
-✅ Cerrados: 21 | 🔄 En progreso: 0 | ⬜ Pendientes: 1 | 🚨 Bloqueantes: 0
+✅ Cerrados: 21 | 🔄 En progreso: 0 | ⬜ Pendientes: 2 | 🚨 Bloqueantes: 1
 
 ---
 
@@ -133,6 +133,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 | #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ✅ Cerrado |
 | #30 | [Race condition: sync-roadmap workflow falla en closing-en-cascada de issues](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) | deuda-tecnica | ✅ Cerrado |
 | #33 | [UI muestra valores stale al primer mount (Zustand persist hydration delay)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) | deuda-tecnica, fase-2 | ⬜ Abierto |
+| #35 | [Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) | bloqueante, deuda-tecnica | ⬜ Abierto |
 
 ---
 
@@ -184,6 +185,7 @@ _(sin issues en esta categoría)_
 - ✅ [#22](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) Line endings LF<->CRLF entre Windows local y CI Linux
 - ✅ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
 - ✅ [#30](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) Race condition: sync-roadmap workflow falla en closing-en-cascada de issues
+- ⬜ [#35](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)
 
 ---
 
