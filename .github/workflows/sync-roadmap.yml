@@ -1,0 +1,96 @@
+name: Sync Roadmap
+
+# Living Roadmap System para SIR V2 — regenera MASTER_PLAN.md desde el estado
+# de issues, milestones, ADRs y commits, y commitea solo si el contenido cambio.
+# Ver docs/decisions/0002-rich-context-snapshot.md y el README del sistema.
+
+on:
+  issues:
+    types: [opened, closed, reopened, labeled, unlabeled, edited, milestoned, demilestoned]
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+  schedule:
+    # 13:00 UTC = 08:00 Lima. Safety net diario si un evento se perdio.
+    - cron: "0 13 * * *"
+
+# Cola las corridas: cancel-in-progress=false a proposito.
+concurrency:
+  group: roadmap-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+jobs:
+  sync:
+    name: Regenerate MASTER_PLAN.md
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # En PRs solo correr si efectivamente se mergeo a main.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.merged == true &&
+       github.event.pull_request.base.ref == 'main')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Verify gh CLI is available
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "::error::gh CLI no esta en el runner."
+            exit 1
+          fi
+          gh --version
+
+      - name: Generate MASTER_PLAN.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/generate_roadmap.py --repo ${{ github.repository }}
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if [ -z "$(git status --porcelain MASTER_PLAN.md)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Sin cambios — nada que commitear."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Hubo cambios. Diff:"
+            git --no-pager diff --stat -- MASTER_PLAN.md || true
+            git --no-pager status --porcelain MASTER_PLAN.md
+          fi
+
+      - name: Configure bot identity
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  "sir-bot[bot]"
+          git config user.email "sir-bot@users.noreply.github.com"
+
+      - name: Commit and push
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git add MASTER_PLAN.md
+          git commit -m "chore(plan): auto-sync MASTER_PLAN from issue activity [skip ci]"
+          git push origin HEAD:main
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Sync Roadmap" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trigger: \`${{ github.event_name }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Changed: \`${{ steps.diff.outputs.changed }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Repo: \`${{ github.repository }}\`" >> "$GITHUB_STEP_SUMMARY"
