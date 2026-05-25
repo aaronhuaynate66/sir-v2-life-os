@@ -4,12 +4,19 @@
 // Debug consumer for useRichContext. Validates end-to-end that the hook
 // builds a RichContextSnapshot and reacts to store mutations.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRichContext } from '@/hooks/useRichContext'
 
 export function RichContextDebugPanel() {
   const snapshot = useRichContext()
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
 
   if (!snapshot) {
     return (
