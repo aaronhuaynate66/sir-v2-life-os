@@ -17,6 +17,7 @@ import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { RichContextDebugPanel } from '@/components/context/RichContextDebugPanel'
+import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
 
 function Badge({ label, color }: { label: string; color: string }) {
   return <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${color}`}>{label}</span>
@@ -50,6 +51,7 @@ export default function DashboardPage() {
   useEffect(() => {
     setNow(new Date())
   }, [])
+  useSnapshotCapture()
   const { sleepRecords, selfMetrics, addSleepRecord, addSelfMetric, resetToFixtures: resetSelf, clearAll: clearSelf } = useSelfStore()
   const { people, relationships, resetToFixtures: resetRelationship, clearAll: clearRelationship } = useRelationshipStore()
   const { goals, resetToFixtures: resetGoal, clearAll: clearGoal } = useGoalStore()
