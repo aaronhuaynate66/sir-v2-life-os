@@ -1,246 +1,156 @@
-# MASTER_PLAN.md — SIR V2 Life OS
+# SIR V2 — Master Plan (Life OS)
 
-> **Objetivo raíz:** Conseguir Paz.
-> Sistema operativo cognitivo-relacional privado. Segundo cerebro. Mission Control de vida.
+## Estado general
 
----
+**Última actualización:** Sesión 6 completada
+**Mantenimiento:** Manual por ahora. Migración a Living Roadmap System planificada para Sesión 7+.
 
-## 1. Estado General
-
-| Campo | Valor |
-|-------|-------|
-| Proyecto | SIR V2 — Life Operating System |
-| Repositorio | `aaronhuaynate66/sir-v2-life-os` |
-| Stack | Next.js 15 · TypeScript · Zustand · Tailwind CSS |
-| Branch principal | `main` |
-| Estado global | 🟡 EN PROGRESO — R5 Context Engine Real activo |
-| Última actualización | 2026-05-24 |
+**Release activo:** Fase 2 — Context & Memory Engine
+**Último PR mergeado:** Sesión 6 — Context Snapshot History
 
 ---
 
-## 2. Progreso General
+## Visión del producto
 
-```
-Releases totales : 10 (R0 → R9)
-Releases cerrados : 5  (R0, R1, R2, R3, R4)
-Releases activos  : 1  (R5)
-Releases pendientes: 3  (R6, R7, R8)
-Releases futuros  : 1  (R9)
+SIR V2 es un Life Operating System que evoluciona en capas progresivas, no por acumulación de features:
 
-Progreso global   : ██████████░░░░░░░░░░  ~50%
-```
+SIR Lite (0-12m) → Relational Memory (12-24m) → Behavioral Intelligence (24-36m) → Identity & Alignment (36-60m) → Life Direction (5-10y) → Human OS (10y+)
+
+Activo central: Human Contextual Memory Graph acumulado durante años.
+No es: Notion con IA, second brain genérico, productivity app, ni reemplazo de decisiones humanas.
 
 ---
 
-## 3. Timeline Visual (Mermaid Gantt)
+## Estado de releases (Fase 1 — SIR Lite)
 
-```mermaid
-gantt
-  title SIR V2 — Roadmap por Releases
-  dateFormat YYYY-MM-DD
-  axisFormat %b %Y
-
-  section Fundación
-  R0 Fundación del Proyecto       :done,    r0, 2025-10-01, 2025-10-15
-  R1 Arquitectura Cognitiva       :done,    r1, 2025-10-15, 2025-11-01
-  R2 Estado Persistente           :done,    r2, 2025-11-01, 2025-11-20
-  R3 Vistas Operativas            :done,    r3, 2025-11-20, 2025-12-10
-
-  section Core Activo
-  R4 Memory System                :active,  r4, 2026-05-01, 2026-05-31
-
-  section Core Pendiente
-  R5 Context Engine Real          :         r5, 2026-06-01, 2026-06-20
-  R6 Recommendation Engine Real   :         r6, 2026-06-20, 2026-07-10
-  R7 AI Brain                     :         r7, 2026-07-10, 2026-08-01
-
-  section Integraciones
-  R8 Integraciones Reales         :         r8, 2026-08-01, 2026-09-01
-
-  section Futuro
-  R9 Persistencia Real            :         r9, 2026-09-01, 2026-10-15
-```
+| Release | Foco | Estado |
+|---------|------|--------|
+| Fase 0 — Fundamentos | Setup repo, Zustand stores, tipos base | Completado |
+| Fase 1 — Stores y dominio | Self, Finance, Goals, Signals, Relationships, Memory | Completado |
+| Fase 2 — Context Engine | RichContextSnapshot, hook, panel, persistencia | En curso (~85%) |
+| Fase 3 — Memory longitudinal | Persistencia histórica avanzada, búsqueda semántica | Pendiente |
+| Fase 4 — UI producción | Reemplazar debug panel con UI real | Pendiente |
+| Fase 5 — IA básica | Resúmenes, sugerencias, briefings | Pendiente |
 
 ---
 
-## 4. Estado por Release
+## Progreso detallado — Fase 2 (Context Engine)
 
-| Release | Nombre | Estado | Descripción |
-|---------|--------|--------|-------------|
-| R0 | Fundación del Proyecto | ✅ Cerrado | Repo, estructura, docs base, CI |
-| R1 | Arquitectura Cognitiva | ✅ Cerrado | Types, engines base, 12 engines skeleton |
-| R2 | Estado Persistente | ✅ Cerrado | Zustand stores con persist, fixtures, CRUD |
-| R3 | Vistas Operativas | ✅ Cerrado | /dashboard, /relationships, /goals, /finance, /signals, /memory read-only |
-| R4 | Memory System | ✅ Cerrado | Memory store, engine, fixtures, context, captura automática |
-| R5 | Context Engine Real | 🔄 Activo | ContextSnapshot real con todas las fuentes |
-| R6 | Recommendation Engine Real | ⬜ Pendiente | Recomendaciones basadas en context real |
-| R7 | AI Brain | ⬜ Pendiente | Integración OpenAI/Claude vía OpenRouter |
-| R8 | Integraciones Reales | ⬜ Pendiente | Calendar, financiero, health, LinkedIn |
-| R9 | Persistencia Real | 🔵 Futuro | Supabase + pgvector + auth real |
+### Sesiones cerradas
 
----
+| Sesión | Descripción | PR |
+|--------|-------------|-----|
+| R4 | Memory System base | (pre-migración) |
+| R5.1A | RichContextSnapshot types | (pre-migración) |
+| R5.1B | buildRichContextSnapshot builder | (pre-migración) |
+| R5.1C | useRichContext hook (estabilización) | #1 |
+| Housekeeping | pnpm lockfile + approve builds | #2 |
+| R5.1D | RichContextDebugPanel integrado en /dashboard | #3 |
+| Fix hydration balance | toLocaleString locale fijo en-US | #4 |
+| Fix hydration panel | RichContextDebugPanel client-only mount | #5 |
+| R5.1E | Validación runtime end-to-end | (no PR, manual + análisis) |
+| R5.1F | Fix relational.activeAlerts + reloj client-only | #6 |
+| Sesión 6 | Context Snapshot History (useSnapshotStore, captura por eventos) | (este PR) |
 
-## 5. Progreso por Release
+### Sesiones pendientes en Fase 2
 
-### R4 — Memory System (✅ Cerrado)
-
-| Microtarea | Descripción | Estado |
-|-----------|-------------|--------|
-| R4A.1 | useMemoryStore — store Zustand persistente | ✅ Cerrado |
-| R4A.2 | fixtureMemories — 5 memorias de ejemplo | ✅ Cerrado |
-| R4A.3 | /memory solo lectura — vista con búsqueda y filtro | ✅ Cerrado |
-| R4A.4 | buildMemoryContext — engine de análisis | ✅ Cerrado |
-| R4A.5 | Memory Context en /memory — panel resumen en UI | ✅ Cerrado |
-| R4B.1 | helpers createXMemory — factories tipadas por tipo | ✅ Cerrado |
-| R4B.2 | Auto Memory Capture — /relationships → memoria | ✅ Cerrado |
-| R4B.3 | Auto Memory Capture — /signals → memoria | ✅ Cerrado |
-| R4B.4 | Auto Memory Capture — /self → memoria | ✅ Cerrado |
-| R4B.5 | Auto Memory Capture — /finance → memoria | ✅ Cerrado |
-| R4B.6 | Auto Memory Capture — /goals → memoria | ✅ Cerrado |
-
-```
-R4 Progress: ████████████████████  100%  (11/11 microtareas)
-```
-
-### Releases Previos Releases Previos (Cerrados)
-
-```
-R0 Progress: ████████████████████  100%
-R1 Progress: ████████████████████  100%
-R2 Progress: ████████████████████  100%
-R3 Progress: ████████████████████  100%
-```
+| Sesión | Descripción |
+|--------|-------------|
+| Sesión 7 | Living Roadmap System (auto-sync MASTER_PLAN.md desde issues/PRs) |
+| Cierre Fase 2 | Decisión: ¿Fase 3 longitudinal o Fase 4 UI primero? |
 
 ---
 
-## 6. Bloqueantes Actuales
+## Hallazgos y deuda técnica
 
-| # | Bloqueante | Impacto | Acción requerida |
-|---|-----------|---------|-----------------|
-| B1 | R5 (Context Engine Real) no especificado | Bloquea R6 y R7 en cadena | Definir spec de ContextSnapshot real |
-| B2 | Sin integración real de datos (R8) | Todo el sistema opera con fixtures | Planificar R8 cuando R7 esté cerrado || B3 | R5 (Context Engine Real) no especificado | Bloquea R6 y R7 en cadena | Definir spec de ContextSnapshot real |
-| B4 | Sin integración real de datos (R8) | Todo el sistema opera con fixtures | Planificar R8 cuando R7 esté cerrado |
+### Observaciones documentadas (no son bugs, son diseño actual)
 
----
+1. memory.totalMemories no aumenta con mutaciones desde /dashboard. Las actions del dashboard NO llaman addMemory(). Solo rutas dedicadas lo hacen. Decisión pendiente: agregar addMemory al dashboard o mantener el dashboard como vista rápida sin memoria.
 
-## 7. Issues Recomendados por Categoría
+2. signals.topSignalIds no ordena por importancia. buildSignals() hace active.slice(0, 3) sin ordenar previamente. Inconsistente con buildMemory(). Deuda menor.
 
-### Memoria (R4)
-- `feat(memory): mostrar MemoryContext panel en /memory — R4A.5`
-- `feat(memory): crear factory createEpisodicMemory, createEmotionalMemory — R4B.1`
-- `feat(memory): Auto Memory Capture desde signals, goals, relationships — R4B.2`
+3. Mutaciones de /self health metric, /goals saveGoal (crear), /relationships editar persona no disparan addMemory(). Diseño actual conservador.
 
-### Context Engine (R5)
-- `feat(context): implementar ContextSnapshot real desde todos los stores`
-- `feat(context): conectar buildContextSnapshot con /dashboard`
+### Deuda técnica pendiente
 
-### Recommendation Engine (R6)
-- `feat(recommendation): recomendaciones basadas en ContextSnapshot real`
-- `feat(recommendation): ranking por impacto en paz (peaceScore)`
-
-### AI Brain (R7)
-- `feat(ai-brain): system prompt con contexto completo del usuario`
-- `feat(ai-brain): chat con SIR en panel lateral`
-- `feat(ai-brain): análisis de patrones vía AI`
-
-### UI / UX
-- `feat(ui): responsive mobile para todas las vistas`
-- `feat(dashboard): Mission Control con ContextSnapshot real`
-
-### Infraestructura
-- `chore: upgrade GitHub Actions de Node.js 20 a Node.js 22`
-- `chore: configurar Vercel deploy automático en push a main`
+- Line endings LF↔CRLF entre Windows local y CI Linux. Solución: .gitattributes con * text=auto eol=lf.
+- pnpm-workspace.yaml benigno aunque el proyecto no es monorepo activo. Migrable a package.json bajo "pnpm": { "onlyBuiltDependencies": [...] }.
+- Cierre runtime de Tests 5-8 (Goals y Relationships desde sus rutas dedicadas). Cerrado con análisis estático en R5.1E pero falta validación humana en navegador.
 
 ---
 
-## 8. ADRs Recomendados
+## Stack técnico
 
-| ADR | Título | Contexto |
-|-----|--------|---------|
-| ADR-001 | Zustand + persist como única capa de estado | Evitar Redux, no hay server state |
-| ADR-002 | No backend hasta R9 | Mantener simplicidad, todo en localStorage |
-| ADR-003 | TypeScript strict sin any | Calidad garantizada en CI |
-| ADR-004 | Engines como funciones puras | Testables, sin efectos secundarios |
-| ADR-005 | MemoryType como unión literal cerrada | Extensibilidad controlada |
-| ADR-006 | OpenRouter como gateway de AI | Abstracción sobre OpenAI/Claude/Groq |
-| ADR-007 | Supabase para persistencia real en R9 | pgvector nativo para memoria vectorial |
-
-> Crear los ADRs en `docs/adr/` cuando corresponda implementar cada decisión.
-
----
-
-## 9. Infraestructura
-
-| Componente | Herramienta | Estado |
-|-----------|-------------|--------|
-| Framework | Next.js 15 + React 18 | ✅ Activo |
-| Lenguaje | TypeScript (strict) | ✅ Activo |
-| Estilos | Tailwind CSS | ✅ Activo |
-| Estado | Zustand + persist | ✅ Activo |
-| CI/CD | GitHub Actions (validate.yml) | ✅ Activo |
-| Deploy | — (no configurado aún) | ⬜ Pendiente |
-| Base de datos | — (R9) | 🔵 Futuro |
-| Auth | — (R9) | 🔵 Futuro |
-| AI Gateway | OpenRouter (R7) | ⬜ Pendiente |
-| Memoria vectorial | pgvector / Supabase (R9) | 🔵 Futuro |
-
-### CI Pipeline (validate.yml)
-Cada push a `main` ejecuta los siguientes checks:
-1. `npm run type-check` — TypeScript sin errores
-2. `npm run lint` — ESLint sin errores
-3. `npm run build` — Build de producción exitoso
+| Capa | Tecnología |
+|------|------------|
+| Framework | Next.js 15.1.0 (App Router) |
+| State management | Zustand + persist middleware |
+| Persistencia local | localStorage |
+| Tipos | TypeScript strict |
+| Package manager | pnpm 11 |
+| Estilo | Tailwind CSS |
+| Animaciones | Framer Motion |
+| Deploy | Vercel (pendiente conectar) |
+| CI | GitHub Actions (type-check + lint + build) |
 
 ---
 
-## 10. Comandos de Validación
+## Workflow de desarrollo
 
-```bash
-# Instalar dependencias
-npm install
+### Modo autónomo establecido (YOLO)
 
-# Desarrollo local
-npm run dev
-# → http://localhost:3000/dashboard
+Cada sesión sigue este flujo:
+1. git pull origin main
+2. pnpm install
+3. git checkout -b <tipo>/<nombre>
+4. Implementación
+5. pnpm type-check && pnpm lint && pnpm build
+6. git commit con conventional commits (multi-commit por paso conceptual)
+7. git push -u origin <branch>
+8. gh pr create --fill
+9. gh pr merge --squash --auto
+10. Reporte estructurado al usuario
 
-# Validar antes de cada commit
-npm run type-check   # TypeScript
-npm run lint         # ESLint
-npm run build        # Build completo
+### Excepciones que requieren OK explícito
 
-# Combinado (equivalente al CI)
-npm run type-check && npm run lint && npm run build
-```
-
----
-
-## 11. Cómo Mantener Este Roadmap
-
-1. **Al cerrar una microtarea:** Cambiar estado en la tabla de R4 (o el release activo) de `⬜ Pendiente` → `🟡 En progreso` → `✅ Cerrado`
-2. **Al cerrar un release completo:** Cambiar estado en la tabla de Releases de `🟡 Activo` → `✅ Cerrado` y actualizar el siguiente release a `🟡 Activo`
-3. **Al agregar microtareas nuevas:** Agregar fila en la tabla del release correspondiente y ajustar el porcentaje de progreso
-4. **Al encontrar un bloqueante:** Agregar fila en la sección de Bloqueantes con impacto y acción requerida
-5. **Al tomar una decisión técnica relevante:** Agregar fila en ADRs Recomendados y crear el archivo `docs/adr/ADR-XXX.md`
-6. **Frecuencia de actualización:** Al finalizar cada microtarea o al inicio de cada sesión de trabajo
+- SQL destructivo (DROP, DELETE, TRUNCATE)
+- Rotación de keys de pagos/identidad (Stripe, Anthropic API, Supabase service_role)
+- Cambios a NEXT_PUBLIC_* env vars
 
 ---
 
-## 12. Siguiente Acción Inmediata
+## Decisiones arquitectónicas tomadas
 
-```
-🎯 ACCIÓN: R5.1 — Definir ContextSnapshot real
-```
+| # | Decisión | Razón |
+|---|----------|-------|
+| 1 | Zustand sobre Redux/Jotai | Simplicidad, suficiente para Fase 1 |
+| 2 | RichContextSnapshot como agregador | Una sola fuente de verdad para estado vivo |
+| 3 | useRichContext con useMemo sobre stores | Reactividad sin re-renders innecesarios |
+| 4 | Debug panel client-only | Evita hydration mismatches sin contaminar el hook |
+| 5 | Locale en-US fijo en formatos de número | Determinismo SSR/CSR |
+| 6 | Memoria solo en rutas dedicadas (no dashboard) | Diseño conservador |
+| 7 | useSnapshotStore separado de useMemoryStore | No mezclar contextos puntuales con memoria semántica |
+| 8 | Captura por eventos (no cron) | Evita ruido, mantiene historial significativo |
 
-**Qué hacer:**
-- Definir estructura `ContextSnapshot` en `src/types`
-- Implementar `buildContextSnapshot()` en `src/engines/context`
-- Conectar todos los stores como fuentes: goals, relationships, signals, finance, self, memory
-- Retornar snapshot tipado sin any
-
-**Criterio de cierre de R5:**
-- [ ] R5.1 ContextSnapshot definido y tipado
-- [ ] buildContextSnapshot implementado y exportado
-- [ ] CI verde en todas las microtareas
+ADRs formales pendientes de crear en docs/decisions/. Tarea de housekeeping futura.
 
 ---
 
-*Última actualización: 2026-05-24 · Maintainer: @aaronhuaynate66*
+## Próxima sesión
+
+Sesión 7 — Living Roadmap System
+
+Objetivo: replicar el sistema de sica-platform en SIR V2 para que MASTER_PLAN.md se auto-genere desde issues, milestones y commits, eliminando mantenimiento manual.
+
+Componentes:
+- scripts/generate_roadmap.py o equivalente en TypeScript
+- .github/workflows/sync-roadmap.yml
+- Backfill: crear issues retroactivos para todas las sesiones cerradas
+- Milestones para fases (Fase 0, 1, 2, 3, 4, 5)
+- Estructura docs/decisions/ para ADRs
+
+Estimación: 1-2h Claude Code autónomo.
+
+---
+
+Generado manualmente. Próximamente: auto-sync vía Living Roadmap System (Sesión 7).
