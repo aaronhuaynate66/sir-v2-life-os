@@ -84,3 +84,28 @@ export interface RichContextSnapshot {
     opportunities: string[]
     recommendedFocus: string[]
 }
+
+export type SnapshotTriggerReason =
+    | 'peace_mode_changed'
+    | 'new_threat'
+    | 'new_risk'
+    | 'new_opportunity'
+    | 'mode_recovery'
+    | 'manual'
+
+export interface SnapshotSummary {
+    id: string
+    timestamp: string
+    date: string
+    peaceScore: number
+    peaceMode: string
+    summary: string[]
+    risks: string[]
+    opportunities: string[]
+    triggerReason: SnapshotTriggerReason
+}
+
+export interface ContextSnapshotHistory {
+    snapshots: SnapshotSummary[]
+    maxSize: number
+}
