@@ -2,11 +2,11 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T22:20:08Z`  
+Última actualización: `2026-05-25T22:22:22Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `6dbd04b`
+**Hash del último commit humano:** `cc3aaea`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-█████████████████████████████████████░░░ 21/23 issues cerrados (91%)
+██████████████████████████████████████░░ 22/23 issues cerrados (96%)
 ```
 
-✅ Cerrados: 21 | 🔄 En progreso: 0 | ⬜ Pendientes: 2 | 🚨 Bloqueantes: 1
+✅ Cerrados: 22 | 🔄 En progreso: 0 | ⬜ Pendientes: 1 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -133,7 +133,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 | #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ✅ Cerrado |
 | #30 | [Race condition: sync-roadmap workflow falla en closing-en-cascada de issues](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) | deuda-tecnica | ✅ Cerrado |
 | #33 | [UI muestra valores stale al primer mount (Zustand persist hydration delay)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) | deuda-tecnica, fase-2 | ⬜ Abierto |
-| #35 | [Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) | bloqueante, deuda-tecnica | ⬜ Abierto |
+| #35 | [Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) | bloqueante, deuda-tecnica | ✅ Cerrado |
 
 ---
 
@@ -185,7 +185,7 @@ _(sin issues en esta categoría)_
 - ✅ [#22](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) Line endings LF<->CRLF entre Windows local y CI Linux
 - ✅ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
 - ✅ [#30](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) Race condition: sync-roadmap workflow falla en closing-en-cascada de issues
-- ⬜ [#35](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)
+- ✅ [#35](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)
 
 ---
 
@@ -225,6 +225,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `cc3aaea` | aaronhuaynate66 | fix(security): patch Next.js to address CVE-2025-66478 and related (#36) | 2026-05-25 |
 | `6dbd04b` | aaronhuaynate66 | Session 10B: Infrastructure debt cleanup (issues #22, #23) (#34) | 2026-05-25 |
 | `c13e32e` | aaronhuaynate66 | Session 10A: Code debt cleanup (issues #19, #20, #21) (#32) | 2026-05-25 |
 | `039db6b` | aaronhuaynate66 | fix(infra): rebase before push in sync-roadmap to avoid race condition (#31) | 2026-05-25 |
@@ -234,7 +235,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `2a5b497` | aaronhuaynate66 | fix(context): relational.activeAlerts as string[] + dashboard clock hydration safety (R5.1F) (#6) | 2026-05-25 |
 | `d01e6a7` | aaronhuaynate66 | fix(context): make RichContextDebugPanel client-only to prevent hydration mismatch (#5) | 2026-05-25 |
 | `5e02f4f` | aaronhuaynate66 | fix(dashboard): use deterministic locale to prevent hydration mismatch (#4) | 2026-05-25 |
-| `579eb8d` | aaronhuaynate66 | feat(context): add RichContextDebugPanel consumer (R5.1D) (#3) | 2026-05-25 |
 
 ---
 
