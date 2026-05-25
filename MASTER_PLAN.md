@@ -2,11 +2,11 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T22:05:20Z`  
+Última actualización: `2026-05-25T22:08:48Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `c13e32e`
+**Hash del último commit humano:** `6dbd04b`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-███████████████████████████████████░░░░░ 19/22 issues cerrados (86%)
+██████████████████████████████████████░░ 21/22 issues cerrados (95%)
 ```
 
-✅ Cerrados: 19 | 🔄 En progreso: 0 | ⬜ Pendientes: 3 | 🚨 Bloqueantes: 0
+✅ Cerrados: 21 | 🔄 En progreso: 0 | ⬜ Pendientes: 1 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -129,8 +129,8 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 
 | # | Issue | Labels | Estado |
 |---|-------|--------|--------|
-| #22 | [Line endings LF<->CRLF entre Windows local y CI Linux](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) | deuda-tecnica | ⬜ Abierto |
-| #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ⬜ Abierto |
+| #22 | [Line endings LF<->CRLF entre Windows local y CI Linux](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) | deuda-tecnica | ✅ Cerrado |
+| #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ✅ Cerrado |
 | #30 | [Race condition: sync-roadmap workflow falla en closing-en-cascada de issues](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) | deuda-tecnica | ✅ Cerrado |
 | #33 | [UI muestra valores stale al primer mount (Zustand persist hydration delay)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) | deuda-tecnica, fase-2 | ⬜ Abierto |
 
@@ -181,8 +181,8 @@ _(sin issues en esta categoría)_
 
 ### Deuda Técnica
 
-- ⬜ [#22](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) Line endings LF<->CRLF entre Windows local y CI Linux
-- ⬜ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
+- ✅ [#22](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) Line endings LF<->CRLF entre Windows local y CI Linux
+- ✅ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
 - ✅ [#30](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) Race condition: sync-roadmap workflow falla en closing-en-cascada de issues
 
 ---
@@ -223,6 +223,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6dbd04b` | aaronhuaynate66 | Session 10B: Infrastructure debt cleanup (issues #22, #23) (#34) | 2026-05-25 |
 | `c13e32e` | aaronhuaynate66 | Session 10A: Code debt cleanup (issues #19, #20, #21) (#32) | 2026-05-25 |
 | `039db6b` | aaronhuaynate66 | fix(infra): rebase before push in sync-roadmap to avoid race condition (#31) | 2026-05-25 |
 | `039dff6` | aaronhuaynate66 | Session 8: Snapshot History Hardening (#29) | 2026-05-25 |
@@ -232,7 +233,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d01e6a7` | aaronhuaynate66 | fix(context): make RichContextDebugPanel client-only to prevent hydration mismatch (#5) | 2026-05-25 |
 | `5e02f4f` | aaronhuaynate66 | fix(dashboard): use deterministic locale to prevent hydration mismatch (#4) | 2026-05-25 |
 | `579eb8d` | aaronhuaynate66 | feat(context): add RichContextDebugPanel consumer (R5.1D) (#3) | 2026-05-25 |
-| `599d5eb` | aaronhuaynate66 | chore(tooling): commit lockfile and approve native builds (#2) | 2026-05-25 |
 
 ---
 
