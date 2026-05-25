@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T19:04:52Z`  
+Última actualización: `2026-05-25T19:23:30Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-████████████████████████████░░░░░░░░░░░░ 11/16 issues cerrados (69%)
+██████████████████████░░░░░░░░░░░░░░░░░░ 11/20 issues cerrados (55%)
 ```
 
-✅ Cerrados: 11 | 🔄 En progreso: 0 | ⬜ Pendientes: 5 | 🚨 Bloqueantes: 0
+✅ Cerrados: 11 | 🔄 En progreso: 0 | ⬜ Pendientes: 9 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -127,6 +127,10 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 |---|-------|--------|--------|
 | #22 | [Line endings LF<->CRLF entre Windows local y CI Linux](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) | deuda-tecnica | ⬜ Abierto |
 | #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ⬜ Abierto |
+| #25 | [Snapshot: trigger 'initial' para captura baseline (no 'manual')](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/25) | deuda-tecnica, fase-2 | ⬜ Abierto |
+| #26 | [Snapshot: peaceMode tipado como string generico (perdio type safety)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) | deuda-tecnica, fase-2 | ⬜ Abierto |
+| #27 | [Snapshot: dedup de duplicados triviales en addSnapshot](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) | deuda-tecnica, fase-2 | ⬜ Abierto |
+| #28 | [Snapshot: documentar scope debug-only del RichContextDebugPanel](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) | deuda-tecnica, fase-2 | ⬜ Abierto |
 
 ---
 
@@ -147,6 +151,10 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 - ⬜ [#19](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/19) Bug UX: form financiero del dashboard tiene min=0 (impide gastos negativos)
 - ⬜ [#20](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/20) memory.totalMemories no aumenta con mutaciones desde /dashboard
 - ⬜ [#21](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/21) signals.topSignalIds no ordena por importancia
+- ⬜ [#25](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/25) Snapshot: trigger 'initial' para captura baseline (no 'manual')
+- ⬜ [#26](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) Snapshot: peaceMode tipado como string generico (perdio type safety)
+- ⬜ [#27](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) Snapshot: dedup de duplicados triviales en addSnapshot
+- ⬜ [#28](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) Snapshot: documentar scope debug-only del RichContextDebugPanel
 
 ### Memory Longitudinal
 
