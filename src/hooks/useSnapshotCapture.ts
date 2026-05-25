@@ -56,7 +56,7 @@ export function useSnapshotCapture(): void {
   useEffect(() => {
     const prev = lastCapturedRef.current
     if (prev === null) {
-      addSnapshot(snapshotToSummary(snapshot, 'manual'))
+      addSnapshot(snapshotToSummary(snapshot, 'initial'))
       lastCapturedRef.current = snapshot
       return
     }

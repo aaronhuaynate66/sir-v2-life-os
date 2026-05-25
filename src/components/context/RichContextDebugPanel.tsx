@@ -10,6 +10,18 @@ import { useRichContext } from '@/hooks/useRichContext'
 import { useSnapshotStore } from '@/stores/useSnapshotStore'
 import type { RichContextSnapshot, SnapshotSummary } from '@/engines/context'
 
+/**
+ * RichContextDebugPanel — debug-only UI for inspecting RichContextSnapshot in runtime.
+ *
+ * NOT for production use. Should be replaced with a proper /debug/context route
+ * or feature-flagged before Fase 4 (UI producción).
+ *
+ * Current scope: shows current snapshot JSON, history of recent snapshots,
+ * manual capture trigger, and history clear with confirm.
+ *
+ * Component is client-only (mount-gate) to avoid SSR hydration issues with
+ * timestamp-based snapshot IDs.
+ */
 function toManualSummary(snapshot: RichContextSnapshot): SnapshotSummary {
   return {
     id: snapshot.id,
