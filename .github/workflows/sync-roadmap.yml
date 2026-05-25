@@ -84,6 +84,8 @@ jobs:
         run: |
           git add MASTER_PLAN.md
           git commit -m "chore(plan): auto-sync MASTER_PLAN from issue activity [skip ci]"
+          # Rebase sobre HEAD remoto para tolerar closing-en-cascada (ver issue #30).
+          git pull --rebase origin main
           git push origin HEAD:main
 
       - name: Summary
