@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T19:23:30Z`  
+Última actualización: `2026-05-25T19:23:39Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
@@ -30,7 +30,7 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 |------|---------|--------|----------|
 | Fase 0 - Fundamentos | Setup | ✅ Completado | ░░░░░░░░░░ 0% |
 | Fase 1 - Stores y dominio | Dominio inicial | ✅ Completado | ██████████ 100% |
-| Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ████████░░ 77% |
+| Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ██████░░░░ 59% |
 | Fase 3 - Memory Longitudinal | Historia profunda | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 | Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 | Fase 5 - IA Basica | Capa cognitiva | ⬜ Pendiente | ░░░░░░░░░░ 0% |
@@ -71,7 +71,7 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 **Gate de salida:** Snapshot agregado + history persistido + cero hydration warnings
 
 ```
-███████████████████████████████░░░░░░░░░ 10/13 issues cerrados (77%)
+████████████████████████░░░░░░░░░░░░░░░░ 10/17 issues cerrados (59%)
 ```
 
 | # | Issue | Labels | Estado | Cerrado |
@@ -89,6 +89,10 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 | #19 | [Bug UX: form financiero del dashboard tiene min=0 (impide gastos negativos)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/19) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
 | #20 | [memory.totalMemories no aumenta con mutaciones desde /dashboard](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/20) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
 | #21 | [signals.topSignalIds no ordena por importancia](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/21) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
+| #25 | [Snapshot: trigger 'initial' para captura baseline (no 'manual')](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/25) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
+| #26 | [Snapshot: peaceMode tipado como string generico (perdio type safety)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
+| #27 | [Snapshot: dedup de duplicados triviales en addSnapshot](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
+| #28 | [Snapshot: documentar scope debug-only del RichContextDebugPanel](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
 
 ### Fase 3 - Memory Longitudinal
 
@@ -127,10 +131,6 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 |---|-------|--------|--------|
 | #22 | [Line endings LF<->CRLF entre Windows local y CI Linux](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) | deuda-tecnica | ⬜ Abierto |
 | #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ⬜ Abierto |
-| #25 | [Snapshot: trigger 'initial' para captura baseline (no 'manual')](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/25) | deuda-tecnica, fase-2 | ⬜ Abierto |
-| #26 | [Snapshot: peaceMode tipado como string generico (perdio type safety)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) | deuda-tecnica, fase-2 | ⬜ Abierto |
-| #27 | [Snapshot: dedup de duplicados triviales en addSnapshot](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) | deuda-tecnica, fase-2 | ⬜ Abierto |
-| #28 | [Snapshot: documentar scope debug-only del RichContextDebugPanel](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) | deuda-tecnica, fase-2 | ⬜ Abierto |
 
 ---
 
