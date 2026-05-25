@@ -2,155 +2,259 @@
 
 ## Estado general
 
-**Última actualización:** Sesión 6 completada
-**Mantenimiento:** Manual por ahora. Migración a Living Roadmap System planificada para Sesión 7+.
+Última actualización: `2026-05-25T19:04:52Z`  
+Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
-**Release activo:** Fase 2 — Context & Memory Engine
-**Último PR mergeado:** Sesión 6 — Context Snapshot History
+**Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
+**Hash del último commit humano:** `476b76f`
 
----
-
-## Visión del producto
-
-SIR V2 es un Life Operating System que evoluciona en capas progresivas, no por acumulación de features:
-
-SIR Lite (0-12m) → Relational Memory (12-24m) → Behavioral Intelligence (24-36m) → Identity & Alignment (36-60m) → Life Direction (5-10y) → Human OS (10y+)
-
-Activo central: Human Contextual Memory Graph acumulado durante años.
-No es: Notion con IA, second brain genérico, productivity app, ni reemplazo de decisiones humanas.
+> SIR V2 es un Life Operating System que evoluciona en capas progresivas.
+> Activo central: Human Contextual Memory Graph acumulado durante años.
 
 ---
 
-## Estado de releases (Fase 1 — SIR Lite)
+## Progreso general
 
-| Release | Foco | Estado |
-|---------|------|--------|
-| Fase 0 — Fundamentos | Setup repo, Zustand stores, tipos base | Completado |
-| Fase 1 — Stores y dominio | Self, Finance, Goals, Signals, Relationships, Memory | Completado |
-| Fase 2 — Context Engine | RichContextSnapshot, hook, panel, persistencia | En curso (~85%) |
-| Fase 3 — Memory longitudinal | Persistencia histórica avanzada, búsqueda semántica | Pendiente |
-| Fase 4 — UI producción | Reemplazar debug panel con UI real | Pendiente |
-| Fase 5 — IA básica | Resúmenes, sugerencias, briefings | Pendiente |
+```
+████████████████████████████░░░░░░░░░░░░ 11/16 issues cerrados (69%)
+```
+
+✅ Cerrados: 11 | 🔄 En progreso: 0 | ⬜ Pendientes: 5 | 🚨 Bloqueantes: 0
 
 ---
 
-## Progreso detallado — Fase 2 (Context Engine)
 
-### Sesiones cerradas
+**Estado por fase:**
 
-| Sesión | Descripción | PR |
-|--------|-------------|-----|
-| R4 | Memory System base | (pre-migración) |
-| R5.1A | RichContextSnapshot types | (pre-migración) |
-| R5.1B | buildRichContextSnapshot builder | (pre-migración) |
-| R5.1C | useRichContext hook (estabilización) | #1 |
-| Housekeeping | pnpm lockfile + approve builds | #2 |
-| R5.1D | RichContextDebugPanel integrado en /dashboard | #3 |
-| Fix hydration balance | toLocaleString locale fijo en-US | #4 |
-| Fix hydration panel | RichContextDebugPanel client-only mount | #5 |
-| R5.1E | Validación runtime end-to-end | (no PR, manual + análisis) |
-| R5.1F | Fix relational.activeAlerts + reloj client-only | #6 |
-| Sesión 6 | Context Snapshot History (useSnapshotStore, captura por eventos) | (este PR) |
-
-### Sesiones pendientes en Fase 2
-
-| Sesión | Descripción |
-|--------|-------------|
-| Sesión 7 | Living Roadmap System (auto-sync MASTER_PLAN.md desde issues/PRs) |
-| Cierre Fase 2 | Decisión: ¿Fase 3 longitudinal o Fase 4 UI primero? |
+| Fase | Período | Estado | Progreso |
+|------|---------|--------|----------|
+| Fase 0 - Fundamentos | Setup | ✅ Completado | ░░░░░░░░░░ 0% |
+| Fase 1 - Stores y dominio | Dominio inicial | ✅ Completado | ██████████ 100% |
+| Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ████████░░ 77% |
+| Fase 3 - Memory Longitudinal | Historia profunda | ⬜ Pendiente | ░░░░░░░░░░ 0% |
+| Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | ░░░░░░░░░░ 0% |
+| Fase 5 - IA Basica | Capa cognitiva | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 
 ---
 
-## Hallazgos y deuda técnica
+## Progreso por Fase
 
-### Observaciones documentadas (no son bugs, son diseño actual)
+### Fase 0 - Fundamentos
 
-1. memory.totalMemories no aumenta con mutaciones desde /dashboard. Las actions del dashboard NO llaman addMemory(). Solo rutas dedicadas lo hacen. Decisión pendiente: agregar addMemory al dashboard o mantener el dashboard como vista rápida sin memoria.
+**Período:** Setup  
+**Due date:** —  
+**Wedge:** Setup repo, Zustand stores, tipos base  
+**Gate de salida:** Stack reproducible: Next.js + Zustand + Tailwind builds limpios
 
-2. signals.topSignalIds no ordena por importancia. buildSignals() hace active.slice(0, 3) sin ordenar previamente. Inconsistente con buildMemory(). Deuda menor.
+_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 
-3. Mutaciones de /self health metric, /goals saveGoal (crear), /relationships editar persona no disparan addMemory(). Diseño actual conservador.
+### Fase 1 - Stores y dominio
 
-### Deuda técnica pendiente
+**Período:** Dominio inicial  
+**Due date:** —  
+**Wedge:** Self, Finance, Goals, Signals, Relationships, Memory  
+**Gate de salida:** Stores persistidos y rutas dedicadas operativas
 
-- Line endings LF↔CRLF entre Windows local y CI Linux. Solución: .gitattributes con * text=auto eol=lf.
-- pnpm-workspace.yaml benigno aunque el proyecto no es monorepo activo. Migrable a package.json bajo "pnpm": { "onlyBuiltDependencies": [...] }.
-- Cierre runtime de Tests 5-8 (Goals y Relationships desde sus rutas dedicadas). Cerrado con análisis estático en R5.1E pero falta validación humana en navegador.
+```
+████████████████████████████████████████ 1/1 issues cerrados (100%)
+```
 
----
+| # | Issue | Labels | Estado | Cerrado |
+|---|-------|--------|--------|---------|
+| #8 | [[R4] Memory System base](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/8) | fase-1, retroactive | ✅ Cerrado | 2026-05-25 |
 
-## Stack técnico
+### Fase 2 - Context Engine (activa)
 
-| Capa | Tecnología |
-|------|------------|
-| Framework | Next.js 15.1.0 (App Router) |
-| State management | Zustand + persist middleware |
-| Persistencia local | localStorage |
-| Tipos | TypeScript strict |
-| Package manager | pnpm 11 |
-| Estilo | Tailwind CSS |
-| Animaciones | Framer Motion |
-| Deploy | Vercel (pendiente conectar) |
-| CI | GitHub Actions (type-check + lint + build) |
+**Período:** Estado vivo  
+**Due date:** —  
+**Wedge:** RichContextSnapshot, hook, panel, persistencia historica  
+**Gate de salida:** Snapshot agregado + history persistido + cero hydration warnings
 
----
+```
+███████████████████████████████░░░░░░░░░ 10/13 issues cerrados (77%)
+```
 
-## Workflow de desarrollo
+| # | Issue | Labels | Estado | Cerrado |
+|---|-------|--------|--------|---------|
+| #9 | [[R5.1A] RichContextSnapshot types](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/9) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #10 | [[R5.1B] buildRichContextSnapshot builder](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/10) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #11 | [[R5.1C] Estabilizar useRichContext hook](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/11) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #12 | [Housekeeping pnpm lockfile + approve builds](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/12) | deuda-tecnica, fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #13 | [[R5.1D] RichContextDebugPanel integrado en /dashboard](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/13) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #14 | [Fix hydration: balance dashboard con locale en-US](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/14) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #15 | [Fix hydration: RichContextDebugPanel client-only](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/15) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #16 | [[R5.1E] Validacion runtime end-to-end](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/16) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #17 | [[R5.1F] Fix relational.activeAlerts + reloj client-only](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/17) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #18 | [[Sesion 6] Context Snapshot History](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/18) | fase-2, retroactive | ✅ Cerrado | 2026-05-25 |
+| #19 | [Bug UX: form financiero del dashboard tiene min=0 (impide gastos negativos)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/19) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
+| #20 | [memory.totalMemories no aumenta con mutaciones desde /dashboard](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/20) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
+| #21 | [signals.topSignalIds no ordena por importancia](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/21) | deuda-tecnica, fase-2 | ⬜ Abierto | — |
 
-### Modo autónomo establecido (YOLO)
+### Fase 3 - Memory Longitudinal
 
-Cada sesión sigue este flujo:
-1. git pull origin main
-2. pnpm install
-3. git checkout -b <tipo>/<nombre>
-4. Implementación
-5. pnpm type-check && pnpm lint && pnpm build
-6. git commit con conventional commits (multi-commit por paso conceptual)
-7. git push -u origin <branch>
-8. gh pr create --fill
-9. gh pr merge --squash --auto
-10. Reporte estructurado al usuario
+**Período:** Historia profunda  
+**Due date:** —  
+**Wedge:** Persistencia historica avanzada, busqueda semantica  
+**Gate de salida:** Recuperar contexto de N meses atras con queries semanticas
 
-### Excepciones que requieren OK explícito
+_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 
-- SQL destructivo (DROP, DELETE, TRUNCATE)
-- Rotación de keys de pagos/identidad (Stripe, Anthropic API, Supabase service_role)
-- Cambios a NEXT_PUBLIC_* env vars
+### Fase 4 - UI Produccion
 
----
+**Período:** UI usuario  
+**Due date:** —  
+**Wedge:** Reemplazar debug panel con UI real para el usuario final  
+**Gate de salida:** Onboarding + uso diario sin necesidad de leer codigo
 
-## Decisiones arquitectónicas tomadas
+_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 
-| # | Decisión | Razón |
-|---|----------|-------|
-| 1 | Zustand sobre Redux/Jotai | Simplicidad, suficiente para Fase 1 |
-| 2 | RichContextSnapshot como agregador | Una sola fuente de verdad para estado vivo |
-| 3 | useRichContext con useMemo sobre stores | Reactividad sin re-renders innecesarios |
-| 4 | Debug panel client-only | Evita hydration mismatches sin contaminar el hook |
-| 5 | Locale en-US fijo en formatos de número | Determinismo SSR/CSR |
-| 6 | Memoria solo en rutas dedicadas (no dashboard) | Diseño conservador |
-| 7 | useSnapshotStore separado de useMemoryStore | No mezclar contextos puntuales con memoria semántica |
-| 8 | Captura por eventos (no cron) | Evita ruido, mantiene historial significativo |
+### Fase 5 - IA Basica
 
-ADRs formales pendientes de crear en docs/decisions/. Tarea de housekeeping futura.
+**Período:** Capa cognitiva  
+**Due date:** —  
+**Wedge:** Resumenes, sugerencias, briefings sobre el snapshot  
+**Gate de salida:** Briefings diarios utiles + ≥1 sugerencia accionable por dia
 
----
-
-## Próxima sesión
-
-Sesión 7 — Living Roadmap System
-
-Objetivo: replicar el sistema de sica-platform en SIR V2 para que MASTER_PLAN.md se auto-genere desde issues, milestones y commits, eliminando mantenimiento manual.
-
-Componentes:
-- scripts/generate_roadmap.py o equivalente en TypeScript
-- .github/workflows/sync-roadmap.yml
-- Backfill: crear issues retroactivos para todas las sesiones cerradas
-- Milestones para fases (Fase 0, 1, 2, 3, 4, 5)
-- Estructura docs/decisions/ para ADRs
-
-Estimación: 1-2h Claude Code autónomo.
+_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 
 ---
 
-Generado manualmente. Próximamente: auto-sync vía Living Roadmap System (Sesión 7).
+## Bloqueantes y deuda transversal (sin milestone)
+
+Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica transversal o bloqueantes que cruzan fases.
+
+| # | Issue | Labels | Estado |
+|---|-------|--------|--------|
+| #22 | [Line endings LF<->CRLF entre Windows local y CI Linux](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) | deuda-tecnica | ⬜ Abierto |
+| #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ⬜ Abierto |
+
+---
+
+## Issues por categoría
+
+### Context Engine
+
+- ✅ [#9](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/9) [R5.1A] RichContextSnapshot types
+- ✅ [#10](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/10) [R5.1B] buildRichContextSnapshot builder
+- ✅ [#11](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/11) [R5.1C] Estabilizar useRichContext hook
+- ✅ [#12](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/12) Housekeeping pnpm lockfile + approve builds
+- ✅ [#13](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/13) [R5.1D] RichContextDebugPanel integrado en /dashboard
+- ✅ [#14](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/14) Fix hydration: balance dashboard con locale en-US
+- ✅ [#15](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/15) Fix hydration: RichContextDebugPanel client-only
+- ✅ [#16](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/16) [R5.1E] Validacion runtime end-to-end
+- ✅ [#17](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/17) [R5.1F] Fix relational.activeAlerts + reloj client-only
+- ✅ [#18](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/18) [Sesion 6] Context Snapshot History
+- ⬜ [#19](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/19) Bug UX: form financiero del dashboard tiene min=0 (impide gastos negativos)
+- ⬜ [#20](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/20) memory.totalMemories no aumenta con mutaciones desde /dashboard
+- ⬜ [#21](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/21) signals.topSignalIds no ordena por importancia
+
+### Memory Longitudinal
+
+_(sin issues en esta categoría)_
+
+### UI Producción
+
+_(sin issues en esta categoría)_
+
+### IA & Cognición
+
+_(sin issues en esta categoría)_
+
+### Dominio (stores)
+
+- ✅ [#8](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/8) [R4] Memory System base
+
+### Fundamentos & Infra
+
+_(sin issues en esta categoría)_
+
+### Deuda Técnica
+
+- ⬜ [#22](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) Line endings LF<->CRLF entre Windows local y CI Linux
+- ⬜ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
+
+---
+
+## Decisiones arquitectónicas (ADRs)
+
+| # | Decisión | Estado | Fecha |
+|---|----------|--------|-------|
+| 0001 | [Zustand como gestor de estado global en SIR V2](docs/decisions/0001-zustand-state-management.md) | Accepted | 2026-05-20 |
+| 0002 | [RichContextSnapshot: agregador centralizado para consumir estado vivo](docs/decisions/0002-rich-context-snapshot.md) | Accepted | 2026-05-22 |
+| 0003 | [RichContextDebugPanel renderizado client-only para evitar hydration mismatch](docs/decisions/0003-client-only-debug-panel.md) | Accepted | 2026-05-23 |
+| 0004 | [Context Snapshot History: store separado y captura por eventos](docs/decisions/0004-context-snapshot-history.md) | Accepted | 2026-05-25 |
+
+Auto-generado leyendo `docs/decisions/`.
+
+---
+
+## Tests runtime validados
+
+Validación manual end-to-end del Context Engine (ver issue R5.1E):
+
+| Test | Foco | Estado |
+|------|------|--------|
+| 1 | RichContextSnapshot se construye sin errores en mount | ✅ |
+| 2 | useRichContext devuelve estructura completa y tipada | ✅ |
+| 3 | Mutación en useFinanceStore actualiza snapshot reactivamente | ✅ |
+| 4 | Locale en-US fija formato numérico (sin hydration mismatch) | ✅ |
+| 5 | Goals: completar/cancelar refleja en snapshot | ✅ |
+| 6 | Relationships: agregar persona refleja peopleCount | ✅ |
+| 7 | Memory: addMemory aumenta totalMemories | ✅ |
+| 8 | useSnapshotStore captura por eventos sin duplicados | ✅ |
+
+---
+
+## Commits recientes
+
+Últimos 10 commits del repo (excluyendo bot y GitHub Actions):
+
+| Hash | Autor | Mensaje | Fecha |
+|------|-------|---------|-------|
+| `476b76f` | aaronhuaynate66 | Session 6: Context Snapshot History (#7) | 2026-05-25 |
+| `2a5b497` | aaronhuaynate66 | fix(context): relational.activeAlerts as string[] + dashboard clock hydration safety (R5.1F) (#6) | 2026-05-25 |
+| `d01e6a7` | aaronhuaynate66 | fix(context): make RichContextDebugPanel client-only to prevent hydration mismatch (#5) | 2026-05-25 |
+| `5e02f4f` | aaronhuaynate66 | fix(dashboard): use deterministic locale to prevent hydration mismatch (#4) | 2026-05-25 |
+| `579eb8d` | aaronhuaynate66 | feat(context): add RichContextDebugPanel consumer (R5.1D) (#3) | 2026-05-25 |
+| `599d5eb` | aaronhuaynate66 | chore(tooling): commit lockfile and approve native builds (#2) | 2026-05-25 |
+| `c602144` | aaronhuaynate66 | fix(hooks): stabilize useRichContext hook (R5.1C) (#1) | 2026-05-25 |
+| `3937527` | aaronhuaynate66 | feat(hooks): R5.1C — crear useRichContext hook con stores y engines | 2026-05-25 |
+| `9eb9265` | aaronhuaynate66 | feat(context): R5.1B — agregar export * from './builder' en index.ts | 2026-05-25 |
+| `45cbab1` | aaronhuaynate66 | feat(context): R5.1B — crear buildRichContextSnapshot en builder.ts | 2026-05-25 |
+
+---
+
+## Infraestructura
+
+| Item | Estado | Notas |
+|------|--------|-------|
+| GitHub repo publico | ✅ Activo | https://github.com/aaronhuaynate66/sir-v2-life-os |
+| GitHub Actions CI | ✅ Activo | validate.yml (type-check + lint + build) |
+| Living Roadmap System | ✅ Activo | Auto-sync MASTER_PLAN.md en cada cambio de issue (sync-roadmap.yml) |
+| Milestones por fase | ✅ Activo | Fase 0-5 como GitHub Milestones |
+| ADRs en docs/decisions/ | ✅ Activo | MADR template, indice en README |
+| Next.js 15 (App Router) | ✅ Activo | Stack base |
+| Zustand + persist (localStorage) | ✅ Activo | Stores por dominio, ver ADR 0001 |
+| Tailwind CSS + Framer Motion | ✅ Activo | Estilo + animaciones |
+| Deploy en Vercel | ⬜ Pendiente | Sin conectar todavia |
+| Backend / Supabase | ⬜ Pendiente | Fase 3+ |
+
+---
+
+## Cómo se mantiene este documento
+
+Auto-generado por `scripts/generate_roadmap.py` ejecutado por `.github/workflows/sync-roadmap.yml`.
+
+**Triggers de regeneración:**
+
+- Apertura, cierre, edición de un issue
+- Cambio de labels o milestone en un issue
+- Merge de un PR a `main`
+- Cron diario a las 13:00 UTC (safety net)
+- Disparo manual (`workflow_dispatch`)
+
+**No editar manualmente este archivo.** Cualquier cambio será sobrescrito en la próxima ejecución del workflow. Para cambiar el contenido visible, actualiza los issues, milestones, ADRs o commits — la fuente de verdad son ellos.
+
+---
+
+_Generado por SIR V2 Living Roadmap System v0.1 (adaptado de sica-platform)_
