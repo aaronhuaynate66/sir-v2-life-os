@@ -75,7 +75,8 @@ export function useRichContext(): RichContextSnapshot {
         stabilityScore: financialScore.stability,
         monthlyBalance: financialScore.monthlyBalance,
         liquidityMonths: 0, // fallback: sin dato explícito de meses de liquidez en store
-        activeAlerts: financialAlerts.length,
+        activeAlerts: financialAlerts.map(a => a.message),
+        timestamp: new Date().toISOString(),
       },
       goals,
       // moodScore: promedio de métricas de mood recientes, fallback 5 si vacío
