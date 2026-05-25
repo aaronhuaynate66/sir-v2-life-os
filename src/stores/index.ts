@@ -7,6 +7,7 @@ export { useFinanceStore } from './useFinanceStore'
 export { useSignalStore } from './useSignalStore'
 export { useRecommendationStore } from './useRecommendationStore'
 export { useMemoryStore } from './useMemoryStore'
+export { useSnapshotStore } from './useSnapshotStore'
 export { STORAGE_KEYS } from './storage'
 export type { StorageKey } from './storage'
 export type {
@@ -17,3 +18,4 @@ export type {
           SignalStore,
             RecommendationStore,
             } from './types'
+export type { SnapshotStore } from './useSnapshotStore'
