@@ -16,6 +16,7 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
+import { RichContextDebugPanel } from '@/components/context/RichContextDebugPanel'
 
 function Badge({ label, color }: { label: string; color: string }) {
   return <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${color}`}>{label}</span>
@@ -117,6 +118,7 @@ export default function DashboardPage() {
           <span className="text-[10px] text-[#222] font-mono uppercase tracking-widest">Datos locales</span>
           <div className="flex gap-3"><button onClick={handleResetAll} className="text-[10px] font-mono text-[#333] hover:text-[#555] border border-[#1a1a1a] px-2 py-1 rounded hover:border-[#333]">Resetear a fixtures</button><button onClick={handleClearAll} className="text-[10px] font-mono text-[#2a2a2a] hover:text-[#ef4444] border border-[#1a1a1a] px-2 py-1 rounded hover:border-[#ef4444]/30">Borrar todo</button></div>
         </div>
+        <RichContextDebugPanel />
         <div className="mt-8 pt-4 border-t border-[#1a1a1a] flex justify-between">
           <span className="text-[10px] text-[#222] font-mono">SIR V2 - Fase 2 - Stores</span>
           <span className="text-[10px] text-[#222] font-mono">datos a senales a contexto a memoria a timing a recomendacion a accion</span>
