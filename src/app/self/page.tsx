@@ -1,11 +1,13 @@
 'use client'
 import { useMemo, useState } from 'react'
+import { Brain, Activity, Plus, Moon, Heart, Clock } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SectionTitle } from '@/components/ui/section-title'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useMemoryStore } from '@/stores'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
@@ -21,6 +23,8 @@ const CAT_LABEL: Record<MetricCategory, string> = {
   energy: 'Energia', mood: 'Animo', stress: 'Estres',
   focus: 'Enfoque', motivation: 'Motivacion', confidence: 'Confianza',
 }
+
+const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
 
 type Tone = 'ok' | 'warn' | 'bad'
 function statTextClass(t: Tone): string {
@@ -86,16 +90,19 @@ function SelfContent() {
     <AppShell>
       <div className="mb-8">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
-        <h1 className="text-3xl font-semibold tracking-tight">Self</h1>
+        <div className="flex items-center gap-3 mt-1">
+          <Brain size={28} strokeWidth={1.5} className="text-muted-foreground" />
+          <h1 className="text-3xl font-semibold tracking-tight">Self</h1>
+        </div>
         <p className="text-sm text-muted-foreground mt-1">Estado biologico y metricas personales</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
-          <Card key={s.label} className="shadow-none">
+          <Card key={s.label} className={cardClass}>
             <CardContent className="p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className={cn('text-2xl font-mono font-bold', statTextClass(s.tone))}>
+              <div className={cn('text-2xl font-mono font-bold tabular-nums', statTextClass(s.tone))}>
                 {s.value}<span className="text-sm text-muted-foreground/50">{s.unit}</span>
               </div>
             </CardContent>
@@ -104,9 +111,9 @@ function SelfContent() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Card className="shadow-none">
+        <Card className={cardClass}>
           <CardContent className="p-6">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Registrar metrica</div>
+            <SectionTitle icon={Plus} label="Registrar metrica" />
             <div className="space-y-2">
               <Select value={mCat} onValueChange={(v) => setMCat(v as MetricCategory)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -114,45 +121,49 @@ function SelfContent() {
                   {METRIC_CATS.map(c => <SelectItem key={c} value={c}>{CAT_LABEL[c]}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Input type="number" min="1" max="10" step="0.5" placeholder="Valor (1-10)" value={mVal} onChange={e => setMVal(e.target.value)} className="font-mono" />
+              <Input type="number" min="1" max="10" step="0.5" placeholder="Valor (1-10)" value={mVal} onChange={e => setMVal(e.target.value)} className="font-mono tabular-nums" />
               <Input type="text" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
               <Button onClick={addMetric} variant="outline" className="w-full">+ Registrar</Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-none">
+        <Card className={cardClass}>
           <CardContent className="p-6">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Registrar sueno</div>
+            <SectionTitle icon={Moon} label="Registrar sueno" />
             <div className="space-y-2">
-              <Input type="number" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono" />
+              <Input type="number" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono tabular-nums" />
               <div className="flex gap-2">
                 <Input type="time" value={sBed} onChange={e => setSBed(e.target.value)} className="font-mono" />
                 <Input type="time" value={sWake} onChange={e => setSWake(e.target.value)} className="font-mono" />
               </div>
-              <Input type="number" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono" />
+              <Input type="number" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono tabular-nums" />
               <Button onClick={addSleep} variant="outline" className="w-full">+ Registrar sueno</Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="mb-4 shadow-none">
+      <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-6">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Ultimas metricas</div>
+          <SectionTitle icon={Activity} label="Ultimas metricas" count={recentMetrics.length} />
           {recentMetrics.length === 0 ? (
-            <div className="text-xs text-muted-foreground/70 py-6 text-center">Sin metricas.</div>
+            <div className="text-center py-8">
+              <Activity size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Sin metricas todavia</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Registra tu primera medicion arriba.</p>
+            </div>
           ) : (
             <div className="space-y-1">
               {recentMetrics.map((m) => (
-                <div key={m.id} className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
+                <div key={m.id} className="flex justify-between items-center py-1.5 border-b border-border/40 last:border-0">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[m.category] || m.category}</Badge>
                     {m.note && <span className="text-xs text-muted-foreground">{m.note}</span>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn('text-sm font-mono', m.value >= 7 ? 'text-emerald-400' : m.value >= 4 ? 'text-amber-400' : 'text-red-400')}>{m.value}/10</span>
-                    <span className="text-[10px] text-muted-foreground/60 font-mono">{new Date(m.timestamp).toLocaleDateString('es', { day: '2-digit', month: '2-digit' })}</span>
+                    <span className={cn('text-sm font-mono tabular-nums', m.value >= 7 ? 'text-emerald-400' : m.value >= 4 ? 'text-amber-400' : 'text-red-400')}>{m.value}/10</span>
+                    <span className="text-[10px] text-muted-foreground/60 font-mono tabular-nums">{new Date(m.timestamp).toLocaleDateString('es', { day: '2-digit', month: '2-digit' })}</span>
                   </div>
                 </div>
               ))}
@@ -162,22 +173,22 @@ function SelfContent() {
       </Card>
 
       {lastSleep && (
-        <Card className="mb-4 shadow-none">
+        <Card className={cn('mb-4', cardClass)}>
           <CardContent className="p-6">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Ultima noche</div>
+            <SectionTitle icon={Clock} label="Ultima noche" />
             <div className="flex gap-6 flex-wrap">
-              <div><div className="text-[10px] text-muted-foreground/60">Fecha</div><div className="text-sm font-mono">{lastSleep.date}</div></div>
-              <div><div className="text-[10px] text-muted-foreground/60">Duracion</div><div className="text-sm font-mono">{lastSleep.duration}h</div></div>
-              <div><div className="text-[10px] text-muted-foreground/60">Calidad</div><div className="text-sm font-mono">{lastSleep.quality}/10</div></div>
-              <div><div className="text-[10px] text-muted-foreground/60">Horario</div><div className="text-sm font-mono">{lastSleep.bedtime}-{lastSleep.wakeTime}</div></div>
+              <div><div className="text-[10px] text-muted-foreground/60">Fecha</div><div className="text-sm font-mono tabular-nums">{lastSleep.date}</div></div>
+              <div><div className="text-[10px] text-muted-foreground/60">Duracion</div><div className="text-sm font-mono tabular-nums">{lastSleep.duration}h</div></div>
+              <div><div className="text-[10px] text-muted-foreground/60">Calidad</div><div className="text-sm font-mono tabular-nums">{lastSleep.quality}/10</div></div>
+              <div><div className="text-[10px] text-muted-foreground/60">Horario</div><div className="text-sm font-mono tabular-nums">{lastSleep.bedtime}-{lastSleep.wakeTime}</div></div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      <Card className="shadow-none">
+      <Card className={cardClass}>
         <CardContent className="p-6">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Salud basica</div>
+          <SectionTitle icon={Heart} label="Salud basica" count={healthMetrics.length} />
           <div className="flex gap-2 mb-3">
             <Select value={hType} onValueChange={(v) => setHType(v as HealthMetricType)}>
               <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
@@ -185,18 +196,21 @@ function SelfContent() {
                 {HEALTH_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Input type="number" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24 font-mono" />
+            <Input type="number" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24 font-mono tabular-nums" />
             <Input type="text" placeholder="Unidad" value={hUnit} onChange={e => setHUnit(e.target.value)} className="w-16" />
             <Button onClick={addHealth} variant="outline" size="sm">+ Agregar</Button>
           </div>
           {healthMetrics.length === 0 ? (
-            <div className="text-xs text-muted-foreground/70 py-2">Sin registros.</div>
+            <div className="text-center py-6">
+              <Heart size={20} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Sin registros de salud.</p>
+            </div>
           ) : (
             <div className="space-y-1">
               {[...healthMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 8).map((h) => (
-                <div key={h.id} className="flex justify-between py-1 border-b border-border/50 last:border-0">
+                <div key={h.id} className="flex justify-between py-1 border-b border-border/40 last:border-0">
                   <span className="text-xs text-muted-foreground">{h.type}</span>
-                  <span className="text-xs font-mono">{h.value} {h.unit}</span>
+                  <span className="text-xs font-mono tabular-nums">{h.value} {h.unit}</span>
                 </div>
               ))}
             </div>
