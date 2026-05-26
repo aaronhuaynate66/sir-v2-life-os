@@ -8,7 +8,6 @@ import {
   AlertCircle, TrendingUp, TrendingDown, Minus,
   CheckCircle2, X,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { calculatePeaceScore, evaluateRecoveryMode, detectPeaceThreats } from '@/engines/peace'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
 import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
@@ -36,6 +35,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { SectionTitle } from '@/components/ui/section-title'
 import { cn } from '@/lib/utils'
 
 type Mode = 'normal' | 'focused' | 'recovery' | 'strategic'
@@ -58,16 +58,6 @@ function statusColor(level: 'ok' | 'warn' | 'bad' | undefined): string {
 }
 
 const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
-
-function SectionTitle({ icon: Icon, label, count }: { icon: LucideIcon; label: string; count?: number | string }) {
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      <Icon size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">{label}</span>
-      {count !== undefined && <span className="text-[10px] font-mono text-muted-foreground/60">&mdash; {count}</span>}
-    </div>
-  )
-}
 
 function Row({ label, value, status }: { label: string; value: string; status?: 'ok' | 'warn' | 'bad' }) {
   return (
