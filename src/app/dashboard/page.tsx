@@ -2,6 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import {
+  Activity, Target, Brain, Wallet, Users, Bell,
+  Moon, Zap, ArrowRightLeft, Sparkles,
+  AlertCircle, TrendingUp, TrendingDown, Minus,
+  CheckCircle2, X,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { calculatePeaceScore, evaluateRecoveryMode, detectPeaceThreats } from '@/engines/peace'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
 import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
@@ -23,7 +30,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,12 +41,8 @@ import { cn } from '@/lib/utils'
 type Mode = 'normal' | 'focused' | 'recovery' | 'strategic'
 
 const MODE_LABEL: Record<Mode, string> = {
-  normal: 'OPERATIVO',
-  focused: 'ENFOCADO',
-  recovery: 'RECUPERACION',
-  strategic: 'ESTRATEGICO',
+  normal: 'OPERATIVO', focused: 'ENFOCADO', recovery: 'RECUPERACION', strategic: 'ESTRATEGICO',
 }
-
 const MODE_CLASSES: Record<Mode, string> = {
   normal: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
   focused: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
@@ -54,17 +57,25 @@ function statusColor(level: 'ok' | 'warn' | 'bad' | undefined): string {
   return 'text-foreground'
 }
 
-function Row({ label, value, status }: { label: string; value: string; status?: 'ok' | 'warn' | 'bad' }) {
+const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+
+function SectionTitle({ icon: Icon, label, count }: { icon: LucideIcon; label: string; count?: number | string }) {
   return (
-    <div className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={cn('text-sm font-mono', statusColor(status))}>{value}</span>
+    <div className="flex items-center gap-2 mb-4">
+      <Icon size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">{label}</span>
+      {count !== undefined && <span className="text-[10px] font-mono text-muted-foreground/60">&mdash; {count}</span>}
     </div>
   )
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans mb-3">{children}</div>
+function Row({ label, value, status }: { label: string; value: string; status?: 'ok' | 'warn' | 'bad' }) {
+  return (
+    <div className="flex justify-between items-center py-1.5 border-b border-border/40 last:border-0">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={cn('text-sm font-mono tabular-nums', statusColor(status))}>{value}</span>
+    </div>
+  )
 }
 
 export default function DashboardPage() {
@@ -75,9 +86,7 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const [now, setNow] = useState<Date | null>(null)
-  useEffect(() => {
-    setNow(new Date())
-  }, [])
+  useEffect(() => { setNow(new Date()) }, [])
   useSnapshotCapture()
   const { sleepRecords, selfMetrics, addSleepRecord, addSelfMetric, resetToFixtures: resetSelf, clearAll: clearSelf } = useSelfStore()
   const { people, relationships, resetToFixtures: resetRelationship, clearAll: clearRelationship } = useRelationshipStore()
@@ -107,9 +116,11 @@ function DashboardContent() {
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
   const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
   const topRec = recommendations.find(r => r.status === 'pending') ?? recs[0] ?? null
+  const activeSignals = signalCtx.activeSignals.filter(s => !s.resolved)
 
   const mode: Mode = peace.recoveryMode || bio.energyLevel < 4 ? 'recovery' : peace.total > 8 && bio.energyLevel > 7 ? 'strategic' : bio.energyLevel > 7 ? 'focused' : 'normal'
   const peaceColor = peace.total >= 7 ? 'text-emerald-400' : peace.total >= 4 ? 'text-amber-400' : 'text-red-400'
+  const peaceDotColor = peace.total >= 7 ? 'bg-emerald-400' : peace.total >= 4 ? 'bg-amber-400' : 'bg-red-400'
 
   function handleAddSleep() { const h = parseFloat(sleepHours); if (isNaN(h) || h < 0 || h > 24) return; const record = { id: `sl_${Date.now()}`, date: new Date().toISOString().split('T')[0], bedtime: '23:00', wakeTime: '07:00', duration: h, quality: h >= 7 ? 8 : h >= 5 ? 5 : 3 }; addSleepRecord(record); addMemory(createSleepMemory(record)); setSleepHours('') }
   function handleAddEnergy() { const e = parseInt(energyVal), s = parseInt(stressVal); if (!isNaN(e) && e >= 1 && e <= 10) { const m = { id: `m_e_${Date.now()}`, category: 'energy' as const, value: e, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) } if (!isNaN(s) && s >= 1 && s <= 10) { const m = { id: `m_s_${Date.now()}`, category: 'stress' as const, value: s, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) } setEnergyVal(''); setStressVal('') }
@@ -118,8 +129,12 @@ function DashboardContent() {
   function handleResetAll() { resetSelf(); resetRelationship(); resetGoal(); resetFinance(); resetSignal(); resetRec() }
   function handleClearAll() { clearSelf(); clearRelationship(); clearGoal(); clearFinance(); clearSignal(); clearRec() }
 
-  const recTimingLabel = topRec?.timing === 'now' ? 'AHORA' : topRec?.timing === 'today' ? 'HOY' : topRec?.timing === 'this_week' ? 'SEMANA' : 'CUANDO LISTO'
-  const recTimingClass = topRec?.timing === 'now' ? 'border-red-500/30 bg-red-500/10 text-red-400' : 'border-border bg-muted text-muted-foreground'
+  const TrendIcon = peace.trend === 'improving' ? TrendingUp : peace.trend === 'declining' ? TrendingDown : Minus
+  const trendLabel = peace.trend === 'improving' ? 'Mejorando' : peace.trend === 'declining' ? 'Declinando' : 'Estable'
+  const trendColor = peace.trend === 'improving' ? 'text-emerald-400' : peace.trend === 'declining' ? 'text-red-400' : 'text-muted-foreground'
+
+  const recTimingLabel = topRec?.timing === 'now' ? 'AHORA' : topRec?.timing === 'today' ? 'HOY' : topRec?.timing === 'this_week' ? 'ESTA SEMANA' : 'CUANDO LISTO'
+  const recTimingClass = topRec?.timing === 'now' ? 'border-red-500/30 bg-red-500/10 text-red-400' : topRec?.timing === 'today' ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground'
 
   return (
     <AppShell wide>
@@ -131,238 +146,292 @@ function DashboardContent() {
           </div>
         </div>
       )}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-between items-start mb-8">
-          <div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
-            <h1 className="text-3xl font-semibold tracking-tight">Mission Control</h1>
-            <div className="text-sm text-muted-foreground mt-1 capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</div>
-          </div>
-          <div className="text-right flex flex-col items-end gap-2">
-            <div className="text-2xl font-mono text-muted-foreground/70">{now ? now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</div>
-            <Badge variant="outline" className={cn('font-mono text-[10px] tracking-widest', MODE_CLASSES[mode])}>{MODE_LABEL[mode]}</Badge>
-          </div>
-        </motion.div>
 
-        <Card className="mb-6 shadow-none">
-          <CardContent className="flex justify-between items-center p-6">
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Mision</div>
-              <div className="text-foreground">Conseguir Paz.</div>
+      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex justify-between items-start mb-8">
+        <div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
+          <h1 className="text-3xl font-semibold tracking-tight">Mission Control</h1>
+          <div className="text-sm text-muted-foreground mt-1 capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</div>
+        </div>
+        <div className="text-right flex flex-col items-end gap-2">
+          <div className="text-2xl font-mono tabular-nums text-muted-foreground/70">{now ? now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+          <Badge variant="outline" className={cn('font-mono text-[10px] tracking-widest', MODE_CLASSES[mode])}>{MODE_LABEL[mode]}</Badge>
+        </div>
+      </motion.div>
+
+      <Card className={cn('mb-6', cardClass)}>
+        <CardContent className="flex justify-between items-center p-6">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Mision</div>
+            <div className="text-foreground">Conseguir Paz.</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Ventana actual</div>
+            <div className={cn('text-xs', timing.type === 'peak' ? 'text-emerald-400' : timing.type === 'avoid' ? 'text-amber-400' : 'text-muted-foreground')}>{timing.description}</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* HERO: Peace Score + Recomendacion */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
+        <Card className={cn('lg:col-span-5', cardClass)}>
+          <CardContent className="p-6">
+            <SectionTitle icon={Activity} label="Peace Score" />
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className={cn('text-6xl md:text-7xl font-mono font-semibold tabular-nums', peaceColor)}>{peace.total.toFixed(1)}</span>
+              <span className="text-2xl text-muted-foreground/50 font-mono">/10</span>
             </div>
-            <div className="text-right">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Ventana actual</div>
-              <div className={cn('text-xs', timing.type === 'peak' ? 'text-emerald-400' : timing.type === 'avoid' ? 'text-amber-400' : 'text-muted-foreground')}>{timing.description}</div>
+            <div className="flex items-center gap-2">
+              <TrendIcon size={14} strokeWidth={1.75} className={trendColor} />
+              <span className={cn('text-xs', trendColor)}>{trendLabel}</span>
+              <span className={cn('ml-2 w-1.5 h-1.5 rounded-full animate-pulse', peaceDotColor)} />
+            </div>
+            {threats.length > 0 && (
+              <>
+                <Separator className="my-4" />
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Atencion</div>
+                <div className="space-y-1.5">
+                  {threats.map((t, i) => (
+                    <div key={i} className="flex gap-2 items-start">
+                      <AlertCircle size={12} strokeWidth={2} className="text-red-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-xs text-muted-foreground leading-relaxed">{t.description}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {topRec ? (
+          <Card className={cn('lg:col-span-7', cardClass)}>
+            <CardContent className="p-6 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Target size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Foco del dia</span>
+                </div>
+                <Badge variant="outline" className={cn('text-[10px] font-mono tracking-wider', recTimingClass)}>{recTimingLabel}</Badge>
+              </div>
+
+              <div className="flex gap-3 flex-1">
+                <div className={cn('w-0.5 self-stretch rounded-full flex-shrink-0', topRec.priority === 'critical' ? 'bg-red-500' : topRec.priority === 'high' ? 'bg-primary' : 'bg-blue-500')} />
+                <div className="flex-1 flex flex-col">
+                  <h2 className="text-xl font-semibold tracking-tight mb-2">{topRec.title}</h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-3">{topRec.description}</p>
+                  <div className="text-[11px] text-muted-foreground/70 font-mono leading-relaxed mb-4">{topRec.reasoning}</div>
+
+                  <div className="flex gap-4 mb-4">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Impacto</span>
+                      <span className="text-sm font-mono tabular-nums text-emerald-400">+{topRec.expectedPeaceImpact}</span>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Confianza</span>
+                      <span className="text-sm font-mono tabular-nums text-foreground">{Math.round(topRec.confidence * 100)}%</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mt-auto">
+                    <Button size="sm" variant="outline" onClick={() => completeRecommendation(topRec.id)} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+                      <CheckCircle2 size={14} strokeWidth={1.75} />
+                      Completar
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => dismissRecommendation(topRec.id)}>
+                      Descartar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className={cn('lg:col-span-7', cardClass)}>
+            <CardContent className="p-6 h-full flex flex-col items-center justify-center text-center">
+              <Target size={24} strokeWidth={1.25} className="text-muted-foreground/40 mb-2" />
+              <div className="text-sm text-muted-foreground">Sin recomendaciones activas.</div>
+              <div className="text-xs text-muted-foreground/60 mt-1">El sistema esta calibrando senales.</div>
+            </CardContent>
+          </Card>
+        )}
+      </motion.div>
+
+      {/* Métricas secundarias: Bio, Finanzas, Objetivos */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card className={cardClass}>
+          <CardContent className="p-6">
+            <SectionTitle icon={Brain} label="Estado Biologico" />
+            <Row label="Energia" value={`${bio.energyLevel.toFixed(1)}/10`} status={bio.energyLevel >= 6 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'} />
+            <Row label="Sueno promedio" value={`${sleep.averageDuration.toFixed(1)}h`} status={sleep.averageDuration >= 7 ? 'ok' : sleep.averageDuration >= 5 ? 'warn' : 'bad'} />
+            <Row label="Calidad sueno" value={`${sleep.averageQuality.toFixed(1)}/10`} status={sleep.averageQuality >= 6 ? 'ok' : 'warn'} />
+            <Row label="Deuda sueno" value={`${bio.sleepDebt.toFixed(1)}h`} status={bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad'} />
+          </CardContent>
+        </Card>
+
+        <Card className={cardClass}>
+          <CardContent className="p-6">
+            <SectionTitle icon={Wallet} label="Finanzas" />
+            <Row label="Estabilidad" value={`${fin.stability.toFixed(1)}/10`} status={fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad'} />
+            <Row label="Balance mensual" value={`$${fin.monthlyBalance.toLocaleString('en-US')}`} status={fin.monthlyBalance >= 0 ? 'ok' : 'bad'} />
+            <Row label="Tasa ahorro" value={`${fin.savingsRate.toFixed(0)}%`} status={fin.savingsRate >= 20 ? 'ok' : fin.savingsRate >= 10 ? 'warn' : 'bad'} />
+            {finAlerts[0] && (
+              <>
+                <Separator className="my-3" />
+                <div className="flex gap-1.5 items-start">
+                  <AlertCircle size={12} strokeWidth={2} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-[11px] text-amber-400 leading-relaxed">{finAlerts[0].message}</span>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className={cardClass}>
+          <CardContent className="p-6">
+            <SectionTitle icon={Target} label="Objetivos" count={`${goalsDash.criticalGoals.length} criticos`} />
+            {goalsDash.criticalGoals.length === 0 ? (
+              <div className="text-xs text-muted-foreground/70 py-2">Sin objetivos criticos.</div>
+            ) : (
+              <div className="space-y-3">
+                {goalsDash.criticalGoals.slice(0, 3).map((g) => (
+                  <div key={g.id}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm truncate">{g.title}</span>
+                      <span className="text-xs font-mono tabular-nums text-muted-foreground">{g.progress}%</span>
+                    </div>
+                    <div className="h-1 bg-muted rounded-full overflow-hidden">
+                      <div className="h-1 rounded-full bg-emerald-500 transition-all duration-300" style={{ width: `${g.progress}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Listas: alertas relacionales + señales activas */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <Card className={cardClass}>
+          <CardContent className="p-6">
+            <SectionTitle icon={Users} label="Alertas Relacionales" count={relAlerts.length} />
+            {relAlerts.length === 0 ? (
+              <div className="text-xs text-muted-foreground/70 py-2">Sin alertas relacionales.</div>
+            ) : (
+              <div className="space-y-3">
+                {relAlerts.slice(0, 3).map((a, i) => (
+                  <div key={i} className="flex gap-3 py-1.5 border-b border-border/40 last:border-0">
+                    <div className={cn('w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0', a.urgency === 'immediate' ? 'bg-red-500' : 'bg-amber-500')} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-foreground">{a.personName}</div>
+                      <div className="text-xs text-muted-foreground">{a.message}</div>
+                      {a.suggestedAction && <div className="text-[11px] text-muted-foreground/60 mt-0.5">{a.suggestedAction}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className={cardClass}>
+          <CardContent className="p-6">
+            <SectionTitle icon={Bell} label="Senales Activas" count={activeSignals.length} />
+            {activeSignals.length === 0 ? (
+              <div className="text-xs text-muted-foreground/70 py-2">Sin senales activas.</div>
+            ) : (
+              <div className="space-y-2">
+                {activeSignals.slice(0, 3).map((sig) => (
+                  <div key={sig.id} className="flex gap-2 items-start py-1.5 border-b border-border/40 last:border-0 group">
+                    <span className="text-[10px] font-mono text-muted-foreground/60 mt-0.5 w-16 flex-shrink-0 uppercase tracking-wider">{sig.source}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-foreground">{sig.content}</div>
+                      {sig.meaning && sig.meaning !== sig.content && <div className="text-xs text-muted-foreground mt-0.5">{sig.meaning}</div>}
+                    </div>
+                    <button
+                      onClick={() => resolveSignal(sig.id)}
+                      className="text-muted-foreground/40 hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Resolver"
+                    >
+                      <X size={14} strokeWidth={1.75} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Forms rápidos: 2x2 en lg, single col en mobile */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+        <Card className={cardClass}>
+          <CardContent className="p-5">
+            <SectionTitle icon={Moon} label="Registrar sueno" />
+            <div className="flex gap-2">
+              <Input type="number" min="0" max="24" step="0.5" placeholder="Horas (ej: 7.5)" value={sleepHours} onChange={e => setSleepHours(e.target.value)} className="flex-1 font-mono tabular-nums" />
+              <Button size="sm" variant="outline" onClick={handleAddSleep}>+ Agregar</Button>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-12 md:col-span-4 space-y-4">
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Peace Score</SectionLabel>
-                <div className={cn('text-5xl font-mono font-bold', peaceColor)}>
-                  {peace.total.toFixed(1)}<span className="text-xl text-muted-foreground/50">/10</span>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className={cn('w-1.5 h-1.5 rounded-full animate-pulse', peaceColor.replace('text-', 'bg-'))} />
-                  <span className="text-xs text-muted-foreground">{peace.trend === 'improving' ? 'Mejorando' : peace.trend === 'declining' ? 'Declinando' : 'Estable'}</span>
-                </div>
-                {threats.length > 0 && (
-                  <>
-                    <Separator className="my-4" />
-                    <div className="space-y-2">
-                      {threats.map((t, i) => (
-                        <div key={i} className="flex gap-2 items-start">
-                          <span className="text-red-400 text-xs mt-0.5">!</span>
-                          <span className="text-[11px] text-muted-foreground">{t.description}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+        <Card className={cardClass}>
+          <CardContent className="p-5">
+            <SectionTitle icon={Zap} label="Energia / Estres (1-10)" />
+            <div className="flex gap-2">
+              <Input type="number" min="1" max="10" placeholder="Energia" value={energyVal} onChange={e => setEnergyVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
+              <Input type="number" min="1" max="10" placeholder="Estres" value={stressVal} onChange={e => setStressVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
+              <Button size="sm" variant="outline" onClick={handleAddEnergy}>+ Agregar</Button>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Estado Biologico</SectionLabel>
-                <Row label="Energia" value={`${bio.energyLevel.toFixed(1)}/10`} status={bio.energyLevel >= 6 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'} />
-                <Row label="Sueno promedio" value={`${sleep.averageDuration.toFixed(1)}h`} status={sleep.averageDuration >= 7 ? 'ok' : sleep.averageDuration >= 5 ? 'warn' : 'bad'} />
-                <Row label="Calidad sueno" value={`${sleep.averageQuality.toFixed(1)}/10`} status={sleep.averageQuality >= 6 ? 'ok' : 'warn'} />
-                <Row label="Deuda sueno" value={`${bio.sleepDebt.toFixed(1)}h`} status={bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad'} />
-              </CardContent>
-            </Card>
+        <Card className={cardClass}>
+          <CardContent className="p-5">
+            <SectionTitle icon={ArrowRightLeft} label="Movimiento financiero" />
+            <div className="flex gap-2">
+              <Select value={finType} onValueChange={(v) => setFinType(v as 'income' | 'expense')}>
+                <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="expense">Gasto</SelectItem>
+                  <SelectItem value="income">Ingreso</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input type="number" min="0" placeholder="USD" value={finAmount} onChange={e => setFinAmount(e.target.value)} className="w-24 font-mono tabular-nums" />
+              <Input type="text" placeholder="Descripcion" value={finDesc} onChange={e => setFinDesc(e.target.value)} className="flex-1" />
+              <Button size="sm" variant="outline" onClick={handleAddFinance}>+ Agregar</Button>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Finanzas</SectionLabel>
-                <Row label="Estabilidad" value={`${fin.stability.toFixed(1)}/10`} status={fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad'} />
-                <Row label="Balance mensual" value={`$${fin.monthlyBalance.toLocaleString('en-US')}`} status={fin.monthlyBalance >= 0 ? 'ok' : 'bad'} />
-                <Row label="Tasa ahorro" value={`${fin.savingsRate.toFixed(0)}%`} status={fin.savingsRate >= 20 ? 'ok' : fin.savingsRate >= 10 ? 'warn' : 'bad'} />
-                {finAlerts[0] && (
-                  <>
-                    <Separator className="mt-3 mb-3" />
-                    <div className="text-[11px] text-amber-400">! {finAlerts[0].message}</div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+        <Card className={cardClass}>
+          <CardContent className="p-5">
+            <SectionTitle icon={Sparkles} label="Senal rapida" />
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                placeholder="Registrar senal o patron..."
+                value={signalContent}
+                onChange={e => setSignalContent(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddSignal() }}
+                className="flex-1"
+              />
+              <Button size="sm" variant="outline" onClick={handleAddSignal}>+ Agregar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-          <div className="col-span-12 md:col-span-8 space-y-4">
-            {topRec && (
-              <Card className="shadow-none">
-                <CardContent className="p-6">
-                  <SectionLabel>Recomendacion Principal</SectionLabel>
-                  <div className="flex gap-3">
-                    <div className={cn('w-1 self-stretch rounded-full flex-shrink-0', topRec.priority === 'critical' ? 'bg-red-500' : topRec.priority === 'high' ? 'bg-amber-500' : 'bg-blue-500')} />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium">{topRec.title}</span>
-                        <Badge variant="outline" className={cn('text-[10px] font-mono', recTimingClass)}>{recTimingLabel}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{topRec.description}</p>
-                      <div className="mt-2 text-[10px] text-muted-foreground/60 font-mono">{topRec.reasoning}</div>
-                      <div className="mt-2 flex gap-3">
-                        <span className="text-[10px] text-muted-foreground/70">Impacto paz: +{topRec.expectedPeaceImpact}</span>
-                        <span className="text-[10px] text-muted-foreground/70">Confianza: {Math.round(topRec.confidence * 100)}%</span>
-                      </div>
-                      <div className="mt-3 flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => completeRecommendation(topRec.id)} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">Completar</Button>
-                        <Button size="sm" variant="ghost" onClick={() => dismissRecommendation(topRec.id)}>Descartar</Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Objetivos &mdash; {goalsDash.criticalGoals.length} criticos</SectionLabel>
-                <div className="space-y-3">
-                  {goalsDash.criticalGoals.slice(0, 3).map((g) => (
-                    <div key={g.id} className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">{g.title}</span>
-                          <span className="text-xs font-mono text-muted-foreground">{g.progress}%</span>
-                        </div>
-                        <div className="h-1 bg-muted rounded-full">
-                          <div className="h-1 rounded-full bg-emerald-500" style={{ width: `${g.progress}%` }} />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {relAlerts.length > 0 && (
-              <Card className="shadow-none">
-                <CardContent className="p-6">
-                  <SectionLabel>Alertas Relacionales &mdash; {relAlerts.length}</SectionLabel>
-                  {relAlerts.slice(0, 2).map((a, i) => (
-                    <div key={i} className="flex gap-3 mb-2 last:mb-0">
-                      <div className={cn('w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0', a.urgency === 'immediate' ? 'bg-red-500' : 'bg-amber-500')} />
-                      <div>
-                        <div className="text-sm">{a.personName}</div>
-                        <div className="text-xs text-muted-foreground">{a.message}</div>
-                        <div className="text-[11px] text-muted-foreground/60 mt-0.5">{a.suggestedAction}</div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Senales activas &mdash; {signalCtx.activeSignals.filter(s => !s.resolved).length}</SectionLabel>
-                <div className="space-y-2">
-                  {signalCtx.activeSignals.filter(s => !s.resolved).slice(0, 3).map((sig) => (
-                    <div key={sig.id} className="flex gap-2 items-start">
-                      <span className="text-[10px] font-mono text-muted-foreground/60 mt-0.5 w-16 flex-shrink-0">{sig.source}</span>
-                      <div className="flex-1">
-                        <div className="text-sm text-foreground">{sig.content}</div>
-                        {sig.meaning && <div className="text-xs text-muted-foreground mt-0.5">{sig.meaning}</div>}
-                      </div>
-                      <button onClick={() => resolveSignal(sig.id)} className="text-xs text-muted-foreground/60 hover:text-foreground flex-shrink-0" aria-label="Resolver">×</button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+      {/* Footer: datos locales + debug + branding */}
+      <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans">Datos locales</span>
+        <div className="flex gap-2">
+          <Button size="sm" variant="ghost" onClick={handleResetAll}>Resetear a fixtures</Button>
+          <Button size="sm" variant="ghost" onClick={handleClearAll} className="hover:bg-red-500/10 hover:text-red-400">Borrar todo</Button>
         </div>
+      </div>
 
-        <div className="mt-6 grid grid-cols-12 gap-4">
-          <div className="col-span-12 md:col-span-6 space-y-3">
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Registrar sueno</SectionLabel>
-                <div className="flex gap-2">
-                  <Input type="number" min="0" max="24" step="0.5" placeholder="Horas (ej: 7.5)" value={sleepHours} onChange={e => setSleepHours(e.target.value)} className="flex-1 font-mono" />
-                  <Button size="sm" variant="outline" onClick={handleAddSleep}>+ Agregar</Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Energia / Estres (1-10)</SectionLabel>
-                <div className="flex gap-2">
-                  <Input type="number" min="1" max="10" placeholder="Energia" value={energyVal} onChange={e => setEnergyVal(e.target.value)} className="flex-1 font-mono" />
-                  <Input type="number" min="1" max="10" placeholder="Estres" value={stressVal} onChange={e => setStressVal(e.target.value)} className="flex-1 font-mono" />
-                  <Button size="sm" variant="outline" onClick={handleAddEnergy}>+ Agregar</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="col-span-12 md:col-span-6 space-y-3">
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Movimiento financiero rapido</SectionLabel>
-                <div className="flex gap-2">
-                  <Select value={finType} onValueChange={(v) => setFinType(v as 'income' | 'expense')}>
-                    <SelectTrigger className="w-28">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="expense">Gasto</SelectItem>
-                      <SelectItem value="income">Ingreso</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input type="number" min="0" placeholder="Monto USD" value={finAmount} onChange={e => setFinAmount(e.target.value)} className="w-28 font-mono" />
-                  <Input type="text" placeholder="Descripcion" value={finDesc} onChange={e => setFinDesc(e.target.value)} className="flex-1" />
-                  <Button size="sm" variant="outline" onClick={handleAddFinance}>+ Agregar</Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-none">
-              <CardContent className="p-6">
-                <SectionLabel>Senal rapida</SectionLabel>
-                <div className="flex gap-2">
-                  <Input type="text" placeholder="Registrar senal o patron..." value={signalContent} onChange={e => setSignalContent(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddSignal() }} className="flex-1" />
-                  <Button size="sm" variant="outline" onClick={handleAddSignal}>+ Agregar</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans">Datos locales</span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={handleResetAll}>Resetear a fixtures</Button>
-            <Button size="sm" variant="ghost" onClick={handleClearAll} className="hover:bg-red-500/10 hover:text-red-400">Borrar todo</Button>
-          </div>
-        </div>
-
-        <RichContextDebugPanel />
+      <RichContextDebugPanel />
 
       <div className="mt-8 pt-4 border-t border-border flex justify-between">
         <span className="text-[10px] text-muted-foreground/60 font-mono">SIR V2 &mdash; Fase 4 &mdash; UI Produccion</span>
