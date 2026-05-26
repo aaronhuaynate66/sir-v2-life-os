@@ -1,30 +1,38 @@
 'use client'
-// SIR V2 â /signals
+// SIR V2 — /signals
 // Senales activas, manual, resolver, fuentes
 import { useMemo, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
-import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { useMemoryStore } from '@/stores'
 import { buildSignalContext } from '@/engines/signal'
 import { createSignalAddedMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { cn } from '@/lib/utils'
 import type { SignalSource, SignalType, SignalUrgency, Signal } from '@/types'
 
 const SOURCE_LABEL: Record<SignalSource, string> = {
   linkedin: 'LinkedIn', instagram: 'Instagram', calendar: 'Calendario',
-  biological: 'Biologico', financial: 'Financiero', relational: 'Relacional', manual: 'Manual'
+  biological: 'Biologico', financial: 'Financiero', relational: 'Relacional', manual: 'Manual',
 }
 const TYPE_LABEL: Record<SignalType, string> = {
   opportunity: 'Oportunidad', warning: 'Advertencia', pattern: 'Patron', timing: 'Timing',
-  emotional: 'Emocional', relational: 'Relacional', biological: 'Biologico', financial: 'Financiero'
-}
-const URGENCY_VARIANT: Record<SignalUrgency, 'bad' | 'warn' | 'default' | 'muted'> = {
-  immediate: 'bad', soon: 'warn', monitor: 'default', archive: 'muted'
+  emotional: 'Emocional', relational: 'Relacional', biological: 'Biologico', financial: 'Financiero',
 }
 const URGENCY_LABEL: Record<SignalUrgency, string> = {
-  immediate: 'Inmediata', soon: 'Pronto', monitor: 'Monitorear', archive: 'Archivar'
+  immediate: 'Inmediata', soon: 'Pronto', monitor: 'Monitorear', archive: 'Archivar',
+}
+const URGENCY_CLASS: Record<SignalUrgency, string> = {
+  immediate: 'border-red-500/30 bg-red-500/10 text-red-400',
+  soon: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
+  monitor: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
+  archive: 'border-border bg-muted text-muted-foreground/60',
 }
 
 export default function SignalsPage() {
@@ -32,6 +40,7 @@ export default function SignalsPage() {
   if (!hydrated) return <RouteSkeleton cards={4} />
   return <SignalsContent />
 }
+
 function SignalsContent() {
   const { signals, addSignal, resolveSignal, removeSignal } = useSignalStore()
   const { addMemory } = useMemoryStore()
@@ -55,7 +64,7 @@ function SignalsContent() {
       actionRequired: !!action,
       suggestedAction: action || undefined,
       detectedAt: new Date().toISOString(),
-      resolved: false
+      resolved: false,
     }
     addSignal(s)
     addMemory(createSignalAddedMemory(s))
@@ -75,100 +84,135 @@ function SignalsContent() {
 
   const active = allSignals.filter(s => !s.resolved)
   const bySource = (Object.keys(SOURCE_LABEL) as SignalSource[]).map(src => ({
-    src, count: active.filter(s => s.source === src).length
+    src, count: active.filter(s => s.source === src).length,
   })).filter(x => x.count > 0)
+
+  const stats = [
+    { label: 'Activas', value: String(ctx.activeSignals.filter(s => !s.resolved).length) },
+    { label: 'Criticas', value: String(ctx.activeSignals.filter(s => s.urgency === 'immediate').length) },
+    { label: 'Con accion', value: String(active.filter(s => s.actionRequired).length) },
+    { label: 'Resueltas', value: String(allSignals.filter(s => s.resolved).length) },
+  ]
 
   return (
     <AppShell>
-      <SectionHeader title="Senales" subtitle="Patrones, timing y contexto activo" />
+      <div className="mb-8">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+        <h1 className="text-3xl font-semibold tracking-tight">Senales</h1>
+        <p className="text-sm text-muted-foreground mt-1">Patrones, timing y contexto activo</p>
+      </div>
 
-      {/* Summary por fuente */}
       {bySource.length > 0 && (
         <div className="flex gap-2 mb-4 flex-wrap">
           {bySource.map(({ src, count }) => (
-            <button key={src} onClick={() => setFilterSource(filterSource === src ? 'all' : src)}
-              className={`flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded border transition-colors ${filterSource === src ? 'border-[#333] text-[#f5f5f5] bg-[#111]' : 'border-[#1a1a1a] text-[#333] hover:border-[#222]'}`}>
+            <button
+              key={src}
+              onClick={() => setFilterSource(filterSource === src ? 'all' : src)}
+              className={cn(
+                'flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded border transition-colors',
+                filterSource === src
+                  ? 'border-foreground/30 text-foreground bg-muted'
+                  : 'border-border text-muted-foreground hover:border-foreground/20',
+              )}
+            >
               <span>{SOURCE_LABEL[src]}</span>
-              <span className="text-[#444]">({count})</span>
+              <span className="text-muted-foreground/60">({count})</span>
             </button>
           ))}
           {filterSource !== 'all' && (
-            <button onClick={() => setFilterSource('all')} className="text-[10px] font-mono text-[#333] hover:text-[#555] px-2 py-1">x todas</button>
+            <button onClick={() => setFilterSource('all')} className="text-[10px] font-mono text-muted-foreground hover:text-foreground px-2 py-1">
+              × todas
+            </button>
           )}
         </div>
       )}
 
-      {/* Resumen del contexto */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'Activas', value: String(ctx.activeSignals.filter(s => !s.resolved).length) },
-          { label: 'Criticas', value: String(ctx.activeSignals.filter(s => s.urgency === 'immediate').length) },
-          { label: 'Con accion', value: String(active.filter(s => s.actionRequired).length) },
-          { label: 'Resueltas', value: String(allSignals.filter(s => s.resolved).length) },
-        ].map((s) => (
-          <Card key={s.label} className="flex flex-col gap-1">
-            <div className="text-[9px] font-mono text-[#333] uppercase tracking-widest">{s.label}</div>
-            <div className="text-2xl font-mono font-bold text-[#f5f5f5]">{s.value}</div>
+        {stats.map((s) => (
+          <Card key={s.label} className="shadow-none">
+            <CardContent className="p-4">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
+              <div className="text-2xl font-mono font-bold text-foreground">{s.value}</div>
+            </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Registrar senal manual */}
-      <Card className="mb-4">
-        <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Registrar senal</div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
-          <Select value={source} onChange={e => setSource(e.target.value as SignalSource)}>
-            {(Object.keys(SOURCE_LABEL) as SignalSource[]).map(s => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
-          </Select>
-          <Select value={type} onChange={e => setType(e.target.value as SignalType)}>
-            {(Object.keys(TYPE_LABEL) as SignalType[]).map(t => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
-          </Select>
-          <Select value={urgency} onChange={e => setUrgency(e.target.value as SignalUrgency)}>
-            {(Object.keys(URGENCY_LABEL) as SignalUrgency[]).map(u => <option key={u} value={u}>{URGENCY_LABEL[u]}</option>)}
-          </Select>
-          <Input placeholder="Contenido de la senal" value={content} onChange={e => setContent(e.target.value)} className="col-span-2 md:col-span-3"
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) submit() }} />
-          <Input placeholder="Significado (opcional)" value={meaning} onChange={e => setMeaning(e.target.value)} className="col-span-1 md:col-span-2" />
-          <Input placeholder="Accion sugerida (opcional)" value={action} onChange={e => setAction(e.target.value)} />
-        </div>
-        <Button onClick={submit}>+ Registrar senal</Button>
+      <Card className="mb-4 shadow-none">
+        <CardContent className="p-6">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Registrar senal</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
+            <Select value={source} onValueChange={(v) => setSource(v as SignalSource)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(SOURCE_LABEL) as SignalSource[]).map(s => <SelectItem key={s} value={s}>{SOURCE_LABEL[s]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={type} onValueChange={(v) => setType(v as SignalType)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(TYPE_LABEL) as SignalType[]).map(t => <SelectItem key={t} value={t}>{TYPE_LABEL[t]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={urgency} onValueChange={(v) => setUrgency(v as SignalUrgency)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(URGENCY_LABEL) as SignalUrgency[]).map(u => <SelectItem key={u} value={u}>{URGENCY_LABEL[u]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="Contenido de la senal"
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              className="col-span-2 md:col-span-3"
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) submit() }}
+            />
+            <Input placeholder="Significado (opcional)" value={meaning} onChange={e => setMeaning(e.target.value)} className="col-span-1 md:col-span-2" />
+            <Input placeholder="Accion sugerida (opcional)" value={action} onChange={e => setAction(e.target.value)} />
+          </div>
+          <Button onClick={submit} variant="outline" size="sm">+ Registrar senal</Button>
+        </CardContent>
       </Card>
 
-      {/* Toggle resueltas */}
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] font-mono text-[#333] uppercase tracking-widest">
-          {filterSource !== 'all' ? SOURCE_LABEL[filterSource as SignalSource] : 'Todas las senales'} â {visible.length}
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          {filterSource !== 'all' ? SOURCE_LABEL[filterSource as SignalSource] : 'Todas las senales'} &mdash; {visible.length}
         </div>
-        <button onClick={() => setShowResolved(!showResolved)} className="text-[10px] font-mono text-[#333] hover:text-[#555]">
+        <button onClick={() => setShowResolved(!showResolved)} className="text-[10px] font-mono text-muted-foreground hover:text-foreground">
           {showResolved ? 'Ocultar resueltas' : 'Mostrar resueltas'}
         </button>
       </div>
 
-      {/* Lista */}
       {visible.length === 0 ? (
-        <EmptyState message="Sin senales en este filtro." />
+        <div className="text-xs text-muted-foreground/70 py-8 text-center">Sin senales en este filtro.</div>
       ) : (
         <div className="space-y-2">
           {visible.map((s) => (
-            <Card key={s.id} className={`${s.resolved ? 'opacity-40' : ''} border-[#1a1a1a]`}>
-              <div className="flex justify-between items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <Badge label={SOURCE_LABEL[s.source]} variant="muted" />
-                    <Badge label={TYPE_LABEL[s.type]} variant="muted" />
-                    <Badge label={URGENCY_LABEL[s.urgency]} variant={URGENCY_VARIANT[s.urgency]} />
-                    {s.actionRequired && <Badge label="accion requerida" variant="warn" />}
+            <Card key={s.id} className={cn('shadow-none', s.resolved && 'opacity-40')}>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <Badge variant="outline" className="text-[10px] font-normal">{SOURCE_LABEL[s.source]}</Badge>
+                      <Badge variant="outline" className="text-[10px] font-normal">{TYPE_LABEL[s.type]}</Badge>
+                      <Badge variant="outline" className={cn('text-[10px] font-normal', URGENCY_CLASS[s.urgency])}>{URGENCY_LABEL[s.urgency]}</Badge>
+                      {s.actionRequired && <Badge variant="outline" className="text-[10px] font-normal border-amber-500/30 bg-amber-500/10 text-amber-400">accion requerida</Badge>}
+                    </div>
+                    <p className="text-sm text-foreground mb-1">{s.content}</p>
+                    {s.meaning && s.meaning !== s.content && <p className="text-xs text-muted-foreground">{s.meaning}</p>}
+                    {s.suggestedAction && <p className="text-[11px] text-muted-foreground/70 mt-1">accion: {s.suggestedAction}</p>}
+                    <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono">{new Date(s.detectedAt).toLocaleDateString('es')}</p>
                   </div>
-                  <p className="text-xs text-[#f5f5f5] mb-1">{s.content}</p>
-                  {s.meaning && s.meaning !== s.content && <p className="text-[11px] text-[#444]">{s.meaning}</p>}
-                  {s.suggestedAction && <p className="text-[10px] text-[#333] mt-1">accion: {s.suggestedAction}</p>}
-                  <p className="text-[9px] text-[#222] mt-1 font-mono">{new Date(s.detectedAt).toLocaleDateString('es')}</p>
+                  <div className="flex gap-1 flex-shrink-0">
+                    {!s.resolved && (
+                      <Button variant="outline" size="sm" onClick={() => resolveSignal(s.id)} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+                        Resolver
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => removeSignal(s.id)} className="hover:text-red-400">×</Button>
+                  </div>
                 </div>
-                <div className="flex gap-1 flex-shrink-0">
-                  {!s.resolved && <Button variant="ok" onClick={() => resolveSignal(s.id)}>Resolver</Button>}
-                  <Button variant="danger" onClick={() => removeSignal(s.id)}>x</Button>
-                </div>
-              </div>
+              </CardContent>
             </Card>
           ))}
         </div>
