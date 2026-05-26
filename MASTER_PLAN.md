@@ -2,11 +2,11 @@
 
 ## Estado general
 
-Última actualización: `2026-05-25T22:22:22Z`  
+Última actualización: `2026-05-26T14:24:27Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `cc3aaea`
+**Hash del último commit humano:** `3652463`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-██████████████████████████████████████░░ 22/23 issues cerrados (96%)
+████████████████████████████████████████ 23/23 issues cerrados (100%)
 ```
 
-✅ Cerrados: 22 | 🔄 En progreso: 0 | ⬜ Pendientes: 1 | 🚨 Bloqueantes: 0
+✅ Cerrados: 23 | 🔄 En progreso: 0 | ⬜ Pendientes: 0 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -132,7 +132,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 | #22 | [Line endings LF<->CRLF entre Windows local y CI Linux](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/22) | deuda-tecnica | ✅ Cerrado |
 | #23 | [pnpm-workspace.yaml benigno pero no es monorepo activo](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) | deuda-tecnica | ✅ Cerrado |
 | #30 | [Race condition: sync-roadmap workflow falla en closing-en-cascada de issues](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) | deuda-tecnica | ✅ Cerrado |
-| #33 | [UI muestra valores stale al primer mount (Zustand persist hydration delay)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) | deuda-tecnica, fase-2 | ⬜ Abierto |
+| #33 | [UI muestra valores stale al primer mount (Zustand persist hydration delay)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) | deuda-tecnica, fase-2 | ✅ Cerrado |
 | #35 | [Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) | bloqueante, deuda-tecnica | ✅ Cerrado |
 
 ---
@@ -158,7 +158,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 - ✅ [#26](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/26) Snapshot: peaceMode tipado como string generico (perdio type safety)
 - ✅ [#27](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) Snapshot: dedup de duplicados triviales en addSnapshot
 - ✅ [#28](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) Snapshot: documentar scope debug-only del RichContextDebugPanel
-- ⬜ [#33](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) UI muestra valores stale al primer mount (Zustand persist hydration delay)
+- ✅ [#33](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) UI muestra valores stale al primer mount (Zustand persist hydration delay)
 
 ### Memory Longitudinal
 
@@ -225,6 +225,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `3652463` | aaronhuaynate66 | fix(hooks): add useHasHydrated to prevent stale UI on first mount (#37) | 2026-05-26 |
 | `cc3aaea` | aaronhuaynate66 | fix(security): patch Next.js to address CVE-2025-66478 and related (#36) | 2026-05-25 |
 | `6dbd04b` | aaronhuaynate66 | Session 10B: Infrastructure debt cleanup (issues #22, #23) (#34) | 2026-05-25 |
 | `c13e32e` | aaronhuaynate66 | Session 10A: Code debt cleanup (issues #19, #20, #21) (#32) | 2026-05-25 |
@@ -234,7 +235,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `476b76f` | aaronhuaynate66 | Session 6: Context Snapshot History (#7) | 2026-05-25 |
 | `2a5b497` | aaronhuaynate66 | fix(context): relational.activeAlerts as string[] + dashboard clock hydration safety (R5.1F) (#6) | 2026-05-25 |
 | `d01e6a7` | aaronhuaynate66 | fix(context): make RichContextDebugPanel client-only to prevent hydration mismatch (#5) | 2026-05-25 |
-| `5e02f4f` | aaronhuaynate66 | fix(dashboard): use deterministic locale to prevent hydration mismatch (#4) | 2026-05-25 |
 
 ---
 
