@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { Users, UserPlus, AlertCircle, Edit, X } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SectionTitle } from '@/components/ui/section-title'
 import { useRelationshipStore, useMemoryStore } from '@/stores'
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { createPersonAddedMemory } from '@/engines/memory'
@@ -38,6 +40,15 @@ const EMPTY_FORM: PersonForm = {
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000)
 }
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
 
 const ENERGY_CLASS: Record<EnergyImpact, string> = {
   energizing: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
@@ -141,19 +152,27 @@ function RelationshipsContent() {
       <div className="mb-8 flex justify-between items-start">
         <div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
-          <h1 className="text-3xl font-semibold tracking-tight">Relaciones</h1>
-          <p className="text-sm text-muted-foreground mt-1">{people.length} personas &middot; {alerts.length} alertas</p>
+          <div className="flex items-center gap-3 mt-1">
+            <Users size={28} strokeWidth={1.5} className="text-muted-foreground" />
+            <h1 className="text-3xl font-semibold tracking-tight">Relaciones</h1>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">{people.length} personas &middot; {alerts.length} alertas</p>
         </div>
         <Button variant="outline" size="sm" onClick={openAdd} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
-          + Agregar persona
+          <UserPlus size={14} strokeWidth={1.75} />
+          Agregar persona
         </Button>
       </div>
 
       {alerts.length > 0 && (
         <div className="mb-6 space-y-2">
-          <h2 className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Alertas relacionales</h2>
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Alertas relacionales</span>
+            <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60 ml-auto">{alerts.length}</span>
+          </div>
           {alerts.map((alert, idx) => (
-            <Card key={idx} className="shadow-none border-l-2 border-l-red-500">
+            <Card key={idx} className={cn('border-l-2 border-l-red-500', cardClass)}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -172,11 +191,9 @@ function RelationshipsContent() {
       )}
 
       {showForm && (
-        <Card className="mb-6 shadow-none">
+        <Card className={cn('mb-6', cardClass)}>
           <CardContent className="p-6">
-            <h2 className="text-sm font-semibold text-foreground mb-4">
-              {editingId ? 'Editar persona' : 'Nueva persona'}
-            </h2>
+            <SectionTitle icon={editingId ? Edit : UserPlus} label={editingId ? 'Editar persona' : 'Nueva persona'} />
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Nombre *</label>
@@ -257,9 +274,12 @@ function RelationshipsContent() {
 
       {people.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-          <div className="text-xs text-muted-foreground/70">Sin personas registradas. Agrega tu primera persona para mapear tus relaciones.</div>
+          <Users size={28} strokeWidth={1.5} className="text-muted-foreground/40" />
+          <div className="text-sm text-muted-foreground">Sin personas registradas todavia.</div>
+          <p className="text-xs text-muted-foreground/60">Agrega tu primera persona para mapear tus relaciones.</p>
           <Button variant="outline" size="sm" onClick={openAdd} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
-            + Agregar persona
+            <UserPlus size={14} strokeWidth={1.75} />
+            Agregar persona
           </Button>
         </div>
       ) : (
@@ -271,44 +291,53 @@ function RelationshipsContent() {
               : 'Sin registro'
 
             return (
-              <Card key={person.id} className="shadow-none">
+              <Card key={person.id} className={cardClass}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-foreground">{person.name}</span>
-                        {person.alias && <span className="text-xs text-muted-foreground">({person.alias})</span>}
-                        <Badge variant="outline" className="text-[10px] font-normal">{person.relationship}</Badge>
-                        <Badge variant="outline" className="text-[10px] font-normal">{person.category}</Badge>
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-semibold text-muted-foreground">{getInitials(person.name)}</span>
                       </div>
-
-                      <div className="flex items-center gap-4 mt-2 flex-wrap">
-                        <span className="text-xs text-muted-foreground">
-                          Confianza: <span className="text-foreground font-medium font-mono">{person.trustLevel}/10</span>
-                        </span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          Energia:
-                          <Badge variant="outline" className={cn('text-[10px] font-normal', ENERGY_CLASS[person.energyImpact])}>{person.energyImpact}</Badge>
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          Ultimo contacto: <span className="text-foreground font-medium">{lastContactDisplay}</span>
-                        </span>
-                      </div>
-
-                      {rel && rel.status === 'strained' && (
-                        <div className="mt-2">
-                          <Badge variant="outline" className="text-[10px] font-normal border-red-500/30 bg-red-500/10 text-red-400">relacion tensa</Badge>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-foreground">{person.name}</span>
+                          {person.alias && <span className="text-xs text-muted-foreground">({person.alias})</span>}
+                          <Badge variant="outline" className="text-[10px] font-normal">{person.relationship}</Badge>
+                          <Badge variant="outline" className="text-[10px] font-normal">{person.category}</Badge>
                         </div>
-                      )}
 
-                      {person.notes && (
-                        <p className="text-xs text-muted-foreground/70 mt-2 truncate">{person.notes}</p>
-                      )}
+                        <div className="flex items-center gap-4 mt-2 flex-wrap">
+                          <span className="text-xs text-muted-foreground">
+                            Confianza: <span className="text-foreground font-medium font-mono tabular-nums">{person.trustLevel}/10</span>
+                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            Energia:
+                            <Badge variant="outline" className={cn('text-[10px] font-normal', ENERGY_CLASS[person.energyImpact])}>{person.energyImpact}</Badge>
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            Ultimo contacto: <span className="text-foreground font-medium font-mono tabular-nums">{lastContactDisplay}</span>
+                          </span>
+                        </div>
+
+                        {rel && rel.status === 'strained' && (
+                          <div className="mt-2">
+                            <Badge variant="outline" className="text-[10px] font-normal border-red-500/30 bg-red-500/10 text-red-400">relacion tensa</Badge>
+                          </div>
+                        )}
+
+                        {person.notes && (
+                          <p className="text-xs text-muted-foreground/70 mt-2 truncate">{person.notes}</p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(person)}>Editar</Button>
-                      <Button variant="ghost" size="sm" onClick={() => removePerson(person.id)} className="hover:text-red-400">×</Button>
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(person)} aria-label="Editar">
+                        <Edit size={14} strokeWidth={1.75} />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => removePerson(person.id)} className="hover:text-red-400" aria-label="Eliminar">
+                        <X size={14} strokeWidth={1.75} />
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
