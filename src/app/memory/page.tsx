@@ -72,19 +72,19 @@ function MemoryContent() {
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <Archive size={28} strokeWidth={1.5} className="text-muted-foreground" />
-          <h1 className="text-3xl font-semibold tracking-tight">Memoria</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Memoria</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">
           {memoryContext.totalMemories} memoria{memoryContext.totalMemories !== 1 ? 's' : ''} en el sistema
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className="text-xl font-mono font-bold tabular-nums text-foreground">{s.value}</div>
+              <div className="text-lg sm:text-xl font-mono font-bold tabular-nums text-foreground break-all">{s.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -172,7 +172,7 @@ function MemoryContent() {
         <div className="flex flex-col gap-3">
           {memories.map((memory) => (
             <Card key={memory.id} className={cardClass}>
-              <CardContent className="p-4 flex flex-col gap-2">
+              <CardContent className="p-3 sm:p-4 flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground leading-snug">{memory.title}</div>

@@ -111,7 +111,7 @@ function SignalsContent() {
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <Bell size={28} strokeWidth={1.5} className="text-muted-foreground" />
-          <h1 className="text-3xl font-semibold tracking-tight">Senales</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Senales</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">Patrones, timing y contexto activo</p>
       </div>
@@ -143,19 +143,19 @@ function SignalsContent() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className="text-2xl font-mono font-bold tabular-nums text-foreground">{s.value}</div>
+              <div className="text-xl sm:text-2xl font-mono font-bold tabular-nums text-foreground">{s.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
       <Card className={cn('mb-4', cardClass)}>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <SectionTitle icon={Sparkles} label="Registrar senal" />
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
             <Select value={source} onValueChange={(v) => setSource(v as SignalSource)}>
@@ -211,7 +211,7 @@ function SignalsContent() {
             const UrgencyIcon = URGENCY_ICON[s.urgency]
             return (
               <Card key={s.id} className={cn(cardClass, s.resolved && 'opacity-40')}>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">

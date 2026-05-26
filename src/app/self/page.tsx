@@ -92,17 +92,17 @@ function SelfContent() {
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <Brain size={28} strokeWidth={1.5} className="text-muted-foreground" />
-          <h1 className="text-3xl font-semibold tracking-tight">Self</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Self</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">Estado biologico y metricas personales</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className={cn('text-2xl font-mono font-bold tabular-nums', statTextClass(s.tone))}>
+              <div className={cn('text-xl sm:text-2xl font-mono font-bold tabular-nums', statTextClass(s.tone))}>
                 {s.value}<span className="text-sm text-muted-foreground/50">{s.unit}</span>
               </div>
             </CardContent>
@@ -112,7 +112,7 @@ function SelfContent() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card className={cardClass}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Plus} label="Registrar metrica" />
             <div className="space-y-2">
               <Select value={mCat} onValueChange={(v) => setMCat(v as MetricCategory)}>
@@ -129,7 +129,7 @@ function SelfContent() {
         </Card>
 
         <Card className={cardClass}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Moon} label="Registrar sueno" />
             <div className="space-y-2">
               <Input type="number" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono tabular-nums" />
@@ -145,7 +145,7 @@ function SelfContent() {
       </div>
 
       <Card className={cn('mb-4', cardClass)}>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <SectionTitle icon={Activity} label="Ultimas metricas" count={recentMetrics.length} />
           {recentMetrics.length === 0 ? (
             <div className="text-center py-8">
@@ -174,7 +174,7 @@ function SelfContent() {
 
       {lastSleep && (
         <Card className={cn('mb-4', cardClass)}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Clock} label="Ultima noche" />
             <div className="flex gap-6 flex-wrap">
               <div><div className="text-[10px] text-muted-foreground/60">Fecha</div><div className="text-sm font-mono tabular-nums">{lastSleep.date}</div></div>
@@ -187,18 +187,18 @@ function SelfContent() {
       )}
 
       <Card className={cardClass}>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <SectionTitle icon={Heart} label="Salud basica" count={healthMetrics.length} />
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             <Select value={hType} onValueChange={(v) => setHType(v as HealthMetricType)}>
-              <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="flex-1 min-w-[120px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {HEALTH_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
             </Select>
             <Input type="number" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24 font-mono tabular-nums" />
-            <Input type="text" placeholder="Unidad" value={hUnit} onChange={e => setHUnit(e.target.value)} className="w-16" />
-            <Button onClick={addHealth} variant="outline" size="sm">+ Agregar</Button>
+            <Input type="text" placeholder="Unidad" value={hUnit} onChange={e => setHUnit(e.target.value)} className="w-20" />
+            <Button onClick={addHealth} variant="outline" size="sm" className="w-full sm:w-auto">+ Agregar</Button>
           </div>
           {healthMetrics.length === 0 ? (
             <div className="text-center py-6">

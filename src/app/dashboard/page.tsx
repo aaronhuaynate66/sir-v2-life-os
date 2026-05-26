@@ -137,25 +137,25 @@ function DashboardContent() {
         </div>
       )}
 
-      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex justify-between items-start mb-8">
-        <div>
+      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex justify-between items-start gap-4 mb-6 sm:mb-8">
+        <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
-          <h1 className="text-3xl font-semibold tracking-tight">Mission Control</h1>
-          <div className="text-sm text-muted-foreground mt-1 capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</div>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Mission Control</h1>
+          <div className="text-xs sm:text-sm text-muted-foreground mt-1 capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</div>
         </div>
-        <div className="text-right flex flex-col items-end gap-2">
-          <div className="text-2xl font-mono tabular-nums text-muted-foreground/70">{now ? now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+        <div className="text-right flex flex-col items-end gap-2 flex-shrink-0">
+          <div className="text-xl sm:text-2xl font-mono tabular-nums text-muted-foreground/70">{now ? now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</div>
           <Badge variant="outline" className={cn('font-mono text-[10px] tracking-widest', MODE_CLASSES[mode])}>{MODE_LABEL[mode]}</Badge>
         </div>
       </motion.div>
 
       <Card className={cn('mb-6', cardClass)}>
-        <CardContent className="flex justify-between items-center p-6">
+        <CardContent className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 sm:p-6">
           <div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Mision</div>
             <div className="text-foreground">Conseguir Paz.</div>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Ventana actual</div>
             <div className={cn('text-xs', timing.type === 'peak' ? 'text-emerald-400' : timing.type === 'avoid' ? 'text-amber-400' : 'text-muted-foreground')}>{timing.description}</div>
           </div>
@@ -165,11 +165,11 @@ function DashboardContent() {
       {/* HERO: Peace Score + Recomendacion */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         <Card className={cn('lg:col-span-5', cardClass)}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Activity} label="Peace Score" />
             <div className="flex items-baseline gap-2 mb-3">
-              <span className={cn('text-6xl md:text-7xl font-mono font-semibold tabular-nums', peaceColor)}>{peace.total.toFixed(1)}</span>
-              <span className="text-2xl text-muted-foreground/50 font-mono">/10</span>
+              <span className={cn('text-5xl sm:text-6xl lg:text-7xl font-mono font-semibold tabular-nums', peaceColor)}>{peace.total.toFixed(1)}</span>
+              <span className="text-xl sm:text-2xl text-muted-foreground/50 font-mono">/10</span>
             </div>
             <div className="flex items-center gap-2">
               <TrendIcon size={14} strokeWidth={1.75} className={trendColor} />
@@ -195,8 +195,8 @@ function DashboardContent() {
 
         {topRec ? (
           <Card className={cn('lg:col-span-7', cardClass)}>
-            <CardContent className="p-6 h-full flex flex-col">
-              <div className="flex items-center justify-between mb-4">
+            <CardContent className="p-4 sm:p-6 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Target size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
                   <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Foco del dia</span>
@@ -206,8 +206,8 @@ function DashboardContent() {
 
               <div className="flex gap-3 flex-1">
                 <div className={cn('w-0.5 self-stretch rounded-full flex-shrink-0', topRec.priority === 'critical' ? 'bg-red-500' : topRec.priority === 'high' ? 'bg-primary' : 'bg-blue-500')} />
-                <div className="flex-1 flex flex-col">
-                  <h2 className="text-xl font-semibold tracking-tight mb-2">{topRec.title}</h2>
+                <div className="flex-1 flex flex-col min-w-0">
+                  <h2 className="text-lg sm:text-xl font-semibold tracking-tight mb-2">{topRec.title}</h2>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-3">{topRec.description}</p>
                   <div className="text-[11px] text-muted-foreground/70 font-mono leading-relaxed mb-4">{topRec.reasoning}</div>
 
@@ -237,7 +237,7 @@ function DashboardContent() {
           </Card>
         ) : (
           <Card className={cn('lg:col-span-7', cardClass)}>
-            <CardContent className="p-6 h-full flex flex-col items-center justify-center text-center">
+            <CardContent className="p-4 sm:p-6 h-full flex flex-col items-center justify-center text-center min-h-[200px]">
               <Target size={24} strokeWidth={1.25} className="text-muted-foreground/40 mb-2" />
               <div className="text-sm text-muted-foreground">Sin recomendaciones activas.</div>
               <div className="text-xs text-muted-foreground/60 mt-1">El sistema esta calibrando senales.</div>
@@ -247,9 +247,9 @@ function DashboardContent() {
       </motion.div>
 
       {/* Métricas secundarias: Bio, Finanzas, Objetivos */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <Card className={cardClass}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Brain} label="Estado Biologico" />
             <Row label="Energia" value={`${bio.energyLevel.toFixed(1)}/10`} status={bio.energyLevel >= 6 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'} />
             <Row label="Sueno promedio" value={`${sleep.averageDuration.toFixed(1)}h`} status={sleep.averageDuration >= 7 ? 'ok' : sleep.averageDuration >= 5 ? 'warn' : 'bad'} />
@@ -259,7 +259,7 @@ function DashboardContent() {
         </Card>
 
         <Card className={cardClass}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Wallet} label="Finanzas" />
             <Row label="Estabilidad" value={`${fin.stability.toFixed(1)}/10`} status={fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad'} />
             <Row label="Balance mensual" value={`$${fin.monthlyBalance.toLocaleString('en-US')}`} status={fin.monthlyBalance >= 0 ? 'ok' : 'bad'} />
@@ -276,8 +276,8 @@ function DashboardContent() {
           </CardContent>
         </Card>
 
-        <Card className={cardClass}>
-          <CardContent className="p-6">
+        <Card className={cn('sm:col-span-2 lg:col-span-1', cardClass)}>
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Target} label="Objetivos" count={`${goalsDash.criticalGoals.length} criticos`} />
             {goalsDash.criticalGoals.length === 0 ? (
               <div className="text-xs text-muted-foreground/70 py-2">Sin objetivos criticos.</div>
@@ -303,7 +303,7 @@ function DashboardContent() {
       {/* Listas: alertas relacionales + señales activas */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <Card className={cardClass}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Users} label="Alertas Relacionales" count={relAlerts.length} />
             {relAlerts.length === 0 ? (
               <div className="text-xs text-muted-foreground/70 py-2">Sin alertas relacionales.</div>
@@ -325,7 +325,7 @@ function DashboardContent() {
         </Card>
 
         <Card className={cardClass}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Bell} label="Senales Activas" count={activeSignals.length} />
             {activeSignals.length === 0 ? (
               <div className="text-xs text-muted-foreground/70 py-2">Sin senales activas.</div>
@@ -356,7 +356,7 @@ function DashboardContent() {
       {/* Forms rápidos: 2x2 en lg, single col en mobile */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
         <Card className={cardClass}>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <SectionTitle icon={Moon} label="Registrar sueno" />
             <div className="flex gap-2">
               <Input type="number" min="0" max="24" step="0.5" placeholder="Horas (ej: 7.5)" value={sleepHours} onChange={e => setSleepHours(e.target.value)} className="flex-1 font-mono tabular-nums" />
@@ -366,7 +366,7 @@ function DashboardContent() {
         </Card>
 
         <Card className={cardClass}>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <SectionTitle icon={Zap} label="Energia / Estres (1-10)" />
             <div className="flex gap-2">
               <Input type="number" min="1" max="10" placeholder="Energia" value={energyVal} onChange={e => setEnergyVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
@@ -377,9 +377,9 @@ function DashboardContent() {
         </Card>
 
         <Card className={cardClass}>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <SectionTitle icon={ArrowRightLeft} label="Movimiento financiero" />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Select value={finType} onValueChange={(v) => setFinType(v as 'income' | 'expense')}>
                 <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -388,14 +388,14 @@ function DashboardContent() {
                 </SelectContent>
               </Select>
               <Input type="number" min="0" placeholder="USD" value={finAmount} onChange={e => setFinAmount(e.target.value)} className="w-24 font-mono tabular-nums" />
-              <Input type="text" placeholder="Descripcion" value={finDesc} onChange={e => setFinDesc(e.target.value)} className="flex-1" />
-              <Button size="sm" variant="outline" onClick={handleAddFinance}>+ Agregar</Button>
+              <Input type="text" placeholder="Descripcion" value={finDesc} onChange={e => setFinDesc(e.target.value)} className="flex-1 min-w-[140px]" />
+              <Button size="sm" variant="outline" onClick={handleAddFinance} className="w-full sm:w-auto">+ Agregar</Button>
             </div>
           </CardContent>
         </Card>
 
         <Card className={cardClass}>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <SectionTitle icon={Sparkles} label="Senal rapida" />
             <div className="flex gap-2">
               <Input
