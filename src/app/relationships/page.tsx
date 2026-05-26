@@ -2,23 +2,18 @@
 
 import { useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
-import {
-  Card,
-  Badge,
-  Button,
-  Input,
-  Select,
-  SectionHeader,
-  EmptyState,
-} from '@/components/ui'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRelationshipStore, useMemoryStore } from '@/stores'
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { createPersonAddedMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { cn } from '@/lib/utils'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PersonForm {
   name: string
@@ -35,40 +30,26 @@ interface PersonForm {
 }
 
 const EMPTY_FORM: PersonForm = {
-  name: '',
-  alias: '',
-  relationship: 'friend',
-  category: 'network',
-  importanceScore: 5,
-  energyImpact: 'neutral',
-  trustLevel: 5,
-  lastContact: '',
-  contactFrequency: '',
-  location: '',
-  notes: '',
+  name: '', alias: '', relationship: 'friend', category: 'network',
+  importanceScore: 5, energyImpact: 'neutral', trustLevel: 5,
+  lastContact: '', contactFrequency: '', location: '', notes: '',
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000)
 }
 
-function energyColor(impact: EnergyImpact): 'ok' | 'bad' | 'default' {
-  if (impact === 'energizing') return 'ok'
-  if (impact === 'draining') return 'bad'
-  return 'default'
+const ENERGY_CLASS: Record<EnergyImpact, string> = {
+  energizing: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
+  neutral: 'border-border bg-muted text-muted-foreground',
+  draining: 'border-red-500/30 bg-red-500/10 text-red-400',
 }
 
-function urgencyColor(
-  urgency: 'immediate' | 'soon' | 'monitor',
-): 'bad' | 'warn' | 'info' {
-  if (urgency === 'immediate') return 'bad'
-  if (urgency === 'soon') return 'warn'
-  return 'info'
+const URGENCY_CLASS: Record<'immediate' | 'soon' | 'monitor', string> = {
+  immediate: 'border-red-500/30 bg-red-500/10 text-red-400',
+  soon: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
+  monitor: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RelationshipsPage() {
   const hydrated = useHasHydrated()
@@ -77,8 +58,7 @@ export default function RelationshipsPage() {
 }
 
 function RelationshipsContent() {
-  const { people, relationships, addPerson, updatePerson, removePerson } =
-    useRelationshipStore()
+  const { people, relationships, addPerson, updatePerson, removePerson } = useRelationshipStore()
   const { addMemory } = useMemoryStore()
 
   const [showForm, setShowForm] = useState(false)
@@ -88,9 +68,7 @@ function RelationshipsContent() {
   const alerts = detectRelationshipAlerts(people, relationships)
 
   function openAdd() {
-    setEditingId(null)
-    setForm(EMPTY_FORM)
-    setShowForm(true)
+    setEditingId(null); setForm(EMPTY_FORM); setShowForm(true)
   }
 
   function openEdit(person: Person) {
@@ -112,9 +90,7 @@ function RelationshipsContent() {
   }
 
   function handleCancel() {
-    setShowForm(false)
-    setEditingId(null)
-    setForm(EMPTY_FORM)
+    setShowForm(false); setEditingId(null); setForm(EMPTY_FORM)
   }
 
   function handleSubmit() {
@@ -162,248 +138,180 @@ function RelationshipsContent() {
 
   return (
     <AppShell>
-      <SectionHeader
-        title="Relaciones"
-        subtitle={`${people.length} personas · ${alerts.length} alertas`}
-        action={
-          <Button variant="ok" onClick={openAdd}>
-            + Agregar persona
-          </Button>
-        }
-      />
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+          <h1 className="text-3xl font-semibold tracking-tight">Relaciones</h1>
+          <p className="text-sm text-muted-foreground mt-1">{people.length} personas &middot; {alerts.length} alertas</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={openAdd} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+          + Agregar persona
+        </Button>
+      </div>
 
       {alerts.length > 0 && (
         <div className="mb-6 space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-[#888] mb-2">
-            Alertas relacionales
-          </h2>
+          <h2 className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Alertas relacionales</h2>
           {alerts.map((alert, idx) => (
-            <Card key={idx} className="border-l-2 border-l-[#ef4444]">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium text-white">{alert.personName}</p>
-                  <p className="text-xs text-[#888] mt-0.5">{alert.message}</p>
-                  {alert.suggestedAction && (
-                    <p className="text-xs text-[#3b82f6] mt-1">
-                      {`→ ${alert.suggestedAction}`}
-                    </p>
-                  )}
+            <Card key={idx} className="shadow-none border-l-2 border-l-red-500">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{alert.personName}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{alert.message}</p>
+                    {alert.suggestedAction && (
+                      <p className="text-xs text-blue-400 mt-1">{`→ ${alert.suggestedAction}`}</p>
+                    )}
+                  </div>
+                  <Badge variant="outline" className={cn('text-[10px] font-normal', URGENCY_CLASS[alert.urgency])}>{alert.urgency}</Badge>
                 </div>
-                <Badge variant={urgencyColor(alert.urgency)} label={alert.urgency} />
-              </div>
+              </CardContent>
             </Card>
           ))}
         </div>
       )}
 
       {showForm && (
-        <Card className="mb-6">
-          <h2 className="text-sm font-semibold text-white mb-4">
-            {editingId ? 'Editar persona' : 'Nueva persona'}
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-[#888] mb-1">Nombre *</label>
-              <Input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Nombre completo"
-              />
+        <Card className="mb-6 shadow-none">
+          <CardContent className="p-6">
+            <h2 className="text-sm font-semibold text-foreground mb-4">
+              {editingId ? 'Editar persona' : 'Nueva persona'}
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Nombre *</label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre completo" />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Alias</label>
+                <Input value={form.alias} onChange={(e) => setForm({ ...form, alias: e.target.value })} placeholder="Apodo o alias" />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Tipo de relacion</label>
+                <Select value={form.relationship} onValueChange={(v) => setForm({ ...form, relationship: v as RelationshipType })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="family">Familia</SelectItem>
+                    <SelectItem value="friend">Amigo/a</SelectItem>
+                    <SelectItem value="romantic">Pareja</SelectItem>
+                    <SelectItem value="professional">Profesional</SelectItem>
+                    <SelectItem value="mentor">Mentor</SelectItem>
+                    <SelectItem value="mentee">Pupilo</SelectItem>
+                    <SelectItem value="acquaintance">Conocido/a</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Categoria</label>
+                <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as PersonCategory })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inner_circle">Circulo intimo</SelectItem>
+                    <SelectItem value="close">Cercano/a</SelectItem>
+                    <SelectItem value="network">Red</SelectItem>
+                    <SelectItem value="peripheral">Periferico/a</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Impacto energetico</label>
+                <Select value={form.energyImpact} onValueChange={(v) => setForm({ ...form, energyImpact: v as EnergyImpact })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="energizing">Energizante</SelectItem>
+                    <SelectItem value="neutral">Neutral</SelectItem>
+                    <SelectItem value="draining">Drenante</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Ultimo contacto</label>
+                <Input type="date" value={form.lastContact} onChange={(e) => setForm({ ...form, lastContact: e.target.value })} className="font-mono" />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Confianza: <span className="font-mono text-foreground">{form.trustLevel}/10</span></label>
+                <Input type="range" min={1} max={10} value={form.trustLevel} onChange={(e) => setForm({ ...form, trustLevel: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Importancia: <span className="font-mono text-foreground">{form.importanceScore}/10</span></label>
+                <Input type="range" min={1} max={10} value={form.importanceScore} onChange={(e) => setForm({ ...form, importanceScore: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Frecuencia de contacto</label>
+                <Input value={form.contactFrequency} onChange={(e) => setForm({ ...form, contactFrequency: e.target.value })} placeholder="Ej: semanal, mensual" />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Ubicacion</label>
+                <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Ciudad o pais" />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">Alias</label>
-              <Input
-                value={form.alias}
-                onChange={(e) => setForm({ ...form, alias: e.target.value })}
-                placeholder="Apodo o alias"
-              />
+            <div className="mt-4 flex gap-2 justify-end">
+              <Button variant="ghost" size="sm" onClick={handleCancel}>Cancelar</Button>
+              <Button variant="outline" size="sm" onClick={handleSubmit} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+                {editingId ? 'Guardar cambios' : 'Agregar'}
+              </Button>
             </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">Tipo de relación</label>
-              <Select
-                value={form.relationship}
-                onChange={(e) =>
-                  setForm({ ...form, relationship: e.target.value as RelationshipType })
-                }
-              >
-                <option value="family">Familia</option>
-                <option value="friend">Amigo/a</option>
-                <option value="romantic">Pareja</option>
-                <option value="professional">Profesional</option>
-                <option value="mentor">Mentor</option>
-                <option value="mentee">Pupilo</option>
-                <option value="acquaintance">Conocido/a</option>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">Categoría</label>
-              <Select
-                value={form.category}
-                onChange={(e) =>
-                  setForm({ ...form, category: e.target.value as PersonCategory })
-                }
-              >
-                <option value="inner_circle">Círculo íntimo</option>
-                <option value="close">Cercano/a</option>
-                <option value="network">Red</option>
-                <option value="peripheral">Periférico/a</option>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">Impacto energético</label>
-              <Select
-                value={form.energyImpact}
-                onChange={(e) =>
-                  setForm({ ...form, energyImpact: e.target.value as EnergyImpact })
-                }
-              >
-                <option value="energizing">Energizante</option>
-                <option value="neutral">Neutral</option>
-                <option value="draining">Drenante</option>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">Último contacto</label>
-              <Input
-                type="date"
-                value={form.lastContact}
-                onChange={(e) => setForm({ ...form, lastContact: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">
-                Confianza: {form.trustLevel}/10
-              </label>
-              <Input
-                type="range"
-                min={1}
-                max={10}
-                value={form.trustLevel}
-                onChange={(e) =>
-                  setForm({ ...form, trustLevel: Number(e.target.value) })
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">
-                Importancia: {form.importanceScore}/10
-              </label>
-              <Input
-                type="range"
-                min={1}
-                max={10}
-                value={form.importanceScore}
-                onChange={(e) =>
-                  setForm({ ...form, importanceScore: Number(e.target.value) })
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">Frecuencia de contacto</label>
-              <Input
-                value={form.contactFrequency}
-                onChange={(e) => setForm({ ...form, contactFrequency: e.target.value })}
-                placeholder="Ej: semanal, mensual"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#888] mb-1">Ubicación</label>
-              <Input
-                value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-                placeholder="Ciudad o país"
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex gap-2 justify-end">
-            <Button variant="ghost" onClick={handleCancel}>
-              Cancelar
-            </Button>
-            <Button variant="ok" onClick={handleSubmit}>
-              {editingId ? 'Guardar cambios' : 'Agregar'}
-            </Button>
-          </div>
+          </CardContent>
         </Card>
       )}
 
       {people.length === 0 ? (
-        <EmptyState
-          message="Sin personas registradas. Agrega tu primera persona para mapear tus relaciones."
-          action={
-            <Button variant="ok" onClick={openAdd}>
-              + Agregar persona
-            </Button>
-          }
-        />
+        <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
+          <div className="text-xs text-muted-foreground/70">Sin personas registradas. Agrega tu primera persona para mapear tus relaciones.</div>
+          <Button variant="outline" size="sm" onClick={openAdd} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+            + Agregar persona
+          </Button>
+        </div>
       ) : (
         <div className="space-y-3">
           {people.map((person) => {
             const rel = relationships.find((r) => r.personId === person.id)
             const lastContactDisplay = person.lastContact
-              ? `Hace ${daysSince(person.lastContact)} días`
+              ? `Hace ${daysSince(person.lastContact)} dias`
               : 'Sin registro'
 
             return (
-              <Card key={person.id}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-white">{person.name}</span>
-                      {person.alias && (
-                        <span className="text-xs text-[#888]">({person.alias})</span>
-                      )}
-                      <Badge variant="default" label={person.relationship} />
-                      <Badge variant="muted" label={person.category} />
-                    </div>
-
-                    <div className="flex items-center gap-4 mt-2 flex-wrap">
-                      <span className="text-xs text-[#888]">
-                        Confianza:{' '}
-                        <span className="text-white font-medium">
-                          {person.trustLevel}/10
-                        </span>
-                      </span>
-                      <span className="text-xs text-[#888] flex items-center gap-1">
-                        Energía:{' '}
-                        <Badge
-                          variant={energyColor(person.energyImpact)}
-                          label={person.energyImpact}
-                        />
-                      </span>
-                      <span className="text-xs text-[#888]">
-                        Último contacto:{' '}
-                        <span className="text-white font-medium">
-                          {lastContactDisplay}
-                        </span>
-                      </span>
-                    </div>
-
-                    {rel && rel.status === 'strained' && (
-                      <div className="mt-1">
-                        <Badge variant="bad" label="relación tensa" />
+              <Card key={person.id} className="shadow-none">
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-foreground">{person.name}</span>
+                        {person.alias && <span className="text-xs text-muted-foreground">({person.alias})</span>}
+                        <Badge variant="outline" className="text-[10px] font-normal">{person.relationship}</Badge>
+                        <Badge variant="outline" className="text-[10px] font-normal">{person.category}</Badge>
                       </div>
-                    )}
 
-                    {person.notes && (
-                      <p className="text-xs text-[#666] mt-2 truncate">{person.notes}</p>
-                    )}
-                  </div>
+                      <div className="flex items-center gap-4 mt-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground">
+                          Confianza: <span className="text-foreground font-medium font-mono">{person.trustLevel}/10</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          Energia:
+                          <Badge variant="outline" className={cn('text-[10px] font-normal', ENERGY_CLASS[person.energyImpact])}>{person.energyImpact}</Badge>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          Ultimo contacto: <span className="text-foreground font-medium">{lastContactDisplay}</span>
+                        </span>
+                      </div>
 
-                  <div className="flex gap-2 shrink-0">
-                    <Button
-                      variant="ghost"
-                      onClick={() => openEdit(person)}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => removePerson(person.id)}
-                    >
-                      ✕
-                    </Button>
+                      {rel && rel.status === 'strained' && (
+                        <div className="mt-2">
+                          <Badge variant="outline" className="text-[10px] font-normal border-red-500/30 bg-red-500/10 text-red-400">relacion tensa</Badge>
+                        </div>
+                      )}
+
+                      {person.notes && (
+                        <p className="text-xs text-muted-foreground/70 mt-2 truncate">{person.notes}</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(person)}>Editar</Button>
+                      <Button variant="ghost" size="sm" onClick={() => removePerson(person.id)} className="hover:text-red-400">×</Button>
+                    </div>
                   </div>
-                </div>
+                </CardContent>
               </Card>
             )
           })}
