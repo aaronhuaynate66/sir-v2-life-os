@@ -1,50 +1,63 @@
 'use client'
-// SIR V2 — Navigation Component
-// Sidebar sobria y dark. Mission Control.
+// SIR V2 — Navigation
+// Sidebar moderno con iconos lucide y active state en acento coral.
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { LayoutDashboard, Brain, Users, Target, DollarSign, Bell, Archive } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Mission Control', short: 'MC' },
-  { href: '/self', label: 'Self', short: 'SE' },
-  { href: '/relationships', label: 'Relaciones', short: 'RE' },
-  { href: '/goals', label: 'Objetivos', short: 'GO' },
-  { href: '/finance', label: 'Finanzas', short: 'FI' },
-  { href: '/signals', label: 'Senales', short: 'SG' },
-  { href: '/memory', label: 'Memoria', short: 'ME' },
+interface NavItem {
+  href: string
+  label: string
+  Icon: LucideIcon
+}
+
+const NAV_ITEMS: readonly NavItem[] = [
+  { href: '/dashboard', label: 'Mission Control', Icon: LayoutDashboard },
+  { href: '/self', label: 'Self', Icon: Brain },
+  { href: '/relationships', label: 'Relaciones', Icon: Users },
+  { href: '/goals', label: 'Objetivos', Icon: Target },
+  { href: '/finance', label: 'Finanzas', Icon: DollarSign },
+  { href: '/signals', label: 'Senales', Icon: Bell },
+  { href: '/memory', label: 'Memoria', Icon: Archive },
 ] as const
 
 export function Nav() {
   const pathname = usePathname()
 
   return (
-    <nav className="w-48 min-h-screen bg-[#0a0a0a] border-r border-[#111] flex flex-col flex-shrink-0">
-      <div className="px-4 py-5 border-b border-[#111]">
-        <div className="text-[9px] font-mono text-[#222] uppercase tracking-widest mb-0.5">SIR V2</div>
-        <div className="text-xs text-[#333] font-mono">Life OS</div>
+    <nav className="w-60 min-h-screen bg-background border-r border-border flex flex-col flex-shrink-0">
+      <div className="px-5 py-5 border-b border-border">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">SIR V2</div>
+        <div className="text-xs text-muted-foreground font-sans mt-0.5">Life OS</div>
       </div>
-      <div className="flex-1 py-3">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+
+      <div className="flex-1 py-3 px-2 flex flex-col gap-0.5">
+        {NAV_ITEMS.map(({ href, label, Icon }) => {
+          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
           return (
             <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-2.5 px-4 py-2.5 text-[11px] font-mono transition-colors ${
+              key={href}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                'border-l-2',
                 active
-                  ? 'text-[#f5f5f5] bg-[#111]'
-                  : 'text-[#333] hover:text-[#666] hover:bg-[#0d0d0d]'
-              }`}
+                  ? 'bg-accent/15 text-foreground border-l-primary'
+                  : 'text-muted-foreground border-l-transparent hover:text-foreground hover:bg-accent/10',
+              )}
             >
-              <span className={`text-[9px] w-5 text-center ${active ? 'text-[#444]' : 'text-[#1e1e1e]'}`}>{item.short}</span>
-              <span>{item.label}</span>
-              {active && <span className="ml-auto w-0.5 h-3 bg-[#333] rounded-full" />}
+              <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+              <span>{label}</span>
             </Link>
           )
         })}
       </div>
-      <div className="px-4 py-4 border-t border-[#111]">
-        <div className="text-[9px] font-mono text-[#1e1e1e]">datos a paz</div>
+
+      <div className="px-5 py-4 border-t border-border">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-mono">datos &rarr; paz</div>
       </div>
     </nav>
   )
