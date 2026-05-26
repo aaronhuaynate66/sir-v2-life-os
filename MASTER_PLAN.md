@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `e5133bb`
+**Hash del último commit humano:** `50fa6db`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -225,6 +225,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `50fa6db` | aaronhuaynate66 | Session 20a: Supabase setup + initial schema (#46) | 2026-05-26 |
 | `e5133bb` | aaronhuaynate66 | Session 19: Mobile responsiveness (critical fix) (#45) | 2026-05-26 |
 | `6df33ac` | aaronhuaynate66 | Session 18: Propagate visual language to 6 domain routes (#44) | 2026-05-26 |
 | `aa705ac` | aaronhuaynate66 | feat(dashboard): re-imagine with visual hierarchy and micro-interactions (#43) | 2026-05-26 |
@@ -234,7 +235,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `37a24e6` | aaronhuaynate66 | Session 13: Design System base (shadcn/ui + Geist) (#39) | 2026-05-26 |
 | `6f6be5a` | aaronhuaynate66 | Session 12: Extend hydration readiness to all routes (#38) | 2026-05-26 |
 | `3652463` | aaronhuaynate66 | fix(hooks): add useHasHydrated to prevent stale UI on first mount (#37) | 2026-05-26 |
-| `cc3aaea` | aaronhuaynate66 | fix(security): patch Next.js to address CVE-2025-66478 and related (#36) | 2026-05-25 |
 
 ---
 
