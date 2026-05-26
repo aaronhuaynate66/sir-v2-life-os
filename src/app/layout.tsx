@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { GeistSans } from 'geist/font/sans'
+import { GeistMono } from 'geist/font/mono'
 import './globals.css'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'SIR V2 — Life Operating System',
@@ -12,8 +11,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className="dark">
-      <body className={inter.className + ' bg-[#0a0a0a] text-[#f5f5f5] antialiased'}>
+    <html lang="es" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className="font-sans bg-[#0a0a0a] text-[#f5f5f5] antialiased">
         {children}
       </body>
     </html>
