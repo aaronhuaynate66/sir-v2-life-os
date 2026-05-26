@@ -1,43 +1,208 @@
 'use client'
 import { useMemo, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
-import { Card, Badge, Button, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useMemoryStore } from '@/stores'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
 import { createSelfMetricMemory, createSleepMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
-const METRIC_CATS: MetricCategory[] = ['energy','mood','stress','focus','motivation','confidence']
-const HEALTH_TYPES: HealthMetricType[] = ['weight','heart_rate','steps','calories','hydration','blood_pressure','custom']
-const CAT_LABEL: Record<MetricCategory,string> = {energy:'Energia',mood:'Animo',stress:'Estres',focus:'Enfoque',motivation:'Motivacion',confidence:'Confianza'}
+
+const METRIC_CATS: MetricCategory[] = ['energy', 'mood', 'stress', 'focus', 'motivation', 'confidence']
+const HEALTH_TYPES: HealthMetricType[] = ['weight', 'heart_rate', 'steps', 'calories', 'hydration', 'blood_pressure', 'custom']
+const CAT_LABEL: Record<MetricCategory, string> = {
+  energy: 'Energia', mood: 'Animo', stress: 'Estres',
+  focus: 'Enfoque', motivation: 'Motivacion', confidence: 'Confianza',
+}
+
+type Tone = 'ok' | 'warn' | 'bad'
+function statTextClass(t: Tone): string {
+  return t === 'ok' ? 'text-emerald-400' : t === 'warn' ? 'text-amber-400' : 'text-red-400'
+}
+
 export default function SelfPage() {
   const hydrated = useHasHydrated()
   if (!hydrated) return <RouteSkeleton cards={4} />
   return <SelfContent />
 }
+
 function SelfContent() {
-  const {selfMetrics,sleepRecords,healthMetrics,addSelfMetric,addSleepRecord,addHealthMetric}=useSelfStore()
+  const { selfMetrics, sleepRecords, healthMetrics, addSelfMetric, addSleepRecord, addHealthMetric } = useSelfStore()
   const { addMemory } = useMemoryStore()
-  const [mCat,setMCat]=useState<MetricCategory>('energy')
-  const [mVal,setMVal]=useState('')
-  const [mNote,setMNote]=useState('')
-  const [sHours,setSHours]=useState('')
-  const [sQual,setSQual]=useState('7')
-  const [sBed,setSBed]=useState('23:00')
-  const [sWake,setSWake]=useState('07:00')
-  const [hType,setHType]=useState<HealthMetricType>('weight')
-  const [hVal,setHVal]=useState('')
-  const [hUnit,setHUnit]=useState('kg')
-  const bio=useMemo(()=>analyzeBiologicalState(sleepRecords,selfMetrics),[sleepRecords,selfMetrics])
-  const sleepTrend=useMemo(()=>analyzeSleepTrend(sleepRecords.slice(-7)),[sleepRecords])
-  const recentMetrics=[...selfMetrics].sort((a,b)=>b.timestamp.localeCompare(a.timestamp)).slice(0,12)
-  const lastSleep=[...sleepRecords].sort((a,b)=>b.date.localeCompare(a.date))[0]
-  function addMetric(){const v=parseFloat(mVal);if(isNaN(v)||v<1||v>10)return;const metric={id:'m_'+Date.now(),category:mCat,value:v,timestamp:new Date().toISOString(),note:mNote||undefined};addSelfMetric(metric);addMemory(createSelfMetricMemory(metric));setMVal('');setMNote('')}
-  function addSleep(){const h=parseFloat(sHours);if(isNaN(h)||h<0||h>24)return;const sleepRecord={id:'sl_'+Date.now(),date:new Date().toISOString().split('T')[0],bedtime:sBed,wakeTime:sWake,duration:h,quality:parseInt(sQual)};addSleepRecord(sleepRecord);addMemory(createSleepMemory(sleepRecord));setSHours('')}
-  function addHealth(){const v=parseFloat(hVal);if(isNaN(v))return;addHealthMetric({id:'h_'+Date.now(),type:hType,value:v,unit:hUnit,timestamp:new Date().toISOString()});setHVal('')}
-  const eC=bio.energyLevel>=7?'ok':bio.energyLevel>=4?'warn':'bad'
-  const sC=sleepTrend.averageDuration>=7?'ok':sleepTrend.averageDuration>=5?'warn':'bad'
-  return(<AppShell><SectionHeader title="Self" subtitle="Estado biologico y metricas personales" /><div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">{[{label:'Energia',value:bio.energyLevel.toFixed(1),unit:'/10',variant:eC},{label:'Sueno prom.',value:sleepTrend.averageDuration.toFixed(1),unit:'h',variant:sC},{label:'Calidad sueno',value:sleepTrend.averageQuality.toFixed(1),unit:'/10',variant:sleepTrend.averageQuality>=6?'ok':'warn'},{label:'Deuda sueno',value:bio.sleepDebt.toFixed(1),unit:'h',variant:bio.sleepDebt<2?'ok':bio.sleepDebt<5?'warn':'bad'}].map((s)=>(<Card key={s.label} className="flex flex-col gap-1"><div className="text-[9px] font-mono text-[#333] uppercase tracking-widest">{s.label}</div><div className={'text-2xl font-mono font-bold '+(s.variant==='ok'?'text-[#22c55e]':s.variant==='warn'?'text-[#f59e0b]':'text-[#ef4444]')}>{s.value}<span className="text-sm text-[#333]">{s.unit}</span></div></Card>))}</div><div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><Card><div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Registrar metrica</div><div className="space-y-2"><Select value={mCat} onChange={e=>setMCat(e.target.value as MetricCategory)}>{METRIC_CATS.map(c=><option key={c} value={c}>{CAT_LABEL[c]}</option>)}</Select><Input type="number" min="1" max="10" step="0.5" placeholder="Valor (1-10)" value={mVal} onChange={e=>setMVal(e.target.value)} /><Input type="text" placeholder="Nota opcional" value={mNote} onChange={e=>setMNote(e.target.value)} /><Button onClick={addMetric} className="w-full">+ Registrar</Button></div></Card><Card><div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Registrar sueno</div><div className="space-y-2"><Input type="number" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e=>setSHours(e.target.value)} /><div className="flex gap-2"><Input type="time" value={sBed} onChange={e=>setSBed(e.target.value)} /><Input type="time" value={sWake} onChange={e=>setSWake(e.target.value)} /></div><Input type="number" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e=>setSQual(e.target.value)} /><Button onClick={addSleep} className="w-full">+ Registrar sueno</Button></div></Card></div><Card className="mb-4"><div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Ultimas metricas</div>{recentMetrics.length===0?<EmptyState message="Sin metricas." />:<div className="space-y-1">{recentMetrics.map((m)=>(<div key={m.id} className="flex justify-between items-center py-1.5 border-b border-[#1a1a1a] last:border-0"><div className="flex items-center gap-2"><Badge label={CAT_LABEL[m.category]||m.category} variant="muted" />{m.note&&<span className="text-[10px] text-[#333]">{m.note}</span>}</div><div className="flex items-center gap-2"><span className={'text-sm font-mono '+(m.value>=7?'text-[#22c55e]':m.value>=4?'text-[#f59e0b]':'text-[#ef4444]')}>{m.value}/10</span><span className="text-[9px] text-[#222]">{new Date(m.timestamp).toLocaleDateString('es',{day:'2-digit',month:'2-digit'})}</span></div></div>))}</div>}</Card>{lastSleep&&<Card className="mb-4"><div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Ultima noche</div><div className="flex gap-6 flex-wrap"><div><div className="text-[9px] text-[#333]">Fecha</div><div className="text-sm font-mono">{lastSleep.date}</div></div><div><div className="text-[9px] text-[#333]">Duracion</div><div className="text-sm font-mono">{lastSleep.duration}h</div></div><div><div className="text-[9px] text-[#333]">Calidad</div><div className="text-sm font-mono">{lastSleep.quality}/10</div></div><div><div className="text-[9px] text-[#333]">Horario</div><div className="text-sm font-mono">{lastSleep.bedtime}-{lastSleep.wakeTime}</div></div></div></Card>}<Card><div className="text-[10px] font-mono text-[#333] uppercase tracking-widest mb-3">Salud basica</div><div className="flex gap-2 mb-3"><Select value={hType} onChange={e=>setHType(e.target.value as HealthMetricType)} className="flex-1">{HEALTH_TYPES.map(t=><option key={t} value={t}>{t}</option>)}</Select><Input type="number" placeholder="Valor" value={hVal} onChange={e=>setHVal(e.target.value)} className="w-24" /><Input type="text" placeholder="Unidad" value={hUnit} onChange={e=>setHUnit(e.target.value)} className="w-16" /><Button onClick={addHealth}>+ Agregar</Button></div>{healthMetrics.length===0?<div className="text-[10px] text-[#222] font-mono">Sin registros.</div>:<div className="space-y-1">{[...healthMetrics].sort((a,b)=>b.timestamp.localeCompare(a.timestamp)).slice(0,8).map((h)=>(<div key={h.id} className="flex justify-between py-1 border-b border-[#1a1a1a] last:border-0"><span className="text-xs text-[#555]">{h.type}</span><span className="text-xs font-mono">{h.value} {h.unit}</span></div>))}</div>}</Card></AppShell>)
+  const [mCat, setMCat] = useState<MetricCategory>('energy')
+  const [mVal, setMVal] = useState('')
+  const [mNote, setMNote] = useState('')
+  const [sHours, setSHours] = useState('')
+  const [sQual, setSQual] = useState('7')
+  const [sBed, setSBed] = useState('23:00')
+  const [sWake, setSWake] = useState('07:00')
+  const [hType, setHType] = useState<HealthMetricType>('weight')
+  const [hVal, setHVal] = useState('')
+  const [hUnit, setHUnit] = useState('kg')
+
+  const bio = useMemo(() => analyzeBiologicalState(sleepRecords, selfMetrics), [sleepRecords, selfMetrics])
+  const sleepTrend = useMemo(() => analyzeSleepTrend(sleepRecords.slice(-7)), [sleepRecords])
+  const recentMetrics = [...selfMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 12)
+  const lastSleep = [...sleepRecords].sort((a, b) => b.date.localeCompare(a.date))[0]
+
+  function addMetric() {
+    const v = parseFloat(mVal); if (isNaN(v) || v < 1 || v > 10) return
+    const metric = { id: 'm_' + Date.now(), category: mCat, value: v, timestamp: new Date().toISOString(), note: mNote || undefined }
+    addSelfMetric(metric); addMemory(createSelfMetricMemory(metric))
+    setMVal(''); setMNote('')
+  }
+  function addSleep() {
+    const h = parseFloat(sHours); if (isNaN(h) || h < 0 || h > 24) return
+    const sleepRecord = { id: 'sl_' + Date.now(), date: new Date().toISOString().split('T')[0], bedtime: sBed, wakeTime: sWake, duration: h, quality: parseInt(sQual) }
+    addSleepRecord(sleepRecord); addMemory(createSleepMemory(sleepRecord))
+    setSHours('')
+  }
+  function addHealth() {
+    const v = parseFloat(hVal); if (isNaN(v)) return
+    addHealthMetric({ id: 'h_' + Date.now(), type: hType, value: v, unit: hUnit, timestamp: new Date().toISOString() })
+    setHVal('')
+  }
+
+  const eC: Tone = bio.energyLevel >= 7 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'
+  const sC: Tone = sleepTrend.averageDuration >= 7 ? 'ok' : sleepTrend.averageDuration >= 5 ? 'warn' : 'bad'
+  const qC: Tone = sleepTrend.averageQuality >= 6 ? 'ok' : 'warn'
+  const dC: Tone = bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad'
+
+  const stats: { label: string; value: string; unit: string; tone: Tone }[] = [
+    { label: 'Energia', value: bio.energyLevel.toFixed(1), unit: '/10', tone: eC },
+    { label: 'Sueno prom.', value: sleepTrend.averageDuration.toFixed(1), unit: 'h', tone: sC },
+    { label: 'Calidad sueno', value: sleepTrend.averageQuality.toFixed(1), unit: '/10', tone: qC },
+    { label: 'Deuda sueno', value: bio.sleepDebt.toFixed(1), unit: 'h', tone: dC },
+  ]
+
+  return (
+    <AppShell>
+      <div className="mb-8">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+        <h1 className="text-3xl font-semibold tracking-tight">Self</h1>
+        <p className="text-sm text-muted-foreground mt-1">Estado biologico y metricas personales</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        {stats.map((s) => (
+          <Card key={s.label} className="shadow-none">
+            <CardContent className="p-4">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
+              <div className={cn('text-2xl font-mono font-bold', statTextClass(s.tone))}>
+                {s.value}<span className="text-sm text-muted-foreground/50">{s.unit}</span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card className="shadow-none">
+          <CardContent className="p-6">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Registrar metrica</div>
+            <div className="space-y-2">
+              <Select value={mCat} onValueChange={(v) => setMCat(v as MetricCategory)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {METRIC_CATS.map(c => <SelectItem key={c} value={c}>{CAT_LABEL[c]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input type="number" min="1" max="10" step="0.5" placeholder="Valor (1-10)" value={mVal} onChange={e => setMVal(e.target.value)} className="font-mono" />
+              <Input type="text" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
+              <Button onClick={addMetric} variant="outline" className="w-full">+ Registrar</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-none">
+          <CardContent className="p-6">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Registrar sueno</div>
+            <div className="space-y-2">
+              <Input type="number" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono" />
+              <div className="flex gap-2">
+                <Input type="time" value={sBed} onChange={e => setSBed(e.target.value)} className="font-mono" />
+                <Input type="time" value={sWake} onChange={e => setSWake(e.target.value)} className="font-mono" />
+              </div>
+              <Input type="number" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono" />
+              <Button onClick={addSleep} variant="outline" className="w-full">+ Registrar sueno</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mb-4 shadow-none">
+        <CardContent className="p-6">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Ultimas metricas</div>
+          {recentMetrics.length === 0 ? (
+            <div className="text-xs text-muted-foreground/70 py-6 text-center">Sin metricas.</div>
+          ) : (
+            <div className="space-y-1">
+              {recentMetrics.map((m) => (
+                <div key={m.id} className="flex justify-between items-center py-1.5 border-b border-border/50 last:border-0">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[m.category] || m.category}</Badge>
+                    {m.note && <span className="text-xs text-muted-foreground">{m.note}</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn('text-sm font-mono', m.value >= 7 ? 'text-emerald-400' : m.value >= 4 ? 'text-amber-400' : 'text-red-400')}>{m.value}/10</span>
+                    <span className="text-[10px] text-muted-foreground/60 font-mono">{new Date(m.timestamp).toLocaleDateString('es', { day: '2-digit', month: '2-digit' })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {lastSleep && (
+        <Card className="mb-4 shadow-none">
+          <CardContent className="p-6">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Ultima noche</div>
+            <div className="flex gap-6 flex-wrap">
+              <div><div className="text-[10px] text-muted-foreground/60">Fecha</div><div className="text-sm font-mono">{lastSleep.date}</div></div>
+              <div><div className="text-[10px] text-muted-foreground/60">Duracion</div><div className="text-sm font-mono">{lastSleep.duration}h</div></div>
+              <div><div className="text-[10px] text-muted-foreground/60">Calidad</div><div className="text-sm font-mono">{lastSleep.quality}/10</div></div>
+              <div><div className="text-[10px] text-muted-foreground/60">Horario</div><div className="text-sm font-mono">{lastSleep.bedtime}-{lastSleep.wakeTime}</div></div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="shadow-none">
+        <CardContent className="p-6">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Salud basica</div>
+          <div className="flex gap-2 mb-3">
+            <Select value={hType} onValueChange={(v) => setHType(v as HealthMetricType)}>
+              <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {HEALTH_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Input type="number" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24 font-mono" />
+            <Input type="text" placeholder="Unidad" value={hUnit} onChange={e => setHUnit(e.target.value)} className="w-16" />
+            <Button onClick={addHealth} variant="outline" size="sm">+ Agregar</Button>
+          </div>
+          {healthMetrics.length === 0 ? (
+            <div className="text-xs text-muted-foreground/70 py-2">Sin registros.</div>
+          ) : (
+            <div className="space-y-1">
+              {[...healthMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 8).map((h) => (
+                <div key={h.id} className="flex justify-between py-1 border-b border-border/50 last:border-0">
+                  <span className="text-xs text-muted-foreground">{h.type}</span>
+                  <span className="text-xs font-mono">{h.value} {h.unit}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </AppShell>
+  )
 }
