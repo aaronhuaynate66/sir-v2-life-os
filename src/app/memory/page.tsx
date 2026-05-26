@@ -6,6 +6,8 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Card, Badge, Input, Select, SectionHeader, EmptyState } from '@/components/ui'
 import { useMemoryStore } from '@/stores'
 import { buildMemoryContext } from '@/engines/memory'
+import { useHasHydrated } from '@/hooks/useHasHydrated'
+import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import type { MemoryType } from '@/types'
 
 const TYPE_LABEL: Record<MemoryType, string> = {
@@ -31,6 +33,12 @@ const ALL_TYPES: MemoryType[] = [
 ]
 
 export default function MemoryPage() {
+  const hydrated = useHasHydrated()
+  if (!hydrated) return <RouteSkeleton cards={3} />
+  return <MemoryContent />
+}
+
+function MemoryContent() {
   const { getRecentMemories, queryMemories, getMemoriesByType } = useMemoryStore()
 
   const [search, setSearch] = useState('')

@@ -6,12 +6,19 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useMemoryStore } from '@/stores'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
+import { useHasHydrated } from '@/hooks/useHasHydrated'
+import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import type { GoalCategory, GoalPriority, Goal } from '@/types'
 const CAT_LABEL: Record<GoalCategory,string> = {financial:'Financiero',personal:'Personal',relational:'Relacional',health:'Salud',career:'Carrera',spiritual:'Espiritual',creative:'Creativo'}
 const PRIO_LABEL: Record<GoalPriority,string> = {critical:'Critico',high:'Alto',medium:'Medio',low:'Bajo'}
 const PRIO_VARIANT: Record<GoalPriority,'bad'|'warn'|'info'|'muted'> = {critical:'bad',high:'warn',medium:'info',low:'muted'}
 const STATUS_COLORS: Record<Goal['status'],string> = {active:'text-[#22c55e]',paused:'text-[#f59e0b]',completed:'text-[#3b82f6]',abandoned:'text-[#333]'}
 export default function GoalsPage() {
+  const hydrated = useHasHydrated()
+  if (!hydrated) return <RouteSkeleton cards={4} />
+  return <GoalsContent />
+}
+function GoalsContent() {
   const {goals,addGoal,updateGoal,updateGoalProgress,completeGoal,pauseGoal}=useGoalStore()
   const { addMemory } = useMemoryStore()
   const dash=useMemo(()=>buildGoalDashboard(goals),[goals])

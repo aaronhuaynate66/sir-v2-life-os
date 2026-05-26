@@ -21,6 +21,7 @@ import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemor
 import { RichContextDebugPanel } from '@/components/context/RichContextDebugPanel'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
+import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 
 function Badge({ label, color }: { label: string; color: string }) {
   return <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${color}`}>{label}</span>
@@ -49,50 +50,9 @@ function Row({ label, value, status }: { label: string; value: string; status?: 
   )
 }
 
-function DashboardSkeleton() {
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#f5f5f5]">
-      <div className="max-w-5xl mx-auto px-6 py-8 animate-pulse">
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <div className="h-2 w-40 bg-[#1a1a1a] rounded mb-2" />
-            <div className="h-4 w-56 bg-[#1a1a1a] rounded mb-1" />
-            <div className="h-2 w-28 bg-[#111] rounded" />
-          </div>
-          <div className="h-6 w-24 bg-[#111] rounded" />
-        </div>
-        <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 mb-6 h-16" />
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-12 md:col-span-4 space-y-4">
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-36" />
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-32" />
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-32" />
-          </div>
-          <div className="col-span-12 md:col-span-8 space-y-4">
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-32" />
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-28" />
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-28" />
-          </div>
-        </div>
-        <div className="mt-6 grid grid-cols-12 gap-4">
-          <div className="col-span-12 md:col-span-6 space-y-3">
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-14" />
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-14" />
-          </div>
-          <div className="col-span-12 md:col-span-6 space-y-3">
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-14" />
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-lg p-4 h-14" />
-          </div>
-        </div>
-        <div className="mt-8 pt-4 border-t border-[#111] h-6" />
-      </div>
-    </div>
-  )
-}
-
 export default function DashboardPage() {
   const hydrated = useHasHydrated()
-  if (!hydrated) return <DashboardSkeleton />
+  if (!hydrated) return <RouteSkeleton cards={6} />
   return <DashboardContent />
 }
 
