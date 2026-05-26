@@ -23,23 +23,29 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: '/memory', label: 'Memoria', Icon: Archive },
 ] as const
 
-export function Nav() {
+interface NavProps {
+  /** Llamado al click en un item. Util para cerrar el drawer mobile al navegar. */
+  onItemClick?: () => void
+}
+
+export function Nav({ onItemClick }: NavProps = {}) {
   const pathname = usePathname()
 
   return (
-    <nav className="w-60 min-h-screen bg-background border-r border-border flex flex-col flex-shrink-0">
+    <nav className="w-full h-full bg-background flex flex-col">
       <div className="px-5 py-5 border-b border-border">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">SIR V2</div>
         <div className="text-xs text-muted-foreground font-sans mt-0.5">Life OS</div>
       </div>
 
-      <div className="flex-1 py-3 px-2 flex flex-col gap-0.5">
+      <div className="flex-1 py-3 px-2 flex flex-col gap-0.5 overflow-y-auto">
         {NAV_ITEMS.map(({ href, label, Icon }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
           return (
             <Link
               key={href}
               href={href}
+              onClick={onItemClick}
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
