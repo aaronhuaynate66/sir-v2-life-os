@@ -2,11 +2,13 @@
 // SIR V2 - /memory
 // Vista de memorias del sistema. Solo lectura.
 import { useState, useMemo } from 'react'
+import { Archive, Search, Tag, Sparkles, BookOpen } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SectionTitle } from '@/components/ui/section-title'
 import { useMemoryStore } from '@/stores'
 import { buildMemoryContext } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -33,6 +35,8 @@ const TYPE_CLASS: Record<MemoryType, string> = {
 }
 
 const ALL_TYPES: MemoryType[] = ['episodic', 'semantic', 'emotional', 'relational', 'temporal', 'predictive']
+
+const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
 
 export default function MemoryPage() {
   const hydrated = useHasHydrated()
@@ -66,18 +70,21 @@ function MemoryContent() {
     <AppShell>
       <div className="mb-8">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
-        <h1 className="text-3xl font-semibold tracking-tight">Memoria</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <div className="flex items-center gap-3 mt-1">
+          <Archive size={28} strokeWidth={1.5} className="text-muted-foreground" />
+          <h1 className="text-3xl font-semibold tracking-tight">Memoria</h1>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">
           {memoryContext.totalMemories} memoria{memoryContext.totalMemories !== 1 ? 's' : ''} en el sistema
         </p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         {stats.map((s) => (
-          <Card key={s.label} className="shadow-none">
+          <Card key={s.label} className={cardClass}>
             <CardContent className="p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className="text-xl font-mono font-bold text-foreground">{s.value}</div>
+              <div className="text-xl font-mono font-bold tabular-nums text-foreground">{s.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -85,12 +92,15 @@ function MemoryContent() {
 
       {Object.keys(memoryContext.memoriesByType).length > 0 && (
         <div className="mb-4">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Distribucion por tipo</div>
+          <div className="flex items-center gap-2 mb-2">
+            <Tag size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Distribucion por tipo</span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {(Object.entries(memoryContext.memoriesByType) as [MemoryType, number][]).map(([type, count]) => (
               <div key={type} className="flex items-center gap-1.5">
                 <Badge variant="outline" className={cn('text-[10px] font-normal', TYPE_CLASS[type])}>{TYPE_LABEL[type]}</Badge>
-                <span className="text-xs font-mono text-muted-foreground">{count}</span>
+                <span className="text-xs font-mono tabular-nums text-muted-foreground">{count}</span>
               </div>
             ))}
           </div>
@@ -99,28 +109,34 @@ function MemoryContent() {
 
       {memoryContext.criticalEntities.length > 0 && (
         <div className="mb-6">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Entidades criticas</div>
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Entidades criticas</span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {memoryContext.criticalEntities.slice(0, 5).map(({ entityId, count }) => (
               <div key={entityId} className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-border bg-card">
                 <span className="text-xs font-mono text-foreground">{entityId}</span>
-                <span className="text-[10px] font-mono text-muted-foreground/60">×{count}</span>
+                <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60">×{count}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div className="flex gap-2 mb-4 flex-wrap">
-        <Input
-          placeholder="Buscar en memorias..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value)
-            if (e.target.value) setTypeFilter('all')
-          }}
-          className="flex-1 min-w-[200px]"
-        />
+      <div className="flex gap-2 mb-4 flex-wrap items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" />
+          <Input
+            placeholder="Buscar en memorias..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              if (e.target.value) setTypeFilter('all')
+            }}
+            className="pl-9"
+          />
+        </div>
         <Select
           value={typeFilter}
           onValueChange={(v) => {
@@ -136,25 +152,31 @@ function MemoryContent() {
         </Select>
       </div>
 
-      <div className="text-[10px] font-mono text-muted-foreground/60 mb-3">
+      <div className="text-[10px] font-mono tabular-nums text-muted-foreground/60 mb-3">
         Mostrando {memories.length} de {memoryContext.totalMemories}
         {typeFilter !== 'all' && ` · Filtro: ${TYPE_LABEL[typeFilter as MemoryType]}`}
         {search.trim() && ` · Busqueda: "${search.trim()}"`}
       </div>
 
       {memories.length === 0 ? (
-        <div className="text-xs text-muted-foreground/70 py-8 text-center">
-          {search ? `Sin resultados para "${search}"` : 'No hay memorias en el sistema aun.'}
+        <div className="text-center py-12">
+          <BookOpen size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">
+            {search ? `Sin resultados para "${search}"` : 'No hay memorias en el sistema aun.'}
+          </p>
+          {!search && (
+            <p className="text-xs text-muted-foreground/60 mt-1">Las memorias se generan automaticamente con tus mutaciones.</p>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {memories.map((memory) => (
-            <Card key={memory.id} className="shadow-none">
+            <Card key={memory.id} className={cardClass}>
               <CardContent className="p-4 flex flex-col gap-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground leading-snug">{memory.title}</div>
-                    <div className="text-[10px] font-mono text-muted-foreground/60 mt-0.5">
+                    <div className="text-[10px] font-mono tabular-nums text-muted-foreground/60 mt-0.5">
                       {new Date(memory.timestamp).toLocaleDateString('es-PE', {
                         day: '2-digit', month: 'short', year: 'numeric',
                       })}
@@ -162,7 +184,7 @@ function MemoryContent() {
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <Badge variant="outline" className={cn('text-[10px] font-normal', TYPE_CLASS[memory.type])}>{TYPE_LABEL[memory.type]}</Badge>
-                    <span className="text-[10px] font-mono text-muted-foreground/60">I:{memory.importance}/10</span>
+                    <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60">I:{memory.importance}/10</span>
                   </div>
                 </div>
                 <div className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{memory.content}</div>

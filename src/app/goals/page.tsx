@@ -1,11 +1,13 @@
 'use client'
 import { useMemo, useState } from 'react'
+import { Target, Plus, CheckCircle2, Archive, Activity } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SectionTitle } from '@/components/ui/section-title'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useMemoryStore } from '@/stores'
 import { buildGoalDashboard } from '@/engines/goal'
@@ -30,6 +32,8 @@ const STATUS_COLORS: Record<Goal['status'], string> = {
   active: 'text-emerald-400', paused: 'text-amber-400',
   completed: 'text-blue-400', abandoned: 'text-muted-foreground/50',
 }
+
+const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
 
 export default function GoalsPage() {
   const hydrated = useHasHydrated()
@@ -107,7 +111,10 @@ function GoalsContent() {
       <div className="mb-8 flex justify-between items-start">
         <div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
-          <h1 className="text-3xl font-semibold tracking-tight">Objetivos</h1>
+          <div className="flex items-center gap-3 mt-1">
+            <Target size={28} strokeWidth={1.5} className="text-muted-foreground" />
+            <h1 className="text-3xl font-semibold tracking-tight">Objetivos</h1>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">Direccion, paz e impacto en vida</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Nuevo objetivo'}</Button>
@@ -115,19 +122,19 @@ function GoalsContent() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
-          <Card key={s.label} className="shadow-none">
+          <Card key={s.label} className={cardClass}>
             <CardContent className="p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className="text-2xl font-mono font-bold text-foreground">{s.value}</div>
+              <div className="text-2xl font-mono font-bold tabular-nums text-foreground">{s.value}</div>
             </CardContent>
           </Card>
         ))}
       </div>
 
       {adding && (
-        <Card className="mb-4 shadow-none">
+        <Card className={cn('mb-4', cardClass)}>
           <CardContent className="p-6">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">{editId ? 'Editar objetivo' : 'Nuevo objetivo'}</div>
+            <SectionTitle icon={Plus} label={editId ? 'Editar objetivo' : 'Nuevo objetivo'} />
             <div className="grid grid-cols-2 gap-2 mb-3">
               <Input placeholder="Titulo" value={title} onChange={e => setTitle(e.target.value)} className="col-span-2" />
               <Input placeholder="Descripcion" value={desc} onChange={e => setDesc(e.target.value)} className="col-span-2" />
@@ -157,13 +164,15 @@ function GoalsContent() {
 
       {activeGoals.length === 0 && !adding ? (
         <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-          <div className="text-xs text-muted-foreground/70">Sin objetivos activos.</div>
+          <Target size={28} strokeWidth={1.5} className="text-muted-foreground/40" />
+          <div className="text-sm text-muted-foreground">Sin objetivos activos.</div>
+          <p className="text-xs text-muted-foreground/60">Crea tu primer objetivo para empezar a medir tu paz.</p>
           <Button variant="outline" size="sm" onClick={() => setAdding(true)}>+ Crear primer objetivo</Button>
         </div>
       ) : (
         <div className="space-y-2 mb-6">
           {activeGoals.map((g) => (
-            <Card key={g.id} className="shadow-none">
+            <Card key={g.id} className={cardClass}>
               <CardContent className="p-6">
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1 min-w-0">
@@ -177,7 +186,7 @@ function GoalsContent() {
                       <div className="flex-1 h-1 bg-muted rounded-full">
                         <div className="h-1 rounded-full bg-emerald-500 transition-all" style={{ width: g.progress + '%' }} />
                       </div>
-                      <span className="text-xs font-mono text-muted-foreground w-8">{g.progress}%</span>
+                      <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{g.progress}%</span>
                     </div>
                     {progressId === g.id && (
                       <div className="flex gap-2 mb-2">
@@ -207,10 +216,14 @@ function GoalsContent() {
 
       {otherGoals.length > 0 && (
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Historial</div>
+          <div className="flex items-center gap-2 mb-3">
+            <Archive size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Historial</span>
+            <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60 ml-auto">{otherGoals.length}</span>
+          </div>
           <div className="space-y-1">
             {otherGoals.map((g) => (
-              <div key={g.id} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
+              <div key={g.id} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">{g.title}</span>
                   <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[g.category]}</Badge>
