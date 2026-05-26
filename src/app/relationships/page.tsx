@@ -149,12 +149,12 @@ function RelationshipsContent() {
 
   return (
     <AppShell>
-      <div className="mb-8 flex justify-between items-start">
+      <div className="mb-8 flex justify-between items-start gap-3 flex-wrap">
         <div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
           <div className="flex items-center gap-3 mt-1">
             <Users size={28} strokeWidth={1.5} className="text-muted-foreground" />
-            <h1 className="text-3xl font-semibold tracking-tight">Relaciones</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Relaciones</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">{people.length} personas &middot; {alerts.length} alertas</p>
         </div>
@@ -173,7 +173,7 @@ function RelationshipsContent() {
           </div>
           {alerts.map((alert, idx) => (
             <Card key={idx} className={cn('border-l-2 border-l-red-500', cardClass)}>
-              <CardContent className="p-4">
+              <CardContent className="p-3 sm:p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">{alert.personName}</p>
@@ -192,9 +192,9 @@ function RelationshipsContent() {
 
       {showForm && (
         <Card className={cn('mb-6', cardClass)}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={editingId ? Edit : UserPlus} label={editingId ? 'Editar persona' : 'Nueva persona'} />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Nombre *</label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre completo" />
@@ -292,7 +292,7 @@ function RelationshipsContent() {
 
             return (
               <Card key={person.id} className={cardClass}>
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">

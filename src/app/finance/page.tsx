@@ -94,17 +94,17 @@ function FinanceContent() {
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <DollarSign size={28} strokeWidth={1.5} className="text-muted-foreground" />
-          <h1 className="text-3xl font-semibold tracking-tight">Finanzas</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Finanzas</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">Flujo de caja, estabilidad y alertas</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className={cn('text-xl font-mono font-bold tabular-nums', toneText(s.tone))}>
+              <div className={cn('text-lg sm:text-xl font-mono font-bold tabular-nums break-all', toneText(s.tone))}>
                 {s.value}<span className="text-sm text-muted-foreground/50">{s.unit}</span>
               </div>
             </CardContent>
@@ -114,7 +114,7 @@ function FinanceContent() {
 
       {alerts.length > 0 && (
         <Card className={cn('mb-4', cardClass)}>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={AlertCircle} label="Alertas" count={alerts.length} />
             {alerts.map((a, i) => (
               <div key={i} className="flex gap-2 items-start py-1 border-b border-border/40 last:border-0">
