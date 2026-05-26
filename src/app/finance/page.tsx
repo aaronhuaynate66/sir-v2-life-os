@@ -7,6 +7,8 @@ import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useMemoryStore } from '@/stores'
 import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
 import { createFinancialMovementMemory } from '@/engines/memory'
+import { useHasHydrated } from '@/hooks/useHasHydrated'
+import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import type { MovementType, FinancialCategory, FinancialMovement } from '@/types'
 
 const TYPE_LABEL: Record<MovementType, string> = {
@@ -27,6 +29,11 @@ const CAT_LABEL: Record<FinancialCategory, string> = {
 const LIQUIDITY_MONTHS = 2.5
 
 export default function FinancePage() {
+  const hydrated = useHasHydrated()
+  if (!hydrated) return <RouteSkeleton cards={4} />
+  return <FinanceContent />
+}
+function FinanceContent() {
   const { financialMovements, addFinancialMovement, removeFinancialMovement } = useFinanceStore()
   const { addMemory } = useMemoryStore()
   const fin = useMemo(() => analyzeFinancialStability(financialMovements, LIQUIDITY_MONTHS), [financialMovements])

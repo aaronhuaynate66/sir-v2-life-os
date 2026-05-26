@@ -14,6 +14,8 @@ import {
 import { useRelationshipStore, useMemoryStore } from '@/stores'
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { createPersonAddedMemory } from '@/engines/memory'
+import { useHasHydrated } from '@/hooks/useHasHydrated'
+import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -69,6 +71,12 @@ function urgencyColor(
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RelationshipsPage() {
+  const hydrated = useHasHydrated()
+  if (!hydrated) return <RouteSkeleton cards={4} />
+  return <RelationshipsContent />
+}
+
+function RelationshipsContent() {
   const { people, relationships, addPerson, updatePerson, removePerson } =
     useRelationshipStore()
   const { addMemory } = useMemoryStore()

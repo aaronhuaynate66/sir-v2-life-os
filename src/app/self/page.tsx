@@ -6,11 +6,18 @@ import { useSelfStore } from '@/stores/useSelfStore'
 import { useMemoryStore } from '@/stores'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
 import { createSelfMetricMemory, createSleepMemory } from '@/engines/memory'
+import { useHasHydrated } from '@/hooks/useHasHydrated'
+import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import type { MetricCategory, HealthMetricType } from '@/types'
 const METRIC_CATS: MetricCategory[] = ['energy','mood','stress','focus','motivation','confidence']
 const HEALTH_TYPES: HealthMetricType[] = ['weight','heart_rate','steps','calories','hydration','blood_pressure','custom']
 const CAT_LABEL: Record<MetricCategory,string> = {energy:'Energia',mood:'Animo',stress:'Estres',focus:'Enfoque',motivation:'Motivacion',confidence:'Confianza'}
 export default function SelfPage() {
+  const hydrated = useHasHydrated()
+  if (!hydrated) return <RouteSkeleton cards={4} />
+  return <SelfContent />
+}
+function SelfContent() {
   const {selfMetrics,sleepRecords,healthMetrics,addSelfMetric,addSleepRecord,addHealthMetric}=useSelfStore()
   const { addMemory } = useMemoryStore()
   const [mCat,setMCat]=useState<MetricCategory>('energy')

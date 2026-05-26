@@ -8,6 +8,8 @@ import { useSignalStore } from '@/stores/useSignalStore'
 import { useMemoryStore } from '@/stores'
 import { buildSignalContext } from '@/engines/signal'
 import { createSignalAddedMemory } from '@/engines/memory'
+import { useHasHydrated } from '@/hooks/useHasHydrated'
+import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import type { SignalSource, SignalType, SignalUrgency, Signal } from '@/types'
 
 const SOURCE_LABEL: Record<SignalSource, string> = {
@@ -26,6 +28,11 @@ const URGENCY_LABEL: Record<SignalUrgency, string> = {
 }
 
 export default function SignalsPage() {
+  const hydrated = useHasHydrated()
+  if (!hydrated) return <RouteSkeleton cards={4} />
+  return <SignalsContent />
+}
+function SignalsContent() {
   const { signals, addSignal, resolveSignal, removeSignal } = useSignalStore()
   const { addMemory } = useMemoryStore()
   const ctx = useMemo(() => buildSignalContext(signals), [signals])
