@@ -19,6 +19,7 @@ import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { useMemoryStore } from '@/stores'
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { RichContextDebugPanel } from '@/components/context/RichContextDebugPanel'
+import { AppShell } from '@/components/layout/AppShell'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
@@ -121,7 +122,7 @@ function DashboardContent() {
   const recTimingClass = topRec?.timing === 'now' ? 'border-red-500/30 bg-red-500/10 text-red-400' : 'border-border bg-muted text-muted-foreground'
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-foreground">
+    <AppShell wide>
       {recovery.active && (
         <div className="fixed top-0 inset-x-0 z-50 bg-red-500/10 border-b border-red-500/20 px-6 py-2">
           <div className="max-w-5xl mx-auto flex items-center gap-3">
@@ -130,8 +131,7 @@ function DashboardContent() {
           </div>
         </div>
       )}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-between items-start mb-8">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-between items-start mb-8">
           <div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
             <h1 className="text-3xl font-semibold tracking-tight">Mission Control</h1>
@@ -364,11 +364,10 @@ function DashboardContent() {
 
         <RichContextDebugPanel />
 
-        <div className="mt-8 pt-4 border-t border-border flex justify-between">
-          <span className="text-[10px] text-muted-foreground/60 font-mono">SIR V2 &mdash; Fase 4 &mdash; UI Produccion</span>
-          <span className="text-[10px] text-muted-foreground/60 font-mono">datos &rarr; senales &rarr; contexto &rarr; memoria &rarr; timing &rarr; recomendacion</span>
-        </div>
+      <div className="mt-8 pt-4 border-t border-border flex justify-between">
+        <span className="text-[10px] text-muted-foreground/60 font-mono">SIR V2 &mdash; Fase 4 &mdash; UI Produccion</span>
+        <span className="text-[10px] text-muted-foreground/60 font-mono">datos &rarr; senales &rarr; contexto &rarr; memoria &rarr; timing &rarr; recomendacion</span>
       </div>
-    </div>
+    </AppShell>
   )
 }
