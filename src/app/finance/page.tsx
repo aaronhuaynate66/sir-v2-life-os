@@ -1,12 +1,14 @@
 'use client'
 // SIR V2 — /finance
 import { useMemo, useState } from 'react'
+import { DollarSign, Wallet, ArrowRightLeft, Plus, Filter, AlertCircle, TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SectionTitle } from '@/components/ui/section-title'
 import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useMemoryStore } from '@/stores'
 import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
@@ -32,6 +34,8 @@ const CAT_LABEL: Record<FinancialCategory, string> = {
   personal: 'Personal', debt: 'Deuda', other: 'Otro',
 }
 const LIQUIDITY_MONTHS = 2.5
+
+const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
 
 type Tone = 'ok' | 'warn' | 'bad'
 function toneText(t: Tone): string {
@@ -88,16 +92,19 @@ function FinanceContent() {
     <AppShell>
       <div className="mb-8">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
-        <h1 className="text-3xl font-semibold tracking-tight">Finanzas</h1>
+        <div className="flex items-center gap-3 mt-1">
+          <DollarSign size={28} strokeWidth={1.5} className="text-muted-foreground" />
+          <h1 className="text-3xl font-semibold tracking-tight">Finanzas</h1>
+        </div>
         <p className="text-sm text-muted-foreground mt-1">Flujo de caja, estabilidad y alertas</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
-          <Card key={s.label} className="shadow-none">
+          <Card key={s.label} className={cardClass}>
             <CardContent className="p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className={cn('text-xl font-mono font-bold', toneText(s.tone))}>
+              <div className={cn('text-xl font-mono font-bold tabular-nums', toneText(s.tone))}>
                 {s.value}<span className="text-sm text-muted-foreground/50">{s.unit}</span>
               </div>
             </CardContent>
@@ -106,14 +113,14 @@ function FinanceContent() {
       </div>
 
       {alerts.length > 0 && (
-        <Card className="mb-4 shadow-none">
+        <Card className={cn('mb-4', cardClass)}>
           <CardContent className="p-6">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Alertas &mdash; {alerts.length}</div>
+            <SectionTitle icon={AlertCircle} label="Alertas" count={alerts.length} />
             {alerts.map((a, i) => (
-              <div key={i} className="flex gap-2 items-start py-1 border-b border-border/50 last:border-0">
-                <span className={cn('text-xs mt-0.5', a.severity === 'critical' ? 'text-red-400' : 'text-amber-400')}>!</span>
+              <div key={i} className="flex gap-2 items-start py-1 border-b border-border/40 last:border-0">
+                <AlertCircle size={12} strokeWidth={2} className={cn('mt-0.5 flex-shrink-0', a.severity === 'critical' ? 'text-red-400' : 'text-amber-400')} />
                 <div>
-                  <div className="text-xs text-muted-foreground">{a.message}</div>
+                  <div className="text-xs text-muted-foreground leading-relaxed">{a.message}</div>
                   {a.suggestedAction && <div className="text-[10px] text-muted-foreground/60 mt-0.5">{a.suggestedAction}</div>}
                 </div>
               </div>
@@ -122,9 +129,9 @@ function FinanceContent() {
         </Card>
       )}
 
-      <Card className="mb-4 shadow-none">
+      <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-6">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">Registrar movimiento</div>
+          <SectionTitle icon={Plus} label="Registrar movimiento" />
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
             <Select value={type} onValueChange={(v) => setType(v as MovementType)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -139,11 +146,11 @@ function FinanceContent() {
               </SelectContent>
             </Select>
             <div className="flex gap-1">
-              <Input type="number" min="0" step="0.01" placeholder="Monto" value={amount} onChange={e => setAmount(e.target.value)} className="font-mono" />
+              <Input type="number" min="0" step="0.01" placeholder="Monto" value={amount} onChange={e => setAmount(e.target.value)} className="font-mono tabular-nums" />
               <Input placeholder="USD" value={currency} onChange={e => setCurrency(e.target.value)} className="w-16 font-mono" />
             </div>
             <Input placeholder="Descripcion" value={description} onChange={e => setDescription(e.target.value)} className="col-span-2" />
-            <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="font-mono" />
+            <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="font-mono tabular-nums" />
           </div>
           <div className="flex items-center gap-4 mb-3">
             <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
@@ -155,7 +162,9 @@ function FinanceContent() {
         </CardContent>
       </Card>
 
-      <div className="flex gap-2 mb-3 flex-wrap">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <Filter size={12} strokeWidth={1.75} className="text-muted-foreground/60" />
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Filtrar</span>
         {(['all', ...Object.keys(TYPE_LABEL)] as (MovementType | 'all')[]).map(t => (
           <button
             key={t}
@@ -163,7 +172,7 @@ function FinanceContent() {
             className={cn(
               'text-[10px] font-mono px-2 py-1 rounded border transition-colors',
               filterType === t
-                ? 'border-foreground/30 text-foreground bg-muted'
+                ? 'border-primary/40 text-primary bg-primary/10'
                 : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground',
             )}
           >
@@ -173,31 +182,41 @@ function FinanceContent() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-xs text-muted-foreground/70 py-8 text-center">Sin movimientos.</div>
+        <div className="text-center py-12">
+          <ArrowRightLeft size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">Sin movimientos en este filtro.</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Registra un movimiento arriba para empezar.</p>
+        </div>
       ) : (
         <div className="space-y-1">
-          {filtered.slice(0, 50).map((m) => (
-            <div key={m.id} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0 group">
-              <div className="flex flex-col">
-                <span className="text-sm text-foreground">{m.description}</span>
-                <div className="flex gap-2 mt-0.5 items-center">
-                  <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[m.category]}</Badge>
-                  {m.recurrent && <Badge variant="outline" className="text-[10px] font-normal border-blue-500/30 bg-blue-500/10 text-blue-400">recurrente</Badge>}
-                  <span className="text-[10px] text-muted-foreground/60 font-mono">{m.date}</span>
+          {filtered.slice(0, 50).map((m) => {
+            const TypeIcon = m.type === 'income' ? TrendingUp : m.type === 'expense' ? TrendingDown : m.type === 'transfer' ? ArrowLeftRight : Wallet
+            return (
+              <div key={m.id} className="flex justify-between items-center py-2 border-b border-border/40 last:border-0 group hover:bg-accent/5 px-2 -mx-2 rounded transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <TypeIcon size={14} strokeWidth={1.75} className={cn('flex-shrink-0', TYPE_COLOR[m.type])} />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm text-foreground truncate">{m.description}</span>
+                    <div className="flex gap-2 mt-0.5 items-center">
+                      <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[m.category]}</Badge>
+                      {m.recurrent && <Badge variant="outline" className="text-[10px] font-normal border-blue-500/30 bg-blue-500/10 text-blue-400">recurrente</Badge>}
+                      <span className="text-[10px] text-muted-foreground/60 font-mono tabular-nums">{m.date}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className={cn('text-sm font-mono tabular-nums', TYPE_COLOR[m.type])}>{TYPE_SIGN[m.type]}{m.amount.toFixed(0)} {m.currency}</span>
+                  <button
+                    onClick={() => removeFinancialMovement(m.id)}
+                    className="text-xs text-muted-foreground/40 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Eliminar"
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={cn('text-sm font-mono', TYPE_COLOR[m.type])}>{TYPE_SIGN[m.type]}{m.amount.toFixed(0)} {m.currency}</span>
-                <button
-                  onClick={() => removeFinancialMovement(m.id)}
-                  className="text-xs text-muted-foreground/40 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                  aria-label="Eliminar"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </AppShell>
