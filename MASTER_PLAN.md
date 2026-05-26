@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `dcdb931`
+**Hash del último commit humano:** `2a18aef`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -225,6 +225,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2a18aef` | aaronhuaynate66 | Session 16: Coral accent + unified navigation + modern Nav (#42) | 2026-05-26 |
 | `dcdb931` | aaronhuaynate66 | Session 15: Migrate 6 remaining routes to shadcn/ui (#41) | 2026-05-26 |
 | `c6b4492` | aaronhuaynate66 | feat(dashboard): migrate to shadcn/ui design system (Vercel aesthetic) (#40) | 2026-05-26 |
 | `37a24e6` | aaronhuaynate66 | Session 13: Design System base (shadcn/ui + Geist) (#39) | 2026-05-26 |
@@ -234,7 +235,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6dbd04b` | aaronhuaynate66 | Session 10B: Infrastructure debt cleanup (issues #22, #23) (#34) | 2026-05-25 |
 | `c13e32e` | aaronhuaynate66 | Session 10A: Code debt cleanup (issues #19, #20, #21) (#32) | 2026-05-25 |
 | `039db6b` | aaronhuaynate66 | fix(infra): rebase before push in sync-roadmap to avoid race condition (#31) | 2026-05-25 |
-| `039dff6` | aaronhuaynate66 | Session 8: Snapshot History Hardening (#29) | 2026-05-25 |
 
 ---
 
