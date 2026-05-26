@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `3652463`
+**Hash del último commit humano:** `6f6be5a`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -225,6 +225,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6f6be5a` | aaronhuaynate66 | Session 12: Extend hydration readiness to all routes (#38) | 2026-05-26 |
 | `3652463` | aaronhuaynate66 | fix(hooks): add useHasHydrated to prevent stale UI on first mount (#37) | 2026-05-26 |
 | `cc3aaea` | aaronhuaynate66 | fix(security): patch Next.js to address CVE-2025-66478 and related (#36) | 2026-05-25 |
 | `6dbd04b` | aaronhuaynate66 | Session 10B: Infrastructure debt cleanup (issues #22, #23) (#34) | 2026-05-25 |
@@ -234,7 +235,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `18b7d22` | aaronhuaynate66 | Session 7: Living Roadmap System (#24) | 2026-05-25 |
 | `476b76f` | aaronhuaynate66 | Session 6: Context Snapshot History (#7) | 2026-05-25 |
 | `2a5b497` | aaronhuaynate66 | fix(context): relational.activeAlerts as string[] + dashboard clock hydration safety (R5.1F) (#6) | 2026-05-25 |
-| `d01e6a7` | aaronhuaynate66 | fix(context): make RichContextDebugPanel client-only to prevent hydration mismatch (#5) | 2026-05-25 |
 
 ---
 
