@@ -41,7 +41,10 @@ type PersistMeta = {
 
 interface AttachedStore<S> {
   store: StoreApi<S> & PersistMeta
-  bindings: SliceBinding<S, { id: string }>[]
+  // Each binding can carry its own item type; the engine treats them
+  // through their slice<->row contract and never reasons over the item shape.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  bindings: SliceBinding<S, any>[]
 }
 
 function logSyncError(label: string, op: string, err: unknown): void {
