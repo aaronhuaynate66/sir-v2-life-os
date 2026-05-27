@@ -1,5 +1,5 @@
 // SIR V2 — Goal Store
-// Manages goals with Zustand + persist
+// Manages goals with Zustand + persist + Supabase sync (Sesion 20c)
 'use client'
 
 import { create } from 'zustand'
@@ -7,6 +7,7 @@ import { persist } from 'zustand/middleware'
 import type { Goal } from '@/types'
 import { fixtureGoals } from '@/data/fixtures'
 import { STORAGE_KEYS } from './storage'
+import { attachSupabaseSync, goalAdapter } from '@/lib/supabase/sync'
 
 interface GoalState {
   goals: Goal[]
@@ -75,3 +76,15 @@ export const useGoalStore = create<GoalStore>()(
     }
   )
 )
+
+attachSupabaseSync({
+  store: useGoalStore,
+  bindings: [
+    {
+      label: 'goals',
+      select: (s) => s.goals,
+      apply: (items) => useGoalStore.setState({ goals: items }),
+      adapter: goalAdapter,
+    },
+  ],
+})
