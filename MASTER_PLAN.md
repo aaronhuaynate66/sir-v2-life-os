@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `50fa6db`
+**Hash del último commit humano:** `0c580d8`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -225,6 +225,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `0c580d8` | aaronhuaynate66 | Session 20b: Auth flow (Google OAuth + Magic Link) (#47) | 2026-05-27 |
 | `50fa6db` | aaronhuaynate66 | Session 20a: Supabase setup + initial schema (#46) | 2026-05-26 |
 | `e5133bb` | aaronhuaynate66 | Session 19: Mobile responsiveness (critical fix) (#45) | 2026-05-26 |
 | `6df33ac` | aaronhuaynate66 | Session 18: Propagate visual language to 6 domain routes (#44) | 2026-05-26 |
@@ -234,7 +235,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c6b4492` | aaronhuaynate66 | feat(dashboard): migrate to shadcn/ui design system (Vercel aesthetic) (#40) | 2026-05-26 |
 | `37a24e6` | aaronhuaynate66 | Session 13: Design System base (shadcn/ui + Geist) (#39) | 2026-05-26 |
 | `6f6be5a` | aaronhuaynate66 | Session 12: Extend hydration readiness to all routes (#38) | 2026-05-26 |
-| `3652463` | aaronhuaynate66 | fix(hooks): add useHasHydrated to prevent stale UI on first mount (#37) | 2026-05-26 |
 
 ---
 
