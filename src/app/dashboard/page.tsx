@@ -8,6 +8,7 @@ import {
   AlertCircle, TrendingUp, TrendingDown, Minus,
   CheckCircle2, X,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { calculatePeaceScore, evaluateRecoveryMode, detectPeaceThreats } from '@/engines/peace'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
 import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
@@ -36,6 +37,11 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { SectionTitle } from '@/components/ui/section-title'
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogCancel, AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
 
 type Mode = 'normal' | 'focused' | 'recovery' | 'strategic'
@@ -112,12 +118,44 @@ function DashboardContent() {
   const peaceColor = peace.total >= 7 ? 'text-emerald-400' : peace.total >= 4 ? 'text-amber-400' : 'text-red-400'
   const peaceDotColor = peace.total >= 7 ? 'bg-emerald-400' : peace.total >= 4 ? 'bg-amber-400' : 'bg-red-400'
 
-  function handleAddSleep() { const h = parseFloat(sleepHours); if (isNaN(h) || h < 0 || h > 24) return; const record = { id: `sl_${Date.now()}`, date: new Date().toISOString().split('T')[0], bedtime: '23:00', wakeTime: '07:00', duration: h, quality: h >= 7 ? 8 : h >= 5 ? 5 : 3 }; addSleepRecord(record); addMemory(createSleepMemory(record)); setSleepHours('') }
-  function handleAddEnergy() { const e = parseInt(energyVal), s = parseInt(stressVal); if (!isNaN(e) && e >= 1 && e <= 10) { const m = { id: `m_e_${Date.now()}`, category: 'energy' as const, value: e, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) } if (!isNaN(s) && s >= 1 && s <= 10) { const m = { id: `m_s_${Date.now()}`, category: 'stress' as const, value: s, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) } setEnergyVal(''); setStressVal('') }
-  function handleAddFinance() { const amt = parseFloat(finAmount); if (isNaN(amt) || amt <= 0) return; const movement = { id: `f_${Date.now()}`, type: finType, amount: amt, currency: 'USD', category: 'other' as const, description: finDesc || 'Movimiento rapido', date: new Date().toISOString().split('T')[0], recurrent: false, tags: [] }; addFinancialMovement(movement); addMemory(createFinancialMovementMemory(movement)); setFinAmount(''); setFinDesc('') }
-  function handleAddSignal() { if (!signalContent.trim()) return; const sig = { id: `sig_${Date.now()}`, source: 'manual' as const, type: 'pattern' as const, content: signalContent, strength: 5, urgency: 'soon' as const, relatedPersons: [], relatedGoals: [], meaning: signalContent, actionRequired: false, detectedAt: new Date().toISOString(), resolved: false }; addSignal(sig); addMemory(createSignalAddedMemory(sig)); setSignalContent('') }
-  function handleResetAll() { resetSelf(); resetRelationship(); resetGoal(); resetFinance(); resetSignal(); resetRec() }
-  function handleClearAll() { clearSelf(); clearRelationship(); clearGoal(); clearFinance(); clearSignal(); clearRec() }
+  function handleAddSleep() {
+    const h = parseFloat(sleepHours)
+    if (isNaN(h) || h < 0 || h > 24) { toast.error('Horas invalidas', { description: 'Debe ser un numero entre 0 y 24.' }); return }
+    const record = { id: `sl_${Date.now()}`, date: new Date().toISOString().split('T')[0], bedtime: '23:00', wakeTime: '07:00', duration: h, quality: h >= 7 ? 8 : h >= 5 ? 5 : 3 }
+    addSleepRecord(record); addMemory(createSleepMemory(record)); setSleepHours('')
+    toast.success('Sueno registrado', { description: `${h}h agregadas a tu historial` })
+  }
+  function handleAddEnergy() {
+    const e = parseInt(energyVal), s = parseInt(stressVal)
+    const eOk = !isNaN(e) && e >= 1 && e <= 10
+    const sOk = !isNaN(s) && s >= 1 && s <= 10
+    if (!eOk && !sOk) { toast.error('Sin datos validos', { description: 'Energia o estres deben estar entre 1 y 10.' }); return }
+    if (eOk) { const m = { id: `m_e_${Date.now()}`, category: 'energy' as const, value: e, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) }
+    if (sOk) { const m = { id: `m_s_${Date.now()}`, category: 'stress' as const, value: s, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) }
+    setEnergyVal(''); setStressVal('')
+    toast.success('Metricas registradas', { description: [eOk ? `energia ${e}` : null, sOk ? `estres ${s}` : null].filter(Boolean).join(' · ') })
+  }
+  function handleAddFinance() {
+    const amt = parseFloat(finAmount)
+    if (isNaN(amt) || amt <= 0) { toast.error('Monto invalido', { description: 'El monto debe ser mayor que 0.' }); return }
+    const movement = { id: `f_${Date.now()}`, type: finType, amount: amt, currency: 'USD', category: 'other' as const, description: finDesc || 'Movimiento rapido', date: new Date().toISOString().split('T')[0], recurrent: false, tags: [] }
+    addFinancialMovement(movement); addMemory(createFinancialMovementMemory(movement)); setFinAmount(''); setFinDesc('')
+    toast.success('Movimiento registrado', { description: `${finType === 'income' ? '+' : '-'}$${amt.toFixed(2)} USD` })
+  }
+  function handleAddSignal() {
+    if (!signalContent.trim()) { toast.error('Senal vacia', { description: 'Escribe el contenido de la senal.' }); return }
+    const sig = { id: `sig_${Date.now()}`, source: 'manual' as const, type: 'pattern' as const, content: signalContent, strength: 5, urgency: 'soon' as const, relatedPersons: [], relatedGoals: [], meaning: signalContent, actionRequired: false, detectedAt: new Date().toISOString(), resolved: false }
+    addSignal(sig); addMemory(createSignalAddedMemory(sig)); setSignalContent('')
+    toast.success('Senal registrada')
+  }
+  function handleResetAll() {
+    resetSelf(); resetRelationship(); resetGoal(); resetFinance(); resetSignal(); resetRec()
+    toast.success('Datos reseteados', { description: 'Fixtures cargados.' })
+  }
+  function handleClearAll() {
+    clearSelf(); clearRelationship(); clearGoal(); clearFinance(); clearSignal(); clearRec()
+    toast.success('Datos eliminados', { description: 'Todo el storage local quedo vacio.' })
+  }
 
   const TrendIcon = peace.trend === 'improving' ? TrendingUp : peace.trend === 'declining' ? TrendingDown : Minus
   const trendLabel = peace.trend === 'improving' ? 'Mejorando' : peace.trend === 'declining' ? 'Declinando' : 'Estable'
@@ -416,8 +454,40 @@ function DashboardContent() {
       <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans">Datos locales</span>
         <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onClick={handleResetAll}>Resetear a fixtures</Button>
-          <Button size="sm" variant="ghost" onClick={handleClearAll} className="hover:bg-red-500/10 hover:text-red-400">Borrar todo</Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="ghost">Resetear a fixtures</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Resetear todos los datos?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tus registros locales seran reemplazados por los datos de muestra (fixtures). Esta accion no se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleResetAll}>Resetear</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="hover:bg-red-500/10 hover:text-red-400">Borrar todo</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>¿Borrar todos los datos locales?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Vas a eliminar permanentemente todo el storage local: sueno, metricas, finanzas, objetivos, senales y relaciones. Esta accion no se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearAll} className="bg-red-500 text-white hover:bg-red-500/90">Borrar todo</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 

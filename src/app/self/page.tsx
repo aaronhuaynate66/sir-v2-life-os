@@ -1,5 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { Brain, Activity, Plus, Moon, Heart, Clock } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -57,21 +58,29 @@ function SelfContent() {
   const lastSleep = [...sleepRecords].sort((a, b) => b.date.localeCompare(a.date))[0]
 
   function addMetric() {
-    const v = parseFloat(mVal); if (isNaN(v) || v < 1 || v > 10) return
+    const v = parseFloat(mVal)
+    if (isNaN(v) || v < 1 || v > 10) { toast.error('Valor invalido', { description: 'Debe estar entre 1 y 10.' }); return }
     const metric = { id: 'm_' + Date.now(), category: mCat, value: v, timestamp: new Date().toISOString(), note: mNote || undefined }
     addSelfMetric(metric); addMemory(createSelfMetricMemory(metric))
     setMVal(''); setMNote('')
+    toast.success('Metrica registrada', { description: `${CAT_LABEL[mCat]}: ${v}/10` })
   }
   function addSleep() {
-    const h = parseFloat(sHours); if (isNaN(h) || h < 0 || h > 24) return
-    const sleepRecord = { id: 'sl_' + Date.now(), date: new Date().toISOString().split('T')[0], bedtime: sBed, wakeTime: sWake, duration: h, quality: parseInt(sQual) }
+    const h = parseFloat(sHours)
+    if (isNaN(h) || h < 0 || h > 24) { toast.error('Horas invalidas', { description: 'Debe estar entre 0 y 24.' }); return }
+    const q = parseInt(sQual)
+    if (isNaN(q) || q < 1 || q > 10) { toast.error('Calidad invalida', { description: 'Debe estar entre 1 y 10.' }); return }
+    const sleepRecord = { id: 'sl_' + Date.now(), date: new Date().toISOString().split('T')[0], bedtime: sBed, wakeTime: sWake, duration: h, quality: q }
     addSleepRecord(sleepRecord); addMemory(createSleepMemory(sleepRecord))
     setSHours('')
+    toast.success('Sueno registrado', { description: `${h}h · calidad ${q}/10` })
   }
   function addHealth() {
-    const v = parseFloat(hVal); if (isNaN(v)) return
+    const v = parseFloat(hVal)
+    if (isNaN(v)) { toast.error('Valor invalido', { description: 'Ingresa un numero valido.' }); return }
     addHealthMetric({ id: 'h_' + Date.now(), type: hType, value: v, unit: hUnit, timestamp: new Date().toISOString() })
     setHVal('')
+    toast.success('Registro de salud agregado', { description: `${hType}: ${v} ${hUnit}` })
   }
 
   const eC: Tone = bio.energyLevel >= 7 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'

@@ -1,6 +1,7 @@
 'use client'
 // SIR V2 — /finance
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { DollarSign, Wallet, ArrowRightLeft, Plus, Filter, AlertCircle, TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -64,7 +65,7 @@ function FinanceContent() {
 
   function addMovement() {
     const amt = parseFloat(amount)
-    if (isNaN(amt) || amt <= 0) return
+    if (isNaN(amt) || amt <= 0) { toast.error('Monto invalido', { description: 'El monto debe ser mayor que 0.' }); return }
     const m: FinancialMovement = {
       id: `f_${Date.now()}`, type, amount: amt, currency, category,
       description: description || TYPE_LABEL[type], date, recurrent, tags: [],
@@ -72,6 +73,11 @@ function FinanceContent() {
     addFinancialMovement(m)
     addMemory(createFinancialMovementMemory(m))
     setAmount(''); setDescription('')
+    toast.success('Movimiento registrado', { description: `${TYPE_LABEL[type]}: ${amt.toFixed(2)} ${currency}` })
+  }
+  function handleRemoveMovement(id: string, desc: string) {
+    removeFinancialMovement(id)
+    toast.success('Movimiento eliminado', { description: desc })
   }
 
   const sorted = [...financialMovements].sort((a, b) => b.date.localeCompare(a.date))
@@ -207,7 +213,7 @@ function FinanceContent() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className={cn('text-sm font-mono tabular-nums', TYPE_COLOR[m.type])}>{TYPE_SIGN[m.type]}{m.amount.toFixed(0)} {m.currency}</span>
                   <button
-                    onClick={() => removeFinancialMovement(m.id)}
+                    onClick={() => handleRemoveMovement(m.id, m.description)}
                     className="text-xs text-muted-foreground/40 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-label="Eliminar"
                   >
