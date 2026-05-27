@@ -72,7 +72,7 @@ export function Nav({ onItemClick }: NavProps = {}) {
       <div className="px-3 py-3 border-t border-border space-y-2">
         {user?.email && (
           <div className="px-2 truncate">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-0.5">Sesion</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-0.5">Sesión</div>
             <div className="text-xs text-foreground font-mono truncate" title={user.email}>{user.email}</div>
           </div>
         )}
@@ -82,7 +82,7 @@ export function Nav({ onItemClick }: NavProps = {}) {
           className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-red-400 hover:bg-red-500/5 transition-colors"
         >
           <LogOut size={16} strokeWidth={1.75} aria-hidden="true" />
-          <span>Cerrar sesion</span>
+          <span>Cerrar sesión</span>
         </button>
       </div>
     </nav>

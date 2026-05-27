@@ -77,7 +77,7 @@ function LoginForm() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Iniciar sesion</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Iniciar sesión</h1>
           <p className="text-sm text-muted-foreground mt-2">Tu Life Operating System personal.</p>
         </div>
 
@@ -135,7 +135,7 @@ function LoginForm() {
                 <Button
                   type="submit"
                   variant="outline"
-                  disabled={loadingProvider !== null || !email.trim()}
+                  disabled={loadingProvider !== null}
                   className="w-full justify-center gap-2"
                 >
                   {loadingProvider === 'email' ? 'Enviando…' : 'Enviar magic link'}
