@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
-**Hash del último commit humano:** `6231368`
+**Hash del último commit humano:** `4d88462`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -225,6 +225,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `4d88462` | aaronhuaynate66 | feat(sync): one-shot localStorage->Supabase migration (Session 20d) (#50) | 2026-05-27 |
 | `6231368` | aaronhuaynate66 | Session 20c: Data layer migration to Supabase (#49) | 2026-05-27 |
 | `2294146` | aaronhuaynate66 | Session 21: UX polish (feedback + validation + confirmations) (#48) | 2026-05-27 |
 | `0c580d8` | aaronhuaynate66 | Session 20b: Auth flow (Google OAuth + Magic Link) (#47) | 2026-05-27 |
@@ -234,7 +235,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `aa705ac` | aaronhuaynate66 | feat(dashboard): re-imagine with visual hierarchy and micro-interactions (#43) | 2026-05-26 |
 | `2a18aef` | aaronhuaynate66 | Session 16: Coral accent + unified navigation + modern Nav (#42) | 2026-05-26 |
 | `dcdb931` | aaronhuaynate66 | Session 15: Migrate 6 remaining routes to shadcn/ui (#41) | 2026-05-26 |
-| `c6b4492` | aaronhuaynate66 | feat(dashboard): migrate to shadcn/ui design system (Vercel aesthetic) (#40) | 2026-05-26 |
 
 ---
 
