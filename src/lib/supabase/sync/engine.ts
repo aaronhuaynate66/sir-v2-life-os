@@ -43,7 +43,6 @@ interface AttachedStore<S> {
   store: StoreApi<S> & PersistMeta
   // Each binding can carry its own item type; the engine treats them
   // through their slice<->row contract and never reasons over the item shape.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   bindings: SliceBinding<S, any>[]
 }
 
@@ -107,8 +106,7 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
   ): Promise<void> {
     const { data, error } = await supabase
       .from(binding.adapter.table)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .select('*' as any)
+          .select('*' as any)
       .eq('user_id', userId)
     if (error) {
       logSyncError(binding.label, 'pull', error)
@@ -163,8 +161,7 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
       const rows = upserts.map((item) => binding.adapter.toRow(item, userId))
       await pushWithRetry(
         async () => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error } = await supabase.from(binding.adapter.table).upsert(rows as any, { onConflict: 'id' })
+                  const { error } = await supabase.from(binding.adapter.table).upsert(rows as any, { onConflict: 'id' })
           return { error }
         },
         binding.label,
