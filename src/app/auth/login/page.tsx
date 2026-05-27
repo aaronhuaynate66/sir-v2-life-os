@@ -24,23 +24,25 @@ function GoogleIcon() {
 function LoginForm() {
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
-  const nextParam = searchParams.get('next') ?? '/dashboard'
 
   const [email, setEmail] = useState('')
   const [loadingProvider, setLoadingProvider] = useState<'google' | 'email' | null>(null)
   const [magicSent, setMagicSent] = useState(false)
   const [error, setError] = useState<string | null>(
-    errorParam === 'auth_callback_failed' ? 'No se pudo completar el inicio de sesion. Intenta de nuevo.' : null,
+    errorParam === 'auth_callback_failed' ? 'No se pudo completar el inicio de sesión. Intenta de nuevo.' : null,
   )
 
   async function handleGoogle() {
     setError(null)
     setLoadingProvider('google')
     const supabase = createClient()
+    // Sin query params en redirectTo: Supabase valida la URL completa contra la
+    // allowlist y los wildcards (*-kenas-...) solo matchean paths desnudos.
+    // El callback siempre redirige a /dashboard por default (basta para single-user).
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
     if (oauthError) {
@@ -59,7 +61,7 @@ function LoginForm() {
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
     setLoadingProvider(null)
