@@ -28,6 +28,7 @@ import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemor
 import { RichContextDebugPanel } from '@/components/context/RichContextDebugPanel'
 import { AppShell } from '@/components/layout/AppShell'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
+import { formatPEN, formatCurrencyCompact } from '@/lib/format/currency'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { Card, CardContent } from '@/components/ui/card'
@@ -138,9 +139,10 @@ function DashboardContent() {
   function handleAddFinance() {
     const amt = parseFloat(finAmount)
     if (isNaN(amt) || amt <= 0) { toast.error('Monto invalido', { description: 'El monto debe ser mayor que 0.' }); return }
-    const movement = { id: `f_${Date.now()}`, type: finType, amount: amt, currency: 'USD', category: 'other' as const, description: finDesc || 'Movimiento rapido', date: new Date().toISOString().split('T')[0], recurrent: false, tags: [] }
+    // Quick action: always PEN. Para flujos USD usa /finance.
+    const movement = { id: `f_${Date.now()}`, type: finType, amount: amt, currency: 'PEN' as const, exchangeRate: 1.0, amountPEN: amt, category: 'other' as const, description: finDesc || 'Movimiento rapido', date: new Date().toISOString().split('T')[0], recurrent: false, tags: [] }
     addFinancialMovement(movement); addMemory(createFinancialMovementMemory(movement)); setFinAmount(''); setFinDesc('')
-    toast.success('Movimiento registrado', { description: `${finType === 'income' ? '+' : '-'}$${amt.toFixed(2)} USD` })
+    toast.success('Movimiento registrado', { description: `${finType === 'income' ? '+' : '-'}${formatPEN(amt)}` })
   }
   function handleAddSignal() {
     if (!signalContent.trim()) { toast.error('Senal vacia', { description: 'Escribe el contenido de la senal.' }); return }
@@ -300,7 +302,7 @@ function DashboardContent() {
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Wallet} label="Finanzas" />
             <Row label="Estabilidad" value={`${fin.stability.toFixed(1)}/10`} status={fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad'} />
-            <Row label="Balance mensual" value={`$${fin.monthlyBalance.toLocaleString('en-US')}`} status={fin.monthlyBalance >= 0 ? 'ok' : 'bad'} />
+            <Row label="Balance mensual" value={formatCurrencyCompact(fin.monthlyBalance, 'PEN')} status={fin.monthlyBalance >= 0 ? 'ok' : 'bad'} />
             <Row label="Tasa ahorro" value={`${fin.savingsRate.toFixed(0)}%`} status={fin.savingsRate >= 20 ? 'ok' : fin.savingsRate >= 10 ? 'warn' : 'bad'} />
             {finAlerts[0] && (
               <>
@@ -425,7 +427,7 @@ function DashboardContent() {
                   <SelectItem value="income">Ingreso</SelectItem>
                 </SelectContent>
               </Select>
-              <Input type="number" min="0" placeholder="USD" value={finAmount} onChange={e => setFinAmount(e.target.value)} className="w-24 font-mono tabular-nums" />
+              <Input type="number" min="0" placeholder="S/" value={finAmount} onChange={e => setFinAmount(e.target.value)} className="w-24 font-mono tabular-nums" />
               <Input type="text" placeholder="Descripcion" value={finDesc} onChange={e => setFinDesc(e.target.value)} className="flex-1 min-w-[140px]" />
               <Button size="sm" variant="outline" onClick={handleAddFinance} className="w-full sm:w-auto">+ Agregar</Button>
             </div>

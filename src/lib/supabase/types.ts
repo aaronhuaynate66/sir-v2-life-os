@@ -111,7 +111,9 @@ export type Database = {
           user_id: string
           type: 'income' | 'expense' | 'investment' | 'transfer' | 'debt'
           amount: number
-          currency: string
+          currency: 'PEN' | 'USD'
+          exchange_rate: number
+          amount_pen: number
           category: 'housing' | 'food' | 'transport' | 'health' | 'entertainment' | 'investment' | 'business' | 'personal' | 'debt' | 'other'
           description: string
           date: string
@@ -126,7 +128,9 @@ export type Database = {
           user_id: string
           type: 'income' | 'expense' | 'investment' | 'transfer' | 'debt'
           amount: number
-          currency?: string
+          currency?: 'PEN' | 'USD'
+          exchange_rate?: number
+          amount_pen: number
           category: 'housing' | 'food' | 'transport' | 'health' | 'entertainment' | 'investment' | 'business' | 'personal' | 'debt' | 'other'
           description: string
           date: string
