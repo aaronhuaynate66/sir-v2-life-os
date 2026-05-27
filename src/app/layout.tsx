@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="font-sans bg-[#0a0a0a] text-[#f5f5f5] antialiased">
         {children}
+        <Toaster />
       </body>
     </html>
   )
