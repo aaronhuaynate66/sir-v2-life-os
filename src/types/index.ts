@@ -82,6 +82,8 @@ export type TimingType = 'now' | 'today' | 'this_week' | 'when_ready'
 
 export type MovementType = 'income' | 'expense' | 'investment' | 'transfer' | 'debt'
 
+export type Currency = 'PEN' | 'USD'
+
 export type FinancialCategory =
   | 'housing'
   | 'food'
@@ -253,8 +255,13 @@ export interface SleepRecord {
 export interface FinancialMovement {
   id: string
   type: MovementType
+  /** Amount in the original currency the user entered. */
   amount: number
-  currency: string
+  currency: Currency
+  /** USD->PEN rate captured at registration time. 1.0 if currency='PEN'. */
+  exchangeRate: number
+  /** Always the PEN equivalent. PEN rows: equals amount. USD rows: amount * exchangeRate. */
+  amountPEN: number
   category: FinancialCategory
   description: string
   date: string

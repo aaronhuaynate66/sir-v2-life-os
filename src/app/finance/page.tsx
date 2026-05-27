@@ -1,8 +1,10 @@
 'use client'
 // SIR V2 — /finance
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { DollarSign, Wallet, ArrowRightLeft, Plus, Filter, AlertCircle, TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react'
+import { fetchUsdToPenRate, FALLBACK_USD_PEN } from '@/lib/exchange'
+import { formatCurrency, formatPEN, formatCurrencyCompact } from '@/lib/format/currency'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +19,7 @@ import { createFinancialMovementMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { cn } from '@/lib/utils'
-import type { MovementType, FinancialCategory, FinancialMovement } from '@/types'
+import type { MovementType, FinancialCategory, FinancialMovement, Currency } from '@/types'
 
 const TYPE_LABEL: Record<MovementType, string> = {
   income: 'Ingreso', expense: 'Gasto', investment: 'Inversion', transfer: 'Transferencia', debt: 'Deuda',
@@ -56,28 +58,77 @@ function FinanceContent() {
   const alerts = useMemo(() => detectFinancialAlerts(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
   const [type, setType] = useState<MovementType>('expense')
   const [amount, setAmount] = useState('')
-  const [currency, setCurrency] = useState('USD')
+  const [currency, setCurrency] = useState<Currency>('PEN')
+  const [exchangeRate, setExchangeRate] = useState<string>('')
+  const [rateIsFallback, setRateIsFallback] = useState(false)
   const [category, setCategory] = useState<FinancialCategory>('other')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [recurrent, setRecurrent] = useState(false)
   const [filterType, setFilterType] = useState<MovementType | 'all'>('all')
 
+  // Auto-fetch USD->PEN rate the first time the user picks USD per session.
+  // Once populated the user can override the value before saving.
+  useEffect(() => {
+    if (currency !== 'USD') return
+    if (exchangeRate.trim() !== '') return
+    let cancelled = false
+    void fetchUsdToPenRate().then((r) => {
+      if (cancelled) return
+      setExchangeRate(r.rate.toFixed(4))
+      setRateIsFallback(r.isFallback)
+      if (r.isFallback) {
+        toast.warning('Tipo de cambio offline', { description: `Usando referencia ~${FALLBACK_USD_PEN}` })
+      }
+    })
+    return () => { cancelled = true }
+  }, [currency, exchangeRate])
+
+  const parsedRate = parseFloat(exchangeRate)
+  const liveRate = currency === 'USD' && !isNaN(parsedRate) && parsedRate > 0 ? parsedRate : 1.0
+  const parsedAmount = parseFloat(amount)
+  const livePreviewPen = currency === 'USD' && !isNaN(parsedAmount) ? parsedAmount * liveRate : 0
+
   function addMovement() {
     const amt = parseFloat(amount)
     if (isNaN(amt) || amt <= 0) { toast.error('Monto invalido', { description: 'El monto debe ser mayor que 0.' }); return }
+    let rate: number
+    let amountPEN: number
+    if (currency === 'PEN') {
+      rate = 1.0
+      amountPEN = amt
+    } else {
+      rate = parseFloat(exchangeRate)
+      if (isNaN(rate) || rate <= 0) { toast.error('Tipo de cambio invalido', { description: 'Ingresa un TC mayor que 0.' }); return }
+      amountPEN = amt * rate
+    }
     const m: FinancialMovement = {
-      id: `f_${Date.now()}`, type, amount: amt, currency, category,
+      id: `f_${Date.now()}`, type, amount: amt, currency, exchangeRate: rate, amountPEN, category,
       description: description || TYPE_LABEL[type], date, recurrent, tags: [],
     }
     addFinancialMovement(m)
     addMemory(createFinancialMovementMemory(m))
     setAmount(''); setDescription('')
-    toast.success('Movimiento registrado', { description: `${TYPE_LABEL[type]}: ${amt.toFixed(2)} ${currency}` })
+    if (currency === 'USD') {
+      // Keep currency=USD + rate so the user can register multiple USD
+      // movements without re-fetching. Reset on PEN.
+    }
+    toast.success('Movimiento registrado', {
+      description: currency === 'USD'
+        ? `${TYPE_LABEL[type]}: ${formatCurrency(amt, 'USD')} = ${formatPEN(amountPEN)}`
+        : `${TYPE_LABEL[type]}: ${formatPEN(amt)}`,
+    })
   }
   function handleRemoveMovement(id: string, desc: string) {
     removeFinancialMovement(id)
     toast.success('Movimiento eliminado', { description: desc })
+  }
+  function handleCurrencyChange(next: Currency) {
+    setCurrency(next)
+    if (next === 'PEN') {
+      setExchangeRate('')
+      setRateIsFallback(false)
+    }
   }
 
   const sorted = [...financialMovements].sort((a, b) => b.date.localeCompare(a.date))
@@ -87,9 +138,10 @@ function FinanceContent() {
   const balanceTone: Tone = fin.monthlyBalance >= 0 ? 'ok' : 'bad'
   const savingsTone: Tone = fin.savingsRate >= 20 ? 'ok' : fin.savingsRate >= 10 ? 'warn' : 'bad'
 
+  const balancePrefix = fin.monthlyBalance >= 0 ? '+' : ''
   const stats = [
     { label: 'Estabilidad', value: fin.stability.toFixed(1), unit: '/10', tone: stabilityTone },
-    { label: 'Balance mensual', value: fin.monthlyBalance >= 0 ? '+' + fin.monthlyBalance.toFixed(0) : fin.monthlyBalance.toFixed(0), unit: ' USD', tone: balanceTone },
+    { label: 'Balance mensual', value: `${balancePrefix}${formatCurrencyCompact(fin.monthlyBalance, 'PEN')}`, unit: '', tone: balanceTone },
     { label: 'Tasa ahorro', value: fin.savingsRate.toFixed(0), unit: '%', tone: savingsTone },
     { label: 'Riesgo', value: fin.riskLevel, unit: '', tone: stabilityTone },
   ]
@@ -151,13 +203,52 @@ function FinanceContent() {
                 {(Object.keys(CAT_LABEL) as FinancialCategory[]).map(c => <SelectItem key={c} value={c}>{CAT_LABEL[c]}</SelectItem>)}
               </SelectContent>
             </Select>
-            <div className="flex gap-1">
-              <Input type="number" min="0" step="0.01" placeholder="Monto" value={amount} onChange={e => setAmount(e.target.value)} className="font-mono tabular-nums" />
-              <Input placeholder="USD" value={currency} onChange={e => setCurrency(e.target.value)} className="w-16 font-mono" />
-            </div>
-            <Input placeholder="Descripcion" value={description} onChange={e => setDescription(e.target.value)} className="col-span-2" />
+            <Select value={currency} onValueChange={(v) => handleCurrencyChange(v as Currency)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PEN">S/ (Soles)</SelectItem>
+                <SelectItem value="USD">$ (USD)</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="number" min="0" step="0.01"
+              placeholder={currency === 'PEN' ? 'Monto S/' : 'Monto $'}
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              className="font-mono tabular-nums"
+            />
+            <Input placeholder="Descripcion" value={description} onChange={e => setDescription(e.target.value)} className="col-span-2 md:col-span-1" />
             <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="font-mono tabular-nums" />
           </div>
+          {currency === 'USD' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 p-3 rounded border border-border bg-muted/30">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">
+                  Tipo de cambio USD&rarr;PEN
+                </label>
+                <Input
+                  type="number" min="0" step="0.0001"
+                  placeholder="3.7600"
+                  value={exchangeRate}
+                  onChange={e => { setExchangeRate(e.target.value); setRateIsFallback(false) }}
+                  className="font-mono tabular-nums"
+                />
+                {rateIsFallback && (
+                  <p className="text-[10px] text-amber-400 mt-1">Tipo de cambio offline, usando referencia.</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">
+                  Equivalente
+                </label>
+                <div className="text-sm font-mono tabular-nums h-9 flex items-center text-foreground">
+                  {!isNaN(parsedAmount) && parsedAmount > 0 && liveRate > 0
+                    ? `${formatCurrency(parsedAmount, 'USD')} x ${liveRate.toFixed(4)} = ${formatPEN(livePreviewPen)}`
+                    : <span className="text-muted-foreground/60">Ingresa monto y TC</span>}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-4 mb-3">
             <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
               <input type="checkbox" checked={recurrent} onChange={e => setRecurrent(e.target.checked)} className="accent-foreground" />
@@ -211,7 +302,16 @@ function FinanceContent() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={cn('text-sm font-mono tabular-nums', TYPE_COLOR[m.type])}>{TYPE_SIGN[m.type]}{m.amount.toFixed(0)} {m.currency}</span>
+                  <div className="flex flex-col items-end">
+                    {m.currency === 'USD' && (
+                      <span className="text-[10px] font-mono tabular-nums text-muted-foreground/70">
+                        {TYPE_SIGN[m.type]}{formatCurrency(m.amount, 'USD')} <span className="text-muted-foreground/50">TC {m.exchangeRate.toFixed(4)}</span>
+                      </span>
+                    )}
+                    <span className={cn('text-sm font-mono tabular-nums', TYPE_COLOR[m.type])}>
+                      {TYPE_SIGN[m.type]}{formatPEN(m.amountPEN)}
+                    </span>
+                  </div>
                   <button
                     onClick={() => handleRemoveMovement(m.id, m.description)}
                     className="text-xs text-muted-foreground/40 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"

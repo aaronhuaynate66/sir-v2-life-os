@@ -39,11 +39,11 @@ export const fixtureMetrics: SelfMetric[] = [
 ]
 
 export const fixtureFinancialMovements: FinancialMovement[] = [
-  { id: 'f1', type: 'income', amount: 3500, currency: 'USD', category: 'business', description: 'Consultoria', date: '2024-11-01', recurrent: false, tags: [] },
-  { id: 'f2', type: 'expense', amount: 900, currency: 'USD', category: 'housing', description: 'Alquiler', date: '2024-11-05', recurrent: true, recurrentPeriod: 'monthly', tags: ['fijo'] },
-  { id: 'f3', type: 'expense', amount: 400, currency: 'USD', category: 'food', description: 'Alimentacion', date: '2024-11-15', recurrent: false, tags: [] },
-  { id: 'f4', type: 'expense', amount: 150, currency: 'USD', category: 'transport', description: 'Transporte', date: '2024-11-15', recurrent: false, tags: [] },
-  { id: 'f5', type: 'investment', amount: 500, currency: 'USD', category: 'investment', description: 'ETF mensual', date: '2024-11-20', recurrent: true, recurrentPeriod: 'monthly', tags: ['inversion'] },
+  { id: 'f1', type: 'income', amount: 3500, currency: 'PEN', exchangeRate: 1.0, amountPEN: 3500, category: 'business', description: 'Consultoria', date: '2024-11-01', recurrent: false, tags: [] },
+  { id: 'f2', type: 'expense', amount: 900, currency: 'PEN', exchangeRate: 1.0, amountPEN: 900, category: 'housing', description: 'Alquiler', date: '2024-11-05', recurrent: true, recurrentPeriod: 'monthly', tags: ['fijo'] },
+  { id: 'f3', type: 'expense', amount: 400, currency: 'PEN', exchangeRate: 1.0, amountPEN: 400, category: 'food', description: 'Alimentacion', date: '2024-11-15', recurrent: false, tags: [] },
+  { id: 'f4', type: 'expense', amount: 150, currency: 'PEN', exchangeRate: 1.0, amountPEN: 150, category: 'transport', description: 'Transporte', date: '2024-11-15', recurrent: false, tags: [] },
+  { id: 'f5', type: 'investment', amount: 500, currency: 'PEN', exchangeRate: 1.0, amountPEN: 500, category: 'investment', description: 'ETF mensual', date: '2024-11-20', recurrent: true, recurrentPeriod: 'monthly', tags: ['inversion'] },
 ]
 
 export const fixtureRecommendation: Recommendation = {

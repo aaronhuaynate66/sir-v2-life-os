@@ -1,12 +1,17 @@
 // SIR V2 — Financial Engine
+//
+// All aggregations operate on amountPEN, never on amount, so mixed-
+// currency portfolios (PEN + USD) are summed in a single base currency.
+// USD movements were converted to PEN at registration time and the rate
+// is captured per-row (no rolling re-conversion).
 import type { FinancialMovement } from '@/types'
 
 export interface FinancialScore { stability: number; liquidityScore: number; savingsRate: number; monthlyBalance: number; riskLevel: 'low'|'medium'|'high'|'critical'; trend: 'improving'|'stable'|'declining' }
 export interface FinancialAlert { type: string; severity: 'info'|'warning'|'critical'; message: string; suggestedAction: string }
 
 export function analyzeFinancialStability(movements: FinancialMovement[], liquidityMonths = 0): FinancialScore {
-  const income = movements.filter(m => m.type === 'income').reduce((s, m) => s + m.amount, 0)
-  const expenses = movements.filter(m => m.type === 'expense').reduce((s, m) => s + m.amount, 0)
+  const income = movements.filter(m => m.type === 'income').reduce((s, m) => s + m.amountPEN, 0)
+  const expenses = movements.filter(m => m.type === 'expense').reduce((s, m) => s + m.amountPEN, 0)
   const balance = income - expenses
   const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0
   const liquidityScore = Math.min(10, liquidityMonths * 1.5)
@@ -18,8 +23,8 @@ export function analyzeFinancialStability(movements: FinancialMovement[], liquid
 export function detectFinancialAlerts(movements: FinancialMovement[], liquidityMonths: number): FinancialAlert[] {
   const alerts: FinancialAlert[] = []
   if (liquidityMonths < 2) alerts.push({ type: 'liquidity', severity: 'critical', message: `Liquidez critica: ${liquidityMonths} mes(es)`, suggestedAction: 'Reducir gastos no esenciales' })
-  const income = movements.filter(m => m.type === 'income').reduce((s, m) => s + m.amount, 0)
-  const expenses = movements.filter(m => m.type === 'expense').reduce((s, m) => s + m.amount, 0)
+  const income = movements.filter(m => m.type === 'income').reduce((s, m) => s + m.amountPEN, 0)
+  const expenses = movements.filter(m => m.type === 'expense').reduce((s, m) => s + m.amountPEN, 0)
   if (expenses > income * 0.9) alerts.push({ type: 'overspend', severity: 'warning', message: 'Gastos >90% del ingreso', suggestedAction: 'Revisar gastos' })
   return alerts
 }
