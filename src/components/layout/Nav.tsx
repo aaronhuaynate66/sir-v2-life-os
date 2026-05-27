@@ -3,9 +3,10 @@
 // Sidebar moderno con iconos lucide y active state en acento coral.
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Brain, Users, Target, DollarSign, Bell, Archive } from 'lucide-react'
+import { LayoutDashboard, Brain, Users, Target, DollarSign, Bell, Archive, LogOut } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/useAuth'
 
 interface NavItem {
   href: string
@@ -30,6 +31,12 @@ interface NavProps {
 
 export function Nav({ onItemClick }: NavProps = {}) {
   const pathname = usePathname()
+  const { user, signOut } = useAuth()
+
+  async function handleSignOut() {
+    onItemClick?.()
+    await signOut()
+  }
 
   return (
     <nav className="w-full h-full bg-background flex flex-col">
@@ -62,8 +69,21 @@ export function Nav({ onItemClick }: NavProps = {}) {
         })}
       </div>
 
-      <div className="px-5 py-4 border-t border-border">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-mono">datos &rarr; paz</div>
+      <div className="px-3 py-3 border-t border-border space-y-2">
+        {user?.email && (
+          <div className="px-2 truncate">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-0.5">Sesión</div>
+            <div className="text-xs text-foreground font-mono truncate" title={user.email}>{user.email}</div>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-red-400 hover:bg-red-500/5 transition-colors"
+        >
+          <LogOut size={16} strokeWidth={1.75} aria-hidden="true" />
+          <span>Cerrar sesión</span>
+        </button>
       </div>
     </nav>
   )
