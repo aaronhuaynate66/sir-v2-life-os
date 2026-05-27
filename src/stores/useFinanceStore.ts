@@ -1,5 +1,5 @@
 // SIR V2 — Finance Store
-// Manages financialMovements with Zustand + persist
+// Manages financialMovements with Zustand + persist + Supabase sync (Sesion 20c)
 'use client'
 
 import { create } from 'zustand'
@@ -7,6 +7,7 @@ import { persist } from 'zustand/middleware'
 import type { FinancialMovement } from '@/types'
 import { fixtureFinancialMovements } from '@/data/fixtures'
 import { STORAGE_KEYS } from './storage'
+import { attachSupabaseSync, financeMovementAdapter } from '@/lib/supabase/sync'
 
 interface FinanceState {
   financialMovements: FinancialMovement[]
@@ -55,3 +56,15 @@ export const useFinanceStore = create<FinanceStore>()(
     }
   )
 )
+
+attachSupabaseSync({
+  store: useFinanceStore,
+  bindings: [
+    {
+      label: 'finance_movements',
+      select: (s) => s.financialMovements,
+      apply: (items) => useFinanceStore.setState({ financialMovements: items }),
+      adapter: financeMovementAdapter,
+    },
+  ],
+})
