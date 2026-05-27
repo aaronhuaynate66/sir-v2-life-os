@@ -1,0 +1,45 @@
+// SIR V2 — Goal table adapter (Sesión 20c)
+
+import type { Goal, GoalCategory, GoalPriority, GoalStatus, Milestone } from '@/types'
+import type { TableAdapter } from '../types'
+
+export const goalAdapter: TableAdapter<Goal> = {
+  table: 'goals',
+  toRow: (g, userId) => ({
+    id: g.id,
+    user_id: userId,
+    title: g.title,
+    description: g.description ?? '',
+    category: g.category,
+    priority: g.priority,
+    status: g.status,
+    target_date: g.targetDate ?? null,
+    progress: g.progress,
+    milestones: g.milestones ?? [],
+    related_goals: g.relatedGoals ?? [],
+    related_persons: g.relatedPersons ?? [],
+    peace_impact: g.peaceImpact,
+    obstacles: g.obstacles ?? [],
+    next_action: g.nextAction ?? '',
+    created_at: g.createdAt,
+    updated_at: g.updatedAt,
+  }),
+  fromRow: (row) => ({
+    id: row.id as string,
+    title: row.title as string,
+    description: (row.description as string) ?? '',
+    category: row.category as GoalCategory,
+    priority: row.priority as GoalPriority,
+    status: row.status as GoalStatus,
+    targetDate: (row.target_date as string) ?? undefined,
+    progress: Number(row.progress) || 0,
+    milestones: (row.milestones as Milestone[]) ?? [],
+    relatedGoals: (row.related_goals as string[]) ?? [],
+    relatedPersons: (row.related_persons as string[]) ?? [],
+    peaceImpact: Number(row.peace_impact) || 5,
+    obstacles: (row.obstacles as string[]) ?? [],
+    nextAction: (row.next_action as string) ?? '',
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  }),
+}
