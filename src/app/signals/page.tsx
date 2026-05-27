@@ -2,6 +2,7 @@
 // SIR V2 — /signals
 // Senales activas, manual, resolver, fuentes
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { Bell, Sparkles, Filter, AlertCircle, Clock, Eye, Archive, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
@@ -11,6 +12,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogCancel, AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { useMemoryStore } from '@/stores'
 import { buildSignalContext } from '@/engines/signal'
@@ -67,7 +73,7 @@ function SignalsContent() {
   const [showResolved, setShowResolved] = useState(false)
 
   function submit() {
-    if (!content.trim()) return
+    if (!content.trim()) { toast.error('Senal vacia', { description: 'Escribe el contenido de la senal.' }); return }
     const s: Signal = {
       id: `sig_${Date.now()}`, source, type, content, strength: 5, urgency,
       relatedPersons: [], relatedGoals: [],
@@ -80,6 +86,15 @@ function SignalsContent() {
     addSignal(s)
     addMemory(createSignalAddedMemory(s))
     setContent(''); setMeaning(''); setAction('')
+    toast.success('Senal registrada', { description: `${SOURCE_LABEL[source]} · ${URGENCY_LABEL[urgency]}` })
+  }
+  function handleResolve(id: string) {
+    resolveSignal(id)
+    toast.success('Senal resuelta')
+  }
+  function handleRemove(id: string, content: string) {
+    removeSignal(id)
+    toast.success('Senal eliminada', { description: content.length > 60 ? content.slice(0, 60) + '...' : content })
   }
 
   const allSignals: Signal[] = [...signals].sort((a, b) => {
@@ -238,13 +253,30 @@ function SignalsContent() {
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
                       {!s.resolved && (
-                        <Button variant="outline" size="sm" onClick={() => resolveSignal(s.id)} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+                        <Button variant="outline" size="sm" onClick={() => handleResolve(s.id)} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
                           Resolver
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => removeSignal(s.id)} className="hover:text-red-400" aria-label="Eliminar">
-                        <X size={14} strokeWidth={1.75} />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="hover:text-red-400" aria-label="Eliminar">
+                            <X size={14} strokeWidth={1.75} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar senal?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              &ldquo;{s.content.length > 80 ? s.content.slice(0, 80) + '...' : s.content}&rdquo;
+                              <br />Esta accion no se puede deshacer.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleRemove(s.id, s.content)} className="bg-red-500 text-white hover:bg-red-500/90">Eliminar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </CardContent>

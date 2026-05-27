@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Users, UserPlus, AlertCircle, Edit, X } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -9,6 +10,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogCancel, AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import { useRelationshipStore, useMemoryStore } from '@/stores'
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { createPersonAddedMemory } from '@/engines/memory'
@@ -105,7 +111,7 @@ function RelationshipsContent() {
   }
 
   function handleSubmit() {
-    if (!form.name.trim()) return
+    if (!form.name.trim()) { toast.error('Nombre requerido', { description: 'Ingresa al menos un nombre.' }); return }
     const now = new Date().toISOString()
     if (editingId) {
       const patch: Partial<Person> = {
@@ -123,6 +129,7 @@ function RelationshipsContent() {
         updatedAt: now,
       }
       updatePerson(editingId, patch)
+      toast.success('Persona actualizada', { description: form.name.trim() })
     } else {
       const newPerson: Person = {
         id: crypto.randomUUID(),
@@ -143,8 +150,14 @@ function RelationshipsContent() {
       }
       addPerson(newPerson)
       addMemory(createPersonAddedMemory(newPerson))
+      toast.success('Persona agregada', { description: newPerson.name })
     }
     handleCancel()
+  }
+
+  function handleRemovePerson(id: string, name: string) {
+    removePerson(id)
+    toast.success('Persona eliminada', { description: name })
   }
 
   return (
@@ -335,9 +348,25 @@ function RelationshipsContent() {
                       <Button variant="ghost" size="sm" onClick={() => openEdit(person)} aria-label="Editar">
                         <Edit size={14} strokeWidth={1.75} />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => removePerson(person.id)} className="hover:text-red-400" aria-label="Eliminar">
-                        <X size={14} strokeWidth={1.75} />
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="hover:text-red-400" aria-label="Eliminar">
+                            <X size={14} strokeWidth={1.75} />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar a {person.name}?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Se eliminara la persona y su relacion asociada. Esta accion no se puede deshacer.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleRemovePerson(person.id, person.name)} className="bg-red-500 text-white hover:bg-red-500/90">Eliminar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 </CardContent>

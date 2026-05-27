@@ -1,5 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { Target, Plus, CheckCircle2, Archive, Activity } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -8,6 +9,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogCancel, AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useMemoryStore } from '@/stores'
 import { buildGoalDashboard } from '@/engines/goal'
@@ -63,18 +69,22 @@ function GoalsContent() {
     setAdding(false); setEditId(null)
   }
   function saveGoal() {
-    if (!title.trim()) return
+    if (!title.trim()) { toast.error('Titulo requerido', { description: 'El titulo no puede estar vacio.' }); return }
+    const pi = parseInt(peaceImpact)
+    if (isNaN(pi) || pi < 1 || pi > 10) { toast.error('Impacto invalido', { description: 'El impacto de paz debe estar entre 1 y 10.' }); return }
     const now = new Date().toISOString()
     if (editId) {
-      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction, peaceImpact: parseInt(peaceImpact) })
+      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction, peaceImpact: pi })
+      toast.success('Objetivo actualizado', { description: title })
     } else {
       const g: Goal = {
         id: 'g_' + Date.now(), title, description: desc, category: cat, priority: prio,
         status: 'active', progress: 0, milestones: [], relatedGoals: [], relatedPersons: [],
-        peaceImpact: parseInt(peaceImpact), obstacles: [], nextAction, targetDate: targetDate || undefined,
+        peaceImpact: pi, obstacles: [], nextAction, targetDate: targetDate || undefined,
         createdAt: now, updatedAt: now,
       }
       addGoal(g)
+      toast.success('Objetivo creado', { description: title })
     }
     resetForm()
   }
@@ -83,14 +93,31 @@ function GoalsContent() {
     setPrio(g.priority); setTargetDate(g.targetDate || ''); setNextAction(g.nextAction || '')
     setPeaceImpact(String(g.peaceImpact)); setAdding(true)
   }
+  function cancelProgress() {
+    setProgressId(null); setProgressVal('')
+  }
   function saveProgress() {
     if (!progressId) return
-    const v = parseInt(progressVal); if (isNaN(v) || v < 0 || v > 100) return
+    const v = parseInt(progressVal)
+    if (isNaN(v) || v < 0 || v > 100) { toast.error('Progreso invalido', { description: 'Debe estar entre 0 y 100.' }); return }
     const goal = goals.find(g => g.id === progressId); if (!goal) return
     const previousProgress = goal.progress
     updateGoalProgress(progressId, v)
     if (v !== previousProgress) addMemory(createGoalProgressMemory(goal, previousProgress, v))
     setProgressId(null); setProgressVal('')
+    toast.success('Progreso actualizado', { description: `${goal.title}: ${previousProgress}% → ${v}%` })
+  }
+  function handleComplete(g: Goal) {
+    completeGoal(g.id)
+    toast.success('Objetivo completado', { description: g.title })
+  }
+  function handlePause(g: Goal) {
+    pauseGoal(g.id)
+    toast.success('Objetivo pausado', { description: g.title })
+  }
+  function handleReactivate(g: Goal) {
+    updateGoal(g.id, { status: 'active' })
+    toast.success('Objetivo reactivado', { description: g.title })
   }
 
   const activeGoals = goals.filter(g => g.status === 'active').sort((a, b) => {
@@ -192,7 +219,7 @@ function GoalsContent() {
                       <div className="flex gap-2 mb-2">
                         <Input type="number" min="0" max="100" placeholder="% nuevo progreso" value={progressVal} onChange={e => setProgressVal(e.target.value)} className="w-40 font-mono" />
                         <Button variant="outline" size="sm" onClick={saveProgress} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">Guardar</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setProgressId(null)}>×</Button>
+                        <Button variant="ghost" size="sm" onClick={cancelProgress}>Cancelar</Button>
                       </div>
                     )}
                     <div className="flex gap-4 text-[10px] text-muted-foreground/70 flex-wrap">
@@ -204,8 +231,40 @@ function GoalsContent() {
                   <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
                     <Button variant="ghost" size="sm" onClick={() => { setProgressId(g.id === progressId ? null : g.id); setProgressVal(String(g.progress)) }}>%</Button>
                     <Button variant="ghost" size="sm" onClick={() => startEdit(g)}>Editar</Button>
-                    <Button variant="outline" size="sm" onClick={() => completeGoal(g.id)} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">Completar</Button>
-                    <Button variant="ghost" size="sm" onClick={() => pauseGoal(g.id)}>Pausar</Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">Completar</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Marcar como completado?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            &ldquo;{g.title}&rdquo; pasara al historial como completado.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleComplete(g)}>Completar</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm">Pausar</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Pausar este objetivo?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            &ldquo;{g.title}&rdquo; dejara de aparecer en activos. Puedes reactivarlo cuando quieras desde el historial.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handlePause(g)}>Pausar</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardContent>
@@ -230,7 +289,7 @@ function GoalsContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={cn('text-[10px] font-mono', STATUS_COLORS[g.status])}>{g.status}</span>
-                  <Button variant="ghost" size="sm" onClick={() => updateGoal(g.id, { status: 'active' })}>Reactivar</Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleReactivate(g)}>Reactivar</Button>
                 </div>
               </div>
             ))}
