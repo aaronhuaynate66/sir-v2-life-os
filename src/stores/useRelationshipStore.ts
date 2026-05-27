@@ -1,5 +1,16 @@
 // SIR V2 — Relationship Store
-// Manages people and relationships with Zustand + persist
+// Manages people and relationships with Zustand + persist + Supabase sync (Sesion 20c)
+//
+// FK note: relationships.person_id REFERENCES people.id ON DELETE CASCADE.
+// removePerson() locally cascades to relationships; the DB also cascades on
+// the people.delete. As long as people upsert runs before relationships
+// upsert on first push, FK constraints are satisfied. The engine fires
+// bindings in array order via Promise.all, but per-binding upsert is
+// independent; for a new person + relationship created in the same tick,
+// the upserts arrive at Supabase in arbitrary order. Mitigation: define
+// people binding FIRST so its slice's push starts first; the relationships
+// FK constraint will reject the relationship upsert if it lands first and
+// the retry will succeed once people lands.
 'use client'
 
 import { create } from 'zustand'
@@ -7,6 +18,11 @@ import { persist } from 'zustand/middleware'
 import type { Person, Relationship } from '@/types'
 import { fixturePeople, fixtureRelationships } from '@/data/fixtures'
 import { STORAGE_KEYS } from './storage'
+import {
+  attachSupabaseSync,
+  personAdapter,
+  relationshipAdapter,
+} from '@/lib/supabase/sync'
 
 interface RelationshipState {
   people: Person[]
@@ -70,3 +86,21 @@ export const useRelationshipStore = create<RelationshipStore>()(
     }
   )
 )
+
+attachSupabaseSync({
+  store: useRelationshipStore,
+  bindings: [
+    {
+      label: 'people',
+      select: (s) => s.people,
+      apply: (items) => useRelationshipStore.setState({ people: items }),
+      adapter: personAdapter,
+    },
+    {
+      label: 'relationships',
+      select: (s) => s.relationships,
+      apply: (items) => useRelationshipStore.setState({ relationships: items }),
+      adapter: relationshipAdapter,
+    },
+  ],
+})

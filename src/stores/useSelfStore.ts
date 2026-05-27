@@ -1,5 +1,6 @@
 // SIR V2 — Self Store
 // Manages selfMetrics, healthMetrics, sleepRecords with Zustand + persist
+// + Supabase sync (Sesion 20c, 3 tables).
 'use client'
 
 import { create } from 'zustand'
@@ -7,6 +8,12 @@ import { persist } from 'zustand/middleware'
 import type { SelfMetric, HealthMetric, SleepRecord } from '@/types'
 import { fixtureSleepRecords, fixtureMetrics } from '@/data/fixtures'
 import { STORAGE_KEYS } from './storage'
+import {
+  attachSupabaseSync,
+  selfMetricAdapter,
+  healthMetricAdapter,
+  sleepRecordAdapter,
+} from '@/lib/supabase/sync'
 
 interface SelfState {
   selfMetrics: SelfMetric[]
@@ -64,3 +71,27 @@ export const useSelfStore = create<SelfStore>()(
     }
   )
 )
+
+attachSupabaseSync({
+  store: useSelfStore,
+  bindings: [
+    {
+      label: 'self_metrics',
+      select: (s) => s.selfMetrics,
+      apply: (items) => useSelfStore.setState({ selfMetrics: items }),
+      adapter: selfMetricAdapter,
+    },
+    {
+      label: 'health_metrics',
+      select: (s) => s.healthMetrics,
+      apply: (items) => useSelfStore.setState({ healthMetrics: items }),
+      adapter: healthMetricAdapter,
+    },
+    {
+      label: 'sleep_records',
+      select: (s) => s.sleepRecords,
+      apply: (items) => useSelfStore.setState({ sleepRecords: items }),
+      adapter: sleepRecordAdapter,
+    },
+  ],
+})
