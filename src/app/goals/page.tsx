@@ -1,6 +1,7 @@
 'use client'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Target, Plus, CheckCircle2, Archive, Activity } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -158,36 +159,47 @@ function GoalsContent() {
         ))}
       </div>
 
-      {adding && (
-        <Card className={cn('mb-4', cardClass)}>
-          <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Plus} label={editId ? 'Editar objetivo' : 'Nuevo objetivo'} />
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <Input placeholder="Titulo" value={title} onChange={e => setTitle(e.target.value)} className="col-span-2" />
-              <Input placeholder="Descripcion" value={desc} onChange={e => setDesc(e.target.value)} className="col-span-2" />
-              <Select value={cat} onValueChange={(v) => setCat(v as GoalCategory)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(CAT_LABEL) as GoalCategory[]).map(c => <SelectItem key={c} value={c}>{CAT_LABEL[c]}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={prio} onValueChange={(v) => setPrio(v as GoalPriority)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(PRIO_LABEL) as GoalPriority[]).map(p => <SelectItem key={p} value={p}>{PRIO_LABEL[p]}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="font-mono" />
-              <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
-              <Input placeholder="Siguiente accion" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={saveGoal} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">{editId ? 'Guardar' : '+ Agregar objetivo'}</Button>
-              <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <AnimatePresence initial={false}>
+        {adding && (
+          <motion.div
+            key="goal-form"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <Card className={cn('mb-4', cardClass)}>
+              <CardContent className="p-4 sm:p-6">
+                <SectionTitle icon={Plus} label={editId ? 'Editar objetivo' : 'Nuevo objetivo'} />
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <Input placeholder="Titulo" value={title} onChange={e => setTitle(e.target.value)} className="col-span-2" />
+                  <Input placeholder="Descripcion" value={desc} onChange={e => setDesc(e.target.value)} className="col-span-2" />
+                  <Select value={cat} onValueChange={(v) => setCat(v as GoalCategory)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(CAT_LABEL) as GoalCategory[]).map(c => <SelectItem key={c} value={c}>{CAT_LABEL[c]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={prio} onValueChange={(v) => setPrio(v as GoalPriority)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(PRIO_LABEL) as GoalPriority[]).map(p => <SelectItem key={p} value={p}>{PRIO_LABEL[p]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="font-mono" />
+                  <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
+                  <Input placeholder="Siguiente accion" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={saveGoal} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">{editId ? 'Guardar' : '+ Agregar objetivo'}</Button>
+                  <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {activeGoals.length === 0 && !adding ? (
         <div className="flex flex-col items-center justify-center py-12 text-center gap-3">

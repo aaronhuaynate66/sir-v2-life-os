@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Users, UserPlus, AlertCircle, Edit, X } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -203,10 +204,19 @@ function RelationshipsContent() {
         </div>
       )}
 
-      {showForm && (
-        <Card className={cn('mb-6', cardClass)}>
-          <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={editingId ? Edit : UserPlus} label={editingId ? 'Editar persona' : 'Nueva persona'} />
+      <AnimatePresence initial={false}>
+        {showForm && (
+          <motion.div
+            key="person-form"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            style={{ overflow: 'hidden' }}
+          >
+            <Card className={cn('mb-6', cardClass)}>
+              <CardContent className="p-4 sm:p-6">
+                <SectionTitle icon={editingId ? Edit : UserPlus} label={editingId ? 'Editar persona' : 'Nueva persona'} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Nombre *</label>
@@ -281,9 +291,11 @@ function RelationshipsContent() {
                 {editingId ? 'Guardar cambios' : 'Agregar'}
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {people.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
