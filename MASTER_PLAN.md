@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-28T15:13:22Z`  
+Última actualización: `2026-05-28T15:14:00Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3 - Memory Longitudinal — Persistencia historica avanzada, busqueda semantica  
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-███████████████████████████████████████░ 38/39 issues cerrados (97%)
+████████████████████████████████████░░░░ 38/42 issues cerrados (90%)
 ```
 
-✅ Cerrados: 38 | 🔄 En progreso: 0 | ⬜ Pendientes: 1 | 🚨 Bloqueantes: 0
+✅ Cerrados: 38 | 🔄 En progreso: 0 | ⬜ Pendientes: 4 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -203,6 +203,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 - ✅ [#65](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/65) Session 20c: Data layer migration to Supabase
 - ✅ [#66](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/66) Session 20d: One-shot localStorage to Supabase migration
 - ✅ [#67](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/67) Session Currency: PEN default + USD with live exchange rate
+- ⬜ [#71](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/71) Fase 3a #3 — Conectar timeline con datos reales de Supabase
 
 ### Memory Longitudinal
 
@@ -239,6 +240,11 @@ _(sin issues en esta categoría)_
 - ✅ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
 - ✅ [#30](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) Race condition: sync-roadmap workflow falla en closing-en-cascada de issues
 - ✅ [#35](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)
+
+### Sin categorizar
+
+- ⬜ [#70](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/70) Fase 3a #2 — Implementar vista timeline con filtros
+- ⬜ [#72](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/72) Fase 3a #4 — Gate de validacion Fase 3a
 
 ---
 
