@@ -86,3 +86,4 @@ El índice se mantiene como tabla rápida; el sistema Living Roadmap también li
 | [0002](0002-rich-context-snapshot.md) | RichContextSnapshot: agregador centralizado para consumir estado vivo | Accepted | 2026-05-22 |
 | [0003](0003-client-only-debug-panel.md) | RichContextDebugPanel renderizado client-only para evitar hydration mismatch | Accepted | 2026-05-23 |
 | [0004](0004-context-snapshot-history.md) | Context Snapshot History: store separado y captura por eventos | Accepted | 2026-05-25 |
+| [0005](0005-timeline-architecture.md) | Arquitectura del Timeline (Fase 3a): multi-query paralela, estado en React, shape unificada | Proposed | 2026-05-28 |
