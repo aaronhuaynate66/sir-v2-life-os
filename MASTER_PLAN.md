@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-26T14:24:27Z`  
+Última actualización: `2026-05-28T14:15:41Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-████████████████████████████████████████ 23/23 issues cerrados (100%)
+██████████████████████████████████████░░ 25/26 issues cerrados (96%)
 ```
 
-✅ Cerrados: 23 | 🔄 En progreso: 0 | ⬜ Pendientes: 0 | 🚨 Bloqueantes: 0
+✅ Cerrados: 25 | 🔄 En progreso: 0 | ⬜ Pendientes: 1 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -32,7 +32,7 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 | Fase 1 - Stores y dominio | Dominio inicial | ✅ Completado | ██████████ 100% |
 | Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ██████████ 100% |
 | Fase 3 - Memory Longitudinal | Historia profunda | ⬜ Pendiente | ░░░░░░░░░░ 0% |
-| Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | ░░░░░░░░░░ 0% |
+| Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | ███████░░░ 67% |
 | Fase 5 - IA Basica | Capa cognitiva | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 
 ---
@@ -110,7 +110,15 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 **Wedge:** Reemplazar debug panel con UI real para el usuario final  
 **Gate de salida:** Onboarding + uso diario sin necesidad de leer codigo
 
-_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
+```
+███████████████████████████░░░░░░░░░░░░░ 2/3 issues cerrados (67%)
+```
+
+| # | Issue | Labels | Estado | Cerrado |
+|---|-------|--------|--------|---------|
+| #53 | [Session 11: Fix Zustand persist hydration delay](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/53) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #54 | [Session 12: useHasHydrated + RouteSkeleton on all routes](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/54) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #55 | [Session 13: Design System base (shadcn/ui + Geist)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/55) | fase-4, retroactive | ⬜ Abierto | — |
 
 ### Fase 5 - IA Basica
 
@@ -166,7 +174,9 @@ _(sin issues en esta categoría)_
 
 ### UI Producción
 
-_(sin issues en esta categoría)_
+- ✅ [#53](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/53) Session 11: Fix Zustand persist hydration delay
+- ✅ [#54](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/54) Session 12: useHasHydrated + RouteSkeleton on all routes
+- ⬜ [#55](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/55) Session 13: Design System base (shadcn/ui + Geist)
 
 ### IA & Cognición
 
