@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-28T14:15:41Z`  
+Última actualización: `2026-05-28T14:16:08Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-██████████████████████████████████████░░ 25/26 issues cerrados (96%)
+███████████████████████████████████████░ 29/30 issues cerrados (97%)
 ```
 
-✅ Cerrados: 25 | 🔄 En progreso: 0 | ⬜ Pendientes: 1 | 🚨 Bloqueantes: 0
+✅ Cerrados: 29 | 🔄 En progreso: 0 | ⬜ Pendientes: 1 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -32,7 +32,7 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 | Fase 1 - Stores y dominio | Dominio inicial | ✅ Completado | ██████████ 100% |
 | Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ██████████ 100% |
 | Fase 3 - Memory Longitudinal | Historia profunda | ⬜ Pendiente | ░░░░░░░░░░ 0% |
-| Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | ███████░░░ 67% |
+| Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | █████████░ 86% |
 | Fase 5 - IA Basica | Capa cognitiva | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 
 ---
@@ -111,14 +111,18 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 **Gate de salida:** Onboarding + uso diario sin necesidad de leer codigo
 
 ```
-███████████████████████████░░░░░░░░░░░░░ 2/3 issues cerrados (67%)
+██████████████████████████████████░░░░░░ 6/7 issues cerrados (86%)
 ```
 
 | # | Issue | Labels | Estado | Cerrado |
 |---|-------|--------|--------|---------|
 | #53 | [Session 11: Fix Zustand persist hydration delay](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/53) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
 | #54 | [Session 12: useHasHydrated + RouteSkeleton on all routes](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/54) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
-| #55 | [Session 13: Design System base (shadcn/ui + Geist)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/55) | fase-4, retroactive | ⬜ Abierto | — |
+| #55 | [Session 13: Design System base (shadcn/ui + Geist)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/55) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #56 | [Session 14: Dashboard redesign with shadcn/ui](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/56) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #57 | [Session 15: Migrate 6 remaining routes to shadcn/ui](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/57) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #58 | [Session 16: Coral accent + unified navigation + modern Nav](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/58) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #59 | [Session 17: Dashboard re-imagined with visual hierarchy](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/59) | fase-4, retroactive | ⬜ Abierto | — |
 
 ### Fase 5 - IA Basica
 
@@ -176,7 +180,11 @@ _(sin issues en esta categoría)_
 
 - ✅ [#53](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/53) Session 11: Fix Zustand persist hydration delay
 - ✅ [#54](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/54) Session 12: useHasHydrated + RouteSkeleton on all routes
-- ⬜ [#55](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/55) Session 13: Design System base (shadcn/ui + Geist)
+- ✅ [#55](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/55) Session 13: Design System base (shadcn/ui + Geist)
+- ✅ [#56](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/56) Session 14: Dashboard redesign with shadcn/ui
+- ✅ [#57](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/57) Session 15: Migrate 6 remaining routes to shadcn/ui
+- ✅ [#58](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/58) Session 16: Coral accent + unified navigation + modern Nav
+- ⬜ [#59](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/59) Session 17: Dashboard re-imagined with visual hierarchy
 
 ### IA & Cognición
 
