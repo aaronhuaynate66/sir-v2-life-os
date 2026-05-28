@@ -460,5 +460,21 @@ Si todo verde: merge → arranca #70.
 
 ---
 
+## 9. External Review Notes
+
+This design document received external technical review. Six observations
+(4 must-design behaviors + 2 implementation details) were incorporated
+into [ADR 0005 § Implementation Notes](../decisions/0005-timeline-architecture.md#implementation-notes-from-external-review).
+They do not change the architectural decisions D1–D3, but they pin down
+behaviors the original design left implicit. Four additional risks
+(R7–R10) were appended.
+
+**Implementation of Issue #70 must honor those constraints** —
+specifically: partial query failure semantics, ISO 8601 validation in
+`relationships.history`, `AbortController`-based cancellation in
+`useTimelineQuery`, and differentiated empty-state messaging.
+
+---
+
 _Documento mantenido junto a la rama `feat/3a-issue-69-analysis-design`._
 _Cierra Issue #69 cuando el PR se mergea._

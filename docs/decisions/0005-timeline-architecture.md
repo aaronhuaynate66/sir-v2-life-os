@@ -156,6 +156,83 @@ tipo. Para 8 tipos heterogéneos eso son ~200 LOC de `switch` por cada
 renderer. **Descartado** — el patrón unificado se aplica una vez en el
 adapter, no en cada renderer.
 
+## Implementation Notes (from external review)
+
+The following constraints emerged from external technical review and must
+be honored when implementing Issue #70. They do not change the
+architectural decisions (D1–D3) above — they pin down behaviors the
+original design left implicit.
+
+### Must be designed before implementation (#70)
+
+1. **Partial query failure semantics.**
+   With multi-query parallel fetching (D1), the hook must handle the case
+   where some queries succeed and others fail. The chosen behavior is:
+   render successful event types with a banner notice listing which types
+   failed and an option to retry. Failing all queries should still surface
+   an actionable error state. Do NOT silently swallow partial failures.
+
+2. **ISO 8601 validation in `relationships.history` adapter.**
+   The `date` field inside `RelationshipEvent` jsonb is not schema-enforced.
+   The `relational_event` adapter must validate that the value parses as
+   ISO 8601 (or normalize it) before using it as `occurredAt`. Events with
+   invalid dates should be skipped with a `console.warn`, not silently
+   sorted into wrong positions.
+
+3. **Query cancellation with `AbortController`.**
+   The `useTimelineQuery` hook must use `AbortController` to cancel
+   in-flight queries when filters change rapidly (e.g., user toggles event
+   types while a page is loading). Use
+   `supabase.from(...).abortSignal(controller.signal)`. Without this, race
+   conditions can lead to merged results from different filter states.
+
+4. **Differentiated empty states.**
+   The empty state UI is shared, but the messaging must differ:
+   - No events in the selected time range: *"No hay eventos en este rango.
+     Probá ampliar el período."*
+   - Search returned zero results: *"No encontré resultados para
+     '&lt;query&gt;'. Probá otros términos."*
+
+   The hook must signal which condition is active (e.g., distinct flags
+   `isEmptyRange` vs `isEmptySearch`) so the UI can pick the correct
+   message.
+
+### Minor implementation details (decided at coding time)
+
+5. **`.ilike()` should be omitted when search is empty.**
+   The query sketch in
+   [issue-69-analysis-design.md §4.1](../phase-3a/issue-69-analysis-design.md#41-per-type-query-template)
+   uses `ilike('content', search ? \`%${search}%\` : '%')`. The wildcard
+   fallback is functionally correct but adds an unnecessary filter to the
+   query plan. In #70, omit the `.ilike()` call entirely when `search` is
+   empty rather than passing `'%'`.
+
+6. **No-op detail button (`[→]`) should not render when no detail route exists.**
+   The mockups in
+   [issue-69-analysis-design.md §2.5](../phase-3a/issue-69-analysis-design.md#25-diseño-de-cada-evento-en-el-feed-mockup-textual)
+   proposed a `[→]` button that is no-op for event types without a
+   dedicated detail route. Better UX: conditionally render the button only
+   when a detail route is defined for that event type. Absence of the
+   button is clearer than a button that does nothing.
+
+### Additional risks identified (extend §5 of design doc)
+
+- **R7 — `loadMore` race with filter change.** When the user changes
+  filters while a `loadMore` call is in flight, the hook must clear the
+  existing event array before merging new pages. Addressed by combining
+  point 3 (AbortController) with explicit array reset on filter change.
+- **R8 — Format validation in `relationships.history`.** Addressed by
+  point 2 above.
+- **R9 — `meta` field has no versioning.** Accepted limitation for Fase
+  3a per D3. If the `meta` shape changes in 3b/3c/3d, document the change
+  in the adapter and in the ADR for that phase. Consumers must treat
+  unknown `meta` keys as forward-compatible (read-only, ignore unknown).
+- **R10 — `goal_event` "updated" with empty diff.** The `goal_event`
+  adapter must NOT emit "updated" events that have no meaningful diff
+  content. Either skip such events entirely or attach a minimal diff
+  summary in `meta` (e.g., which fields changed). Rendering "Goal X
+  updated" with an empty body is misleading UX.
+
 ## References
 
 - [Issue #69 — Análisis y diseño UI exploración temporal](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/69)
