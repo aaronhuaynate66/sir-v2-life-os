@@ -1,17 +1,38 @@
-// SIR V2 — Timeline query layer (Fase 3a Issue #70)
+// SIR V2 — Timeline query layer (Fase 3a Issue #71)
 //
-// Esta capa simula la fetch a Supabase usando fixtures. Issue #71 reemplaza
-// `queryByType` por queries reales contra Supabase. La interfaz publica
-// `fetchPage` se mantiene; el hook no necesita cambios.
+// Reemplaza la capa de fixtures por queries reales a Supabase. La interfaz
+// publica (fetchPage, activeTypes, DEFAULT_FILTERS) se mantiene identica
+// — useTimelineQuery NO cambia. Adapters tampoco cambian: la shape
+// TimelineEvent es estable.
+//
+// Pipeline por tipo (2 etapas de adaptacion):
+//   Supabase row -> sync adapter.fromRow -> native type (Memory, etc.)
+//   native type -> timeline adapter -> TimelineEvent
+//
+// Las queries respetan las 6 Implementation Notes del ADR 0005:
+//   #1 Partial failure: Promise.allSettled distingue por tipo (sigue ok).
+//   #2 ISO 8601 validation: vive en adapters/relational_event.ts.
+//   #3 AbortController: .abortSignal(signal) en cada query Supabase.
+//   #4 Empty states: flags ya en useTimelineQuery (no se tocan).
+//   #5 Omitir .ilike() vacio: solo si sanitizeSearch(...) != ''.
+//   #6 Boton detalle condicional: la UI ya lo oculta en todos los tipos.
 
-import type {
-  FetchTypeResult,
-  TimelineCursor,
-  TimelineEvent,
-  TimelineEventType,
-  TimelineFilters,
-} from './types'
-import { ALL_EVENT_TYPES, TIMELINE_PAGE_SIZE, DEFAULT_FILTERS } from './types'
+'use client'
+
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+import { createClient } from '@/lib/supabase/client'
+import {
+  memoryAdapter,
+  financeMovementAdapter,
+  signalAdapter,
+  goalAdapter,
+  selfMetricAdapter,
+  healthMetricAdapter,
+  sleepRecordAdapter,
+  personAdapter,
+  relationshipAdapter,
+} from '@/lib/supabase/sync'
 
 import { adaptMemories } from './adapters/memory'
 import { adaptSelfMetrics } from './adapters/self_metric'
@@ -24,20 +45,17 @@ import { adaptPeople } from './adapters/people'
 import { adaptRelationalHistory } from './adapters/relational_event'
 
 import {
-  timelineFixtureMemories,
-  timelineFixtureSelfMetrics,
-  timelineFixtureHealthMetrics,
-  timelineFixtureSleepRecords,
-  timelineFixtureFinanceMovements,
-  timelineFixtureSignals,
-  timelineFixtureGoals,
-  timelineFixturePeople,
-  timelineFixtureRelationships,
-  FIXTURE_FAILURE_TRIGGER,
-  FIXTURE_FAILED_TYPES_ON_TRIGGER,
-} from './fixtures'
+  type FetchTypeResult,
+  type TimelineCursor,
+  type TimelineEvent,
+  type TimelineEventType,
+  type TimelineFilters,
+  ALL_EVENT_TYPES,
+  TIMELINE_PAGE_SIZE,
+  DEFAULT_FILTERS,
+} from './types'
 
-// ─── filtros ────────────────────────────────────────────────────────
+// ─── helpers ────────────────────────────────────────────────────────
 
 export function activeTypes(filters: TimelineFilters): TimelineEventType[] {
   if (filters.types.size === 0) return [...ALL_EVENT_TYPES]
@@ -61,102 +79,285 @@ function dateRangeStartIso(filters: TimelineFilters): string | null {
   }
 }
 
-function matchesSearch(events: TimelineEvent[], search: string): TimelineEvent[] {
-  const q = search.trim().toLowerCase()
-  if (!q) return events
-  return events.filter((e) => {
-    if (e.title.toLowerCase().includes(q)) return true
-    if (e.body && e.body.toLowerCase().includes(q)) return true
-    return e.tags.some((tag) => tag.toLowerCase().includes(q))
-  })
+function dateOnlyFromIso(iso: string): string {
+  // "2026-05-25T22:00:00.000Z" -> "2026-05-25"
+  return iso.split('T')[0] ?? iso
 }
 
-function matchesRange(events: TimelineEvent[], startIso: string | null): TimelineEvent[] {
-  if (!startIso) return events
-  return events.filter((e) => e.occurredAt >= startIso)
-}
-
-function matchesCursor(events: TimelineEvent[], cursor: TimelineCursor): TimelineEvent[] {
-  if (!cursor) return events
-  return events.filter((e) => e.occurredAt < cursor)
+/**
+ * Search debe ir sin caracteres especiales de PostgREST. `%` y `_` son
+ * wildcards de ilike; `,` rompe el separador de .or(); no permitir
+ * literales evita resultados sorpresivos en busqueda textual de Fase 3a.
+ * La busqueda parcial sigue funcionando gracias al `%${term}%` que rodea.
+ */
+function sanitizeSearch(raw: string): string {
+  return raw.trim().replace(/[%_,]/g, '')
 }
 
 function sortDesc(events: TimelineEvent[]): TimelineEvent[] {
   return events.sort((a, b) => {
     if (a.occurredAt > b.occurredAt) return -1
     if (a.occurredAt < b.occurredAt) return 1
-    // Tiebreaker estable: id DESC para que la paginacion sea reproducible
     if (a.id < b.id) return 1
     if (a.id > b.id) return -1
     return 0
   })
 }
 
-// ─── delay simulado ─────────────────────────────────────────────────
-
-const SIMULATED_DELAY_MS = 220
-
-function delayWithAbort(ms: number, signal: AbortSignal): Promise<void> {
-  if (signal.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'))
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => {
-      signal.removeEventListener('abort', onAbort)
-      resolve()
-    }, ms)
-    const onAbort = () => {
-      clearTimeout(t)
-      signal.removeEventListener('abort', onAbort)
-      reject(new DOMException('Aborted', 'AbortError'))
-    }
-    signal.addEventListener('abort', onAbort, { once: true })
-  })
-}
-
-// ─── per-type query ─────────────────────────────────────────────────
-
-function adaptForType(type: TimelineEventType): TimelineEvent[] {
-  switch (type) {
-    case 'memory':           return adaptMemories(timelineFixtureMemories)
-    case 'self_metric':      return adaptSelfMetrics(timelineFixtureSelfMetrics)
-    case 'health':           return adaptHealthMetrics(timelineFixtureHealthMetrics)
-    case 'sleep':            return adaptSleeps(timelineFixtureSleepRecords)
-    case 'finance':          return adaptFinances(timelineFixtureFinanceMovements)
-    case 'signal':           return adaptSignals(timelineFixtureSignals)
-    case 'goal_event':       return adaptGoals(timelineFixtureGoals)
-    case 'relational_event':
-      return [
-        ...adaptPeople(timelineFixturePeople),
-        ...adaptRelationalHistory(timelineFixtureRelationships, timelineFixturePeople),
-      ]
+function isAbortError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === 'AbortError') return true
+  if (err && typeof err === 'object' && 'name' in err && (err as { name: unknown }).name === 'AbortError') {
+    return true
   }
+  // Supabase wraps abort en su propio error con .code === '20'? defensive:
+  if (err && typeof err === 'object' && 'message' in err) {
+    const msg = String((err as { message: unknown }).message ?? '')
+    if (msg.toLowerCase().includes('abort')) return true
+  }
+  return false
 }
 
-const FAIL_TYPES_SET = new Set<TimelineEventType>(FIXTURE_FAILED_TYPES_ON_TRIGGER)
+// ─── per-type queries ──────────────────────────────────────────────
+//
+// Cada funcion:
+//   1. Construye la query con order + limit + abortSignal.
+//   2. Aplica filtros condicionales (date range, cursor, search).
+//   3. Mapea filas via sync adapter -> native type.
+//   4. Mapea native type via timeline adapter -> TimelineEvent[].
+//
+// El tipo de retorno es siempre TimelineEvent[]. Throws en error de red,
+// RLS, o cualquier fallo no-abort. AbortError se relanza para que el
+// caller lo distinga en Promise.allSettled.
 
-async function queryByType(
+type SbClient = SupabaseClient
+
+async function queryMemoryEvents(
+  sb: SbClient, userId: string, filters: TimelineFilters, cursor: TimelineCursor,
+  signal: AbortSignal, pageSize: number,
+): Promise<TimelineEvent[]> {
+  const startIso = dateRangeStartIso(filters)
+  const term = sanitizeSearch(filters.search)
+  let q = sb
+    .from('memories')
+    .select('*')
+    .eq('user_id', userId)
+    .order('occurred_at', { ascending: false })
+    .limit(pageSize)
+    .abortSignal(signal)
+  if (startIso) q = q.gte('occurred_at', startIso)
+  if (cursor)   q = q.lt('occurred_at', cursor)
+  if (term)     q = q.or(`title.ilike.%${term}%,content.ilike.%${term}%`)
+  const { data, error } = await q
+  if (error) throw error
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return adaptMemories(rows.map((r) => memoryAdapter.fromRow(r)))
+}
+
+async function querySelfMetricEvents(
+  sb: SbClient, userId: string, filters: TimelineFilters, cursor: TimelineCursor,
+  signal: AbortSignal, pageSize: number,
+): Promise<TimelineEvent[]> {
+  const startIso = dateRangeStartIso(filters)
+  const term = sanitizeSearch(filters.search)
+  let q = sb
+    .from('self_metrics')
+    .select('*')
+    .eq('user_id', userId)
+    .order('measured_at', { ascending: false })
+    .limit(pageSize)
+    .abortSignal(signal)
+  if (startIso) q = q.gte('measured_at', startIso)
+  if (cursor)   q = q.lt('measured_at', cursor)
+  if (term)     q = q.ilike('note', `%${term}%`)
+  const { data, error } = await q
+  if (error) throw error
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return adaptSelfMetrics(rows.map((r) => selfMetricAdapter.fromRow(r)))
+}
+
+async function queryHealthMetricEvents(
+  sb: SbClient, userId: string, filters: TimelineFilters, cursor: TimelineCursor,
+  signal: AbortSignal, pageSize: number,
+): Promise<TimelineEvent[]> {
+  const startIso = dateRangeStartIso(filters)
+  const term = sanitizeSearch(filters.search)
+  let q = sb
+    .from('health_metrics')
+    .select('*')
+    .eq('user_id', userId)
+    .order('measured_at', { ascending: false })
+    .limit(pageSize)
+    .abortSignal(signal)
+  if (startIso) q = q.gte('measured_at', startIso)
+  if (cursor)   q = q.lt('measured_at', cursor)
+  if (term)     q = q.ilike('note', `%${term}%`)
+  const { data, error } = await q
+  if (error) throw error
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return adaptHealthMetrics(rows.map((r) => healthMetricAdapter.fromRow(r)))
+}
+
+async function querySleepEvents(
+  sb: SbClient, userId: string, filters: TimelineFilters, cursor: TimelineCursor,
+  signal: AbortSignal, pageSize: number,
+): Promise<TimelineEvent[]> {
+  // sleep_records.date es YYYY-MM-DD; el cursor es ISO timestamp, convertir.
+  const startIso = dateRangeStartIso(filters)
+  const startDate = startIso ? dateOnlyFromIso(startIso) : null
+  const cursorDate = cursor ? dateOnlyFromIso(cursor) : null
+  const term = sanitizeSearch(filters.search)
+  let q = sb
+    .from('sleep_records')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+    .limit(pageSize)
+    .abortSignal(signal)
+  if (startDate)  q = q.gte('date', startDate)
+  if (cursorDate) q = q.lt('date', cursorDate)
+  if (term)       q = q.or(`dreams.ilike.%${term}%,notes.ilike.%${term}%`)
+  const { data, error } = await q
+  if (error) throw error
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return adaptSleeps(rows.map((r) => sleepRecordAdapter.fromRow(r)))
+}
+
+async function queryFinanceEvents(
+  sb: SbClient, userId: string, filters: TimelineFilters, cursor: TimelineCursor,
+  signal: AbortSignal, pageSize: number,
+): Promise<TimelineEvent[]> {
+  // finance_movements.date es YYYY-MM-DD; idem sleep.
+  const startIso = dateRangeStartIso(filters)
+  const startDate = startIso ? dateOnlyFromIso(startIso) : null
+  const cursorDate = cursor ? dateOnlyFromIso(cursor) : null
+  const term = sanitizeSearch(filters.search)
+  let q = sb
+    .from('finance_movements')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false })
+    .limit(pageSize)
+    .abortSignal(signal)
+  if (startDate)  q = q.gte('date', startDate)
+  if (cursorDate) q = q.lt('date', cursorDate)
+  if (term)       q = q.ilike('description', `%${term}%`)
+  const { data, error } = await q
+  if (error) throw error
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return adaptFinances(rows.map((r) => financeMovementAdapter.fromRow(r)))
+}
+
+async function querySignalEvents(
+  sb: SbClient, userId: string, filters: TimelineFilters, cursor: TimelineCursor,
+  signal: AbortSignal, pageSize: number,
+): Promise<TimelineEvent[]> {
+  const startIso = dateRangeStartIso(filters)
+  const term = sanitizeSearch(filters.search)
+  let q = sb
+    .from('signals')
+    .select('*')
+    .eq('user_id', userId)
+    .order('detected_at', { ascending: false })
+    .limit(pageSize)
+    .abortSignal(signal)
+  if (startIso) q = q.gte('detected_at', startIso)
+  if (cursor)   q = q.lt('detected_at', cursor)
+  if (term)     q = q.or(`content.ilike.%${term}%,meaning.ilike.%${term}%`)
+  const { data, error } = await q
+  if (error) throw error
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return adaptSignals(rows.map((r) => signalAdapter.fromRow(r)))
+}
+
+async function queryGoalEvents(
+  sb: SbClient, userId: string, filters: TimelineFilters, _cursor: TimelineCursor,
+  signal: AbortSignal, pageSize: number,
+): Promise<TimelineEvent[]> {
+  // goals es entity-state: ignoramos cursor server-side, merge client se
+  // encarga (volumen bajo). Filtro de rango cubre created_at O updated_at.
+  const startIso = dateRangeStartIso(filters)
+  const term = sanitizeSearch(filters.search)
+  let q = sb
+    .from('goals')
+    .select('*')
+    .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .limit(pageSize)
+    .abortSignal(signal)
+  if (startIso) q = q.or(`created_at.gte.${startIso},updated_at.gte.${startIso}`)
+  if (term)     q = q.or(`title.ilike.%${term}%,description.ilike.%${term}%`)
+  const { data, error } = await q
+  if (error) throw error
+  const rows = (data ?? []) as Record<string, unknown>[]
+  return adaptGoals(rows.map((r) => goalAdapter.fromRow(r)))
+}
+
+async function queryRelationalEvents(
+  sb: SbClient, userId: string, filters: TimelineFilters, _cursor: TimelineCursor,
+  signal: AbortSignal, _pageSize: number,
+): Promise<TimelineEvent[]> {
+  // relational_event = people creation + relationships.history unpacked.
+  // Volumen bajo en ambos casos. Fetch sin filtros server-side (necesitamos
+  // todas las people para name lookup en history adapter). Todos los
+  // filtros se aplican client-side.
+  const [peopleResult, relsResult] = await Promise.all([
+    sb.from('people').select('*').eq('user_id', userId).abortSignal(signal),
+    sb.from('relationships').select('*').eq('user_id', userId).abortSignal(signal),
+  ])
+  if (peopleResult.error) throw peopleResult.error
+  if (relsResult.error) throw relsResult.error
+
+  const peopleRows = (peopleResult.data ?? []) as Record<string, unknown>[]
+  const relsRows = (relsResult.data ?? []) as Record<string, unknown>[]
+  const people = peopleRows.map((r) => personAdapter.fromRow(r))
+  const relationships = relsRows.map((r) => relationshipAdapter.fromRow(r))
+
+  // Person creation events + relationship history items (validados ISO 8601
+  // dentro del adapter).
+  let events: TimelineEvent[] = [
+    ...adaptPeople(people),
+    ...adaptRelationalHistory(relationships, people),
+  ]
+
+  // Client-side filtros (date range + search). Sin cursor por R6 del ADR.
+  const startIso = dateRangeStartIso(filters)
+  if (startIso) events = events.filter((e) => e.occurredAt >= startIso)
+  const term = sanitizeSearch(filters.search).toLowerCase()
+  if (term) {
+    events = events.filter(
+      (e) =>
+        e.title.toLowerCase().includes(term) ||
+        (e.body?.toLowerCase().includes(term) ?? false) ||
+        e.tags.some((t) => t.toLowerCase().includes(term)),
+    )
+  }
+  return events
+}
+
+// ─── orchestrator por tipo ─────────────────────────────────────────
+
+function queryByType(
   type: TimelineEventType,
+  sb: SbClient,
+  userId: string,
   filters: TimelineFilters,
   cursor: TimelineCursor,
   signal: AbortSignal,
   pageSize: number,
 ): Promise<TimelineEvent[]> {
-  await delayWithAbort(SIMULATED_DELAY_MS, signal)
-
-  // Failure simulation deliberada (ver fixtures.ts FIXTURE_FAILURE_TRIGGER)
-  if (filters.search.trim() === FIXTURE_FAILURE_TRIGGER && FAIL_TYPES_SET.has(type)) {
-    throw new Error(`Simulated failure for type ${type}`)
+  switch (type) {
+    case 'memory':           return queryMemoryEvents(sb, userId, filters, cursor, signal, pageSize)
+    case 'self_metric':      return querySelfMetricEvents(sb, userId, filters, cursor, signal, pageSize)
+    case 'health':           return queryHealthMetricEvents(sb, userId, filters, cursor, signal, pageSize)
+    case 'sleep':            return querySleepEvents(sb, userId, filters, cursor, signal, pageSize)
+    case 'finance':          return queryFinanceEvents(sb, userId, filters, cursor, signal, pageSize)
+    case 'signal':           return querySignalEvents(sb, userId, filters, cursor, signal, pageSize)
+    case 'goal_event':       return queryGoalEvents(sb, userId, filters, cursor, signal, pageSize)
+    case 'relational_event': return queryRelationalEvents(sb, userId, filters, cursor, signal, pageSize)
   }
-
-  const startIso = dateRangeStartIso(filters)
-  let pool = adaptForType(type)
-  pool = matchesRange(pool, startIso)
-  pool = matchesSearch(pool, filters.search)
-  pool = sortDesc(pool)
-  pool = matchesCursor(pool, cursor)
-  return pool.slice(0, pageSize)
 }
 
-// ─── fetchPage publica ──────────────────────────────────────────────
+// ─── fetchPage publica ─────────────────────────────────────────────
 
 export interface FetchPageResult {
   events: TimelineEvent[]
@@ -187,8 +388,17 @@ export async function fetchPage({
     return { events: [], failedTypes: [], hasMore: false }
   }
 
+  const sb = createClient()
+
+  // userId con RLS — defensivo: si no hay sesion, falla rapido.
+  // El middleware deberia haber redirigido antes pero defensive depth.
+  const { data: authData, error: authError } = await sb.auth.getUser()
+  if (authError) throw authError
+  const userId = authData?.user?.id
+  if (!userId) throw new Error('No authenticated user for timeline query')
+
   const settled = await Promise.allSettled(
-    types.map((t) => queryByType(t, filters, cursor, signal, pageSize)),
+    types.map((t) => queryByType(t, sb, userId, filters, cursor, signal, pageSize)),
   )
 
   const perType: FetchTypeResult[] = settled.map((r, i) => {
@@ -196,38 +406,33 @@ export async function fetchPage({
       return { type: types[i], ok: true, events: r.value }
     }
     const err = r.reason
-    const isAbort =
-      err instanceof DOMException && err.name === 'AbortError'
+    if (isAbortError(err)) {
+      return { type: types[i], ok: false, events: [] /* sin error: abort intencional */ }
+    }
     return {
       type: types[i],
       ok: false,
       events: [],
-      error: isAbort ? undefined : err instanceof Error ? err : new Error(String(err)),
+      error: err instanceof Error ? err : new Error(String(err)),
     }
   })
 
   const events: TimelineEvent[] = []
   const failedTypes: TimelineEventType[] = []
-  let totalReceived = 0
 
   for (const r of perType) {
     if (r.ok) {
       events.push(...r.events)
-      totalReceived += r.events.length
     } else if (r.error) {
-      // AbortError NO suma al fallo (intencional)
       failedTypes.push(r.type)
     }
   }
 
   const sorted = sortDesc(events).slice(0, pageSize)
-  // Si todos los OK trajeron < pageSize cada uno, es probable que no haya mas.
   const hasMore =
     perType.some((r) => r.ok && r.events.length === pageSize) && sorted.length >= pageSize
 
   return { events: sorted, failedTypes, hasMore }
 }
-
-// ─── re-export pequenas utilidades para tests/UI ────────────────────
 
 export { DEFAULT_FILTERS }
