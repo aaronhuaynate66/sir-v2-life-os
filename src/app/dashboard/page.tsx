@@ -25,7 +25,6 @@ import { useSignalStore } from '@/stores/useSignalStore'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { useMemoryStore } from '@/stores'
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
-import { RichContextDebugPanel } from '@/components/context/RichContextDebugPanel'
 import { AppShell } from '@/components/layout/AppShell'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
 import { formatPEN, formatCurrencyCompact } from '@/lib/format/currency'
@@ -492,8 +491,6 @@ function DashboardContent() {
           </AlertDialog>
         </div>
       </div>
-
-      <RichContextDebugPanel />
 
       <div className="mt-8 pt-4 border-t border-border flex justify-between">
         <span className="text-[10px] text-muted-foreground/60 font-mono">SIR V2 &mdash; Fase 4 &mdash; UI Produccion</span>
