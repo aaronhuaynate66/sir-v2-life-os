@@ -5,7 +5,7 @@
 Última actualización: `2026-05-28T15:14:00Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
-**Fase activa:** Fase 3 - Memory Longitudinal — Persistencia historica avanzada, busqueda semantica  
+**Fase activa:** Fase 3a - Historial Profundo — Navegacion temporal del historial existente con filtros y vistas longitudinales  
 **Hash del último commit humano:** `885b966`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
@@ -23,6 +23,24 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 ---
 
+## Timeline visual
+
+```mermaid
+gantt
+    title SIR V2 Roadmap — Fases 0 a 5
+    dateFormat YYYY-MM-DD
+    axisFormat %b %Y
+
+    section Fase 3b - Búsqueda Semántica
+    Fase 3b - Búsqueda Semántica    :fase3b, 2026-06-11, 2026-07-12
+
+    section Fase 3c - Resumen Patrones Longitudinales
+    Fase 3c - Resumen Patrones Longitudinales    :fase3c, 2026-07-12, 2026-08-11
+
+    section Fase 3d - Memoria Que Aprende
+    Fase 3d - Memoria Que Aprende    :fase3d, 2026-08-11, 2026-09-25
+
+```
 
 **Estado por fase:**
 
@@ -33,7 +51,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 | Fase 2 - Context Engine | Estado vivo | ✅ Completado | ██████████ 100% |
 | Fase Backend & Sync | Persistencia remota | ✅ Completado | ██████████ 100% |
 | Fase 4 - UI Produccion | UI usuario | ✅ Completado | ██████████ 100% |
-| Fase 3 - Memory Longitudinal | Historia profunda | ✅ Completado | ░░░░░░░░░░ 0% |
+| Fase 3a - Historial Profundo | Exploracion temporal | 🔄 Activo | ░░░░░░░░░░ 0% |
+| Fase 3b - Búsqueda Semántica | Jun–Jul 2026 | ⬜ Pendiente | ░░░░░░░░░░ 0% |
+| Fase 3c - Resumen Patrones Longitudinales | Jul–Ago 2026 | ⬜ Pendiente | ░░░░░░░░░░ 0% |
+| Fase 3d - Memoria Que Aprende | Ago–Sep 2026 | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 | Fase 5 - IA Basica | Capa cognitiva | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 
 ---
@@ -138,14 +159,50 @@ _(Fase cerrada — sin issues registrados)_
 | #60 | [Session 18: Propagate visual language to 6 domain routes](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/60) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
 | #61 | [Session 19: Mobile responsiveness (critical fix)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/61) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
 
-### Fase 3 - Memory Longitudinal (activa)
+### Fase 3a - Historial Profundo (activa)
 
-**Período:** Historia profunda  
-**Due date:** —  
-**Wedge:** Persistencia historica avanzada, busqueda semantica  
-**Gate de salida:** Recuperar contexto de N meses atras con queries semanticas
+**Período:** Exploracion temporal  
+**Due date:** 2026-06-11  
+**Wedge:** Navegacion temporal del historial existente con filtros y vistas longitudinales  
+**Gate de salida:** Usuario puede explorar N meses atras con UI nativa (sin IA, sin embeddings)
 
-_(Fase cerrada — sin issues registrados)_
+```
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 0/4 issues cerrados (0%)
+```
+
+| # | Issue | Labels | Estado | Cerrado |
+|---|-------|--------|--------|---------|
+| #69 | [Fase 3a #1 — Analisis y diseno UI exploracion temporal](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/69) | fase-3a | ⬜ Abierto | — |
+| #70 | [Fase 3a #2 — Implementar vista timeline con filtros](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/70) | fase-3a | ⬜ Abierto | — |
+| #71 | [Fase 3a #3 — Conectar timeline con datos reales de Supabase](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/71) | fase-3a | ⬜ Abierto | — |
+| #72 | [Fase 3a #4 — Gate de validacion Fase 3a](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/72) | fase-3a | ⬜ Abierto | — |
+
+### Fase 3b - Búsqueda Semántica
+
+**Período:** Significado, no keywords  
+**Due date:** 2026-07-12  
+**Wedge:** Embeddings + pgvector para busqueda por significado  
+**Gate de salida:** Usuario puede preguntar 'que paso cuando me sentia ansioso por trabajo' y obtener resultados
+
+_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
+
+### Fase 3c - Resumen Patrones Longitudinales
+
+**Período:** Insights automaticos  
+**Due date:** 2026-08-11  
+**Wedge:** LLM analiza historial y genera insights longitudinales automaticos  
+**Gate de salida:** SIR genera 1 resumen semanal accionable con patrones observados
+
+_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
+
+### Fase 3d - Memoria Que Aprende
+
+**Período:** RAG cross-session  
+**Due date:** 2026-09-25  
+**Wedge:** Arquitectura de memoria persistente (short/medium/long term) con RAG  
+**Gate de salida:** Cada interaccion con SIR tiene contexto profundo automatico del usuario
+
+_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 
 ### Fase 5 - IA Basica
 
@@ -203,11 +260,13 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 - ✅ [#65](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/65) Session 20c: Data layer migration to Supabase
 - ✅ [#66](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/66) Session 20d: One-shot localStorage to Supabase migration
 - ✅ [#67](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/67) Session Currency: PEN default + USD with live exchange rate
+
+### Memory Longitudinal (3a/b/c/d)
+
+- ⬜ [#69](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/69) Fase 3a #1 — Analisis y diseno UI exploracion temporal
+- ⬜ [#70](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/70) Fase 3a #2 — Implementar vista timeline con filtros
 - ⬜ [#71](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/71) Fase 3a #3 — Conectar timeline con datos reales de Supabase
-
-### Memory Longitudinal
-
-_(sin issues en esta categoría)_
+- ⬜ [#72](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/72) Fase 3a #4 — Gate de validacion Fase 3a
 
 ### UI Producción
 
@@ -220,7 +279,6 @@ _(sin issues en esta categoría)_
 - ✅ [#59](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/59) Session 17: Dashboard re-imagined with visual hierarchy
 - ✅ [#60](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/60) Session 18: Propagate visual language to 6 domain routes
 - ✅ [#61](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/61) Session 19: Mobile responsiveness (critical fix)
-- ⬜ [#69](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/69) Fase 3a #1 — Analisis y diseno UI exploracion temporal
 
 ### IA & Cognición
 
@@ -240,11 +298,6 @@ _(sin issues en esta categoría)_
 - ✅ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
 - ✅ [#30](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) Race condition: sync-roadmap workflow falla en closing-en-cascada de issues
 - ✅ [#35](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)
-
-### Sin categorizar
-
-- ⬜ [#70](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/70) Fase 3a #2 — Implementar vista timeline con filtros
-- ⬜ [#72](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/72) Fase 3a #4 — Gate de validacion Fase 3a
 
 ---
 
