@@ -109,7 +109,7 @@ PHASES_META: list[dict[str, Any]] = [
         "period": "Exploracion temporal",
         "wedge": "Navegacion temporal del historial existente con filtros y vistas longitudinales",
         "gate": "Usuario puede explorar N meses atras con UI nativa (sin IA, sin embeddings)",
-        "active": True,
+        "active": False,
     },
     {
         "key": "fase-3b",
@@ -118,7 +118,7 @@ PHASES_META: list[dict[str, Any]] = [
         "period": "Significado, no keywords",
         "wedge": "Embeddings + pgvector para busqueda por significado",
         "gate": "Usuario puede preguntar 'que paso cuando me sentia ansioso por trabajo' y obtener resultados",
-        "active": False,
+        "active": True,
     },
     {
         "key": "fase-3c",
@@ -180,8 +180,8 @@ INFRASTRUCTURE: list[tuple[str, str, str]] = [
     ("Next.js 15 (App Router)", "✅ Activo", "Stack base"),
     ("Zustand + persist (localStorage)", "✅ Activo", "Stores por dominio, ver ADR 0001"),
     ("Tailwind CSS + Framer Motion", "✅ Activo", "Estilo + animaciones"),
-    ("Deploy en Vercel", "⬜ Pendiente", "Sin conectar todavia"),
-    ("Backend / Supabase", "⬜ Pendiente", "Fase 3+"),
+    ("Deploy en Vercel", "✅ Activo", "Produccion en https://sir-v2-life-os.vercel.app"),
+    ("Backend / Supabase", "✅ Activo", "Cerrado en Fase Backend & Sync (auth + sync + RLS)"),
 ]
 
 
