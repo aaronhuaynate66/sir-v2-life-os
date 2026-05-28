@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-28T14:16:26Z`  
+Última actualización: `2026-05-28T14:17:15Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-████████████████████████████████████████ 32/32 issues cerrados (100%)
+████████████████████████████████████████ 35/35 issues cerrados (100%)
 ```
 
-✅ Cerrados: 32 | 🔄 En progreso: 0 | ⬜ Pendientes: 0 | 🚨 Bloqueantes: 0
+✅ Cerrados: 35 | 🔄 En progreso: 0 | ⬜ Pendientes: 0 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -200,7 +200,7 @@ _(sin issues en esta categoría)_
 
 ### Fundamentos & Infra
 
-_(sin issues en esta categoría)_
+- ✅ [#62](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/62) Session 20a: Supabase setup + initial schema
 
 ### Deuda Técnica
 
@@ -208,6 +208,11 @@ _(sin issues en esta categoría)_
 - ✅ [#23](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/23) pnpm-workspace.yaml benigno pero no es monorepo activo
 - ✅ [#30](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/30) Race condition: sync-roadmap workflow falla en closing-en-cascada de issues
 - ✅ [#35](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/35) Security: actualizar Next.js a versión patched (CVE-2025-66478 + others)
+
+### Sin categorizar
+
+- ✅ [#63](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/63) Session 20b: Auth flow (Google OAuth + Magic Link)
+- ✅ [#64](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/64) Session 21: UX polish (toasts + AlertDialogs + validaciones)
 
 ---
 
