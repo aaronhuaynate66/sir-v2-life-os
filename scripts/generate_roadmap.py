@@ -635,6 +635,8 @@ def section_header(last_update_iso_value: str, head_short: str, active_phase: di
         f"**Fase activa:** {active_phase['title']} — {active_phase['wedge']}  ",
         f"**Hash del último commit humano:** `{head_short}`",
         "",
+        "> 📋 Para backlog de próximas sesiones, ideas brainstorm y descartados, ver [docs/BACKLOG.md](docs/BACKLOG.md).",
+        "",
         "> SIR V2 es un Life Operating System que evoluciona en capas progresivas.",
         "> Activo central: Human Contextual Memory Graph acumulado durante años.",
         "",

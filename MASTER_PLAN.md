@@ -8,6 +8,8 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
 **Hash del último commit humano:** `2485725`
 
+> 📋 Para backlog de próximas sesiones, ideas brainstorm y descartados, ver [docs/BACKLOG.md](docs/BACKLOG.md).
+
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
 
