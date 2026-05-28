@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `86248ba`
+**Hash del último commit humano:** `2485725`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -338,6 +338,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2485725` | aaronhuaynate66 | Close Phase 3a + activate Phase 3b + fix infrastructure drift (#77) | 2026-05-28 |
 | `86248ba` | aaronhuaynate66 | Phase 3a Issue #71: Connect timeline to real Supabase data (#76) | 2026-05-28 |
 | `05d1bc7` | aaronhuaynate66 | Phase 3a Issue #70: Timeline UI with filters (mock data) (#75) | 2026-05-28 |
 | `1d54010` | aaronhuaynate66 | Phase 3a Issue #69: Analysis and UI design for temporal exploration (#74) | 2026-05-28 |
@@ -347,7 +348,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8b5c9e1` | aaronhuaynate66 | feat(currency): PEN default + USD with exchange rate (#51) | 2026-05-27 |
 | `4d88462` | aaronhuaynate66 | feat(sync): one-shot localStorage->Supabase migration (Session 20d) (#50) | 2026-05-27 |
 | `6231368` | aaronhuaynate66 | Session 20c: Data layer migration to Supabase (#49) | 2026-05-27 |
-| `2294146` | aaronhuaynate66 | Session 21: UX polish (feedback + validation + confirmations) (#48) | 2026-05-27 |
 
 ---
 
