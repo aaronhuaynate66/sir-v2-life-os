@@ -33,6 +33,8 @@ export const healthMetricAdapter: TableAdapter<HealthMetric> = {
     unit: m.unit,
     note: m.note ?? null,
     measured_at: m.timestamp,
+    capture_id: m.captureId ?? null,
+    source_image_path: m.sourceImagePath ?? null,
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -41,6 +43,8 @@ export const healthMetricAdapter: TableAdapter<HealthMetric> = {
     unit: row.unit as string,
     note: (row.note as string) ?? undefined,
     timestamp: row.measured_at as string,
+    captureId: (row.capture_id as string) ?? undefined,
+    sourceImagePath: (row.source_image_path as string) ?? undefined,
   }),
 }
 

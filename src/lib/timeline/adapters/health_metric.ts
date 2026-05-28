@@ -10,6 +10,19 @@ const TYPE_LABEL: Record<HealthMetricType, string> = {
   calories: 'Calorías',
   hydration: 'Hidratación',
   custom: 'Custom',
+  // body composition (Migration 0005)
+  bmi: 'IMC',
+  body_fat_percent: 'Grasa corporal',
+  muscle_mass_kg: 'Masa muscular',
+  bone_mass_kg: 'Masa ósea',
+  water_percent: 'Agua corporal',
+  protein_percent: 'Proteína',
+  visceral_fat_level: 'Grasa visceral',
+  metabolic_rate_kcal: 'Metab. basal',
+  skeletal_muscle_mass_kg: 'Masa musc. esquelet.',
+  metabolic_age: 'Edad metabólica',
+  body_score: 'Score corporal',
+  ideal_weight_kg: 'Peso ideal',
 }
 
 function formatValue(m: HealthMetric): string {
