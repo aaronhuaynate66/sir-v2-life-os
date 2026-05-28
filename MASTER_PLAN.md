@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3a - Historial Profundo — Navegacion temporal del historial existente con filtros y vistas longitudinales  
-**Hash del último commit humano:** `885b966`
+**Hash del último commit humano:** `cac2a16`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -337,6 +337,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `cac2a16` | aaronhuaynate66 | feat(roadmap): split Fase 3 into 4 sub-phases (3a/3b/3c/3d) (#73) | 2026-05-28 |
 | `885b966` | aaronhuaynate66 | Roadmap restructure: retroactive milestones + script fixes + documentation (#68) | 2026-05-28 |
 | `6e034f8` | aaronhuaynate66 | Move debug panel to /debug/context route (#52) | 2026-05-28 |
 | `8b5c9e1` | aaronhuaynate66 | feat(currency): PEN default + USD with exchange rate (#51) | 2026-05-27 |
@@ -346,7 +347,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `0c580d8` | aaronhuaynate66 | Session 20b: Auth flow (Google OAuth + Magic Link) (#47) | 2026-05-27 |
 | `50fa6db` | aaronhuaynate66 | Session 20a: Supabase setup + initial schema (#46) | 2026-05-26 |
 | `e5133bb` | aaronhuaynate66 | Session 19: Mobile responsiveness (critical fix) (#45) | 2026-05-26 |
-| `6df33ac` | aaronhuaynate66 | Session 18: Propagate visual language to 6 domain routes (#44) | 2026-05-26 |
 
 ---
 
