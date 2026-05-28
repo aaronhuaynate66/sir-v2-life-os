@@ -49,8 +49,13 @@ MONTH_ES = {
     7: "Jul", 8: "Ago", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dic",
 }
 
-# Tabla estatica de las 6 fases del Life OS. El estado de "active" determina
-# en que fase esta el trabajo hoy. Cambios aqui requieren PR humano.
+# Tabla estatica de las fases del Life OS. El orden de esta lista refleja la
+# secuencia historica real (no el numero), porque Backend & Sync y UI Produccion
+# se ejecutaron antes de retomar Memory Longitudinal. El estado "active"
+# determina en que fase esta el trabajo hoy. Una y solo una puede estar activa
+# (chequeo via assert al final del modulo).
+#
+# Convenciones para agregar/cerrar fases: ver scripts/ROADMAP_GUIDE.md.
 PHASES_META: list[dict[str, Any]] = [
     {
         "key": "fase-0",
@@ -77,15 +82,15 @@ PHASES_META: list[dict[str, Any]] = [
         "period": "Estado vivo",
         "wedge": "RichContextSnapshot, hook, panel, persistencia historica",
         "gate": "Snapshot agregado + history persistido + cero hydration warnings",
-        "active": True,
+        "active": False,
     },
     {
-        "key": "fase-3",
-        "milestone_title": "Fase 3 - Memory Longitudinal",
-        "title": "Fase 3 - Memory Longitudinal",
-        "period": "Historia profunda",
-        "wedge": "Persistencia historica avanzada, busqueda semantica",
-        "gate": "Recuperar contexto de N meses atras con queries semanticas",
+        "key": "fase-backend-sync",
+        "milestone_title": "Fase Backend & Sync",
+        "title": "Fase Backend & Sync",
+        "period": "Persistencia remota",
+        "wedge": "Migracion a Supabase con auth y sync multi-device",
+        "gate": "Schema + auth + sync engine + migracion localStorage + currency multi-moneda",
         "active": False,
     },
     {
@@ -98,6 +103,15 @@ PHASES_META: list[dict[str, Any]] = [
         "active": False,
     },
     {
+        "key": "fase-3",
+        "milestone_title": "Fase 3 - Memory Longitudinal",
+        "title": "Fase 3 - Memory Longitudinal",
+        "period": "Historia profunda",
+        "wedge": "Persistencia historica avanzada, busqueda semantica",
+        "gate": "Recuperar contexto de N meses atras con queries semanticas",
+        "active": True,
+    },
+    {
         "key": "fase-5",
         "milestone_title": "Fase 5 - IA Basica",
         "title": "Fase 5 - IA Basica",
@@ -108,12 +122,21 @@ PHASES_META: list[dict[str, Any]] = [
     },
 ]
 
+# Invariante: exactamente una fase activa. Romper aqui temprano evita
+# silencios raros como un header "Fase activa:" vacio o duplicado.
+_ACTIVE_PHASES = [p for p in PHASES_META if p["active"]]
+assert len(_ACTIVE_PHASES) == 1, (
+    f"PHASES_META invariant: exactamente una fase debe tener active=True, hay {len(_ACTIVE_PHASES)}. "
+    f"Ver scripts/ROADMAP_GUIDE.md para el flujo de transicion entre fases."
+)
+
 # Categorizacion de issues. Orden importa: primer match gana.
 # Cada regla: (titulo_seccion, labels_match, title_keywords)
 CATEGORY_RULES: list[tuple[str, set[str], list[str]]] = [
     ("Context Engine", {"fase-2"}, ["context", "snapshot", "hydration", "richcontext"]),
+    ("Backend & Sync", {"fase-backend-sync"}, ["supabase", "auth", "oauth", "magic link", "sync engine", "migration"]),
     ("Memory Longitudinal", {"fase-3"}, ["memory", "semantic", "longitudinal"]),
-    ("UI Producción", {"fase-4"}, ["ui", "dashboard", "panel"]),
+    ("UI Producción", {"fase-4"}, ["ui", "dashboard", "panel", "shadcn", "responsive"]),
     ("IA & Cognición", {"fase-5"}, ["llm", "ai", "summarize", "briefing"]),
     ("Dominio (stores)", {"fase-1"}, ["store", "zustand", "finance", "goals", "signals", "relational", "self"]),
     ("Fundamentos & Infra", {"fase-0"}, ["setup", "next.js", "infra", "tooling", "lockfile"]),
@@ -467,8 +490,20 @@ def gantt_task_id(phase_key: str) -> str:
     return phase_key.replace("-", "")
 
 
+def _milestone_is_done(milestone: Milestone | None) -> bool:
+    """Una fase se considera terminada si su milestone esta closed, o si tiene
+    issues y todos estan cerrados. La segunda condicion auto-detecta el drift
+    'milestone abierto pero 100% issues cerradas' que aparecio en Fase 2."""
+    if milestone is None:
+        return False
+    if milestone.state.lower() == "closed":
+        return True
+    total = milestone.open_issues + milestone.closed_issues
+    return total > 0 and milestone.open_issues == 0
+
+
 def gantt_status_for(meta: dict[str, Any], milestone: Milestone | None, issues: list[Issue]) -> str:
-    if milestone and milestone.state.lower() == "closed":
+    if _milestone_is_done(milestone):
         return "done"
     if meta["active"]:
         if phase_has_open_blocker(meta["key"], issues):
@@ -478,7 +513,7 @@ def gantt_status_for(meta: dict[str, Any], milestone: Milestone | None, issues: 
 
 
 def visual_progress_state(meta: dict[str, Any], milestone: Milestone | None) -> str:
-    if milestone and milestone.state.lower() == "closed":
+    if _milestone_is_done(milestone):
         return "✅ Completado"
     if meta["active"]:
         return "🔄 Activo"
@@ -633,8 +668,10 @@ def section_phase(
     ]
 
     if total == 0:
-        if meta["active"]:
-            lines.append("_(Sin issues asignados aún)_")
+        if _milestone_is_done(milestone):
+            lines.append("_(Fase cerrada — sin issues registrados)_")
+        elif meta["active"]:
+            lines.append("_(Sin issues asignados aún. Arranca esta fase.)_")
         else:
             lines.append("_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_")
         lines.append("")
