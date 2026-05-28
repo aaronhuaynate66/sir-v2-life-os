@@ -2,7 +2,7 @@
 
 ## Estado general
 
-Última actualización: `2026-05-28T14:17:15Z`  
+Última actualización: `2026-05-28T14:17:33Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-████████████████████████████████████████ 35/35 issues cerrados (100%)
+████████████████████████████████████████ 38/38 issues cerrados (100%)
 ```
 
-✅ Cerrados: 35 | 🔄 En progreso: 0 | ⬜ Pendientes: 0 | 🚨 Bloqueantes: 0
+✅ Cerrados: 38 | 🔄 En progreso: 0 | ⬜ Pendientes: 0 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -30,9 +30,9 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 |------|---------|--------|----------|
 | Fase 0 - Fundamentos | Setup | ✅ Completado | ░░░░░░░░░░ 0% |
 | Fase 1 - Stores y dominio | Dominio inicial | ✅ Completado | ██████████ 100% |
-| Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ██████████ 100% |
+| Fase 2 - Context Engine | Estado vivo | ✅ Completado | ██████████ 100% |
 | Fase 3 - Memory Longitudinal | Historia profunda | ⬜ Pendiente | ░░░░░░░░░░ 0% |
-| Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | ██████████ 100% |
+| Fase 4 - UI Produccion | UI usuario | ✅ Completado | ██████████ 100% |
 | Fase 5 - IA Basica | Capa cognitiva | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 
 ---
@@ -213,6 +213,9 @@ _(sin issues en esta categoría)_
 
 - ✅ [#63](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/63) Session 20b: Auth flow (Google OAuth + Magic Link)
 - ✅ [#64](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/64) Session 21: UX polish (toasts + AlertDialogs + validaciones)
+- ✅ [#65](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/65) Session 20c: Data layer migration to Supabase
+- ✅ [#66](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/66) Session 20d: One-shot localStorage to Supabase migration
+- ✅ [#67](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/67) Session Currency: PEN default + USD with live exchange rate
 
 ---
 
