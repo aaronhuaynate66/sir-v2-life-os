@@ -2,10 +2,10 @@
 
 ## Estado general
 
-Última actualización: `2026-05-26T14:24:27Z`  
+Última actualización: `2026-05-28T14:17:33Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
-**Fase activa:** Fase 2 - Context Engine — RichContextSnapshot, hook, panel, persistencia historica  
+**Fase activa:** Fase 3 - Memory Longitudinal — Persistencia historica avanzada, busqueda semantica  
 **Hash del último commit humano:** `6e034f8`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-████████████████████████████████████████ 23/23 issues cerrados (100%)
+████████████████████████████████████████ 38/38 issues cerrados (100%)
 ```
 
-✅ Cerrados: 23 | 🔄 En progreso: 0 | ⬜ Pendientes: 0 | 🚨 Bloqueantes: 0
+✅ Cerrados: 38 | 🔄 En progreso: 0 | ⬜ Pendientes: 0 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -30,9 +30,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 |------|---------|--------|----------|
 | Fase 0 - Fundamentos | Setup | ✅ Completado | ░░░░░░░░░░ 0% |
 | Fase 1 - Stores y dominio | Dominio inicial | ✅ Completado | ██████████ 100% |
-| Fase 2 - Context Engine | Estado vivo | 🔄 Activo | ██████████ 100% |
-| Fase 3 - Memory Longitudinal | Historia profunda | ⬜ Pendiente | ░░░░░░░░░░ 0% |
-| Fase 4 - UI Produccion | UI usuario | ⬜ Pendiente | ░░░░░░░░░░ 0% |
+| Fase 2 - Context Engine | Estado vivo | ✅ Completado | ██████████ 100% |
+| Fase Backend & Sync | Persistencia remota | ✅ Completado | ██████████ 100% |
+| Fase 4 - UI Produccion | UI usuario | ✅ Completado | ██████████ 100% |
+| Fase 3 - Memory Longitudinal | Historia profunda | 🔄 Activo | ░░░░░░░░░░ 0% |
 | Fase 5 - IA Basica | Capa cognitiva | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 
 ---
@@ -46,7 +47,7 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 **Wedge:** Setup repo, Zustand stores, tipos base  
 **Gate de salida:** Stack reproducible: Next.js + Zustand + Tailwind builds limpios
 
-_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
+_(Fase cerrada — sin issues registrados)_
 
 ### Fase 1 - Stores y dominio
 
@@ -63,7 +64,7 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 |---|-------|--------|--------|---------|
 | #8 | [[R4] Memory System base](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/8) | fase-1, retroactive | ✅ Cerrado | 2026-05-25 |
 
-### Fase 2 - Context Engine (activa)
+### Fase 2 - Context Engine
 
 **Período:** Estado vivo  
 **Due date:** —  
@@ -94,14 +95,25 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 | #27 | [Snapshot: dedup de duplicados triviales en addSnapshot](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/27) | deuda-tecnica, fase-2 | ✅ Cerrado | 2026-05-25 |
 | #28 | [Snapshot: documentar scope debug-only del RichContextDebugPanel](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) | deuda-tecnica, fase-2 | ✅ Cerrado | 2026-05-25 |
 
-### Fase 3 - Memory Longitudinal
+### Fase Backend & Sync
 
-**Período:** Historia profunda  
+**Período:** Persistencia remota  
 **Due date:** —  
-**Wedge:** Persistencia historica avanzada, busqueda semantica  
-**Gate de salida:** Recuperar contexto de N meses atras con queries semanticas
+**Wedge:** Migracion a Supabase con auth y sync multi-device  
+**Gate de salida:** Schema + auth + sync engine + migracion localStorage + currency multi-moneda
 
-_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
+```
+████████████████████████████████████████ 6/6 issues cerrados (100%)
+```
+
+| # | Issue | Labels | Estado | Cerrado |
+|---|-------|--------|--------|---------|
+| #62 | [Session 20a: Supabase setup + initial schema](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/62) | fase-backend-sync, retroactive | ✅ Cerrado | 2026-05-28 |
+| #63 | [Session 20b: Auth flow (Google OAuth + Magic Link)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/63) | fase-backend-sync, retroactive | ✅ Cerrado | 2026-05-28 |
+| #64 | [Session 21: UX polish (toasts + AlertDialogs + validaciones)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/64) | fase-backend-sync, retroactive | ✅ Cerrado | 2026-05-28 |
+| #65 | [Session 20c: Data layer migration to Supabase](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/65) | fase-backend-sync, retroactive | ✅ Cerrado | 2026-05-28 |
+| #66 | [Session 20d: One-shot localStorage to Supabase migration](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/66) | fase-backend-sync, retroactive | ✅ Cerrado | 2026-05-28 |
+| #67 | [Session Currency: PEN default + USD with live exchange rate](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/67) | fase-backend-sync, retroactive | ✅ Cerrado | 2026-05-28 |
 
 ### Fase 4 - UI Produccion
 
@@ -110,7 +122,30 @@ _(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
 **Wedge:** Reemplazar debug panel con UI real para el usuario final  
 **Gate de salida:** Onboarding + uso diario sin necesidad de leer codigo
 
-_(Sin issues asignados. Arranca cuando la fase previa cierre gate.)_
+```
+████████████████████████████████████████ 9/9 issues cerrados (100%)
+```
+
+| # | Issue | Labels | Estado | Cerrado |
+|---|-------|--------|--------|---------|
+| #53 | [Session 11: Fix Zustand persist hydration delay](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/53) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #54 | [Session 12: useHasHydrated + RouteSkeleton on all routes](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/54) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #55 | [Session 13: Design System base (shadcn/ui + Geist)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/55) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #56 | [Session 14: Dashboard redesign with shadcn/ui](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/56) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #57 | [Session 15: Migrate 6 remaining routes to shadcn/ui](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/57) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #58 | [Session 16: Coral accent + unified navigation + modern Nav](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/58) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #59 | [Session 17: Dashboard re-imagined with visual hierarchy](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/59) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #60 | [Session 18: Propagate visual language to 6 domain routes](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/60) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+| #61 | [Session 19: Mobile responsiveness (critical fix)](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/61) | fase-4, retroactive | ✅ Cerrado | 2026-05-28 |
+
+### Fase 3 - Memory Longitudinal (activa)
+
+**Período:** Historia profunda  
+**Due date:** —  
+**Wedge:** Persistencia historica avanzada, busqueda semantica  
+**Gate de salida:** Recuperar contexto de N meses atras con queries semanticas
+
+_(Sin issues asignados aún. Arranca esta fase.)_
 
 ### Fase 5 - IA Basica
 
@@ -160,13 +195,30 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 - ✅ [#28](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/28) Snapshot: documentar scope debug-only del RichContextDebugPanel
 - ✅ [#33](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/33) UI muestra valores stale al primer mount (Zustand persist hydration delay)
 
+### Backend & Sync
+
+- ✅ [#62](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/62) Session 20a: Supabase setup + initial schema
+- ✅ [#63](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/63) Session 20b: Auth flow (Google OAuth + Magic Link)
+- ✅ [#64](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/64) Session 21: UX polish (toasts + AlertDialogs + validaciones)
+- ✅ [#65](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/65) Session 20c: Data layer migration to Supabase
+- ✅ [#66](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/66) Session 20d: One-shot localStorage to Supabase migration
+- ✅ [#67](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/67) Session Currency: PEN default + USD with live exchange rate
+
 ### Memory Longitudinal
 
 _(sin issues en esta categoría)_
 
 ### UI Producción
 
-_(sin issues en esta categoría)_
+- ✅ [#53](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/53) Session 11: Fix Zustand persist hydration delay
+- ✅ [#54](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/54) Session 12: useHasHydrated + RouteSkeleton on all routes
+- ✅ [#55](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/55) Session 13: Design System base (shadcn/ui + Geist)
+- ✅ [#56](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/56) Session 14: Dashboard redesign with shadcn/ui
+- ✅ [#57](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/57) Session 15: Migrate 6 remaining routes to shadcn/ui
+- ✅ [#58](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/58) Session 16: Coral accent + unified navigation + modern Nav
+- ✅ [#59](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/59) Session 17: Dashboard re-imagined with visual hierarchy
+- ✅ [#60](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/60) Session 18: Propagate visual language to 6 domain routes
+- ✅ [#61](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/61) Session 19: Mobile responsiveness (critical fix)
 
 ### IA & Cognición
 
