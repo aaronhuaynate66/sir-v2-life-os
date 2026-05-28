@@ -2,11 +2,11 @@
 
 ## Estado general
 
-Última actualización: `2026-05-28T16:08:20Z`  
+Última actualización: `2026-05-28T17:53:27Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3a - Historial Profundo — Navegacion temporal del historial existente con filtros y vistas longitudinales  
-**Hash del último commit humano:** `1d54010`
+**Hash del último commit humano:** `05d1bc7`
 
 > SIR V2 es un Life Operating System que evoluciona en capas progresivas.
 > Activo central: Human Contextual Memory Graph acumulado durante años.
@@ -16,10 +16,10 @@ Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 ## Progreso general
 
 ```
-█████████████████████████████████████░░░ 39/42 issues cerrados (93%)
+██████████████████████████████████████░░ 40/42 issues cerrados (95%)
 ```
 
-✅ Cerrados: 39 | 🔄 En progreso: 0 | ⬜ Pendientes: 3 | 🚨 Bloqueantes: 0
+✅ Cerrados: 40 | 🔄 En progreso: 0 | ⬜ Pendientes: 2 | 🚨 Bloqueantes: 0
 
 ---
 
@@ -51,7 +51,7 @@ gantt
 | Fase 2 - Context Engine | Estado vivo | ✅ Completado | ██████████ 100% |
 | Fase Backend & Sync | Persistencia remota | ✅ Completado | ██████████ 100% |
 | Fase 4 - UI Produccion | UI usuario | ✅ Completado | ██████████ 100% |
-| Fase 3a - Historial Profundo | Exploracion temporal | 🔄 Activo | ██░░░░░░░░ 25% |
+| Fase 3a - Historial Profundo | Exploracion temporal | 🔄 Activo | █████░░░░░ 50% |
 | Fase 3b - Búsqueda Semántica | Jun–Jul 2026 | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 | Fase 3c - Resumen Patrones Longitudinales | Jul–Ago 2026 | ⬜ Pendiente | ░░░░░░░░░░ 0% |
 | Fase 3d - Memoria Que Aprende | Ago–Sep 2026 | ⬜ Pendiente | ░░░░░░░░░░ 0% |
@@ -167,13 +167,13 @@ _(Fase cerrada — sin issues registrados)_
 **Gate de salida:** Usuario puede explorar N meses atras con UI nativa (sin IA, sin embeddings)
 
 ```
-██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 1/4 issues cerrados (25%)
+████████████████████░░░░░░░░░░░░░░░░░░░░ 2/4 issues cerrados (50%)
 ```
 
 | # | Issue | Labels | Estado | Cerrado |
 |---|-------|--------|--------|---------|
 | #69 | [Fase 3a #1 — Analisis y diseno UI exploracion temporal](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/69) | fase-3a | ✅ Cerrado | 2026-05-28 |
-| #70 | [Fase 3a #2 — Implementar vista timeline con filtros](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/70) | fase-3a | ⬜ Abierto | — |
+| #70 | [Fase 3a #2 — Implementar vista timeline con filtros](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/70) | fase-3a | ✅ Cerrado | 2026-05-28 |
 | #71 | [Fase 3a #3 — Conectar timeline con datos reales de Supabase](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/71) | fase-3a | ⬜ Abierto | — |
 | #72 | [Fase 3a #4 — Gate de validacion Fase 3a](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/72) | fase-3a | ⬜ Abierto | — |
 
@@ -264,7 +264,7 @@ Estos issues no pertenecen a una fase especifica. Suelen ser deuda tecnica trans
 ### Memory Longitudinal (3a/b/c/d)
 
 - ✅ [#69](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/69) Fase 3a #1 — Analisis y diseno UI exploracion temporal
-- ⬜ [#70](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/70) Fase 3a #2 — Implementar vista timeline con filtros
+- ✅ [#70](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/70) Fase 3a #2 — Implementar vista timeline con filtros
 - ⬜ [#71](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/71) Fase 3a #3 — Conectar timeline con datos reales de Supabase
 - ⬜ [#72](https://github.com/aaronhuaynate66/sir-v2-life-os/issues/72) Fase 3a #4 — Gate de validacion Fase 3a
 
@@ -338,6 +338,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `05d1bc7` | aaronhuaynate66 | Phase 3a Issue #70: Timeline UI with filters (mock data) (#75) | 2026-05-28 |
 | `1d54010` | aaronhuaynate66 | Phase 3a Issue #69: Analysis and UI design for temporal exploration (#74) | 2026-05-28 |
 | `cac2a16` | aaronhuaynate66 | feat(roadmap): split Fase 3 into 4 sub-phases (3a/3b/3c/3d) (#73) | 2026-05-28 |
 | `885b966` | aaronhuaynate66 | Roadmap restructure: retroactive milestones + script fixes + documentation (#68) | 2026-05-28 |
@@ -347,7 +348,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6231368` | aaronhuaynate66 | Session 20c: Data layer migration to Supabase (#49) | 2026-05-27 |
 | `2294146` | aaronhuaynate66 | Session 21: UX polish (feedback + validation + confirmations) (#48) | 2026-05-27 |
 | `0c580d8` | aaronhuaynate66 | Session 20b: Auth flow (Google OAuth + Magic Link) (#47) | 2026-05-27 |
-| `50fa6db` | aaronhuaynate66 | Session 20a: Supabase setup + initial schema (#46) | 2026-05-26 |
 
 ---
 
