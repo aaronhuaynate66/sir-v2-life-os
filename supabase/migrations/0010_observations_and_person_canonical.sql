@@ -22,7 +22,7 @@
 create table if not exists public.observations (
   id                  text primary key default gen_random_uuid()::text,
   user_id             uuid not null references auth.users(id) on delete cascade,
-  person_id           uuid references public.people(id) on delete cascade,
+  person_id           text references public.people(id) on delete cascade,
   capture_type        text not null check (capture_type in (
     'whatsapp_chat',
     'whatsapp_info',
@@ -89,7 +89,7 @@ create policy "delete own observations"
 create table if not exists public.person_synthesis (
   id                          uuid primary key default uuid_generate_v4(),
   user_id                     uuid not null references auth.users(id) on delete cascade,
-  person_id                   uuid not null references public.people(id) on delete cascade,
+  person_id                   text not null references public.people(id) on delete cascade,
   synthesis_text              text not null,
   source_observation_count    int not null,
   source_observation_ids      text[] not null default '{}',
@@ -145,7 +145,7 @@ alter table public.people add column if not exists special_dates       jsonb not
 alter table public.people add column if not exists profile_avatar_path text;
 
 -- ─── 3B. ALTER memories (4 columnas + 'social' type) ────────────────
-alter table public.memories add column if not exists person_id      uuid references public.people(id) on delete cascade;
+alter table public.memories add column if not exists person_id      text references public.people(id) on delete cascade;
 alter table public.memories add column if not exists source         text;
 alter table public.memories add column if not exists quality_score  int
   check (quality_score is null or quality_score between 1 and 5);
