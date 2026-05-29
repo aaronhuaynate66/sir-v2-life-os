@@ -76,12 +76,37 @@ REGLAS:
    - Copialo literal del header. Conservá los emojis ("Diana Carolina ❣️").
    - Si el chat es de grupo y aparecen varios nombres, usa el nombre del grupo.
 
-3. conversationDate
-   - Si el header muestra fecha explicita ("26 May 2026", "Today", "Yesterday",
-     "Tuesday"), resolvela a ISO 8601 con timezone Lima -05:00.
-   - "Today" / "Hoy" = la fecha actual segun tu contexto.
-   - Solo fecha sin hora: usar T00:00:00-05:00.
-   - Si no hay info de fecha visible, null + mencionalo en rawObservations.
+3. conversationDate — REGLAS ESTRICTAS
+
+   3.1 SOLO usar fecha explicita visible en:
+       - El HEADER (parte superior con el nombre del contacto).
+       - Separadores visuales de mensajes (texto centrado tipo "Today",
+         "Yesterday", "26 May 2026", "Lunes 26 de mayo", etc).
+
+   3.2 NUNCA inferir la fecha desde timestamps de hora del mensaje
+       (formato HH:mm como "13:16", "09:40", "23:45"). Esos son HORAS
+       del dia, NO fechas. "13:16" NO significa "13 de enero" ni nada
+       relacionado a fecha.
+
+   3.3 Si NO ves una fecha explicita visible en ningun separador ni en
+       el header, devolver null. NO inventar, NO asumir, NO inferir
+       desde context implicito.
+
+   3.4 Si el header solo muestra el nombre del contacto sin fecha,
+       conversationDate = null.
+
+   3.5 Resolucion cuando SI hay fecha visible:
+       - "Today" o "Hoy" -> la fecha actual segun tu contexto, con
+         hora 00:00:00 y offset Lima -05:00.
+       - "Yesterday" o "Ayer" -> fecha actual menos 1 dia.
+       - "Tuesday", "Wednesday", etc. -> el dia mas reciente en el
+         pasado que coincide con ese nombre, con offset Lima -05:00.
+       - "26 May" o "26 de mayo" -> con ano actual.
+       - Fecha completa "26 May 2026" -> usar esa exacta.
+       - Solo fecha sin hora -> T00:00:00-05:00.
+
+   3.6 En todos los casos donde devuelvas null, MENCIONALO en
+       rawObservations: "Sin fecha explicita visible en la imagen".
 
 4. content
    - Mensaje de texto: copialo literal sin truncar.
