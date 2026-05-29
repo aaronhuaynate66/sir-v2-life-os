@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `daee855`
+**Hash del último commit humano:** `c387694`
 
 > 📋 Para backlog de próximas sesiones, ideas brainstorm y descartados, ver [docs/BACKLOG.md](docs/BACKLOG.md).
 
@@ -340,6 +340,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c387694` | aaronhuaynate66 | feat(detail-page): foundation — observations table + capture universal pipeline (Sesion 1+2+2.5) | 2026-05-29 |
 | `daee855` | aaronhuaynate66 | Captura WhatsApp con Claude Vision Sonnet (#85) | 2026-05-29 |
 | `f5f05a3` | aaronhuaynate66 | docs(backlog): add document intelligence layer ideas (#84) | 2026-05-29 |
 | `9f46673` | aaronhuaynate66 | Refactor: spanish URLs + person slugs + detail page (#83) | 2026-05-29 |
@@ -349,7 +350,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `47e625e` | aaronhuaynate66 | Captura báscula con Claude Vision (post-Fase 3a) (#79) | 2026-05-29 |
 | `b1d189b` | aaronhuaynate66 | Add canonical BACKLOG.md as source of truth for project state (#78) | 2026-05-28 |
 | `2485725` | aaronhuaynate66 | Close Phase 3a + activate Phase 3b + fix infrastructure drift (#77) | 2026-05-28 |
-| `86248ba` | aaronhuaynate66 | Phase 3a Issue #71: Connect timeline to real Supabase data (#76) | 2026-05-28 |
 
 ---
 
