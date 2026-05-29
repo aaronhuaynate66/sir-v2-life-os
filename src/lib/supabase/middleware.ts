@@ -43,10 +43,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Si esta autenticado y va a /auth/login, redirigir a dashboard.
+  // Si esta autenticado y va a /auth/login, redirigir al panel.
   if (user && pathname === '/auth/login') {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/panel'
     return NextResponse.redirect(url)
   }
 
