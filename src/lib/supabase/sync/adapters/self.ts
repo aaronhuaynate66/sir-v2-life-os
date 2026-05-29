@@ -35,6 +35,7 @@ export const healthMetricAdapter: TableAdapter<HealthMetric> = {
     measured_at: m.timestamp,
     capture_id: m.captureId ?? null,
     source_image_path: m.sourceImagePath ?? null,
+    capture_type: m.captureType ?? null,
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -45,6 +46,7 @@ export const healthMetricAdapter: TableAdapter<HealthMetric> = {
     timestamp: row.measured_at as string,
     captureId: (row.capture_id as string) ?? undefined,
     sourceImagePath: (row.source_image_path as string) ?? undefined,
+    captureType: (row.capture_type as 'scale' | 'whatsapp') ?? undefined,
   }),
 }
 

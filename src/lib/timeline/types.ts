@@ -34,8 +34,8 @@ export const ALL_EVENT_TYPES: readonly TimelineEventType[] = [
  * por tipo salvo para icon + color.
  */
 export interface TimelineEvent {
-  /** ID estable. Convencion: `${type}:${sourceId}` o
-   *  `${type}:${sourceId}:${subIndex}` para items de history desempaquetados. */
+  /** ID estable. Convencion: `${type}:${sourceId}` para single events o
+   *  `capture:${captureId}` para grouped events post-groupByCapture. */
   id: string
   type: TimelineEventType
   /** Timestamp canonico ISO 8601 (clave de orden DESC). */
@@ -48,6 +48,36 @@ export interface TimelineEvent {
   tags: string[]
   /** Data type-specific. Forma libre (ver ADR 0005 R9). */
   meta: Record<string, unknown>
+
+  // ─── opcionales para agrupacion por captura (Fase post-PR #81) ──
+  /** Set por adapters cuando la fila fuente tiene capture_id. Habilita
+   *  agrupacion en fetchPage. Adapters sin capture (memory, sleep, etc.)
+   *  no lo setean. */
+  captureId?: string
+  /** Set por adapters como hint sobre el tipo de captura. Render en el
+   *  card grouped usa esto para body line ("Báscula · conf. high"). */
+  captureKind?: 'scale' | 'whatsapp'
+  /** Set por groupByCapture() cuando 2+ events comparten captureId.
+   *  Si está presente y no vacio, TimelineFeed renderiza
+   *  TimelineCardGrouped en vez de TimelineCard. */
+  groupedItems?: GroupedItem[]
+}
+
+/** Una metrica individual dentro de un GroupedTimelineEvent. */
+export interface GroupedItem {
+  /** ID del row original (pre-agrupacion). */
+  id: string
+  /** Tipo del item, por si tiene icon distinto al grupo (cross-type). */
+  type: TimelineEventType
+  /** Label en español listo para render (ej. "Peso", "IMC"). */
+  label: string
+  /** Valor formateado para display (ej. "82.2 kg", "25.5 %"). */
+  display: string
+}
+
+/** Type guard idiomatico para narrowing en render. */
+export function isGrouped(e: TimelineEvent): boolean {
+  return Array.isArray(e.groupedItems) && e.groupedItems.length > 0
 }
 
 /**

@@ -21,8 +21,20 @@ export function adaptHealthMetric(m: HealthMetric): TimelineEvent {
       metricType: m.type,
       value: m.value,
       unit: m.unit,
+      // Confidence se infiere del note "Captura báscula (conf. high)" si
+      // existe. groupByCapture lo recoge para el body line del card grouped.
+      confidence: extractConfidenceFromNote(m.note),
     },
+    captureId: m.captureId,
+    captureKind: m.captureType,
   }
+}
+
+/** Parsea "Captura báscula (conf. high)" -> "high". Tolera ausencia. */
+function extractConfidenceFromNote(note: string | undefined): 'high' | 'medium' | 'low' | undefined {
+  if (!note) return undefined
+  const match = note.match(/conf\.\s*(high|medium|low)/i)
+  return match ? (match[1].toLowerCase() as 'high' | 'medium' | 'low') : undefined
 }
 
 export function adaptHealthMetrics(rows: HealthMetric[]): TimelineEvent[] {

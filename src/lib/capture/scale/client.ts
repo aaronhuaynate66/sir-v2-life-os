@@ -103,6 +103,7 @@ export async function persistScaleCapture(args: PersistArgs): Promise<PersistRes
       timestamp: args.measuredAt,
       captureId,
       sourceImagePath,
+      captureType: 'scale',
       note: args.confidence ? `Captura báscula (conf. ${args.confidence})` : 'Captura báscula',
     })
   }

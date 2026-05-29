@@ -7,12 +7,13 @@ import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TimelineCard } from './TimelineCard'
+import { TimelineCardGrouped } from './TimelineCardGrouped'
 import { EmptyState } from './EmptyState'
 import { PartialFailureBanner } from './PartialFailureBanner'
 import { TimelineFiltersBar } from './TimelineFilters'
 import { TimelineFiltersMobile } from './TimelineFiltersMobile'
 import { useTimelineQuery } from '@/hooks/useTimelineQuery'
-import { DEFAULT_FILTERS, type TimelineFilters } from '@/lib/timeline/types'
+import { DEFAULT_FILTERS, isGrouped, type TimelineFilters } from '@/lib/timeline/types'
 
 function FeedSkeleton({ count = 4 }: { count?: number }) {
   return (
@@ -103,7 +104,11 @@ export function TimelineFeed() {
     body = (
       <div className="space-y-3">
         {events.map((e) => (
-          <TimelineCard key={e.id} event={e} nowMs={nowMs} />
+          isGrouped(e) ? (
+            <TimelineCardGrouped key={e.id} event={e} nowMs={nowMs} />
+          ) : (
+            <TimelineCard key={e.id} event={e} nowMs={nowMs} />
+          )
         ))}
         {hasMore && (
           <div ref={sentinelRef} aria-hidden="true" className="h-1" />
