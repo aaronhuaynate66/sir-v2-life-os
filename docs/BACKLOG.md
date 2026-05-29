@@ -1,6 +1,6 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 29/05/2026
+> **Última actualización:** 29/05/2026 (post-merge PR #85 + detail page V1→V2 ⭐)
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
@@ -14,6 +14,70 @@
 ---
 
 ## 🔥 PRÓXIMAS SESIONES (orden definido)
+
+### 0. Portar detail page completo de SIR V1 → V2 (PRIORIDAD ALTA) ⭐
+
+**Por qué:** El detail page actual de `/relaciones/[slug]` en V2 solo muestra 4 campos básicos (relación, categoría, importancia, confianza). SIR V1 (sir.marlabinc.com) tiene una vista MUCHO más rica que es la verdadera capa de valor del sistema. Sin esto, la captura WhatsApp y la red de relaciones queda sin su verdadero contexto consumible.
+
+**Referencia visual:** Screenshot del 29/05/2026 en `sir.marlabinc.com` mostrando perfil de Diana Diaz con todos los componentes.
+
+**Features pendientes a portar (17):**
+
+1. **Score relacional global**: número grande (49) + 3 progress bars (Fuerza, Reciprocidad, Confianza) + "Último contacto: 23 may 2026".
+2. **Visualización del ciclo menstrual**: donut con fase actual (FOLICULAR), día del ciclo (7), próximo período (~22 días), recomendación contextual ("Buen momento para planes juntos").
+3. **Cumpleaños** con countdown ("Cumpleaños en 16 días").
+4. **Última interacción** con countdown ("Última interacción: hace 5 días").
+5. **Registro rápido**: 4 botones emoji (Ánimo, Energía, Sueño, Dolor).
+6. **Vida profesional**: resumen autogenerado (LinkedIn + carrera, ej. "Titulada en Administración de Empresas...").
+7. **Vida social**: stats redes + seguidores en común (ej. "23 publicaciones y sigue a 1,374 personas... 14 seguidores en común").
+8. **Lo personal**: 3 párrafos narrativos auto-extraídos sobre la relación (tono emocional, dinámica, observaciones).
+9. **Fechas importantes**: lista con countdown (ej. "14 de junio - en 16 días").
+10. **Perfil profesional**: sección colapsable.
+11. **Redes sociales**: conectadas con escaneo (ej. "@diana.carolina.d").
+12. **Nota de voz**: botón para grabar audio asociado a la persona.
+13. **Fechas especiales**: añadibles.
+14. **Registrar interacción**: 5 estados emocionales (corazón roto → corazón pleno) + notas opcionales.
+15. **MEMORIAS ASOCIADAS** (sidebar derecho, lo más crítico):
+    - Tipos: `SEMANTIC`, `EPISODIC`, `EMOTIONAL`, `SOCIAL`.
+    - Auto-pobladas desde capturas WhatsApp (PR #85 ya guarda `relationships.history` items, falta extracción a tabla `memories`).
+    - Cada memoria con timestamp + content + person_id.
+    - 20+ memorias visibles en perfil de V1.
+16. **Botones top-right**:
+    - **Briefing IA**: genera resumen contextual de la persona usando LLM sobre todas las memorias asociadas.
+    - **Chat WhatsApp**: link directo a `wa.me/{teléfono}`.
+    - **Analizar screenshot**: atajo a `/captura/whatsapp` con la persona pre-seleccionada.
+17. **Bitácora**: colapsable con historial completo de interacciones.
+
+**Schema requerido:**
+
+- `people`: agregar columnas `fecha_nacimiento`, `ciclo_inicio` (date para inferir fase), `telefono`, `linkedin_url`, `instagram_handle`, etc.
+- Nueva tabla `memories`:
+  - `id`, `user_id`, `person_id`, `type` (`SEMANTIC|EPISODIC|EMOTIONAL|SOCIAL`)
+  - `content` (JSONB), `source` (`screenshot_whatsapp|manual|inferred`)
+  - `quality_score` (1-5), `timestamp`, `embeddings` (vector para Fase 3b).
+- Pipeline: `capture/whatsapp` → extract memories → insert en `memories` con `person_id`.
+
+**Prerequisitos:**
+- Captura WhatsApp ya popula data parcialmente (PR #85).
+- Migración de schema `people` necesaria.
+- Tabla `memories` nueva (probablemente con `pgvector` para Fase 3b).
+- Extracción/parseo de `relationships.history` items en memorias tipificadas.
+
+**Esfuerzo estimado:** 5-8 sesiones (~20-30h):
+- Sesión 1: planning + schema design + migration.
+- Sesión 2: tabla `memories` + extracción desde history.
+- Sesión 3: detail page layout base (score, ciclo, registro rápido).
+- Sesión 4: detail page secciones contextuales (vida prof/social/personal).
+- Sesión 5: memorias asociadas sidebar.
+- Sesión 6: botones top-right (Briefing IA + Chat WA + Analizar).
+- Sesión 7: registrar interacción + nota de voz.
+- Sesión 8: polish + validación end-to-end.
+
+**Prioridad:** ALTA. Es la verdadera capa de valor de SIR V2. Sin esto, la captura WhatsApp y el grafo quedan como features sueltas sin contexto consumible.
+
+**Próxima sesión sugerida:** 30/05/2026 — Planning técnico completo con PASO 0 (schema design + decisiones de migration).
+
+---
 
 ### 1. Captura Báscula (alta prioridad personal)
 
