@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `05268e6`
+**Hash del último commit humano:** `617e34f`
 
 > 📋 Para backlog de próximas sesiones, ideas brainstorm y descartados, ver [docs/BACKLOG.md](docs/BACKLOG.md).
 
@@ -340,6 +340,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `617e34f` | aaronhuaynate66 | Unify health metric labels in spanish across UI (self + timeline) (#81) | 2026-05-29 |
 | `05268e6` | aaronhuaynate66 | Migration 0006: catch-up uuid→text + backlog UX items (#80) | 2026-05-29 |
 | `47e625e` | aaronhuaynate66 | Captura báscula con Claude Vision (post-Fase 3a) (#79) | 2026-05-29 |
 | `b1d189b` | aaronhuaynate66 | Add canonical BACKLOG.md as source of truth for project state (#78) | 2026-05-28 |
@@ -349,7 +350,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1d54010` | aaronhuaynate66 | Phase 3a Issue #69: Analysis and UI design for temporal exploration (#74) | 2026-05-28 |
 | `cac2a16` | aaronhuaynate66 | feat(roadmap): split Fase 3 into 4 sub-phases (3a/3b/3c/3d) (#73) | 2026-05-28 |
 | `885b966` | aaronhuaynate66 | Roadmap restructure: retroactive milestones + script fixes + documentation (#68) | 2026-05-28 |
-| `6e034f8` | aaronhuaynate66 | Move debug panel to /debug/context route (#52) | 2026-05-28 |
 
 ---
 
