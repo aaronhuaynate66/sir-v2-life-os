@@ -112,6 +112,57 @@ Ideas conversadas pero NO comprometidas. Cada una requiere planning serio antes 
 - Ayudaría a Claude Code a entender mejor el monorepo.
 - Bajo riesgo, sin lock-in.
 
+### Ingestión documental (post-Captura WhatsApp)
+
+Cluster de 3 ideas relacionadas. Comparten infraestructura (Storage + parser + memories) y deben evaluarse en orden secuencial.
+
+### MarkItDown como librería de ingestión
+
+**Qué:** Integrar `markitdown` (Microsoft, open source) para convertir documentos heterogéneos en Markdown semántico procesable por LLM.
+
+**Formatos soportados:**
+- PDF (informes médicos, recibos, contratos)
+- DOCX (journals viejos, documentos personales)
+- PPTX (poco probable pero gratis)
+- XLSX (tablas/datos)
+- HTML (artículos guardados)
+
+**Caso de uso:** Subir PDF → MarkItDown → memoria importada como markdown estructurado en tabla memories.
+
+**Esfuerzo:** 2-3 sesiones (endpoint + UI upload + flujo preview/edit antes de guardar).
+
+**Prerequisito:** después de Captura WhatsApp (reusa infraestructura de Storage + Vision pattern).
+
+### Importar exportaciones masivas de WhatsApp
+
+**Qué:** Procesar el ZIP que WhatsApp exporta (chat.txt + media opcional) para reconstruir historial de relación con una persona.
+
+**Diferencia con Captura WhatsApp:**
+- Captura WhatsApp: 1 screenshot a la vez (conversaciones recientes)
+- Importación masiva: meses/años de historial de una sola vez
+
+**Caso de uso:** "Quiero meter mi historia completa con Diana de los últimos 2 años." Parsea chat.txt línea por línea, agrupa por períodos significativos, genera summaries narrativos con LLM, inserta como items en relationships.history.
+
+**Esfuerzo:** 3-4 sesiones (parser chat.txt + chunking + embeddings + dedupe).
+
+**Prerequisito:** después de Captura WhatsApp y Fase 3b (búsqueda semántica con pgvector para evitar duplicados semánticos).
+
+### Ingestión documental general
+
+**Qué:** UI genérica "subir documento" que detecta tipo y rutea al procesador correcto.
+
+**Tipos soportados:**
+- PDF informe médico → memories + health_metrics si aplica
+- DOCX journal viejo → memories en bloque
+- TXT export chat → relationships.history
+- Imagen con texto → OCR + memories
+
+**Caso de uso:** Centralizar todas las capturas/imports en una sola UI con detección inteligente del tipo.
+
+**Esfuerzo:** Difícil estimar — depende de tener MarkItDown + Captura WhatsApp como base.
+
+**Prerequisito:** después de MarkItDown.
+
 ---
 
 ## ❌ DESCARTADO (con razón documentada)
