@@ -1,0 +1,56 @@
+// SIR V2 — Tipos del grafo de relaciones (/red/grafo).
+// Port de la vista de SIR V1 — visualizacion macro de la red personal.
+
+export type GraphCategory =
+  | 'familia'
+  | 'personal'
+  | 'profesional'
+  | 'networking'
+  | 'estrategico'
+  | 'desarrollo'
+  | 'self'
+
+export interface GraphNode {
+  /** 'self' para el nodo central, person.slug (o person.id fallback) para los demas. */
+  id: string
+  /** Iniciales de 2 chars para render dentro del circulo. */
+  label: string
+  /** Nombre completo visible debajo del nodo. */
+  fullName: string
+  category: GraphCategory
+  /** 0-100. Para self queda en 100 (no aplica). */
+  healthScore: number
+  /** Cantidad de items en relationships.history. Para self queda en 0. */
+  interactionCount: number
+  isSelf?: boolean
+  // Posicion fijada (solo para self). react-force-graph-2d respeta fx/fy.
+  fx?: number
+  fy?: number
+}
+
+export interface GraphEdge {
+  /** Node id (self) */
+  source: string
+  /** Node id (slug) */
+  target: string
+  category: GraphCategory
+  /** Etiqueta visible: "Familia", "Personal", etc. */
+  label: string
+  color: string
+}
+
+export interface GraphData {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+}
+
+/** Filtros aplicables desde la UI antes de pasar a GraphCanvas. */
+export interface GraphFilters {
+  category: GraphCategory | 'all'
+  minHealth: number  // 0-100
+}
+
+export const DEFAULT_FILTERS: GraphFilters = {
+  category: 'all',
+  minHealth: 0,
+}
