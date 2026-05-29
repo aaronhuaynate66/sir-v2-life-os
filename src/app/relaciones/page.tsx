@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Users, UserPlus, AlertCircle, Edit, X } from 'lucide-react'
+import Link from 'next/link'
+import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +22,8 @@ import { detectRelationshipAlerts } from '@/engines/relationship'
 import { createPersonAddedMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { createClient } from '@/lib/supabase/client'
+import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
 import { cn } from '@/lib/utils'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
 
@@ -111,7 +114,7 @@ function RelationshipsContent() {
     setShowForm(false); setEditingId(null); setForm(EMPTY_FORM)
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!form.name.trim()) { toast.error('Nombre requerido', { description: 'Ingresa al menos un nombre.' }); return }
     const now = new Date().toISOString()
     if (editingId) {
@@ -132,8 +135,24 @@ function RelationshipsContent() {
       updatePerson(editingId, patch)
       toast.success('Persona actualizada', { description: form.name.trim() })
     } else {
+      // Slug auto-generado al crear. ensureUniqueSlug previene colisiones
+      // dentro del mismo user. Si la sesion expiro o falla la red, el
+      // slug igual se setea con base — el sync engine lo retentara.
+      const baseSlug = generateSlug(form.name)
+      let slug = baseSlug
+      try {
+        const sb = createClient()
+        const { data } = await sb.auth.getUser()
+        if (data?.user?.id) {
+          slug = await ensureUniqueSlug(baseSlug, data.user.id, { client: sb })
+        }
+      } catch {
+        // Best-effort: si falla, queda con baseSlug; el constraint unico
+        // rechaza el upsert y el usuario puede editarlo desde /relaciones/[slug].
+      }
       const newPerson: Person = {
         id: crypto.randomUUID(),
+        slug,
         name: form.name.trim(),
         alias: form.alias.trim() || undefined,
         relationship: form.relationship,
@@ -357,6 +376,13 @@ function RelationshipsContent() {
                     </div>
 
                     <div className="flex gap-1 shrink-0">
+                      {person.slug && (
+                        <Button variant="ghost" size="sm" asChild aria-label="Ver detalle">
+                          <Link href={`/relaciones/${person.slug}`}>
+                            <ArrowRight size={14} strokeWidth={1.75} />
+                          </Link>
+                        </Button>
+                      )}
                       <Button variant="ghost" size="sm" onClick={() => openEdit(person)} aria-label="Editar">
                         <Edit size={14} strokeWidth={1.75} />
                       </Button>
