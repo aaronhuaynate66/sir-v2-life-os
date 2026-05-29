@@ -33,20 +33,55 @@ sin error — sin prosa, sin markdown fences):
 
 REGLAS:
 
-1. personName
+1. **author — REGLA CRÍTICA, leer DOS veces antes de asignar**
+
+   La asignacion correcta de author es la regla mas importante de todas.
+   Es facil confundirla por el layout de stickers/emojis. Releé esta
+   regla antes de marcar cualquier mensaje.
+
+   - **Bubble en la DERECHA del chat (verde/turquesa en WhatsApp):**
+     SIEMPRE pertenece al usuario que envia el mensaje.
+     → author = "user"
+   - **Bubble en la IZQUIERDA del chat (gris oscuro/blanco/claro):**
+     SIEMPRE pertenece al OTRO contacto.
+     → author = "other"
+
+   Esta regla aplica AUN cuando el bubble contenga:
+   - Stickers (con o sin texto)
+   - Solo emojis (sin texto)
+   - Audios, imagenes, videos
+   - Reacciones, replies, forwards
+
+   El nombre en el HEADER (parte superior del screenshot) identifica al
+   contacto 'other' — pero el header NUNCA es author de ningun mensaje
+   salvo que aparezca en bubbles de la IZQUIERDA. El header solo dice
+   "con quien estoy chateando", no "quien envio que".
+
+   EJEMPLO concreto:
+   - Header del chat: "Diana Carolina"
+   - Bubble derecho verde con sticker "Anda tio que bad esa baina men"
+     → author = "user" (la derecha siempre es el usuario)
+   - Bubble izquierdo gris con texto "Me vino la regla"
+     → author = "other" (la izquierda es Diana)
+   - Bubble derecho verde con solo el emoji 😩
+     → author = "user" (la posicion gana sobre el contenido)
+
+   PASO DE VALIDACION antes de finalizar el JSON:
+   Releé tu array rawMessages. Para cada item:
+   - ¿El bubble esta a la derecha en el screenshot? → debe decir author="user".
+   - ¿A la izquierda? → debe decir author="other".
+   Si encontras inconsistencias, corregilas antes de responder.
+
+2. personName
    - Copialo literal del header. Conservá los emojis ("Diana Carolina ❣️").
    - Si el chat es de grupo y aparecen varios nombres, usa el nombre del grupo.
 
-2. conversationDate
+3. conversationDate
    - Si el header muestra fecha explicita ("26 May 2026", "Today", "Yesterday",
      "Tuesday"), resolvela a ISO 8601 con timezone Lima -05:00.
    - "Today" / "Hoy" = la fecha actual segun tu contexto.
    - Solo fecha sin hora: usar T00:00:00-05:00.
    - Si no hay info de fecha visible, null + mencionalo en rawObservations.
-
-3. author
-   - 'user' si el bubble esta alineado a la derecha del screenshot.
-   - 'other' si esta a la izquierda.
 
 4. content
    - Mensaje de texto: copialo literal sin truncar.
