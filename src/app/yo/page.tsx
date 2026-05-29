@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Brain, Activity, Plus, Moon, Heart, Clock, Scale, ArrowRight } from 'lucide-react'
+import { Brain, Activity, Plus, Moon, Heart, Clock, Scale, ArrowRight, MessageSquare } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -136,6 +136,29 @@ function SelfContent() {
           </div>
           <Button size="sm" asChild className="flex-shrink-0">
             <Link href="/captura/bascula" className="inline-flex items-center gap-1.5">
+              + Subir foto
+              <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className={cn('mb-4', cardClass)}>
+        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <MessageSquare size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-foreground">Capturar conversación WhatsApp</div>
+              <div className="text-xs text-muted-foreground leading-snug">
+                Subí un screenshot y Claude Sonnet identifica el contacto, infiere
+                el tono emocional, y guarda el resumen en el historial de la persona.
+              </div>
+            </div>
+          </div>
+          <Button size="sm" asChild className="flex-shrink-0">
+            <Link href="/captura/whatsapp" className="inline-flex items-center gap-1.5">
               + Subir foto
               <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
             </Link>
