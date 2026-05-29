@@ -1,8 +1,77 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 29/05/2026 (post-merge PR #85 + detail page V1→V2 ⭐)
+> **Última actualización:** 29/05/2026 (post-merge PR #86 — Sesión 1+2+2.5 detail page foundation)
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## 🐛 BUGS CONOCIDOS (post Sesión 2.5)
+
+### BUG-001: LinkedIn extractor halucina nombres y datos
+- **Severidad:** P0 (datos falsos persistidos en DB)
+- **Estado:** Anti-hallucination prompt + compresión adaptativa NO suficientes.
+- **Síntoma:** Vision Sonnet 4.5 devuelve `confidence='high'` con nombre e información completamente inventada (caso real: "Patricia Aleg Díaz Sánchez" en lugar de "Diana Carolina Diaz Sanchez").
+- **Hipótesis pendientes:**
+  1. Compresión adaptativa NO se aplica en runtime — verificar peso real del blob en `observations.source_image_path` (re-descargar de Storage y medir).
+  2. Anti-hallucination prompt no es respetado por Sonnet pese a estar al INICIO.
+  3. Crop adaptativo (above-the-fold) podría resolver — recortar header del perfil antes de Vision.
+  4. Filename de imagen como cross-check — LinkedIn URLs contienen el slug del perfil ("diana-carolina-diaz-sanchez") → si está presente en el File.name, validar que el fullName extraído lo contenga.
+  5. Temperature=0 + retry strategy.
+  6. Downgrade a Opus solo para LinkedIn (más caro pero más fiel a instrucciones).
+- **Prioridad de fix:** Próxima sesión (BUG-001-FIX).
+
+### BUG-002: Persona matcher no busca por handle/url/phone
+- **Severidad:** P1 (UX friction)
+- **Síntoma:** Al subir captura Instagram con handle "diana.carolina.d", el matcher busca solo por nombre canónico → no encuentra Diana existente.
+- **Nota:** El endpoint `/api/people/search` (commit `0c41d14`) YA tiene logica de ranking por `instagram_handle`/`linkedin_url`/`phone_number` server-side, pero el extractor NO está pre-poblando `searchQuery` con esos campos. Falta wirear el flujo: tras detector → si captureType es instagram, usar `suggestedPersonName` + handle extraído como query.
+- **Fix:** Cliente debe construir mejor el query inicial post-extracción, no solo desde `suggestedPersonName` del detector.
+
+### BUG-003: /captura no enlazada en UI
+- **Severidad:** P2 (UX friction)
+- **Síntoma:** Ruta `/captura` (test page Sesión 2) solo accesible por URL manual.
+- **Fix:** Decidir UX (botón en Self vs ítem en menú lateral) + implementar.
+
+---
+
+## 🆕 BACKLOG NUEVO (post Sesión 2.5)
+
+### Sesión 2.6 — Fix BUG-001 LinkedIn hallucination [P0]
+Investigar las 6 hipótesis del BUG-001.
+Probables sub-tareas:
+- **Logger del peso real post-compresión-extracción:** descargar el blob de Storage tras el insert y comparar bytes con `observations.data.compression.compressedBytes` (cliente reportado vs servidor recibido).
+- **Filename cross-check** en extractor antes de aceptar `fullName` (si File.name = "linkedin-diana-carolina.png" → exigir match parcial).
+- **Crop adaptativo above-the-fold** para LinkedIn — recortar primeros ~30% verticales antes de mandar a Vision (donde está el nombre + headline + foto).
+- **Test con `temperature=0`** en la llamada Vision.
+- **A/B test Opus vs Sonnet** para LinkedIn (medir confidence vs hallucination rate en 5+ screenshots).
+- **Validación post-extracción:** si `fullName` contiene tokens muy comunes ("Patricia", "Maria") sin match en suggestedPersonName del detector, forzar `confidence='low'` + flag `needs_review=true`.
+
+### Sesión 2.7 — UI ruta /captura + fix matcher [P1]
+- **BUG-003**: Agregar enlace a `/captura` en menú lateral o botón en Self.
+- **BUG-002**: Wirear post-extracción → re-search en el matcher con handle/phone extraídos como query adicional.
+
+### Sesión 3 — Detail page UI base [P1]
+Componentes 1-4 del item ⭐ ("Portar detail page completo de SIR V1 → V2"):
+- RelationalScore (numero grande + 3 progress bars)
+- BirthdayCountdown
+- LastInteractionPanel
+- ruta `/relaciones/[slug]` consumiendo `observations` + `person_synthesis`.
+- **DEPENDS ON:** Sesión 2.6 (datos confiables, no alucinados) y Sesión 2.7 (entry point UX).
+
+### Iteraciones futuras LinkedIn schema [P2]
+Agregar campos al schema B.4:
+- `certifications[]`
+- `volunteerWork[]`
+- `languages[]`
+- `organizations[]`
+- followers count
+- `isVerified`
+- `hasBannerImage` (ya está)
+- `isOpenToWork` (ya está)
+
+### Nuevo capture_type whatsapp_web [P2]
+Detector debe distinguir `whatsapp_chat` móvil (bubbles columna) vs `whatsapp_web` (3 paneles: lista chats + conversación + info contacto).
+Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type` (migration 0012).
 
 ---
 
