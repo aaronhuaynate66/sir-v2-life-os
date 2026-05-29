@@ -35,6 +35,9 @@ export interface DetectResult {
   originalBytes: number
   /** Bytes despues de compresion WebP. */
   compressedBytes: number
+  /** Blob WebP comprimido — reutilizable por /api/capture/process para no
+   *  comprimir dos veces. */
+  compressedBlob: Blob
 }
 
 class DetectorError extends Error {
@@ -88,6 +91,7 @@ export async function detectCaptureType(
     raw: json.raw,
     originalBytes: compressed.originalBytes,
     compressedBytes: compressed.compressedBytes,
+    compressedBlob: compressed.blob,
   }
 }
 

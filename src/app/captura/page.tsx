@@ -1,18 +1,19 @@
 'use client'
-// SIR V2 — /captura (Sesion 1 — test page del detector universal)
+// SIR V2 — /captura (Sesion 2 — pipeline completo end-to-end)
 //
-// Pagina minima para validar end-to-end que POST /api/capture funciona:
-// file picker -> compresion -> detector Vision -> render del DetectorResult.
+// Flujo:
+//   1. Pick file -> comprimir + detectar tipo (POST /api/capture)
+//   2. Si tipo tiene extractor: buscar persona sugerida en /api/people/search
+//   3. Usuario elige: vincular existente, crear nueva, o skip
+//   4. POST /api/capture/process -> extractor Vision + Storage upload + insert observation
+//   5. Mostrar Observation row + datos extraidos
 //
-// NO consume tabla observations todavia (eso es Sesion 2).
-// NO sube imagen a Storage todavia.
-// NO llama extractor especifico todavia.
-//
-// Coexiste con /captura/whatsapp y /captura/bascula sin tocarlos.
+// NO crea aun el detail page. Esta vista es la cama de pruebas para validar
+// que B.2 / B.3 / B.4 + persistencia + matcher andan correctos.
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Loader2 } from 'lucide-react'
+import { ArrowLeft, Camera, Loader2, CheckCircle2, UserPlus, Users, X } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -21,6 +22,22 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
 import type { DetectResult } from '@/lib/capture/detector/client'
+import {
+  HttpError,
+  createPerson,
+  processCapture,
+  searchPeople,
+  type PersonCandidate,
+  type ProcessCaptureResponse,
+} from '@/lib/capture/observations/client'
+import type { CaptureType, Observation } from '@/lib/capture/observations/types'
+
+const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
+  'whatsapp_chat',
+  'whatsapp_info',
+  'instagram',
+  'linkedin',
+])
 
 export default function CapturaIndexPage() {
   const hydrated = useHasHydrated()
@@ -28,38 +45,209 @@ export default function CapturaIndexPage() {
   return <CapturaIndexContent />
 }
 
-function CapturaIndexContent() {
-  const [file, setFile] = useState<File | null>(null)
-  const [result, setResult] = useState<DetectResult | null>(null)
-  const [error, setError] = useState<{ status: number; message: string; detail?: string } | null>(null)
-  const [loading, setLoading] = useState(false)
+interface ErrorState {
+  status: number
+  message: string
+  detail?: string
+}
 
-  const onFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null
-    setFile(f)
-    setResult(null)
-    setError(null)
+function CapturaIndexContent() {
+  // ── Step 1: file picking + detector ───────────────────────────────
+  const [file, setFile] = useState<File | null>(null)
+  const [detection, setDetection] = useState<DetectResult | null>(null)
+  const [detectLoading, setDetectLoading] = useState(false)
+  const [detectError, setDetectError] = useState<ErrorState | null>(null)
+
+  // ── Step 2: person matcher ────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [candidates, setCandidates] = useState<PersonCandidate[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<ErrorState | null>(null)
+  const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null)
+  const [selectedPersonName, setSelectedPersonName] = useState<string | null>(null)
+
+  // Inline create-new-person form
+  const [showCreate, setShowCreate] = useState(false)
+  const [createName, setCreateName] = useState('')
+  const [createLoading, setCreateLoading] = useState(false)
+
+  // ── Step 3: process (extract + storage + insert) ─────────────────
+  const [processLoading, setProcessLoading] = useState(false)
+  const [processError, setProcessError] = useState<ErrorState | null>(null)
+  const [processed, setProcessed] = useState<ProcessCaptureResponse | null>(null)
+
+  // ─── handlers ─────────────────────────────────────────────────────
+
+  const resetForNewFile = useCallback(() => {
+    setDetection(null)
+    setDetectError(null)
+    setCandidates([])
+    setSearchError(null)
+    setSelectedPersonId(null)
+    setSelectedPersonName(null)
+    setShowCreate(false)
+    setCreateName('')
+    setProcessError(null)
+    setProcessed(null)
+    setSearchQuery('')
   }, [])
+
+  const onFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0] ?? null
+      setFile(f)
+      resetForNewFile()
+    },
+    [resetForNewFile],
+  )
 
   const onDetect = useCallback(async () => {
     if (!file) return
-    setLoading(true)
-    setError(null)
-    setResult(null)
+    setDetectLoading(true)
+    setDetectError(null)
+    setDetection(null)
+    setProcessed(null)
     try {
       const r = await detectCaptureType(file)
-      setResult(r)
+      setDetection(r)
+      // Auto-poblar el query del matcher con suggestedPersonName.
+      if (r.detected.suggestedPersonName) {
+        setSearchQuery(r.detected.suggestedPersonName)
+        setCreateName(r.detected.suggestedPersonName)
+      }
     } catch (e) {
       if (e instanceof DetectorError) {
-        setError({ status: e.status, message: e.message, detail: e.detail })
+        setDetectError({ status: e.status, message: e.message, detail: e.detail })
       } else {
         const msg = e instanceof Error ? e.message : String(e)
-        setError({ status: 0, message: msg })
+        setDetectError({ status: 0, message: msg })
       }
     } finally {
-      setLoading(false)
+      setDetectLoading(false)
     }
   }, [file])
+
+  // Debounced search trigger when query / capture type cambian.
+  useEffect(() => {
+    if (!detection) return
+    const q = searchQuery.trim()
+    if (q.length < 2) {
+      setCandidates([])
+      return
+    }
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      setSearchLoading(true)
+      setSearchError(null)
+      try {
+        const r = await searchPeople(q, {
+          captureType: detection.detected.type,
+          signal: controller.signal,
+        })
+        setCandidates(r.candidates)
+      } catch (e) {
+        if (controller.signal.aborted) return
+        if (e instanceof HttpError) {
+          setSearchError({ status: e.status, message: e.message, detail: e.detail })
+        } else {
+          const msg = e instanceof Error ? e.message : String(e)
+          setSearchError({ status: 0, message: msg })
+        }
+      } finally {
+        if (!controller.signal.aborted) setSearchLoading(false)
+      }
+    }, 250)
+    return () => {
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [searchQuery, detection])
+
+  const onSelectPerson = useCallback((p: PersonCandidate) => {
+    setSelectedPersonId(p.id)
+    setSelectedPersonName(p.name)
+    setShowCreate(false)
+  }, [])
+
+  const onClearSelection = useCallback(() => {
+    setSelectedPersonId(null)
+    setSelectedPersonName(null)
+  }, [])
+
+  const onCreatePerson = useCallback(async () => {
+    const trimmed = createName.trim()
+    if (!trimmed || !detection) return
+    setCreateLoading(true)
+    try {
+      const captureType = detection.detected.type
+      const extras: {
+        instagram_handle?: string
+        linkedin_url?: string
+        phone_number?: string
+      } = {}
+      // Si el detector sugiere algo util (todavia no extraemos hasta el process,
+      // por lo cual estos campos quedan vacios al momento de crear). En una
+      // iteracion futura podriamos llamar al extractor primero y pre-fill.
+      const r = await createPerson({ name: trimmed, ...extras })
+      const p = r.person
+      const candidate: PersonCandidate = {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        alias: p.alias,
+        relationship: p.relationship,
+        category: p.category,
+        importance_score: p.importance_score,
+        instagram_handle: p.instagram_handle,
+        linkedin_url: p.linkedin_url,
+        phone_number: p.phone_number,
+        matchScore: 100,
+        matchReason: 'just_created',
+      }
+      setCandidates((curr) => [candidate, ...curr])
+      setSelectedPersonId(p.id)
+      setSelectedPersonName(p.name)
+      setShowCreate(false)
+      void captureType
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setSearchError({
+        status: e instanceof HttpError ? e.status : 0,
+        message: 'No se pudo crear la persona',
+        detail: msg,
+      })
+    } finally {
+      setCreateLoading(false)
+    }
+  }, [createName, detection])
+
+  const onProcess = useCallback(async () => {
+    if (!detection) return
+    setProcessLoading(true)
+    setProcessError(null)
+    setProcessed(null)
+    try {
+      const r = await processCapture({
+        file: detection.compressedBlob,
+        captureType: detection.detected.type,
+        detectorData: detection.detected,
+        personId: selectedPersonId,
+      })
+      setProcessed(r)
+    } catch (e) {
+      if (e instanceof HttpError) {
+        setProcessError({ status: e.status, message: e.message, detail: e.detail })
+      } else {
+        const msg = e instanceof Error ? e.message : String(e)
+        setProcessError({ status: 0, message: msg })
+      }
+    } finally {
+      setProcessLoading(false)
+    }
+  }, [detection, selectedPersonId])
+
+  const canExtract =
+    detection !== null && TYPES_WITH_EXTRACTOR.has(detection.detected.type)
 
   return (
     <AppShell>
@@ -73,33 +261,32 @@ function CapturaIndexContent() {
 
       <header className="mb-6 sm:mb-8">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">
-          SIR V2 &mdash; Captura universal (Sesión 1 / test)
+          SIR V2 &mdash; Captura universal (Sesión 2 / pipeline completo)
         </div>
         <div className="flex items-center gap-3">
           <Camera size={20} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Detector de captura</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+            Captura end-to-end
+          </h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Subí cualquier screenshot. Claude Sonnet 4.5 identifica si es{' '}
-          <span className="font-medium text-foreground">WhatsApp chat/info</span>,{' '}
-          <span className="font-medium text-foreground">Instagram</span>,{' '}
-          <span className="font-medium text-foreground">LinkedIn</span> o desconocido. Esta vista es
-          un test del endpoint <code className="font-mono text-[11px]">POST /api/capture</code> —
-          todavía no persiste nada.
+          Detector → Extractor especifico → Storage → tabla observations.
+          Soporta whatsapp_chat, whatsapp_info, instagram, linkedin.
         </p>
       </header>
 
-      <Card className="shadow-none">
+      <Card className="shadow-none mb-6">
         <CardContent className="p-4 sm:p-6 space-y-4">
+          {/* STEP 1: PICK FILE */}
           <div>
             <label className="text-xs uppercase tracking-widest text-muted-foreground/70 font-sans block mb-2">
-              Imagen
+              1. Imagen
             </label>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               onChange={onFile}
-              disabled={loading}
+              disabled={detectLoading || processLoading}
               className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10"
             />
             {file && (
@@ -109,9 +296,14 @@ function CapturaIndexContent() {
             )}
           </div>
 
+          {/* STEP 2: DETECTOR */}
           <div>
-            <Button onClick={onDetect} disabled={!file || loading} size="sm">
-              {loading ? (
+            <Button
+              onClick={onDetect}
+              disabled={!file || detectLoading || processLoading}
+              size="sm"
+            >
+              {detectLoading ? (
                 <>
                   <Loader2 size={14} className="mr-2 animate-spin" />
                   Detectando…
@@ -122,56 +314,314 @@ function CapturaIndexContent() {
             </Button>
           </div>
 
-          {error && (
+          {detectError && (
             <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs space-y-1">
               <div className="font-medium text-red-400">
-                Error HTTP {error.status}: {error.message}
+                Error HTTP {detectError.status}: {detectError.message}
               </div>
-              {error.detail && <div className="text-muted-foreground">{error.detail}</div>}
+              {detectError.detail && (
+                <div className="text-muted-foreground">{detectError.detail}</div>
+              )}
             </div>
           )}
 
-          {result && (
-            <div className="rounded-md border border-border bg-muted/20 p-4 space-y-3">
-              <div className="flex items-center gap-2">
+          {detection && (
+            <div className="rounded-md border border-border bg-muted/20 p-4 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className="text-[10px] font-mono uppercase tracking-wider">
                   Detectado
                 </Badge>
-                <span className="text-sm font-medium font-mono">{result.detected.type}</span>
+                <span className="text-sm font-medium font-mono">{detection.detected.type}</span>
                 <Badge variant="secondary" className="text-[10px] font-mono">
-                  conf. {result.detected.confidence}
+                  conf. {detection.detected.confidence}
                 </Badge>
+                <span className="text-[10px] font-mono text-muted-foreground/70">
+                  {(detection.originalBytes / 1024).toFixed(0)} KB →{' '}
+                  {(detection.compressedBytes / 1024).toFixed(0)} KB
+                </span>
               </div>
-
               <div className="text-xs text-muted-foreground">
-                <div>
-                  <span className="font-medium text-foreground">Razonamiento:</span>{' '}
-                  {result.detected.reasoning}
-                </div>
-                {result.detected.suggestedPersonName && (
-                  <div className="mt-1">
-                    <span className="font-medium text-foreground">Sugerencia persona:</span>{' '}
-                    {result.detected.suggestedPersonName}
-                  </div>
-                )}
-                <div className="mt-2 font-mono text-[10px] text-muted-foreground/70">
-                  {(result.originalBytes / 1024).toFixed(0)} KB →{' '}
-                  {(result.compressedBytes / 1024).toFixed(0)} KB (compresion WebP)
-                </div>
+                <span className="font-medium text-foreground">Razonamiento:</span>{' '}
+                {detection.detected.reasoning}
               </div>
-
-              <details className="text-xs">
-                <summary className="cursor-pointer text-muted-foreground/70 hover:text-foreground">
-                  Raw output
-                </summary>
-                <pre className="mt-2 p-2 bg-background rounded text-[10px] overflow-x-auto font-mono whitespace-pre-wrap break-all">
-                  {result.raw}
-                </pre>
-              </details>
+              {detection.detected.suggestedPersonName && (
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">Sugerencia persona:</span>{' '}
+                  {detection.detected.suggestedPersonName}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* STEP 3: PERSON MATCHER (solo si hay extractor disponible) */}
+      {canExtract && (
+        <Card className="shadow-none mb-6">
+          <CardContent className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Users size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+              <h2 className="text-sm font-semibold tracking-tight">
+                2. Vincular persona
+              </h2>
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+                opcional
+              </span>
+            </div>
+
+            {selectedPersonId ? (
+              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-400" />
+                  <span className="text-foreground font-medium">{selectedPersonName}</span>
+                  <span className="font-mono text-muted-foreground/70">{selectedPersonId}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClearSelection}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Limpiar seleccion"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-muted-foreground/70 font-sans block mb-2">
+                    Buscar
+                  </label>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Nombre, alias, @handle, telefono…"
+                    className="text-sm w-full rounded border border-border bg-background px-3 py-1.5"
+                    disabled={processLoading}
+                  />
+                </div>
+
+                {searchLoading && (
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <Loader2 size={12} className="animate-spin" />
+                    Buscando…
+                  </div>
+                )}
+
+                {searchError && (
+                  <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs">
+                    <div className="font-medium text-red-400">
+                      Error HTTP {searchError.status}: {searchError.message}
+                    </div>
+                    {searchError.detail && (
+                      <div className="text-muted-foreground">{searchError.detail}</div>
+                    )}
+                  </div>
+                )}
+
+                {candidates.length > 0 && (
+                  <ul className="space-y-1.5 max-h-72 overflow-y-auto">
+                    {candidates.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          onClick={() => onSelectPerson(c)}
+                          className="w-full text-left rounded border border-border hover:border-accent/50 px-3 py-2 text-xs flex items-center justify-between gap-3"
+                        >
+                          <div>
+                            <div className="font-medium text-foreground">{c.name}</div>
+                            <div className="text-muted-foreground font-mono text-[10px]">
+                              {c.slug ?? c.id}
+                              {c.alias && ` · alias: ${c.alias}`}
+                              {c.instagram_handle && ` · @${c.instagram_handle}`}
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="text-[10px] font-mono shrink-0">
+                            {c.matchReason} {c.matchScore}
+                          </Badge>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {searchQuery.trim().length >= 2 &&
+                  !searchLoading &&
+                  candidates.length === 0 &&
+                  !searchError && (
+                    <div className="text-xs text-muted-foreground italic">
+                      Sin coincidencias en tus personas.
+                    </div>
+                  )}
+
+                {/* Create new person */}
+                <div className="pt-2">
+                  {showCreate ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={createName}
+                        onChange={(e) => setCreateName(e.target.value)}
+                        placeholder="Nombre de la persona nueva"
+                        className="text-sm w-full rounded border border-border bg-background px-3 py-1.5"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={onCreatePerson}
+                          disabled={createLoading || createName.trim().length === 0}
+                        >
+                          {createLoading ? (
+                            <>
+                              <Loader2 size={12} className="mr-2 animate-spin" />
+                              Creando…
+                            </>
+                          ) : (
+                            'Crear y vincular'
+                          )}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setShowCreate(false)}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowCreate(true)}
+                      disabled={processLoading}
+                    >
+                      <UserPlus size={14} className="mr-2" />
+                      Crear persona nueva
+                    </Button>
+                  )}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 4: PROCESS (extract + storage + insert) */}
+      {canExtract && (
+        <Card className="shadow-none mb-6">
+          <CardContent className="p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold tracking-tight">
+                3. Guardar observation
+              </h2>
+              <Button
+                size="sm"
+                onClick={onProcess}
+                disabled={!detection || processLoading || processed !== null}
+              >
+                {processLoading ? (
+                  <>
+                    <Loader2 size={14} className="mr-2 animate-spin" />
+                    Procesando…
+                  </>
+                ) : processed ? (
+                  'Guardado ✓'
+                ) : selectedPersonId ? (
+                  'Extraer y guardar con persona'
+                ) : (
+                  'Extraer y guardar sin persona'
+                )}
+              </Button>
+            </div>
+
+            {processError && (
+              <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs space-y-1">
+                <div className="font-medium text-red-400">
+                  Error HTTP {processError.status}: {processError.message}
+                </div>
+                {processError.detail && (
+                  <div className="text-muted-foreground">{processError.detail}</div>
+                )}
+              </div>
+            )}
+
+            {processed && <ProcessedView result={processed} />}
+          </CardContent>
+        </Card>
+      )}
+
+      {!canExtract && detection && (
+        <Card className="shadow-none mb-6">
+          <CardContent className="p-4 sm:p-6">
+            <p className="text-xs text-muted-foreground">
+              El tipo <span className="font-mono">{detection.detected.type}</span> no
+              tiene extractor todavia. Persistencia de tipos sin extractor (manual_note,
+              voice_note, unknown) viene en sesiones futuras.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </AppShell>
+  )
+}
+
+function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
+  const obs: Observation = result.observation
+  return (
+    <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Badge className="text-[10px] font-mono uppercase tracking-wider">Guardado</Badge>
+        <span className="text-xs font-mono text-foreground">{obs.id}</span>
+        <Badge variant="outline" className="text-[10px] font-mono">
+          {obs.captureType}
+        </Badge>
+        {obs.confidence && (
+          <Badge variant="secondary" className="text-[10px] font-mono">
+            conf. {obs.confidence}
+          </Badge>
+        )}
+        {obs.needsReview && (
+          <Badge variant="destructive" className="text-[10px] font-mono">
+            needs review
+          </Badge>
+        )}
+      </div>
+
+      <div className="text-xs text-muted-foreground space-y-1">
+        <div>
+          <span className="font-medium text-foreground">person_id:</span>{' '}
+          <span className="font-mono">{obs.personId ?? '(null)'}</span>
+        </div>
+        <div>
+          <span className="font-medium text-foreground">storage:</span>{' '}
+          <span className="font-mono">
+            {obs.storageBucket}/{obs.sourceImagePath}
+          </span>
+        </div>
+        <div>
+          <span className="font-medium text-foreground">observed_at:</span>{' '}
+          <span className="font-mono">{obs.observedAt}</span>
+        </div>
+        <div>
+          <span className="font-medium text-foreground">captured_at:</span>{' '}
+          <span className="font-mono">{obs.capturedAt}</span>
+        </div>
+      </div>
+
+      <details className="text-xs">
+        <summary className="cursor-pointer text-muted-foreground/70 hover:text-foreground">
+          Datos extraidos ({Object.keys(result.extracted).length} campos)
+        </summary>
+        <pre className="mt-2 p-2 bg-background rounded text-[10px] overflow-x-auto font-mono whitespace-pre-wrap break-all">
+          {JSON.stringify(result.extracted, null, 2)}
+        </pre>
+      </details>
+
+      <details className="text-xs">
+        <summary className="cursor-pointer text-muted-foreground/70 hover:text-foreground">
+          Raw output Vision
+        </summary>
+        <pre className="mt-2 p-2 bg-background rounded text-[10px] overflow-x-auto font-mono whitespace-pre-wrap break-all">
+          {result.raw}
+        </pre>
+      </details>
+    </div>
   )
 }
