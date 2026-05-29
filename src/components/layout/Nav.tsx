@@ -15,14 +15,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: readonly NavItem[] = [
-  { href: '/dashboard', label: 'Mission Control', Icon: LayoutDashboard },
-  { href: '/self', label: 'Self', Icon: Brain },
-  { href: '/relationships', label: 'Relaciones', Icon: Users },
-  { href: '/goals', label: 'Objetivos', Icon: Target },
-  { href: '/finance', label: 'Finanzas', Icon: DollarSign },
-  { href: '/signals', label: 'Senales', Icon: Bell },
-  { href: '/memory', label: 'Memoria', Icon: Archive },
-  { href: '/timeline', label: 'Historial', Icon: History },
+  { href: '/panel', label: 'Mission Control', Icon: LayoutDashboard },
+  { href: '/yo', label: 'Self', Icon: Brain },
+  { href: '/relaciones', label: 'Relaciones', Icon: Users },
+  { href: '/objetivos', label: 'Objetivos', Icon: Target },
+  { href: '/finanzas', label: 'Finanzas', Icon: DollarSign },
+  { href: '/senales', label: 'Senales', Icon: Bell },
+  { href: '/memoria', label: 'Memoria', Icon: Archive },
+  { href: '/historial', label: 'Historial', Icon: History },
 ] as const
 
 interface NavProps {
@@ -48,7 +48,7 @@ export function Nav({ onItemClick }: NavProps = {}) {
 
       <div className="flex-1 py-3 px-2 flex flex-col gap-0.5 overflow-y-auto">
         {NAV_ITEMS.map(({ href, label, Icon }) => {
-          const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
+          const active = pathname === href || (href !== '/panel' && pathname.startsWith(href))
           return (
             <Link
               key={href}

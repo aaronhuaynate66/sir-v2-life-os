@@ -24,7 +24,7 @@ export function ScaleCaptureSuccess({ insertedCount, onAnother }: ScaleCaptureSu
           </h2>
           <p className="text-sm text-muted-foreground max-w-md">
             La imagen quedó archivada en tu bucket privado. Las métricas
-            aparecerán en <span className="font-medium text-foreground">/timeline</span> en cuanto
+            aparecerán en <span className="font-medium text-foreground">/historial</span> en cuanto
             sincronicen con Supabase.
           </p>
         </div>
@@ -33,7 +33,7 @@ export function ScaleCaptureSuccess({ insertedCount, onAnother }: ScaleCaptureSu
             Otra captura
           </Button>
           <Button size="sm" asChild>
-            <Link href="/timeline">Ver en historial</Link>
+            <Link href="/historial">Ver en historial</Link>
           </Button>
         </div>
       </CardContent>

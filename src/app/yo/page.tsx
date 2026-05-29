@@ -135,7 +135,7 @@ function SelfContent() {
             </div>
           </div>
           <Button size="sm" asChild className="flex-shrink-0">
-            <Link href="/capture/scale" className="inline-flex items-center gap-1.5">
+            <Link href="/captura/bascula" className="inline-flex items-center gap-1.5">
               + Subir foto
               <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
             </Link>

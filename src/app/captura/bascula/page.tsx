@@ -20,7 +20,7 @@ function CaptureScaleContent() {
   return (
     <AppShell>
       <Link
-        href="/self"
+        href="/yo"
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-4"
       >
         <ArrowLeft size={13} strokeWidth={1.75} aria-hidden="true" />
