@@ -8,7 +8,7 @@
 // IMPORTANTE: este componente es 100% client-side — depende de <canvas>
 // y se carga via dynamic import desde GraphView con ssr: false.
 
-import { useMemo, useRef, useEffect } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import type { GraphData } from '@/lib/graph/types'
 import { CATEGORY_COLOR } from '@/lib/graph/colors'
@@ -33,51 +33,77 @@ function toForceGraphData(data: GraphData) {
   }
 }
 
+const NODE_RADIUS = 7
+const SELF_NODE_RADIUS = 10
+const LABEL_OFFSET = 4 // px entre el bottom del circulo y el top del nombre
+
 export function GraphCanvas({ data }: GraphCanvasProps) {
+  // react-force-graph ref expone una API compleja (zoomToFit, d3Force, etc.)
+  // que no esta tipada en el package. Usamos unknown + cast en el uso.
   const fgRef = useRef<unknown>(null)
-  const wrapperRef = useRef<HTMLDivElement | null>(null)
   const fgData = useMemo(() => toForceGraphData(data), [data])
 
-  // Auto-zoom-to-fit cuando cambia data (despues que termina el force layout).
-  useEffect(() => {
-    // react-force-graph expone zoomToFit() en la ref. Usamos setTimeout para
-    // dejar que el force layout estabilice los nodos primero.
-    const t = setTimeout(() => {
-      const fg = fgRef.current as { zoomToFit?: (ms: number, padding: number) => void } | null
-      try {
-        fg?.zoomToFit?.(400, 60)
-      } catch {
-        // ignore — primer mount puede no tener zoomToFit listo
-      }
-    }, 600)
-    return () => clearTimeout(t)
-  }, [fgData])
+  // Shape minima de la ref que necesitamos. La lib expone mas pero solo
+  // usamos zoomToFit + d3Force.
+  type ForceGraphRef = {
+    zoomToFit?: (ms: number, padding: number) => void
+    d3Force?: (name: string) => { strength?: (v: number) => void; distance?: (v: number) => void } | undefined
+    __sirForcesConfigured?: boolean
+  }
+
+  // Configurar fuerzas d3 + zoom-to-fit cuando el engine inicializa.
+  // El callback `onEngineStop` se dispara cuando la simulacion para.
+  const handleEngineStop = useCallback(() => {
+    const fg = fgRef.current as ForceGraphRef | null
+    if (!fg) return
+    try {
+      fg.zoomToFit?.(400, 40)
+    } catch {
+      // Primer mount puede no estar listo todavia.
+    }
+  }, [])
+
+  // Ajustar fuerzas tras el primer mount.
+  const handleEngineTick = useCallback(() => {
+    const fg = fgRef.current as ForceGraphRef | null
+    if (!fg || fg.__sirForcesConfigured) return
+    try {
+      const charge = fg.d3Force?.('charge')
+      charge?.strength?.(-280)
+      const link = fg.d3Force?.('link')
+      link?.distance?.(110)
+      fg.__sirForcesConfigured = true
+    } catch {
+      // Si la API d3Force no esta lista, sera reintentado en proximo tick.
+    }
+  }, [])
 
   return (
-    <div
-      ref={wrapperRef}
-      className="relative w-full h-[60vh] sm:h-[70vh] min-h-[400px] rounded-lg border border-border bg-muted/10 overflow-hidden"
-    >
+    <div className="relative w-full h-[60vh] sm:h-[70vh] min-h-[400px] rounded-lg border border-border bg-muted/10 overflow-hidden">
       <ForceGraph2D
         ref={fgRef as React.MutableRefObject<undefined>}
         graphData={fgData}
         backgroundColor="transparent"
-        // Edges
+        // ─── Edges ────────────────────────────────────────────────
         linkColor={(link: { color?: string }) => link.color ?? '#64748b'}
-        linkWidth={1.5}
-        linkCurvature={0.25}
+        linkWidth={1.8}
+        linkCurvature={0.3}
         linkDirectionalArrowLength={0}
-        // Force layout
-        cooldownTicks={80}
-        d3AlphaDecay={0.04}
-        d3VelocityDecay={0.35}
-        // Hover
+        // ─── Force layout ─────────────────────────────────────────
+        cooldownTicks={120}
+        d3AlphaDecay={0.035}
+        d3VelocityDecay={0.4}
+        onEngineStop={handleEngineStop}
+        onEngineTick={handleEngineTick}
+        // ─── Hover ───────────────────────────────────────────────
         nodeLabel={(node: { fullName?: string }) => node.fullName ?? ''}
-        // Custom node render
-        nodeRelSize={8}
+        // ─── Custom node render ──────────────────────────────────
+        nodeRelSize={NODE_RADIUS}
         nodeCanvasObjectMode={() => 'replace'}
         nodeCanvasObject={renderNode}
-        // Edge label
+        // Pointer area (clickable region) — usa el circulo, no el label.
+        nodePointerAreaPaint={paintNodePointerArea}
+        // ─── Edge label ──────────────────────────────────────────
         linkCanvasObjectMode={() => 'after'}
         linkCanvasObject={renderLinkLabel}
       />
@@ -102,7 +128,19 @@ type LinkLike = {
   color?: string
 }
 
-/** Render del nodo: circulo + iniciales adentro + fullName debajo. */
+/**
+ * Resuelve el color del nodo defensivamente.
+ * `isSelf` SIEMPRE gana sobre `category` para evitar que el self herede
+ * un color de categoria (ej. cuando un round-trip por la lib pierde
+ * el category prop).
+ */
+function nodeColor(node: NodeLike): string {
+  if (node.isSelf) return CATEGORY_COLOR.self
+  const cat = node.category && CATEGORY_COLOR[node.category] ? node.category : 'networking'
+  return CATEGORY_COLOR[cat]
+}
+
+/** Render del nodo: circulo + iniciales DENTRO + fullName DEBAJO. */
 function renderNode(
   rawNode: unknown,
   ctx: CanvasRenderingContext2D,
@@ -111,42 +149,69 @@ function renderNode(
   const node = rawNode as NodeLike
   const x = node.x ?? 0
   const y = node.y ?? 0
-  const fill = CATEGORY_COLOR[node.category ?? 'networking']
-  const radius = node.isSelf ? 16 : 12
+  const fill = nodeColor(node)
+  const radius = node.isSelf ? SELF_NODE_RADIUS : NODE_RADIUS
 
-  // Sombra suave para self
+  // Sombra suave para self (ring exterior).
   if (node.isSelf) {
     ctx.beginPath()
     ctx.arc(x, y, radius + 3, 0, 2 * Math.PI)
-    ctx.fillStyle = 'rgba(245, 245, 245, 0.15)'
+    ctx.fillStyle = 'rgba(245, 245, 245, 0.18)'
     ctx.fill()
   }
 
-  // Circulo del nodo
+  // Circulo del nodo.
   ctx.beginPath()
   ctx.arc(x, y, radius, 0, 2 * Math.PI)
   ctx.fillStyle = fill
   ctx.fill()
-  // Border
-  ctx.strokeStyle = node.isSelf ? '#f5f5f5' : 'rgba(255,255,255,0.25)'
-  ctx.lineWidth = node.isSelf ? 2 : 1
+  // Border.
+  ctx.strokeStyle = node.isSelf ? '#f5f5f5' : 'rgba(255,255,255,0.4)'
+  ctx.lineWidth = node.isSelf ? 1.8 : 1
   ctx.stroke()
 
-  // Iniciales centradas
-  const labelFontSize = Math.max(9, 12 / Math.max(0.6, globalScale))
-  ctx.font = `600 ${labelFontSize}px ui-sans-serif, system-ui`
+  // Iniciales centradas DENTRO del circulo.
+  // Texto oscuro sobre cualquier color (todos los colores son saturados claros).
+  const labelFontSize = Math.max(7, Math.min(10, radius * 0.95))
+  ctx.font = `700 ${labelFontSize}px ui-sans-serif, system-ui`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillStyle = node.isSelf ? '#0a0a0a' : '#0a0a0a'
+  ctx.fillStyle = '#0a0a0a'
   ctx.fillText(node.label ?? '?', x, y)
 
-  // Nombre completo debajo (solo si zoom suficiente)
+  // Nombre completo DEBAJO del circulo (solo si zoom suficiente para legibilidad).
   if (globalScale > 0.55 && node.fullName) {
-    const nameFontSize = Math.max(8, 11 / Math.max(0.6, globalScale))
-    ctx.font = `400 ${nameFontSize}px ui-sans-serif, system-ui`
-    ctx.fillStyle = '#cbd5e1'
-    ctx.fillText(node.fullName, x, y + radius + nameFontSize + 2)
+    const nameFontSize = Math.max(8, Math.min(11, 10 / Math.max(0.6, globalScale) + 1))
+    ctx.font = `500 ${nameFontSize}px ui-sans-serif, system-ui`
+    const text = node.fullName
+    const metrics = ctx.measureText(text)
+    const padX = 4
+    const padY = 2
+    const w = metrics.width + padX * 2
+    const h = nameFontSize + padY * 2
+    const labelY = y + radius + LABEL_OFFSET + h / 2
+    // Fondo del label para legibilidad cuando los nodos quedan cerca.
+    ctx.fillStyle = 'rgba(10, 10, 10, 0.72)'
+    ctx.fillRect(x - w / 2, labelY - h / 2, w, h)
+    ctx.fillStyle = '#e5e7eb'
+    ctx.fillText(text, x, labelY)
   }
+}
+
+/** Hit area del nodo para hover/click. */
+function paintNodePointerArea(
+  rawNode: unknown,
+  color: string,
+  ctx: CanvasRenderingContext2D,
+) {
+  const node = rawNode as NodeLike
+  const x = node.x ?? 0
+  const y = node.y ?? 0
+  const radius = node.isSelf ? SELF_NODE_RADIUS : NODE_RADIUS
+  ctx.beginPath()
+  ctx.arc(x, y, radius + 2, 0, 2 * Math.PI)
+  ctx.fillStyle = color
+  ctx.fill()
 }
 
 /** Render del label del edge: pequeño texto a la mitad del segmento. */
@@ -176,7 +241,7 @@ function renderLinkLabel(
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  // Fondo del label para legibilidad sobre la curva
+  // Fondo del label para legibilidad sobre la curva.
   const text = link.label
   const padding = 3
   const metrics = ctx.measureText(text)
