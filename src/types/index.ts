@@ -112,6 +112,19 @@ export type HealthMetricType =
   | 'calories'
   | 'hydration'
   | 'custom'
+  // body composition (Migration 0005)
+  | 'bmi'
+  | 'body_fat_percent'
+  | 'muscle_mass_kg'
+  | 'bone_mass_kg'
+  | 'water_percent'
+  | 'protein_percent'
+  | 'visceral_fat_level'
+  | 'metabolic_rate_kcal'
+  | 'skeletal_muscle_mass_kg'
+  | 'metabolic_age'
+  | 'body_score'
+  | 'ideal_weight_kg'
 
 export type EventCategory =
   | 'personal'
@@ -239,6 +252,11 @@ export interface HealthMetric {
   unit: string
   note?: string
   timestamp: string
+  /** ID de la captura cuando viene de un upload (báscula, etc.). Agrupa las
+   *  N métricas que salieron juntas de la misma imagen. Migration 0005. */
+  captureId?: string
+  /** Storage path del screenshot original. Migration 0005. */
+  sourceImagePath?: string
 }
 
 export interface SleepRecord {
