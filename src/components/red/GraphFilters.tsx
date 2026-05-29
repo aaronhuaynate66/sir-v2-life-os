@@ -1,0 +1,92 @@
+'use client'
+// SIR V2 — Filtros del grafo: tabs (categoría) + slider (salud minima).
+
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { CATEGORY_LABEL, FILTERABLE_CATEGORIES } from '@/lib/graph/colors'
+import type { GraphCategory, GraphFilters } from '@/lib/graph/types'
+
+interface GraphFiltersProps {
+  filters: GraphFilters
+  onChange: (next: GraphFilters) => void
+}
+
+export function GraphFiltersBar({ filters, onChange }: GraphFiltersProps) {
+  function setCategory(category: GraphCategory | 'all') {
+    onChange({ ...filters, category })
+  }
+
+  function setMinHealth(value: number) {
+    onChange({ ...filters, minHealth: value })
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Tabs de categoría */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans mr-1">
+          Categoría
+        </span>
+        <CategoryTab active={filters.category === 'all'} onClick={() => setCategory('all')} label="Todos" />
+        {FILTERABLE_CATEGORIES.map((cat) => (
+          <CategoryTab
+            key={cat}
+            active={filters.category === cat}
+            onClick={() => setCategory(cat)}
+            label={CATEGORY_LABEL[cat]}
+          />
+        ))}
+      </div>
+
+      {/* Slider salud mínima */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Label htmlFor="min-health" className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">
+          Salud mínima
+        </Label>
+        <input
+          id="min-health"
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={filters.minHealth}
+          onChange={(e) => setMinHealth(Number(e.target.value))}
+          className="flex-1 max-w-xs accent-primary"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={filters.minHealth}
+        />
+        <span className="text-xs font-mono tabular-nums text-foreground min-w-[3ch] text-right">
+          {filters.minHealth}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function CategoryTab({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  label: string
+}) {
+  return (
+    <Button
+      type="button"
+      variant={active ? 'default' : 'outline'}
+      size="sm"
+      onClick={onClick}
+      className={cn(
+        'h-7 px-2.5 text-[11px] font-mono',
+        active && 'bg-primary text-primary-foreground hover:bg-primary/90',
+      )}
+      aria-pressed={active}
+    >
+      {label}
+    </Button>
+  )
+}
