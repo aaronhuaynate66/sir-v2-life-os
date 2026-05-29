@@ -43,6 +43,7 @@ import { adaptSignals } from './adapters/signal'
 import { adaptGoals } from './adapters/goal'
 import { adaptPeople } from './adapters/people'
 import { adaptRelationalHistory } from './adapters/relational_event'
+import { groupByCapture } from './grouping'
 
 import {
   type FetchTypeResult,
@@ -432,7 +433,14 @@ export async function fetchPage({
   const hasMore =
     perType.some((r) => r.ok && r.events.length === pageSize) && sorted.length >= pageSize
 
-  return { events: sorted, failedTypes, hasMore }
+  // G3: agrupar por captureId SOLO cuando search está vacia. Con search
+  // activa, devolvemos rows flat para que el usuario vea matches especificos.
+  // sanitizeSearch ya hace trim + strip de chars especiales.
+  const finalEvents = sanitizeSearch(filters.search) === ''
+    ? groupByCapture(sorted)
+    : sorted
+
+  return { events: finalEvents, failedTypes, hasMore }
 }
 
 export { DEFAULT_FILTERS }
