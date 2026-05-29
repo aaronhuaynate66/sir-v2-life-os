@@ -1,29 +1,7 @@
 // SIR V2 — HealthMetric → TimelineEvent adapter
-import type { HealthMetric, HealthMetricType } from '@/types'
+import type { HealthMetric } from '@/types'
 import type { TimelineEvent } from '../types'
-
-const TYPE_LABEL: Record<HealthMetricType, string> = {
-  weight: 'Peso',
-  blood_pressure: 'Presión',
-  heart_rate: 'Ritmo cardíaco',
-  steps: 'Pasos',
-  calories: 'Calorías',
-  hydration: 'Hidratación',
-  custom: 'Custom',
-  // body composition (Migration 0005)
-  bmi: 'IMC',
-  body_fat_percent: 'Grasa corporal',
-  muscle_mass_kg: 'Masa muscular',
-  bone_mass_kg: 'Masa ósea',
-  water_percent: 'Agua corporal',
-  protein_percent: 'Proteína',
-  visceral_fat_level: 'Grasa visceral',
-  metabolic_rate_kcal: 'Metab. basal',
-  skeletal_muscle_mass_kg: 'Masa musc. esquelet.',
-  metabolic_age: 'Edad metabólica',
-  body_score: 'Score corporal',
-  ideal_weight_kg: 'Peso ideal',
-}
+import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 
 function formatValue(m: HealthMetric): string {
   const v = Number.isInteger(m.value) ? m.value.toString() : m.value.toFixed(1)
@@ -31,7 +9,7 @@ function formatValue(m: HealthMetric): string {
 }
 
 export function adaptHealthMetric(m: HealthMetric): TimelineEvent {
-  const label = TYPE_LABEL[m.type] ?? m.type
+  const label = getHealthMetricLabel(m.type)
   return {
     id: `health:${m.id}`,
     type: 'health',

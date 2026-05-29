@@ -16,6 +16,7 @@ import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
 import { createSelfMetricMemory, createSleepMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 
@@ -81,7 +82,7 @@ function SelfContent() {
     if (isNaN(v)) { toast.error('Valor invalido', { description: 'Ingresa un numero valido.' }); return }
     addHealthMetric({ id: 'h_' + Date.now(), type: hType, value: v, unit: hUnit, timestamp: new Date().toISOString() })
     setHVal('')
-    toast.success('Registro de salud agregado', { description: `${hType}: ${v} ${hUnit}` })
+    toast.success('Registro de salud agregado', { description: `${getHealthMetricLabel(hType)}: ${v} ${hUnit}` })
   }
 
   const eC: Tone = bio.energyLevel >= 7 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'
@@ -225,7 +226,7 @@ function SelfContent() {
             <Select value={hType} onValueChange={(v) => setHType(v as HealthMetricType)}>
               <SelectTrigger className="flex-1 min-w-[120px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {HEALTH_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {HEALTH_TYPES.map(t => <SelectItem key={t} value={t}>{getHealthMetricLabel(t)}</SelectItem>)}
               </SelectContent>
             </Select>
             <Input type="number" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24 font-mono tabular-nums" />
@@ -241,7 +242,7 @@ function SelfContent() {
             <div className="space-y-1">
               {[...healthMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 8).map((h) => (
                 <div key={h.id} className="flex justify-between py-1 border-b border-border/40 last:border-0">
-                  <span className="text-xs text-muted-foreground">{h.type}</span>
+                  <span className="text-xs text-muted-foreground">{getHealthMetricLabel(h.type)}</span>
                   <span className="text-xs font-mono tabular-nums">{h.value} {h.unit}</span>
                 </div>
               ))}
