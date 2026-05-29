@@ -14,6 +14,43 @@
 import type { TimelineEvent, GroupedItem, TimelineEventType } from './types'
 
 /**
+ * Orden curado de metricas de bascula para el render del card grouped.
+ * Mismo patron que la app del Mi Scale: peso primero, indicadores
+ * derivados, composicion, y referencias al final. Aplica SOLO cuando
+ * captureKind === 'scale'. Otros tipos de captura (whatsapp, futuros)
+ * mantienen el orden recibido.
+ *
+ * Keys = HealthMetricType (el campo subyacente del row), no
+ * TimelineEventType. La fuente es event.meta.metricType seteado por
+ * el adapter timeline de health_metric.
+ */
+const SCALE_ORDER: readonly string[] = [
+  'weight',
+  'bmi',
+  'body_fat_percent',
+  'muscle_mass_kg',
+  'water_percent',
+  'bone_mass_kg',
+  'protein_percent',
+  'visceral_fat_level',
+  'skeletal_muscle_mass_kg',
+  'metabolic_rate_kcal',
+  'ideal_weight_kg',
+  'metabolic_age',
+  'body_score',
+] as const
+
+const SCALE_ORDER_INDEX = new Map<string, number>(
+  SCALE_ORDER.map((key, i) => [key, i]),
+)
+
+function scaleOrderIndex(metricType: unknown): number {
+  if (typeof metricType !== 'string') return Number.MAX_SAFE_INTEGER
+  const idx = SCALE_ORDER_INDEX.get(metricType)
+  return idx ?? Number.MAX_SAFE_INTEGER // items desconocidos al final, orden estable
+}
+
+/**
  * Agrupa events por captureId. Mantiene orden global por occurredAt DESC.
  */
 export function groupByCapture(events: TimelineEvent[]): TimelineEvent[] {
@@ -69,8 +106,24 @@ function sortDesc(events: TimelineEvent[]): TimelineEvent[] {
 function buildGroupedEvent(captureId: string, items: TimelineEvent[]): TimelineEvent {
   // Ordenar items dentro del grupo por occurredAt DESC para que el
   // "newest" sea el primero — relevante si los timestamps difieren.
+  // Para scale captures todos los items comparten timestamp, asi que
+  // el sort por scale-order que viene despues domina.
   const orderedItems = sortDesc([...items])
   const newest = orderedItems[0]
+
+  // captureKind: tomar el primero no-undefined (asumimos uniformidad
+  // dentro de una captura, que es el caso para scale).
+  const captureKind = orderedItems
+    .map((it) => it.captureKind)
+    .find((k): k is 'scale' | 'whatsapp' => k !== undefined)
+
+  // Si es bascula, re-ordenar por importancia visual (Peso primero, etc.).
+  // Para otros tipos futuros (whatsapp), mantener el orden por timestamp.
+  if (captureKind === 'scale') {
+    orderedItems.sort(
+      (a, b) => scaleOrderIndex(a.meta?.metricType) - scaleOrderIndex(b.meta?.metricType),
+    )
+  }
 
   const groupedItems: GroupedItem[] = orderedItems.map((it) => ({
     id: it.id,
@@ -78,12 +131,6 @@ function buildGroupedEvent(captureId: string, items: TimelineEvent[]): TimelineE
     label: extractLabel(it),
     display: extractDisplay(it),
   }))
-
-  // captureKind: tomar el primero no-undefined (asumimos uniformidad
-  // dentro de una captura, que es el caso para scale).
-  const captureKind = orderedItems
-    .map((it) => it.captureKind)
-    .find((k): k is 'scale' | 'whatsapp' => k !== undefined)
 
   // confidence: idem, desde meta.
   const confidence = orderedItems
