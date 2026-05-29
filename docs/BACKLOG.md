@@ -1,6 +1,6 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 28/05/2026
+> **Última actualización:** 29/05/2026
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
@@ -75,6 +75,50 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 - **Cap en `relationships.history`**: cuando aparezca volumen >50 items por relación. R7 del ADR 0005. Esfuerzo: 15 min.
 
 - **Robots.txt + noindex meta tag para rutas autenticadas**: hoy todas las páginas son crawlable. Indexar sólo la landing pública (cuando exista) y excluir `/panel`, `/yo`, `/historial`, etc. con `noindex` + `robots.txt`. Esfuerzo: 30 min.
+
+### Edición completa en /relaciones/[slug]
+
+**Detectado:** validación manual del 29/05/2026 (PR #85).
+
+**Qué falta:** el detail page de persona solo permite editar nombre + slug. Para cambiar tipo de relación, categoría, importancia, confianza, impacto energético, frecuencia de contacto, el usuario debe volver a `/relaciones` y usar el formulario existente (modal de creación/edición).
+
+**Propuesta:** formulario inline completo en el detail page con todos los campos editables (mismo schema que el modal). Idealmente con sección "Editar" colapsable o tabs para no saturar la vista.
+
+**Esfuerzo estimado:** 1-2 sesiones (~3-4h).
+
+**Prioridad:** Media. Funcional, mejora UX.
+
+---
+
+### Grafo /red/grafo — zoom inicial más generoso (labels cortados)
+
+**Síntoma (29/05/2026):** al abrir `/red/grafo` con pocas personas (2 nodos: self + Diana), los labels se cortan ("Diana C" en vez de "Diana Carolina", "Aarón Huayna" en vez de "Aarón Huaynate Espinoza"). El `zoomToFit` post-stabilización no incluye padding suficiente para los labels.
+
+**Fix propuesto:**
+- `zoomToFit(400, 100)` en lugar de `zoomToFit(400, 40)` en `GraphCanvas.tsx`.
+- O calcular padding dinámico según length del label más largo del set de nodos.
+- O reducir `nodeRelSize` y usar `nodeAutoColorBy` con configuración de label fit.
+
+**Esfuerzo estimado:** 30-60 min.
+
+**Prioridad:** Baja. Cosmético.
+
+---
+
+### Re-validar Captura WhatsApp con screenshot con fecha explícita
+
+**Contexto (29/05/2026):** el fix de prompt para `conversationDate` (commit `360bfde` en PR #85) se aplicó pero nunca se re-validó con un screenshot que SÍ tenga fecha explícita visible en el header o como separador. Las pruebas post-fix fueron con capturas sin fecha visible (correctamente devolvieron `null` + warning amber).
+
+**Test pendiente:** subir un screenshot de WhatsApp donde el header muestre fecha tipo "Today", "Yesterday", "26 May 2026", o separador de día visible en medio del chat.
+
+**Comportamiento esperado:**
+- `conversationDate` debe resolverse correctamente a la fecha visible con offset Lima -05:00.
+- Sin warning amber en `WhatsAppCapturePreview`.
+- `rawObservations` NO debe mencionar "Sin fecha explicita visible".
+
+**Prioridad:** Alta. Validar antes de capturar muchas conversaciones para asegurar que el caso "con fecha visible" no se rompió por el fix.
+
+---
 
 ### Ajuste prompt Vision Captura WhatsApp — asignación user/other
 
