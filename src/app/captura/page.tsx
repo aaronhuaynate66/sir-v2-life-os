@@ -222,13 +222,13 @@ function CapturaIndexContent() {
   }, [createName, detection])
 
   const onProcess = useCallback(async () => {
-    if (!detection) return
+    if (!detection || !file) return
     setProcessLoading(true)
     setProcessError(null)
     setProcessed(null)
     try {
       const r = await processCapture({
-        file: detection.compressedBlob,
+        file,
         captureType: detection.detected.type,
         detectorData: detection.detected,
         personId: selectedPersonId,
@@ -244,7 +244,7 @@ function CapturaIndexContent() {
     } finally {
       setProcessLoading(false)
     }
-  }, [detection, selectedPersonId])
+  }, [detection, file, selectedPersonId])
 
   const canExtract =
     detection !== null && TYPES_WITH_EXTRACTOR.has(detection.detected.type)
@@ -336,8 +336,9 @@ function CapturaIndexContent() {
                   conf. {detection.detected.confidence}
                 </Badge>
                 <span className="text-[10px] font-mono text-muted-foreground/70">
-                  {(detection.originalBytes / 1024).toFixed(0)} KB →{' '}
-                  {(detection.compressedBytes / 1024).toFixed(0)} KB
+                  detección: {(detection.originalBytes / 1024).toFixed(0)} KB →{' '}
+                  {(detection.compressedBytes / 1024).toFixed(0)} KB · q=
+                  {detection.detectionQuality.toFixed(2)}
                 </span>
               </div>
               <div className="text-xs text-muted-foreground">
@@ -602,6 +603,19 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
         <div>
           <span className="font-medium text-foreground">captured_at:</span>{' '}
           <span className="font-mono">{obs.capturedAt}</span>
+        </div>
+        <div className="pt-2 mt-2 border-t border-border/50">
+          <span className="font-medium text-foreground">compresión extractor:</span>{' '}
+          <span className="font-mono">
+            {(result.compression.originalBytes / 1024).toFixed(0)} KB →{' '}
+            {(result.compression.compressedBytes / 1024).toFixed(0)} KB · q={' '}
+            {result.compression.finalQuality.toFixed(2)} (target{' '}
+            {result.compression.targetQuality.toFixed(2)}) · {result.compression.maxWidth}px ·{' '}
+            {result.compression.attempts} pase{result.compression.attempts === 1 ? '' : 's'}
+          </span>
+          {result.compression.hitCeiling && (
+            <span className="ml-2 text-yellow-400 font-mono">⚠ techo q=0.98 sin alcanzar piso</span>
+          )}
         </div>
       </div>
 

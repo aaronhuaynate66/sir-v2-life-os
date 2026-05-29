@@ -6,7 +6,7 @@
 
 'use client'
 
-import { compressImage } from '@/lib/capture/scale/compress'
+import { compressForDetection } from '@/lib/capture/scale/compress'
 import type {
   CaptureType,
   CaptureDetectError,
@@ -20,11 +20,6 @@ export interface DetectOptions {
   /** Cuando el cliente sabe el tipo (atajo desde paths tipados),
    *  evita gastar tokens en Vision. */
   captureTypeHint?: CaptureType
-  /** Override de los defaults de compress (maxSize=1024, quality=0.85). */
-  compress?: {
-    maxSize?: number
-    quality?: number
-  }
 }
 
 export interface DetectResult {
@@ -33,11 +28,10 @@ export interface DetectResult {
   raw: string
   /** Bytes originales del File. */
   originalBytes: number
-  /** Bytes despues de compresion WebP. */
+  /** Bytes del blob enviado al detector (perfil DETECTION_STRATEGY). */
   compressedBytes: number
-  /** Blob WebP comprimido — reutilizable por /api/capture/process para no
-   *  comprimir dos veces. */
-  compressedBlob: Blob
+  /** Quality final del pase de detection (informativo). */
+  detectionQuality: number
 }
 
 class DetectorError extends Error {
@@ -52,14 +46,20 @@ class DetectorError extends Error {
 }
 
 /**
- * Sube `file` al detector. Comprime client-side a WebP, posta a /api/capture,
- * y devuelve el resultado parseado. Throws DetectorError con status preciso.
+ * Sube `file` al detector. Comprime client-side con perfil DETECTION
+ * (1080px / q=0.7), posta a /api/capture, devuelve el resultado parseado.
+ *
+ * Importante: NO retiene el blob comprimido. El extractor especifico
+ * (PASO 2 del flujo) debe recomprimir desde el File original con la
+ * strategy del capture_type detectado para evitar perder detalle.
+ *
+ * Throws DetectorError con status preciso.
  */
 export async function detectCaptureType(
   file: File,
   opts: DetectOptions = {},
 ): Promise<DetectResult> {
-  const compressed = await compressImage(file, opts.compress)
+  const compressed = await compressForDetection(file)
 
   const formData = new FormData()
   formData.append('file', compressed.blob, file.name.replace(/\.[^.]+$/, '.webp'))
@@ -91,7 +91,7 @@ export async function detectCaptureType(
     raw: json.raw,
     originalBytes: compressed.originalBytes,
     compressedBytes: compressed.compressedBytes,
-    compressedBlob: compressed.blob,
+    detectionQuality: compressed.finalQuality,
   }
 }
 

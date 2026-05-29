@@ -10,6 +10,7 @@
 
 'use client'
 
+import { compressForExtraction } from '@/lib/capture/scale/compress'
 import type { CaptureType, DetectorResult, Observation } from './types'
 
 export interface PersonCandidate {
@@ -58,8 +59,9 @@ export interface CreatePersonResponse {
 }
 
 export interface ProcessCaptureInput {
-  /** WebP comprimido (mismo Blob que se mando al detector). */
-  file: Blob
+  /** File ORIGINAL del usuario. El cliente recomprime aca usando la
+   *  strategy especifica del captureType (compressForExtraction). */
+  file: File
   captureType: CaptureType
   detectorData?: DetectorResult
   personId?: string | null
@@ -72,6 +74,16 @@ export interface ProcessCaptureResponse {
   /** Output sanitizado del extractor (shape varia por capture_type). */
   extracted: Record<string, unknown>
   raw: string
+  /** Diagnostico de la compresion aplicada a la imagen del extractor. */
+  compression: {
+    originalBytes: number
+    compressedBytes: number
+    maxWidth: number
+    targetQuality: number
+    finalQuality: number
+    attempts: number
+    hitCeiling: boolean
+  }
 }
 
 class HttpError extends Error {
@@ -135,8 +147,13 @@ export async function processCapture(
   input: ProcessCaptureInput,
   signal?: AbortSignal,
 ): Promise<ProcessCaptureResponse> {
+  // Recomprimir desde el File ORIGINAL con la strategy del captureType.
+  // Si el detector dio whatsapp_chat -> 1080/0.75 (denso pero legible).
+  // Si dio linkedin -> 1600/0.95 con piso 300 KB (denso + vertical).
+  const compressed = await compressForExtraction(input.file, input.captureType)
+
   const formData = new FormData()
-  formData.append('file', input.file, 'capture.webp')
+  formData.append('file', compressed.blob, 'capture.webp')
   formData.append('capture_type', input.captureType)
   if (input.detectorData) {
     formData.append('detector_data', JSON.stringify(input.detectorData))
@@ -157,7 +174,19 @@ export async function processCapture(
     const body = await readErrorBody(res)
     throw new HttpError(res.status, body.error, body.detail)
   }
-  return (await res.json()) as ProcessCaptureResponse
+  const json = (await res.json()) as Omit<ProcessCaptureResponse, 'compression'>
+  return {
+    ...json,
+    compression: {
+      originalBytes: compressed.originalBytes,
+      compressedBytes: compressed.compressedBytes,
+      maxWidth: compressed.strategy.maxWidth,
+      targetQuality: compressed.strategy.quality,
+      finalQuality: compressed.finalQuality,
+      attempts: compressed.attempts,
+      hitCeiling: compressed.hitCeiling,
+    },
+  }
 }
 
 export { HttpError }
