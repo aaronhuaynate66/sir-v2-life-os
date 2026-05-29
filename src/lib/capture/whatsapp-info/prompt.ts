@@ -87,6 +87,27 @@ REGLAS GENERALES:
 - rawObservations: notas en español sobre ambiguedades, campos cortados o
   observaciones utiles para review humano. null si no hay nada que reportar.
 
+REGLA CRITICA — Null sobre invento:
+
+Si NO podes leer un campo con claridad:
+- Devolvé null para ese campo
+- NUNCA INVENTES valores plausibles
+  * NO inventes phoneNumber con prefijos verosimiles ("+51 999 ...").
+  * NO inventes aboutText con frases tipicas ("Disponible", "Hola!").
+  * NO inventes lastSeen ("en linea", "hoy a las 14:00") si no aparece.
+  * NO inventes counts (groupsInCommonCount, contactsInCommonCount) —
+    devolver null si la fila no es claramente legible.
+- Es PREFERIBLE null a informacion incorrecta.
+
+Aplica tambien a displayName:
+- Si el nombre debajo de la foto NO se lee con claridad -> displayName=""
+  con confidence='low'. NUNCA inventes un nombre "plausible".
+
+Si MENOS del 50% de los campos son legibles:
+- confidence='low'
+- rawObservations: explicá EXACTAMENTE que partes son ilegibles
+  ("foto cortada, About no visible, telefono borroso").
+
 CRITICO:
 - Solo JSON. Sin prosa antes o despues. Sin markdown fences.
 - Empezá la respuesta con \`{\` y terminá con \`}\`.

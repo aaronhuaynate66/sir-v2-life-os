@@ -32,7 +32,7 @@ export function isValidLinkedInProfileExtracted(x: unknown): x is LinkedInProfil
   if (!x || typeof x !== 'object') return false
   const o = x as Record<string, unknown>
 
-  if (typeof o.fullName !== 'string') return false
+  if (!isStringOrNull(o.fullName)) return false
   if (!isStringOrNull(o.headline)) return false
   if (!isStringOrNull(o.location)) return false
   if (!isStringOrNull(o.currentRole)) return false
@@ -72,7 +72,7 @@ export function sanitizeLinkedInProfile(
   raw: LinkedInProfileExtracted,
 ): LinkedInProfileExtracted {
   return {
-    fullName: raw.fullName.trim().slice(0, 200),
+    fullName: trimOrNull(raw.fullName, 200),
     headline: trimOrNull(raw.headline, 300),
     location: trimOrNull(raw.location, 200),
     currentRole: trimOrNull(raw.currentRole, 200),

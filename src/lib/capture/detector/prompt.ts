@@ -81,6 +81,19 @@ REGLAS GENERALES:
 - Si la imagen es ambigua entre dos tipos, elegi el de MAYOR cantidad de
   señales y bajar la confidence a medium.
 
+REGLA CRITICA — Anti-hallucination:
+
+Si tu confidence seria 'low' porque la imagen esta borrosa, de baja
+resolucion o ilegible:
+- Devolvé type='unknown' con confidence='low'
+- NO INVENTES un tipo plausible
+- NO devuelvas 'medium' para forzar una respuesta
+- Es PREFERIBLE 'unknown' a una clasificacion incorrecta
+
+Aplica tambien a suggestedPersonName:
+- Si el nombre del header NO se lee con claridad -> suggestedPersonName=null
+- NUNCA inventes un nombre "plausible". Es mejor null.
+
 CRITICO:
 - Solo JSON. Sin prosa antes o despues. Sin markdown fences.
 - Empezá la respuesta con \`{\` y terminá con \`}\`.

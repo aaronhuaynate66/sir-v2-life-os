@@ -104,6 +104,30 @@ REGLAS GENERALES:
   y confidence='low' y explicacion en rawObservations.
 - rawObservations: notas sobre campos cortados, ambiguedades, etc.
 
+REGLA CRITICA — Null sobre invento:
+
+Si NO podes leer un campo con claridad:
+- Devolvé null para ese campo
+- NUNCA INVENTES bio, handles, displayName ni stats.
+  * NO inventes una bio "plausible" basada en lo que se suele poner
+    en Instagram. Si la bio NO es visible -> bio=null.
+  * NO inventes displayName si solo se ve el @handle. -> displayName=null.
+  * NO inventes externalLink con URLs tipicas (linktr.ee/..., un sitio
+    personal). Si no esta visible -> externalLink=null.
+  * NO inventes postsCount, followersCount, followingCount. Si los
+    numeros no se leen -> null.
+  * NO inventes pronouns ni category.
+- Es PREFERIBLE null a informacion incorrecta.
+
+Aplica tambien a handle:
+- Si el @handle NO se lee con claridad -> handle="" con confidence='low'.
+- NUNCA inventes un handle "plausible" tipo "nombre_apellido".
+
+Si MENOS del 50% de los campos son legibles:
+- confidence='low'
+- rawObservations: explicá EXACTAMENTE que partes son ilegibles
+  ("@handle borroso, contadores cortados, bio no visible").
+
 CRITICO:
 - Solo JSON. Sin prosa antes o despues. Sin markdown fences.
 - Empezá la respuesta con \`{\` y terminá con \`}\`.

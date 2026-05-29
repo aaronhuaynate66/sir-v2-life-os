@@ -21,8 +21,9 @@ export interface LinkedInOrgRef {
 }
 
 export interface LinkedInProfileExtracted {
-  /** Nombre completo como aparece grande. Literal. */
-  fullName: string
+  /** Nombre completo como aparece grande. Literal. null si el nombre
+   *  NO se puede leer con claridad (anti-hallucination). */
+  fullName: string | null
   /** Headline (una linea con cargo + empresa). Copia literal. null si no. */
   headline: string | null
   /** Ubicacion (linea pequeña debajo del headline). null si no. */
