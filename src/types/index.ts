@@ -139,6 +139,10 @@ export type ReflectionType = 'daily' | 'weekly' | 'monthly' | 'event' | 'spontan
 
 export interface Person {
   id: string
+  /** Slug user-facing para URLs /relaciones/[slug]. Auto-generado desde
+   *  el nombre, editable. Único por user_id. Nullable durante transición
+   *  (migration 0008). */
+  slug?: string
   name: string
   alias?: string
   relationship: RelationshipType

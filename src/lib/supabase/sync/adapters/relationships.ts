@@ -12,6 +12,7 @@ export const personAdapter: TableAdapter<Person> = {
   toRow: (p, userId) => ({
     id: p.id,
     user_id: userId,
+    slug: p.slug ?? null,
     name: p.name,
     alias: p.alias ?? null,
     relationship: p.relationship,
@@ -29,6 +30,7 @@ export const personAdapter: TableAdapter<Person> = {
   }),
   fromRow: (row) => ({
     id: row.id as string,
+    slug: (row.slug as string) ?? undefined,
     name: row.name as string,
     alias: (row.alias as string) ?? undefined,
     relationship: row.relationship as RelationshipType,
