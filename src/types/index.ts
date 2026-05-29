@@ -174,12 +174,47 @@ export interface Relationship {
   nextActionDate?: string
 }
 
+/** Mensaje individual de WhatsApp dentro de un capture history item. */
+export interface WhatsAppMessage {
+  /** "HH:mm" en formato 24h. */
+  timestamp: string
+  author: 'user' | 'other'
+  content: string
+  hasSticker?: boolean
+  hasEmoji?: boolean
+}
+
+/** Estados emocionales inferidos por Vision Nivel B. */
+export interface WhatsAppEmotionalStates {
+  /** snake_case combinable con '+'. */
+  otherPerson?: string
+  user?: string
+}
+
 export interface RelationshipEvent {
   id: string
   description: string
   emotionalTone: number
   date: string
-  type: 'positive' | 'negative' | 'neutral' | 'milestone'
+  type: 'positive' | 'negative' | 'neutral' | 'milestone' | 'whatsapp_capture'
+
+  // ─── opcionales para items de captura WhatsApp (Migration 0009) ──
+  /** Tipo de captura cuando el item viene de un upload automatizado. */
+  captureKind?: 'whatsapp'
+  /** ID estable de la captura (compartido si futuro agrupa N items). */
+  captureId?: string
+  /** Path en Storage del screenshot original. */
+  sourceImagePath?: string
+  /** Tags de la conversacion. */
+  topics?: string[]
+  /** Estados emocionales inferidos por Vision (Nivel B). */
+  emotionalStates?: WhatsAppEmotionalStates
+  /** Mensajes individuales extraidos para futura busqueda semantica. */
+  rawMessages?: WhatsAppMessage[]
+  /** Solo si Nivel C activado: 3 preguntas reflexivas. */
+  reflectionQuestions?: string[]
+  /** Confidence reportado por Vision. */
+  confidence?: 'high' | 'medium' | 'low'
 }
 
 export interface Milestone {

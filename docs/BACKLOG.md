@@ -1,6 +1,6 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 28/05/2026
+> **Última actualización:** 29/05/2026 (post-merge PR #85 + detail page V1→V2 ⭐)
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
@@ -14,6 +14,70 @@
 ---
 
 ## 🔥 PRÓXIMAS SESIONES (orden definido)
+
+### 0. Portar detail page completo de SIR V1 → V2 (PRIORIDAD ALTA) ⭐
+
+**Por qué:** El detail page actual de `/relaciones/[slug]` en V2 solo muestra 4 campos básicos (relación, categoría, importancia, confianza). SIR V1 (sir.marlabinc.com) tiene una vista MUCHO más rica que es la verdadera capa de valor del sistema. Sin esto, la captura WhatsApp y la red de relaciones queda sin su verdadero contexto consumible.
+
+**Referencia visual:** Screenshot del 29/05/2026 en `sir.marlabinc.com` mostrando perfil de Diana Diaz con todos los componentes.
+
+**Features pendientes a portar (17):**
+
+1. **Score relacional global**: número grande (49) + 3 progress bars (Fuerza, Reciprocidad, Confianza) + "Último contacto: 23 may 2026".
+2. **Visualización del ciclo menstrual**: donut con fase actual (FOLICULAR), día del ciclo (7), próximo período (~22 días), recomendación contextual ("Buen momento para planes juntos").
+3. **Cumpleaños** con countdown ("Cumpleaños en 16 días").
+4. **Última interacción** con countdown ("Última interacción: hace 5 días").
+5. **Registro rápido**: 4 botones emoji (Ánimo, Energía, Sueño, Dolor).
+6. **Vida profesional**: resumen autogenerado (LinkedIn + carrera, ej. "Titulada en Administración de Empresas...").
+7. **Vida social**: stats redes + seguidores en común (ej. "23 publicaciones y sigue a 1,374 personas... 14 seguidores en común").
+8. **Lo personal**: 3 párrafos narrativos auto-extraídos sobre la relación (tono emocional, dinámica, observaciones).
+9. **Fechas importantes**: lista con countdown (ej. "14 de junio - en 16 días").
+10. **Perfil profesional**: sección colapsable.
+11. **Redes sociales**: conectadas con escaneo (ej. "@diana.carolina.d").
+12. **Nota de voz**: botón para grabar audio asociado a la persona.
+13. **Fechas especiales**: añadibles.
+14. **Registrar interacción**: 5 estados emocionales (corazón roto → corazón pleno) + notas opcionales.
+15. **MEMORIAS ASOCIADAS** (sidebar derecho, lo más crítico):
+    - Tipos: `SEMANTIC`, `EPISODIC`, `EMOTIONAL`, `SOCIAL`.
+    - Auto-pobladas desde capturas WhatsApp (PR #85 ya guarda `relationships.history` items, falta extracción a tabla `memories`).
+    - Cada memoria con timestamp + content + person_id.
+    - 20+ memorias visibles en perfil de V1.
+16. **Botones top-right**:
+    - **Briefing IA**: genera resumen contextual de la persona usando LLM sobre todas las memorias asociadas.
+    - **Chat WhatsApp**: link directo a `wa.me/{teléfono}`.
+    - **Analizar screenshot**: atajo a `/captura/whatsapp` con la persona pre-seleccionada.
+17. **Bitácora**: colapsable con historial completo de interacciones.
+
+**Schema requerido:**
+
+- `people`: agregar columnas `fecha_nacimiento`, `ciclo_inicio` (date para inferir fase), `telefono`, `linkedin_url`, `instagram_handle`, etc.
+- Nueva tabla `memories`:
+  - `id`, `user_id`, `person_id`, `type` (`SEMANTIC|EPISODIC|EMOTIONAL|SOCIAL`)
+  - `content` (JSONB), `source` (`screenshot_whatsapp|manual|inferred`)
+  - `quality_score` (1-5), `timestamp`, `embeddings` (vector para Fase 3b).
+- Pipeline: `capture/whatsapp` → extract memories → insert en `memories` con `person_id`.
+
+**Prerequisitos:**
+- Captura WhatsApp ya popula data parcialmente (PR #85).
+- Migración de schema `people` necesaria.
+- Tabla `memories` nueva (probablemente con `pgvector` para Fase 3b).
+- Extracción/parseo de `relationships.history` items en memorias tipificadas.
+
+**Esfuerzo estimado:** 5-8 sesiones (~20-30h):
+- Sesión 1: planning + schema design + migration.
+- Sesión 2: tabla `memories` + extracción desde history.
+- Sesión 3: detail page layout base (score, ciclo, registro rápido).
+- Sesión 4: detail page secciones contextuales (vida prof/social/personal).
+- Sesión 5: memorias asociadas sidebar.
+- Sesión 6: botones top-right (Briefing IA + Chat WA + Analizar).
+- Sesión 7: registrar interacción + nota de voz.
+- Sesión 8: polish + validación end-to-end.
+
+**Prioridad:** ALTA. Es la verdadera capa de valor de SIR V2. Sin esto, la captura WhatsApp y el grafo quedan como features sueltas sin contexto consumible.
+
+**Próxima sesión sugerida:** 30/05/2026 — Planning técnico completo con PASO 0 (schema design + decisiones de migration).
+
+---
 
 ### 1. Captura Báscula (alta prioridad personal)
 
@@ -75,6 +139,64 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 - **Cap en `relationships.history`**: cuando aparezca volumen >50 items por relación. R7 del ADR 0005. Esfuerzo: 15 min.
 
 - **Robots.txt + noindex meta tag para rutas autenticadas**: hoy todas las páginas son crawlable. Indexar sólo la landing pública (cuando exista) y excluir `/panel`, `/yo`, `/historial`, etc. con `noindex` + `robots.txt`. Esfuerzo: 30 min.
+
+### Edición completa en /relaciones/[slug]
+
+**Detectado:** validación manual del 29/05/2026 (PR #85).
+
+**Qué falta:** el detail page de persona solo permite editar nombre + slug. Para cambiar tipo de relación, categoría, importancia, confianza, impacto energético, frecuencia de contacto, el usuario debe volver a `/relaciones` y usar el formulario existente (modal de creación/edición).
+
+**Propuesta:** formulario inline completo en el detail page con todos los campos editables (mismo schema que el modal). Idealmente con sección "Editar" colapsable o tabs para no saturar la vista.
+
+**Esfuerzo estimado:** 1-2 sesiones (~3-4h).
+
+**Prioridad:** Media. Funcional, mejora UX.
+
+---
+
+### Grafo /red/grafo — zoom inicial más generoso (labels cortados)
+
+**Síntoma (29/05/2026):** al abrir `/red/grafo` con pocas personas (2 nodos: self + Diana), los labels se cortan ("Diana C" en vez de "Diana Carolina", "Aarón Huayna" en vez de "Aarón Huaynate Espinoza"). El `zoomToFit` post-stabilización no incluye padding suficiente para los labels.
+
+**Fix propuesto:**
+- `zoomToFit(400, 100)` en lugar de `zoomToFit(400, 40)` en `GraphCanvas.tsx`.
+- O calcular padding dinámico según length del label más largo del set de nodos.
+- O reducir `nodeRelSize` y usar `nodeAutoColorBy` con configuración de label fit.
+
+**Esfuerzo estimado:** 30-60 min.
+
+**Prioridad:** Baja. Cosmético.
+
+---
+
+### Re-validar Captura WhatsApp con screenshot con fecha explícita
+
+**Contexto (29/05/2026):** el fix de prompt para `conversationDate` (commit `360bfde` en PR #85) se aplicó pero nunca se re-validó con un screenshot que SÍ tenga fecha explícita visible en el header o como separador. Las pruebas post-fix fueron con capturas sin fecha visible (correctamente devolvieron `null` + warning amber).
+
+**Test pendiente:** subir un screenshot de WhatsApp donde el header muestre fecha tipo "Today", "Yesterday", "26 May 2026", o separador de día visible en medio del chat.
+
+**Comportamiento esperado:**
+- `conversationDate` debe resolverse correctamente a la fecha visible con offset Lima -05:00.
+- Sin warning amber en `WhatsAppCapturePreview`.
+- `rawObservations` NO debe mencionar "Sin fecha explicita visible".
+
+**Prioridad:** Alta. Validar antes de capturar muchas conversaciones para asegurar que el caso "con fecha visible" no se rompió por el fix.
+
+---
+
+### Ajuste prompt Vision Captura WhatsApp — asignación user/other
+
+**Síntoma:** En screenshots con stickers o cuando los emojis aparecen sin bubble explícito, Vision puede invertir la asignación `author='user'` vs `author='other'`.
+
+**Caso de prueba (29/05/2026):** Screenshot con Diana Carolina:
+- Vision asignó incorrectamente "Me vino la regla" como `user` (debería ser `other`=Diana, bubble izquierdo).
+- Vision asignó incorrectamente el sticker "Ala yo estaba full" como `other` (debería ser `user`, bubble derecho).
+
+**Fix aplicado (commit `96172cc` en PR #85):** Refactor del system prompt para hacer más explícita la regla "bubble derecho = user, izquierdo = other": (1) promovida a REGLA 1; (2) énfasis en colores WhatsApp (verde/turquesa = user, gris/blanco = other); (3) aplica AUN con stickers/emojis solos/audios; (4) ejemplo concreto con el caso real; (5) paso de validación re-read antes de responder.
+
+**Si el bug reaparece:** considerar agregar al prompt una sección de "validación pre-respuesta" más estricta, o un retry server-side que detecte coherencia (ej: si el primer mensaje cronológico es de un sticker, validar que sea `user`).
+
+**Estado:** RESUELTO con fix en PR #85. **Pendiente re-validar con nueva captura** post-merge.
 
 ### Mejoras de UX captura (post-merge PR #79 + fix 0006)
 

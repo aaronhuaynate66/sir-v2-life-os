@@ -13,6 +13,7 @@ const HISTORY_TYPE_LABEL: Record<RelationshipEvent['type'], string> = {
   negative: 'negativo',
   neutral: 'neutral',
   milestone: 'hito',
+  whatsapp_capture: 'captura',
 }
 
 function isValidIso8601(s: unknown): s is string {
@@ -45,13 +46,23 @@ export function adaptRelationalHistory(
       const toneLabel =
         h.emotionalTone > 0 ? `+${h.emotionalTone}` : `${h.emotionalTone}`
 
+      // Items de captura WhatsApp: el title ya contiene "Persona: <summary>",
+      // por eso NO duplicamos la summary en body. El indicador visual
+      // "WhatsApp · conf. {confidence}" se renderiza en TimelineCard via
+      // captureKind. Tags extra desde topics.
+      const isWhatsApp = h.captureKind === 'whatsapp'
+      const tags: string[] = [HISTORY_TYPE_LABEL[h.type] ?? h.type]
+      if (isWhatsApp && Array.isArray(h.topics)) {
+        tags.push(...h.topics.slice(0, 4))
+      }
+
       events.push({
         id: `relational_event:h:${r.id}:${h.id}`,
         type: 'relational_event',
         occurredAt: new Date(h.date).toISOString(),
         title: `${personName}: ${h.description}`,
-        body: `Tono emocional: ${toneLabel}`,
-        tags: [HISTORY_TYPE_LABEL[h.type] ?? h.type],
+        body: isWhatsApp ? undefined : `Tono emocional: ${toneLabel}`,
+        tags,
         meta: {
           sourceKind: 'relationship_history',
           relationshipId: r.id,
@@ -59,7 +70,10 @@ export function adaptRelationalHistory(
           historyId: h.id,
           emotionalTone: h.emotionalTone,
           historyType: h.type,
+          confidence: h.confidence,
         },
+        captureId: h.captureId,
+        captureKind: h.captureKind,
       })
     }
   }
