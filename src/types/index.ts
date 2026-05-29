@@ -245,6 +245,9 @@ export interface SelfMetric {
   timestamp: string
 }
 
+/** Tipo de captura cuando viene de un upload automatizado. Migration 0007. */
+export type CaptureKind = 'scale' | 'whatsapp'
+
 export interface HealthMetric {
   id: string
   type: HealthMetricType
@@ -257,6 +260,9 @@ export interface HealthMetric {
   captureId?: string
   /** Storage path del screenshot original. Migration 0005. */
   sourceImagePath?: string
+  /** Origen de la captura. Habilita el header dinamico del
+   *  TimelineCardGrouped. Migration 0007. */
+  captureType?: CaptureKind
 }
 
 export interface SleepRecord {
