@@ -86,6 +86,15 @@ export function TimelineCard({ event, nowMs }: TimelineCardProps) {
               {event.title}
             </h3>
 
+            {/* Indicator line para capturas WhatsApp (single, no grouped):
+                diferenciacion visual + confidence. Mismo patron que el body
+                de TimelineCardGrouped ("Bascula · conf. high"). */}
+            {event.captureKind === 'whatsapp' && (
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 font-mono">
+                📱 WhatsApp{typeof event.meta?.confidence === 'string' ? ` · conf. ${event.meta.confidence}` : ''}
+              </p>
+            )}
+
             {event.body && (
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mt-1.5 line-clamp-3">
                 {event.body}

@@ -46,9 +46,10 @@ export function adaptRelationalHistory(
       const toneLabel =
         h.emotionalTone > 0 ? `+${h.emotionalTone}` : `${h.emotionalTone}`
 
-      // Items de captura WhatsApp llevan body distinto + tags extra desde
-      // topics. captureKind + confidence propagados habilitan groupByCapture
-      // y el body line dinamico del TimelineCardGrouped.
+      // Items de captura WhatsApp: el title ya contiene "Persona: <summary>",
+      // por eso NO duplicamos la summary en body. El indicador visual
+      // "WhatsApp · conf. {confidence}" se renderiza en TimelineCard via
+      // captureKind. Tags extra desde topics.
       const isWhatsApp = h.captureKind === 'whatsapp'
       const tags: string[] = [HISTORY_TYPE_LABEL[h.type] ?? h.type]
       if (isWhatsApp && Array.isArray(h.topics)) {
@@ -60,7 +61,7 @@ export function adaptRelationalHistory(
         type: 'relational_event',
         occurredAt: new Date(h.date).toISOString(),
         title: `${personName}: ${h.description}`,
-        body: isWhatsApp ? h.description : `Tono emocional: ${toneLabel}`,
+        body: isWhatsApp ? undefined : `Tono emocional: ${toneLabel}`,
         tags,
         meta: {
           sourceKind: 'relationship_history',
