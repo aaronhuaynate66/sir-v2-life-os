@@ -3,7 +3,7 @@
 // Orquestador: filtros + hook + cards + paginacion + estados vacios.
 
 import { useEffect, useRef, useState } from 'react'
-import { Search, X } from 'lucide-react'
+import { Search, X, EyeOff, Eye } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TimelineCard } from './TimelineCard'
@@ -62,6 +62,19 @@ export function TimelineFeed() {
   }
   function clearSearch() {
     setSearch('')
+  }
+
+  // Toggle de privacidad de finanzas (atajo de un toque, util al compartir
+  // pantalla). Sincronizado con el filtro de tipos: oculta/muestra los
+  // movimientos financieros del feed quitando/agregando 'finance' al Set.
+  const financeHidden = !filters.types.has('finance')
+  function toggleFinance() {
+    setFilters((prev) => {
+      const types = new Set(prev.types)
+      if (types.has('finance')) types.delete('finance')
+      else types.add('finance')
+      return { ...prev, types }
+    })
   }
 
   // ─── infinite scroll sentinel ─────────────────────────────────────
@@ -159,6 +172,22 @@ export function TimelineFeed() {
           )}
         </div>
         <TimelineFiltersMobile filters={filters} onChange={setFilters} />
+      </div>
+
+      {/* Privacidad finanzas: atajo de un toque (screen-sharing). */}
+      <div className="flex justify-end mb-3">
+        <button
+          type="button"
+          onClick={toggleFinance}
+          aria-pressed={financeHidden}
+          className="inline-flex items-center gap-1.5 text-[11px] rounded-full border px-2.5 py-1 transition-colors border-border text-muted-foreground hover:text-foreground hover:border-accent/40"
+        >
+          {financeHidden ? (
+            <><Eye size={12} strokeWidth={1.75} aria-hidden="true" /> Mostrar finanzas</>
+          ) : (
+            <><EyeOff size={12} strokeWidth={1.75} aria-hidden="true" /> Ocultar finanzas</>
+          )}
+        </button>
       </div>
 
       {partialFailure && (
