@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { DataMigrationGate } from '@/components/system/DataMigrationGate'
 import './globals.css'
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <DataMigrationGate />
         <Toaster />
+        <Analytics />
       </body>
     </html>
   )

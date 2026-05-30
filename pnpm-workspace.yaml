@@ -1,0 +1,5 @@
+allowBuilds:
+  # @sentry/cli solo construye el binario para subir source maps (no lo
+  # usamos: Sentry corre sin withSentryConfig). false = no construir, sin
+  # romper el install (Vercel incluido).
+  '@sentry/cli': false
