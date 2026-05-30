@@ -17,6 +17,10 @@ import { createClient } from '@/lib/supabase/server'
 import { personAdapter } from '@/lib/supabase/sync'
 import { ensureUniqueSlug, generateSlug } from '@/lib/people/slug'
 import { PersonDetail } from '@/components/relaciones/PersonDetail'
+import {
+  getLatestObservation,
+  getObservationsForPerson,
+} from '@/lib/observations/fetch'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -67,5 +71,27 @@ export default async function RelacionPage({ params }: PageProps) {
   if (error || !row) notFound()
 
   const person = personAdapter.fromRow(row as Record<string, unknown>)
-  return <PersonDetail initialPerson={person} />
+
+  // Capa de datos para el detail page (Sesion 3 PR-A):
+  // - Ultima whatsapp_chat (fuente de "Ultima interaccion" — observations
+  //   de tipo perfil como whatsapp_info / instagram / linkedin NO son
+  //   interacciones).
+  // - Observations curadas de la persona (is_obsolete=false). PR-A solo
+  //   las usa para un panel de conteo / validacion del filtro; PR-B+ las
+  //   consume para "Vida social / profesional" reales.
+  // Ambos helpers tienen .eq('is_obsolete', false) baked in — vale el
+  // principio critico de Sesion 3.
+  const personId = String(row.id)
+  const [lastChat, curatedObservations] = await Promise.all([
+    getLatestObservation(supabase, userId, personId, 'whatsapp_chat'),
+    getObservationsForPerson(supabase, userId, personId, { limit: 50 }),
+  ])
+
+  return (
+    <PersonDetail
+      initialPerson={person}
+      lastChat={lastChat}
+      curatedObservations={curatedObservations}
+    />
+  )
 }

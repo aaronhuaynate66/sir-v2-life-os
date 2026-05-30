@@ -28,10 +28,19 @@ import { useRelationshipStore } from '@/stores'
 import { createClient } from '@/lib/supabase/client'
 import { ensureUniqueSlug, generateSlug, isValidSlug } from '@/lib/people/slug'
 import { cn } from '@/lib/utils'
+import { LastInteractionPanel } from './LastInteractionPanel'
+import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
 
 interface PersonDetailProps {
   initialPerson: Person
+  /** Ultima observation con capture_type='whatsapp_chat' (ya curada
+   *  is_obsolete=false). null si Diana no tiene chats registrados. */
+  lastChat?: Observation | null
+  /** Todas las observations curadas de la persona (is_obsolete=false),
+   *  ordenadas por observed_at DESC. PR-A solo usa la longitud + breakdown
+   *  para validar el filtro; PR-B+ consume el contenido. */
+  curatedObservations?: Observation[]
 }
 
 const RELATIONSHIP_LABEL: Record<Person['relationship'], string> = {
@@ -51,7 +60,11 @@ const CATEGORY_LABEL: Record<Person['category'], string> = {
   peripheral: 'Periférico',
 }
 
-export function PersonDetail({ initialPerson }: PersonDetailProps) {
+export function PersonDetail({
+  initialPerson,
+  lastChat = null,
+  curatedObservations = [],
+}: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
 
@@ -237,6 +250,37 @@ export function PersonDetail({ initialPerson }: PersonDetailProps) {
         </CardContent>
       </Card>
 
+      {/* ─── Sesion 3 PR-A: secciones del detail page V2 ─────────────── */}
+      {/* RelationalScore + BirthdayCountdown vienen en PR-B. */}
+      <div className="grid gap-4 sm:grid-cols-2 mb-4">
+        <PlaceholderSlot
+          label="Score relacional"
+          note="Fuerza · Reciprocidad · Confianza (PR-B)"
+        />
+        <PlaceholderSlot
+          label="Cumpleaños"
+          note={
+            live.lastContact
+              ? 'Countdown desde birth_date (PR-B)'
+              : 'Sin birth_date — agregalo desde editar persona (PR-B)'
+          }
+        />
+      </div>
+
+      <div className="mb-4">
+        <LastInteractionPanel lastChat={lastChat} />
+      </div>
+
+      {/* "Lo personal" — empty state intencional. La sintesis narrativa
+          es lazy y se genera bajo demanda (D4 de Sesion 1+2). No se
+          construye en PR-A. */}
+      <PersonalSynthesisPlaceholder />
+
+      {/* Datos curados visibles: confirma el contrato is_obsolete=false
+          de la capa de fetch. Las filas LinkedIn alucinadas que dejamos
+          obsoletas en PR #87 NO deberian aparecer aca. */}
+      <CuratedObservationsPanel observations={curatedObservations} />
+
       {live.notes && (
         <Card className="shadow-none mb-4">
           <CardContent className="p-4 sm:p-6">
@@ -278,5 +322,92 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-sm">{value}</span>
     </div>
+  )
+}
+
+/** Placeholder visible para slots de PR-B. Mantiene el layout coherente
+ *  sin pretender funcionalidad. */
+function PlaceholderSlot({ label, note }: { label: string; note: string }) {
+  return (
+    <Card className="shadow-none border-dashed">
+      <CardContent className="p-4 sm:p-6">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">
+          {label}
+        </div>
+        <p className="text-xs text-muted-foreground italic">{note}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Empty state honesto para "Lo personal". La sintesis narrativa requiere
+ *  ≥3 observations + LLM call; no se genera en PR-A. */
+function PersonalSynthesisPlaceholder() {
+  return (
+    <Card className="shadow-none mb-4 border-dashed">
+      <CardContent className="p-4 sm:p-6">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">
+          Lo personal
+        </div>
+        <p className="text-sm text-muted-foreground italic leading-relaxed">
+          Sin síntesis generada. Cuando haya suficientes observaciones (≥3
+          conversaciones de WhatsApp), aparecerá acá un resumen narrativo
+          del vínculo. La generación se construye en una sesión futura.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Panel de "Datos curados" — muestra el conteo de observations
+ *  is_obsolete=false agrupado por capture_type. PR-A lo usa para validar
+ *  visualmente el contrato del filtro; PR-B+ va a transformar esto en
+ *  paneles de Vida social / profesional / etc. */
+function CuratedObservationsPanel({ observations }: { observations: Observation[] }) {
+  const byType = observations.reduce<Record<string, number>>((acc, obs) => {
+    acc[obs.captureType] = (acc[obs.captureType] ?? 0) + 1
+    return acc
+  }, {})
+  const types = Object.entries(byType).sort((a, b) => b[1] - a[1])
+
+  return (
+    <Card className="shadow-none mb-4 border-dashed">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-baseline justify-between gap-2 mb-3">
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            Datos curados
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground/60">
+            is_obsolete=false
+          </span>
+        </div>
+
+        {observations.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">
+            Sin observaciones curadas para esta persona.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-foreground">
+              <span className="text-2xl font-semibold tracking-tight">
+                {observations.length}
+              </span>{' '}
+              <span className="text-muted-foreground">observación{observations.length === 1 ? '' : 'es'} curada{observations.length === 1 ? '' : 's'}</span>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {types.map(([type, count]) => (
+                <Badge key={type} variant="outline" className="text-[10px] font-mono">
+                  {type} · {count}
+                </Badge>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground italic">
+              Las visualizaciones que consumen esta data (Vida social,
+              Vida profesional, Bitácora) llegan en PR-B+.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
