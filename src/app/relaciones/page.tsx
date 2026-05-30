@@ -90,8 +90,18 @@ function RelationshipsContent() {
 
   const alerts = detectRelationshipAlerts(people, relationships)
 
+  // Distinct locations del store → datalist de autocomplete en el form.
+  const locationSuggestions = Array.from(
+    new Set(people.map((p) => p.location).filter((l): l is string => !!l && l.trim().length > 0)),
+  ).sort((a, b) => a.localeCompare(b))
+
   function openAdd() {
-    setEditingId(null); setForm(EMPTY_FORM); setShowForm(true)
+    // Defaults computados al click — NO en EMPTY_FORM (que queda stale si
+    // se importa al mount del componente, y porque "hoy" cambia).
+    const today = new Date().toISOString().slice(0, 10)
+    setEditingId(null)
+    setForm({ ...EMPTY_FORM, lastContact: today, location: 'Lima' })
+    setShowForm(true)
   }
 
   function openEdit(person: Person) {
@@ -306,7 +316,17 @@ function RelationshipsContent() {
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Ubicacion</label>
-                <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Ciudad o pais" />
+                <Input
+                  value={form.location}
+                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  placeholder="Ciudad o pais"
+                  list="person-location-suggestions"
+                />
+                <datalist id="person-location-suggestions">
+                  {locationSuggestions.map((loc) => (
+                    <option key={loc} value={loc} />
+                  ))}
+                </datalist>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Fecha de nacimiento</label>

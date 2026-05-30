@@ -6,7 +6,7 @@
 import { useState } from 'react'
 import { Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { TimelineFiltersBar } from './TimelineFilters'
 import {
   ALL_EVENT_TYPES,
@@ -50,6 +50,9 @@ export function TimelineFiltersMobile({ filters, onChange }: TimelineFiltersMobi
       <SheetContent side="bottom" className="h-[85vh] overflow-y-auto p-4">
         <SheetHeader className="mb-4">
           <SheetTitle>Filtros del historial</SheetTitle>
+          <SheetDescription className="sr-only">
+            Controles de búsqueda, rango temporal, tipos de evento y personas. Aplican al feed del historial al cerrar este panel.
+          </SheetDescription>
         </SheetHeader>
         <TimelineFiltersBar filters={filters} onChange={onChange} />
         <div className="mt-6 pt-4 border-t border-border flex justify-end">

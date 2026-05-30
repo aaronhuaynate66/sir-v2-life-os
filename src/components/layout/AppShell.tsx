@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Nav } from './Nav'
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 
 interface AppShellProps {
@@ -40,6 +40,9 @@ export function AppShell({ children, wide = false }: AppShellProps) {
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
             <SheetTitle className="sr-only">Navegacion</SheetTitle>
+            <SheetDescription className="sr-only">
+              Enlaces principales del Life OS — Mission Control, Self, Relaciones, Captura, Objetivos y demás.
+            </SheetDescription>
             <Nav onItemClick={() => setOpen(false)} />
           </SheetContent>
         </Sheet>

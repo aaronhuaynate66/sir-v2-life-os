@@ -12,7 +12,8 @@
 //      * lastChat <14 dias  -> +10 (cap 100)
 //      * lastChat 14-60 d   -> sin ajuste
 //      * lastChat >60 d / null -> -10 (floor 0)
-//    Defaulteado a 50 cuando importance_score viene 5 (default schema).
+//    Baseline para persona recien creada (importance=5 default, sin chat):
+//    50 - 10 = 40.
 //
 //  - Reciprocidad (0-100 | null): MIDE balance de mensajes user/other.
 //    V1 lo calculaba desde un log dedicado de interacciones que V2 no tiene
@@ -212,7 +213,7 @@ function FooterLine({
       <Link href="/captura" className="underline underline-offset-2 hover:text-foreground">
         Subí una conversación
       </Link>{' '}
-      o editá last_contact desde la persona.
+      o editá el último contacto desde la persona.
     </div>
   )
 }

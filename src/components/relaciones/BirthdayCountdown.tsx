@@ -22,8 +22,6 @@ export interface BirthdayCountdownProps {
   /** people.birth_date — ISO YYYY-MM-DD o YYYY-MM-DDT... null si no
    *  esta seteado. */
   birthDate: string | null | undefined
-  /** Slug de la persona para el link del empty state. */
-  personSlug: string | null | undefined
 }
 
 interface NextBirthday {
@@ -78,7 +76,7 @@ const ABS_FORMATTER = new Intl.DateTimeFormat('es', {
   month: 'long',
 })
 
-export function BirthdayCountdown({ birthDate, personSlug }: BirthdayCountdownProps) {
+export function BirthdayCountdown({ birthDate }: BirthdayCountdownProps) {
   return (
     <Card className="shadow-none">
       <CardContent className="p-4 sm:p-6">
@@ -89,7 +87,7 @@ export function BirthdayCountdown({ birthDate, personSlug }: BirthdayCountdownPr
           </div>
         </div>
 
-        {birthDate ? <Body birthDate={birthDate} /> : <EmptyState personSlug={personSlug} />}
+        {birthDate ? <Body birthDate={birthDate} /> : <EmptyState />}
       </CardContent>
     </Card>
   )
@@ -139,14 +137,14 @@ function Body({ birthDate }: { birthDate: string }) {
   )
 }
 
-function EmptyState({ personSlug }: { personSlug: string | null | undefined }) {
+function EmptyState() {
   return (
     <div className="text-sm text-muted-foreground space-y-1.5">
       <p>Sin fecha de nacimiento.</p>
       <p className="text-xs leading-relaxed">
-        Agregala desde el form en{' '}
+        Agregala desde{' '}
         <Link
-          href={personSlug ? `/relaciones#person-${personSlug}` : '/relaciones'}
+          href="/relaciones"
           className="underline underline-offset-2 hover:text-foreground"
         >
           /relaciones
