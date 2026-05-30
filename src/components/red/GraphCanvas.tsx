@@ -57,7 +57,11 @@ export function GraphCanvas({ data }: GraphCanvasProps) {
     const fg = fgRef.current as ForceGraphRef | null
     if (!fg) return
     try {
-      fg.zoomToFit?.(400, 40)
+      // Padding 100 (no 40) para reservar espacio a los labels debajo de
+      // cada nodo — con pocos nodos (ej. self + Diana), un padding chico
+      // recortaba "Diana Carolina" a "Diana C" y "Aaron Huaynate Espinoza"
+      // a "Aaron Huayna". 100 px funciona consistente para nombres largos.
+      fg.zoomToFit?.(400, 100)
     } catch {
       // Primer mount puede no estar listo todavia.
     }
