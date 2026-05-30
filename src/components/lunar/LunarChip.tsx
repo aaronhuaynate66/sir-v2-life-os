@@ -48,14 +48,17 @@ export function LunarChip({ date, size = 'sm', className }: LunarChipProps) {
     )
   }
 
+  const pct = Math.round(phase.illumination * 100)
   return (
     <Badge
       variant="outline"
       className={cn('inline-flex items-center gap-1.5 text-[11px] font-normal', className)}
-      title={`Día ${Math.round(phase.ageDays)} del ciclo lunar · ${(phase.illumination * 100).toFixed(0)}% iluminada · ${phase.waxing ? 'creciendo' : 'menguando'}`}
+      title={`Día ${Math.round(phase.ageDays)} del ciclo lunar · ${pct}% iluminada · ${phase.waxing ? 'creciendo' : 'menguando'}`}
     >
       <span aria-hidden="true">{phase.symbol}</span>
-      <span>{phase.label}</span>
+      <span>
+        {phase.label} · <span className="font-mono tabular-nums">{pct}%</span>
+      </span>
     </Badge>
   )
 }
