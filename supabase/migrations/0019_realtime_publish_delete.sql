@@ -1,0 +1,32 @@
+-- ============================================================
+-- SIR V2 — Migration 0019: asegurar que supabase_realtime publique DELETE
+-- ============================================================
+-- HIPÓTESIS del DELETE que no propaga en vivo (aun con REPLICA IDENTITY FULL):
+-- la publicación `supabase_realtime` no incluye la operación DELETE en su
+-- parámetro `publish`. Es a nivel de publicación (no por tabla): si DELETE
+-- no está, NINGUNA tabla emite eventos DELETE por Realtime, sin importar el
+-- replica identity. Eso explica que INSERT/UPDATE propaguen y DELETE no.
+--
+-- Este SET fija las 4 operaciones. Es IDEMPOTENTE y seguro: si ya estaban
+-- todas, es no-op; si faltaba delete, lo agrega. NO cambia la lista de
+-- tablas de la publicación. NO toca datos.
+--
+-- Aplicar manualmente: Supabase Dashboard -> SQL Editor -> Run.
+--
+-- ── DIAGNÓSTICO (correr ANTES para confirmar la causa) ──────────────
+-- select pubname, pubinsert, pubupdate, pubdelete, pubtruncate
+-- from pg_publication where pubname = 'supabase_realtime';
+--   -> si pubdelete = false  => ESTA migración es el fix.
+--   -> si pubdelete = true    => la causa es otra (ver logging client
+--      'sir-debug-sync'); NO marcar resuelto por correr esto.
+-- ============================================================
+
+alter publication supabase_realtime set (publish = 'insert, update, delete, truncate');
+
+-- ============================================================
+-- Verificacion post-aplicacion (pegar en SQL Editor):
+-- ============================================================
+-- select pubname, pubinsert, pubupdate, pubdelete, pubtruncate
+-- from pg_publication where pubname = 'supabase_realtime';
+--   -> pubdelete debe ser true.
+-- ============================================================
