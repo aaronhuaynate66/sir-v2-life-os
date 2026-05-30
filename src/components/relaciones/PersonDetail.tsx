@@ -15,14 +15,17 @@
 //   1. updatePerson (sync engine sincroniza al DB).
 //   2. router.replace al nuevo slug si cambió — la URL refleja el slug nuevo.
 //
-// HIDRATACIÓN (fix React #418): varios paneles computan "ahora"
-// (new Date()/Date.now()/Intl) en el render — countdowns, tiempos
-// relativos, fase de ciclo. El server corre en UTC y el cliente en Lima
-// (UTC-5), así que el HTML difería server vs cliente. Igual que el resto
-// de las páginas client del proyecto, gateamos el render con
-// useHasHydrated(): server + primer render cliente = RouteSkeleton (idéntico
-// → sin mismatch); el contenido now-dependiente se computa solo en cliente
-// tras montar.
+// HIDRATACIÓN (fix React #418, refinado): varios paneles computan "ahora"
+// (new Date()/Date.now()/Intl) en el render — countdowns, tiempos relativos,
+// fase de ciclo, score relacional. El server corre en UTC y el cliente en
+// Lima, así que ese HTML difería. En vez de gatear TODA la página (que
+// causaba flash de skeleton), cada panel now-dependiente es mount-safe por
+// su cuenta vía useMounted() (placeholder en server + primer render cliente,
+// valor real tras montar). Así el contenido estático del detalle renderiza
+// de inmediato sin flash. Componentes mount-safe: BirthdayCountdown,
+// CicloPanel, FechasImportantes, LastInteractionPanel, RelationalScore,
+// PersonLogsList, MemoriasAsociadasPanel, LoPersonal. Bitacora y
+// PerfilProfesional ya eran safe (su fecha está tras un colapsable cerrado).
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -40,8 +43,6 @@ import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import { useRelationshipStore } from '@/stores'
-import { useHasHydrated } from '@/hooks/useHasHydrated'
-import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { createClient } from '@/lib/supabase/client'
 import { ensureUniqueSlug, generateSlug, isValidSlug } from '@/lib/people/slug'
 import { cn } from '@/lib/utils'
@@ -154,16 +155,7 @@ function formFromPerson(p: Person): EditForm {
   }
 }
 
-export function PersonDetail(props: PersonDetailProps) {
-  // Gate de hidratación (fix #418): hasta que los stores persistidos hidraten,
-  // server y cliente renderizan el mismo RouteSkeleton. Tras montar, el
-  // contenido (con fechas/tiempos relativos) se computa solo client-side.
-  const hydrated = useHasHydrated()
-  if (!hydrated) return <RouteSkeleton cards={4} />
-  return <PersonDetailContent {...props} />
-}
-
-function PersonDetailContent({
+export function PersonDetail({
   initialPerson,
   lastChat = null,
   curatedObservations = [],

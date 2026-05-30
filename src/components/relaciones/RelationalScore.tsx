@@ -28,6 +28,8 @@
 // SCORE GLOBAL: promedio de las dimensiones NO-NULL (round). Casi siempre
 // dos (Fuerza + Confianza); cuando Reciprocidad este disponible, tres.
 
+'use client'
+
 import Link from 'next/link'
 import { TrendingUp, Info } from 'lucide-react'
 
@@ -36,6 +38,7 @@ import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
 import { cn } from '@/lib/utils'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+import { useMounted } from '@/hooks/useMounted'
 
 export interface RelationalScoreProps {
   person: Person
@@ -94,7 +97,9 @@ function computeBreakdown(person: Person, lastChat: Observation | null): ScoreBr
 }
 
 export function RelationalScore({ person, lastChat }: RelationalScoreProps) {
-  const breakdown = computeBreakdown(person, lastChat)
+  // El score incorpora un ajuste por recencia del último chat (Date.now()),
+  // así que el número/Fuerza/footer dependen de "ahora" → mount-safe.
+  const mounted = useMounted()
 
   return (
     <Card className="shadow-none">
@@ -106,27 +111,51 @@ export function RelationalScore({ person, lastChat }: RelationalScoreProps) {
           </div>
         </div>
 
-        <div className="flex items-baseline gap-2 mb-5">
-          <span className="text-4xl font-semibold tracking-tight tabular-nums">
-            {breakdown.global}
-          </span>
-          <span className="text-xs text-muted-foreground">/100</span>
-        </div>
-
-        <div className="space-y-3 mb-4">
-          <ScoreBar label="Fuerza" value={breakdown.fuerza} color="emerald" />
-          <ScoreBar
-            label="Reciprocidad"
-            value={breakdown.reciprocidad}
-            color="amber"
-            insufficientHint="Necesita un log de interacciones recíprocas (sesión futura)."
-          />
-          <ScoreBar label="Confianza" value={breakdown.confianza} color="sky" />
-        </div>
-
-        <FooterLine person={person} daysSinceLastChat={breakdown.daysSinceLastChat} />
+        {mounted ? <ScoreContent person={person} lastChat={lastChat} /> : <ScorePlaceholder />}
       </CardContent>
     </Card>
+  )
+}
+
+function ScoreContent({ person, lastChat }: RelationalScoreProps) {
+  const breakdown = computeBreakdown(person, lastChat)
+  return (
+    <>
+      <div className="flex items-baseline gap-2 mb-5">
+        <span className="text-4xl font-semibold tracking-tight tabular-nums">
+          {breakdown.global}
+        </span>
+        <span className="text-xs text-muted-foreground">/100</span>
+      </div>
+
+      <div className="space-y-3 mb-4">
+        <ScoreBar label="Fuerza" value={breakdown.fuerza} color="emerald" />
+        <ScoreBar
+          label="Reciprocidad"
+          value={breakdown.reciprocidad}
+          color="amber"
+          insufficientHint="Necesita un log de interacciones recíprocas (sesión futura)."
+        />
+        <ScoreBar label="Confianza" value={breakdown.confianza} color="sky" />
+      </div>
+
+      <FooterLine person={person} daysSinceLastChat={breakdown.daysSinceLastChat} />
+    </>
+  )
+}
+
+/** Placeholder determinístico mientras se difiere el cómputo del score. */
+function ScorePlaceholder() {
+  return (
+    <div aria-hidden="true">
+      <div className="h-10 w-20 rounded bg-muted/40 animate-pulse mb-5" />
+      <div className="space-y-3 mb-4">
+        <div className="h-1.5 w-full rounded-full bg-muted animate-pulse" />
+        <div className="h-1.5 w-full rounded-full bg-muted animate-pulse" />
+        <div className="h-1.5 w-full rounded-full bg-muted animate-pulse" />
+      </div>
+      <div className="h-3 w-40 rounded bg-muted/30 animate-pulse border-t border-border/40 pt-3" />
+    </div>
   )
 }
 

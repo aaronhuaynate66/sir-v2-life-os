@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRelationshipStore } from '@/stores'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+import { useMounted } from '@/hooks/useMounted'
 import {
   sortSpecialDates,
   formatSpecialDate,
@@ -47,7 +48,11 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
   const [recurring, setRecurring] = useState(false)
 
   const dates = person.specialDates ?? []
-  const { valid, invalid } = sortSpecialDates(dates)
+  // Los countdowns dependen de "hoy" → se computan solo tras montar. Server y
+  // primer render cliente muestran un placeholder si hay fechas (no el empty
+  // state, que sería falso).
+  const mounted = useMounted()
+  const { valid, invalid } = mounted ? sortSpecialDates(dates) : { valid: [], invalid: [] }
 
   function resetForm() {
     setLabel('')
@@ -168,7 +173,19 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
           </div>
         )}
 
-        {valid.length === 0 && invalid.length === 0 ? (
+        {!mounted && dates.length > 0 ? (
+          <ul className="space-y-1.5" aria-hidden="true">
+            {dates.map((d) => (
+              <li
+                key={d.id}
+                className="flex items-center justify-between gap-3 rounded-md border border-border/40 px-3 py-2"
+              >
+                <div className="h-4 w-28 rounded bg-muted/40 animate-pulse" />
+                <div className="h-4 w-14 rounded bg-muted/30 animate-pulse" />
+              </li>
+            ))}
+          </ul>
+        ) : valid.length === 0 && invalid.length === 0 ? (
           !adding && <EmptyState />
         ) : (
           <ul className="space-y-1.5">

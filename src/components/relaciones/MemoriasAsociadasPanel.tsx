@@ -23,6 +23,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useMounted } from '@/hooks/useMounted'
 import type { Memory, MemoryType } from '@/types'
 
 /** Cuántas memorias mostrar antes de colapsar (volumen V1: 20+). */
@@ -302,6 +303,8 @@ function EmptyState() {
 }
 
 function MemoryList({ memories }: { memories: Memory[] }) {
+  // El tiempo relativo (formatRelative usa Date.now()) se difiere a post-mount.
+  const mounted = useMounted()
   return (
     <ul className="space-y-3">
       {memories.map((m) => (
@@ -317,7 +320,7 @@ function MemoryList({ memories }: { memories: Memory[] }) {
               {TYPE_LABEL[m.type] ?? m.type}
             </Badge>
             <span className="text-[10px] text-muted-foreground/70 font-mono">
-              {formatRelative(m.timestamp)}
+              {mounted ? formatRelative(m.timestamp) : ''}
             </span>
           </div>
           <p className="text-sm text-foreground leading-relaxed">{m.content}</p>

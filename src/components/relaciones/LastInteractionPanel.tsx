@@ -21,10 +21,13 @@
 // etiquetado con badge "registro manual" para preservar la distinción
 // captura (conversación real) vs nota tuya. Si ambos son null, empty.
 
+'use client'
+
 import { MessageCircle } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useMounted } from '@/hooks/useMounted'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 
@@ -50,9 +53,16 @@ export function LastInteractionPanel({
     ? new Date(lastManualInteraction.loggedAt).getTime()
     : -Infinity
 
+  // La selección de cuál mostrar es determinística (compara timestamps fijos),
+  // pero el body renderiza "hace N días" (Date.now()) + fecha Intl → mount-safe.
+  const mounted = useMounted()
+  const hasData = chatTime !== -Infinity || manualTime !== -Infinity
+
   let body: React.ReactNode
-  if (chatTime === -Infinity && manualTime === -Infinity) {
+  if (!hasData) {
     body = <EmptyState />
+  } else if (!mounted) {
+    body = <InteractionPlaceholder />
   } else if (manualTime > chatTime) {
     body = <ManualInteractionBody log={lastManualInteraction as PersonLog} />
   } else {
@@ -171,6 +181,16 @@ function LastChatBody({ obs }: { obs: Observation }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Placeholder determinístico mientras se difiere el tiempo relativo. */
+function InteractionPlaceholder() {
+  return (
+    <div className="space-y-3" aria-hidden="true">
+      <div className="h-7 w-32 rounded bg-muted/40 animate-pulse" />
+      <div className="h-4 w-24 rounded bg-muted/30 animate-pulse" />
     </div>
   )
 }

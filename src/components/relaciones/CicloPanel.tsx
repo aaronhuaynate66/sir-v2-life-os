@@ -17,12 +17,15 @@
 // Patron visual: Card + shadow-none + uppercase tracking-widest, igual
 // que LastInteractionPanel / RelationalScore / BirthdayCountdown.
 
+'use client'
+
 import Link from 'next/link'
 import { Activity } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
+import { useMounted } from '@/hooks/useMounted'
 import { cn } from '@/lib/utils'
 
 export interface CicloPanelProps {
@@ -45,6 +48,8 @@ const PHASE_ACCENT_CLASS: Record<CyclePhaseId, string> = {
 }
 
 export function CicloPanel({ cycleStartDate, cycleLengthDays }: CicloPanelProps) {
+  // La fase/día/countdown del ciclo dependen de "hoy" → mount-safe.
+  const mounted = useMounted()
   return (
     <Card className="shadow-none mb-4">
       <CardContent className="p-4 sm:p-6">
@@ -61,12 +66,29 @@ export function CicloPanel({ cycleStartDate, cycleLengthDays }: CicloPanelProps)
         </div>
 
         {cycleStartDate ? (
-          <Body cycleStartDate={cycleStartDate} cycleLengthDays={cycleLengthDays ?? 28} />
+          mounted ? (
+            <Body cycleStartDate={cycleStartDate} cycleLengthDays={cycleLengthDays ?? 28} />
+          ) : (
+            <CicloPlaceholder />
+          )
         ) : (
           <EmptyState />
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/** Placeholder determinístico mientras se difiere el cómputo del ciclo. */
+function CicloPlaceholder() {
+  return (
+    <div className="flex items-center gap-4 sm:gap-6" aria-hidden="true">
+      <div className="w-24 h-24 rounded-full bg-muted/30 animate-pulse shrink-0" />
+      <div className="space-y-2">
+        <div className="h-5 w-28 rounded bg-muted/40 animate-pulse" />
+        <div className="h-3 w-20 rounded bg-muted/30 animate-pulse" />
+      </div>
+    </div>
   )
 }
 

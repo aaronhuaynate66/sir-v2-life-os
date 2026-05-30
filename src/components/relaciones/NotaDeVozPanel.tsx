@@ -15,6 +15,7 @@ import { Mic, Square, Trash2, Play, Loader2, AlertCircle, Check } from 'lucide-r
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useMounted } from '@/hooks/useMounted'
 import {
   createVoiceNote, deleteVoiceNote, getVoiceNoteUrl, type VoiceNoteError,
 } from './voice-notes/client'
@@ -52,6 +53,9 @@ type Phase = 'idle' | 'recording' | 'recorded' | 'uploading'
 
 export function NotaDeVozPanel({ personId, observations }: NotaDeVozPanelProps) {
   const router = useRouter()
+  // `supported` (window/MediaRecorder) y las fechas Intl de la lista difieren
+  // server vs cliente -> render el cuerpo solo tras montar (mount-safe).
+  const mounted = useMounted()
   const supported = typeof window !== 'undefined' && typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices
 
   const [phase, setPhase] = useState<Phase>('idle')
@@ -163,7 +167,9 @@ export function NotaDeVozPanel({ personId, observations }: NotaDeVozPanelProps) 
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">Nota de voz</div>
         </div>
 
-        {!supported ? (
+        {!mounted ? (
+          <div className="h-9 w-28 rounded bg-muted/40 animate-pulse" aria-hidden="true" />
+        ) : !supported ? (
           <p className="text-sm text-muted-foreground italic">
             Tu navegador no soporta grabación de audio. Probá desde Chrome o Safari actualizados.
           </p>

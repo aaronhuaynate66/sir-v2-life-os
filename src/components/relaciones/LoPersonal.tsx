@@ -21,6 +21,7 @@ import { Sparkles, Loader2, AlertCircle, RefreshCw, ExternalLink } from 'lucide-
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { useMounted } from '@/hooks/useMounted'
 import { generatePersonSynthesis, type GenerateSynthesisError } from './person-synthesis/client'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
 
@@ -43,6 +44,7 @@ const GEN_DATE_FMT = new Intl.DateTimeFormat('es', {
 
 export function LoPersonal({ personId, synthesis, conversationCount }: LoPersonalProps) {
   const router = useRouter()
+  const mounted = useMounted()
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<GenerateSynthesisError | null>(null)
 
@@ -112,7 +114,7 @@ export function LoPersonal({ personId, synthesis, conversationCount }: LoPersona
               ))}
             </div>
             <div className="text-[10px] text-muted-foreground/60 font-mono border-t border-border/40 pt-2">
-              Generado {GEN_DATE_FMT.format(new Date(synthesis.generatedAt))} ·{' '}
+              Generado {mounted ? GEN_DATE_FMT.format(new Date(synthesis.generatedAt)) : '…'} ·{' '}
               {synthesis.sourceObservationCount} conversación
               {synthesis.sourceObservationCount === 1 ? '' : 'es'} · {synthesis.modelUsed}
             </div>

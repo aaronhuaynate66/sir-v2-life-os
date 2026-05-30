@@ -13,11 +13,14 @@
 //   - cumple ya paso este año    -> contar al del proximo año.
 //   - feb 29 + año no bisiesto   -> ajustar al 28-feb (sin romper).
 
+'use client'
+
 import Link from 'next/link'
 import { Cake } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+import { useMounted } from '@/hooks/useMounted'
 
 export interface BirthdayCountdownProps {
   /** people.birth_date — ISO YYYY-MM-DD o YYYY-MM-DDT... null si no
@@ -78,6 +81,8 @@ const ABS_FORMATTER = new Intl.DateTimeFormat('es', {
 })
 
 export function BirthdayCountdown({ birthDate }: BirthdayCountdownProps) {
+  // El countdown depende de "hoy" → se computa solo tras montar (mount-safe).
+  const mounted = useMounted()
   return (
     <Card className="shadow-none">
       <CardContent className="p-4 sm:p-6">
@@ -88,9 +93,20 @@ export function BirthdayCountdown({ birthDate }: BirthdayCountdownProps) {
           </div>
         </div>
 
-        {birthDate ? <Body birthDate={birthDate} /> : <EmptyState />}
+        {birthDate ? mounted ? <Body birthDate={birthDate} /> : <Placeholder /> : <EmptyState />}
       </CardContent>
     </Card>
+  )
+}
+
+/** Placeholder determinístico (server + primer render cliente) mientras se
+ *  difiere el cómputo del countdown. */
+function Placeholder() {
+  return (
+    <div className="space-y-2" aria-hidden="true">
+      <div className="h-7 w-24 rounded bg-muted/40 animate-pulse" />
+      <div className="h-3 w-40 rounded bg-muted/30 animate-pulse mt-3" />
+    </div>
   )
 }
 

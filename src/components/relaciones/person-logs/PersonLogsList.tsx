@@ -1,7 +1,10 @@
 // SIR V2 — Lista compacta de logs (compartida por RegistroRapidoPanel
 // y RegistrarInteraccionPanel). Filtra opcionalmente por kind.
 
+'use client'
+
 import { Badge } from '@/components/ui/badge'
+import { useMounted } from '@/hooks/useMounted'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 
 const KIND_LABEL: Record<PersonLogKind, string> = {
@@ -48,6 +51,9 @@ export function PersonLogsList({
   max = 5,
   emptyMessage = 'Sin registros todavía.',
 }: PersonLogsListProps) {
+  // El tiempo relativo (formatRelative usa Date.now()) se difiere a post-mount
+  // para no romper hidratación; el resto de la fila es determinístico.
+  const mounted = useMounted()
   const allowed = kinds ? new Set(kinds) : null
   const filtered = (allowed ? logs.filter((l) => allowed.has(l.kind)) : logs).slice(0, max)
 
@@ -74,7 +80,7 @@ export function PersonLogsList({
             )}
           </div>
           <span className="text-[10px] font-mono text-muted-foreground/70 shrink-0">
-            {formatRelative(log.loggedAt)}
+            {mounted ? formatRelative(log.loggedAt) : ''}
           </span>
         </li>
       ))}
