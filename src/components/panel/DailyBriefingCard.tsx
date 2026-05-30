@@ -5,7 +5,7 @@
 // contexto actual). Render parseado por secciones (Hoy / En foco / Sugerencia).
 // Autocontenido: no toca los stores del /panel.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,11 +19,44 @@ interface ApiError {
 }
 
 const SECTION_LABELS = ['Hoy', 'En foco', 'Sugerencia']
+const CACHE_KEY = 'sir-daily-briefing'
+
+function todayStr(): string {
+  // Fecha local del cliente (el cache es por dispositivo).
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function loadCached(): string | null {
+  try {
+    const raw = window.localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { date?: string; text?: string }
+    return parsed?.date === todayStr() && typeof parsed.text === 'string' ? parsed.text : null
+  } catch {
+    return null
+  }
+}
+
+function saveCached(text: string): void {
+  try {
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify({ date: todayStr(), text }))
+  } catch {
+    /* localStorage lleno/deshabilitado: el briefing igual se muestra esta sesión */
+  }
+}
 
 export function DailyBriefingCard() {
   const [loading, setLoading] = useState(false)
   const [briefing, setBriefing] = useState<string | null>(null)
   const [error, setError] = useState<ApiError | null>(null)
+
+  // Carga el briefing cacheado de HOY (si lo hay) al montar — client-only,
+  // en efecto (no en render) para no romper hidratación.
+  useEffect(() => {
+    const cached = loadCached()
+    if (cached) setBriefing(cached)
+  }, [])
 
   async function generate() {
     if (loading) return
@@ -39,6 +72,7 @@ export function DailyBriefingCard() {
       }
       const json = (await res.json()) as { briefing: string }
       setBriefing(json.briefing)
+      saveCached(json.briefing)
     } catch (e) {
       setError({ status: 0, message: e instanceof Error ? e.message : String(e) })
     } finally {
