@@ -164,10 +164,15 @@ function MemoryContent() {
         <div className="text-center py-12">
           <BookOpen size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">
-            {search ? `Sin resultados para "${search}"` : 'No hay memorias en el sistema aun.'}
+            {search ? `Sin resultados para "${search}"` : 'Todavía no hay memorias.'}
           </p>
           {!search && (
-            <p className="text-xs text-muted-foreground/60 mt-1">Las memorias se generan automaticamente con tus mutaciones.</p>
+            <p className="text-xs text-muted-foreground/60 mt-1 max-w-md mx-auto leading-relaxed">
+              Las memorias se arman solas a partir de tus capturas de WhatsApp: subí una conversación
+              en <span className="text-foreground/80">Captura</span> y luego tocá{' '}
+              <span className="text-foreground/80">Generar desde el historial</span> en el perfil de
+              la persona (Relaciones → detalle).
+            </p>
           )}
         </div>
       ) : (
