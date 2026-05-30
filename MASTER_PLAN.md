@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `93a95c6`
+**Hash del último commit humano:** `5094588`
 
 > 📋 Para backlog de próximas sesiones, ideas brainstorm y descartados, ver [docs/BACKLOG.md](docs/BACKLOG.md).
 
@@ -340,6 +340,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `5094588` | aaronhuaynate66 | feat(detail-page): ruta /relaciones/[slug] + observations fetch layer + LastInteractionPanel (Sesion 3 PR-A) | 2026-05-30 |
 | `93a95c6` | aaronhuaynate66 | fix(matcher+nav): close BUG-002 (bidirectional matcher) + BUG-003 (entry point) — Sesion 2.7 | 2026-05-30 |
 | `3596687` | Aaron Huaynate | docs(backlog): add BUG-001/002/003 + sesiones 2.6/2.7 + futuros | 2026-05-29 |
 | `c387694` | aaronhuaynate66 | feat(detail-page): foundation — observations table + capture universal pipeline (Sesion 1+2+2.5) | 2026-05-29 |
@@ -349,7 +350,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1d900e3` | aaronhuaynate66 | Timeline: consolidar capturas en una card agrupada (capture_id) (#82) | 2026-05-29 |
 | `617e34f` | aaronhuaynate66 | Unify health metric labels in spanish across UI (self + timeline) (#81) | 2026-05-29 |
 | `05268e6` | aaronhuaynate66 | Migration 0006: catch-up uuid→text + backlog UX items (#80) | 2026-05-29 |
-| `47e625e` | aaronhuaynate66 | Captura báscula con Claude Vision (post-Fase 3a) (#79) | 2026-05-29 |
 
 ---
 
