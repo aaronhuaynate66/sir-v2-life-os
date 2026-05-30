@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `9f94ed3`
+**Hash del último commit humano:** `42c80b5`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -340,16 +340,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `9f94ed3` | aaronhuaynate66 | fix(lunar): cardinal phases narrow window + pct in sm chip | 2026-05-30 |
-| `20270b2` | aaronhuaynate66 | feat(person-logs): Registro rapido + Registrar interaccion (Sesion 6) | 2026-05-30 |
-| `006d96e` | aaronhuaynate66 | feat(lunar+ciclo): fase lunar (dashboard) + ciclo persona (donut + nota) completos | 2026-05-30 |
-| `abbc825` | aaronhuaynate66 | feat(memories): sidebar MemoriasAsociadasPanel + backfill endpoint (Sesion 4 PR #2) | 2026-05-30 |
-| `43521c1` | aaronhuaynate66 | chore(roadmap): embed BACKLOG.md verbatim inside MASTER_PLAN.md | 2026-05-30 |
-| `c15bc92` | aaronhuaynate66 | feat(memories): backend foundation — migration 0012 + extract/fetch lib (Sesion 4 PR #1) | 2026-05-30 |
-| `e4c5ac3` | aaronhuaynate66 | chore(consolidation): BACKLOG reconcile post-Sesion 3 + grafo zoom fix | 2026-05-30 |
-| `8c99d4c` | aaronhuaynate66 | fix(sweep): form defaults + RelationalScore copy + Sheet a11y + BACKLOG sync (post-Sesion 3) | 2026-05-30 |
-| `e043611` | aaronhuaynate66 | feat(detail-page): RelationalScore + BirthdayCountdown + birth_date editable (Sesion 3 PR-B) | 2026-05-30 |
-| `5094588` | aaronhuaynate66 | feat(detail-page): ruta /relaciones/[slug] + observations fetch layer + LastInteractionPanel (Sesion 3 PR-A) | 2026-05-30 |
+| `42c80b5` | Aaron Huaynate | feat(detail-page): edicion inline completa en /relaciones/[slug] (#5) | 2026-05-30 |
+| `52728c6` | Aaron Huaynate | feat(search): UI /buscar - busqueda semantica en lenguaje natural (Fase 3b) | 2026-05-30 |
+| `6fa12f1` | Aaron Huaynate | feat(search): Fase 3b foundation - pgvector + embeddings + RPC + endpoints | 2026-05-30 |
+| `2f6f8e0` | Aaron Huaynate | refactor(sync): Supabase fuente de verdad - reconciliacion DB-autoritativa (split-brain) | 2026-05-30 |
+| `f224fe8` | Aaron Huaynate | feat(detail-page): Nota de voz - grabar/guardar/reproducir (#12) | 2026-05-30 |
+| `9df7a1f` | Aaron Huaynate | feat(detail-page): Bitacora colapsable - historial de interacciones (#17) | 2026-05-30 |
+| `1cfcc74` | Aaron Huaynate | feat(detail-page): Perfil profesional colapsable (#10) | 2026-05-30 |
+| `d4b5f0c` | Aaron Huaynate | fix(stores): no sembrar fixtures en prod + autolimpiar localStorage (split-brain) | 2026-05-30 |
+| `de0012a` | Aaron Huaynate | feat(detail-page): Memorias asociadas - filtro por tipo + colapso (#15) | 2026-05-30 |
+| `0af99ac` | Aaron Huaynate | feat(detail-page): botones top-right - Chat WhatsApp + Briefing IA (#16) | 2026-05-30 |
 
 ---
 
