@@ -19,10 +19,21 @@
 // Reentrancy guard: isApplyingPull = true while reconciling DB->local,
 // so the subscriber early-returns and doesn't re-push.
 //
-// First-mount semantic (per Session 20c spec, Option A):
-//   merged = local first, DB overrides on overlapping ids. Local-only
-//   rows are NEVER deleted. DB-only rows are added. NO push of local
-//   to DB (data migration is Session 20d).
+// Reconciliation semantic (Supabase como única fuente de verdad — refactor
+// split-brain). El pull ya NO es aditivo ciego. Distinguimos:
+//   - fila en DB                          -> autoritativa, se conserva.
+//   - fila local ausente de DB pero NUNCA sincronizada (no en knownIds)
+//                                         -> creada offline/pendiente, se
+//                                            conserva (se pushea luego).
+//   - fila local ausente de DB que SÍ estuvo sincronizada (en knownIds)
+//                                         -> borrada remotamente, se DROPEA
+//                                            (asi se propagan los deletes y
+//                                             no resucitan filas borradas).
+// knownIds se persiste por (tabla,user) en localStorage para sobrevivir
+// reloads (clave para el caso "device B" del split-brain). El drop ocurre
+// bajo isApplyingPull -> el subscriber no lo ve -> NO se emite DELETE a DB
+// (la fila ya no está allá). Las filas reales en DB (ej. Diana) jamás se
+// dropean porque están en DB.
 
 'use client'
 
@@ -31,6 +42,43 @@ import { createClient } from '@/lib/supabase/client'
 import type { SliceBinding } from './types'
 
 const RETRY_DELAYS_MS = [1000, 4000, 16000] as const
+
+// ─── knownIds: set persistido de ids confirmados en DB por (tabla,user) ──
+function knownKey(table: string, userId: string): string {
+  return `sync-known:${table}:${userId}`
+}
+
+function loadKnownIds(table: string, userId: string): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = window.localStorage.getItem(knownKey(table, userId))
+    if (!raw) return new Set()
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? new Set(arr.filter((x): x is string => typeof x === 'string')) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+function saveKnownIds(table: string, userId: string, ids: Set<string>): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(knownKey(table, userId), JSON.stringify([...ids]))
+  } catch {
+    // localStorage lleno/deshabilitado: degradamos a merge aditivo en el
+    // proximo pull (knownIds vacio = conservar local-only). Aceptable.
+  }
+}
+
+function mutateKnownIds(
+  table: string,
+  userId: string,
+  fn: (s: Set<string>) => void,
+): void {
+  const s = loadKnownIds(table, userId)
+  fn(s)
+  saveKnownIds(table, userId, s)
+}
 
 type PersistMeta = {
   persist?: {
@@ -113,11 +161,24 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
       return
     }
     const dbItems = (data as Record<string, unknown>[]).map((row) => binding.adapter.fromRow(row))
+    const dbIds = new Set(dbItems.map((r) => r.id))
     const localItems = binding.select(store.getState())
-    const merged = new Map<string, T>()
-    for (const r of localItems) merged.set(r.id, r)
-    for (const r of dbItems) merged.set(r.id, r) // DB-wins on overlap
-    const next = [...merged.values()]
+    const known = loadKnownIds(binding.adapter.table, userId)
+
+    // DB es autoritativo: arrancamos del set de DB.
+    const next: T[] = [...dbItems]
+    // Conservamos SOLO las filas locales ausentes de DB que nunca se
+    // sincronizaron (creadas offline / push pendiente). Las que sí estuvieron
+    // sincronizadas y ya no están en DB se consideran borradas remotamente
+    // y se dropean (propaga el delete, evita resurrección).
+    for (const r of localItems) {
+      if (!dbIds.has(r.id) && !known.has(r.id)) next.push(r)
+    }
+
+    // knownIds = exactamente lo que hay en DB ahora. (Las pendientes locales
+    // entran a known recién cuando su upsert se confirma en flushOps.)
+    saveKnownIds(binding.adapter.table, userId, dbIds)
+
     binding.apply(next)
   }
 
@@ -159,7 +220,7 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
   ): Promise<void> {
     if (upserts.length > 0) {
       const rows = upserts.map((item) => binding.adapter.toRow(item, userId))
-      await pushWithRetry(
+      const ok = await pushWithRetry(
         async () => {
                   const { error } = await supabase.from(binding.adapter.table).upsert(rows as any, { onConflict: 'id' })
           return { error }
@@ -167,9 +228,16 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
         binding.label,
         `upsert(${upserts.length})`,
       )
+      // Confirmado en DB -> entran a knownIds (deja de tratarse como
+      // pendiente local; si luego desaparece de DB, se reconcilia como delete).
+      if (ok) {
+        mutateKnownIds(binding.adapter.table, userId, (s) => {
+          for (const item of upserts) s.add(item.id)
+        })
+      }
     }
     if (deletes.length > 0) {
-      await pushWithRetry(
+      const ok = await pushWithRetry(
         async () => {
           const { error } = await supabase
             .from(binding.adapter.table)
@@ -181,6 +249,12 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
         binding.label,
         `delete(${deletes.length})`,
       )
+      // Borrado del DB -> salen de knownIds.
+      if (ok) {
+        mutateKnownIds(binding.adapter.table, userId, (s) => {
+          for (const id of deletes) s.delete(id)
+        })
+      }
     }
   }
 
