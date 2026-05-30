@@ -86,6 +86,21 @@ function mutateKnownIds(
   saveKnownIds(table, userId, s)
 }
 
+// Logging de diagnóstico de Realtime/sync, OFF por defecto. Activar en la
+// consola del navegador: localStorage.setItem('sir-debug-sync','1') y recargar.
+// Distingue "el evento DELETE no llega" vs "llega pero el re-pull no dropea".
+function syncDebug(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem('sir-debug-sync') === '1'
+  } catch {
+    return false
+  }
+}
+function dlog(...args: unknown[]): void {
+  if (syncDebug()) console.debug('[sync]', ...args)
+}
+
 type PersistMeta = {
   persist?: {
     hasHydrated: () => boolean
@@ -183,6 +198,14 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
     // y se dropean (propaga el delete, evita resurrección).
     for (const r of localItems) {
       if (!dbIds.has(r.id) && !known.has(r.id)) next.push(r)
+    }
+
+    if (syncDebug()) {
+      const dropped = localItems.filter((r) => !dbIds.has(r.id) && known.has(r.id)).map((r) => r.id)
+      dlog(
+        `pull ${binding.adapter.table}: db=${dbItems.length} local=${localItems.length}` +
+          (dropped.length ? ` DROPPED=${dropped.length} ${JSON.stringify(dropped)}` : ''),
+      )
     }
 
     // knownIds = exactamente lo que hay en DB ahora. (Las pendientes locales
@@ -337,10 +360,13 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
       channel = channel.on(
         'postgres_changes',
         { event: '*', schema: 'public', table },
-        () => scheduleRealtimePull(),
+        (payload) => {
+          dlog(`realtime event ${table} ${payload.eventType}`, payload)
+          scheduleRealtimePull()
+        },
       )
     }
-    channel.subscribe()
+    channel.subscribe((status) => dlog(`realtime channel status: ${status}`))
     realtimeChannel = channel
   }
 
