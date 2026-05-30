@@ -173,9 +173,11 @@ export async function persistWhatsAppCapture(args: PersistArgs): Promise<Persist
     confidence: args.extracted.confidence,
   }
 
-  // 3. Append al store. Si no existe Relationship row para esa persona, crearla.
+  // 3. Append al store (JSONB relationships.history — respaldo INTACTO).
+  //    Si no existe Relationship row para esa persona, crearla.
   const state = useRelationshipStore.getState()
   const existing = state.relationships.find((r) => r.personId === args.personId)
+  const relationshipId = existing ? existing.id : `rel_${args.personId}`
 
   if (existing) {
     useRelationshipStore.setState((s) => ({
@@ -190,7 +192,7 @@ export async function persistWhatsAppCapture(args: PersistArgs): Promise<Persist
     const person = state.people.find((p) => p.id === args.personId)
     const personRelationship = person?.relationship ?? 'acquaintance'
     const newRel: Relationship = {
-      id: `rel_${args.personId}`,
+      id: relationshipId,
       personId: args.personId,
       type: personRelationship,
       status: 'active',
@@ -207,6 +209,45 @@ export async function persistWhatsAppCapture(args: PersistArgs): Promise<Persist
     // Nota: el sync engine pusheara la nueva relationship al DB automaticamente.
     // No actualizamos people.updated_at acá — irrelevante para el flujo y
     // evita la friction del typed Database client.
+  }
+
+  // 4. DUAL-WRITE (Opción B, no-lossy): copiar el evento a la tabla
+  //    append-only relationship_events. El JSONB de arriba SIGUE siendo el
+  //    respaldo (cero pérdida). Best-effort + idempotente (upsert
+  //    ignoreDuplicates por PK=id): si falla (offline / tabla aún sin migrar
+  //    0021), el evento ya quedó en el JSONB y la 0021 lo reconcilia. NO
+  //    bloquea ni rompe la captura — por eso va en try/catch y NO se await-
+  //    propaga el error.
+  try {
+    const { error: eventError } = await supabase
+      .from('relationship_events')
+      .upsert(
+        {
+          id: captureId,
+          user_id: userId,
+          person_id: args.personId,
+          relationship_id: relationshipId,
+          description: event.description,
+          emotional_tone: event.emotionalTone,
+          event_date: event.date,
+          event_type: event.type,
+          capture_kind: event.captureKind ?? null,
+          capture_id: event.captureId ?? null,
+          source_image_path: event.sourceImagePath ?? null,
+          topics: event.topics ?? null,
+          emotional_states: event.emotionalStates ?? null,
+          raw_messages: event.rawMessages ?? null,
+          reflection_questions: event.reflectionQuestions ?? null,
+          confidence: event.confidence ?? null,
+        } as never,
+        { onConflict: 'id', ignoreDuplicates: true },
+      )
+    if (eventError) {
+      // No-fatal: el JSONB ya tiene el evento; la 0021 lo reconcilia.
+      console.warn('[whatsapp] dual-write relationship_events falló (no fatal):', eventError.message)
+    }
+  } catch (err) {
+    console.warn('[whatsapp] dual-write relationship_events excepción (no fatal):', err)
   }
 
   return { captureId, sourceImagePath }
