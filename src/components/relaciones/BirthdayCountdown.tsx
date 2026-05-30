@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { Cake } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 
 export interface BirthdayCountdownProps {
   /** people.birth_date — ISO YYYY-MM-DD o YYYY-MM-DDT... null si no
@@ -36,15 +37,15 @@ interface NextBirthday {
 const DAY_MS = 86_400_000
 
 function computeNextBirthday(birthDate: string): NextBirthday | null {
-  // Parsea como fecha local (YYYY-MM-DD interpretado en TZ local). Tomamos
-  // el prefijo YYYY-MM-DD por si viene un timestamptz completo.
-  const m = birthDate.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (!m) return null
-  const year = Number(m[1])
-  const month = Number(m[2]) - 1
-  const day = Number(m[3])
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null
-  if (year < 1900 || month < 0 || month > 11 || day < 1 || day > 31) return null
+  // Parsea como fecha LOCAL (helper compartido — evita el shift UTC que
+  // corre el día en Lima). Tolera un timestamptz completo tomando el
+  // prefijo YYYY-MM-DD. parseLocalDate ya valida rangos por round-trip.
+  const birth = parseLocalDate(birthDate)
+  if (!birth) return null
+  const year = birth.getFullYear()
+  const month = birth.getMonth()
+  const day = birth.getDate()
+  if (year < 1900) return null
 
   const now = new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())

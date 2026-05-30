@@ -281,7 +281,14 @@ export function PersonDetail({
       </div>
 
       <div className="mb-4">
-        <LastInteractionPanel lastChat={lastChat} />
+        {/* personLogs viene ordenado por loggedAt DESC desde la fetch layer,
+            así que el primer kind='interaction' es el registro manual más
+            reciente. El panel decide si gana este o lastChat (conversación
+            real) por fecha. */}
+        <LastInteractionPanel
+          lastChat={lastChat}
+          lastManualInteraction={personLogs.find((l) => l.kind === 'interaction') ?? null}
+        />
       </div>
 
       {/* Sesion 6: registros per-persona (mood/energy/sleep/pain +

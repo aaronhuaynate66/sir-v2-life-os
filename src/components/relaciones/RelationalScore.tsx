@@ -35,6 +35,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
 import { cn } from '@/lib/utils'
+import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 
 export interface RelationalScoreProps {
   person: Person
@@ -198,12 +199,16 @@ function FooterLine({
       </div>
     )
   }
-  if (person.lastContact) {
-    const d = new Date(person.lastContact)
+  // lastContact es date-only (`YYYY-MM-DD`). Parsear como fecha LOCAL para
+  // que NO retroceda un día en TZ con offset negativo (Lima UTC-5). Antes
+  // usaba `new Date(str)` (medianoche UTC) → mostraba "29 may" para un
+  // 2026-05-30, descuadrando contra Métricas (que muestra el ISO crudo).
+  const lastContactDate = parseLocalDate(person.lastContact)
+  if (lastContactDate) {
     return (
       <div className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
         Último contacto (manual):{' '}
-        <span className="text-foreground font-medium font-mono">{ABS_FORMATTER.format(d)}</span>
+        <span className="text-foreground font-medium font-mono">{ABS_FORMATTER.format(lastContactDate)}</span>
       </div>
     )
   }

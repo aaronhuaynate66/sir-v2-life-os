@@ -10,21 +10,55 @@
 //
 // Por eso este componente recibe `lastChat: Observation | null` (ya
 // filtrado por capture_type='whatsapp_chat' AND is_obsolete=false por la
-// capa de fetch). Si llega null, mostramos empty state honesto.
+// capa de fetch).
+//
+// REGISTRO MANUAL (Sesion 6+): el usuario también puede loguear una
+// "interacción" a mano (person_logs, kind='interaction'). Eso NO es una
+// conversación real capturada, pero ES un dato de "cuándo interactué con
+// esta persona". Para no mentir ("sin interacciones" cuando acabás de
+// registrar una) recibimos también `lastManualInteraction` y mostramos el
+// MÁS RECIENTE entre captura y registro manual — el manual SIEMPRE
+// etiquetado con badge "registro manual" para preservar la distinción
+// captura (conversación real) vs nota tuya. Si ambos son null, empty.
 
 import { MessageCircle } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import type { Observation } from '@/lib/capture/observations/types'
+import type { PersonLog } from '@/lib/person-logs/types'
 
 export interface LastInteractionPanelProps {
   /** Ultima observation con capture_type='whatsapp_chat' (ya curada
    *  is_obsolete=false). null si la persona no tiene ninguna registrada. */
   lastChat: Observation | null
+  /** Último person_log con kind='interaction' (registro manual). null si
+   *  no hay ninguno. Se compara por fecha con lastChat y gana el más
+   *  reciente. */
+  lastManualInteraction?: PersonLog | null
 }
 
-export function LastInteractionPanel({ lastChat }: LastInteractionPanelProps) {
+export function LastInteractionPanel({
+  lastChat,
+  lastManualInteraction = null,
+}: LastInteractionPanelProps) {
+  // Decidir qué mostrar: el más reciente por fecha. lastChat usa
+  // observedAt (timestamp completo); el log manual usa loggedAt (timestamptz).
+  // Ambos parsean bien con new Date() — NO son date-only.
+  const chatTime = lastChat ? new Date(lastChat.observedAt).getTime() : -Infinity
+  const manualTime = lastManualInteraction
+    ? new Date(lastManualInteraction.loggedAt).getTime()
+    : -Infinity
+
+  let body: React.ReactNode
+  if (chatTime === -Infinity && manualTime === -Infinity) {
+    body = <EmptyState />
+  } else if (manualTime > chatTime) {
+    body = <ManualInteractionBody log={lastManualInteraction as PersonLog} />
+  } else {
+    body = <LastChatBody obs={lastChat as Observation} />
+  }
+
   return (
     <Card className="shadow-none">
       <CardContent className="p-4 sm:p-6">
@@ -40,9 +74,48 @@ export function LastInteractionPanel({ lastChat }: LastInteractionPanelProps) {
           </div>
         </div>
 
-        {lastChat ? <LastChatBody obs={lastChat} /> : <EmptyState />}
+        {body}
       </CardContent>
     </Card>
+  )
+}
+
+/** Etiqueta del tono emocional 1-5 (paridad con RegistrarInteraccionPanel). */
+const INTERACTION_TONE: Record<number, string> = {
+  1: 'Corazón roto',
+  2: 'Tenso',
+  3: 'Neutral',
+  4: 'Cálido',
+  5: 'Corazón pleno',
+}
+
+function ManualInteractionBody({ log }: { log: PersonLog }) {
+  const loggedAt = new Date(log.loggedAt)
+  const ago = formatTimeAgo(loggedAt)
+  const absoluteDate = formatAbsoluteDate(loggedAt)
+  const toneLabel = INTERACTION_TONE[log.value] ?? null
+  const note = typeof log.note === 'string' && log.note.trim().length > 0 ? log.note.trim() : null
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span className="text-2xl font-semibold tracking-tight">{ago.headline}</span>
+        <span className="text-xs text-muted-foreground font-mono">· {absoluteDate}</span>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Badge variant="secondary" className="text-[10px] font-mono uppercase tracking-wider">
+          registro manual
+        </Badge>
+        {toneLabel && (
+          <Badge variant="outline" className="text-[10px] font-mono">
+            {toneLabel} · {log.value}/5
+          </Badge>
+        )}
+      </div>
+
+      {note && <p className="text-sm text-foreground leading-relaxed">{note}</p>}
+    </div>
   )
 }
 
@@ -107,10 +180,12 @@ function EmptyState() {
     <div className="text-sm text-muted-foreground space-y-1.5">
       <p>Sin interacciones registradas.</p>
       <p className="text-xs leading-relaxed">
-        Las interacciones se registran subiendo screenshots de WhatsApp chat en{' '}
-        <span className="font-mono text-foreground/80">/captura</span>. Snapshots
-        de perfil (Instagram, LinkedIn, info de contacto) NO cuentan como
-        interacción.
+        Se alimenta de dos fuentes: una <span className="font-medium">conversación real</span>,
+        subiendo screenshots de WhatsApp chat en{' '}
+        <span className="font-mono text-foreground/80">/captura</span>, o un{' '}
+        <span className="font-medium">registro manual</span> desde el panel
+        &quot;Registrar interacción&quot;. Snapshots de perfil (Instagram, LinkedIn, info
+        de contacto) NO cuentan como interacción.
       </p>
     </div>
   )

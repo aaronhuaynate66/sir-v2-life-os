@@ -25,6 +25,8 @@
 // Notas contextuales: paridad V1 — strings estáticos por fase, sin LLM,
 // sin recomendaciones médicas. Tono observacional, no prescriptivo.
 
+import { parseLocalDate, toIsoLocal } from '@/lib/dates/parseLocalDate'
+
 export type CyclePhaseId = 'menstrual' | 'follicular' | 'ovulation' | 'luteal'
 
 export interface CyclePhase {
@@ -58,25 +60,6 @@ const CONTEXT_NOTE: Record<CyclePhaseId, string> = {
   luteal:
     'Fase lútea. Energía decreciente progresiva, mayor introspección hacia el final. ' +
     'Buen momento para cerrar tareas y bajar el ritmo.',
-}
-
-function parseLocalDate(iso: string): Date | null {
-  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (!m) return null
-  const y = Number(m[1])
-  const mo = Number(m[2]) - 1
-  const d = Number(m[3])
-  if (!Number.isFinite(y) || !Number.isFinite(mo) || !Number.isFinite(d)) return null
-  const dt = new Date(y, mo, d)
-  if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) return null
-  return dt
-}
-
-function toIsoLocal(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 function classifyPhase(cycleDay: number, cycleLength: number): CyclePhaseId {
