@@ -45,10 +45,32 @@
 
 import type { StoreApi } from 'zustand'
 import type { RealtimeChannel } from '@supabase/supabase-js'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import type { SliceBinding } from './types'
 
 const RETRY_DELAYS_MS = [1000, 4000, 16000] as const
+// Throttle del toast de fallo de sync: si una ráfaga de pushes falla
+// (ej. offline), mostramos UN aviso, no N.
+const SYNC_FAILURE_TOAST_THROTTLE_MS = 12000
+let lastSyncFailureToastAt = 0
+
+/**
+ * Avisa al usuario que un push a Supabase falló tras agotar los reintentos.
+ * Antes esto era un console.error silencioso: el usuario no se enteraba de
+ * que su cambio no llegó al DB. La fila queda en localStorage y se re-pushea
+ * en la próxima mutación o al reconectar ('online' -> repushPending), así que
+ * el mensaje es tranquilizador, no alarmista. Throttled para no spamear.
+ */
+function notifySyncFailure(): void {
+  if (typeof window === 'undefined') return
+  const now = Date.now()
+  if (now - lastSyncFailureToastAt < SYNC_FAILURE_TOAST_THROTTLE_MS) return
+  lastSyncFailureToastAt = now
+  toast.error('No pude sincronizar algunos cambios', {
+    description: 'Quedaron guardados en este dispositivo. Reintento al recuperar conexión.',
+  })
+}
 // Throttle de re-pull por foco/visibilidad: evita martillar en toggles rápidos.
 const FOCUS_PULL_THROTTLE_MS = 2000
 // Debounce de re-pull por Realtime: coalesce ráfagas de eventos.
@@ -304,6 +326,10 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
         mutatePendingIds(binding.adapter.table, userId, (s) => {
           for (const item of upserts) s.delete(item.id)
         })
+      } else {
+        // Falló tras reintentos: avisar al usuario (la fila sigue pendiente y
+        // se re-pushea al reconectar).
+        notifySyncFailure()
       }
     }
     if (deletes.length > 0) {
@@ -311,7 +337,7 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
       mutatePendingIds(binding.adapter.table, userId, (s) => {
         for (const id of deletes) s.delete(id)
       })
-      await pushWithRetry(
+      const ok = await pushWithRetry(
         async () => {
           const { error } = await supabase
             .from(binding.adapter.table)
@@ -323,6 +349,7 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
         binding.label,
         `delete(${deletes.length})`,
       )
+      if (!ok) notifySyncFailure()
     }
   }
 
