@@ -4,8 +4,8 @@
 // migration 0010). V1 mostraba "Cumpleanos en N dias".
 //
 // special_dates (otro canonical jsonb de migration 0010) NO se consume
-// aca — queda para un componente futuro "Fechas importantes" (item #9
-// del backlog detail page).
+// aca — lo consume FechasImportantes ("Fechas importantes", item #9 del
+// backlog detail page).
 //
 // Edge cases:
 //   - birth_date null            -> empty state con CTA a editar la persona.

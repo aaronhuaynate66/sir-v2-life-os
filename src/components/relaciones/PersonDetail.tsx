@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
+import { FechasImportantes } from './FechasImportantes'
 import { CicloPanel } from './CicloPanel'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistroRapidoPanel } from './RegistroRapidoPanel'
@@ -271,6 +272,9 @@ export function PersonDetail({
         <RelationalScore person={live} lastChat={lastChat} />
         <BirthdayCountdown birthDate={live.birthDate ?? null} />
       </div>
+
+      {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
+      <FechasImportantes person={live} />
 
       {/* ─── Lunar + Ciclo: estado actual por persona ─────────────────── */}
       <div className="mb-4">

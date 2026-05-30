@@ -166,8 +166,28 @@ export interface Person {
    *  Canonical en `people.cycle_length_days` (migration 0010, default 28).
    *  Solo se interpreta junto con cycleStartDate. */
   cycleLengthDays?: number
+  /** Fechas importantes de la persona (aniversarios, santos, fechas
+   *  especiales). Canonical en `people.special_dates` (jsonb, migration
+   *  0010, default '[]'). Renderizadas con countdown en FechasImportantes
+   *  (detail page, item #9 del backlog). undefined = sin fechas. */
+  specialDates?: SpecialDate[]
   createdAt: string
   updatedAt: string
+}
+
+/** Una fecha importante asociada a una persona (item #9/#13 del detail page).
+ *  Vive serializada en `people.special_dates` (jsonb array). */
+export interface SpecialDate {
+  /** Id estable (uuid) — usado para editar/borrar dentro del array. */
+  id: string
+  /** Etiqueta libre: "Aniversario", "Día del santo", "Mudanza", etc. */
+  label: string
+  /** Fecha ISO date-only (YYYY-MM-DD). Se parsea en TZ local (parseLocalDate)
+   *  para evitar el shift UTC en Lima. */
+  date: string
+  /** true = se repite cada año (countdown al próximo aniversario, como un
+   *  cumpleaños). false = evento único (el countdown puede quedar en pasado). */
+  recurring: boolean
 }
 
 export interface Relationship {

@@ -3,9 +3,30 @@
 
 import type {
   Person, Relationship, RelationshipType, PersonCategory, EnergyImpact,
-  RelationshipStatus, RelationshipEvent,
+  RelationshipStatus, RelationshipEvent, SpecialDate,
 } from '@/types'
 import type { TableAdapter } from '../types'
+
+/** Normaliza el jsonb `people.special_dates` a SpecialDate[] tolerando
+ *  filas viejas (null / shape parcial). Filtra entradas sin label/date. */
+function parseSpecialDates(raw: unknown): SpecialDate[] {
+  if (!Array.isArray(raw)) return []
+  const out: SpecialDate[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const r = item as Record<string, unknown>
+    const label = typeof r.label === 'string' ? r.label : ''
+    const date = typeof r.date === 'string' ? r.date : ''
+    if (!label || !date) continue
+    out.push({
+      id: typeof r.id === 'string' && r.id ? r.id : `${date}-${label}`,
+      label,
+      date,
+      recurring: r.recurring === true,
+    })
+  }
+  return out
+}
 
 export const personAdapter: TableAdapter<Person> = {
   table: 'people',
@@ -28,6 +49,7 @@ export const personAdapter: TableAdapter<Person> = {
     birth_date: p.birthDate ?? null,
     cycle_start_date: p.cycleStartDate ?? null,
     cycle_length_days: p.cycleLengthDays ?? null,
+    special_dates: p.specialDates ?? [],
     created_at: p.createdAt,
     updated_at: p.updatedAt,
   }),
@@ -52,6 +74,7 @@ export const personAdapter: TableAdapter<Person> = {
       row.cycle_length_days !== null && row.cycle_length_days !== undefined
         ? Number(row.cycle_length_days)
         : undefined,
+    specialDates: parseSpecialDates(row.special_dates),
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }),
