@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `8c99d4c`
+**Hash del último commit humano:** `e4c5ac3`
 
 > 📋 Para backlog de próximas sesiones, ideas brainstorm y descartados, ver [docs/BACKLOG.md](docs/BACKLOG.md).
 
@@ -340,6 +340,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e4c5ac3` | aaronhuaynate66 | chore(consolidation): BACKLOG reconcile post-Sesion 3 + grafo zoom fix | 2026-05-30 |
 | `8c99d4c` | aaronhuaynate66 | fix(sweep): form defaults + RelationalScore copy + Sheet a11y + BACKLOG sync (post-Sesion 3) | 2026-05-30 |
 | `e043611` | aaronhuaynate66 | feat(detail-page): RelationalScore + BirthdayCountdown + birth_date editable (Sesion 3 PR-B) | 2026-05-30 |
 | `5094588` | aaronhuaynate66 | feat(detail-page): ruta /relaciones/[slug] + observations fetch layer + LastInteractionPanel (Sesion 3 PR-A) | 2026-05-30 |
@@ -349,7 +350,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `daee855` | aaronhuaynate66 | Captura WhatsApp con Claude Vision Sonnet (#85) | 2026-05-29 |
 | `f5f05a3` | aaronhuaynate66 | docs(backlog): add document intelligence layer ideas (#84) | 2026-05-29 |
 | `9f46673` | aaronhuaynate66 | Refactor: spanish URLs + person slugs + detail page (#83) | 2026-05-29 |
-| `1d900e3` | aaronhuaynate66 | Timeline: consolidar capturas en una card agrupada (capture_id) (#82) | 2026-05-29 |
 
 ---
 
