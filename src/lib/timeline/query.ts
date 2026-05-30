@@ -42,7 +42,7 @@ import { adaptFinances } from './adapters/finance'
 import { adaptSignals } from './adapters/signal'
 import { adaptGoals } from './adapters/goal'
 import { adaptPeople } from './adapters/people'
-import { adaptRelationalHistory } from './adapters/relational_event'
+import { adaptRelationalHistory, adaptRelationalEventRows } from './adapters/relational_event'
 import { groupByCapture } from './grouping'
 
 import {
@@ -294,35 +294,83 @@ async function queryGoalEvents(
 }
 
 async function queryRelationalEvents(
-  sb: SbClient, userId: string, filters: TimelineFilters, _cursor: TimelineCursor,
-  signal: AbortSignal, _pageSize: number,
+  sb: SbClient, userId: string, filters: TimelineFilters, cursor: TimelineCursor,
+  signal: AbortSignal, pageSize: number,
 ): Promise<TimelineEvent[]> {
-  // relational_event = people creation + relationships.history unpacked.
-  // Volumen bajo en ambos casos. Fetch sin filtros server-side (necesitamos
-  // todas las people para name lookup en history adapter). Todos los
-  // filtros se aplican client-side.
-  const [peopleResult, relsResult] = await Promise.all([
-    sb.from('people').select('*').eq('user_id', userId).abortSignal(signal),
-    sb.from('relationships').select('*').eq('user_id', userId).abortSignal(signal),
-  ])
-  if (peopleResult.error) throw peopleResult.error
-  if (relsResult.error) throw relsResult.error
-
-  const peopleRows = (peopleResult.data ?? []) as Record<string, unknown>[]
-  const relsRows = (relsResult.data ?? []) as Record<string, unknown>[]
-  const people = peopleRows.map((r) => personAdapter.fromRow(r))
-  const relationships = relsRows.map((r) => relationshipAdapter.fromRow(r))
-
-  // Person creation events + relationship history items (validados ISO 8601
-  // dentro del adapter).
-  let events: TimelineEvent[] = [
-    ...adaptPeople(people),
-    ...adaptRelationalHistory(relationships, people),
-  ]
-
-  // Client-side filtros (date range + search). Sin cursor por R6 del ADR.
+  // relational_event = people creation + historial relacional.
+  //
+  // Opción B (no-lossy): el historial sale de la tabla append-only
+  // `relationship_events` (PRIMARIA: indexada por event_date, capeada a
+  // pageSize, con date-range + cursor server-side -> paginación real para
+  // Historial Profundo). El JSONB `relationships.history` queda como
+  // FALLBACK/respaldo intacto y solo se lee si la tabla está ausente
+  // (0021 sin correr aún) o vacía -> cero regresión, cero pérdida.
+  //
+  // people: entity-state, volumen bajo, sin filtro server-side (lo necesita
+  // el adapter para el name lookup y para los person-creation events).
   const startIso = dateRangeStartIso(filters)
+
+  let eventsQ = sb
+    .from('relationship_events')
+    .select('*')
+    .eq('user_id', userId)
+    .order('event_date', { ascending: false })
+    .limit(pageSize)
+    .abortSignal(signal)
+  if (startIso) eventsQ = eventsQ.gte('event_date', startIso)
+  if (cursor)   eventsQ = eventsQ.lt('event_date', cursor)
+
+  const [peopleSettled, eventsSettled] = await Promise.allSettled([
+    sb.from('people').select('*').eq('user_id', userId).abortSignal(signal),
+    eventsQ,
+  ])
+
+  // people es core: abort se relanza; cualquier otro error también (sin
+  // people no hay name lookup ni person events).
+  if (peopleSettled.status === 'rejected') throw peopleSettled.reason
+  if (peopleSettled.value.error) throw peopleSettled.value.error
+  const peopleRows = (peopleSettled.value.data ?? []) as Record<string, unknown>[]
+  const people = peopleRows.map((r) => personAdapter.fromRow(r))
+
+  // Historial desde la tabla SOLO si la query resolvió sin error y trajo
+  // filas. Si la tabla falta (0021 sin correr -> PostgREST devuelve error en
+  // .value.error, no rejection) o vino vacía -> caemos al JSONB. Un abort sí
+  // se relanza para que Promise.allSettled del caller lo distinga.
+  let relationalEvents: TimelineEvent[] | null = null
+  if (eventsSettled.status === 'rejected') {
+    if (isAbortError(eventsSettled.reason)) throw eventsSettled.reason
+    // error transitorio (red, etc.): caer al JSONB en vez de fallar el tipo.
+  } else if (!eventsSettled.value.error) {
+    const eventRows = (eventsSettled.value.data ?? []) as Record<string, unknown>[]
+    if (eventRows.length > 0) {
+      relationalEvents = adaptRelationalEventRows(eventRows, people)
+    }
+  }
+
+  if (relationalEvents === null) {
+    // FALLBACK JSONB (respaldo intacto). Replica el comportamiento previo:
+    // unpack completo + filtros client-side (date range + cursor).
+    const relsResult = await sb
+      .from('relationships')
+      .select('*')
+      .eq('user_id', userId)
+      .abortSignal(signal)
+    if (relsResult.error) throw relsResult.error
+    const relsRows = (relsResult.data ?? []) as Record<string, unknown>[]
+    const relationships = relsRows.map((r) => relationshipAdapter.fromRow(r))
+    let jsonbEvents = adaptRelationalHistory(relationships, people)
+    if (startIso) jsonbEvents = jsonbEvents.filter((e) => e.occurredAt >= startIso)
+    if (cursor)   jsonbEvents = jsonbEvents.filter((e) => e.occurredAt < cursor)
+    relationalEvents = jsonbEvents
+  }
+
+  // Person creation events (entity-state) + historial (tabla o JSONB).
+  let events: TimelineEvent[] = [...adaptPeople(people), ...relationalEvents]
+
+  // Date range aplica a los person events (el historial ya viene filtrado).
   if (startIso) events = events.filter((e) => e.occurredAt >= startIso)
+
+  // Search client-side (title/body/tags) -> preserva match por nombre y topics.
   const term = sanitizeSearch(filters.search).toLowerCase()
   if (term) {
     events = events.filter(
