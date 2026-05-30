@@ -84,6 +84,18 @@ export interface ProcessCaptureResponse {
     attempts: number
     hitCeiling: boolean
   }
+  /** Candidatos rankeados por el matcher server-side post-extraccion.
+   *  Solo se setea si el cliente no mando person_id. Sesion 2.7 (BUG-002). */
+  matchCandidates: PersonCandidate[]
+  /** Si el matcher encontro match exacto fuerte (handle, URL o telefono),
+   *  el server YA vinculo la observation y devuelve esto para que la UI
+   *  muestre el resultado. Si null, la observation quedo sin persona y
+   *  la UI debe ofrecer candidates para link manual. */
+  autoLinked: { personId: string; reason: string } | null
+}
+
+export interface LinkObservationResponse {
+  observation: Observation
 }
 
 class HttpError extends Error {
@@ -177,6 +189,8 @@ export async function processCapture(
   const json = (await res.json()) as Omit<ProcessCaptureResponse, 'compression'>
   return {
     ...json,
+    matchCandidates: json.matchCandidates ?? [],
+    autoLinked: json.autoLinked ?? null,
     compression: {
       originalBytes: compressed.originalBytes,
       compressedBytes: compressed.compressedBytes,
@@ -187,6 +201,31 @@ export async function processCapture(
       hitCeiling: compressed.hitCeiling,
     },
   }
+}
+
+// ─── linkObservationToPerson ─────────────────────────────────────────
+
+/**
+ * PATCH /api/observations/{id} para vincular la observation a una persona
+ * post-save. Usado desde la UI cuando el matcher devolvio candidatos sin
+ * auto-link (matches por nombre, no por handle/url/phone exacto).
+ *
+ * Pasar personId=null desvincula.
+ */
+export async function linkObservationToPerson(
+  observationId: string,
+  personId: string | null,
+): Promise<LinkObservationResponse> {
+  const res = await fetch(`/api/observations/${encodeURIComponent(observationId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ person_id: personId }),
+  })
+  if (!res.ok) {
+    const body = await readErrorBody(res)
+    throw new HttpError(res.status, body.error, body.detail)
+  }
+  return (await res.json()) as LinkObservationResponse
 }
 
 export { HttpError }
