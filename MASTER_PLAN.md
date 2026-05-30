@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `006d96e`
+**Hash del último commit humano:** `20270b2`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -340,6 +340,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `20270b2` | aaronhuaynate66 | feat(person-logs): Registro rapido + Registrar interaccion (Sesion 6) | 2026-05-30 |
 | `006d96e` | aaronhuaynate66 | feat(lunar+ciclo): fase lunar (dashboard) + ciclo persona (donut + nota) completos | 2026-05-30 |
 | `abbc825` | aaronhuaynate66 | feat(memories): sidebar MemoriasAsociadasPanel + backfill endpoint (Sesion 4 PR #2) | 2026-05-30 |
 | `43521c1` | aaronhuaynate66 | chore(roadmap): embed BACKLOG.md verbatim inside MASTER_PLAN.md | 2026-05-30 |
@@ -349,7 +350,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e043611` | aaronhuaynate66 | feat(detail-page): RelationalScore + BirthdayCountdown + birth_date editable (Sesion 3 PR-B) | 2026-05-30 |
 | `5094588` | aaronhuaynate66 | feat(detail-page): ruta /relaciones/[slug] + observations fetch layer + LastInteractionPanel (Sesion 3 PR-A) | 2026-05-30 |
 | `93a95c6` | aaronhuaynate66 | fix(matcher+nav): close BUG-002 (bidirectional matcher) + BUG-003 (entry point) — Sesion 2.7 | 2026-05-30 |
-| `3596687` | Aaron Huaynate | docs(backlog): add BUG-001/002/003 + sesiones 2.6/2.7 + futuros | 2026-05-29 |
 
 ---
 
@@ -378,7 +378,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 30/05/2026 (Sesión 5 — Fase lunar + Ciclo persona entregados).
+> **Última actualización:** 30/05/2026 (Sesión 6 — Registro rápido + Registrar interacción entregados; tabla `person_logs`).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
@@ -407,6 +407,17 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 ---
 
 ## 🆕 BACKLOG NUEVO
+
+### Sesión 6 — Registro rápido + Registrar interacción ✅ ENTREGADO
+Cerrada el 30/05/2026 con un PR (`feat/person-logs`):
+
+- **Migración 0013** (`supabase/migrations/0013_person_logs.sql`, aditiva): tabla nueva `person_logs(id text PK, user_id text, person_id text FK→people, kind text CHECK ∈ {mood, energy, sleep, pain, interaction}, value int CHECK 1..5, note text, logged_at timestamptz, created_at timestamptz)`. RLS + 4 policies + índice `(user_id, person_id, logged_at desc)`. **Aplicar manualmente** en Supabase Dashboard.
+- **Storage Supabase-native** (no `relationships.history` Zustand): decisión consciente para no extender el split-brain y dejar la data queryable para correlación futura.
+- **POST `/api/person-logs`** authed + user-scoped (mismo patrón que `/api/memories/backfill` y `/api/observations/[id]`). Validación de `kind` enum + `value` 1..5.
+- **`getLogsForPerson()`** server-side helper (`src/lib/person-logs/fetch.ts`), mismo patrón que `observations/fetch.ts`.
+- **RegistroRapidoPanel** (#5 backlog ⭐) + **RegistrarInteraccionPanel** (#14) en el detail page. Lista compacta de logs recientes filtrada por kind. `router.refresh()` tras postear.
+
+**Próximo paso natural:** correlación lunar/ciclo en Fase 3c usando `person_logs.logged_at` × `moonPhase()` × `cyclePhase()`.
 
 ### Sesión 5 — Fase lunar + Ciclo persona ✅ ENTREGADO (estado actual)
 Cerrada el 30/05/2026 con un PR (`feat/lunar-and-ciclo`):
@@ -464,7 +475,7 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 2. 🟡 **Visualización del ciclo menstrual** — ENTREGADO PARCIAL en `CicloPanel.tsx` (Sesión 5): donut con fase actual (menstrual/folicular/ovulación/lútea), día del ciclo, próximo período estimado, nota contextual estática por fase. `cycleStartDate` + `cycleLengthDays` editables end-to-end. **Diferido:** (a) derivación de `cycle_start_date` desde capturas WhatsApp, (b) serie/historial de períodos, (c) overlay en timeline (Fase 3c).
 3. ✅ **Cumpleaños** con countdown — entregado en `BirthdayCountdown.tsx` (PR #89) + `birth_date` editable end-to-end.
 4. ✅ **Última interacción** con countdown — entregado en `LastInteractionPanel.tsx` (PR #88) leyendo `whatsapp_chat` más reciente filtrado por `is_obsolete=false`.
-5. **Registro rápido**: 4 botones emoji (Ánimo, Energía, Sueño, Dolor).
+5. ✅ **Registro rápido** — entregado en `RegistroRapidoPanel.tsx` (Sesión 6). 4 acciones (Ánimo / Energía / Sueño / Dolor) con selector 1-5. Storage Supabase-native en tabla `person_logs` (migration 0013) vía POST `/api/person-logs`, no `relationships.history`. Alimenta correlación lunar/ciclo (Fase 3c).
 6. **Vida profesional**: resumen autogenerado (LinkedIn + carrera, ej. "Titulada en Administración de Empresas...").
 7. **Vida social**: stats redes + seguidores en común (ej. "23 publicaciones y sigue a 1,374 personas... 14 seguidores en común").
 8. **Lo personal**: 3 párrafos narrativos auto-extraídos sobre la relación (tono emocional, dinámica, observaciones).
@@ -473,7 +484,7 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 11. **Redes sociales**: conectadas con escaneo (ej. "@diana.carolina.d").
 12. **Nota de voz**: botón para grabar audio asociado a la persona.
 13. **Fechas especiales**: añadibles.
-14. **Registrar interacción**: 5 estados emocionales (corazón roto → corazón pleno) + notas opcionales.
+14. ✅ **Registrar interacción** — entregado en `RegistrarInteraccionPanel.tsx` (Sesión 6). 5 estados emocionales (corazón roto → pleno = 1-5) + nota opcional. Mismo storage que #5 (tabla `person_logs`, `kind='interaction'`).
 15. **MEMORIAS ASOCIADAS** (sidebar derecho, lo más crítico):
     - Tipos: `SEMANTIC`, `EPISODIC`, `EMOTIONAL`, `SOCIAL`.
     - Auto-pobladas desde capturas WhatsApp (PR #85 ya guarda `relationships.history` items, falta extracción a tabla `memories`).
