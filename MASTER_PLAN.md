@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c387694`
+**Hash del último commit humano:** `93a95c6`
 
 > 📋 Para backlog de próximas sesiones, ideas brainstorm y descartados, ver [docs/BACKLOG.md](docs/BACKLOG.md).
 
@@ -340,6 +340,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `93a95c6` | aaronhuaynate66 | fix(matcher+nav): close BUG-002 (bidirectional matcher) + BUG-003 (entry point) — Sesion 2.7 | 2026-05-30 |
+| `3596687` | Aaron Huaynate | docs(backlog): add BUG-001/002/003 + sesiones 2.6/2.7 + futuros | 2026-05-29 |
 | `c387694` | aaronhuaynate66 | feat(detail-page): foundation — observations table + capture universal pipeline (Sesion 1+2+2.5) | 2026-05-29 |
 | `daee855` | aaronhuaynate66 | Captura WhatsApp con Claude Vision Sonnet (#85) | 2026-05-29 |
 | `f5f05a3` | aaronhuaynate66 | docs(backlog): add document intelligence layer ideas (#84) | 2026-05-29 |
@@ -348,8 +350,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `617e34f` | aaronhuaynate66 | Unify health metric labels in spanish across UI (self + timeline) (#81) | 2026-05-29 |
 | `05268e6` | aaronhuaynate66 | Migration 0006: catch-up uuid→text + backlog UX items (#80) | 2026-05-29 |
 | `47e625e` | aaronhuaynate66 | Captura báscula con Claude Vision (post-Fase 3a) (#79) | 2026-05-29 |
-| `b1d189b` | aaronhuaynate66 | Add canonical BACKLOG.md as source of truth for project state (#78) | 2026-05-28 |
-| `2485725` | aaronhuaynate66 | Close Phase 3a + activate Phase 3b + fix infrastructure drift (#77) | 2026-05-28 |
 
 ---
 
