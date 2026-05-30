@@ -45,6 +45,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRelationshipStore } from '@/stores'
 import { createClient } from '@/lib/supabase/client'
 import { ensureUniqueSlug, generateSlug, isValidSlug } from '@/lib/people/slug'
+import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { RelationalScore } from './RelationalScore'
@@ -513,7 +514,9 @@ export function PersonDetail({
         personId={live.id}
         synthesis={synthesis}
         conversationCount={
-          curatedObservations.filter((o) => o.captureType === 'whatsapp_chat').length
+          curatedObservations.filter((o) =>
+            CONVERSATION_CAPTURE_TYPES.includes(o.captureType),
+          ).length
         }
       />
 

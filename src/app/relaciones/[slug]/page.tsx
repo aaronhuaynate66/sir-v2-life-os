@@ -21,6 +21,7 @@ import {
   getLatestObservation,
   getObservationsForPerson,
 } from '@/lib/observations/fetch'
+import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getLogsForPerson } from '@/lib/person-logs/fetch'
 import { getCurrentSynthesis } from '@/lib/person-synthesis/fetch'
@@ -86,7 +87,7 @@ export default async function RelacionPage({ params }: PageProps) {
   // principio critico de Sesion 3.
   const personId = String(row.id)
   const [lastChat, curatedObservations, memories, personLogs, synthesis] = await Promise.all([
-    getLatestObservation(supabase, userId, personId, 'whatsapp_chat'),
+    getLatestObservation(supabase, userId, personId, CONVERSATION_CAPTURE_TYPES),
     getObservationsForPerson(supabase, userId, personId, { limit: 50 }),
     getMemoriesForPerson(supabase, userId, personId, { limit: 100 }),
     getLogsForPerson(supabase, userId, personId, { limit: 50 }),

@@ -154,7 +154,7 @@ function LastChatBody({ obs }: { obs: Observation }) {
 
       <div className="flex items-center gap-2 flex-wrap">
         <Badge variant="outline" className="text-[10px] font-mono uppercase tracking-wider">
-          whatsapp_chat
+          {obs.captureType}
         </Badge>
         {obs.confidence && (
           <Badge variant="secondary" className="text-[10px] font-mono">

@@ -25,6 +25,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 import { getObservationsForPerson } from '@/lib/observations/fetch'
+import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { rowToPersonSynthesis } from '@/lib/person-synthesis/fetch'
 import {
   SYNTHESIS_SYSTEM_PROMPT,
@@ -98,9 +99,9 @@ export async function POST(req: NextRequest) {
   }
   const personName = (personRow.name as string) ?? 'esta persona'
 
-  // 4. Conversaciones curadas (whatsapp_chat, is_obsolete=false baked in)
+  // 4. Conversaciones curadas (whatsapp_chat + whatsapp_web, is_obsolete=false)
   const observations = await getObservationsForPerson(supabase, userId, personId, {
-    captureType: 'whatsapp_chat',
+    captureType: CONVERSATION_CAPTURE_TYPES,
     limit: MAX_CONVERSATIONS,
   })
   if (observations.length === 0) {

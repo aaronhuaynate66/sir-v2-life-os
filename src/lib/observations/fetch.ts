@@ -54,8 +54,9 @@ export function rowToObservation(row: Record<string, unknown>): Observation {
 export interface GetObservationsOptions {
   /** Default 100. La vista detalle no necesita mas que eso. */
   limit?: number
-  /** Si se pasa, restringe a un solo capture_type (ej. solo whatsapp_chat). */
-  captureType?: CaptureType
+  /** Si se pasa, restringe a uno o varios capture_type (ej. solo
+   *  whatsapp_chat, o [whatsapp_chat, whatsapp_web] para conversaciones). */
+  captureType?: CaptureType | readonly CaptureType[]
 }
 
 /**
@@ -81,7 +82,9 @@ export async function getObservationsForPerson(
     .limit(opts.limit ?? 100)
 
   if (opts.captureType) {
-    query = query.eq('capture_type', opts.captureType)
+    query = Array.isArray(opts.captureType)
+      ? query.in('capture_type', [...opts.captureType])
+      : query.eq('capture_type', opts.captureType as CaptureType)
   }
 
   const { data, error } = await query
@@ -100,15 +103,18 @@ export async function getLatestObservation(
   supabase: SupabaseClient,
   userId: string,
   personId: string,
-  captureType: CaptureType,
+  captureType: CaptureType | readonly CaptureType[],
 ): Promise<Observation | null> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('observations')
     .select(OBSERVATION_COLUMNS)
     .eq('user_id', userId)
     .eq('person_id', personId)
-    .eq('capture_type', captureType)
     .eq('is_obsolete', false) // ← guardrail
+  query = Array.isArray(captureType)
+    ? query.in('capture_type', [...captureType])
+    : query.eq('capture_type', captureType as CaptureType)
+  const { data, error } = await query
     .order('observed_at', { ascending: false })
     .limit(1)
     .maybeSingle()
