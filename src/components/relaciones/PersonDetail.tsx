@@ -43,6 +43,7 @@ import { CicloPanel } from './CicloPanel'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
+import { NotaDeVozPanel } from './NotaDeVozPanel'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
@@ -323,6 +324,10 @@ export function PersonDetail({
         <RegistroRapidoPanel personId={live.id} recentLogs={personLogs} />
         <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs} />
       </div>
+
+      {/* Nota de voz (#12): graba audio -> bucket person-voice-notes +
+          observation voice_note (aparece tambien en la Bitacora). */}
+      <NotaDeVozPanel personId={live.id} observations={curatedObservations} />
 
       {/* Vida profesional (#6) + Vida social (#7): render determinístico
           de las observations linkedin / instagram curadas. */}
