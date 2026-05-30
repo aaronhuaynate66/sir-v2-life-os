@@ -262,19 +262,40 @@ function CapturaIndexContent() {
 
       <header className="mb-6 sm:mb-8">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">
-          SIR V2 &mdash; Captura universal (Sesión 2 / pipeline completo)
+          SIR V2 &middot; Captura
         </div>
         <div className="flex items-center gap-3">
           <Camera size={20} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            Captura end-to-end
+            Capturar un pantallazo
           </h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Detector → Extractor especifico → Storage → tabla observations.
-          Soporta whatsapp_chat, whatsapp_info, instagram, linkedin.
+          Subí un pantallazo de un chat de <span className="text-foreground">WhatsApp</span> o de
+          un perfil de <span className="text-foreground">Instagram</span> /{' '}
+          <span className="text-foreground">LinkedIn</span>. SIR detecta el tipo, extrae los datos
+          y los asocia a una persona de tus relaciones.
         </p>
       </header>
+
+      {/* Guía de primer uso: 3 pasos, visible antes de subir nada. */}
+      <ol className="mb-6 grid gap-2 sm:grid-cols-3">
+        {[
+          { n: 1, t: 'Elegí la imagen', d: 'Un pantallazo de WhatsApp, Instagram o LinkedIn.' },
+          { n: 2, t: 'Vinculá la persona', d: 'SIR sugiere a quién pertenece; confirmás o creás una.' },
+          { n: 3, t: 'Guardá', d: 'Los datos quedan en el perfil de esa persona.' },
+        ].map((s) => (
+          <li key={s.n} className="rounded-md border border-border/50 bg-muted/10 p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-5 h-5 rounded-full bg-accent/15 text-accent-foreground text-[11px] font-mono flex items-center justify-center">
+                {s.n}
+              </span>
+              <span className="text-xs font-medium">{s.t}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">{s.d}</p>
+          </li>
+        ))}
+      </ol>
 
       <Card className="shadow-none mb-6">
         <CardContent className="p-4 sm:p-6 space-y-4">
@@ -511,7 +532,7 @@ function CapturaIndexContent() {
           <CardContent className="p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-semibold tracking-tight">
-                3. Guardar observation
+                3. Guardar la captura
               </h2>
               <Button
                 size="sm"
@@ -553,9 +574,10 @@ function CapturaIndexContent() {
         <Card className="shadow-none mb-6">
           <CardContent className="p-4 sm:p-6">
             <p className="text-xs text-muted-foreground">
-              El tipo <span className="font-mono">{detection.detected.type}</span> no
-              tiene extractor todavia. Persistencia de tipos sin extractor (manual_note,
-              voice_note, unknown) viene en sesiones futuras.
+              Esta imagen se detectó como{' '}
+              <span className="font-mono">{detection.detected.type}</span>, que todavía no se puede
+              extraer automáticamente. Probá con un pantallazo de un chat de WhatsApp o de un perfil
+              de Instagram / LinkedIn.
             </p>
           </CardContent>
         </Card>
