@@ -13,6 +13,7 @@ import { calculatePeaceScore, evaluateRecoveryMode, detectPeaceThreats } from '@
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
 import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
 import { detectRelationshipAlerts } from '@/engines/relationship'
+import { LunarChip } from '@/components/lunar/LunarChip'
 import { buildSignalContext } from '@/engines/signal'
 import { generateRecommendations } from '@/engines/recommendation'
 import { buildGoalDashboard } from '@/engines/goal'
@@ -180,7 +181,10 @@ function DashboardContent() {
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Mission Control</h1>
-          <div className="text-xs sm:text-sm text-muted-foreground mt-1 capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</div>
+          <div className="flex items-center gap-2 flex-wrap mt-1">
+            <span className="text-xs sm:text-sm text-muted-foreground capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</span>
+            {now && <LunarChip date={now} />}
+          </div>
         </div>
         <div className="text-right flex flex-col items-end gap-2 flex-shrink-0">
           <div className="text-xl sm:text-2xl font-mono tabular-nums text-muted-foreground/70">{now ? now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) : ''}</div>

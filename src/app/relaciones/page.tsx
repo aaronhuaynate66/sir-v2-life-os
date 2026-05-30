@@ -40,6 +40,8 @@ interface PersonForm {
   location: string
   notes: string
   birthDate: string
+  cycleStartDate: string
+  cycleLengthDays: number
 }
 
 const EMPTY_FORM: PersonForm = {
@@ -47,6 +49,7 @@ const EMPTY_FORM: PersonForm = {
   importanceScore: 5, energyImpact: 'neutral', trustLevel: 5,
   lastContact: '', contactFrequency: '', location: '', notes: '',
   birthDate: '',
+  cycleStartDate: '', cycleLengthDays: 28,
 }
 
 function daysSince(dateStr: string): number {
@@ -119,6 +122,8 @@ function RelationshipsContent() {
       location: person.location ?? '',
       notes: person.notes,
       birthDate: person.birthDate ?? '',
+      cycleStartDate: person.cycleStartDate ?? '',
+      cycleLengthDays: person.cycleLengthDays ?? 28,
     })
     setShowForm(true)
   }
@@ -144,6 +149,8 @@ function RelationshipsContent() {
         location: form.location.trim() || undefined,
         notes: form.notes,
         birthDate: form.birthDate || undefined,
+        cycleStartDate: form.cycleStartDate || undefined,
+        cycleLengthDays: form.cycleStartDate ? form.cycleLengthDays : undefined,
         updatedAt: now,
       }
       updatePerson(editingId, patch)
@@ -179,6 +186,8 @@ function RelationshipsContent() {
         location: form.location.trim() || undefined,
         notes: form.notes,
         birthDate: form.birthDate || undefined,
+        cycleStartDate: form.cycleStartDate || undefined,
+        cycleLengthDays: form.cycleStartDate ? form.cycleLengthDays : undefined,
         tags: [],
         createdAt: now,
         updatedAt: now,
@@ -331,6 +340,24 @@ function RelationshipsContent() {
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Fecha de nacimiento</label>
                 <Input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} className="font-mono" />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Inicio del último período</label>
+                <Input type="date" value={form.cycleStartDate} onChange={(e) => setForm({ ...form, cycleStartDate: e.target.value })} className="font-mono" />
+                <p className="text-[10px] text-muted-foreground/70 mt-1">Opcional — habilita el panel de ciclo en el detalle.</p>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Largo del ciclo (días)</label>
+                <Input
+                  type="number"
+                  min={15}
+                  max={60}
+                  value={form.cycleLengthDays}
+                  onChange={(e) => setForm({ ...form, cycleLengthDays: Number(e.target.value) || 28 })}
+                  className="font-mono"
+                  disabled={!form.cycleStartDate}
+                />
+                <p className="text-[10px] text-muted-foreground/70 mt-1">Default 28. Rango 15-60.</p>
               </div>
             </div>
             <div className="mt-4 flex gap-2 justify-end">

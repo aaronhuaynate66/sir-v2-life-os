@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
+import { CicloPanel } from './CicloPanel'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Memory, Person } from '@/types'
@@ -262,6 +263,14 @@ export function PersonDetail({
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
         <RelationalScore person={live} lastChat={lastChat} />
         <BirthdayCountdown birthDate={live.birthDate ?? null} />
+      </div>
+
+      {/* ─── Lunar + Ciclo: estado actual por persona ─────────────────── */}
+      <div className="mb-4">
+        <CicloPanel
+          cycleStartDate={live.cycleStartDate ?? null}
+          cycleLengthDays={live.cycleLengthDays ?? null}
+        />
       </div>
 
       <div className="mb-4">

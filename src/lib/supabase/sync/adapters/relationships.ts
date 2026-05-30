@@ -26,6 +26,8 @@ export const personAdapter: TableAdapter<Person> = {
     tags: p.tags ?? [],
     notes: p.notes ?? '',
     birth_date: p.birthDate ?? null,
+    cycle_start_date: p.cycleStartDate ?? null,
+    cycle_length_days: p.cycleLengthDays ?? null,
     created_at: p.createdAt,
     updated_at: p.updatedAt,
   }),
@@ -45,6 +47,11 @@ export const personAdapter: TableAdapter<Person> = {
     tags: (row.tags as string[]) ?? [],
     notes: (row.notes as string) ?? '',
     birthDate: (row.birth_date as string) ?? undefined,
+    cycleStartDate: (row.cycle_start_date as string) ?? undefined,
+    cycleLengthDays:
+      row.cycle_length_days !== null && row.cycle_length_days !== undefined
+        ? Number(row.cycle_length_days)
+        : undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }),
