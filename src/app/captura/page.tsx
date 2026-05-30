@@ -690,7 +690,7 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
     <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
         <Badge className="text-[10px] font-mono uppercase tracking-wider">Guardado</Badge>
-        <span className="text-xs font-mono text-foreground">{obs.id}</span>
+        <span className="text-xs font-mono text-foreground break-all min-w-0">{obs.id}</span>
         <Badge variant="outline" className="text-[10px] font-mono">
           {obs.captureType}
         </Badge>
@@ -758,14 +758,14 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
         </div>
       )}
 
-      <div className="text-xs text-muted-foreground space-y-1">
+      <div className="text-xs text-muted-foreground space-y-1 break-words">
         <div>
           <span className="font-medium text-foreground">person_id:</span>{' '}
-          <span className="font-mono">{obs.personId ?? '(null)'}</span>
+          <span className="font-mono break-all">{obs.personId ?? '(null)'}</span>
         </div>
         <div>
           <span className="font-medium text-foreground">storage:</span>{' '}
-          <span className="font-mono">
+          <span className="font-mono break-all">
             {obs.storageBucket}/{obs.sourceImagePath}
           </span>
         </div>

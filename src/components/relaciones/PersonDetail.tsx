@@ -264,7 +264,7 @@ export function PersonDetail({
             </div>
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{live.name}</h1>
-              <div className="text-xs text-muted-foreground font-mono">
+              <div className="text-xs text-muted-foreground font-mono truncate">
                 /relaciones/<span className="text-foreground">{live.slug ?? '(sin slug)'}</span>
               </div>
             </div>
