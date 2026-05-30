@@ -14,15 +14,19 @@
 // puede quedar desfasado hasta el proximo pull manual del usuario; en
 // PR #2 es aceptable. Extraccion automatica on-capture queda diferida.
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, Loader2, Camera, AlertCircle } from 'lucide-react'
+import { Sparkles, Loader2, Camera, AlertCircle, ChevronDown } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { Memory } from '@/types'
+import { cn } from '@/lib/utils'
+import type { Memory, MemoryType } from '@/types'
+
+/** Cuántas memorias mostrar antes de colapsar (volumen V1: 20+). */
+const INITIAL_VISIBLE = 8
 
 export interface MemoriasAsociadasPanelProps {
   /** Memorias ya fetched server-side via getMemoriesForPerson, ordenadas
@@ -72,6 +76,22 @@ export function MemoriasAsociadasPanel({ memories, personId }: MemoriasAsociadas
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<BackfillError | null>(null)
   const [lastResult, setLastResult] = useState<BackfillSuccess | null>(null)
+  // Filtro por tipo (#15) + colapso para volumen.
+  const [activeType, setActiveType] = useState<MemoryType | 'all'>('all')
+  const [showAll, setShowAll] = useState(false)
+
+  // Conteo por tipo presente (para los chips de filtro).
+  const typeCounts = useMemo(() => {
+    const counts = new Map<MemoryType, number>()
+    for (const m of memories) counts.set(m.type, (counts.get(m.type) ?? 0) + 1)
+    return counts
+  }, [memories])
+
+  const filtered = useMemo(
+    () => (activeType === 'all' ? memories : memories.filter((m) => m.type === activeType)),
+    [memories, activeType],
+  )
+  const visible = showAll ? filtered : filtered.slice(0, INITIAL_VISIBLE)
 
   const onBackfill = useCallback(async () => {
     setLoading(true)
@@ -172,9 +192,90 @@ export function MemoriasAsociadasPanel({ memories, personId }: MemoriasAsociadas
           </div>
         )}
 
-        {memories.length === 0 ? <EmptyState /> : <MemoryList memories={memories} />}
+        {memories.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <>
+            {/* Filtro por tipo: chips con conteo. Solo si hay >1 tipo. */}
+            {typeCounts.size > 1 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <FilterChip
+                  label="Todas"
+                  count={memories.length}
+                  active={activeType === 'all'}
+                  onClick={() => {
+                    setActiveType('all')
+                    setShowAll(false)
+                  }}
+                />
+                {Array.from(typeCounts.entries())
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([type, count]) => (
+                    <FilterChip
+                      key={type}
+                      label={TYPE_LABEL[type] ?? type}
+                      count={count}
+                      active={activeType === type}
+                      onClick={() => {
+                        setActiveType(type)
+                        setShowAll(false)
+                      }}
+                    />
+                  ))}
+              </div>
+            )}
+
+            <MemoryList memories={visible} />
+
+            {filtered.length > INITIAL_VISIBLE && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowAll((v) => !v)}
+                className="mt-3 w-full"
+              >
+                <ChevronDown
+                  size={13}
+                  strokeWidth={1.75}
+                  className={cn('mr-1.5 transition-transform', showAll && 'rotate-180')}
+                />
+                {showAll
+                  ? 'Ver menos'
+                  : `Ver todas (${filtered.length})`}
+              </Button>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
+  )
+}
+
+function FilterChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string
+  count: number
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'text-[11px] rounded-full border px-2.5 py-0.5 transition-colors',
+        active
+          ? 'border-accent/50 bg-accent/10 text-foreground'
+          : 'border-border text-muted-foreground hover:border-accent/40 hover:text-foreground',
+      )}
+      aria-pressed={active}
+    >
+      {label} <span className="font-mono tabular-nums opacity-70">{count}</span>
+    </button>
   )
 }
 
