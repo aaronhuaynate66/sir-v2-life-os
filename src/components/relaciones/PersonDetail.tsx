@@ -35,6 +35,7 @@ import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
 import { VidaSocial } from './VidaSocial'
 import { RedesSociales } from './RedesSociales'
+import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
 import { CicloPanel } from './CicloPanel'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
@@ -176,16 +177,24 @@ export function PersonDetail({
       </Link>
 
       <header className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-            <Users size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{live.name}</h1>
-            <div className="text-xs text-muted-foreground font-mono">
-              /relaciones/<span className="text-foreground">{live.slug ?? '(sin slug)'}</span>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 mb-2 min-w-0">
+            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0">
+              <Users size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{live.name}</h1>
+              <div className="text-xs text-muted-foreground font-mono">
+                /relaciones/<span className="text-foreground">{live.slug ?? '(sin slug)'}</span>
+              </div>
             </div>
           </div>
+          {/* Botones top-right (#16): Briefing IA + Chat WhatsApp. */}
+          <PersonActions
+            personId={live.id}
+            personName={live.name}
+            phoneNumber={live.phoneNumber ?? null}
+          />
         </div>
       </header>
 
