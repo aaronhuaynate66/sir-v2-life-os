@@ -23,6 +23,7 @@ import {
 } from '@/lib/observations/fetch'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getLogsForPerson } from '@/lib/person-logs/fetch'
+import { getCurrentSynthesis } from '@/lib/person-synthesis/fetch'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -84,11 +85,12 @@ export default async function RelacionPage({ params }: PageProps) {
   // Ambos helpers tienen .eq('is_obsolete', false) baked in — vale el
   // principio critico de Sesion 3.
   const personId = String(row.id)
-  const [lastChat, curatedObservations, memories, personLogs] = await Promise.all([
+  const [lastChat, curatedObservations, memories, personLogs, synthesis] = await Promise.all([
     getLatestObservation(supabase, userId, personId, 'whatsapp_chat'),
     getObservationsForPerson(supabase, userId, personId, { limit: 50 }),
     getMemoriesForPerson(supabase, userId, personId, { limit: 100 }),
     getLogsForPerson(supabase, userId, personId, { limit: 50 }),
+    getCurrentSynthesis(supabase, userId, personId),
   ])
 
   return (
@@ -98,6 +100,7 @@ export default async function RelacionPage({ params }: PageProps) {
       curatedObservations={curatedObservations}
       memories={memories}
       personLogs={personLogs}
+      synthesis={synthesis}
     />
   )
 }

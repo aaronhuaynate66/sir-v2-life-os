@@ -34,12 +34,14 @@ import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
 import { VidaSocial } from './VidaSocial'
+import { LoPersonal } from './LoPersonal'
 import { CicloPanel } from './CicloPanel'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
+import type { PersonSynthesis } from '@/lib/person-synthesis/types'
 import type { Memory, Person } from '@/types'
 
 interface PersonDetailProps {
@@ -57,6 +59,9 @@ interface PersonDetailProps {
   /** Logs de la persona (mood/energy/sleep/pain/interaction). Sesion 6.
    *  Server-fetched, ordenados por logged_at DESC. */
   personLogs?: PersonLog[]
+  /** Síntesis narrativa vigente ("Lo personal", #8). Server-fetched de
+   *  person_synthesis (is_current=true). null si nunca se generó. */
+  synthesis?: PersonSynthesis | null
 }
 
 const RELATIONSHIP_LABEL: Record<Person['relationship'], string> = {
@@ -82,6 +87,7 @@ export function PersonDetail({
   curatedObservations = [],
   memories = [],
   personLogs = [],
+  synthesis = null,
 }: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
@@ -313,10 +319,15 @@ export function PersonDetail({
         <VidaSocial observations={curatedObservations} />
       </div>
 
-      {/* "Lo personal" — empty state intencional. La sintesis narrativa
-          es lazy y se genera bajo demanda (D4 de Sesion 1+2). No se
-          construye en PR-A. */}
-      <PersonalSynthesisPlaceholder />
+      {/* "Lo personal" (#8): síntesis narrativa LLM, lazy + cacheada en
+          person_synthesis. conversationCount = whatsapp_chat curadas. */}
+      <LoPersonal
+        personId={live.id}
+        synthesis={synthesis}
+        conversationCount={
+          curatedObservations.filter((o) => o.captureType === 'whatsapp_chat').length
+        }
+      />
 
       {/* Datos curados visibles: confirma el contrato is_obsolete=false
           de la capa de fetch. Las filas LinkedIn alucinadas que dejamos
@@ -368,25 +379,6 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-sm">{value}</span>
     </div>
-  )
-}
-
-/** Empty state honesto para "Lo personal". La sintesis narrativa requiere
- *  ≥3 observations + LLM call; no se genera en PR-A. */
-function PersonalSynthesisPlaceholder() {
-  return (
-    <Card className="shadow-none mb-4 border-dashed">
-      <CardContent className="p-4 sm:p-6">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">
-          Lo personal
-        </div>
-        <p className="text-sm text-muted-foreground italic leading-relaxed">
-          Sin síntesis generada. Cuando haya suficientes observaciones (≥3
-          conversaciones de WhatsApp), aparecerá acá un resumen narrativo
-          del vínculo. La generación se construye en una sesión futura.
-        </p>
-      </CardContent>
-    </Card>
   )
 }
 
