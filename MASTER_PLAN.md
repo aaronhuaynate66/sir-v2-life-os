@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `20270b2`
+**Hash del último commit humano:** `9f94ed3`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -340,6 +340,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `9f94ed3` | aaronhuaynate66 | fix(lunar): cardinal phases narrow window + pct in sm chip | 2026-05-30 |
 | `20270b2` | aaronhuaynate66 | feat(person-logs): Registro rapido + Registrar interaccion (Sesion 6) | 2026-05-30 |
 | `006d96e` | aaronhuaynate66 | feat(lunar+ciclo): fase lunar (dashboard) + ciclo persona (donut + nota) completos | 2026-05-30 |
 | `abbc825` | aaronhuaynate66 | feat(memories): sidebar MemoriasAsociadasPanel + backfill endpoint (Sesion 4 PR #2) | 2026-05-30 |
@@ -349,7 +350,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8c99d4c` | aaronhuaynate66 | fix(sweep): form defaults + RelationalScore copy + Sheet a11y + BACKLOG sync (post-Sesion 3) | 2026-05-30 |
 | `e043611` | aaronhuaynate66 | feat(detail-page): RelationalScore + BirthdayCountdown + birth_date editable (Sesion 3 PR-B) | 2026-05-30 |
 | `5094588` | aaronhuaynate66 | feat(detail-page): ruta /relaciones/[slug] + observations fetch layer + LastInteractionPanel (Sesion 3 PR-A) | 2026-05-30 |
-| `93a95c6` | aaronhuaynate66 | fix(matcher+nav): close BUG-002 (bidirectional matcher) + BUG-003 (entry point) — Sesion 2.7 | 2026-05-30 |
 
 ---
 
