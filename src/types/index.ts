@@ -277,6 +277,17 @@ export interface Memory {
   decayRate: number
   tags: string[]
   relatedMemories: string[]
+  // ─── Sesion 4 (Memorias asociadas) — campos opcionales ─────────────
+  /** Persona vinculada cuando la memoria es relacional (captura WhatsApp,
+   *  observation con person_id resuelto). null = memoria sin persona. */
+  personId?: string
+  /** De donde viene la memoria. Opcional para retro-compat con rows viejas
+   *  (memories.source es nullable en DB). extract.ts solo escribe estos
+   *  3 valores; el CHECK constraint se enforza en TS, no en SQL. */
+  source?: 'whatsapp_capture' | 'manual' | 'inferred'
+  /** Id estable del RelationshipEvent que origino la memoria — usado para
+   *  el dedupe del backfill (unique index parcial en migration 0012). */
+  sourceEventId?: string
 }
 
 export interface SelfMetric {
