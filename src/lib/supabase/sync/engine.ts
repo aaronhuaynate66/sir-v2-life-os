@@ -28,13 +28,18 @@
 //
 // Reconciliation semantic (Supabase como única fuente de verdad):
 //   - fila en DB                          -> autoritativa, se conserva.
-//   - fila local ausente de DB pero NUNCA sincronizada (no en knownIds)
-//                                         -> creada offline/pendiente, se conserva.
-//   - fila local ausente de DB que SÍ estuvo sincronizada (en knownIds)
-//                                         -> borrada remotamente, se DROPEA
-//                                            (propaga deletes, no resucita).
+//   - fila local ausente de DB CON push pendiente (en pendingIds)
+//                                         -> creada/editada offline, se conserva
+//                                            (se re-pushea; no se pierde data).
+//   - fila local ausente de DB SIN push pendiente
+//                                         -> borrada remotamente O fantasma
+//                                            adoptada por un pull viejo -> se DROPEA
+//                                            (propaga deletes en vivo, no resucita).
 // El drop ocurre bajo isApplyingPull -> el subscriber no pushea -> NO se emite
 // DELETE a DB. Las filas reales en DB (ej. Diana) jamás se dropean.
+// (Antes esto usaba "knownIds" — proxy negativo que no distinguía pendiente
+//  real de fantasma adoptada, así que los deletes remotos no se aplicaban en
+//  el receptor. pendingIds lo arregla y auto-sana fantasmas existentes.)
 
 'use client'
 
@@ -49,15 +54,22 @@ const FOCUS_PULL_THROTTLE_MS = 2000
 // Debounce de re-pull por Realtime: coalesce ráfagas de eventos.
 const REALTIME_PULL_DEBOUNCE_MS = 600
 
-// ─── knownIds: set persistido de ids confirmados en DB por (tabla,user) ──
-function knownKey(table: string, userId: string): string {
-  return `sync-known:${table}:${userId}`
+// ─── pendingIds: set persistido de ids con un PUSH LOCAL pendiente ───────
+// (filas creadas/editadas localmente cuyo upsert aún NO se confirmó en DB).
+// Es el ÚNICO motivo válido para conservar en un pull una fila local que no
+// está en DB. Antes usábamos "knownIds" (negativo: conservar lo NO conocido),
+// que no distinguía una fila genuinamente pendiente de una fila FANTASMA
+// adoptada por pull en el pasado -> esas nunca se dropeaban ante un delete
+// remoto. pendingIds es positivo y explícito: solo lo pendiente se conserva;
+// todo lo demás ausente de DB se dropea (deletes remotos + fantasmas).
+function pendingKey(table: string, userId: string): string {
+  return `sync-pending:${table}:${userId}`
 }
 
-function loadKnownIds(table: string, userId: string): Set<string> {
+function loadPendingIds(table: string, userId: string): Set<string> {
   if (typeof window === 'undefined') return new Set()
   try {
-    const raw = window.localStorage.getItem(knownKey(table, userId))
+    const raw = window.localStorage.getItem(pendingKey(table, userId))
     if (!raw) return new Set()
     const arr = JSON.parse(raw)
     return Array.isArray(arr) ? new Set(arr.filter((x): x is string => typeof x === 'string')) : new Set()
@@ -66,24 +78,25 @@ function loadKnownIds(table: string, userId: string): Set<string> {
   }
 }
 
-function saveKnownIds(table: string, userId: string, ids: Set<string>): void {
+function savePendingIds(table: string, userId: string, ids: Set<string>): void {
   if (typeof window === 'undefined') return
   try {
-    window.localStorage.setItem(knownKey(table, userId), JSON.stringify([...ids]))
+    window.localStorage.setItem(pendingKey(table, userId), JSON.stringify([...ids]))
   } catch {
-    // localStorage lleno/deshabilitado: degradamos a merge aditivo en el
-    // proximo pull (knownIds vacio = conservar local-only). Aceptable.
+    // localStorage lleno/deshabilitado: aceptable (peor caso, un push
+    // pendiente no se preserva entre reloads; se re-pushea en la próxima
+    // mutación o al reconectar).
   }
 }
 
-function mutateKnownIds(
+function mutatePendingIds(
   table: string,
   userId: string,
   fn: (s: Set<string>) => void,
 ): void {
-  const s = loadKnownIds(table, userId)
+  const s = loadPendingIds(table, userId)
   fn(s)
-  saveKnownIds(table, userId, s)
+  savePendingIds(table, userId, s)
 }
 
 // Logging de diagnóstico de Realtime/sync, OFF por defecto. Activar en la
@@ -188,29 +201,33 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
     const dbItems = (data as Record<string, unknown>[]).map((row) => binding.adapter.fromRow(row))
     const dbIds = new Set(dbItems.map((r) => r.id))
     const localItems = binding.select(store.getState())
-    const known = loadKnownIds(binding.adapter.table, userId)
+    const pending = loadPendingIds(binding.adapter.table, userId)
 
     // DB es autoritativo: arrancamos del set de DB.
     const next: T[] = [...dbItems]
-    // Conservamos SOLO las filas locales ausentes de DB que nunca se
-    // sincronizaron (creadas offline / push pendiente). Las que sí estuvieron
-    // sincronizadas y ya no están en DB se consideran borradas remotamente
-    // y se dropean (propaga el delete, evita resurrección).
+    // Conservamos SOLO las filas locales ausentes de DB que tienen un PUSH
+    // LOCAL pendiente (creadas/editadas offline, aún sin confirmar). Cualquier
+    // otra fila local ausente de DB -> borrada remotamente O fantasma adoptada
+    // por un pull viejo -> se DROPEA (propaga deletes en vivo, sin resucitar).
     for (const r of localItems) {
-      if (!dbIds.has(r.id) && !known.has(r.id)) next.push(r)
+      if (!dbIds.has(r.id) && pending.has(r.id)) next.push(r)
     }
 
     if (syncDebug()) {
-      const dropped = localItems.filter((r) => !dbIds.has(r.id) && known.has(r.id)).map((r) => r.id)
+      const dropped = localItems.filter((r) => !dbIds.has(r.id) && !pending.has(r.id)).map((r) => r.id)
       dlog(
-        `pull ${binding.adapter.table}: db=${dbItems.length} local=${localItems.length}` +
+        `pull ${binding.adapter.table}: db=${dbItems.length} local=${localItems.length} pending=${pending.size}` +
           (dropped.length ? ` DROPPED=${dropped.length} ${JSON.stringify(dropped)}` : ''),
       )
     }
 
-    // knownIds = exactamente lo que hay en DB ahora. (Las pendientes locales
-    // entran a known recién cuando su upsert se confirma en flushOps.)
-    saveKnownIds(binding.adapter.table, userId, dbIds)
+    // Prune: las filas pendientes que ya aparecen en DB están confirmadas
+    // (por nuestro push o por sync); dejan de ser pendientes.
+    if (pending.size > 0) {
+      mutatePendingIds(binding.adapter.table, userId, (s) => {
+        for (const id of dbIds) s.delete(id)
+      })
+    }
 
     binding.apply(next)
   }
@@ -267,6 +284,11 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
     userId: string,
   ): Promise<void> {
     if (upserts.length > 0) {
+      // Marcamos pendiente ANTES de pushear: si el push falla (offline), la
+      // fila se preserva en el próximo pull y se re-pushea al reconectar.
+      mutatePendingIds(binding.adapter.table, userId, (s) => {
+        for (const item of upserts) s.add(item.id)
+      })
       const rows = upserts.map((item) => binding.adapter.toRow(item, userId))
       const ok = await pushWithRetry(
         async () => {
@@ -276,16 +298,20 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
         binding.label,
         `upsert(${upserts.length})`,
       )
-      // Confirmado en DB -> entran a knownIds (deja de tratarse como
-      // pendiente local; si luego desaparece de DB, se reconcilia como delete).
+      // Confirmado en DB -> deja de ser pendiente (queda como fila normal de
+      // DB; un delete remoto posterior la reconcilia y dropea).
       if (ok) {
-        mutateKnownIds(binding.adapter.table, userId, (s) => {
-          for (const item of upserts) s.add(item.id)
+        mutatePendingIds(binding.adapter.table, userId, (s) => {
+          for (const item of upserts) s.delete(item.id)
         })
       }
     }
     if (deletes.length > 0) {
-      const ok = await pushWithRetry(
+      // Borrado local: ya no es pendiente, sin importar el resultado del push.
+      mutatePendingIds(binding.adapter.table, userId, (s) => {
+        for (const id of deletes) s.delete(id)
+      })
+      await pushWithRetry(
         async () => {
           const { error } = await supabase
             .from(binding.adapter.table)
@@ -297,26 +323,21 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
         binding.label,
         `delete(${deletes.length})`,
       )
-      // Borrado del DB -> salen de knownIds.
-      if (ok) {
-        mutateKnownIds(binding.adapter.table, userId, (s) => {
-          for (const id of deletes) s.delete(id)
-        })
-      }
     }
   }
 
   /**
-   * Re-push de filas locales pendientes (creadas offline / push fallido):
-   * son las que NO están en knownIds. Se llama al recuperar conexión.
+   * Re-push de filas locales con push pendiente (creadas/editadas offline o
+   * push fallido): las que están en pendingIds. Se llama al recuperar conexión.
    */
   async function repushPending(userId: string): Promise<void> {
     for (const binding of bindings) {
-      const known = loadKnownIds(binding.adapter.table, userId)
+      const pendingSet = loadPendingIds(binding.adapter.table, userId)
+      if (pendingSet.size === 0) continue
       const localItems = binding.select(store.getState())
-      const pending = localItems.filter((r) => !known.has(r.id))
-      if (pending.length > 0) {
-        await flushOps(binding, pending, [], userId)
+      const toPush = localItems.filter((r) => pendingSet.has(r.id))
+      if (toPush.length > 0) {
+        await flushOps(binding, toPush, [], userId)
       }
     }
   }
