@@ -1,6 +1,6 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 29/05/2026 (Sesión 2.7 — fix BUG-002 + BUG-003)
+> **Última actualización:** 30/05/2026 (sweep post-Sesión 3 + status sync BUG-002/003)
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
@@ -16,15 +16,15 @@
   - El piso de 300 KB para `linkedin` es inalcanzable en la mayoría de screenshots reales: la imagen sube hasta el techo `q=0.98` sin tocarlo. Opera como "subí al máximo posible". Cosmético — la advertencia ⚠ aparece en la UI cuando pasa pero no afecta el resultado.
 - **Acción si vuelve a aparecer:** revisar las 6 hipótesis archivadas en el commit `7445d40` (filename cross-check, crop adaptativo, temperature=0, Opus, etc.).
 
-### BUG-002 🔧 EN CURSO (Sesión 2.7): Persona matcher no busca por handle/url/phone
+### BUG-002 ✅ RESUELTO (PR #87 Sesión 2.7): Persona matcher no busca por handle/url/phone
 - **Severidad:** P1 (UX friction + potencial vinculación incorrecta)
 - **Síntoma raíz:** se vinculaba persona ANTES de extraer, con `suggestedPersonName` del DETECTOR (imagen agresiva ~30 KB → ruidoso, dio "Diene Caroline Diaz Sanchez"). Por eso no matcheaba a la "Diana Carolina" existente, y permitía vincular a personas equivocadas (caso real: observación pre-fix vinculó "Gimena Martina" inventado a Diana Carolina).
-- **Fix Sesión 2.7:** matcher post-extracción con campos autoritativos (`fullName` linkedin, `handle` instagram, `phoneNumber+displayName` whatsapp_info). Guardrail: auto-link SOLO con match exacto fuerte (handle, URL o phone normalizado); matches por nombre → siempre candidatos al usuario.
+- **Fix entregado:** matcher post-extracción con campos autoritativos (`fullName` linkedin, `handle` instagram, `phoneNumber+displayName` whatsapp_info). Guardrail: auto-link SOLO con match exacto fuerte (handle, URL o phone normalizado); matches por nombre → siempre candidatos al usuario. Token-based bidireccional (commit `ef318e8`) cierra el caso "query del extractor más largo que el row guardado".
 
-### BUG-003 🔧 EN CURSO (Sesión 2.7): /captura no enlazada en UI
+### BUG-003 ✅ RESUELTO (PR #87 Sesión 2.7): /captura no enlazada en UI
 - **Severidad:** P2 (UX friction)
 - **Síntoma:** Ruta `/captura` solo accesible por URL manual.
-- **Fix Sesión 2.7:** Ítem "Captura" agregado al sidebar (`src/components/layout/Nav.tsx`), entre Relaciones y Objetivos, con ícono `Camera`.
+- **Fix entregado:** Ítem "Captura" agregado al sidebar (`src/components/layout/Nav.tsx`), entre Relaciones y Objetivos, con ícono `Camera`.
 
 ---
 
@@ -187,7 +187,7 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - **Emails Supabase template ES**: customizar emails de auth (template HTML + opcional SMTP Resend gratis hasta 3k/mes). Esfuerzo: 15-45 min.
 
-- **Accessibility pass**: fix `aria-describedby` en Sheet (warning detectado en Issue #70). Esfuerzo: 30 min.
+- ~~**Accessibility pass**: fix `aria-describedby` en Sheet (warning detectado en Issue #70). Esfuerzo: 30 min.~~ ✅ Resuelto en sweep 30/05/2026 — `SheetDescription` sr-only en AppShell + TimelineFiltersMobile.
 
 - **Gantt fix**: el Gantt del MASTER_PLAN omite la fase activa cuando las previas no tienen due_on. Fix: usar fecha de creación del milestone como fallback. Esfuerzo: 30 min.
 
