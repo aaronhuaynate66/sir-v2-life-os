@@ -155,6 +155,9 @@ export interface Person {
   location?: string
   tags: string[]
   notes: string
+  /** Fecha de nacimiento ISO (YYYY-MM-DD). Canonical en `people.birth_date`
+   *  (migration 0010). Usado por BirthdayCountdown en el detail page. */
+  birthDate?: string
   createdAt: string
   updatedAt: string
 }
