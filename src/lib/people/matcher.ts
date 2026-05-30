@@ -70,12 +70,48 @@ interface PeopleRow {
 
 // ─── normalizaciones ────────────────────────────────────────────────
 
-/** Strip emojis + ruido manteniendo letras (con acentos), digitos, espacio, '@._-'. */
+/**
+ * Strip emojis + ruido, fold NFD (Díaz -> Diaz), manteniendo letras,
+ * digitos, espacio y '@._-'.
+ *
+ * El fold de acentos no es la causa raiz del BUG-002 (el tramo
+ * "diana carolina" del caso real no tiene acentos), pero hace falta
+ * para que "Diana Carolina Diaz Sanchez" matchee con un row guardado
+ * como "Diana Díaz" o "Díaz" — escenarios reales en español.
+ */
 export function normalizeName(s: string): string {
   return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // strip diacritics
     .replace(/[^\p{L}\p{N}@._\s'-]/gu, '')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+/** Tokeniza un nombre normalizado: NFD + strip diacritics + lowercase +
+ *  split por espacio + filter empty. */
+function tokenizeName(s: string): string[] {
+  return normalizeName(s)
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 0)
+}
+
+/** True si `a` es prefijo ORDENADO de `b` (mismos tokens en mismo orden
+ *  desde el indice 0). Asume |a| <= |b|. */
+function isOrderedPrefix(a: string[], b: string[]): boolean {
+  if (a.length === 0 || a.length > b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
+}
+
+/** True si todos los tokens de `a` (set) estan presentes en `b` (set). */
+function isTokenSubset(a: string[], b: string[]): boolean {
+  if (a.length === 0) return false
+  const setB = new Set(b)
+  return a.every((t) => setB.has(t))
 }
 
 /** Strip '@' + trim + lowercase. */
@@ -159,8 +195,8 @@ interface ScoredHit {
 }
 
 function scoreRow(row: PeopleRow, ctx: ScoreContext): ScoredHit {
-  const rowName = (row.name ?? '').toLowerCase()
-  const rowAlias = (row.alias ?? '').toLowerCase()
+  const rowName = normalizeName(row.name ?? '').toLowerCase()
+  const rowAlias = normalizeName(row.alias ?? '').toLowerCase()
   const rowSlug = (row.slug ?? '').toLowerCase()
   const rowHandle = normalizeHandle(row.instagram_handle ?? '')
   const rowLinkedin = normalizeLinkedInUrl(row.linkedin_url ?? '')
@@ -177,20 +213,68 @@ function scoreRow(row: PeopleRow, ctx: ScoreContext): ScoredHit {
     return { score: 100, reason: 'exact_phone', isExactStrong: true }
   }
 
-  // ─── 2. Señales por NOMBRE (NUNCA auto-link) ──────────────────────
+  // ─── 2. Señales por NOMBRE (token-based + BIDIRECCIONAL) ──────────
+  //
+  // BUG-002 raiz (validacion PR #87 v1): los checks unidireccionales
+  // (rowName.startsWith(q) || rowName.includes(q)) NUNCA matchean cuando
+  // el query es MAS LARGO que el guardado — un string corto no puede
+  // startsWith/includes a uno mas largo. Caso real: rowName="diana carolina"
+  // (guardado), q="diana carolina diaz sanchez" (extractor) -> 0 hits.
+  //
+  // Fix: tokenizar ambos, comparar bidireccional con sets/prefijo.
   if (ctx.name) {
-    const q = ctx.name
-    if (rowName === q || rowAlias === q) {
-      return { score: 95, reason: 'exact_name', isExactStrong: false }
-    }
-    if (rowSlug === q) {
-      return { score: 90, reason: 'exact_slug', isExactStrong: false }
-    }
-    if (rowName.startsWith(q) || rowAlias.startsWith(q)) {
-      return { score: 70, reason: 'name_prefix', isExactStrong: false }
-    }
-    if (rowName.includes(q) || rowAlias.includes(q)) {
-      return { score: 50, reason: 'name_substring', isExactStrong: false }
+    const qTokens = tokenizeName(ctx.name)
+
+    if (qTokens.length > 0) {
+      const nameTokens = tokenizeName(row.name ?? '')
+      const aliasTokens = tokenizeName(row.alias ?? '')
+
+      // 2a. exact_name: sets de tokens iguales (ignora orden + duplicados).
+      const setQ = new Set(qTokens)
+      const setName = new Set(nameTokens)
+      const setAlias = new Set(aliasTokens)
+      const setsEqual = (a: Set<string>, b: Set<string>) =>
+        a.size === b.size && a.size > 0 && Array.from(a).every((t) => b.has(t))
+      if (setsEqual(setQ, setName) || setsEqual(setQ, setAlias)) {
+        return { score: 95, reason: 'exact_name', isExactStrong: false }
+      }
+
+      // 2b. exact_slug (sin tokens — slug es atomico).
+      if (rowSlug && rowSlug === ctx.name) {
+        return { score: 90, reason: 'exact_slug', isExactStrong: false }
+      }
+
+      // 2c. name_prefix: los tokens del MAS CORTO son prefijo ORDENADO
+      // del mas largo. ej.: ["diana","carolina"] prefijo de
+      // ["diana","carolina","diaz","sanchez"] -> match.
+      const prefixHit = (a: string[], b: string[]) =>
+        a.length > 0 &&
+        b.length > 0 &&
+        (a.length <= b.length ? isOrderedPrefix(a, b) : isOrderedPrefix(b, a))
+      if (prefixHit(qTokens, nameTokens) || prefixHit(qTokens, aliasTokens)) {
+        return { score: 70, reason: 'name_prefix', isExactStrong: false }
+      }
+
+      // 2d. name_subset: todos los tokens del MAS CORTO ⊆ tokens del
+      // mas largo (orden libre). ej.: query "carolina diaz" contra
+      // row "diana carolina diaz sanchez".
+      const subsetHit = (a: string[], b: string[]) =>
+        a.length > 0 &&
+        b.length > 0 &&
+        (a.length <= b.length ? isTokenSubset(a, b) : isTokenSubset(b, a))
+      if (subsetHit(qTokens, nameTokens) || subsetHit(qTokens, aliasTokens)) {
+        return { score: 60, reason: 'name_subset', isExactStrong: false }
+      }
+
+      // 2e. name_substring: fallback bidireccional sobre strings completos
+      // (cubre casos sin espacios o con caracteres especiales).
+      const q = ctx.name
+      if (
+        (rowName && (rowName.includes(q) || q.includes(rowName))) ||
+        (rowAlias && (rowAlias.includes(q) || q.includes(rowAlias)))
+      ) {
+        return { score: 50, reason: 'name_substring', isExactStrong: false }
+      }
     }
   }
 
