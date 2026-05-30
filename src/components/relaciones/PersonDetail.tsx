@@ -32,6 +32,8 @@ import { LastInteractionPanel } from './LastInteractionPanel'
 import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
+import { VidaProfesional } from './VidaProfesional'
+import { VidaSocial } from './VidaSocial'
 import { CicloPanel } from './CicloPanel'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistroRapidoPanel } from './RegistroRapidoPanel'
@@ -302,6 +304,13 @@ export function PersonDetail({
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
         <RegistroRapidoPanel personId={live.id} recentLogs={personLogs} />
         <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs} />
+      </div>
+
+      {/* Vida profesional (#6) + Vida social (#7): render determinístico
+          de las observations linkedin / instagram curadas. */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <VidaProfesional observations={curatedObservations} />
+        <VidaSocial observations={curatedObservations} />
       </div>
 
       {/* "Lo personal" — empty state intencional. La sintesis narrativa
