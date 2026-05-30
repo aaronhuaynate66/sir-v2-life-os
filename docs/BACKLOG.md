@@ -187,6 +187,22 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 **Regla operativa vigente:**
 > Gestionar personas **siempre por UI** (`/relaciones` modal Eliminar). **Nunca** por SQL directo en Supabase: queda fila huérfana en localStorage del usuario hasta el próximo manual cleanup.
 
+### Sincronización en vivo entre dispositivos (sync cross-device near-real-time)
+
+**Síntoma:** hoy el sync es **push inmediato en mutación + pull SOLO al cargar/loguear** (sin realtime, sin polling, sin refresco al recuperar foco). Un cambio en un dispositivo se ve en el otro **recién al recargar**. Confirmado en el código del sync engine: el `pull` corre solo en `start()` (carga de la app tras hidratación del persist + evento `SIGNED_IN`); el `push` lo dispara cualquier mutación del store vía el `store.subscribe`.
+
+**Objetivo:** que un cambio (incluido **borrado**) hecho en el celular aparezca en la web **sin recargar**, y viceversa.
+
+**Enfoques posibles (de menor a mayor esfuerzo):**
+- (a) **Re-pull al recuperar foco** de la pestaña (`visibilitychange`) y/o en navegación client-side — barato, cubre el 80% del caso "abrí la otra pestaña y veo lo último".
+- (b) **Supabase Realtime subscriptions** por tabla del Camino A (people/relationships/goals/signals/self/finance/memories/recommendations) para aplicar cambios remotos en vivo (incluye DELETEs).
+
+**Considerar además:**
+- Mitigar el **last-write-wins por fila** (el `upsert` por `onConflict: 'id'` pisa la fila entera): merge por campo o timestamps de conflicto.
+- **Reintento automático de pushes offline fallidos al reconectar** (hoy un push que agota los 3 reintentos no se re-pushea solo hasta la próxima mutación de esa fila o recarga).
+
+**Prioridad:** media-alta — antes de uso multi-dispositivo intensivo o beta.
+
 ---
 
 ## ⏳ PENDIENTES MENORES (no urgentes)
