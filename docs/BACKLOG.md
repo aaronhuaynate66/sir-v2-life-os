@@ -1,6 +1,6 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 30/05/2026 (consolidación post-Sesión 3 — alinea backlog al estado real: detail page base entregada, Báscula + WhatsApp core ya en prod, sweep #90 cerrado).
+> **Última actualización:** 30/05/2026 (Sesión 5 — Fase lunar + Ciclo persona entregados).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
@@ -29,6 +29,16 @@
 ---
 
 ## 🆕 BACKLOG NUEVO
+
+### Sesión 5 — Fase lunar + Ciclo persona ✅ ENTREGADO (estado actual)
+Cerrada el 30/05/2026 con un PR (`feat/lunar-and-ciclo`):
+
+- **Fase lunar** — util puro determinístico `src/lib/lunar/phase.ts` (`moonPhase(date)` → `{ phase, illumination, ageDays, waxing }`, 8 fases en español, modelo sinódico 29.53059 + luna nueva de referencia 2000-01-06 18:14 UTC + wrap-around correcto para fase 'new'). Componente `LunarChip` consumible en cualquier punto de la UI, hoy renderizado en `/panel` (Mission Control) junto a la fecha del día. Compute-on-read para CUALQUIER fecha (cimiento de correlación lunar de Fase 3c).
+- **Ciclo persona** — `cycleStartDate` + `cycleLengthDays` editables end-to-end (form + adapter + Person type). `src/lib/ciclo/phase.ts` computa fase (menstrual/folicular/ovulación/lútea) + día del ciclo + próximo período. `CicloPanel` en el detail page con donut SVG + nota contextual estática (paridad V1, sin LLM). Empty state honesto si falta `cycleStartDate`.
+
+**Diferido:**
+- Fase lunar: tagging persistido en `observations`/`memories` + análisis de correlación → Fase 3c (necesita data acumulada).
+- Ciclo: derivación desde captura WhatsApp, serie histórica, overlay en timeline → Fase 3c / sesión de captura dedicada.
 
 ### Sesión 3 — Detail page UI base ✅ ENTREGADA
 Cerrada el 30/05/2026 con dos PRs:
@@ -73,7 +83,7 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 **Features pendientes a portar:** los 4 base ya están en prod (#1 score, #3 cumple, #4 última interacción + ruta detalle entregadas Sesión 3 PR-A/B). Quedan 13:
 
 1. ✅ **Score relacional global** (base) — entregado en `RelationalScore.tsx` (PR #89). Reciprocidad sigue "datos insuficientes" hasta tener log de interacciones recíprocas; itera cuando la fuente exista.
-2. **Visualización del ciclo menstrual**: donut con fase actual (FOLICULAR), día del ciclo (7), próximo período (~22 días), recomendación contextual ("Buen momento para planes juntos").
+2. 🟡 **Visualización del ciclo menstrual** — ENTREGADO PARCIAL en `CicloPanel.tsx` (Sesión 5): donut con fase actual (menstrual/folicular/ovulación/lútea), día del ciclo, próximo período estimado, nota contextual estática por fase. `cycleStartDate` + `cycleLengthDays` editables end-to-end. **Diferido:** (a) derivación de `cycle_start_date` desde capturas WhatsApp, (b) serie/historial de períodos, (c) overlay en timeline (Fase 3c).
 3. ✅ **Cumpleaños** con countdown — entregado en `BirthdayCountdown.tsx` (PR #89) + `birth_date` editable end-to-end.
 4. ✅ **Última interacción** con countdown — entregado en `LastInteractionPanel.tsx` (PR #88) leyendo `whatsapp_chat` más reciente filtrado por `is_obsolete=false`.
 5. **Registro rápido**: 4 botones emoji (Ánimo, Energía, Sueño, Dolor).

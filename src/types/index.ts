@@ -158,6 +158,14 @@ export interface Person {
   /** Fecha de nacimiento ISO (YYYY-MM-DD). Canonical en `people.birth_date`
    *  (migration 0010). Usado por BirthdayCountdown en el detail page. */
   birthDate?: string
+  /** Inicio del último período menstrual (ISO YYYY-MM-DD). Canonical en
+   *  `people.cycle_start_date` (migration 0010). Usado por CicloPanel
+   *  para inferir fase actual. null/undefined → empty state. */
+  cycleStartDate?: string
+  /** Largo del ciclo menstrual en días (15-60, CHECK constraint en SQL).
+   *  Canonical en `people.cycle_length_days` (migration 0010, default 28).
+   *  Solo se interpreta junto con cycleStartDate. */
+  cycleLengthDays?: number
   createdAt: string
   updatedAt: string
 }
