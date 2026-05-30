@@ -1,6 +1,6 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 30/05/2026 (sweep post-Sesión 3 + status sync BUG-002/003)
+> **Última actualización:** 30/05/2026 (consolidación post-Sesión 3 — alinea backlog al estado real: detail page base entregada, Báscula + WhatsApp core ya en prod, sweep #90 cerrado).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
@@ -30,21 +30,13 @@
 
 ## 🆕 BACKLOG NUEVO
 
-### Sesión 3 — Detail page UI base [P1]
-Componentes 1-4 del item ⭐ ("Portar detail page completo de SIR V1 → V2"):
-- RelationalScore (numero grande + 3 progress bars)
-- BirthdayCountdown
-- LastInteractionPanel
-- ruta `/relaciones/[slug]` consumiendo `observations` + `person_synthesis`.
-- **DEPENDS ON:** Sesión 2.7 (vinculación persona↔observación confiable + entry point UX) — ya entregado.
+### Sesión 3 — Detail page UI base ✅ ENTREGADA
+Cerrada el 30/05/2026 con dos PRs:
+- **PR #88 PR-A** (`5094588`): ruta `/relaciones/[slug]` server-side, fetch layer reutilizable (`src/lib/observations/fetch.ts`) con `is_obsolete=false` baked in, **LastInteractionPanel** (fuente `whatsapp_chat` más reciente, empty state honesto).
+- **PR #89 PR-B** (`e043611`): **RelationalScore** (número 0-100 + 3 bars; Reciprocidad como "datos insuficientes" hasta tener log de interacciones recíprocas), **BirthdayCountdown** (desde `people.birth_date`), `birth_date` editable end-to-end (Person type + adapter + form input).
+- **Sweep #90** (`8c99d4c`): form defaults (lastContact=hoy + location='Lima' + datalist autocomplete), copy fixes (RelationalScore comment + UI text), simplificación BirthdayCountdown EmptyState, accessibility `SheetDescription` sr-only.
 
-### Sesión 3 — Detail page UI base [P1]
-Componentes 1-4 del item ⭐ ("Portar detail page completo de SIR V1 → V2"):
-- RelationalScore (numero grande + 3 progress bars)
-- BirthdayCountdown
-- LastInteractionPanel
-- ruta `/relaciones/[slug]` consumiendo `observations` + `person_synthesis`.
-- **DEPENDS ON:** Sesión 2.6 (datos confiables, no alucinados) y Sesión 2.7 (entry point UX).
+Las 4 features del backlog item ⭐ (Score relacional / Cumpleaños / Última interacción / ruta detalle) entregadas en su versión base. El arco completo del detail page V1→V2 sigue como **próxima sesión 0** (ver más abajo) con foco en componentes #15 (memorias asociadas), #6-8 (vida prof/social/personal), #2 (ciclo).
 
 ### Iteraciones futuras LinkedIn schema [P2]
 Agregar campos al schema B.4:
@@ -78,12 +70,12 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 
 **Referencia visual:** Screenshot del 29/05/2026 en `sir.marlabinc.com` mostrando perfil de Diana Diaz con todos los componentes.
 
-**Features pendientes a portar (17):**
+**Features pendientes a portar:** los 4 base ya están en prod (#1 score, #3 cumple, #4 última interacción + ruta detalle entregadas Sesión 3 PR-A/B). Quedan 13:
 
-1. **Score relacional global**: número grande (49) + 3 progress bars (Fuerza, Reciprocidad, Confianza) + "Último contacto: 23 may 2026".
+1. ✅ **Score relacional global** (base) — entregado en `RelationalScore.tsx` (PR #89). Reciprocidad sigue "datos insuficientes" hasta tener log de interacciones recíprocas; itera cuando la fuente exista.
 2. **Visualización del ciclo menstrual**: donut con fase actual (FOLICULAR), día del ciclo (7), próximo período (~22 días), recomendación contextual ("Buen momento para planes juntos").
-3. **Cumpleaños** con countdown ("Cumpleaños en 16 días").
-4. **Última interacción** con countdown ("Última interacción: hace 5 días").
+3. ✅ **Cumpleaños** con countdown — entregado en `BirthdayCountdown.tsx` (PR #89) + `birth_date` editable end-to-end.
+4. ✅ **Última interacción** con countdown — entregado en `LastInteractionPanel.tsx` (PR #88) leyendo `whatsapp_chat` más reciente filtrado por `is_obsolete=false`.
 5. **Registro rápido**: 4 botones emoji (Ánimo, Energía, Sueño, Dolor).
 6. **Vida profesional**: resumen autogenerado (LinkedIn + carrera, ej. "Titulada en Administración de Empresas...").
 7. **Vida social**: stats redes + seguidores en común (ej. "23 publicaciones y sigue a 1,374 personas... 14 seguidores en común").
@@ -136,27 +128,13 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 
 ---
 
-### 1. Captura Báscula (alta prioridad personal)
-
-- Caso de uso real validado (screenshot Xiaomi Mi Scale del 18/05/2026).
-- Schema simple: 13 métricas a `health_metrics`.
-- Estimación: 1-2 sesiones (~4-6h).
-- Costo: ~$1-3/mes (Claude Vision API).
-- Stack: Supabase Storage + Claude Vision + UI con preview editable.
-
-### 2. Captura WhatsApp Relaciones (post Báscula)
-
-- Reusa infraestructura de Captura Báscula.
-- Schema complejo: extrae mensajes + tono emocional + temas → `relationships.history`.
-- Consentimientos: ✅ Diana Carolina (pareja). Otros contactos requieren consentimiento explícito antes de capturar.
-- Estimación: 2-3 sesiones (~8-12h).
-- Costo: ~$5-15/mes según volumen.
-
-### 3. Issues de Fase 3b (planning estratégico)
+### 1. Issues de Fase 3b (planning estratégico)
 
 - Decidir scope concreto de "Búsqueda Semántica".
 - Posibles issues: pgvector setup, embeddings generation, search UI, re-rank, etc.
 - Estimación de planning: 30-60 min.
+
+> **Nota:** Captura Báscula (PR #79) y Captura WhatsApp Relaciones core (PR #85) **ya están en producción**. Sus residuales viven en "Pendientes menores" más abajo (sync engine hardening + re-validación conversationDate + variante whatsapp_web + extracción `relationships.history` → tabla `memories`).
 
 ---
 
@@ -175,9 +153,26 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
 ---
 
+## 🏗️ DEUDA ARQUITECTÓNICA
+
+### Split-brain `localStorage` ↔ Supabase (detectado 29/05/2026)
+
+**Síntoma:** la lista `/relaciones` lee del store Zustand (hidratado de `localStorage`); el detail page `/relaciones/[slug]` lee Supabase directo. El sync engine hace merge **aditivo** (nunca borra el lado local), entonces los `removePerson` solo se propagan por la UI del store — **no emiten DELETE a Supabase**. Mismo patrón en `observations`/`memories` afectó el cleanup-saga del 29/05 (filas alucinadas que parecían borradas en una vista y seguían en la otra).
+
+**Causa raíz:** dos fuentes de verdad sin reconciliación destructiva. El sync engine fue diseñado offline-first y prioriza no perder data local; ese mismo principio bloquea propagación de deletes.
+
+**Arco futuro:** refactor a Supabase como única fuente de verdad. Store Zustand se reduce a cache hidratable, sin escritura local prioritaria. Deletes emiten `DELETE` directo, lecturas pasan por Supabase + revalidación. Esfuerzo estimado: 1-2 sesiones, riesgo medio (toca todos los flujos de relaciones y captura).
+
+**Regla operativa vigente:**
+> Gestionar personas **siempre por UI** (`/relaciones` modal Eliminar). **Nunca** por SQL directo en Supabase: queda fila huérfana en localStorage del usuario hasta el próximo manual cleanup.
+
+---
+
 ## ⏳ PENDIENTES MENORES (no urgentes)
 
 Mejoras incrementales. Hacer cuando aporte valor concreto.
+
+- **Storage buckets — cleanup de huérfanos**: las observations soft-deleteadas el 29/05 dejaron imágenes en `linkedin-captures`, `instagram-captures`, `whatsapp-captures`, `person-avatars` bajo `{user_id}/...`. Tarea de datos, no de código: listar paths por bucket vs observations vivas y borrar las huérfanas. Esfuerzo: 30 min con script. **No ejecutar hasta que se decida la política de retención de imágenes asociadas a `observations.is_obsolete=true`** (¿borrar al obsoletar? ¿quedan como referencia?). Pendiente decisión.
 
 - **Sentry + Vercel Analytics**: observabilidad runtime mínima. Necesario antes de abrir SIR a familia/beta. Esfuerzo: 1-2h.
 
@@ -211,18 +206,11 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 ---
 
-### Grafo /red/grafo — zoom inicial más generoso (labels cortados)
+### Grafo /red/grafo — zoom inicial más generoso ✅ RESUELTO (consolidación post-Sesión 3)
 
-**Síntoma (29/05/2026):** al abrir `/red/grafo` con pocas personas (2 nodos: self + Diana), los labels se cortan ("Diana C" en vez de "Diana Carolina", "Aarón Huayna" en vez de "Aarón Huaynate Espinoza"). El `zoomToFit` post-stabilización no incluye padding suficiente para los labels.
+**Síntoma (29/05/2026):** al abrir `/red/grafo` con pocas personas (2 nodos: self + Diana), los labels se cortan ("Diana C" en vez de "Diana Carolina", "Aarón Huayna" en vez de "Aarón Huaynate Espinoza").
 
-**Fix propuesto:**
-- `zoomToFit(400, 100)` en lugar de `zoomToFit(400, 40)` en `GraphCanvas.tsx`.
-- O calcular padding dinámico según length del label más largo del set de nodos.
-- O reducir `nodeRelSize` y usar `nodeAutoColorBy` con configuración de label fit.
-
-**Esfuerzo estimado:** 30-60 min.
-
-**Prioridad:** Baja. Cosmético.
+**Fix entregado:** `zoomToFit(400, 100)` en lugar de `zoomToFit(400, 40)` en `GraphCanvas.tsx` (conservador, sin tocar `nodeRelSize` ni padding dinámico). Validación visual en prod después del deploy.
 
 ---
 
@@ -375,8 +363,8 @@ Invariantes del sistema. NO se contradicen por nuevas features.
 3. **Privacidad por defecto.**
    RLS en todas las tablas. Datos de terceros requieren consentimiento explícito (Diana ya consintió; otros contactos pendientes).
 
-4. **Production-first workflow.**
-   Validación vía Vercel preview/production, NO localhost.
+4. **De frente a producción.**
+   Merge directo a `main` con squash; la validación ocurre **en producción** (Vercel deploy automático), no en preview ni en localhost. Las exigencias de CI verde (tsc + lint + build) son no negociables. Excepciones que requieren confirmación previa siguen vigentes: migraciones `DROP`/`DELETE`, rotación de keys (Anthropic/Supabase/pagos/identidad), cambios en `NEXT_PUBLIC_*`.
 
 5. **Human-in-the-loop para decisiones sensibles.**
    Las skills/engines no pueden modificarse autónomamente. Toda evolución pasa por aprobación humana explícita.
