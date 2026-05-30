@@ -26,6 +26,8 @@ import { getExtractorSpec } from '@/lib/capture/extractors'
 import { isValidDetectorResult } from '@/lib/capture/detector/validate'
 import { insertObservation } from '@/lib/capture/observations/insert'
 import { deriveObservedAt } from '@/lib/capture/observations/observed-at'
+import { signalsFromExtracted } from '@/lib/capture/observations/extract-signals'
+import { findCandidates, type ScoredCandidate } from '@/lib/people/matcher'
 import {
   storageBucketFor,
   type CaptureType,
@@ -270,11 +272,31 @@ export async function POST(req: NextRequest) {
   // 8. observed_at
   const observedAt = deriveObservedAt(captureType, extracted)
 
-  // 9. Insert observation (rollback de storage si falla)
+  // 9. Matcher post-extraccion (BUG-002, Sesion 2.7)
+  //    Si el cliente NO mando un person_id, corremos el matcher con los
+  //    campos autoritativos del extractor (mucha mejor señal que el
+  //    suggestedPersonName del detector que viene de imagen agresiva).
+  //    Auto-link SOLO si el matcher reporta exact handle/URL/phone.
+  //    Matches por nombre -> devolvemos candidatos para que el usuario
+  //    elija en la UI, jamas auto-link.
+  let finalPersonId: string | null = personId
+  let matchCandidates: ScoredCandidate[] = []
+  let autoLinked: { personId: string; reason: string } | null = null
+  if (!finalPersonId) {
+    const signals = signalsFromExtracted(captureType, extracted)
+    const matcher = await findCandidates(supabase, userId, signals)
+    matchCandidates = matcher.candidates
+    if (matcher.autoLink) {
+      finalPersonId = matcher.autoLink.personId
+      autoLinked = matcher.autoLink
+    }
+  }
+
+  // 10. Insert observation (rollback de storage si falla)
   try {
     const observation = await insertObservation(supabase, {
       userId,
-      personId,
+      personId: finalPersonId,
       captureType,
       sourceImagePath: storagePath,
       storageBucket: bucket,
@@ -285,7 +307,7 @@ export async function POST(req: NextRequest) {
       needsReview: confidence === 'low',
     })
     return NextResponse.json(
-      { observation, extracted, raw },
+      { observation, extracted, raw, matchCandidates, autoLinked },
       { status: 200 },
     )
   } catch (e) {
