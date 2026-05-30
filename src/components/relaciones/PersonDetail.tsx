@@ -34,6 +34,7 @@ import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
 import { VidaSocial } from './VidaSocial'
+import { PerfilProfesional } from './PerfilProfesional'
 import { RedesSociales } from './RedesSociales'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
@@ -328,6 +329,9 @@ export function PersonDetail({
         <VidaProfesional observations={curatedObservations} />
         <VidaSocial observations={curatedObservations} />
       </div>
+
+      {/* Perfil profesional completo (#10): colapsable, detalle LinkedIn. */}
+      <PerfilProfesional person={live} observations={curatedObservations} />
 
       {/* Redes sociales conectadas (#11): contacto + links, editable inline. */}
       <RedesSociales person={live} observations={curatedObservations} />
