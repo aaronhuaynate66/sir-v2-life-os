@@ -17,6 +17,12 @@ import {
   sanitizeExtracted as sanitizeWhatsAppChat,
 } from './whatsapp/validate'
 
+import { WHATSAPP_WEB_SYSTEM_PROMPT } from './whatsapp-web/prompt'
+import {
+  isValidWhatsAppWebExtracted,
+  sanitizeWhatsAppWeb,
+} from './whatsapp-web/validate'
+
 import { WHATSAPP_INFO_SYSTEM_PROMPT } from './whatsapp-info/prompt'
 import {
   isValidWhatsAppInfoExtracted,
@@ -59,6 +65,17 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
         isValid: isValidWhatsAppCaptureExtracted,
         sanitize: (x) =>
           sanitizeWhatsAppChat(x as Parameters<typeof sanitizeWhatsAppChat>[0]) as unknown as Record<
+            string,
+            unknown
+          >,
+        maxTokens: 2000,
+      }
+    case 'whatsapp_web':
+      return {
+        getSystemPrompt: () => WHATSAPP_WEB_SYSTEM_PROMPT,
+        isValid: isValidWhatsAppWebExtracted,
+        sanitize: (x) =>
+          sanitizeWhatsAppWeb(x as Parameters<typeof sanitizeWhatsAppWeb>[0]) as unknown as Record<
             string,
             unknown
           >,

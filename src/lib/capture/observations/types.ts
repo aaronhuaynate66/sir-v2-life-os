@@ -15,12 +15,21 @@
  */
 export type CaptureType =
   | 'whatsapp_chat'
+  | 'whatsapp_web'
   | 'whatsapp_info'
   | 'instagram'
   | 'linkedin'
   | 'manual_note'
   | 'voice_note'
   | 'unknown'
+
+/** Tipos de captura que SON una conversación real (no snapshot de perfil).
+ *  Los consumidores de "interacción" (LastInteractionPanel, síntesis, etc.)
+ *  filtran por estos. whatsapp_chat = móvil; whatsapp_web = escritorio. */
+export const CONVERSATION_CAPTURE_TYPES: readonly CaptureType[] = [
+  'whatsapp_chat',
+  'whatsapp_web',
+]
 
 /**
  * Niveles de confianza reportados por el detector y por los extractores
@@ -76,6 +85,7 @@ export interface Observation {
 export function storageBucketFor(captureType: CaptureType): string | null {
   switch (captureType) {
     case 'whatsapp_chat':
+    case 'whatsapp_web':
     case 'whatsapp_info':
       return 'whatsapp-captures'
     case 'instagram':

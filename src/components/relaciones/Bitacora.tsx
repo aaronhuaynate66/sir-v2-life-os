@@ -48,6 +48,7 @@ const LOG_LABEL: Record<PersonLogKind, string> = {
 
 const CAPTURE_LABEL: Record<CaptureType, string> = {
   whatsapp_chat: 'WhatsApp',
+  whatsapp_web: 'WhatsApp Web',
   whatsapp_info: 'WhatsApp · info',
   instagram: 'Instagram',
   linkedin: 'LinkedIn',

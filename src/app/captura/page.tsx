@@ -35,6 +35,7 @@ import type { CaptureType, Observation } from '@/lib/capture/observations/types'
 
 const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
   'whatsapp_chat',
+  'whatsapp_web',
   'whatsapp_info',
   'instagram',
   'linkedin',
@@ -939,6 +940,7 @@ function extractInitialName(
     case 'whatsapp_info':
       return read('displayName')
     case 'whatsapp_chat':
+    case 'whatsapp_web':
       return read('personName')
     default:
       return ''
@@ -968,6 +970,9 @@ function extractContactFields(
     case 'instagram':
       return { instagram_handle: read('handle') }
     case 'whatsapp_info':
+      return { phone_number: read('phoneNumber') }
+    case 'whatsapp_web':
+      // Web sí expone el teléfono del panel derecho cuando está abierto.
       return { phone_number: read('phoneNumber') }
     case 'whatsapp_chat':
       return {}

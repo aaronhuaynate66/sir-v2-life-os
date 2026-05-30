@@ -44,6 +44,7 @@ const ALLOWED_MIME = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gi
 const MAX_FILE_BYTES = 10 * 1024 * 1024
 const VALID_CAPTURE_TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
   'whatsapp_chat',
+  'whatsapp_web',
   'whatsapp_info',
   'instagram',
   'linkedin',
@@ -102,6 +103,8 @@ function bucketSlugFor(captureType: CaptureType): string {
   switch (captureType) {
     case 'whatsapp_chat':
       return 'whatsapp-chat'
+    case 'whatsapp_web':
+      return 'whatsapp-web'
     case 'whatsapp_info':
       return 'whatsapp-info'
     case 'instagram':

@@ -52,6 +52,15 @@ export function signalsFromExtracted(
       if (personName) out.name = personName
       break
     }
+    case 'whatsapp_web': {
+      // Web aporta nombre (header centro) Y teléfono (panel derecho) -> mejor
+      // señal para el matcher (auto-link por phone si está visible).
+      const personName = readString(data.personName)
+      if (personName) out.name = personName
+      const phone = readString(data.phoneNumber)
+      if (phone) out.phone = phone
+      break
+    }
     case 'manual_note':
     case 'voice_note':
     case 'unknown':

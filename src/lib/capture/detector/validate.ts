@@ -9,6 +9,7 @@ import type { CaptureType, Confidence, DetectorResult } from '../observations/ty
 
 const VALID_TYPES: ReadonlySet<CaptureType> = new Set<CaptureType>([
   'whatsapp_chat',
+  'whatsapp_web',
   'whatsapp_info',
   'instagram',
   'linkedin',

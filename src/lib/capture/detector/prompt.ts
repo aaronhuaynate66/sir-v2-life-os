@@ -14,7 +14,7 @@ Schema EXACTO de respuesta (debe parsear con JSON.parse() sin error —
 sin prosa, sin markdown fences):
 
 {
-  "type": "whatsapp_chat" | "whatsapp_info" | "instagram" | "linkedin" | "unknown",
+  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "linkedin" | "unknown",
   "confidence": "high" | "medium" | "low",
   "reasoning": "<<=80 chars: pista visual concreta que disparó la decisión>",
   "suggestedPersonName": "<nombre visible en el header si aplica, null si no>"
@@ -22,14 +22,31 @@ sin prosa, sin markdown fences):
 
 REGLAS DE CLASIFICACION:
 
-1. whatsapp_chat
+1. whatsapp_chat (WhatsApp MÓVIL — teléfono)
    Señales visuales:
+   - Aspecto VERTICAL/retrato de pantalla de teléfono (UNA sola columna).
    - Bubbles de mensaje en COLUMNAS izquierda/derecha del chat.
    - Bubbles verde/turquesa (user, derecha) + gris/blanco (other, izquierda).
    - Header con foto pequeña + nombre del contacto + estado de conexion.
    - Timestamps HH:mm dentro o debajo de cada bubble.
    - Posible barra inferior con campo de texto + icono de microfono.
-   Es el formato MAS comun. Si ves bubbles en columnas, es whatsapp_chat.
+   Es el formato MOVIL: bubbles en columnas en una pantalla VERTICAL de teléfono,
+   SIN sidebar de lista de chats.
+
+1b. whatsapp_web (WhatsApp ESCRITORIO — navegador / app de Windows)
+   Señales visuales que lo DISTINGUEN del móvil:
+   - Aspecto APAISADO/horizontal de escritorio con layout de TRES COLUMNAS.
+   - IZQUIERDA: barra lateral con header "WhatsApp", caja de búsqueda y una
+     LISTA de "Chats"/"Contactos" (nombres + previews). A veces banner
+     "Obtener WhatsApp para Windows" abajo.
+   - CENTRO: la conversación activa con burbujas verde (derecha) / gris
+     (izquierda), igual que el chat pero embebida en las 3 columnas.
+   - DERECHA (opcional): panel "Info. del contacto" con foto grande, nombre,
+     número de teléfono, botones Voz/Video/Busca.
+   REGLA CLAVE: si ves el layout APAISADO de 3 columnas (sidebar de lista de
+   chats a la izquierda + conversación al centro), es whatsapp_web, NO
+   whatsapp_chat. El sidebar de chats y/o el panel de info a la derecha son la
+   señal decisiva del escritorio.
 
 2. whatsapp_info
    Vista de "Datos del contacto" (NO conversacion):
@@ -73,8 +90,8 @@ REGLAS DE CONFIANZA:
 REGLAS GENERALES:
 
 - suggestedPersonName: si ves un nombre claro en el header (whatsapp_chat,
-  whatsapp_info, linkedin) o @handle (instagram), copialo literal. Si no
-  hay nombre visible, devolver null.
+  whatsapp_web [header del centro o panel derecho], whatsapp_info, linkedin)
+  o @handle (instagram), copialo literal. Si no hay nombre visible, null.
 - reasoning: 1 frase concreta, en español, mencionando la señal visual
   especifica (ej. "Bubbles verde/gris en columnas + header con nombre").
   NO uses jerga interna como "high confidence", "tipo whatsapp_chat".

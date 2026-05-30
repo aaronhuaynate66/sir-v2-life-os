@@ -30,7 +30,7 @@ export function deriveObservedAt(
   data: Record<string, unknown>,
   fallback: Date = new Date(),
 ): string {
-  if (captureType === 'whatsapp_chat') {
+  if (captureType === 'whatsapp_chat' || captureType === 'whatsapp_web') {
     const cd = data.conversationDate
     if (typeof cd === 'string' && cd.length > 0) {
       const d = new Date(cd)
