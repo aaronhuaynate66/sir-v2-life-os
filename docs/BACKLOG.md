@@ -1,54 +1,42 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 29/05/2026 (post-merge PR #86 — Sesión 1+2+2.5 detail page foundation)
+> **Última actualización:** 29/05/2026 (Sesión 2.7 — fix BUG-002 + BUG-003)
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
 ---
 
-## 🐛 BUGS CONOCIDOS (post Sesión 2.5)
+## 🐛 BUGS CONOCIDOS
 
-### BUG-001: LinkedIn extractor halucina nombres y datos
-- **Severidad:** P0 (datos falsos persistidos en DB)
-- **Estado:** Anti-hallucination prompt + compresión adaptativa NO suficientes.
-- **Síntoma:** Vision Sonnet 4.5 devuelve `confidence='high'` con nombre e información completamente inventada (caso real: "Patricia Aleg Díaz Sánchez" en lugar de "Diana Carolina Diaz Sanchez").
-- **Hipótesis pendientes:**
-  1. Compresión adaptativa NO se aplica en runtime — verificar peso real del blob en `observations.source_image_path` (re-descargar de Storage y medir).
-  2. Anti-hallucination prompt no es respetado por Sonnet pese a estar al INICIO.
-  3. Crop adaptativo (above-the-fold) podría resolver — recortar header del perfil antes de Vision.
-  4. Filename de imagen como cross-check — LinkedIn URLs contienen el slug del perfil ("diana-carolina-diaz-sanchez") → si está presente en el File.name, validar que el fullName extraído lo contenga.
-  5. Temperature=0 + retry strategy.
-  6. Downgrade a Opus solo para LinkedIn (más caro pero más fiel a instrucciones).
-- **Prioridad de fix:** Próxima sesión (BUG-001-FIX).
+### BUG-001 ✅ RESUELTO (residual P3): LinkedIn extractor halucinaba nombres
+- **Severidad original:** P0
+- **Estado:** Resuelto en producción por el código mergeado en `c387694` (compresión adaptativa 1600px / q=0.95 + anti-hallucination prompt). Validado en prod re-subiendo el screenshot original: el extractor saca `fullName` y `location` correctos, `confidence='medium'` honesto.
+- **Residual P3 (cosmético, no bloquea):**
+  - Campos de detalle fino (`about`, secciones de education) salen parcialmente mal leídos en algunas capturas, pero el modelo los reporta como `medium` confidence — aceptable.
+  - El piso de 300 KB para `linkedin` es inalcanzable en la mayoría de screenshots reales: la imagen sube hasta el techo `q=0.98` sin tocarlo. Opera como "subí al máximo posible". Cosmético — la advertencia ⚠ aparece en la UI cuando pasa pero no afecta el resultado.
+- **Acción si vuelve a aparecer:** revisar las 6 hipótesis archivadas en el commit `7445d40` (filename cross-check, crop adaptativo, temperature=0, Opus, etc.).
 
-### BUG-002: Persona matcher no busca por handle/url/phone
-- **Severidad:** P1 (UX friction)
-- **Síntoma:** Al subir captura Instagram con handle "diana.carolina.d", el matcher busca solo por nombre canónico → no encuentra Diana existente.
-- **Nota:** El endpoint `/api/people/search` (commit `0c41d14`) YA tiene logica de ranking por `instagram_handle`/`linkedin_url`/`phone_number` server-side, pero el extractor NO está pre-poblando `searchQuery` con esos campos. Falta wirear el flujo: tras detector → si captureType es instagram, usar `suggestedPersonName` + handle extraído como query.
-- **Fix:** Cliente debe construir mejor el query inicial post-extracción, no solo desde `suggestedPersonName` del detector.
+### BUG-002 🔧 EN CURSO (Sesión 2.7): Persona matcher no busca por handle/url/phone
+- **Severidad:** P1 (UX friction + potencial vinculación incorrecta)
+- **Síntoma raíz:** se vinculaba persona ANTES de extraer, con `suggestedPersonName` del DETECTOR (imagen agresiva ~30 KB → ruidoso, dio "Diene Caroline Diaz Sanchez"). Por eso no matcheaba a la "Diana Carolina" existente, y permitía vincular a personas equivocadas (caso real: observación pre-fix vinculó "Gimena Martina" inventado a Diana Carolina).
+- **Fix Sesión 2.7:** matcher post-extracción con campos autoritativos (`fullName` linkedin, `handle` instagram, `phoneNumber+displayName` whatsapp_info). Guardrail: auto-link SOLO con match exacto fuerte (handle, URL o phone normalizado); matches por nombre → siempre candidatos al usuario.
 
-### BUG-003: /captura no enlazada en UI
+### BUG-003 🔧 EN CURSO (Sesión 2.7): /captura no enlazada en UI
 - **Severidad:** P2 (UX friction)
-- **Síntoma:** Ruta `/captura` (test page Sesión 2) solo accesible por URL manual.
-- **Fix:** Decidir UX (botón en Self vs ítem en menú lateral) + implementar.
+- **Síntoma:** Ruta `/captura` solo accesible por URL manual.
+- **Fix Sesión 2.7:** Ítem "Captura" agregado al sidebar (`src/components/layout/Nav.tsx`), entre Relaciones y Objetivos, con ícono `Camera`.
 
 ---
 
-## 🆕 BACKLOG NUEVO (post Sesión 2.5)
+## 🆕 BACKLOG NUEVO
 
-### Sesión 2.6 — Fix BUG-001 LinkedIn hallucination [P0]
-Investigar las 6 hipótesis del BUG-001.
-Probables sub-tareas:
-- **Logger del peso real post-compresión-extracción:** descargar el blob de Storage tras el insert y comparar bytes con `observations.data.compression.compressedBytes` (cliente reportado vs servidor recibido).
-- **Filename cross-check** en extractor antes de aceptar `fullName` (si File.name = "linkedin-diana-carolina.png" → exigir match parcial).
-- **Crop adaptativo above-the-fold** para LinkedIn — recortar primeros ~30% verticales antes de mandar a Vision (donde está el nombre + headline + foto).
-- **Test con `temperature=0`** en la llamada Vision.
-- **A/B test Opus vs Sonnet** para LinkedIn (medir confidence vs hallucination rate en 5+ screenshots).
-- **Validación post-extracción:** si `fullName` contiene tokens muy comunes ("Patricia", "Maria") sin match en suggestedPersonName del detector, forzar `confidence='low'` + flag `needs_review=true`.
-
-### Sesión 2.7 — UI ruta /captura + fix matcher [P1]
-- **BUG-003**: Agregar enlace a `/captura` en menú lateral o botón en Self.
-- **BUG-002**: Wirear post-extracción → re-search en el matcher con handle/phone extraídos como query adicional.
+### Sesión 3 — Detail page UI base [P1]
+Componentes 1-4 del item ⭐ ("Portar detail page completo de SIR V1 → V2"):
+- RelationalScore (numero grande + 3 progress bars)
+- BirthdayCountdown
+- LastInteractionPanel
+- ruta `/relaciones/[slug]` consumiendo `observations` + `person_synthesis`.
+- **DEPENDS ON:** Sesión 2.7 (vinculación persona↔observación confiable + entry point UX) — ya entregado.
 
 ### Sesión 3 — Detail page UI base [P1]
 Componentes 1-4 del item ⭐ ("Portar detail page completo de SIR V1 → V2"):
