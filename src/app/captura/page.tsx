@@ -25,6 +25,7 @@ import type { DetectResult } from '@/lib/capture/detector/client'
 import {
   HttpError,
   createPerson,
+  linkObservationToPerson,
   processCapture,
   searchPeople,
   type PersonCandidate,
@@ -564,7 +565,105 @@ function CapturaIndexContent() {
 }
 
 function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
-  const obs: Observation = result.observation
+  const [obs, setObs] = useState<Observation>(result.observation)
+  const [candidates, setCandidates] = useState<PersonCandidate[]>(result.matchCandidates)
+  const [linkLoading, setLinkLoading] = useState<string | null>(null)
+  const [linkError, setLinkError] = useState<ErrorState | null>(null)
+
+  // Crear persona nueva — prellenado con extractor fields.
+  const [showCreate, setShowCreate] = useState(false)
+  const [createName, setCreateName] = useState(() =>
+    extractInitialName(result.observation.captureType, result.extracted),
+  )
+  const [createLoading, setCreateLoading] = useState(false)
+
+  const onLink = useCallback(
+    async (personId: string) => {
+      setLinkLoading(personId)
+      setLinkError(null)
+      try {
+        const r = await linkObservationToPerson(obs.id, personId)
+        setObs(r.observation)
+      } catch (e) {
+        if (e instanceof HttpError) {
+          setLinkError({ status: e.status, message: e.message, detail: e.detail })
+        } else {
+          const msg = e instanceof Error ? e.message : String(e)
+          setLinkError({ status: 0, message: msg })
+        }
+      } finally {
+        setLinkLoading(null)
+      }
+    },
+    [obs.id],
+  )
+
+  const onUnlink = useCallback(async () => {
+    setLinkLoading('__unlink__')
+    setLinkError(null)
+    try {
+      const r = await linkObservationToPerson(obs.id, null)
+      setObs(r.observation)
+    } catch (e) {
+      if (e instanceof HttpError) {
+        setLinkError({ status: e.status, message: e.message, detail: e.detail })
+      } else {
+        const msg = e instanceof Error ? e.message : String(e)
+        setLinkError({ status: 0, message: msg })
+      }
+    } finally {
+      setLinkLoading(null)
+    }
+  }, [obs.id])
+
+  const onCreateAndLink = useCallback(async () => {
+    const trimmed = createName.trim()
+    if (!trimmed) return
+    setCreateLoading(true)
+    setLinkError(null)
+    try {
+      const created = await createPerson({
+        name: trimmed,
+        ...extractContactFields(result.observation.captureType, result.extracted),
+      })
+      const linked = await linkObservationToPerson(obs.id, created.person.id)
+      setObs(linked.observation)
+      // Prepend la nueva persona a candidates para mantener contexto.
+      setCandidates((curr) => [
+        {
+          id: created.person.id,
+          name: created.person.name,
+          slug: created.person.slug,
+          alias: created.person.alias,
+          relationship: created.person.relationship,
+          category: created.person.category,
+          importance_score: created.person.importance_score,
+          instagram_handle: created.person.instagram_handle,
+          linkedin_url: created.person.linkedin_url,
+          phone_number: created.person.phone_number,
+          matchScore: 100,
+          matchReason: 'just_created',
+        },
+        ...curr,
+      ])
+      setShowCreate(false)
+    } catch (e) {
+      if (e instanceof HttpError) {
+        setLinkError({ status: e.status, message: e.message, detail: e.detail })
+      } else {
+        const msg = e instanceof Error ? e.message : String(e)
+        setLinkError({ status: 0, message: msg })
+      }
+    } finally {
+      setCreateLoading(false)
+    }
+  }, [createName, obs.id, result.observation.captureType, result.extracted])
+
+  const linkedPersonName =
+    obs.personId
+      ? candidates.find((c) => c.id === obs.personId)?.name ?? '(persona vinculada)'
+      : null
+
   return (
     <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
@@ -583,7 +682,59 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
             needs review
           </Badge>
         )}
+        {result.autoLinked && (
+          <Badge variant="secondary" className="text-[10px] font-mono">
+            auto-link · {result.autoLinked.reason}
+          </Badge>
+        )}
       </div>
+
+      {/* PERSONA VINCULADA */}
+      {obs.personId ? (
+        <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={14} className="text-emerald-400" />
+            <span className="text-foreground font-medium">{linkedPersonName}</span>
+            <span className="font-mono text-muted-foreground/70">{obs.personId}</span>
+          </div>
+          <button
+            type="button"
+            onClick={onUnlink}
+            disabled={linkLoading !== null}
+            className="text-muted-foreground hover:text-foreground disabled:opacity-50"
+            aria-label="Desvincular persona"
+          >
+            {linkLoading === '__unlink__' ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <X size={14} />
+            )}
+          </button>
+        </div>
+      ) : (
+        <PostSaveMatcher
+          candidates={candidates}
+          onLink={onLink}
+          linkLoading={linkLoading}
+          showCreate={showCreate}
+          setShowCreate={setShowCreate}
+          createName={createName}
+          setCreateName={setCreateName}
+          createLoading={createLoading}
+          onCreateAndLink={onCreateAndLink}
+        />
+      )}
+
+      {linkError && (
+        <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs">
+          <div className="font-medium text-red-400">
+            Error HTTP {linkError.status}: {linkError.message}
+          </div>
+          {linkError.detail && (
+            <div className="text-muted-foreground">{linkError.detail}</div>
+          )}
+        </div>
+      )}
 
       <div className="text-xs text-muted-foreground space-y-1">
         <div>
@@ -638,4 +789,167 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
       </details>
     </div>
   )
+}
+
+function PostSaveMatcher({
+  candidates,
+  onLink,
+  linkLoading,
+  showCreate,
+  setShowCreate,
+  createName,
+  setCreateName,
+  createLoading,
+  onCreateAndLink,
+}: {
+  candidates: PersonCandidate[]
+  onLink: (id: string) => void
+  linkLoading: string | null
+  showCreate: boolean
+  setShowCreate: (v: boolean) => void
+  createName: string
+  setCreateName: (v: string) => void
+  createLoading: boolean
+  onCreateAndLink: () => void
+}) {
+  return (
+    <div className="rounded-md border border-border bg-background/60 p-3 space-y-3">
+      <div className="flex items-center gap-2">
+        <Users size={14} className="text-muted-foreground/70" />
+        <h3 className="text-xs font-semibold tracking-tight">
+          ¿Es alguna de estas personas?
+        </h3>
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+          matcher post-extracción
+        </span>
+      </div>
+
+      {candidates.length > 0 ? (
+        <ul className="space-y-1.5 max-h-72 overflow-y-auto">
+          {candidates.map((c) => (
+            <li key={c.id}>
+              <button
+                type="button"
+                onClick={() => onLink(c.id)}
+                disabled={linkLoading !== null}
+                className="w-full text-left rounded border border-border hover:border-accent/50 px-3 py-2 text-xs flex items-center justify-between gap-3 disabled:opacity-50"
+              >
+                <div>
+                  <div className="font-medium text-foreground">{c.name}</div>
+                  <div className="text-muted-foreground font-mono text-[10px]">
+                    {c.slug ?? c.id}
+                    {c.alias && ` · alias: ${c.alias}`}
+                    {c.instagram_handle && ` · @${c.instagram_handle}`}
+                    {c.phone_number && ` · ${c.phone_number}`}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge variant="secondary" className="text-[10px] font-mono">
+                    {c.matchReason} {c.matchScore}
+                  </Badge>
+                  {linkLoading === c.id && <Loader2 size={12} className="animate-spin" />}
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="text-xs text-muted-foreground italic">
+          Sin coincidencias en tus personas con los campos del extractor.
+        </div>
+      )}
+
+      <div className="pt-1">
+        {showCreate ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={createName}
+              onChange={(e) => setCreateName(e.target.value)}
+              placeholder="Nombre de la persona nueva"
+              className="text-sm w-full rounded border border-border bg-background px-3 py-1.5"
+              disabled={createLoading}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={onCreateAndLink}
+                disabled={createLoading || createName.trim().length === 0}
+              >
+                {createLoading ? (
+                  <>
+                    <Loader2 size={12} className="mr-2 animate-spin" />
+                    Creando…
+                  </>
+                ) : (
+                  'Crear y vincular'
+                )}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setShowCreate(false)}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => setShowCreate(true)}>
+            <UserPlus size={14} className="mr-2" />
+            Crear persona nueva (prellenado del extractor)
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Saca el mejor nombre disponible del output del extractor para
+ *  pre-poblar el form de "crear persona nueva". */
+function extractInitialName(
+  captureType: CaptureType,
+  extracted: Record<string, unknown>,
+): string {
+  const read = (k: string) =>
+    typeof extracted[k] === 'string' ? (extracted[k] as string).trim() : ''
+  switch (captureType) {
+    case 'linkedin':
+      return read('fullName')
+    case 'instagram':
+      return read('displayName') || read('handle')
+    case 'whatsapp_info':
+      return read('displayName')
+    case 'whatsapp_chat':
+      return read('personName')
+    default:
+      return ''
+  }
+}
+
+/** Mapea los campos del extractor a los campos opcionales que acepta
+ *  POST /api/people para "crear persona nueva" prellenado. */
+function extractContactFields(
+  captureType: CaptureType,
+  extracted: Record<string, unknown>,
+): {
+  instagram_handle?: string
+  linkedin_url?: string
+  phone_number?: string
+} {
+  const read = (k: string) =>
+    typeof extracted[k] === 'string' && (extracted[k] as string).trim().length > 0
+      ? (extracted[k] as string).trim()
+      : undefined
+
+  switch (captureType) {
+    case 'linkedin':
+      // Hoy el extractor LinkedIn no devuelve URL del perfil — queda en
+      // null. Futura iteracion: agregar al schema B.4.
+      return {}
+    case 'instagram':
+      return { instagram_handle: read('handle') }
+    case 'whatsapp_info':
+      return { phone_number: read('phoneNumber') }
+    case 'whatsapp_chat':
+      return {}
+    default:
+      return {}
+  }
 }
