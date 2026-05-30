@@ -33,7 +33,10 @@ import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { CicloPanel } from './CicloPanel'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
+import { RegistroRapidoPanel } from './RegistroRapidoPanel'
+import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import type { Observation } from '@/lib/capture/observations/types'
+import type { PersonLog } from '@/lib/person-logs/types'
 import type { Memory, Person } from '@/types'
 
 interface PersonDetailProps {
@@ -48,6 +51,9 @@ interface PersonDetailProps {
   /** Memorias materializadas en tabla `memories` (PR-B Sesion 4 backend).
    *  Server-fetched, ordenadas por occurred_at DESC. */
   memories?: Memory[]
+  /** Logs de la persona (mood/energy/sleep/pain/interaction). Sesion 6.
+   *  Server-fetched, ordenados por logged_at DESC. */
+  personLogs?: PersonLog[]
 }
 
 const RELATIONSHIP_LABEL: Record<Person['relationship'], string> = {
@@ -72,6 +78,7 @@ export function PersonDetail({
   lastChat = null,
   curatedObservations = [],
   memories = [],
+  personLogs = [],
 }: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
@@ -275,6 +282,15 @@ export function PersonDetail({
 
       <div className="mb-4">
         <LastInteractionPanel lastChat={lastChat} />
+      </div>
+
+      {/* Sesion 6: registros per-persona (mood/energy/sleep/pain +
+          tono de interaccion). Storage Supabase-native en person_logs
+          (no relationships.history) — alimenta correlacion lunar/ciclo
+          en Fase 3c. */}
+      <div className="grid gap-4 sm:grid-cols-2 mb-4">
+        <RegistroRapidoPanel personId={live.id} recentLogs={personLogs} />
+        <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs} />
       </div>
 
       {/* "Lo personal" — empty state intencional. La sintesis narrativa
