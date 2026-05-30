@@ -45,6 +45,7 @@ export function buildMemoryContext(memories: Memory[]): MemoryContext {
       relational: 0,
       temporal: 0,
       predictive: 0,
+      social: 0,
     }
     return {
       totalMemories: 0,
@@ -64,6 +65,7 @@ export function buildMemoryContext(memories: Memory[]): MemoryContext {
     relational: 0,
     temporal: 0,
     predictive: 0,
+    social: 0,
   }
   for (const m of memories) {
     memoriesByType[m.type] = (memoriesByType[m.type] ?? 0) + 1

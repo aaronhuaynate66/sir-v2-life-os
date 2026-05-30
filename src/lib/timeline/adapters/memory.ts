@@ -9,6 +9,7 @@ const TYPE_LABEL: Record<Memory['type'], string> = {
   relational: 'Relacional',
   temporal: 'Temporal',
   predictive: 'Predictiva',
+  social: 'Social',
 }
 
 export function adaptMemory(m: Memory): TimelineEvent {

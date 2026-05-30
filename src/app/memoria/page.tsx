@@ -23,6 +23,7 @@ const TYPE_LABEL: Record<MemoryType, string> = {
   relational: 'Relacional',
   temporal: 'Temporal',
   predictive: 'Predictiva',
+  social: 'Social',
 }
 
 const TYPE_CLASS: Record<MemoryType, string> = {
@@ -32,9 +33,10 @@ const TYPE_CLASS: Record<MemoryType, string> = {
   relational: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
   temporal: 'border-border bg-muted text-muted-foreground/70',
   predictive: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
+  social: 'border-pink-500/30 bg-pink-500/10 text-pink-400',
 }
 
-const ALL_TYPES: MemoryType[] = ['episodic', 'semantic', 'emotional', 'relational', 'temporal', 'predictive']
+const ALL_TYPES: MemoryType[] = ['episodic', 'semantic', 'emotional', 'relational', 'temporal', 'predictive', 'social']
 
 const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
 

@@ -65,6 +65,9 @@ export type MemoryType =
   | 'relational'
   | 'temporal'
   | 'predictive'
+  // 'social' agregado al CHECK de memories.type en migration 0010
+  // (parity V1). Materializado por capturas WhatsApp/redes.
+  | 'social'
 
 export type RecommendationType =
   | 'action'
@@ -171,6 +174,19 @@ export interface Person {
    *  0010, default '[]'). Renderizadas con countdown en FechasImportantes
    *  (detail page, item #9 del backlog). undefined = sin fechas. */
   specialDates?: SpecialDate[]
+  /** Teléfono (formato libre, ej. "+51 999 888 777"). Canonical en
+   *  `people.phone_number` (migration 0010). Habilita el botón Chat
+   *  WhatsApp (wa.me) del detail page. */
+  phoneNumber?: string
+  /** Handle de Instagram SIN @ (ej. "diana.carolina.d"). Canonical en
+   *  `people.instagram_handle` (migration 0010). */
+  instagramHandle?: string
+  /** URL completa del perfil de LinkedIn. Canonical en
+   *  `people.linkedin_url` (migration 0010). */
+  linkedinUrl?: string
+  /** Handle de Twitter/X SIN @. Canonical en `people.twitter_handle`
+   *  (migration 0010). */
+  twitterHandle?: string
   createdAt: string
   updatedAt: string
 }

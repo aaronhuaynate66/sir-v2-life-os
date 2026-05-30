@@ -51,6 +51,7 @@ const TYPE_LABEL: Record<Memory['type'], string> = {
   relational: 'Relacional',
   temporal: 'Temporal',
   predictive: 'Predictiva',
+  social: 'Social',
 }
 
 const TYPE_BADGE_VARIANT: Record<
@@ -63,6 +64,7 @@ const TYPE_BADGE_VARIANT: Record<
   relational: 'outline',
   temporal: 'outline',
   predictive: 'outline',
+  social: 'default',
 }
 
 export function MemoriasAsociadasPanel({ memories, personId }: MemoriasAsociadasPanelProps) {

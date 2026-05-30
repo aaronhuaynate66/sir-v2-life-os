@@ -34,6 +34,7 @@ import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
 import { VidaSocial } from './VidaSocial'
+import { RedesSociales } from './RedesSociales'
 import { LoPersonal } from './LoPersonal'
 import { CicloPanel } from './CicloPanel'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
@@ -318,6 +319,9 @@ export function PersonDetail({
         <VidaProfesional observations={curatedObservations} />
         <VidaSocial observations={curatedObservations} />
       </div>
+
+      {/* Redes sociales conectadas (#11): contacto + links, editable inline. */}
+      <RedesSociales person={live} observations={curatedObservations} />
 
       {/* "Lo personal" (#8): síntesis narrativa LLM, lazy + cacheada en
           person_synthesis. conversationCount = whatsapp_chat curadas. */}
