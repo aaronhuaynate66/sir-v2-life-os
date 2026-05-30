@@ -36,6 +36,7 @@ import { VidaProfesional } from './VidaProfesional'
 import { VidaSocial } from './VidaSocial'
 import { PerfilProfesional } from './PerfilProfesional'
 import { RedesSociales } from './RedesSociales'
+import { Bitacora } from './Bitacora'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
 import { CicloPanel } from './CicloPanel'
@@ -354,6 +355,10 @@ export function PersonDetail({
       {/* Memorias asociadas — server-fetched (PR-B Sesion 4) + boton de
           backfill idempotente desde relationships.history. */}
       <MemoriasAsociadasPanel memories={memories} personId={live.id} />
+
+      {/* Bitácora (#17): historial completo de interacciones (person_logs
+          + observations), colapsable. */}
+      <Bitacora personLogs={personLogs} observations={curatedObservations} />
 
       {live.notes && (
         <Card className="shadow-none mb-4">
