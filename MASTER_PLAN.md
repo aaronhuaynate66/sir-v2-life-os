@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `43521c1`
+**Hash del último commit humano:** `abbc825`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -340,6 +340,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `abbc825` | aaronhuaynate66 | feat(memories): sidebar MemoriasAsociadasPanel + backfill endpoint (Sesion 4 PR #2) | 2026-05-30 |
 | `43521c1` | aaronhuaynate66 | chore(roadmap): embed BACKLOG.md verbatim inside MASTER_PLAN.md | 2026-05-30 |
 | `c15bc92` | aaronhuaynate66 | feat(memories): backend foundation — migration 0012 + extract/fetch lib (Sesion 4 PR #1) | 2026-05-30 |
 | `e4c5ac3` | aaronhuaynate66 | chore(consolidation): BACKLOG reconcile post-Sesion 3 + grafo zoom fix | 2026-05-30 |
@@ -349,7 +350,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `93a95c6` | aaronhuaynate66 | fix(matcher+nav): close BUG-002 (bidirectional matcher) + BUG-003 (entry point) — Sesion 2.7 | 2026-05-30 |
 | `3596687` | Aaron Huaynate | docs(backlog): add BUG-001/002/003 + sesiones 2.6/2.7 + futuros | 2026-05-29 |
 | `c387694` | aaronhuaynate66 | feat(detail-page): foundation — observations table + capture universal pipeline (Sesion 1+2+2.5) | 2026-05-29 |
-| `daee855` | aaronhuaynate66 | Captura WhatsApp con Claude Vision Sonnet (#85) | 2026-05-29 |
 
 ---
 
