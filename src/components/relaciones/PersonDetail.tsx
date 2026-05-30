@@ -1,9 +1,14 @@
 'use client'
 // SIR V2 — /relaciones/[slug] detail UI
 //
-// Render de los datos básicos de una persona + formulario inline para
-// editar nombre + slug. Otros campos siguen editándose desde el listado
-// principal con el AlertDialog/Dialog existente (sin duplicar lógica).
+// Render de la persona + EDICIÓN INLINE COMPLETA (#5): el formulario de
+// la card "Identidad" edita el set completo de campos escalares/enum
+// (nombre, slug, alias, relación, categoría, energía, confianza,
+// importancia, frecuencia, último contacto, ubicación, cumpleaños, ciclo,
+// tags, notas). Ya NO hace falta volver a /relaciones para editar.
+//
+// Campos con UI dedicada propia (no se duplican acá): redes/contacto
+// (RedesSociales, #11) y fechas importantes (FechasImportantes, #9).
 //
 // Cuando el usuario cambia el slug, validamos formato y uniqueness vía
 // ensureUniqueSlug. Al guardar exitosamente:
@@ -23,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 import { useRelationshipStore } from '@/stores'
 import { createClient } from '@/lib/supabase/client'
@@ -47,7 +53,7 @@ import { NotaDeVozPanel } from './NotaDeVozPanel'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
-import type { Memory, Person } from '@/types'
+import type { Memory, Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
 
 interface PersonDetailProps {
   initialPerson: Person
@@ -86,6 +92,57 @@ const CATEGORY_LABEL: Record<Person['category'], string> = {
   peripheral: 'Periférico',
 }
 
+const ENERGY_LABEL: Record<EnergyImpact, string> = {
+  energizing: 'Energizante',
+  neutral: 'Neutral',
+  draining: 'Drenante',
+}
+
+/** Estado del formulario de edición inline. Strings para inputs; las
+ *  fechas son date-only (YYYY-MM-DD) tal cual las espera <input type=date>;
+ *  tags es CSV (se parsea a string[] al guardar). */
+interface EditForm {
+  name: string
+  slug: string
+  alias: string
+  relationship: RelationshipType
+  category: PersonCategory
+  energyImpact: EnergyImpact
+  trustLevel: number
+  importanceScore: number
+  contactFrequency: string
+  lastContact: string
+  location: string
+  birthDate: string
+  cycleStartDate: string
+  cycleLengthDays: number
+  tags: string
+  notes: string
+}
+
+function formFromPerson(p: Person): EditForm {
+  return {
+    name: p.name,
+    slug: p.slug ?? generateSlug(p.name),
+    alias: p.alias ?? '',
+    relationship: p.relationship,
+    category: p.category,
+    energyImpact: p.energyImpact,
+    trustLevel: p.trustLevel,
+    importanceScore: p.importanceScore,
+    contactFrequency: p.contactFrequency ?? '',
+    // date-only: tomamos el prefijo YYYY-MM-DD (lastContact puede venir como
+    // ISO completo de fixtures viejos; el input date necesita solo la fecha).
+    lastContact: (p.lastContact ?? '').slice(0, 10),
+    location: p.location ?? '',
+    birthDate: (p.birthDate ?? '').slice(0, 10),
+    cycleStartDate: (p.cycleStartDate ?? '').slice(0, 10),
+    cycleLengthDays: p.cycleLengthDays ?? 28,
+    tags: (p.tags ?? []).join(', '),
+    notes: p.notes ?? '',
+  }
+}
+
 export function PersonDetail({
   initialPerson,
   lastChat = null,
@@ -102,13 +159,11 @@ export function PersonDetail({
   const live = people.find((p) => p.id === initialPerson.id) ?? initialPerson
 
   const [editing, setEditing] = useState(false)
-  const [nameInput, setNameInput] = useState(live.name)
-  const [slugInput, setSlugInput] = useState(live.slug ?? generateSlug(live.name))
   const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState<EditForm>(() => formFromPerson(live))
 
   function startEditing() {
-    setNameInput(live.name)
-    setSlugInput(live.slug ?? generateSlug(live.name))
+    setForm(formFromPerson(live))
     setEditing(true)
   }
 
@@ -116,9 +171,13 @@ export function PersonDetail({
     setEditing(false)
   }
 
+  function patch<K extends keyof EditForm>(key: K, value: EditForm[K]) {
+    setForm((f) => ({ ...f, [key]: value }))
+  }
+
   async function handleSave() {
-    const trimmedName = nameInput.trim()
-    const trimmedSlug = slugInput.trim()
+    const trimmedName = form.name.trim()
+    const trimmedSlug = form.slug.trim()
     if (!trimmedName) {
       toast.error('Nombre vacío', { description: 'Ingresá al menos un nombre.' })
       return
@@ -149,9 +208,27 @@ export function PersonDetail({
         }
       }
       const now = new Date().toISOString()
+      // Tags: input separado por comas -> array deduplicado sin vacíos.
+      const tags = Array.from(
+        new Set(form.tags.split(',').map((t) => t.trim()).filter(Boolean)),
+      )
       updatePerson(live.id, {
         name: trimmedName,
         slug: finalSlug,
+        alias: form.alias.trim() || undefined,
+        relationship: form.relationship,
+        category: form.category,
+        energyImpact: form.energyImpact,
+        trustLevel: form.trustLevel,
+        importanceScore: form.importanceScore,
+        contactFrequency: form.contactFrequency.trim(),
+        lastContact: form.lastContact || undefined,
+        location: form.location.trim() || undefined,
+        birthDate: form.birthDate || undefined,
+        cycleStartDate: form.cycleStartDate || undefined,
+        cycleLengthDays: form.cycleStartDate ? form.cycleLengthDays : undefined,
+        tags,
+        notes: form.notes,
         updatedAt: now,
       })
       setEditing(false)
@@ -210,45 +287,117 @@ export function PersonDetail({
             {!editing && (
               <Button size="sm" variant="ghost" onClick={startEditing}>
                 <Edit2 size={13} strokeWidth={1.75} className="mr-1.5" />
-                Editar nombre + slug
+                Editar
               </Button>
             )}
           </div>
 
           {editing ? (
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="person-name" className="text-xs">
-                  Nombre completo
-                </Label>
-                <Input
-                  id="person-name"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  disabled={saving}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="person-slug" className="text-xs">
-                  Slug (URL)
-                </Label>
-                <Input
-                  id="person-slug"
-                  value={slugInput}
-                  onChange={(e) => setSlugInput(e.target.value)}
-                  disabled={saving}
-                  className={cn(
-                    'mt-1 font-mono',
-                    !isValidSlug(slugInput) && slugInput && 'border-amber-500/40',
-                  )}
-                />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Solo a-z, 0-9 y guiones. Aparece en la URL:
-                  <span className="font-mono text-foreground/70 ml-1">
-                    /relaciones/{slugInput || '<slug>'}
-                  </span>
-                </p>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="person-name" className="text-xs">Nombre completo</Label>
+                  <Input id="person-name" value={form.name} onChange={(e) => patch('name', e.target.value)} disabled={saving} className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="person-alias" className="text-xs">Alias</Label>
+                  <Input id="person-alias" value={form.alias} onChange={(e) => patch('alias', e.target.value)} disabled={saving} className="mt-1" placeholder="Apodo (opcional)" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="person-slug" className="text-xs">Slug (URL)</Label>
+                  <Input
+                    id="person-slug"
+                    value={form.slug}
+                    onChange={(e) => patch('slug', e.target.value)}
+                    disabled={saving}
+                    className={cn('mt-1 font-mono', !isValidSlug(form.slug) && form.slug && 'border-amber-500/40')}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Solo a-z, 0-9 y guiones. URL:
+                    <span className="font-mono text-foreground/70 ml-1">/relaciones/{form.slug || '<slug>'}</span>
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs">Tipo de relación</Label>
+                  <Select value={form.relationship} onValueChange={(v) => patch('relationship', v as RelationshipType)} disabled={saving}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(RELATIONSHIP_LABEL) as RelationshipType[]).map((k) => (
+                        <SelectItem key={k} value={k}>{RELATIONSHIP_LABEL[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Categoría</Label>
+                  <Select value={form.category} onValueChange={(v) => patch('category', v as PersonCategory)} disabled={saving}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(CATEGORY_LABEL) as PersonCategory[]).map((k) => (
+                        <SelectItem key={k} value={k}>{CATEGORY_LABEL[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Impacto energético</Label>
+                  <Select value={form.energyImpact} onValueChange={(v) => patch('energyImpact', v as EnergyImpact)} disabled={saving}>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(ENERGY_LABEL) as EnergyImpact[]).map((k) => (
+                        <SelectItem key={k} value={k}>{ENERGY_LABEL[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="person-freq" className="text-xs">Frecuencia de contacto</Label>
+                  <Input id="person-freq" value={form.contactFrequency} onChange={(e) => patch('contactFrequency', e.target.value)} disabled={saving} className="mt-1" placeholder="Ej: semanal, mensual" />
+                </div>
+                <div>
+                  <Label htmlFor="person-trust" className="text-xs">Confianza: <span className="font-mono text-foreground">{form.trustLevel}/10</span></Label>
+                  <Input id="person-trust" type="range" min={1} max={10} value={form.trustLevel} onChange={(e) => patch('trustLevel', Number(e.target.value))} disabled={saving} className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="person-importance" className="text-xs">Importancia: <span className="font-mono text-foreground">{form.importanceScore}/10</span></Label>
+                  <Input id="person-importance" type="range" min={1} max={10} value={form.importanceScore} onChange={(e) => patch('importanceScore', Number(e.target.value))} disabled={saving} className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="person-lastcontact" className="text-xs">Último contacto</Label>
+                  <Input id="person-lastcontact" type="date" value={form.lastContact} onChange={(e) => patch('lastContact', e.target.value)} disabled={saving} className="mt-1 font-mono" />
+                </div>
+                <div>
+                  <Label htmlFor="person-location" className="text-xs">Ubicación</Label>
+                  <Input id="person-location" value={form.location} onChange={(e) => patch('location', e.target.value)} disabled={saving} className="mt-1" placeholder="Ciudad o país" />
+                </div>
+                <div>
+                  <Label htmlFor="person-birth" className="text-xs">Fecha de nacimiento</Label>
+                  <Input id="person-birth" type="date" value={form.birthDate} onChange={(e) => patch('birthDate', e.target.value)} disabled={saving} className="mt-1 font-mono" />
+                </div>
+                <div>
+                  <Label htmlFor="person-cyclestart" className="text-xs">Inicio último período</Label>
+                  <Input id="person-cyclestart" type="date" value={form.cycleStartDate} onChange={(e) => patch('cycleStartDate', e.target.value)} disabled={saving} className="mt-1 font-mono" />
+                </div>
+                <div>
+                  <Label htmlFor="person-cyclelen" className="text-xs">Largo del ciclo (días)</Label>
+                  <Input id="person-cyclelen" type="number" min={15} max={60} value={form.cycleLengthDays} onChange={(e) => patch('cycleLengthDays', Number(e.target.value) || 28)} disabled={saving || !form.cycleStartDate} className="mt-1 font-mono" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="person-tags" className="text-xs">Tags / etiquetas</Label>
+                  <Input id="person-tags" value={form.tags} onChange={(e) => patch('tags', e.target.value)} disabled={saving} className="mt-1" placeholder="separados por coma: familia, trabajo, …" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="person-notes" className="text-xs">Notas</Label>
+                  <textarea
+                    id="person-notes"
+                    value={form.notes}
+                    onChange={(e) => patch('notes', e.target.value)}
+                    disabled={saving}
+                    rows={4}
+                    className="mt-1 flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Notas libres sobre la persona…"
+                  />
+                </div>
               </div>
               <div className="flex gap-2 justify-end">
                 <Button size="sm" variant="ghost" onClick={cancelEditing} disabled={saving}>
@@ -273,20 +422,24 @@ export function PersonDetail({
         </CardContent>
       </Card>
 
-      <Card className="shadow-none mb-4">
-        <CardContent className="p-4 sm:p-6 space-y-2 text-sm">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">
-            Métricas relacionales
-          </div>
-          <Row label="Importancia" value={`${live.importanceScore}/10`} />
-          <Row label="Confianza" value={`${live.trustLevel}/10`} />
-          <Row label="Impacto energético" value={live.energyImpact} />
-          <Row label="Frecuencia contacto" value={live.contactFrequency || '—'} />
-          {live.lastContact && <Row label="Último contacto" value={live.lastContact} />}
-          {live.location && <Row label="Ubicación" value={live.location} />}
-          {live.birthDate && <Row label="Fecha de nacimiento" value={live.birthDate} />}
-        </CardContent>
-      </Card>
+      {/* Métricas read-only: ocultas durante la edición (el form de arriba
+          ya cubre estos campos). */}
+      {!editing && (
+        <Card className="shadow-none mb-4">
+          <CardContent className="p-4 sm:p-6 space-y-2 text-sm">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">
+              Métricas relacionales
+            </div>
+            <Row label="Importancia" value={`${live.importanceScore}/10`} />
+            <Row label="Confianza" value={`${live.trustLevel}/10`} />
+            <Row label="Impacto energético" value={ENERGY_LABEL[live.energyImpact] ?? live.energyImpact} />
+            <Row label="Frecuencia contacto" value={live.contactFrequency || '—'} />
+            {live.lastContact && <Row label="Último contacto" value={live.lastContact.slice(0, 10)} />}
+            {live.location && <Row label="Ubicación" value={live.location} />}
+            {live.birthDate && <Row label="Fecha de nacimiento" value={live.birthDate.slice(0, 10)} />}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ─── Sesion 3 PR-B: RelationalScore + BirthdayCountdown reales ── */}
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
