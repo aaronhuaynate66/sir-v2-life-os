@@ -31,8 +31,9 @@ import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
+import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import type { Observation } from '@/lib/capture/observations/types'
-import type { Person } from '@/types'
+import type { Memory, Person } from '@/types'
 
 interface PersonDetailProps {
   initialPerson: Person
@@ -43,6 +44,9 @@ interface PersonDetailProps {
    *  ordenadas por observed_at DESC. PR-A solo usa la longitud + breakdown
    *  para validar el filtro; PR-B+ consume el contenido. */
   curatedObservations?: Observation[]
+  /** Memorias materializadas en tabla `memories` (PR-B Sesion 4 backend).
+   *  Server-fetched, ordenadas por occurred_at DESC. */
+  memories?: Memory[]
 }
 
 const RELATIONSHIP_LABEL: Record<Person['relationship'], string> = {
@@ -66,6 +70,7 @@ export function PersonDetail({
   initialPerson,
   lastChat = null,
   curatedObservations = [],
+  memories = [],
 }: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
@@ -272,6 +277,10 @@ export function PersonDetail({
           de la capa de fetch. Las filas LinkedIn alucinadas que dejamos
           obsoletas en PR #87 NO deberian aparecer aca. */}
       <CuratedObservationsPanel observations={curatedObservations} />
+
+      {/* Memorias asociadas — server-fetched (PR-B Sesion 4) + boton de
+          backfill idempotente desde relationships.history. */}
+      <MemoriasAsociadasPanel memories={memories} personId={live.id} />
 
       {live.notes && (
         <Card className="shadow-none mb-4">
