@@ -26,6 +26,7 @@ import { useSignalStore } from '@/stores/useSignalStore'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { useMemoryStore } from '@/stores'
 import { SEED_FIXTURES } from '@/data/fixtures/seed'
+import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { AppShell } from '@/components/layout/AppShell'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
@@ -192,6 +193,9 @@ function DashboardContent() {
           <Badge variant="outline" className={cn('font-mono text-[10px] tracking-widest', MODE_CLASSES[mode])}>{MODE_LABEL[mode]}</Badge>
         </div>
       </motion.div>
+
+      {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
+      <DailyBriefingCard />
 
       <Card className={cn('mb-6', cardClass)}>
         <CardContent className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 sm:p-6">
