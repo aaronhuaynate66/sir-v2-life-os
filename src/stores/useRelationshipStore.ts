@@ -17,6 +17,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Person, Relationship } from '@/types'
 import { fixturePeople, fixtureRelationships } from '@/data/fixtures'
+import { SEED_FIXTURES, purgeFixtureRows } from '@/data/fixtures/seed'
 import { STORAGE_KEYS } from './storage'
 import {
   attachSupabaseSync,
@@ -42,10 +43,11 @@ interface RelationshipActions {
 
 export type RelationshipStore = RelationshipState & RelationshipActions
 
-const INITIAL_STATE: RelationshipState = {
-  people: fixturePeople,
-  relationships: fixtureRelationships,
-}
+// Fixtures SOLO fuera de producción (SEED_FIXTURES). En prod el estado
+// inicial es vacío: la data real llega del DB vía el sync engine.
+const INITIAL_STATE: RelationshipState = SEED_FIXTURES
+  ? { people: fixturePeople, relationships: fixtureRelationships }
+  : { people: [], relationships: [] }
 
 export const useRelationshipStore = create<RelationshipStore>()(
   persist(
@@ -83,6 +85,19 @@ export const useRelationshipStore = create<RelationshipStore>()(
     }),
     {
       name: STORAGE_KEYS.RELATIONSHIP,
+      // v1: purga fixtures sembrados en localStorage de clientes viejos
+      // (deuda split-brain). Corre en rehidratación, ANTES de que el sync
+      // engine suscriba — así no dispara DELETE de filas reales (Diana).
+      version: 1,
+      migrate: (state) => {
+        if (!state || typeof state !== 'object') return state
+        const s = state as Partial<RelationshipState>
+        return {
+          ...(state as object),
+          people: purgeFixtureRows(s.people),
+          relationships: purgeFixtureRows(s.relationships),
+        } as RelationshipState
+      },
     }
   )
 )

@@ -7,6 +7,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { SelfMetric, HealthMetric, SleepRecord } from '@/types'
 import { fixtureSleepRecords, fixtureMetrics } from '@/data/fixtures'
+import { SEED_FIXTURES, purgeFixtureRows } from '@/data/fixtures/seed'
 import { STORAGE_KEYS } from './storage'
 import {
   attachSupabaseSync,
@@ -33,11 +34,10 @@ interface SelfActions {
 
 export type SelfStore = SelfState & SelfActions
 
-const INITIAL_STATE: SelfState = {
-  selfMetrics: fixtureMetrics,
-  healthMetrics: [],
-  sleepRecords: fixtureSleepRecords,
-}
+// Fixtures SOLO fuera de producción. healthMetrics nunca tuvo fixtures.
+const INITIAL_STATE: SelfState = SEED_FIXTURES
+  ? { selfMetrics: fixtureMetrics, healthMetrics: [], sleepRecords: fixtureSleepRecords }
+  : { selfMetrics: [], healthMetrics: [], sleepRecords: [] }
 
 export const useSelfStore = create<SelfStore>()(
   persist(
@@ -68,6 +68,17 @@ export const useSelfStore = create<SelfStore>()(
     }),
     {
       name: STORAGE_KEYS.SELF,
+      // v1: purga fixtures sembrados (sl1-3, m1-6) de clientes viejos.
+      version: 1,
+      migrate: (state) => {
+        if (!state || typeof state !== 'object') return state
+        const s = state as Partial<SelfState>
+        return {
+          ...(state as object),
+          selfMetrics: purgeFixtureRows(s.selfMetrics),
+          sleepRecords: purgeFixtureRows(s.sleepRecords),
+        } as SelfState
+      },
     }
   )
 )

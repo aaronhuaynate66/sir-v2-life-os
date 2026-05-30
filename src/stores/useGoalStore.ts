@@ -6,6 +6,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Goal } from '@/types'
 import { fixtureGoals } from '@/data/fixtures'
+import { SEED_FIXTURES, purgeFixtureRows } from '@/data/fixtures/seed'
 import { STORAGE_KEYS } from './storage'
 import { attachSupabaseSync, goalAdapter } from '@/lib/supabase/sync'
 
@@ -26,9 +27,7 @@ interface GoalActions {
 
 export type GoalStore = GoalState & GoalActions
 
-const INITIAL_STATE: GoalState = {
-  goals: fixtureGoals,
-}
+const INITIAL_STATE: GoalState = SEED_FIXTURES ? { goals: fixtureGoals } : { goals: [] }
 
 export const useGoalStore = create<GoalStore>()(
   persist(
@@ -73,6 +72,13 @@ export const useGoalStore = create<GoalStore>()(
     }),
     {
       name: STORAGE_KEYS.GOAL,
+      // v1: purga goals sembrados (goal_001/002) de clientes viejos.
+      version: 1,
+      migrate: (state) => {
+        if (!state || typeof state !== 'object') return state
+        const s = state as Partial<GoalState>
+        return { ...(state as object), goals: purgeFixtureRows(s.goals) } as GoalState
+      },
     }
   )
 )

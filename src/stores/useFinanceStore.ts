@@ -10,6 +10,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Currency, FinancialMovement } from '@/types'
 import { fixtureFinancialMovements } from '@/data/fixtures'
+import { SEED_FIXTURES, purgeFixtureRows } from '@/data/fixtures/seed'
 import { STORAGE_KEYS } from './storage'
 import { attachSupabaseSync, financeMovementAdapter } from '@/lib/supabase/sync'
 
@@ -27,9 +28,9 @@ interface FinanceActions {
 
 export type FinanceStore = FinanceState & FinanceActions
 
-const INITIAL_STATE: FinanceState = {
-  financialMovements: fixtureFinancialMovements,
-}
+const INITIAL_STATE: FinanceState = SEED_FIXTURES
+  ? { financialMovements: fixtureFinancialMovements }
+  : { financialMovements: [] }
 
 // Pre-currency shape (version 1): no exchangeRate, no amountPEN, currency
 // was a free string defaulting to 'USD'. Upgrade reinterprets every row
@@ -98,14 +99,21 @@ export const useFinanceStore = create<FinanceStore>()(
     }),
     {
       name: STORAGE_KEYS.FINANCE,
-      version: 2,
+      // v2: upgrade de moneda (legacy -> PEN). v3: purga fixtures sembrados
+      // (f1-f5) del localStorage de clientes viejos (deuda split-brain).
+      version: 3,
       migrate: (state, fromVersion) => {
         if (!state || typeof state !== 'object') return state
-        if (fromVersion >= 2) return state
         const s = state as { financialMovements?: LegacyFinancialMovement[] }
+        // Paso 1 (solo si viene de < v2): reinterpretar moneda.
+        const upgraded =
+          fromVersion < 2
+            ? (s.financialMovements ?? []).map(upgradeMovement)
+            : ((s.financialMovements ?? []) as unknown as FinancialMovement[])
+        // Paso 2 (siempre): purgar fixtures.
         return {
           ...(state as object),
-          financialMovements: (s.financialMovements ?? []).map(upgradeMovement),
+          financialMovements: purgeFixtureRows(upgraded),
         } as FinanceState
       },
     }

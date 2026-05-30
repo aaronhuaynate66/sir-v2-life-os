@@ -6,6 +6,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Memory } from '@/types'
 import { fixtureMemories } from '@/data/fixtures'
+import { SEED_FIXTURES, purgeFixtureRows } from '@/data/fixtures/seed'
 import { attachSupabaseSync, memoryAdapter } from '@/lib/supabase/sync'
 
 interface MemoryState {
@@ -26,9 +27,7 @@ interface MemoryActions {
 
 export type MemoryStore = MemoryState & MemoryActions
 
-const INITIAL_STATE: MemoryState = {
-  memories: fixtureMemories,
-}
+const INITIAL_STATE: MemoryState = SEED_FIXTURES ? { memories: fixtureMemories } : { memories: [] }
 
 export const useMemoryStore = create<MemoryStore>()(
   persist(
@@ -76,6 +75,13 @@ export const useMemoryStore = create<MemoryStore>()(
     }),
     {
       name: 'sir-v2-memory',
+      // v1: purga memorias sembradas (mem_001..005) de clientes viejos.
+      version: 1,
+      migrate: (state) => {
+        if (!state || typeof state !== 'object') return state
+        const s = state as Partial<MemoryState>
+        return { ...(state as object), memories: purgeFixtureRows(s.memories) } as MemoryState
+      },
     },
   ),
 )

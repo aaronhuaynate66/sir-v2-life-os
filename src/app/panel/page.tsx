@@ -25,6 +25,7 @@ import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { useMemoryStore } from '@/stores'
+import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { AppShell } from '@/components/layout/AppShell'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
@@ -455,7 +456,12 @@ function DashboardContent() {
         </Card>
       </motion.div>
 
-      {/* Footer: datos locales + debug + branding */}
+      {/* Footer: datos locales + debug + branding.
+          Controles destructivos SOLO en dev (SEED_FIXTURES): en prod,
+          "Resetear a fixtures" / "Borrar todo" pondrían los slices en []
+          y el sync engine emitiría un DELETE de la data real (ej. Diana)
+          hacia Supabase. Footgun del split-brain — oculto en producción. */}
+      {SEED_FIXTURES && (
       <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans">Datos locales</span>
         <div className="flex gap-2">
@@ -495,6 +501,7 @@ function DashboardContent() {
           </AlertDialog>
         </div>
       </div>
+      )}
 
       <div className="mt-8 pt-4 border-t border-border flex justify-between">
         <span className="text-[10px] text-muted-foreground/60 font-mono">SIR V2 &mdash; Fase 4 &mdash; UI Produccion</span>

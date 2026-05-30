@@ -6,6 +6,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Recommendation, RecommendationStatus } from '@/types'
 import { fixtureRecommendation } from '@/data/fixtures'
+import { SEED_FIXTURES, purgeFixtureRows } from '@/data/fixtures/seed'
 import { STORAGE_KEYS } from './storage'
 
 interface RecommendationState {
@@ -25,9 +26,9 @@ interface RecommendationActions {
 
 export type RecommendationStore = RecommendationState & RecommendationActions
 
-const INITIAL_STATE: RecommendationState = {
-    recommendations: [fixtureRecommendation],
-}
+const INITIAL_STATE: RecommendationState = SEED_FIXTURES
+    ? { recommendations: [fixtureRecommendation] }
+    : { recommendations: [] }
 
 export const useRecommendationStore = create<RecommendationStore>()(
     persist(
@@ -76,6 +77,16 @@ export const useRecommendationStore = create<RecommendationStore>()(
           }),
       {
               name: STORAGE_KEYS.RECOMMENDATION,
+              // v1: purga la recomendación sembrada (rec_initial_001).
+              version: 1,
+              migrate: (state) => {
+                      if (!state || typeof state !== 'object') return state
+                      const s = state as Partial<RecommendationState>
+                      return {
+                              ...(state as object),
+                              recommendations: purgeFixtureRows(s.recommendations),
+                      } as RecommendationState
+              },
       }
         )
   )

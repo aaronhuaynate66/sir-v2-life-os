@@ -15,11 +15,7 @@
 'use client'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import {
-  fixturePeople, fixtureRelationships, fixtureGoals, fixtureSignals,
-  fixtureSleepRecords, fixtureMetrics, fixtureFinancialMovements,
-  fixtureMemories,
-} from '@/data/fixtures'
+import { FIXTURE_IDS } from '@/data/fixtures/seed'
 import { useMemoryStore } from '@/stores/useMemoryStore'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useFinanceStore } from '@/stores/useFinanceStore'
@@ -34,18 +30,9 @@ import {
 } from '@/lib/supabase/sync'
 import type { TableAdapter } from './types'
 
-// IDs that came pre-seeded with the app. These are not real user data;
-// they should never be pushed to DB.
-const FIXTURE_IDS = new Set<string>([
-  ...fixturePeople.map((x) => x.id),
-  ...fixtureRelationships.map((x) => x.id),
-  ...fixtureGoals.map((x) => x.id),
-  ...fixtureSignals.map((x) => x.id),
-  ...fixtureSleepRecords.map((x) => x.id),
-  ...fixtureMetrics.map((x) => x.id),
-  ...fixtureFinancialMovements.map((x) => x.id),
-  ...fixtureMemories.map((x) => x.id),
-])
+// IDs pre-sembrados (FIXTURE_IDS, fuente única en @/data/fixtures/seed).
+// Nunca se pushean al DB. La lista es de strings literales, así este path
+// (que corre en prod) no vuelve a importar los objetos fixture al bundle.
 
 const RETRY_DELAY_MS = 2000
 
