@@ -380,6 +380,19 @@ def read_adrs(decisions_dir: Path) -> list[ADR]:
     return adrs
 
 
+def read_backlog(backlog_path: Path) -> str:
+    """Lee docs/BACKLOG.md VERBATIM. Es la fuente humana editable; este
+    script solo lo embebe (sin parsear ni filtrar) para que cada
+    regeneracion del MASTER_PLAN preserve el contenido.
+
+    Si el archivo no existe, devuelve "" — la seccion correspondiente se
+    omite y el generador sigue funcionando.
+    """
+    if not backlog_path.exists():
+        return ""
+    return backlog_path.read_text(encoding="utf-8")
+
+
 def is_bot_commit(c: Commit) -> bool:
     login = c.author_login.lower()
     email = c.author_email.lower()
@@ -635,7 +648,7 @@ def section_header(last_update_iso_value: str, head_short: str, active_phase: di
         f"**Fase activa:** {active_phase['title']} — {active_phase['wedge']}  ",
         f"**Hash del último commit humano:** `{head_short}`",
         "",
-        "> 📋 Para backlog de próximas sesiones, ideas brainstorm y descartados, ver [docs/BACKLOG.md](docs/BACKLOG.md).",
+        "> 📋 El backlog vive embebido más abajo (sección \"Backlog\"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.",
         "",
         "> SIR V2 es un Life Operating System que evoluciona en capas progresivas.",
         "> Activo central: Human Contextual Memory Graph acumulado durante años.",
@@ -904,6 +917,27 @@ def section_runtime_validation() -> str:
     return "\n".join(lines)
 
 
+def section_backlog(backlog_text: str) -> str:
+    """Embebe docs/BACKLOG.md verbatim. Si esta vacio (archivo ausente),
+    devuelve "" y la seccion se omite de render() — el body se compacta
+    naturalmente."""
+    if not backlog_text:
+        return ""
+    lines = [
+        "## Backlog (fuente editable: docs/BACKLOG.md)",
+        "",
+        "> Este bloque viene **embebido verbatim** desde `docs/BACKLOG.md` en cada",
+        "> regeneración. Editá `docs/BACKLOG.md` directamente; este MASTER_PLAN se",
+        "> reescribe completo cuando el workflow corre. No editar acá.",
+        "",
+        backlog_text.rstrip(),
+        "",
+        "---",
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def section_footer() -> str:
     return (
         "## Cómo se mantiene este documento\n"
@@ -934,6 +968,7 @@ def render(
     milestones: list[Milestone],
     commits: list[Commit],
     adrs: list[ADR],
+    backlog_text: str = "",
 ) -> str:
     last_update = latest_update_iso(issues)
     head_short = latest_non_bot_commit_short(commits)
@@ -951,6 +986,9 @@ def render(
         section_runtime_validation(),
         section_commits(commits),
         section_infrastructure(),
+        # Backlog embebido — verbatim desde docs/BACKLOG.md (fuente editable).
+        # Va aca, despues de fases/issues/infra y antes del footer.
+        section_backlog(backlog_text),
         section_footer(),
     ]
     body = "\n".join(parts)
@@ -975,10 +1013,12 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     out_path = (repo_root / args.output).resolve()
     decisions_dir = repo_root / "docs" / "decisions"
+    backlog_path = repo_root / "docs" / "BACKLOG.md"
 
     log(f"repo:          {args.repo}")
     log(f"output:        {out_path}")
     log(f"decisions dir: {decisions_dir}")
+    log(f"backlog file:  {backlog_path}")
 
     try:
         issues = fetch_issues(args.repo)
@@ -989,13 +1029,15 @@ def main() -> int:
         return 1
 
     adrs = read_adrs(decisions_dir)
+    backlog_text = read_backlog(backlog_path)
 
     log(f"issues:     {len(issues)} ({sum(1 for i in issues if i.state == 'OPEN')} abiertos)")
     log(f"milestones: {len(milestones)}")
     log(f"commits:    {len(commits)} (raw)")
     log(f"adrs:       {len(adrs)}")
+    log(f"backlog:    {len(backlog_text)} chars ({backlog_text.count(chr(10))} lineas)")
 
-    new_content = render(issues, milestones, commits, adrs)
+    new_content = render(issues, milestones, commits, adrs, backlog_text)
     log(f"output renderizado: {len(new_content)} chars, {new_content.count(chr(10))} lineas")
 
     if out_path.exists():
