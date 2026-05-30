@@ -58,12 +58,30 @@ function mod(a: number, b: number): number {
   return ((a % b) + b) % b
 }
 
-// Boundaries = midpoints entre los 8 centros equispaciados (SYNODIC/8).
-// La fase 'new' STRADDLES la frontera del mes sinódico: vive en
-// [0, 1.84566) Y en [27.68493, SYNODIC]. Lo manejamos con una check
-// extra en lookupPhase() para no romper la convención del lookup
-// estrictamente creciente.
-const NEW_WRAPAROUND_START = 27.68493
+// Bucketing NO equiespaciado: las 4 fases cardinales (nueva, cuarto
+// creciente, llena, cuarto menguante) ocupan ventanas ANGOSTAS (1 día
+// ≈ half-width 0.5 días) alrededor de su centro exacto. Las 4 fases
+// intermedias llenan el resto.
+//
+// Razon del cambio (Sesion 7 fix): el bucketing equiespaciado previo
+// metia age=13.77 (2026-05-30, llena REAL al 100% recien el 31)
+// dentro de 'full' a 99% — etiqueta visualmente equivocada vs la app
+// de referencia. Una ventana angosta para llena ([14.27, 15.27])
+// coloca al 30/05 en 'waxing_gibbous' (correcto) y reserva 'full'
+// para el dia del pico real.
+//
+// Centros (SYNODIC * k/4):
+//   new=0, first_quarter=7.38265, full=14.76529, last_quarter=22.14794
+//
+// La fase 'new' STRADDLES el mes sinódico: vive en [SYNODIC-0.5, SYNODIC]
+// (wrap) Y en [0, 0.5). Lo maneja lookupPhase() con un check explicito
+// antes de la tabla.
+const CARDINAL_HALF_WIDTH = 0.5
+const NEW_END = CARDINAL_HALF_WIDTH // 0.5
+const NEW_WRAPAROUND_START = SYNODIC_MONTH - CARDINAL_HALF_WIDTH // 29.03058867
+const FIRST_QUARTER_CENTER = SYNODIC_MONTH * 0.25 // 7.38264717
+const FULL_CENTER = SYNODIC_MONTH * 0.5 // 14.76529434
+const LAST_QUARTER_CENTER = SYNODIC_MONTH * 0.75 // 22.14794150
 
 const PHASE_TABLE: Array<{
   id: LunarPhaseId
@@ -74,14 +92,58 @@ const PHASE_TABLE: Array<{
   /** Fin del rango en ageDays (exclusive). */
   end: number
 }> = [
-  { id: 'new', label: 'Luna nueva', symbol: '🌑', start: 0, end: 1.84566 },
-  { id: 'waxing_crescent', label: 'Creciente iluminante', symbol: '🌒', start: 1.84566, end: 5.53699 },
-  { id: 'first_quarter', label: 'Cuarto creciente', symbol: '🌓', start: 5.53699, end: 9.22831 },
-  { id: 'waxing_gibbous', label: 'Gibosa creciente', symbol: '🌔', start: 9.22831, end: 12.91963 },
-  { id: 'full', label: 'Luna llena', symbol: '🌕', start: 12.91963, end: 16.61096 },
-  { id: 'waning_gibbous', label: 'Gibosa menguante', symbol: '🌖', start: 16.61096, end: 20.30228 },
-  { id: 'last_quarter', label: 'Cuarto menguante', symbol: '🌗', start: 20.30228, end: 23.99361 },
-  { id: 'waning_crescent', label: 'Menguante final', symbol: '🌘', start: 23.99361, end: NEW_WRAPAROUND_START },
+  // 'new' está en index 0 SOLO para la mitad [0, 0.5). La mitad de wrap
+  // se resuelve en lookupPhase() antes de iterar la tabla.
+  { id: 'new', label: 'Luna nueva', symbol: '🌑', start: 0, end: NEW_END },
+  {
+    id: 'waxing_crescent',
+    label: 'Luna creciente',
+    symbol: '🌒',
+    start: NEW_END,
+    end: FIRST_QUARTER_CENTER - CARDINAL_HALF_WIDTH,
+  },
+  {
+    id: 'first_quarter',
+    label: 'Cuarto creciente',
+    symbol: '🌓',
+    start: FIRST_QUARTER_CENTER - CARDINAL_HALF_WIDTH,
+    end: FIRST_QUARTER_CENTER + CARDINAL_HALF_WIDTH,
+  },
+  {
+    id: 'waxing_gibbous',
+    label: 'Creciente gibosa',
+    symbol: '🌔',
+    start: FIRST_QUARTER_CENTER + CARDINAL_HALF_WIDTH,
+    end: FULL_CENTER - CARDINAL_HALF_WIDTH,
+  },
+  {
+    id: 'full',
+    label: 'Luna llena',
+    symbol: '🌕',
+    start: FULL_CENTER - CARDINAL_HALF_WIDTH,
+    end: FULL_CENTER + CARDINAL_HALF_WIDTH,
+  },
+  {
+    id: 'waning_gibbous',
+    label: 'Menguante gibosa',
+    symbol: '🌖',
+    start: FULL_CENTER + CARDINAL_HALF_WIDTH,
+    end: LAST_QUARTER_CENTER - CARDINAL_HALF_WIDTH,
+  },
+  {
+    id: 'last_quarter',
+    label: 'Cuarto menguante',
+    symbol: '🌗',
+    start: LAST_QUARTER_CENTER - CARDINAL_HALF_WIDTH,
+    end: LAST_QUARTER_CENTER + CARDINAL_HALF_WIDTH,
+  },
+  {
+    id: 'waning_crescent',
+    label: 'Luna menguante',
+    symbol: '🌘',
+    start: LAST_QUARTER_CENTER + CARDINAL_HALF_WIDTH,
+    end: NEW_WRAPAROUND_START,
+  },
 ]
 
 // La propiedad waxing/waning es geometrica (creciendo vs decreciendo),
