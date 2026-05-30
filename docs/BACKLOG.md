@@ -187,21 +187,25 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 **Regla operativa vigente:**
 > Gestionar personas **siempre por UI** (`/relaciones` modal Eliminar). **Nunca** por SQL directo en Supabase: queda fila huérfana en localStorage del usuario hasta el próximo manual cleanup.
 
-### Sincronización en vivo entre dispositivos (sync cross-device near-real-time)
+### Sincronización en vivo entre dispositivos (sync cross-device) ✅ RESUELTO (verificado en vivo)
 
-**Síntoma:** hoy el sync es **push inmediato en mutación + pull SOLO al cargar/loguear** (sin realtime, sin polling, sin refresco al recuperar foco). Un cambio en un dispositivo se ve en el otro **recién al recargar**. Confirmado en el código del sync engine: el `pull` corre solo en `start()` (carga de la app tras hidratación del persist + evento `SIGNED_IN`); el `push` lo dispara cualquier mutación del store vía el `store.subscribe`.
+**Estado:** CREATE / UPDATE / DELETE se propagan en vivo entre dispositivos **sin recargar**. Verificado end-to-end en prod con dos pestañas (incluido el borrado, sin resurrección, Diana intacta).
 
-**Objetivo:** que un cambio (incluido **borrado**) hecho en el celular aparezca en la web **sin recargar**, y viceversa.
+**Síntoma original:** el sync era push inmediato en mutación + pull SOLO al cargar/loguear → los cambios del otro dispositivo se veían recién al recargar.
 
-**Enfoques posibles (de menor a mayor esfuerzo):**
-- (a) **Re-pull al recuperar foco** de la pestaña (`visibilitychange`) y/o en navegación client-side — barato, cubre el 80% del caso "abrí la otra pestaña y veo lo último".
-- (b) **Supabase Realtime subscriptions** por tabla del Camino A (people/relationships/goals/signals/self/finance/memories/recommendations) para aplicar cambios remotos en vivo (incluye DELETEs).
+**Solución entregada (varias capas; las 3 migraciones ya aplicadas en prod):**
+- **Re-pull al recuperar foco/visibilidad** (`visibilitychange` + `window 'focus'`, throttle 2s) + **re-push de pendientes al reconectar** (`online`) — engine `attachSupabaseSync`.
+- **Supabase Realtime** (`postgres_changes`, event `*`) por tabla del Camino A; cada evento dispara un re-pull debounced (600ms), DB-autoritativo. Migración **0017** (agrega las 9 tablas a la publicación `supabase_realtime`).
+- **DELETE en vivo** requirió dos piezas más:
+  - **0018** `REPLICA IDENTITY FULL` en las 9 tablas → el evento DELETE incluye la fila vieja con `user_id` para que Realtime evalúe la RLS y lo entregue.
+  - **0019** `publish='insert,update,delete,truncate'` en `supabase_realtime` → la publicación efectivamente emite DELETE.
+- **Reconciliación con `pendingIds`** (no `knownIds`): en el pull se preservan SOLO las filas con push local pendiente; toda fila local ausente de DB sin push pendiente (delete remoto o fantasma adoptada por pull viejo) se dropea. Esto fue el eslabón final: sin él, una fila adoptada por sync no se borraba en el receptor ante un delete remoto.
 
-**Considerar además:**
-- Mitigar el **last-write-wins por fila** (el `upsert` por `onConflict: 'id'` pisa la fila entera): merge por campo o timestamps de conflicto.
-- **Reintento automático de pushes offline fallidos al reconectar** (hoy un push que agota los 3 reintentos no se re-pushea solo hasta la próxima mutación de esa fila o recarga).
+**Invariantes:** los re-pulls corren bajo `isApplyingPull` (nunca emiten DELETE/upsert a prod, sin loop de eco); las altas offline se preservan (`pendingIds`) y se re-pushean al reconectar.
 
-**Prioridad:** media-alta — antes de uso multi-dispositivo intensivo o beta.
+**Pendientes menores (no bloquean, quedan para iteración):**
+- Mitigar el **last-write-wins por fila** (el `upsert` por `onConflict:'id'` pisa la fila entera): merge por campo o timestamps de conflicto. Hay una ventana de carrera last-write-wins más visible ahora que se re-pullea seguido.
+- Logging de diagnóstico `[sync]` gateado tras `localStorage 'sir-debug-sync'` (silencioso por defecto; se deja para debug futuro).
 
 ---
 
