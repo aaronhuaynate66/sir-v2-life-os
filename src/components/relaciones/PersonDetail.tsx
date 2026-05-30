@@ -29,6 +29,8 @@ import { createClient } from '@/lib/supabase/client'
 import { ensureUniqueSlug, generateSlug, isValidSlug } from '@/lib/people/slug'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
+import { RelationalScore } from './RelationalScore'
+import { BirthdayCountdown } from './BirthdayCountdown'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
 
@@ -247,24 +249,14 @@ export function PersonDetail({
           <Row label="Frecuencia contacto" value={live.contactFrequency || '—'} />
           {live.lastContact && <Row label="Último contacto" value={live.lastContact} />}
           {live.location && <Row label="Ubicación" value={live.location} />}
+          {live.birthDate && <Row label="Fecha de nacimiento" value={live.birthDate} />}
         </CardContent>
       </Card>
 
-      {/* ─── Sesion 3 PR-A: secciones del detail page V2 ─────────────── */}
-      {/* RelationalScore + BirthdayCountdown vienen en PR-B. */}
+      {/* ─── Sesion 3 PR-B: RelationalScore + BirthdayCountdown reales ── */}
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
-        <PlaceholderSlot
-          label="Score relacional"
-          note="Fuerza · Reciprocidad · Confianza (PR-B)"
-        />
-        <PlaceholderSlot
-          label="Cumpleaños"
-          note={
-            live.lastContact
-              ? 'Countdown desde birth_date (PR-B)'
-              : 'Sin birth_date — agregalo desde editar persona (PR-B)'
-          }
-        />
+        <RelationalScore person={live} lastChat={lastChat} />
+        <BirthdayCountdown birthDate={live.birthDate ?? null} personSlug={live.slug ?? null} />
       </div>
 
       <div className="mb-4">
@@ -322,21 +314,6 @@ function Row({ label, value }: { label: string; value: string }) {
       <span className="text-xs text-muted-foreground">{label}</span>
       <span className="text-sm">{value}</span>
     </div>
-  )
-}
-
-/** Placeholder visible para slots de PR-B. Mantiene el layout coherente
- *  sin pretender funcionalidad. */
-function PlaceholderSlot({ label, note }: { label: string; note: string }) {
-  return (
-    <Card className="shadow-none border-dashed">
-      <CardContent className="p-4 sm:p-6">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">
-          {label}
-        </div>
-        <p className="text-xs text-muted-foreground italic">{note}</p>
-      </CardContent>
-    </Card>
   )
 }
 

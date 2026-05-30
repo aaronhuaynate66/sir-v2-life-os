@@ -39,12 +39,14 @@ interface PersonForm {
   contactFrequency: string
   location: string
   notes: string
+  birthDate: string
 }
 
 const EMPTY_FORM: PersonForm = {
   name: '', alias: '', relationship: 'friend', category: 'network',
   importanceScore: 5, energyImpact: 'neutral', trustLevel: 5,
   lastContact: '', contactFrequency: '', location: '', notes: '',
+  birthDate: '',
 }
 
 function daysSince(dateStr: string): number {
@@ -106,6 +108,7 @@ function RelationshipsContent() {
       contactFrequency: person.contactFrequency,
       location: person.location ?? '',
       notes: person.notes,
+      birthDate: person.birthDate ?? '',
     })
     setShowForm(true)
   }
@@ -130,6 +133,7 @@ function RelationshipsContent() {
         contactFrequency: form.contactFrequency,
         location: form.location.trim() || undefined,
         notes: form.notes,
+        birthDate: form.birthDate || undefined,
         updatedAt: now,
       }
       updatePerson(editingId, patch)
@@ -164,6 +168,7 @@ function RelationshipsContent() {
         contactFrequency: form.contactFrequency,
         location: form.location.trim() || undefined,
         notes: form.notes,
+        birthDate: form.birthDate || undefined,
         tags: [],
         createdAt: now,
         updatedAt: now,
@@ -302,6 +307,10 @@ function RelationshipsContent() {
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Ubicacion</label>
                 <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Ciudad o pais" />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Fecha de nacimiento</label>
+                <Input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} className="font-mono" />
               </div>
             </div>
             <div className="mt-4 flex gap-2 justify-end">
