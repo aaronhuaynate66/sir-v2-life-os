@@ -336,7 +336,7 @@ export function WhatsAppCapturePreview({
                 disabled={saving}
                 className="text-xs"
               >
-                <UserPlus size={13} strokeWidth={1.75} className="mr-1.5" />
+                <UserPlus size={13} strokeWidth={1.75} className="mr-1.5" aria-hidden="true" />
                 Crear nueva persona
               </Button>
             </div>
@@ -483,11 +483,12 @@ export function WhatsAppCapturePreview({
                 }
               }}
               placeholder="agregar tema (ej. health, work_context)"
+              aria-label="Agregar tema"
               disabled={saving}
               className="text-sm"
             />
-            <Button type="button" size="sm" variant="outline" onClick={addTopic} disabled={saving || !newTopic.trim()}>
-              <Plus size={13} strokeWidth={1.75} />
+            <Button type="button" size="sm" variant="outline" onClick={addTopic} disabled={saving || !newTopic.trim()} aria-label="Agregar tema">
+              <Plus size={13} strokeWidth={1.75} aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -585,6 +586,7 @@ export function WhatsAppCapturePreview({
                   <Input
                     value={q}
                     onChange={(e) => updateReflectionQuestion(i, e.target.value)}
+                    aria-label={`Pregunta reflexiva ${i + 1}`}
                     disabled={saving}
                     className="text-sm"
                   />

@@ -179,14 +179,14 @@ export function NotaDeVozPanel({ personId, observations }: NotaDeVozPanelProps) 
             <div className="flex items-center gap-3 flex-wrap">
               {phase === 'idle' && (
                 <Button size="sm" onClick={startRecording}>
-                  <Mic size={14} strokeWidth={1.75} className="mr-1.5" />
+                  <Mic size={14} strokeWidth={1.75} className="mr-1.5" aria-hidden="true" />
                   Grabar
                 </Button>
               )}
               {phase === 'recording' && (
                 <>
                   <Button size="sm" variant="outline" onClick={stopRecording} className="border-red-500/40 text-red-400 hover:bg-red-500/10">
-                    <Square size={13} strokeWidth={2} className="mr-1.5 fill-current" />
+                    <Square size={13} strokeWidth={2} className="mr-1.5 fill-current" aria-hidden="true" />
                     Detener
                   </Button>
                   <span className="flex items-center gap-1.5 text-sm font-mono tabular-nums text-red-400">
@@ -283,8 +283,8 @@ function VoiceNoteRow({ obs, onDeleted }: { obs: Observation; onDeleted: () => v
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {!url ? (
-            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={play} disabled={loading}>
-              {loading ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} strokeWidth={1.75} />}
+            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={play} disabled={loading} aria-label="Reproducir nota de voz">
+              {loading ? <Loader2 size={13} className="animate-spin" aria-hidden="true" /> : <Play size={13} strokeWidth={1.75} aria-hidden="true" />}
             </Button>
           ) : null}
           <span className="text-xs text-muted-foreground font-mono">
