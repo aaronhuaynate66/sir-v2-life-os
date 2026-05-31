@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `42c80b5`
+**Hash del último commit humano:** `7b3249d`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -312,6 +312,7 @@ _(sin issues en esta categoría)_
 | 0003 | [RichContextDebugPanel renderizado client-only para evitar hydration mismatch](docs/decisions/0003-client-only-debug-panel.md) | Accepted | 2026-05-23 |
 | 0004 | [Context Snapshot History: store separado y captura por eventos](docs/decisions/0004-context-snapshot-history.md) | Accepted | 2026-05-25 |
 | 0005 | [Arquitectura del Timeline (Fase 3a) — multi-query paralela, estado en React, shape unificada](docs/decisions/0005-timeline-architecture.md) | Proposed | 2026-05-28 |
+| 0006 | [SIR optimiza bienestar relacional, NO engagement](docs/decisions/0006-wellbeing-not-engagement.md) | Accepted | 2026-05-30 |
 
 Auto-generado leyendo `docs/decisions/`.
 
@@ -340,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `42c80b5` | Aaron Huaynate | feat(detail-page): edicion inline completa en /relaciones/[slug] (#5) | 2026-05-30 |
-| `52728c6` | Aaron Huaynate | feat(search): UI /buscar - busqueda semantica en lenguaje natural (Fase 3b) | 2026-05-30 |
-| `6fa12f1` | Aaron Huaynate | feat(search): Fase 3b foundation - pgvector + embeddings + RPC + endpoints | 2026-05-30 |
-| `2f6f8e0` | Aaron Huaynate | refactor(sync): Supabase fuente de verdad - reconciliacion DB-autoritativa (split-brain) | 2026-05-30 |
-| `f224fe8` | Aaron Huaynate | feat(detail-page): Nota de voz - grabar/guardar/reproducir (#12) | 2026-05-30 |
-| `9df7a1f` | Aaron Huaynate | feat(detail-page): Bitacora colapsable - historial de interacciones (#17) | 2026-05-30 |
-| `1cfcc74` | Aaron Huaynate | feat(detail-page): Perfil profesional colapsable (#10) | 2026-05-30 |
-| `d4b5f0c` | Aaron Huaynate | fix(stores): no sembrar fixtures en prod + autolimpiar localStorage (split-brain) | 2026-05-30 |
-| `de0012a` | Aaron Huaynate | feat(detail-page): Memorias asociadas - filtro por tipo + colapso (#15) | 2026-05-30 |
-| `0af99ac` | Aaron Huaynate | feat(detail-page): botones top-right - Chat WhatsApp + Briefing IA (#16) | 2026-05-30 |
+| `7b3249d` | Aaron Huaynate | fix(memories): anclar idempotencia en el PK (source_event_id no existe en prod) | 2026-05-31 |
+| `14dd9e3` | Aaron Huaynate | feat(memories): derivar memorias desde observations (camino aditivo) | 2026-05-31 |
+| `ababe31` | Aaron Huaynate | feat(export): dossier imprimible de persona (print stylesheet + window.print) | 2026-05-31 |
+| `eaab167` | Aaron Huaynate | feat(export): export CSV client-side (data ownership) | 2026-05-31 |
+| `874f019` | Aaron Huaynate | feat(longitudinal): vista de correlación Fase 3c — person_logs × fase lunar × ciclo | 2026-05-31 |
+| `40a8324` | Aaron Huaynate | feat(charts): gráficos de tendencias (series temporales, viz SVG propia) | 2026-05-31 |
+| `238376f` | Aaron Huaynate | feat(agenda): vista "Próximo" — recordatorios accionables + agenda global de fechas | 2026-05-31 |
+| `01176e9` | Aaron Huaynate | fix(quality): state-leak de PersonDetail entre vistas + unificación de cajas de error restantes | 2026-05-31 |
+| `7439e81` | Aaron Huaynate | a11y: nombres accesibles en inputs/botones icon-only + aria-hidden en íconos decorativos | 2026-05-31 |
+| `c0e6e9e` | Aaron Huaynate | refactor(errors): adoptar ApiErrorNotice + parseErrorResponse en MemoriasAsociadasPanel | 2026-05-31 |
 
 ---
 
@@ -564,6 +565,26 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
 **Regla operativa vigente:**
 > Gestionar personas **siempre por UI** (`/relaciones` modal Eliminar). **Nunca** por SQL directo en Supabase: queda fila huérfana en localStorage del usuario hasta el próximo manual cleanup.
+
+### Sincronización en vivo entre dispositivos (sync cross-device) ✅ RESUELTO (verificado en vivo)
+
+**Estado:** CREATE / UPDATE / DELETE se propagan en vivo entre dispositivos **sin recargar**. Verificado end-to-end en prod con dos pestañas (incluido el borrado, sin resurrección, Diana intacta).
+
+**Síntoma original:** el sync era push inmediato en mutación + pull SOLO al cargar/loguear → los cambios del otro dispositivo se veían recién al recargar.
+
+**Solución entregada (varias capas; las 3 migraciones ya aplicadas en prod):**
+- **Re-pull al recuperar foco/visibilidad** (`visibilitychange` + `window 'focus'`, throttle 2s) + **re-push de pendientes al reconectar** (`online`) — engine `attachSupabaseSync`.
+- **Supabase Realtime** (`postgres_changes`, event `*`) por tabla del Camino A; cada evento dispara un re-pull debounced (600ms), DB-autoritativo. Migración **0017** (agrega las 9 tablas a la publicación `supabase_realtime`).
+- **DELETE en vivo** requirió dos piezas más:
+  - **0018** `REPLICA IDENTITY FULL` en las 9 tablas → el evento DELETE incluye la fila vieja con `user_id` para que Realtime evalúe la RLS y lo entregue.
+  - **0019** `publish='insert,update,delete,truncate'` en `supabase_realtime` → la publicación efectivamente emite DELETE.
+- **Reconciliación con `pendingIds`** (no `knownIds`): en el pull se preservan SOLO las filas con push local pendiente; toda fila local ausente de DB sin push pendiente (delete remoto o fantasma adoptada por pull viejo) se dropea. Esto fue el eslabón final: sin él, una fila adoptada por sync no se borraba en el receptor ante un delete remoto.
+
+**Invariantes:** los re-pulls corren bajo `isApplyingPull` (nunca emiten DELETE/upsert a prod, sin loop de eco); las altas offline se preservan (`pendingIds`) y se re-pushean al reconectar.
+
+**Pendientes menores (no bloquean, quedan para iteración):**
+- Mitigar el **last-write-wins por fila** (el `upsert` por `onConflict:'id'` pisa la fila entera): merge por campo o timestamps de conflicto. Hay una ventana de carrera last-write-wins más visible ahora que se re-pullea seguido.
+- Logging de diagnóstico `[sync]` gateado tras `localStorage 'sir-debug-sync'` (silencioso por defecto; se deja para debug futuro).
 
 ---
 
