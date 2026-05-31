@@ -35,9 +35,11 @@ const ALLOWED_MIME = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gi
 const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10 MB
 const VALID_TYPE_HINTS: ReadonlySet<CaptureType> = new Set<CaptureType>([
   'whatsapp_chat',
+  'whatsapp_web',
   'whatsapp_info',
   'instagram',
   'linkedin',
+  'scale',
   'manual_note',
   'voice_note',
   'unknown',

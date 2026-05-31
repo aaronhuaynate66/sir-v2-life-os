@@ -41,11 +41,14 @@ function isRecord(x: unknown): x is Record<string, unknown> {
 export function isValidDetectorResult(x: unknown): x is DetectorResult {
   if (!isRecord(x)) return false
 
+  // Vision a veces emite el enum con whitespace/newline ("scale\n"). Lo
+  // toleramos: comparamos contra el set en su forma trimmeada. El sanitize
+  // posterior persiste el valor limpio.
   if (typeof x.type !== 'string') return false
-  if (!VALID_TYPES.has(x.type as CaptureType)) return false
+  if (!VALID_TYPES.has(x.type.trim() as CaptureType)) return false
 
   if (typeof x.confidence !== 'string') return false
-  if (!VALID_CONFIDENCES.has(x.confidence as Confidence)) return false
+  if (!VALID_CONFIDENCES.has(x.confidence.trim() as Confidence)) return false
 
   if (typeof x.reasoning !== 'string') return false
 
@@ -65,8 +68,9 @@ export function sanitizeDetectorResult(x: DetectorResult): DetectorResult {
   const namedRaw = typeof x.suggestedPersonName === 'string' ? x.suggestedPersonName.trim() : null
   const suggestedPersonName = namedRaw && namedRaw.length > 0 ? namedRaw.slice(0, 200) : null
   return {
-    type: x.type,
-    confidence: x.confidence,
+    // Normalizamos el enum (el guard ya validó la forma trimmeada).
+    type: x.type.trim() as CaptureType,
+    confidence: x.confidence.trim() as Confidence,
     reasoning,
     suggestedPersonName,
   }
