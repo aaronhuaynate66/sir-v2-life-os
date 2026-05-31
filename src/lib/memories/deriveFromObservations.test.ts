@@ -11,7 +11,8 @@ import type { Observation, CaptureType } from '@/lib/capture/observations/types'
 import {
   deriveKey,
   parseDerivedKey,
-  coveredObservationIds,
+  derivedMemoryId,
+  observationIdFromMemoryId,
   selectUncoveredObservations,
   extractObservationText,
   extractTopics,
@@ -65,9 +66,18 @@ describe('clave estable / idempotencia', () => {
     expect(parseDerivedKey(deriveKey(id, 0))).toEqual({ observationId: id, index: 0 })
   })
 
-  it('coveredObservationIds extrae solo las claves obs:', () => {
-    const set = coveredObservationIds(['obs:a:0', 'obs:a:1', 'evt_x', null, 'obs:b:0'])
-    expect([...set].sort()).toEqual(['a', 'b'])
+  it('derivedMemoryId construye el PK determinístico (mem_obs:<id>:<n>)', () => {
+    expect(derivedMemoryId('o1', 0)).toBe('mem_obs:o1:0')
+    expect(derivedMemoryId('o1', 2)).toBe('mem_obs:o1:2')
+  })
+
+  it('observationIdFromMemoryId es el inverso del PK derivado', () => {
+    expect(observationIdFromMemoryId('mem_obs:o1:0')).toBe('o1')
+    expect(observationIdFromMemoryId('mem_obs:7de2-626d:1')).toBe('7de2-626d')
+    // ids ajenos (no derivados) → null
+    expect(observationIdFromMemoryId('mem_evt_abc')).toBeNull()
+    expect(observationIdFromMemoryId('otro')).toBeNull()
+    expect(observationIdFromMemoryId(null)).toBeNull()
   })
 
   it('selectUncoveredObservations filtra las ya derivadas', () => {
@@ -223,13 +233,15 @@ describe('parseDeriveResponse', () => {
 })
 
 describe('derivedMemoryToRow', () => {
-  it('incluye observation_id inferido de la clave + source_event_id', () => {
+  it('ancla en el PK id + observation_id; NO escribe source_event_id', () => {
     const m = baseMemoryFromObservation('X', obs({ id: 'o42' }))
     const row = derivedMemoryToRow(m, 'user-1')
+    expect(row.id).toBe('mem_obs:o42:0')
     expect(row.user_id).toBe('user-1')
-    expect(row.source_event_id).toBe('obs:o42:0')
     expect(row.observation_id).toBe('o42')
     expect(row.source).toBe('inferred')
     expect(row.occurred_at).toBe(m.timestamp)
+    // source_event_id NO debe estar en el row (columna ausente en prod).
+    expect('source_event_id' in row).toBe(false)
   })
 })

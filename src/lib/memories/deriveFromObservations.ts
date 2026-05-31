@@ -5,11 +5,16 @@
 // memorias en la tabla `memories` a partir de observations curadas, SIN
 // tocar el flujo viejo (relationships.history / backfill 0012 siguen vivos).
 //
-// IDEMPOTENCIA SIN MIGRACIÓN: reusamos el unique index parcial existente
-// (user_id, source_event_id). La clave estable por memoria es
-//   `obs:<observationId>:<n>`
-// (prefijo 'obs:' → nunca colisiona con las del backfill viejo, que usan
-// ids de RelationshipEvent). Re-derivar hace ON CONFLICT DO NOTHING.
+// IDEMPOTENCIA ANCLADA EN EL PRIMARY KEY:
+//   El id de cada memoria derivada es determinístico:
+//     id = `mem_obs:<observationId>:<n>`
+//   El PK `memories.id` SIEMPRE existe (0001) → re-derivar hace upsert con
+//   ON CONFLICT (id) DO NOTHING, sin depender de columnas opcionales.
+//
+//   (Decisión post-bug 31/05: la versión previa anclaba en
+//   source_event_id, columna de la migration 0012 que NUNCA se aplicó en
+//   prod. El PK es la única clave garantizada. `observation_id` —de 0010—
+//   se setea igual, para linkear y para el skip pre-LLM.)
 //
 // SÍNTESIS: el route usa Anthropic (ver derivePrompt.ts). Este módulo provee
 // el armado determinístico (clave estable, selección de no-cubiertas, mapeo
@@ -70,15 +75,17 @@ export function parseDerivedKey(
   return { observationId: m[1], index: Number(m[2]) }
 }
 
-/** Ids de observation ya cubiertos a partir de las claves source_event_id
- *  existentes (las que no son del namespace 'obs:' se ignoran). */
-export function coveredObservationIds(sourceEventIds: (string | null | undefined)[]): Set<string> {
-  const set = new Set<string>()
-  for (const k of sourceEventIds) {
-    const parsed = parseDerivedKey(k)
-    if (parsed) set.add(parsed.observationId)
-  }
-  return set
+/** Primary key determinístico de una memoria derivada: `mem_obs:<id>:<n>`.
+ *  Es la ANCLA de idempotencia (upsert ON CONFLICT (id) DO NOTHING). */
+export function derivedMemoryId(observationId: string, index: number): string {
+  return `mem_${deriveKey(observationId, index)}`
+}
+
+/** Inverso de derivedMemoryId: extrae el observationId de un PK derivado.
+ *  null si el id no es del namespace derivado. */
+export function observationIdFromMemoryId(memId: string | null | undefined): string | null {
+  if (!memId || !memId.startsWith('mem_')) return null
+  return parseDerivedKey(memId.slice(4))?.observationId ?? null
 }
 
 /** Observations que todavía NO fueron derivadas (idempotencia barata antes
@@ -196,7 +203,7 @@ export function baseMemoryFromObservation(personName: string, obs: Observation):
   const timestamp = obs.observedAt || obs.capturedAt || obs.createdAt
 
   return {
-    id: `mem_${deriveKey(obs.id, 0)}`,
+    id: derivedMemoryId(obs.id, 0),
     type,
     title,
     content,
@@ -210,8 +217,10 @@ export function baseMemoryFromObservation(personName: string, obs: Observation):
     relatedMemories: [],
     personId: obs.personId ?? undefined,
     source: 'inferred',
+    // sourceEventId es el CARRIER en memoria de la clave (para derivar el
+    // PK id y la columna observation_id). NO se persiste en una columna
+    // source_event_id (esa es de 0012, que puede no existir en prod).
     sourceEventId: deriveKey(obs.id, 0),
-    // observationId NO está en el type Memory; lo agrega el row builder.
   }
 }
 
@@ -274,7 +283,7 @@ export function memoriesFromLlmItems(
     const key = deriveKey(obs.id, used)
 
     out.push({
-      id: `mem_${key}`,
+      id: derivedMemoryId(obs.id, used),
       type,
       title,
       content,
@@ -296,11 +305,15 @@ export function memoriesFromLlmItems(
   return out
 }
 
-// ─── Row builder para INSERT (incluye observation_id) ───────────────
+// ─── Row builder para INSERT ─────────────────────────────────────────
+//
+// NO escribe source_event_id (columna de 0012, ausente en prod). El PK
+// `id` (determinístico) es la clave de idempotencia. observation_id (0010)
+// se infiere de la clave en memoria para linkear y para el skip pre-LLM.
 
-/** observation_id se infiere de la clave estable (obs:<id>:<n>). */
 export function derivedMemoryToRow(m: Memory, userId: string): Record<string, unknown> {
-  const parsed = parseDerivedKey(m.sourceEventId)
+  const observationId =
+    observationIdFromMemoryId(m.id) ?? parseDerivedKey(m.sourceEventId)?.observationId ?? null
   return {
     id: m.id,
     user_id: userId,
@@ -317,7 +330,6 @@ export function derivedMemoryToRow(m: Memory, userId: string): Record<string, un
     occurred_at: m.timestamp,
     last_accessed: m.lastAccessed ?? m.timestamp,
     source: m.source ?? 'inferred',
-    source_event_id: m.sourceEventId ?? null,
-    observation_id: parsed ? parsed.observationId : null,
+    observation_id: observationId,
   }
 }

@@ -12,8 +12,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Memory, MemoryType } from '@/types'
 
+// NOTA: NO seleccionamos source_event_id — esa columna es de la migration
+// 0012 que puede no estar aplicada en prod (bug 31/05). Seleccionarla
+// rompería todo el fetch. rowToMemory ya tolera su ausencia (→ undefined).
 const MEMORY_COLUMNS =
-  'id, user_id, person_id, type, title, content, entities, emotional_charge, importance, decay_rate, tags, related_memories, occurred_at, last_accessed, created_at, source, source_event_id'
+  'id, user_id, person_id, type, title, content, entities, emotional_charge, importance, decay_rate, tags, related_memories, occurred_at, last_accessed, created_at, source'
 
 /** snake_case (DB) -> camelCase (TS). Compatible con rows pre-Sesion 4
  *  (source/source_event_id pueden venir null). */

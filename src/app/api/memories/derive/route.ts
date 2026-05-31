@@ -19,7 +19,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getObservationsForPerson } from '@/lib/observations/fetch'
 import {
   QUALIFYING_CAPTURE_TYPES,
-  coveredObservationIds,
+  derivedMemoryId,
+  observationIdFromMemoryId,
   selectUncoveredObservations,
   digestObservations,
   baseMemoriesFromObservations,
@@ -95,19 +96,23 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Idempotencia barata: saltar las observations ya derivadas.
+  // Idempotencia barata: saltar las observations ya derivadas. Anclamos en
+  // el PRIMARY KEY (siempre existe): probamos el id de índice 0 de cada
+  // observation; si está, esa observation ya fue derivada.
+  const probeIds = observations.map((o) => derivedMemoryId(o.id, 0))
   const { data: existing, error: existingErr } = await supabase
     .from('memories')
-    .select('source_event_id')
+    .select('id')
     .eq('user_id', userId)
-    .eq('person_id', personId)
-    .like('source_event_id', 'obs:%')
+    .in('id', probeIds)
   if (existingErr) {
     return errorJson(500, 'No se pudo leer memorias existentes', existingErr.message)
   }
-  const covered = coveredObservationIds(
-    (existing ?? []).map((r) => (r as { source_event_id: string | null }).source_event_id),
-  )
+  const covered = new Set<string>()
+  for (const r of existing ?? []) {
+    const obsId = observationIdFromMemoryId((r as { id: string }).id)
+    if (obsId) covered.add(obsId)
+  }
   const uncovered = selectUncoveredObservations(observations, covered)
 
   if (uncovered.length === 0) {
@@ -156,9 +161,11 @@ export async function POST(req: NextRequest) {
 
   const rows = memories.map((m) => derivedMemoryToRow(m, userId))
 
+  // Idempotencia por PRIMARY KEY (siempre existe): ON CONFLICT (id) DO
+  // NOTHING. Re-derivar la misma observation no duplica.
   const { data: inserted, error: upsertErr } = await supabase
     .from('memories')
-    .upsert(rows, { onConflict: 'user_id,source_event_id', ignoreDuplicates: true })
+    .upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
     .select('id')
   if (upsertErr) {
     return errorJson(500, 'No se pudieron guardar las memorias', upsertErr.message)
