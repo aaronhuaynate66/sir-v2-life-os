@@ -21,6 +21,12 @@ export type CaptureType =
   | 'linkedin'
   | 'manual_note'
   | 'voice_note'
+  // 'scale' = captura de báscula inteligente. El detector universal lo
+  // reconoce, pero NO se materializa como row de observations: las métricas
+  // van a `health_metrics` (capture_type='scale', migration 0005/0007) vía
+  // el flujo client-side de /lib/capture/scale. Por eso NO está en el CHECK
+  // de observations.capture_type (0010) — es un tipo "self", sin persona.
+  | 'scale'
   | 'unknown'
 
 /** Tipos de captura que SON una conversación real (no snapshot de perfil).
@@ -92,6 +98,11 @@ export function storageBucketFor(captureType: CaptureType): string | null {
       return 'instagram-captures'
     case 'linkedin':
       return 'linkedin-captures'
+    case 'scale':
+      // El screenshot de báscula sí se archiva, pero en su propio bucket
+      // privado (migration 0005). El upload lo hace persistScaleCapture,
+      // no el pipeline de observations.
+      return 'scale-captures'
     case 'manual_note':
     case 'voice_note':
     case 'unknown':

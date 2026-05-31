@@ -45,6 +45,9 @@ export const COMPRESSION_STRATEGIES = {
   whatsapp_info: { maxWidth: 1080, quality: 0.75, minOutputKB: 50 },
   instagram: { maxWidth: 1080, quality: 0.85, minOutputKB: 100 },
   linkedin: { maxWidth: 1600, quality: 0.95, minOutputKB: 300 },
+  // Báscula: grilla densa de números pequeños -> hace falta resolución y
+  // calidad para que Vision lea decimales (81.85, 23.4%, etc.) sin alucinar.
+  scale: { maxWidth: 1280, quality: 0.9, minOutputKB: 150 },
   manual_note: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },
   voice_note: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },
   unknown: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },

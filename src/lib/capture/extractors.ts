@@ -112,6 +112,13 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
           ) as unknown as Record<string, unknown>,
         maxTokens: 1800,
       }
+    case 'scale':
+      // La báscula NO usa el pipeline de observations: tiene su propio
+      // endpoint (/api/capture/scale) + persistencia a health_metrics.
+      // Devolver null hace que /api/capture/process rechace el tipo (no
+      // está en VALID_CAPTURE_TYPES_WITH_EXTRACTOR) y el caller lo rutea
+      // al flujo de báscula en su lugar.
+      return null
     case 'manual_note':
     case 'voice_note':
     case 'unknown':

@@ -6,12 +6,11 @@
 
 'use client'
 
-import type { HealthMetric } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { blobToBase64 } from './compress'
+import { buildScaleHealthMetrics } from './map'
 import type { ScaleCaptureExtracted, ScaleMetric } from './types'
-import { SCALE_METRICS_ORDER, SCALE_METRIC_MAPPING } from './types'
 
 const STORAGE_BUCKET = 'scale-captures'
 
@@ -89,24 +88,14 @@ export async function persistScaleCapture(args: PersistArgs): Promise<PersistRes
     throw new Error(`No se pudo subir la imagen: ${uploadError.message}`)
   }
 
-  // 2. Construir HealthMetric[]
-  const metrics: HealthMetric[] = []
-  for (const key of SCALE_METRICS_ORDER) {
-    const value = args.finalMetrics[key]
-    if (typeof value !== 'number' || !Number.isFinite(value)) continue
-    const mapping = SCALE_METRIC_MAPPING[key]
-    metrics.push({
-      id: `${captureId}__${key}`,
-      type: mapping.healthType,
-      value,
-      unit: mapping.unit,
-      timestamp: args.measuredAt,
-      captureId,
-      sourceImagePath,
-      captureType: 'scale',
-      note: args.confidence ? `Captura báscula (conf. ${args.confidence})` : 'Captura báscula',
-    })
-  }
+  // 2. Construir HealthMetric[] (mapeo puro, testeado en map.test.ts)
+  const metrics = buildScaleHealthMetrics({
+    finalMetrics: args.finalMetrics,
+    captureId,
+    sourceImagePath,
+    measuredAt: args.measuredAt,
+    confidence: args.confidence,
+  })
   if (metrics.length === 0) {
     // No hay métricas válidas — borrar la imagen subida para no dejar
     // basura, aunque RLS permite re-upload luego.

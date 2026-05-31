@@ -52,6 +52,7 @@ const CAPTURE_LABEL: Record<CaptureType, string> = {
   whatsapp_info: 'WhatsApp · info',
   instagram: 'Instagram',
   linkedin: 'LinkedIn',
+  scale: 'Báscula',
   manual_note: 'Nota',
   voice_note: 'Nota de voz',
   unknown: 'Captura',

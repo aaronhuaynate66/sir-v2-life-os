@@ -13,8 +13,12 @@ const VALID_TYPES: ReadonlySet<CaptureType> = new Set<CaptureType>([
   'whatsapp_info',
   'instagram',
   'linkedin',
-  // 'manual_note', 'voice_note', 'unknown' — el detector NO emite estos
-  // tres (manual/voice no salen de screenshot; unknown si). Permitimos
+  // 'scale' SÍ sale de screenshot (panel de báscula inteligente). Lo
+  // emite el detector aunque no sea person-centric: el caller lo rutea al
+  // flujo de health_metrics en vez del de observations.
+  'scale',
+  // 'manual_note', 'voice_note', 'unknown' — el detector NO emite los dos
+  // primeros (manual/voice no salen de screenshot; unknown si). Permitimos
   // unknown porque es output legitimo del prompt cuando nada matchea.
   'unknown',
 ])

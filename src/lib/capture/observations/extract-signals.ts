@@ -61,6 +61,10 @@ export function signalsFromExtracted(
       if (phone) out.phone = phone
       break
     }
+    case 'scale':
+      // La báscula no aporta señales de persona: mide al propio usuario.
+      // No hay nombre/handle/teléfono que matchear.
+      break
     case 'manual_note':
     case 'voice_note':
     case 'unknown':

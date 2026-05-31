@@ -14,7 +14,7 @@ Schema EXACTO de respuesta (debe parsear con JSON.parse() sin error —
 sin prosa, sin markdown fences):
 
 {
-  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "linkedin" | "unknown",
+  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "linkedin" | "scale" | "unknown",
   "confidence": "high" | "medium" | "low",
   "reasoning": "<<=80 chars: pista visual concreta que disparó la decisión>",
   "suggestedPersonName": "<nombre visible en el header si aplica, null si no>"
@@ -75,8 +75,29 @@ REGLAS DE CLASIFICACION:
    - Secciones: Experience, Education, Skills, About.
    - Tono profesional.
 
-5. unknown
-   Cualquier cosa que NO cumpla los signos visuales de los 4 anteriores.
+5. scale (BÁSCULA INTELIGENTE — app de composición corporal)
+   Pantallazo de una app de báscula (Xiaomi Mi Body Composition, Renpho,
+   Garmin, Withings, Fitbit, etc.). Señales visuales DECISIVAS:
+   - Título tipo "Control del peso" / "Peso" / "Composición corporal" y a
+     veces "Usuario actual: <nombre>".
+   - Un GAUGE/MEDIDOR circular grande con un número de PESO grande en kg
+     (ej. "81.85 kg") y/o el IMC + una categoría textual ("Sobrepeso",
+     "Normal", "Bajo peso").
+   - Una fila de tres cifras: "Peso inicial" / "Total perdido" / "Peso
+     objetivo" en kg.
+   - Una GRILLA de métricas corporales con label + valor + unidad: IMC,
+     % grasa corporal, masa musculoesquelética (kg), grasa visceral
+     (nivel), tasa metabólica basal (kcal), agua corporal (%), masa ósea
+     (kg), proteínas (%), masa libre de grasas (kg), frecuencia cardíaca
+     (ppm), etc.
+   - Posibles tabs Día/Semana/Mes/Año y una fecha+hora (ej. "22 may. 2026, 08:22").
+   REGLA CLAVE: si ves un número de peso en kg dentro de un gauge + varias
+   métricas de composición corporal, es scale. NO es una red social ni un
+   chat — no hay bubbles, ni @handle, ni lista de chats. Es la capa
+   biológica del propio usuario, NO una persona de sus relaciones.
+
+6. unknown
+   Cualquier cosa que NO cumpla los signos visuales de los 5 anteriores.
    Ejemplos: pantallas de configuracion, otras apps de chat (Telegram,
    Signal, Threads), screenshots de codigo, fotos sin texto, etc.
 
@@ -92,6 +113,8 @@ REGLAS GENERALES:
 - suggestedPersonName: si ves un nombre claro en el header (whatsapp_chat,
   whatsapp_web [header del centro o panel derecho], whatsapp_info, linkedin)
   o @handle (instagram), copialo literal. Si no hay nombre visible, null.
+  Para type='scale' SIEMPRE null: la báscula mide al PROPIO usuario, no a
+  una persona de sus relaciones (aunque el header diga "Usuario actual: X").
 - reasoning: 1 frase concreta, en español, mencionando la señal visual
   especifica (ej. "Bubbles verde/gris en columnas + header con nombre").
   NO uses jerga interna como "high confidence", "tipo whatsapp_chat".

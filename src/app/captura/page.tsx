@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Loader2, CheckCircle2, UserPlus, Users, X } from 'lucide-react'
+import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, UserPlus, Users, X } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
 import type { DetectResult } from '@/lib/capture/detector/client'
+import { ScaleCaptureBranch } from '@/components/capture/scale/ScaleCaptureBranch'
 import {
   HttpError,
   createPerson,
@@ -252,6 +253,15 @@ function CapturaIndexContent() {
   const canExtract =
     detection !== null && TYPES_WITH_EXTRACTOR.has(detection.detected.type)
 
+  // La báscula tiene su propio sub-flujo (health_metrics, sin persona).
+  const isScale = detection !== null && detection.detected.type === 'scale'
+
+  // Reset total para "otra captura" desde el branch de báscula: vuelve al paso 1.
+  const onResetScale = useCallback(() => {
+    setFile(null)
+    resetForNewFile()
+  }, [resetForNewFile])
+
   return (
     <AppShell>
       <Link
@@ -273,10 +283,11 @@ function CapturaIndexContent() {
           </h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Subí un pantallazo de un chat de <span className="text-foreground">WhatsApp</span> o de
-          un perfil de <span className="text-foreground">Instagram</span> /{' '}
-          <span className="text-foreground">LinkedIn</span>. SIR detecta el tipo, extrae los datos
-          y los asocia a una persona de tus relaciones.
+          Subí un pantallazo de un chat de <span className="text-foreground">WhatsApp</span>, de un
+          perfil de <span className="text-foreground">Instagram</span> /{' '}
+          <span className="text-foreground">LinkedIn</span>, o del panel de tu{' '}
+          <span className="text-foreground">báscula inteligente</span>. SIR detecta el tipo, extrae
+          los datos y los asocia a una persona — o, si es báscula, los guarda como tus métricas.
         </p>
       </header>
 
@@ -545,14 +556,28 @@ function CapturaIndexContent() {
         </Card>
       )}
 
-      {!canExtract && detection && (
+      {/* BÁSCULA: sub-flujo propio (extrae métricas → health_metrics, sin persona). */}
+      {isScale && detection && file && (
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Scale size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+            <h2 className="text-sm font-semibold tracking-tight">Métricas de báscula</h2>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+              capa biológica · self
+            </span>
+          </div>
+          <ScaleCaptureBranch file={file} onReset={onResetScale} />
+        </div>
+      )}
+
+      {!canExtract && !isScale && detection && (
         <Card className="shadow-none mb-6">
           <CardContent className="p-4 sm:p-6">
             <p className="text-xs text-muted-foreground">
               Esta imagen se detectó como{' '}
               <span className="font-mono">{detection.detected.type}</span>, que todavía no se puede
-              extraer automáticamente. Probá con un pantallazo de un chat de WhatsApp o de un perfil
-              de Instagram / LinkedIn.
+              extraer automáticamente. Probá con un pantallazo de un chat de WhatsApp, un perfil de
+              Instagram / LinkedIn, o el panel de tu báscula inteligente.
             </p>
           </CardContent>
         </Card>
