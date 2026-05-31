@@ -5,9 +5,10 @@
 // determinístico si el modelo falla o no devuelve nada parseable).
 //
 // NO toca el flujo viejo: /captura/whatsapp, relationships.history y el
-// backfill 0012 siguen intactos. Idempotente vía clave estable
-// `obs:<observationId>:<n>` + el unique index existente
-// (user_id, source_event_id) → ON CONFLICT DO NOTHING.
+// backfill 0012 siguen intactos. Idempotente vía el PRIMARY KEY `id`
+// (determinístico `mem_obs:<observationId>:<n>`, existe desde 0001) →
+// upsert ON CONFLICT (id) DO NOTHING. NO depende de source_event_id
+// (esa columna de 0012 no existe en prod; ver fix 7b3249d).
 //
 // Body JSON: { person_id: string }
 // Response 200: { generated, inserted, skipped, alreadyCovered, usedLlm }
