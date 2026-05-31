@@ -65,6 +65,7 @@ import { personLogToneSeries } from '@/lib/charts/adapters'
 import { PersonDossier } from './PersonDossier'
 import { ExportCsvButton } from '@/components/export/ExportCsvButton'
 import { personLogsCsv, observationsCsv } from '@/lib/export/adapters'
+import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
@@ -595,7 +596,15 @@ export function PersonDetail({
 
       {/* Memorias asociadas — server-fetched (PR-B Sesion 4) + boton de
           backfill idempotente desde relationships.history. */}
-      <MemoriasAsociadasPanel memories={memories} personId={live.id} />
+      <MemoriasAsociadasPanel
+        memories={memories}
+        personId={live.id}
+        derivableCount={
+          curatedObservations.filter((o) =>
+            QUALIFYING_CAPTURE_TYPES.includes(o.captureType),
+          ).length
+        }
+      />
 
       {/* Bitácora (#17): historial completo de interacciones (person_logs
           + observations), colapsable. */}

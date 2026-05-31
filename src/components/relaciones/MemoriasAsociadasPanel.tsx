@@ -17,7 +17,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, Loader2, Camera, ChevronDown } from 'lucide-react'
+import { Sparkles, Loader2, Camera, ChevronDown, Wand2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -37,12 +37,23 @@ export interface MemoriasAsociadasPanelProps {
   memories: Memory[]
   /** id de la persona — necesario para el POST de backfill. */
   personId: string
+  /** Cantidad de observations curadas (capturas/notas) de la persona.
+   *  Habilita el botón "Derivar desde conversaciones". undefined → habilitado. */
+  derivableCount?: number
 }
 
 interface BackfillSuccess {
   insertedCount: number
   generated: number
   skipped: number
+}
+
+interface DeriveSuccess {
+  generated: number
+  inserted: number
+  skipped: number
+  alreadyCovered: number
+  usedLlm: boolean
 }
 
 const TYPE_LABEL: Record<Memory['type'], string> = {
@@ -68,11 +79,19 @@ const TYPE_BADGE_VARIANT: Record<
   social: 'default',
 }
 
-export function MemoriasAsociadasPanel({ memories, personId }: MemoriasAsociadasPanelProps) {
+export function MemoriasAsociadasPanel({
+  memories,
+  personId,
+  derivableCount,
+}: MemoriasAsociadasPanelProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
   const [lastResult, setLastResult] = useState<BackfillSuccess | null>(null)
+  // Camino aditivo: derivar memorias desde observations (capturas reales).
+  const [deriving, setDeriving] = useState(false)
+  const [deriveError, setDeriveError] = useState<ApiError | null>(null)
+  const [deriveResult, setDeriveResult] = useState<DeriveSuccess | null>(null)
   // Filtro por tipo (#15) + colapso para volumen.
   const [activeType, setActiveType] = useState<MemoryType | 'all'>('all')
   const [showAll, setShowAll] = useState(false)
@@ -116,6 +135,31 @@ export function MemoriasAsociadasPanel({ memories, personId }: MemoriasAsociadas
     }
   }, [personId, router])
 
+  const onDerive = useCallback(async () => {
+    setDeriving(true)
+    setDeriveError(null)
+    setDeriveResult(null)
+    try {
+      const res = await fetch('/api/memories/derive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person_id: personId }),
+      })
+      if (!res.ok) {
+        setDeriveError(await parseErrorResponse(res))
+        return
+      }
+      const json = (await res.json()) as DeriveSuccess
+      setDeriveResult(json)
+      router.refresh()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      setDeriveError({ status: 0, message: 'Red caída o request abortado', detail: msg })
+    } finally {
+      setDeriving(false)
+    }
+  }, [personId, router])
+
   return (
     <Card className="shadow-none mb-4">
       <CardContent className="p-4 sm:p-6">
@@ -136,24 +180,66 @@ export function MemoriasAsociadasPanel({ memories, personId }: MemoriasAsociadas
               </Badge>
             )}
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onBackfill}
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <Loader2 size={12} className="mr-2 animate-spin" />
-                {memories.length === 0 ? 'Generando…' : 'Actualizando…'}
-              </>
-            ) : memories.length === 0 ? (
-              'Generar desde el historial'
-            ) : (
-              'Actualizar memorias'
-            )}
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              size="sm"
+              onClick={onDerive}
+              disabled={deriving || derivableCount === 0}
+              title={
+                derivableCount === 0
+                  ? 'No hay capturas/notas de esta persona para derivar'
+                  : 'Derivar memorias desde conversaciones, perfiles y notas (IA)'
+              }
+            >
+              {deriving ? (
+                <>
+                  <Loader2 size={12} className="mr-2 animate-spin" />
+                  Derivando…
+                </>
+              ) : (
+                <>
+                  <Wand2 size={12} className="mr-2" />
+                  Derivar desde mis conversaciones
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onBackfill}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={12} className="mr-2 animate-spin" />
+                  {memories.length === 0 ? 'Generando…' : 'Actualizando…'}
+                </>
+              ) : memories.length === 0 ? (
+                'Generar desde el historial'
+              ) : (
+                'Actualizar memorias'
+              )}
+            </Button>
+          </div>
         </div>
+
+        {deriveError && <ApiErrorNotice error={deriveError} className="mb-3" />}
+
+        {deriveResult && (
+          <div className="rounded-md border border-violet-500/30 bg-violet-500/5 p-3 text-xs mb-3">
+            <span className="text-violet-300 font-medium">
+              {deriveResult.inserted === 0
+                ? deriveResult.alreadyCovered > 0
+                  ? 'Todo al día — tus conversaciones ya estaban derivadas.'
+                  : 'Sin memorias nuevas para derivar.'
+                : `Se derivaron ${deriveResult.inserted} memoria${deriveResult.inserted === 1 ? '' : 's'} desde tus conversaciones.`}
+            </span>{' '}
+            <span className="text-muted-foreground font-mono">
+              inserted={deriveResult.inserted} · skipped={deriveResult.skipped} · ya-cubiertas=
+              {deriveResult.alreadyCovered} · {deriveResult.usedLlm ? 'IA' : 'base'}
+            </span>
+          </div>
+        )}
 
         {error && <ApiErrorNotice error={error} className="mb-3" />}
 
@@ -263,18 +349,17 @@ function EmptyState() {
     <div className="text-sm text-muted-foreground space-y-2">
       <p>Sin memorias todavía.</p>
       <p className="text-xs leading-relaxed">
-        Las memorias se derivan automáticamente de{' '}
-        <span className="font-mono text-foreground/80">relationships.history</span> cuando
-        subís conversaciones desde{' '}
+        Usá <span className="font-mono text-foreground/80">Derivar desde mis conversaciones</span>{' '}
+        para destilar memorias desde tus capturas reales (WhatsApp, Instagram, LinkedIn) y notas
+        de esta persona. Re-correrlo es idempotente (no duplica). También podés{' '}
         <Link
           href="/captura"
           className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-foreground"
         >
           <Camera size={11} strokeWidth={1.75} aria-hidden="true" />
-          /captura
+          subir más capturas
         </Link>
-        . El botón <span className="font-mono text-foreground/80">Generar</span> de arriba
-        materializa el historial actual; re-correrlo es idempotente.
+        .
       </p>
     </div>
   )
