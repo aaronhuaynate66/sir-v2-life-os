@@ -48,6 +48,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import type { SliceBinding } from './types'
+import { diffSlice, reconcilePull, parsePendingIds } from './reconcile'
 
 const RETRY_DELAYS_MS = [1000, 4000, 16000] as const
 // Throttle del toast de fallo de sync: si una ráfaga de pushes falla
@@ -91,10 +92,7 @@ function pendingKey(table: string, userId: string): string {
 function loadPendingIds(table: string, userId: string): Set<string> {
   if (typeof window === 'undefined') return new Set()
   try {
-    const raw = window.localStorage.getItem(pendingKey(table, userId))
-    if (!raw) return new Set()
-    const arr = JSON.parse(raw)
-    return Array.isArray(arr) ? new Set(arr.filter((x): x is string => typeof x === 'string')) : new Set()
+    return parsePendingIds(window.localStorage.getItem(pendingKey(table, userId)))
   } catch {
     return new Set()
   }
@@ -183,31 +181,6 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
   let realtimeChannel: RealtimeChannel | null = null
   let realtimeTimer: ReturnType<typeof setTimeout> | null = null
 
-  /**
-   * Diff two arrays by id using referential equality. Returns inserts,
-   * updates (changed via reference inequality) and deletes. O(n).
-   */
-  function diffSlice<T extends { id: string }>(
-    prev: T[],
-    curr: T[],
-  ): { upserts: T[]; deletes: string[] } {
-    const prevMap = new Map<string, T>()
-    for (const item of prev) prevMap.set(item.id, item)
-    const currMap = new Map<string, T>()
-    for (const item of curr) currMap.set(item.id, item)
-
-    const upserts: T[] = []
-    for (const [id, curItem] of currMap) {
-      const prevItem = prevMap.get(id)
-      if (!prevItem || prevItem !== curItem) upserts.push(curItem)
-    }
-    const deletes: string[] = []
-    for (const id of prevMap.keys()) {
-      if (!currMap.has(id)) deletes.push(id)
-    }
-    return { upserts, deletes }
-  }
-
   async function pullSlice<T extends { id: string }>(
     binding: SliceBinding<S, T>,
     userId: string,
@@ -221,33 +194,25 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
       return
     }
     const dbItems = (data as Record<string, unknown>[]).map((row) => binding.adapter.fromRow(row))
-    const dbIds = new Set(dbItems.map((r) => r.id))
     const localItems = binding.select(store.getState())
     const pending = loadPendingIds(binding.adapter.table, userId)
 
-    // DB es autoritativo: arrancamos del set de DB.
-    const next: T[] = [...dbItems]
-    // Conservamos SOLO las filas locales ausentes de DB que tienen un PUSH
-    // LOCAL pendiente (creadas/editadas offline, aún sin confirmar). Cualquier
-    // otra fila local ausente de DB -> borrada remotamente O fantasma adoptada
-    // por un pull viejo -> se DROPEA (propaga deletes en vivo, sin resucitar).
-    for (const r of localItems) {
-      if (!dbIds.has(r.id) && pending.has(r.id)) next.push(r)
-    }
+    // DB autoritativo + preservación de pendientes locales. (Núcleo puro en
+    // reconcile.ts -> testeado en reconcile.test.ts.)
+    const { next, confirmedPendingIds, droppedIds } = reconcilePull(dbItems, localItems, pending)
 
     if (syncDebug()) {
-      const dropped = localItems.filter((r) => !dbIds.has(r.id) && !pending.has(r.id)).map((r) => r.id)
       dlog(
         `pull ${binding.adapter.table}: db=${dbItems.length} local=${localItems.length} pending=${pending.size}` +
-          (dropped.length ? ` DROPPED=${dropped.length} ${JSON.stringify(dropped)}` : ''),
+          (droppedIds.length ? ` DROPPED=${droppedIds.length} ${JSON.stringify(droppedIds)}` : ''),
       )
     }
 
     // Prune: las filas pendientes que ya aparecen en DB están confirmadas
     // (por nuestro push o por sync); dejan de ser pendientes.
-    if (pending.size > 0) {
+    if (confirmedPendingIds.length > 0) {
       mutatePendingIds(binding.adapter.table, userId, (s) => {
-        for (const id of dbIds) s.delete(id)
+        for (const id of confirmedPendingIds) s.delete(id)
       })
     }
 
