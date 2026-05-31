@@ -95,7 +95,12 @@ export default async function RelacionPage({ params }: PageProps) {
   ])
 
   return (
+    // key={person.id}: fuerza un montaje fresco por persona. Sin esto, al
+    // navegar de /relaciones/A a /relaciones/B React reusa la instancia y el
+    // estado local de PersonDetail (form de edición, editing, saving) queda
+    // con los datos de A hasta que el usuario lo note -> fuga entre vistas.
     <PersonDetail
+      key={person.id}
       initialPerson={person}
       lastChat={lastChat}
       curatedObservations={curatedObservations}

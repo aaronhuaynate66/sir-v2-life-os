@@ -2,11 +2,10 @@
 
 'use client'
 
-export interface GenerateBriefingError {
-  status: number
-  message: string
-  detail?: string
-}
+import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
+
+/** Alias del tipo de error compartido (mantiene el nombre histórico). */
+export type GenerateBriefingError = ApiError
 
 export async function generatePersonBriefing(personId: string): Promise<string> {
   const res = await fetch('/api/person-briefing', {
@@ -14,20 +13,7 @@ export async function generatePersonBriefing(personId: string): Promise<string> 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ person_id: personId }),
   })
-  if (!res.ok) {
-    let body: { error?: string; detail?: string } = {}
-    try {
-      body = await res.json()
-    } catch {
-      /* sin body */
-    }
-    const err: GenerateBriefingError = {
-      status: res.status,
-      message: body.error ?? `HTTP ${res.status}`,
-      detail: body.detail,
-    }
-    throw err
-  }
+  if (!res.ok) throw await parseErrorResponse(res)
   const json = (await res.json()) as { briefing: string }
   return json.briefing
 }

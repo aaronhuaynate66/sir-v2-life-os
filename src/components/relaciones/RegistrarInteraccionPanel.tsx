@@ -11,13 +11,15 @@
 
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { HeartCrack, Frown, Meh, Smile, Heart, Loader2, AlertCircle, Check } from 'lucide-react'
+import { HeartCrack, Frown, Meh, Smile, Heart, Loader2, Check } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { toApiError, type ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
-import { createPersonLog, type CreatePersonLogError } from './person-logs/client'
+import { createPersonLog } from './person-logs/client'
 import { PersonLogsList } from './person-logs/PersonLogsList'
 import type { PersonLog } from '@/lib/person-logs/types'
 
@@ -49,7 +51,7 @@ export function RegistrarInteraccionPanel({
   const [selected, setSelected] = useState<EmoState['value'] | null>(null)
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<CreatePersonLogError | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
   const [success, setSuccess] = useState<{ value: number } | null>(null)
 
   const onSubmit = useCallback(async () => {
@@ -69,13 +71,7 @@ export function RegistrarInteraccionPanel({
       setNote('')
       router.refresh()
     } catch (e) {
-      const err = e as CreatePersonLogError
-      if (err && typeof err.status === 'number') {
-        setError(err)
-      } else {
-        const msg = e instanceof Error ? e.message : String(e)
-        setError({ status: 0, message: msg })
-      }
+      setError(toApiError(e))
     } finally {
       setSubmitting(false)
     }
@@ -175,15 +171,7 @@ export function RegistrarInteraccionPanel({
           </div>
         )}
 
-        {error && (
-          <div className="rounded-md border border-red-500/30 bg-red-500/5 p-2 text-xs mt-3 space-y-1">
-            <div className="flex items-center gap-1.5 font-medium text-red-400">
-              <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
-              Error HTTP {error.status}: {error.message}
-            </div>
-            {error.detail && <div className="text-muted-foreground">{error.detail}</div>}
-          </div>
-        )}
+        {error && <ApiErrorNotice error={error} className="p-2 mt-3" />}
 
         <div className="mt-4">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-2">

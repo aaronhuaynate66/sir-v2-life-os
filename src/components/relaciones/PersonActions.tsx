@@ -11,14 +11,16 @@
 //     #8 (síntesis): mismo patrón de endpoint + client + Anthropic.
 
 import { useState, useCallback } from 'react'
-import { MessageCircle, Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { MessageCircle, Sparkles, Loader2, RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { toApiError, type ApiError } from '@/lib/api/errors'
 import { whatsappLink } from '@/lib/social/links'
-import { generatePersonBriefing, type GenerateBriefingError } from './person-briefing/client'
+import { generatePersonBriefing } from './person-briefing/client'
 
 export interface PersonActionsProps {
   personId: string
@@ -32,7 +34,7 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [briefing, setBriefing] = useState<string | null>(null)
-  const [error, setError] = useState<GenerateBriefingError | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
 
   const runBriefing = useCallback(async () => {
     setLoading(true)
@@ -41,9 +43,7 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
       const text = await generatePersonBriefing(personId)
       setBriefing(text)
     } catch (e) {
-      const err = e as GenerateBriefingError
-      if (err && typeof err.status === 'number') setError(err)
-      else setError({ status: 0, message: e instanceof Error ? e.message : String(e) })
+      setError(toApiError(e))
     } finally {
       setLoading(false)
     }
@@ -113,15 +113,7 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
               </div>
             )}
 
-            {error && !loading && (
-              <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs space-y-1">
-                <div className="flex items-center gap-1.5 font-medium text-red-400">
-                  <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
-                  Error HTTP {error.status}: {error.message}
-                </div>
-                {error.detail && <div className="text-muted-foreground">{error.detail}</div>}
-              </div>
-            )}
+            {error && !loading && <ApiErrorNotice error={error} />}
 
             {briefing && !loading && <BriefingBody text={briefing} />}
 

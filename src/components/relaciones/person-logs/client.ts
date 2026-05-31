@@ -2,6 +2,7 @@
 
 'use client'
 
+import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 
 export interface CreatePersonLogInput {
@@ -11,11 +12,8 @@ export interface CreatePersonLogInput {
   note?: string
 }
 
-export interface CreatePersonLogError {
-  status: number
-  message: string
-  detail?: string
-}
+/** Alias del tipo de error compartido (mantiene el nombre histórico). */
+export type CreatePersonLogError = ApiError
 
 export async function createPersonLog(
   input: CreatePersonLogInput,
@@ -30,20 +28,7 @@ export async function createPersonLog(
       ...(input.note ? { note: input.note } : {}),
     }),
   })
-  if (!res.ok) {
-    let body: { error?: string; detail?: string } = {}
-    try {
-      body = await res.json()
-    } catch {
-      /* sin body */
-    }
-    const err: CreatePersonLogError = {
-      status: res.status,
-      message: body.error ?? `HTTP ${res.status}`,
-      detail: body.detail,
-    }
-    throw err
-  }
+  if (!res.ok) throw await parseErrorResponse(res)
   const json = (await res.json()) as { log: PersonLog }
   return json.log
 }

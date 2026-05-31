@@ -12,13 +12,15 @@
 
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Smile, Zap, Moon, Activity, Loader2, AlertCircle, Check } from 'lucide-react'
+import { Smile, Zap, Moon, Activity, Loader2, Check } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { toApiError, type ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
-import { createPersonLog, type CreatePersonLogError } from './person-logs/client'
+import { createPersonLog } from './person-logs/client'
 import { PersonLogsList } from './person-logs/PersonLogsList'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 
@@ -48,7 +50,7 @@ export function RegistroRapidoPanel({ personId, recentLogs }: RegistroRapidoPane
   const router = useRouter()
   const [openKind, setOpenKind] = useState<PersonLogKind | null>(null)
   const [submitting, setSubmitting] = useState<PersonLogKind | null>(null)
-  const [error, setError] = useState<CreatePersonLogError | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
   const [recentSubmit, setRecentSubmit] = useState<{ kind: PersonLogKind; value: number } | null>(null)
 
   const onPick = useCallback(
@@ -61,13 +63,7 @@ export function RegistroRapidoPanel({ personId, recentLogs }: RegistroRapidoPane
         setOpenKind(null)
         router.refresh()
       } catch (e) {
-        const err = e as CreatePersonLogError
-        if (err && typeof err.status === 'number') {
-          setError(err)
-        } else {
-          const msg = e instanceof Error ? e.message : String(e)
-          setError({ status: 0, message: msg })
-        }
+        setError(toApiError(e))
       } finally {
         setSubmitting(null)
       }
@@ -153,15 +149,7 @@ export function RegistroRapidoPanel({ personId, recentLogs }: RegistroRapidoPane
           </div>
         )}
 
-        {error && (
-          <div className="rounded-md border border-red-500/30 bg-red-500/5 p-2 text-xs mb-3 space-y-1">
-            <div className="flex items-center gap-1.5 font-medium text-red-400">
-              <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
-              Error HTTP {error.status}: {error.message}
-            </div>
-            {error.detail && <div className="text-muted-foreground">{error.detail}</div>}
-          </div>
-        )}
+        {error && <ApiErrorNotice error={error} className="p-2 mb-3" />}
 
         <div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-2">

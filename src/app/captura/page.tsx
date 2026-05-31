@@ -20,6 +20,7 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
 import type { DetectResult } from '@/lib/capture/detector/client'
 import {
@@ -337,16 +338,7 @@ function CapturaIndexContent() {
             </Button>
           </div>
 
-          {detectError && (
-            <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs space-y-1">
-              <div className="font-medium text-red-400">
-                Error HTTP {detectError.status}: {detectError.message}
-              </div>
-              {detectError.detail && (
-                <div className="text-muted-foreground">{detectError.detail}</div>
-              )}
-            </div>
-          )}
+          {detectError && <ApiErrorNotice error={detectError} />}
 
           {detection && (
             <div className="rounded-md border border-border bg-muted/20 p-4 space-y-2">
@@ -432,16 +424,7 @@ function CapturaIndexContent() {
                   </div>
                 )}
 
-                {searchError && (
-                  <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs">
-                    <div className="font-medium text-red-400">
-                      Error HTTP {searchError.status}: {searchError.message}
-                    </div>
-                    {searchError.detail && (
-                      <div className="text-muted-foreground">{searchError.detail}</div>
-                    )}
-                  </div>
-                )}
+                {searchError && <ApiErrorNotice error={searchError} />}
 
                 {candidates.length > 0 && (
                   <ul className="space-y-1.5 max-h-72 overflow-y-auto">
@@ -555,16 +538,7 @@ function CapturaIndexContent() {
               </Button>
             </div>
 
-            {processError && (
-              <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs space-y-1">
-                <div className="font-medium text-red-400">
-                  Error HTTP {processError.status}: {processError.message}
-                </div>
-                {processError.detail && (
-                  <div className="text-muted-foreground">{processError.detail}</div>
-                )}
-              </div>
-            )}
+            {processError && <ApiErrorNotice error={processError} />}
 
             {processed && <ProcessedView result={processed} />}
           </CardContent>
@@ -748,16 +722,7 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
         />
       )}
 
-      {linkError && (
-        <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs">
-          <div className="font-medium text-red-400">
-            Error HTTP {linkError.status}: {linkError.message}
-          </div>
-          {linkError.detail && (
-            <div className="text-muted-foreground">{linkError.detail}</div>
-          )}
-        </div>
-      )}
+      {linkError && <ApiErrorNotice error={linkError} />}
 
       <div className="text-xs text-muted-foreground space-y-1 break-words">
         <div>
