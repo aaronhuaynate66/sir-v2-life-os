@@ -29,17 +29,16 @@
 - **Fixes:** hidratación fina del detail page (`16eb853`), state-leak de PersonDetail (`01176e9`).
 - **Tests:** ~379 tests en 34 archivos (lógica pura de engines, captura, fechas, sync, alignment) + error boundaries.
 
-**Migraciones — estado honesto (verificado en auditoría de prod 31/05):**
-- **0013–0021 aplicadas.** 0014/0015/0016/0021 confirmadas por introspección REST; 0017–0020 inferidas (las features que dependen de ellas funcionan), no verificables por REST.
-- **0012 (`memories.source_event_id` + índice único) NUNCA se aplicó en prod** → causó el 500 de `/api/memories/derive`; el camino nuevo se reancló al PRIMARY KEY (no la necesita). El camino **legacy** `/api/memories/backfill` sí la necesita.
-- **0022 (red de seguridad aditiva: re-asegura cols 0010 + restaura 0012) PENDIENTE — acción manual por Chrome** (la consola SQL estaba caída al momento del fix). Idempotente, no-destructiva.
+**Migraciones — ✅ PROD SINCRONIZADO CON EL REPO, SIN DRIFT PENDIENTE (verificado en vivo 31/05):**
+- **0012–0022 aplicadas.** Diagnóstico en vivo (SQL Editor por Chrome, tras reiniciar la PC que destrabó la consola): **21/21 índices esperados presentes**, `observations.capture_type` incluye `whatsapp_web`, `memories.type` incluye `social`, **9/9 tablas** en la publicación `supabase_realtime`, **62 policies**.
+- **0012 restaurada vía 0022:** `memories.source_event_id` existe y el índice único `uniq_memories_source_event` existe. El bug histórico del 500 de `/api/memories/derive` (que motivó reanclar la idempotencia al PRIMARY KEY) queda cerrado; el camino **legacy** `/api/memories/backfill` vuelve a tener su columna/índice.
+- **0022** (red de seguridad aditiva: re-asegura cols 0010 + restaura 0012) **APLICADA** en prod. Idempotente, no-destructiva.
 
 **Pendiente real (lo que NO está hecho):**
 - **Activar Fase 3b (búsqueda semántica):** cargar `OPENAI_API_KEY` (server) + correr embeddings sobre la data existente (`observations`/`memories`) + validar `/buscar`. **Hoy el código está completo pero DORMIDO** (sin key, `embedText` lanza error claro).
 - **Fase 3d** — memoria que aprende (RAG cross-session).
 - **Etapa 4 follow-ups:** Human OKRs estructurados, Narrative Intelligence, delta de relationship score (necesita snapshots históricos), tono de interacción desde `person_logs` en el engine, inferencia LLM de dominio para objetivos de texto libre.
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
-- **Migración 0022:** correr por Chrome (SQL en el commit `7b3249d` / `supabase/migrations/0022`).
 - **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
 - **Refactor split-brain → Supabase única fuente** (deuda arquitectónica, ver más abajo).
 

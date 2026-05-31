@@ -46,8 +46,9 @@ Memoria semántica + embeddings, relationship graph, recuperación contextual, d
 - **Relationship graph:** `/red/grafo` en prod.
 - **Recuperación contextual:** sin embeddings activos es por filtros/recencia, no semántica.
 - **Detección de evolución:** parcial — correlaciones longitudinales (Fase 3c) y resumen semanal, pero no un tracking estructurado del cambio del vínculo en el tiempo.
+- **Schema:** ✅ **prod 100% sincronizado con el repo** (drift de migraciones reconciliado el 31/05; `0012` restaurada vía `0022`, sin migraciones pendientes — 21/21 índices, `whatsapp_web`/`social` en sus enums, realtime y policies completos). El único bloqueo de E2 es la key, no el esquema.
 
-**Eslabón faltante para cerrar E2:** activar 3b (key + embeddings sobre `observations`/`memories`) y la búsqueda semántica real.
+**Eslabón faltante para cerrar E2:** activar 3b (key + embeddings sobre `observations`/`memories`) y la búsqueda semántica real. **No hay deuda de schema.**
 
 ---
 
