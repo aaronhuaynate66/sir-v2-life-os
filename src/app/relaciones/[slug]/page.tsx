@@ -86,13 +86,18 @@ export default async function RelacionPage({ params }: PageProps) {
   // Ambos helpers tienen .eq('is_obsolete', false) baked in — vale el
   // principio critico de Sesion 3.
   const personId = String(row.id)
-  const [lastChat, curatedObservations, memories, personLogs, synthesis] = await Promise.all([
-    getLatestObservation(supabase, userId, personId, CONVERSATION_CAPTURE_TYPES),
-    getObservationsForPerson(supabase, userId, personId, { limit: 50 }),
-    getMemoriesForPerson(supabase, userId, personId, { limit: 100 }),
-    getLogsForPerson(supabase, userId, personId, { limit: 50 }),
-    getCurrentSynthesis(supabase, userId, personId),
-  ])
+  const [lastChat, curatedObservations, memories, personLogs, correlationLogs, synthesis] =
+    await Promise.all([
+      getLatestObservation(supabase, userId, personId, CONVERSATION_CAPTURE_TYPES),
+      getObservationsForPerson(supabase, userId, personId, { limit: 50 }),
+      getMemoriesForPerson(supabase, userId, personId, { limit: 100 }),
+      getLogsForPerson(supabase, userId, personId, { limit: 50 }),
+      // Set amplio (≈2 años) SOLO para la vista de correlación (Fase 3c).
+      // Separado de `personLogs` (últimos 50) para no cambiar la semántica
+      // de los paneles que asumen "recientes".
+      getLogsForPerson(supabase, userId, personId, { limit: 730 }),
+      getCurrentSynthesis(supabase, userId, personId),
+    ])
 
   return (
     // key={person.id}: fuerza un montaje fresco por persona. Sin esto, al
@@ -106,6 +111,7 @@ export default async function RelacionPage({ params }: PageProps) {
       curatedObservations={curatedObservations}
       memories={memories}
       personLogs={personLogs}
+      correlationLogs={correlationLogs}
       synthesis={synthesis}
     />
   )

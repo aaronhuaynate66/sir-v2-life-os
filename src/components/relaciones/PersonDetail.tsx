@@ -27,11 +27,11 @@
 // PersonLogsList, MemoriasAsociadasPanel, LoPersonal. Bitacora y
 // PerfilProfesional ya eran safe (su fecha está tras un colapsable cerrado).
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowLeft, Users, Edit2, Check, X as XIcon } from 'lucide-react'
+import { ArrowLeft, Users, Edit2, Check, X as XIcon, MessageSquareHeart } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -59,6 +59,9 @@ import { Bitacora } from './Bitacora'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
 import { CicloPanel } from './CicloPanel'
+import { CorrelacionPanel } from './CorrelacionPanel'
+import { TrendChart } from '@/components/charts/TrendChart'
+import { personLogToneSeries } from '@/lib/charts/adapters'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
@@ -83,6 +86,9 @@ interface PersonDetailProps {
   /** Logs de la persona (mood/energy/sleep/pain/interaction). Sesion 6.
    *  Server-fetched, ordenados por logged_at DESC. */
   personLogs?: PersonLog[]
+  /** Set amplio de logs (≈2 años) para la vista de correlación (Fase 3c).
+   *  Separado de personLogs (últimos 50). */
+  correlationLogs?: PersonLog[]
   /** Síntesis narrativa vigente ("Lo personal", #8). Server-fetched de
    *  person_synthesis (is_current=true). null si nunca se generó. */
   synthesis?: PersonSynthesis | null
@@ -162,6 +168,7 @@ export function PersonDetail({
   curatedObservations = [],
   memories = [],
   personLogs = [],
+  correlationLogs = [],
   synthesis = null,
 }: PersonDetailProps) {
   const router = useRouter()
@@ -170,6 +177,12 @@ export function PersonDetail({
   // Si el local store tiene una version mas fresca (el sync engine la pullo),
   // usamos esa. Sino fallback al initialPerson del server.
   const live = people.find((p) => p.id === initialPerson.id) ?? initialPerson
+
+  // Feature 3: tono de interacción (kind='interaction', 1-5) en el tiempo.
+  const toneSeries = useMemo(
+    () => personLogToneSeries(correlationLogs, 'interaction'),
+    [correlationLogs],
+  )
 
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -468,6 +481,30 @@ export function PersonDetail({
         <CicloPanel
           cycleStartDate={live.cycleStartDate ?? null}
           cycleLengthDays={live.cycleLengthDays ?? null}
+        />
+      </div>
+
+      {/* Correlación longitudinal (Fase 3c): person_logs × fase lunar ×
+          fase del ciclo. Determinístico; narrativa IA opcional detrás de
+          botón. Empty state honesto si falta data. */}
+      <div className="mb-4">
+        <CorrelacionPanel
+          personId={live.id}
+          personLogs={correlationLogs}
+          cycleStartDate={live.cycleStartDate ?? null}
+          cycleLengthDays={live.cycleLengthDays ?? null}
+        />
+      </div>
+
+      {/* Feature 3: evolución del tono de interacción con esta persona. */}
+      <div className="mb-4">
+        <TrendChart
+          label="Tono de interacción"
+          icon={MessageSquareHeart}
+          points={toneSeries}
+          colorClass="text-violet-400"
+          formatValue={(n) => n.toFixed(1)}
+          emptyHint="Registrá interacciones (arriba) para ver cómo evoluciona el tono."
         />
       </div>
 
