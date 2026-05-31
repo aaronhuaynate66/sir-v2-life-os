@@ -17,6 +17,8 @@ import { createSelfMetricMemory, createSleepMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
+import { TrendChart } from '@/components/charts/TrendChart'
+import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 
@@ -58,6 +60,9 @@ function SelfContent() {
   const sleepTrend = useMemo(() => analyzeSleepTrend(sleepRecords.slice(-7)), [sleepRecords])
   const recentMetrics = [...selfMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 12)
   const lastSleep = [...sleepRecords].sort((a, b) => b.date.localeCompare(a.date))[0]
+  // Feature 3: series de evolución (energía + duración de sueño).
+  const energySeries = useMemo(() => selfMetricSeries(selfMetrics, 'energy'), [selfMetrics])
+  const sleepSeries = useMemo(() => sleepDurationSeries(sleepRecords), [sleepRecords])
 
   function addMetric() {
     const v = parseFloat(mVal)
@@ -119,6 +124,26 @@ function SelfContent() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Feature 3: tendencias de energía y sueño en el tiempo. */}
+      <div className="grid gap-3 sm:grid-cols-2 mb-6">
+        <TrendChart
+          label="Energía"
+          icon={Activity}
+          points={energySeries}
+          colorClass="text-emerald-400"
+          formatValue={(n) => n.toFixed(1)}
+          emptyHint="Registrá tu energía para ver la evolución."
+        />
+        <TrendChart
+          label="Sueño (horas)"
+          icon={Moon}
+          points={sleepSeries}
+          colorClass="text-sky-400"
+          formatValue={(n) => `${n.toFixed(1)}h`}
+          emptyHint="Registrá tus noches para ver la tendencia."
+        />
       </div>
 
       <Card className={cn('mb-4', cardClass)}>

@@ -18,6 +18,8 @@ import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/fina
 import { createFinancialMovementMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { TrendChart } from '@/components/charts/TrendChart'
+import { financeBalanceSeries } from '@/lib/charts/adapters'
 import { cn } from '@/lib/utils'
 import type { MovementType, FinancialCategory, FinancialMovement, Currency } from '@/types'
 
@@ -133,6 +135,8 @@ function FinanceContent() {
 
   const sorted = [...financialMovements].sort((a, b) => b.date.localeCompare(a.date))
   const filtered = filterType === 'all' ? sorted : sorted.filter(m => m.type === filterType)
+  // Feature 3: balance acumulado (PEN) en el tiempo.
+  const balanceSeries = useMemo(() => financeBalanceSeries(financialMovements), [financialMovements])
 
   const stabilityTone: Tone = fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad'
   const balanceTone: Tone = fin.monthlyBalance >= 0 ? 'ok' : 'bad'
@@ -168,6 +172,18 @@ function FinanceContent() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Feature 3: tendencia del balance acumulado (PEN). */}
+      <div className="mb-4">
+        <TrendChart
+          label="Balance acumulado"
+          icon={TrendingUp}
+          points={balanceSeries}
+          colorClass={balanceSeries.length > 0 && (balanceSeries[balanceSeries.length - 1]?.value ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}
+          formatValue={(n) => formatPEN(n)}
+          emptyHint="Registrá movimientos para ver cómo evoluciona tu balance."
+        />
       </div>
 
       {alerts.length > 0 && (
