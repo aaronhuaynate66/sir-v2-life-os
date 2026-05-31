@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useMemoryStore } from '@/stores'
+import { useRelationshipStore } from '@/stores/useRelationshipStore'
+import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -51,6 +53,7 @@ export default function GoalsPage() {
 function GoalsContent() {
   const { goals, addGoal, updateGoal, updateGoalProgress, completeGoal, pauseGoal } = useGoalStore()
   const { addMemory } = useMemoryStore()
+  const { people, relationships } = useRelationshipStore()
   const dash = useMemo(() => buildGoalDashboard(goals), [goals])
   const [adding, setAdding] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -158,6 +161,8 @@ function GoalsContent() {
           </Card>
         ))}
       </div>
+
+      <AlignmentPanel goals={goals} people={people} relationships={relationships} />
 
       <AnimatePresence initial={false}>
         {adding && (
