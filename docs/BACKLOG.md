@@ -1,8 +1,47 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 30/05/2026 (Sesión 6 — Registro rápido + Registrar interacción entregados; tabla `person_logs`).
+> **Última actualización:** 31/05/2026 (reconciliación con la realidad de prod + captura del roadmap estratégico).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
+> **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## ✅ EN PRODUCCIÓN — reconciliación (2026-05-31)
+
+> Estado verificado contra `git log` y el código. Lo de abajo **ya está en prod**; las secciones históricas más abajo se conservan como bitácora pero pueden estar desactualizadas frente a esto.
+
+**Detail page V2 — CERRADO (el "ítem 0" de PRÓXIMAS SESIONES ya está completo).** Los 17 componentes existen: score relacional, ciclo, cumpleaños, última interacción, registro rápido, registrar interacción, vida profesional/social, lo personal (`person-synthesis`), fechas importantes, perfil profesional, redes sociales, nota de voz, memorias asociadas, briefing IA (`person-briefing`), acciones (WA/analizar), bitácora, correlación 3c.
+
+**Plataforma / capacidades en prod:**
+- **Sync en vivo cross-device** ✅ (CREATE/UPDATE/DELETE sin recargar): focus re-pull + Realtime + repush offline (`61f1f2d`, `f548854`, `d57822d`, `54b699b`; migraciones 0017/0018/0019).
+- **relationship_events** append-only + dual-write no-lossy (Opción B; `c6caf52`, `46b0d3f`).
+- **Captura whatsapp_web** (detector + extractor + pipeline; `c4efd74`, `15cc7b3`) y **notas de voz** (migración 0014 + `NotaDeVozPanel`).
+- **Fase 5 — Briefing diario** accionable en Mission Control + cache por día (`47e7e4c`, `fabef7a`).
+- **Fase 3c** — correlación longitudinal (`person_logs` × fase lunar × ciclo) + resumen semanal (`874f019`, migración 0016).
+- **Charts de tendencias** SVG propios (`40a8324`), **Agenda "Próximo"** (`238376f`), **Export/Dossier** + CSV client-side (`ababe31`, `eaab167`).
+- **Derivar memorias desde observations** (`14dd9e3`; fix idempotencia por PK `7b3249d`).
+- **Alignment Engine MVP** (Etapa 4): engine puro + narrativa reflexiva + panel en `/objetivos` + selector de personas (`888d75c`, `356b07f`, `235ce4d`, `ce2c544`).
+- **Edición inline** en el detail page (`PersonDetail.tsx`).
+- **Observabilidad:** Sentry (`@sentry/nextjs`) + Vercel Analytics instalados y cableados (`instrumentation.ts` — no-op sin DSN); **error boundaries** de App Router (`aa228c3`).
+- **Robots.txt + noindex** para rutas autenticadas (`src/app/robots.ts`).
+- **Emails auth ES:** template listo (`docs/auth-email-templates-es.md`); aplicarlo en el dashboard de Supabase es **acción manual**.
+- **Fixes:** hidratación fina del detail page (`16eb853`), state-leak de PersonDetail (`01176e9`).
+- **Tests:** ~379 tests en 34 archivos (lógica pura de engines, captura, fechas, sync, alignment) + error boundaries.
+
+**Migraciones — estado honesto (verificado en auditoría de prod 31/05):**
+- **0013–0021 aplicadas.** 0014/0015/0016/0021 confirmadas por introspección REST; 0017–0020 inferidas (las features que dependen de ellas funcionan), no verificables por REST.
+- **0012 (`memories.source_event_id` + índice único) NUNCA se aplicó en prod** → causó el 500 de `/api/memories/derive`; el camino nuevo se reancló al PRIMARY KEY (no la necesita). El camino **legacy** `/api/memories/backfill` sí la necesita.
+- **0022 (red de seguridad aditiva: re-asegura cols 0010 + restaura 0012) PENDIENTE — acción manual por Chrome** (la consola SQL estaba caída al momento del fix). Idempotente, no-destructiva.
+
+**Pendiente real (lo que NO está hecho):**
+- **Activar Fase 3b (búsqueda semántica):** cargar `OPENAI_API_KEY` (server) + correr embeddings sobre la data existente (`observations`/`memories`) + validar `/buscar`. **Hoy el código está completo pero DORMIDO** (sin key, `embedText` lanza error claro).
+- **Fase 3d** — memoria que aprende (RAG cross-session).
+- **Etapa 4 follow-ups:** Human OKRs estructurados, Narrative Intelligence, delta de relationship score (necesita snapshots históricos), tono de interacción desde `person_logs` en el engine, inferencia LLM de dominio para objetivos de texto libre.
+- **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
+- **Migración 0022:** correr por Chrome (SQL en el commit `7b3249d` / `supabase/migrations/0022`).
+- **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
+- **Refactor split-brain → Supabase única fuente** (deuda arquitectónica, ver más abajo).
 
 ---
 
@@ -78,16 +117,18 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 
 ## 🎯 EN CURSO
 
-- **Fase 3b — Búsqueda Semántica**: ACTIVA, sin issues asignados.
-  - Próximo paso: planning estratégico + crear 3-5 issues operativos.
+- **Fase 3b — Búsqueda Semántica**: 🟡 **CÓDIGO COMPLETO, DORMIDA.** pgvector (0015) + `src/lib/embeddings/client.ts` + `POST /api/memories/embed` + `POST /api/search` + página `/buscar` ya existen. **Bloqueada por falta de `OPENAI_API_KEY`** (server-side, OpenAI `text-embedding-3-small`).
+  - **Próximo paso para activarla:** cargar `OPENAI_API_KEY` en el server → correr el embed sobre `observations`/`memories` existentes → validar `/buscar` end-to-end.
 
 ---
 
 ## 🔥 PRÓXIMAS SESIONES (orden definido)
 
-### 0. Portar detail page completo de SIR V1 → V2 (PRIORIDAD ALTA) ⭐
+### 0. Portar detail page completo de SIR V1 → V2 ✅ COMPLETADO (2026-05-31)
 
-**Por qué:** El detail page actual de `/relaciones/[slug]` en V2 solo muestra 4 campos básicos (relación, categoría, importancia, confianza). SIR V1 (sir.marlabinc.com) tiene una vista MUCHO más rica que es la verdadera capa de valor del sistema. Sin esto, la captura WhatsApp y la red de relaciones queda sin su verdadero contexto consumible.
+> **CERRADO.** Los 17 componentes están en prod (ver "EN PRODUCCIÓN" arriba). El checklist 1–17 de abajo se conserva como bitácora del arco; salvo iteraciones menores marcadas, todo está entregado. La sección de "Schema requerido / Esfuerzo estimado" quedó como registro histórico del plan original.
+
+**Por qué (contexto histórico):** El detail page V2 arrancó mostrando solo 4 campos básicos. SIR V1 (sir.marlabinc.com) tenía una vista mucho más rica — la verdadera capa de valor. Ese arco ya se portó completo.
 
 **Referencia visual:** Screenshot del 29/05/2026 en `sir.marlabinc.com` mostrando perfil de Diana Diaz con todos los componentes.
 
@@ -163,12 +204,12 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 
 Sub-fases ya estructuradas como milestones en GitHub.
 
-| Sub-fase | Capacidad | Estado | Esfuerzo estimado |
-|----------|-----------|--------|-------------------|
+| Sub-fase | Capacidad | Estado | Nota |
+|----------|-----------|--------|------|
 | 3a | Historial Profundo | ✅ CERRADA | (cerrada 28/05) |
-| 3b | Búsqueda semántica (pgvector + embeddings) | 🔄 ACTIVA | 3-5 sesiones |
-| 3c | Resumen automático de patrones longitudinales | ⬜ Pendiente | 3-4 sesiones |
-| 3d | Memoria que aprende (RAG cross-session) | ⬜ Pendiente | 5-8 sesiones |
+| 3b | Búsqueda semántica (pgvector + embeddings) | 🟡 CÓDIGO COMPLETO, DORMIDA | falta `OPENAI_API_KEY` + embeddear data existente |
+| 3c | Resumen automático de patrones longitudinales | ✅ ENTREGADA | correlación lunar/ciclo + resumen semanal (`874f019`, 0016) |
+| 3d | Memoria que aprende (RAG cross-session) | ⬜ Pendiente | 5-8 sesiones; depende de 3b activa |
 
 Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
@@ -215,13 +256,13 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - **Storage buckets — cleanup de huérfanos**: las observations soft-deleteadas el 29/05 dejaron imágenes en `linkedin-captures`, `instagram-captures`, `whatsapp-captures`, `person-avatars` bajo `{user_id}/...`. Tarea de datos, no de código: listar paths por bucket vs observations vivas y borrar las huérfanas. Esfuerzo: 30 min con script. **No ejecutar hasta que se decida la política de retención de imágenes asociadas a `observations.is_obsolete=true`** (¿borrar al obsoletar? ¿quedan como referencia?). Pendiente decisión.
 
-- **Sentry + Vercel Analytics**: observabilidad runtime mínima. Necesario antes de abrir SIR a familia/beta. Esfuerzo: 1-2h.
+- ~~**Sentry + Vercel Analytics**~~ ✅ INSTALADO: `@sentry/nextjs` + `@vercel/analytics` cableados (`instrumentation.ts`/`instrumentation-client.ts`, `onRequestError`; no-op sin DSN). Falta solo cargar el DSN en prod para que capture.
 
-- **Mobile QA estructurado**: validar flujos críticos en 375px / 390px / 414px / 768px. Esfuerzo: 1h.
+- **Mobile QA estructurado**: validar flujos críticos en 375px / 390px / 414px / 768px. Esfuerzo: 1h. _(Pendiente — sin evidencia de pase formal.)_
 
-- **Estados vacíos pedagógicos**: copy que enseña al usuario qué registrar. Esfuerzo: 1-2h.
+- **Estados vacíos pedagógicos**: parcial — `/memoria` ya tiene empty state pedagógico (`0de0114`); resto de rutas pendiente.
 
-- **Emails Supabase template ES**: customizar emails de auth (template HTML + opcional SMTP Resend gratis hasta 3k/mes). Esfuerzo: 15-45 min.
+- ~~**Emails Supabase template ES**~~ ✅ Template ES listo en `docs/auth-email-templates-es.md`. **Pegarlo en el dashboard de Supabase = acción manual** (no versionable desde el repo).
 
 - ~~**Accessibility pass**: fix `aria-describedby` en Sheet (warning detectado en Issue #70). Esfuerzo: 30 min.~~ ✅ Resuelto en sweep 30/05/2026 — `SheetDescription` sr-only en AppShell + TimelineFiltersMobile.
 
@@ -231,19 +272,11 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - **Cap en `relationships.history`**: cuando aparezca volumen >50 items por relación. R7 del ADR 0005. Esfuerzo: 15 min.
 
-- **Robots.txt + noindex meta tag para rutas autenticadas**: hoy todas las páginas son crawlable. Indexar sólo la landing pública (cuando exista) y excluir `/panel`, `/yo`, `/historial`, etc. con `noindex` + `robots.txt`. Esfuerzo: 30 min.
+- ~~**Robots.txt + noindex para rutas autenticadas**~~ ✅ Resuelto: `src/app/robots.ts` en prod.
 
-### Edición completa en /relaciones/[slug]
+### Edición completa en /relaciones/[slug] ✅ RESUELTO
 
-**Detectado:** validación manual del 29/05/2026 (PR #85).
-
-**Qué falta:** el detail page de persona solo permite editar nombre + slug. Para cambiar tipo de relación, categoría, importancia, confianza, impacto energético, frecuencia de contacto, el usuario debe volver a `/relaciones` y usar el formulario existente (modal de creación/edición).
-
-**Propuesta:** formulario inline completo en el detail page con todos los campos editables (mismo schema que el modal). Idealmente con sección "Editar" colapsable o tabs para no saturar la vista.
-
-**Esfuerzo estimado:** 1-2 sesiones (~3-4h).
-
-**Prioridad:** Media. Funcional, mejora UX.
+**Detectado:** validación manual del 29/05/2026 (PR #85). **Resuelto:** el detail page (`PersonDetail.tsx`) ya tiene edición inline de los campos de la persona (no solo nombre + slug); ya no hace falta volver a `/relaciones` para editar.
 
 ---
 
