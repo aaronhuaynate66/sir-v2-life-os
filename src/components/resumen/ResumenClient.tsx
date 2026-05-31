@@ -8,20 +8,16 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CalendarRange, Sparkles, Loader2, AlertCircle, ChevronDown } from 'lucide-react'
+import { CalendarRange, Sparkles, Loader2, ChevronDown } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { parseErrorResponse, toApiError, type ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
 import type { LongitudinalSummary } from '@/lib/longitudinal/types'
-
-interface ApiError {
-  status: number
-  message: string
-  detail?: string
-}
 
 const ABS = new Intl.DateTimeFormat('es', { day: '2-digit', month: 'short' })
 const ABS_FULL = new Intl.DateTimeFormat('es', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -55,14 +51,12 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
         body: JSON.stringify({ days: 7 }),
       })
       if (!res.ok) {
-        let b: { error?: string; detail?: string } = {}
-        try { b = await res.json() } catch { /* sin body */ }
-        setError({ status: res.status, message: b.error ?? `HTTP ${res.status}`, detail: b.detail })
+        setError(await parseErrorResponse(res))
         return
       }
       router.refresh()
     } catch (e) {
-      setError({ status: 0, message: e instanceof Error ? e.message : String(e) })
+      setError(toApiError(e))
     } finally {
       setGenerating(false)
     }
@@ -87,15 +81,7 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
         </Button>
       </div>
 
-      {error && (
-        <div className="rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs space-y-1 mb-4">
-          <div className="flex items-center gap-1.5 font-medium text-red-400">
-            <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
-            Error HTTP {error.status}: {error.message}
-          </div>
-          {error.detail && <div className="text-muted-foreground">{error.detail}</div>}
-        </div>
-      )}
+      {error && <ApiErrorNotice error={error} className="mb-4" />}
 
       {!latest ? (
         <Card className="shadow-none border-dashed">

@@ -6,17 +6,13 @@
 // Autocontenido: no toca los stores del /panel.
 
 import { useEffect, useState } from 'react'
-import { Sparkles, Loader2, AlertCircle, RefreshCw } from 'lucide-react'
+import { Sparkles, Loader2, RefreshCw } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { parseErrorResponse, toApiError, type ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
-
-interface ApiError {
-  status: number
-  message: string
-  detail?: string
-}
 
 const SECTION_LABELS = ['Hoy', 'En foco', 'Sugerencia']
 const CACHE_KEY = 'sir-daily-briefing'
@@ -65,16 +61,14 @@ export function DailyBriefingCard() {
     try {
       const res = await fetch('/api/briefing/daily', { method: 'POST' })
       if (!res.ok) {
-        let b: { error?: string; detail?: string } = {}
-        try { b = await res.json() } catch { /* sin body */ }
-        setError({ status: res.status, message: b.error ?? `HTTP ${res.status}`, detail: b.detail })
+        setError(await parseErrorResponse(res))
         return
       }
       const json = (await res.json()) as { briefing: string }
       setBriefing(json.briefing)
       saveCached(json.briefing)
     } catch (e) {
-      setError({ status: 0, message: e instanceof Error ? e.message : String(e) })
+      setError(toApiError(e))
     } finally {
       setLoading(false)
     }
@@ -103,13 +97,11 @@ export function DailyBriefingCard() {
         </div>
 
         {error && (
-          <div className="rounded-md border border-red-500/30 bg-red-500/5 p-2.5 text-xs space-y-1">
-            <div className="flex items-center gap-1.5 font-medium text-red-400">
-              <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
-              {error.status === 422 ? 'Sin contexto todavía' : `Error HTTP ${error.status}: ${error.message}`}
-            </div>
-            {error.detail && <div className="text-muted-foreground">{error.detail}</div>}
-          </div>
+          <ApiErrorNotice
+            error={error}
+            className="p-2.5"
+            title={error.status === 422 ? 'Sin contexto todavía' : undefined}
+          />
         )}
 
         {!briefing && !error && !loading && (

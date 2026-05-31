@@ -2,13 +2,11 @@
 
 'use client'
 
+import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
 
-export interface GenerateSynthesisError {
-  status: number
-  message: string
-  detail?: string
-}
+/** Alias del tipo de error compartido (mantiene el nombre histórico). */
+export type GenerateSynthesisError = ApiError
 
 export async function generatePersonSynthesis(personId: string): Promise<PersonSynthesis> {
   const res = await fetch('/api/person-synthesis', {
@@ -16,20 +14,7 @@ export async function generatePersonSynthesis(personId: string): Promise<PersonS
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ person_id: personId }),
   })
-  if (!res.ok) {
-    let body: { error?: string; detail?: string } = {}
-    try {
-      body = await res.json()
-    } catch {
-      /* sin body */
-    }
-    const err: GenerateSynthesisError = {
-      status: res.status,
-      message: body.error ?? `HTTP ${res.status}`,
-      detail: body.detail,
-    }
-    throw err
-  }
+  if (!res.ok) throw await parseErrorResponse(res)
   const json = (await res.json()) as { synthesis: PersonSynthesis }
   return json.synthesis
 }

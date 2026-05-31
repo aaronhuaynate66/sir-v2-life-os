@@ -17,12 +17,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, Loader2, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react'
+import { Sparkles, Loader2, RefreshCw, ExternalLink } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { toApiError, type ApiError } from '@/lib/api/errors'
 import { useMounted } from '@/hooks/useMounted'
-import { generatePersonSynthesis, type GenerateSynthesisError } from './person-synthesis/client'
+import { generatePersonSynthesis } from './person-synthesis/client'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
 
 export interface LoPersonalProps {
@@ -46,7 +48,7 @@ export function LoPersonal({ personId, synthesis, conversationCount }: LoPersona
   const router = useRouter()
   const mounted = useMounted()
   const [generating, setGenerating] = useState(false)
-  const [error, setError] = useState<GenerateSynthesisError | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
 
   async function handleGenerate() {
     setGenerating(true)
@@ -55,9 +57,7 @@ export function LoPersonal({ personId, synthesis, conversationCount }: LoPersona
       await generatePersonSynthesis(personId)
       router.refresh()
     } catch (e) {
-      const err = e as GenerateSynthesisError
-      if (err && typeof err.status === 'number') setError(err)
-      else setError({ status: 0, message: e instanceof Error ? e.message : String(e) })
+      setError(toApiError(e))
     } finally {
       setGenerating(false)
     }
@@ -94,15 +94,7 @@ export function LoPersonal({ personId, synthesis, conversationCount }: LoPersona
           )}
         </div>
 
-        {error && (
-          <div className="rounded-md border border-red-500/30 bg-red-500/5 p-2 text-xs mb-3 space-y-1">
-            <div className="flex items-center gap-1.5 font-medium text-red-400">
-              <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
-              Error HTTP {error.status}: {error.message}
-            </div>
-            {error.detail && <div className="text-muted-foreground">{error.detail}</div>}
-          </div>
-        )}
+        {error && <ApiErrorNotice error={error} className="p-2 mb-3" />}
 
         {synthesis ? (
           <div className="space-y-3">
