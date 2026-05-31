@@ -19,6 +19,7 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useMemoryStore } from '@/stores'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
+import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -66,10 +67,11 @@ function GoalsContent() {
   const [targetDate, setTargetDate] = useState('')
   const [nextAction, setNextAction] = useState('')
   const [peaceImpact, setPeaceImpact] = useState('5')
+  const [relatedPersons, setRelatedPersons] = useState<string[]>([])
 
   function resetForm() {
     setTitle(''); setDesc(''); setCat('personal'); setPrio('medium')
-    setTargetDate(''); setNextAction(''); setPeaceImpact('5')
+    setTargetDate(''); setNextAction(''); setPeaceImpact('5'); setRelatedPersons([])
     setAdding(false); setEditId(null)
   }
   function saveGoal() {
@@ -77,13 +79,14 @@ function GoalsContent() {
     const pi = parseInt(peaceImpact)
     if (isNaN(pi) || pi < 1 || pi > 10) { toast.error('Impacto invalido', { description: 'El impacto de paz debe estar entre 1 y 10.' }); return }
     const now = new Date().toISOString()
+    const linkedPersons = sanitizePersonIds(relatedPersons, new Set(people.map((p) => p.id)))
     if (editId) {
-      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction, peaceImpact: pi })
+      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction, peaceImpact: pi, relatedPersons: linkedPersons })
       toast.success('Objetivo actualizado', { description: title })
     } else {
       const g: Goal = {
         id: 'g_' + Date.now(), title, description: desc, category: cat, priority: prio,
-        status: 'active', progress: 0, milestones: [], relatedGoals: [], relatedPersons: [],
+        status: 'active', progress: 0, milestones: [], relatedGoals: [], relatedPersons: linkedPersons,
         peaceImpact: pi, obstacles: [], nextAction, targetDate: targetDate || undefined,
         createdAt: now, updatedAt: now,
       }
@@ -95,7 +98,7 @@ function GoalsContent() {
   function startEdit(g: Goal) {
     setEditId(g.id); setTitle(g.title); setDesc(g.description); setCat(g.category)
     setPrio(g.priority); setTargetDate(g.targetDate || ''); setNextAction(g.nextAction || '')
-    setPeaceImpact(String(g.peaceImpact)); setAdding(true)
+    setPeaceImpact(String(g.peaceImpact)); setRelatedPersons(g.relatedPersons ?? []); setAdding(true)
   }
   function cancelProgress() {
     setProgressId(null); setProgressVal('')
@@ -195,6 +198,41 @@ function GoalsContent() {
                   <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="font-mono" />
                   <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
                   <Input placeholder="Siguiente accion" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
+                  <div className="col-span-2">
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+                      Personas vinculadas
+                    </div>
+                    {people.length === 0 ? (
+                      <p className="text-xs text-muted-foreground/70">
+                        Agregá personas en <span className="font-mono text-foreground/80">/relaciones</span> para poder vincularlas y activar la Alineación.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {people.map((p) => {
+                          const active = relatedPersons.includes(p.id)
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setRelatedPersons((ids) => togglePersonId(ids, p.id))}
+                              aria-pressed={active}
+                              className={cn(
+                                'text-[11px] rounded-full border px-2.5 py-0.5 transition-colors',
+                                active
+                                  ? 'border-accent/50 bg-accent/10 text-foreground'
+                                  : 'border-border text-muted-foreground hover:border-accent/40 hover:text-foreground',
+                              )}
+                            >
+                              {p.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground/60 mt-1.5">
+                      Vincular personas habilita el estado de Alineación (objetivo declarado ↔ comportamiento observado).
+                    </p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={saveGoal} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">{editId ? 'Guardar' : '+ Agregar objetivo'}</Button>
