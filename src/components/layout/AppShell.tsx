@@ -26,8 +26,8 @@ export function AppShell({ children, wide = false }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Mobile top bar (oculto en lg+) */}
-      <header className="lg:hidden sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-3 sm:px-4 h-14">
+      {/* Mobile top bar (oculto en lg+ y al imprimir) */}
+      <header className="lg:hidden print:hidden sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-3 sm:px-4 h-14">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <button
@@ -52,14 +52,14 @@ export function AppShell({ children, wide = false }: AppShellProps) {
         <div className="w-9" aria-hidden="true" />
       </header>
 
-      {/* Desktop sidebar (oculto en <lg) */}
-      <aside className="hidden lg:block fixed left-0 top-0 bottom-0 w-60 border-r border-border">
+      {/* Desktop sidebar (oculto en <lg y al imprimir) */}
+      <aside className="hidden lg:block print:hidden fixed left-0 top-0 bottom-0 w-60 border-r border-border">
         <Nav />
       </aside>
 
-      {/* Main content */}
-      <main className="lg:ml-60">
-        <div className={cn('mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8', wide ? 'max-w-5xl' : 'max-w-4xl')}>
+      {/* Main content. Al imprimir: sin margen de sidebar ni padding/ancho. */}
+      <main className="lg:ml-60 print:ml-0">
+        <div className={cn('mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 print:max-w-none print:p-0', wide ? 'max-w-5xl' : 'max-w-4xl')}>
           {children}
         </div>
       </main>

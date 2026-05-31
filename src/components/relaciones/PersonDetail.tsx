@@ -31,7 +31,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowLeft, Users, Edit2, Check, X as XIcon, MessageSquareHeart } from 'lucide-react'
+import { ArrowLeft, Users, Edit2, Check, X as XIcon, MessageSquareHeart, Printer } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -62,6 +62,9 @@ import { CicloPanel } from './CicloPanel'
 import { CorrelacionPanel } from './CorrelacionPanel'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { personLogToneSeries } from '@/lib/charts/adapters'
+import { PersonDossier } from './PersonDossier'
+import { ExportCsvButton } from '@/components/export/ExportCsvButton'
+import { personLogsCsv, observationsCsv } from '@/lib/export/adapters'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
@@ -274,6 +277,9 @@ export function PersonDetail({
 
   return (
     <AppShell>
+      {/* Contenido en pantalla. Se oculta al imprimir (print:hidden); el
+          dossier imprimible vive aparte, al final de AppShell. */}
+      <div className="print:hidden">
       <Link
         href="/relaciones"
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-4"
@@ -303,6 +309,31 @@ export function PersonDetail({
           />
         </div>
       </header>
+
+      {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => window.print()}
+        >
+          <Printer size={13} strokeWidth={2} aria-hidden="true" />
+          Exportar / Imprimir dossier
+        </Button>
+        <ExportCsvButton
+          filenamePrefix={`registros_${live.slug ?? live.id}`}
+          count={correlationLogs.length}
+          buildCsv={() => personLogsCsv(correlationLogs)}
+          label="Registros CSV"
+        />
+        <ExportCsvButton
+          filenamePrefix={`observaciones_${live.slug ?? live.id}`}
+          count={curatedObservations.length}
+          buildCsv={() => observationsCsv(curatedObservations)}
+          label="Observaciones CSV"
+        />
+      </div>
 
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-6">
@@ -601,6 +632,16 @@ export function PersonDetail({
         </Link>{' '}
         y usá el formulario existente.
       </p>
+      </div>
+
+      {/* Dossier imprimible (Parte A): oculto en pantalla, visible al imprimir.
+          Consolida lo clave de la persona en layout limpio para papel/PDF. */}
+      <PersonDossier
+        person={live}
+        synthesis={synthesis}
+        personLogs={correlationLogs}
+        observations={curatedObservations}
+      />
     </AppShell>
   )
 }

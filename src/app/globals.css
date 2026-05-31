@@ -67,3 +67,15 @@ body { background-color: hsl(var(--background)); color: hsl(var(--foreground)); 
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 2px; }
 ::selection { background: hsl(var(--primary) / 0.3); color: hsl(var(--foreground)); }
 :focus-visible { outline: 1px solid hsl(var(--ring)); outline-offset: 2px; }
+
+/* ─── Print (Export Parte A: dossier imprimible / PDF) ───────────────
+   Papel blanco, tinta negra; el theme oscuro de pantalla no se imprime.
+   El dossier (.print:block) y su contenido fuerzan sus propios colores. */
+@media print {
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    color-scheme: light;
+  }
+  @page { margin: 16mm; }
+}
