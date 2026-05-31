@@ -20,6 +20,8 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { financeBalanceSeries } from '@/lib/charts/adapters'
+import { ExportCsvButton } from '@/components/export/ExportCsvButton'
+import { financeMovementsCsv } from '@/lib/export/adapters'
 import { cn } from '@/lib/utils'
 import type { MovementType, FinancialCategory, FinancialMovement, Currency } from '@/types'
 
@@ -152,13 +154,21 @@ function FinanceContent() {
 
   return (
     <AppShell>
-      <div className="mb-8">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
-        <div className="flex items-center gap-3 mt-1">
-          <DollarSign size={28} strokeWidth={1.5} className="text-muted-foreground" />
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Finanzas</h1>
+      <div className="mb-8 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+          <div className="flex items-center gap-3 mt-1">
+            <DollarSign size={28} strokeWidth={1.5} className="text-muted-foreground" />
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Finanzas</h1>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">Flujo de caja, estabilidad y alertas</p>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">Flujo de caja, estabilidad y alertas</p>
+        <ExportCsvButton
+          filenamePrefix="finanzas"
+          count={financialMovements.length}
+          buildCsv={() => financeMovementsCsv(financialMovements)}
+          label="Exportar movimientos"
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
