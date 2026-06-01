@@ -153,6 +153,11 @@ function DashboardContent() {
   // No los mostramos como lecturas reales (coherente con el Weekly Score).
   const hasEnergyData = selfMetrics.some((m) => m.category === 'energy')
   const hasSleepData = sleepRecords.length > 0
+  const hasFinanceData = financialMovements.length > 0
+  // Peace Score: con cero datos reales el engine compone un número sobre
+  // defaults fabricados (energía 6/sueño 7h/mood 6.5). No lo mostramos como
+  // lectura real — "Calibrando", coherente con el Weekly Score.
+  const peaceCalibrating = !hasEnergyData && !hasSleepData && !hasFinanceData && goals.length === 0
 
   const mode: Mode = recoveryAssessment.active || peace.recoveryMode || bio.energyLevel < 4 ? 'recovery' : peace.total > 8 && bio.energyLevel > 7 ? 'strategic' : bio.energyLevel > 7 ? 'focused' : 'normal'
   const peaceColor = peace.total >= 7 ? 'text-emerald-400' : peace.total >= 4 ? 'text-amber-400' : 'text-red-400'
@@ -257,16 +262,30 @@ function DashboardContent() {
         <Card className={cn('lg:col-span-5', cardClass)}>
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Activity} label="Peace Score" />
+            {peaceCalibrating ? (
+              <>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="text-5xl sm:text-6xl lg:text-7xl font-mono font-semibold tabular-nums text-muted-foreground/40">—</span>
+                  <span className="text-xl sm:text-2xl text-muted-foreground/50 font-mono">/10</span>
+                </div>
+                <p className="text-xs text-muted-foreground/70 leading-relaxed">
+                  Calibrando. Registrá sueño, energía o tus primeros movimientos para calcular tu paz.
+                </p>
+              </>
+            ) : (
             <div className="flex items-baseline gap-2 mb-3">
               <span className={cn('text-5xl sm:text-6xl lg:text-7xl font-mono font-semibold tabular-nums', peaceColor)}>{peace.total.toFixed(1)}</span>
               <span className="text-xl sm:text-2xl text-muted-foreground/50 font-mono">/10</span>
             </div>
+            )}
+            {!peaceCalibrating && (
             <div className="flex items-center gap-2">
               <TrendIcon size={14} strokeWidth={1.75} className={trendColor} />
               <span className={cn('text-xs', trendColor)}>{trendLabel}</span>
               <span className={cn('ml-2 w-1.5 h-1.5 rounded-full animate-pulse', peaceDotColor)} />
             </div>
-            {threats.length > 0 && (
+            )}
+            {!peaceCalibrating && threats.length > 0 && (
               <>
                 <Separator className="my-4" />
                 <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Atencion</div>
@@ -330,7 +349,7 @@ function DashboardContent() {
             <CardContent className="p-4 sm:p-6 h-full flex flex-col items-center justify-center text-center min-h-[200px]">
               <Target size={24} strokeWidth={1.25} className="text-muted-foreground/40 mb-2" />
               <div className="text-sm text-muted-foreground">Sin recomendaciones activas.</div>
-              <div className="text-xs text-muted-foreground/60 mt-1">El sistema esta calibrando senales.</div>
+              <div className="text-xs text-muted-foreground/60 mt-1">El sistema está calibrando señales.</div>
             </CardContent>
           </Card>
         )}
@@ -356,7 +375,7 @@ function DashboardContent() {
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Brain} label="Estado Biologico" />
+            <SectionTitle icon={Brain} label="Estado Biológico" />
             {hasEnergyData
               ? <Row label="Energia" value={`${bio.energyLevel.toFixed(1)}/10`} status={bio.energyLevel >= 6 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'} />
               : <Row label="Energia" value="sin datos" />}
@@ -370,7 +389,7 @@ function DashboardContent() {
               <Row label="Sueno" value="sin datos" />
             )}
             {!hasEnergyData && !hasSleepData && (
-              <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registrá energía y sueño abajo para ver tu estado.</p>
+              <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registrá energía y sueño en &laquo;Registro rápido&raquo; para ver tu estado.</p>
             )}
           </CardContent>
         </Card>
@@ -378,10 +397,19 @@ function DashboardContent() {
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Wallet} label="Finanzas" />
-            <Row label="Estabilidad" value={`${fin.stability.toFixed(1)}/10`} status={fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad'} />
-            <Row label="Balance mensual" value={formatCurrencyCompact(fin.monthlyBalance, 'PEN')} status={fin.monthlyBalance >= 0 ? 'ok' : 'bad'} />
-            <Row label="Tasa ahorro" value={`${fin.savingsRate.toFixed(0)}%`} status={fin.savingsRate >= 20 ? 'ok' : fin.savingsRate >= 10 ? 'warn' : 'bad'} />
-            {finAlerts[0] && (
+            {hasFinanceData ? (
+              <>
+                <Row label="Estabilidad" value={`${fin.stability.toFixed(1)}/10`} status={fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad'} />
+                <Row label="Balance mensual" value={formatCurrencyCompact(fin.monthlyBalance, 'PEN')} status={fin.monthlyBalance >= 0 ? 'ok' : 'bad'} />
+                <Row label="Tasa ahorro" value={`${fin.savingsRate.toFixed(0)}%`} status={fin.savingsRate >= 20 ? 'ok' : fin.savingsRate >= 10 ? 'warn' : 'bad'} />
+              </>
+            ) : (
+              <>
+                <Row label="Estabilidad" value="sin datos" />
+                <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registrá movimientos en /finanzas para ver tu estabilidad.</p>
+              </>
+            )}
+            {hasFinanceData && finAlerts[0] && (
               <>
                 <Separator className="my-3" />
                 <div className="flex gap-1.5 items-start">
@@ -397,7 +425,7 @@ function DashboardContent() {
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Target} label="Objetivos" count={`${goalsDash.criticalGoals.length} criticos`} />
             {goalsDash.criticalGoals.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-2">Sin objetivos criticos.</div>
+              <div className="text-xs text-muted-foreground/70 py-2">Sin objetivos críticos.</div>
             ) : (
               <div className="space-y-3">
                 {goalsDash.criticalGoals.slice(0, 3).map((g) => (
@@ -443,9 +471,9 @@ function DashboardContent() {
 
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Bell} label="Senales Activas" count={activeSignals.length} />
+            <SectionTitle icon={Bell} label="Señales Activas" count={activeSignals.length} />
             {activeSignals.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-2">Sin senales activas.</div>
+              <div className="text-xs text-muted-foreground/70 py-2">Sin señales activas.</div>
             ) : (
               <div className="space-y-2">
                 {activeSignals.slice(0, 3).map((sig) => (
@@ -482,8 +510,8 @@ function DashboardContent() {
         >
           <span className="flex items-center gap-2 min-w-0">
             <PlusCircle size={14} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0" />
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">Registro rapido</span>
-            <span className="text-[11px] text-muted-foreground/40 truncate hidden sm:inline">sueno · energia · finanzas · senal</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">Registro rápido</span>
+            <span className="text-[11px] text-muted-foreground/40 truncate hidden sm:inline">sueño · energía · finanzas · señal</span>
           </span>
           <ChevronDown size={16} strokeWidth={1.75} className={cn('text-muted-foreground/50 flex-shrink-0 transition-transform duration-200', showCapture && 'rotate-180')} />
         </button>
@@ -499,7 +527,7 @@ function DashboardContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-5">
-            <SectionTitle icon={Moon} label="Registrar sueno" />
+            <SectionTitle icon={Moon} label="Registrar sueño" />
             <div className="flex gap-2">
               <Input type="number" min="0" max="24" step="0.5" placeholder="Horas (ej: 7.5)" value={sleepHours} onChange={e => setSleepHours(e.target.value)} className="flex-1 font-mono tabular-nums" />
               <Button size="sm" variant="outline" onClick={handleAddSleep}>+ Agregar</Button>
@@ -509,7 +537,7 @@ function DashboardContent() {
 
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-5">
-            <SectionTitle icon={Zap} label="Energia / Estres (1-10)" />
+            <SectionTitle icon={Zap} label="Energía / Estrés (1-10)" />
             <div className="flex gap-2">
               <Input type="number" min="1" max="10" placeholder="Energia" value={energyVal} onChange={e => setEnergyVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
               <Input type="number" min="1" max="10" placeholder="Estres" value={stressVal} onChange={e => setStressVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
@@ -538,11 +566,11 @@ function DashboardContent() {
 
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-5">
-            <SectionTitle icon={Sparkles} label="Senal rapida" />
+            <SectionTitle icon={Sparkles} label="Señal rápida" />
             <div className="flex gap-2">
               <Input
                 type="text"
-                placeholder="Registrar senal o patron..."
+                placeholder="Registrar señal o patrón..."
                 value={signalContent}
                 onChange={e => setSignalContent(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleAddSignal() }}

@@ -110,9 +110,9 @@ function SelfContent() {
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <Brain size={28} strokeWidth={1.5} className="text-muted-foreground" />
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Self</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Yo</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">Estado biologico y metricas personales</p>
+        <p className="text-sm text-muted-foreground mt-1">Estado biológico y métricas personales</p>
       </div>
 
       {/* Espacio personal / diagnóstico — sección privada, lo primero que ve. */}
@@ -242,8 +242,8 @@ function SelfContent() {
           {recentMetrics.length === 0 ? (
             <div className="text-center py-8">
               <Activity size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Sin metricas todavia</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Registra tu primera medicion arriba.</p>
+              <p className="text-sm text-muted-foreground">Sin métricas todavía.</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Registrá tu primera medición arriba.</p>
             </div>
           ) : (
             <div className="space-y-1">

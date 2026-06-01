@@ -126,7 +126,7 @@ function SignalsContent() {
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <Bell size={28} strokeWidth={1.5} className="text-muted-foreground" />
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Senales</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Señales</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">Patrones, timing y contexto activo</p>
       </div>
@@ -217,8 +217,8 @@ function SignalsContent() {
       {visible.length === 0 ? (
         <div className="text-center py-12">
           <Bell size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Sin senales en este filtro.</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Registra una senal arriba o ajusta los filtros.</p>
+          <p className="text-sm text-muted-foreground">Sin señales en este filtro.</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Registrá una señal arriba o ajustá los filtros.</p>
         </div>
       ) : (
         <div className="space-y-2">

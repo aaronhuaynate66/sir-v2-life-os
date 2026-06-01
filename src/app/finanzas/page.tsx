@@ -46,11 +46,13 @@ const CAT_LABEL: Record<FinancialCategory, string> = {
   personal: 'Personal', debt: 'Deuda', other: 'Otro',
 }
 const LIQUIDITY_MONTHS = 2.5
+const RISK_LABEL: Record<'low' | 'medium' | 'high' | 'critical', string> = { low: 'bajo', medium: 'medio', high: 'alto', critical: 'crítico' }
 
 const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
 
-type Tone = 'ok' | 'warn' | 'bad'
+type Tone = 'ok' | 'warn' | 'bad' | 'muted'
 function toneText(t: Tone): string {
+  if (t === 'muted') return 'text-muted-foreground/50'
   return t === 'ok' ? 'text-emerald-400' : t === 'warn' ? 'text-amber-400' : 'text-red-400'
 }
 
@@ -157,17 +159,28 @@ function FinanceContent() {
   // Feature 3: balance acumulado (PEN) en el tiempo.
   const balanceSeries = useMemo(() => financeBalanceSeries(financialMovements), [financialMovements])
 
+  // Sin movimientos no calculamos estabilidad/riesgo (el engine fabrica un
+  // ~4.4 de "riesgo alto" con cero datos). Mostramos estado neutral hasta que
+  // haya datos reales, coherente con el Weekly Score y el estado biológico.
+  const hasFinanceData = financialMovements.length > 0
   const stabilityTone: Tone = fin.riskLevel === 'low' ? 'ok' : fin.riskLevel === 'medium' ? 'warn' : 'bad'
   const balanceTone: Tone = fin.monthlyBalance >= 0 ? 'ok' : 'bad'
   const savingsTone: Tone = fin.savingsRate >= 20 ? 'ok' : fin.savingsRate >= 10 ? 'warn' : 'bad'
 
   const balancePrefix = fin.monthlyBalance >= 0 ? '+' : ''
-  const stats = [
-    { label: 'Estabilidad', value: fin.stability.toFixed(1), unit: '/10', tone: stabilityTone },
-    { label: 'Balance mensual', value: `${balancePrefix}${formatCurrencyCompact(fin.monthlyBalance, 'PEN')}`, unit: '', tone: balanceTone },
-    { label: 'Tasa ahorro', value: fin.savingsRate.toFixed(0), unit: '%', tone: savingsTone },
-    { label: 'Riesgo', value: fin.riskLevel, unit: '', tone: stabilityTone },
-  ]
+  const stats = hasFinanceData
+    ? [
+        { label: 'Estabilidad', value: fin.stability.toFixed(1), unit: '/10', tone: stabilityTone },
+        { label: 'Balance mensual', value: `${balancePrefix}${formatCurrencyCompact(fin.monthlyBalance, 'PEN')}`, unit: '', tone: balanceTone },
+        { label: 'Tasa ahorro', value: fin.savingsRate.toFixed(0), unit: '%', tone: savingsTone },
+        { label: 'Riesgo', value: RISK_LABEL[fin.riskLevel], unit: '', tone: stabilityTone },
+      ]
+    : [
+        { label: 'Estabilidad', value: '—', unit: '', tone: 'muted' as Tone },
+        { label: 'Balance mensual', value: '—', unit: '', tone: 'muted' as Tone },
+        { label: 'Tasa ahorro', value: '—', unit: '', tone: 'muted' as Tone },
+        { label: 'Riesgo', value: 'sin datos', unit: '', tone: 'muted' as Tone },
+      ]
 
   return (
     <AppShell>
@@ -188,7 +201,7 @@ function FinanceContent() {
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3', hasFinanceData ? 'mb-6' : 'mb-2')}>
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
             <CardContent className="p-3 sm:p-4">
@@ -200,6 +213,11 @@ function FinanceContent() {
           </Card>
         ))}
       </div>
+      {!hasFinanceData && (
+        <p className="text-xs text-muted-foreground/60 mb-6">
+          Registrá tus primeros movimientos para calcular estabilidad, balance y tasa de ahorro.
+        </p>
+      )}
 
       {/* Feature 3: tendencia del balance acumulado (PEN). */}
       <div className="mb-4">
@@ -348,7 +366,7 @@ function FinanceContent() {
         <div className="text-center py-12">
           <ArrowRightLeft size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">Sin movimientos en este filtro.</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Registra un movimiento arriba para empezar.</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Registrá un movimiento arriba para empezar.</p>
         </div>
       ) : (
         <div className="space-y-1">

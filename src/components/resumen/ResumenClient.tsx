@@ -83,7 +83,9 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
 
       {error && <ApiErrorNotice error={error} className="mb-4" />}
 
-      {!latest ? (
+      {generating ? (
+        <GeneratingSkeleton />
+      ) : !latest ? (
         <Card className="shadow-none border-dashed">
           <CardContent className="p-6 text-center">
             <p className="text-sm text-muted-foreground">
@@ -112,6 +114,31 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
         </div>
       )}
     </AppShell>
+  )
+}
+
+/** Placeholder mientras el LLM genera el resumen (evita UI congelada + salto). */
+function GeneratingSkeleton() {
+  return (
+    <Card className="shadow-none">
+      <CardContent className="p-4 sm:p-6 space-y-3 animate-pulse">
+        <div className="flex items-center justify-between gap-2">
+          <div className="h-4 w-28 bg-muted rounded" />
+          <div className="h-3 w-32 bg-muted/60 rounded" />
+        </div>
+        <div className="rounded-md border border-accent/20 bg-accent/5 p-3 space-y-2">
+          <div className="h-2.5 w-16 bg-muted rounded" />
+          <div className="h-3 w-full bg-muted/60 rounded" />
+          <div className="h-3 w-4/5 bg-muted/60 rounded" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-2.5 w-20 bg-muted rounded" />
+          <div className="h-3 w-full bg-muted/60 rounded" />
+          <div className="h-3 w-2/3 bg-muted/60 rounded" />
+        </div>
+        <p className="text-[11px] text-muted-foreground/60 pt-1">Analizando tus últimos 7 días…</p>
+      </CardContent>
+    </Card>
   )
 }
 

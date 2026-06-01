@@ -42,6 +42,10 @@ const STATUS_COLORS: Record<Goal['status'], string> = {
   active: 'text-emerald-400', paused: 'text-amber-400',
   completed: 'text-blue-400', abandoned: 'text-muted-foreground/50',
 }
+const STATUS_LABEL: Record<Goal['status'], string> = {
+  active: 'activo', paused: 'pausado',
+  completed: 'completado', abandoned: 'abandonado',
+}
 
 const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
 
@@ -344,7 +348,7 @@ function GoalsContent() {
                   <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[g.category]}</Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={cn('text-[10px] font-mono', STATUS_COLORS[g.status])}>{g.status}</span>
+                  <span className={cn('text-[10px] font-mono', STATUS_COLORS[g.status])}>{STATUS_LABEL[g.status]}</span>
                   <Button variant="ghost" size="sm" onClick={() => handleReactivate(g)}>Reactivar</Button>
                 </div>
               </div>

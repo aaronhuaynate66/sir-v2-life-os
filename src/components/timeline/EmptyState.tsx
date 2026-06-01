@@ -31,9 +31,10 @@ const COPY: Record<EmptyVariant, { Icon: LucideIcon; title: (q?: string) => stri
   },
   error: {
     Icon: AlertTriangle,
+    // Fallo de carga recuperable: ámbar (no rojo) — es reintentable, no crítico.
     title: () => 'No pudimos cargar el historial.',
     sub: 'Verificá tu conexión y reintentá.',
-    iconClass: 'text-red-400',
+    iconClass: 'text-amber-400',
   },
 }
 
