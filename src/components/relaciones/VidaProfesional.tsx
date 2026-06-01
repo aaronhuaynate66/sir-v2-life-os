@@ -11,8 +11,7 @@
 //
 // Patrón visual: Card + shadow-none + uppercase tracking-widest.
 
-import Link from 'next/link'
-import { Briefcase, ExternalLink, BadgeCheck } from 'lucide-react'
+import { Briefcase, BadgeCheck } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -139,15 +138,10 @@ function EmptyState() {
   return (
     <div className="text-sm text-muted-foreground space-y-1.5">
       <p>Sin captura de LinkedIn.</p>
-      <p className="text-xs leading-relaxed inline-flex items-center gap-1">
-        Escaneá un perfil desde{' '}
-        <Link
-          href="/captura"
-          className="underline underline-offset-2 hover:text-foreground inline-flex items-center gap-0.5"
-        >
-          Captura <ExternalLink size={11} strokeWidth={1.75} aria-hidden="true" />
-        </Link>{' '}
-        para poblar esta sección.
+      <p className="text-xs leading-relaxed">
+        Subí un pantallazo del perfil con{' '}
+        <span className="font-medium text-foreground">Agregar captura</span> (arriba) para poblar
+        esta sección — se asocia directo a esta persona.
       </p>
     </div>
   )

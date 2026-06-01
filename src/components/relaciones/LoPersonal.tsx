@@ -16,8 +16,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Sparkles, Loader2, RefreshCw, ExternalLink } from 'lucide-react'
+import { Sparkles, Loader2, RefreshCw } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -145,14 +144,8 @@ function EmptyState() {
     <p className="text-sm text-muted-foreground italic leading-relaxed">
       Sin síntesis generada. Cuando haya al menos una conversación de WhatsApp
       registrada con esta persona, vas a poder generar acá un retrato narrativo
-      del vínculo. Empezá registrando una desde{' '}
-      <Link
-        href="/captura"
-        className="not-italic underline underline-offset-2 hover:text-foreground inline-flex items-center gap-0.5"
-      >
-        Captura <ExternalLink size={11} strokeWidth={1.75} aria-hidden="true" />
-      </Link>
-      .
+      del vínculo. Empezá registrando una con{' '}
+      <span className="not-italic font-medium text-foreground">Agregar captura</span> (arriba).
     </p>
   )
 }

@@ -52,7 +52,6 @@ import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
-import { VidaSocial } from './VidaSocial'
 import { PerfilProfesional } from './PerfilProfesional'
 import { RedesSociales } from './RedesSociales'
 import { Bitacora } from './Bitacora'
@@ -570,18 +569,16 @@ export function PersonDetail({
           observation voice_note (aparece tambien en la Bitacora). */}
       <NotaDeVozPanel personId={live.id} observations={curatedObservations} />
 
-      {/* Vida profesional (#6) + Vida social (#7): render determinístico
-          de las observations linkedin / instagram curadas. */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <VidaProfesional observations={curatedObservations} />
-        <VidaSocial observations={curatedObservations} />
-      </div>
+      {/* Redes & social (unificado): handles manuales editables + enriquecimiento
+          de la captura de Instagram, en un solo bloque coherente. La captura se
+          hace con el panel inline "Agregar captura" (arriba), no en /captura. */}
+      <RedesSociales person={live} observations={curatedObservations} />
+
+      {/* Vida profesional (#6): resumen determinístico de la captura LinkedIn. */}
+      <VidaProfesional observations={curatedObservations} />
 
       {/* Perfil profesional completo (#10): colapsable, detalle LinkedIn. */}
       <PerfilProfesional person={live} observations={curatedObservations} />
-
-      {/* Redes sociales conectadas (#11): contacto + links, editable inline. */}
-      <RedesSociales person={live} observations={curatedObservations} />
 
       {/* "Lo personal" (#8): síntesis narrativa LLM, lazy + cacheada en
           person_synthesis. conversationCount = whatsapp_chat curadas. */}

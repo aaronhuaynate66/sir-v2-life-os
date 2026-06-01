@@ -1,22 +1,33 @@
 'use client'
-// SIR V2 — RedesSociales (#11 del detail page V1).
+// SIR V2 — Redes & social (perfil social unificado, modelo personal-CRM).
 //
-// Redes/contacto conectados de la persona, con enlaces externos. Editable
-// inline (persiste vía updatePerson -> sync engine, mismo patrón que
-// FechasImportantes). Campos canónicos en people (migration 0010):
-// phone_number / instagram_handle / linkedin_url / twitter_handle.
+// Fusión de las antiguas cards "Redes sociales" (#11, handles manuales) +
+// "Vida social" (#7, datos extraídos de la captura de Instagram). Antes eran
+// dos cards compitiendo por lo mismo; ahora los handles y el enriquecimiento
+// de la captura viven en UN solo bloque coherente.
 //
-// Bonus: si un handle no está seteado pero SÍ aparece en una captura
-// (observation instagram/linkedin curada), lo ofrecemos como sugerencia
-// "detectado en captura · usar" — el escaneo del V1, sin re-tipear.
+// - Handles manuales editables inline (persiste vía updatePerson -> sync,
+//   mismo patrón que FechasImportantes). Campos canónicos en people
+//   (migration 0010): phone_number / instagram_handle / linkedin_url /
+//   twitter_handle.
+// - Si hay captura de Instagram curada: se muestra enriquecido (handle,
+//   verificado/privado, posts/seguidores/siguiendo, bio, link) DENTRO de la
+//   misma card.
+// - Sugerencias "detectado en captura · usar" si un handle está vacío pero
+//   apareció en una captura.
+//
+// La captura/enriquecimiento se hace con el panel inline "Agregar captura"
+// (AgregarCapturaPanel, arriba en el detalle) — NO se navega a /captura.
 
 import { useState } from 'react'
 import { toast } from 'sonner'
 import {
   AtSign, Briefcase, Bird, Phone, ExternalLink, Edit2, Check, X as XIcon, Sparkles,
+  BadgeCheck, Lock,
 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,7 +35,7 @@ import { useRelationshipStore } from '@/stores'
 import {
   whatsappLink, instagramLink, twitterLink, normalizeUrl, normalizeHandle,
 } from '@/lib/social/links'
-import { latestOfType, readInstagram, readLinkedIn } from '@/lib/observations/profile'
+import { latestOfType, readInstagram, readLinkedIn, fmtCount } from '@/lib/observations/profile'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
 
@@ -96,7 +107,7 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
           <div className="flex items-center gap-2">
             <AtSign size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
-              Redes sociales
+              Redes &amp; social
             </div>
           </div>
           {!editing && (
@@ -129,19 +140,27 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
             </div>
           </div>
         ) : (
-          <div className="space-y-2">
-            {!hasAny && (
+          <div className="space-y-3">
+            {/* Nada manual ni capturado → empty state que apunta al panel inline. */}
+            {!hasAny && !igObs && !liObs && (
               <p className="text-sm text-muted-foreground italic">
-                Sin redes conectadas. Usá <span className="not-italic font-medium">Editar</span>{' '}
-                para vincular teléfono, Instagram, LinkedIn o Twitter.
+                Sin redes ni capturas. Usá <span className="not-italic font-medium">Editar</span>{' '}
+                para vincular teléfono, Instagram, LinkedIn o Twitter — o subí una captura con{' '}
+                <span className="not-italic font-medium">Agregar captura</span> (arriba) para enriquecer el perfil.
               </p>
             )}
-            {waUrl && <SocialRow Icon={Phone} label="WhatsApp" value={person.phoneNumber!} href={waUrl} accent="text-emerald-400" />}
-            {igUrl && <SocialRow Icon={AtSign} label="Instagram" value={`@${person.instagramHandle}`} href={igUrl} accent="text-pink-400" />}
-            {liUrl && <SocialRow Icon={Briefcase} label="LinkedIn" value={liUrl.replace(/^https?:\/\//, '')} href={liUrl} accent="text-sky-400" />}
-            {twUrl && <SocialRow Icon={Bird} label="Twitter/X" value={`@${person.twitterHandle}`} href={twUrl} accent="text-foreground" />}
 
-            {/* Sugerencias detectadas en capturas */}
+            {/* Handles conectados (links externos). */}
+            {hasAny && (
+              <div className="space-y-2">
+                {waUrl && <SocialRow Icon={Phone} label="WhatsApp" value={person.phoneNumber!} href={waUrl} accent="text-emerald-400" />}
+                {igUrl && <SocialRow Icon={AtSign} label="Instagram" value={`@${person.instagramHandle}`} href={igUrl} accent="text-pink-400" />}
+                {liUrl && <SocialRow Icon={Briefcase} label="LinkedIn" value={liUrl.replace(/^https?:\/\//, '')} href={liUrl} accent="text-sky-400" />}
+                {twUrl && <SocialRow Icon={Bird} label="Twitter/X" value={`@${person.twitterHandle}`} href={twUrl} accent="text-foreground" />}
+              </div>
+            )}
+
+            {/* Sugerencias detectadas en capturas (vincular sin re-tipear). */}
             {!person.instagramHandle && scannedInstagram && (
               <button
                 type="button"
@@ -159,6 +178,9 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
                 Hay una captura de LinkedIn — pegá la URL del perfil en Editar para enlazarla.
               </p>
             )}
+
+            {/* Enriquecimiento de la captura de Instagram (datos extraídos). */}
+            {igObs && <InstagramEnrichment obs={igObs} />}
           </div>
         )}
       </CardContent>
@@ -219,5 +241,81 @@ function SocialRow({
       </div>
       <ExternalLink size={13} strokeWidth={1.75} className="text-muted-foreground/40 group-hover:text-foreground shrink-0" aria-hidden="true" />
     </a>
+  )
+}
+
+/** Enriquecimiento desde la captura de Instagram (handle, badges, métricas,
+ *  bio, link). Render determinístico de lo que el extractor estructuró — sin
+ *  LLM. Vive DENTRO de la card unificada (antes era la card "Vida social"). */
+function InstagramEnrichment({ obs }: { obs: Observation }) {
+  const ig = readInstagram(obs.data)
+  return (
+    <div className="rounded-md border border-border/40 p-3 space-y-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70 mr-1">
+          Instagram · captura
+        </span>
+        {ig.handle && (
+          <span className="text-sm font-medium font-mono text-foreground">@{ig.handle}</span>
+        )}
+        {ig.isVerified && (
+          <Badge variant="outline" className="text-[10px] font-normal gap-1 border-sky-500/30 bg-sky-500/10 text-sky-400">
+            <BadgeCheck size={10} strokeWidth={2} aria-hidden="true" />
+            verificado
+          </Badge>
+        )}
+        {ig.isPrivate && (
+          <Badge variant="outline" className="text-[10px] font-normal gap-1">
+            <Lock size={10} strokeWidth={2} aria-hidden="true" />
+            privado
+          </Badge>
+        )}
+        {ig.category && (
+          <Badge variant="outline" className="text-[10px] font-normal">
+            {ig.category}
+          </Badge>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <Stat label="Posts" value={fmtCount(ig.postsCount)} />
+        <Stat label="Seguidores" value={fmtCount(ig.followersCount)} />
+        <Stat label="Siguiendo" value={fmtCount(ig.followingCount)} />
+      </div>
+
+      {ig.bio && (
+        <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-border/40 pl-3 whitespace-pre-wrap line-clamp-4">
+          {ig.bio}
+        </p>
+      )}
+
+      {ig.externalLink && (
+        <a
+          href={ig.externalLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-sky-400 hover:underline inline-flex items-center gap-1 break-all"
+        >
+          <ExternalLink size={11} strokeWidth={1.75} aria-hidden="true" />
+          {ig.externalLink}
+        </a>
+      )}
+
+      <div className="text-[11px] text-muted-foreground/70 border-t border-border/40 pt-2 flex items-center justify-between gap-2">
+        <span>Seguidores en común: datos insuficientes</span>
+        <span className="font-mono text-muted-foreground/50">
+          instagram · {obs.confidence ?? 'sin confianza'}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/40 px-2 py-2 text-center">
+      <div className="text-base font-semibold tabular-nums tracking-tight">{value}</div>
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70">{label}</div>
+    </div>
   )
 }
