@@ -204,6 +204,45 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 
 ---
 
+## 🧲 BACKLOG inspirado en Clay (personal-CRM) — agregado 2026-05-31
+
+Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lógica de engines** (timing / recommendation / signal / relationship — todos puros y testeados, ver `src/engines/*`); en varios casos lo que falta es **exponerla en UI**, no construir el cerebro. Ordenado por prioridad/criterio.
+
+### P0 — Próximo candidato fuerte
+**1. "Reconectar" / serendipia** — bloque en `/panel` que sugiere **3-5 personas por día** para reconectar.
+- **Qué es:** un feed diario "deberías hablarle a X" (por silencio prolongado, fecha relevante, score relacional, señal).
+- **Esfuerzo: BAJO.** La lógica YA EXISTE: `timing` (cadencia/“hace cuánto”), `recommendation` (genera+rankea), `signal` (urgencia), `relationship` (alertas del panel). Es mayormente **wiring + UI** sobre engines puros ya cubiertos por tests.
+- **Prioridad: ALTA.** Marcado como el **próximo candidato fuerte** del backlog.
+
+### P1 — Alto valor, esfuerzo bajo/medio
+**4. Fuerza de relación visible + filtrable** — exponer `healthScore`/`importanceScore` de forma prominente en cada contacto (alta / media / baja) y **filtrar `/relaciones` por eso**.
+- **Qué es:** badge/indicador de fuerza por contacto + filtro en la lista.
+- **Esfuerzo: BAJO-MEDIO.** El score ya se computa (lo usa el grafo para tamaño de nodo y `RelationalScore`); falta el badge en la lista + un filtro. Reusa `relationship` engine.
+
+**2. Cadence por persona** — frecuencia objetivo de contacto por persona (semanal / quincenal / bimestral / …) + opción **"automática"** donde la IA propone la cadencia; alimenta los recordatorios.
+- **Qué es:** campo de cadencia por persona; el `timing` engine ya sabe "hace cuánto no hablás" → con el target cierra el loop "atrasado vs al día".
+- **Esfuerzo: MEDIO.** Net-new sobre el `timing` engine (campo nuevo en `people` → migración aditiva cuando se haga; el cómputo es engine puro). Insumo directo del item #1.
+
+### Dirección de diseño (se cruza con el rework de UX en curso)
+**3. Timeline unificado por persona como centro del detalle** — consolidar TODAS las interacciones (observations / capturas / logs / notas de voz) en **un solo hilo cronológico** que sea el **corazón** de la página de detalle, no un bloque más entre otros.
+- **Nota:** se cruza con el rework de UX en curso (unificación de cards, captura inline). Dejar anotado como **dirección de diseño**, no tarea suelta: la página debería orbitar el timeline, con los paneles (redes, profesional, etc.) como contexto lateral.
+
+### Lección de diseño (regla, no feature)
+**5. Recordatorios día-por-defecto** — SI/cuando se implementen recordatorios, que sean **a nivel día por defecto** y con **hora solo cuando el usuario la fija**.
+- **Por qué:** lección de Clay — forzar una hora a todo recordatorio genera fricción y falsa precisión. Default = día; hora = opt-in.
+
+### Después / lift grande
+**6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**.
+- **Esfuerzo: ALTO.** Integración externa (OAuth calendario, sync, matching a `people`). Backlog lejano.
+
+**7. Q&A por persona (estilo agente "Nexus")** — extender el resumen longitudinal (`person-synthesis` / Fase 3c) a un **preguntá-sobre-esta-persona** usando su contexto (observations + memories + logs).
+- **Esfuerzo: ALTO.** Depende de Fase 3b (búsqueda semántica) activa + RAG (3d). Construye sobre `person-synthesis` ya existente.
+
+### ⚠️ Guardrail a respetar (cuando se active la búsqueda semántica, Fase 3b)
+Asegurar que **personas con poca o ninguna interacción NO desaparezcan de los resultados**. Es una **falla conocida de Clay** (los contactos "fríos" se vuelven invisibles). SIR **ya la esquiva en el grafo** (commit del 31/05: el grafo dejó de ocultar nodos sin `history`/actividad). Replicar ese criterio en `/buscar` y en cualquier ranking: el embedding/score puede **ordenar**, nunca **excluir** silenciosamente a un contacto existente.
+
+---
+
 ## 📦 FASES PLANEADAS Memory Longitudinal (post-Captura)
 
 Sub-fases ya estructuradas como milestones en GitHub.
