@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `7b3249d`
+**Hash del último commit humano:** `48edd6b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `7b3249d` | Aaron Huaynate | fix(memories): anclar idempotencia en el PK (source_event_id no existe en prod) | 2026-05-31 |
-| `14dd9e3` | Aaron Huaynate | feat(memories): derivar memorias desde observations (camino aditivo) | 2026-05-31 |
-| `ababe31` | Aaron Huaynate | feat(export): dossier imprimible de persona (print stylesheet + window.print) | 2026-05-31 |
-| `eaab167` | Aaron Huaynate | feat(export): export CSV client-side (data ownership) | 2026-05-31 |
-| `874f019` | Aaron Huaynate | feat(longitudinal): vista de correlación Fase 3c — person_logs × fase lunar × ciclo | 2026-05-31 |
-| `40a8324` | Aaron Huaynate | feat(charts): gráficos de tendencias (series temporales, viz SVG propia) | 2026-05-31 |
-| `238376f` | Aaron Huaynate | feat(agenda): vista "Próximo" — recordatorios accionables + agenda global de fechas | 2026-05-31 |
-| `01176e9` | Aaron Huaynate | fix(quality): state-leak de PersonDetail entre vistas + unificación de cajas de error restantes | 2026-05-31 |
-| `7439e81` | Aaron Huaynate | a11y: nombres accesibles en inputs/botones icon-only + aria-hidden en íconos decorativos | 2026-05-31 |
-| `c0e6e9e` | Aaron Huaynate | refactor(errors): adoptar ApiErrorNotice + parseErrorResponse en MemoriasAsociadasPanel | 2026-05-31 |
+| `48edd6b` | Aaron Huaynate | feat(objetivos): pasos editables + progreso por rollup + plan IA (hito 2-3) | 2026-06-01 |
+| `681d435` | Aaron Huaynate | fix(grafo): familiares-de-contacto cuelgan de su contacto, no del centro | 2026-06-01 |
+| `4fb5031` | Aaron Huaynate | feat(objetivos): modelo de pasos accionables por objetivo (hito 1) | 2026-06-01 |
+| `3a7986c` | Aaron Huaynate | fix(i18n): normalizar acentos/ñ en strings de UI (ronda 3 D) | 2026-06-01 |
+| `74f93d7` | Aaron Huaynate | refactor(ui): EmptyState compartido reemplaza copias hand-rolled (ronda 3 C) | 2026-06-01 |
+| `28ad738` | Aaron Huaynate | feat(skeleton): body skeleton en generación LLM de briefing y alineación (ronda 3 B) | 2026-06-01 |
+| `df0094e` | Aaron Huaynate | fix(skeleton): RouteSkeleton dentro del AppShell — sin salto al hidratar (ronda 3 A) | 2026-06-01 |
+| `f4eda34` | Aaron Huaynate | fix(ux): estados honestos sin datos, copy y skeleton de resumen (ronda 2 hito 3) | 2026-06-01 |
+| `6d6f00e` | Aaron Huaynate | feat(panel): colapsar captura rápida en disclosure — silencio visual (ronda 2 hito 2) | 2026-06-01 |
+| `742dff5` | Aaron Huaynate | fix(responsive): grafo /red dimensiona al contenedor + pulido mobile (ronda 2 hito 1) | 2026-06-01 |
 
 ---
 
@@ -379,9 +379,52 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 30/05/2026 (Sesión 6 — Registro rápido + Registrar interacción entregados; tabla `person_logs`).
+> **Última actualización:** 31/05/2026 (reconciliación con la realidad de prod + captura del roadmap estratégico).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
+> **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## ✅ EN PRODUCCIÓN — reconciliación (2026-05-31)
+
+> Estado verificado contra `git log` y el código. Lo de abajo **ya está en prod**; las secciones históricas más abajo se conservan como bitácora pero pueden estar desactualizadas frente a esto.
+
+**Detail page V2 — CERRADO (el "ítem 0" de PRÓXIMAS SESIONES ya está completo).** Los 17 componentes existen: score relacional, ciclo, cumpleaños, última interacción, registro rápido, registrar interacción, vida profesional/social, lo personal (`person-synthesis`), fechas importantes, perfil profesional, redes sociales, nota de voz, memorias asociadas, briefing IA (`person-briefing`), acciones (WA/analizar), bitácora, correlación 3c.
+
+**Plataforma / capacidades en prod:**
+- **Sync en vivo cross-device** ✅ (CREATE/UPDATE/DELETE sin recargar): focus re-pull + Realtime + repush offline (`61f1f2d`, `f548854`, `d57822d`, `54b699b`; migraciones 0017/0018/0019).
+- **relationship_events** append-only + dual-write no-lossy (Opción B; `c6caf52`, `46b0d3f`).
+- **Captura whatsapp_web** (detector + extractor + pipeline; `c4efd74`, `15cc7b3`) y **notas de voz** (migración 0014 + `NotaDeVozPanel`).
+- **Fase 5 — Briefing diario** accionable en Mission Control + cache por día (`47e7e4c`, `fabef7a`).
+- **Fase 3c** — correlación longitudinal (`person_logs` × fase lunar × ciclo) + resumen semanal (`874f019`, migración 0016).
+- **Charts de tendencias** SVG propios (`40a8324`), **Agenda "Próximo"** (`238376f`), **Export/Dossier** + CSV client-side (`ababe31`, `eaab167`).
+- **Derivar memorias desde observations** (`14dd9e3`; fix idempotencia por PK `7b3249d`).
+- **Alignment Engine MVP** (Etapa 4): engine puro + narrativa reflexiva + panel en `/objetivos` + selector de personas (`888d75c`, `356b07f`, `235ce4d`, `ce2c544`).
+- **Edición inline** en el detail page (`PersonDetail.tsx`).
+- **Observabilidad:** Sentry (`@sentry/nextjs`) + Vercel Analytics instalados y cableados (`instrumentation.ts` — no-op sin DSN); **error boundaries** de App Router (`aa228c3`).
+- **Robots.txt + noindex** para rutas autenticadas (`src/app/robots.ts`).
+- **Emails auth ES:** template listo (`docs/auth-email-templates-es.md`); aplicarlo en el dashboard de Supabase es **acción manual**.
+- **Fixes:** hidratación fina del detail page (`16eb853`), state-leak de PersonDetail (`01176e9`).
+- **Tests:** ~379 tests en 34 archivos (lógica pura de engines, captura, fechas, sync, alignment) + error boundaries.
+
+**Migraciones — ✅ PROD SINCRONIZADO CON EL REPO, SIN DRIFT PENDIENTE (verificado en vivo 31/05):**
+- **0012–0022 aplicadas.** Diagnóstico en vivo (SQL Editor por Chrome, tras reiniciar la PC que destrabó la consola): **21/21 índices esperados presentes**, `observations.capture_type` incluye `whatsapp_web`, `memories.type` incluye `social`, **9/9 tablas** en la publicación `supabase_realtime`, **62 policies**.
+- **0012 restaurada vía 0022:** `memories.source_event_id` existe y el índice único `uniq_memories_source_event` existe. El bug histórico del 500 de `/api/memories/derive` (que motivó reanclar la idempotencia al PRIMARY KEY) queda cerrado; el camino **legacy** `/api/memories/backfill` vuelve a tener su columna/índice.
+- **0022** (red de seguridad aditiva: re-asegura cols 0010 + restaura 0012) **APLICADA** en prod. Idempotente, no-destructiva.
+
+**Migraciones — flujo NUEVO con runner (Auditoría riesgo #2, 31/05):**
+- Se acabó el SQL a mano en el dashboard. Ahora: agregar `supabase/migrations/00NN_name.sql` → merge a `main` → el workflow **`Migrate DB (Supabase)`** (`.github/workflows/migrate.yml`) corre **después** de los tests y hace `supabase db push` (sólo lo pendiente). Ver **`docs/MIGRATIONS.md`**.
+- **Acción manual pendiente de Aaron** (one-time, en `docs/MIGRATIONS.md`): (1) secrets `SUPABASE_ACCESS_TOKEN` + `SUPABASE_DB_PASSWORD`; (2) **baseline** del historial (insert `0001..0023` en `supabase_migrations.schema_migrations`) para que el primer push sea NO-OP. Hasta eso, el runner hace skip elegante (no rompe CI).
+- **0023** (`rate_limits`, runner de rate limiting) sigue requiriendo aplicarse (idempotente); el baseline asume que ya está en prod.
+
+**Pendiente real (lo que NO está hecho):**
+- **Activar Fase 3b (búsqueda semántica):** cargar `OPENAI_API_KEY` (server) + correr embeddings sobre la data existente (`observations`/`memories`) + validar `/buscar`. **Hoy el código está completo pero DORMIDO** (sin key, `embedText` lanza error claro).
+- **Fase 3d** — memoria que aprende (RAG cross-session).
+- **Etapa 4 follow-ups:** Human OKRs estructurados, Narrative Intelligence, delta de relationship score (necesita snapshots históricos), tono de interacción desde `person_logs` en el engine, inferencia LLM de dominio para objetivos de texto libre.
+- **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
+- **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
+- **Refactor split-brain → Supabase única fuente** (deuda arquitectónica, ver más abajo).
 
 ---
 
@@ -457,16 +500,18 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 
 ## 🎯 EN CURSO
 
-- **Fase 3b — Búsqueda Semántica**: ACTIVA, sin issues asignados.
-  - Próximo paso: planning estratégico + crear 3-5 issues operativos.
+- **Fase 3b — Búsqueda Semántica**: 🟡 **CÓDIGO COMPLETO, DORMIDA.** pgvector (0015) + `src/lib/embeddings/client.ts` + `POST /api/memories/embed` + `POST /api/search` + página `/buscar` ya existen. **Bloqueada por falta de `OPENAI_API_KEY`** (server-side, OpenAI `text-embedding-3-small`).
+  - **Próximo paso para activarla:** cargar `OPENAI_API_KEY` en el server → correr el embed sobre `observations`/`memories` existentes → validar `/buscar` end-to-end.
 
 ---
 
 ## 🔥 PRÓXIMAS SESIONES (orden definido)
 
-### 0. Portar detail page completo de SIR V1 → V2 (PRIORIDAD ALTA) ⭐
+### 0. Portar detail page completo de SIR V1 → V2 ✅ COMPLETADO (2026-05-31)
 
-**Por qué:** El detail page actual de `/relaciones/[slug]` en V2 solo muestra 4 campos básicos (relación, categoría, importancia, confianza). SIR V1 (sir.marlabinc.com) tiene una vista MUCHO más rica que es la verdadera capa de valor del sistema. Sin esto, la captura WhatsApp y la red de relaciones queda sin su verdadero contexto consumible.
+> **CERRADO.** Los 17 componentes están en prod (ver "EN PRODUCCIÓN" arriba). El checklist 1–17 de abajo se conserva como bitácora del arco; salvo iteraciones menores marcadas, todo está entregado. La sección de "Schema requerido / Esfuerzo estimado" quedó como registro histórico del plan original.
+
+**Por qué (contexto histórico):** El detail page V2 arrancó mostrando solo 4 campos básicos. SIR V1 (sir.marlabinc.com) tenía una vista mucho más rica — la verdadera capa de valor. Ese arco ya se portó completo.
 
 **Referencia visual:** Screenshot del 29/05/2026 en `sir.marlabinc.com` mostrando perfil de Diana Diaz con todos los componentes.
 
@@ -538,16 +583,65 @@ Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type
 
 ---
 
+## 🧲 BACKLOG inspirado en Clay (personal-CRM) — agregado 2026-05-31
+
+Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lógica de engines** (timing / recommendation / signal / relationship — todos puros y testeados, ver `src/engines/*`); en varios casos lo que falta es **exponerla en UI**, no construir el cerebro. Ordenado por prioridad/criterio.
+
+### P0 — Próximo candidato fuerte
+**1. "Reconectar" / serendipia** — bloque en `/panel` que sugiere **3-5 personas por día** para reconectar.
+- **Qué es:** un feed diario "deberías hablarle a X" (por silencio prolongado, fecha relevante, score relacional, señal).
+- **Esfuerzo: BAJO.** La lógica YA EXISTE: `timing` (cadencia/“hace cuánto”), `recommendation` (genera+rankea), `signal` (urgencia), `relationship` (alertas del panel). Es mayormente **wiring + UI** sobre engines puros ya cubiertos por tests.
+- **Prioridad: ALTA.** Marcado como el **próximo candidato fuerte** del backlog.
+
+### P1 — Alto valor, esfuerzo bajo/medio
+**4. Fuerza de relación visible + filtrable** — exponer `healthScore`/`importanceScore` de forma prominente en cada contacto (alta / media / baja) y **filtrar `/relaciones` por eso**.
+- **Qué es:** badge/indicador de fuerza por contacto + filtro en la lista.
+- **Esfuerzo: BAJO-MEDIO.** El score ya se computa (lo usa el grafo para tamaño de nodo y `RelationalScore`); falta el badge en la lista + un filtro. Reusa `relationship` engine.
+
+**2. Cadence por persona** — frecuencia objetivo de contacto por persona (semanal / quincenal / bimestral / …) + opción **"automática"** donde la IA propone la cadencia; alimenta los recordatorios.
+- **Qué es:** campo de cadencia por persona; el `timing` engine ya sabe "hace cuánto no hablás" → con el target cierra el loop "atrasado vs al día".
+- **Esfuerzo: MEDIO.** Net-new sobre el `timing` engine (campo nuevo en `people` → migración aditiva cuando se haga; el cómputo es engine puro). Insumo directo del item #1.
+
+### Dirección de diseño (se cruza con el rework de UX en curso)
+**3. Timeline unificado por persona como centro del detalle** — consolidar TODAS las interacciones (observations / capturas / logs / notas de voz) en **un solo hilo cronológico** que sea el **corazón** de la página de detalle, no un bloque más entre otros.
+- **Nota:** se cruza con el rework de UX en curso (unificación de cards, captura inline). Dejar anotado como **dirección de diseño**, no tarea suelta: la página debería orbitar el timeline, con los paneles (redes, profesional, etc.) como contexto lateral.
+
+### Lección de diseño (regla, no feature)
+**5. Recordatorios día-por-defecto** — SI/cuando se implementen recordatorios, que sean **a nivel día por defecto** y con **hora solo cuando el usuario la fija**.
+- **Por qué:** lección de Clay — forzar una hora a todo recordatorio genera fricción y falsa precisión. Default = día; hora = opt-in.
+
+### Después / lift grande
+**6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**.
+- **Esfuerzo: ALTO.** Integración externa (OAuth calendario, sync, matching a `people`). Backlog lejano.
+
+**7. Q&A por persona (estilo agente "Nexus")** — extender el resumen longitudinal (`person-synthesis` / Fase 3c) a un **preguntá-sobre-esta-persona** usando su contexto (observations + memories + logs).
+- **Esfuerzo: ALTO.** Depende de Fase 3b (búsqueda semántica) activa + RAG (3d). Construye sobre `person-synthesis` ya existente.
+
+**8. Cross-referencing por ubicación** — que la capa de memoria/engines interprete el campo `location` (ya existe en `people`; ahora editable a nivel distrito/ciudad) y lo cruce.
+- **Qué es:** sugerencias contextuales por cercanía — "Diana vive en Barranco → visitala", o "X y vos están cerca" cuando Aaron está en la zona. Aparece en la **Agenda / Próximo**.
+- **Conecta con:** `timing` + `recommendation` engines y la vista Agenda. Requiere normalizar `location` (distrito/ciudad) y, para "estás cerca", una fuente de ubicación de Aaron (manual o futura). Esfuerzo medio; no implementar aún, solo anotado.
+
+**9. Familia / relaciones persona↔persona (padres como nodos del grafo)** — DIFERIDO de la tanda de campos de relación (era el item A4). Hoy NO existe modelo persona↔persona: `relationships` es self↔persona (una fila por contacto) y el grafo es una estrella desde el self. Ponerlo bien requiere un **sub-proyecto**:
+- **Modelo:** nueva tabla `person_links` (`person_a_id`, `person_b_id`, `kind` ∈ parent/sibling/partner/…, `user_id`) + RLS. Migración aditiva.
+- **Grafo:** el builder debe dibujar aristas persona↔persona (no solo self→persona) — cambia el layout de fuerza (hoy el self está fijo al centro); riesgo de desestabilizar el grafo recién rediseñado, por eso se hace aislado.
+- **UI:** mini-sección "Familia" en la ficha: agregar padre/madre → crea la persona-nodo mínima (relationship='family') + el link. 
+- **Por qué se difirió:** alcance/riesgo propio; no mezclarlo con cambios de campos simples. Candidato a su propia sesión.
+
+### ⚠️ Guardrail a respetar (cuando se active la búsqueda semántica, Fase 3b)
+Asegurar que **personas con poca o ninguna interacción NO desaparezcan de los resultados**. Es una **falla conocida de Clay** (los contactos "fríos" se vuelven invisibles). SIR **ya la esquiva en el grafo** (commit del 31/05: el grafo dejó de ocultar nodos sin `history`/actividad). Replicar ese criterio en `/buscar` y en cualquier ranking: el embedding/score puede **ordenar**, nunca **excluir** silenciosamente a un contacto existente.
+
+---
+
 ## 📦 FASES PLANEADAS Memory Longitudinal (post-Captura)
 
 Sub-fases ya estructuradas como milestones en GitHub.
 
-| Sub-fase | Capacidad | Estado | Esfuerzo estimado |
-|----------|-----------|--------|-------------------|
+| Sub-fase | Capacidad | Estado | Nota |
+|----------|-----------|--------|------|
 | 3a | Historial Profundo | ✅ CERRADA | (cerrada 28/05) |
-| 3b | Búsqueda semántica (pgvector + embeddings) | 🔄 ACTIVA | 3-5 sesiones |
-| 3c | Resumen automático de patrones longitudinales | ⬜ Pendiente | 3-4 sesiones |
-| 3d | Memoria que aprende (RAG cross-session) | ⬜ Pendiente | 5-8 sesiones |
+| 3b | Búsqueda semántica (pgvector + embeddings) | 🟡 CÓDIGO COMPLETO, DORMIDA | falta `OPENAI_API_KEY` + embeddear data existente |
+| 3c | Resumen automático de patrones longitudinales | ✅ ENTREGADA | correlación lunar/ciclo + resumen semanal (`874f019`, 0016) |
+| 3d | Memoria que aprende (RAG cross-session) | ⬜ Pendiente | 5-8 sesiones; depende de 3b activa |
 
 Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
@@ -594,13 +688,13 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - **Storage buckets — cleanup de huérfanos**: las observations soft-deleteadas el 29/05 dejaron imágenes en `linkedin-captures`, `instagram-captures`, `whatsapp-captures`, `person-avatars` bajo `{user_id}/...`. Tarea de datos, no de código: listar paths por bucket vs observations vivas y borrar las huérfanas. Esfuerzo: 30 min con script. **No ejecutar hasta que se decida la política de retención de imágenes asociadas a `observations.is_obsolete=true`** (¿borrar al obsoletar? ¿quedan como referencia?). Pendiente decisión.
 
-- **Sentry + Vercel Analytics**: observabilidad runtime mínima. Necesario antes de abrir SIR a familia/beta. Esfuerzo: 1-2h.
+- ~~**Sentry + Vercel Analytics**~~ ✅ INSTALADO: `@sentry/nextjs` + `@vercel/analytics` cableados (`instrumentation.ts`/`instrumentation-client.ts`, `onRequestError`; no-op sin DSN). Falta solo cargar el DSN en prod para que capture.
 
-- **Mobile QA estructurado**: validar flujos críticos en 375px / 390px / 414px / 768px. Esfuerzo: 1h.
+- **Mobile QA estructurado**: validar flujos críticos en 375px / 390px / 414px / 768px. Esfuerzo: 1h. _(Pendiente — sin evidencia de pase formal.)_
 
-- **Estados vacíos pedagógicos**: copy que enseña al usuario qué registrar. Esfuerzo: 1-2h.
+- **Estados vacíos pedagógicos**: parcial — `/memoria` ya tiene empty state pedagógico (`0de0114`); resto de rutas pendiente.
 
-- **Emails Supabase template ES**: customizar emails de auth (template HTML + opcional SMTP Resend gratis hasta 3k/mes). Esfuerzo: 15-45 min.
+- ~~**Emails Supabase template ES**~~ ✅ Template ES listo en `docs/auth-email-templates-es.md`. **Pegarlo en el dashboard de Supabase = acción manual** (no versionable desde el repo).
 
 - ~~**Accessibility pass**: fix `aria-describedby` en Sheet (warning detectado en Issue #70). Esfuerzo: 30 min.~~ ✅ Resuelto en sweep 30/05/2026 — `SheetDescription` sr-only en AppShell + TimelineFiltersMobile.
 
@@ -610,19 +704,11 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - **Cap en `relationships.history`**: cuando aparezca volumen >50 items por relación. R7 del ADR 0005. Esfuerzo: 15 min.
 
-- **Robots.txt + noindex meta tag para rutas autenticadas**: hoy todas las páginas son crawlable. Indexar sólo la landing pública (cuando exista) y excluir `/panel`, `/yo`, `/historial`, etc. con `noindex` + `robots.txt`. Esfuerzo: 30 min.
+- ~~**Robots.txt + noindex para rutas autenticadas**~~ ✅ Resuelto: `src/app/robots.ts` en prod.
 
-### Edición completa en /relaciones/[slug]
+### Edición completa en /relaciones/[slug] ✅ RESUELTO
 
-**Detectado:** validación manual del 29/05/2026 (PR #85).
-
-**Qué falta:** el detail page de persona solo permite editar nombre + slug. Para cambiar tipo de relación, categoría, importancia, confianza, impacto energético, frecuencia de contacto, el usuario debe volver a `/relaciones` y usar el formulario existente (modal de creación/edición).
-
-**Propuesta:** formulario inline completo en el detail page con todos los campos editables (mismo schema que el modal). Idealmente con sección "Editar" colapsable o tabs para no saturar la vista.
-
-**Esfuerzo estimado:** 1-2 sesiones (~3-4h).
-
-**Prioridad:** Media. Funcional, mejora UX.
+**Detectado:** validación manual del 29/05/2026 (PR #85). **Resuelto:** el detail page (`PersonDetail.tsx`) ya tiene edición inline de los campos de la persona (no solo nombre + slug); ya no hace falta volver a `/relaciones` para editar.
 
 ---
 
