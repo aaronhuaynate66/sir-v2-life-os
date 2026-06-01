@@ -11,7 +11,7 @@
 
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
-import { ShieldAlert, ChevronDown, Loader2, Upload, ImageIcon, Eye } from 'lucide-react'
+import { ShieldAlert, ChevronDown, Loader2, Upload, ImageIcon, Eye, ScanLine } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,7 @@ import {
   uploadDocumentPhoto,
   getDocumentPhotoUrl,
 } from '@/lib/person-sensitive/client'
+import { extractDocument } from '@/lib/capture/document/client'
 
 export interface InformacionSensibleProps {
   personId: string
@@ -35,6 +36,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [scanning, setScanning] = useState(false)
 
   const [documentoTipo, setDocumentoTipo] = useState('')
   const [documentoNumero, setDocumentoNumero] = useState('')
@@ -88,6 +90,51 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
       }
     },
     [personId],
+  )
+
+  // Capturar documento: sube la foto al bucket privado + extrae los campos por
+  // visión (extracción puntual permitida) + autocompleta + guarda. Si la
+  // extracción falla, igual queda la foto guardada (no se pierde el upload).
+  const onScanDocument = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (e.target) e.target.value = ''
+      if (!file) return
+      setScanning(true)
+      try {
+        // 1. Subir la foto original al bucket privado (queda en el documento).
+        const path = await uploadDocumentPhoto(personId, file)
+        setFotoPath(path)
+        setFotoUrl(null)
+        // 2. Extraer los campos por visión.
+        const ex = await extractDocument(file)
+        // 3. Autocompletar SOLO lo que el modelo leyó (no pisa lo ya cargado).
+        const tipo = ex.documentoTipo ?? documentoTipo
+        const dni = ex.documentoNumero ?? documentoNumero
+        const pasNum = ex.pasaporteNumero ?? pasaporteNumero
+        const pasVenc = ex.pasaporteVencimiento ?? pasaporteVencimiento
+        setDocumentoTipo(tipo)
+        setDocumentoNumero(dni)
+        setPasaporteNumero(pasNum)
+        setPasaporteVencimiento(pasVenc)
+        // 4. Persistir (foto + campos leídos).
+        await saveSensitiveData(personId, {
+          documentoTipo: tipo.trim() || undefined,
+          documentoNumero: dni.trim() || undefined,
+          pasaporteNumero: pasNum.trim() || undefined,
+          pasaporteVencimiento: pasVenc || undefined,
+          fotoDocumentoPath: path,
+        })
+        toast.success('Documento leído y guardado', { description: 'Revisá los datos y corregí si hace falta.' })
+      } catch (err) {
+        toast.error('No se pudo leer el documento', {
+          description: err instanceof Error ? err.message : 'La foto quedó guardada; podés cargar los datos a mano.',
+        })
+      } finally {
+        setScanning(false)
+      }
+    },
+    [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento],
   )
 
   const viewPhoto = useCallback(async () => {
@@ -180,21 +227,35 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
                   </div>
                 </div>
 
-                {/* Foto del documento (bucket privado). */}
+                {/* Foto del documento (bucket privado) + lectura por IA. */}
                 <div className="rounded-md border border-border/50 p-3 space-y-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <ImageIcon size={13} strokeWidth={1.75} aria-hidden="true" />
                     Foto del documento / pasaporte
                     {fotoPath && <span className="text-emerald-400">· cargada</span>}
                   </div>
+                  <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+                    Subí una foto del DNI o pasaporte y la leo para autocompletar los campos de arriba
+                    (extracción puntual; la imagen queda en tu almacenamiento privado).
+                  </p>
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* Primario: leer documento (sube + extrae + autocompleta). */}
+                    <label className={cn(
+                      'inline-flex items-center gap-1.5 text-xs rounded-md border border-accent/40 bg-accent/10 text-foreground px-2.5 py-1.5 cursor-pointer hover:bg-accent/20',
+                      (scanning || uploading) && 'opacity-50 pointer-events-none',
+                    )}>
+                      {scanning ? <Loader2 size={13} className="animate-spin" /> : <ScanLine size={13} strokeWidth={1.75} aria-hidden="true" />}
+                      {scanning ? 'Leyendo…' : 'Leer documento (IA)'}
+                      <input type="file" accept="image/*" onChange={onScanDocument} disabled={scanning || uploading} className="hidden" />
+                    </label>
+                    {/* Secundario: subir foto sin leer. */}
                     <label className={cn(
                       'inline-flex items-center gap-1.5 text-xs rounded-md border border-border px-2.5 py-1.5 cursor-pointer hover:bg-accent/5',
-                      uploading && 'opacity-50 pointer-events-none',
+                      (uploading || scanning) && 'opacity-50 pointer-events-none',
                     )}>
                       {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} strokeWidth={1.75} aria-hidden="true" />}
-                      {fotoPath ? 'Reemplazar' : 'Subir foto'}
-                      <input type="file" accept="image/*" onChange={onPickPhoto} disabled={uploading} className="hidden" />
+                      {fotoPath ? 'Reemplazar foto' : 'Subir sin leer'}
+                      <input type="file" accept="image/*" onChange={onPickPhoto} disabled={uploading || scanning} className="hidden" />
                     </label>
                     {fotoPath && (
                       <Button type="button" size="sm" variant="ghost" onClick={viewPhoto}>
