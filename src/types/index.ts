@@ -380,6 +380,34 @@ export interface SleepRecord {
   notes?: string
 }
 
+/**
+ * Diagnóstico personal del dueño de la app (Espacio personal en /yo).
+ * Singleton por usuario. Data PERSONAL SENSIBLE: privada por RLS, NO se manda
+ * a embeddings/IA, NO se expone fuera de /yo. Migration 0030.
+ * Mezcla campos estructurados (listas) + texto libre (narrativas).
+ */
+export interface SelfDiagnosis {
+  id: string
+  /** Estado emocional actual — texto libre ("¿cómo estás hoy, de verdad?"). */
+  emotionalState: string
+  /** Principales ansiedades / preocupaciones. */
+  anxieties: string[]
+  /** Bloqueos detectados. */
+  blocks: string[]
+  /** "Lo que dejé de tolerar". */
+  stoppedTolerating: string[]
+  /** "Lo que entiendo". */
+  understandings: string[]
+  /** Frases ancla / valores. */
+  anchors: string[]
+  /** Visión de vida ideal — narrativa libre. */
+  idealLifeVision: string
+  /** Modelo del yo futuro — narrativa libre. */
+  futureSelf: string
+  /** ISO timestamp de la última edición. */
+  updatedAt: string
+}
+
 export interface FinancialMovement {
   id: string
   type: MovementType

@@ -20,6 +20,7 @@ import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
+import { SelfDiagnosisPanel } from '@/components/yo/SelfDiagnosisPanel'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 
@@ -113,6 +114,9 @@ function SelfContent() {
         </div>
         <p className="text-sm text-muted-foreground mt-1">Estado biologico y metricas personales</p>
       </div>
+
+      {/* Espacio personal / diagnóstico — sección privada, lo primero que ve. */}
+      <SelfDiagnosisPanel />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (

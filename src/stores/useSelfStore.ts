@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { SelfMetric, HealthMetric, SleepRecord } from '@/types'
+import type { SelfMetric, HealthMetric, SleepRecord, SelfDiagnosis } from '@/types'
 import { fixtureSleepRecords, fixtureMetrics } from '@/data/fixtures'
 import { SEED_FIXTURES, purgeFixtureRows } from '@/data/fixtures/seed'
 import { STORAGE_KEYS } from './storage'
@@ -14,12 +14,15 @@ import {
   selfMetricAdapter,
   healthMetricAdapter,
   sleepRecordAdapter,
+  selfDiagnosisAdapter,
 } from '@/lib/supabase/sync'
 
 interface SelfState {
   selfMetrics: SelfMetric[]
   healthMetrics: HealthMetric[]
   sleepRecords: SleepRecord[]
+  /** Diagnóstico personal (singleton por usuario). null = nunca creado. */
+  diagnosis: SelfDiagnosis | null
 }
 
 interface SelfActions {
@@ -28,6 +31,9 @@ interface SelfActions {
   removeSelfMetric: (id: string) => void
   addHealthMetric: (metric: HealthMetric) => void
   addSleepRecord: (record: SleepRecord) => void
+  /** Crea/actualiza el diagnóstico (un solo upsert). */
+  setDiagnosis: (diagnosis: SelfDiagnosis) => void
+  clearDiagnosis: () => void
   resetToFixtures: () => void
   clearAll: () => void
 }
@@ -35,9 +41,10 @@ interface SelfActions {
 export type SelfStore = SelfState & SelfActions
 
 // Fixtures SOLO fuera de producción. healthMetrics nunca tuvo fixtures.
+// El diagnóstico NUNCA tiene fixtures: es data personal real del usuario.
 const INITIAL_STATE: SelfState = SEED_FIXTURES
-  ? { selfMetrics: fixtureMetrics, healthMetrics: [], sleepRecords: fixtureSleepRecords }
-  : { selfMetrics: [], healthMetrics: [], sleepRecords: [] }
+  ? { selfMetrics: fixtureMetrics, healthMetrics: [], sleepRecords: fixtureSleepRecords, diagnosis: null }
+  : { selfMetrics: [], healthMetrics: [], sleepRecords: [], diagnosis: null }
 
 export const useSelfStore = create<SelfStore>()(
   persist(
@@ -61,10 +68,14 @@ export const useSelfStore = create<SelfStore>()(
       addSleepRecord: (record) =>
         set((s) => ({ sleepRecords: [...s.sleepRecords, record] })),
 
+      setDiagnosis: (diagnosis) => set({ diagnosis }),
+
+      clearDiagnosis: () => set({ diagnosis: null }),
+
       resetToFixtures: () => set(INITIAL_STATE),
 
       clearAll: () =>
-        set({ selfMetrics: [], healthMetrics: [], sleepRecords: [] }),
+        set({ selfMetrics: [], healthMetrics: [], sleepRecords: [], diagnosis: null }),
     }),
     {
       name: STORAGE_KEYS.SELF,
@@ -103,6 +114,14 @@ attachSupabaseSync({
       select: (s) => s.sleepRecords,
       apply: (items) => useSelfStore.setState({ sleepRecords: items }),
       adapter: sleepRecordAdapter,
+    },
+    {
+      // Singleton ↔ slice-array de 0/1 fila. DB autoritativo: el pull aplica
+      // la fila remota (si existe) sobre la local; si no hay ninguna, queda null.
+      label: 'self_diagnosis',
+      select: (s) => (s.diagnosis ? [s.diagnosis] : []),
+      apply: (items) => useSelfStore.setState({ diagnosis: items[0] ?? null }),
+      adapter: selfDiagnosisAdapter,
     },
   ],
 })

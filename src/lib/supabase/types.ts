@@ -105,6 +105,37 @@ export type Database = {
         }
         Update: Partial<Database['public']['Tables']['sleep_records']['Insert']>
       }
+      self_diagnosis: {
+        Row: {
+          id: string
+          user_id: string
+          emotional_state: string
+          anxieties: string[]
+          blocks: string[]
+          stopped_tolerating: string[]
+          understandings: string[]
+          anchors: string[]
+          ideal_life_vision: string
+          future_self: string
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          id: string
+          user_id: string
+          emotional_state?: string
+          anxieties?: string[]
+          blocks?: string[]
+          stopped_tolerating?: string[]
+          understandings?: string[]
+          anchors?: string[]
+          ideal_life_vision?: string
+          future_self?: string
+          updated_at?: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['self_diagnosis']['Insert']>
+      }
       finance_movements: {
         Row: {
           id: string
