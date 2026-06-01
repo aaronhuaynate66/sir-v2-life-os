@@ -238,6 +238,16 @@ Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lóg
 **7. Q&A por persona (estilo agente "Nexus")** — extender el resumen longitudinal (`person-synthesis` / Fase 3c) a un **preguntá-sobre-esta-persona** usando su contexto (observations + memories + logs).
 - **Esfuerzo: ALTO.** Depende de Fase 3b (búsqueda semántica) activa + RAG (3d). Construye sobre `person-synthesis` ya existente.
 
+**8. Cross-referencing por ubicación** — que la capa de memoria/engines interprete el campo `location` (ya existe en `people`; ahora editable a nivel distrito/ciudad) y lo cruce.
+- **Qué es:** sugerencias contextuales por cercanía — "Diana vive en Barranco → visitala", o "X y vos están cerca" cuando Aaron está en la zona. Aparece en la **Agenda / Próximo**.
+- **Conecta con:** `timing` + `recommendation` engines y la vista Agenda. Requiere normalizar `location` (distrito/ciudad) y, para "estás cerca", una fuente de ubicación de Aaron (manual o futura). Esfuerzo medio; no implementar aún, solo anotado.
+
+**9. Familia / relaciones persona↔persona (padres como nodos del grafo)** — DIFERIDO de la tanda de campos de relación (era el item A4). Hoy NO existe modelo persona↔persona: `relationships` es self↔persona (una fila por contacto) y el grafo es una estrella desde el self. Ponerlo bien requiere un **sub-proyecto**:
+- **Modelo:** nueva tabla `person_links` (`person_a_id`, `person_b_id`, `kind` ∈ parent/sibling/partner/…, `user_id`) + RLS. Migración aditiva.
+- **Grafo:** el builder debe dibujar aristas persona↔persona (no solo self→persona) — cambia el layout de fuerza (hoy el self está fijo al centro); riesgo de desestabilizar el grafo recién rediseñado, por eso se hace aislado.
+- **UI:** mini-sección "Familia" en la ficha: agregar padre/madre → crea la persona-nodo mínima (relationship='family') + el link. 
+- **Por qué se difirió:** alcance/riesgo propio; no mezclarlo con cambios de campos simples. Candidato a su propia sesión.
+
 ### ⚠️ Guardrail a respetar (cuando se active la búsqueda semántica, Fase 3b)
 Asegurar que **personas con poca o ninguna interacción NO desaparezcan de los resultados**. Es una **falla conocida de Clay** (los contactos "fríos" se vuelven invisibles). SIR **ya la esquiva en el grafo** (commit del 31/05: el grafo dejó de ocultar nodos sin `history`/actividad). Replicar ese criterio en `/buscar` y en cualquier ranking: el embedding/score puede **ordenar**, nunca **excluir** silenciosamente a un contacto existente.
 
