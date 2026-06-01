@@ -1,8 +1,8 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Target, Plus, CheckCircle2, Archive, Activity } from 'lucide-react'
+import { Target, Plus, Archive, ListChecks, ChevronRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,9 +17,12 @@ import {
   AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { useGoalStore } from '@/stores/useGoalStore'
+import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useMemoryStore } from '@/stores'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
+import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
+import { computeStepProgress } from '@/lib/objectives/steps'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
@@ -58,10 +61,39 @@ export default function GoalsPage() {
 
 function GoalsContent() {
   const { goals, addGoal, updateGoal, updateGoalProgress, completeGoal, pauseGoal } = useGoalStore()
+  const objectiveSteps = useObjectiveStepStore((s) => s.steps)
   const { addMemory } = useMemoryStore()
   const { people, relationships } = useRelationshipStore()
   const dash = useMemo(() => buildGoalDashboard(goals), [goals])
+
+  // Pasos por objetivo (para rollup y para el toggle de la lista).
+  const stepsByGoal = useMemo(() => {
+    const map = new Map<string, typeof objectiveSteps>()
+    for (const s of objectiveSteps) {
+      const arr = map.get(s.objectiveId)
+      if (arr) arr.push(s)
+      else map.set(s.objectiveId, [s])
+    }
+    return map
+  }, [objectiveSteps])
+
+  // El progreso del objetivo se calcula de los pasos cuando existen: rollup
+  // hechos/total → goal.progress (fuente única para dashboard, alineación y
+  // agenda). Sólo objetivos ACTIVOS; idempotente (sólo escribe si difiere) →
+  // converge en una pasada, sin loop. Si no hay pasos, no toca nada (cae al
+  // progreso manual).
+  useEffect(() => {
+    for (const g of goals) {
+      if (g.status !== 'active') continue
+      const prog = computeStepProgress(stepsByGoal.get(g.id) ?? [])
+      if (prog && prog.percent !== g.progress) {
+        updateGoalProgress(g.id, prog.percent)
+      }
+    }
+  }, [goals, stepsByGoal, updateGoalProgress])
+
   const [adding, setAdding] = useState(false)
+  const [stepsOpenId, setStepsOpenId] = useState<string | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const [progressId, setProgressId] = useState<string | null>(null)
   const [progressVal, setProgressVal] = useState('')
@@ -259,7 +291,13 @@ function GoalsContent() {
         />
       ) : (
         <div className="space-y-2 mb-6">
-          {activeGoals.map((g) => (
+          {activeGoals.map((g) => {
+            const gSteps = stepsByGoal.get(g.id) ?? []
+            const rollup = computeStepProgress(gSteps)
+            const hasSteps = rollup != null
+            const displayPct = rollup ? rollup.percent : g.progress
+            const stepsOpen = stepsOpenId === g.id
+            return (
             <Card key={g.id} className={cardClass}>
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
@@ -270,13 +308,28 @@ function GoalsContent() {
                       <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[g.category]}</Badge>
                     </div>
                     {g.description && <p className="text-xs text-muted-foreground mb-2">{g.description}</p>}
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <div className="flex-1 h-1 bg-muted rounded-full">
-                        <div className="h-1 rounded-full bg-emerald-500 transition-all" style={{ width: g.progress + '%' }} />
+                        <div className="h-1 rounded-full bg-emerald-500 transition-all" style={{ width: displayPct + '%' }} />
                       </div>
-                      <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{g.progress}%</span>
+                      <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{displayPct}%</span>
                     </div>
-                    {progressId === g.id && (
+                    <div className="mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setStepsOpenId(stepsOpen ? null : g.id)}
+                        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                        aria-expanded={stepsOpen}
+                      >
+                        <ChevronRight size={12} className={cn('transition-transform', stepsOpen && 'rotate-90')} />
+                        <ListChecks size={12} />
+                        Pasos{hasSteps ? ` · ${rollup.done}/${rollup.total}` : ''}
+                      </button>
+                      {hasSteps && (
+                        <span className="ml-2 text-[10px] text-muted-foreground/50">progreso por pasos</span>
+                      )}
+                    </div>
+                    {!hasSteps && progressId === g.id && (
                       <div className="flex gap-2 mb-2 flex-wrap">
                         <Input type="number" min="0" max="100" placeholder="% nuevo progreso" value={progressVal} onChange={e => setProgressVal(e.target.value)} className="flex-1 min-w-0 max-w-[10rem] font-mono" />
                         <Button variant="outline" size="sm" onClick={saveProgress} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">Guardar</Button>
@@ -290,7 +343,9 @@ function GoalsContent() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-wrap sm:flex-shrink-0 sm:justify-end">
-                    <Button variant="ghost" size="sm" onClick={() => { setProgressId(g.id === progressId ? null : g.id); setProgressVal(String(g.progress)) }}>%</Button>
+                    {!hasSteps && (
+                      <Button variant="ghost" size="sm" onClick={() => { setProgressId(g.id === progressId ? null : g.id); setProgressVal(String(g.progress)) }}>%</Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => startEdit(g)}>Editar</Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -328,9 +383,24 @@ function GoalsContent() {
                     </AlertDialog>
                   </div>
                 </div>
+                <AnimatePresence initial={false}>
+                  {stepsOpen && (
+                    <motion.div
+                      key="steps"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <ObjectiveSteps goal={g} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
 
