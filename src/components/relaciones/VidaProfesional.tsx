@@ -107,7 +107,10 @@ function Body({ obs }: { obs: Observation }) {
             hint={li.latestEducation.dateRange ?? undefined}
           />
         )}
-        {li.location && <Row label="Ubicación" value={li.location} />}
+        {/* Etiquetado como "según LinkedIn" para NO confundirlo con la ubicación
+            manual de la persona (Identidad). Un capture nunca pisa person.location;
+            esto es sólo lo que dijo la captura. */}
+        {li.location && <Row label="Ubicación (LinkedIn)" value={li.location} />}
         {li.connectionsCount !== null && li.connectionsCount !== undefined && (
           <Row label="Conexiones" value={fmtCount(li.connectionsCount)} />
         )}
