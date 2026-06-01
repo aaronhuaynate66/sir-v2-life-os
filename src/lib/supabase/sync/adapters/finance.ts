@@ -1,10 +1,15 @@
 // SIR V2 — Finance table adapter (Sesión 20c, currency in Sesión Currency)
 
-import type { FinancialMovement, MovementType, FinancialCategory, Currency } from '@/types'
+import type { FinancialMovement, MovementType, FinancialCategory, Currency, SpendIntent } from '@/types'
 import type { TableAdapter } from '../types'
 
 function normalizeCurrency(value: unknown): Currency {
   return value === 'USD' ? 'USD' : 'PEN'
+}
+
+const INTENTS: SpendIntent[] = ['obligatorio', 'necesario', 'no_esencial']
+function normalizeIntent(value: unknown): SpendIntent | undefined {
+  return INTENTS.includes(value as SpendIntent) ? (value as SpendIntent) : undefined
 }
 
 export const financeMovementAdapter: TableAdapter<FinancialMovement> = {
@@ -18,6 +23,7 @@ export const financeMovementAdapter: TableAdapter<FinancialMovement> = {
     exchange_rate: m.exchangeRate,
     amount_pen: m.amountPEN,
     category: m.category,
+    intent: m.intent ?? null,
     description: m.description,
     date: m.date,
     recurrent: m.recurrent,
@@ -46,6 +52,7 @@ export const financeMovementAdapter: TableAdapter<FinancialMovement> = {
       exchangeRate,
       amountPEN,
       category: row.category as FinancialCategory,
+      intent: normalizeIntent(row.intent),
       description: row.description as string,
       date: row.date as string,
       recurrent: Boolean(row.recurrent),

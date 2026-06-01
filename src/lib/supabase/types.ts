@@ -146,6 +146,7 @@ export type Database = {
           exchange_rate: number
           amount_pen: number
           category: 'housing' | 'food' | 'transport' | 'health' | 'entertainment' | 'investment' | 'business' | 'personal' | 'debt' | 'other'
+          intent: 'obligatorio' | 'necesario' | 'no_esencial' | null
           description: string
           date: string
           recurrent: boolean
@@ -163,6 +164,7 @@ export type Database = {
           exchange_rate?: number
           amount_pen: number
           category: 'housing' | 'food' | 'transport' | 'health' | 'entertainment' | 'investment' | 'business' | 'personal' | 'debt' | 'other'
+          intent?: 'obligatorio' | 'necesario' | 'no_esencial' | null
           description: string
           date: string
           recurrent?: boolean

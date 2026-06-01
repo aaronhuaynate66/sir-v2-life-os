@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SectionTitle } from '@/components/ui/section-title'
 import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useMemoryStore } from '@/stores'
-import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
+import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByIntent, SPEND_INTENT_ORDER } from '@/engines/financial'
 import { createFinancialMovementMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
@@ -22,8 +22,10 @@ import { TrendChart } from '@/components/charts/TrendChart'
 import { financeBalanceSeries } from '@/lib/charts/adapters'
 import { ExportCsvButton } from '@/components/export/ExportCsvButton'
 import { financeMovementsCsv } from '@/lib/export/adapters'
+import { SpendIntentBreakdown } from '@/components/finanzas/SpendIntentBreakdown'
+import { INTENT_LABEL, INTENT_HINT, INTENT_BADGE } from '@/lib/finanzas/intent-meta'
 import { cn } from '@/lib/utils'
-import type { MovementType, FinancialCategory, FinancialMovement, Currency } from '@/types'
+import type { MovementType, FinancialCategory, FinancialMovement, Currency, SpendIntent } from '@/types'
 
 const TYPE_LABEL: Record<MovementType, string> = {
   income: 'Ingreso', expense: 'Gasto', investment: 'Inversion', transfer: 'Transferencia', debt: 'Deuda',
@@ -60,12 +62,15 @@ function FinanceContent() {
   const { addMemory } = useMemoryStore()
   const fin = useMemo(() => analyzeFinancialStability(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
   const alerts = useMemo(() => detectFinancialAlerts(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
+  const spendingByIntent = useMemo(() => analyzeSpendingByIntent(financialMovements), [financialMovements])
   const [type, setType] = useState<MovementType>('expense')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<Currency>('PEN')
   const [exchangeRate, setExchangeRate] = useState<string>('')
   const [rateIsFallback, setRateIsFallback] = useState(false)
   const [category, setCategory] = useState<FinancialCategory>('other')
+  // Intención del gasto (P1). Solo aplica a salidas (expense/debt).
+  const [intent, setIntent] = useState<SpendIntent>('necesario')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [recurrent, setRecurrent] = useState(false)
@@ -106,8 +111,11 @@ function FinanceContent() {
       if (isNaN(rate) || rate <= 0) { toast.error('Tipo de cambio invalido', { description: 'Ingresa un TC mayor que 0.' }); return }
       amountPEN = amt * rate
     }
+    // La intención solo tiene sentido en salidas de dinero (expense/debt).
+    const isOutflow = type === 'expense' || type === 'debt'
     const m: FinancialMovement = {
       id: `f_${Date.now()}`, type, amount: amt, currency, exchangeRate: rate, amountPEN, category,
+      intent: isOutflow ? intent : undefined,
       description: description || TYPE_LABEL[type], date, recurrent, tags: [],
     }
     addFinancialMovement(m)
@@ -213,6 +221,9 @@ function FinanceContent() {
         </Card>
       )}
 
+      {/* P1: desglose del gasto por intención (obligatorio/necesario/no-esencial). */}
+      <SpendIntentBreakdown data={spendingByIntent} />
+
       <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-6">
           <SectionTitle icon={Plus} label="Registrar movimiento" />
@@ -275,6 +286,23 @@ function FinanceContent() {
               </div>
             </div>
           )}
+          {/* Intención — solo en salidas de dinero (P1). Ortogonal a la categoría. */}
+          {(type === 'expense' || type === 'debt') && (
+            <div className="mb-3 p-3 rounded border border-border bg-muted/30">
+              <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+                Intención del gasto
+              </label>
+              <Select value={intent} onValueChange={(v) => setIntent(v as SpendIntent)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SPEND_INTENT_ORDER.map((i) => (
+                    <SelectItem key={i} value={i}>{INTENT_LABEL[i]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground/60 mt-1.5">{INTENT_HINT[intent]}</p>
+            </div>
+          )}
           <div className="flex items-center gap-4 mb-3">
             <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
               <input type="checkbox" checked={recurrent} onChange={e => setRecurrent(e.target.checked)} className="accent-foreground" />
@@ -320,8 +348,9 @@ function FinanceContent() {
                   <TypeIcon size={14} strokeWidth={1.75} className={cn('flex-shrink-0', TYPE_COLOR[m.type])} />
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm text-foreground truncate">{m.description}</span>
-                    <div className="flex gap-2 mt-0.5 items-center">
+                    <div className="flex gap-2 mt-0.5 items-center flex-wrap">
                       <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[m.category]}</Badge>
+                      {m.intent && <Badge variant="outline" className={cn('text-[10px] font-normal', INTENT_BADGE[m.intent])}>{INTENT_LABEL[m.intent]}</Badge>}
                       {m.recurrent && <Badge variant="outline" className="text-[10px] font-normal border-blue-500/30 bg-blue-500/10 text-blue-400">recurrente</Badge>}
                       <span className="text-[10px] text-muted-foreground/60 font-mono tabular-nums">{m.date}</span>
                     </div>

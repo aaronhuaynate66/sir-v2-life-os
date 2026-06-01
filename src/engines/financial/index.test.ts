@@ -10,8 +10,8 @@
 
 import { describe, it, expect } from 'vitest'
 
-import type { FinancialMovement } from '@/types'
-import { analyzeFinancialStability, detectFinancialAlerts } from './index'
+import type { FinancialMovement, SpendIntent } from '@/types'
+import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByIntent, SPEND_INTENT_ORDER } from './index'
 
 /** Factory mínima: el engine sólo lee `type` y `amountPEN`. */
 function mv(type: FinancialMovement['type'], amountPEN: number): FinancialMovement {
@@ -119,5 +119,67 @@ describe('detectFinancialAlerts', () => {
   it('NO falso positivo de sobregasto con ingreso 0 y gasto 0', () => {
     // 0 > 0*0.9 === 0 > 0 === false → sin overspend.
     expect(detectFinancialAlerts([], 5)).toHaveLength(0)
+  })
+})
+
+describe('analyzeSpendingByIntent', () => {
+  function exp(amountPEN: number, intent?: SpendIntent): FinancialMovement {
+    return { ...mv('expense', amountPEN), intent }
+  }
+
+  it('vacío → 3 ítems en 0, sin clasificar ni sin clasificar', () => {
+    const r = analyzeSpendingByIntent([])
+    expect(r.items.map((i) => i.intent)).toEqual(SPEND_INTENT_ORDER)
+    expect(r.items.every((i) => i.totalPEN === 0 && i.count === 0 && i.pct === 0)).toBe(true)
+    expect(r.classifiedPEN).toBe(0)
+    expect(r.unclassifiedPEN).toBe(0)
+  })
+
+  it('agrupa por intención y calcula % sobre el clasificado', () => {
+    const r = analyzeSpendingByIntent([
+      exp(600, 'obligatorio'),
+      exp(300, 'necesario'),
+      exp(100, 'no_esencial'),
+    ])
+    const byIntent = Object.fromEntries(r.items.map((i) => [i.intent, i]))
+    expect(byIntent.obligatorio.totalPEN).toBe(600)
+    expect(byIntent.obligatorio.pct).toBe(60)
+    expect(byIntent.necesario.pct).toBe(30)
+    expect(byIntent.no_esencial.pct).toBe(10)
+    expect(r.classifiedPEN).toBe(1000)
+    expect(r.classifiedCount).toBe(3)
+  })
+
+  it('salidas sin intención van a unclassified, no se inventan', () => {
+    const r = analyzeSpendingByIntent([exp(500, 'obligatorio'), exp(250)])
+    expect(r.classifiedPEN).toBe(500)
+    expect(r.unclassifiedPEN).toBe(250)
+    expect(r.unclassifiedCount).toBe(1)
+    // % se calcula sobre el clasificado, no sobre el total.
+    expect(r.items.find((i) => i.intent === 'obligatorio')!.pct).toBe(100)
+  })
+
+  it('cuenta debt como salida clasificable; ignora income/investment/transfer', () => {
+    const r = analyzeSpendingByIntent([
+      { ...mv('debt', 200), intent: 'obligatorio' },
+      { ...mv('income', 5000), intent: 'no_esencial' as SpendIntent }, // intent en income se ignora
+      mv('investment', 999),
+      mv('transfer', 50),
+    ])
+    expect(r.classifiedPEN).toBe(200)
+    expect(r.classifiedCount).toBe(1)
+    expect(r.unclassifiedPEN).toBe(0) // income/investment/transfer no son salidas
+  })
+
+  it('mezcla varias del mismo intent (suma + count)', () => {
+    const r = analyzeSpendingByIntent([
+      exp(40, 'no_esencial'),
+      exp(60, 'no_esencial'),
+      exp(100, 'necesario'),
+    ])
+    const ne = r.items.find((i) => i.intent === 'no_esencial')!
+    expect(ne.totalPEN).toBe(100)
+    expect(ne.count).toBe(2)
+    expect(ne.pct).toBe(50)
   })
 })

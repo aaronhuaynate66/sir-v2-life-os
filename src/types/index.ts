@@ -408,6 +408,18 @@ export interface SelfDiagnosis {
   updatedAt: string
 }
 
+/**
+ * Intención del gasto (P1, Financial OS): cuán prescindible era, ortogonal a
+ * la categoría (qué se compró). Es el dato accionable para detectar el "gasto
+ * hormiga" y la correlación emocional↔financiera (P3).
+ *   - obligatorio : fijo / inevitable (alquiler, servicios, deuda).
+ *   - necesario   : necesario pero flexible (mercado, transporte).
+ *   - no_esencial : discrecional (delivery, antojos, impulso).
+ * Solo aplica a salidas de dinero (expense/debt). Opcional: movimientos sin
+ * clasificar quedan fuera del desglose. Migration 0031.
+ */
+export type SpendIntent = 'obligatorio' | 'necesario' | 'no_esencial'
+
 export interface FinancialMovement {
   id: string
   type: MovementType
@@ -419,6 +431,8 @@ export interface FinancialMovement {
   /** Always the PEN equivalent. PEN rows: equals amount. USD rows: amount * exchangeRate. */
   amountPEN: number
   category: FinancialCategory
+  /** Intención del gasto. Solo en salidas (expense/debt). Migration 0031. */
+  intent?: SpendIntent
   description: string
   date: string
   recurrent: boolean

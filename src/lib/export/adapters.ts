@@ -45,6 +45,7 @@ const FINANCE_COLUMNS: CsvColumn<FinancialMovement>[] = [
   { header: 'Tipo', value: (m) => MOVEMENT_TYPE_LABEL[m.type] ?? m.type },
   { header: 'Descripción', value: (m) => m.description },
   { header: 'Categoría', value: (m) => m.category },
+  { header: 'Intención', value: (m) => m.intent ?? '' },
   { header: 'Monto', value: (m) => m.amount },
   { header: 'Moneda', value: (m) => m.currency },
   { header: 'Tipo de cambio', value: (m) => m.exchangeRate },
