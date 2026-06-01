@@ -320,6 +320,28 @@ export interface Goal {
   updatedAt: string
 }
 
+/** Estado de un paso de objetivo. 'hecho' cuenta como completado en el rollup. */
+export type ObjectiveStepStatus = 'pendiente' | 'en_progreso' | 'hecho'
+
+/**
+ * Paso/hito accionable de un objetivo (tabla objective_steps, migración 0040).
+ * Descompone un Goal en acciones concretas y ordenadas. El progreso del
+ * objetivo se calcula del rollup de pasos hechos/total cuando existen pasos.
+ */
+export interface ObjectiveStep {
+  id: string
+  /** FK → Goal.id (objective_id en DB, ON DELETE CASCADE). */
+  objectiveId: string
+  title: string
+  description?: string
+  /** Fecha objetivo opcional (date-only ISO 'YYYY-MM-DD'). */
+  targetDate?: string
+  status: ObjectiveStepStatus
+  /** Orden dentro del objetivo (0..n). Reasignado de forma densa al reordenar. */
+  order: number
+  createdAt: string
+}
+
 export interface Signal {
   id: string
   source: SignalSource

@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useGoalStore } from '@/stores/useGoalStore'
+import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useMemoryStore } from '@/stores/useMemoryStore'
@@ -19,6 +20,7 @@ const STORES = [
   useSelfStore,
   useFinanceStore,
   useGoalStore,
+  useObjectiveStepStore,
   useSignalStore,
   useRelationshipStore,
   useMemoryStore,

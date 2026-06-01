@@ -235,6 +235,31 @@ export type Database = {
         }
         Update: Partial<Database['public']['Tables']['goals']['Insert']>
       }
+      objective_steps: {
+        Row: {
+          id: string
+          user_id: string
+          objective_id: string
+          title: string
+          description: string
+          target_date: string | null
+          status: 'pendiente' | 'en_progreso' | 'hecho'
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id: string
+          user_id: string
+          objective_id: string
+          title: string
+          description?: string
+          target_date?: string | null
+          status?: 'pendiente' | 'en_progreso' | 'hecho'
+          sort_order?: number
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['objective_steps']['Insert']>
+      }
       signals: {
         Row: {
           id: string

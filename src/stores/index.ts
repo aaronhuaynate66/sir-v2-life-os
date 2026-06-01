@@ -3,6 +3,7 @@
 export { useSelfStore } from './useSelfStore'
 export { useRelationshipStore } from './useRelationshipStore'
 export { useGoalStore } from './useGoalStore'
+export { useObjectiveStepStore } from './useObjectiveStepStore'
 export { useFinanceStore } from './useFinanceStore'
 export { useSignalStore } from './useSignalStore'
 export { useRecommendationStore } from './useRecommendationStore'
