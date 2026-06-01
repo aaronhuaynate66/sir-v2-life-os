@@ -33,16 +33,19 @@ const GraphCanvas = dynamic(
 interface GraphViewProps {
   selfFullName: string | null
   selfEmail: string
+  /** IDs de personas con interacción directa (observations/logs). Server-fetched.
+   *  Un familiar-de-contacto que NO esté acá es 2º grado (cuelga de su contacto). */
+  directContactIds?: string[]
 }
 
-export function GraphView({ selfFullName, selfEmail }: GraphViewProps) {
+export function GraphView({ selfFullName, selfEmail, directContactIds = [] }: GraphViewProps) {
   const { people, relationships, personLinks } = useRelationshipStore()
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS)
 
   // Build raw data una vez (memoizado).
   const rawData: GraphData = useMemo(
-    () => buildGraphData({ people, relationships, personLinks: personLinks ?? [], selfFullName, selfEmail }),
-    [people, relationships, personLinks, selfFullName, selfEmail],
+    () => buildGraphData({ people, relationships, personLinks: personLinks ?? [], directContactIds, selfFullName, selfEmail }),
+    [people, relationships, personLinks, directContactIds, selfFullName, selfEmail],
   )
 
   // Aplicar filtros (categoría + salud mínima). NO ocultamos por "actividad":

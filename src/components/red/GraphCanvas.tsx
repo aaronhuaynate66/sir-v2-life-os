@@ -36,10 +36,13 @@ function toForceGraphData(data: GraphData) {
 const SELF_RADIUS = 15
 const LABEL_OFFSET = 5 // px entre el bottom del circulo y el top de la pill
 
-/** Radio del nodo por importanceScore (1-10) → 8..14 px. self = 15. */
-function radiusFor(node: { isSelf?: boolean; score?: number }): number {
+/** Radio del nodo por importanceScore (1-10) → 8..14 px. self = 15. Los de
+ *  2º grado (familiares de un contacto, sin tu interacción directa) van más
+ *  chicos (5..6.5) para que se lea que NO son tu red directa. */
+function radiusFor(node: { isSelf?: boolean; score?: number; secondDegree?: boolean }): number {
   if (node.isSelf) return SELF_RADIUS
   const s = Math.min(10, Math.max(1, node.score ?? 5))
+  if (node.secondDegree) return 5 + ((s - 1) / 9) * 1.5
   return 8 + ((s - 1) / 9) * 6
 }
 
@@ -63,6 +66,7 @@ type NodeLike = {
   category?: keyof typeof CATEGORY_COLOR
   isSelf?: boolean
   score?: number
+  secondDegree?: boolean
   x?: number
   y?: number
 }
@@ -168,7 +172,8 @@ export function GraphCanvas({ data }: GraphCanvasProps) {
       const fill = nodeColor(node)
 
       ctx.save()
-      ctx.globalAlpha = active ? 1 : 0.2
+      // Activo: 2º grado un poco atenuado (0.78) vs directo (1). Inactivo: 0.2.
+      ctx.globalAlpha = active ? (node.secondDegree ? 0.78 : 1) : 0.2
 
       // Glow del nodo enfocado (hover/tap).
       if (hovered && node.id === hovered) {

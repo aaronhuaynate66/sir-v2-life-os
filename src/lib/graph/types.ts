@@ -26,6 +26,9 @@ export interface GraphNode {
   interactionCount: number
   /** importanceScore 1-10 (jerarquía → tamaño del nodo). self = 10. */
   score: number
+  /** 2º grado: familiar de un contacto SIN interacción directa con self.
+   *  Cuelga de su contacto (no del centro) y se dibuja más chico/atenuado. */
+  secondDegree?: boolean
   isSelf?: boolean
   // Posicion fijada (solo para self). react-force-graph-2d respeta fx/fy.
   fx?: number

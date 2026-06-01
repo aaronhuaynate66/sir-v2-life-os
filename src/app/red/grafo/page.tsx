@@ -27,6 +27,25 @@ export default async function GrafoPage() {
   const selfFullName = (profile?.full_name as string | null) ?? null
   const selfEmail = user.email ?? ''
 
+  // Personas con interacción DIRECTA: aparecen en alguna observation curada o
+  // person_log. Los familiares creados desde la card "Familia" (sin captura ni
+  // log) NO están acá → el grafo los trata como 2º grado (cuelgan de su
+  // contacto, no del centro). RLS scopea ambas queries al usuario.
+  const [obsRows, logRows] = await Promise.all([
+    supabase.from('observations').select('person_id').eq('is_obsolete', false).not('person_id', 'is', null),
+    supabase.from('person_logs').select('person_id'),
+  ])
+  const directContactIds = Array.from(
+    new Set(
+      [
+        ...((obsRows.data ?? []) as { person_id: string | null }[]),
+        ...((logRows.data ?? []) as { person_id: string | null }[]),
+      ]
+        .map((r) => r.person_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    ),
+  )
+
   return (
     <AppShell>
       <Link
@@ -51,7 +70,7 @@ export default async function GrafoPage() {
         </p>
       </header>
 
-      <GraphView selfFullName={selfFullName} selfEmail={selfEmail} />
+      <GraphView selfFullName={selfFullName} selfEmail={selfEmail} directContactIds={directContactIds} />
     </AppShell>
   )
 }

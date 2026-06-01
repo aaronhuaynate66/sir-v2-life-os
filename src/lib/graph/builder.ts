@@ -110,6 +110,10 @@ export interface BuildGraphArgs {
   relationships: Relationship[]
   /** Aristas de familia persona↔persona (migration 0035). Default []. */
   personLinks?: PersonLink[]
+  /** IDs de personas con evidencia de interacción DIRECTA con self
+   *  (observations curadas o person_logs). Un familiar-de-contacto que NO esté
+   *  acá es de 2º grado: cuelga de su contacto, no del centro. Default []. */
+  directContactIds?: string[]
   selfFullName: string | null
   selfEmail: string
 }
@@ -127,9 +131,19 @@ export function buildGraphData({
   people,
   relationships,
   personLinks = [],
+  directContactIds = [],
   selfFullName,
   selfEmail,
 }: BuildGraphArgs): GraphData {
+  // 2º grado: persona que es TARGET de un vínculo de familia y NO tiene
+  // interacción directa con self. Cuelga de su contacto (la arista person↔
+  // person), no del centro. Un familiar que TAMBIÉN es contacto directo
+  // (está en directContactIds) conserva su arista al centro.
+  const directSet = new Set(directContactIds)
+  const linkTargetIds = new Set(personLinks.map((l) => l.personBId))
+  const isSecondDegree = (personId: string): boolean =>
+    linkTargetIds.has(personId) && !directSet.has(personId)
+
   const relByPerson = new Map<string, Relationship>()
   for (const r of relationships) {
     // Conservar la primera relationship por person (suele haber solo una).
@@ -164,6 +178,7 @@ export function buildGraphData({
     const rel = relByPerson.get(p.id)
     const category = categoryForPerson(p)
     const displayName = p.alias?.trim() || p.name
+    const secondDegree = isSecondDegree(p.id)
     personNodes.push({
       id,
       label: initialsFromName(displayName),
@@ -173,14 +188,19 @@ export function buildGraphData({
       healthScore: healthScoreFor(rel),
       interactionCount: interactionCountFor(rel),
       score: Number.isFinite(p.importanceScore) ? p.importanceScore : 5,
+      secondDegree,
     })
-    edges.push({
-      source: 'self',
-      target: id,
-      category,
-      label: CATEGORY_LABEL[category],
-      color: CATEGORY_COLOR[category],
-    })
+    // Los de 2º grado NO se conectan al centro: cuelgan de su contacto vía la
+    // arista de familia (abajo). Los contactos directos sí van al centro.
+    if (!secondDegree) {
+      edges.push({
+        source: 'self',
+        target: id,
+        category,
+        label: CATEGORY_LABEL[category],
+        color: CATEGORY_COLOR[category],
+      })
+    }
   }
 
   // Aristas de familia persona↔persona (migration 0035). Se dibujan en color

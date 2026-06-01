@@ -77,15 +77,32 @@ describe('buildGraphData — aristas de familia persona↔persona (A.4)', () => 
   const padre = person({ id: 'p_padre', name: 'Jorge', slug: 'jorge', relationship: 'family', category: 'close' })
   const link: PersonLink = { id: 'l1', personAId: 'p_diana', personBId: 'p_padre', kind: 'padre', createdAt: '2026-06-01T00:00:00Z' }
 
-  it('dibuja una arista familia entre los nodos (por slug), con el parentesco como label', () => {
+  it('dibuja la arista familia con el parentesco como label', () => {
     const g = buildGraphData({ people: [diana, padre], relationships: [], personLinks: [link], selfFullName: 'Aaron', selfEmail: 'a@x.com' })
     const fam = g.edges.find((e) => e.source === 'diana' && e.target === 'jorge')
     expect(fam).toBeTruthy()
     expect(fam!.category).toBe('familia')
     expect(fam!.label).toBe('Padre')
-    // y siguen estando las aristas self→persona
+  })
+
+  it('BUG FIX: el familiar-solo (target de link, sin interacción directa) NO cuelga del centro', () => {
+    const g = buildGraphData({ people: [diana, padre], relationships: [], personLinks: [link], selfFullName: 'Aaron', selfEmail: 'a@x.com' })
+    // Diana (contacto directo, no es target) → arista al centro.
     expect(g.edges.some((e) => e.source === 'self' && e.target === 'diana')).toBe(true)
+    // Jorge (solo familiar de Diana, sin observations/logs) → SIN arista al centro.
+    expect(g.edges.some((e) => e.source === 'self' && e.target === 'jorge')).toBe(false)
+    // y queda marcado 2º grado.
+    expect(g.nodes.find((n) => n.id === 'jorge')?.secondDegree).toBe(true)
+    expect(g.nodes.find((n) => n.id === 'diana')?.secondDegree).toBe(false)
+  })
+
+  it('familiar que TAMBIÉN es contacto directo (en directContactIds) conserva su arista al centro', () => {
+    const g = buildGraphData({
+      people: [diana, padre], relationships: [], personLinks: [link],
+      directContactIds: ['p_padre'], selfFullName: 'A', selfEmail: 'a@x.com',
+    })
     expect(g.edges.some((e) => e.source === 'self' && e.target === 'jorge')).toBe(true)
+    expect(g.nodes.find((n) => n.id === 'jorge')?.secondDegree).toBe(false)
   })
 
   it('omite el link si un extremo no resuelve a un nodo (persona borrada)', () => {
@@ -96,5 +113,6 @@ describe('buildGraphData — aristas de familia persona↔persona (A.4)', () => 
   it('sin personLinks → solo aristas self→persona (compat)', () => {
     const g = buildGraphData({ people: [diana, padre], relationships: [], selfFullName: 'A', selfEmail: 'a@x.com' })
     expect(g.edges.every((e) => e.source === 'self')).toBe(true)
+    expect(g.nodes.every((n) => !n.secondDegree)).toBe(true)
   })
 })
