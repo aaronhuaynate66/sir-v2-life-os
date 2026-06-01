@@ -38,13 +38,31 @@ describe('scoreToTier', () => {
 })
 
 describe('computeWeeklyScore', () => {
-  it('sin datos → score 0, tier D, no confiable', () => {
+  it('sin datos → calibrating (NO una semana mala), no confiable', () => {
     const r = computeWeeklyScore(EMPTY, { now: NOW })
-    expect(r.score).toBe(0)
-    expect(r.tier).toBe('D')
+    expect(r.status).toBe('calibrating')
     expect(r.confident).toBe(false)
     expect(r.daysWithData).toBe(0)
     expect(r.components.every((c) => !c.available)).toBe(true)
+  })
+
+  it('SOLO finanzas (sin bienestar) → calibrating, no baja a D', () => {
+    const r = computeWeeklyScore(
+      { ...EMPTY, financialMovements: [mov('income', 100), mov('expense', 80)] },
+      { now: NOW },
+    )
+    expect(r.status).toBe('calibrating') // clave: no inventa un 39/D desde solo finanzas
+    const fin = r.components.find((c) => c.key === 'finance')!
+    expect(fin.available).toBe(true)
+  })
+
+  it('un solo día de bienestar → calibrating (necesita >=2 días)', () => {
+    const r = computeWeeklyScore(
+      { ...EMPTY, selfMetrics: [metric(1, 'energy', 8)] },
+      { now: NOW },
+    )
+    expect(r.daysWithData).toBe(1)
+    expect(r.status).toBe('calibrating')
   })
 
   it('semana excelente → tier alto', () => {
@@ -57,6 +75,7 @@ describe('computeWeeklyScore', () => {
       },
       { now: NOW },
     )
+    expect(r.status).toBe('scored')
     expect(r.score).toBeGreaterThanOrEqual(78)
     expect(['S', 'A']).toContain(r.tier)
     expect(r.confident).toBe(true)
@@ -73,6 +92,7 @@ describe('computeWeeklyScore', () => {
       },
       { now: NOW },
     )
+    expect(r.status).toBe('scored') // hay bienestar medido: esto SÍ es una semana mala real
     expect(r.score).toBeLessThan(50)
     expect(r.tier).toBe('D')
   })
@@ -86,6 +106,7 @@ describe('computeWeeklyScore', () => {
     const sleepC = r.components.find((c) => c.key === 'sleep')!
     expect(sleepC.available).toBe(true)
     expect(r.components.filter((c) => c.available)).toHaveLength(1)
+    expect(r.status).toBe('scored') // sueño es bienestar + 2 días → puntúa
     expect(r.score).toBe(100)
     expect(r.tier).toBe('S')
   })

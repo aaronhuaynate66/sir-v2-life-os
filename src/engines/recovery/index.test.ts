@@ -46,6 +46,18 @@ describe('assessRecovery', () => {
     expect(r.active).toBe(true)
   })
 
+  it('weeklyTier null (calibrando) NO dispara weak_week — ausencia de datos ≠ semana mala', () => {
+    const r = assessRecovery({ ...HEALTHY, weeklyTier: null })
+    expect(r.triggers).not.toContain('weak_week')
+    expect(r.active).toBe(false)
+  })
+
+  it('todo en null/sano con weeklyTier null → inactivo (usuario sin datos no está en recuperación)', () => {
+    const r = assessRecovery({ weeklyTier: null, avgSleepHours: null, avgStress: null, avgEnergy: null, nonEssentialShare: null })
+    expect(r.active).toBe(false)
+    expect(r.severity).toBe('none')
+  })
+
   it('gasto impulsivo dispara con >40%', () => {
     expect(assessRecovery({ ...HEALTHY, nonEssentialShare: 45 }).triggers).toContain('impulsive_spend')
     expect(assessRecovery({ ...HEALTHY, nonEssentialShare: 40 }).triggers).not.toContain('impulsive_spend')

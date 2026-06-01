@@ -36,8 +36,15 @@ export interface WeeklyComponent {
 }
 
 export interface WeeklyScore {
-  /** 0-100 sobre los componentes disponibles. 0 si no hay ninguno. */
+  /**
+   * 'scored'      → hay señal de bienestar suficiente: score/tier son válidos.
+   * 'calibrating' → faltan datos reales: NO interpretar score/tier como malos,
+   *                 es ausencia de datos (la UI muestra "calibrando").
+   */
+  status: 'scored' | 'calibrating'
+  /** 0-100 sobre los componentes disponibles. Solo significativo si status='scored'. */
   score: number
+  /** Tier del score. Solo significativo si status='scored'. */
   tier: WeeklyTier
   components: WeeklyComponent[]
   /** Días distintos de la ventana con AL MENOS un dato (sueño o métrica). */
@@ -46,6 +53,14 @@ export interface WeeklyScore {
   /** true si daysWithData >= 3 (suficiente para confiar en el número). */
   confident: boolean
 }
+
+// Mínimo de días con señal de bienestar para emitir un tier (vs "calibrando").
+// La ausencia de registros NO es una semana mala: es falta de datos.
+const MIN_DAYS_FOR_SCORE = 2
+// Dimensiones de "bienestar": al menos una debe tener datos para puntuar.
+// Finanzas/objetivos enriquecen pero no producen un tier por sí solas (evita
+// el falso "39/D" cuando solo hay movimientos financieros cargados).
+const WELLBEING_KEYS: WeeklyComponentKey[] = ['sleep', 'energy', 'calm']
 
 export interface WeeklyConfig {
   windowDays?: number
@@ -223,7 +238,15 @@ export function computeWeeklyScore(
   const totalWeight = avail.reduce((s, c) => s + c.weight, 0)
   const score = totalWeight > 0 ? round1(avail.reduce((s, c) => s + c.score * c.weight, 0) / totalWeight) : 0
 
+  // ── Estado: ¿hay señal de bienestar suficiente para puntuar? ──
+  // Ausencia de datos NO es una semana mala. Sin ≥1 dimensión de bienestar
+  // y ≥MIN_DAYS_FOR_SCORE días de registro → 'calibrating' (neutro).
+  const hasWellbeing = components.some((c) => c.available && WELLBEING_KEYS.includes(c.key))
+  const status: WeeklyScore['status'] =
+    hasWellbeing && days.size >= MIN_DAYS_FOR_SCORE ? 'scored' : 'calibrating'
+
   return {
+    status,
     score,
     tier: scoreToTier(score),
     components,

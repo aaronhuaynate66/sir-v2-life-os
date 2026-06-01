@@ -28,7 +28,12 @@ export type RecoveryTrigger = 'bad_sleep' | 'high_stress' | 'low_energy' | 'weak
 export type RecoverySeverity = 'none' | 'soft' | 'hard'
 
 export interface RecoveryInput {
-  weeklyTier: WeeklyTier
+  /**
+   * Tier semanal SOLO si el weekly score está en estado 'scored'. Pasar null
+   * cuando está 'calibrating' (sin datos suficientes): la falta de registros
+   * NUNCA debe disparar recuperación.
+   */
+  weeklyTier: WeeklyTier | null
   /** Promedio de sueño 7d (h). null = sin datos. */
   avgSleepHours: number | null
   /** Promedio de estrés 7d (1-10). null = sin datos. */

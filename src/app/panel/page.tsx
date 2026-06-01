@@ -128,13 +128,15 @@ function DashboardContent() {
       ? (spendIntent.items.find((i) => i.intent === 'no_esencial')?.pct ?? null)
       : null
     return assessRecovery({
-      weeklyTier: weekly.tier,
+      // Solo pasamos el tier si el weekly está realmente puntuado: en
+      // 'calibrating' (sin datos) NO debe dispararse recuperación.
+      weeklyTier: weekly.status === 'scored' ? weekly.tier : null,
       avgSleepHours: winAvg.avgSleepHours,
       avgStress: winAvg.avgStress,
       avgEnergy: winAvg.avgEnergy,
       nonEssentialShare: nonEss,
     })
-  }, [weekly.tier, winAvg, spendIntent])
+  }, [weekly.status, weekly.tier, winAvg, spendIntent])
   const recoveryHard = recoveryAssessment.severity === 'hard'
   // En recuperación dura simplificamos la UI; el usuario puede expandir igual.
   const [showAll, setShowAll] = useState(false)
@@ -143,6 +145,11 @@ function DashboardContent() {
   const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
   const topRec = recommendations.find(r => r.status === 'pending') ?? recs[0] ?? null
   const activeSignals = signalCtx.activeSignals.filter(s => !s.resolved)
+  // Reconciliación de "sin datos" vs default fabricado: el engine biológico
+  // devuelve 6.0 de energía / 7h de sueño por defecto cuando no hay registros.
+  // No los mostramos como lecturas reales (coherente con el Weekly Score).
+  const hasEnergyData = selfMetrics.some((m) => m.category === 'energy')
+  const hasSleepData = sleepRecords.length > 0
 
   const mode: Mode = recoveryAssessment.active || peace.recoveryMode || bio.energyLevel < 4 ? 'recovery' : peace.total > 8 && bio.energyLevel > 7 ? 'strategic' : bio.energyLevel > 7 ? 'focused' : 'normal'
   const peaceColor = peace.total >= 7 ? 'text-emerald-400' : peace.total >= 4 ? 'text-amber-400' : 'text-red-400'
@@ -358,10 +365,21 @@ function DashboardContent() {
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Brain} label="Estado Biologico" />
-            <Row label="Energia" value={`${bio.energyLevel.toFixed(1)}/10`} status={bio.energyLevel >= 6 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'} />
-            <Row label="Sueno promedio" value={`${sleep.averageDuration.toFixed(1)}h`} status={sleep.averageDuration >= 7 ? 'ok' : sleep.averageDuration >= 5 ? 'warn' : 'bad'} />
-            <Row label="Calidad sueno" value={`${sleep.averageQuality.toFixed(1)}/10`} status={sleep.averageQuality >= 6 ? 'ok' : 'warn'} />
-            <Row label="Deuda sueno" value={`${bio.sleepDebt.toFixed(1)}h`} status={bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad'} />
+            {hasEnergyData
+              ? <Row label="Energia" value={`${bio.energyLevel.toFixed(1)}/10`} status={bio.energyLevel >= 6 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'} />
+              : <Row label="Energia" value="sin datos" />}
+            {hasSleepData ? (
+              <>
+                <Row label="Sueno promedio" value={`${sleep.averageDuration.toFixed(1)}h`} status={sleep.averageDuration >= 7 ? 'ok' : sleep.averageDuration >= 5 ? 'warn' : 'bad'} />
+                <Row label="Calidad sueno" value={`${sleep.averageQuality.toFixed(1)}/10`} status={sleep.averageQuality >= 6 ? 'ok' : 'warn'} />
+                <Row label="Deuda sueno" value={`${bio.sleepDebt.toFixed(1)}h`} status={bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad'} />
+              </>
+            ) : (
+              <Row label="Sueno" value="sin datos" />
+            )}
+            {!hasEnergyData && !hasSleepData && (
+              <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registrá energía y sueño abajo para ver tu estado.</p>
+            )}
           </CardContent>
         </Card>
 
