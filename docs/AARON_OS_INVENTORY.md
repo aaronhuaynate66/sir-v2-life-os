@@ -6,6 +6,13 @@
 >
 > Fecha: 2026-05-31 · Migraciones actuales: hasta `0025`.
 
+> **Progreso (2026-06-01).** Entregados sobre este roadmap:
+> - ✅ **P0** — Diagnóstico personal en `/yo` (mig. `0030`).
+> - ✅ **P1** — Gasto por intención (obligatorio/necesario/no-esencial) + desglose en `/finanzas` (mig. `0031`).
+> - ✅ **P3** — Correlación emocional↔financiera ("estrés↑→gasto no-esencial↑") en `/finanzas`.
+> - ✅ **P5** — Calendario Outlook `.ics` read-only en `/agenda` (parser + `/api/calendar`, TZ Lima, recurrentes). **Acción pendiente: setear `OUTLOOK_ICS_URL` en Vercel** (ver [CALENDAR_SETUP.md](CALENDAR_SETUP.md)).
+> - ⏳ Pendientes: **P2** weekly score S/A/B/C/D, **P4** recovery mode dinámico, **P6** `/horario` timeline.
+
 ---
 
 ## Tabla resumen
