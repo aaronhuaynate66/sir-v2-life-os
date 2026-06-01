@@ -228,6 +228,28 @@ export interface Relationship {
   nextActionDate?: string
 }
 
+/** Parentesco de una arista de familia persona↔persona. */
+export type FamilyKind =
+  | 'padre'
+  | 'madre'
+  | 'hijo'
+  | 'hija'
+  | 'hermano'
+  | 'hermana'
+  | 'pareja'
+  | 'familiar'
+
+/** Arista de familia persona↔persona (tabla `person_links`, migration 0035).
+ *  personAId = sujeto (la persona de la ficha), personBId = el familiar.
+ *  Se renderiza como arista 'familia' en el grafo. */
+export interface PersonLink {
+  id: string
+  personAId: string
+  personBId: string
+  kind: FamilyKind
+  createdAt: string
+}
+
 /** Mensaje individual de WhatsApp dentro de un capture history item. */
 export interface WhatsAppMessage {
   /** "HH:mm" en formato 24h. */

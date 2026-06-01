@@ -3,7 +3,7 @@
 
 import type {
   Person, Relationship, RelationshipType, PersonCategory, EnergyImpact,
-  RelationshipStatus, RelationshipEvent, SpecialDate,
+  RelationshipStatus, RelationshipEvent, SpecialDate, PersonLink, FamilyKind,
 } from '@/types'
 import type { TableAdapter } from '../types'
 
@@ -128,5 +128,25 @@ export const relationshipAdapter: TableAdapter<Relationship> = {
     strengths: (row.strengths as string[]) ?? [],
     nextAction: (row.next_action as string) ?? undefined,
     nextActionDate: (row.next_action_date as string) ?? undefined,
+  }),
+}
+
+/** Aristas de familia persona↔persona (person_links, migration 0035). */
+export const personLinkAdapter: TableAdapter<PersonLink> = {
+  table: 'person_links',
+  toRow: (l, userId) => ({
+    id: l.id,
+    user_id: userId,
+    person_a_id: l.personAId,
+    person_b_id: l.personBId,
+    kind: l.kind,
+    created_at: l.createdAt,
+  }),
+  fromRow: (row) => ({
+    id: row.id as string,
+    personAId: row.person_a_id as string,
+    personBId: row.person_b_id as string,
+    kind: row.kind as FamilyKind,
+    createdAt: row.created_at as string,
   }),
 }

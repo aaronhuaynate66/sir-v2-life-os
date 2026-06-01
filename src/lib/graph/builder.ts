@@ -1,7 +1,7 @@
 // SIR V2 — Builder del grafo de relaciones.
 // Pure function: convierte people + relationships + profile en GraphData.
 
-import type { Person, Relationship } from '@/types'
+import type { Person, Relationship, PersonLink } from '@/types'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from './colors'
 import type { GraphCategory, GraphData, GraphEdge, GraphNode } from './types'
 
@@ -108,8 +108,15 @@ function interactionCountFor(rel: Relationship | undefined): number {
 export interface BuildGraphArgs {
   people: Person[]
   relationships: Relationship[]
+  /** Aristas de familia persona↔persona (migration 0035). Default []. */
+  personLinks?: PersonLink[]
   selfFullName: string | null
   selfEmail: string
+}
+
+/** Capitaliza el parentesco para el label del edge ("padre" → "Padre"). */
+function kindLabel(kind: string): string {
+  return kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : 'Familia'
 }
 
 /**
@@ -119,6 +126,7 @@ export interface BuildGraphArgs {
 export function buildGraphData({
   people,
   relationships,
+  personLinks = [],
   selfFullName,
   selfEmail,
 }: BuildGraphArgs): GraphData {
@@ -146,9 +154,13 @@ export function buildGraphData({
 
   const personNodes: GraphNode[] = []
   const edges: GraphEdge[] = []
+  // person.id → node id (slug || id). Para resolver las aristas de familia,
+  // que se guardan por person.id pero los nodos usan slug.
+  const nodeIdByPersonId = new Map<string, string>()
 
   for (const p of people) {
     const id = p.slug?.trim() || p.id
+    nodeIdByPersonId.set(p.id, id)
     const rel = relByPerson.get(p.id)
     const category = categoryForPerson(p)
     const displayName = p.alias?.trim() || p.name
@@ -168,6 +180,22 @@ export function buildGraphData({
       category,
       label: CATEGORY_LABEL[category],
       color: CATEGORY_COLOR[category],
+    })
+  }
+
+  // Aristas de familia persona↔persona (migration 0035). Se dibujan en color
+  // 'familia' con el parentesco como label. Se omiten si algún extremo no
+  // resuelve a un nodo (persona borrada) o si apuntan a sí mismas.
+  for (const link of personLinks) {
+    const source = nodeIdByPersonId.get(link.personAId)
+    const target = nodeIdByPersonId.get(link.personBId)
+    if (!source || !target || source === target) continue
+    edges.push({
+      source,
+      target,
+      category: 'familia',
+      label: kindLabel(link.kind),
+      color: CATEGORY_COLOR.familia,
     })
   }
 

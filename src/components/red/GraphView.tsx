@@ -36,13 +36,13 @@ interface GraphViewProps {
 }
 
 export function GraphView({ selfFullName, selfEmail }: GraphViewProps) {
-  const { people, relationships } = useRelationshipStore()
+  const { people, relationships, personLinks } = useRelationshipStore()
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS)
 
   // Build raw data una vez (memoizado).
   const rawData: GraphData = useMemo(
-    () => buildGraphData({ people, relationships, selfFullName, selfEmail }),
-    [people, relationships, selfFullName, selfEmail],
+    () => buildGraphData({ people, relationships, personLinks: personLinks ?? [], selfFullName, selfEmail }),
+    [people, relationships, personLinks, selfFullName, selfEmail],
   )
 
   // Aplicar filtros (categoría + salud mínima). NO ocultamos por "actividad":

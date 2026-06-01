@@ -70,6 +70,7 @@ import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
+import { FamiliaPanel } from './FamiliaPanel'
 import { InformacionSensible } from './InformacionSensible'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
@@ -604,6 +605,10 @@ export function PersonDetail({
           de la captura de Instagram, en un solo bloque coherente. La captura se
           hace con el panel inline "Agregar captura" (arriba), no en /captura. */}
       <RedesSociales person={live} observations={curatedObservations} />
+
+      {/* Familia (A.4): vincular padre/madre/etc. como nodos de familia en el
+          grafo (person_links, 0035). Crea el nodo-persona mínimo + la arista. */}
+      <FamiliaPanel person={live} />
 
       {/* Vida profesional (#6): educación (campo people, 0024) + resumen
           determinístico de la captura LinkedIn. */}

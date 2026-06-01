@@ -136,6 +136,25 @@ export type Database = {
         }
         Update: Partial<Database['public']['Tables']['self_diagnosis']['Insert']>
       }
+      person_links: {
+        Row: {
+          id: string
+          user_id: string
+          person_a_id: string
+          person_b_id: string
+          kind: string
+          created_at: string
+        }
+        Insert: {
+          id: string
+          user_id: string
+          person_a_id: string
+          person_b_id: string
+          kind: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['person_links']['Insert']>
+      }
       finance_movements: {
         Row: {
           id: string

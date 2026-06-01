@@ -15,7 +15,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Person, Relationship } from '@/types'
+import type { Person, Relationship, PersonLink } from '@/types'
 import { fixturePeople, fixtureRelationships } from '@/data/fixtures'
 import { SEED_FIXTURES, purgeFixtureRows } from '@/data/fixtures/seed'
 import { STORAGE_KEYS } from './storage'
@@ -23,11 +23,14 @@ import {
   attachSupabaseSync,
   personAdapter,
   relationshipAdapter,
+  personLinkAdapter,
 } from '@/lib/supabase/sync'
 
 interface RelationshipState {
   people: Person[]
   relationships: Relationship[]
+  /** Aristas de familia persona↔persona (migration 0035). */
+  personLinks: PersonLink[]
 }
 
 interface RelationshipActions {
@@ -37,6 +40,8 @@ interface RelationshipActions {
   addRelationship: (rel: Relationship) => void
   updateRelationship: (id: string, patch: Partial<Relationship>) => void
   removeRelationship: (id: string) => void
+  addPersonLink: (link: PersonLink) => void
+  removePersonLink: (id: string) => void
   resetToFixtures: () => void
   clearAll: () => void
 }
@@ -46,8 +51,8 @@ export type RelationshipStore = RelationshipState & RelationshipActions
 // Fixtures SOLO fuera de producción (SEED_FIXTURES). En prod el estado
 // inicial es vacío: la data real llega del DB vía el sync engine.
 const INITIAL_STATE: RelationshipState = SEED_FIXTURES
-  ? { people: fixturePeople, relationships: fixtureRelationships }
-  : { people: [], relationships: [] }
+  ? { people: fixturePeople, relationships: fixtureRelationships, personLinks: [] }
+  : { people: [], relationships: [], personLinks: [] }
 
 export const useRelationshipStore = create<RelationshipStore>()(
   persist(
@@ -66,6 +71,10 @@ export const useRelationshipStore = create<RelationshipStore>()(
         set((s) => ({
           people: s.people.filter((p) => p.id !== id),
           relationships: s.relationships.filter((r) => r.personId !== id),
+          // Cascade local de aristas de familia (la FK en DB también cascada).
+          personLinks: (s.personLinks ?? []).filter(
+            (l) => l.personAId !== id && l.personBId !== id,
+          ),
         })),
 
       addRelationship: (rel) =>
@@ -79,9 +88,15 @@ export const useRelationshipStore = create<RelationshipStore>()(
       removeRelationship: (id) =>
         set((s) => ({ relationships: s.relationships.filter((r) => r.id !== id) })),
 
+      addPersonLink: (link) =>
+        set((s) => ({ personLinks: [...s.personLinks, link] })),
+
+      removePersonLink: (id) =>
+        set((s) => ({ personLinks: s.personLinks.filter((l) => l.id !== id) })),
+
       resetToFixtures: () => set(INITIAL_STATE),
 
-      clearAll: () => set({ people: [], relationships: [] }),
+      clearAll: () => set({ people: [], relationships: [], personLinks: [] }),
     }),
     {
       name: STORAGE_KEYS.RELATIONSHIP,
@@ -116,6 +131,15 @@ attachSupabaseSync({
       select: (s) => s.relationships,
       apply: (items) => useRelationshipStore.setState({ relationships: items }),
       adapter: relationshipAdapter,
+    },
+    // person_links DESPUÉS de people: la FK person_links.person_*_id → people.id
+    // necesita que la persona exista; si el upsert del link llega primero, el
+    // engine reintenta y pasa cuando people aterriza (mismo patrón que rels).
+    {
+      label: 'personLinks',
+      select: (s) => s.personLinks ?? [],
+      apply: (items) => useRelationshipStore.setState({ personLinks: items }),
+      adapter: personLinkAdapter,
     },
   ],
 })

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
-import { categoryForPerson, firstName, initialsFromName } from './builder'
-import type { Person, RelationshipType, PersonCategory } from '@/types'
+import { categoryForPerson, firstName, initialsFromName, buildGraphData } from './builder'
+import type { Person, RelationshipType, PersonCategory, PersonLink } from '@/types'
 
 function person(over: Partial<Person> & Pick<Person, 'relationship' | 'category'>): Person {
   return {
@@ -69,5 +69,32 @@ describe('initialsFromName (sigue intacto)', () => {
   it('2 iniciales', () => {
     expect(initialsFromName('Diana Carolina')).toBe('DC')
     expect(initialsFromName('Maria Isabel')).toBe('MI')
+  })
+})
+
+describe('buildGraphData — aristas de familia persona↔persona (A.4)', () => {
+  const diana = person({ id: 'p_diana', name: 'Diana', slug: 'diana', relationship: 'romantic', category: 'close' })
+  const padre = person({ id: 'p_padre', name: 'Jorge', slug: 'jorge', relationship: 'family', category: 'close' })
+  const link: PersonLink = { id: 'l1', personAId: 'p_diana', personBId: 'p_padre', kind: 'padre', createdAt: '2026-06-01T00:00:00Z' }
+
+  it('dibuja una arista familia entre los nodos (por slug), con el parentesco como label', () => {
+    const g = buildGraphData({ people: [diana, padre], relationships: [], personLinks: [link], selfFullName: 'Aaron', selfEmail: 'a@x.com' })
+    const fam = g.edges.find((e) => e.source === 'diana' && e.target === 'jorge')
+    expect(fam).toBeTruthy()
+    expect(fam!.category).toBe('familia')
+    expect(fam!.label).toBe('Padre')
+    // y siguen estando las aristas self→persona
+    expect(g.edges.some((e) => e.source === 'self' && e.target === 'diana')).toBe(true)
+    expect(g.edges.some((e) => e.source === 'self' && e.target === 'jorge')).toBe(true)
+  })
+
+  it('omite el link si un extremo no resuelve a un nodo (persona borrada)', () => {
+    const g = buildGraphData({ people: [diana], relationships: [], personLinks: [link], selfFullName: 'A', selfEmail: 'a@x.com' })
+    expect(g.edges.some((e) => e.category === 'familia')).toBe(false)
+  })
+
+  it('sin personLinks → solo aristas self→persona (compat)', () => {
+    const g = buildGraphData({ people: [diana, padre], relationships: [], selfFullName: 'A', selfEmail: 'a@x.com' })
+    expect(g.edges.every((e) => e.source === 'self')).toBe(true)
   })
 })
