@@ -47,7 +47,7 @@ export default async function GrafoPage() {
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
           Vos en el centro, conectado a cada persona por categoría. Filtrá por tipo
-          de relación o salud mínima. Los contactos sin actividad quedan ocultos.
+          de relación o salud mínima.
         </p>
       </header>
 
