@@ -6,12 +6,16 @@
 >
 > Fecha: 2026-05-31 · Migraciones actuales: hasta `0025`.
 
-> **Progreso (2026-06-01).** Entregados sobre este roadmap:
+> **Progreso (2026-06-01) — roadmap P0–P6 COMPLETO.**
 > - ✅ **P0** — Diagnóstico personal en `/yo` (mig. `0030`).
 > - ✅ **P1** — Gasto por intención (obligatorio/necesario/no-esencial) + desglose en `/finanzas` (mig. `0031`).
+> - ✅ **P2** — Weekly score compuesto con tiers S/A/B/C/D en `/panel` (`src/engines/weekly`).
 > - ✅ **P3** — Correlación emocional↔financiera ("estrés↑→gasto no-esencial↑") en `/finanzas`.
-> - ✅ **P5** — Calendario Outlook `.ics` read-only en `/agenda` (parser + `/api/calendar`, TZ Lima, recurrentes). **Acción pendiente: setear `OUTLOOK_ICS_URL` en Vercel** (ver [CALENDAR_SETUP.md](CALENDAR_SETUP.md)).
-> - ⏳ Pendientes: **P2** weekly score S/A/B/C/D, **P4** recovery mode dinámico, **P6** `/horario` timeline.
+> - ✅ **P4** — Recovery Mode dinámico en `/panel`: triggers de sobrecarga → severidad → simplifica la UI (`src/engines/recovery`).
+> - ✅ **P5** — Calendario Outlook `.ics` read-only en `/agenda` (parser + `/api/calendar`, TZ Lima, recurrentes). **Acción: setear `OUTLOOK_ICS_URL` en Vercel** (ver [CALENDAR_SETUP.md](CALENDAR_SETUP.md)).
+> - ✅ **P6** — `/horario`: timeline operativo del día (bloque actual/próximo, countdown, sobrecarga) sobre el feed ICS.
+>
+> **Acciones pendientes de Aaron:** correr migraciones `0030` + `0031` (SQL Editor) y setear `OUTLOOK_ICS_URL` en Vercel para activar el calendario + `/horario`.
 
 ---
 
