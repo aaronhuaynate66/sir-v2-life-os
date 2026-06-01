@@ -16,6 +16,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
+import { enforceRateLimit } from '@/lib/ratelimit'
 import {
   SCALE_VISION_SYSTEM_PROMPT,
 } from '@/lib/capture/scale/prompt'
@@ -95,6 +96,9 @@ export async function POST(req: NextRequest) {
   if (authError || !authData?.user) {
     return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
   }
+
+  const rl = await enforceRateLimit(supabase, authData.user.id, 'vision')
+  if (!rl.ok) return rl.response
 
   // 2. Parse body
   let body: unknown

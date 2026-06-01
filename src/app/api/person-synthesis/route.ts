@@ -25,6 +25,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
+import { enforceRateLimit } from '@/lib/ratelimit'
 import { getObservationsForPerson } from '@/lib/observations/fetch'
 import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { rowToPersonSynthesis } from '@/lib/person-synthesis/fetch'
@@ -71,6 +72,9 @@ export async function POST(req: NextRequest) {
   if (authError || !authData?.user) {
     return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
   }
+
+  const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
+  if (!rl.ok) return rl.response
   const userId = authData.user.id
 
   // 2. Body

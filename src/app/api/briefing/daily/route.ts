@@ -12,6 +12,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
+import { enforceRateLimit } from '@/lib/ratelimit'
 import { moonPhase } from '@/lib/lunar/phase'
 import {
   DAILY_BRIEFING_SYSTEM_PROMPT,
@@ -44,6 +45,9 @@ export async function POST(_req: NextRequest) {
   if (authError || !authData?.user) {
     return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
   }
+
+  const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
+  if (!rl.ok) return rl.response
   const userId = authData.user.id
 
   const recentIso = new Date(Date.now() - RECENT_DAYS * DAY_MS).toISOString()

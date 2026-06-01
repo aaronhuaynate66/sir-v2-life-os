@@ -23,6 +23,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
+import { enforceRateLimit } from '@/lib/ratelimit'
 import { getExtractorSpec } from '@/lib/capture/extractors'
 import { isValidDetectorResult } from '@/lib/capture/detector/validate'
 import { insertObservation } from '@/lib/capture/observations/insert'
@@ -130,6 +131,9 @@ export async function POST(req: NextRequest) {
   if (authError || !authData?.user) {
     return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
   }
+
+  const rl = await enforceRateLimit(supabase, authData.user.id, 'vision')
+  if (!rl.ok) return rl.response
   const userId = authData.user.id
 
   // 2. Parse FormData

@@ -17,6 +17,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
+import { enforceRateLimit } from '@/lib/ratelimit'
 import { getObservationsForPerson } from '@/lib/observations/fetch'
 import {
   QUALIFYING_CAPTURE_TYPES,
@@ -56,6 +57,9 @@ export async function POST(req: NextRequest) {
   if (authError || !authData?.user) {
     return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
   }
+
+  const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
+  if (!rl.ok) return rl.response
   const userId = authData.user.id
 
   let body: { person_id?: unknown }

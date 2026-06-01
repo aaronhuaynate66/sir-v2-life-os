@@ -17,6 +17,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
+import { enforceRateLimit } from '@/lib/ratelimit'
 import {
   ALIGNMENT_NARRATIVE_SYSTEM_PROMPT,
   buildAlignmentInput,
@@ -68,6 +69,9 @@ export async function POST(req: NextRequest) {
   if (authError || !authData?.user) {
     return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
   }
+
+  const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
+  if (!rl.ok) return rl.response
 
   let body: Record<string, unknown>
   try {

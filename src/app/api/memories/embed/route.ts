@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
+import { enforceRateLimit } from '@/lib/ratelimit'
 import { embedBatch, toPgVector, EMBEDDING_MODEL, EmbeddingError } from '@/lib/embeddings/client'
 
 export const runtime = 'nodejs'
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
   if (authError || !authData?.user) {
     return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
   }
+
+  const rl = await enforceRateLimit(supabase, authData.user.id, 'embeddings')
+  if (!rl.ok) return rl.response
   const userId = authData.user.id
 
   let batch = 100
