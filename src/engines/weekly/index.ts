@@ -100,6 +100,60 @@ function sleepDurationScore(hours: number): number {
   return clamp100(((hours - 4) / (7.5 - 4)) * 100)
 }
 
+/** Filtra métricas (por timestamp) y sueño (por date) a la ventana [now-N, now]. */
+function inWindow(
+  selfMetrics: SelfMetric[],
+  sleepRecords: SleepRecord[],
+  now: Date,
+  windowDays: number,
+): { winMetrics: SelfMetric[]; winSleep: SleepRecord[]; days: Set<string> } {
+  const cutoffMs = now.getTime() - windowDays * 86_400_000
+  const winMetrics = selfMetrics.filter((m) => {
+    const t = new Date(m.timestamp).getTime()
+    return Number.isFinite(t) && t >= cutoffMs && t <= now.getTime()
+  })
+  const cutoffDate = new Date(cutoffMs).toISOString().slice(0, 10)
+  const nowDate = now.toISOString().slice(0, 10)
+  const winSleep = sleepRecords.filter((r) => r.date >= cutoffDate && r.date <= nowDate)
+  const days = new Set<string>()
+  for (const m of winMetrics) { const k = dayKey(m.timestamp); if (k) days.add(k) }
+  for (const r of winSleep) days.add(r.date)
+  return { winMetrics, winSleep, days }
+}
+
+export interface WindowAverages {
+  /** Promedio de energía 1-10 en la ventana. null si no hay registros. */
+  avgEnergy: number | null
+  /** Promedio de estrés 1-10. null si no hay registros. */
+  avgStress: number | null
+  /** Duración de sueño promedio (h). null si no hay registros. */
+  avgSleepHours: number | null
+  daysWithData: number
+}
+
+/**
+ * Promedios de la ventana, reutilizables fuera del score (ej. Recovery Mode).
+ * Devuelve null por métrica sin datos para no confundir "0" con "ausente".
+ */
+export function windowAverages(
+  selfMetrics: SelfMetric[],
+  sleepRecords: SleepRecord[],
+  config: WeeklyConfig = {},
+): WindowAverages {
+  const windowDays = config.windowDays ?? 7
+  const now = config.now ?? new Date()
+  const { winMetrics, winSleep, days } = inWindow(selfMetrics, sleepRecords, now, windowDays)
+  const energyVals = winMetrics.filter((m) => m.category === 'energy').map((m) => m.value)
+  const stressVals = winMetrics.filter((m) => m.category === 'stress').map((m) => m.value)
+  const sleepVals = winSleep.map((r) => r.duration)
+  return {
+    avgEnergy: energyVals.length ? round1(avg(energyVals)) : null,
+    avgStress: stressVals.length ? round1(avg(stressVals)) : null,
+    avgSleepHours: sleepVals.length ? round1(avg(sleepVals)) : null,
+    daysWithData: days.size,
+  }
+}
+
 export function computeWeeklyScore(
   input: { selfMetrics: SelfMetric[]; sleepRecords: SleepRecord[]; financialMovements: FinancialMovement[]; goals: Goal[] },
   config: WeeklyConfig = {},
@@ -107,21 +161,9 @@ export function computeWeeklyScore(
   const windowDays = config.windowDays ?? 7
   const liquidityMonths = config.liquidityMonths ?? 2.5
   const now = config.now ?? new Date()
-  const cutoffMs = now.getTime() - windowDays * 86_400_000
 
   // ── Ventana de métricas (por timestamp) y sueño (por date) ──
-  const winMetrics = input.selfMetrics.filter((m) => {
-    const t = new Date(m.timestamp).getTime()
-    return Number.isFinite(t) && t >= cutoffMs && t <= now.getTime()
-  })
-  const cutoffDate = new Date(cutoffMs).toISOString().slice(0, 10)
-  const nowDate = now.toISOString().slice(0, 10)
-  const winSleep = input.sleepRecords.filter((r) => r.date >= cutoffDate && r.date <= nowDate)
-
-  // ── Días con datos ──
-  const days = new Set<string>()
-  for (const m of winMetrics) { const k = dayKey(m.timestamp); if (k) days.add(k) }
-  for (const r of winSleep) days.add(r.date)
+  const { winMetrics, winSleep, days } = inWindow(input.selfMetrics, input.sleepRecords, now, windowDays)
 
   // ── Sub-scores ──
   const energyVals = winMetrics.filter((m) => m.category === 'energy').map((m) => m.value)

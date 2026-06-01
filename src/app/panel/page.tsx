@@ -9,16 +9,17 @@ import {
   CheckCircle2, X,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { calculatePeaceScore, evaluateRecoveryMode, detectPeaceThreats } from '@/engines/peace'
+import { calculatePeaceScore, detectPeaceThreats } from '@/engines/peace'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
-import { analyzeFinancialStability, detectFinancialAlerts } from '@/engines/financial'
+import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByIntent } from '@/engines/financial'
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { LunarChip } from '@/components/lunar/LunarChip'
 import { buildSignalContext } from '@/engines/signal'
 import { generateRecommendations } from '@/engines/recommendation'
 import { buildGoalDashboard } from '@/engines/goal'
 import { getCurrentTimingWindow } from '@/engines/timing'
-import { computeWeeklyScore } from '@/engines/weekly'
+import { computeWeeklyScore, windowAverages } from '@/engines/weekly'
+import { assessRecovery } from '@/engines/recovery'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
@@ -29,6 +30,7 @@ import { useMemoryStore } from '@/stores'
 import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
+import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { AppShell } from '@/components/layout/AppShell'
@@ -118,13 +120,31 @@ function DashboardContent() {
     () => computeWeeklyScore({ selfMetrics, sleepRecords, financialMovements, goals }, { now: now ?? undefined, liquidityMonths: 2.5 }),
     [selfMetrics, sleepRecords, financialMovements, goals, now],
   )
-  const recovery = useMemo(() => evaluateRecoveryMode(peace), [peace])
+  // P4: evaluación dinámica de recuperación sobre señales de sobrecarga.
+  const spendIntent = useMemo(() => analyzeSpendingByIntent(financialMovements), [financialMovements])
+  const winAvg = useMemo(() => windowAverages(selfMetrics, sleepRecords, { now: now ?? undefined }), [selfMetrics, sleepRecords, now])
+  const recoveryAssessment = useMemo(() => {
+    const nonEss = spendIntent.classifiedPEN > 0
+      ? (spendIntent.items.find((i) => i.intent === 'no_esencial')?.pct ?? null)
+      : null
+    return assessRecovery({
+      weeklyTier: weekly.tier,
+      avgSleepHours: winAvg.avgSleepHours,
+      avgStress: winAvg.avgStress,
+      avgEnergy: winAvg.avgEnergy,
+      nonEssentialShare: nonEss,
+    })
+  }, [weekly.tier, winAvg, spendIntent])
+  const recoveryHard = recoveryAssessment.severity === 'hard'
+  // En recuperación dura simplificamos la UI; el usuario puede expandir igual.
+  const [showAll, setShowAll] = useState(false)
+  const simplified = recoveryHard && !showAll
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
   const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
   const topRec = recommendations.find(r => r.status === 'pending') ?? recs[0] ?? null
   const activeSignals = signalCtx.activeSignals.filter(s => !s.resolved)
 
-  const mode: Mode = peace.recoveryMode || bio.energyLevel < 4 ? 'recovery' : peace.total > 8 && bio.energyLevel > 7 ? 'strategic' : bio.energyLevel > 7 ? 'focused' : 'normal'
+  const mode: Mode = recoveryAssessment.active || peace.recoveryMode || bio.energyLevel < 4 ? 'recovery' : peace.total > 8 && bio.energyLevel > 7 ? 'strategic' : bio.energyLevel > 7 ? 'focused' : 'normal'
   const peaceColor = peace.total >= 7 ? 'text-emerald-400' : peace.total >= 4 ? 'text-amber-400' : 'text-red-400'
   const peaceDotColor = peace.total >= 7 ? 'bg-emerald-400' : peace.total >= 4 ? 'bg-amber-400' : 'bg-red-400'
 
@@ -177,11 +197,16 @@ function DashboardContent() {
 
   return (
     <AppShell wide>
-      {recovery.active && (
-        <div className="fixed top-0 inset-x-0 z-50 bg-red-500/10 border-b border-red-500/20 px-6 py-2">
+      {recoveryAssessment.active && (
+        <div className={cn(
+          'fixed top-0 inset-x-0 z-50 px-6 py-2 border-b',
+          recoveryHard ? 'bg-red-500/10 border-red-500/20' : 'bg-amber-500/10 border-amber-500/20',
+        )}>
           <div className="max-w-5xl mx-auto flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            <span className="text-xs text-red-400 font-mono">RECOVERY MODE &mdash; {recovery.reason}</span>
+            <span className={cn('w-2 h-2 rounded-full animate-pulse', recoveryHard ? 'bg-red-500' : 'bg-amber-500')} />
+            <span className={cn('text-xs font-mono', recoveryHard ? 'text-red-400' : 'text-amber-400')}>
+              RECOVERY MODE &mdash; {recoveryAssessment.reasons[0] ?? 'cuidá tu energía'}
+            </span>
           </div>
         </div>
       )}
@@ -224,6 +249,9 @@ function DashboardContent() {
 
       {/* Weekly score (P2): score semanal compuesto con tier S/A/B/C/D. */}
       <WeeklyScoreCard data={weekly} />
+
+      {/* Recovery Mode dinámico (P4): prioridades de recuperación cuando hay sobrecarga. */}
+      <RecoveryPanel data={recoveryAssessment} />
 
       {/* HERO: Peace Score + Recomendacion */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
@@ -309,6 +337,22 @@ function DashboardContent() {
         )}
       </motion.div>
 
+      {/* En recuperación dura, simplificamos: ocultamos métricas secundarias,
+          listas y formularios para reducir carga cognitiva y priorizar descanso.
+          El usuario puede expandir igual. */}
+      {simplified && (
+        <div className="mb-6 text-center">
+          <Button size="sm" variant="ghost" onClick={() => setShowAll(true)} className="text-muted-foreground">
+            Mostrar el panel completo
+          </Button>
+          <p className="text-[10px] text-muted-foreground/60 mt-1">
+            En recuperación ocultamos lo secundario para que te enfoques en lo que importa hoy: descansar.
+          </p>
+        </div>
+      )}
+
+      {!simplified && (
+        <>
       {/* Métricas secundarias: Bio, Finanzas, Objetivos */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <Card className={cardClass}>
@@ -474,6 +518,16 @@ function DashboardContent() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {recoveryHard && showAll && (
+        <div className="mb-6 text-center">
+          <Button size="sm" variant="ghost" onClick={() => setShowAll(false)} className="text-muted-foreground">
+            Volver al modo recuperación (vista simple)
+          </Button>
+        </div>
+      )}
+        </>
+      )}
 
       {/* Footer: datos locales + debug + branding.
           Controles destructivos SOLO en dev (SEED_FIXTURES): en prod,
