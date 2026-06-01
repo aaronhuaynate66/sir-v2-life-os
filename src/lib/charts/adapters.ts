@@ -9,6 +9,8 @@ import type {
   SelfMetric,
   SleepRecord,
   MetricCategory,
+  HealthMetric,
+  HealthMetricType,
 } from '@/types'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
@@ -79,6 +81,27 @@ export function sleepQualitySeries(records: SleepRecord[]): SeriesPoint[] {
     records.map((r) => ({ date: r.date, value: r.quality })),
     'last',
   )
+}
+
+/**
+ * Serie temporal de una MÉTRICA CORPORAL (health_metrics) de un tipo dado
+ * (ej. 'weight'), para el chart de tendencia de /yo.
+ *
+ * La báscula inserta N tipos (peso, IMC, grasa…) por captura con el MISMO
+ * timestamp; filtramos por tipo y agregamos por día (último valor del día,
+ * por orden cronológico) → una serie limpia, sin libs de charting. Pre-orden
+ * por timestamp para que 'last' sea la lectura más reciente del día y la
+ * salida quede cronológica (dedup de lecturas del mismo día).
+ */
+export function healthMetricSeries(
+  metrics: HealthMetric[],
+  type: HealthMetricType,
+): SeriesPoint[] {
+  const points = metrics
+    .filter((m) => m.type === type && Number.isFinite(m.value))
+    .map((m) => ({ date: m.timestamp, value: m.value }))
+    .sort((a, b) => a.date.localeCompare(b.date)) // ISO → orden cronológico
+  return aggregateByDay(points, 'last')
 }
 
 /**

@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import type { FinancialMovement, SelfMetric, SleepRecord } from '@/types'
+import type { FinancialMovement, SelfMetric, SleepRecord, HealthMetric, HealthMetricType } from '@/types'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import {
   financeBalanceSeries,
@@ -16,7 +16,12 @@ import {
   sleepDurationSeries,
   sleepQualitySeries,
   personLogToneSeries,
+  healthMetricSeries,
 } from './adapters'
+
+function health(type: HealthMetricType, value: number, timestamp: string, id = `h_${type}_${timestamp}`): HealthMetric {
+  return { id, type, value, unit: 'kg', timestamp }
+}
 
 function mov(over: Partial<FinancialMovement>): FinancialMovement {
   return {
@@ -163,5 +168,73 @@ describe('personLogToneSeries', () => {
       plog('interaction', 3, '2026-05-01T11:00:00Z'),
     ])
     expect(out[0].value).toBe(3)
+  })
+})
+
+describe('healthMetricSeries', () => {
+  it('sin métricas → []', () => {
+    expect(healthMetricSeries([], 'weight')).toEqual([])
+  })
+
+  it('1 punto → 1 punto', () => {
+    const out = healthMetricSeries([health('weight', 82.2, '2026-05-18T08:00:00Z')], 'weight')
+    expect(out).toEqual([{ date: '2026-05-18', value: 82.2 }])
+  })
+
+  it('caso real de Aaron: 2 capturas → línea 82.20 → 81.85, en orden cronológico', () => {
+    const out = healthMetricSeries(
+      [
+        health('weight', 82.2, '2026-05-18T08:00:00Z'),
+        health('weight', 81.85, '2026-05-22T08:00:00Z'),
+      ],
+      'weight',
+    )
+    expect(out.map((p) => p.date)).toEqual(['2026-05-18', '2026-05-22'])
+    expect(out.map((p) => p.value)).toEqual([82.2, 81.85])
+  })
+
+  it('multi-tipo: filtra SOLO el tipo pedido', () => {
+    const metrics = [
+      health('weight', 82.2, '2026-05-18T08:00:00Z'),
+      health('body_fat_percent', 19.5, '2026-05-18T08:00:00Z'),
+      health('skeletal_muscle_mass_kg', 33.1, '2026-05-18T08:00:00Z'),
+    ]
+    expect(healthMetricSeries(metrics, 'body_fat_percent')).toEqual([{ date: '2026-05-18', value: 19.5 }])
+    expect(healthMetricSeries(metrics, 'weight')).toEqual([{ date: '2026-05-18', value: 82.2 }])
+  })
+
+  it('orden: input desordenado → salida cronológica', () => {
+    const out = healthMetricSeries(
+      [
+        health('weight', 81.85, '2026-05-22T08:00:00Z'),
+        health('weight', 83.0, '2026-05-10T08:00:00Z'),
+        health('weight', 82.2, '2026-05-18T08:00:00Z'),
+      ],
+      'weight',
+    )
+    expect(out.map((p) => p.date)).toEqual(['2026-05-10', '2026-05-18', '2026-05-22'])
+  })
+
+  it('dedup mismo día: 2 lecturas el mismo día → 1 punto (la más reciente)', () => {
+    const out = healthMetricSeries(
+      [
+        health('weight', 82.5, '2026-05-18T07:00:00Z'),
+        health('weight', 82.1, '2026-05-18T21:00:00Z'), // más tarde el mismo día
+      ],
+      'weight',
+    )
+    expect(out).toHaveLength(1)
+    expect(out[0]).toEqual({ date: '2026-05-18', value: 82.1 })
+  })
+
+  it('descarta valores no finitos', () => {
+    const out = healthMetricSeries(
+      [
+        health('weight', Number.NaN, '2026-05-18T08:00:00Z'),
+        health('weight', 81.85, '2026-05-22T08:00:00Z'),
+      ],
+      'weight',
+    )
+    expect(out).toEqual([{ date: '2026-05-22', value: 81.85 }])
   })
 })

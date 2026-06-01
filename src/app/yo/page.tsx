@@ -18,6 +18,7 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 import { TrendChart } from '@/components/charts/TrendChart'
+import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
@@ -144,6 +145,12 @@ function SelfContent() {
           formatValue={(n) => `${n.toFixed(1)}h`}
           emptyHint="Registrá tus noches para ver la tendencia."
         />
+      </div>
+
+      {/* Tendencia corporal: serie temporal de health_metrics (báscula) con
+          selector de métrica + stats del período. */}
+      <div className="mb-6">
+        <BodyMetricsTrend metrics={healthMetrics} />
       </div>
 
       <Card className={cn('mb-4', cardClass)}>
