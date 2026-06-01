@@ -503,7 +503,7 @@ export function PersonDetail({
       {/* ─── Sesion 3 PR-B: RelationalScore + BirthdayCountdown reales ── */}
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
         <RelationalScore person={live} lastChat={lastChat} />
-        <BirthdayCountdown birthDate={live.birthDate ?? null} />
+        <BirthdayCountdown person={live} />
       </div>
 
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
