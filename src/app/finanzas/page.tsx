@@ -23,7 +23,10 @@ import { financeBalanceSeries } from '@/lib/charts/adapters'
 import { ExportCsvButton } from '@/components/export/ExportCsvButton'
 import { financeMovementsCsv } from '@/lib/export/adapters'
 import { SpendIntentBreakdown } from '@/components/finanzas/SpendIntentBreakdown'
+import { EmotionFinancePanel } from '@/components/finanzas/EmotionFinancePanel'
 import { INTENT_LABEL, INTENT_HINT, INTENT_BADGE } from '@/lib/finanzas/intent-meta'
+import { correlateStressVsNonEssentialSpend } from '@/lib/longitudinal/emotionFinance'
+import { useSelfStore } from '@/stores/useSelfStore'
 import { cn } from '@/lib/utils'
 import type { MovementType, FinancialCategory, FinancialMovement, Currency, SpendIntent } from '@/types'
 
@@ -59,10 +62,16 @@ export default function FinancePage() {
 
 function FinanceContent() {
   const { financialMovements, addFinancialMovement, removeFinancialMovement } = useFinanceStore()
+  const { selfMetrics } = useSelfStore()
   const { addMemory } = useMemoryStore()
   const fin = useMemo(() => analyzeFinancialStability(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
   const alerts = useMemo(() => detectFinancialAlerts(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
   const spendingByIntent = useMemo(() => analyzeSpendingByIntent(financialMovements), [financialMovements])
+  // P3: correlación estrés (self_metrics) ↔ gasto no-esencial (intent).
+  const emotionFinance = useMemo(
+    () => correlateStressVsNonEssentialSpend(selfMetrics, financialMovements),
+    [selfMetrics, financialMovements],
+  )
   const [type, setType] = useState<MovementType>('expense')
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<Currency>('PEN')
@@ -223,6 +232,9 @@ function FinanceContent() {
 
       {/* P1: desglose del gasto por intención (obligatorio/necesario/no-esencial). */}
       <SpendIntentBreakdown data={spendingByIntent} />
+
+      {/* P3: correlación estrés ↔ gasto no-esencial. */}
+      <EmotionFinancePanel data={emotionFinance} />
 
       <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-6">
