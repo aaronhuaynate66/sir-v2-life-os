@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Activity, Target, Brain, Wallet, Users, Bell,
   Moon, Zap, ArrowRightLeft, Sparkles,
   AlertCircle, TrendingUp, TrendingDown, Minus,
-  CheckCircle2, X,
+  CheckCircle2, X, ChevronDown, PlusCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { calculatePeaceScore, detectPeaceThreats } from '@/engines/peace'
@@ -141,6 +141,9 @@ function DashboardContent() {
   // En recuperación dura simplificamos la UI; el usuario puede expandir igual.
   const [showAll, setShowAll] = useState(false)
   const simplified = recoveryHard && !showAll
+  // Captura rápida colapsada por defecto (silencio visual): la captura
+  // principal vive en /captura; estos formularios quedan a un tap.
+  const [showCapture, setShowCapture] = useState(false)
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
   const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
   const topRec = recommendations.find(r => r.status === 'pending') ?? recs[0] ?? null
@@ -467,8 +470,33 @@ function DashboardContent() {
         </Card>
       </motion.div>
 
-      {/* Forms rápidos: 2x2 en lg, single col en mobile */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }} className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+      {/* Registro rápido (colapsable): sueño, energía, finanzas, señal.
+          Colapsado por defecto para reducir la densidad del dashboard —
+          la captura principal vive en /captura. Un tap lo despliega. */}
+      <div className="mb-8 border-t border-border/40 pt-2">
+        <button
+          type="button"
+          onClick={() => setShowCapture((v) => !v)}
+          aria-expanded={showCapture}
+          className="w-full flex items-center justify-between gap-2 py-2 text-left rounded-md hover:bg-accent/5 transition-colors"
+        >
+          <span className="flex items-center gap-2 min-w-0">
+            <PlusCircle size={14} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">Registro rapido</span>
+            <span className="text-[11px] text-muted-foreground/40 truncate hidden sm:inline">sueno · energia · finanzas · senal</span>
+          </span>
+          <ChevronDown size={16} strokeWidth={1.75} className={cn('text-muted-foreground/50 flex-shrink-0 transition-transform duration-200', showCapture && 'rotate-180')} />
+        </button>
+        <AnimatePresence initial={false}>
+          {showCapture && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ overflow: 'hidden' }}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-5">
             <SectionTitle icon={Moon} label="Registrar sueno" />
@@ -524,7 +552,11 @@ function DashboardContent() {
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {recoveryHard && showAll && (
         <div className="mb-6 text-center">
