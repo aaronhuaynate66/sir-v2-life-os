@@ -15,13 +15,17 @@ export interface GraphNode {
   id: string
   /** Iniciales de 2 chars para render dentro del circulo. */
   label: string
-  /** Nombre completo visible debajo del nodo. */
+  /** Nombre corto (primer nombre) visible debajo del nodo. */
+  shortName: string
+  /** Nombre completo (tooltip hover). */
   fullName: string
   category: GraphCategory
   /** 0-100. Para self queda en 100 (no aplica). */
   healthScore: number
   /** Cantidad de items en relationships.history. Para self queda en 0. */
   interactionCount: number
+  /** importanceScore 1-10 (jerarquía → tamaño del nodo). self = 10. */
+  score: number
   isSelf?: boolean
   // Posicion fijada (solo para self). react-force-graph-2d respeta fx/fy.
   fx?: number

@@ -41,13 +41,22 @@ export function buildSelfLabel(
 }
 
 /**
- * Mapea Person + Relationship + tags a una GraphCategory.
+ * Mapea Person -> GraphCategory para color/label del grafo.
+ *
+ * Se bucketea por TIPO DE RELACIÓN (la señal real de la naturaleza del
+ * vínculo), NO por `category` (que es un tier de red: inner_circle/close/
+ * network/peripheral y por defecto cae en 'network'). El bug que motivó este
+ * cambio: una PAREJA (romantic) o un amigo con `category` por defecto ('network')
+ * caía en 'networking' gris — semánticamente incorrecto. Tu pareja/amigos son
+ * tu círculo PERSONAL, nunca "networking". El tier `category` se usa aparte
+ * para la jerarquía (tamaño del nodo via importanceScore).
+ *
  * Reglas (en orden de precedencia):
- *  1. tag 'estrategico' o 'desarrollo' -> override directo (opt-in)
- *  2. relationship='family' -> familia
- *  3. relationship in {professional, mentor, mentee} -> profesional
- *  4. relationship in {friend, romantic} + category in {inner_circle, close} -> personal
- *  5. resto -> networking
+ *  1. tag 'estrategico' / 'desarrollo' -> override (opt-in)
+ *  2. family -> familia
+ *  3. romantic | friend -> personal   (pareja y amigos = círculo personal)
+ *  4. professional | mentor | mentee -> profesional
+ *  5. acquaintance / resto -> networking
  */
 export function categoryForPerson(person: Person): GraphCategory {
   const tags = person.tags ?? []
@@ -57,19 +66,24 @@ export function categoryForPerson(person: Person): GraphCategory {
   switch (person.relationship) {
     case 'family':
       return 'familia'
+    case 'romantic':
+    case 'friend':
+      return 'personal'
     case 'professional':
     case 'mentor':
     case 'mentee':
       return 'profesional'
-    case 'friend':
-    case 'romantic':
-      return person.category === 'inner_circle' || person.category === 'close'
-        ? 'personal'
-        : 'networking'
     case 'acquaintance':
     default:
       return 'networking'
   }
+}
+
+/** Primer nombre (token) de un nombre completo. "Diana Carolina" -> "Diana". */
+export function firstName(name: string | null | undefined): string {
+  if (!name || typeof name !== 'string') return ''
+  const first = name.trim().split(/\s+/).filter(Boolean)[0]
+  return first ?? ''
 }
 
 /**
@@ -115,13 +129,16 @@ export function buildGraphData({
   }
 
   // Self node — center fijo en (0,0).
+  const selfFull = selfFullName?.trim() || selfEmail
   const selfNode: GraphNode = {
     id: 'self',
     label: buildSelfLabel(selfFullName, selfEmail),
-    fullName: selfFullName?.trim() || selfEmail,
+    shortName: firstName(selfFullName) || 'Yo',
+    fullName: selfFull,
     category: 'self',
     healthScore: 100,
     interactionCount: 0,
+    score: 10,
     isSelf: true,
     fx: 0,
     fy: 0,
@@ -134,13 +151,16 @@ export function buildGraphData({
     const id = p.slug?.trim() || p.id
     const rel = relByPerson.get(p.id)
     const category = categoryForPerson(p)
+    const displayName = p.alias?.trim() || p.name
     personNodes.push({
       id,
-      label: initialsFromName(p.alias?.trim() || p.name),
-      fullName: p.alias?.trim() || p.name,
+      label: initialsFromName(displayName),
+      shortName: firstName(displayName) || initialsFromName(displayName),
+      fullName: displayName,
       category,
       healthScore: healthScoreFor(rel),
       interactionCount: interactionCountFor(rel),
+      score: Number.isFinite(p.importanceScore) ? p.importanceScore : 5,
     })
     edges.push({
       source: 'self',

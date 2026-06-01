@@ -6,10 +6,12 @@ import type { GraphData, GraphNode } from './types'
 function node(partial: Partial<GraphNode> & Pick<GraphNode, 'id'>): GraphNode {
   return {
     label: 'XX',
+    shortName: partial.id,
     fullName: partial.id,
     category: 'networking',
     healthScore: 50,
     interactionCount: 0,
+    score: 5,
     ...partial,
   }
 }
