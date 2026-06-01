@@ -13,6 +13,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -125,6 +126,7 @@ export async function POST(req: NextRequest) {
   try {
     raw = await callVision(client, imageBase64, mediaType)
   } catch (e) {
+    reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada a Claude Vision', msg.slice(0, 300))
   }

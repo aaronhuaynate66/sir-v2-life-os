@@ -14,6 +14,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ insight }, { status: 200 })
   } catch (e) {
+    reportApiError(e)
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar la reflexión', detail)
   }

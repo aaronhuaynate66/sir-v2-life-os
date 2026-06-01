@@ -14,6 +14,7 @@
 //   200: { ok: true }
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { insertObservation } from '@/lib/capture/observations/insert'
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ observation }, { status: 201 })
   } catch (e) {
+    reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
     // El audio ya está en Storage; lo limpiamos para no dejar huérfano.
     await supabase.storage.from(VOICE_BUCKET).remove([storagePath]).catch(() => {})

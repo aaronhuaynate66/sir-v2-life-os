@@ -23,6 +23,7 @@
 //     auth context) y el userId verificado.
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { backfillMemoriesForPerson } from '@/lib/memories/extract'
@@ -112,6 +113,7 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     )
   } catch (e) {
+    reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(500, 'Backfill de memorias fallo', msg.slice(0, 300))
   }

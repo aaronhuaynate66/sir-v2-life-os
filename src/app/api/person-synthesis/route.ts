@@ -22,6 +22,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { getObservationsForPerson } from '@/lib/observations/fetch'
@@ -135,6 +136,7 @@ export async function POST(req: NextRequest) {
     inputTokens = msg.usage?.input_tokens ?? null
     outputTokens = msg.usage?.output_tokens ?? null
   } catch (e) {
+    reportApiError(e)
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo de síntesis', m.slice(0, 300))
   }

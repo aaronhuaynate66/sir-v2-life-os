@@ -11,6 +11,7 @@
 // Requiere OPENAI_API_KEY (500 si falta). RLS via user session.
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { embedBatch, toPgVector, EMBEDDING_MODEL, EmbeddingError } from '@/lib/embeddings/client'
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
   try {
     vectors = await embedBatch(rows.map((r) => memoryInput(r as { title: string | null; content: string | null })))
   } catch (e) {
+    reportApiError(e)
     if (e instanceof EmbeddingError) {
       return errorJson(e.status && e.status >= 400 && e.status < 600 ? 502 : 500, 'Falló la generación de embeddings', e.message)
     }

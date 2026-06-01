@@ -15,6 +15,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { DETECTOR_SYSTEM_PROMPT } from '@/lib/capture/detector/prompt'
@@ -151,6 +152,7 @@ export async function POST(req: NextRequest) {
   try {
     raw = await callDetectorVision(client, imageBase64, mediaType)
   } catch (e) {
+    reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al detector Vision', msg.slice(0, 300))
   }

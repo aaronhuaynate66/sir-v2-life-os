@@ -12,6 +12,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { getSystemPrompt } from '@/lib/capture/whatsapp/prompt'
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
   try {
     raw = await callVision(client, imageBase64, mediaType, reflection)
   } catch (e) {
+    reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
     // Si el modelo no existe (404 o "model not found"), devolver 502 con detalle
     // para que el cliente reporte al usuario claramente.

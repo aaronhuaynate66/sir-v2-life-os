@@ -20,6 +20,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { getExtractorSpec } from '@/lib/capture/extractors'
@@ -208,6 +209,7 @@ export async function POST(req: NextRequest) {
   try {
     raw = await callExtractorVision(client, systemPrompt, imageBase64, mediaType, spec.maxTokens)
   } catch (e) {
+    reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada Vision al extractor', msg.slice(0, 300))
   }
@@ -314,6 +316,7 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     )
   } catch (e) {
+    reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
     // Best-effort rollback del upload
     await supabase.storage.from(bucket).remove([storagePath]).catch(() => {})

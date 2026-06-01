@@ -13,6 +13,7 @@
 // Auth: requiere sesion activa.
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { ensureUniqueSlug, generateSlug } from '@/lib/people/slug'
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
   try {
     slug = await ensureUniqueSlug(generateSlug(name), userId, { client: supabase })
   } catch (e) {
+    reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(500, 'No se pudo generar slug', msg.slice(0, 200))
   }

@@ -13,6 +13,7 @@
 // (correr /api/memories/embed primero). RLS: el RPC filtra auth.uid().
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { embedText, toPgVector, EMBEDDING_MODEL, EmbeddingError } from '@/lib/embeddings/client'
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
   try {
     queryEmbedding = await embedText(query)
   } catch (e) {
+    reportApiError(e)
     if (e instanceof EmbeddingError) {
       return errorJson(502, 'Falló la generación del embedding de la consulta', e.message)
     }

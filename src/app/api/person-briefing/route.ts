@@ -14,6 +14,7 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
     const textBlock = msg.content.find((b) => b.type === 'text')
     text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
   } catch (e) {
+    reportApiError(e)
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo de briefing', m.slice(0, 300))
   }
