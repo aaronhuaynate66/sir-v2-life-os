@@ -70,6 +70,7 @@ import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
+import { InformacionSensible } from './InformacionSensible'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
@@ -666,6 +667,11 @@ export function PersonDetail({
           ))}
         </div>
       )}
+
+      {/* Información sensible / datos adicionales (DNI, pasaporte, foto):
+          colapsable, al fondo, marcado como sensible. Container — los valores
+          los carga el usuario. NO se usa en IA/grafo/summaries. */}
+      <InformacionSensible personId={live.id} />
 
       <Separator className="my-6" />
       <p className="text-xs text-muted-foreground">
