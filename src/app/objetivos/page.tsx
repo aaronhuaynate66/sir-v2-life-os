@@ -32,7 +32,7 @@ const CAT_LABEL: Record<GoalCategory, string> = {
   financial: 'Financiero', personal: 'Personal', relational: 'Relacional',
   health: 'Salud', career: 'Carrera', spiritual: 'Espiritual', creative: 'Creativo',
 }
-const PRIO_LABEL: Record<GoalPriority, string> = { critical: 'Critico', high: 'Alto', medium: 'Medio', low: 'Bajo' }
+const PRIO_LABEL: Record<GoalPriority, string> = { critical: 'Crítico', high: 'Alto', medium: 'Medio', low: 'Bajo' }
 const PRIO_CLASS: Record<GoalPriority, string> = {
   critical: 'border-red-500/30 bg-red-500/10 text-red-400',
   high: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
@@ -80,9 +80,9 @@ function GoalsContent() {
     setAdding(false); setEditId(null)
   }
   function saveGoal() {
-    if (!title.trim()) { toast.error('Titulo requerido', { description: 'El titulo no puede estar vacio.' }); return }
+    if (!title.trim()) { toast.error('Título requerido', { description: 'El título no puede estar vacío.' }); return }
     const pi = parseInt(peaceImpact)
-    if (isNaN(pi) || pi < 1 || pi > 10) { toast.error('Impacto invalido', { description: 'El impacto de paz debe estar entre 1 y 10.' }); return }
+    if (isNaN(pi) || pi < 1 || pi > 10) { toast.error('Impacto inválido', { description: 'El impacto de paz debe estar entre 1 y 10.' }); return }
     const now = new Date().toISOString()
     const linkedPersons = sanitizePersonIds(relatedPersons, new Set(people.map((p) => p.id)))
     if (editId) {
@@ -111,7 +111,7 @@ function GoalsContent() {
   function saveProgress() {
     if (!progressId) return
     const v = parseInt(progressVal)
-    if (isNaN(v) || v < 0 || v > 100) { toast.error('Progreso invalido', { description: 'Debe estar entre 0 y 100.' }); return }
+    if (isNaN(v) || v < 0 || v > 100) { toast.error('Progreso inválido', { description: 'Debe estar entre 0 y 100.' }); return }
     const goal = goals.find(g => g.id === progressId); if (!goal) return
     const previousProgress = goal.progress
     updateGoalProgress(progressId, v)
@@ -154,7 +154,7 @@ function GoalsContent() {
             <Target size={28} strokeWidth={1.5} className="text-muted-foreground" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Objetivos</h1>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Direccion, paz e impacto en vida</p>
+          <p className="text-sm text-muted-foreground mt-1">Dirección, paz e impacto en vida</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Nuevo objetivo'}</Button>
       </div>
@@ -186,8 +186,8 @@ function GoalsContent() {
               <CardContent className="p-4 sm:p-6">
                 <SectionTitle icon={Plus} label={editId ? 'Editar objetivo' : 'Nuevo objetivo'} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                  <Input placeholder="Titulo" value={title} onChange={e => setTitle(e.target.value)} className="col-span-2" />
-                  <Input placeholder="Descripcion" value={desc} onChange={e => setDesc(e.target.value)} className="col-span-2" />
+                  <Input placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} className="col-span-2" />
+                  <Input placeholder="Descripción" value={desc} onChange={e => setDesc(e.target.value)} className="col-span-2" />
                   <Select value={cat} onValueChange={(v) => setCat(v as GoalCategory)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -202,7 +202,7 @@ function GoalsContent() {
                   </Select>
                   <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="font-mono" />
                   <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
-                  <Input placeholder="Siguiente accion" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
+                  <Input placeholder="Siguiente acción" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
                   <div className="col-span-2">
                     <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">
                       Personas vinculadas <span className="text-muted-foreground/50 normal-case tracking-normal">· opcional</span>
@@ -254,7 +254,7 @@ function GoalsContent() {
         <EmptyState
           icon={Target}
           title="Sin objetivos activos."
-          hint="Crea tu primer objetivo para empezar a medir tu paz."
+          hint="Creá tu primer objetivo para empezar a medir tu paz."
           action={<Button variant="outline" size="sm" onClick={() => setAdding(true)}>+ Crear primer objetivo</Button>}
         />
       ) : (

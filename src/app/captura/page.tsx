@@ -422,7 +422,7 @@ function CapturaIndexContent() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Nombre, alias, @handle, telefono…"
+                    placeholder="Nombre, alias, @handle, teléfono…"
                     className="text-sm w-full rounded border border-border bg-background px-3 py-1.5"
                     disabled={processLoading}
                   />

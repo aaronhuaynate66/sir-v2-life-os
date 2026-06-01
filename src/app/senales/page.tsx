@@ -29,11 +29,11 @@ import type { SignalSource, SignalType, SignalUrgency, Signal } from '@/types'
 
 const SOURCE_LABEL: Record<SignalSource, string> = {
   linkedin: 'LinkedIn', instagram: 'Instagram', calendar: 'Calendario',
-  biological: 'Biologico', financial: 'Financiero', relational: 'Relacional', manual: 'Manual',
+  biological: 'Biológico', financial: 'Financiero', relational: 'Relacional', manual: 'Manual',
 }
 const TYPE_LABEL: Record<SignalType, string> = {
-  opportunity: 'Oportunidad', warning: 'Advertencia', pattern: 'Patron', timing: 'Timing',
-  emotional: 'Emocional', relational: 'Relacional', biological: 'Biologico', financial: 'Financiero',
+  opportunity: 'Oportunidad', warning: 'Advertencia', pattern: 'Patrón', timing: 'Timing',
+  emotional: 'Emocional', relational: 'Relacional', biological: 'Biológico', financial: 'Financiero',
 }
 const URGENCY_LABEL: Record<SignalUrgency, string> = {
   immediate: 'Inmediata', soon: 'Pronto', monitor: 'Monitorear', archive: 'Archivar',
@@ -74,7 +74,7 @@ function SignalsContent() {
   const [showResolved, setShowResolved] = useState(false)
 
   function submit() {
-    if (!content.trim()) { toast.error('Senal vacia', { description: 'Escribe el contenido de la senal.' }); return }
+    if (!content.trim()) { toast.error('Señal vacía', { description: 'Escribí el contenido de la señal.' }); return }
     const s: Signal = {
       id: `sig_${Date.now()}`, source, type, content, strength: 5, urgency,
       relatedPersons: [], relatedGoals: [],
@@ -87,15 +87,15 @@ function SignalsContent() {
     addSignal(s)
     addMemory(createSignalAddedMemory(s))
     setContent(''); setMeaning(''); setAction('')
-    toast.success('Senal registrada', { description: `${SOURCE_LABEL[source]} · ${URGENCY_LABEL[urgency]}` })
+    toast.success('Señal registrada', { description: `${SOURCE_LABEL[source]} · ${URGENCY_LABEL[urgency]}` })
   }
   function handleResolve(id: string) {
     resolveSignal(id)
-    toast.success('Senal resuelta')
+    toast.success('Señal resuelta')
   }
   function handleRemove(id: string, content: string) {
     removeSignal(id)
-    toast.success('Senal eliminada', { description: content.length > 60 ? content.slice(0, 60) + '...' : content })
+    toast.success('Señal eliminada', { description: content.length > 60 ? content.slice(0, 60) + '...' : content })
   }
 
   const allSignals: Signal[] = [...signals].sort((a, b) => {
@@ -116,8 +116,8 @@ function SignalsContent() {
 
   const stats = [
     { label: 'Activas', value: String(ctx.activeSignals.filter(s => !s.resolved).length) },
-    { label: 'Criticas', value: String(ctx.activeSignals.filter(s => s.urgency === 'immediate').length) },
-    { label: 'Con accion', value: String(active.filter(s => s.actionRequired).length) },
+    { label: 'Críticas', value: String(ctx.activeSignals.filter(s => s.urgency === 'immediate').length) },
+    { label: 'Con acción', value: String(active.filter(s => s.actionRequired).length) },
     { label: 'Resueltas', value: String(allSignals.filter(s => s.resolved).length) },
   ]
 
@@ -172,7 +172,7 @@ function SignalsContent() {
 
       <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-4 sm:p-6">
-          <SectionTitle icon={Sparkles} label="Registrar senal" />
+          <SectionTitle icon={Sparkles} label="Registrar señal" />
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
             <Select value={source} onValueChange={(v) => setSource(v as SignalSource)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -193,22 +193,22 @@ function SignalsContent() {
               </SelectContent>
             </Select>
             <Input
-              placeholder="Contenido de la senal"
+              placeholder="Contenido de la señal"
               value={content}
               onChange={e => setContent(e.target.value)}
               className="col-span-2 md:col-span-3"
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) submit() }}
             />
             <Input placeholder="Significado (opcional)" value={meaning} onChange={e => setMeaning(e.target.value)} className="col-span-1 md:col-span-2" />
-            <Input placeholder="Accion sugerida (opcional)" value={action} onChange={e => setAction(e.target.value)} />
+            <Input placeholder="Acción sugerida (opcional)" value={action} onChange={e => setAction(e.target.value)} />
           </div>
-          <Button onClick={submit} variant="outline" size="sm">+ Registrar senal</Button>
+          <Button onClick={submit} variant="outline" size="sm">+ Registrar señal</Button>
         </CardContent>
       </Card>
 
       <div className="flex items-center justify-between mb-3">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
-          {filterSource !== 'all' ? SOURCE_LABEL[filterSource as SignalSource] : 'Todas las senales'} &mdash; {visible.length}
+          {filterSource !== 'all' ? SOURCE_LABEL[filterSource as SignalSource] : 'Todas las señales'} &mdash; {visible.length}
         </div>
         <button onClick={() => setShowResolved(!showResolved)} className="text-[10px] font-mono text-muted-foreground hover:text-foreground py-1.5 px-1 -mr-1">
           {showResolved ? 'Ocultar resueltas' : 'Mostrar resueltas'}
@@ -266,7 +266,7 @@ function SignalsContent() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>¿Eliminar senal?</AlertDialogTitle>
+                            <AlertDialogTitle>¿Eliminar señal?</AlertDialogTitle>
                             <AlertDialogDescription>
                               &ldquo;{s.content.length > 80 ? s.content.slice(0, 80) + '...' : s.content}&rdquo;
                               <br />Esta accion no se puede deshacer.

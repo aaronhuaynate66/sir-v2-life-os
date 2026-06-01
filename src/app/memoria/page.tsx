@@ -17,8 +17,8 @@ import { cn } from '@/lib/utils'
 import type { MemoryType } from '@/types'
 
 const TYPE_LABEL: Record<MemoryType, string> = {
-  episodic: 'Episodica',
-  semantic: 'Semantica',
+  episodic: 'Episódica',
+  semantic: 'Semántica',
   emotional: 'Emocional',
   relational: 'Relacional',
   temporal: 'Temporal',
@@ -157,7 +157,7 @@ function MemoryContent() {
       <div className="text-[10px] font-mono tabular-nums text-muted-foreground/60 mb-3">
         Mostrando {memories.length} de {memoryContext.totalMemories}
         {typeFilter !== 'all' && ` · Filtro: ${TYPE_LABEL[typeFilter as MemoryType]}`}
-        {search.trim() && ` · Busqueda: "${search.trim()}"`}
+        {search.trim() && ` · Búsqueda: "${search.trim()}"`}
       </div>
 
       {memories.length === 0 ? (

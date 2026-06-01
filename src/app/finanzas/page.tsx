@@ -32,7 +32,7 @@ import { cn } from '@/lib/utils'
 import type { MovementType, FinancialCategory, FinancialMovement, Currency, SpendIntent } from '@/types'
 
 const TYPE_LABEL: Record<MovementType, string> = {
-  income: 'Ingreso', expense: 'Gasto', investment: 'Inversion', transfer: 'Transferencia', debt: 'Deuda',
+  income: 'Ingreso', expense: 'Gasto', investment: 'Inversión', transfer: 'Transferencia', debt: 'Deuda',
 }
 const TYPE_COLOR: Record<MovementType, string> = {
   income: 'text-emerald-400', expense: 'text-red-400', investment: 'text-blue-400',
@@ -42,8 +42,8 @@ const TYPE_SIGN: Record<MovementType, string> = {
   income: '+', expense: '-', investment: '-', transfer: '', debt: '-',
 }
 const CAT_LABEL: Record<FinancialCategory, string> = {
-  housing: 'Vivienda', food: 'Alimentacion', transport: 'Transporte', health: 'Salud',
-  entertainment: 'Entretenimiento', investment: 'Inversion', business: 'Negocio',
+  housing: 'Vivienda', food: 'Alimentación', transport: 'Transporte', health: 'Salud',
+  entertainment: 'Entretenimiento', investment: 'Inversión', business: 'Negocio',
   personal: 'Personal', debt: 'Deuda', other: 'Otro',
 }
 const LIQUIDITY_MONTHS = 2.5
@@ -112,7 +112,7 @@ function FinanceContent() {
 
   function addMovement() {
     const amt = parseFloat(amount)
-    if (isNaN(amt) || amt <= 0) { toast.error('Monto invalido', { description: 'El monto debe ser mayor que 0.' }); return }
+    if (isNaN(amt) || amt <= 0) { toast.error('Monto inválido', { description: 'El monto debe ser mayor que 0.' }); return }
     let rate: number
     let amountPEN: number
     if (currency === 'PEN') {
@@ -120,7 +120,7 @@ function FinanceContent() {
       amountPEN = amt
     } else {
       rate = parseFloat(exchangeRate)
-      if (isNaN(rate) || rate <= 0) { toast.error('Tipo de cambio invalido', { description: 'Ingresa un TC mayor que 0.' }); return }
+      if (isNaN(rate) || rate <= 0) { toast.error('Tipo de cambio inválido', { description: 'Ingresá un TC mayor que 0.' }); return }
       amountPEN = amt * rate
     }
     // La intención solo tiene sentido en salidas de dinero (expense/debt).

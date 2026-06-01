@@ -28,8 +28,8 @@ import type { MetricCategory, HealthMetricType } from '@/types'
 const METRIC_CATS: MetricCategory[] = ['energy', 'mood', 'stress', 'focus', 'motivation', 'confidence']
 const HEALTH_TYPES: HealthMetricType[] = ['weight', 'heart_rate', 'steps', 'calories', 'hydration', 'blood_pressure', 'custom']
 const CAT_LABEL: Record<MetricCategory, string> = {
-  energy: 'Energia', mood: 'Animo', stress: 'Estres',
-  focus: 'Enfoque', motivation: 'Motivacion', confidence: 'Confianza',
+  energy: 'Energía', mood: 'Ánimo', stress: 'Estrés',
+  focus: 'Enfoque', motivation: 'Motivación', confidence: 'Confianza',
 }
 
 const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
@@ -69,25 +69,25 @@ function SelfContent() {
 
   function addMetric() {
     const v = parseFloat(mVal)
-    if (isNaN(v) || v < 1 || v > 10) { toast.error('Valor invalido', { description: 'Debe estar entre 1 y 10.' }); return }
+    if (isNaN(v) || v < 1 || v > 10) { toast.error('Valor inválido', { description: 'Debe estar entre 1 y 10.' }); return }
     const metric = { id: 'm_' + Date.now(), category: mCat, value: v, timestamp: new Date().toISOString(), note: mNote || undefined }
     addSelfMetric(metric); addMemory(createSelfMetricMemory(metric))
     setMVal(''); setMNote('')
-    toast.success('Metrica registrada', { description: `${CAT_LABEL[mCat]}: ${v}/10` })
+    toast.success('Métrica registrada', { description: `${CAT_LABEL[mCat]}: ${v}/10` })
   }
   function addSleep() {
     const h = parseFloat(sHours)
-    if (isNaN(h) || h < 0 || h > 24) { toast.error('Horas invalidas', { description: 'Debe estar entre 0 y 24.' }); return }
+    if (isNaN(h) || h < 0 || h > 24) { toast.error('Horas inválidas', { description: 'Debe estar entre 0 y 24.' }); return }
     const q = parseInt(sQual)
-    if (isNaN(q) || q < 1 || q > 10) { toast.error('Calidad invalida', { description: 'Debe estar entre 1 y 10.' }); return }
+    if (isNaN(q) || q < 1 || q > 10) { toast.error('Calidad inválida', { description: 'Debe estar entre 1 y 10.' }); return }
     const sleepRecord = { id: 'sl_' + Date.now(), date: new Date().toISOString().split('T')[0], bedtime: sBed, wakeTime: sWake, duration: h, quality: q }
     addSleepRecord(sleepRecord); addMemory(createSleepMemory(sleepRecord))
     setSHours('')
-    toast.success('Sueno registrado', { description: `${h}h · calidad ${q}/10` })
+    toast.success('Sueño registrado', { description: `${h}h · calidad ${q}/10` })
   }
   function addHealth() {
     const v = parseFloat(hVal)
-    if (isNaN(v)) { toast.error('Valor invalido', { description: 'Ingresa un numero valido.' }); return }
+    if (isNaN(v)) { toast.error('Valor inválido', { description: 'Ingresá un número válido.' }); return }
     addHealthMetric({ id: 'h_' + Date.now(), type: hType, value: v, unit: hUnit, timestamp: new Date().toISOString() })
     setHVal('')
     toast.success('Registro de salud agregado', { description: `${getHealthMetricLabel(hType)}: ${v} ${hUnit}` })
@@ -99,10 +99,10 @@ function SelfContent() {
   const dC: Tone = bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad'
 
   const stats: { label: string; value: string; unit: string; tone: Tone }[] = [
-    { label: 'Energia', value: bio.energyLevel.toFixed(1), unit: '/10', tone: eC },
-    { label: 'Sueno prom.', value: sleepTrend.averageDuration.toFixed(1), unit: 'h', tone: sC },
-    { label: 'Calidad sueno', value: sleepTrend.averageQuality.toFixed(1), unit: '/10', tone: qC },
-    { label: 'Deuda sueno', value: bio.sleepDebt.toFixed(1), unit: 'h', tone: dC },
+    { label: 'Energía', value: bio.energyLevel.toFixed(1), unit: '/10', tone: eC },
+    { label: 'Sueño prom.', value: sleepTrend.averageDuration.toFixed(1), unit: 'h', tone: sC },
+    { label: 'Calidad sueño', value: sleepTrend.averageQuality.toFixed(1), unit: '/10', tone: qC },
+    { label: 'Deuda sueño', value: bio.sleepDebt.toFixed(1), unit: 'h', tone: dC },
   ]
 
   return (
@@ -223,7 +223,7 @@ function SelfContent() {
 
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Moon} label="Registrar sueno" />
+            <SectionTitle icon={Moon} label="Registrar sueño" />
             <div className="space-y-2">
               <Input type="number" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono tabular-nums" />
               <div className="flex gap-2">
@@ -231,7 +231,7 @@ function SelfContent() {
                 <Input type="time" value={sWake} onChange={e => setSWake(e.target.value)} className="font-mono" />
               </div>
               <Input type="number" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono tabular-nums" />
-              <Button onClick={addSleep} variant="outline" className="w-full">+ Registrar sueno</Button>
+              <Button onClick={addSleep} variant="outline" className="w-full">+ Registrar sueño</Button>
             </div>
           </CardContent>
         </Card>
@@ -282,7 +282,7 @@ function SelfContent() {
 
       <Card className={cardClass}>
         <CardContent className="p-4 sm:p-6">
-          <SectionTitle icon={Heart} label="Salud basica" count={healthMetrics.length} />
+          <SectionTitle icon={Heart} label="Salud básica" count={healthMetrics.length} />
           <div className="flex flex-wrap gap-2 mb-3">
             <Select value={hType} onValueChange={(v) => setHType(v as HealthMetricType)}>
               <SelectTrigger className="flex-1 basis-full sm:basis-auto min-w-[120px]"><SelectValue /></SelectTrigger>

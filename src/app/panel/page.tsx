@@ -166,34 +166,34 @@ function DashboardContent() {
 
   function handleAddSleep() {
     const h = parseFloat(sleepHours)
-    if (isNaN(h) || h < 0 || h > 24) { toast.error('Horas invalidas', { description: 'Debe ser un numero entre 0 y 24.' }); return }
+    if (isNaN(h) || h < 0 || h > 24) { toast.error('Horas inválidas', { description: 'Debe ser un número entre 0 y 24.' }); return }
     const record = { id: `sl_${Date.now()}`, date: new Date().toISOString().split('T')[0], bedtime: '23:00', wakeTime: '07:00', duration: h, quality: h >= 7 ? 8 : h >= 5 ? 5 : 3 }
     addSleepRecord(record); addMemory(createSleepMemory(record)); setSleepHours('')
-    toast.success('Sueno registrado', { description: `${h}h agregadas a tu historial` })
+    toast.success('Sueño registrado', { description: `${h}h agregadas a tu historial` })
   }
   function handleAddEnergy() {
     const e = parseInt(energyVal), s = parseInt(stressVal)
     const eOk = !isNaN(e) && e >= 1 && e <= 10
     const sOk = !isNaN(s) && s >= 1 && s <= 10
-    if (!eOk && !sOk) { toast.error('Sin datos validos', { description: 'Energia o estres deben estar entre 1 y 10.' }); return }
+    if (!eOk && !sOk) { toast.error('Sin datos válidos', { description: 'Energía o estrés deben estar entre 1 y 10.' }); return }
     if (eOk) { const m = { id: `m_e_${Date.now()}`, category: 'energy' as const, value: e, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) }
     if (sOk) { const m = { id: `m_s_${Date.now()}`, category: 'stress' as const, value: s, timestamp: new Date().toISOString() }; addSelfMetric(m); addMemory(createSelfMetricMemory(m)) }
     setEnergyVal(''); setStressVal('')
-    toast.success('Metricas registradas', { description: [eOk ? `energia ${e}` : null, sOk ? `estres ${s}` : null].filter(Boolean).join(' · ') })
+    toast.success('Métricas registradas', { description: [eOk ? `energía ${e}` : null, sOk ? `estrés ${s}` : null].filter(Boolean).join(' · ') })
   }
   function handleAddFinance() {
     const amt = parseFloat(finAmount)
-    if (isNaN(amt) || amt <= 0) { toast.error('Monto invalido', { description: 'El monto debe ser mayor que 0.' }); return }
+    if (isNaN(amt) || amt <= 0) { toast.error('Monto inválido', { description: 'El monto debe ser mayor que 0.' }); return }
     // Quick action: always PEN. Para flujos USD usa /finance.
-    const movement = { id: `f_${Date.now()}`, type: finType, amount: amt, currency: 'PEN' as const, exchangeRate: 1.0, amountPEN: amt, category: 'other' as const, description: finDesc || 'Movimiento rapido', date: new Date().toISOString().split('T')[0], recurrent: false, tags: [] }
+    const movement = { id: `f_${Date.now()}`, type: finType, amount: amt, currency: 'PEN' as const, exchangeRate: 1.0, amountPEN: amt, category: 'other' as const, description: finDesc || 'Movimiento rápido', date: new Date().toISOString().split('T')[0], recurrent: false, tags: [] }
     addFinancialMovement(movement); addMemory(createFinancialMovementMemory(movement)); setFinAmount(''); setFinDesc('')
     toast.success('Movimiento registrado', { description: `${finType === 'income' ? '+' : '-'}${formatPEN(amt)}` })
   }
   function handleAddSignal() {
-    if (!signalContent.trim()) { toast.error('Senal vacia', { description: 'Escribe el contenido de la senal.' }); return }
+    if (!signalContent.trim()) { toast.error('Señal vacía', { description: 'Escribí el contenido de la señal.' }); return }
     const sig = { id: `sig_${Date.now()}`, source: 'manual' as const, type: 'pattern' as const, content: signalContent, strength: 5, urgency: 'soon' as const, relatedPersons: [], relatedGoals: [], meaning: signalContent, actionRequired: false, detectedAt: new Date().toISOString(), resolved: false }
     addSignal(sig); addMemory(createSignalAddedMemory(sig)); setSignalContent('')
-    toast.success('Senal registrada')
+    toast.success('Señal registrada')
   }
   function handleResetAll() {
     resetSelf(); resetRelationship(); resetGoal(); resetFinance(); resetSignal(); resetRec()
@@ -242,7 +242,7 @@ function DashboardContent() {
       <Card className={cn('mb-6', cardClass)}>
         <CardContent className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 sm:p-6">
           <div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Mision</div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Misión</div>
             <div className="text-foreground">Conseguir Paz.</div>
           </div>
           <div className="sm:text-right">
@@ -289,7 +289,7 @@ function DashboardContent() {
             {!peaceCalibrating && threats.length > 0 && (
               <>
                 <Separator className="my-4" />
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Atencion</div>
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Atención</div>
                 <div className="space-y-1.5">
                   {threats.map((t, i) => (
                     <div key={i} className="flex gap-2 items-start">
@@ -382,16 +382,16 @@ function DashboardContent() {
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Brain} label="Estado Biológico" />
             {hasEnergyData
-              ? <Row label="Energia" value={`${bio.energyLevel.toFixed(1)}/10`} status={bio.energyLevel >= 6 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'} />
-              : <Row label="Energia" value="sin datos" />}
+              ? <Row label="Energía" value={`${bio.energyLevel.toFixed(1)}/10`} status={bio.energyLevel >= 6 ? 'ok' : bio.energyLevel >= 4 ? 'warn' : 'bad'} />
+              : <Row label="Energía" value="sin datos" />}
             {hasSleepData ? (
               <>
-                <Row label="Sueno promedio" value={`${sleep.averageDuration.toFixed(1)}h`} status={sleep.averageDuration >= 7 ? 'ok' : sleep.averageDuration >= 5 ? 'warn' : 'bad'} />
-                <Row label="Calidad sueno" value={`${sleep.averageQuality.toFixed(1)}/10`} status={sleep.averageQuality >= 6 ? 'ok' : 'warn'} />
-                <Row label="Deuda sueno" value={`${bio.sleepDebt.toFixed(1)}h`} status={bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad'} />
+                <Row label="Sueño promedio" value={`${sleep.averageDuration.toFixed(1)}h`} status={sleep.averageDuration >= 7 ? 'ok' : sleep.averageDuration >= 5 ? 'warn' : 'bad'} />
+                <Row label="Calidad sueño" value={`${sleep.averageQuality.toFixed(1)}/10`} status={sleep.averageQuality >= 6 ? 'ok' : 'warn'} />
+                <Row label="Deuda sueño" value={`${bio.sleepDebt.toFixed(1)}h`} status={bio.sleepDebt < 2 ? 'ok' : bio.sleepDebt < 5 ? 'warn' : 'bad'} />
               </>
             ) : (
-              <Row label="Sueno" value="sin datos" />
+              <Row label="Sueño" value="sin datos" />
             )}
             {!hasEnergyData && !hasSleepData && (
               <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registrá energía y sueño en &laquo;Registro rápido&raquo; para ver tu estado.</p>
@@ -544,8 +544,8 @@ function DashboardContent() {
           <CardContent className="p-4 sm:p-5">
             <SectionTitle icon={Zap} label="Energía / Estrés (1-10)" />
             <div className="flex gap-2">
-              <Input type="number" min="1" max="10" placeholder="Energia" value={energyVal} onChange={e => setEnergyVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
-              <Input type="number" min="1" max="10" placeholder="Estres" value={stressVal} onChange={e => setStressVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
+              <Input type="number" min="1" max="10" placeholder="Energía" value={energyVal} onChange={e => setEnergyVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
+              <Input type="number" min="1" max="10" placeholder="Estrés" value={stressVal} onChange={e => setStressVal(e.target.value)} className="flex-1 font-mono tabular-nums" />
               <Button size="sm" variant="outline" onClick={handleAddEnergy}>+ Agregar</Button>
             </div>
           </CardContent>
@@ -635,7 +635,7 @@ function DashboardContent() {
               <AlertDialogHeader>
                 <AlertDialogTitle>¿Borrar todos los datos locales?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Vas a eliminar permanentemente todo el storage local: sueno, metricas, finanzas, objetivos, senales y relaciones. Esta accion no se puede deshacer.
+                  Vas a eliminar permanentemente todo el storage local: sueño, métricas, finanzas, objetivos, señales y relaciones. Esta acción no se puede deshacer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -649,8 +649,8 @@ function DashboardContent() {
       )}
 
       <div className="mt-8 pt-4 border-t border-border flex justify-between">
-        <span className="text-[10px] text-muted-foreground/60 font-mono">SIR V2 &mdash; Fase 4 &mdash; UI Produccion</span>
-        <span className="text-[10px] text-muted-foreground/60 font-mono">datos &rarr; senales &rarr; contexto &rarr; memoria &rarr; timing &rarr; recomendacion</span>
+        <span className="text-[10px] text-muted-foreground/60 font-mono">SIR V2 &mdash; Fase 4 &mdash; UI Producción</span>
+        <span className="text-[10px] text-muted-foreground/60 font-mono">datos &rarr; señales &rarr; contexto &rarr; memoria &rarr; timing &rarr; recomendación</span>
       </div>
     </AppShell>
   )
