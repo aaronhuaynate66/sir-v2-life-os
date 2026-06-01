@@ -18,6 +18,7 @@ import { buildSignalContext } from '@/engines/signal'
 import { generateRecommendations } from '@/engines/recommendation'
 import { buildGoalDashboard } from '@/engines/goal'
 import { getCurrentTimingWindow } from '@/engines/timing'
+import { computeWeeklyScore } from '@/engines/weekly'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
@@ -27,6 +28,7 @@ import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { useMemoryStore } from '@/stores'
 import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
+import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { AppShell } from '@/components/layout/AppShell'
@@ -112,6 +114,10 @@ function DashboardContent() {
   const goalsDash = useMemo(() => buildGoalDashboard(goals), [goals])
   const timing = getCurrentTimingWindow(bio, now?.getHours() ?? 0)
   const peace = useMemo(() => calculatePeaceScore({ biologicalState: bio, financialState: { stabilityScore: fin.stability, monthlyBalance: fin.monthlyBalance, liquidityMonths: 2.5, activeAlerts: finAlerts.map(a => a.message), timestamp: new Date().toISOString() }, goals, moodScore: 6.5, relationshipAlertCount: relAlerts.length }), [bio, fin, finAlerts, relAlerts, goals])
+  const weekly = useMemo(
+    () => computeWeeklyScore({ selfMetrics, sleepRecords, financialMovements, goals }, { now: now ?? undefined, liquidityMonths: 2.5 }),
+    [selfMetrics, sleepRecords, financialMovements, goals, now],
+  )
   const recovery = useMemo(() => evaluateRecoveryMode(peace), [peace])
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
   const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
@@ -215,6 +221,9 @@ function DashboardContent() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Weekly score (P2): score semanal compuesto con tier S/A/B/C/D. */}
+      <WeeklyScoreCard data={weekly} />
 
       {/* HERO: Peace Score + Recomendacion */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
