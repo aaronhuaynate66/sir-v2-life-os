@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import type { Goal, Person, Signal, SpecialDate } from '@/types'
+import type { Goal, ObjectiveStep, Person, Signal, SpecialDate } from '@/types'
 import { buildAgenda } from './build'
 
 const NOW = new Date(2026, 5, 1) // 1-jun-2026, medianoche local.
@@ -72,6 +72,20 @@ function signal(over: Partial<Signal>): Signal {
     actionRequired: over.actionRequired ?? true,
     resolved: over.resolved ?? false,
     detectedAt: '2026-05-01T00:00:00Z',
+    ...over,
+  }
+}
+
+function ostep(over: Partial<ObjectiveStep>): ObjectiveStep {
+  return {
+    id: over.id ?? 'os1',
+    objectiveId: over.objectiveId ?? 'g1',
+    title: over.title ?? 'Paso',
+    description: over.description,
+    targetDate: over.targetDate,
+    status: over.status ?? 'pendiente',
+    order: over.order ?? 0,
+    createdAt: over.createdAt ?? '2026-01-01T00:00:00Z',
     ...over,
   }
 }
@@ -261,6 +275,127 @@ describe('buildAgenda — objetivos', () => {
   it('objetivo sin targetDate → excluido', () => {
     const items = buildAgenda({ ...EMPTY, goals: [goal({})] }, {}, NOW)
     expect(items.filter((i) => i.kind === 'goal_target')).toHaveLength(0)
+  })
+})
+
+describe('buildAgenda — próximo paso de objetivo', () => {
+  it('surfacéa el próximo paso pendiente (no-hecho por orden) de un objetivo activo', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        goals: [goal({ id: 'g1', title: 'Mundial', status: 'active' })],
+        objectiveSteps: [
+          ostep({ id: 'a', objectiveId: 'g1', order: 0, status: 'hecho', title: 'Inscribirse' }),
+          ostep({ id: 'b', objectiveId: 'g1', order: 1, status: 'pendiente', title: 'Entrenar', targetDate: '2026-06-06' }),
+        ],
+      },
+      {},
+      NOW,
+    )
+    const step = items.find((i) => i.kind === 'objective_step')
+    expect(step).toBeDefined()
+    expect(step!.title).toBe('Paso: Entrenar')
+    expect(step!.detail).toContain('Mundial')
+    expect(step!.daysUntil).toBe(5)
+  })
+
+  it('un solo paso por objetivo (el próximo), no inunda', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        goals: [goal({ id: 'g1', status: 'active' })],
+        objectiveSteps: [
+          ostep({ id: 'a', objectiveId: 'g1', order: 0, status: 'pendiente' }),
+          ostep({ id: 'b', objectiveId: 'g1', order: 1, status: 'pendiente' }),
+          ostep({ id: 'c', objectiveId: 'g1', order: 2, status: 'pendiente' }),
+        ],
+      },
+      {},
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'objective_step')).toHaveLength(1)
+  })
+
+  it('paso sin fecha → daysUntil 0 y rank debajo de los datados', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        goals: [goal({ id: 'g1', title: 'Meta', status: 'active', targetDate: '2026-06-10' })],
+        objectiveSteps: [ostep({ id: 'a', objectiveId: 'g1', status: 'pendiente', title: 'Arrancar' })],
+      },
+      {},
+      NOW,
+    )
+    const step = items.find((i) => i.kind === 'objective_step')!
+    expect(step.daysUntil).toBe(0)
+    expect(step.detail).toContain('siguiente acción')
+    // El goal_target datado (rank 3) va antes que el paso sin fecha (rank 4).
+    const idxGoal = items.findIndex((i) => i.kind === 'goal_target')
+    const idxStep = items.findIndex((i) => i.kind === 'objective_step')
+    expect(idxGoal).toBeLessThan(idxStep)
+  })
+
+  it('todos los pasos hechos → no surfacéa nada', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        goals: [goal({ id: 'g1', status: 'active' })],
+        objectiveSteps: [ostep({ id: 'a', objectiveId: 'g1', status: 'hecho' })],
+      },
+      {},
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'objective_step')).toHaveLength(0)
+  })
+
+  it('objetivo no-activo → sus pasos no aparecen', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        goals: [goal({ id: 'g1', status: 'paused' })],
+        objectiveSteps: [ostep({ id: 'a', objectiveId: 'g1', status: 'pendiente' })],
+      },
+      {},
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'objective_step')).toHaveLength(0)
+  })
+
+  it('paso con fecha fuera del horizonte → excluido', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        goals: [goal({ id: 'g1', status: 'active' })],
+        objectiveSteps: [ostep({ id: 'a', objectiveId: 'g1', status: 'pendiente', targetDate: '2026-09-01' })],
+      },
+      { horizonDays: 30 },
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'objective_step')).toHaveLength(0)
+  })
+
+  it('paso vencido (activo) → incluido con daysUntil negativo', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        goals: [goal({ id: 'g1', status: 'active' })],
+        objectiveSteps: [ostep({ id: 'a', objectiveId: 'g1', status: 'pendiente', targetDate: '2026-05-20' })],
+      },
+      {},
+      NOW,
+    )
+    const step = items.find((i) => i.kind === 'objective_step')!
+    expect(step.daysUntil).toBe(-12)
+    expect(step.detail).toContain('vencido')
+  })
+
+  it('sin objectiveSteps en input → compat, sin items de paso', () => {
+    const items = buildAgenda(
+      { ...EMPTY, goals: [goal({ id: 'g1', status: 'active' })] },
+      {},
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'objective_step')).toHaveLength(0)
   })
 })
 

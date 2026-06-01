@@ -7,6 +7,8 @@
 //   - no_contact      : "no contactás a X hace N días" (umbral según
 //                       importancia; usa person.lastContact).
 //   - goal_target     : objetivos activos con targetDate cercana (o vencida).
+//   - objective_step  : próximo paso pendiente de cada objetivo activo (el
+//                       "qué hacer ahora" para avanzar; uno por objetivo).
 //   - birthday        : cumpleaños próximos de TODA la red (no por-persona).
 //   - special_date    : fechas especiales (people.special_dates) de TODA
 //                       la red — la "agenda global de fechas" (#5 plegada acá).
@@ -19,12 +21,13 @@
 // feb-29 y anniversaries) para birthdays y special_dates: una sola fuente
 // de verdad para "próxima ocurrencia anual" en todo el sistema.
 
-import type { Goal, Person, Signal, SpecialDate } from '@/types'
+import type { Goal, ObjectiveStep, Person, Signal, SpecialDate } from '@/types'
 import {
   computeSpecialDateCountdown,
   type SpecialDateCountdown,
 } from '@/lib/dates/specialDates'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+import { nextPendingStep, daysUntilStep } from '@/lib/objectives/steps'
 
 const DAY_MS = 86_400_000
 
@@ -32,6 +35,7 @@ export type AgendaKind =
   | 'critical_signal'
   | 'no_contact'
   | 'goal_target'
+  | 'objective_step'
   | 'birthday'
   | 'special_date'
 
@@ -66,6 +70,9 @@ export interface AgendaInput {
   people: Person[]
   goals: Goal[]
   signals: Signal[]
+  /** Pasos de objetivos (migración 0040). Opcional: si no se pasan, no se
+   *  surfacéa el "próximo paso" (compat con callers viejos). */
+  objectiveSteps?: ObjectiveStep[]
 }
 
 export interface AgendaOptions {
@@ -84,6 +91,9 @@ const RANK: Record<string, number> = {
   signal_soon: 1,
   no_contact: 2,
   dated: 3,
+  // Próximo paso SIN fecha: accionable pero no time-bound → debajo de lo datado
+  // (los pasos CON fecha entran como 'dated' y compiten por cercanía).
+  next_step: 4,
 }
 
 /** medianoche local de hoy. */
@@ -240,6 +250,70 @@ function buildGoalTargets(
   return items
 }
 
+/**
+ * Próximo paso accionable de cada objetivo activo: el "qué hacer AHORA para
+ * avanzar". Un solo item por objetivo (el primer paso no-hecho por orden) para
+ * no inundar la agenda. Complementa goal_target (deadline del objetivo) con la
+ * acción concreta inmediata.
+ *
+ *   - Paso CON fecha → rank 'dated' (compite por cercanía con objetivos y
+ *     fechas; incluye vencidos, excluye futuros fuera del horizonte).
+ *   - Paso SIN fecha → rank 'next_step' (debajo de lo datado; daysUntil 0).
+ */
+function buildObjectiveSteps(
+  goals: Goal[],
+  steps: ObjectiveStep[],
+  horizonDays: number,
+  now: Date,
+): AgendaItem[] {
+  const items: AgendaItem[] = []
+  const activeIds = new Set(goals.filter((g) => g.status === 'active').map((g) => g.id))
+  const titleById = new Map(goals.map((g) => [g.id, g.title]))
+
+  // Agrupar pasos por objetivo (solo objetivos activos).
+  const byObjective = new Map<string, ObjectiveStep[]>()
+  for (const s of steps) {
+    if (!activeIds.has(s.objectiveId)) continue
+    const arr = byObjective.get(s.objectiveId)
+    if (arr) arr.push(s)
+    else byObjective.set(s.objectiveId, [s])
+  }
+
+  for (const [objectiveId, objSteps] of byObjective) {
+    const next = nextPendingStep(objSteps)
+    if (!next) continue // todo hecho → nada que surfacéar.
+    const goalTitle = titleById.get(objectiveId) ?? 'Objetivo'
+    const days = daysUntilStep(next, now)
+
+    if (days != null) {
+      // Paso con fecha: mismo trato que un objetivo datado.
+      if (days > horizonDays) continue // futuro lejano: aún no urge.
+      const datePhrase = days < 0 ? `vencido hace ${pluralDias(days)}` : futurePhrase(days)
+      items.push({
+        id: `step_${next.id}`,
+        kind: 'objective_step',
+        title: `Paso: ${next.title}`,
+        detail: `${goalTitle} · ${datePhrase}`,
+        daysUntil: days,
+        href: '/objetivos',
+        sortRank: RANK.dated,
+      })
+    } else {
+      // Paso sin fecha: accionable, no time-bound.
+      items.push({
+        id: `step_${next.id}`,
+        kind: 'objective_step',
+        title: `Paso: ${next.title}`,
+        detail: `${goalTitle} · siguiente acción`,
+        daysUntil: 0,
+        href: '/objetivos',
+        sortRank: RANK.next_step,
+      })
+    }
+  }
+  return items
+}
+
 function buildCriticalSignals(signals: Signal[]): AgendaItem[] {
   const items: AgendaItem[] = []
   for (const s of signals) {
@@ -280,6 +354,7 @@ export function buildAgenda(
     ...buildCriticalSignals(input.signals),
     ...buildNoContact(input.people, baseThreshold, highThreshold, now),
     ...buildGoalTargets(input.goals, horizonDays, now),
+    ...buildObjectiveSteps(input.goals, input.objectiveSteps ?? [], horizonDays, now),
     ...buildBirthdays(input.people, horizonDays, now),
     ...buildSpecialDates(input.people, horizonDays, now),
   ]

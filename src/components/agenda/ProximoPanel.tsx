@@ -20,6 +20,7 @@ import {
   CalendarClock,
   Cake,
   CalendarHeart,
+  ListChecks,
   Target,
   UserX,
   ChevronRight,
@@ -30,6 +31,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
+import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { buildAgenda, type AgendaItem, type AgendaKind } from '@/lib/agenda/build'
 import { cn } from '@/lib/utils'
@@ -38,6 +40,7 @@ const KIND_ICON: Record<AgendaKind, LucideIcon> = {
   critical_signal: AlertCircle,
   no_contact: UserX,
   goal_target: Target,
+  objective_step: ListChecks,
   birthday: Cake,
   special_date: CalendarHeart,
 }
@@ -46,6 +49,7 @@ const KIND_ACCENT: Record<AgendaKind, string> = {
   critical_signal: 'text-red-400',
   no_contact: 'text-amber-400',
   goal_target: 'text-blue-400',
+  objective_step: 'text-emerald-400',
   birthday: 'text-primary',
   special_date: 'text-violet-400',
 }
@@ -66,6 +70,7 @@ export function ProximoPanel({
 }: ProximoPanelProps) {
   const people = useRelationshipStore((s) => s.people)
   const goals = useGoalStore((s) => s.goals)
+  const objectiveSteps = useObjectiveStepStore((s) => s.steps)
   const signals = useSignalStore((s) => s.signals)
 
   // Mount-safe: buildAgenda depende de Date.now() (orden por cercanía).
@@ -75,7 +80,7 @@ export function ProximoPanel({
   }, [])
 
   const items =
-    now != null ? buildAgenda({ people, goals, signals }, { limit }, now) : null
+    now != null ? buildAgenda({ people, goals, objectiveSteps, signals }, { limit }, now) : null
 
   return (
     <Card className="shadow-none mb-6">
