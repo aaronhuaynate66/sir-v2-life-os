@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useMemoryStore } from '@/stores'
 import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByIntent, SPEND_INTENT_ORDER } from '@/engines/financial'
@@ -363,11 +364,11 @@ function FinanceContent() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <ArrowRightLeft size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Sin movimientos en este filtro.</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Registrá un movimiento arriba para empezar.</p>
-        </div>
+        <EmptyState
+          icon={ArrowRightLeft}
+          title="Sin movimientos en este filtro."
+          hint="Registrá un movimiento arriba para empezar."
+        />
       ) : (
         <div className="space-y-1">
           {filtered.slice(0, 50).map((m) => {

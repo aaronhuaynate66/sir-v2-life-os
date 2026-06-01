@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
@@ -215,11 +216,11 @@ function SignalsContent() {
       </div>
 
       {visible.length === 0 ? (
-        <div className="text-center py-12">
-          <Bell size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Sin señales en este filtro.</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Registrá una señal arriba o ajustá los filtros.</p>
-        </div>
+        <EmptyState
+          icon={Bell}
+          title="Sin señales en este filtro."
+          hint="Registrá una señal arriba o ajustá los filtros."
+        />
       ) : (
         <div className="space-y-2">
           {visible.map((s) => {

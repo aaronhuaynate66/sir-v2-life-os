@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useMemoryStore } from '@/stores'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
@@ -240,11 +241,12 @@ function SelfContent() {
         <CardContent className="p-4 sm:p-6">
           <SectionTitle icon={Activity} label="Ultimas metricas" count={recentMetrics.length} />
           {recentMetrics.length === 0 ? (
-            <div className="text-center py-8">
-              <Activity size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Sin métricas todavía.</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">Registrá tu primera medición arriba.</p>
-            </div>
+            <EmptyState
+              icon={Activity}
+              size="sm"
+              title="Sin métricas todavía."
+              hint="Registrá tu primera medición arriba."
+            />
           ) : (
             <div className="space-y-1">
               {recentMetrics.map((m) => (
@@ -293,10 +295,7 @@ function SelfContent() {
             <Button onClick={addHealth} variant="outline" size="sm" className="w-full sm:w-auto">+ Agregar</Button>
           </div>
           {healthMetrics.length === 0 ? (
-            <div className="text-center py-6">
-              <Heart size={20} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">Sin registros de salud.</p>
-            </div>
+            <EmptyState icon={Heart} size="sm" title="Sin registros de salud." />
           ) : (
             <div className="space-y-1">
               {[...healthMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 8).map((h) => (

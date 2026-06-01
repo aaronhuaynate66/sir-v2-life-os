@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
@@ -250,12 +251,12 @@ function GoalsContent() {
       </AnimatePresence>
 
       {activeGoals.length === 0 && !adding ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-          <Target size={28} strokeWidth={1.5} className="text-muted-foreground/40" />
-          <div className="text-sm text-muted-foreground">Sin objetivos activos.</div>
-          <p className="text-xs text-muted-foreground/60">Crea tu primer objetivo para empezar a medir tu paz.</p>
-          <Button variant="outline" size="sm" onClick={() => setAdding(true)}>+ Crear primer objetivo</Button>
-        </div>
+        <EmptyState
+          icon={Target}
+          title="Sin objetivos activos."
+          hint="Crea tu primer objetivo para empezar a medir tu paz."
+          action={<Button variant="outline" size="sm" onClick={() => setAdding(true)}>+ Crear primer objetivo</Button>}
+        />
       ) : (
         <div className="space-y-2 mb-6">
           {activeGoals.map((g) => (

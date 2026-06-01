@@ -45,6 +45,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { SectionTitle } from '@/components/ui/section-title'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
@@ -346,10 +347,14 @@ function DashboardContent() {
           </Card>
         ) : (
           <Card className={cn('lg:col-span-7', cardClass)}>
-            <CardContent className="p-4 sm:p-6 h-full flex flex-col items-center justify-center text-center min-h-[200px]">
-              <Target size={24} strokeWidth={1.25} className="text-muted-foreground/40 mb-2" />
-              <div className="text-sm text-muted-foreground">Sin recomendaciones activas.</div>
-              <div className="text-xs text-muted-foreground/60 mt-1">El sistema está calibrando señales.</div>
+            <CardContent className="p-4 sm:p-6">
+              <EmptyState
+                icon={Target}
+                size="sm"
+                title="Sin recomendaciones activas."
+                hint="El sistema está calibrando señales."
+                className="min-h-[200px]"
+              />
             </CardContent>
           </Card>
         )}
