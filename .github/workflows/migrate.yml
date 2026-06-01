@@ -1,0 +1,75 @@
+name: Migrate DB (Supabase)
+
+# Runner de migraciones (Auditoría: riesgo #2 — elimina el SQL manual que causó
+# el drift 0012). Aplica SÓLO las migraciones pendientes (`supabase db push`)
+# de forma reproducible y versionada.
+#
+# CUÁNDO CORRE: después de que "Validate SIR V2" (type-check + lint + test +
+# build) termina con éxito en main. Usamos workflow_run (no `push`) a propósito,
+# para no aplicar schema en paralelo a tests que podrían fallar. El push del
+# código a Vercel es independiente; como las migraciones acá son aditivas y el
+# código las tolera (fail-open / if-not-exists), el orden code-antes-de-schema
+# es seguro.
+#
+# GATE POR SECRETS: si faltan SUPABASE_ACCESS_TOKEN / SUPABASE_DB_PASSWORD, el
+# job NO falla — hace skip elegante (notice). Así el pipeline no se rompe hasta
+# que Aaron provea los secrets. Ver docs/MIGRATIONS.md.
+
+on:
+  workflow_run:
+    workflows: ['Validate SIR V2']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+# Nunca dos push de migraciones a la vez (la doc del CLI advierte choques por
+# orden de versiones si corren en paralelo).
+concurrency:
+  group: supabase-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    # Sólo si la validación pasó (tests verdes). En workflow_dispatch no hay
+    # workflow_run → la condición permite correr manualmente igual.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Comprobar secrets (skip elegante si faltan)
+        id: secrets
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_DB_PASSWORD" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Migraciones omitidas::Faltan SUPABASE_ACCESS_TOKEN y/o SUPABASE_DB_PASSWORD en los secrets del repo. No es un error: agregalos en Settings > Secrets and variables > Actions para activar el runner. Ver docs/MIGRATIONS.md."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.secrets.outputs.ready == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        if: steps.secrets.outputs.ready == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link al proyecto
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase link --project-ref rzdtlkfeuswhdbmwivsy
+
+      - name: Aplicar migraciones pendientes (db push)
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        # Tras el baseline (ver docs/MIGRATIONS.md) esto es NO-OP hasta que se
+        # agregue un 00NN nuevo. `db push` aplica sólo lo que falte, en orden.
+        run: supabase db push

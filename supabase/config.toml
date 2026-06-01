@@ -1,0 +1,11 @@
+# Supabase CLI — config del proyecto (Auditoría: runner de migraciones, riesgo #2).
+#
+# Sólo necesitamos `project_id` para el flujo de CI (`supabase link` + `db push`
+# contra el proyecto remoto). El resto de las secciones del config (api, db,
+# studio, auth…) son para desarrollo LOCAL (`supabase start`), que NO usamos:
+# el CLI aplica defaults para todo lo omitido. Si algún día se quiere correr
+# Supabase local, `supabase init` regenera un config.toml completo.
+#
+# project_id = ref del proyecto. NO es secreto: ya está en la URL pública
+# (NEXT_PUBLIC_SUPABASE_URL = https://rzdtlkfeuswhdbmwivsy.supabase.co).
+project_id = "rzdtlkfeuswhdbmwivsy"

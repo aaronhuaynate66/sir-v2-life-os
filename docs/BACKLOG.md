@@ -34,6 +34,11 @@
 - **0012 restaurada vía 0022:** `memories.source_event_id` existe y el índice único `uniq_memories_source_event` existe. El bug histórico del 500 de `/api/memories/derive` (que motivó reanclar la idempotencia al PRIMARY KEY) queda cerrado; el camino **legacy** `/api/memories/backfill` vuelve a tener su columna/índice.
 - **0022** (red de seguridad aditiva: re-asegura cols 0010 + restaura 0012) **APLICADA** en prod. Idempotente, no-destructiva.
 
+**Migraciones — flujo NUEVO con runner (Auditoría riesgo #2, 31/05):**
+- Se acabó el SQL a mano en el dashboard. Ahora: agregar `supabase/migrations/00NN_name.sql` → merge a `main` → el workflow **`Migrate DB (Supabase)`** (`.github/workflows/migrate.yml`) corre **después** de los tests y hace `supabase db push` (sólo lo pendiente). Ver **`docs/MIGRATIONS.md`**.
+- **Acción manual pendiente de Aaron** (one-time, en `docs/MIGRATIONS.md`): (1) secrets `SUPABASE_ACCESS_TOKEN` + `SUPABASE_DB_PASSWORD`; (2) **baseline** del historial (insert `0001..0023` en `supabase_migrations.schema_migrations`) para que el primer push sea NO-OP. Hasta eso, el runner hace skip elegante (no rompe CI).
+- **0023** (`rate_limits`, runner de rate limiting) sigue requiriendo aplicarse (idempotente); el baseline asume que ya está en prod.
+
 **Pendiente real (lo que NO está hecho):**
 - **Activar Fase 3b (búsqueda semántica):** cargar `OPENAI_API_KEY` (server) + correr embeddings sobre la data existente (`observations`/`memories`) + validar `/buscar`. **Hoy el código está completo pero DORMIDO** (sin key, `embedText` lanza error claro).
 - **Fase 3d** — memoria que aprende (RAG cross-session).
