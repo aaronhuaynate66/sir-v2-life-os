@@ -70,6 +70,7 @@ import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
+import { AgregarCapturaPanel } from './AgregarCapturaPanel'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
@@ -550,6 +551,11 @@ export function PersonDetail({
           lastManualInteraction={personLogs.find((l) => l.kind === 'interaction') ?? null}
         />
       </div>
+
+      {/* Captura en contexto: subir un pantallazo y asociarlo DIRECTO a esta
+          persona, sin pasar por /captura ni re-seleccionar. Reusa el pipeline
+          detect → process con person_id fijo. */}
+      <AgregarCapturaPanel personId={live.id} personName={live.name} />
 
       {/* Sesion 6: registros per-persona (mood/energy/sleep/pain +
           tono de interaccion). Storage Supabase-native en person_logs
