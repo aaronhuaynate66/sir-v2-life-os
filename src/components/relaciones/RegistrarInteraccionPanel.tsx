@@ -89,7 +89,7 @@ export function RegistrarInteraccionPanel({
           </span>
         </div>
 
-        <div className="grid grid-cols-5 gap-1.5 mb-3">
+        <div className="grid grid-cols-5 gap-2 mb-3">
           {EMO_STATES.map((s) => {
             const isSelected = selected === s.value
             return (
@@ -137,30 +137,30 @@ export function RegistrarInteraccionPanel({
           rows={2}
           maxLength={500}
           disabled={submitting}
-          className="w-full text-sm rounded-md border border-border bg-background px-3 py-2 resize-none mb-3 disabled:opacity-50"
+          className="w-full text-sm rounded-md border border-border bg-background px-3 py-2 resize-none mb-2 disabled:opacity-50"
         />
 
-        <div className="flex items-center justify-between gap-3">
-          <Button
-            size="sm"
-            onClick={onSubmit}
-            disabled={selected == null || submitting}
-          >
-            {submitting ? (
-              <>
-                <Loader2 size={12} className="mr-2 animate-spin" />
-                Registrando…
-              </>
-            ) : (
-              'Registrar interacción'
-            )}
-          </Button>
-          {note.length > 0 && (
-            <span className="text-[10px] font-mono text-muted-foreground/70">
-              {note.length}/500
-            </span>
+        {note.length > 0 && (
+          <div className="text-right text-[10px] font-mono text-muted-foreground/70 mb-2">
+            {note.length}/500
+          </div>
+        )}
+
+        <Button
+          size="sm"
+          onClick={onSubmit}
+          disabled={selected == null || submitting}
+          className="w-full"
+        >
+          {submitting ? (
+            <>
+              <Loader2 size={12} className="mr-2 animate-spin" />
+              Registrando…
+            </>
+          ) : (
+            'Registrar interacción'
           )}
-        </div>
+        </Button>
 
         {success && (
           <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2 text-xs mt-3 flex items-center gap-1.5">
