@@ -11,7 +11,7 @@
 'use client'
 
 import { compressForExtraction } from '@/lib/capture/scale/compress'
-import type { CaptureType, DetectorResult, Observation } from './types'
+import type { CaptureType, Confidence, DetectorResult, Observation } from './types'
 
 export interface PersonCandidate {
   id: string
@@ -67,6 +67,18 @@ export interface ProcessCaptureInput {
   personId?: string | null
   /** Para whatsapp_chat: encender reflectionQuestions. */
   reflection?: boolean
+  /** Datos ya revisados/confirmados por el usuario → el server SALTA Vision y
+   *  persiste EXACTO esto (review-before-save). */
+  confirmedData?: Record<string, unknown>
+}
+
+/** Respuesta del modo PREVIEW (persist=false): extrae sin guardar. */
+export interface PreviewCaptureResponse {
+  preview: true
+  extracted: Record<string, unknown>
+  confidence: Confidence | null
+  captureType: CaptureType
+  raw: string
 }
 
 export interface ProcessCaptureResponse {
@@ -176,6 +188,9 @@ export async function processCapture(
   if (input.reflection) {
     formData.append('reflection', 'true')
   }
+  if (input.confirmedData) {
+    formData.append('confirmed_data', JSON.stringify(input.confirmedData))
+  }
 
   const res = await fetch('/api/capture/process', {
     method: 'POST',
@@ -201,6 +216,33 @@ export async function processCapture(
       hitCeiling: compressed.hitCeiling,
     },
   }
+}
+
+// ─── previewCapture (review-before-save) ────────────────────────────
+
+/**
+ * Extrae los campos por Vision SIN guardar (persist=false). Devuelve lo
+ * extraído + confidence para que la UI lo muestre a revisión antes de
+ * persistir. Luego, processCapture({ confirmedData }) guarda lo confirmado.
+ */
+export async function previewCapture(
+  input: Pick<ProcessCaptureInput, 'file' | 'captureType' | 'detectorData'>,
+  signal?: AbortSignal,
+): Promise<PreviewCaptureResponse> {
+  const compressed = await compressForExtraction(input.file, input.captureType)
+  const formData = new FormData()
+  formData.append('file', compressed.blob, 'capture.webp')
+  formData.append('capture_type', input.captureType)
+  formData.append('persist', 'false')
+  if (input.detectorData) {
+    formData.append('detector_data', JSON.stringify(input.detectorData))
+  }
+  const res = await fetch('/api/capture/process', { method: 'POST', body: formData, signal })
+  if (!res.ok) {
+    const body = await readErrorBody(res)
+    throw new HttpError(res.status, body.error, body.detail)
+  }
+  return (await res.json()) as PreviewCaptureResponse
 }
 
 // ─── linkObservationToPerson ─────────────────────────────────────────

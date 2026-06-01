@@ -193,6 +193,13 @@ export async function POST(req: NextRequest) {
 
   const reflection = reflectionRaw === 'true' || reflectionRaw === '1'
 
+  // persist=false → modo PREVIEW: extrae pero NO sube/inserta (review-before-save).
+  // confirmed_data → el usuario ya revisó; usamos esos datos y SALTAMOS Vision.
+  // Defaults preservan el comportamiento previo (persist=true, sin confirmed_data).
+  const persist = formData.get('persist') !== 'false'
+  const confirmedDataRaw = formData.get('confirmed_data')
+  const isConfirmed = typeof confirmedDataRaw === 'string' && confirmedDataRaw.length > 0
+
   // 3. Extractor dispatch
   const spec = getExtractorSpec(captureType)
   if (!spec) {
@@ -200,54 +207,83 @@ export async function POST(req: NextRequest) {
   }
   const systemPrompt = spec.getSystemPrompt({ reflection })
 
-  // 4. Anthropic client + Vision call
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // 4. Obtener `extracted`: o de confirmed_data (usuario ya revisó → SALTAMOS
+  //    Vision para guardar EXACTAMENTE lo revisado, sin re-extraer no-determinista)
+  //    o corriendo Vision sobre la imagen.
   const mediaType = file.type as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
-  const imageBase64 = await blobToBase64(file)
-
   let raw = ''
-  try {
-    raw = await callExtractorVision(client, systemPrompt, imageBase64, mediaType, spec.maxTokens)
-  } catch (e) {
-    reportApiError(e)
-    const msg = e instanceof Error ? e.message : String(e)
-    return errorJson(502, 'Falló la llamada Vision al extractor', msg.slice(0, 300))
-  }
-
-  // 5. Parse + validate
   let parsed: unknown = null
-  try {
-    parsed = JSON.parse(stripJsonFences(raw))
-  } catch {
+
+  if (isConfirmed) {
     try {
-      raw = await callExtractorVision(
-        client,
-        systemPrompt,
-        imageBase64,
-        mediaType,
-        spec.maxTokens,
-        'CRÍTICO: tu respuesta anterior no era JSON valido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá la respuesta con `{` y terminá con `}`.',
-      )
-      parsed = JSON.parse(stripJsonFences(raw))
+      parsed = JSON.parse(confirmedDataRaw as string)
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
-      return errorJson(502, 'Extractor devolvio JSON invalido', msg.slice(0, 200))
+      return errorJson(400, 'confirmed_data no es JSON válido', msg.slice(0, 200))
+    }
+    raw = '(confirmado por el usuario)'
+  } else {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
+    }
+    const client = new Anthropic({ maxRetries: 2 })
+    const imageBase64 = await blobToBase64(file)
+
+    try {
+      raw = await callExtractorVision(client, systemPrompt, imageBase64, mediaType, spec.maxTokens)
+    } catch (e) {
+      reportApiError(e)
+      const msg = e instanceof Error ? e.message : String(e)
+      return errorJson(502, 'Falló la llamada Vision al extractor', msg.slice(0, 300))
+    }
+
+    // 5. Parse + validate (1 retry si el JSON sale mal)
+    try {
+      parsed = JSON.parse(stripJsonFences(raw))
+    } catch {
+      try {
+        raw = await callExtractorVision(
+          client,
+          systemPrompt,
+          imageBase64,
+          mediaType,
+          spec.maxTokens,
+          'CRÍTICO: tu respuesta anterior no era JSON valido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá la respuesta con `{` y terminá con `}`.',
+        )
+        parsed = JSON.parse(stripJsonFences(raw))
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return errorJson(502, 'Extractor devolvio JSON invalido', msg.slice(0, 200))
+      }
     }
   }
 
   if (!spec.isValid(parsed)) {
     return errorJson(
       422,
-      'JSON del extractor no cumple el schema esperado',
+      isConfirmed ? 'confirmed_data no cumple el schema esperado' : 'JSON del extractor no cumple el schema esperado',
       JSON.stringify(parsed).slice(0, 300),
     )
   }
 
   const extracted = spec.sanitize(parsed)
+
+  // Confidence consolidada (extractor manda; cae al detector si falta).
+  const extractedConfidence =
+    typeof (extracted as { confidence?: unknown }).confidence === 'string'
+      ? ((extracted as { confidence: Confidence }).confidence)
+      : null
+  const confidence: Confidence | null =
+    extractedConfidence ?? detectorData?.confidence ?? null
+
+  // 5b. PREVIEW: si persist=false, devolvemos lo extraído para que el usuario
+  //     lo revise ANTES de guardar. NO subimos imagen ni insertamos nada.
+  if (!persist) {
+    return NextResponse.json(
+      { preview: true, extracted, confidence, captureType, raw },
+      { status: 200 },
+    )
+  }
 
   // 6. Upload a Storage
   const bucket = storageBucketFor(captureType)
@@ -270,15 +306,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 7. Confidence consolidada (extractor manda; cae al detector si falta)
-  const extractedConfidence =
-    typeof (extracted as { confidence?: unknown }).confidence === 'string'
-      ? ((extracted as { confidence: Confidence }).confidence)
-      : null
-  const confidence: Confidence | null =
-    extractedConfidence ?? detectorData?.confidence ?? null
-
-  // 8. observed_at
+  // 8. observed_at (confidence ya se computó arriba, antes del preview)
   const observedAt = deriveObservedAt(captureType, extracted)
 
   // 9. Matcher post-extraccion (BUG-002, Sesion 2.7)
@@ -313,7 +341,9 @@ export async function POST(req: NextRequest) {
       detectorData,
       confidence,
       observedAt,
-      needsReview: confidence === 'low',
+      // Confirmado por el usuario → ya revisado (no needs_review). Sin confirmar
+      // → flag para confianza baja, como antes.
+      needsReview: isConfirmed ? false : confidence === 'low',
     })
     return NextResponse.json(
       { observation, extracted, raw, matchCandidates, autoLinked },
