@@ -111,9 +111,29 @@ export function DailyBriefingCard() {
           </p>
         )}
 
+        {loading && <BriefingSkeleton />}
+
         {briefing && !loading && <BriefingBody text={briefing} />}
       </CardContent>
     </Card>
+  )
+}
+
+/** Placeholder mientras el LLM arma el briefing (consistente con ProximoPanel). */
+function BriefingSkeleton() {
+  return (
+    <div className="space-y-3 animate-pulse" aria-hidden="true">
+      <div className="rounded-md border border-accent/20 bg-accent/5 p-3 space-y-2">
+        <div className="h-2.5 w-10 bg-muted rounded" />
+        <div className="h-3 w-full bg-muted/60 rounded" />
+        <div className="h-3 w-4/5 bg-muted/60 rounded" />
+      </div>
+      <div className="space-y-2">
+        <div className="h-2.5 w-14 bg-muted rounded" />
+        <div className="h-3 w-full bg-muted/50 rounded" />
+        <div className="h-3 w-2/3 bg-muted/50 rounded" />
+      </div>
+    </div>
   )
 }
 

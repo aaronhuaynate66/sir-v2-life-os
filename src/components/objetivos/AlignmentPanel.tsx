@@ -64,6 +64,22 @@ interface NarrativeState {
   error: ApiError | null
 }
 
+/** Placeholder mientras el LLM redacta la reflexión (en vez de solo el spinner). */
+function ReflectionSkeleton() {
+  return (
+    <div className="rounded-md border border-violet-500/20 bg-violet-500/5 p-3">
+      <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70 mb-2">
+        <Loader2 size={12} className="animate-spin" aria-hidden="true" />
+        Generando reflexión…
+      </div>
+      <div className="space-y-2 animate-pulse" aria-hidden="true">
+        <div className="h-3 w-full bg-muted/50 rounded" />
+        <div className="h-3 w-4/5 bg-muted/50 rounded" />
+      </div>
+    </div>
+  )
+}
+
 export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelProps) {
   const alignments = useMemo(
     () => computeAlignments(goals, { people, relationships }),
@@ -177,7 +193,9 @@ export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelP
                 {canReflect && (
                   <div className="pt-1">
                     {n?.error && <ApiErrorNotice error={n.error} className="mb-2" />}
-                    {n?.insight ? (
+                    {n?.loading ? (
+                      <ReflectionSkeleton />
+                    ) : n?.insight ? (
                       <div className="rounded-md border border-violet-500/30 bg-violet-500/5 p-3 text-xs">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-violet-100/90 leading-relaxed">{n.insight}</p>
@@ -195,12 +213,8 @@ export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelP
                         </div>
                       </div>
                     ) : (
-                      <Button size="sm" variant="outline" onClick={() => generate(a)} disabled={n?.loading}>
-                        {n?.loading ? (
-                          <><Loader2 size={12} className="mr-2 animate-spin" />Generando…</>
-                        ) : (
-                          <><Sparkles size={12} className="mr-2" />Generar reflexión</>
-                        )}
+                      <Button size="sm" variant="outline" onClick={() => generate(a)}>
+                        <Sparkles size={12} className="mr-2" />Generar reflexión
                       </Button>
                     )}
                   </div>
