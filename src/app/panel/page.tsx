@@ -204,20 +204,9 @@ function DashboardContent() {
 
   return (
     <AppShell wide>
-      {recoveryAssessment.active && (
-        <div className={cn(
-          'fixed top-0 inset-x-0 z-50 px-6 py-2 border-b',
-          recoveryHard ? 'bg-red-500/10 border-red-500/20' : 'bg-amber-500/10 border-amber-500/20',
-        )}>
-          <div className="max-w-5xl mx-auto flex items-center gap-3">
-            <span className={cn('w-2 h-2 rounded-full animate-pulse', recoveryHard ? 'bg-red-500' : 'bg-amber-500')} />
-            <span className={cn('text-xs font-mono', recoveryHard ? 'text-red-400' : 'text-amber-400')}>
-              RECOVERY MODE &mdash; {recoveryAssessment.reasons[0] ?? 'cuidá tu energía'}
-            </span>
-          </div>
-        </div>
-      )}
-
+      {/* El estado de recuperación se comunica inline (RecoveryPanel, abajo) y
+          en el badge de modo del header. Antes había un banner `fixed top-0`
+          que en mobile tapaba el header sticky y el botón de menú — removido. */}
       <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex justify-between items-start gap-4 mb-6 sm:mb-8">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
