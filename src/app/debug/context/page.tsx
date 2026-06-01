@@ -12,7 +12,7 @@ import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 
 export default function DebugContextPage() {
   const hydrated = useHasHydrated()
-  if (!hydrated) return <RouteSkeleton cards={1} />
+  if (!hydrated) return <RouteSkeleton cards={1} wide />
   return <DebugContextContent />
 }
 

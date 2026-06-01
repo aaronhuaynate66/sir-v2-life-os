@@ -84,7 +84,7 @@ function Row({ label, value, status }: { label: string; value: string; status?: 
 
 export default function DashboardPage() {
   const hydrated = useHasHydrated()
-  if (!hydrated) return <RouteSkeleton cards={6} />
+  if (!hydrated) return <RouteSkeleton cards={6} wide />
   return <DashboardContent />
 }
 

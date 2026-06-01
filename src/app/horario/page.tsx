@@ -17,7 +17,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
-import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { RouteSkeleton, SkeletonBlocks } from '@/components/skeletons/RouteSkeleton'
 import { buildDayTimeline, type DayTimeline, type TimelineBlock, type OverloadLevel } from '@/lib/calendar/timeline'
 import { LIMA_TZ_LABEL } from '@/lib/calendar/tz'
 import type { CalendarEvent, CalendarFeedResult } from '@/lib/calendar/types'
@@ -107,7 +107,9 @@ function HorarioContent() {
 }
 
 function Body({ state, timeline, nowMs }: { state: FetchState; timeline: DayTimeline; nowMs: number }) {
-  if (state.kind === 'loading') return <RouteSkeleton cards={3} />
+  // Ya estamos dentro del AppShell (HorarioContent) y el header ya se pintó:
+  // usamos el cuerpo bare del skeleton, sin shell ni header duplicados.
+  if (state.kind === 'loading') return <SkeletonBlocks cards={3} header={false} />
   if (state.kind === 'error') {
     return <Note tone="warn">No pude consultar el calendario ({state.message}).</Note>
   }

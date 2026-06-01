@@ -12,7 +12,7 @@ import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 
 export default function TimelinePage() {
   const hydrated = useHasHydrated()
-  if (!hydrated) return <RouteSkeleton cards={4} />
+  if (!hydrated) return <RouteSkeleton cards={4} wide />
   return <TimelineContent />
 }
 
