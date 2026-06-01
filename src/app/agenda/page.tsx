@@ -9,6 +9,7 @@ import { motion } from 'framer-motion'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
+import { CalendarPanel } from '@/components/agenda/CalendarPanel'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 
@@ -32,6 +33,9 @@ export default function AgendaPage() {
           Todo lo accionable de tu red, ordenado por urgencia.
         </p>
       </motion.div>
+
+      {/* Calendario externo (Outlook .ics) — degrada limpio si no está configurado. */}
+      <CalendarPanel />
 
       <ProximoPanel title="Recordatorios" />
     </AppShell>

@@ -70,7 +70,7 @@ function obs(over: Partial<Observation>): Observation {
 describe('financeMovementsCsv', () => {
   it('vacío → solo headers', () => {
     expect(financeMovementsCsv([])).toBe(
-      'Fecha,Tipo,Descripción,Categoría,Monto,Moneda,Tipo de cambio,Monto PEN,Recurrente,Etiquetas',
+      'Fecha,Tipo,Descripción,Categoría,Intención,Monto,Moneda,Tipo de cambio,Monto PEN,Recurrente,Etiquetas',
     )
   })
 
@@ -80,9 +80,16 @@ describe('financeMovementsCsv', () => {
       mov({ id: 'a', type: 'expense', date: '2026-05-01', amount: 30, amountPEN: 30, description: 'Café' }),
     ])
     const lines = csv.split('\r\n')
-    // ascendente: primero 05-01
-    expect(lines[1]).toBe('2026-05-01,Gasto,Café,other,30,PEN,1,30,no,')
-    expect(lines[2]).toBe('2026-05-10,Ingreso,Sueldo,other,500,PEN,1,500,no,fijo; trabajo')
+    // ascendente: primero 05-01. Intención vacía cuando no está seteada.
+    expect(lines[1]).toBe('2026-05-01,Gasto,Café,other,,30,PEN,1,30,no,')
+    expect(lines[2]).toBe('2026-05-10,Ingreso,Sueldo,other,,500,PEN,1,500,no,fijo; trabajo')
+  })
+
+  it('incluye la intención del gasto cuando está seteada', () => {
+    const csv = financeMovementsCsv([
+      mov({ type: 'expense', date: '2026-05-01', amount: 45, amountPEN: 45, description: 'Delivery', intent: 'no_esencial' }),
+    ])
+    expect(csv.split('\r\n')[1]).toBe('2026-05-01,Gasto,Delivery,other,no_esencial,45,PEN,1,45,no,')
   })
 
   it('escapa descripción con coma y comillas', () => {
