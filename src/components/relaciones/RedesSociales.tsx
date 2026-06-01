@@ -36,6 +36,7 @@ import {
   whatsappLink, instagramLink, twitterLink, normalizeUrl, normalizeHandle,
 } from '@/lib/social/links'
 import { latestOfType, readInstagram, readLinkedIn, fmtCount } from '@/lib/observations/profile'
+import { DiscardCaptureButton } from './DiscardCaptureButton'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
 
@@ -306,6 +307,10 @@ function InstagramEnrichment({ obs }: { obs: Observation }) {
         <span className="font-mono text-muted-foreground/50">
           instagram · {obs.confidence ?? 'sin confianza'}
         </span>
+      </div>
+
+      <div className="flex justify-end">
+        <DiscardCaptureButton observationId={obs.id} what="Captura de Instagram" label="Descartar" />
       </div>
     </div>
   )

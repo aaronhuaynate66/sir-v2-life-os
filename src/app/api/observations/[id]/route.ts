@@ -27,6 +27,10 @@ export const dynamic = 'force-dynamic'
 
 interface PatchBody {
   person_id?: unknown
+  /** true = descartar la captura (is_obsolete=true → deja de alimentar las
+   *  vistas curadas). false = restaurar. */
+  is_obsolete?: unknown
+  obsoleted_reason?: unknown
 }
 
 interface ErrorBody {
@@ -82,17 +86,39 @@ export async function PATCH(
     return errorJson(400, 'Body JSON invalido')
   }
 
-  // Por ahora solo aceptamos person_id (string para vincular, null para
-  // desvincular). Mas adelante: user_edits, needs_review override, etc.
-  if (!('person_id' in body)) {
-    return errorJson(400, 'Falta person_id en el body')
-  }
-  if (body.person_id !== null && typeof body.person_id !== 'string') {
-    return errorJson(400, 'person_id debe ser string o null')
+  // Aceptamos person_id (vincular/desvincular) y/o is_obsolete (descartar/
+  // restaurar la captura). Al menos uno debe venir.
+  const hasPersonId = 'person_id' in body
+  const hasObsolete = 'is_obsolete' in body
+  if (!hasPersonId && !hasObsolete) {
+    return errorJson(400, 'Falta person_id o is_obsolete en el body')
   }
 
-  const update: Record<string, unknown> = {
-    person_id: body.person_id,
+  const update: Record<string, unknown> = {}
+
+  if (hasPersonId) {
+    if (body.person_id !== null && typeof body.person_id !== 'string') {
+      return errorJson(400, 'person_id debe ser string o null')
+    }
+    update.person_id = body.person_id
+  }
+
+  if (hasObsolete) {
+    if (typeof body.is_obsolete !== 'boolean') {
+      return errorJson(400, 'is_obsolete debe ser boolean')
+    }
+    update.is_obsolete = body.is_obsolete
+    if (body.is_obsolete) {
+      update.obsoleted_at = new Date().toISOString()
+      update.obsoleted_reason =
+        typeof body.obsoleted_reason === 'string' && body.obsoleted_reason.trim()
+          ? body.obsoleted_reason.trim().slice(0, 200)
+          : 'descartada por el usuario'
+    } else {
+      // Restaurar: limpiar marcas de obsolescencia.
+      update.obsoleted_at = null
+      update.obsoleted_reason = null
+    }
   }
 
   // RLS deja pasar solo rows del user. Si pasa un id ajeno -> 0 rows

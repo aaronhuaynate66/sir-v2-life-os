@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { latestOfType, readLinkedIn, fmtCount } from '@/lib/observations/profile'
 import { normalizeUrl } from '@/lib/social/links'
+import { DiscardCaptureButton } from './DiscardCaptureButton'
 import { cn } from '@/lib/utils'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
@@ -135,6 +136,12 @@ export function PerfilProfesional({ person, observations }: PerfilProfesionalPro
               <span className="text-[10px] font-mono text-muted-foreground/50">
                 escaneado {ABS_DATE.format(new Date(obs.observedAt))} · {obs.confidence ?? 's/conf'}
               </span>
+            </div>
+
+            {/* Descartar la captura si la extracción salió mal (baja resolución,
+                datos garabateados). La saca de Vida profesional + Bitácora. */}
+            <div className="flex justify-end">
+              <DiscardCaptureButton observationId={obs.id} what="Perfil de LinkedIn" />
             </div>
           </div>
         )}

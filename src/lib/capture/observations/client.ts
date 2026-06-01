@@ -228,4 +228,25 @@ export async function linkObservationToPerson(
   return (await res.json()) as LinkObservationResponse
 }
 
+/**
+ * PATCH /api/observations/{id} para DESCARTAR una captura mal extraída
+ * (is_obsolete=true). Deja de alimentar las vistas curadas (Vida social/
+ * profesional, Bitácora) y desaparece de la ficha. RLS asegura ownership.
+ */
+export async function discardObservation(
+  observationId: string,
+  reason?: string,
+): Promise<LinkObservationResponse> {
+  const res = await fetch(`/api/observations/${encodeURIComponent(observationId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_obsolete: true, obsoleted_reason: reason }),
+  })
+  if (!res.ok) {
+    const body = await readErrorBody(res)
+    throw new HttpError(res.status, body.error, body.detail)
+  }
+  return (await res.json()) as LinkObservationResponse
+}
+
 export { HttpError }

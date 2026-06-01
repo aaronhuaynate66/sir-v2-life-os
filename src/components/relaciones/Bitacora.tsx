@@ -18,6 +18,7 @@ import { ChevronDown, NotebookPen } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DiscardCaptureButton } from './DiscardCaptureButton'
 import { cn } from '@/lib/utils'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import type { Observation, CaptureType } from '@/lib/capture/observations/types'
@@ -36,6 +37,8 @@ interface Entry {
   detail: string | null
   /** Para logs: "3/5". */
   value: string | null
+  /** id crudo de la observation (solo source='observation') → permite descartar. */
+  obsId?: string
 }
 
 const LOG_LABEL: Record<PersonLogKind, string> = {
@@ -89,6 +92,7 @@ function buildEntries(personLogs: PersonLog[], observations: Observation[]): Ent
       label: CAPTURE_LABEL[obs.captureType] ?? obs.captureType,
       detail: observationDetail(obs),
       value: null,
+      obsId: obs.id,
     })
   }
   entries.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
@@ -180,6 +184,16 @@ export function Bitacora({ personLogs, observations }: BitacoraProps) {
                       </div>
                       {e.detail && (
                         <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{e.detail}</p>
+                      )}
+                      {e.obsId && (
+                        <div className="mt-0.5">
+                          <DiscardCaptureButton
+                            observationId={e.obsId}
+                            label="Descartar"
+                            what={`Captura de ${e.label}`}
+                            className="h-6 px-1.5 text-[10px]"
+                          />
+                        </div>
                       )}
                     </li>
                   ))}
