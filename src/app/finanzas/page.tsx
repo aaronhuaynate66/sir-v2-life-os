@@ -193,7 +193,7 @@ function FinanceContent() {
           <Card key={s.label} className={cardClass}>
             <CardContent className="p-3 sm:p-4">
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
-              <div className={cn('text-lg sm:text-xl font-mono font-bold tabular-nums break-all', toneText(s.tone))}>
+              <div className={cn('text-lg sm:text-xl font-mono font-bold tabular-nums break-words', toneText(s.tone))}>
                 {s.value}<span className="text-sm text-muted-foreground/50">{s.unit}</span>
               </div>
             </CardContent>
@@ -237,7 +237,7 @@ function FinanceContent() {
       <EmotionFinancePanel data={emotionFinance} />
 
       <Card className={cn('mb-4', cardClass)}>
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <SectionTitle icon={Plus} label="Registrar movimiento" />
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-2">
             <Select value={type} onValueChange={(v) => setType(v as MovementType)}>
@@ -333,7 +333,7 @@ function FinanceContent() {
             key={t}
             onClick={() => setFilterType(t)}
             className={cn(
-              'text-[10px] font-mono px-2 py-1 rounded border transition-colors',
+              'text-[10px] font-mono px-2.5 py-1.5 rounded border transition-colors',
               filterType === t
                 ? 'border-primary/40 text-primary bg-primary/10'
                 : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground',
@@ -381,7 +381,7 @@ function FinanceContent() {
                   </div>
                   <button
                     onClick={() => handleRemoveMovement(m.id, m.description)}
-                    className="text-xs text-muted-foreground/40 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded text-base leading-none text-muted-foreground/40 hover:text-red-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                     aria-label="Eliminar"
                   >
                     ×

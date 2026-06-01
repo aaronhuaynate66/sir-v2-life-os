@@ -180,7 +180,7 @@ function GoalsContent() {
             <Card className={cn('mb-4', cardClass)}>
               <CardContent className="p-4 sm:p-6">
                 <SectionTitle icon={Plus} label={editId ? 'Editar objetivo' : 'Nuevo objetivo'} />
-                <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                   <Input placeholder="Titulo" value={title} onChange={e => setTitle(e.target.value)} className="col-span-2" />
                   <Input placeholder="Descripcion" value={desc} onChange={e => setDesc(e.target.value)} className="col-span-2" />
                   <Select value={cat} onValueChange={(v) => setCat(v as GoalCategory)}>
@@ -257,7 +257,7 @@ function GoalsContent() {
           {activeGoals.map((g) => (
             <Card key={g.id} className={cardClass}>
               <CardContent className="p-4 sm:p-6">
-                <div className="flex justify-between items-start gap-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-sm font-medium text-foreground">{g.title}</span>
@@ -272,8 +272,8 @@ function GoalsContent() {
                       <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{g.progress}%</span>
                     </div>
                     {progressId === g.id && (
-                      <div className="flex gap-2 mb-2">
-                        <Input type="number" min="0" max="100" placeholder="% nuevo progreso" value={progressVal} onChange={e => setProgressVal(e.target.value)} className="w-40 font-mono" />
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        <Input type="number" min="0" max="100" placeholder="% nuevo progreso" value={progressVal} onChange={e => setProgressVal(e.target.value)} className="flex-1 min-w-0 max-w-[10rem] font-mono" />
                         <Button variant="outline" size="sm" onClick={saveProgress} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">Guardar</Button>
                         <Button variant="ghost" size="sm" onClick={cancelProgress}>Cancelar</Button>
                       </div>
@@ -284,7 +284,7 @@ function GoalsContent() {
                       <span>paz: <span className="text-muted-foreground font-mono">+{g.peaceImpact}</span></span>
                     </div>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
+                  <div className="flex gap-1 flex-wrap sm:flex-shrink-0 sm:justify-end">
                     <Button variant="ghost" size="sm" onClick={() => { setProgressId(g.id === progressId ? null : g.id); setProgressVal(String(g.progress)) }}>%</Button>
                     <Button variant="ghost" size="sm" onClick={() => startEdit(g)}>Editar</Button>
                     <AlertDialog>

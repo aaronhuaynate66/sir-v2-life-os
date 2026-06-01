@@ -140,7 +140,7 @@ function SignalsContent() {
               key={src}
               onClick={() => setFilterSource(filterSource === src ? 'all' : src)}
               className={cn(
-                'flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1 rounded border transition-colors',
+                'flex items-center gap-1.5 text-[10px] font-mono px-2.5 py-1.5 rounded border transition-colors',
                 filterSource === src
                   ? 'border-primary/40 text-primary bg-primary/10'
                   : 'border-border text-muted-foreground hover:border-foreground/20',
@@ -151,7 +151,7 @@ function SignalsContent() {
             </button>
           ))}
           {filterSource !== 'all' && (
-            <button onClick={() => setFilterSource('all')} className="text-[10px] font-mono text-muted-foreground hover:text-foreground px-2 py-1">
+            <button onClick={() => setFilterSource('all')} className="text-[10px] font-mono text-muted-foreground hover:text-foreground px-2 py-1.5">
               × todas
             </button>
           )}
@@ -209,7 +209,7 @@ function SignalsContent() {
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
           {filterSource !== 'all' ? SOURCE_LABEL[filterSource as SignalSource] : 'Todas las senales'} &mdash; {visible.length}
         </div>
-        <button onClick={() => setShowResolved(!showResolved)} className="text-[10px] font-mono text-muted-foreground hover:text-foreground">
+        <button onClick={() => setShowResolved(!showResolved)} className="text-[10px] font-mono text-muted-foreground hover:text-foreground py-1.5 px-1 -mr-1">
           {showResolved ? 'Ocultar resueltas' : 'Mostrar resueltas'}
         </button>
       </div>

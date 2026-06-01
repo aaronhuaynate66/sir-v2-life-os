@@ -283,7 +283,7 @@ function SelfContent() {
           <SectionTitle icon={Heart} label="Salud basica" count={healthMetrics.length} />
           <div className="flex flex-wrap gap-2 mb-3">
             <Select value={hType} onValueChange={(v) => setHType(v as HealthMetricType)}>
-              <SelectTrigger className="flex-1 min-w-[120px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="flex-1 basis-full sm:basis-auto min-w-[120px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {HEALTH_TYPES.map(t => <SelectItem key={t} value={t}>{getHealthMetricLabel(t)}</SelectItem>)}
               </SelectContent>

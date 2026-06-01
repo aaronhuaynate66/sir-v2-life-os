@@ -12,7 +12,7 @@
 // 100% client-side (depende de <canvas>); se carga via dynamic import con
 // ssr:false desde GraphView.
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import type { GraphData } from '@/lib/graph/types'
 import { CATEGORY_COLOR } from '@/lib/graph/colors'
@@ -76,8 +76,29 @@ type LinkLike = {
 
 export function GraphCanvas({ data }: GraphCanvasProps) {
   const fgRef = useRef<unknown>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const fgData = useMemo(() => toForceGraphData(data), [data])
   const [hovered, setHovered] = useState<string | null>(null)
+  // react-force-graph-2d no mide su contenedor: sin width/height explícitos
+  // cae a window.innerWidth/Height y el canvas desborda la card en mobile.
+  // Medimos el wrapper con ResizeObserver y le pasamos px reales.
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null)
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight })
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Reencuadrar al cambiar el tamaño del canvas (rotación / resize).
+  useEffect(() => {
+    if (!size) return
+    const fg = fgRef.current as { zoomToFit?: (ms: number, padding: number) => void } | null
+    try { fg?.zoomToFit?.(400, 70) } catch { /* layout aún no listo */ }
+  }, [size])
 
   // Adyacencia para resaltar el nodo + sus vecinos al hover/tap.
   const neighbors = useMemo(() => {
@@ -271,9 +292,12 @@ export function GraphCanvas({ data }: GraphCanvasProps) {
   )
 
   return (
-    <div className="relative w-full h-[60vh] sm:h-[70vh] min-h-[420px] rounded-lg border border-border bg-muted/10 overflow-hidden">
+    <div ref={wrapRef} className="relative w-full h-[60vh] sm:h-[70vh] min-h-[420px] rounded-lg border border-border bg-muted/10 overflow-hidden">
+      {size && (
       <ForceGraph2D
         ref={fgRef as React.MutableRefObject<undefined>}
+        width={size.w}
+        height={size.h}
         graphData={fgData}
         backgroundColor="transparent"
         linkColor={linkColor}
@@ -297,6 +321,7 @@ export function GraphCanvas({ data }: GraphCanvasProps) {
         linkCanvasObjectMode={() => 'after'}
         linkCanvasObject={renderLinkLabel}
       />
+      )}
     </div>
   )
 }

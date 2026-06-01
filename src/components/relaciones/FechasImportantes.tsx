@@ -265,7 +265,7 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-muted-foreground/50 hover:text-red-400 transition-colors p-0.5"
+      className="flex-shrink-0 flex items-center justify-center h-8 w-8 -m-1.5 rounded text-muted-foreground/50 hover:text-red-400 transition-colors"
       aria-label="Eliminar fecha"
     >
       <X size={14} strokeWidth={1.75} />

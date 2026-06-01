@@ -60,7 +60,7 @@ export function TimelineFiltersBar({ filters, onChange }: TimelineFiltersProps) 
               size="sm"
               onClick={() => setDateRange(preset)}
               className={cn(
-                'h-7 px-2.5 text-[11px] font-mono',
+                'h-8 px-2.5 text-[11px] font-mono',
                 active && 'bg-primary text-primary-foreground hover:bg-primary/90',
               )}
               aria-pressed={active}
@@ -87,7 +87,7 @@ export function TimelineFiltersBar({ filters, onChange }: TimelineFiltersProps) 
               onClick={() => toggleType(type)}
               aria-pressed={active}
               className={cn(
-                'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-[11px] font-medium transition-colors',
+                'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border text-[11px] font-medium transition-colors',
                 active
                   ? visual.chipClass
                   : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted',
