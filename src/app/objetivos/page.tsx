@@ -200,11 +200,11 @@ function GoalsContent() {
                   <Input placeholder="Siguiente accion" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
                   <div className="col-span-2">
                     <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">
-                      Personas vinculadas
+                      Personas vinculadas <span className="text-muted-foreground/50 normal-case tracking-normal">· opcional</span>
                     </div>
                     {people.length === 0 ? (
                       <p className="text-xs text-muted-foreground/70">
-                        Agregá personas en <span className="font-mono text-foreground/80">/relaciones</span> para poder vincularlas y activar la Alineación.
+                        Opcional. Si este objetivo involucra a alguien, vas a poder vincular personas cuando las agregues en <span className="font-mono text-foreground/80">/relaciones</span>.
                       </p>
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
@@ -230,7 +230,8 @@ function GoalsContent() {
                       </div>
                     )}
                     <p className="text-[10px] text-muted-foreground/60 mt-1.5">
-                      Vincular personas habilita el estado de Alineación (objetivo declarado ↔ comportamiento observado).
+                      Opcional. La mayoría de los objetivos personales no involucran a nadie. Si este sí,
+                      vinculá personas para ver señales de alineación (declarado ↔ comportamiento observado).
                     </p>
                   </div>
                 </div>

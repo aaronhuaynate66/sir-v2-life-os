@@ -69,6 +69,14 @@ export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelP
     () => computeAlignments(goals, { people, relationships }),
     [goals, people, relationships],
   )
+  // Solo objetivos con ≥1 PERSONA vinculada: comparar "lo declarado vs el
+  // comportamiento observado" solo tiene sentido ahí. Vincular personas es
+  // OPCIONAL — la mayoría de los objetivos personales no involucran a nadie, y
+  // ese es el punto. No los tratamos como "datos insuficientes" ni los listamos.
+  const linkedAlignments = useMemo(
+    () => alignments.filter((a) => a.linkedPersonNames.length > 0),
+    [alignments],
+  )
   const [narratives, setNarratives] = useState<Record<string, NarrativeState>>({})
 
   const generate = useCallback(async (a: GoalAlignment) => {
@@ -115,22 +123,25 @@ export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelP
     })
   }, [])
 
-  if (alignments.length === 0) return null
+  // Sin objetivos con personas vinculadas → la sección no aplica: se oculta
+  // por completo (nada de listar todo con "datos insuficientes").
+  if (linkedAlignments.length === 0) return null
 
   return (
     <Card className="shadow-none mb-6">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between gap-2 mb-1">
           <SectionTitle icon={Compass} label="Alineación" />
-          <Badge variant="outline" className="text-[10px] font-mono">{alignments.length}</Badge>
+          <Badge variant="outline" className="text-[10px] font-mono">{linkedAlignments.length}</Badge>
         </div>
         <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-          Cómo se compara lo que declaraste querer con tu comportamiento observado. Son observaciones
-          para reflexionar — la IA asiste, no juzga. Podés descartarlas.
+          Solo para los objetivos donde vinculaste personas: cómo se compara lo que declaraste querer
+          con tu comportamiento observado. Son observaciones para reflexionar — la IA asiste, no juzga.
+          Podés descartarlas.
         </p>
 
         <div className="space-y-3">
-          {alignments.map((a) => {
+          {linkedAlignments.map((a) => {
             const meta = STATE_META[a.state]
             const n = narratives[a.goalId]
             const canReflect = a.state !== 'insufficient_data'
