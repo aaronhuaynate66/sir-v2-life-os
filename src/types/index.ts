@@ -187,6 +187,13 @@ export interface Person {
   /** Handle de Twitter/X SIN @. Canonical en `people.twitter_handle`
    *  (migration 0010). */
   twitterHandle?: string
+  /** Estado civil (soltero/casado/etc.). Texto libre con opciones sugeridas
+   *  en el form. Canonical en `people.estado_civil` (migration 0024). */
+  estadoCivil?: string
+  /** Grado de instrucción / educación (texto libre, ej. "Universitario ·
+   *  Ing. Industrial"). Se muestra en Vida profesional. Canonical en
+   *  `people.education` (migration 0024). */
+  education?: string
   createdAt: string
   updatedAt: string
 }

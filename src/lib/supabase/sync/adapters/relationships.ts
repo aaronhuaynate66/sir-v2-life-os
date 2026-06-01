@@ -56,6 +56,12 @@ export const personAdapter: TableAdapter<Person> = {
     twitter_handle: p.twitterHandle ?? null,
     created_at: p.createdAt,
     updated_at: p.updatedAt,
+    // Campos de relación 0024. Inclusión CONDICIONAL a propósito: si el field
+    // nunca se setea, NO mandamos la key → el upsert sigue funcionando aunque
+    // la columna todavía no exista en prod (deploy seguro antes de migrar).
+    // Solo cuando el usuario carga el valor (post-migración) viaja la key.
+    ...(p.estadoCivil !== undefined ? { estado_civil: p.estadoCivil } : {}),
+    ...(p.education !== undefined ? { education: p.education } : {}),
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -83,6 +89,10 @@ export const personAdapter: TableAdapter<Person> = {
     instagramHandle: (row.instagram_handle as string) ?? undefined,
     linkedinUrl: (row.linkedin_url as string) ?? undefined,
     twitterHandle: (row.twitter_handle as string) ?? undefined,
+    // 0024 — tolerante: si la columna aún no existe, select('*') no la trae
+    // → undefined, sin romper la lectura.
+    estadoCivil: (row.estado_civil as string) ?? undefined,
+    education: (row.education as string) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }),

@@ -121,6 +121,16 @@ const ENERGY_LABEL: Record<EnergyImpact, string> = {
   draining: 'Drenante',
 }
 
+/** Opciones sugeridas de estado civil (texto libre en DB; el form sugiere). */
+const ESTADO_CIVIL_OPTIONS = [
+  'Soltero/a',
+  'En pareja',
+  'Casado/a',
+  'Divorciado/a',
+  'Viudo/a',
+  'Otro',
+] as const
+
 /** Estado del formulario de edición inline. Strings para inputs; las
  *  fechas son date-only (YYYY-MM-DD) tal cual las espera <input type=date>;
  *  tags es CSV (se parsea a string[] al guardar). */
@@ -136,6 +146,8 @@ interface EditForm {
   contactFrequency: string
   lastContact: string
   location: string
+  estadoCivil: string
+  education: string
   birthDate: string
   cycleStartDate: string
   cycleLengthDays: number
@@ -158,6 +170,8 @@ function formFromPerson(p: Person): EditForm {
     // ISO completo de fixtures viejos; el input date necesita solo la fecha).
     lastContact: (p.lastContact ?? '').slice(0, 10),
     location: p.location ?? '',
+    estadoCivil: p.estadoCivil ?? '',
+    education: p.education ?? '',
     birthDate: (p.birthDate ?? '').slice(0, 10),
     cycleStartDate: (p.cycleStartDate ?? '').slice(0, 10),
     cycleLengthDays: p.cycleLengthDays ?? 28,
@@ -254,6 +268,8 @@ export function PersonDetail({
         contactFrequency: form.contactFrequency.trim(),
         lastContact: form.lastContact || undefined,
         location: form.location.trim() || undefined,
+        estadoCivil: form.estadoCivil.trim() || undefined,
+        education: form.education.trim() || undefined,
         birthDate: form.birthDate || undefined,
         cycleStartDate: form.cycleStartDate || undefined,
         cycleLengthDays: form.cycleStartDate ? form.cycleLengthDays : undefined,
@@ -426,7 +442,20 @@ export function PersonDetail({
                 </div>
                 <div>
                   <Label htmlFor="person-location" className="text-xs">Ubicación</Label>
-                  <Input id="person-location" value={form.location} onChange={(e) => patch('location', e.target.value)} disabled={saving} className="mt-1" placeholder="Ciudad o país" />
+                  <Input id="person-location" value={form.location} onChange={(e) => patch('location', e.target.value)} disabled={saving} className="mt-1" placeholder="Distrito, ciudad — ej. Barranco, Lima" />
+                </div>
+                <div>
+                  <Label htmlFor="person-estadocivil" className="text-xs">Estado civil</Label>
+                  <Select value={form.estadoCivil} onValueChange={(v) => patch('estadoCivil', v)} disabled={saving}>
+                    <SelectTrigger id="person-estadocivil" className="mt-1"><SelectValue placeholder="Sin especificar" /></SelectTrigger>
+                    <SelectContent>
+                      {ESTADO_CIVIL_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="person-education" className="text-xs">Educación / grado de instrucción</Label>
+                  <Input id="person-education" value={form.education} onChange={(e) => patch('education', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. Universitario · Ing. Industrial (UNI)" />
                 </div>
                 <div>
                   <Label htmlFor="person-birth" className="text-xs">Fecha de nacimiento</Label>
@@ -494,6 +523,7 @@ export function PersonDetail({
             <Row label="Frecuencia contacto" value={live.contactFrequency || '—'} />
             {live.lastContact && <Row label="Último contacto" value={live.lastContact.slice(0, 10)} />}
             {live.location && <Row label="Ubicación" value={live.location} />}
+            {live.estadoCivil && <Row label="Estado civil" value={live.estadoCivil} />}
             {live.birthDate && <Row label="Fecha de nacimiento" value={live.birthDate.slice(0, 10)} />}
           </CardContent>
         </Card>
@@ -574,8 +604,9 @@ export function PersonDetail({
           hace con el panel inline "Agregar captura" (arriba), no en /captura. */}
       <RedesSociales person={live} observations={curatedObservations} />
 
-      {/* Vida profesional (#6): resumen determinístico de la captura LinkedIn. */}
-      <VidaProfesional observations={curatedObservations} />
+      {/* Vida profesional (#6): educación (campo people, 0024) + resumen
+          determinístico de la captura LinkedIn. */}
+      <VidaProfesional person={live} observations={curatedObservations} />
 
       {/* Perfil profesional completo (#10): colapsable, detalle LinkedIn. */}
       <PerfilProfesional person={live} observations={curatedObservations} />

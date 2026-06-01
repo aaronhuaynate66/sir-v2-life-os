@@ -11,7 +11,7 @@
 //
 // Patrón visual: Card + shadow-none + uppercase tracking-widest.
 
-import { Briefcase, BadgeCheck } from 'lucide-react'
+import { Briefcase, BadgeCheck, GraduationCap } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,14 +22,18 @@ import {
   fmtCount,
 } from '@/lib/observations/profile'
 import type { Observation } from '@/lib/capture/observations/types'
+import type { Person } from '@/types'
 
 export interface VidaProfesionalProps {
+  /** La persona (para `education`, campo people 0024). */
+  person: Person
   /** Observations curadas de la persona (todas; filtramos linkedin acá). */
   observations: Observation[]
 }
 
-export function VidaProfesional({ observations }: VidaProfesionalProps) {
+export function VidaProfesional({ person, observations }: VidaProfesionalProps) {
   const obs = latestOfType(observations, 'linkedin')
+  const education = person.education?.trim()
 
   return (
     <Card className="shadow-none mb-4">
@@ -46,7 +50,18 @@ export function VidaProfesional({ observations }: VidaProfesionalProps) {
           </div>
         </div>
 
-        {obs ? <Body obs={obs} /> : <EmptyState />}
+        {/* Educación / grado de instrucción (campo people, editable en Identidad). */}
+        {education && (
+          <div className="flex items-start gap-2 mb-3 pb-3 border-b border-border/40">
+            <GraduationCap size={14} strokeWidth={1.75} className="text-muted-foreground/70 mt-0.5 shrink-0" aria-hidden="true" />
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Educación</div>
+              <div className="text-sm text-foreground">{education}</div>
+            </div>
+          </div>
+        )}
+
+        {obs ? <Body obs={obs} /> : education ? null : <EmptyState />}
       </CardContent>
     </Card>
   )
