@@ -25,7 +25,9 @@ import {
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 30
+// Coherente con /plan: 60s (máx Hobby) para no arriesgar 504 si el LLM se
+// demora. La salida es chica (~800 tokens), así que normalmente termina <15s.
+export const maxDuration = 60
 
 const MODEL_ID = 'claude-sonnet-4-5-20250929'
 

@@ -12,7 +12,7 @@ import { Sparkles, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
-import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
+import { parseErrorResponse, withTimeoutHint, type ApiError } from '@/lib/api/errors'
 import type { ProposedSmart } from '@/lib/objectives/smartPrompt'
 
 export interface SmartDraft {
@@ -54,7 +54,7 @@ export function SmartAssist({
         }),
       })
       if (!res.ok) {
-        setState({ loading: false, proposed: null, error: await parseErrorResponse(res) })
+        setState({ loading: false, proposed: null, error: withTimeoutHint(await parseErrorResponse(res)) })
         return
       }
       const json = (await res.json()) as { smart: ProposedSmart }

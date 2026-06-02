@@ -35,6 +35,29 @@ export async function parseErrorResponse(res: Response): Promise<ApiError> {
 }
 
 /**
+ * Statuses que significan "se agotó el tiempo" en el gateway/función. Para
+ * nuestras rutas LLM equivale a que el modelo tardó demasiado.
+ *   - 408 Request Timeout · 504 Gateway Timeout · 524 (timeout de Cloudflare/CDN)
+ */
+const TIMEOUT_STATUSES = new Set([408, 504, 524])
+
+/**
+ * Si el ApiError es un timeout de gateway, reescribe su mensaje a algo claro y
+ * accionable ("tardó demasiado, reintentá"). El resto pasa sin cambios. Útil
+ * para las rutas LLM (plan/SMART) donde un 504 viene como HTML sin nuestro JSON.
+ */
+export function withTimeoutHint(err: ApiError): ApiError {
+  if (TIMEOUT_STATUSES.has(err.status)) {
+    return {
+      status: err.status,
+      message: 'La generación tardó demasiado',
+      detail: 'El modelo no respondió a tiempo. Reintentá en unos segundos.',
+    }
+  }
+  return err
+}
+
+/**
  * Normaliza un valor capturado (catch) a ApiError. Si ya es un ApiError
  * (tiene status numérico) lo devuelve tal cual; si no (Error de red, string,
  * etc.) lo envuelve con status 0.

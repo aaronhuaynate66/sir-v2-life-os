@@ -38,7 +38,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
-import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
+import { parseErrorResponse, withTimeoutHint, type ApiError } from '@/lib/api/errors'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useSelfStore } from '@/stores/useSelfStore'
@@ -238,7 +238,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
         }),
       })
       if (!res.ok) {
-        setPlan({ loading: false, proposed: null, feasibility: [], error: await parseErrorResponse(res) })
+        setPlan({ loading: false, proposed: null, feasibility: [], error: withTimeoutHint(await parseErrorResponse(res)) })
         return
       }
       const json = (await res.json()) as { keyResults: ProposedKeyResult[]; feasibility?: string[] }

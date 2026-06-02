@@ -27,7 +27,10 @@ import {
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 30
+// Plan OKR jerárquico + grounding + feasibility: la generación de ~1.6k tokens
+// con Sonnet supera el default (~10s) de funciones serverless → daba HTTP 504.
+// 60s es el máximo del plan Hobby de Vercel y deja margen sobrado (~30-40s).
+export const maxDuration = 60
 
 const MODEL_ID = 'claude-sonnet-4-5-20250929'
 
@@ -90,10 +93,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const client = new Anthropic({ maxRetries: 2 })
+    // maxRetries 1 (no 2): un reintento completo de ~30s podría empujar la
+    // función más allá de los 60s. 1600 tokens cubren un OKR típico (≤5 KRs ×
+    // ≤6 tareas + feasibility ≈ 1.2k) recortando la cola de latencia.
+    const client = new Anthropic({ maxRetries: 1 })
     const msg = await client.messages.create({
       model: MODEL_ID,
-      max_tokens: 2000,
+      max_tokens: 1600,
       system: OBJECTIVE_PLAN_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildPlanInput(input) }],
     })
