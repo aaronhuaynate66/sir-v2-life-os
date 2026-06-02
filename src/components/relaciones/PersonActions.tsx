@@ -73,7 +73,7 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
             size="sm"
             variant="outline"
             asChild
-            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400"
+            className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok"
           >
             <a href={waUrl} target="_blank" rel="noopener noreferrer">
               <MessageCircle size={14} strokeWidth={1.75} className="mr-1.5" />
@@ -148,7 +148,7 @@ function BriefingBody({ text }: { text: string }) {
           const isTldr = labelMatch === 'TL;DR'
           return (
             <div key={i} className={isTldr ? 'rounded-md border border-accent/30 bg-accent/5 p-3' : ''}>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">
                 {labelMatch}
               </div>
               <p className="text-sm text-foreground leading-relaxed">{value}</p>

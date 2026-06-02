@@ -49,7 +49,7 @@ export function PerfilProfesional({ person, observations }: PerfilProfesionalPro
         >
           <div className="flex items-center gap-2">
             <Briefcase size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               Perfil profesional
             </div>
             <Badge variant="outline" className="text-[10px] font-mono">LinkedIn</Badge>
@@ -96,14 +96,14 @@ export function PerfilProfesional({ person, observations }: PerfilProfesionalPro
 
             {li.about && (
               <div>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">Acerca de</div>
+                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">Acerca de</div>
                 <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{li.about}</p>
               </div>
             )}
 
             <div className="flex flex-wrap items-center gap-1.5">
               {li.isOpenToWork && (
-                <Badge variant="outline" className="text-[10px] font-normal gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                <Badge variant="outline" className="text-[10px] font-normal gap-1 border-ok/30 bg-ok-soft text-ok">
                   <BadgeCheck size={10} strokeWidth={2} aria-hidden="true" /> Open to work
                 </Badge>
               )}
@@ -123,7 +123,7 @@ export function PerfilProfesional({ person, observations }: PerfilProfesionalPro
                   href={profileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-sky-400 hover:underline inline-flex items-center gap-1"
+                  className="text-xs text-brand-soft-foreground hover:underline inline-flex items-center gap-1"
                 >
                   <ExternalLink size={11} strokeWidth={1.75} aria-hidden="true" />
                   Ver perfil en LinkedIn

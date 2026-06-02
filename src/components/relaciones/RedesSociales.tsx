@@ -107,7 +107,7 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <AtSign size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               Redes &amp; social
             </div>
           </div>
@@ -175,7 +175,7 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
             )}
             {!person.linkedinUrl && scannedLinkedinHasProfile && (
               <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1.5">
-                <Sparkles size={11} strokeWidth={1.75} className="text-sky-400" aria-hidden="true" />
+                <Sparkles size={11} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
                 Hay una captura de LinkedIn — pegá la URL del perfil en Editar para enlazarla.
               </p>
             )}
@@ -260,7 +260,7 @@ function InstagramEnrichment({ obs }: { obs: Observation }) {
           <span className="text-sm font-medium font-mono text-foreground">@{ig.handle}</span>
         )}
         {ig.isVerified && (
-          <Badge variant="outline" className="text-[10px] font-normal gap-1 border-sky-500/30 bg-sky-500/10 text-sky-400">
+          <Badge variant="brand" className="text-[10px] font-normal gap-1">
             <BadgeCheck size={10} strokeWidth={2} aria-hidden="true" />
             verificado
           </Badge>
@@ -295,7 +295,7 @@ function InstagramEnrichment({ obs }: { obs: Observation }) {
           href={ig.externalLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-sky-400 hover:underline inline-flex items-center gap-1 break-all"
+          className="text-xs text-brand-soft-foreground hover:underline inline-flex items-center gap-1 break-all"
         >
           <ExternalLink size={11} strokeWidth={1.75} aria-hidden="true" />
           {ig.externalLink}

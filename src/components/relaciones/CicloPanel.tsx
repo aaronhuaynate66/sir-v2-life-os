@@ -61,7 +61,7 @@ export function CicloPanel({ cycleStartDate, cycleLengthDays }: CicloPanelProps)
             className="text-muted-foreground/70"
             aria-hidden="true"
           />
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
             Ciclo menstrual
           </div>
         </div>

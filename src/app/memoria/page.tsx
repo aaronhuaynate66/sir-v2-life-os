@@ -29,16 +29,16 @@ const TYPE_LABEL: Record<MemoryType, string> = {
 const TYPE_CLASS: Record<MemoryType, string> = {
   episodic: 'border-border bg-muted text-muted-foreground',
   semantic: 'border-border bg-muted text-muted-foreground/70',
-  emotional: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-  relational: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
+  emotional: 'border-warn/30 bg-warn-soft text-warn',
+  relational: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
   temporal: 'border-border bg-muted text-muted-foreground/70',
-  predictive: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-  social: 'border-pink-500/30 bg-pink-500/10 text-pink-400',
+  predictive: 'border-warn/30 bg-warn-soft text-warn',
+  social: 'border-border bg-muted text-muted-foreground/70',
 }
 
 const ALL_TYPES: MemoryType[] = ['episodic', 'semantic', 'emotional', 'relational', 'temporal', 'predictive', 'social']
 
-const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
 export default function MemoryPage() {
   const hydrated = useHasHydrated()
@@ -71,7 +71,7 @@ function MemoryContent() {
   return (
     <AppShell>
       <div className="mb-8">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <Archive size={28} strokeWidth={1.5} className="text-muted-foreground" />
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Memoria</h1>
@@ -85,7 +85,7 @@ function MemoryContent() {
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
             <CardContent className="p-3 sm:p-4">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">{s.label}</div>
               <div className="text-lg sm:text-xl font-mono font-bold tabular-nums text-foreground break-all">{s.value}</div>
             </CardContent>
           </Card>
@@ -96,7 +96,7 @@ function MemoryContent() {
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-2">
             <Tag size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Distribucion por tipo</span>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Distribucion por tipo</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {(Object.entries(memoryContext.memoriesByType) as [MemoryType, number][]).map(([type, count]) => (
@@ -113,7 +113,7 @@ function MemoryContent() {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Entidades criticas</span>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Entidades criticas</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {memoryContext.criticalEntities.slice(0, 5).map(({ entityId, count }) => (

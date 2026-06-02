@@ -46,12 +46,12 @@ const KIND_ICON: Record<AgendaKind, LucideIcon> = {
 }
 
 const KIND_ACCENT: Record<AgendaKind, string> = {
-  critical_signal: 'text-red-400',
-  no_contact: 'text-amber-400',
-  goal_target: 'text-blue-400',
-  objective_step: 'text-emerald-400',
-  birthday: 'text-primary',
-  special_date: 'text-violet-400',
+  critical_signal: 'text-bad',
+  no_contact: 'text-warn',
+  goal_target: 'text-brand-soft-foreground',
+  objective_step: 'text-ok',
+  birthday: 'text-brand-soft-foreground',
+  special_date: 'text-brand-soft-foreground',
 }
 
 export interface ProximoPanelProps {

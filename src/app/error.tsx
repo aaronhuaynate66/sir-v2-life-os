@@ -33,10 +33,10 @@ export default function RouteError({
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
-      <Card className="shadow-none max-w-md w-full border-red-500/30">
+      <Card className="shadow-none max-w-md w-full border-bad/30">
         <CardContent className="p-6 sm:p-8 flex flex-col items-center text-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-            <AlertTriangle size={20} strokeWidth={1.75} className="text-red-400" aria-hidden="true" />
+          <div className="w-12 h-12 rounded-full bg-bad-soft border border-bad/30 flex items-center justify-center">
+            <AlertTriangle size={20} strokeWidth={1.75} className="text-bad" aria-hidden="true" />
           </div>
           <div className="space-y-1.5">
             <h1 className="text-lg font-semibold tracking-tight">Algo se rompió en esta vista</h1>

@@ -80,7 +80,7 @@ export function DailyBriefingCard() {
         <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Sparkles size={15} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               Briefing de hoy
             </div>
           </div>
@@ -155,10 +155,10 @@ function BriefingBody({ text }: { text: string }) {
               key={i}
               className={cn(
                 isHoy && 'rounded-md border border-accent/30 bg-accent/5 p-3',
-                isSug && 'rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3',
+                isSug && 'rounded-md border border-ok/30 bg-ok-soft p-3',
               )}
             >
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{label}</div>
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">{label}</div>
               {bullets ? (
                 <ul className="space-y-1 list-disc pl-4">
                   {bullets.map((b, j) => (

@@ -164,7 +164,7 @@ export function NotaDeVozPanel({ personId, observations }: NotaDeVozPanelProps) 
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Mic size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">Nota de voz</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Nota de voz</div>
         </div>
 
         {!mounted ? (
@@ -223,7 +223,7 @@ export function NotaDeVozPanel({ personId, observations }: NotaDeVozPanelProps) 
 
             {/* Lista de notas guardadas */}
             <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-2">
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">
                 Notas guardadas {voiceNotes.length > 0 && `(${voiceNotes.length})`}
               </div>
               {voiceNotes.length === 0 ? (

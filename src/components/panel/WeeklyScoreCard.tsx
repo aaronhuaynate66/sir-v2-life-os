@@ -13,19 +13,21 @@ import { SectionTitle } from '@/components/ui/section-title'
 import type { WeeklyScore, WeeklyTier, WeeklyComponent } from '@/engines/weekly'
 import { cn } from '@/lib/utils'
 
+// S es el tier elite → acento de marca (no semántico). A/B buenos → ok;
+// C flojo → warn; D duro → bad.
 const TIER_TEXT: Record<WeeklyTier, string> = {
-  S: 'text-amber-300',
-  A: 'text-emerald-400',
-  B: 'text-sky-400',
-  C: 'text-amber-400',
-  D: 'text-red-400',
+  S: 'text-brand-soft-foreground',
+  A: 'text-ok',
+  B: 'text-ok',
+  C: 'text-warn',
+  D: 'text-bad',
 }
 const TIER_RING: Record<WeeklyTier, string> = {
-  S: 'border-amber-300/40 bg-amber-300/10',
-  A: 'border-emerald-400/40 bg-emerald-400/10',
-  B: 'border-sky-400/40 bg-sky-400/10',
-  C: 'border-amber-400/40 bg-amber-400/10',
-  D: 'border-red-400/40 bg-red-400/10',
+  S: 'border-brand/40 bg-brand-soft',
+  A: 'border-ok/40 bg-ok-soft',
+  B: 'border-ok/40 bg-ok-soft',
+  C: 'border-warn/40 bg-warn-soft',
+  D: 'border-bad/40 bg-bad-soft',
 }
 const TIER_PHRASE: Record<WeeklyTier, string> = {
   S: 'Semana excepcional.',
@@ -36,10 +38,9 @@ const TIER_PHRASE: Record<WeeklyTier, string> = {
 }
 
 function barColor(score: number): string {
-  if (score >= 78) return 'bg-emerald-400'
-  if (score >= 64) return 'bg-sky-400'
-  if (score >= 50) return 'bg-amber-400'
-  return 'bg-red-400'
+  if (score >= 64) return 'bg-ok'
+  if (score >= 50) return 'bg-warn'
+  return 'bg-bad'
 }
 
 export function WeeklyScoreCard({ data }: { data: WeeklyScore }) {
@@ -51,7 +52,7 @@ export function WeeklyScoreCard({ data }: { data: WeeklyScore }) {
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <SectionTitle icon={Gauge} label="Score semanal" />
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50">últimos {windowDays} días</span>
+          <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">últimos {windowDays} días</span>
         </div>
 
         {!anyData ? (

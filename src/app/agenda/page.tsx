@@ -25,7 +25,7 @@ export default function AgendaPage() {
         transition={{ duration: 0.3 }}
         className="mb-6 sm:mb-8"
       >
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">
           SIR V2 &mdash; Agenda
         </div>
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Próximo</h1>

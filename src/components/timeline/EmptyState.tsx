@@ -34,7 +34,7 @@ const COPY: Record<EmptyVariant, { Icon: LucideIcon; title: (q?: string) => stri
     // Fallo de carga recuperable: ámbar (no rojo) — es reintentable, no crítico.
     title: () => 'No pudimos cargar el historial.',
     sub: 'Verificá tu conexión y reintentá.',
-    iconClass: 'text-amber-400',
+    iconClass: 'text-warn',
   },
 }
 

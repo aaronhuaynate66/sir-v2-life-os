@@ -3,7 +3,7 @@
 //
 // Consolida el bloque rojo "Error HTTP N: msg + detail" que estaba copiado
 // en /buscar, DailyBriefingCard, ResumenClient y LoPersonal. Mismo markup
-// (border-red-500/30 bg-red-500/5) -> sin regresión visual. `title` permite
+// (tokens bad: border-bad/30 bg-bad-soft). `title` permite
 // el caso especial (ej. 422 "Sin contexto todavía") y `children` un hint
 // extra (ej. recordatorio de env var).
 
@@ -29,12 +29,12 @@ export function ApiErrorNotice({
   return (
     <div
       className={cn(
-        'rounded-md border border-red-500/30 bg-red-500/5 p-3 text-xs space-y-1',
+        'rounded-md border border-bad/30 bg-bad-soft p-3 text-xs space-y-1',
         className,
       )}
       role="alert"
     >
-      <div className="flex items-center gap-1.5 font-medium text-red-400">
+      <div className="flex items-center gap-1.5 font-medium text-bad">
         <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
         {title ?? `Error HTTP ${error.status}: ${error.message}`}
       </div>

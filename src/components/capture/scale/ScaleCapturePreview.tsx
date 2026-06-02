@@ -133,7 +133,7 @@ export function ScaleCapturePreview({
                   disabled={saving}
                   className={cn(
                     'mt-1 font-mono tabular-nums',
-                    !visionDetectedDate && 'border-warn/40 focus-visible:ring-amber-500/40',
+                    !visionDetectedDate && 'border-warn/40 focus-visible:ring-warn/40',
                   )}
                   aria-describedby={visionDetectedDate ? undefined : 'measuredAt-warning'}
                 />

@@ -169,7 +169,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
   }, [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, fotoPath])
 
   return (
-    <Card className="shadow-none mb-4 border-amber-500/20">
+    <Card className="shadow-none mb-4 border-warn/20">
       <CardContent className="p-4 sm:p-6">
         <button
           type="button"
@@ -178,8 +178,8 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
           aria-expanded={open}
         >
           <div className="flex items-center gap-2">
-            <ShieldAlert size={14} strokeWidth={1.75} className="text-amber-400/80" aria-hidden="true" />
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            <ShieldAlert size={14} strokeWidth={1.75} className="text-warn/80" aria-hidden="true" />
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               Información sensible · datos adicionales
             </div>
           </div>
@@ -193,7 +193,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
 
         {open && (
           <div className="mt-4">
-            <p className="text-[11px] text-amber-300/80 bg-amber-500/5 border border-amber-500/20 rounded-md p-2.5 mb-4 leading-relaxed">
+            <p className="text-[11px] text-warn/80 bg-warn-soft border border-warn/20 rounded-md p-2.5 mb-4 leading-relaxed">
               Datos privados (documento, pasaporte). Se guardan cifrados en reposo por Supabase, con
               acceso solo tuyo (RLS), y <span className="font-medium">no</span> se usan en IA, grafo ni resúmenes.
             </p>
@@ -232,7 +232,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <ImageIcon size={13} strokeWidth={1.75} aria-hidden="true" />
                     Foto del documento / pasaporte
-                    {fotoPath && <span className="text-emerald-400">· cargada</span>}
+                    {fotoPath && <span className="text-ok">· cargada</span>}
                   </div>
                   <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
                     Subí una foto del DNI o pasaporte y la leo para autocompletar los campos de arriba

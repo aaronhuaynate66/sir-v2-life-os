@@ -104,7 +104,7 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
               className="text-muted-foreground/70"
               aria-hidden="true"
             />
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               Fechas importantes
             </div>
           </div>
@@ -199,9 +199,9 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
             {invalid.map((sd) => (
               <li
                 key={sd.id}
-                className="flex items-center justify-between gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs"
+                className="flex items-center justify-between gap-2 rounded-md border border-warn/30 bg-warn-soft px-3 py-2 text-xs"
               >
-                <span className="flex items-center gap-1.5 text-amber-400">
+                <span className="flex items-center gap-1.5 text-warn">
                   <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
                   {sd.label} · fecha inválida
                 </span>

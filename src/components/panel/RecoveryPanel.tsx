@@ -11,9 +11,9 @@ import { cn } from '@/lib/utils'
 export function RecoveryPanel({ data }: { data: RecoveryAssessment }) {
   if (!data.active) return null
   const hard = data.severity === 'hard'
-  const accent = hard ? 'text-red-400' : 'text-amber-400'
-  const border = hard ? 'border-red-500/30' : 'border-amber-500/30'
-  const bg = hard ? 'bg-red-500/[0.06]' : 'bg-amber-500/[0.06]'
+  const accent = hard ? 'text-bad' : 'text-warn'
+  const border = hard ? 'border-bad/30' : 'border-warn/30'
+  const bg = hard ? 'bg-bad/[0.06]' : 'bg-warn/[0.06]'
 
   return (
     <Card className={cn('shadow-none mb-6', border, bg)}>
@@ -31,7 +31,7 @@ export function RecoveryPanel({ data }: { data: RecoveryAssessment }) {
           </p>
         )}
 
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">Prioridades ahora</div>
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">Prioridades ahora</div>
         <ul className="space-y-1.5">
           {data.priorities.map((p, i) => (
             <li key={i} className="flex items-start gap-2 text-sm text-foreground/90 leading-snug">

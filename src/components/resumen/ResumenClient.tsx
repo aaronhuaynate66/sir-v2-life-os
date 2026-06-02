@@ -66,7 +66,7 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
     <AppShell>
       <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2</div>
           <div className="flex items-center gap-3">
             <CalendarRange size={28} strokeWidth={1.5} className="text-muted-foreground" aria-hidden="true" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Resumen semanal</h1>
@@ -162,10 +162,10 @@ function SummaryBody({ text }: { text: string }) {
               key={i}
               className={cn(
                 isResumen && 'rounded-md border border-accent/30 bg-accent/5 p-3',
-                isAction && 'rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3',
+                isAction && 'rounded-md border border-ok/30 bg-ok-soft p-3',
               )}
             >
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{label}</div>
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">{label}</div>
               {bullets ? (
                 <ul className="space-y-1 list-disc pl-4">
                   {bullets.map((b, j) => (
@@ -195,7 +195,7 @@ function History({ items }: { items: LongitudinalSummary[] }) {
           className="w-full flex items-center justify-between gap-2 group"
           aria-expanded={open}
         >
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
             Semanas anteriores ({items.length})
           </div>
           <ChevronDown size={16} strokeWidth={1.75} className={cn('text-muted-foreground/60 transition-transform group-hover:text-foreground', open && 'rotate-180')} aria-hidden="true" />

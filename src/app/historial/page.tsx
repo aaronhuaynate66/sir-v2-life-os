@@ -20,7 +20,7 @@ function TimelineContent() {
   return (
     <AppShell wide>
       <header className="mb-6 sm:mb-8">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">
           SIR V2 &mdash; Vista longitudinal
         </div>
         <div className="flex items-center gap-3">

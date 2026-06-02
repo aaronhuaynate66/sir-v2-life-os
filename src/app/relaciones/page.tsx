@@ -202,14 +202,14 @@ function RelationshipsContent() {
     <AppShell>
       <div className="mb-8 flex justify-between items-start gap-3 flex-wrap">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2</div>
           <div className="flex items-center gap-3 mt-1">
             <Users size={28} strokeWidth={1.5} className="text-muted-foreground" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Relaciones</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">{people.length} personas &middot; {alerts.length} alertas</p>
         </div>
-        <Button variant="outline" size="sm" onClick={openAdd} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+        <Button variant="outline" size="sm" onClick={openAdd} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
           <UserPlus size={14} strokeWidth={1.75} />
           Agregar persona
         </Button>
@@ -219,7 +219,7 @@ function RelationshipsContent() {
         <div className="mb-6 space-y-2">
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Alertas relacionales</span>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Alertas relacionales</span>
             <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60 ml-auto">{alerts.length}</span>
           </div>
           {alerts.map((alert, idx) => (
@@ -230,7 +230,7 @@ function RelationshipsContent() {
                     <p className="text-sm font-medium text-foreground">{alert.personName}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{alert.message}</p>
                     {alert.suggestedAction && (
-                      <p className="text-xs text-blue-400 mt-1">{`→ ${alert.suggestedAction}`}</p>
+                      <p className="text-xs text-brand-soft-foreground mt-1">{`→ ${alert.suggestedAction}`}</p>
                     )}
                   </div>
                   <Badge variant="outline" className={cn('text-[10px] font-normal', URGENCY_CLASS[alert.urgency])}>{alert.urgency}</Badge>
@@ -356,7 +356,7 @@ function RelationshipsContent() {
             </div>
             <div className="mt-4 flex gap-2 justify-end">
               <Button variant="ghost" size="sm" onClick={handleCancel}>Cancelar</Button>
-              <Button variant="outline" size="sm" onClick={handleSubmit} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+              <Button variant="outline" size="sm" onClick={handleSubmit} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
                 {editingId ? 'Guardar cambios' : 'Agregar'}
               </Button>
             </div>
@@ -371,7 +371,7 @@ function RelationshipsContent() {
           <Users size={28} strokeWidth={1.5} className="text-muted-foreground/40" />
           <div className="text-sm text-muted-foreground">Sin personas registradas todavia.</div>
           <p className="text-xs text-muted-foreground/60">Agrega tu primera persona para mapear tus relaciones.</p>
-          <Button variant="outline" size="sm" onClick={openAdd} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+          <Button variant="outline" size="sm" onClick={openAdd} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
             <UserPlus size={14} strokeWidth={1.75} />
             Agregar persona
           </Button>

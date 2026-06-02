@@ -405,7 +405,7 @@ export function PersonDetail({
                     value={form.slug}
                     onChange={(e) => patch('slug', e.target.value)}
                     disabled={saving}
-                    className={cn('mt-1 font-mono', !isValidSlug(form.slug) && form.slug && 'border-amber-500/40')}
+                    className={cn('mt-1 font-mono', !isValidSlug(form.slug) && form.slug && 'border-warn/40')}
                   />
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Solo a-z, 0-9 y guiones. URL:

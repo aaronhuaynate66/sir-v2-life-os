@@ -187,7 +187,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-1">
           <Camera size={15} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
             Agregar captura
           </div>
         </div>
@@ -198,9 +198,9 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
 
         {phase === 'done' ? (
           <div className="space-y-3">
-            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs flex items-center gap-2">
-              <Check size={14} strokeWidth={2} className="text-emerald-400 flex-shrink-0" aria-hidden="true" />
-              <span className="text-emerald-400">
+            <div className="rounded-md border border-ok/30 bg-ok-soft p-3 text-xs flex items-center gap-2">
+              <Check size={14} strokeWidth={2} className="text-ok flex-shrink-0" aria-hidden="true" />
+              <span className="text-ok">
                 {savedType && TYPE_LABEL[savedType] ? `Captura de ${TYPE_LABEL[savedType]}` : 'Captura'} guardada
                 y asociada a {personName}.
               </span>
@@ -260,9 +260,9 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
           </div>
         ) : phase === 'scale' ? (
           <div className="space-y-3">
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs flex items-start gap-2">
-              <Scale size={14} strokeWidth={1.75} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
-              <span className="text-amber-300/90">
+            <div className="rounded-md border border-warn/30 bg-warn-soft p-3 text-xs flex items-start gap-2">
+              <Scale size={14} strokeWidth={1.75} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <span className="text-warn/90">
                 Esto parece tu báscula. Las métricas corporales van a <span className="font-medium">tu salud</span>,
                 no al perfil de {personName}. Usá el flujo de báscula para guardarlas.
               </span>

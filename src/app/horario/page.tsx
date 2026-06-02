@@ -42,9 +42,9 @@ function formatCountdown(ms: number): string {
 }
 
 const OVERLOAD_STYLE: Record<OverloadLevel, { text: string; border: string; bg: string }> = {
-  ok: { text: 'text-emerald-400', border: 'border-emerald-500/30', bg: 'bg-emerald-500/[0.06]' },
-  busy: { text: 'text-amber-400', border: 'border-amber-500/30', bg: 'bg-amber-500/[0.06]' },
-  overloaded: { text: 'text-red-400', border: 'border-red-500/30', bg: 'bg-red-500/[0.06]' },
+  ok: { text: 'text-ok', border: 'border-ok/30', bg: 'bg-ok-soft' },
+  busy: { text: 'text-warn', border: 'border-warn/30', bg: 'bg-warn-soft' },
+  overloaded: { text: 'text-bad', border: 'border-bad/30', bg: 'bg-bad-soft' },
 }
 
 type FetchState =
@@ -91,14 +91,14 @@ function HorarioContent() {
     <AppShell>
       <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mb-6 sm:mb-8 flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2 &mdash; Horario</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2 &mdash; Horario</div>
           <div className="flex items-center gap-3 mt-1">
             <Clock size={28} strokeWidth={1.5} className="text-muted-foreground" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Horario</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">Tu día operativo, bloque a bloque.</p>
         </div>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50 mt-2">{LIMA_TZ_LABEL}</span>
+        <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mt-2">{LIMA_TZ_LABEL}</span>
       </motion.div>
 
       <Body state={state} timeline={timeline} nowMs={nowMs} />
@@ -139,7 +139,7 @@ function Body({ state, timeline, nowMs }: { state: FetchState; timeline: DayTime
       {timeline.allDay.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {timeline.allDay.map((e) => (
-            <Badge key={e.id} variant="outline" className="text-[11px] font-normal border-violet-500/30 bg-violet-500/10 text-violet-300">
+            <Badge key={e.id} variant="brand" className="text-[11px] font-normal">
               <CalendarDays size={11} strokeWidth={1.75} className="mr-1" aria-hidden="true" />
               {e.title}
             </Badge>
@@ -153,7 +153,7 @@ function Body({ state, timeline, nowMs }: { state: FetchState; timeline: DayTime
       {/* Línea de tiempo completa */}
       <Card className="shadow-none">
         <CardContent className="p-4 sm:p-6">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">El día</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-3">El día</div>
           <ol className="space-y-0.5">
             {timeline.blocks.map((b) => (
               <BlockRow key={b.event.id} block={b} nowMs={nowMs} />
@@ -172,7 +172,7 @@ function NowNext({ timeline, nowMs }: { timeline: DayTimeline; nowMs: number }) 
       {/* AHORA */}
       <Card className={cn('shadow-none', current ? 'border-primary/40 bg-primary/[0.05]' : '')}>
         <CardContent className="p-4 sm:p-5">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Ahora</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">Ahora</div>
           {current ? (
             <>
               <div className="text-lg font-semibold tracking-tight leading-tight">{current.event.title}</div>
@@ -186,7 +186,7 @@ function NowNext({ timeline, nowMs }: { timeline: DayTimeline; nowMs: number }) 
                 </div>
               )}
               <div className="mt-3 flex items-baseline gap-1.5">
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">termina en</span>
+                <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">termina en</span>
                 <span className="text-base font-mono tabular-nums text-primary">{formatCountdown(current.endMs - nowMs)}</span>
               </div>
             </>
@@ -199,7 +199,7 @@ function NowNext({ timeline, nowMs }: { timeline: DayTimeline; nowMs: number }) 
       {/* PRÓXIMO */}
       <Card className="shadow-none">
         <CardContent className="p-4 sm:p-5">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Próximo</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">Próximo</div>
           {next ? (
             <>
               <div className="text-lg font-semibold tracking-tight leading-tight">{next.event.title}</div>
@@ -213,7 +213,7 @@ function NowNext({ timeline, nowMs }: { timeline: DayTimeline; nowMs: number }) 
                 </div>
               )}
               <div className="mt-3 flex items-baseline gap-1.5">
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">empieza en</span>
+                <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">empieza en</span>
                 <span className="text-base font-mono tabular-nums text-foreground">{formatCountdown(next.startMs - nowMs)}</span>
               </div>
             </>
@@ -232,7 +232,7 @@ function BlockRow({ block, nowMs }: { block: TimelineBlock; nowMs: number }) {
   return (
     <li className={cn('flex items-center gap-3 py-2 border-b border-border/40 last:border-0', isPast && 'opacity-40')}>
       <div className="w-14 flex-shrink-0 text-xs font-mono tabular-nums text-muted-foreground">{limaTime(block.event.start)}</div>
-      <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', isCurrent ? 'bg-primary animate-pulse' : isPast ? 'bg-muted-foreground/40' : 'bg-sky-400')} aria-hidden="true" />
+      <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', isCurrent ? 'bg-brand animate-pulse' : isPast ? 'bg-muted-foreground/40' : 'bg-muted-foreground/70')} aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <div className={cn('text-sm truncate', isCurrent ? 'text-foreground font-medium' : 'text-foreground/90')}>{block.event.title}</div>
         {block.event.location && <div className="text-[11px] text-muted-foreground truncate">{block.event.location}</div>}
@@ -271,7 +271,7 @@ function NotConfigured() {
 
 function Note({ tone, children }: { tone: 'warn' | 'muted'; children: React.ReactNode }) {
   const Icon = tone === 'warn' ? AlertCircle : Clock
-  const color = tone === 'warn' ? 'text-amber-400' : 'text-muted-foreground/40'
+  const color = tone === 'warn' ? 'text-warn' : 'text-muted-foreground/40'
   return (
     <Card className="shadow-none">
       <CardContent className="p-8 text-center">

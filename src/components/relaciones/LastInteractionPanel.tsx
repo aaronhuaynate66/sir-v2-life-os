@@ -79,7 +79,7 @@ export function LastInteractionPanel({
             className="text-muted-foreground/70"
             aria-hidden="true"
           />
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
             Última interacción
           </div>
         </div>

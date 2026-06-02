@@ -92,7 +92,7 @@ export function CalendarPanel() {
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <SectionTitle icon={CalendarDays} label="Calendario" />
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50">{LIMA_TZ_LABEL}</span>
+          <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{LIMA_TZ_LABEL}</span>
         </div>
         <Body state={state} />
       </CardContent>
@@ -122,11 +122,11 @@ function Body({ state }: { state: State }) {
   return (
     <div className="space-y-4 mt-1">
       {error && (
-        <p className="text-[10px] text-amber-400/80">Mostrando última copia (no pude refrescar: {error}).</p>
+        <p className="text-[10px] text-warn/80">Mostrando última copia (no pude refrescar: {error}).</p>
       )}
       {groups.map((g) => (
         <div key={g.dateKey}>
-          <div className="text-[11px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
             {dayHeader(g.dateKey, todayKey, tomorrowKey)}
           </div>
           <ul className="space-y-1.5">
@@ -201,7 +201,7 @@ function NotConfigured() {
 }
 
 function Note({ icon: Icon, tone, children }: { icon: typeof CalendarDays; tone: 'warn' | 'muted'; children: React.ReactNode }) {
-  const color = tone === 'warn' ? 'text-amber-400' : 'text-muted-foreground/40'
+  const color = tone === 'warn' ? 'text-warn' : 'text-muted-foreground/40'
   return (
     <div className="text-center py-6">
       <Icon size={20} strokeWidth={1.5} className={`${color} mx-auto mb-2`} aria-hidden="true" />

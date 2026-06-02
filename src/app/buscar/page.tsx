@@ -73,7 +73,7 @@ export default function BuscarPage() {
   return (
     <AppShell>
       <div className="mb-6">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2</div>
         <div className="flex items-center gap-3">
           <Search size={28} strokeWidth={1.5} className="text-muted-foreground" aria-hidden="true" />
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Búsqueda semántica</h1>
@@ -108,7 +108,7 @@ export default function BuscarPage() {
       </div>
 
       {indexMsg && (
-        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2.5 text-xs text-emerald-400 mb-4">
+        <div className="rounded-md border border-ok/30 bg-ok-soft p-2.5 text-xs text-ok mb-4">
           {indexMsg}
         </div>
       )}
@@ -130,7 +130,7 @@ export default function BuscarPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               {results.length} resultado{results.length === 1 ? '' : 's'}
             </div>
             {results.map((r) => (

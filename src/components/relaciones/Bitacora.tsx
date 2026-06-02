@@ -137,7 +137,7 @@ export function Bitacora({ personLogs, observations }: BitacoraProps) {
         >
           <div className="flex items-center gap-2">
             <NotebookPen size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">Bitácora</div>
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Bitácora</div>
             {entries.length > 0 && (
               <Badge variant="outline" className="text-[10px] font-mono">{entries.length}</Badge>
             )}

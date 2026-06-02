@@ -45,7 +45,7 @@ export function VidaProfesional({ person, observations }: VidaProfesionalProps) 
             className="text-muted-foreground/70"
             aria-hidden="true"
           />
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
             Vida profesional
           </div>
         </div>
@@ -126,7 +126,7 @@ function Body({ obs }: { obs: Observation }) {
         {li.isOpenToWork && (
           <Badge
             variant="outline"
-            className="text-[10px] font-normal gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+            className="text-[10px] font-normal gap-1 border-ok/30 bg-ok-soft text-ok"
           >
             <BadgeCheck size={10} strokeWidth={2} aria-hidden="true" />
             Open to work

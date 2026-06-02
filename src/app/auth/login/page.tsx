@@ -84,9 +84,9 @@ function LoginForm() {
         <Card className="shadow-none">
           <CardContent className="p-6 space-y-4">
             {error && (
-              <div className="flex items-start gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2">
-                <AlertCircle size={14} strokeWidth={1.75} className="text-red-400 mt-0.5 flex-shrink-0" />
-                <span className="text-xs text-red-400 leading-relaxed">{error}</span>
+              <div className="flex items-start gap-2 rounded-md border border-bad/30 bg-bad-soft px-3 py-2">
+                <AlertCircle size={14} strokeWidth={1.75} className="text-bad mt-0.5 flex-shrink-0" />
+                <span className="text-xs text-bad leading-relaxed">{error}</span>
               </div>
             )}
 
@@ -111,9 +111,9 @@ function LoginForm() {
             </div>
 
             {magicSent ? (
-              <div className="flex items-start gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-3">
-                <CheckCircle2 size={14} strokeWidth={1.75} className="text-emerald-400 mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-emerald-400 leading-relaxed">
+              <div className="flex items-start gap-2 rounded-md border border-ok/30 bg-ok-soft px-3 py-3">
+                <CheckCircle2 size={14} strokeWidth={1.75} className="text-ok mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-ok leading-relaxed">
                   Revisa <span className="font-mono">{email}</span> y haz click en el link para entrar.
                 </div>
               </div>

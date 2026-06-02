@@ -145,7 +145,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             <Users size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               Familia
             </div>
           </div>
