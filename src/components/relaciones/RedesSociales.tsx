@@ -62,10 +62,13 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
   const igObs = latestOfType(observations, 'instagram')
   const liObs = latestOfType(observations, 'linkedin')
   const igData = igObs ? readInstagram(igObs.data) : null
+  const liData = liObs ? readLinkedIn(liObs.data) : null
   const scannedInstagram = igData?.handle ?? null
   // Síntesis narrativa social (estilo V1, determinística — sin LLM).
   const narrative = socialNarrative({ ig: igData })
-  const scannedLinkedinHasProfile = !!liObs // linkedin_url no se extrae como tal; señalamos que hay captura
+  // URL de LinkedIn construida por el extractor desde el vanity visible (gema
+  // V1). Si existe y la persona no tiene URL cargada, ofrecemos vincularla.
+  const scannedLinkedinUrl = liData?.profileUrl ?? null
 
   function startEditing() {
     setPhone(person.phoneNumber ?? '')
@@ -99,6 +102,15 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
       updatedAt: new Date().toISOString(),
     })
     toast.success('Instagram vinculado', { description: `@${scannedInstagram}` })
+  }
+
+  function useScannedLinkedin() {
+    if (!scannedLinkedinUrl) return
+    updatePerson(person.id, {
+      linkedinUrl: normalizeUrl(scannedLinkedinUrl) ?? undefined,
+      updatedAt: new Date().toISOString(),
+    })
+    toast.success('LinkedIn vinculado', { description: scannedLinkedinUrl.replace(/^https?:\/\//, '') })
   }
 
   const igUrl = instagramLink(person.instagramHandle)
@@ -185,7 +197,19 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
                 <span className="ml-auto underline underline-offset-2">usar</span>
               </button>
             )}
-            {!person.linkedinUrl && scannedLinkedinHasProfile && (
+            {!person.linkedinUrl && scannedLinkedinUrl && (
+              <button
+                type="button"
+                onClick={useScannedLinkedin}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-dashed border-border/60 rounded-md px-2.5 py-1.5 w-full"
+              >
+                <Sparkles size={12} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
+                Detectado en captura:{' '}
+                <span className="font-mono text-foreground/80 truncate">{scannedLinkedinUrl.replace(/^https?:\/\//, '')}</span>
+                <span className="ml-auto underline underline-offset-2 shrink-0">usar</span>
+              </button>
+            )}
+            {!person.linkedinUrl && !scannedLinkedinUrl && liObs && (
               <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1.5">
                 <Sparkles size={11} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
                 Hay una captura de LinkedIn — pegá la URL del perfil en Editar para enlazarla.

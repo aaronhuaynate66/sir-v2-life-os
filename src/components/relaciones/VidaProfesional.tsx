@@ -117,6 +117,9 @@ function Body({ obs, hideSummary = false }: { obs: Observation; hideSummary?: bo
         {li.headline && summary !== li.headline && (
           <Row label="Headline" value={li.headline} />
         )}
+        {/* Experiencia más reciente con su rango. El historial COMPLETO (todas
+            las empresas, gema V1) vive en "Perfil profesional" (#10) para no
+            saturar el resumen at-a-glance. */}
         {li.latestExperience?.name && (
           <Row
             label="Experiencia"
@@ -125,7 +128,16 @@ function Body({ obs, hideSummary = false }: { obs: Observation; hideSummary?: bo
                 ? `${li.latestExperience.title} · ${li.latestExperience.name}`
                 : li.latestExperience.name
             }
-            hint={li.latestExperience.dateRange ?? undefined}
+            hint={
+              [
+                li.latestExperience.dateRange,
+                li.workHistory && li.workHistory.length > 1
+                  ? `+${li.workHistory.length - 1} ${li.workHistory.length - 1 === 1 ? 'empresa anterior' : 'empresas anteriores'}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(' · ') || undefined
+            }
           />
         )}
         {/* Educación se renderiza arriba (reconciliada LinkedIn > RENIEC), no acá. */}

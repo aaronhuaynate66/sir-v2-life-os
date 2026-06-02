@@ -57,6 +57,30 @@ describe('readLinkedIn — coerción defensiva', () => {
     expect(readLinkedIn({ connectionsCount: NaN }).connectionsCount).toBeNull()
     expect(readLinkedIn({ connectionsCount: Infinity }).connectionsCount).toBeNull()
   })
+
+  it('lee workHistory/educationHistory completos + profileUrl (gema V1)', () => {
+    const r = readLinkedIn({
+      workHistory: [
+        { name: 'Globant', title: 'Ing.', dateRange: '2022 - hoy' },
+        { name: 'BBVA', title: null, dateRange: '2019 - 2022' },
+        { title: 'sin name' }, // inválida → se dropea
+      ],
+      educationHistory: [{ name: 'PUCP', title: 'Ing. Informática', dateRange: '2014 - 2019' }],
+      profileUrl: 'https://linkedin.com/in/maria-lopez',
+    })
+    expect(r.workHistory?.map((w) => w.name)).toEqual(['Globant', 'BBVA'])
+    expect(r.educationHistory).toHaveLength(1)
+    expect(r.profileUrl).toBe('https://linkedin.com/in/maria-lopez')
+  })
+
+  it('backfill: row vieja sin arrays pero con latest* → historial de 1', () => {
+    const r = readLinkedIn({
+      latestExperience: { name: 'Acme', title: 'Dev', dateRange: '2020 - 2024' },
+      latestEducation: { name: 'UNI', title: null, dateRange: null },
+    })
+    expect(r.workHistory).toEqual([{ name: 'Acme', title: 'Dev', dateRange: '2020 - 2024' }])
+    expect(r.educationHistory).toEqual([{ name: 'UNI', title: null, dateRange: null }])
+  })
 })
 
 describe('readInstagram — coerción defensiva', () => {

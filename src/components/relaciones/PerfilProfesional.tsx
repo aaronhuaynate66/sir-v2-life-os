@@ -9,7 +9,7 @@
 // la observation linkedin más reciente — sin LLM.
 
 import { useState } from 'react'
-import { ChevronDown, Briefcase, ExternalLink, BadgeCheck, Image as ImageIcon } from 'lucide-react'
+import { ChevronDown, Briefcase, ExternalLink, BadgeCheck, Image as ImageIcon, GraduationCap } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -18,6 +18,7 @@ import { normalizeUrl } from '@/lib/social/links'
 import { DiscardCaptureButton } from './DiscardCaptureButton'
 import { cn } from '@/lib/utils'
 import type { Observation } from '@/lib/capture/observations/types'
+import type { LinkedInOrgRef } from '@/lib/capture/linkedin/types'
 import type { Person } from '@/types'
 
 export interface PerfilProfesionalProps {
@@ -36,7 +37,11 @@ export function PerfilProfesional({ person, observations }: PerfilProfesionalPro
   if (!obs) return null
 
   const li = readLinkedIn(obs.data)
-  const profileUrl = normalizeUrl(person.linkedinUrl ?? null)
+  // URL del perfil: la manual de la persona manda; si no hay, usamos la que
+  // el extractor construyó desde el vanity visible (gema V1).
+  const profileUrl = normalizeUrl(person.linkedinUrl ?? null) ?? li.profileUrl ?? null
+  const work = li.workHistory ?? []
+  const education = li.educationHistory ?? []
 
   return (
     <Card className="shadow-none mb-4">
@@ -78,21 +83,18 @@ export function PerfilProfesional({ person, observations }: PerfilProfesionalPro
               {li.connectionsCount !== null && li.connectionsCount !== undefined && (
                 <Row label="Conexiones" value={fmtCount(li.connectionsCount)} />
               )}
-              {li.latestExperience?.name && (
-                <Row
-                  label="Última experiencia"
-                  value={li.latestExperience.title ? `${li.latestExperience.title} · ${li.latestExperience.name}` : li.latestExperience.name}
-                  hint={li.latestExperience.dateRange ?? undefined}
-                />
-              )}
-              {li.latestEducation?.name && (
-                <Row
-                  label="Educación"
-                  value={li.latestEducation.title ? `${li.latestEducation.title} · ${li.latestEducation.name}` : li.latestEducation.name}
-                  hint={li.latestEducation.dateRange ?? undefined}
-                />
-              )}
             </div>
+
+            {/* Historial laboral COMPLETO (gema V1): todas las empresas, de más
+                reciente a más antigua. Render determinístico de lo extraído. */}
+            {work.length > 0 && (
+              <Timeline label="Experiencia" Icon={Briefcase} entries={work} />
+            )}
+
+            {/* Historial educativo COMPLETO. */}
+            {education.length > 0 && (
+              <Timeline label="Educación" Icon={GraduationCap} entries={education} />
+            )}
 
             {li.about && (
               <div>
@@ -147,6 +149,45 @@ export function PerfilProfesional({ person, observations }: PerfilProfesionalPro
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/** Timeline vertical de un historial (laboral o educativo). Cada entrada:
+ *  cargo/grado · institución + rango. Determinístico, sin LLM. */
+function Timeline({
+  label,
+  Icon,
+  entries,
+}: {
+  label: string
+  Icon: typeof Briefcase
+  entries: LinkedInOrgRef[]
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">
+        <Icon size={12} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+        {label}
+      </div>
+      <ol className="space-y-2.5 border-l border-border/50 pl-3.5 ml-1">
+        {entries.map((e, i) => (
+          <li key={`${e.name}-${i}`} className="relative">
+            <span
+              className="absolute -left-[18px] top-1.5 h-1.5 w-1.5 rounded-full bg-border ring-2 ring-background"
+              aria-hidden="true"
+            />
+            <div className="text-sm text-foreground leading-snug">
+              {e.title ? <span className="font-medium">{e.title}</span> : null}
+              {e.title ? ' · ' : ''}
+              <span className={e.title ? 'text-muted-foreground' : 'font-medium'}>{e.name}</span>
+            </div>
+            {e.dateRange && (
+              <div className="text-[10px] font-mono text-muted-foreground/60">{e.dateRange}</div>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
   )
 }
 

@@ -16,7 +16,7 @@
 // El LLM sigue reservado para "Lo personal" (síntesis de conversaciones,
 // cacheada en person_synthesis) — esa SÍ necesita modelo. Acá no.
 
-import type { LinkedInProfileExtracted } from '@/lib/capture/linkedin/types'
+import type { LinkedInProfileExtracted, LinkedInOrgRef } from '@/lib/capture/linkedin/types'
 import type { InstagramProfileExtracted } from '@/lib/capture/instagram/types'
 import type { ReconciledEducation } from '@/lib/observations/education'
 import { professionalSummary, fmtCount } from '@/lib/observations/profile'
@@ -34,6 +34,26 @@ function joinSentences(sentences: (string | null | undefined)[]): string | null 
   const parts = sentences.map((s) => s?.trim()).filter((s): s is string => !!s)
   if (parts.length === 0) return null
   return parts.join(' ')
+}
+
+/** Lista en prosa las empresas PREVIAS (del 2.º ítem en adelante) del historial
+ *  laboral, hasta 3, deduplicando contra la actual. null si no hay trayectoria
+ *  previa observable. Determinístico, no inventa. */
+function previousCompanies(workHistory: LinkedInOrgRef[] | undefined): string | null {
+  if (!workHistory || workHistory.length <= 1) return null
+  const current = workHistory[0]?.name?.toLowerCase()
+  const prev: string[] = []
+  for (const entry of workHistory.slice(1)) {
+    const name = entry.name?.trim()
+    if (!name) continue
+    if (name.toLowerCase() === current) continue
+    if (prev.some((p) => p.toLowerCase() === name.toLowerCase())) continue
+    prev.push(name)
+    if (prev.length >= 3) break
+  }
+  if (prev.length === 0) return null
+  if (prev.length === 1) return prev[0]
+  return `${prev.slice(0, -1).join(', ')} y ${prev[prev.length - 1]}`
 }
 
 export interface ProfessionalNarrativeInput {
@@ -64,6 +84,14 @@ export function professionalNarrative(input: ProfessionalNarrativeInput): string
       // Si el summary es el headline (no rol+empresa), lo presentamos como tal.
       const isRole = !!(li.currentRole && li.currentCompany) || !!li.currentRole
       sentences.push(isRole ? `Se desempeña como ${summary}.` : `Se presenta como "${summary}".`)
+    }
+
+    // 2b. Trayectoria: empresas previas del historial laboral (gema V1).
+    //     workHistory[0] es la más reciente (ya cubierta arriba); listamos las
+    //     siguientes como recorrido. Sin inventar: sólo nombres observados.
+    const trajectory = previousCompanies(li.workHistory)
+    if (trajectory) {
+      sentences.push(`Antes pasó por ${trajectory}.`)
     }
 
     // 3. Cómo se describe (primera oración del about).

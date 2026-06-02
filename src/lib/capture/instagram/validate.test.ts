@@ -33,13 +33,13 @@ describe('isValidInstagramProfileExtracted', () => {
   })
 
   it('tolera mutualFollowersText ausente (el modelo lo omite)', () => {
-    const o = base() as Record<string, unknown>
+    const o = base() as unknown as Record<string, unknown>
     delete o.mutualFollowersText
     expect(isValidInstagramProfileExtracted(o)).toBe(true)
   })
 
   it('rechaza mutualFollowersText con tipo inválido', () => {
-    const o = base() as Record<string, unknown>
+    const o = base() as unknown as Record<string, unknown>
     o.mutualFollowersText = 42
     expect(isValidInstagramProfileExtracted(o)).toBe(false)
   })

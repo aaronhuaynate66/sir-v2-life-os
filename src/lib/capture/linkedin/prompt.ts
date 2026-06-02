@@ -85,6 +85,9 @@ prosa, sin markdown fences):
   "about": "<seccion About/Acerca de literal o null>",
   "latestExperience": { "name": "...", "title": "..." | null, "dateRange": "..." | null } | null,
   "latestEducation":  { "name": "...", "title": "..." | null, "dateRange": "..." | null } | null,
+  "workHistory": [ { "name": "<empresa>", "title": "<cargo>" | null, "dateRange": "<rango>" | null } ],
+  "educationHistory": [ { "name": "<institucion>", "title": "<grado/programa>" | null, "dateRange": "<rango>" | null } ],
+  "profileUrl": "<https://linkedin.com/in/<handle> construida desde el vanity visible, o null>",
   "connectionsCount": <entero o null>,
   "isOpenToWork": <true|false>,
   "hasProfilePhoto": <true|false>,
@@ -131,20 +134,39 @@ QUE BUSCAR EN LA IMAGEN:
    - Copia literal con saltos de linea (\\n). Hasta 1500 chars.
    - null si la seccion no aparece o esta vacia.
 
-6. latestExperience
-   - Si la seccion "Experience" / "Experiencia" esta visible, extraer la
-     entrada MAS RECIENTE (la primera, arriba):
+6. workHistory (HISTORIAL LABORAL COMPLETO — gema importante)
+   - Si la seccion "Experience" / "Experiencia" esta visible, extraer TODAS
+     las entradas legibles, de MAS RECIENTE a MAS ANTIGUA. Cada entrada:
      * name = empresa
-     * title = cargo dentro de esa empresa
-     * dateRange = rango temporal literal (ej. "Jan 2022 - Present")
-   - null si la seccion no esta visible.
+     * title = cargo dentro de esa empresa (null si no es legible)
+     * dateRange = rango temporal literal (ej. "ene. 2022 - actualidad",
+       "Jan 2022 - Present"). null si no es legible.
+   - Devolvé un ARRAY (orden: la primera entrada es la mas reciente).
+   - Array VACIO [] si la seccion Experience no esta visible o es ilegible.
+   - ANTI-HALLUCINATION: NO completes empresas/cargos/fechas que no se leen
+     literal. Es preferible un array mas corto (o vacio) que entradas
+     inventadas. Si una entrada es legible solo parcialmente (empresa si,
+     cargo no), incluila con los campos que faltan en null.
+   - latestExperience = la PRIMERA entrada de workHistory (la mas reciente),
+     o null si workHistory esta vacio.
 
-7. latestEducation
-   - Misma logica para "Education" / "Educacion":
+7. educationHistory (HISTORIAL EDUCATIVO COMPLETO)
+   - Misma logica para "Education" / "Educacion": TODAS las instituciones
+     legibles, de mas reciente a mas antigua. Cada entrada:
      * name = institucion
-     * title = grado / programa
-     * dateRange = rango
-   - null si no se ve.
+     * title = grado / programa (null si no es legible)
+     * dateRange = rango (null si no es legible)
+   - Array VACIO [] si la seccion no esta visible.
+   - latestEducation = la PRIMERA entrada de educationHistory, o null.
+
+7b. profileUrl (CONSTRUCCION DE URL — gema V1)
+   - Si en la imagen se ve el vanity/handle del perfil (ej. en la barra de
+     direcciones "linkedin.com/in/maria-lopez", o el texto "in/maria-lopez",
+     o "Contact info" con el slug), CONSTRUI la URL canonica:
+     * "in/maria-lopez"  -> "https://linkedin.com/in/maria-lopez"
+     * URL completa visible -> normalizala a "https://linkedin.com/in/<slug>"
+   - REGLA CRITICA: NO inventes la URL a partir del NOMBRE de la persona.
+     Solo si el handle/slug aparece LITERAL en la imagen. Si no se ve -> null.
 
 8. connectionsCount
    - Linea pequeña tipo "500+ connections", "1,234 followers", o un boton

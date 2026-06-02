@@ -13,7 +13,8 @@ import type { MatcherSignals } from '@/lib/people/matcher'
  * Convierte el output sanitizado de un extractor en señales para el
  * matcher. Cada capture_type aporta lo que su schema soporta:
  *
- *   - linkedin       -> fullName (no hay URL en el extractor today)
+ *   - linkedin       -> fullName + linkedinUrl (profileUrl construida desde el
+ *                       vanity visible; habilita auto-link por URL exacta)
  *   - instagram      -> handle + displayName como fallback name
  *   - whatsapp_info  -> phoneNumber + displayName
  *   - whatsapp_chat  -> personName (header del chat)
@@ -31,6 +32,8 @@ export function signalsFromExtracted(
     case 'linkedin': {
       const fullName = readString(data.fullName)
       if (fullName) out.name = fullName
+      const profileUrl = readString(data.profileUrl)
+      if (profileUrl) out.linkedinUrl = profileUrl
       break
     }
     case 'instagram': {

@@ -55,6 +55,34 @@ describe('professionalNarrative', () => {
     const p = professionalNarrative({ li: li({ isOpenToWork: true, currentRole: 'Dev' }), education: NO_EDU })
     expect(p).toContain('abierta/o a nuevas oportunidades')
   })
+
+  it('lista empresas previas del historial laboral (trayectoria, gema V1)', () => {
+    const p = professionalNarrative({
+      li: li({
+        currentRole: 'Ing. de Datos',
+        currentCompany: 'Globant',
+        workHistory: [
+          { name: 'Globant', title: 'Ing. de Datos', dateRange: '2022 - hoy' },
+          { name: 'BBVA', title: 'Analista', dateRange: '2019 - 2022' },
+          { name: 'Belcorp', title: 'Practicante', dateRange: '2018 - 2019' },
+        ],
+      }),
+      education: NO_EDU,
+    })
+    expect(p).toContain('Antes pasó por BBVA y Belcorp.')
+  })
+
+  it('sin trayectoria previa (historial de 1) → no agrega la oración', () => {
+    const p = professionalNarrative({
+      li: li({
+        currentRole: 'Dev',
+        currentCompany: 'Acme',
+        workHistory: [{ name: 'Acme', title: 'Dev', dateRange: '2020 - hoy' }],
+      }),
+      education: NO_EDU,
+    })
+    expect(p).not.toContain('Antes pasó por')
+  })
 })
 
 describe('socialNarrative', () => {

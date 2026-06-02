@@ -72,6 +72,21 @@ function orgRef(v: unknown): LinkedInOrgRef | null {
   return { name, title: str(r.title), dateRange: str(r.dateRange) }
 }
 
+/** Coerciona una lista de orgRefs (workHistory/educationHistory). Dropea
+ *  entradas inválidas. Devuelve [] para rows viejos sin el campo. */
+function orgRefList(v: unknown): LinkedInOrgRef[] {
+  if (!Array.isArray(v)) return []
+  return v.map(orgRef).filter((r): r is LinkedInOrgRef => r !== null)
+}
+
+/** Si la lista vino vacía (row vieja) pero hay un `latest` legible, lo usamos
+ *  como historial de 1 entrada — así VidaProfesional/PerfilProfesional renderizan
+ *  igual sin importar la versión de la captura. */
+function backfillHistory(list: LinkedInOrgRef[], latest: LinkedInOrgRef | null): LinkedInOrgRef[] {
+  if (list.length > 0) return list
+  return latest ? [latest] : []
+}
+
 /** Coerciona observations.data (linkedin) a un shape parcial seguro. */
 export function readLinkedIn(data: Record<string, unknown>): Partial<LinkedInProfileExtracted> {
   return {
@@ -83,6 +98,12 @@ export function readLinkedIn(data: Record<string, unknown>): Partial<LinkedInPro
     about: str(data.about),
     latestExperience: orgRef(data.latestExperience),
     latestEducation: orgRef(data.latestEducation),
+    // Historiales completos (gema V1). Backward-compat: si la row es vieja y
+    // sólo tiene latest*, lo exponemos como lista de 1 para que los readers
+    // que consumen arrays funcionen igual.
+    workHistory: backfillHistory(orgRefList(data.workHistory), orgRef(data.latestExperience)),
+    educationHistory: backfillHistory(orgRefList(data.educationHistory), orgRef(data.latestEducation)),
+    profileUrl: str(data.profileUrl),
     connectionsCount: num(data.connectionsCount),
     isOpenToWork: bool(data.isOpenToWork),
     hasProfilePhoto: bool(data.hasProfilePhoto),

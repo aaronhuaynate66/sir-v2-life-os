@@ -35,10 +35,24 @@ export interface LinkedInProfileExtracted {
   currentCompany: string | null
   /** Texto de la seccion "About" / "Acerca de" si esta visible. null si no. */
   about: string | null
-  /** Entrada mas reciente de Experience visible. null si no se ve la seccion. */
+  /** Entrada mas reciente de Experience visible. null si no se ve la seccion.
+   *  Compat: cuando el modelo devuelve `workHistory`, esto es su primer item
+   *  (más reciente); se conserva para readers/rows viejos. */
   latestExperience: LinkedInOrgRef | null
-  /** Entrada mas reciente de Education visible. null si no se ve. */
+  /** Entrada mas reciente de Education visible. null si no se ve.
+   *  Compat análogo a latestExperience (primer item de `educationHistory`). */
   latestEducation: LinkedInOrgRef | null
+  /** Historial laboral COMPLETO visible, de más reciente a más antiguo
+   *  (gema V1). Cada entrada con empresa/cargo/rango. Vacío si la sección
+   *  Experience no es legible. NO inventa entradas (anti-hallucination). */
+  workHistory: LinkedInOrgRef[]
+  /** Historial educativo COMPLETO visible (todas las instituciones), de más
+   *  reciente a más antigua. Vacío si la sección Education no es legible. */
+  educationHistory: LinkedInOrgRef[]
+  /** URL del perfil construida desde el vanity/handle visible
+   *  (https://linkedin.com/in/<handle>), gema V1. null si el handle no se ve
+   *  literal — NO se inventa a partir del nombre. */
+  profileUrl: string | null
   /** Numero de conexiones si la metrica esta visible ("500+ connections",
    *  "1,234 followers"). Devolver el entero (500+ -> 500). null si no esta. */
   connectionsCount: number | null
