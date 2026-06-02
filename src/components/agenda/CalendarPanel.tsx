@@ -118,11 +118,25 @@ function Body({ state }: { state: State }) {
   const todayKey = todayKeyLima(0)
   const tomorrowKey = todayKeyLima(1)
   const groups = groupByDay(events)
+  // Leyenda solo si hay más de un calendario (con multi-calendario tiene sentido).
+  const legend = (state.data.calendars ?? []).filter((c) => c.label)
+  const showLegend = legend.length > 1
 
   return (
     <div className="space-y-4 mt-1">
       {error && (
         <p className="text-[10px] text-warn/80">Mostrando última copia (no pude refrescar: {error}).</p>
+      )}
+      {showLegend && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {legend.map((c) => (
+            <span key={c.id} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color ?? 'var(--brand)' }} aria-hidden="true" />
+              {c.label}
+              {c.error && <span className="text-warn/80" title={c.error}>(error)</span>}
+            </span>
+          ))}
+        </div>
       )}
       {groups.map((g) => (
         <div key={g.dateKey}>
@@ -143,6 +157,14 @@ function Body({ state }: { state: State }) {
 function EventRow({ ev }: { ev: CalendarEvent }) {
   return (
     <li className="flex items-start gap-3 rounded-md px-2 py-1.5 -mx-2 hover:bg-accent/10 transition-colors">
+      {ev.calendarColor && (
+        <span
+          className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0"
+          style={{ backgroundColor: ev.calendarColor }}
+          aria-hidden="true"
+          title={ev.calendarLabel}
+        />
+      )}
       <div className="flex-shrink-0 w-14 pt-0.5">
         {ev.allDay ? (
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground/60">Todo el día</span>
@@ -184,13 +206,12 @@ function NotConfigured() {
     <div className="mt-2 rounded-md border border-dashed border-border/70 bg-muted/20 p-4">
       <div className="flex items-center gap-2 mb-1.5">
         <Settings2 size={14} strokeWidth={1.75} className="text-muted-foreground" aria-hidden="true" />
-        <span className="text-sm font-medium text-foreground/90">Conectá tu calendario de Outlook</span>
+        <span className="text-sm font-medium text-foreground/90">Conectá tu calendario</span>
       </div>
       <p className="text-xs text-muted-foreground leading-relaxed">
-        En Outlook, publicá tu calendario y copiá la URL <span className="font-mono text-foreground/80">.ics</span>.
-        Agregá esa URL como variable de entorno{' '}
-        <span className="font-mono text-foreground/80">OUTLOOK_ICS_URL</span> en Vercel
-        (Project → Settings → Environment Variables) y volvé a deployar.
+        Usá <span className="font-medium text-foreground/80">Calendarios conectados</span> aquí abajo
+        para pegar la URL <span className="font-mono text-foreground/80">.ics</span> de tu calendario
+        (Outlook, Google, iCloud…). Podés conectar varios y se muestran unificados.
       </p>
       <p className="text-[10px] text-muted-foreground/60 mt-2 leading-relaxed">
         Tu token de calendario queda solo en el servidor — nunca se expone en el navegador.

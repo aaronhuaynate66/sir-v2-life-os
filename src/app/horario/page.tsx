@@ -122,9 +122,22 @@ function Body({ state, timeline, nowMs }: { state: FetchState; timeline: DayTime
   }
 
   const o = OVERLOAD_STYLE[timeline.overload.level]
+  const legend = (state.data.calendars ?? []).filter((c) => c.label)
+  const showLegend = legend.length > 1
 
   return (
     <div className="space-y-5">
+      {/* Leyenda de calendarios (multi-calendario) */}
+      {showLegend && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          {legend.map((c) => (
+            <span key={c.id} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color ?? 'var(--brand)' }} aria-hidden="true" />
+              {c.label}
+            </span>
+          ))}
+        </div>
+      )}
       {/* Sobrecarga */}
       {timeline.overload.level !== 'ok' && (
         <Card className={cn('shadow-none', o.border, o.bg)}>
@@ -232,7 +245,16 @@ function BlockRow({ block, nowMs }: { block: TimelineBlock; nowMs: number }) {
   return (
     <li className={cn('flex items-center gap-3 py-2 border-b border-border/40 last:border-0', isPast && 'opacity-40')}>
       <div className="w-14 flex-shrink-0 text-xs font-mono tabular-nums text-muted-foreground">{limaTime(block.event.start)}</div>
-      <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', isCurrent ? 'bg-brand animate-pulse' : isPast ? 'bg-muted-foreground/40' : 'bg-muted-foreground/70')} aria-hidden="true" />
+      {block.event.calendarColor ? (
+        <div
+          className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', isCurrent && 'animate-pulse')}
+          style={{ backgroundColor: block.event.calendarColor }}
+          aria-hidden="true"
+          title={block.event.calendarLabel}
+        />
+      ) : (
+        <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', isCurrent ? 'bg-brand animate-pulse' : isPast ? 'bg-muted-foreground/40' : 'bg-muted-foreground/70')} aria-hidden="true" />
+      )}
       <div className="min-w-0 flex-1">
         <div className={cn('text-sm truncate', isCurrent ? 'text-foreground font-medium' : 'text-foreground/90')}>{block.event.title}</div>
         {block.event.location && <div className="text-[11px] text-muted-foreground truncate">{block.event.location}</div>}
