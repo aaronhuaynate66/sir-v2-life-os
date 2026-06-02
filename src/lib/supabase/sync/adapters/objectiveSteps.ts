@@ -30,7 +30,9 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     id: s.id,
     user_id: userId,
     objective_id: s.objectiveId,
-    kind: s.kind,
+    // Coerce: data persistida pre-0041 (localStorage) puede no traer `kind`.
+    // Sin esto, un upsert de ese paso viejo mandaría kind=undefined.
+    kind: coerceKind(s.kind),
     parent_id: s.parentId ?? null,
     title: s.title,
     description: s.description ?? '',
