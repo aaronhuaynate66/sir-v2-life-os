@@ -22,7 +22,7 @@ import { useMemoryStore } from '@/stores'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
 import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
-import { computeStepProgress } from '@/lib/objectives/steps'
+import { computeObjectiveProgress } from '@/lib/objectives/steps'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
@@ -77,15 +77,15 @@ function GoalsContent() {
     return map
   }, [objectiveSteps])
 
-  // El progreso del objetivo se calcula de los pasos cuando existen: rollup
-  // hechos/total → goal.progress (fuente única para dashboard, alineación y
+  // El progreso del objetivo se calcula del rollup OKR cuando hay KRs: promedio
+  // de % de cada KR → goal.progress (fuente única para dashboard, alineación y
   // agenda). Sólo objetivos ACTIVOS; idempotente (sólo escribe si difiere) →
-  // converge en una pasada, sin loop. Si no hay pasos, no toca nada (cae al
+  // converge en una pasada, sin loop. Si no hay KRs, no toca nada (cae al
   // progreso manual).
   useEffect(() => {
     for (const g of goals) {
       if (g.status !== 'active') continue
-      const prog = computeStepProgress(stepsByGoal.get(g.id) ?? [])
+      const prog = computeObjectiveProgress(stepsByGoal.get(g.id) ?? [], g.id)
       if (prog && prog.percent !== g.progress) {
         updateGoalProgress(g.id, prog.percent)
       }
@@ -293,7 +293,7 @@ function GoalsContent() {
         <div className="space-y-2 mb-6">
           {activeGoals.map((g) => {
             const gSteps = stepsByGoal.get(g.id) ?? []
-            const rollup = computeStepProgress(gSteps)
+            const rollup = computeObjectiveProgress(gSteps, g.id)
             const hasSteps = rollup != null
             const displayPct = rollup ? rollup.percent : g.progress
             const stepsOpen = stepsOpenId === g.id
@@ -323,10 +323,10 @@ function GoalsContent() {
                       >
                         <ChevronRight size={12} className={cn('transition-transform', stepsOpen && 'rotate-90')} />
                         <ListChecks size={12} />
-                        Pasos{hasSteps ? ` · ${rollup.done}/${rollup.total}` : ''}
+                        Plan{hasSteps ? ` · ${rollup.done}/${rollup.total} KR` : ''}
                       </button>
                       {hasSteps && (
-                        <span className="ml-2 text-[10px] text-muted-foreground/50">progreso por pasos</span>
+                        <span className="ml-2 text-[10px] text-muted-foreground/50">progreso por KRs</span>
                       )}
                     </div>
                     {!hasSteps && progressId === g.id && (
