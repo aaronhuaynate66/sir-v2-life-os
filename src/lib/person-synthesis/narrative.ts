@@ -121,5 +121,15 @@ export function socialNarrative(input: SocialNarrativeInput): string | null {
     sentences.push(`Su bio dice: "${firstSentence(ig.bio)}".`)
   }
 
+  // 5. Seguidores en común (prueba social — gente que ambos siguen).
+  const mutual = ig.mutualFollowers
+  if (mutual && mutual.totalCount != null && mutual.totalCount > 0) {
+    const names = mutual.named.slice(0, 2).map((h) => `@${h}`).join(', ')
+    const more = mutual.totalCount > mutual.named.length ? ' y más' : ''
+    const nameClause = names ? ` (${names}${more})` : ''
+    const noun = mutual.totalCount === 1 ? 'seguidor' : 'seguidores'
+    sentences.push(`Comparten ${fmtCount(mutual.totalCount)} ${noun} en común${nameClause}.`)
+  }
+
   return joinSentences(sentences)
 }

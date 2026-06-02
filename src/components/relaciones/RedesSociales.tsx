@@ -20,10 +20,11 @@
 // (AgregarCapturaPanel, arriba en el detalle) — NO se navega a /captura.
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import {
   AtSign, Briefcase, Bird, Phone, ExternalLink, Edit2, Check, X as XIcon, Sparkles,
-  BadgeCheck, Lock,
+  BadgeCheck, Lock, Users,
 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -38,7 +39,8 @@ import {
 import { latestOfType, readInstagram, readLinkedIn, fmtCount } from '@/lib/observations/profile'
 import { socialNarrative } from '@/lib/person-synthesis/narrative'
 import { DiscardCaptureButton } from './DiscardCaptureButton'
-import type { Observation } from '@/lib/capture/observations/types'
+import type { Observation, Confidence } from '@/lib/capture/observations/types'
+import type { InstagramMutualFollowers } from '@/lib/capture/instagram/mutual'
 import type { Person } from '@/types'
 
 export interface RedesSocialesProps {
@@ -327,15 +329,116 @@ function InstagramEnrichment({ obs }: { obs: Observation }) {
         </a>
       )}
 
-      <div className="text-[11px] text-muted-foreground/70 border-t border-border/40 pt-2 flex items-center justify-between gap-2">
-        <span>Seguidores en común: datos insuficientes</span>
-        <span className="font-mono text-muted-foreground/50">
-          instagram · {obs.confidence ?? 'sin confianza'}
-        </span>
+      <div className="border-t border-border/40 pt-2 space-y-1.5">
+        <MutualFollowers mutual={ig.mutualFollowers ?? null} confidence={obs.confidence} />
       </div>
 
       <div className="flex justify-end">
         <DiscardCaptureButton observationId={obs.id} what="Captura de Instagram" label="Descartar" />
+      </div>
+    </div>
+  )
+}
+
+/** Seguidores en común extraídos de la captura. Si alguno de los handles
+ *  nombrados coincide (por instagram_handle normalizado) con una persona que YA
+ *  existe en la red del usuario, se enlaza a su ficha — sin crear personas ni
+ *  inventar. Si no hay coincidencia pero el token parece un handle, se enlaza a
+ *  Instagram; si es ambiguo, queda como texto plano. */
+function MutualFollowers({
+  mutual,
+  confidence,
+}: {
+  mutual: InstagramMutualFollowers | null
+  confidence: Confidence | null
+}) {
+  const people = useRelationshipStore((s) => s.people)
+  const meta = (
+    <span className="font-mono text-muted-foreground/50 text-[11px]">
+      instagram · {confidence ?? 'sin confianza'}
+    </span>
+  )
+
+  if (!mutual || (mutual.named.length === 0 && mutual.totalCount === null)) {
+    return (
+      <div className="text-[11px] text-muted-foreground/70 flex items-center justify-between gap-2">
+        <span>Seguidores en común: datos insuficientes</span>
+        {meta}
+      </div>
+    )
+  }
+
+  // Índice handle-normalizado -> persona (para enlazar lo que ya está en la red).
+  const byHandle = new Map<string, Person>()
+  for (const p of people) {
+    const h = normalizeHandle(p.instagramHandle)
+    if (h) byHandle.set(h.toLowerCase(), p)
+  }
+
+  const looksLikeHandle = (t: string) => /^[\w.]{1,40}$/.test(t)
+  const extra =
+    mutual.totalCount !== null && mutual.totalCount > mutual.named.length
+      ? mutual.totalCount - mutual.named.length
+      : 0
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70 flex items-center gap-1.5">
+          <Users size={11} strokeWidth={1.75} aria-hidden="true" />
+          Seguidores en común
+          {mutual.totalCount !== null && (
+            <span className="font-mono text-foreground/70 normal-case">{fmtCount(mutual.totalCount)}</span>
+          )}
+        </span>
+        {meta}
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {mutual.named.map((token) => {
+          const norm = normalizeHandle(token)
+          const match = norm ? byHandle.get(norm.toLowerCase()) : undefined
+          if (match?.slug) {
+            return (
+              <Link
+                key={token}
+                href={`/relaciones/${match.slug}`}
+                className="inline-flex items-center gap-1 rounded-full border border-brand/40 bg-brand/5 px-2 py-0.5 text-[11px] text-brand-soft-foreground hover:bg-brand/10 transition-colors"
+                title={`${match.name} — en tu red`}
+              >
+                <Sparkles size={9} strokeWidth={2} aria-hidden="true" />
+                {match.name}
+              </Link>
+            )
+          }
+          if (looksLikeHandle(token)) {
+            const href = instagramLink(token)
+            return href ? (
+              <a
+                key={token}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-full border border-border/50 px-2 py-0.5 text-[11px] font-mono text-muted-foreground hover:text-foreground hover:border-accent/40 transition-colors"
+              >
+                @{token}
+              </a>
+            ) : (
+              <span key={token} className="rounded-full border border-border/50 px-2 py-0.5 text-[11px] font-mono text-muted-foreground">
+                @{token}
+              </span>
+            )
+          }
+          return (
+            <span key={token} className="rounded-full border border-border/50 px-2 py-0.5 text-[11px] text-muted-foreground">
+              {token}
+            </span>
+          )
+        })}
+        {extra > 0 && (
+          <span className="inline-flex items-center px-1.5 py-0.5 text-[11px] text-muted-foreground/70">
+            y {fmtCount(extra)} más
+          </span>
+        )}
       </div>
     </div>
   )

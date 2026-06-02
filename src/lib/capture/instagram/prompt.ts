@@ -25,6 +25,7 @@ prosa, sin markdown fences):
   "isVerified": <true|false>,
   "isPrivate": <true|false>,
   "hasProfilePhoto": <true|false>,
+  "mutualFollowersText": "<linea de seguidores en comun, LITERAL, o null>",
   "confidence": "high" | "medium" | "low",
   "rawObservations": "<max 200 chars en español o null>"
 }
@@ -91,6 +92,18 @@ QUE BUSCAR EN LA IMAGEN:
     - true si la foto circular grande es una imagen real.
     - false si es el avatar default gris/silueta.
 
+11. mutualFollowersText (seguidores en común / conexiones en común)
+    - En perfiles de OTRAS personas, Instagram muestra una línea de prueba
+      social, normalmente arriba o debajo de los contadores, con foto(s)
+      pequeña(s) de seguidores en común:
+      * ES: "its_almendrita, adrian.prog y 12 más siguen esta cuenta"
+      * ES: "Seguido por its_almendrita y adrian.prog"
+      * EN: "Followed by its_almendrita, adrian.prog and 12 others"
+    - Copiá esa línea COMPLETA y LITERAL (los handles nombrados + el "y N más").
+    - NO la reescribas, NO la resumas, NO expandas el "N más" a una lista.
+    - null si NO aparece esa línea (cuenta propia, sin seguidores en común,
+      o no visible en el recorte). NUNCA inventes handles de seguidores en común.
+
 REGLAS DE CONFIANZA:
 
 - high   : handle + displayName + 3 contadores claros, bio legible.
@@ -117,6 +130,8 @@ Si NO podes leer un campo con claridad:
   * NO inventes postsCount, followersCount, followingCount. Si los
     numeros no se leen -> null.
   * NO inventes pronouns ni category.
+  * NO inventes mutualFollowersText. Si NO ves la línea de seguidores en
+    común -> null. NUNCA inventes handles "plausibles" de seguidores en común.
 - Es PREFERIBLE null a informacion incorrecta.
 
 Aplica tambien a handle:

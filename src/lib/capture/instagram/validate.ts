@@ -2,6 +2,7 @@
 
 import type { Confidence } from '../observations/types'
 import type { InstagramProfileExtracted } from './types'
+import { parseMutualFollowers } from './mutual'
 
 const VALID_CONFIDENCES: ReadonlySet<Confidence> = new Set<Confidence>([
   'high',
@@ -34,6 +35,8 @@ export function isValidInstagramProfileExtracted(x: unknown): x is InstagramProf
   if (typeof o.isVerified !== 'boolean') return false
   if (typeof o.isPrivate !== 'boolean') return false
   if (typeof o.hasProfilePhoto !== 'boolean') return false
+  // mutualFollowersText es nuevo: tolerante a que el modelo lo omita (undefined).
+  if (o.mutualFollowersText !== undefined && !isStringOrNull(o.mutualFollowersText)) return false
   if (typeof o.confidence !== 'string') return false
   if (!VALID_CONFIDENCES.has(o.confidence as Confidence)) return false
   if (!isStringOrNull(o.rawObservations)) return false
@@ -57,6 +60,13 @@ export function sanitizeInstagramProfile(
   if (handle.startsWith('@')) handle = handle.slice(1)
   handle = handle.slice(0, 100)
 
+  // Seguidores en común: guardar la línea literal recortada + su parseo
+  // determinístico. parseMutualFollowers nunca inventa (línea vacía -> null).
+  const mutualFollowersText = trimOrNull(raw.mutualFollowersText ?? null, 300)
+  const parsedMutual = parseMutualFollowers(mutualFollowersText)
+  const mutualFollowers =
+    parsedMutual.named.length > 0 || parsedMutual.totalCount !== null ? parsedMutual : null
+
   return {
     handle,
     displayName: trimOrNull(raw.displayName, 200),
@@ -70,6 +80,8 @@ export function sanitizeInstagramProfile(
     isVerified: raw.isVerified,
     isPrivate: raw.isPrivate,
     hasProfilePhoto: raw.hasProfilePhoto,
+    mutualFollowersText,
+    mutualFollowers,
     confidence: raw.confidence,
     rawObservations: trimOrNull(raw.rawObservations, 240),
   }

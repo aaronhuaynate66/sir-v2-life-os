@@ -16,6 +16,10 @@ import type {
   LinkedInOrgRef,
 } from '@/lib/capture/linkedin/types'
 import type { InstagramProfileExtracted } from '@/lib/capture/instagram/types'
+import {
+  parseMutualFollowers,
+  type InstagramMutualFollowers,
+} from '@/lib/capture/instagram/mutual'
 
 /** La observation más reciente de un capture_type dado. Asume `observations`
  *  ya ordenadas por observed_at DESC (contrato de getObservationsForPerson),
@@ -37,6 +41,29 @@ function num(v: unknown): number | null {
 function bool(v: unknown): boolean {
   return v === true
 }
+/** Coerciona el bloque de seguidores en común. Prefiere la estructura ya
+ *  persistida (`mutualFollowers`); si no es válida, reparsea el texto literal
+ *  (`mutualFollowersText`) — así rows viejas o parciales también funcionan.
+ *  null si no hay nada legible. */
+function mutualFollowers(data: Record<string, unknown>): InstagramMutualFollowers | null {
+  const raw = data.mutualFollowers
+  if (raw && typeof raw === 'object') {
+    const r = raw as Record<string, unknown>
+    const named = Array.isArray(r.named)
+      ? r.named.filter((n): n is string => typeof n === 'string' && n.trim().length > 0)
+      : []
+    const totalCount = num(r.totalCount)
+    if (named.length > 0 || totalCount !== null) return { named, totalCount }
+  }
+  // Fallback: reparsear la línea literal si la estructura no estaba.
+  const text = str(data.mutualFollowersText)
+  if (text) {
+    const parsed = parseMutualFollowers(text)
+    if (parsed.named.length > 0 || parsed.totalCount !== null) return parsed
+  }
+  return null
+}
+
 function orgRef(v: unknown): LinkedInOrgRef | null {
   if (!v || typeof v !== 'object') return null
   const r = v as Record<string, unknown>
@@ -78,6 +105,8 @@ export function readInstagram(data: Record<string, unknown>): Partial<InstagramP
     isVerified: bool(data.isVerified),
     isPrivate: bool(data.isPrivate),
     hasProfilePhoto: bool(data.hasProfilePhoto),
+    mutualFollowersText: str(data.mutualFollowersText),
+    mutualFollowers: mutualFollowers(data),
   }
 }
 

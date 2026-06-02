@@ -8,6 +8,7 @@
 // capture_type='instagram'.
 
 import type { Confidence } from '../observations/types'
+import type { InstagramMutualFollowers } from './mutual'
 
 export interface InstagramProfileExtracted {
   /** @handle SIN el @. Copia literal lowercased/cased igual que aparece. */
@@ -37,6 +38,15 @@ export interface InstagramProfileExtracted {
   isPrivate: boolean
   /** True si tiene foto de perfil (no avatar default). */
   hasProfilePhoto: boolean
+  /** Línea de "seguidores en común" copiada LITERAL desde la imagen
+   *  ("its_almendrita, adrian.prog y 12 más siguen esta cuenta" /
+   *  "Followed by X, Y and N others"). null si la línea no aparece (típico
+   *  cuando es la cuenta propia o no hay seguidores en común). El parseo a
+   *  estructura lo hace `parseMutualFollowers` durante el sanitize. */
+  mutualFollowersText: string | null
+  /** Versión estructurada de mutualFollowersText (handles nombrados + conteo
+   *  total). Derivada determinísticamente; null si no hubo línea legible. */
+  mutualFollowers: InstagramMutualFollowers | null
   confidence: Confidence
   /** Observaciones del modelo (campos cortados, ambiguedades). null si nada. */
   rawObservations: string | null
