@@ -90,6 +90,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
     return {
       id: `os_${Date.now()}_${order}_${salt}`,
       objectiveId: goal.id,
+      kind: 'key_result',
       title: title.trim(),
       description: description?.trim() || undefined,
       targetDate: targetDate || undefined,

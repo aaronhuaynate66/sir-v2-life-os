@@ -1,15 +1,31 @@
-// SIR V2 — Lógica pura de pasos de objetivo (rollup, orden, próximo paso).
+// SIR V2 — Lógica pura del plan OKR de un objetivo (jerarquía, rollup, orden).
 //
 // PURO + determinístico: cero deps, cero red, cero LLM. Toda la matemática del
-// progreso por pasos y el reordenamiento vive acá → testeable y reusable por
-// la UI de /objetivos y por la agenda "Próximo".
+// modelo OKR (Objetivo → Resultados Clave → Tareas) vive acá → testeable y
+// reusable por la UI de /objetivos y por la agenda "Próximo".
 //
-// Contrato del orden: los pasos se ordenan por `order` ascendente, con
-// desempate estable por `createdAt` y luego `id` (dos pasos con el mismo
-// `order` — ej. importados por IA — quedan en orden determinístico).
+// Jerarquía (migración 0041): cada ObjectiveStep es un KR (kind='key_result',
+// parentId undefined) o una tarea (kind='task', parentId = KR.id). Ambos llevan
+// objectiveId = Goal.id. El progreso del KR = rollup de sus tareas; el del
+// objetivo = rollup de sus KRs.
+//
+// Contrato del orden: dentro de un grupo de hermanos (KRs entre sí; tareas de un
+// mismo KR) se ordena por `order` ascendente, con desempate estable por
+// `createdAt` y luego `id` (dos nodos con el mismo `order` — ej. importados por
+// IA — quedan en orden determinístico).
 
 import type { ObjectiveStep } from '@/types'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+
+/** ¿Es un Resultado Clave? (KR explícito o data pre-0041 sin `kind`). */
+export function isKeyResult(s: ObjectiveStep): boolean {
+  return s.kind !== 'task'
+}
+
+/** ¿Es una tarea (hoja accionable bajo un KR)? */
+export function isTask(s: ObjectiveStep): boolean {
+  return s.kind === 'task'
+}
 
 /** Rollup de progreso de un objetivo a partir de sus pasos. */
 export interface StepProgress {
@@ -28,7 +44,7 @@ export function sortSteps(steps: ObjectiveStep[]): ObjectiveStep[] {
   })
 }
 
-/** Pasos de UN objetivo, ya ordenados. */
+/** TODOS los nodos (KRs + tareas) de UN objetivo, ya ordenados. */
 export function stepsForObjective(
   steps: ObjectiveStep[],
   objectiveId: string,
@@ -36,9 +52,28 @@ export function stepsForObjective(
   return sortSteps(steps.filter((s) => s.objectiveId === objectiveId))
 }
 
+/** Resultados Clave de un objetivo (KRs, parentId null), ordenados. */
+export function keyResultsForObjective(
+  steps: ObjectiveStep[],
+  objectiveId: string,
+): ObjectiveStep[] {
+  return sortSteps(
+    steps.filter((s) => s.objectiveId === objectiveId && isKeyResult(s)),
+  )
+}
+
+/** Tareas que cuelgan de un KR (parentId = krId), ordenadas. */
+export function tasksForKeyResult(
+  steps: ObjectiveStep[],
+  krId: string,
+): ObjectiveStep[] {
+  return sortSteps(steps.filter((s) => isTask(s) && s.parentId === krId))
+}
+
 /**
- * Progreso rollup: hechos / total. Devuelve null si no hay pasos (el caller
- * cae al comportamiento actual: progreso manual del objetivo).
+ * Progreso rollup genérico por status: hechos / total de una lista plana.
+ * Devuelve null si la lista está vacía. Base reusada por el rollup de tareas
+ * de un KR.
  */
 export function computeStepProgress(steps: ObjectiveStep[]): StepProgress | null {
   if (steps.length === 0) return null
@@ -47,9 +82,71 @@ export function computeStepProgress(steps: ObjectiveStep[]): StepProgress | null
 }
 
 /**
- * Próximo paso accionable de un objetivo: el primero NO 'hecho' por orden.
- * Es el "qué hacer ahora" que la agenda surfacéa. null si no hay pasos
- * pendientes (todo hecho, o sin pasos).
+ * Progreso de un KR = rollup de sus tareas (hechas/total). Un KR SIN tareas se
+ * juzga por su propio status: 'hecho' → 100% (1/1), si no → 0% (0/1). Así un KR
+ * sin descomponer sigue aportando al objetivo.
+ */
+export function computeKeyResultProgress(
+  tasks: ObjectiveStep[],
+  kr: ObjectiveStep,
+): StepProgress {
+  const rollup = computeStepProgress(tasks)
+  if (rollup) return rollup
+  const done = kr.status === 'hecho' ? 1 : 0
+  return { done, total: 1, percent: done * 100 }
+}
+
+/**
+ * Progreso del objetivo = rollup de sus KRs. `done`/`total` cuentan KRs
+ * completados (al 100%) / total de KRs; `percent` es el promedio de los
+ * porcentajes de cada KR (granular: refleja avance parcial dentro de cada KR).
+ * Devuelve null si el objetivo no tiene KRs (el caller cae a progreso manual).
+ */
+export function computeObjectiveProgress(
+  steps: ObjectiveStep[],
+  objectiveId: string,
+): StepProgress | null {
+  const krs = keyResultsForObjective(steps, objectiveId)
+  if (krs.length === 0) return null
+  let sumPercent = 0
+  let done = 0
+  for (const kr of krs) {
+    const p = computeKeyResultProgress(tasksForKeyResult(steps, kr.id), kr)
+    sumPercent += p.percent
+    if (p.percent === 100) done += 1
+  }
+  return { done, total: krs.length, percent: Math.round(sumPercent / krs.length) }
+}
+
+/**
+ * Próximo paso accionable de UN objetivo, recorriendo el árbol OKR: el primer
+ * KR no-completo (por orden), y dentro de él su primera tarea no-'hecho'. Si el
+ * KR no tiene tareas, el KR mismo es la hoja accionable. Devuelve la HOJA (la
+ * tarea, o el KR sin tareas) — el "qué hacer AHORA" que la agenda surfacéa.
+ * null si todo está hecho o no hay KRs.
+ *
+ * `steps` puede ser todo el store o sólo los nodos del objetivo: filtra por la
+ * jerarquía (parentId), no por objectiveId, así que pasar los del objetivo basta.
+ */
+export function nextPendingLeaf(steps: ObjectiveStep[]): ObjectiveStep | null {
+  const krs = sortSteps(steps.filter(isKeyResult))
+  for (const kr of krs) {
+    const tasks = tasksForKeyResult(steps, kr.id)
+    if (tasks.length === 0) {
+      if (kr.status !== 'hecho') return kr // KR sin tareas → es la hoja.
+      continue
+    }
+    const pendingTask = tasks.find((t) => t.status !== 'hecho')
+    if (pendingTask) return pendingTask
+    // Todas las tareas del KR hechas → KR completo, seguimos al próximo KR.
+  }
+  return null
+}
+
+/**
+ * @deprecated Pre-OKR (0040): primer nodo no-'hecho' por orden de una lista
+ * plana. Reemplazado por nextPendingLeaf (recorre la jerarquía KR→tarea). Se
+ * mantiene por compatibilidad; preferí nextPendingLeaf en código nuevo.
  */
 export function nextPendingStep(steps: ObjectiveStep[]): ObjectiveStep | null {
   const ordered = sortSteps(steps)

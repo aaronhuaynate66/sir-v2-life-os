@@ -240,6 +240,8 @@ export type Database = {
           id: string
           user_id: string
           objective_id: string
+          kind: 'key_result' | 'task'
+          parent_id: string | null
           title: string
           description: string
           target_date: string | null
@@ -251,6 +253,8 @@ export type Database = {
           id: string
           user_id: string
           objective_id: string
+          kind?: 'key_result' | 'task'
+          parent_id?: string | null
           title: string
           description?: string
           target_date?: string | null

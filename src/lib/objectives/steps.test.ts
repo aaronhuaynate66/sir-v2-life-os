@@ -6,8 +6,15 @@ import type { ObjectiveStep } from '@/types'
 import {
   sortSteps,
   stepsForObjective,
+  keyResultsForObjective,
+  tasksForKeyResult,
   computeStepProgress,
+  computeKeyResultProgress,
+  computeObjectiveProgress,
   nextPendingStep,
+  nextPendingLeaf,
+  isKeyResult,
+  isTask,
   normalizeOrders,
   moveStep,
   daysUntilStep,
@@ -17,6 +24,8 @@ function step(over: Partial<ObjectiveStep>): ObjectiveStep {
   return {
     id: over.id ?? 's1',
     objectiveId: over.objectiveId ?? 'g1',
+    kind: over.kind ?? 'key_result',
+    parentId: over.parentId,
     title: over.title ?? 'Paso',
     description: over.description,
     targetDate: over.targetDate,
@@ -25,6 +34,15 @@ function step(over: Partial<ObjectiveStep>): ObjectiveStep {
     createdAt: over.createdAt ?? '2026-01-01T00:00:00Z',
     ...over,
   }
+}
+
+/** Atajo: KR de un objetivo. */
+function kr(over: Partial<ObjectiveStep>): ObjectiveStep {
+  return step({ kind: 'key_result', ...over })
+}
+/** Atajo: tarea bajo un KR (requiere parentId). */
+function task(over: Partial<ObjectiveStep>): ObjectiveStep {
+  return step({ kind: 'task', ...over })
 }
 
 describe('sortSteps', () => {
@@ -175,5 +193,148 @@ describe('daysUntilStep', () => {
 
   it('sin fecha → null', () => {
     expect(daysUntilStep(step({}), NOW)).toBeNull()
+  })
+})
+
+// ─── OKR: jerarquía KR → tareas (migración 0041) ─────────────────────
+
+describe('isKeyResult / isTask', () => {
+  it('kind=key_result o ausente (pre-0041) → KR', () => {
+    expect(isKeyResult(kr({}))).toBe(true)
+    expect(isTask(kr({}))).toBe(false)
+    // data vieja sin kind se castea a key_result por el helper, pero probamos
+    // explícitamente el contrato: sólo 'task' es tarea.
+  })
+  it('kind=task → tarea', () => {
+    expect(isTask(task({ parentId: 'k1' }))).toBe(true)
+    expect(isKeyResult(task({ parentId: 'k1' }))).toBe(false)
+  })
+})
+
+describe('keyResultsForObjective', () => {
+  it('devuelve sólo KRs del objetivo, ordenados; ignora tareas', () => {
+    const steps = [
+      kr({ id: 'k2', objectiveId: 'g1', order: 1 }),
+      kr({ id: 'k1', objectiveId: 'g1', order: 0 }),
+      task({ id: 't1', objectiveId: 'g1', parentId: 'k1', order: 0 }),
+      kr({ id: 'kx', objectiveId: 'g2', order: 0 }),
+    ]
+    expect(keyResultsForObjective(steps, 'g1').map((s) => s.id)).toEqual(['k1', 'k2'])
+  })
+})
+
+describe('tasksForKeyResult', () => {
+  it('devuelve sólo tareas del KR, ordenadas', () => {
+    const steps = [
+      kr({ id: 'k1' }),
+      task({ id: 'tb', parentId: 'k1', order: 1 }),
+      task({ id: 'ta', parentId: 'k1', order: 0 }),
+      task({ id: 'tx', parentId: 'k2', order: 0 }),
+    ]
+    expect(tasksForKeyResult(steps, 'k1').map((s) => s.id)).toEqual(['ta', 'tb'])
+  })
+})
+
+describe('computeKeyResultProgress', () => {
+  it('con tareas → rollup hechas/total', () => {
+    const k = kr({ id: 'k1' })
+    const tasks = [
+      task({ id: 'a', parentId: 'k1', status: 'hecho' }),
+      task({ id: 'b', parentId: 'k1', status: 'pendiente' }),
+    ]
+    expect(computeKeyResultProgress(tasks, k)).toEqual({ done: 1, total: 2, percent: 50 })
+  })
+
+  it('sin tareas y KR pendiente → 0% (0/1)', () => {
+    expect(computeKeyResultProgress([], kr({ status: 'pendiente' }))).toEqual({
+      done: 0,
+      total: 1,
+      percent: 0,
+    })
+  })
+
+  it('sin tareas y KR hecho → 100% (1/1)', () => {
+    expect(computeKeyResultProgress([], kr({ status: 'hecho' }))).toEqual({
+      done: 1,
+      total: 1,
+      percent: 100,
+    })
+  })
+})
+
+describe('computeObjectiveProgress', () => {
+  it('sin KRs → null (cae a progreso manual)', () => {
+    expect(computeObjectiveProgress([], 'g1')).toBeNull()
+  })
+
+  it('promedia los porcentajes de los KRs; done = KRs al 100%', () => {
+    const steps = [
+      kr({ id: 'k1', objectiveId: 'g1', order: 0 }), // sin tareas, pendiente → 0%
+      kr({ id: 'k2', objectiveId: 'g1', order: 1 }), // 1/2 tareas → 50%
+      task({ id: 'a', objectiveId: 'g1', parentId: 'k2', status: 'hecho' }),
+      task({ id: 'b', objectiveId: 'g1', parentId: 'k2', status: 'pendiente' }),
+      kr({ id: 'k3', objectiveId: 'g1', order: 2 }), // todas hechas → 100%
+      task({ id: 'c', objectiveId: 'g1', parentId: 'k3', status: 'hecho' }),
+    ]
+    // promedio (0 + 50 + 100) / 3 = 50; done = 1 (k3)
+    expect(computeObjectiveProgress(steps, 'g1')).toEqual({ done: 1, total: 3, percent: 50 })
+  })
+
+  it('KR sin tareas pero hecho cuenta como completo', () => {
+    const steps = [
+      kr({ id: 'k1', objectiveId: 'g1', status: 'hecho' }),
+      kr({ id: 'k2', objectiveId: 'g1', status: 'pendiente' }),
+    ]
+    expect(computeObjectiveProgress(steps, 'g1')).toEqual({ done: 1, total: 2, percent: 50 })
+  })
+})
+
+describe('nextPendingLeaf', () => {
+  it('primera tarea no-hecho del primer KR no-completo', () => {
+    const steps = [
+      kr({ id: 'k1', order: 0 }),
+      task({ id: 'a', parentId: 'k1', order: 0, status: 'hecho' }),
+      task({ id: 'b', parentId: 'k1', order: 1, status: 'pendiente', title: 'Comprar pasaje' }),
+      kr({ id: 'k2', order: 1 }),
+      task({ id: 'c', parentId: 'k2', order: 0, status: 'pendiente' }),
+    ]
+    const leaf = nextPendingLeaf(steps)
+    expect(leaf?.id).toBe('b')
+    expect(leaf?.title).toBe('Comprar pasaje')
+  })
+
+  it('salta al próximo KR cuando el primero está completo', () => {
+    const steps = [
+      kr({ id: 'k1', order: 0 }),
+      task({ id: 'a', parentId: 'k1', order: 0, status: 'hecho' }),
+      kr({ id: 'k2', order: 1 }),
+      task({ id: 'b', parentId: 'k2', order: 0, status: 'pendiente', title: 'Pagar fee' }),
+    ]
+    expect(nextPendingLeaf(steps)?.id).toBe('b')
+  })
+
+  it('KR sin tareas y no-hecho → el KR es la hoja', () => {
+    const steps = [kr({ id: 'k1', order: 0, status: 'en_progreso', title: 'Visa' })]
+    expect(nextPendingLeaf(steps)?.id).toBe('k1')
+  })
+
+  it('KR sin tareas y hecho → se salta', () => {
+    const steps = [
+      kr({ id: 'k1', order: 0, status: 'hecho' }),
+      kr({ id: 'k2', order: 1, status: 'pendiente', title: 'Inscripción' }),
+    ]
+    expect(nextPendingLeaf(steps)?.id).toBe('k2')
+  })
+
+  it('todo hecho → null', () => {
+    const steps = [
+      kr({ id: 'k1', status: 'hecho' }),
+      task({ id: 'a', parentId: 'k1', status: 'hecho' }),
+    ]
+    expect(nextPendingLeaf(steps)).toBeNull()
+  })
+
+  it('sin nodos → null', () => {
+    expect(nextPendingLeaf([])).toBeNull()
   })
 })

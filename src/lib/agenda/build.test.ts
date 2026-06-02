@@ -80,6 +80,8 @@ function ostep(over: Partial<ObjectiveStep>): ObjectiveStep {
   return {
     id: over.id ?? 'os1',
     objectiveId: over.objectiveId ?? 'g1',
+    kind: over.kind ?? 'key_result',
+    parentId: over.parentId,
     title: over.title ?? 'Paso',
     description: over.description,
     targetDate: over.targetDate,

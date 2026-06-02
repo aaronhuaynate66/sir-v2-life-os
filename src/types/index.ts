@@ -324,20 +324,36 @@ export interface Goal {
 export type ObjectiveStepStatus = 'pendiente' | 'en_progreso' | 'hecho'
 
 /**
- * Paso/hito accionable de un objetivo (tabla objective_steps, migración 0040).
- * Descompone un Goal en acciones concretas y ordenadas. El progreso del
- * objetivo se calcula del rollup de pasos hechos/total cuando existen pasos.
+ * Nivel de un nodo del plan OKR (migración 0041):
+ *   - 'key_result': resultado clave medible, cuelga del objetivo (parentId null).
+ *   - 'task': acción concreta/logística, cuelga de un KR (parentId = KR.id).
+ */
+export type ObjectiveStepKind = 'key_result' | 'task'
+
+/**
+ * Nodo del plan OKR de un objetivo (tabla objective_steps, migración 0040 +
+ * 0041). El objetivo (Goal) se descompone en RESULTADOS CLAVE (KRs) medibles, y
+ * cada KR en TAREAS concretas (las hojas accionables). El progreso del KR es el
+ * rollup de sus tareas; el del objetivo, el rollup de sus KRs.
+ *
+ * Una misma tabla modela ambos niveles, discriminados por `kind`:
+ *   - KR  : kind='key_result', parentId undefined, objectiveId = Goal.id.
+ *   - tarea: kind='task',      parentId = KR.id,   objectiveId = Goal.id (denorm).
  */
 export interface ObjectiveStep {
   id: string
-  /** FK → Goal.id (objective_id en DB, ON DELETE CASCADE). */
+  /** FK → Goal.id (objective_id en DB, ON DELETE CASCADE). KRs y tareas lo llevan. */
   objectiveId: string
+  /** Nivel del nodo. KR vs tarea. Default histórico (0040): 'key_result'. */
+  kind: ObjectiveStepKind
+  /** FK self → ObjectiveStep.id del KR padre (sólo tareas). undefined = KR. */
+  parentId?: string
   title: string
   description?: string
   /** Fecha objetivo opcional (date-only ISO 'YYYY-MM-DD'). */
   targetDate?: string
   status: ObjectiveStepStatus
-  /** Orden dentro del objetivo (0..n). Reasignado de forma densa al reordenar. */
+  /** Orden dentro del grupo de hermanos (KRs entre KRs; tareas dentro de su KR). */
   order: number
   createdAt: string
 }
