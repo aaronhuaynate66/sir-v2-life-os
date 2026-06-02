@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `48edd6b`
+**Hash del último commit humano:** `1e1b84c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `48edd6b` | Aaron Huaynate | feat(objetivos): pasos editables + progreso por rollup + plan IA (hito 2-3) | 2026-06-01 |
-| `681d435` | Aaron Huaynate | fix(grafo): familiares-de-contacto cuelgan de su contacto, no del centro | 2026-06-01 |
-| `4fb5031` | Aaron Huaynate | feat(objetivos): modelo de pasos accionables por objetivo (hito 1) | 2026-06-01 |
-| `3a7986c` | Aaron Huaynate | fix(i18n): normalizar acentos/ñ en strings de UI (ronda 3 D) | 2026-06-01 |
-| `74f93d7` | Aaron Huaynate | refactor(ui): EmptyState compartido reemplaza copias hand-rolled (ronda 3 C) | 2026-06-01 |
-| `28ad738` | Aaron Huaynate | feat(skeleton): body skeleton en generación LLM de briefing y alineación (ronda 3 B) | 2026-06-01 |
-| `df0094e` | Aaron Huaynate | fix(skeleton): RouteSkeleton dentro del AppShell — sin salto al hidratar (ronda 3 A) | 2026-06-01 |
-| `f4eda34` | Aaron Huaynate | fix(ux): estados honestos sin datos, copy y skeleton de resumen (ronda 2 hito 3) | 2026-06-01 |
-| `6d6f00e` | Aaron Huaynate | feat(panel): colapsar captura rápida en disclosure — silencio visual (ronda 2 hito 2) | 2026-06-01 |
-| `742dff5` | Aaron Huaynate | fix(responsive): grafo /red dimensiona al contenedor + pulido mobile (ronda 2 hito 1) | 2026-06-01 |
+| `1e1b84c` | Aaron Huaynate | chore(migrations): renumera mi 0047 → 0048 para resolver colisión | 2026-06-02 |
+| `0b96875` | Aaron Huaynate | feat(relaciones): GEMA A+B superficie — "Hoy con tu gente" en /horario y /relaciones | 2026-06-02 |
+| `0588c84` | Aaron Huaynate | @ | 2026-06-02 |
+| `5002970` | Aaron Huaynate | feat(relaciones): GEMA A — API de Daily Actions (scoring sin IA + mensaje on-demand) | 2026-06-02 |
+| `c46b9a3` | Aaron Huaynate | feat(relaciones): GEMA A+B — motor de urgencia de contacto + rituales (puro) | 2026-06-02 |
+| `c1d9e0b` | Aaron Huaynate | @ | 2026-06-02 |
+| `e4dfaeb` | Aaron Huaynate | feat(relaciones): GEMA C — Reciprocidad por delta de calidad (destraba el NULL) | 2026-06-02 |
+| `c42f586` | Aaron Huaynate | @ | 2026-06-02 |
+| `0a4b716` | Aaron Huaynate | @ | 2026-06-02 |
+| `f6cd4e3` | Aaron Huaynate | @ | 2026-06-02 |
 
 ---
 
@@ -495,6 +495,19 @@ Agregar campos al schema B.4:
 ### Nuevo capture_type whatsapp_web [P2]
 Detector debe distinguir `whatsapp_chat` móvil (bubbles columna) vs `whatsapp_web` (3 paneles: lista chats + conversación + info contacto).
 Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type` (migration 0012).
+
+### Captura por TEXTO pegado para perfiles (LinkedIn/IG) [P1 — media]
+Permitir **pegar el texto** del perfil (LinkedIn/Instagram) en lugar de subir una imagen → extracción exacta **sin OCR/Visión**. **Resuelve de raíz** el problema recurrente de capturas ilegibles de página entera (letra diminuta → el LLM alucina o lee mal con confianza alta; ver BUG-001 y el fix 01/06 de detección de legibilidad). El texto pegado ya viene en caracteres reales: el extractor sólo estructura, no adivina píxeles.
+- Opcional/relacionado: leer el texto del perfil vía **Claude-in-Chrome** sobre la sesión logueada del usuario (NO scraping) — el usuario abre el perfil, el agente lee el DOM/texto visible.
+- Esfuerzo: bajo/medio. Nuevo modo de entrada en `/captura` y en `AgregarCapturaPanel` (textarea → mismo pipeline de extracción/observación, salteando Visión).
+
+### Calendario v2 — OAuth + sync bidireccional + multi-calendario [prioridad: a definir]
+Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_ICS_URL`). Subir a:
+- **Conexión fácil por login/OAuth** (Google/Gmail y Outlook/Microsoft) además de la URL `.ics`.
+- **Sync BIDIRECCIONAL en tiempo real** (crear/editar eventos desde SIR, no solo leer).
+- **Múltiples calendarios conectados a la vez** (ej. trabajo Outlook + personal Gmail).
+- **Feature grande**: OAuth por proveedor (consent screens, refresh tokens, scopes, almacenamiento seguro de tokens), webhooks/push para tiempo real, manejo de conflictos en el merge bidireccional. **Definir alcance ANTES de construir** (¿qué proveedores primero? ¿escritura o solo lectura multi-fuente en v2.0?).
+- Prioridad: **a definir** (revisión mañana).
 
 ---
 
