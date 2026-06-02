@@ -165,7 +165,7 @@ export function Bitacora({ personLogs, observations }: BitacoraProps) {
                       <span
                         className={cn(
                           'absolute -left-[1.30rem] top-1.5 w-1.5 h-1.5 rounded-full',
-                          e.source === 'log' ? 'bg-accent/70' : 'bg-sky-400/70',
+                          e.source === 'log' ? 'bg-brand/70' : 'bg-muted-foreground/50',
                         )}
                         aria-hidden="true"
                       />

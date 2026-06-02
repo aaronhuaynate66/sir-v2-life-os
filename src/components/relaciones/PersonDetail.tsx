@@ -31,7 +31,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowLeft, Edit2, Check, X as XIcon, MessageSquareHeart, Printer } from 'lucide-react'
+import { ArrowLeft, Edit2, Check, X as XIcon, MessageSquareHeart, Printer, History } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -294,8 +294,25 @@ export function PersonDetail({
     }
   }
 
+  // Línea de tiempo → columna derecha sticky en desktop (Fase 2). Última
+  // interacción + Bitácora completa. En mobile baja al final (lo monta el
+  // AppShell). Se oculta al imprimir (el dossier imprime aparte).
+  const timelineRail = (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <History size={13} strokeWidth={1.75} className="text-text-tertiary" aria-hidden="true" />
+        <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Línea de tiempo</span>
+      </div>
+      <LastInteractionPanel
+        lastChat={lastChat}
+        lastManualInteraction={personLogs.find((l) => l.kind === 'interaction') ?? null}
+      />
+      <Bitacora personLogs={personLogs} observations={curatedObservations} />
+    </div>
+  )
+
   return (
-    <AppShell>
+    <AppShell rightRail={timelineRail}>
       {/* Contenido en pantalla. Se oculta al imprimir (print:hidden); el
           dossier imprimible vive aparte, al final de AppShell. */}
       <div className="print:hidden">
@@ -574,17 +591,6 @@ export function PersonDetail({
         />
       </div>
 
-      <div className="mb-4">
-        {/* personLogs viene ordenado por loggedAt DESC desde la fetch layer,
-            así que el primer kind='interaction' es el registro manual más
-            reciente. El panel decide si gana este o lastChat (conversación
-            real) por fecha. */}
-        <LastInteractionPanel
-          lastChat={lastChat}
-          lastManualInteraction={personLogs.find((l) => l.kind === 'interaction') ?? null}
-        />
-      </div>
-
       {/* Captura en contexto: subir un pantallazo y asociarlo DIRECTO a esta
           persona, sin pasar por /captura ni re-seleccionar. Reusa el pipeline
           detect → process con person_id fijo. */}
@@ -644,10 +650,6 @@ export function PersonDetail({
           ).length
         }
       />
-
-      {/* Bitácora (#17): historial completo de interacciones (person_logs
-          + observations), colapsable. */}
-      <Bitacora personLogs={personLogs} observations={curatedObservations} />
 
       {live.notes && (
         <Card className="shadow-none mb-4">

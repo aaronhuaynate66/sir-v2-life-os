@@ -13,9 +13,13 @@ interface AppShellProps {
   children: ReactNode
   /** Si true usa max-w-5xl (para /dashboard, layout mas denso). Default: max-w-4xl. */
   wide?: boolean
+  /** Columna derecha sticky (2-col en desktop, colapsa debajo del contenido
+   *  en mobile). Para pantallas densas: línea de tiempo de la ficha, etc.
+   *  Cuando se provee, el shell ensancha el contenedor. Se oculta al imprimir. */
+  rightRail?: ReactNode
 }
 
-export function AppShell({ children, wide = false }: AppShellProps) {
+export function AppShell({ children, wide = false, rightRail }: AppShellProps) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
@@ -59,8 +63,24 @@ export function AppShell({ children, wide = false }: AppShellProps) {
 
       {/* Main content. Al imprimir: sin margen de sidebar ni padding/ancho. */}
       <main className="lg:ml-60 print:ml-0">
-        <div className={cn('mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 print:max-w-none print:p-0', wide ? 'max-w-5xl' : 'max-w-4xl')}>
-          {children}
+        <div
+          className={cn(
+            'mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 print:max-w-none print:p-0',
+            rightRail ? 'max-w-6xl' : wide ? 'max-w-5xl' : 'max-w-4xl',
+          )}
+        >
+          {rightRail ? (
+            // 2 columnas en desktop: contenido (fluido) + rail sticky de ancho
+            // fijo. En mobile/print colapsa a una columna (el rail baja).
+            <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_clamp(300px,28vw,360px)] lg:gap-8 lg:items-start print:block">
+              <div className="min-w-0">{children}</div>
+              <aside className="mt-6 lg:mt-0 lg:sticky lg:top-8 print:hidden">
+                {rightRail}
+              </aside>
+            </div>
+          ) : (
+            children
+          )}
         </div>
       </main>
     </div>
