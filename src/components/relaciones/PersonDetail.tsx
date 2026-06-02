@@ -67,7 +67,6 @@ import { ExportCsvButton } from '@/components/export/ExportCsvButton'
 import { personLogsCsv, observationsCsv } from '@/lib/export/adapters'
 import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
-import { RegistroRapidoPanel } from './RegistroRapidoPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
@@ -591,14 +590,11 @@ export function PersonDetail({
           detect → process con person_id fijo. */}
       <AgregarCapturaPanel personId={live.id} personName={live.name} />
 
-      {/* Sesion 6: registros per-persona (mood/energy/sleep/pain +
-          tono de interaccion). Storage Supabase-native en person_logs
-          (no relationships.history) — alimenta correlacion lunar/ciclo
-          en Fase 3c. */}
-      <div className="grid gap-4 sm:grid-cols-2 mb-4">
-        <RegistroRapidoPanel personId={live.id} recentLogs={personLogs} />
-        <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs} />
-      </div>
+      {/* Registro RELACIONAL: tono de la última interacción con esta persona.
+          (Ánimo/Energía/Sueño/Dolor se sacaron de la ficha: son métricas
+          biológicas de self, viven en /yo — no tienen sentido "respecto a esta
+          persona".) Storage Supabase-native en person_logs. */}
+      <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs} />
 
       {/* Nota de voz (#12): graba audio -> bucket person-voice-notes +
           observation voice_note (aparece tambien en la Bitacora). */}
