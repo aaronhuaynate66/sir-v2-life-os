@@ -1,5 +1,5 @@
 -- ============================================================
--- SIR V2 — Migration 0047: tabla action_suggestions (Daily Actions)
+-- SIR V2 — Migration 0048: tabla action_suggestions (Daily Actions)
 -- ============================================================
 -- Cache de los MENSAJES COPIABLES de Daily Actions (GEMA A, portada de v1
 -- `action_suggestions`). El scoring/ranking es puro y client-side (no se

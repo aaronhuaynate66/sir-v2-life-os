@@ -4,7 +4,7 @@
 // enviar sin editar). Aislado del scoring: una sola persona, un solo Haiku,
 // max_tokens chico, maxDuration 30, maxRetries 2 → barato y sin timeout/502.
 //
-// Cache fail-open: si la tabla action_suggestions existe (mig 0047), cacheamos
+// Cache fail-open: si la tabla action_suggestions existe (mig 0048), cacheamos
 // por (user, person, día) e idempotamos; si NO existe, generamos on-demand y
 // seguimos (igual que rate_limits con su RPC). El contexto sensible (nombre,
 // ubicación, notas) lo trae el SERVER desde la fila de la persona, no el cliente.
