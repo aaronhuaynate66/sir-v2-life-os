@@ -29,7 +29,7 @@ export function GraphFiltersBar({ filters, onChange }: GraphFiltersProps) {
     <div className="space-y-3">
       {/* Toggle: solo vínculos directos (oculta 2º grado). */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans mr-1">
+        <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mr-1">
           Vínculos
         </span>
         <Button
@@ -54,7 +54,7 @@ export function GraphFiltersBar({ filters, onChange }: GraphFiltersProps) {
 
       {/* Tabs de categoría */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans mr-1">
+        <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mr-1">
           Categoría
         </span>
         <CategoryTab active={filters.category === 'all'} onClick={() => setCategory('all')} label="Todos" />
@@ -70,7 +70,7 @@ export function GraphFiltersBar({ filters, onChange }: GraphFiltersProps) {
 
       {/* Slider salud mínima */}
       <div className="flex flex-wrap items-center gap-3">
-        <Label htmlFor="min-health" className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">
+        <Label htmlFor="min-health" className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">
           Salud mínima
         </Label>
         <input

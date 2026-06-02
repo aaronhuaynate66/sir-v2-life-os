@@ -1,30 +1,87 @@
-'use client'
-// SIR V2 — /red (landing)
-// Punto de entrada a las vistas de tu red personal. Por ahora un link
-// al grafo; en el futuro acomoda /red/lista, /red/insights, etc.
+// SIR V2 — /red (Server Component)
+//
+// /red ES el grafo de relaciones (antes había un landing-hub con dos cards
+// redundantes — la "lista" ya es /relaciones, en el nav, y abrir el grafo
+// era un clic de más). Ahora la ruta renderiza el GraphView directo.
+// /red/grafo redirige acá para no romper links viejos.
+//
+// Lookup server-side de profile.full_name + email del usuario para el label
+// del nodo central, e interacción por persona (última + ánimo) para el hover
+// y la detección de 2º grado. La lógica interna del grafo (GraphView /
+// GraphCanvas / GraphFilters) vive en sus componentes y no se toca acá.
 
-import Link from 'next/link'
-import { Network, ArrowRight, Users } from 'lucide-react'
+import { redirect } from 'next/navigation'
+import { Network } from 'lucide-react'
+
 import { AppShell } from '@/components/layout/AppShell'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { useHasHydrated } from '@/hooks/useHasHydrated'
-import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
-import { useRelationshipStore } from '@/stores/useRelationshipStore'
+import { GraphView } from '@/components/red/GraphView'
+import { createClient } from '@/lib/supabase/server'
 
-export default function RedPage() {
-  const hydrated = useHasHydrated()
-  if (!hydrated) return <RouteSkeleton cards={2} />
-  return <RedContent />
-}
+export default async function RedPage() {
+  const supabase = await createClient()
+  const { data: authData } = await supabase.auth.getUser()
+  const user = authData?.user
+  if (!user) redirect('/auth/login')
 
-function RedContent() {
-  const { people } = useRelationshipStore()
+  // Lookup profile.full_name (puede no existir si el usuario no la seteo).
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  const selfFullName = (profile?.full_name as string | null) ?? null
+  const selfEmail = user.email ?? ''
+
+  // Interacción por persona (server, sin N+1): dos queries (observations +
+  // person_logs), agrupadas en JS → última interacción + ánimo. Sirve para el
+  // hover Y para 2º grado (quien tiene interacción es contacto directo). RLS
+  // scopea ambas al usuario.
+  const [obsRows, logRows] = await Promise.all([
+    supabase
+      .from('observations')
+      .select('person_id, observed_at, capture_type')
+      .eq('is_obsolete', false)
+      .not('person_id', 'is', null),
+    supabase.from('person_logs').select('person_id, logged_at, kind, value'),
+  ])
+
+  const CAP_LABEL: Record<string, string> = {
+    whatsapp_chat: 'WhatsApp', whatsapp_web: 'WhatsApp', whatsapp_info: 'WhatsApp',
+    instagram: 'Instagram', linkedin: 'LinkedIn', voice_note: 'Nota de voz', manual_note: 'Nota',
+  }
+  const LOG_LABEL: Record<string, string> = {
+    mood: 'Ánimo', energy: 'Energía', sleep: 'Sueño', pain: 'Dolor', interaction: 'Interacción',
+  }
+
+  const interactionById: Record<string, { at: string; label: string; mood?: string }> = {}
+  const bump = (pid: string, at: string, label: string) => {
+    const cur = interactionById[pid]
+    if (!cur || at > cur.at) interactionById[pid] = { at, label, mood: cur?.mood }
+  }
+
+  for (const r of (obsRows.data ?? []) as { person_id: string | null; observed_at: string | null; capture_type: string | null }[]) {
+    if (r.person_id && r.observed_at) bump(r.person_id, r.observed_at, CAP_LABEL[r.capture_type ?? ''] ?? 'Captura')
+  }
+  const latestMood: Record<string, { at: string; value: number }> = {}
+  for (const r of (logRows.data ?? []) as { person_id: string | null; logged_at: string | null; kind: string | null; value: number | null }[]) {
+    if (!r.person_id || !r.logged_at) continue
+    bump(r.person_id, r.logged_at, `${LOG_LABEL[r.kind ?? ''] ?? 'Registro'} ${r.value ?? ''}/5`.trim())
+    if (r.kind === 'mood' && r.value != null) {
+      const m = latestMood[r.person_id]
+      if (!m || r.logged_at > m.at) latestMood[r.person_id] = { at: r.logged_at, value: r.value }
+    }
+  }
+  for (const [pid, m] of Object.entries(latestMood)) {
+    if (interactionById[pid]) interactionById[pid].mood = `Ánimo ${m.value}/5`
+  }
+
+  const directContactIds = Object.keys(interactionById)
 
   return (
     <AppShell>
       <header className="mb-6 sm:mb-8">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">
           SIR V2 &mdash; Tu red personal
         </div>
         <div className="flex items-center gap-3">
@@ -32,55 +89,18 @@ function RedContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Red</h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Vista macro de las personas en tu vida y la calidad de tus relaciones con ellas.
+          Vos en el centro, conectado a cada persona por categoría. Filtrá por tipo
+          de relación o salud mínima. La lista completa con edición vive en{' '}
+          <span className="font-mono text-foreground/70">/relaciones</span>.
         </p>
       </header>
 
-      <Card className="shadow-none mb-4">
-        <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <Network size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-foreground">Grafo de relaciones</div>
-              <div className="text-xs text-muted-foreground leading-snug">
-                {people.length === 0
-                  ? 'Visualizá tu red cuando agregues personas en /relaciones.'
-                  : `${people.length} ${people.length === 1 ? 'persona' : 'personas'} en tu red, conectadas por categoría y salud.`}
-              </div>
-            </div>
-          </div>
-          <Button size="sm" asChild className="flex-shrink-0">
-            <Link href="/red/grafo" className="inline-flex items-center gap-1.5">
-              Abrir grafo
-              <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-none">
-        <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-muted/40 border border-border flex items-center justify-center">
-              <Users size={18} strokeWidth={1.75} className="text-muted-foreground" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-foreground">Lista de personas</div>
-              <div className="text-xs text-muted-foreground leading-snug">
-                Vista tabular completa con edición inline.
-              </div>
-            </div>
-          </div>
-          <Button size="sm" variant="outline" asChild className="flex-shrink-0">
-            <Link href="/relaciones" className="inline-flex items-center gap-1.5">
-              Ir a /relaciones
-              <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <GraphView
+        selfFullName={selfFullName}
+        selfEmail={selfEmail}
+        directContactIds={directContactIds}
+        interactionById={interactionById}
+      />
     </AppShell>
   )
 }

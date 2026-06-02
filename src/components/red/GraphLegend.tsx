@@ -6,7 +6,7 @@ import { CATEGORY_COLOR, CATEGORY_LABEL, FILTERABLE_CATEGORIES } from '@/lib/gra
 export function GraphLegend() {
   return (
     <div className="flex flex-wrap items-center gap-3 px-3 py-2 border border-border rounded-md bg-muted/20">
-      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">
+      <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">
         Categorías
       </span>
       {FILTERABLE_CATEGORIES.map((cat) => (
