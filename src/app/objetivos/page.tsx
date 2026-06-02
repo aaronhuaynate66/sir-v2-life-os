@@ -22,6 +22,7 @@ import { useMemoryStore } from '@/stores'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
 import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
+import { SmartAssist } from '@/components/objetivos/SmartAssist'
 import { computeObjectiveProgress } from '@/lib/objectives/steps'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { buildGoalDashboard } from '@/engines/goal'
@@ -105,10 +106,15 @@ function GoalsContent() {
   const [nextAction, setNextAction] = useState('')
   const [peaceImpact, setPeaceImpact] = useState('5')
   const [relatedPersons, setRelatedPersons] = useState<string[]>([])
+  // SMART (mig 0042)
+  const [target, setTarget] = useState('')
+  const [baseline, setBaseline] = useState('')
+  const [why, setWhy] = useState('')
 
   function resetForm() {
     setTitle(''); setDesc(''); setCat('personal'); setPrio('medium')
     setTargetDate(''); setNextAction(''); setPeaceImpact('5'); setRelatedPersons([])
+    setTarget(''); setBaseline(''); setWhy('')
     setAdding(false); setEditId(null)
   }
   function saveGoal() {
@@ -117,14 +123,16 @@ function GoalsContent() {
     if (isNaN(pi) || pi < 1 || pi > 10) { toast.error('Impacto inválido', { description: 'El impacto de paz debe estar entre 1 y 10.' }); return }
     const now = new Date().toISOString()
     const linkedPersons = sanitizePersonIds(relatedPersons, new Set(people.map((p) => p.id)))
+    const smart = { target: target.trim() || undefined, baseline: baseline.trim() || undefined, why: why.trim() || undefined }
     if (editId) {
-      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction, peaceImpact: pi, relatedPersons: linkedPersons })
+      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction, peaceImpact: pi, relatedPersons: linkedPersons, ...smart })
       toast.success('Objetivo actualizado', { description: title })
     } else {
       const g: Goal = {
         id: 'g_' + Date.now(), title, description: desc, category: cat, priority: prio,
         status: 'active', progress: 0, milestones: [], relatedGoals: [], relatedPersons: linkedPersons,
         peaceImpact: pi, obstacles: [], nextAction, targetDate: targetDate || undefined,
+        ...smart,
         createdAt: now, updatedAt: now,
       }
       addGoal(g)
@@ -135,7 +143,9 @@ function GoalsContent() {
   function startEdit(g: Goal) {
     setEditId(g.id); setTitle(g.title); setDesc(g.description); setCat(g.category)
     setPrio(g.priority); setTargetDate(g.targetDate || ''); setNextAction(g.nextAction || '')
-    setPeaceImpact(String(g.peaceImpact)); setRelatedPersons(g.relatedPersons ?? []); setAdding(true)
+    setPeaceImpact(String(g.peaceImpact)); setRelatedPersons(g.relatedPersons ?? [])
+    setTarget(g.target ?? ''); setBaseline(g.baseline ?? ''); setWhy(g.why ?? '')
+    setAdding(true)
   }
   function cancelProgress() {
     setProgressId(null); setProgressVal('')
@@ -235,6 +245,29 @@ function GoalsContent() {
                   <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="font-mono" />
                   <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
                   <Input placeholder="Siguiente acción" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
+
+                  {/* ─── Definición SMART (medible + por qué) ─── */}
+                  <div className="col-span-2 rounded-md border border-border/50 bg-muted/20 p-3 space-y-2">
+                    <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
+                      Definición SMART <span className="text-muted-foreground/50 normal-case tracking-normal">· medible + por qué</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Input placeholder="Meta medible (ej. Pesar 75 kg)" value={target} onChange={e => setTarget(e.target.value)} />
+                      <Input placeholder="Hoy estás (ej. 82 kg) · opcional" value={baseline} onChange={e => setBaseline(e.target.value)} />
+                      <Input placeholder="Por qué importa" value={why} onChange={e => setWhy(e.target.value)} className="sm:col-span-2" />
+                    </div>
+                    <SmartAssist
+                      draft={{ title, description: desc, category: cat, targetDate }}
+                      onApply={(f) => {
+                        setTarget(f.target)
+                        if (f.baseline !== undefined) setBaseline(f.baseline)
+                        if (f.why !== undefined) setWhy(f.why)
+                        if (f.suggestedTargetDate && !targetDate) setTargetDate(f.suggestedTargetDate)
+                        toast.success('Definición SMART aplicada', { description: f.target })
+                      }}
+                    />
+                  </div>
+
                   <div className="col-span-2">
                     <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
                       Personas vinculadas <span className="text-muted-foreground/50 normal-case tracking-normal">· opcional</span>
@@ -308,6 +341,18 @@ function GoalsContent() {
                       <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[g.category]}</Badge>
                     </div>
                     {g.description && <p className="text-xs text-muted-foreground mb-2">{g.description}</p>}
+                    {(g.target || g.why) && (
+                      <div className="mb-2 space-y-0.5">
+                        {g.target && (
+                          <div className="flex items-center gap-1.5 text-xs text-foreground/90">
+                            <Target size={11} className="text-brand-soft-foreground flex-shrink-0" aria-hidden="true" />
+                            <span className="font-medium">{g.target}</span>
+                            {g.baseline && <span className="text-muted-foreground">· hoy: {g.baseline}</span>}
+                          </div>
+                        )}
+                        {g.why && <div className="text-[11px] text-muted-foreground/80 italic">Por qué: {g.why}</div>}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 mb-1">
                       <div className="flex-1 h-1 bg-secondary rounded-full">
                         <div className="h-1 rounded-full bg-brand transition-all" style={{ width: displayPct + '%' }} />

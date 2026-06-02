@@ -211,6 +211,9 @@ export type Database = {
           peace_impact: number
           obstacles: string[]
           next_action: string
+          target: string | null
+          baseline: string | null
+          why: string | null
           created_at: string
           updated_at: string
         }
@@ -230,6 +233,9 @@ export type Database = {
           peace_impact?: number
           obstacles?: string[]
           next_action?: string
+          target?: string | null
+          baseline?: string | null
+          why?: string | null
           created_at?: string
           updated_at?: string
         }

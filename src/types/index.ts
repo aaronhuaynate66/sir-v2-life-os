@@ -316,6 +316,13 @@ export interface Goal {
   peaceImpact: number
   obstacles: string[]
   nextAction: string
+  // ─── Definición SMART (migración 0042) ──────────────────────────────
+  /** Measurable: la métrica/resultado objetivo (ej. "Pesar 75 kg", "Ahorrar S/5000"). */
+  target?: string
+  /** Measurable: dónde estás hoy respecto del target (ej. "82 kg", "S/1200"). */
+  baseline?: string
+  /** Relevant: por qué importa este objetivo. */
+  why?: string
   createdAt: string
   updatedAt: string
 }
