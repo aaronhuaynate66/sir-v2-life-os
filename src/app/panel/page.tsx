@@ -59,20 +59,20 @@ const MODE_LABEL: Record<Mode, string> = {
   normal: 'OPERATIVO', focused: 'ENFOCADO', recovery: 'RECUPERACION', strategic: 'ESTRATEGICO',
 }
 const MODE_CLASSES: Record<Mode, string> = {
-  normal: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  focused: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
-  recovery: 'border-red-500/30 bg-red-500/10 text-red-400',
-  strategic: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
+  normal: 'border-ok/30 bg-ok-soft text-ok-foreground',
+  focused: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
+  recovery: 'border-bad/30 bg-bad-soft text-bad-foreground',
+  strategic: 'border-warn/30 bg-warn-soft text-warn-foreground',
 }
 
 function statusColor(level: 'ok' | 'warn' | 'bad' | undefined): string {
-  if (level === 'ok') return 'text-emerald-400'
-  if (level === 'warn') return 'text-amber-400'
-  if (level === 'bad') return 'text-red-400'
+  if (level === 'ok') return 'text-ok'
+  if (level === 'warn') return 'text-warn'
+  if (level === 'bad') return 'text-bad'
   return 'text-foreground'
 }
 
-const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
 function Row({ label, value, status }: { label: string; value: string; status?: 'ok' | 'warn' | 'bad' }) {
   return (
@@ -161,8 +161,8 @@ function DashboardContent() {
   const peaceCalibrating = !hasEnergyData && !hasSleepData && !hasFinanceData && goals.length === 0
 
   const mode: Mode = recoveryAssessment.active || peace.recoveryMode || bio.energyLevel < 4 ? 'recovery' : peace.total > 8 && bio.energyLevel > 7 ? 'strategic' : bio.energyLevel > 7 ? 'focused' : 'normal'
-  const peaceColor = peace.total >= 7 ? 'text-emerald-400' : peace.total >= 4 ? 'text-amber-400' : 'text-red-400'
-  const peaceDotColor = peace.total >= 7 ? 'bg-emerald-400' : peace.total >= 4 ? 'bg-amber-400' : 'bg-red-400'
+  const peaceColor = peace.total >= 7 ? 'text-ok' : peace.total >= 4 ? 'text-warn' : 'text-bad'
+  const peaceDotColor = peace.total >= 7 ? 'bg-ok' : peace.total >= 4 ? 'bg-warn' : 'bg-bad'
 
   function handleAddSleep() {
     const h = parseFloat(sleepHours)
@@ -206,19 +206,82 @@ function DashboardContent() {
 
   const TrendIcon = peace.trend === 'improving' ? TrendingUp : peace.trend === 'declining' ? TrendingDown : Minus
   const trendLabel = peace.trend === 'improving' ? 'Mejorando' : peace.trend === 'declining' ? 'Declinando' : 'Estable'
-  const trendColor = peace.trend === 'improving' ? 'text-emerald-400' : peace.trend === 'declining' ? 'text-red-400' : 'text-muted-foreground'
+  const trendColor = peace.trend === 'improving' ? 'text-ok' : peace.trend === 'declining' ? 'text-bad' : 'text-muted-foreground'
 
   const recTimingLabel = topRec?.timing === 'now' ? 'AHORA' : topRec?.timing === 'today' ? 'HOY' : topRec?.timing === 'this_week' ? 'ESTA SEMANA' : 'CUANDO LISTO'
-  const recTimingClass = topRec?.timing === 'now' ? 'border-red-500/30 bg-red-500/10 text-red-400' : topRec?.timing === 'today' ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground'
+  const recTimingClass = topRec?.timing === 'now' ? 'border-bad/30 bg-bad-soft text-bad-foreground' : topRec?.timing === 'today' ? 'border-brand/30 bg-brand-soft text-brand-soft-foreground' : 'border-border bg-muted text-muted-foreground'
+
+  // Columna derecha (Fase 2): "qué viene" + "qué pide atención". Descomprime
+  // la densidad del centro. En recuperación dura ocultamos las listas
+  // secundarias (igual que el cuerpo principal) y dejamos sólo Próximo.
+  const dashboardRail = (
+    <div className="space-y-4">
+      <ProximoPanel limit={6} showViewAll />
+
+      {!simplified && (
+        <Card className={cardClass}>
+          <CardContent className="p-4 sm:p-6">
+            <SectionTitle icon={Users} label="Alertas relacionales" count={relAlerts.length} />
+            {relAlerts.length === 0 ? (
+              <div className="text-xs text-muted-foreground/70 py-2">Sin alertas relacionales.</div>
+            ) : (
+              <div className="space-y-3">
+                {relAlerts.slice(0, 4).map((a, i) => (
+                  <div key={i} className="flex gap-3 py-1.5 border-b border-border/40 last:border-0">
+                    <div className={cn('w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0', a.urgency === 'immediate' ? 'bg-bad' : 'bg-warn')} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-foreground">{a.personName}</div>
+                      <div className="text-xs text-muted-foreground">{a.message}</div>
+                      {a.suggestedAction && <div className="text-[11px] text-muted-foreground/60 mt-0.5">{a.suggestedAction}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {!simplified && (
+        <Card className={cardClass}>
+          <CardContent className="p-4 sm:p-6">
+            <SectionTitle icon={Bell} label="Señales activas" count={activeSignals.length} />
+            {activeSignals.length === 0 ? (
+              <div className="text-xs text-muted-foreground/70 py-2">Sin señales activas.</div>
+            ) : (
+              <div className="space-y-2">
+                {activeSignals.slice(0, 4).map((sig) => (
+                  <div key={sig.id} className="flex gap-2 items-start py-1.5 border-b border-border/40 last:border-0 group">
+                    <span className="text-[10px] font-mono text-muted-foreground/60 mt-0.5 w-16 flex-shrink-0 uppercase tracking-wider">{sig.source}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-foreground">{sig.content}</div>
+                      {sig.meaning && sig.meaning !== sig.content && <div className="text-xs text-muted-foreground mt-0.5">{sig.meaning}</div>}
+                    </div>
+                    <button
+                      onClick={() => resolveSignal(sig.id)}
+                      className="text-muted-foreground/40 hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Resolver"
+                    >
+                      <X size={14} strokeWidth={1.75} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
 
   return (
-    <AppShell wide>
+    <AppShell rightRail={dashboardRail}>
       {/* El estado de recuperación se comunica inline (RecoveryPanel, abajo) y
           en el badge de modo del header. Antes había un banner `fixed top-0`
           que en mobile tapaba el header sticky y el botón de menú — removido. */}
       <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex justify-between items-start gap-4 mb-6 sm:mb-8">
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Mission Control</h1>
           <div className="flex items-center gap-2 flex-wrap mt-1">
             <span className="text-xs sm:text-sm text-muted-foreground capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</span>
@@ -234,20 +297,18 @@ function DashboardContent() {
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
       <DailyBriefingCard />
 
-      {/* Agenda "Próximo" (Feature 1): agrega cumpleaños, fechas especiales,
-          objetivos por vencer, señales y contactos pendientes de TODA la red.
-          Determinístico, sin LLM. Top 6 acá + link a /agenda. */}
-      <ProximoPanel limit={6} showViewAll />
+      {/* Agenda "Próximo", alertas relacionales y señales viven ahora en la
+          columna derecha (rightRail) para descomprimir el centro. */}
 
       <Card className={cn('mb-6', cardClass)}>
         <CardContent className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 sm:p-6">
           <div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Misión</div>
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">Misión</div>
             <div className="text-foreground">Conseguir Paz.</div>
           </div>
           <div className="sm:text-right">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">Ventana actual</div>
-            <div className={cn('text-xs', timing.type === 'peak' ? 'text-emerald-400' : timing.type === 'avoid' ? 'text-amber-400' : 'text-muted-foreground')}>{timing.description}</div>
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">Ventana actual</div>
+            <div className={cn('text-xs', timing.type === 'peak' ? 'text-ok' : timing.type === 'avoid' ? 'text-warn' : 'text-muted-foreground')}>{timing.description}</div>
           </div>
         </CardContent>
       </Card>
@@ -289,11 +350,11 @@ function DashboardContent() {
             {!peaceCalibrating && threats.length > 0 && (
               <>
                 <Separator className="my-4" />
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">Atención</div>
+                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">Atención</div>
                 <div className="space-y-1.5">
                   {threats.map((t, i) => (
                     <div key={i} className="flex gap-2 items-start">
-                      <AlertCircle size={12} strokeWidth={2} className="text-red-400 mt-0.5 flex-shrink-0" />
+                      <AlertCircle size={12} strokeWidth={2} className="text-bad mt-0.5 flex-shrink-0" />
                       <span className="text-xs text-muted-foreground leading-relaxed">{t.description}</span>
                     </div>
                   ))}
@@ -315,7 +376,7 @@ function DashboardContent() {
               </div>
 
               <div className="flex gap-3 flex-1">
-                <div className={cn('w-0.5 self-stretch rounded-full flex-shrink-0', topRec.priority === 'critical' ? 'bg-red-500' : topRec.priority === 'high' ? 'bg-primary' : 'bg-blue-500')} />
+                <div className={cn('w-0.5 self-stretch rounded-full flex-shrink-0', topRec.priority === 'critical' ? 'bg-bad' : topRec.priority === 'high' ? 'bg-brand' : 'bg-muted-foreground/50')} />
                 <div className="flex-1 flex flex-col min-w-0">
                   <h2 className="text-lg sm:text-xl font-semibold tracking-tight mb-2">{topRec.title}</h2>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-3">{topRec.description}</p>
@@ -323,17 +384,17 @@ function DashboardContent() {
 
                   <div className="flex gap-4 mb-4">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Impacto</span>
-                      <span className="text-sm font-mono tabular-nums text-emerald-400">+{topRec.expectedPeaceImpact}</span>
+                      <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Impacto</span>
+                      <span className="text-sm font-mono tabular-nums text-ok">+{topRec.expectedPeaceImpact}</span>
                     </div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Confianza</span>
+                      <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Confianza</span>
                       <span className="text-sm font-mono tabular-nums text-foreground">{Math.round(topRec.confidence * 100)}%</span>
                     </div>
                   </div>
 
                   <div className="flex gap-2 mt-auto">
-                    <Button size="sm" variant="outline" onClick={() => completeRecommendation(topRec.id)} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+                    <Button size="sm" variant="outline" onClick={() => completeRecommendation(topRec.id)} className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">
                       <CheckCircle2 size={14} strokeWidth={1.75} />
                       Completar
                     </Button>
@@ -418,8 +479,8 @@ function DashboardContent() {
               <>
                 <Separator className="my-3" />
                 <div className="flex gap-1.5 items-start">
-                  <AlertCircle size={12} strokeWidth={2} className="text-amber-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-[11px] text-amber-400 leading-relaxed">{finAlerts[0].message}</span>
+                  <AlertCircle size={12} strokeWidth={2} className="text-warn mt-0.5 flex-shrink-0" />
+                  <span className="text-[11px] text-warn-foreground leading-relaxed">{finAlerts[0].message}</span>
                 </div>
               </>
             )}
@@ -439,8 +500,8 @@ function DashboardContent() {
                       <span className="text-sm truncate">{g.title}</span>
                       <span className="text-xs font-mono tabular-nums text-muted-foreground">{g.progress}%</span>
                     </div>
-                    <div className="h-1 bg-muted rounded-full overflow-hidden">
-                      <div className="h-1 rounded-full bg-emerald-500 transition-all duration-300" style={{ width: `${g.progress}%` }} />
+                    <div className="h-1 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-1 rounded-full bg-brand transition-all duration-300" style={{ width: `${g.progress}%` }} />
                     </div>
                   </div>
                 ))}
@@ -450,58 +511,8 @@ function DashboardContent() {
         </Card>
       </motion.div>
 
-      {/* Listas: alertas relacionales + señales activas */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }} className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <Card className={cardClass}>
-          <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Users} label="Alertas Relacionales" count={relAlerts.length} />
-            {relAlerts.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-2">Sin alertas relacionales.</div>
-            ) : (
-              <div className="space-y-3">
-                {relAlerts.slice(0, 3).map((a, i) => (
-                  <div key={i} className="flex gap-3 py-1.5 border-b border-border/40 last:border-0">
-                    <div className={cn('w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0', a.urgency === 'immediate' ? 'bg-red-500' : 'bg-amber-500')} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-foreground">{a.personName}</div>
-                      <div className="text-xs text-muted-foreground">{a.message}</div>
-                      {a.suggestedAction && <div className="text-[11px] text-muted-foreground/60 mt-0.5">{a.suggestedAction}</div>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className={cardClass}>
-          <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Bell} label="Señales Activas" count={activeSignals.length} />
-            {activeSignals.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-2">Sin señales activas.</div>
-            ) : (
-              <div className="space-y-2">
-                {activeSignals.slice(0, 3).map((sig) => (
-                  <div key={sig.id} className="flex gap-2 items-start py-1.5 border-b border-border/40 last:border-0 group">
-                    <span className="text-[10px] font-mono text-muted-foreground/60 mt-0.5 w-16 flex-shrink-0 uppercase tracking-wider">{sig.source}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-foreground">{sig.content}</div>
-                      {sig.meaning && sig.meaning !== sig.content && <div className="text-xs text-muted-foreground mt-0.5">{sig.meaning}</div>}
-                    </div>
-                    <button
-                      onClick={() => resolveSignal(sig.id)}
-                      className="text-muted-foreground/40 hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Resolver"
-                    >
-                      <X size={14} strokeWidth={1.75} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+      {/* (Alertas relacionales + señales activas se movieron a la columna
+          derecha — ver dashboardRail.) */}
 
       {/* Registro rápido (colapsable): sueño, energía, finanzas, señal.
           Colapsado por defecto para reducir la densidad del dashboard —
@@ -515,7 +526,7 @@ function DashboardContent() {
         >
           <span className="flex items-center gap-2 min-w-0">
             <PlusCircle size={14} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0" />
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">Registro rápido</span>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Registro rápido</span>
             <span className="text-[11px] text-muted-foreground/40 truncate hidden sm:inline">sueño · energía · finanzas · señal</span>
           </span>
           <ChevronDown size={16} strokeWidth={1.75} className={cn('text-muted-foreground/50 flex-shrink-0 transition-transform duration-200', showCapture && 'rotate-180')} />
@@ -608,7 +619,7 @@ function DashboardContent() {
           hacia Supabase. Footgun del split-brain — oculto en producción. */}
       {SEED_FIXTURES && (
       <div className="mt-8 pt-4 border-t border-border flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans">Datos locales</span>
+        <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Datos locales</span>
         <div className="flex gap-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -629,7 +640,7 @@ function DashboardContent() {
           </AlertDialog>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button size="sm" variant="ghost" className="hover:bg-red-500/10 hover:text-red-400">Borrar todo</Button>
+              <Button size="sm" variant="ghost" className="hover:bg-bad-soft hover:text-bad">Borrar todo</Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -640,7 +651,7 @@ function DashboardContent() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClearAll} className="bg-red-500 text-white hover:bg-red-500/90">Borrar todo</AlertDialogAction>
+                <AlertDialogAction onClick={handleClearAll} className="bg-bad text-white hover:bg-bad/90">Borrar todo</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
