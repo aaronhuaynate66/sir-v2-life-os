@@ -9,7 +9,7 @@
 // → check ANTHROPIC_API_KEY → Anthropic → parser tolerante → JSON.
 //
 // Body JSON: { title, description?, category?, targetDate? }
-// Response 200: { steps: [{ title, description?, targetDate? }] }
+// Response 200: { keyResults: [{ title, description?, tasks: [{ title, description?, targetDate? }] }] }
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
@@ -83,17 +83,17 @@ export async function POST(req: NextRequest) {
     const client = new Anthropic({ maxRetries: 2 })
     const msg = await client.messages.create({
       model: MODEL_ID,
-      max_tokens: 1200,
+      max_tokens: 2000,
       system: OBJECTIVE_PLAN_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildPlanInput(input) }],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
     const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-    const steps = parseObjectivePlan(text)
-    if (steps.length === 0) {
+    const keyResults = parseObjectivePlan(text)
+    if (keyResults.length === 0) {
       return errorJson(502, 'Plan vacío del modelo', 'No se pudo extraer un plan. Reintentá en unos segundos.')
     }
-    return NextResponse.json({ steps }, { status: 200 })
+    return NextResponse.json({ keyResults }, { status: 200 })
   } catch (e) {
     reportApiError(e)
     const detail = e instanceof Error ? e.message : String(e)

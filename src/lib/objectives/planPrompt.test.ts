@@ -1,4 +1,4 @@
-// SIR V2 — Tests del prompt/parser del plan de objetivos.
+// SIR V2 — Tests del prompt/parser del plan OKR de objetivos.
 
 import { describe, it, expect } from 'vitest'
 
@@ -7,17 +7,18 @@ import { buildPlanInput, parseObjectivePlan } from './planPrompt'
 describe('buildPlanInput', () => {
   it('incluye título, dominio, descripción, hoy y fecha objetivo', () => {
     const msg = buildPlanInput({
-      title: 'Ganar el Mundial de Bomberos',
+      title: 'Competir en el Mundial en el exterior',
       description: 'Categoría sénior',
       category: 'personal',
       targetDate: '2026-11-01',
       today: '2026-06-01',
     })
-    expect(msg).toContain('Ganar el Mundial de Bomberos')
+    expect(msg).toContain('Competir en el Mundial en el exterior')
     expect(msg).toContain('Dominio: personal')
     expect(msg).toContain('Categoría sénior')
     expect(msg).toContain('Hoy es: 2026-06-01')
     expect(msg).toContain('Fecha objetivo: 2026-11-01')
+    expect(msg).toContain('keyResults')
   })
 
   it('sin fecha objetivo → lo aclara', () => {
@@ -27,42 +28,80 @@ describe('buildPlanInput', () => {
 })
 
 describe('parseObjectivePlan', () => {
-  it('parsea JSON limpio', () => {
+  it('parsea un plan OKR limpio (KRs con tareas)', () => {
     const raw = JSON.stringify({
-      steps: [
-        { title: 'Inscribirse al equipo', targetDate: '2026-06-15' },
-        { title: 'Plan de entrenamiento', description: '5 días/semana', targetDate: '2026-07-01' },
+      keyResults: [
+        {
+          title: 'Visa y viaje',
+          tasks: [
+            { title: 'Tramitar la eVisa', targetDate: '2026-07-01' },
+            { title: 'Comprar el pasaje', description: 'ida y vuelta', targetDate: '2026-07-15' },
+          ],
+        },
+        {
+          title: 'Inscripción',
+          tasks: [{ title: 'Pagar el fee' }],
+        },
       ],
     })
-    const steps = parseObjectivePlan(raw)
-    expect(steps).toHaveLength(2)
-    expect(steps[0]).toEqual({ title: 'Inscribirse al equipo', description: undefined, targetDate: '2026-06-15' })
-    expect(steps[1].description).toBe('5 días/semana')
+    const krs = parseObjectivePlan(raw)
+    expect(krs).toHaveLength(2)
+    expect(krs[0].title).toBe('Visa y viaje')
+    expect(krs[0].tasks).toHaveLength(2)
+    expect(krs[0].tasks[0]).toEqual({ title: 'Tramitar la eVisa', description: undefined, targetDate: '2026-07-01' })
+    expect(krs[0].tasks[1].description).toBe('ida y vuelta')
+    expect(krs[1].tasks[0]).toEqual({ title: 'Pagar el fee', description: undefined, targetDate: undefined })
   })
 
   it('tolera markdown/ruido alrededor del JSON', () => {
-    const raw = 'Claro, acá tenés el plan:\n```json\n{ "steps": [ { "title": "Paso A" } ] }\n```\n¡Éxitos!'
-    const steps = parseObjectivePlan(raw)
-    expect(steps).toHaveLength(1)
-    expect(steps[0].title).toBe('Paso A')
+    const raw =
+      'Claro, acá tenés el plan:\n```json\n{ "keyResults": [ { "title": "KR A", "tasks": [ { "title": "Hacer X" } ] } ] }\n```\n¡Éxitos!'
+    const krs = parseObjectivePlan(raw)
+    expect(krs).toHaveLength(1)
+    expect(krs[0].title).toBe('KR A')
+    expect(krs[0].tasks[0].title).toBe('Hacer X')
   })
 
-  it('descarta pasos sin título', () => {
-    const raw = JSON.stringify({ steps: [{ title: '' }, { title: '   ' }, { title: 'Válido' }, { foo: 1 }] })
-    const steps = parseObjectivePlan(raw)
-    expect(steps).toHaveLength(1)
-    expect(steps[0].title).toBe('Válido')
+  it('descarta KRs sin título; conserva KRs sin tareas', () => {
+    const raw = JSON.stringify({
+      keyResults: [
+        { title: '', tasks: [{ title: 'X' }] },
+        { title: '   ', tasks: [] },
+        { title: 'Válido', tasks: [] },
+        { foo: 1 },
+      ],
+    })
+    const krs = parseObjectivePlan(raw)
+    expect(krs).toHaveLength(1)
+    expect(krs[0].title).toBe('Válido')
+    expect(krs[0].tasks).toEqual([])
+  })
+
+  it('descarta tareas sin título dentro de un KR', () => {
+    const raw = JSON.stringify({
+      keyResults: [{ title: 'KR', tasks: [{ title: '' }, { title: 'Buena' }, { nope: 1 }] }],
+    })
+    const krs = parseObjectivePlan(raw)
+    expect(krs[0].tasks).toHaveLength(1)
+    expect(krs[0].tasks[0].title).toBe('Buena')
   })
 
   it('ignora targetDate con formato inválido', () => {
-    const raw = JSON.stringify({ steps: [{ title: 'X', targetDate: '15 de junio' }] })
-    expect(parseObjectivePlan(raw)[0].targetDate).toBeUndefined()
+    const raw = JSON.stringify({ keyResults: [{ title: 'KR', tasks: [{ title: 'X', targetDate: '15 de julio' }] }] })
+    expect(parseObjectivePlan(raw)[0].tasks[0].targetDate).toBeUndefined()
   })
 
-  it('JSON inválido o sin steps → []', () => {
+  it('KR sin campo tasks → tasks vacío', () => {
+    const raw = JSON.stringify({ keyResults: [{ title: 'Solo KR' }] })
+    const krs = parseObjectivePlan(raw)
+    expect(krs).toHaveLength(1)
+    expect(krs[0].tasks).toEqual([])
+  })
+
+  it('JSON inválido o sin keyResults → []', () => {
     expect(parseObjectivePlan('no json aquí')).toEqual([])
     expect(parseObjectivePlan('{ "otra": 1 }')).toEqual([])
     expect(parseObjectivePlan('')).toEqual([])
-    expect(parseObjectivePlan('{ "steps": "no es array" }')).toEqual([])
+    expect(parseObjectivePlan('{ "keyResults": "no es array" }')).toEqual([])
   })
 })

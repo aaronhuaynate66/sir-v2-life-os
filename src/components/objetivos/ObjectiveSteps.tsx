@@ -47,6 +47,7 @@ import {
   normalizeOrders,
   moveStep,
 } from '@/lib/objectives/steps'
+import type { ProposedKeyResult, ProposedTask } from '@/lib/objectives/planPrompt'
 import { cn } from '@/lib/utils'
 import type { Goal, ObjectiveStep, ObjectiveStepKind, ObjectiveStepStatus } from '@/types'
 
@@ -61,16 +62,10 @@ function nextStatus(s: ObjectiveStepStatus): ObjectiveStepStatus {
   return s === 'pendiente' ? 'en_progreso' : s === 'en_progreso' ? 'hecho' : 'pendiente'
 }
 
-/** Paso propuesto por el LLM (aún no persistido). */
-interface ProposedStep {
-  title: string
-  description?: string
-  targetDate?: string
-}
-
 interface PlanState {
   loading: boolean
-  proposed: ProposedStep[] | null
+  /** Plan OKR propuesto por el LLM (KRs con tareas), aún no persistido. */
+  proposed: ProposedKeyResult[] | null
   error: ApiError | null
 }
 
@@ -195,7 +190,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
     })
   }
 
-  // ─── Plan IA (plano hoy; fase 4 lo vuelve jerárquico) ────────────────
+  // ─── Plan IA (OKR completo: KRs + tareas) ────────────────────────────
   const generatePlan = useCallback(async () => {
     setPlan({ loading: true, proposed: null, error: null })
     try {
@@ -213,8 +208,8 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
         setPlan({ loading: false, proposed: null, error: await parseErrorResponse(res) })
         return
       }
-      const json = (await res.json()) as { steps: ProposedStep[] }
-      setPlan({ loading: false, proposed: json.steps, error: null })
+      const json = (await res.json()) as { keyResults: ProposedKeyResult[] }
+      setPlan({ loading: false, proposed: json.keyResults, error: null })
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       setPlan({
@@ -225,15 +220,41 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
     }
   }, [goal.title, goal.description, goal.category, goal.targetDate])
 
-  function updateProposed(i: number, patch: Partial<ProposedStep>) {
+  function updateProposedKr(i: number, patch: Partial<Omit<ProposedKeyResult, 'tasks'>>) {
     setPlan((p) =>
       p.proposed
-        ? { ...p, proposed: p.proposed.map((s, idx) => (idx === i ? { ...s, ...patch } : s)) }
+        ? { ...p, proposed: p.proposed.map((kr, idx) => (idx === i ? { ...kr, ...patch } : kr)) }
         : p,
     )
   }
-  function removeProposed(i: number) {
+  function removeProposedKr(i: number) {
     setPlan((p) => (p.proposed ? { ...p, proposed: p.proposed.filter((_, idx) => idx !== i) } : p))
+  }
+  function updateProposedTask(i: number, j: number, patch: Partial<ProposedTask>) {
+    setPlan((p) =>
+      p.proposed
+        ? {
+            ...p,
+            proposed: p.proposed.map((kr, idx) =>
+              idx === i
+                ? { ...kr, tasks: kr.tasks.map((t, tj) => (tj === j ? { ...t, ...patch } : t)) }
+                : kr,
+            ),
+          }
+        : p,
+    )
+  }
+  function removeProposedTask(i: number, j: number) {
+    setPlan((p) =>
+      p.proposed
+        ? {
+            ...p,
+            proposed: p.proposed.map((kr, idx) =>
+              idx === i ? { ...kr, tasks: kr.tasks.filter((_, tj) => tj !== j) } : kr,
+            ),
+          }
+        : p,
+    )
   }
   function discardPlan() {
     setPlan({ loading: false, proposed: null, error: null })
@@ -241,19 +262,43 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
   function acceptPlan() {
     if (!plan.proposed || plan.proposed.length === 0) return
     const base = keyResults.length
-    // Plan plano → aterriza como KRs (sin tareas). La fase 4 lo hará jerárquico.
-    const toAdd = plan.proposed
-      .filter((s) => s.title.trim())
-      .map((s, i) =>
-        makeStep({ title: s.title, kind: 'key_result', order: base + i, targetDate: s.targetDate, description: s.description, salt: i }),
-      )
+    const toAdd: ObjectiveStep[] = []
+    plan.proposed.forEach((krp, i) => {
+      if (!krp.title.trim()) return
+      const krStep = makeStep({
+        title: krp.title,
+        kind: 'key_result',
+        order: base + i,
+        description: krp.description,
+        salt: i,
+      })
+      toAdd.push(krStep)
+      krp.tasks.forEach((tp, j) => {
+        if (!tp.title.trim()) return
+        toAdd.push(
+          makeStep({
+            title: tp.title,
+            kind: 'task',
+            parentId: krStep.id,
+            order: j,
+            targetDate: tp.targetDate,
+            description: tp.description,
+            salt: i * 100 + j,
+          }),
+        )
+      })
+    })
     if (toAdd.length === 0) {
-      toast.error('Plan vacío', { description: 'Ningún resultado tenía título.' })
+      toast.error('Plan vacío', { description: 'Ningún resultado clave tenía título.' })
       return
     }
+    const krCount = toAdd.filter((s) => s.kind === 'key_result').length
+    const taskCount = toAdd.length - krCount
     addSteps(toAdd)
     discardPlan()
-    toast.success('Plan agregado', { description: `${toAdd.length} resultados clave sumados.` })
+    toast.success('Plan agregado', {
+      description: `${krCount} resultados clave y ${taskCount} tareas sumadas.`,
+    })
   }
 
   return (
@@ -329,8 +374,10 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
         ) : plan.proposed ? (
           <PlanReview
             proposed={plan.proposed}
-            onChange={updateProposed}
-            onRemove={removeProposed}
+            onChangeKr={updateProposedKr}
+            onRemoveKr={removeProposedKr}
+            onChangeTask={updateProposedTask}
+            onRemoveTask={removeProposedTask}
             onAccept={acceptPlan}
             onDiscard={discardPlan}
           />
@@ -605,26 +652,33 @@ function IconBtn({
   )
 }
 
-/** Review-before-save del plan generado: editable antes de persistir. */
+/** Review-before-save del plan OKR generado: KRs con tareas, editable. */
 function PlanReview({
   proposed,
-  onChange,
-  onRemove,
+  onChangeKr,
+  onRemoveKr,
+  onChangeTask,
+  onRemoveTask,
   onAccept,
   onDiscard,
 }: {
-  proposed: ProposedStep[]
-  onChange: (i: number, patch: Partial<ProposedStep>) => void
-  onRemove: (i: number) => void
+  proposed: ProposedKeyResult[]
+  onChangeKr: (i: number, patch: Partial<Omit<ProposedKeyResult, 'tasks'>>) => void
+  onRemoveKr: (i: number) => void
+  onChangeTask: (i: number, j: number, patch: Partial<ProposedTask>) => void
+  onRemoveTask: (i: number, j: number) => void
   onAccept: () => void
   onDiscard: () => void
 }) {
+  const krCount = proposed.filter((kr) => kr.title.trim()).length
+  const taskCount = proposed.reduce((n, kr) => n + kr.tasks.filter((t) => t.title.trim()).length, 0)
+
   return (
     <div className="rounded-md border border-brand/30 bg-brand-soft p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs text-brand-soft-foreground">
           <Sparkles size={13} />
-          Plan propuesto · revisá, editá y aceptá (o descartá)
+          Plan OKR propuesto · revisá, editá y aceptá (o descartá)
         </div>
         <button
           type="button"
@@ -637,43 +691,61 @@ function PlanReview({
       </div>
 
       {proposed.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Sin items para guardar.</p>
+        <p className="text-xs text-muted-foreground">Sin resultados clave para guardar.</p>
       ) : (
-        <ul className="space-y-2">
-          {proposed.map((s, i) => (
-            <li key={i} className="flex flex-col sm:flex-row gap-1.5 items-start">
-              <span className="text-[10px] font-mono text-muted-foreground/60 mt-2 w-5 flex-shrink-0">{i + 1}.</span>
-              <div className="flex-1 w-full space-y-1">
+        <ul className="space-y-2.5">
+          {proposed.map((kr, i) => (
+            <li key={i} className="rounded-md border border-border/50 bg-background/40 p-2 space-y-1.5">
+              {/* KR */}
+              <div className="flex items-start gap-1.5">
+                <Target size={12} className="mt-2.5 text-brand-soft-foreground flex-shrink-0" aria-hidden="true" />
                 <Input
-                  value={s.title}
-                  onChange={(e) => onChange(i, { title: e.target.value })}
-                  className="h-8 text-sm"
-                  placeholder="Título"
+                  value={kr.title}
+                  onChange={(e) => onChangeKr(i, { title: e.target.value })}
+                  className="h-8 text-sm font-medium flex-1"
+                  placeholder="Resultado clave"
                 />
-                {s.description && (
-                  <Input
-                    value={s.description}
-                    onChange={(e) => onChange(i, { description: e.target.value })}
-                    className="h-7 text-xs text-muted-foreground"
-                    placeholder="Detalle"
-                  />
-                )}
+                <button
+                  type="button"
+                  onClick={() => onRemoveKr(i)}
+                  className="p-1.5 text-muted-foreground/50 hover:text-bad flex-shrink-0"
+                  aria-label={`Quitar resultado clave ${i + 1}`}
+                >
+                  <Trash2 size={13} />
+                </button>
               </div>
-              <Input
-                type="date"
-                value={s.targetDate ?? ''}
-                onChange={(e) => onChange(i, { targetDate: e.target.value || undefined })}
-                className="h-8 w-full sm:w-36 font-mono text-xs"
-                aria-label={`Fecha sugerida item ${i + 1}`}
-              />
-              <button
-                type="button"
-                onClick={() => onRemove(i)}
-                className="p-1.5 text-muted-foreground/50 hover:text-bad flex-shrink-0"
-                aria-label={`Quitar item ${i + 1} del plan`}
-              >
-                <Trash2 size={13} />
-              </button>
+
+              {/* Tareas del KR */}
+              {kr.tasks.length > 0 && (
+                <ul className="pl-5 space-y-1">
+                  {kr.tasks.map((t, j) => (
+                    <li key={j} className="flex flex-col sm:flex-row gap-1.5 items-start">
+                      <span className="text-[10px] font-mono text-muted-foreground/50 mt-2 w-4 flex-shrink-0">{j + 1}.</span>
+                      <Input
+                        value={t.title}
+                        onChange={(e) => onChangeTask(i, j, { title: e.target.value })}
+                        className="h-7 text-[13px] flex-1"
+                        placeholder="Tarea concreta"
+                      />
+                      <Input
+                        type="date"
+                        value={t.targetDate ?? ''}
+                        onChange={(e) => onChangeTask(i, j, { targetDate: e.target.value || undefined })}
+                        className="h-7 w-full sm:w-36 font-mono text-xs"
+                        aria-label={`Fecha tarea ${i + 1}.${j + 1}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => onRemoveTask(i, j)}
+                        className="p-1 text-muted-foreground/50 hover:text-bad flex-shrink-0"
+                        aria-label={`Quitar tarea ${i + 1}.${j + 1}`}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>
@@ -686,7 +758,7 @@ function PlanReview({
           onClick={onAccept}
           className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground"
         >
-          Aceptar plan ({proposed.length})
+          Aceptar plan ({krCount} KR · {taskCount} tareas)
         </Button>
         <Button size="sm" variant="ghost" onClick={onDiscard}>Descartar</Button>
       </div>
