@@ -39,61 +39,13 @@ import type { Person } from '@/types'
 import { cn } from '@/lib/utils'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import { useMounted } from '@/hooks/useMounted'
+import { computeRelationalScore, healthBand } from '@/lib/people/relationalScore'
 
 export interface RelationalScoreProps {
   person: Person
   /** Ultima observation con capture_type='whatsapp_chat' (curada). Se usa
    *  para el ajuste de recencia de Fuerza. null si no hay chat. */
   lastChat: Observation | null
-}
-
-interface ScoreBreakdown {
-  fuerza: number
-  reciprocidad: number | null
-  confianza: number
-  global: number
-  /** Dias desde el ultimo whatsapp_chat (para el footer "Ultimo contacto:"). */
-  daysSinceLastChat: number | null
-}
-
-const DAY_MS = 86_400_000
-
-function clamp(n: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, n))
-}
-
-function computeBreakdown(person: Person, lastChat: Observation | null): ScoreBreakdown {
-  const importance = clamp(Number(person.importanceScore) || 5, 1, 10)
-  const trust = clamp(Number(person.trustLevel) || 5, 1, 10)
-
-  let daysSinceLastChat: number | null = null
-  if (lastChat?.observedAt) {
-    const t = new Date(lastChat.observedAt).getTime()
-    if (!Number.isNaN(t) && t <= Date.now()) {
-      daysSinceLastChat = Math.floor((Date.now() - t) / DAY_MS)
-    }
-  }
-
-  // Fuerza con ajuste de recencia.
-  let fuerza = importance * 10
-  if (daysSinceLastChat === null) {
-    fuerza -= 10
-  } else if (daysSinceLastChat < 14) {
-    fuerza += 10
-  } else if (daysSinceLastChat > 60) {
-    fuerza -= 10
-  }
-  fuerza = clamp(fuerza, 0, 100)
-
-  // Reciprocidad: guardrail — V2 no tiene log de interacciones aun.
-  const reciprocidad: number | null = null
-
-  const confianza = trust * 10
-
-  const known = [fuerza, confianza, ...(reciprocidad !== null ? [reciprocidad] : [])]
-  const global = Math.round(known.reduce((a, b) => a + b, 0) / known.length)
-
-  return { fuerza, reciprocidad, confianza, global, daysSinceLastChat }
 }
 
 export function RelationalScore({ person, lastChat }: RelationalScoreProps) {
@@ -117,16 +69,15 @@ export function RelationalScore({ person, lastChat }: RelationalScoreProps) {
   )
 }
 
-/** Banda de salud → color semántico (ok/warn/bad). El vínculo es estado,
- *  así que el color significa (no es decorativo). */
-function healthBand(score: number): { color: string; soft: string; label: string } {
-  if (score >= 70) return { color: '#2dd4a7', soft: '#7fe9cf', label: 'Sólido' }
-  if (score >= 40) return { color: '#e0a93b', soft: '#f0cd8a', label: 'A cuidar' }
-  return { color: '#e5564c', soft: '#f0a09a', label: 'En riesgo' }
-}
-
 function ScoreContent({ person, lastChat }: RelationalScoreProps) {
-  const breakdown = computeBreakdown(person, lastChat)
+  const breakdown = computeRelationalScore(
+    {
+      importanceScore: person.importanceScore,
+      trustLevel: person.trustLevel,
+      lastChatObservedAt: lastChat?.observedAt ?? null,
+    },
+    new Date(),
+  )
   const band = healthBand(breakdown.global)
 
   return (

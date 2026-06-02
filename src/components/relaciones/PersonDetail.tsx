@@ -54,6 +54,7 @@ import {
 import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
+import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
@@ -335,6 +336,17 @@ export function PersonDetail({
           />
         </div>
       </header>
+
+      {/* Franja de resumen (síntesis V1): lo primero que se ve al abrir la
+          persona. Ciclo + próxima fecha + última interacción + score + próxima
+          acción accionable, todo sintetizado por buildPersonSummary (pura). */}
+      <ResumenPersona
+        person={live}
+        lastChatObservedAt={lastChat?.observedAt ?? null}
+        lastManualInteractionAt={
+          personLogs.find((l) => l.kind === 'interaction')?.loggedAt ?? null
+        }
+      />
 
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
