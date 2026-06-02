@@ -200,8 +200,8 @@ export function WhatsAppCaptureFlow() {
   return (
     <Card className="shadow-none">
       <CardContent className="p-6 flex flex-col items-center text-center gap-4">
-        <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-          <AlertCircle size={20} strokeWidth={1.75} className="text-red-400" aria-hidden="true" />
+        <div className="w-12 h-12 rounded-full bg-bad-soft border border-bad/30 flex items-center justify-center">
+          <AlertCircle size={20} strokeWidth={1.75} className="text-bad" aria-hidden="true" />
         </div>
         <div className="space-y-1 max-w-md">
           <h2 className="text-base font-semibold tracking-tight text-foreground">Hubo un problema</h2>

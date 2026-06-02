@@ -154,7 +154,7 @@ export function WhatsAppCaptureUploader({ onFile, disabled }: WhatsAppCaptureUpl
         </div>
 
         {error && (
-          <div className="text-xs text-red-400 text-center" role="alert">
+          <div className="text-xs text-bad text-center" role="alert">
             {error}
           </div>
         )}

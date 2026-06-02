@@ -273,7 +273,7 @@ function CapturaIndexContent() {
       </Link>
 
       <header className="mb-6 sm:mb-8">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-sans mb-1">
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">
           SIR V2 &middot; Captura
         </div>
         <div className="flex items-center gap-3">
@@ -314,7 +314,7 @@ function CapturaIndexContent() {
         <CardContent className="p-4 sm:p-6 space-y-4">
           {/* STEP 1: PICK FILE */}
           <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground/70 font-sans block mb-2">
+            <label className="text-xs uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-2">
               1. Imagen
             </label>
             <input
@@ -391,15 +391,15 @@ function CapturaIndexContent() {
               <h2 className="text-sm font-semibold tracking-tight">
                 2. Vincular persona
               </h2>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+              <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
                 opcional
               </span>
             </div>
 
             {selectedPersonId ? (
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs flex items-center justify-between gap-3">
+              <div className="rounded-md border border-ok/30 bg-ok-soft p-3 text-xs flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 size={14} className="text-emerald-400" />
+                  <CheckCircle2 size={14} className="text-ok" />
                   <span className="text-foreground font-medium">{selectedPersonName}</span>
                   <span className="font-mono text-muted-foreground/70">{selectedPersonId}</span>
                 </div>
@@ -415,7 +415,7 @@ function CapturaIndexContent() {
             ) : (
               <>
                 <div>
-                  <label className="text-xs uppercase tracking-widest text-muted-foreground/70 font-sans block mb-2">
+                  <label className="text-xs uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-2">
                     Buscar
                   </label>
                   <input
@@ -562,7 +562,7 @@ function CapturaIndexContent() {
           <div className="flex items-center gap-2">
             <Scale size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
             <h2 className="text-sm font-semibold tracking-tight">Métricas de báscula</h2>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               capa biológica · self
             </span>
           </div>
@@ -687,7 +687,7 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
       : null
 
   return (
-    <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-4 space-y-3">
+    <div className="rounded-md border border-ok/30 bg-ok-soft p-4 space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
         <Badge className="text-[10px] font-mono uppercase tracking-wider">Guardado</Badge>
         <span className="text-xs font-mono text-foreground break-all min-w-0">{obs.id}</span>
@@ -713,9 +713,9 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
 
       {/* PERSONA VINCULADA */}
       {obs.personId ? (
-        <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs flex items-center justify-between gap-3">
+        <div className="rounded-md border border-ok/40 bg-ok-soft p-3 text-xs flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={14} className="text-emerald-400" />
+            <CheckCircle2 size={14} className="text-ok" />
             <span className="text-foreground font-medium">{linkedPersonName}</span>
             <span className="font-mono text-muted-foreground/70">{obs.personId}</span>
           </div>
@@ -778,7 +778,7 @@ function ProcessedView({ result }: { result: ProcessCaptureResponse }) {
             {result.compression.attempts} pase{result.compression.attempts === 1 ? '' : 's'}
           </span>
           {result.compression.hitCeiling && (
-            <span className="ml-2 text-yellow-400 font-mono">⚠ techo q=0.98 sin alcanzar piso</span>
+            <span className="ml-2 text-warn font-mono">⚠ techo q=0.98 sin alcanzar piso</span>
           )}
         </div>
       </div>
@@ -832,7 +832,7 @@ function PostSaveMatcher({
         <h3 className="text-xs font-semibold tracking-tight">
           ¿Es alguna de estas personas?
         </h3>
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
+        <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
           matcher post-extracción
         </span>
       </div>

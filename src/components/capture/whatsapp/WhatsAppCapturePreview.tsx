@@ -54,15 +54,15 @@ const CONFIDENCE_VISUAL: Record<
   WhatsAppCaptureExtracted['confidence'],
   { Icon: typeof CheckCircle2; class: string; label: string }
 > = {
-  high:   { Icon: CheckCircle2,  class: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10', label: 'alta' },
-  medium: { Icon: AlertCircle,   class: 'text-amber-400 border-amber-500/30 bg-amber-500/10',       label: 'media' },
-  low:    { Icon: AlertTriangle, class: 'text-red-400 border-red-500/30 bg-red-500/10',             label: 'baja' },
+  high:   { Icon: CheckCircle2,  class: 'text-ok border-ok/30 bg-ok-soft', label: 'alta' },
+  medium: { Icon: AlertCircle,   class: 'text-warn border-warn/30 bg-warn-soft',       label: 'media' },
+  low:    { Icon: AlertTriangle, class: 'text-bad border-bad/30 bg-bad-soft',             label: 'baja' },
 }
 
 const MATCH_VISUAL: Record<PersonMatch['confidence'], { emoji: string; label: string; class: string }> = {
-  high:   { emoji: '🟢', label: 'auto', class: 'text-emerald-400' },
-  medium: { emoji: '🟡', label: 'ambiguo', class: 'text-amber-400' },
-  low:    { emoji: '🔴', label: 'manual', class: 'text-red-400' },
+  high:   { emoji: '🟢', label: 'auto', class: 'text-ok' },
+  medium: { emoji: '🟡', label: 'ambiguo', class: 'text-warn' },
+  low:    { emoji: '🔴', label: 'manual', class: 'text-bad' },
 }
 
 function defaultDateTimeLocal(iso: string | null): string {
@@ -404,14 +404,14 @@ export function WhatsAppCapturePreview({
             disabled={saving}
             className={cn(
               'mt-1 font-mono tabular-nums',
-              !visionDetectedDate && 'border-amber-500/40 focus-visible:ring-amber-500/40',
+              !visionDetectedDate && 'border-warn/40 focus-visible:ring-amber-500/40',
             )}
             aria-describedby={visionDetectedDate ? undefined : 'convo-date-warning'}
           />
           {!visionDetectedDate && (
             <p
               id="convo-date-warning"
-              className="text-[11px] text-amber-400 mt-1 flex items-start gap-1 leading-snug"
+              className="text-[11px] text-warn mt-1 flex items-start gap-1 leading-snug"
               role="status"
             >
               <AlertTriangle
@@ -465,7 +465,7 @@ export function WhatsAppCapturePreview({
                   onClick={() => removeTopic(t)}
                   disabled={saving}
                   aria-label={`Quitar ${t}`}
-                  className="hover:text-red-400 rounded"
+                  className="hover:text-bad rounded"
                 >
                   <XIcon size={10} strokeWidth={2} />
                 </button>
@@ -552,8 +552,8 @@ export function WhatsAppCapturePreview({
                     className={cn(
                       'text-[9px] font-mono uppercase tracking-wider flex-shrink-0',
                       m.author === 'user'
-                        ? 'border-primary/30 bg-primary/10 text-primary'
-                        : 'border-blue-500/30 bg-blue-500/10 text-blue-300',
+                        ? 'border-brand/30 bg-brand-soft text-brand-soft-foreground'
+                        : 'border-border bg-secondary text-muted-foreground',
                     )}
                   >
                     {m.author === 'user' ? 'yo' : 'otra'}
@@ -642,7 +642,7 @@ export function WhatsAppCapturePreview({
         </div>
 
         {submitError && (
-          <div className="text-xs text-red-400 text-right" role="alert">
+          <div className="text-xs text-bad text-right" role="alert">
             {submitError}
           </div>
         )}

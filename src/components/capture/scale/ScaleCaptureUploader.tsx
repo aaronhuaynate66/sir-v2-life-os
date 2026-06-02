@@ -108,7 +108,7 @@ export function ScaleCaptureUploader({ onFile, disabled }: ScaleCaptureUploaderP
         </div>
 
         {error && (
-          <div className="mt-3 text-xs text-red-400 text-center" role="alert">
+          <div className="mt-3 text-xs text-bad text-center" role="alert">
             {error}
           </div>
         )}

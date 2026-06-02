@@ -39,9 +39,9 @@ const URGENCY_LABEL: Record<SignalUrgency, string> = {
   immediate: 'Inmediata', soon: 'Pronto', monitor: 'Monitorear', archive: 'Archivar',
 }
 const URGENCY_CLASS: Record<SignalUrgency, string> = {
-  immediate: 'border-red-500/30 bg-red-500/10 text-red-400',
-  soon: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-  monitor: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
+  immediate: 'border-bad/30 bg-bad-soft text-bad',
+  soon: 'border-warn/30 bg-warn-soft text-warn',
+  monitor: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
   archive: 'border-border bg-muted text-muted-foreground/60',
 }
 const URGENCY_ICON: Record<SignalUrgency, LucideIcon> = {
@@ -51,7 +51,7 @@ const URGENCY_ICON: Record<SignalUrgency, LucideIcon> = {
   archive: Archive,
 }
 
-const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
 export default function SignalsPage() {
   const hydrated = useHasHydrated()
@@ -124,7 +124,7 @@ function SignalsContent() {
   return (
     <AppShell>
       <div className="mb-8">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <Bell size={28} strokeWidth={1.5} className="text-muted-foreground" />
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Señales</h1>
@@ -135,7 +135,7 @@ function SignalsContent() {
       {bySource.length > 0 && (
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <Filter size={12} strokeWidth={1.75} className="text-muted-foreground/60" />
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Por fuente</span>
+          <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Por fuente</span>
           {bySource.map(({ src, count }) => (
             <button
               key={src}
@@ -163,7 +163,7 @@ function SignalsContent() {
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
             <CardContent className="p-3 sm:p-4">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">{s.label}</div>
               <div className="text-xl sm:text-2xl font-mono font-bold tabular-nums text-foreground">{s.value}</div>
             </CardContent>
           </Card>
@@ -207,7 +207,7 @@ function SignalsContent() {
       </Card>
 
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
           {filterSource !== 'all' ? SOURCE_LABEL[filterSource as SignalSource] : 'Todas las señales'} &mdash; {visible.length}
         </div>
         <button onClick={() => setShowResolved(!showResolved)} className="text-[10px] font-mono text-muted-foreground hover:text-foreground py-1.5 px-1 -mr-1">
@@ -236,16 +236,16 @@ function SignalsContent() {
                           strokeWidth={1.75}
                           className={cn(
                             'flex-shrink-0',
-                            s.urgency === 'immediate' ? 'text-red-400'
-                              : s.urgency === 'soon' ? 'text-amber-400'
-                              : s.urgency === 'monitor' ? 'text-blue-400'
+                            s.urgency === 'immediate' ? 'text-bad'
+                              : s.urgency === 'soon' ? 'text-warn'
+                              : s.urgency === 'monitor' ? 'text-brand-soft-foreground'
                               : 'text-muted-foreground/60',
                           )}
                         />
                         <Badge variant="outline" className="text-[10px] font-normal">{SOURCE_LABEL[s.source]}</Badge>
                         <Badge variant="outline" className="text-[10px] font-normal">{TYPE_LABEL[s.type]}</Badge>
                         <Badge variant="outline" className={cn('text-[10px] font-normal', URGENCY_CLASS[s.urgency])}>{URGENCY_LABEL[s.urgency]}</Badge>
-                        {s.actionRequired && <Badge variant="outline" className="text-[10px] font-normal border-amber-500/30 bg-amber-500/10 text-amber-400">accion requerida</Badge>}
+                        {s.actionRequired && <Badge variant="outline" className="text-[10px] font-normal border-warn/30 bg-warn-soft text-warn">accion requerida</Badge>}
                       </div>
                       <p className="text-sm text-foreground mb-1">{s.content}</p>
                       {s.meaning && s.meaning !== s.content && <p className="text-xs text-muted-foreground">{s.meaning}</p>}
@@ -254,13 +254,13 @@ function SignalsContent() {
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
                       {!s.resolved && (
-                        <Button variant="outline" size="sm" onClick={() => handleResolve(s.id)} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">
+                        <Button variant="outline" size="sm" onClick={() => handleResolve(s.id)} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
                           Resolver
                         </Button>
                       )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="hover:text-red-400" aria-label="Eliminar">
+                          <Button variant="ghost" size="sm" className="hover:text-bad" aria-label="Eliminar">
                             <X size={14} strokeWidth={1.75} />
                           </Button>
                         </AlertDialogTrigger>
@@ -274,7 +274,7 @@ function SignalsContent() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleRemove(s.id, s.content)} className="bg-red-500 text-white hover:bg-red-500/90">Eliminar</AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleRemove(s.id, s.content)} className="bg-bad text-white hover:bg-bad/90">Eliminar</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>

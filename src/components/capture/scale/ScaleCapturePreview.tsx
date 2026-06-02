@@ -31,9 +31,9 @@ const CONFIDENCE_VISUAL: Record<
   ScaleCaptureExtracted['confidence'],
   { Icon: typeof CheckCircle2; class: string; label: string }
 > = {
-  high:   { Icon: CheckCircle2,  class: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10', label: 'alta' },
-  medium: { Icon: AlertCircle,   class: 'text-amber-400 border-amber-500/30 bg-amber-500/10',       label: 'media' },
-  low:    { Icon: AlertTriangle, class: 'text-red-400 border-red-500/30 bg-red-500/10',             label: 'baja' },
+  high:   { Icon: CheckCircle2,  class: 'text-ok border-ok/30 bg-ok-soft', label: 'alta' },
+  medium: { Icon: AlertCircle,   class: 'text-warn border-warn/30 bg-warn-soft',       label: 'media' },
+  low:    { Icon: AlertTriangle, class: 'text-bad border-bad/30 bg-bad-soft',             label: 'baja' },
 }
 
 function defaultMeasuredAtLocal(extractedIso: string | null): string {
@@ -133,14 +133,14 @@ export function ScaleCapturePreview({
                   disabled={saving}
                   className={cn(
                     'mt-1 font-mono tabular-nums',
-                    !visionDetectedDate && 'border-amber-500/40 focus-visible:ring-amber-500/40',
+                    !visionDetectedDate && 'border-warn/40 focus-visible:ring-amber-500/40',
                   )}
                   aria-describedby={visionDetectedDate ? undefined : 'measuredAt-warning'}
                 />
                 {!visionDetectedDate && (
                   <p
                     id="measuredAt-warning"
-                    className="text-[11px] text-amber-400 mt-1 flex items-start gap-1 leading-snug"
+                    className="text-[11px] text-warn mt-1 flex items-start gap-1 leading-snug"
                     role="status"
                   >
                     <AlertTriangle
@@ -181,7 +181,7 @@ export function ScaleCapturePreview({
                           <span className="text-muted-foreground/60">({mapping.unit})</span>
                         )}
                         {!isDetected && (
-                          <span className="text-[9px] font-mono uppercase tracking-wider text-amber-400/70">
+                          <span className="text-[9px] font-mono uppercase tracking-wider text-warn/70">
                             no detectado
                           </span>
                         )}
