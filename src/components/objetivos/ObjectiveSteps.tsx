@@ -32,6 +32,7 @@ import {
   X,
   Pencil,
   Target,
+  Gauge,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -39,6 +40,10 @@ import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
+import { useFinanceStore } from '@/stores/useFinanceStore'
+import { useSelfStore } from '@/stores/useSelfStore'
+import { useSignalStore } from '@/stores/useSignalStore'
+import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import {
   keyResultsForObjective,
   tasksForKeyResult,
@@ -48,6 +53,7 @@ import {
   moveStep,
 } from '@/lib/objectives/steps'
 import type { ProposedKeyResult, ProposedTask } from '@/lib/objectives/planPrompt'
+import { buildGroundingContext, renderGroundingForPrompt } from '@/lib/objectives/grounding'
 import { cn } from '@/lib/utils'
 import type { Goal, ObjectiveStep, ObjectiveStepKind, ObjectiveStepStatus } from '@/types'
 
@@ -66,6 +72,8 @@ interface PlanState {
   loading: boolean
   /** Plan OKR propuesto por el LLM (KRs con tareas), aún no persistido. */
   proposed: ProposedKeyResult[] | null
+  /** Notas de feasibility aterrizadas en la data real (Hito B). */
+  feasibility: string[]
   error: ApiError | null
 }
 
@@ -77,6 +85,13 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
   const setStepStatus = useObjectiveStepStore((s) => s.setStepStatus)
   const removeStep = useObjectiveStepStore((s) => s.removeStep)
   const applyOrderChanges = useObjectiveStepStore((s) => s.applyOrderChanges)
+
+  // Grounding: data real para que el plan y la feasibility se apoyen en SIR.
+  const financialMovements = useFinanceStore((s) => s.financialMovements)
+  const healthMetrics = useSelfStore((s) => s.healthMetrics)
+  const selfMetrics = useSelfStore((s) => s.selfMetrics)
+  const signals = useSignalStore((s) => s.signals)
+  const people = useRelationshipStore((s) => s.people)
 
   const keyResults = keyResultsForObjective(allSteps, goal.id)
   const progress = computeObjectiveProgress(allSteps, goal.id)
@@ -90,7 +105,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
   // Expand/colapso de KRs (por defecto expandidos → se ven las tareas)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   // Plan IA
-  const [plan, setPlan] = useState<PlanState>({ loading: false, proposed: null, error: null })
+  const [plan, setPlan] = useState<PlanState>({ loading: false, proposed: null, feasibility: [], error: null })
 
   const makeStep = useCallback(
     (opts: {
@@ -190,10 +205,24 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
     })
   }
 
-  // ─── Plan IA (OKR completo: KRs + tareas) ────────────────────────────
+  // ─── Plan IA (OKR completo + feasibility, apoyado en data real) ──────
   const generatePlan = useCallback(async () => {
-    setPlan({ loading: true, proposed: null, error: null })
+    setPlan({ loading: true, proposed: null, feasibility: [], error: null })
     try {
+      // Grounding: resumimos la data real del usuario (client-side, sin N+1) y
+      // mandamos sólo el texto resumido (no filas crudas; sin self_diagnosis).
+      const linkedPeople = (goal.relatedPersons ?? [])
+        .map((id) => people.find((p) => p.id === id)?.name)
+        .filter((n): n is string => !!n)
+      const ctx = buildGroundingContext({
+        financialMovements,
+        healthMetrics,
+        selfMetrics,
+        signals,
+        linkedPeople,
+      })
+      const context = renderGroundingForPrompt(ctx)
+
       const res = await fetch('/api/objectives/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -202,23 +231,42 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
           description: goal.description || undefined,
           category: goal.category,
           targetDate: goal.targetDate || undefined,
+          target: goal.target || undefined,
+          baseline: goal.baseline || undefined,
+          why: goal.why || undefined,
+          context: context || undefined,
         }),
       })
       if (!res.ok) {
-        setPlan({ loading: false, proposed: null, error: await parseErrorResponse(res) })
+        setPlan({ loading: false, proposed: null, feasibility: [], error: await parseErrorResponse(res) })
         return
       }
-      const json = (await res.json()) as { keyResults: ProposedKeyResult[] }
-      setPlan({ loading: false, proposed: json.keyResults, error: null })
+      const json = (await res.json()) as { keyResults: ProposedKeyResult[]; feasibility?: string[] }
+      setPlan({ loading: false, proposed: json.keyResults, feasibility: json.feasibility ?? [], error: null })
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       setPlan({
         loading: false,
         proposed: null,
+        feasibility: [],
         error: { status: 0, message: 'Red caída o request abortado', detail: msg },
       })
     }
-  }, [goal.title, goal.description, goal.category, goal.targetDate])
+  }, [
+    goal.title,
+    goal.description,
+    goal.category,
+    goal.targetDate,
+    goal.target,
+    goal.baseline,
+    goal.why,
+    goal.relatedPersons,
+    financialMovements,
+    healthMetrics,
+    selfMetrics,
+    signals,
+    people,
+  ])
 
   function updateProposedKr(i: number, patch: Partial<Omit<ProposedKeyResult, 'tasks'>>) {
     setPlan((p) =>
@@ -257,7 +305,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
     )
   }
   function discardPlan() {
-    setPlan({ loading: false, proposed: null, error: null })
+    setPlan({ loading: false, proposed: null, feasibility: [], error: null })
   }
   function acceptPlan() {
     if (!plan.proposed || plan.proposed.length === 0) return
@@ -374,6 +422,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
         ) : plan.proposed ? (
           <PlanReview
             proposed={plan.proposed}
+            feasibility={plan.feasibility}
             onChangeKr={updateProposedKr}
             onRemoveKr={removeProposedKr}
             onChangeTask={updateProposedTask}
@@ -655,6 +704,7 @@ function IconBtn({
 /** Review-before-save del plan OKR generado: KRs con tareas, editable. */
 function PlanReview({
   proposed,
+  feasibility,
   onChangeKr,
   onRemoveKr,
   onChangeTask,
@@ -663,6 +713,7 @@ function PlanReview({
   onDiscard,
 }: {
   proposed: ProposedKeyResult[]
+  feasibility: string[]
   onChangeKr: (i: number, patch: Partial<Omit<ProposedKeyResult, 'tasks'>>) => void
   onRemoveKr: (i: number) => void
   onChangeTask: (i: number, j: number, patch: Partial<ProposedTask>) => void
@@ -749,6 +800,24 @@ function PlanReview({
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Notas de viabilidad aterrizadas en la data real (no se persisten). */}
+      {feasibility.length > 0 && (
+        <div className="rounded-md border border-warn/30 bg-warn-soft p-2.5 space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.07em] text-warn-foreground">
+            <Gauge size={12} aria-hidden="true" />
+            Viabilidad (según tu data real)
+          </div>
+          <ul className="space-y-1">
+            {feasibility.map((note, i) => (
+              <li key={i} className="text-[12px] text-foreground/90 leading-snug flex gap-1.5">
+                <span className="text-warn-foreground/70 flex-shrink-0">·</span>
+                <span>{note}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <div className="flex gap-2 pt-1">

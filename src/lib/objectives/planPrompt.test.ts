@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { buildPlanInput, parseObjectivePlan } from './planPrompt'
+import { buildPlanInput, parseObjectivePlan, parseFeasibilityNotes } from './planPrompt'
 
 describe('buildPlanInput', () => {
   it('incluye título, dominio, descripción, hoy y fecha objetivo', () => {
@@ -24,6 +24,55 @@ describe('buildPlanInput', () => {
   it('sin fecha objetivo → lo aclara', () => {
     const msg = buildPlanInput({ title: 'Aprender guitarra', today: '2026-06-01' })
     expect(msg).toContain('Sin fecha objetivo definida')
+  })
+
+  it('incluye SMART (target/baseline/why) y el bloque de grounding', () => {
+    const msg = buildPlanInput({
+      title: 'Competir afuera',
+      target: 'Pesar 75 kg',
+      baseline: '82 kg',
+      why: 'Clasificar a mi categoría',
+      context: 'DATOS REALES DEL USUARIO:\n- Finanzas (mes 2026-06): balance S/1500/mes.',
+      today: '2026-06-01',
+    })
+    expect(msg).toContain('Meta medible (target): Pesar 75 kg')
+    expect(msg).toContain('Punto de partida (hoy): 82 kg')
+    expect(msg).toContain('Por qué importa: Clasificar a mi categoría')
+    expect(msg).toContain('balance S/1500/mes')
+  })
+
+  it('sin grounding → no agrega bloque de datos', () => {
+    const msg = buildPlanInput({ title: 'X', today: '2026-06-01' })
+    expect(msg).not.toContain('DATOS REALES')
+  })
+})
+
+describe('parseFeasibilityNotes', () => {
+  it('extrae el array feasibility del JSON', () => {
+    const raw = JSON.stringify({
+      keyResults: [{ title: 'KR', tasks: [] }],
+      feasibility: ['Te faltan ~S/2000 para el pasaje', 'Estás 7 kg sobre tu categoría'],
+    })
+    expect(parseFeasibilityNotes(raw)).toEqual([
+      'Te faltan ~S/2000 para el pasaje',
+      'Estás 7 kg sobre tu categoría',
+    ])
+  })
+
+  it('descarta entradas vacías y no-string', () => {
+    const raw = JSON.stringify({ feasibility: ['ok', '', '   ', 42, null, 'dos'] })
+    expect(parseFeasibilityNotes(raw)).toEqual(['ok', 'dos'])
+  })
+
+  it('sin feasibility o no-array → []', () => {
+    expect(parseFeasibilityNotes(JSON.stringify({ keyResults: [] }))).toEqual([])
+    expect(parseFeasibilityNotes(JSON.stringify({ feasibility: 'no-array' }))).toEqual([])
+    expect(parseFeasibilityNotes('no json')).toEqual([])
+  })
+
+  it('tolera markdown alrededor', () => {
+    const raw = '```json\n{ "feasibility": ["nota"] }\n```'
+    expect(parseFeasibilityNotes(raw)).toEqual(['nota'])
   })
 })
 

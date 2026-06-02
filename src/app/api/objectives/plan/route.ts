@@ -8,8 +8,9 @@
 // Mismo patrón que /api/alignment/narrative: auth → rate limit ('generation')
 // → check ANTHROPIC_API_KEY → Anthropic → parser tolerante → JSON.
 //
-// Body JSON: { title, description?, category?, targetDate? }
-// Response 200: { keyResults: [{ title, description?, tasks: [{ title, description?, targetDate? }] }] }
+// Body JSON: { title, description?, category?, targetDate?, target?, baseline?,
+//             why?, context? }  (context = grounding ya resumido client-side)
+// Response 200: { keyResults: [{ title, description?, tasks: [...] }], feasibility: string[] }
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
@@ -21,6 +22,7 @@ import {
   OBJECTIVE_PLAN_SYSTEM_PROMPT,
   buildPlanInput,
   parseObjectivePlan,
+  parseFeasibilityNotes,
 } from '@/lib/objectives/planPrompt'
 
 export const runtime = 'nodejs'
@@ -71,11 +73,19 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v : undefined)
+  // Grounding (context): cap defensivo de tamaño — ya viene resumido client-side.
+  const context = typeof body.context === 'string' ? body.context.slice(0, 4000) : undefined
+
   const input = {
     title,
-    description: typeof body.description === 'string' ? body.description : undefined,
-    category: typeof body.category === 'string' ? body.category : undefined,
-    targetDate: typeof body.targetDate === 'string' ? body.targetDate : undefined,
+    description: str(body.description),
+    category: str(body.category),
+    targetDate: str(body.targetDate),
+    target: str(body.target),
+    baseline: str(body.baseline),
+    why: str(body.why),
+    context,
     today: todayIso(),
   }
 
@@ -93,7 +103,8 @@ export async function POST(req: NextRequest) {
     if (keyResults.length === 0) {
       return errorJson(502, 'Plan vacío del modelo', 'No se pudo extraer un plan. Reintentá en unos segundos.')
     }
-    return NextResponse.json({ keyResults }, { status: 200 })
+    const feasibility = parseFeasibilityNotes(text)
+    return NextResponse.json({ keyResults, feasibility }, { status: 200 })
   } catch (e) {
     reportApiError(e)
     const detail = e instanceof Error ? e.message : String(e)

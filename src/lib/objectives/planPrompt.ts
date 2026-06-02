@@ -21,6 +21,15 @@ export interface PlanPromptInput {
   category?: string
   /** Fecha objetivo del objetivo (date-only ISO 'YYYY-MM-DD'), si existe. */
   targetDate?: string
+  /** SMART: métrica/resultado medible (ej. "Pesar 75 kg"). */
+  target?: string
+  /** SMART: punto de partida actual (ej. "82 kg"). */
+  baseline?: string
+  /** SMART: por qué importa. */
+  why?: string
+  /** Grounding: bloque de texto con la data real del usuario (finanzas, /yo,
+   *  señales, personas). Ya resumido — ver lib/objectives/grounding.ts. */
+  context?: string
   /** Fecha de hoy (date-only ISO), para acotar el rango sugerido. */
   today: string
 }
@@ -42,10 +51,10 @@ export interface ProposedKeyResult {
 
 export const OBJECTIVE_PLAN_SYSTEM_PROMPT = `Eres el módulo de Planificación de SIR, un sistema operativo personal centrado en el bienestar y la acción. Pensás como un buen project manager: convertís un objetivo en un plan EJECUTABLE.
 
-Recibís UN objetivo declarado por el usuario (título, descripción, dominio y, si existe, una fecha objetivo). Tu tarea: descomponerlo en un plan OKR de DOS niveles.
+Recibís UN objetivo declarado por el usuario (título, descripción, dominio, su definición SMART si existe, una fecha objetivo si existe) y, cuando hay, un bloque de DATOS REALES del usuario (finanzas, cuerpo/báscula, bienestar, señales, personas). Tu tarea: descomponerlo en un plan OKR de DOS niveles APOYADO en esos datos, y devolver notas de viabilidad aterrizadas.
 
 Devolvé EXCLUSIVAMENTE un objeto JSON (sin texto adicional, sin markdown, sin comentarios):
-{ "keyResults": [ { "title": "...", "description": "...", "tasks": [ { "title": "...", "description": "...", "targetDate": "YYYY-MM-DD" } ] } ] }
+{ "keyResults": [ { "title": "...", "description": "...", "tasks": [ { "title": "...", "description": "...", "targetDate": "YYYY-MM-DD" } ] } ], "feasibility": [ "nota corta aterrizada en los datos", "..." ] }
 
 NIVEL 1 — RESULTADOS CLAVE (keyResults):
 - Entre 2 y 5. Cada uno es un OUTCOME o ÁREA medible que, completada, acerca el objetivo. NO es una acción.
@@ -77,6 +86,17 @@ REGLAS DE FECHAS:
 - Si hay fecha objetivo: distribuí "targetDate" de las tareas de forma creciente entre hoy y la fecha objetivo (inclusive); ninguna posterior a la fecha objetivo ni anterior a hoy. Trámites y logística temprano; lo decisivo cerca del final.
 - Si NO hay fecha objetivo: podés omitir "targetDate" (o ponerla sólo donde tenga sentido).
 
+GROUNDING (apoyate en los DATOS REALES, si vienen):
+- El plan debe reflejar la realidad del usuario. Si hay un costo o ingreso conocido (ej. ahorro de S/X/mes), aterrizá las tareas a eso.
+- NO inventes cifras que no tenés. Si te falta un dato clave para avanzar (ej. el costo del pasaje o del fee), creá una tarea concreta para CONSEGUIRLO ("Cotizar el pasaje…", "Averiguar el fee de inscripción…") en vez de poner un número inventado.
+- Usá sólo lo que aporta al objetivo: no metas datos irrelevantes (ej. señales sin relación).
+
+FEASIBILITY ("feasibility"): 1 a 4 notas CORTAS, cada una aterrizada en un dato real concreto. Ejemplos del tono:
+- "Con tu cashflow (+S/X/mes) y el costo estimado, te faltarían ~S/Z; cubrir eso toma ~N meses."
+- "Tu último peso fue Ykg — estás ~N kg sobre la categoría objetivo."
+- "Tu energía/sueño viene bajo (V/10) para sostener esta carga; ojo con el ritmo."
+Si NO hay datos reales suficientes para una nota honesta, devolvé "feasibility": [] (NO inventes feasibility).
+
 ESTILO: Español neutro. Realista para una persona real con tiempo y plata limitados. Cero relleno motivacional. SOLO el JSON.`
 
 /** Arma el mensaje de usuario para Anthropic desde el objetivo. */
@@ -84,6 +104,9 @@ export function buildPlanInput(input: PlanPromptInput): string {
   const lines: string[] = [`Objetivo: "${input.title}".`]
   if (input.category) lines.push(`Dominio: ${input.category}.`)
   if (input.description) lines.push(`Descripción: ${input.description}`)
+  if (input.target) lines.push(`Meta medible (target): ${input.target}.`)
+  if (input.baseline) lines.push(`Punto de partida (hoy): ${input.baseline}.`)
+  if (input.why) lines.push(`Por qué importa: ${input.why}`)
   lines.push(`Hoy es: ${input.today}.`)
   if (input.targetDate) {
     lines.push(
@@ -92,7 +115,10 @@ export function buildPlanInput(input: PlanPromptInput): string {
   } else {
     lines.push('Sin fecha objetivo definida: las fechas de las tareas son opcionales.')
   }
-  lines.push('', 'Devolvé el plan OKR en el JSON especificado: keyResults con sus tasks concretas.')
+  if (input.context && input.context.trim()) {
+    lines.push('', input.context.trim())
+  }
+  lines.push('', 'Devolvé el plan OKR + feasibility en el JSON especificado: keyResults con sus tasks concretas, y feasibility aterrizada en los datos reales (o [] si no hay datos).')
   return lines.join('\n')
 }
 
@@ -150,4 +176,32 @@ export function parseObjectivePlan(raw: string): ProposedKeyResult[] {
     out.push({ title, description, tasks })
   }
   return out
+}
+
+/**
+ * Extrae las notas de feasibility (array de strings) del mismo bloque JSON.
+ * Tolerante: si no hay `feasibility` array, o ninguna nota usable, devuelve [].
+ * Recorta y descarta entradas vacías; tope de 6 notas para no inundar la UI.
+ */
+export function parseFeasibilityNotes(raw: string): string[] {
+  if (!raw || typeof raw !== 'string') return []
+  const start = raw.indexOf('{')
+  const end = raw.lastIndexOf('}')
+  if (start === -1 || end <= start) return []
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw.slice(start, end + 1))
+  } catch {
+    return []
+  }
+  if (typeof parsed !== 'object' || parsed === null) return []
+  const notesRaw = (parsed as { feasibility?: unknown }).feasibility
+  if (!Array.isArray(notesRaw)) return []
+  const notes: string[] = []
+  for (const n of notesRaw) {
+    const s = cleanString(n)
+    if (s) notes.push(s)
+    if (notes.length >= 6) break
+  }
+  return notes
 }
