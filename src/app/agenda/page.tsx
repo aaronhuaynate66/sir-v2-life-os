@@ -5,16 +5,19 @@
 // Misma agregación determinística que el panel de Mission Control, sin
 // recorte: toda la lista accionable ordenada por urgencia/cercanía.
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
 import { CalendarPanel } from '@/components/agenda/CalendarPanel'
+import { CalendarConnections } from '@/components/agenda/CalendarConnections'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 
 export default function AgendaPage() {
   const hydrated = useHasHydrated()
+  const [calReload, setCalReload] = useState(0)
   if (!hydrated) return <RouteSkeleton cards={2} />
 
   return (
@@ -34,8 +37,11 @@ export default function AgendaPage() {
         </p>
       </motion.div>
 
-      {/* Calendario externo (Outlook .ics) — degrada limpio si no está configurado. */}
-      <CalendarPanel />
+      {/* Calendario(s) externo(s) — multi-calendario; degrada limpio si no hay nada conectado. */}
+      <CalendarPanel reloadKey={calReload} />
+
+      {/* Gestión de calendarios conectados (agregar/editar/eliminar/toggle). */}
+      <CalendarConnections onChange={() => setCalReload((k) => k + 1)} />
 
       <ProximoPanel title="Recordatorios" />
     </AppShell>

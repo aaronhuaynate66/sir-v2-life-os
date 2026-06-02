@@ -69,7 +69,7 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; data: CalendarFeedResult }
 
-export function CalendarPanel() {
+export function CalendarPanel({ reloadKey = 0 }: { reloadKey?: number }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export function CalendarPanel() {
       }
     })()
     return () => { cancelled = true }
-  }, [])
+  }, [reloadKey])
 
   return (
     <Card className={cardClass}>
