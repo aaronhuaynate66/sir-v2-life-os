@@ -12,6 +12,9 @@ import {
   computeSpecialDateCountdown,
   sortSpecialDates,
   formatCountdownPhrase,
+  formatSpecialDate,
+  inferAnnualRecurrence,
+  isEffectivelyRecurring,
 } from './specialDates'
 
 const sd = (over: Partial<SpecialDate>): SpecialDate => ({
@@ -121,6 +124,68 @@ describe('sortSpecialDates', () => {
       'pasada_reciente', // -2 (más reciente de las pasadas)
       'pasada_vieja', // -40
     ])
+  })
+})
+
+describe('inferAnnualRecurrence', () => {
+  it('etiquetas de evento anual → true (accent/case-insensitive)', () => {
+    expect(inferAnnualRecurrence('Aniversario')).toBe(true)
+    expect(inferAnnualRecurrence('Aniversario de bodas')).toBe(true)
+    expect(inferAnnualRecurrence('Cumpleaños')).toBe(true)
+    expect(inferAnnualRecurrence('Día del santo')).toBe(true)
+    expect(inferAnnualRecurrence('ANIVERSÁRIO')).toBe(true) // mayúsc + acento
+    expect(inferAnnualRecurrence('Natalicio de papá')).toBe(true)
+  })
+  it('etiquetas de evento único → false', () => {
+    expect(inferAnnualRecurrence('Mudanza')).toBe(false)
+    expect(inferAnnualRecurrence('Primera cita')).toBe(false)
+    expect(inferAnnualRecurrence('Operación')).toBe(false)
+    expect(inferAnnualRecurrence('')).toBe(false)
+  })
+})
+
+describe('isEffectivelyRecurring', () => {
+  it('recurring=true explícito gana siempre', () => {
+    expect(isEffectivelyRecurring(sd({ label: 'Mudanza', recurring: true }))).toBe(true)
+  })
+  it('recurring=false pero etiqueta anual → true (self-heal de fila vieja)', () => {
+    expect(isEffectivelyRecurring(sd({ label: 'Aniversario', recurring: false }))).toBe(true)
+  })
+  it('recurring=false + etiqueta única → false', () => {
+    expect(isEffectivelyRecurring(sd({ label: 'Mudanza', recurring: false }))).toBe(false)
+  })
+})
+
+describe('computeSpecialDateCountdown — recurrencia inferida (bug 13-ago)', () => {
+  it('Aniversario guardado como one-time (recurring=false) NO se muestra como pasado', () => {
+    // Reproduce el bug: "Aniversario" del 13-ago-2024 guardado one-time.
+    // Antes: "hace 657 días". Ahora: próxima ocurrencia anual futura.
+    const cd = computeSpecialDateCountdown(
+      sd({ label: 'Aniversario', date: '2024-08-13', recurring: false }),
+      new Date(2026, 5, 2), // 2-jun-2026
+    )!
+    expect(cd.recurring).toBe(true) // recurrencia efectiva inferida
+    expect(cd.isPast).toBe(false)
+    expect(cd.occurrence.getFullYear()).toBe(2026)
+    expect(cd.occurrence.getMonth()).toBe(7) // agosto
+    expect(cd.occurrence.getDate()).toBe(13)
+    expect(cd.daysUntil).toBeGreaterThan(0)
+    expect(formatCountdownPhrase(cd)).toBe('en 72 días')
+  })
+  it('formatSpecialDate de un aniversario inferido NO muestra año', () => {
+    const cd = computeSpecialDateCountdown(
+      sd({ label: 'Aniversario', date: '2024-08-13', recurring: false }),
+      new Date(2026, 5, 2),
+    )!
+    expect(formatSpecialDate(cd)).toBe('13 de agosto')
+  })
+  it('evento único con etiqueta neutra sigue pudiendo ser pasado', () => {
+    const cd = computeSpecialDateCountdown(
+      sd({ label: 'Mudanza', date: '2024-08-13', recurring: false }),
+      new Date(2026, 5, 2),
+    )!
+    expect(cd.recurring).toBe(false)
+    expect(cd.isPast).toBe(true)
   })
 })
 

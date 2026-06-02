@@ -30,6 +30,7 @@ import {
   sortSpecialDates,
   formatSpecialDate,
   formatCountdownPhrase,
+  inferAnnualRecurrence,
   type SpecialDateCountdown,
 } from '@/lib/dates/specialDates'
 import { cn } from '@/lib/utils'
@@ -46,6 +47,10 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
   const [label, setLabel] = useState('')
   const [date, setDate] = useState('')
   const [recurring, setRecurring] = useState(false)
+  // ¿El usuario tocó el toggle a mano? Si no, lo auto-deducimos de la etiqueta
+  // ("Aniversario" / "cumple" → anual) mientras escribe. Un toggle manual
+  // congela su decisión (incluso para etiquetas de aniversario).
+  const [recurringTouched, setRecurringTouched] = useState(false)
 
   const dates = person.specialDates ?? []
   // Los countdowns dependen de "hoy" → se computan solo tras montar. Server y
@@ -58,7 +63,15 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
     setLabel('')
     setDate('')
     setRecurring(false)
+    setRecurringTouched(false)
     setAdding(false)
+  }
+
+  // Al tipear la etiqueta: si el usuario no tocó el toggle, lo sincronizamos
+  // con la inferencia ("Aniversario de bodas" → anual ON).
+  function onLabelChange(value: string) {
+    setLabel(value)
+    if (!recurringTouched) setRecurring(inferAnnualRecurrence(value))
   }
 
   function handleAdd() {
@@ -125,7 +138,7 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
               <Input
                 id="sd-label"
                 value={label}
-                onChange={(e) => setLabel(e.target.value)}
+                onChange={(e) => onLabelChange(e.target.value)}
                 placeholder="Ej: Aniversario, Día del santo…"
                 className="mt-1"
                 autoFocus
@@ -145,7 +158,10 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
             </div>
             <button
               type="button"
-              onClick={() => setRecurring((v) => !v)}
+              onClick={() => {
+                setRecurringTouched(true)
+                setRecurring((v) => !v)
+              }}
               className={cn(
                 'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
                 recurring
@@ -234,7 +250,7 @@ function DateRow({
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium truncate">{cd.sd.label}</span>
-          {cd.sd.recurring && (
+          {cd.recurring && (
             <Badge variant="outline" className="text-[9px] font-normal gap-1 px-1.5 py-0">
               <Repeat size={9} strokeWidth={2} aria-hidden="true" />
               anual

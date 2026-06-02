@@ -166,6 +166,30 @@ describe('buildAgenda — fechas especiales (agenda global)', () => {
     expect(specials.map((i) => i.title)).toContain('Mudanza · Bob')
   })
 
+  it('aniversario guardado como one-time (recurring=false) igual surfacéa por etiqueta', () => {
+    // Bug 13-ago: "Aniversario" viejo con recurring=false NO debe filtrarse
+    // como pasado — la recurrencia se infiere de la etiqueta y aparece la
+    // próxima ocurrencia anual (vía computeSpecialDateCountdown compartido).
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        people: [
+          person({
+            id: 'd',
+            name: 'Diana',
+            specialDates: [sd({ id: 'aniv', label: 'Aniversario', date: '2024-06-10', recurring: false })],
+          }),
+        ],
+      },
+      {},
+      NOW,
+    )
+    const specials = items.filter((i) => i.kind === 'special_date')
+    expect(specials).toHaveLength(1)
+    expect(specials[0].title).toBe('Aniversario · Diana')
+    expect(specials[0].daysUntil).toBe(9) // 1-jun → 10-jun, ocurrencia 2026
+  })
+
   it('one-time ya pasada → excluida; one-time futura dentro de horizonte → incluida', () => {
     const items = buildAgenda(
       {

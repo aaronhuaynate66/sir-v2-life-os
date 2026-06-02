@@ -16,8 +16,49 @@ import { parseLocalDate } from './parseLocalDate'
 
 const DAY_MS = 86_400_000
 
+/** Palabras (sin acentos, en minúscula) que marcan un evento INHERENTEMENTE
+ *  anual. Un "Aniversario" o "cumple" se repite cada año por definición,
+ *  aunque la fila vieja se haya guardado con recurring=false (default viejo
+ *  del form). Mantener corto y poco ambiguo para no marcar como anual algo
+ *  genuinamente único. */
+const ANNUAL_LABEL_HINTS = [
+  'aniversario',
+  'aniver',
+  'cumple', // cubre "cumpleaños", "cumple"
+  'santo', // "día del santo"
+  'boda', // "bodas", "aniversario de bodas"
+  'natalicio',
+] as const
+
+function normalize(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // quita acentos/diacríticos combinantes
+    .toLowerCase()
+}
+
+/**
+ * ¿La etiqueta implica un evento anual recurrente? Pura. Se usa para:
+ *   - auto-default del toggle "se repite cada año" al crear la fecha.
+ *   - self-heal de filas viejas (aniversario guardado como one-time antes de
+ *     que el form tuviera el default correcto).
+ */
+export function inferAnnualRecurrence(label: string): boolean {
+  const n = normalize(label)
+  return ANNUAL_LABEL_HINTS.some((h) => n.includes(h))
+}
+
+/** Recurrencia EFECTIVA de una fecha: explícita (recurring=true) o inferida
+ *  de la etiqueta. Una sola fuente de verdad para ficha + agenda. */
+export function isEffectivelyRecurring(sd: SpecialDate): boolean {
+  return sd.recurring || inferAnnualRecurrence(sd.label)
+}
+
 export interface SpecialDateCountdown {
   sd: SpecialDate
+  /** Recurrencia EFECTIVA usada para el cómputo (explícita o inferida de la
+   *  etiqueta). La UI muestra el badge "anual" según esto, no según sd.recurring. */
+  recurring: boolean
   /** Ocurrencia relevante: próximo aniversario (recurring) o la fecha
    *  original (one-time). */
   occurrence: Date
@@ -61,16 +102,19 @@ export function computeSpecialDateCountdown(
   if (!parsed) return null
 
   const todayStart = startOfDay(now)
+  // Recurrencia efectiva: explícita O inferida de la etiqueta (un "Aniversario"
+  // es anual aunque la fila vieja esté guardada como one-time).
+  const recurring = isEffectivelyRecurring(sd)
 
-  if (sd.recurring) {
+  if (recurring) {
     const occurrence = nextAnnualOccurrence(parsed.getMonth(), parsed.getDate(), todayStart)
     const daysUntil = Math.round((occurrence.getTime() - todayStart.getTime()) / DAY_MS)
-    return { sd, occurrence, daysUntil, isPast: false }
+    return { sd, recurring, occurrence, daysUntil, isPast: false }
   }
 
   const occurrence = parsed
   const daysUntil = Math.round((occurrence.getTime() - todayStart.getTime()) / DAY_MS)
-  return { sd, occurrence, daysUntil, isPast: daysUntil < 0 }
+  return { sd, recurring, occurrence, daysUntil, isPast: daysUntil < 0 }
 }
 
 /**
@@ -110,9 +154,10 @@ const DAY_MONTH_YEAR = new Intl.DateTimeFormat('es', {
   year: 'numeric',
 })
 
-/** Fecha absoluta legible. recurring → "14 de junio"; one-time → con año. */
+/** Fecha absoluta legible. recurring → "14 de junio"; one-time → con año.
+ *  Usa la recurrencia EFECTIVA (cd.recurring), no sd.recurring. */
 export function formatSpecialDate(cd: SpecialDateCountdown): string {
-  return cd.sd.recurring
+  return cd.recurring
     ? DAY_MONTH.format(cd.occurrence)
     : DAY_MONTH_YEAR.format(cd.occurrence)
 }
