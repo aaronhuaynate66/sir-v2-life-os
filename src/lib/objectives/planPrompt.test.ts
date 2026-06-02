@@ -2,7 +2,12 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { buildPlanInput, parseObjectivePlan, parseFeasibilityNotes } from './planPrompt'
+import {
+  buildPlanInput,
+  parseObjectivePlan,
+  parseFeasibilityNotes,
+  extractJsonObject,
+} from './planPrompt'
 
 describe('buildPlanInput', () => {
   it('incluye título, dominio, descripción, hoy y fecha objetivo', () => {
@@ -152,5 +157,46 @@ describe('parseObjectivePlan', () => {
     expect(parseObjectivePlan('{ "otra": 1 }')).toEqual([])
     expect(parseObjectivePlan('')).toEqual([])
     expect(parseObjectivePlan('{ "keyResults": "no es array" }')).toEqual([])
+  })
+
+  // ─── Robustez del extractor (regresión del 502 "plan vacío") ──────────
+  it('tolera comas colgantes (trailing commas) que el modelo a veces deja', () => {
+    const raw = '{ "keyResults": [ { "title": "A", "tasks": [ { "title": "x" }, ], }, ], }'
+    const krs = parseObjectivePlan(raw)
+    expect(krs).toHaveLength(1)
+    expect(krs[0].tasks[0].title).toBe('x')
+  })
+
+  it('tolera prosa antes y después del objeto JSON', () => {
+    const raw = 'Perfecto, este es tu plan: { "keyResults": [ { "title": "A", "tasks": [] } ] } ¡A por ello!'
+    expect(parseObjectivePlan(raw)).toHaveLength(1)
+  })
+
+  it('no se confunde con llaves dentro de strings', () => {
+    const raw = '{ "keyResults": [ { "title": "Fase {1}: arranque", "tasks": [] } ] }'
+    expect(parseObjectivePlan(raw)[0].title).toBe('Fase {1}: arranque')
+  })
+
+  it('respuesta TRUNCADA (sin cerrar) → [] (gatilla el reintento server-side)', () => {
+    // Caso raíz del 502: el modelo se pasa de max_tokens y la salida queda a
+    // mitad de camino → JSON incompleto → no parseable → [].
+    const raw = '{ "keyResults": [ { "title": "Subir ingresos", "tasks": [ { "title": "Cotiz'
+    expect(parseObjectivePlan(raw)).toEqual([])
+  })
+})
+
+describe('extractJsonObject', () => {
+  it('extrae un objeto balanceado válido', () => {
+    expect(extractJsonObject('{ "a": 1 }')).toEqual({ a: 1 })
+  })
+  it('truncado → null', () => {
+    expect(extractJsonObject('{ "a": [ { "b": ')).toBeNull()
+  })
+  it('sin objeto → null', () => {
+    expect(extractJsonObject('solo texto')).toBeNull()
+    expect(extractJsonObject('')).toBeNull()
+  })
+  it('un array top-level no cuenta como objeto → null', () => {
+    expect(extractJsonObject('[1,2,3]')).toBeNull()
   })
 })

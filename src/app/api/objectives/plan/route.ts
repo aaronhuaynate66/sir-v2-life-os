@@ -20,10 +20,12 @@ import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import {
   OBJECTIVE_PLAN_SYSTEM_PROMPT,
+  OBJECTIVE_PLAN_RETRY_NUDGE,
   buildPlanInput,
   parseObjectivePlan,
   parseFeasibilityNotes,
 } from '@/lib/objectives/planPrompt'
+import type { ProposedKeyResult } from '@/lib/objectives/planPrompt'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -34,6 +36,15 @@ export const maxDuration = 60
 
 const MODEL_ID = 'claude-sonnet-4-5-20250929'
 
+// max_tokens es un TECHO, no un objetivo: el modelo para cuando termina, así que
+// subirlo NO agrega latencia para una respuesta normal — sólo evita que un plan
+// largo se TRUNQUE a la mitad (truncado → JSON inválido → "plan vacío"/502, que
+// es lo que pasaba con 1600 para objetivos verbosos como los financieros). La
+// latencia la acota maxDuration=60 + los topes de tamaño del prompt.
+const PLAN_MAX_TOKENS = 3000
+// Reintento conciso: pedimos un plan más chico para que entre completo y rápido.
+const RETRY_MAX_TOKENS = 2200
+
 interface ErrorBody {
   error: string
   detail?: string
@@ -41,6 +52,29 @@ interface ErrorBody {
 
 function errorJson(status: number, error: string, detail?: string): NextResponse<ErrorBody> {
   return NextResponse.json({ error, detail }, { status })
+}
+
+interface Attempt {
+  text: string
+  /** 'max_tokens' = la respuesta se truncó (causa típica de "plan vacío"). */
+  truncated: boolean
+}
+
+/** Una llamada al modelo: devuelve el texto y si se truncó por max_tokens. */
+async function runPlan(
+  client: Anthropic,
+  userMessage: string,
+  maxTokens: number,
+): Promise<Attempt> {
+  const msg = await client.messages.create({
+    model: MODEL_ID,
+    max_tokens: maxTokens,
+    system: OBJECTIVE_PLAN_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userMessage }],
+  })
+  const textBlock = msg.content.find((b) => b.type === 'text')
+  const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
+  return { text, truncated: msg.stop_reason === 'max_tokens' }
 }
 
 /** Hoy en date-only ISO (server-side; el plan no necesita TZ exacta del cliente). */
@@ -92,25 +126,50 @@ export async function POST(req: NextRequest) {
     today: todayIso(),
   }
 
+  const baseMessage = buildPlanInput(input)
+
   try {
-    // maxRetries 1 (no 2): un reintento completo de ~30s podría empujar la
-    // función más allá de los 60s. 1600 tokens cubren un OKR típico (≤5 KRs ×
-    // ≤6 tareas + feasibility ≈ 1.2k) recortando la cola de latencia.
+    // Intento 1: techo alto para no truncar; maxRetries 1 cubre un 5xx/red
+    // transitorio de Anthropic sin que lo vea el usuario.
     const client = new Anthropic({ maxRetries: 1 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 1600,
-      system: OBJECTIVE_PLAN_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildPlanInput(input) }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-    const keyResults = parseObjectivePlan(text)
+    let attempt = await runPlan(client, baseMessage, PLAN_MAX_TOKENS)
+    let keyResults = parseObjectivePlan(attempt.text)
+
+    // Intento 2 (sólo si el 1 no produjo plan: truncado, vacío o no-parseable).
+    // Nudge: "JSON válido y COMPLETO, conciso, ≥3 KRs". Techo menor → más rápido
+    // y con menos riesgo de truncar de nuevo. maxRetries 0 para acotar el tiempo
+    // total bajo los 60s.
     if (keyResults.length === 0) {
-      return errorJson(502, 'Plan vacío del modelo', 'No se pudo extraer un plan. Reintentá en unos segundos.')
+      const retryClient = new Anthropic({ maxRetries: 0 })
+      const retryMessage = `${baseMessage}\n\n${OBJECTIVE_PLAN_RETRY_NUDGE}`
+      const retry = await runPlan(retryClient, retryMessage, RETRY_MAX_TOKENS)
+      const retryKrs = parseObjectivePlan(retry.text)
+      if (retryKrs.length > 0) {
+        keyResults = retryKrs
+        attempt = retry
+      }
     }
-    const feasibility = parseFeasibilityNotes(text)
-    return NextResponse.json({ keyResults, feasibility }, { status: 200 })
+
+    if (keyResults.length === 0) {
+      // No tiramos una excepción: logueamos diagnóstico (sin el contenido, que
+      // puede llevar data del grounding) y devolvemos un 502 claro.
+      reportApiError(new Error('objectives/plan: plan vacío tras reintento'), {
+        objectiveTitle: title,
+        lastTruncated: attempt.truncated,
+        lastTextLength: attempt.text.length,
+      })
+      return errorJson(
+        502,
+        'No se pudo armar el plan',
+        'El modelo no devolvió un plan utilizable. Reintentá en unos segundos.',
+      )
+    }
+
+    const feasibility = parseFeasibilityNotes(attempt.text)
+    return NextResponse.json({ keyResults, feasibility } satisfies {
+      keyResults: ProposedKeyResult[]
+      feasibility: string[]
+    }, { status: 200 })
   } catch (e) {
     reportApiError(e)
     const detail = e instanceof Error ? e.message : String(e)

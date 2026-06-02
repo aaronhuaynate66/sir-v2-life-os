@@ -128,6 +128,71 @@ function cleanString(raw: unknown): string {
   return typeof raw === 'string' ? raw.trim() : ''
 }
 
+/**
+ * Extrae el primer objeto JSON balanceado de la respuesta del LLM, de forma
+ * ROBUSTA frente a las formas que devuelven los modelos:
+ *   - fences ```json … ``` (o ``` … ```),
+ *   - prosa antes/después del objeto ("Claro, acá tenés: { … } ¡Éxitos!"),
+ *   - llaves dentro de strings (no rompen el conteo de profundidad),
+ *   - comas colgantes (trailing commas) antes de } o ] → segundo intento las saca.
+ * Devuelve el objeto parseado o null si no hay un objeto COMPLETO y parseable
+ * (p. ej. respuesta truncada a la mitad → null → el caller reintenta).
+ */
+export function extractJsonObject(raw: string): Record<string, unknown> | null {
+  if (!raw || typeof raw !== 'string') return null
+  const candidate = balancedObject(raw)
+  if (!candidate) return null
+  for (const attempt of [candidate, stripTrailingCommas(candidate)]) {
+    try {
+      const parsed = JSON.parse(attempt)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>
+      }
+    } catch {
+      /* probamos el próximo saneo */
+    }
+  }
+  return null
+}
+
+/** Primer objeto `{…}` balanceado (ignora llaves dentro de strings). null si
+ *  no hay apertura o si nunca se cierra (truncado). */
+function balancedObject(s: string): string | null {
+  const start = s.indexOf('{')
+  if (start === -1) return null
+  let depth = 0
+  let inStr = false
+  let esc = false
+  for (let i = start; i < s.length; i++) {
+    const c = s[i]
+    if (inStr) {
+      if (esc) esc = false
+      else if (c === '\\') esc = true
+      else if (c === '"') inStr = false
+      continue
+    }
+    if (c === '"') inStr = true
+    else if (c === '{') depth++
+    else if (c === '}') {
+      depth--
+      if (depth === 0) return s.slice(start, i + 1)
+    }
+  }
+  return null // nunca cerró → truncado
+}
+
+/** Saca comas colgantes antes de } o ] (algunos modelos las dejan). */
+function stripTrailingCommas(s: string): string {
+  return s.replace(/,(\s*[}\]])/g, '$1')
+}
+
+/**
+ * Nudge para el reintento server-side: se concatena al mensaje cuando el primer
+ * intento vino vacío/no-parseable (p. ej. truncado). Pide JSON COMPLETO y
+ * conciso para no volver a pasarse de largo.
+ */
+export const OBJECTIVE_PLAN_RETRY_NUDGE = `IMPORTANTE: tu salida debe ser EXCLUSIVAMENTE un objeto JSON válido y COMPLETO (todas las llaves y corchetes cerrados), sin ningún texto fuera del JSON ni fences \`\`\`. Sé CONCISO para que entre completo: 3 a 4 keyResults, 3 a 4 tasks por keyResult, títulos cortos y descripciones breves u omitidas. Incluí al menos 3 keyResults.`
+
 function parseTask(item: unknown): ProposedTask | null {
   if (typeof item !== 'object' || item === null) return null
   const obj = item as Record<string, unknown>
@@ -146,18 +211,9 @@ function parseTask(item: unknown): ProposedTask | null {
  * legítimo en el modelo). Devuelve [] si no hay nada usable.
  */
 export function parseObjectivePlan(raw: string): ProposedKeyResult[] {
-  if (!raw || typeof raw !== 'string') return []
-  const start = raw.indexOf('{')
-  const end = raw.lastIndexOf('}')
-  if (start === -1 || end <= start) return []
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw.slice(start, end + 1))
-  } catch {
-    return []
-  }
-  if (typeof parsed !== 'object' || parsed === null) return []
-  const krsRaw = (parsed as { keyResults?: unknown }).keyResults
+  const parsed = extractJsonObject(raw)
+  if (!parsed) return []
+  const krsRaw = parsed.keyResults
   if (!Array.isArray(krsRaw)) return []
 
   const out: ProposedKeyResult[] = []
@@ -184,18 +240,9 @@ export function parseObjectivePlan(raw: string): ProposedKeyResult[] {
  * Recorta y descarta entradas vacías; tope de 6 notas para no inundar la UI.
  */
 export function parseFeasibilityNotes(raw: string): string[] {
-  if (!raw || typeof raw !== 'string') return []
-  const start = raw.indexOf('{')
-  const end = raw.lastIndexOf('}')
-  if (start === -1 || end <= start) return []
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw.slice(start, end + 1))
-  } catch {
-    return []
-  }
-  if (typeof parsed !== 'object' || parsed === null) return []
-  const notesRaw = (parsed as { feasibility?: unknown }).feasibility
+  const parsed = extractJsonObject(raw)
+  if (!parsed) return []
+  const notesRaw = parsed.feasibility
   if (!Array.isArray(notesRaw)) return []
   const notes: string[] = []
   for (const n of notesRaw) {
