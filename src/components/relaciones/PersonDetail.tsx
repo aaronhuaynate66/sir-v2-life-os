@@ -46,6 +46,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRelationshipStore } from '@/stores'
 import { createClient } from '@/lib/supabase/client'
 import { ensureUniqueSlug, generateSlug, isValidSlug } from '@/lib/people/slug'
+import {
+  RELATIONSHIP_TYPE_LABEL,
+  PERSON_CATEGORY_LABEL,
+  ENERGY_IMPACT_LABEL,
+} from '@/lib/people/labels'
 import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
@@ -100,28 +105,11 @@ interface PersonDetailProps {
   synthesis?: PersonSynthesis | null
 }
 
-const RELATIONSHIP_LABEL: Record<Person['relationship'], string> = {
-  family: 'Familia',
-  friend: 'Amigo/a',
-  romantic: 'Pareja',
-  professional: 'Profesional',
-  mentor: 'Mentor/a',
-  mentee: 'Aprendiz',
-  acquaintance: 'Conocido/a',
-}
-
-const CATEGORY_LABEL: Record<Person['category'], string> = {
-  inner_circle: 'Círculo cercano',
-  close: 'Cercano',
-  network: 'Network',
-  peripheral: 'Periférico',
-}
-
-const ENERGY_LABEL: Record<EnergyImpact, string> = {
-  energizing: 'Energizante',
-  neutral: 'Neutral',
-  draining: 'Drenante',
-}
+// Etiquetas en español centralizadas en @/lib/people/labels. Se alían a los
+// nombres locales para no tocar el resto del componente (display + Selects).
+const RELATIONSHIP_LABEL = RELATIONSHIP_TYPE_LABEL
+const CATEGORY_LABEL = PERSON_CATEGORY_LABEL
+const ENERGY_LABEL = ENERGY_IMPACT_LABEL
 
 /** Opciones sugeridas de estado civil (texto libre en DB; el form sugiere). */
 const ESTADO_CIVIL_OPTIONS = [

@@ -25,6 +25,12 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
+import {
+  relationshipTypeLabel,
+  personCategoryLabel,
+  energyImpactLabel,
+  alertUrgencyLabel,
+} from '@/lib/people/labels'
 import { cn } from '@/lib/utils'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
 
@@ -233,7 +239,7 @@ function RelationshipsContent() {
                       <p className="text-xs text-brand-soft-foreground mt-1">{`→ ${alert.suggestedAction}`}</p>
                     )}
                   </div>
-                  <Badge variant="outline" className={cn('text-[10px] font-normal', URGENCY_CLASS[alert.urgency])}>{alert.urgency}</Badge>
+                  <Badge variant="outline" className={cn('text-[10px] font-normal', URGENCY_CLASS[alert.urgency])}>{alertUrgencyLabel(alert.urgency)}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -394,8 +400,8 @@ function RelationshipsContent() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-foreground">{person.name}</span>
                           {person.alias && <span className="text-xs text-muted-foreground">({person.alias})</span>}
-                          <Badge variant="outline" className="text-[10px] font-normal">{person.relationship}</Badge>
-                          <Badge variant="outline" className="text-[10px] font-normal">{person.category}</Badge>
+                          <Badge variant="outline" className="text-[10px] font-normal">{relationshipTypeLabel(person.relationship)}</Badge>
+                          <Badge variant="outline" className="text-[10px] font-normal">{personCategoryLabel(person.category)}</Badge>
                         </div>
 
                         <div className="flex items-center gap-4 mt-2 flex-wrap">
@@ -404,7 +410,7 @@ function RelationshipsContent() {
                           </span>
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             Energia:
-                            <Badge variant="outline" className={cn('text-[10px] font-normal', ENERGY_CLASS[person.energyImpact])}>{person.energyImpact}</Badge>
+                            <Badge variant="outline" className={cn('text-[10px] font-normal', ENERGY_CLASS[person.energyImpact])}>{energyImpactLabel(person.energyImpact)}</Badge>
                           </span>
                           <span className="text-xs text-muted-foreground">
                             Ultimo contacto: <span className="text-foreground font-medium font-mono tabular-nums">{lastContactDisplay}</span>
