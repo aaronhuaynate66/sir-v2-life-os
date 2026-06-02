@@ -44,6 +44,10 @@ export function isValidLinkedInProfileExtracted(x: unknown): x is LinkedInProfil
   if (typeof o.isOpenToWork !== 'boolean') return false
   if (typeof o.hasProfilePhoto !== 'boolean') return false
   if (typeof o.hasBannerImage !== 'boolean') return false
+  // imageLegible: tolerante — el modelo podría omitirlo. No invalida la
+  // extracción si falta; sanitize lo normaliza (omitido → true, backstop de
+  // dimensiones client-side cubre el caso página-entera).
+  if ('imageLegible' in o && typeof o.imageLegible !== 'boolean') return false
   if (typeof o.confidence !== 'string') return false
   if (!VALID_CONFIDENCES.has(o.confidence as Confidence)) return false
   if (!isStringOrNull(o.rawObservations)) return false
@@ -84,6 +88,9 @@ export function sanitizeLinkedInProfile(
     isOpenToWork: raw.isOpenToWork,
     hasProfilePhoto: raw.hasProfilePhoto,
     hasBannerImage: raw.hasBannerImage,
+    // Omitido o no-boolean → true (legible); solo un false explícito corta.
+    // El guard de dimensiones client-side respalda el caso página-entera.
+    imageLegible: raw.imageLegible === false ? false : true,
     confidence: raw.confidence,
     rawObservations: trimOrNull(raw.rawObservations, 240),
   }

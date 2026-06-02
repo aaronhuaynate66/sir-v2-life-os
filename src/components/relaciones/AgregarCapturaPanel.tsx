@@ -26,7 +26,7 @@ import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
 import { previewCapture, processCapture, HttpError } from '@/lib/capture/observations/client'
 import { planPersonCapture } from '@/lib/capture/person-capture'
-import { assessExtraction } from '@/lib/capture/legibility'
+import { assessExtraction, type ImageDims } from '@/lib/capture/legibility'
 import type { CaptureType, Confidence, DetectorResult } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 
@@ -75,6 +75,19 @@ function previewRows(extracted: Record<string, unknown>): { k: string; v: string
     }
   }
   return rows.slice(0, 12)
+}
+
+/** Mide las dimensiones naturales de la imagen original (señal de legibilidad
+ *  modelo-independiente). Graceful: null si el browser no puede decodificar. */
+async function readImageDims(file: File): Promise<ImageDims | null> {
+  try {
+    const bmp = await createImageBitmap(file)
+    const dims = { width: bmp.width, height: bmp.height }
+    bmp.close()
+    return dims
+  } catch {
+    return null
+  }
 }
 
 export interface AgregarCapturaPanelProps {
@@ -158,8 +171,12 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
         return
       }
 
-      // PREVIEW: extrae sin guardar.
-      const pv = await previewCapture({ file, captureType: type, detectorData: detection.detected })
+      // PREVIEW (extrae sin guardar) + medir dimensiones de la imagen original
+      // en paralelo (señal de legibilidad modelo-independiente).
+      const [pv, dims] = await Promise.all([
+        previewCapture({ file, captureType: type, detectorData: detection.detected }),
+        readImageDims(file),
+      ])
       const state: PreviewState = {
         captureType: type,
         detectorData: detection.detected,
@@ -169,8 +186,10 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
       setPreview(state)
 
       // Evaluar legibilidad: ilegible → cortar (no mostrar basura); dudoso →
-      // revisar; ok (alta confianza + varios campos) → guardar directo.
-      const verdict = assessExtraction(pv.extracted, pv.confidence)
+      // revisar; ok → guardar directo. Combina confianza + flag imageLegible
+      // del extractor + dimensiones (página entera = letra diminuta, aunque
+      // el LLM jure confianza alta).
+      const verdict = assessExtraction(pv.extracted, pv.confidence, { dims, captureType: type })
       if (verdict === 'unreadable') {
         setPhase('illegible')
       } else if (verdict === 'ok') {

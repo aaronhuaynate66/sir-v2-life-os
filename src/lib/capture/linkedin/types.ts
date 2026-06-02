@@ -48,6 +48,12 @@ export interface LinkedInProfileExtracted {
   hasProfilePhoto: boolean
   /** True si hay banner / cover image personalizado. */
   hasBannerImage: boolean
+  /** Señal de calidad de imagen INDEPENDIENTE del contenido: false si la
+   *  captura era de página entera / texto diminuto / borroso (aunque el
+   *  modelo "crea" haber leído bien). El prompt la evalúa aparte de
+   *  confidence. Default true si el modelo la omite (el guard de dimensiones
+   *  client-side es el respaldo modelo-independiente). */
+  imageLegible: boolean
   confidence: Confidence
   rawObservations: string | null
 }

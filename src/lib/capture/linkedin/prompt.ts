@@ -50,6 +50,28 @@ falsos. Datos falsos pueden contaminar la base de personas durante
 meses sin que el usuario lo note.
 
 ═══════════════════════════════════════════════════════════════════════
+REGLA CRITICA #2 — Flag imageLegible (SEÑAL DE CALIDAD, aparte de confidence):
+═══════════════════════════════════════════════════════════════════════
+
+Devolvé SIEMPRE el campo "imageLegible" (true|false). NO es lo mismo que
+confidence — es una pregunta DISTINTA sobre la IMAGEN, no sobre tu certeza:
+
+  imageLegible = false  SI:
+   - Es una captura de PAGINA ENTERA / zoom-out: se ve TODO el perfil de una
+     sola vez y cada letra mide pocos pixeles.
+   - El texto esta borroso, pixelado o tan chico que tuviste que ADIVINAR
+     caracteres o palabras.
+   - Cualquier duda razonable sobre si lo que leiste es exactamente lo que
+     dice la imagen.
+
+  imageLegible = true  SOLO SI el texto se lee NITIDO, a tamaño normal de
+  lectura, sin adivinar.
+
+ADVERTENCIA: podés "sentirte seguro" de lo que creés leer y AUN ASI marcar
+imageLegible=false porque la imagen era diminuta. Una captura de pagina
+entera de LinkedIn casi siempre es imageLegible=false. Ante la duda → false.
+
+═══════════════════════════════════════════════════════════════════════
 
 Schema EXACTO de respuesta (debe parsear con JSON.parse() sin error — sin
 prosa, sin markdown fences):
@@ -67,6 +89,7 @@ prosa, sin markdown fences):
   "isOpenToWork": <true|false>,
   "hasProfilePhoto": <true|false>,
   "hasBannerImage": <true|false>,
+  "imageLegible": <true|false>,
   "confidence": "high" | "medium" | "low",
   "rawObservations": "<max 200 chars en español o null>"
 }
