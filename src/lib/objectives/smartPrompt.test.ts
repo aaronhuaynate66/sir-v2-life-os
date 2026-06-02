@@ -22,6 +22,26 @@ describe('buildSmartInput', () => {
     const msg = buildSmartInput({ title: 'Ahorrar', targetDate: '2026-12-31', today: '2026-06-01' })
     expect(msg).toContain('Ya tiene fecha objetivo: 2026-12-31')
   })
+
+  it('con context (grounding) pide inferir el baseline de los datos reales', () => {
+    const msg = buildSmartInput({
+      title: 'Bajar de peso',
+      today: '2026-06-01',
+      context: 'DATOS REALES DEL USUARIO:\n- Cuerpo (báscula): peso 82 kg.',
+    })
+    expect(msg).toContain('peso 82 kg')
+    expect(msg).toContain('Inferí "baseline" de esos DATOS REALES')
+  })
+
+  it('modo dictado → usa el párrafo libre como fuente', () => {
+    const msg = buildSmartInput({
+      title: '',
+      today: '2026-06-01',
+      dictation: 'Quiero ahorrar para un fondo de emergencia este año',
+    })
+    expect(msg).toContain('extraé los campos SMART')
+    expect(msg).toContain('fondo de emergencia')
+  })
 })
 
 describe('parseSmart', () => {
@@ -38,6 +58,13 @@ describe('parseSmart', () => {
       why: 'Quiero competir en mi categoría',
       suggestedTargetDate: '2026-11-01',
     })
+  })
+
+  it('extrae specific cuando viene; lo omite si está vacío', () => {
+    const withSpec = parseSmart(JSON.stringify({ specific: 'Pesar 75 kg para competir', target: 'Pesar 75 kg', why: 'X' }))
+    expect(withSpec?.specific).toBe('Pesar 75 kg para competir')
+    const noSpec = parseSmart(JSON.stringify({ specific: '', target: 'Pesar 75 kg', why: 'X' }))
+    expect(noSpec?.specific).toBeUndefined()
   })
 
   it('tolera markdown/ruido alrededor del JSON', () => {

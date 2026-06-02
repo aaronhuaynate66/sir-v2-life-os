@@ -62,7 +62,9 @@ export async function POST(req: NextRequest) {
   }
 
   const title = typeof body.title === 'string' ? body.title.trim() : ''
-  if (!title) return errorJson(400, 'title requerido (string no vacío)')
+  const dictation = typeof body.dictation === 'string' ? body.dictation.trim().slice(0, 4000) : undefined
+  // Aceptamos title vacío SOLO en modo dictado (el párrafo es la fuente).
+  if (!title && !dictation) return errorJson(400, 'title o dictation requerido (string no vacío)')
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return errorJson(
@@ -77,6 +79,9 @@ export async function POST(req: NextRequest) {
     description: typeof body.description === 'string' ? body.description : undefined,
     category: typeof body.category === 'string' ? body.category : undefined,
     targetDate: typeof body.targetDate === 'string' ? body.targetDate : undefined,
+    // Grounding ya resumido client-side; cap defensivo coherente con /plan.
+    context: typeof body.context === 'string' ? body.context.slice(0, 4000) : undefined,
+    dictation,
     today: todayIso(),
   }
 

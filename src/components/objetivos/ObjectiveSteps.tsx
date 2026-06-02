@@ -16,7 +16,7 @@
 // "Generar plan con IA" (fase 4) reescribe el plan completo (KRs + tareas);
 // hasta entonces convive un plan plano que aterriza como KRs sin tareas.
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Check,
@@ -77,7 +77,23 @@ interface PlanState {
   error: ApiError | null
 }
 
-export function ObjectiveSteps({ goal }: { goal: Goal }) {
+export function ObjectiveSteps({
+  goal,
+  smartComplete,
+  onRequestDefine,
+  autoGenerate = false,
+  onAutoGenerateConsumed,
+}: {
+  goal: Goal
+  /** ¿El objetivo está bien definido (SMART)? Gatea la generación de plan IA. */
+  smartComplete: boolean
+  /** Abre el wizard de definición (cuando el objetivo aún no es SMART). */
+  onRequestDefine: () => void
+  /** Disparo externo (desde el CTA de la tarjeta) para generar el plan al abrir. */
+  autoGenerate?: boolean
+  /** Avisa al padre que ya consumimos el disparo (para que limpie el flag). */
+  onAutoGenerateConsumed?: () => void
+}) {
   const allSteps = useObjectiveStepStore((s) => s.steps)
   const addStep = useObjectiveStepStore((s) => s.addStep)
   const addSteps = useObjectiveStepStore((s) => s.addSteps)
@@ -268,6 +284,16 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
     people,
   ])
 
+  // Disparo externo: el CTA de la tarjeta abre el panel y pide generar el plan
+  // de una. Consumimos el flag primero (para no re-disparar) y sólo generamos si
+  // el objetivo ya es SMART y no hay una generación/propuesta en curso.
+  useEffect(() => {
+    if (!autoGenerate) return
+    onAutoGenerateConsumed?.()
+    if (smartComplete && !plan.loading && !plan.proposed) void generatePlan()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoGenerate, smartComplete])
+
   function updateProposedKr(i: number, patch: Partial<Omit<ProposedKeyResult, 'tasks'>>) {
     setPlan((p) =>
       p.proposed
@@ -430,10 +456,19 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
             onAccept={acceptPlan}
             onDiscard={discardPlan}
           />
-        ) : (
+        ) : smartComplete ? (
           <Button size="sm" variant="outline" onClick={generatePlan} className="border-brand/30 text-brand-soft-foreground hover:bg-brand-soft">
             <Sparkles size={12} className="mr-2" />Generar plan con IA
           </Button>
+        ) : (
+          <div className="space-y-1.5">
+            <Button size="sm" variant="outline" onClick={onRequestDefine} className="border-brand/30 text-brand-soft-foreground hover:bg-brand-soft">
+              <Sparkles size={12} className="mr-2" />Definir objetivo
+            </Button>
+            <p className="text-[11px] text-muted-foreground/70">
+              Definí el objetivo en formato SMART (meta, punto de partida, fecha y por qué) para que el plan IA salga aterrizado.
+            </p>
+          </div>
         )}
       </div>
     </div>

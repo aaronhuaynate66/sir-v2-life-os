@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Target, Plus, Archive, ListChecks, ChevronRight } from 'lucide-react'
+import { Target, Plus, Archive, ListChecks, ChevronRight, Sparkles } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +23,9 @@ import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
 import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
 import { SmartAssist } from '@/components/objetivos/SmartAssist'
+import { SmartWizard } from '@/components/objetivos/SmartWizard'
 import { computeObjectiveProgress } from '@/lib/objectives/steps'
+import { isGoalSmartComplete, missingSmartFields } from '@/lib/objectives/smart'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
@@ -95,6 +97,9 @@ function GoalsContent() {
 
   const [adding, setAdding] = useState(false)
   const [stepsOpenId, setStepsOpenId] = useState<string | null>(null)
+  // Wizard de definición SMART (gating del plan IA) + disparo de generación.
+  const [wizardGoalId, setWizardGoalId] = useState<string | null>(null)
+  const [autoGenId, setAutoGenId] = useState<string | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const [progressId, setProgressId] = useState<string | null>(null)
   const [progressVal, setProgressVal] = useState('')
@@ -173,6 +178,8 @@ function GoalsContent() {
     updateGoal(g.id, { status: 'active' })
     toast.success('Objetivo reactivado', { description: g.title })
   }
+
+  const wizardGoal = wizardGoalId ? goals.find((g) => g.id === wizardGoalId) ?? null : null
 
   const activeGoals = goals.filter(g => g.status === 'active').sort((a, b) => {
     const po: Record<GoalPriority, number> = { critical: 0, high: 1, medium: 2, low: 3 }
@@ -330,6 +337,8 @@ function GoalsContent() {
             const hasSteps = rollup != null
             const displayPct = rollup ? rollup.percent : g.progress
             const stepsOpen = stepsOpenId === g.id
+            const smartOk = isGoalSmartComplete(g)
+            const smartMissing = missingSmartFields(g).length
             return (
             <Card key={g.id} className={cardClass}>
               <CardContent className="p-4 sm:p-6">
@@ -372,6 +381,33 @@ function GoalsContent() {
                       </button>
                       {hasSteps && (
                         <span className="ml-2 text-[10px] text-muted-foreground/50">progreso por KRs</span>
+                      )}
+                    </div>
+                    {/* CTA primario, gateado por definición SMART: definir → o → generar plan */}
+                    <div className="mb-2 flex items-center gap-2 flex-wrap">
+                      {smartOk ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-brand/30 text-brand-soft-foreground hover:bg-brand-soft"
+                          onClick={() => { setStepsOpenId(g.id); setAutoGenId(g.id) }}
+                        >
+                          <Sparkles size={12} className="mr-1.5" />Generar plan con IA
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-brand/30 text-brand-soft-foreground hover:bg-brand-soft"
+                            onClick={() => setWizardGoalId(g.id)}
+                          >
+                            <Sparkles size={12} className="mr-1.5" />Definir objetivo
+                          </Button>
+                          <span className="text-[10px] text-muted-foreground/60">
+                            faltan {smartMissing}/5 SMART para el plan
+                          </span>
+                        </>
                       )}
                     </div>
                     {!hasSteps && progressId === g.id && (
@@ -438,7 +474,13 @@ function GoalsContent() {
                       transition={{ duration: 0.2, ease: 'easeOut' }}
                       style={{ overflow: 'hidden' }}
                     >
-                      <ObjectiveSteps goal={g} />
+                      <ObjectiveSteps
+                        goal={g}
+                        smartComplete={smartOk}
+                        onRequestDefine={() => setWizardGoalId(g.id)}
+                        autoGenerate={autoGenId === g.id}
+                        onAutoGenerateConsumed={() => setAutoGenId(null)}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -471,6 +513,10 @@ function GoalsContent() {
             ))}
           </div>
         </div>
+      )}
+
+      {wizardGoal && (
+        <SmartWizard goal={wizardGoal} onClose={() => setWizardGoalId(null)} />
       )}
     </AppShell>
   )
