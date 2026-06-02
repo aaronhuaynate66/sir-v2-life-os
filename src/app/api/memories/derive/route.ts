@@ -23,6 +23,7 @@ import {
   QUALIFYING_CAPTURE_TYPES,
   derivedMemoryId,
   observationIdFromMemoryId,
+  selectDerivableObservations,
   selectUncoveredObservations,
   digestObservations,
   baseMemoriesFromObservations,
@@ -89,15 +90,28 @@ export async function POST(req: NextRequest) {
   const personName = (personRow.name as string) ?? 'esta persona'
 
   // Observations curadas que califican (conversaciones + perfiles + notas).
-  const observations = await getObservationsForPerson(supabase, userId, personId, {
+  // (getObservationsForPerson ya excluye is_obsolete=true.)
+  const fetched = await getObservationsForPerson(supabase, userId, personId, {
     captureType: QUALIFYING_CAPTURE_TYPES,
     limit: MAX_OBSERVATIONS,
   })
-  if (observations.length === 0) {
+  if (fetched.length === 0) {
     return errorJson(
       422,
       'Sin observaciones para derivar',
       'Subí capturas (WhatsApp, Instagram, LinkedIn) o notas de esta persona y reintentá.',
+    )
+  }
+
+  // Filtrar fuentes dudosas: descartadas y de confianza baja/media. Evita que
+  // una captura ilegible (ej. LinkedIn de página entera) propague basura a
+  // memorias. (Ver selectDerivableObservations.)
+  const observations = selectDerivableObservations(fetched)
+  if (observations.length === 0) {
+    return errorJson(
+      422,
+      'Las capturas disponibles no son confiables para derivar',
+      'Todas las capturas de esta persona quedaron descartadas o con baja confianza de lectura. Volvé a capturar con imágenes más nítidas (las secciones del perfil, no la página entera) y reintentá.',
     )
   }
 

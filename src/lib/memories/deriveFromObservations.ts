@@ -97,6 +97,29 @@ export function selectUncoveredObservations(
   return observations.filter((o) => !covered.has(o.id))
 }
 
+/**
+ * Observations que SON fuente legítima para derivar memorias.
+ *
+ * Raíz del bug LinkedIn propagado a memorias: una captura ilegible (página
+ * entera, letra diminuta) salió con confianza baja y campos garabateados, y
+ * "Derivar desde mis conversaciones" la usó igual → 2 memorias basura.
+ *
+ * Excluimos:
+ *   - obsoletas/descartadas (`isObsolete`) — ya las filtra el fetch, pero lo
+ *     repetimos acá para que la función pura sea self-contained y testeable.
+ *   - confianza baja o media — fuente dudosa; no queremos materializar basura.
+ *
+ * Mantenemos confianza 'high' y `null` (legacy: capturas pre-confidence que
+ * no tienen el campo; no las castigamos retroactivamente).
+ */
+export function selectDerivableObservations(observations: Observation[]): Observation[] {
+  return observations.filter((o) => {
+    if (o.isObsolete) return false
+    if (o.confidence === 'low' || o.confidence === 'medium') return false
+    return true
+  })
+}
+
 // ─── Lectura defensiva de `data` (Record<string, unknown>) ──────────
 
 function str(v: unknown): string | null {

@@ -23,6 +23,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { DiscardMemoryButton } from '@/components/relaciones/DiscardMemoryButton'
 import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
 import { useMounted } from '@/hooks/useMounted'
@@ -382,9 +383,12 @@ function MemoryList({ memories }: { memories: Memory[] }) {
             >
               {TYPE_LABEL[m.type] ?? m.type}
             </Badge>
-            <span className="text-[10px] text-muted-foreground/70 font-mono">
-              {mounted ? formatRelative(m.timestamp) : ''}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-muted-foreground/70 font-mono">
+                {mounted ? formatRelative(m.timestamp) : ''}
+              </span>
+              <DiscardMemoryButton memoryId={m.id} preview={m.content} />
+            </div>
           </div>
           <p className="text-sm text-foreground leading-relaxed">{m.content}</p>
           {m.tags && m.tags.length > 0 && (

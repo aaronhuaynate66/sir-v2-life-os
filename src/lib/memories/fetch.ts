@@ -63,19 +63,28 @@ export async function getMemoriesForPerson(
   personId: string,
   opts: GetMemoriesOptions = {},
 ): Promise<Memory[]> {
-  let query = supabase
-    .from('memories')
-    .select(MEMORY_COLUMNS)
-    .eq('user_id', userId)
-    .eq('person_id', personId)
-    .order('occurred_at', { ascending: false })
-    .limit(opts.limit ?? 100)
-
-  if (opts.type) {
-    query = query.eq('type', opts.type)
+  // Filtra memorias descartadas (is_obsolete=true). PRE-MIGRATION-SAFE: la
+  // columna es de la migration 0045; si todavia no se aplico, el filtro
+  // rompe el fetch (error 42703) → reintentamos sin el filtro. Asi el deploy
+  // del filtro no necesita esperar a la migration.
+  const build = (withObsoleteFilter: boolean) => {
+    let q = supabase
+      .from('memories')
+      .select(MEMORY_COLUMNS)
+      .eq('user_id', userId)
+      .eq('person_id', personId)
+      .order('occurred_at', { ascending: false })
+      .limit(opts.limit ?? 100)
+    if (opts.type) q = q.eq('type', opts.type)
+    if (withObsoleteFilter) q = q.eq('is_obsolete', false)
+    return q
   }
 
-  const { data, error } = await query
+  let { data, error } = await build(true)
+  if (error) {
+    // Fallback: columna ausente (o cualquier error del filtro) → sin filtro.
+    ;({ data, error } = await build(false))
+  }
   if (error || !data) return []
   return (data as unknown as Record<string, unknown>[]).map(rowToMemory)
 }

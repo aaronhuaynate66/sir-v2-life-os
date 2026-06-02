@@ -13,6 +13,7 @@ import {
   parseDerivedKey,
   derivedMemoryId,
   observationIdFromMemoryId,
+  selectDerivableObservations,
   selectUncoveredObservations,
   extractObservationText,
   extractTopics,
@@ -89,6 +90,25 @@ describe('clave estable / idempotencia', () => {
   it('selectUncovered con todo cubierto → []', () => {
     const all = [obs({ id: 'a' })]
     expect(selectUncoveredObservations(all, new Set(['a']))).toEqual([])
+  })
+
+  it('selectDerivableObservations excluye descartadas y confianza baja/media', () => {
+    const all = [
+      obs({ id: 'high', confidence: 'high' }),
+      obs({ id: 'null-legacy', confidence: null }), // legacy: se mantiene
+      obs({ id: 'medium', confidence: 'medium' }), // dudosa: fuera
+      obs({ id: 'low', confidence: 'low' }), // dudosa: fuera
+      obs({ id: 'obsoleta', confidence: 'high', isObsolete: true }), // descartada: fuera
+    ]
+    expect(selectDerivableObservations(all).map((o) => o.id)).toEqual(['high', 'null-legacy'])
+  })
+
+  it('selectDerivableObservations con solo basura → []', () => {
+    const all = [
+      obs({ id: 'low', confidence: 'low' }),
+      obs({ id: 'obsoleta', confidence: 'high', isObsolete: true }),
+    ]
+    expect(selectDerivableObservations(all)).toEqual([])
   })
 })
 
