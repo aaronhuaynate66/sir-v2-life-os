@@ -26,10 +26,11 @@ import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
 import { previewCapture, processCapture, HttpError } from '@/lib/capture/observations/client'
 import { planPersonCapture } from '@/lib/capture/person-capture'
+import { assessExtraction } from '@/lib/capture/legibility'
 import type { CaptureType, Confidence, DetectorResult } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 
-type Phase = 'idle' | 'working' | 'review' | 'confirming' | 'done' | 'scale' | 'unsupported'
+type Phase = 'idle' | 'working' | 'review' | 'confirming' | 'done' | 'scale' | 'unsupported' | 'illegible'
 
 interface ErrorState {
   status: number
@@ -167,8 +168,12 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
       }
       setPreview(state)
 
-      // Alta confianza → guardar directo. Media/baja/sin dato → revisar.
-      if (pv.confidence === 'high') {
+      // Evaluar legibilidad: ilegible → cortar (no mostrar basura); dudoso →
+      // revisar; ok (alta confianza + varios campos) → guardar directo.
+      const verdict = assessExtraction(pv.extracted, pv.confidence)
+      if (verdict === 'unreadable') {
+        setPhase('illegible')
+      } else if (verdict === 'ok') {
         await persistConfirmed(state)
       } else {
         setPhase('review')
@@ -286,6 +291,20 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
               <span className="text-muted-foreground">
                 No reconocí un tipo asociable (chat de WhatsApp, perfil de Instagram/LinkedIn).
                 Probá con otra imagen.
+              </span>
+            </div>
+            <Button size="sm" variant="outline" onClick={reset} className="w-full">
+              Elegir otra imagen
+            </Button>
+          </div>
+        ) : phase === 'illegible' ? (
+          <div className="space-y-3">
+            <div className="rounded-md border border-warn/30 bg-warn/5 p-3 text-xs flex items-start gap-2">
+              <AlertCircle size={14} strokeWidth={1.75} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <span className="text-warn-foreground">
+                No pude leer bien esta imagen. Probá con una captura más nítida o más cercana —
+                las <span className="font-medium">secciones del perfil</span> (no la página entera),
+                que la letra se lea grande. No guardé nada.
               </span>
             </div>
             <Button size="sm" variant="outline" onClick={reset} className="w-full">
