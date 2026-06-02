@@ -399,6 +399,27 @@ describe('buildAgenda — próximo paso de objetivo', () => {
     )
     expect(items.filter((i) => i.kind === 'objective_step')).toHaveLength(0)
   })
+
+  it('OKR: surfacéa la TAREA hoja pendiente, no el KR padre', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        goals: [goal({ id: 'g1', title: 'Mundial', status: 'active' })],
+        objectiveSteps: [
+          ostep({ id: 'kr1', objectiveId: 'g1', kind: 'key_result', order: 0, title: 'Visa y viaje' }),
+          ostep({ id: 't1', objectiveId: 'g1', kind: 'task', parentId: 'kr1', order: 0, status: 'hecho', title: 'Tramitar eVisa' }),
+          ostep({ id: 't2', objectiveId: 'g1', kind: 'task', parentId: 'kr1', order: 1, status: 'pendiente', title: 'Comprar pasaje', targetDate: '2026-06-06' }),
+        ],
+      },
+      {},
+      NOW,
+    )
+    const step = items.find((i) => i.kind === 'objective_step')!
+    // La hoja accionable es la tarea pendiente, NO el KR "Visa y viaje".
+    expect(step.title).toBe('Paso: Comprar pasaje')
+    expect(step.detail).toContain('Mundial')
+    expect(step.daysUntil).toBe(5)
+  })
 })
 
 describe('buildAgenda — señales críticas', () => {

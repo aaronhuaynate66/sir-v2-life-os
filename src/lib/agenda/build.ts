@@ -27,7 +27,7 @@ import {
   type SpecialDateCountdown,
 } from '@/lib/dates/specialDates'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
-import { nextPendingStep, daysUntilStep } from '@/lib/objectives/steps'
+import { nextPendingLeaf, daysUntilStep } from '@/lib/objectives/steps'
 
 const DAY_MS = 86_400_000
 
@@ -251,14 +251,18 @@ function buildGoalTargets(
 }
 
 /**
- * Próximo paso accionable de cada objetivo activo: el "qué hacer AHORA para
- * avanzar". Un solo item por objetivo (el primer paso no-hecho por orden) para
- * no inundar la agenda. Complementa goal_target (deadline del objetivo) con la
- * acción concreta inmediata.
+ * Próxima TAREA accionable de cada objetivo activo: el "qué hacer AHORA para
+ * avanzar". Recorre el árbol OKR (KR → tareas) y devuelve la HOJA pendiente —
+ * la tarea concreta, no el KR (un KR es un outcome, no una acción). Un solo
+ * item por objetivo para no inundar la agenda. Complementa goal_target
+ * (deadline del objetivo) con la acción concreta inmediata.
  *
- *   - Paso CON fecha → rank 'dated' (compite por cercanía con objetivos y
- *     fechas; incluye vencidos, excluye futuros fuera del horizonte).
- *   - Paso SIN fecha → rank 'next_step' (debajo de lo datado; daysUntil 0).
+ *   - Tarea CON fecha → rank 'dated' (compite por cercanía con objetivos y
+ *     fechas; incluye vencidas, excluye futuras fuera del horizonte).
+ *   - Tarea SIN fecha → rank 'next_step' (debajo de lo datado; daysUntil 0).
+ *
+ * (Un KR sin tareas todavía es su propia hoja: hasta que se descompone, surfacéa
+ * el KR como acción siguiente.)
  */
 function buildObjectiveSteps(
   goals: Goal[],
@@ -270,7 +274,7 @@ function buildObjectiveSteps(
   const activeIds = new Set(goals.filter((g) => g.status === 'active').map((g) => g.id))
   const titleById = new Map(goals.map((g) => [g.id, g.title]))
 
-  // Agrupar pasos por objetivo (solo objetivos activos).
+  // Agrupar nodos por objetivo (solo objetivos activos).
   const byObjective = new Map<string, ObjectiveStep[]>()
   for (const s of steps) {
     if (!activeIds.has(s.objectiveId)) continue
@@ -280,7 +284,7 @@ function buildObjectiveSteps(
   }
 
   for (const [objectiveId, objSteps] of byObjective) {
-    const next = nextPendingStep(objSteps)
+    const next = nextPendingLeaf(objSteps)
     if (!next) continue // todo hecho → nada que surfacéar.
     const goalTitle = titleById.get(objectiveId) ?? 'Objetivo'
     const days = daysUntilStep(next, now)
