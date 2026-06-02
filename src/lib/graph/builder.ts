@@ -114,6 +114,8 @@ export interface BuildGraphArgs {
    *  (observations curadas o person_logs). Un familiar-de-contacto que NO esté
    *  acá es de 2º grado: cuelga de su contacto, no del centro. Default []. */
   directContactIds?: string[]
+  /** Info de hover por person.id (armada en GraphView, depende de "ahora"). */
+  hoverById?: Record<string, import('./hover').NodeHover>
   selfFullName: string | null
   selfEmail: string
 }
@@ -132,6 +134,7 @@ export function buildGraphData({
   relationships,
   personLinks = [],
   directContactIds = [],
+  hoverById = {},
   selfFullName,
   selfEmail,
 }: BuildGraphArgs): GraphData {
@@ -189,6 +192,7 @@ export function buildGraphData({
       interactionCount: interactionCountFor(rel),
       score: Number.isFinite(p.importanceScore) ? p.importanceScore : 5,
       secondDegree,
+      hover: hoverById[p.id],
     })
     // Los de 2º grado NO se conectan al centro: cuelgan de su contacto vía la
     // arista de familia (abajo). Los contactos directos sí van al centro.

@@ -1,6 +1,8 @@
 // SIR V2 — Tipos del grafo de relaciones (/red/grafo).
 // Port de la vista de SIR V1 — visualizacion macro de la red personal.
 
+import type { NodeHover } from './hover'
+
 export type GraphCategory =
   | 'familia'
   | 'personal'
@@ -29,6 +31,9 @@ export interface GraphNode {
   /** 2º grado: familiar de un contacto SIN interacción directa con self.
    *  Cuelga de su contacto (no del centro) y se dibuja más chico/atenuado. */
   secondDegree?: boolean
+  /** Info accionable para el tooltip de hover (última interacción, recomendación,
+   *  edad, ciclo, ánimo). Armada en GraphView (depende de "ahora" + server). */
+  hover?: NodeHover
   isSelf?: boolean
   // Posicion fijada (solo para self). react-force-graph-2d respeta fx/fy.
   fx?: number

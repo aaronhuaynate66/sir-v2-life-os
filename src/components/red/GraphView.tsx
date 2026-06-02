@@ -4,8 +4,9 @@
 // GraphCanvas se carga via dynamic import con ssr: false porque depende
 // de <canvas>. Mientras carga, mostramos un skeleton.
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import { Network } from 'lucide-react'
@@ -14,7 +15,9 @@ import { GraphFiltersBar } from './GraphFilters'
 import { GraphLegend } from './GraphLegend'
 import { buildGraphData } from '@/lib/graph/builder'
 import { filterGraph } from '@/lib/graph/filter'
+import { buildHover, type InteractionInfo, type NodeHover } from '@/lib/graph/hover'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
+import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { DEFAULT_FILTERS, type GraphData, type GraphFilters } from '@/lib/graph/types'
 
 // Dynamic import con ssr:false porque react-force-graph-2d usa <canvas>.
@@ -36,16 +39,54 @@ interface GraphViewProps {
   /** IDs de personas con interacción directa (observations/logs). Server-fetched.
    *  Un familiar-de-contacto que NO esté acá es 2º grado (cuelga de su contacto). */
   directContactIds?: string[]
+  /** Resumen de última interacción por person.id (server-fetched, sin N+1). */
+  interactionById?: Record<string, InteractionInfo>
 }
 
-export function GraphView({ selfFullName, selfEmail, directContactIds = [] }: GraphViewProps) {
+export function GraphView({ selfFullName, selfEmail, directContactIds = [], interactionById = {} }: GraphViewProps) {
+  const router = useRouter()
   const { people, relationships, personLinks } = useRelationshipStore()
+  const recommendations = useRecommendationStore((s) => s.recommendations)
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS)
+
+  // Última recomendación activa por persona (del store client, vía relatedPersons).
+  const recById = useMemo(() => {
+    const map: Record<string, string> = {}
+    const sorted = [...recommendations].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    for (const r of sorted) {
+      if (r.status === 'dismissed' || r.status === 'completed') continue
+      for (const pid of r.relatedPersons ?? []) {
+        if (!map[pid]) map[pid] = r.title // el más reciente (ya ordenado desc)
+      }
+    }
+    return map
+  }, [recommendations])
+
+  // Hover por persona: edad + ciclo (de la persona) + última interacción/ánimo
+  // (server) + recomendación (store). Depende de "ahora" → vive acá, no en el
+  // builder (que se mantiene puro).
+  const hoverById = useMemo(() => {
+    const now = new Date()
+    const map: Record<string, NodeHover> = {}
+    for (const p of people) {
+      map[p.id] = buildHover({ person: p, interaction: interactionById[p.id], recommendation: recById[p.id], now })
+    }
+    return map
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [people, interactionById, recById])
 
   // Build raw data una vez (memoizado).
   const rawData: GraphData = useMemo(
-    () => buildGraphData({ people, relationships, personLinks: personLinks ?? [], directContactIds, selfFullName, selfEmail }),
-    [people, relationships, personLinks, directContactIds, selfFullName, selfEmail],
+    () => buildGraphData({ people, relationships, personLinks: personLinks ?? [], directContactIds, hoverById, selfFullName, selfEmail }),
+    [people, relationships, personLinks, directContactIds, hoverById, selfFullName, selfEmail],
+  )
+
+  // Clic en nodo → navegar a la ficha (self → /yo).
+  const onNavigate = useCallback(
+    (nodeId: string, isSelf: boolean) => {
+      router.push(isSelf ? '/yo' : `/relaciones/${encodeURIComponent(nodeId)}`)
+    },
+    [router],
   )
 
   // Aplicar filtros (categoría + salud mínima). NO ocultamos por "actividad":
@@ -101,7 +142,7 @@ export function GraphView({ selfFullName, selfEmail, directContactIds = [] }: Gr
           </CardContent>
         </Card>
       ) : (
-        <GraphCanvas data={filteredData} />
+        <GraphCanvas data={filteredData} onNavigate={onNavigate} />
       )}
 
       <GraphLegend />

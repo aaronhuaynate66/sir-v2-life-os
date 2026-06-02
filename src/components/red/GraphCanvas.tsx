@@ -16,9 +16,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import type { GraphData } from '@/lib/graph/types'
 import { CATEGORY_COLOR } from '@/lib/graph/colors'
+import { hoverToHtml, type NodeHover } from '@/lib/graph/hover'
 
 interface GraphCanvasProps {
   data: GraphData
+  /** Clic en un nodo → navegar. isSelf=true para el nodo central. */
+  onNavigate?: (nodeId: string, isSelf: boolean) => void
 }
 
 function toForceGraphData(data: GraphData) {
@@ -67,6 +70,7 @@ type NodeLike = {
   isSelf?: boolean
   score?: number
   secondDegree?: boolean
+  hover?: NodeHover
   x?: number
   y?: number
 }
@@ -78,7 +82,7 @@ type LinkLike = {
   color?: string
 }
 
-export function GraphCanvas({ data }: GraphCanvasProps) {
+export function GraphCanvas({ data, onNavigate }: GraphCanvasProps) {
   const fgRef = useRef<unknown>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const fgData = useMemo(() => toForceGraphData(data), [data])
@@ -314,15 +318,15 @@ export function GraphCanvas({ data }: GraphCanvasProps) {
         d3VelocityDecay={0.42}
         onEngineStop={handleEngineStop}
         onEngineTick={handleEngineTick}
-        nodeLabel={(node: { fullName?: string }) => node.fullName ?? ''}
+        nodeLabel={(node: NodeLike) => hoverToHtml(node.fullName ?? '', node.hover)}
         nodeRelSize={SELF_RADIUS}
         nodeCanvasObjectMode={() => 'replace'}
         nodeCanvasObject={renderNode}
         nodePointerAreaPaint={paintNodePointerArea}
         onNodeHover={(node: NodeLike | null) => setHovered(node?.id ?? null)}
-        onNodeClick={(node: NodeLike) =>
-          setHovered((prev) => (prev === node?.id ? null : (node?.id ?? null)))
-        }
+        onNodeClick={(node: NodeLike) => {
+          if (node?.id) onNavigate?.(node.id, !!node.isSelf)
+        }}
         linkCanvasObjectMode={() => 'after'}
         linkCanvasObject={renderLinkLabel}
       />

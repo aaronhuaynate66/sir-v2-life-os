@@ -27,24 +27,50 @@ export default async function GrafoPage() {
   const selfFullName = (profile?.full_name as string | null) ?? null
   const selfEmail = user.email ?? ''
 
-  // Personas con interacción DIRECTA: aparecen en alguna observation curada o
-  // person_log. Los familiares creados desde la card "Familia" (sin captura ni
-  // log) NO están acá → el grafo los trata como 2º grado (cuelgan de su
-  // contacto, no del centro). RLS scopea ambas queries al usuario.
+  // Interacción por persona (server, sin N+1): dos queries (observations +
+  // person_logs), agrupadas en JS → última interacción + ánimo. Sirve para el
+  // hover Y para 2º grado (quien tiene interacción es contacto directo). RLS
+  // scopea ambas al usuario.
   const [obsRows, logRows] = await Promise.all([
-    supabase.from('observations').select('person_id').eq('is_obsolete', false).not('person_id', 'is', null),
-    supabase.from('person_logs').select('person_id'),
+    supabase
+      .from('observations')
+      .select('person_id, observed_at, capture_type')
+      .eq('is_obsolete', false)
+      .not('person_id', 'is', null),
+    supabase.from('person_logs').select('person_id, logged_at, kind, value'),
   ])
-  const directContactIds = Array.from(
-    new Set(
-      [
-        ...((obsRows.data ?? []) as { person_id: string | null }[]),
-        ...((logRows.data ?? []) as { person_id: string | null }[]),
-      ]
-        .map((r) => r.person_id)
-        .filter((id): id is string => typeof id === 'string' && id.length > 0),
-    ),
-  )
+
+  const CAP_LABEL: Record<string, string> = {
+    whatsapp_chat: 'WhatsApp', whatsapp_web: 'WhatsApp', whatsapp_info: 'WhatsApp',
+    instagram: 'Instagram', linkedin: 'LinkedIn', voice_note: 'Nota de voz', manual_note: 'Nota',
+  }
+  const LOG_LABEL: Record<string, string> = {
+    mood: 'Ánimo', energy: 'Energía', sleep: 'Sueño', pain: 'Dolor', interaction: 'Interacción',
+  }
+
+  const interactionById: Record<string, { at: string; label: string; mood?: string }> = {}
+  const bump = (pid: string, at: string, label: string) => {
+    const cur = interactionById[pid]
+    if (!cur || at > cur.at) interactionById[pid] = { at, label, mood: cur?.mood }
+  }
+
+  for (const r of (obsRows.data ?? []) as { person_id: string | null; observed_at: string | null; capture_type: string | null }[]) {
+    if (r.person_id && r.observed_at) bump(r.person_id, r.observed_at, CAP_LABEL[r.capture_type ?? ''] ?? 'Captura')
+  }
+  const latestMood: Record<string, { at: string; value: number }> = {}
+  for (const r of (logRows.data ?? []) as { person_id: string | null; logged_at: string | null; kind: string | null; value: number | null }[]) {
+    if (!r.person_id || !r.logged_at) continue
+    bump(r.person_id, r.logged_at, `${LOG_LABEL[r.kind ?? ''] ?? 'Registro'} ${r.value ?? ''}/5`.trim())
+    if (r.kind === 'mood' && r.value != null) {
+      const m = latestMood[r.person_id]
+      if (!m || r.logged_at > m.at) latestMood[r.person_id] = { at: r.logged_at, value: r.value }
+    }
+  }
+  for (const [pid, m] of Object.entries(latestMood)) {
+    if (interactionById[pid]) interactionById[pid].mood = `Ánimo ${m.value}/5`
+  }
+
+  const directContactIds = Object.keys(interactionById)
 
   return (
     <AppShell>
@@ -70,7 +96,12 @@ export default async function GrafoPage() {
         </p>
       </header>
 
-      <GraphView selfFullName={selfFullName} selfEmail={selfEmail} directContactIds={directContactIds} />
+      <GraphView
+        selfFullName={selfFullName}
+        selfEmail={selfEmail}
+        directContactIds={directContactIds}
+        interactionById={interactionById}
+      />
     </AppShell>
   )
 }
