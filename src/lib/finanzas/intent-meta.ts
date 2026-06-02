@@ -18,23 +18,25 @@ export const INTENT_HINT: Record<SpendIntent, string> = {
   no_esencial: 'Discrecional: delivery, antojos, impulso.',
 }
 
-/** Color de texto/acento por intención (Tailwind). */
+/** Color de texto/acento por intención (tokens del sistema). El gasto
+ *  obligatorio es categórico (marca); necesario lee como ok; el no-esencial
+ *  es el que conviene vigilar (warn). */
 export const INTENT_TEXT: Record<SpendIntent, string> = {
-  obligatorio: 'text-sky-400',
-  necesario: 'text-emerald-400',
-  no_esencial: 'text-amber-400',
+  obligatorio: 'text-brand-soft-foreground',
+  necesario: 'text-ok',
+  no_esencial: 'text-warn',
 }
 
-/** Fondo de la barra proporcional por intención (Tailwind). */
+/** Fondo de la barra proporcional por intención. */
 export const INTENT_BAR: Record<SpendIntent, string> = {
-  obligatorio: 'bg-sky-400',
-  necesario: 'bg-emerald-400',
-  no_esencial: 'bg-amber-400',
+  obligatorio: 'bg-brand',
+  necesario: 'bg-ok',
+  no_esencial: 'bg-warn',
 }
 
 /** Estilo de badge (borde + fondo + texto) para la lista de movimientos. */
 export const INTENT_BADGE: Record<SpendIntent, string> = {
-  obligatorio: 'border-sky-500/30 bg-sky-500/10 text-sky-400',
-  necesario: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-  no_esencial: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
+  obligatorio: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
+  necesario: 'border-ok/30 bg-ok-soft text-ok-foreground',
+  no_esencial: 'border-warn/30 bg-warn-soft text-warn-foreground',
 }

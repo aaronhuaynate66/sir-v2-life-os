@@ -49,14 +49,14 @@ type FieldDef = TextFieldDef | ListFieldDef
 
 // Orden y wording fieles a lo que pidió Aaron.
 const FIELDS: FieldDef[] = [
-  { kind: 'text', key: 'emotionalState', label: 'Estado emocional actual', icon: HeartPulse, accent: 'text-rose-400', placeholder: '¿Cómo estás hoy, de verdad? Sin filtro.' },
-  { kind: 'list', key: 'anxieties', label: 'Principales ansiedades / preocupaciones', icon: AlertTriangle, accent: 'text-amber-400', placeholder: 'Una preocupación y Enter…' },
-  { kind: 'list', key: 'blocks', label: 'Bloqueos detectados', icon: Ban, accent: 'text-red-400', placeholder: 'Algo que te traba y Enter…' },
-  { kind: 'list', key: 'stoppedTolerating', label: 'Lo que dejé de tolerar', icon: Ban, accent: 'text-orange-400', placeholder: 'Algo que ya no aceptás y Enter…' },
-  { kind: 'list', key: 'understandings', label: 'Lo que entiendo', icon: Lightbulb, accent: 'text-emerald-400', placeholder: 'Una claridad que ganaste y Enter…' },
-  { kind: 'text', key: 'idealLifeVision', label: 'Visión de vida ideal', icon: Sparkles, accent: 'text-sky-400', placeholder: 'Cómo se ve tu vida cuando todo está en su lugar…' },
-  { kind: 'text', key: 'futureSelf', label: 'Modelo del yo futuro', icon: Compass, accent: 'text-indigo-400', placeholder: 'Quién es el vos en el que te estás convirtiendo…' },
-  { kind: 'list', key: 'anchors', label: 'Frases ancla / valores', icon: Anchor, accent: 'text-violet-400', placeholder: 'Una frase o valor que te sostiene y Enter…' },
+  { kind: 'text', key: 'emotionalState', label: 'Estado emocional actual', icon: HeartPulse, accent: 'text-text-tertiary', placeholder: '¿Cómo estás hoy, de verdad? Sin filtro.' },
+  { kind: 'list', key: 'anxieties', label: 'Principales ansiedades / preocupaciones', icon: AlertTriangle, accent: 'text-text-tertiary', placeholder: 'Una preocupación y Enter…' },
+  { kind: 'list', key: 'blocks', label: 'Bloqueos detectados', icon: Ban, accent: 'text-text-tertiary', placeholder: 'Algo que te traba y Enter…' },
+  { kind: 'list', key: 'stoppedTolerating', label: 'Lo que dejé de tolerar', icon: Ban, accent: 'text-text-tertiary', placeholder: 'Algo que ya no aceptás y Enter…' },
+  { kind: 'list', key: 'understandings', label: 'Lo que entiendo', icon: Lightbulb, accent: 'text-text-tertiary', placeholder: 'Una claridad que ganaste y Enter…' },
+  { kind: 'text', key: 'idealLifeVision', label: 'Visión de vida ideal', icon: Sparkles, accent: 'text-text-tertiary', placeholder: 'Cómo se ve tu vida cuando todo está en su lugar…' },
+  { kind: 'text', key: 'futureSelf', label: 'Modelo del yo futuro', icon: Compass, accent: 'text-text-tertiary', placeholder: 'Quién es el vos en el que te estás convirtiendo…' },
+  { kind: 'list', key: 'anchors', label: 'Frases ancla / valores', icon: Anchor, accent: 'text-text-tertiary', placeholder: 'Una frase o valor que te sostiene y Enter…' },
 ]
 
 const cardClass = 'shadow-none transition-colors duration-200'
@@ -173,7 +173,7 @@ function ReadView({ diagnosis }: { diagnosis: SelfDiagnosis }) {
             <div key={f.key}>
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Icon size={13} strokeWidth={1.75} className={f.accent} aria-hidden="true" />
-                <span className="text-[11px] uppercase tracking-widest text-muted-foreground/70">{f.label}</span>
+                <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{f.label}</span>
               </div>
               <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{v}</p>
             </div>
@@ -185,7 +185,7 @@ function ReadView({ diagnosis }: { diagnosis: SelfDiagnosis }) {
           <div key={f.key}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <Icon size={13} strokeWidth={1.75} className={f.accent} aria-hidden="true" />
-              <span className="text-[11px] uppercase tracking-widest text-muted-foreground/70">{f.label}</span>
+              <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{f.label}</span>
             </div>
             <ul className="space-y-1">
               {items.map((it, i) => (
@@ -218,7 +218,7 @@ function EditView({ draft, setDraft, onSave, onCancel }: EditViewProps) {
           <div key={f.key}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <Icon size={13} strokeWidth={1.75} className={f.accent} aria-hidden="true" />
-              <label className="text-[11px] uppercase tracking-widest text-muted-foreground/70">{f.label}</label>
+              <label className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{f.label}</label>
             </div>
             {f.kind === 'text' ? (
               <Textarea

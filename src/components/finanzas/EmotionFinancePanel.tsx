@@ -11,17 +11,17 @@ import { formatPEN } from '@/lib/format/currency'
 import type { EmotionFinanceCorrelation, StressLevel } from '@/lib/longitudinal/emotionFinance'
 import { cn } from '@/lib/utils'
 
-const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
 const LEVEL_BAR: Record<StressLevel, string> = {
-  low: 'bg-emerald-400',
-  medium: 'bg-amber-400',
-  high: 'bg-red-400',
+  low: 'bg-ok',
+  medium: 'bg-warn',
+  high: 'bg-bad',
 }
 const LEVEL_TEXT: Record<StressLevel, string> = {
-  low: 'text-emerald-400',
-  medium: 'text-amber-400',
-  high: 'text-red-400',
+  low: 'text-ok',
+  medium: 'text-warn',
+  high: 'text-bad',
 }
 
 export function EmotionFinancePanel({ data }: { data: EmotionFinanceCorrelation }) {
@@ -44,8 +44,8 @@ export function EmotionFinancePanel({ data }: { data: EmotionFinanceCorrelation 
         ) : (
           <>
             {hasPattern && insight ? (
-              <div className="flex items-start gap-2 mb-4 p-3 rounded border border-amber-500/30 bg-amber-500/10">
-                <TrendingUp size={15} strokeWidth={1.75} className="text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="flex items-start gap-2 mb-4 p-3 rounded border border-warn/30 bg-warn-soft">
+                <TrendingUp size={15} strokeWidth={1.75} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <p className="text-sm text-foreground/90 leading-relaxed">{insight}</p>
               </div>
             ) : (

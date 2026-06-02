@@ -35,8 +35,8 @@ const TYPE_LABEL: Record<MovementType, string> = {
   income: 'Ingreso', expense: 'Gasto', investment: 'Inversión', transfer: 'Transferencia', debt: 'Deuda',
 }
 const TYPE_COLOR: Record<MovementType, string> = {
-  income: 'text-emerald-400', expense: 'text-red-400', investment: 'text-blue-400',
-  transfer: 'text-amber-400', debt: 'text-red-400',
+  income: 'text-ok', expense: 'text-bad', investment: 'text-brand-soft-foreground',
+  transfer: 'text-warn', debt: 'text-bad',
 }
 const TYPE_SIGN: Record<MovementType, string> = {
   income: '+', expense: '-', investment: '-', transfer: '', debt: '-',
@@ -49,12 +49,12 @@ const CAT_LABEL: Record<FinancialCategory, string> = {
 const LIQUIDITY_MONTHS = 2.5
 const RISK_LABEL: Record<'low' | 'medium' | 'high' | 'critical', string> = { low: 'bajo', medium: 'medio', high: 'alto', critical: 'crítico' }
 
-const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
 type Tone = 'ok' | 'warn' | 'bad' | 'muted'
 function toneText(t: Tone): string {
   if (t === 'muted') return 'text-muted-foreground/50'
-  return t === 'ok' ? 'text-emerald-400' : t === 'warn' ? 'text-amber-400' : 'text-red-400'
+  return t === 'ok' ? 'text-ok' : t === 'warn' ? 'text-warn' : 'text-bad'
 }
 
 export default function FinancePage() {
@@ -187,7 +187,7 @@ function FinanceContent() {
     <AppShell>
       <div className="mb-8 flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2</div>
           <div className="flex items-center gap-3 mt-1">
             <DollarSign size={28} strokeWidth={1.5} className="text-muted-foreground" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Finanzas</h1>
@@ -206,7 +206,7 @@ function FinanceContent() {
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
             <CardContent className="p-3 sm:p-4">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">{s.label}</div>
               <div className={cn('text-lg sm:text-xl font-mono font-bold tabular-nums break-words', toneText(s.tone))}>
                 {s.value}<span className="text-sm text-muted-foreground/50">{s.unit}</span>
               </div>
@@ -226,7 +226,7 @@ function FinanceContent() {
           label="Balance acumulado"
           icon={TrendingUp}
           points={balanceSeries}
-          colorClass={balanceSeries.length > 0 && (balanceSeries[balanceSeries.length - 1]?.value ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}
+          colorClass={balanceSeries.length > 0 && (balanceSeries[balanceSeries.length - 1]?.value ?? 0) >= 0 ? 'text-ok' : 'text-bad'}
           formatValue={(n) => formatPEN(n)}
           emptyHint="Registrá movimientos para ver cómo evoluciona tu balance."
         />
@@ -238,7 +238,7 @@ function FinanceContent() {
             <SectionTitle icon={AlertCircle} label="Alertas" count={alerts.length} />
             {alerts.map((a, i) => (
               <div key={i} className="flex gap-2 items-start py-1 border-b border-border/40 last:border-0">
-                <AlertCircle size={12} strokeWidth={2} className={cn('mt-0.5 flex-shrink-0', a.severity === 'critical' ? 'text-red-400' : 'text-amber-400')} />
+                <AlertCircle size={12} strokeWidth={2} className={cn('mt-0.5 flex-shrink-0', a.severity === 'critical' ? 'text-bad' : 'text-warn')} />
                 <div>
                   <div className="text-xs text-muted-foreground leading-relaxed">{a.message}</div>
                   {a.suggestedAction && <div className="text-[10px] text-muted-foreground/60 mt-0.5">{a.suggestedAction}</div>}
@@ -291,7 +291,7 @@ function FinanceContent() {
           {currency === 'USD' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 p-3 rounded border border-border bg-muted/30">
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">
+                <label className="block text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">
                   Tipo de cambio USD&rarr;PEN
                 </label>
                 <Input
@@ -302,11 +302,11 @@ function FinanceContent() {
                   className="font-mono tabular-nums"
                 />
                 {rateIsFallback && (
-                  <p className="text-[10px] text-amber-400 mt-1">Tipo de cambio offline, usando referencia.</p>
+                  <p className="text-[10px] text-warn mt-1">Tipo de cambio offline, usando referencia.</p>
                 )}
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">
+                <label className="block text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">
                   Equivalente
                 </label>
                 <div className="text-sm font-mono tabular-nums h-9 flex items-center text-foreground">
@@ -320,7 +320,7 @@ function FinanceContent() {
           {/* Intención — solo en salidas de dinero (P1). Ortogonal a la categoría. */}
           {(type === 'expense' || type === 'debt') && (
             <div className="mb-3 p-3 rounded border border-border bg-muted/30">
-              <label className="block text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+              <label className="block text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
                 Intención del gasto
               </label>
               <Select value={intent} onValueChange={(v) => setIntent(v as SpendIntent)}>
@@ -346,7 +346,7 @@ function FinanceContent() {
 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <Filter size={12} strokeWidth={1.75} className="text-muted-foreground/60" />
-        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Filtrar</span>
+        <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Filtrar</span>
         {(['all', ...Object.keys(TYPE_LABEL)] as (MovementType | 'all')[]).map(t => (
           <button
             key={t}
@@ -382,7 +382,7 @@ function FinanceContent() {
                     <div className="flex gap-2 mt-0.5 items-center flex-wrap">
                       <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[m.category]}</Badge>
                       {m.intent && <Badge variant="outline" className={cn('text-[10px] font-normal', INTENT_BADGE[m.intent])}>{INTENT_LABEL[m.intent]}</Badge>}
-                      {m.recurrent && <Badge variant="outline" className="text-[10px] font-normal border-blue-500/30 bg-blue-500/10 text-blue-400">recurrente</Badge>}
+                      {m.recurrent && <Badge variant="brand" className="text-[10px] font-normal">recurrente</Badge>}
                       <span className="text-[10px] text-muted-foreground/60 font-mono tabular-nums">{m.date}</span>
                     </div>
                   </div>
@@ -400,7 +400,7 @@ function FinanceContent() {
                   </div>
                   <button
                     onClick={() => handleRemoveMovement(m.id, m.description)}
-                    className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded text-base leading-none text-muted-foreground/40 hover:text-red-400 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded text-base leading-none text-muted-foreground/40 hover:text-bad opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                     aria-label="Eliminar"
                   >
                     ×

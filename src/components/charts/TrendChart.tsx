@@ -25,7 +25,7 @@ export interface TrendChartProps {
   icon: LucideIcon
   /** Puntos ya preparados por un adapter (orden indistinto). */
   points: SeriesPoint[]
-  /** Clase de color de texto para la línea/área (ej. "text-emerald-400"). */
+  /** Clase de color de texto para la línea/área (ej. "text-brand"). */
   colorClass?: string
   /** Formateador del valor (ej. formatPEN, o n => `${n}h`). Default toString. */
   formatValue?: (n: number) => string
@@ -42,7 +42,7 @@ export function TrendChart({
   label,
   icon,
   points,
-  colorClass = 'text-primary',
+  colorClass = 'text-brand',
   formatValue = (n) => String(n),
   height = 56,
   emptyHint,
@@ -62,8 +62,8 @@ export function TrendChart({
     delta == null || delta === 0
       ? 'text-muted-foreground'
       : delta > 0
-        ? 'text-emerald-400'
-        : 'text-red-400'
+        ? 'text-ok'
+        : 'text-bad'
 
   return (
     <Card className={cn('shadow-none', className)}>

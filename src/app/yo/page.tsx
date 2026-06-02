@@ -32,11 +32,11 @@ const CAT_LABEL: Record<MetricCategory, string> = {
   focus: 'Enfoque', motivation: 'Motivación', confidence: 'Confianza',
 }
 
-const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
 type Tone = 'ok' | 'warn' | 'bad'
 function statTextClass(t: Tone): string {
-  return t === 'ok' ? 'text-emerald-400' : t === 'warn' ? 'text-amber-400' : 'text-red-400'
+  return t === 'ok' ? 'text-ok' : t === 'warn' ? 'text-warn' : 'text-bad'
 }
 
 export default function SelfPage() {
@@ -108,7 +108,7 @@ function SelfContent() {
   return (
     <AppShell>
       <div className="mb-8">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2</div>
         <div className="flex items-center gap-3 mt-1">
           <Brain size={28} strokeWidth={1.5} className="text-muted-foreground" />
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Yo</h1>
@@ -123,7 +123,7 @@ function SelfContent() {
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
             <CardContent className="p-3 sm:p-4">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">{s.label}</div>
               <div className={cn('text-xl sm:text-2xl font-mono font-bold tabular-nums', statTextClass(s.tone))}>
                 {s.value}<span className="text-sm text-muted-foreground/50">{s.unit}</span>
               </div>
@@ -138,7 +138,7 @@ function SelfContent() {
           label="Energía"
           icon={Activity}
           points={energySeries}
-          colorClass="text-emerald-400"
+          colorClass="text-brand"
           formatValue={(n) => n.toFixed(1)}
           emptyHint="Registrá tu energía para ver la evolución."
         />
@@ -146,7 +146,7 @@ function SelfContent() {
           label="Sueño (horas)"
           icon={Moon}
           points={sleepSeries}
-          colorClass="text-sky-400"
+          colorClass="text-brand"
           formatValue={(n) => `${n.toFixed(1)}h`}
           emptyHint="Registrá tus noches para ver la tendencia."
         />
@@ -256,7 +256,7 @@ function SelfContent() {
                     {m.note && <span className="text-xs text-muted-foreground">{m.note}</span>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn('text-sm font-mono tabular-nums', m.value >= 7 ? 'text-emerald-400' : m.value >= 4 ? 'text-amber-400' : 'text-red-400')}>{m.value}/10</span>
+                    <span className={cn('text-sm font-mono tabular-nums', m.value >= 7 ? 'text-ok' : m.value >= 4 ? 'text-warn' : 'text-bad')}>{m.value}/10</span>
                     <span className="text-[10px] text-muted-foreground/60 font-mono tabular-nums">{new Date(m.timestamp).toLocaleDateString('es', { day: '2-digit', month: '2-digit' })}</span>
                   </div>
                 </div>
