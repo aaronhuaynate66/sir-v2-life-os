@@ -37,21 +37,21 @@ const CAT_LABEL: Record<GoalCategory, string> = {
 }
 const PRIO_LABEL: Record<GoalPriority, string> = { critical: 'Crítico', high: 'Alto', medium: 'Medio', low: 'Bajo' }
 const PRIO_CLASS: Record<GoalPriority, string> = {
-  critical: 'border-red-500/30 bg-red-500/10 text-red-400',
-  high: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-  medium: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
+  critical: 'border-bad/30 bg-bad-soft text-bad-foreground',
+  high: 'border-warn/30 bg-warn-soft text-warn-foreground',
+  medium: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
   low: 'border-border bg-muted text-muted-foreground',
 }
 const STATUS_COLORS: Record<Goal['status'], string> = {
-  active: 'text-emerald-400', paused: 'text-amber-400',
-  completed: 'text-blue-400', abandoned: 'text-muted-foreground/50',
+  active: 'text-ok', paused: 'text-warn',
+  completed: 'text-brand-soft-foreground', abandoned: 'text-muted-foreground/50',
 }
 const STATUS_LABEL: Record<Goal['status'], string> = {
   active: 'activo', paused: 'pausado',
   completed: 'completado', abandoned: 'abandonado',
 }
 
-const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
 export default function GoalsPage() {
   const hydrated = useHasHydrated()
@@ -181,7 +181,7 @@ function GoalsContent() {
     <AppShell>
       <div className="mb-8 flex justify-between items-start gap-3 flex-wrap">
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-1">SIR V2</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">SIR V2</div>
           <div className="flex items-center gap-3 mt-1">
             <Target size={28} strokeWidth={1.5} className="text-muted-foreground" />
             <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Objetivos</h1>
@@ -195,7 +195,7 @@ function GoalsContent() {
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
             <CardContent className="p-3 sm:p-4">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1">{s.label}</div>
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">{s.label}</div>
               <div className="text-xl sm:text-2xl font-mono font-bold tabular-nums text-foreground">{s.value}</div>
             </CardContent>
           </Card>
@@ -236,7 +236,7 @@ function GoalsContent() {
                   <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
                   <Input placeholder="Siguiente acción" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
                   <div className="col-span-2">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-1.5">
+                    <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
                       Personas vinculadas <span className="text-muted-foreground/50 normal-case tracking-normal">· opcional</span>
                     </div>
                     {people.length === 0 ? (
@@ -273,7 +273,7 @@ function GoalsContent() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={saveGoal} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">{editId ? 'Guardar' : '+ Agregar objetivo'}</Button>
+                  <Button variant="outline" size="sm" onClick={saveGoal}>{editId ? 'Guardar' : '+ Agregar objetivo'}</Button>
                   <Button variant="ghost" size="sm" onClick={resetForm}>Cancelar</Button>
                 </div>
               </CardContent>
@@ -309,8 +309,8 @@ function GoalsContent() {
                     </div>
                     {g.description && <p className="text-xs text-muted-foreground mb-2">{g.description}</p>}
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="flex-1 h-1 bg-muted rounded-full">
-                        <div className="h-1 rounded-full bg-emerald-500 transition-all" style={{ width: displayPct + '%' }} />
+                      <div className="flex-1 h-1 bg-secondary rounded-full">
+                        <div className="h-1 rounded-full bg-brand transition-all" style={{ width: displayPct + '%' }} />
                       </div>
                       <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{displayPct}%</span>
                     </div>
@@ -332,7 +332,7 @@ function GoalsContent() {
                     {!hasSteps && progressId === g.id && (
                       <div className="flex gap-2 mb-2 flex-wrap">
                         <Input type="number" min="0" max="100" placeholder="% nuevo progreso" value={progressVal} onChange={e => setProgressVal(e.target.value)} className="flex-1 min-w-0 max-w-[10rem] font-mono" />
-                        <Button variant="outline" size="sm" onClick={saveProgress} className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">Guardar</Button>
+                        <Button variant="outline" size="sm" onClick={saveProgress}>Guardar</Button>
                         <Button variant="ghost" size="sm" onClick={cancelProgress}>Cancelar</Button>
                       </div>
                     )}
@@ -349,7 +349,7 @@ function GoalsContent() {
                     <Button variant="ghost" size="sm" onClick={() => startEdit(g)}>Editar</Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400">Completar</Button>
+                        <Button variant="outline" size="sm" className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">Completar</Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
@@ -408,7 +408,7 @@ function GoalsContent() {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Archive size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Historial</span>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Historial</span>
             <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60 ml-auto">{otherGoals.length}</span>
           </div>
           <div className="space-y-1">

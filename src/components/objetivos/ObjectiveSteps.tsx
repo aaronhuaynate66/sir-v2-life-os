@@ -42,8 +42,8 @@ import type { Goal, ObjectiveStep, ObjectiveStepStatus } from '@/types'
 
 const STATUS_META: Record<ObjectiveStepStatus, { icon: typeof Circle; cls: string; label: string }> = {
   pendiente: { icon: Circle, cls: 'text-muted-foreground/50', label: 'pendiente' },
-  en_progreso: { icon: CircleDot, cls: 'text-amber-400', label: 'en progreso' },
-  hecho: { icon: Check, cls: 'text-emerald-400', label: 'hecho' },
+  en_progreso: { icon: CircleDot, cls: 'text-warn', label: 'en progreso' },
+  hecho: { icon: Check, cls: 'text-ok', label: 'hecho' },
 }
 
 /** Cicla el estado: pendiente → en_progreso → hecho → pendiente. */
@@ -200,7 +200,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
     <div className="mt-3 border-t border-border/40 pt-3 space-y-3">
       {/* Rollup */}
       {progress && (
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
           {progress.done}/{progress.total} pasos · {progress.percent}%
         </div>
       )}
@@ -287,7 +287,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
                       <button
                         type="button"
                         onClick={() => handleRemove(s)}
-                        className="p-1 text-muted-foreground/50 hover:text-rose-400"
+                        className="p-1 text-muted-foreground/50 hover:text-bad"
                         aria-label="Borrar paso"
                       >
                         <Trash2 size={13} />
@@ -330,7 +330,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
       <div className="pt-1">
         {plan.error && <ApiErrorNotice error={plan.error} className="mb-2" />}
         {plan.loading ? (
-          <div className="rounded-md border border-violet-500/20 bg-violet-500/5 p-3">
+          <div className="rounded-md border border-brand/20 bg-brand-soft p-3">
             <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70">
               <Loader2 size={12} className="animate-spin" aria-hidden="true" />
               Generando plan de pasos…
@@ -345,7 +345,7 @@ export function ObjectiveSteps({ goal }: { goal: Goal }) {
             onDiscard={discardPlan}
           />
         ) : (
-          <Button size="sm" variant="outline" onClick={generatePlan} className="border-violet-500/30 text-violet-300 hover:bg-violet-500/10">
+          <Button size="sm" variant="outline" onClick={generatePlan} className="border-brand/30 text-brand-soft-foreground hover:bg-brand-soft">
             <Sparkles size={12} className="mr-2" />Generar plan con IA
           </Button>
         )}
@@ -369,9 +369,9 @@ function PlanReview({
   onDiscard: () => void
 }) {
   return (
-    <div className="rounded-md border border-violet-500/30 bg-violet-500/5 p-3 space-y-2">
+    <div className="rounded-md border border-brand/30 bg-brand-soft p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs text-violet-200/90">
+        <div className="flex items-center gap-2 text-xs text-brand-soft-foreground">
           <Sparkles size={13} />
           Plan propuesto · revisá, editá y aceptá (o descartá)
         </div>
@@ -418,7 +418,7 @@ function PlanReview({
               <button
                 type="button"
                 onClick={() => onRemove(i)}
-                className="p-1.5 text-muted-foreground/50 hover:text-rose-400 flex-shrink-0"
+                className="p-1.5 text-muted-foreground/50 hover:text-bad flex-shrink-0"
                 aria-label={`Quitar paso ${i + 1} del plan`}
               >
                 <Trash2 size={13} />
@@ -433,7 +433,7 @@ function PlanReview({
           size="sm"
           variant="outline"
           onClick={onAccept}
-          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-400"
+          className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground"
         >
           Aceptar plan ({proposed.length})
         </Button>

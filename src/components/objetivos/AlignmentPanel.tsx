@@ -32,18 +32,18 @@ export interface AlignmentPanelProps {
 const STATE_META: Record<AlignmentState, { label: string; chip: string; dot: string }> = {
   aligned: {
     label: 'Alineado',
-    chip: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
-    dot: 'bg-emerald-500',
+    chip: 'border-ok/30 bg-ok-soft text-ok-foreground',
+    dot: 'bg-ok',
   },
   drifting: {
     label: 'A la deriva',
-    chip: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-    dot: 'bg-amber-500',
+    chip: 'border-warn/30 bg-warn-soft text-warn-foreground',
+    dot: 'bg-warn',
   },
   needs_attention: {
     label: 'Necesita atención',
-    chip: 'border-rose-500/30 bg-rose-500/10 text-rose-400',
-    dot: 'bg-rose-500',
+    chip: 'border-bad/30 bg-bad-soft text-bad-foreground',
+    dot: 'bg-bad',
   },
   insufficient_data: {
     label: 'Datos insuficientes',
@@ -53,9 +53,9 @@ const STATE_META: Record<AlignmentState, { label: string; chip: string; dot: str
 }
 
 const CONCERN_DOT: Record<ConcernLevel, string> = {
-  0: 'bg-emerald-500',
-  1: 'bg-amber-500',
-  2: 'bg-rose-500',
+  0: 'bg-ok',
+  1: 'bg-warn',
+  2: 'bg-bad',
 }
 
 interface NarrativeState {
@@ -67,7 +67,7 @@ interface NarrativeState {
 /** Placeholder mientras el LLM redacta la reflexión (en vez de solo el spinner). */
 function ReflectionSkeleton() {
   return (
-    <div className="rounded-md border border-violet-500/20 bg-violet-500/5 p-3">
+    <div className="rounded-md border border-brand/20 bg-brand-soft p-3">
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70 mb-2">
         <Loader2 size={12} className="animate-spin" aria-hidden="true" />
         Generando reflexión…
@@ -196,9 +196,9 @@ export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelP
                     {n?.loading ? (
                       <ReflectionSkeleton />
                     ) : n?.insight ? (
-                      <div className="rounded-md border border-violet-500/30 bg-violet-500/5 p-3 text-xs">
+                      <div className="rounded-md border border-brand/30 bg-brand-soft p-3 text-xs">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-violet-100/90 leading-relaxed">{n.insight}</p>
+                          <p className="text-brand-soft-foreground leading-relaxed">{n.insight}</p>
                           <button
                             type="button"
                             onClick={() => dismiss(a.goalId)}
