@@ -9,7 +9,14 @@
 // MAPEO DE DIMENSIONES (idéntico al histórico de RelationalScore):
 //   - Fuerza (0-100): importance_score (1-10, x10) ajustado por recencia del
 //     último whatsapp_chat: <14d +10, 14-60d sin ajuste, >60d/null -10.
-//   - Reciprocidad: null (V2 aún no tiene log de interacciones recíprocas).
+//   - Reciprocidad (0-100 | null): GEMA C portada de V1. V1 mantenía un score
+//     mutable por relación y, en cada interacción registrada, lo movía con un
+//     DELTA por CALIDAD ({1:-5, 2:-2, 3:0, 4:+3, 5:+6}). V2 no muta un campo:
+//     guarda cada interacción en person_logs (kind='interaction', value 1-5).
+//     Acá REPRODUCIMOS el acumulado de V1 reproyectando esos deltas sobre un
+//     baseline (50), clamp [0,100]. Sin interacciones registradas → null
+//     (datos insuficientes, honesto). Con ≥1 → un número real: así la
+//     Reciprocidad deja de salir NULL en V2.
 //   - Confianza (0-100): trust_level (1-10, x10), sin ajuste.
 //   - Global: promedio de las dimensiones NO-null (round).
 //
@@ -18,6 +25,33 @@
 
 const DAY_MS = 86_400_000
 
+/** Delta de Reciprocidad por CALIDAD de la interacción (1-5). Portado tal cual
+ *  de SIR V1 (`apps/web/src/app/(app)/actions.ts:100`): una conversación tensa
+ *  resta, una plena suma más de lo que resta una mala. Asimétrico a propósito:
+ *  reconstruir confianza cuesta más que romperla, pero un buen encuentro pesa. */
+export const QUALITY_DELTA: Record<number, number> = { 1: -5, 2: -2, 3: 0, 4: 3, 5: 6 }
+
+/** Valor de arranque de la Reciprocidad (V1 creaba la relación en 50). */
+export const RECIPROCITY_BASELINE = 50
+
+/**
+ * Reciprocidad (0-100) a partir del historial de calidades de interacción.
+ * `qualities` en orden CRONOLÓGICO (más vieja → más nueva): replicamos la
+ * mutación incremental de V1 (cada interacción ajustaba el score guardado),
+ * por eso el clamp se aplica paso a paso. V1 movía Reciprocidad con
+ * `round(delta * 0.6)` (la fuerza tomaba el delta entero; la reciprocidad,
+ * atenuada). Sin interacciones → null (no inventamos un número).
+ */
+export function computeReciprocity(qualities: number[]): number | null {
+  if (!qualities || qualities.length === 0) return null
+  let r = RECIPROCITY_BASELINE
+  for (const q of qualities) {
+    const delta = QUALITY_DELTA[q] ?? 0
+    r = clamp(r + Math.round(delta * 0.6), 0, 100)
+  }
+  return r
+}
+
 export interface RelationalScoreInput {
   /** people.importance_score (1-10). Cae a 5 si no es un número válido. */
   importanceScore: number
@@ -25,6 +59,10 @@ export interface RelationalScoreInput {
   trustLevel: number
   /** observed_at ISO del último whatsapp_chat curado. null si no hay chat. */
   lastChatObservedAt: string | null
+  /** Calidades (1-5) de person_logs kind='interaction', en orden CRONOLÓGICO
+   *  (más vieja → más nueva). Opcional: si se omite o va vacío, Reciprocidad
+   *  queda null (datos insuficientes), preservando el comportamiento previo. */
+  interactionQualities?: number[]
 }
 
 export interface RelationalScoreBreakdown {
@@ -66,8 +104,9 @@ export function computeRelationalScore(
   }
   fuerza = clamp(fuerza, 0, 100)
 
-  // Reciprocidad: guardrail — V2 no tiene log de interacciones recíprocas aún.
-  const reciprocidad: number | null = null
+  // Reciprocidad: GEMA C — reproyecta los deltas por calidad del historial de
+  // interacciones (person_logs). null sólo si no hay ninguna registrada.
+  const reciprocidad: number | null = computeReciprocity(input.interactionQualities ?? [])
 
   const confianza = trust * 10
 
