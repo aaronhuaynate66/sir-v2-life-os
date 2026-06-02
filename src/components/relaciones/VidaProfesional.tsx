@@ -21,6 +21,7 @@ import {
   professionalSummary,
   fmtCount,
 } from '@/lib/observations/profile'
+import { reconcileEducation } from '@/lib/observations/education'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
 
@@ -33,7 +34,11 @@ export interface VidaProfesionalProps {
 
 export function VidaProfesional({ person, observations }: VidaProfesionalProps) {
   const obs = latestOfType(observations, 'linkedin')
-  const education = person.education?.trim()
+  // Reconciliación de educación: LinkedIn (institución/carrera/años) manda
+  // sobre el nivel de registro/RENIEC del campo `people.education`. Una sola
+  // línea de verdad arriba; el registro queda como secundario etiquetado.
+  const li = obs ? readLinkedIn(obs.data) : null
+  const edu = reconcileEducation(person.education, li?.latestEducation ?? null)
 
   return (
     <Card className="shadow-none mb-4">
@@ -50,18 +55,32 @@ export function VidaProfesional({ person, observations }: VidaProfesionalProps) 
           </div>
         </div>
 
-        {/* Educación / grado de instrucción (campo people, editable en Identidad). */}
-        {education && (
+        {/* Educación reconciliada (LinkedIn > RENIEC). El registro, si difiere,
+            baja a una sub-línea etiquetada para no perder la procedencia legal. */}
+        {edu.primary && (
           <div className="flex items-start gap-2 mb-3 pb-3 border-b border-border/40">
             <GraduationCap size={14} strokeWidth={1.75} className="text-muted-foreground/70 mt-0.5 shrink-0" aria-hidden="true" />
-            <div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Educación</div>
-              <div className="text-sm text-foreground">{education}</div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                Educación
+                {edu.primary.source === 'linkedin' && (
+                  <span className="ml-1 normal-case tracking-normal text-muted-foreground/50">· según LinkedIn</span>
+                )}
+              </div>
+              <div className="text-sm text-foreground">{edu.primary.value}</div>
+              {edu.primary.hint && (
+                <div className="text-[10px] font-mono text-muted-foreground/60">{edu.primary.hint}</div>
+              )}
+              {edu.secondary && (
+                <div className="text-[11px] text-muted-foreground/60 mt-0.5">
+                  Registro: {edu.secondary.value}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {obs ? <Body obs={obs} /> : education ? null : <EmptyState />}
+        {obs ? <Body obs={obs} /> : edu.primary ? null : <EmptyState />}
       </CardContent>
     </Card>
   )
@@ -96,17 +115,7 @@ function Body({ obs }: { obs: Observation }) {
             hint={li.latestExperience.dateRange ?? undefined}
           />
         )}
-        {li.latestEducation?.name && (
-          <Row
-            label="Educación"
-            value={
-              li.latestEducation.title
-                ? `${li.latestEducation.title} · ${li.latestEducation.name}`
-                : li.latestEducation.name
-            }
-            hint={li.latestEducation.dateRange ?? undefined}
-          />
-        )}
+        {/* Educación se renderiza arriba (reconciliada LinkedIn > RENIEC), no acá. */}
         {/* Etiquetado como "según LinkedIn" para NO confundirlo con la ubicación
             manual de la persona (Identidad). Un capture nunca pisa person.location;
             esto es sólo lo que dijo la captura. */}

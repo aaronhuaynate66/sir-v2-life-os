@@ -88,25 +88,14 @@ export function fmtCount(n: number | null | undefined): string {
 }
 
 /**
- * Resumen profesional de UNA línea, ensamblado determinísticamente desde
- * los campos LinkedIn (paridad V1 "Titulada en …, trabaja en …"). Devuelve
- * null si no hay material suficiente para una frase honesta.
+ * Resumen profesional de UNA línea (rol + empresa, o headline). Determinístico.
+ * NO incluye educación a propósito: la educación se muestra en su propia línea
+ * reconciliada (ver `reconcileEducation` en ./education), donde LinkedIn manda
+ * sobre el nivel de registro/RENIEC. Devuelve null si no hay material suficiente.
  */
 export function professionalSummary(li: Partial<LinkedInProfileExtracted>): string | null {
-  const parts: string[] = []
-  if (li.currentRole && li.currentCompany) {
-    parts.push(`${li.currentRole} en ${li.currentCompany}`)
-  } else if (li.currentRole) {
-    parts.push(li.currentRole)
-  } else if (li.headline) {
-    parts.push(li.headline)
-  }
-  if (li.latestEducation?.name) {
-    const edu = li.latestEducation.title
-      ? `${li.latestEducation.title} · ${li.latestEducation.name}`
-      : li.latestEducation.name
-    parts.push(edu)
-  }
-  if (parts.length === 0) return null
-  return parts.join(' · ')
+  if (li.currentRole && li.currentCompany) return `${li.currentRole} en ${li.currentCompany}`
+  if (li.currentRole) return li.currentRole
+  if (li.headline) return li.headline
+  return null
 }

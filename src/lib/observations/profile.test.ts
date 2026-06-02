@@ -78,14 +78,14 @@ describe('professionalSummary', () => {
   it('rol + empresa → "Rol en Empresa"', () => {
     expect(professionalSummary({ currentRole: 'Engineer', currentCompany: 'Acme' })).toBe('Engineer en Acme')
   })
-  it('agrega educación (con título · institución)', () => {
+  it('NO incluye educación (se muestra en su propia línea reconciliada)', () => {
     expect(
       professionalSummary({
         currentRole: 'Engineer',
         currentCompany: 'Acme',
         latestEducation: { name: 'MIT', title: 'BSc', dateRange: null },
       }),
-    ).toBe('Engineer en Acme · BSc · MIT')
+    ).toBe('Engineer en Acme')
   })
   it('solo headline cuando no hay rol', () => {
     expect(professionalSummary({ headline: 'Builder of things' })).toBe('Builder of things')
