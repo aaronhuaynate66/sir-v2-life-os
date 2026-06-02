@@ -22,6 +22,7 @@ import {
   limaTime,
   formatCountdown,
 } from './parts'
+import { DailyActionsPanel } from './DailyActionsPanel'
 
 const OVERLOAD_STYLE: Record<OverloadLevel, { text: string; border: string; bg: string }> = {
   ok: { text: 'text-ok', border: 'border-ok/30', bg: 'bg-ok-soft' },
@@ -74,6 +75,9 @@ export function DiaView({
           </CardContent>
         </Card>
       )}
+
+      {/* Hoy con tu gente — Daily Actions + rituales (GEMA A+B) */}
+      <DailyActionsPanel />
 
       {/* Leyenda multi-calendario */}
       {showLegend && (

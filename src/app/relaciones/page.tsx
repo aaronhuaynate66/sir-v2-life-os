@@ -23,6 +23,7 @@ import { detectRelationshipAlerts } from '@/engines/relationship'
 import { createPersonAddedMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
 import {
@@ -244,6 +245,12 @@ function RelationshipsContent() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {people.length > 0 && (
+        <div className="mb-6">
+          <DailyActionsPanel variant="compact" />
         </div>
       )}
 
