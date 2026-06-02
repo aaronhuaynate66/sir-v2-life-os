@@ -122,6 +122,14 @@ Permitir **pegar el texto** del perfil (LinkedIn/Instagram) en lugar de subir un
 - Opcional/relacionado: leer el texto del perfil vía **Claude-in-Chrome** sobre la sesión logueada del usuario (NO scraping) — el usuario abre el perfil, el agente lee el DOM/texto visible.
 - Esfuerzo: bajo/medio. Nuevo modo de entrada en `/captura` y en `AgregarCapturaPanel` (textarea → mismo pipeline de extracción/observación, salteando Visión).
 
+### Calendario v2 — OAuth + sync bidireccional + multi-calendario [prioridad: a definir]
+Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_ICS_URL`). Subir a:
+- **Conexión fácil por login/OAuth** (Google/Gmail y Outlook/Microsoft) además de la URL `.ics`.
+- **Sync BIDIRECCIONAL en tiempo real** (crear/editar eventos desde SIR, no solo leer).
+- **Múltiples calendarios conectados a la vez** (ej. trabajo Outlook + personal Gmail).
+- **Feature grande**: OAuth por proveedor (consent screens, refresh tokens, scopes, almacenamiento seguro de tokens), webhooks/push para tiempo real, manejo de conflictos en el merge bidireccional. **Definir alcance ANTES de construir** (¿qué proveedores primero? ¿escritura o solo lectura multi-fuente en v2.0?).
+- Prioridad: **a definir** (revisión mañana).
+
 ---
 
 ## 🎯 EN CURSO
