@@ -37,7 +37,6 @@ import {
   whatsappLink, instagramLink, twitterLink, normalizeUrl, normalizeHandle,
 } from '@/lib/social/links'
 import { latestOfType, readInstagram, readLinkedIn, fmtCount } from '@/lib/observations/profile'
-import { socialNarrative } from '@/lib/person-synthesis/narrative'
 import { DiscardCaptureButton } from './DiscardCaptureButton'
 import type { Observation, Confidence } from '@/lib/capture/observations/types'
 import type { InstagramMutualFollowers } from '@/lib/capture/instagram/mutual'
@@ -64,8 +63,9 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
   const igData = igObs ? readInstagram(igObs.data) : null
   const liData = liObs ? readLinkedIn(liObs.data) : null
   const scannedInstagram = igData?.handle ?? null
-  // Síntesis narrativa social (estilo V1, determinística — sin LLM).
-  const narrative = socialNarrative({ ig: igData })
+  // La narrativa social (síntesis del eje "Vida social") ahora vive en su propia
+  // card (VidaSocial, #7) para ser consistente con Vida profesional / Lo personal.
+  // Acá quedan SOLO los handles/links + el enriquecimiento de la captura.
   // URL de LinkedIn construida por el extractor desde el vanity visible (gema
   // V1). Si existe y la persona no tiene URL cargada, ofrecemos vincularla.
   const scannedLinkedinUrl = liData?.profileUrl ?? null
@@ -160,12 +160,6 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
           </div>
         ) : (
           <div className="space-y-3">
-            {/* Párrafo sintetizado de "Vida social" (estilo V1): se lee de
-                corrido. Determinístico, sin LLM. Los links/handles quedan debajo. */}
-            {narrative && (
-              <p className="text-sm text-foreground leading-relaxed">{narrative}</p>
-            )}
-
             {/* Nada manual ni capturado → empty state que apunta al panel inline. */}
             {!hasAny && !igObs && !liObs && (
               <p className="text-sm text-muted-foreground italic">

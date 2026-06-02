@@ -25,6 +25,7 @@ import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getLogsForPerson } from '@/lib/person-logs/fetch'
 import { getCurrentSynthesis } from '@/lib/person-synthesis/fetch'
+import { getProfileAxes } from '@/lib/person-axes/fetch'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -86,7 +87,7 @@ export default async function RelacionPage({ params }: PageProps) {
   // Ambos helpers tienen .eq('is_obsolete', false) baked in — vale el
   // principio critico de Sesion 3.
   const personId = String(row.id)
-  const [lastChat, curatedObservations, memories, personLogs, correlationLogs, synthesis] =
+  const [lastChat, curatedObservations, memories, personLogs, correlationLogs, synthesis, profileAxes] =
     await Promise.all([
       getLatestObservation(supabase, userId, personId, CONVERSATION_CAPTURE_TYPES),
       getObservationsForPerson(supabase, userId, personId, { limit: 50 }),
@@ -97,6 +98,9 @@ export default async function RelacionPage({ params }: PageProps) {
       // de los paneles que asumen "recientes".
       getLogsForPerson(supabase, userId, personId, { limit: 730 }),
       getCurrentSynthesis(supabase, userId, personId),
+      // Ejes narrativos persistidos profesional/social (0047). null si la fila
+      // no existe o la migración no corrió → los ejes caen al cómputo en vivo.
+      getProfileAxes(supabase, userId, personId),
     ])
 
   return (
@@ -113,6 +117,7 @@ export default async function RelacionPage({ params }: PageProps) {
       personLogs={personLogs}
       correlationLogs={correlationLogs}
       synthesis={synthesis}
+      profileAxes={profileAxes}
     />
   )
 }

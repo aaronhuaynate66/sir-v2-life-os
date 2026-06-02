@@ -30,6 +30,8 @@ import { insertObservation } from '@/lib/capture/observations/insert'
 import { deriveObservedAt } from '@/lib/capture/observations/observed-at'
 import { signalsFromExtracted } from '@/lib/capture/observations/extract-signals'
 import { findCandidates, type ScoredCandidate } from '@/lib/people/matcher'
+import { computeProfessionalAxis, computeSocialAxis } from '@/lib/person-axes/compute'
+import { upsertAxisAuto } from '@/lib/person-axes/upsert'
 import {
   storageBucketFor,
   type CaptureType,
@@ -160,6 +162,43 @@ function buildStoragePath(userId: string, captureType: CaptureType): string {
   const ts = Date.now()
   const rand = Math.random().toString(36).slice(2, 10)
   return `${userId}/${bucketSlugFor(captureType)}/${ts}-${rand}.webp`
+}
+
+/**
+ * Recomputa y persiste el eje narrativo (profesional|social) de la ficha tras
+ * una captura LinkedIn/Instagram (GEMA 2). DETERMINÍSTICO (sin LLM). NUNCA
+ * lanza: traga cualquier error (incluida la tabla 0047 sin migrar) para no
+ * afectar la captura ya persistida. La síntesis se computa "al capturar" — no
+ * en cada carga — evitando el riesgo de timeout/502 en el render.
+ */
+async function persistAxisBestEffort(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  personId: string,
+  captureType: 'linkedin' | 'instagram',
+  extracted: Record<string, unknown>,
+  observationId: string,
+): Promise<void> {
+  try {
+    if (captureType === 'linkedin') {
+      // El eje profesional reconcilia educación con el campo people.education.
+      const { data: personRow } = await supabase
+        .from('people')
+        .select('education')
+        .eq('user_id', userId)
+        .eq('id', personId)
+        .maybeSingle()
+      const education = (personRow?.education as string | null) ?? null
+      const text = computeProfessionalAxis(extracted, education)
+      await upsertAxisAuto(supabase, userId, personId, 'professional', text, observationId)
+    } else {
+      const text = computeSocialAxis(extracted)
+      await upsertAxisAuto(supabase, userId, personId, 'social', text, observationId)
+    }
+  } catch (e) {
+    // Best-effort: log y seguir. La ficha cae al cómputo en vivo si no se persistió.
+    reportApiError(e)
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -430,6 +469,15 @@ export async function POST(req: NextRequest) {
       // → flag para confianza baja, como antes.
       needsReview: isConfirmed ? false : confidence === 'low',
     })
+
+    // 10b. Persistir el eje narrativo (profesional|social) de la ficha (GEMA 2,
+    //      person_profile_axes 0047). DETERMINÍSTICO (sin LLM) → cero latencia /
+    //      sin riesgo de 502. Best-effort TOTAL: cualquier fallo (tabla aún sin
+    //      migrar, etc.) se traga y NO afecta la captura ya persistida.
+    if (finalPersonId && (captureType === 'linkedin' || captureType === 'instagram')) {
+      await persistAxisBestEffort(supabase, userId, finalPersonId, captureType, extracted, observation.id)
+    }
+
     return NextResponse.json(
       { observation, extracted, raw, matchCandidates, autoLinked },
       { status: 200 },

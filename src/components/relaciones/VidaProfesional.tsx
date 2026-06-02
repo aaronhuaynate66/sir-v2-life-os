@@ -24,6 +24,7 @@ import {
 import { reconcileEducation } from '@/lib/observations/education'
 import { professionalNarrative } from '@/lib/person-synthesis/narrative'
 import type { Observation } from '@/lib/capture/observations/types'
+import type { PersonProfileAxes } from '@/lib/person-axes/types'
 import type { Person } from '@/types'
 
 export interface VidaProfesionalProps {
@@ -31,9 +32,11 @@ export interface VidaProfesionalProps {
   person: Person
   /** Observations curadas de la persona (todas; filtramos linkedin acá). */
   observations: Observation[]
+  /** Ejes persistidos (0047). null → caemos al cómputo en vivo. */
+  axes?: PersonProfileAxes | null
 }
 
-export function VidaProfesional({ person, observations }: VidaProfesionalProps) {
+export function VidaProfesional({ person, observations, axes = null }: VidaProfesionalProps) {
   const obs = latestOfType(observations, 'linkedin')
   // Reconciliación de educación: LinkedIn (institución/carrera/años) manda
   // sobre el nivel de registro/RENIEC del campo `people.education`. Una sola
@@ -41,8 +44,10 @@ export function VidaProfesional({ person, observations }: VidaProfesionalProps) 
   const li = obs ? readLinkedIn(obs.data) : null
   const edu = reconcileEducation(person.education, li?.latestEducation ?? null)
   // Síntesis narrativa DETERMINÍSTICA (estilo V1, sin LLM): párrafo de corrido
-  // a partir de los campos estructurados + educación reconciliada.
-  const narrative = professionalNarrative({ li, education: edu })
+  // a partir de los campos estructurados + educación reconciliada. Persistido
+  // (person_profile_axes, generado al capturar) manda; si no hay, computamos
+  // en vivo (backward-compat / migración sin correr).
+  const narrative = axes?.professionalText ?? professionalNarrative({ li, education: edu })
 
   return (
     <Card className="shadow-none mb-4">

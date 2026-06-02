@@ -59,6 +59,7 @@ import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
+import { VidaSocial } from './VidaSocial'
 import { PerfilProfesional } from './PerfilProfesional'
 import { RedesSociales } from './RedesSociales'
 import { Bitacora } from './Bitacora'
@@ -81,6 +82,7 @@ import { InformacionSensible } from './InformacionSensible'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
+import type { PersonProfileAxes } from '@/lib/person-axes/types'
 import type { Memory, Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
 
 interface PersonDetailProps {
@@ -104,6 +106,9 @@ interface PersonDetailProps {
   /** Síntesis narrativa vigente ("Lo personal", #8). Server-fetched de
    *  person_synthesis (is_current=true). null si nunca se generó. */
   synthesis?: PersonSynthesis | null
+  /** Ejes narrativos persistidos profesional/social (person_profile_axes, 0047).
+   *  null si no hay fila → los ejes caen al cómputo en vivo. */
+  profileAxes?: PersonProfileAxes | null
 }
 
 // Etiquetas en español centralizadas en @/lib/people/labels. Se alían a los
@@ -179,6 +184,7 @@ export function PersonDetail({
   personLogs = [],
   correlationLogs = [],
   synthesis = null,
+  profileAxes = null,
 }: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
@@ -615,12 +621,21 @@ export function PersonDetail({
           grafo (person_links, 0035). Crea el nodo-persona mínimo + la arista. */}
       <FamiliaPanel person={live} />
 
+      {/* ─── Los TRES ejes narrativos de la ficha (profesional/social/personal),
+          consistentes entre sí. Profesional + social: síntesis determinística
+          PERSISTIDA (person_profile_axes, 0047) con fallback en vivo. Personal:
+          síntesis IA cacheada (person_synthesis). ─────────────────────────── */}
+
       {/* Vida profesional (#6): educación (campo people, 0024) + resumen
           determinístico de la captura LinkedIn. */}
-      <VidaProfesional person={live} observations={curatedObservations} />
+      <VidaProfesional person={live} observations={curatedObservations} axes={profileAxes} />
 
       {/* Perfil profesional completo (#10): colapsable, detalle LinkedIn. */}
       <PerfilProfesional person={live} observations={curatedObservations} />
+
+      {/* Vida social (#7): tercer eje narrativo — identidad social, alcance y
+          seguidores en común desde la captura de Instagram. */}
+      <VidaSocial observations={curatedObservations} axes={profileAxes} />
 
       {/* "Lo personal" (#8): síntesis narrativa LLM, lazy + cacheada en
           person_synthesis. conversationCount = whatsapp_chat curadas. */}
