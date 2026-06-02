@@ -101,6 +101,44 @@ async function callExtractorVision(
   return textBlock && textBlock.type === 'text' ? textBlock.text : ''
 }
 
+// Modo TEXTO PEGADO: en vez de una imagen, el usuario pegó el texto del perfil
+// (copy/paste). El texto es EXACTO (no es OCR) → extracción confiable, sin el
+// problema de las capturas ilegibles. Reusa el MISMO system prompt del
+// extractor + este recordatorio de que la fuente es texto fiel.
+const TEXT_INPUT_EXTRA = `MODO TEXTO PEGADO (la fuente NO es una imagen):
+En vez de una captura, el usuario PEGÓ el TEXTO del perfil (copiado del navegador o la app). El texto es EXACTO y fiel — NO es OCR, no hay píxeles que adivinar. Reglas:
+- Extraé los campos del texto LITERAL. Mantené la regla anti-invención: si un dato no está en el texto, va null. Pero NO bajes la confianza por "imagen ilegible/borrosa": acá no hay imagen.
+- Como el texto es fiel, usá confidence='high' salvo que el texto esté realmente incompleto o no parezca un perfil.
+- Si el esquema pide imageLegible, devolvé true (no hubo imagen que leer mal).
+- El texto puede traer ruido de UI (botones "Seguir"/"Mensaje", menús, "ver más", contadores, "· 3.º"). Ignorá el ruido y quedate con los datos del perfil.`
+
+const MAX_TEXT_CHARS = 20_000
+const MIN_TEXT_CHARS = 12
+
+async function callExtractorText(
+  client: Anthropic,
+  systemPrompt: string,
+  profileText: string,
+  maxTokens: number,
+  systemExtra: string = '',
+): Promise<string> {
+  const base = `${systemPrompt}\n\n${TEXT_INPUT_EXTRA}`
+  const system = systemExtra ? `${base}\n\n${systemExtra}` : base
+  const msg = await client.messages.create({
+    model: EXTRACTOR_MODEL_ID,
+    max_tokens: maxTokens,
+    system,
+    messages: [
+      {
+        role: 'user',
+        content: [{ type: 'text', text: `PERFIL (texto pegado):\n\n${profileText}` }],
+      },
+    ],
+  })
+  const textBlock = msg.content.find((b) => b.type === 'text')
+  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+}
+
 function bucketSlugFor(captureType: CaptureType): string {
   switch (captureType) {
     case 'whatsapp_chat':
@@ -132,8 +170,6 @@ export async function POST(req: NextRequest) {
     return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
   }
 
-  const rl = await enforceRateLimit(supabase, authData.user.id, 'vision')
-  if (!rl.ok) return rl.response
   const userId = authData.user.id
 
   // 2. Parse FormData
@@ -145,19 +181,40 @@ export async function POST(req: NextRequest) {
   }
 
   const file = formData.get('file')
+  const textRaw = formData.get('text')
   const captureTypeRaw = formData.get('capture_type')
   const detectorDataRaw = formData.get('detector_data')
   const personIdRaw = formData.get('person_id')
   const reflectionRaw = formData.get('reflection')
 
-  if (!(file instanceof Blob)) {
-    return errorJson(400, 'Body invalido', 'Se esperaba un campo "file" con un Blob.')
-  }
-  if (file.size > MAX_FILE_BYTES) {
-    return errorJson(413, 'Imagen demasiado grande', `Máx ${MAX_FILE_BYTES / 1024 / 1024} MB.`)
-  }
-  if (!ALLOWED_MIME.has(file.type)) {
-    return errorJson(415, 'Tipo de imagen no soportado', `mimeType=${file.type || '(vacio)'}.`)
+  // Modo TEXTO PEGADO: si vino `text` (y no un file), saltamos Visión y
+  // Storage. El texto es la vía CONFIABLE (sin OCR ilegible).
+  const isTextMode =
+    !(file instanceof Blob) && typeof textRaw === 'string' && textRaw.trim().length > 0
+  const profileText = isTextMode ? (textRaw as string).trim() : ''
+
+  // Rate limit: la vía texto pega al bucket 'generation' (es un completion de
+  // texto, no Visión); la vía imagen al bucket 'vision'.
+  const rl = await enforceRateLimit(supabase, userId, isTextMode ? 'generation' : 'vision')
+  if (!rl.ok) return rl.response
+
+  if (isTextMode) {
+    if (profileText.length < MIN_TEXT_CHARS) {
+      return errorJson(400, 'Texto demasiado corto', `Pegá el texto del perfil (mín ${MIN_TEXT_CHARS} caracteres).`)
+    }
+    if (profileText.length > MAX_TEXT_CHARS) {
+      return errorJson(413, 'Texto demasiado largo', `Máx ${MAX_TEXT_CHARS} caracteres.`)
+    }
+  } else {
+    if (!(file instanceof Blob)) {
+      return errorJson(400, 'Body invalido', 'Se esperaba un campo "file" (Blob) o "text" (string).')
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      return errorJson(413, 'Imagen demasiado grande', `Máx ${MAX_FILE_BYTES / 1024 / 1024} MB.`)
+    }
+    if (!ALLOWED_MIME.has(file.type)) {
+      return errorJson(415, 'Tipo de imagen no soportado', `mimeType=${file.type || '(vacio)'}.`)
+    }
   }
 
   if (typeof captureTypeRaw !== 'string' || captureTypeRaw.length === 0) {
@@ -210,7 +267,11 @@ export async function POST(req: NextRequest) {
   // 4. Obtener `extracted`: o de confirmed_data (usuario ya revisó → SALTAMOS
   //    Vision para guardar EXACTAMENTE lo revisado, sin re-extraer no-determinista)
   //    o corriendo Vision sobre la imagen.
-  const mediaType = file.type as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
+  const mediaType = isTextMode
+    ? null
+    : ((file as Blob).type as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif')
+  const RETRY_EXTRA =
+    'CRÍTICO: tu respuesta anterior no era JSON valido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá la respuesta con `{` y terminá con `}`.'
   let raw = ''
   let parsed: unknown = null
 
@@ -222,15 +283,39 @@ export async function POST(req: NextRequest) {
       return errorJson(400, 'confirmed_data no es JSON válido', msg.slice(0, 200))
     }
     raw = '(confirmado por el usuario)'
+  } else if (isTextMode) {
+    // Vía TEXTO: structuramos el texto pegado con el MISMO extractor (sin Visión).
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
+    }
+    const client = new Anthropic({ maxRetries: 2 })
+    try {
+      raw = await callExtractorText(client, systemPrompt, profileText, spec.maxTokens)
+    } catch (e) {
+      reportApiError(e)
+      const msg = e instanceof Error ? e.message : String(e)
+      return errorJson(502, 'Falló la extracción del texto', msg.slice(0, 300))
+    }
+    try {
+      parsed = JSON.parse(stripJsonFences(raw))
+    } catch {
+      try {
+        raw = await callExtractorText(client, systemPrompt, profileText, spec.maxTokens, RETRY_EXTRA)
+        parsed = JSON.parse(stripJsonFences(raw))
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return errorJson(502, 'Extractor devolvio JSON invalido', msg.slice(0, 200))
+      }
+    }
   } else {
     if (!process.env.ANTHROPIC_API_KEY) {
       return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
     }
     const client = new Anthropic({ maxRetries: 2 })
-    const imageBase64 = await blobToBase64(file)
+    const imageBase64 = await blobToBase64(file as Blob)
 
     try {
-      raw = await callExtractorVision(client, systemPrompt, imageBase64, mediaType, spec.maxTokens)
+      raw = await callExtractorVision(client, systemPrompt, imageBase64, mediaType!, spec.maxTokens)
     } catch (e) {
       reportApiError(e)
       const msg = e instanceof Error ? e.message : String(e)
@@ -242,14 +327,7 @@ export async function POST(req: NextRequest) {
       parsed = JSON.parse(stripJsonFences(raw))
     } catch {
       try {
-        raw = await callExtractorVision(
-          client,
-          systemPrompt,
-          imageBase64,
-          mediaType,
-          spec.maxTokens,
-          'CRÍTICO: tu respuesta anterior no era JSON valido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá la respuesta con `{` y terminá con `}`.',
-        )
+        raw = await callExtractorVision(client, systemPrompt, imageBase64, mediaType!, spec.maxTokens, RETRY_EXTRA)
         parsed = JSON.parse(stripJsonFences(raw))
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -285,25 +363,32 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // 6. Upload a Storage
-  const bucket = storageBucketFor(captureType)
-  if (!bucket) {
-    // Defensive: no deberia pasar para los 4 tipos validados antes.
-    return errorJson(500, 'No hay bucket asignado a este capture_type')
-  }
-  const storagePath = buildStoragePath(userId, captureType)
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(storagePath, file, {
-      contentType: mediaType,
-      upsert: false,
-    })
-  if (uploadError) {
-    return errorJson(
-      502,
-      'No se pudo subir la imagen al bucket',
-      `${bucket}: ${uploadError.message}`,
-    )
+  // 6. Upload a Storage (SOLO vía imagen). En modo texto no hay imagen:
+  //    source_image_path/storage_bucket quedan null.
+  let sourceImagePath: string | null = null
+  let storageBucket: string | null = null
+  if (!isTextMode) {
+    const bucket = storageBucketFor(captureType)
+    if (!bucket) {
+      // Defensive: no deberia pasar para los 4 tipos validados antes.
+      return errorJson(500, 'No hay bucket asignado a este capture_type')
+    }
+    const storagePath = buildStoragePath(userId, captureType)
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(storagePath, file as Blob, {
+        contentType: mediaType!,
+        upsert: false,
+      })
+    if (uploadError) {
+      return errorJson(
+        502,
+        'No se pudo subir la imagen al bucket',
+        `${bucket}: ${uploadError.message}`,
+      )
+    }
+    sourceImagePath = storagePath
+    storageBucket = bucket
   }
 
   // 8. observed_at (confidence ya se computó arriba, antes del preview)
@@ -335,8 +420,8 @@ export async function POST(req: NextRequest) {
       userId,
       personId: finalPersonId,
       captureType,
-      sourceImagePath: storagePath,
-      storageBucket: bucket,
+      sourceImagePath,
+      storageBucket,
       data: extracted,
       detectorData,
       confidence,
@@ -352,8 +437,10 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
-    // Best-effort rollback del upload
-    await supabase.storage.from(bucket).remove([storagePath]).catch(() => {})
+    // Best-effort rollback del upload (solo si subimos algo).
+    if (storageBucket && sourceImagePath) {
+      await supabase.storage.from(storageBucket).remove([sourceImagePath]).catch(() => {})
+    }
     return errorJson(500, 'No se pudo persistir observation', msg.slice(0, 300))
   }
 }

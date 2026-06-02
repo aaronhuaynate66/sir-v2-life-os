@@ -245,6 +245,81 @@ export async function previewCapture(
   return (await res.json()) as PreviewCaptureResponse
 }
 
+// ─── Captura por TEXTO pegado (sin Visión/OCR) ──────────────────────
+
+export interface PreviewCaptureTextInput {
+  /** Texto del perfil pegado por el usuario. */
+  text: string
+  captureType: CaptureType
+  detectorData?: DetectorResult
+}
+
+export interface ProcessCaptureTextInput extends PreviewCaptureTextInput {
+  personId?: string | null
+  /** Datos ya revisados/confirmados → el server SALTA la extracción. */
+  confirmedData?: Record<string, unknown>
+}
+
+/** Respuesta de processCapture por texto (sin diagnóstico de compresión: no
+ *  hubo imagen). */
+export type ProcessCaptureTextResponse = Omit<ProcessCaptureResponse, 'compression'>
+
+function appendTextFields(formData: FormData, input: PreviewCaptureTextInput): void {
+  formData.append('text', input.text)
+  formData.append('capture_type', input.captureType)
+  if (input.detectorData) {
+    formData.append('detector_data', JSON.stringify(input.detectorData))
+  }
+}
+
+/**
+ * PREVIEW por texto pegado (persist=false): structura el texto SIN guardar y
+ * devuelve lo extraído + confidence para revisión. Misma respuesta que
+ * previewCapture (imagen) → la UI comparte el flujo review-before-save.
+ */
+export async function previewCaptureFromText(
+  input: PreviewCaptureTextInput,
+  signal?: AbortSignal,
+): Promise<PreviewCaptureResponse> {
+  const formData = new FormData()
+  appendTextFields(formData, input)
+  formData.append('persist', 'false')
+  const res = await fetch('/api/capture/process', { method: 'POST', body: formData, signal })
+  if (!res.ok) {
+    const body = await readErrorBody(res)
+    throw new HttpError(res.status, body.error, body.detail)
+  }
+  return (await res.json()) as PreviewCaptureResponse
+}
+
+/**
+ * Persiste una captura por texto. Igual que processCapture pero manda `text`
+ * en vez de `file` (sin compresión ni Storage). Con confirmedData el server
+ * salta la extracción y guarda EXACTO lo revisado.
+ */
+export async function processCaptureFromText(
+  input: ProcessCaptureTextInput,
+  signal?: AbortSignal,
+): Promise<ProcessCaptureTextResponse> {
+  const formData = new FormData()
+  appendTextFields(formData, input)
+  if (input.personId) formData.append('person_id', input.personId)
+  if (input.confirmedData) {
+    formData.append('confirmed_data', JSON.stringify(input.confirmedData))
+  }
+  const res = await fetch('/api/capture/process', { method: 'POST', body: formData, signal })
+  if (!res.ok) {
+    const body = await readErrorBody(res)
+    throw new HttpError(res.status, body.error, body.detail)
+  }
+  const json = (await res.json()) as ProcessCaptureTextResponse
+  return {
+    ...json,
+    matchCandidates: json.matchCandidates ?? [],
+    autoLinked: json.autoLinked ?? null,
+  }
+}
+
 // ─── linkObservationToPerson ─────────────────────────────────────────
 
 /**

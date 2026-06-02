@@ -17,20 +17,32 @@
 import { useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye } from 'lucide-react'
+import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye, FileText, ClipboardPaste } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
-import { previewCapture, processCapture, HttpError } from '@/lib/capture/observations/client'
+import {
+  previewCapture,
+  processCapture,
+  previewCaptureFromText,
+  processCaptureFromText,
+  HttpError,
+} from '@/lib/capture/observations/client'
 import { planPersonCapture } from '@/lib/capture/person-capture'
 import { assessExtraction, type ImageDims } from '@/lib/capture/legibility'
+import {
+  detectCaptureTypeFromText,
+  detectorResultFromText,
+  type TextProfileType,
+} from '@/lib/capture/text/detectFromText'
 import type { CaptureType, Confidence, DetectorResult } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 
 type Phase = 'idle' | 'working' | 'review' | 'confirming' | 'done' | 'scale' | 'unsupported' | 'illegible'
+type Mode = 'text' | 'image'
 
 interface ErrorState {
   status: number
@@ -39,10 +51,19 @@ interface ErrorState {
 }
 
 interface PreviewState {
+  /** De dónde salió: texto pegado (confiable) o imagen (Visión). */
+  source: Mode
   captureType: CaptureType
   detectorData: DetectorResult
   extracted: Record<string, unknown>
   confidence: Confidence | null
+  /** Solo en source='text': el texto pegado, para persistir al confirmar. */
+  text?: string
+}
+
+const TEXT_TYPE_LABEL: Record<TextProfileType, string> = {
+  linkedin: 'LinkedIn',
+  instagram: 'Instagram',
 }
 
 const TYPE_LABEL: Partial<Record<CaptureType, string>> = {
@@ -98,7 +119,14 @@ export interface AgregarCapturaPanelProps {
 export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPanelProps) {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
+  // Modo por defecto: TEXTO pegado (la vía confiable, sin OCR ilegible). La
+  // imagen sigue disponible como alternativa.
+  const [mode, setMode] = useState<Mode>('text')
   const [file, setFile] = useState<File | null>(null)
+  const [pastedText, setPastedText] = useState('')
+  // Tipo del perfil pegado: se autodetecta del texto, con override manual.
+  const [textType, setTextType] = useState<TextProfileType>('linkedin')
+  const [textTypeTouched, setTextTypeTouched] = useState(false)
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState<ErrorState | null>(null)
   const [savedType, setSavedType] = useState<CaptureType | null>(null)
@@ -106,6 +134,8 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
 
   const reset = useCallback(() => {
     setFile(null)
+    setPastedText('')
+    setTextTypeTouched(false)
     setPhase('idle')
     setError(null)
     setSavedType(null)
@@ -121,25 +151,54 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
     setPreview(null)
   }, [])
 
+  // Al pegar/tipear texto: si el usuario no fijó el tipo a mano, lo
+  // autodetectamos por marcadores (LinkedIn vs Instagram).
+  const onPastedTextChange = useCallback(
+    (value: string) => {
+      setPastedText(value)
+      setError(null)
+      if (!textTypeTouched) {
+        const d = detectCaptureTypeFromText(value)
+        if (d.type !== 'unknown') setTextType(d.type)
+      }
+    },
+    [textTypeTouched],
+  )
+
   const toError = (e: unknown): ErrorState =>
     e instanceof DetectorError || e instanceof HttpError
       ? { status: e.status, message: e.message, detail: e.detail }
       : { status: 0, message: e instanceof Error ? e.message : String(e) }
 
   // Persiste lo confirmado (sin re-extraer: confirmedData = lo revisado).
+  // Rutea por origen: texto → processCaptureFromText; imagen → processCapture.
   const persistConfirmed = useCallback(
     async (p: PreviewState) => {
-      if (!file) return
       setPhase('confirming')
       setError(null)
       try {
-        await processCapture({
-          file,
-          captureType: p.captureType,
-          detectorData: p.detectorData,
-          personId,
-          confirmedData: p.extracted,
-        })
+        if (p.source === 'text') {
+          await processCaptureFromText({
+            text: p.text ?? '',
+            captureType: p.captureType,
+            detectorData: p.detectorData,
+            personId,
+            confirmedData: p.extracted,
+          })
+        } else {
+          if (!file) {
+            setError({ status: 0, message: 'No hay imagen para guardar' })
+            setPhase('review')
+            return
+          }
+          await processCapture({
+            file,
+            captureType: p.captureType,
+            detectorData: p.detectorData,
+            personId,
+            confirmedData: p.extracted,
+          })
+        }
         setSavedType(p.captureType)
         setPhase('done')
         router.refresh()
@@ -150,6 +209,41 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
     },
     [file, personId, router],
   )
+
+  // Procesa TEXTO pegado: detecta tipo (override del usuario o autodetección),
+  // extrae sin Visión, comparte el flujo review-before-save.
+  const runText = useCallback(async () => {
+    const text = pastedText.trim()
+    if (!text) return
+    setPhase('working')
+    setError(null)
+    try {
+      const captureType: CaptureType = textType
+      const detectorData: DetectorResult = {
+        ...detectorResultFromText(text, textType),
+        type: captureType,
+      }
+      const pv = await previewCaptureFromText({ text, captureType, detectorData })
+      const state: PreviewState = {
+        source: 'text',
+        captureType,
+        detectorData,
+        extracted: pv.extracted,
+        confidence: pv.confidence,
+        text,
+      }
+      setPreview(state)
+      // Texto = fuente confiable; igual pasa por assess (sin dims): si el
+      // extractor reporta confianza baja/ningún campo, va a revisión.
+      const verdict = assessExtraction(pv.extracted, pv.confidence, { captureType })
+      if (verdict === 'unreadable') setPhase('illegible')
+      else if (verdict === 'ok') await persistConfirmed(state)
+      else setPhase('review')
+    } catch (e) {
+      setError(toError(e))
+      setPhase('idle')
+    }
+  }, [pastedText, textType, persistConfirmed])
 
   const run = useCallback(async () => {
     if (!file) return
@@ -178,6 +272,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
         readImageDims(file),
       ])
       const state: PreviewState = {
+        source: 'image',
         captureType: type,
         detectorData: detection.detected,
         extracted: pv.extracted,
@@ -321,46 +416,172 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
             <div className="rounded-md border border-warn/30 bg-warn/5 p-3 text-xs flex items-start gap-2">
               <AlertCircle size={14} strokeWidth={1.75} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span className="text-warn-foreground">
-                No pude leer bien esta imagen. Probá con una captura más nítida o más cercana —
-                las <span className="font-medium">secciones del perfil</span> (no la página entera),
-                que la letra se lea grande. No guardé nada.
+                {preview?.source === 'text' ? (
+                  <>
+                    No pude extraer datos claros de ese texto. Asegurate de pegar el contenido del{' '}
+                    <span className="font-medium">perfil</span> (nombre, headline, experiencia…). No guardé nada.
+                  </>
+                ) : (
+                  <>
+                    No pude leer bien esta imagen. Probá con una captura más nítida o más cercana —
+                    las <span className="font-medium">secciones del perfil</span> (no la página entera),
+                    que la letra se lea grande. Tip: pegá el <span className="font-medium">texto</span> del
+                    perfil, es más confiable. No guardé nada.
+                  </>
+                )}
               </span>
             </div>
             <Button size="sm" variant="outline" onClick={reset} className="w-full">
-              Elegir otra imagen
+              {preview?.source === 'text' ? 'Volver a intentar' : 'Elegir otra imagen'}
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={onFile}
-              disabled={working}
-              className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10 disabled:opacity-50"
-            />
-            {file && (
-              <div className="text-[11px] text-muted-foreground font-mono">
-                {file.name} · {(file.size / 1024).toFixed(0)} KB
-              </div>
+            {/* Selector de modo: TEXTO (confiable) vs IMAGEN. */}
+            <div className="inline-flex rounded-md border border-border p-0.5 text-xs">
+              <ModeTab
+                active={mode === 'text'}
+                onClick={() => setMode('text')}
+                icon={<FileText size={12} strokeWidth={1.75} aria-hidden="true" />}
+                label="Pegar texto"
+                disabled={working}
+              />
+              <ModeTab
+                active={mode === 'image'}
+                onClick={() => setMode('image')}
+                icon={<Camera size={12} strokeWidth={1.75} aria-hidden="true" />}
+                label="Subir imagen"
+                disabled={working}
+              />
+            </div>
+
+            {mode === 'text' ? (
+              <>
+                <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                  Pegá el texto del perfil (LinkedIn/Instagram). Es la vía{' '}
+                  <span className="font-medium text-foreground">confiable</span>: se lee exacto, sin
+                  los errores de las capturas de página entera.
+                </p>
+                <textarea
+                  value={pastedText}
+                  onChange={(e) => onPastedTextChange(e.target.value)}
+                  disabled={working}
+                  rows={6}
+                  placeholder="Pegá acá el texto del perfil — nombre, headline, experiencia, ubicación…"
+                  className="w-full rounded-md border border-border bg-background p-2.5 text-sm leading-relaxed disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-accent/40"
+                />
+                {/* Tipo detectado, con override. */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] text-muted-foreground/70">Tipo:</span>
+                  {(['linkedin', 'instagram'] as TextProfileType[]).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      disabled={working}
+                      onClick={() => {
+                        setTextType(t)
+                        setTextTypeTouched(true)
+                      }}
+                      className={cn(
+                        'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors disabled:opacity-50',
+                        textType === t
+                          ? 'border-accent/50 bg-accent/10 text-foreground'
+                          : 'border-border text-muted-foreground hover:border-accent/40',
+                      )}
+                      aria-pressed={textType === t}
+                    >
+                      {TEXT_TYPE_LABEL[t]}
+                    </button>
+                  ))}
+                  {!textTypeTouched && pastedText.trim().length > 0 && (
+                    <span className="text-[10px] text-muted-foreground/50">autodetectado</span>
+                  )}
+                </div>
+
+                {error && <ApiErrorNotice error={error} className="p-2" />}
+
+                <Button
+                  size="sm"
+                  onClick={runText}
+                  disabled={pastedText.trim().length === 0 || working}
+                  className="w-full"
+                >
+                  {working ? (
+                    <>
+                      <Loader2 size={14} className="mr-2 animate-spin" />
+                      Procesando…
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardPaste size={14} strokeWidth={1.75} className="mr-2" aria-hidden="true" />
+                      Procesar texto
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={onFile}
+                  disabled={working}
+                  className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10 disabled:opacity-50"
+                />
+                {file && (
+                  <div className="text-[11px] text-muted-foreground font-mono">
+                    {file.name} · {(file.size / 1024).toFixed(0)} KB
+                  </div>
+                )}
+
+                {error && <ApiErrorNotice error={error} className="p-2" />}
+
+                <Button size="sm" onClick={run} disabled={!file || working} className="w-full">
+                  {working ? (
+                    <>
+                      <Loader2 size={14} className="mr-2 animate-spin" />
+                      Detectando…
+                    </>
+                  ) : (
+                    'Subir y revisar'
+                  )}
+                </Button>
+              </>
             )}
-
-            {error && <ApiErrorNotice error={error} className="p-2" />}
-
-            <Button size="sm" onClick={run} disabled={!file || working} className="w-full">
-              {working ? (
-                <>
-                  <Loader2 size={14} className="mr-2 animate-spin" />
-                  Detectando…
-                </>
-              ) : (
-                'Subir y revisar'
-              )}
-            </Button>
           </div>
         )}
       </CardContent>
     </Card>
+  )
+}
+
+function ModeTab({
+  active,
+  onClick,
+  icon,
+  label,
+  disabled,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  label: string
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded px-2.5 py-1 transition-colors disabled:opacity-50',
+        active ? 'bg-accent/15 text-foreground' : 'text-muted-foreground hover:text-foreground',
+      )}
+    >
+      {icon}
+      {label}
+    </button>
   )
 }
