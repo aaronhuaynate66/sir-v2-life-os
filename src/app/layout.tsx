@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="font-sans bg-[#0a0a0a] text-[#f5f5f5] antialiased">
+      <body className="font-sans bg-background text-foreground antialiased">
         {children}
         <DataMigrationGate />
         <Toaster />

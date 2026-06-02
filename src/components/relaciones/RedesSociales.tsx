@@ -154,10 +154,10 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
             {/* Handles conectados (links externos). */}
             {hasAny && (
               <div className="space-y-2">
-                {waUrl && <SocialRow Icon={Phone} label="WhatsApp" value={person.phoneNumber!} href={waUrl} accent="text-emerald-400" />}
-                {igUrl && <SocialRow Icon={AtSign} label="Instagram" value={`@${person.instagramHandle}`} href={igUrl} accent="text-pink-400" />}
-                {liUrl && <SocialRow Icon={Briefcase} label="LinkedIn" value={liUrl.replace(/^https?:\/\//, '')} href={liUrl} accent="text-sky-400" />}
-                {twUrl && <SocialRow Icon={Bird} label="Twitter/X" value={`@${person.twitterHandle}`} href={twUrl} accent="text-foreground" />}
+                {waUrl && <SocialRow Icon={Phone} label="WhatsApp" value={person.phoneNumber!} href={waUrl} accent="text-muted-foreground" />}
+                {igUrl && <SocialRow Icon={AtSign} label="Instagram" value={`@${person.instagramHandle}`} href={igUrl} accent="text-muted-foreground" />}
+                {liUrl && <SocialRow Icon={Briefcase} label="LinkedIn" value={liUrl.replace(/^https?:\/\//, '')} href={liUrl} accent="text-muted-foreground" />}
+                {twUrl && <SocialRow Icon={Bird} label="Twitter/X" value={`@${person.twitterHandle}`} href={twUrl} accent="text-muted-foreground" />}
               </div>
             )}
 
@@ -168,7 +168,7 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
                 onClick={useScannedInstagram}
                 className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors border border-dashed border-border/60 rounded-md px-2.5 py-1.5 w-full"
               >
-                <Sparkles size={12} strokeWidth={1.75} className="text-pink-400" aria-hidden="true" />
+                <Sparkles size={12} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
                 Detectado en captura: <span className="font-mono text-foreground/80">@{scannedInstagram}</span>
                 <span className="ml-auto underline underline-offset-2">usar</span>
               </button>

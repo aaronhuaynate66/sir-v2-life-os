@@ -4,17 +4,23 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
+      // Pills = fondo soft + texto del mismo color. Semánticos solo significan.
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "border-transparent bg-secondary text-secondary-foreground",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-        outline: "text-foreground",
+          "border-transparent bg-secondary text-muted-foreground",
+        outline: "border-border text-muted-foreground",
+        // Acento de marca (IA / destacado).
+        brand: "border-transparent bg-brand-soft text-brand-soft-foreground",
+        // Semánticos (salud / estado).
+        ok: "border-transparent bg-ok-soft text-ok-foreground",
+        warn: "border-transparent bg-warn-soft text-warn-foreground",
+        bad: "border-transparent bg-bad-soft text-bad-foreground",
+        destructive: "border-transparent bg-bad-soft text-bad-foreground",
       },
     },
     defaultVariants: {

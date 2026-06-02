@@ -79,7 +79,7 @@ export function DailyBriefingCard() {
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <Sparkles size={15} strokeWidth={1.75} className="text-accent" aria-hidden="true" />
+            <Sparkles size={15} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
               Briefing de hoy
             </div>

@@ -31,7 +31,7 @@
 'use client'
 
 import Link from 'next/link'
-import { TrendingUp, Info } from 'lucide-react'
+import { Activity, Info } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import type { Observation } from '@/lib/capture/observations/types'
@@ -102,12 +102,12 @@ export function RelationalScore({ person, lastChat }: RelationalScoreProps) {
   const mounted = useMounted()
 
   return (
-    <Card className="shadow-none">
+    <Card>
       <CardContent className="p-4 sm:p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
-            Score relacional
+        <div className="flex items-center gap-2 mb-5">
+          <Activity size={13} strokeWidth={1.75} className="text-text-tertiary" aria-hidden="true" />
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
+            Salud del vínculo
           </div>
         </div>
 
@@ -117,26 +117,58 @@ export function RelationalScore({ person, lastChat }: RelationalScoreProps) {
   )
 }
 
+/** Banda de salud → color semántico (ok/warn/bad). El vínculo es estado,
+ *  así que el color significa (no es decorativo). */
+function healthBand(score: number): { color: string; soft: string; label: string } {
+  if (score >= 70) return { color: '#2dd4a7', soft: '#7fe9cf', label: 'Sólido' }
+  if (score >= 40) return { color: '#e0a93b', soft: '#f0cd8a', label: 'A cuidar' }
+  return { color: '#e5564c', soft: '#f0a09a', label: 'En riesgo' }
+}
+
 function ScoreContent({ person, lastChat }: RelationalScoreProps) {
   const breakdown = computeBreakdown(person, lastChat)
+  const band = healthBand(breakdown.global)
+
   return (
     <>
-      <div className="flex items-baseline gap-2 mb-5">
-        <span className="text-4xl font-semibold tracking-tight tabular-nums">
-          {breakdown.global}
-        </span>
-        <span className="text-xs text-muted-foreground">/100</span>
+      <div className="flex items-center gap-5 mb-5">
+        {/* Anillo limpio (conic-gradient): pista surface-2 + arco semántico. */}
+        <div
+          className="relative h-20 w-20 shrink-0 rounded-full"
+          style={{
+            background: `conic-gradient(${band.color} ${breakdown.global * 3.6}deg, hsl(var(--secondary)) 0deg)`,
+          }}
+          role="img"
+          aria-label={`Salud del vínculo: ${breakdown.global} de 100 (${band.label})`}
+        >
+          <div className="absolute inset-[6px] rounded-full bg-card flex flex-col items-center justify-center">
+            <span className="text-2xl font-semibold tracking-tight tabular-nums leading-none">
+              {breakdown.global}
+            </span>
+            <span className="text-[10px] text-text-tertiary mt-0.5">/100</span>
+          </div>
+        </div>
+        <div className="min-w-0">
+          <div
+            className="text-sm font-medium"
+            style={{ color: band.soft }}
+          >
+            {band.label}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            Promedio de las dimensiones con datos.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-3 mb-4">
-        <ScoreBar label="Fuerza" value={breakdown.fuerza} color="emerald" />
+        <ScoreBar label="Fuerza" value={breakdown.fuerza} />
         <ScoreBar
           label="Reciprocidad"
           value={breakdown.reciprocidad}
-          color="amber"
           insufficientHint="Necesita un log de interacciones recíprocas (sesión futura)."
         />
-        <ScoreBar label="Confianza" value={breakdown.confianza} color="sky" />
+        <ScoreBar label="Confianza" value={breakdown.confianza} />
       </div>
 
       <FooterLine person={person} daysSinceLastChat={breakdown.daysSinceLastChat} />
@@ -148,48 +180,44 @@ function ScoreContent({ person, lastChat }: RelationalScoreProps) {
 function ScorePlaceholder() {
   return (
     <div aria-hidden="true">
-      <div className="h-10 w-20 rounded bg-muted/40 animate-pulse mb-5" />
-      <div className="space-y-3 mb-4">
-        <div className="h-1.5 w-full rounded-full bg-muted animate-pulse" />
-        <div className="h-1.5 w-full rounded-full bg-muted animate-pulse" />
-        <div className="h-1.5 w-full rounded-full bg-muted animate-pulse" />
+      <div className="flex items-center gap-5 mb-5">
+        <div className="h-20 w-20 rounded-full bg-secondary animate-pulse shrink-0" />
+        <div className="h-4 w-24 rounded bg-secondary animate-pulse" />
       </div>
-      <div className="h-3 w-40 rounded bg-muted/30 animate-pulse border-t border-border/40 pt-3" />
+      <div className="space-y-3 mb-4">
+        <div className="h-1.5 w-full rounded-full bg-secondary animate-pulse" />
+        <div className="h-1.5 w-full rounded-full bg-secondary animate-pulse" />
+        <div className="h-1.5 w-full rounded-full bg-secondary animate-pulse" />
+      </div>
+      <div className="h-3 w-40 rounded bg-secondary animate-pulse border-t border-border/40 pt-3" />
     </div>
   )
 }
 
+/** Barra fina: fill blanco translúcido (neutral); el color semántico vive
+ *  en el anillo (estado global), no se repite por dimensión. */
 function ScoreBar({
   label,
   value,
-  color,
   insufficientHint,
 }: {
   label: string
   value: number | null
-  color: 'emerald' | 'amber' | 'sky'
   insufficientHint?: string
 }) {
   const insufficient = value === null
-  const fillClass = insufficient
-    ? 'bg-muted-foreground/30'
-    : color === 'emerald'
-    ? 'bg-emerald-500/70'
-    : color === 'amber'
-    ? 'bg-amber-500/70'
-    : 'bg-sky-500/70'
 
   return (
     <div>
-      <div className="flex items-baseline justify-between text-xs mb-1">
+      <div className="flex items-baseline justify-between text-xs mb-1.5">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-mono tabular-nums text-foreground/80">
           {insufficient ? '—' : `${value}/100`}
         </span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+      <div className="h-1 w-full rounded-full bg-secondary overflow-hidden">
         <div
-          className={cn('h-full transition-all', fillClass)}
+          className={cn('h-full rounded-full transition-all', insufficient ? 'bg-muted-foreground/30' : 'bg-foreground/55')}
           style={{ width: insufficient ? '100%' : `${value}%`, opacity: insufficient ? 0.4 : 1 }}
         />
       </div>

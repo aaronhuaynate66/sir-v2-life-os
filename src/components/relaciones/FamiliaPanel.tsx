@@ -218,7 +218,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
                   <button
                     type="button"
                     onClick={() => handleRemove(l)}
-                    className="flex items-center justify-center h-8 w-8 -m-1.5 rounded text-muted-foreground/50 hover:text-rose-400 flex-shrink-0"
+                    className="flex items-center justify-center h-8 w-8 -m-1.5 rounded text-muted-foreground/50 hover:text-bad flex-shrink-0"
                     aria-label={`Quitar vínculo ${KIND_LABEL[l.kind] ?? l.kind}`}
                   >
                     <X size={13} strokeWidth={1.75} />

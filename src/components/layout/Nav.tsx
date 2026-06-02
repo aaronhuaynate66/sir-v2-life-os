@@ -48,8 +48,11 @@ export function Nav({ onItemClick }: NavProps = {}) {
   return (
     <nav className="w-full h-full bg-background flex flex-col">
       <div className="px-5 py-5 border-b border-border">
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans">SIR V2</div>
-        <div className="text-xs text-muted-foreground font-sans mt-0.5">Life OS</div>
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-brand" aria-hidden="true" />
+          <span className="text-sm font-semibold tracking-tight text-foreground">SIR V2</span>
+        </div>
+        <div className="text-xs text-muted-foreground font-sans mt-1 pl-4">Life OS</div>
       </div>
 
       <div className="flex-1 py-3 px-2 flex flex-col gap-0.5 overflow-y-auto">
@@ -65,8 +68,8 @@ export function Nav({ onItemClick }: NavProps = {}) {
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                 'border-l-2',
                 active
-                  ? 'bg-accent/15 text-foreground border-l-primary'
-                  : 'text-muted-foreground border-l-transparent hover:text-foreground hover:bg-accent/10',
+                  ? 'bg-secondary text-foreground border-l-brand'
+                  : 'text-muted-foreground border-l-transparent hover:text-foreground hover:bg-secondary/60',
               )}
             >
               <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -86,7 +89,7 @@ export function Nav({ onItemClick }: NavProps = {}) {
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-red-400 hover:bg-red-500/5 transition-colors"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-bad hover:bg-bad-soft transition-colors"
         >
           <LogOut size={16} strokeWidth={1.75} aria-hidden="true" />
           <span>Cerrar sesión</span>

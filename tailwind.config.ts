@@ -15,7 +15,7 @@ const config: Config = {
     },
     extend: {
       colors: {
-        // shadcn tokens (HSL via CSS vars en globals.css).
+        // ─── Sistema de diseño SIR V2 (tokens HSL via CSS vars) ─────────
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
@@ -26,6 +26,7 @@ const config: Config = {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))',
         },
+        // Botón primario estilo Vercel (bg claro / texto oscuro).
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
@@ -38,10 +39,35 @@ const config: Config = {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
         },
+        // accent = superficie de hover (surface-2), NO color de marca.
         accent: {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
         },
+        // ─── Acento de marca (UNO solo): IA + acción primaria ──────────
+        brand: {
+          DEFAULT: 'hsl(var(--brand))',
+          foreground: 'hsl(var(--brand-foreground))',
+          soft: 'hsl(var(--brand) / 0.14)',
+          'soft-foreground': '#b9a9f5',
+        },
+        // ─── Semánticos: SOLO significado (salud/estado) ───────────────
+        ok: {
+          DEFAULT: '#2dd4a7',
+          soft: 'rgba(45, 212, 167, 0.12)',
+          foreground: '#7fe9cf',
+        },
+        warn: {
+          DEFAULT: '#e0a93b',
+          soft: 'rgba(224, 169, 59, 0.12)',
+          foreground: '#f0cd8a',
+        },
+        bad: {
+          DEFAULT: '#e5564c',
+          soft: 'rgba(229, 86, 76, 0.12)',
+          foreground: '#f0a09a',
+        },
+        // Alias semánticos de shadcn (apuntan a los mismos valores).
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
@@ -54,28 +80,26 @@ const config: Config = {
           DEFAULT: 'hsl(var(--warning))',
           foreground: 'hsl(var(--warning-foreground))',
         },
-        border: 'hsl(var(--border))',
+        // ─── Superficies, bordes y texto en escala ─────────────────────
+        surface: {
+          1: 'hsl(var(--card))',
+          2: 'hsl(var(--secondary))',
+          3: '#232327',
+        },
+        border: {
+          DEFAULT: 'hsl(var(--border))',
+          strong: 'hsl(var(--border-strong))',
+        },
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
-        // Legacy SIR V2 semantic tokens (preservados por compatibilidad).
-        surface: '#111111',
-        'surface-raised': '#1a1a1a',
-        'border-subtle': '#2a2a2a',
-        'text-primary': '#f5f5f5',
-        'text-secondary': '#888888',
-        'text-muted': '#444444',
-        'accent-hover': '#2563eb',
-        'peace-dim': '#166534',
-        'warning-dim': '#78350f',
-        danger: '#ef4444',
-        'danger-dim': '#7f1d1d',
-        gold: '#d4af37',
-        'gold-dim': '#713f12',
+        // Texto en 3 niveles (primary = foreground; tertiary nuevo).
+        'text-tertiary': 'hsl(var(--text-tertiary))',
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        // 12px cards / 9px controles.
+        lg: 'var(--radius)',                    /* 12px */
+        md: 'calc(var(--radius) - 3px)',        /* 9px — controles */
+        sm: 'calc(var(--radius) - 6px)',        /* 6px */
       },
       fontFamily: {
         sans: ['var(--font-geist-sans)', 'Inter', 'system-ui', 'sans-serif'],

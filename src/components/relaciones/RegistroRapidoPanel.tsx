@@ -38,10 +38,10 @@ interface ActionDef {
 }
 
 const ACTIONS: ActionDef[] = [
-  { kind: 'mood', label: 'Ánimo', Icon: Smile, accentClass: 'text-amber-400' },
-  { kind: 'energy', label: 'Energía', Icon: Zap, accentClass: 'text-emerald-400' },
-  { kind: 'sleep', label: 'Sueño', Icon: Moon, accentClass: 'text-sky-400' },
-  { kind: 'pain', label: 'Dolor', Icon: Activity, accentClass: 'text-red-400' },
+  { kind: 'mood', label: 'Ánimo', Icon: Smile, accentClass: 'text-warn' },
+  { kind: 'energy', label: 'Energía', Icon: Zap, accentClass: 'text-ok' },
+  { kind: 'sleep', label: 'Sueño', Icon: Moon, accentClass: 'text-brand-soft-foreground' },
+  { kind: 'pain', label: 'Dolor', Icon: Activity, accentClass: 'text-bad' },
 ]
 
 const QUICK_KINDS: ReadonlyArray<PersonLogKind> = ['mood', 'energy', 'sleep', 'pain']

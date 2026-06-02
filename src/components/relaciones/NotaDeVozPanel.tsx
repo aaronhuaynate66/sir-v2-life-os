@@ -185,12 +185,12 @@ export function NotaDeVozPanel({ personId, observations }: NotaDeVozPanelProps) 
               )}
               {phase === 'recording' && (
                 <>
-                  <Button size="sm" variant="outline" onClick={stopRecording} className="border-red-500/40 text-red-400 hover:bg-red-500/10">
+                  <Button size="sm" variant="outline" onClick={stopRecording} className="border-bad/40 text-bad hover:bg-bad-soft">
                     <Square size={13} strokeWidth={2} className="mr-1.5 fill-current" aria-hidden="true" />
                     Detener
                   </Button>
-                  <span className="flex items-center gap-1.5 text-sm font-mono tabular-nums text-red-400">
-                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" aria-hidden="true" />
+                  <span className="flex items-center gap-1.5 text-sm font-mono tabular-nums text-bad">
+                    <span className="w-2 h-2 rounded-full bg-bad animate-pulse" aria-hidden="true" />
                     {fmtDuration(elapsed)}
                   </span>
                 </>
@@ -215,7 +215,7 @@ export function NotaDeVozPanel({ personId, observations }: NotaDeVozPanelProps) 
             </div>
 
             {error && (
-              <div className="rounded-md border border-red-500/30 bg-red-500/5 p-2 text-xs flex items-start gap-1.5 text-red-400">
+              <div className="rounded-md border border-bad/30 bg-bad-soft p-2 text-xs flex items-start gap-1.5 text-bad">
                 <AlertCircle size={12} strokeWidth={2} className="mt-0.5 shrink-0" aria-hidden="true" />
                 <span>{error}</span>
               </div>
@@ -294,7 +294,7 @@ function VoiceNoteRow({ obs, onDeleted }: { obs: Observation; onDeleted: () => v
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 px-2 text-muted-foreground/50 hover:text-red-400"
+          className="h-7 px-2 text-muted-foreground/50 hover:text-bad"
           onClick={onDelete}
           disabled={deleting}
           aria-label="Borrar nota de voz"
@@ -303,7 +303,7 @@ function VoiceNoteRow({ obs, onDeleted }: { obs: Observation; onDeleted: () => v
         </Button>
       </div>
       {url && <audio src={url} controls autoPlay className="w-full h-9" />}
-      {err && <p className="text-[11px] text-red-400">{err}</p>}
+      {err && <p className="text-[11px] text-bad">{err}</p>}
     </li>
   )
 }

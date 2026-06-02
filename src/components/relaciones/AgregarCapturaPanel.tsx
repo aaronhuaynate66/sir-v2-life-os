@@ -53,9 +53,9 @@ const TYPE_LABEL: Partial<Record<CaptureType, string>> = {
 }
 
 const CONF_META: Record<'high' | 'medium' | 'low' | 'unknown', { label: string; chip: string }> = {
-  high: { label: 'confianza alta', chip: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' },
-  medium: { label: 'confianza media', chip: 'border-amber-500/30 bg-amber-500/10 text-amber-400' },
-  low: { label: 'confianza baja', chip: 'border-rose-500/30 bg-rose-500/10 text-rose-400' },
+  high: { label: 'confianza alta', chip: 'border-ok/30 bg-ok-soft text-ok-foreground' },
+  medium: { label: 'confianza media', chip: 'border-warn/30 bg-warn-soft text-warn-foreground' },
+  low: { label: 'confianza baja', chip: 'border-bad/30 bg-bad-soft text-bad-foreground' },
   unknown: { label: 'confianza s/d', chip: 'border-border bg-muted text-muted-foreground' },
 }
 

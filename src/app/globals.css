@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── SIR V2 — Sistema de diseño (rediseño "Vercel oscuro") ───────────
+   Fuente única de verdad de los tokens. La app corre siempre en .dark
+   (root layout fuerza class="dark"); :root mantiene un set claro mínimo
+   por si algún día se ofrece tema claro y para herramientas.
+
+   Reglas del sistema:
+   - UN solo acento de marca (violeta --brand): reservado para IA y la
+     acción primaria/destacada. Nunca decorativo.
+   - Color semántico (ok/warn/bad) SOLO para significado (salud/estado).
+   - Todo lo demás vive en la escala de superficies + grises de borde.
+   - Los tokens van como triplete HSL para que los modificadores de
+     opacidad de Tailwind (bg-x/10, border-x/40) sigan funcionando.        */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -10,63 +22,104 @@
     --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
-    --primary: 351 95% 71%;
-    --primary-foreground: 0 0% 4%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    --accent: 351 95% 71%;
-    --accent-foreground: 0 0% 4%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 71% 45%;
-    --success-foreground: 0 0% 4%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 4%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 4 74% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 164 65% 43%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 75% 55%;
+    --warning-foreground: 0 0% 9%;
     --border: 0 0% 90%;
+    --border-strong: 0 0% 82%;
     --input: 0 0% 90%;
-    --ring: 351 95% 71%;
-    --radius: 0.5rem;
+    --ring: 252 56% 57%;
+    --radius: 0.75rem;
+
+    /* Acento de marca (violeta) + texto terciario. */
+    --brand: 252 56% 57%;                /* #6e56cf */
+    --brand-foreground: 0 0% 100%;
+    --text-tertiary: 240 5% 43%;         /* #6b6b73 */
   }
 
-  /* Dark theme: gris neutro Vercel + acento coral salmon (#fb7185 / rose-400). */
+  /* ─── Tema oscuro (default de la app) ─────────────────────────────
+     Superficies de fondo a primer plano:
+       bg #0a0a0a · surface-1 #111113 (cards) · surface-2 #18181b
+       (inputs/chips/hover) · surface-3 #232327 (hover fuerte/activo).
+     Bordes casi invisibles (el sello del look). Texto en 3 niveles. */
   .dark {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 351 95% 71%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 11%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 11%;
-    --muted-foreground: 0 0% 64%;
-    --accent: 351 95% 71%;
-    --accent-foreground: 0 0% 4%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --success: 142 71% 45%;
+    --background: 0 0% 4%;               /* #0a0a0a — bg */
+    --foreground: 0 0% 93%;              /* #ededed — texto primario */
+
+    --card: 240 6% 7%;                   /* #111113 — surface-1 */
+    --card-foreground: 0 0% 93%;
+    --popover: 240 5% 10%;               /* #18181b — surface-2 (flotantes) */
+    --popover-foreground: 0 0% 93%;
+
+    /* surface-2: inputs, chips, hover. secondary/muted/accent/input apuntan acá. */
+    --secondary: 240 5% 10%;             /* #18181b */
+    --secondary-foreground: 0 0% 93%;
+    --muted: 240 5% 10%;                 /* #18181b */
+    --muted-foreground: 240 5% 65%;      /* #a1a1aa — texto secundario */
+    --accent: 240 5% 10%;                /* #18181b — hover de ghost/outline */
+    --accent-foreground: 0 0% 93%;       /* texto sobre superficies hover */
+
+    /* Botón primario estilo Vercel: bg blanco, texto negro. */
+    --primary: 0 0% 93%;                 /* #ededed (casi blanco) */
+    --primary-foreground: 0 0% 4%;       /* #0a0a0a */
+
+    /* Semánticos — SOLO significado (salud/estado), nunca decoración. */
+    --destructive: 4 74% 60%;            /* #e5564c — bad */
+    --destructive-foreground: 0 0% 100%;
+    --success: 164 65% 43%;              /* ~#2dd4a7 — ok */
     --success-foreground: 0 0% 4%;
-    --warning: 38 92% 50%;
+    --warning: 38 73% 55%;               /* ~#e0a93b — warn */
     --warning-foreground: 0 0% 4%;
-    --border: 0 0% 14%;
-    --input: 0 0% 14%;
-    --ring: 351 95% 71%;
+
+    /* Bordes (HSL solido afinado al equivalente de blanco translucido
+       .08 / .14 sobre el bg). Mantiene los modificadores /40, /60. */
+    --border: 0 0% 12%;                  /* ≈ rgba(255,255,255,.08) sobre bg */
+    --border-strong: 0 0% 17%;           /* ≈ rgba(255,255,255,.14) — borde fuerte */
+    --input: 0 0% 12%;
+    --ring: 252 56% 57%;                 /* foco = marca (violeta) */
+
+    /* Acento de marca: UNO solo. Reservado para IA y acción primaria. */
+    --brand: 252 56% 57%;                /* #6e56cf */
+    --brand-foreground: 0 0% 100%;
+    --text-tertiary: 240 5% 43%;         /* #6b6b73 — texto terciario */
   }
 }
 
 * { box-sizing: border-box; }
 html { color-scheme: dark; }
 html.dark { color-scheme: dark; }
-body { background-color: hsl(var(--background)); color: hsl(var(--foreground)); -webkit-font-smoothing: antialiased; }
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+}
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: hsl(var(--card)); }
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 2px; }
-::selection { background: hsl(var(--primary) / 0.3); color: hsl(var(--foreground)); }
+::selection { background: hsl(var(--brand) / 0.3); color: hsl(var(--foreground)); }
 :focus-visible { outline: 1px solid hsl(var(--ring)); outline-offset: 2px; }
+
+/* Label de sección chiquito: 11px uppercase, tracking ancho, color terciario.
+   Única excepción al sentence-case (todo lo demás va en oración). */
+.section-label {
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: hsl(var(--text-tertiary));
+}
 
 /* ─── Print (Export Parte A: dossier imprimible / PDF) ───────────────
    Papel blanco, tinta negra; el theme oscuro de pantalla no se imprime.

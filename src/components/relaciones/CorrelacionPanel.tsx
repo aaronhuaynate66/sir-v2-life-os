@@ -45,11 +45,11 @@ const KIND_LABEL: Record<PersonLogKind, string> = {
 }
 
 const KIND_BAR: Record<PersonLogKind, string> = {
-  mood: 'bg-amber-400',
-  energy: 'bg-emerald-400',
-  sleep: 'bg-sky-400',
-  pain: 'bg-red-400',
-  interaction: 'bg-violet-400',
+  mood: 'bg-warn',
+  energy: 'bg-ok',
+  sleep: 'bg-brand-soft-foreground',
+  pain: 'bg-bad',
+  interaction: 'bg-brand',
 }
 
 export function CorrelacionPanel({

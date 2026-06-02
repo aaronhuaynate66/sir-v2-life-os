@@ -157,7 +157,7 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
               <Repeat
                 size={13}
                 strokeWidth={1.75}
-                className={cn(recurring && 'text-accent')}
+                className={cn(recurring && 'text-brand')}
                 aria-hidden="true"
               />
               Se repite cada año
@@ -249,7 +249,7 @@ function DateRow({
         <span
           className={cn(
             'text-xs font-medium tabular-nums whitespace-nowrap',
-            isToday ? 'text-accent' : cd.isPast ? 'text-muted-foreground' : 'text-foreground',
+            isToday ? 'text-brand' : cd.isPast ? 'text-muted-foreground' : 'text-foreground',
           )}
         >
           {phrase}
@@ -265,7 +265,7 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex-shrink-0 flex items-center justify-center h-8 w-8 -m-1.5 rounded text-muted-foreground/50 hover:text-red-400 transition-colors"
+      className="flex-shrink-0 flex items-center justify-center h-8 w-8 -m-1.5 rounded text-muted-foreground/50 hover:text-bad transition-colors"
       aria-label="Eliminar fecha"
     >
       <X size={14} strokeWidth={1.75} />

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import { Avatar } from '@/components/ui/avatar'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
@@ -56,25 +57,18 @@ function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000)
 }
 
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
-
-const cardClass = 'shadow-none transition-colors duration-200 hover:border-primary/30'
+const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
 const ENERGY_CLASS: Record<EnergyImpact, string> = {
-  energizing: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
+  energizing: 'border-ok/30 bg-ok-soft text-ok-foreground',
   neutral: 'border-border bg-muted text-muted-foreground',
-  draining: 'border-red-500/30 bg-red-500/10 text-red-400',
+  draining: 'border-bad/30 bg-bad-soft text-bad-foreground',
 }
 
 const URGENCY_CLASS: Record<'immediate' | 'soon' | 'monitor', string> = {
-  immediate: 'border-red-500/30 bg-red-500/10 text-red-400',
-  soon: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
-  monitor: 'border-blue-500/30 bg-blue-500/10 text-blue-400',
+  immediate: 'border-bad/30 bg-bad-soft text-bad-foreground',
+  soon: 'border-warn/30 bg-warn-soft text-warn-foreground',
+  monitor: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
 }
 
 export default function RelationshipsPage() {
@@ -395,9 +389,7 @@ function RelationshipsContent() {
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-semibold text-muted-foreground">{getInitials(person.name)}</span>
-                      </div>
+                      <Avatar name={person.name} size="md" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-foreground">{person.name}</span>
@@ -421,7 +413,7 @@ function RelationshipsContent() {
 
                         {rel && rel.status === 'strained' && (
                           <div className="mt-2">
-                            <Badge variant="outline" className="text-[10px] font-normal border-red-500/30 bg-red-500/10 text-red-400">relacion tensa</Badge>
+                            <Badge variant="bad" className="text-[10px] font-normal">relacion tensa</Badge>
                           </div>
                         )}
 
@@ -444,7 +436,7 @@ function RelationshipsContent() {
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="hover:text-red-400" aria-label="Eliminar">
+                          <Button variant="ghost" size="sm" className="hover:text-bad" aria-label="Eliminar">
                             <X size={14} strokeWidth={1.75} />
                           </Button>
                         </AlertDialogTrigger>
@@ -457,7 +449,7 @@ function RelationshipsContent() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleRemovePerson(person.id, person.name)} className="bg-red-500 text-white hover:bg-red-500/90">Eliminar</AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleRemovePerson(person.id, person.name)} className="bg-bad text-white hover:bg-bad/90">Eliminar</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>

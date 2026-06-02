@@ -33,18 +33,19 @@ export interface CicloPanelProps {
   cycleLengthDays?: number | null
 }
 
+// Colores de fase alineados a la paleta del sistema (bad/warn/ok/brand).
 const PHASE_COLOR: Record<CyclePhaseId, string> = {
-  menstrual: '#ef4444', // red-500
-  follicular: '#f59e0b', // amber-500
-  ovulation: '#10b981', // emerald-500
-  luteal: '#8b5cf6', // violet-500
+  menstrual: '#e5564c', // bad
+  follicular: '#e0a93b', // warn
+  ovulation: '#2dd4a7', // ok
+  luteal: '#6e56cf', // brand
 }
 
 const PHASE_ACCENT_CLASS: Record<CyclePhaseId, string> = {
-  menstrual: 'text-red-400',
-  follicular: 'text-amber-400',
-  ovulation: 'text-emerald-400',
-  luteal: 'text-violet-400',
+  menstrual: 'text-bad',
+  follicular: 'text-warn',
+  ovulation: 'text-ok',
+  luteal: 'text-brand-soft-foreground',
 }
 
 export function CicloPanel({ cycleStartDate, cycleLengthDays }: CicloPanelProps) {

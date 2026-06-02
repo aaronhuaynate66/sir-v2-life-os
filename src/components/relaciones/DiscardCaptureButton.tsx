@@ -64,7 +64,7 @@ export function DiscardCaptureButton({
           size="sm"
           variant="ghost"
           disabled={busy}
-          className={cn('text-muted-foreground/70 hover:text-rose-400', className)}
+          className={cn('text-muted-foreground/70 hover:text-bad', className)}
         >
           {busy ? (
             <Loader2 size={13} className="mr-1.5 animate-spin" />
@@ -88,7 +88,7 @@ export function DiscardCaptureButton({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={busy}
-            className="bg-rose-500/90 hover:bg-rose-500 text-white"
+            className="bg-bad hover:bg-bad/90 text-white"
           >
             Descartar
           </AlertDialogAction>

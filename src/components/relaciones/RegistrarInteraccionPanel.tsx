@@ -36,11 +36,11 @@ interface EmoState {
 }
 
 const EMO_STATES: ReadonlyArray<EmoState> = [
-  { value: 1, label: 'Corazón roto', Icon: HeartCrack, accentClass: 'text-red-400' },
-  { value: 2, label: 'Tenso', Icon: Frown, accentClass: 'text-amber-400' },
+  { value: 1, label: 'Corazón roto', Icon: HeartCrack, accentClass: 'text-bad' },
+  { value: 2, label: 'Tenso', Icon: Frown, accentClass: 'text-warn' },
   { value: 3, label: 'Neutral', Icon: Meh, accentClass: 'text-muted-foreground' },
-  { value: 4, label: 'Cálido', Icon: Smile, accentClass: 'text-sky-400' },
-  { value: 5, label: 'Corazón pleno', Icon: Heart, accentClass: 'text-emerald-400' },
+  { value: 4, label: 'Cálido', Icon: Smile, accentClass: 'text-brand-soft-foreground' },
+  { value: 5, label: 'Corazón pleno', Icon: Heart, accentClass: 'text-ok' },
 ]
 
 export function RegistrarInteraccionPanel({
@@ -81,10 +81,10 @@ export function RegistrarInteraccionPanel({
     <Card className="shadow-none mb-4">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-3">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
             Registrar interacción
           </div>
-          <span className="text-[10px] text-muted-foreground/60">
+          <span className="text-[11px] text-text-tertiary">
             tono de la última conversación
           </span>
         </div>
@@ -101,8 +101,8 @@ export function RegistrarInteraccionPanel({
                 className={cn(
                   'flex flex-col items-center gap-1 rounded-md border py-2 transition-colors disabled:opacity-50',
                   isSelected
-                    ? 'border-accent/60 bg-accent/15'
-                    : 'border-border hover:border-accent/40 hover:bg-accent/5',
+                    ? 'border-brand/50 bg-brand-soft'
+                    : 'border-border hover:border-border-strong hover:bg-secondary',
                 )}
                 title={s.label}
                 aria-pressed={isSelected}
@@ -137,7 +137,7 @@ export function RegistrarInteraccionPanel({
           rows={2}
           maxLength={500}
           disabled={submitting}
-          className="w-full text-sm rounded-md border border-border bg-background px-3 py-2 resize-none mb-2 disabled:opacity-50"
+          className="w-full text-sm rounded-md border border-input bg-secondary px-3 py-2 resize-none mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"
         />
 
         {note.length > 0 && (
@@ -163,9 +163,9 @@ export function RegistrarInteraccionPanel({
         </Button>
 
         {success && (
-          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2 text-xs mt-3 flex items-center gap-1.5">
-            <Check size={12} strokeWidth={2} className="text-emerald-400" aria-hidden="true" />
-            <span className="text-emerald-400">
+          <div className="rounded-md border border-ok/30 bg-ok-soft p-2 text-xs mt-3 flex items-center gap-1.5">
+            <Check size={12} strokeWidth={2} className="text-ok" aria-hidden="true" />
+            <span className="text-ok-foreground">
               Interacción registrada con tono <span className="font-mono">{success.value}/5</span>.
             </span>
           </div>
@@ -174,7 +174,7 @@ export function RegistrarInteraccionPanel({
         {error && <ApiErrorNotice error={error} className="p-2 mt-3" />}
 
         <div className="mt-4">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 mb-2">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">
             Interacciones registradas
           </div>
           <PersonLogsList

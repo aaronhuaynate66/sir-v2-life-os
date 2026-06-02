@@ -31,11 +31,12 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowLeft, Users, Edit2, Check, X as XIcon, MessageSquareHeart, Printer } from 'lucide-react'
+import { ArrowLeft, Edit2, Check, X as XIcon, MessageSquareHeart, Printer } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -309,13 +310,15 @@ export function PersonDetail({
 
       <header className="mb-6">
         <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3 mb-2 min-w-0">
-            <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0">
-              <Users size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
-            </div>
+          <div className="flex items-center gap-4 min-w-0">
+            <Avatar name={live.name} size="lg" />
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{live.name}</h1>
-              <div className="text-xs text-muted-foreground font-mono truncate">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <Badge variant="brand" className="text-[11px]">{CATEGORY_LABEL[live.category]}</Badge>
+                <Badge variant="outline" className="text-[11px]">{RELATIONSHIP_LABEL[live.relationship]}</Badge>
+              </div>
+              <div className="text-xs text-muted-foreground font-mono truncate mt-1.5">
                 /relaciones/<span className="text-foreground">{live.slug ?? '(sin slug)'}</span>
               </div>
             </div>
@@ -357,7 +360,7 @@ export function PersonDetail({
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
               Identidad
             </div>
             {!editing && (
@@ -516,7 +519,7 @@ export function PersonDetail({
       {!editing && (
         <Card className="shadow-none mb-4">
           <CardContent className="p-4 sm:p-6 space-y-2 text-sm">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-3">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-3">
               Métricas relacionales
             </div>
             <Row label="Importancia" value={`${live.importanceScore}/10`} />
@@ -566,7 +569,7 @@ export function PersonDetail({
           label="Tono de interacción"
           icon={MessageSquareHeart}
           points={toneSeries}
-          colorClass="text-violet-400"
+          colorClass="text-brand"
           formatValue={(n) => n.toFixed(1)}
           emptyHint="Registrá interacciones (arriba) para ver cómo evoluciona el tono."
         />
@@ -653,7 +656,7 @@ export function PersonDetail({
       {live.notes && (
         <Card className="shadow-none mb-4">
           <CardContent className="p-4 sm:p-6">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70 mb-2">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">
               Notas
             </div>
             <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
@@ -724,7 +727,7 @@ function CuratedObservationsPanel({ observations }: { observations: Observation[
     <Card className="shadow-none mb-4 border-dashed">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-baseline justify-between gap-2 mb-3">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
             Datos curados
           </div>
           <span className="text-[10px] font-mono text-muted-foreground/60">

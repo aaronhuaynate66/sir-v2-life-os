@@ -97,7 +97,7 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
         <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <Sparkles size={16} strokeWidth={1.75} className="text-accent" aria-hidden="true" />
+              <Sparkles size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
               Briefing · {personName}
             </SheetTitle>
             <SheetDescription>
