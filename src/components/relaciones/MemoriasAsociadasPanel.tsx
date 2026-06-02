@@ -96,6 +96,10 @@ export function MemoriasAsociadasPanel({
   // Filtro por tipo (#15) + colapso para volumen.
   const [activeType, setActiveType] = useState<MemoryType | 'all'>('all')
   const [showAll, setShowAll] = useState(false)
+  // Las memorias CRUDAS quedan colapsadas por defecto: la ficha sintetiza
+  // arriba (Vida profesional/social, Lo personal); las tarjetas crudas no van
+  // "en la cara" — se abren bajo demanda.
+  const [listOpen, setListOpen] = useState(false)
 
   // Conteo por tipo presente (para los chips de filtro).
   const typeCounts = useMemo(() => {
@@ -260,6 +264,19 @@ export function MemoriasAsociadasPanel({
 
         {memories.length === 0 ? (
           <EmptyState />
+        ) : !listOpen ? (
+          <button
+            type="button"
+            onClick={() => setListOpen(true)}
+            className="flex w-full items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/10 px-3 py-2.5 text-left transition-colors hover:border-accent/40"
+          >
+            <span className="text-sm text-muted-foreground">
+              {memories.length} memoria{memories.length === 1 ? '' : 's'} cruda
+              {memories.length === 1 ? '' : 's'} guardada{memories.length === 1 ? '' : 's'}.
+              La síntesis vive arriba (Vida profesional/social, Lo personal).
+            </span>
+            <ChevronDown size={14} strokeWidth={1.75} className="shrink-0 text-muted-foreground/70" aria-hidden="true" />
+          </button>
         ) : (
           <>
             {/* Filtro por tipo: chips con conteo. Solo si hay >1 tipo. */}
@@ -310,6 +327,19 @@ export function MemoriasAsociadasPanel({
                   : `Ver todas (${filtered.length})`}
               </Button>
             )}
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setListOpen(false)
+                setShowAll(false)
+              }}
+              className="mt-1 w-full text-muted-foreground"
+            >
+              <ChevronDown size={13} strokeWidth={1.75} className="mr-1.5 rotate-180" />
+              Ocultar memorias
+            </Button>
           </>
         )}
       </CardContent>

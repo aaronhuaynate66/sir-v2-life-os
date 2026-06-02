@@ -36,6 +36,7 @@ import {
   whatsappLink, instagramLink, twitterLink, normalizeUrl, normalizeHandle,
 } from '@/lib/social/links'
 import { latestOfType, readInstagram, readLinkedIn, fmtCount } from '@/lib/observations/profile'
+import { socialNarrative } from '@/lib/person-synthesis/narrative'
 import { DiscardCaptureButton } from './DiscardCaptureButton'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
@@ -58,7 +59,10 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
   // Handles detectados en capturas (sugerencias si el campo está vacío).
   const igObs = latestOfType(observations, 'instagram')
   const liObs = latestOfType(observations, 'linkedin')
-  const scannedInstagram = igObs ? readInstagram(igObs.data).handle ?? null : null
+  const igData = igObs ? readInstagram(igObs.data) : null
+  const scannedInstagram = igData?.handle ?? null
+  // Síntesis narrativa social (estilo V1, determinística — sin LLM).
+  const narrative = socialNarrative({ ig: igData })
   const scannedLinkedinHasProfile = !!liObs // linkedin_url no se extrae como tal; señalamos que hay captura
 
   function startEditing() {
@@ -142,6 +146,12 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Párrafo sintetizado de "Vida social" (estilo V1): se lee de
+                corrido. Determinístico, sin LLM. Los links/handles quedan debajo. */}
+            {narrative && (
+              <p className="text-sm text-foreground leading-relaxed">{narrative}</p>
+            )}
+
             {/* Nada manual ni capturado → empty state que apunta al panel inline. */}
             {!hasAny && !igObs && !liObs && (
               <p className="text-sm text-muted-foreground italic">

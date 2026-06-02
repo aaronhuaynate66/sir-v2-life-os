@@ -22,6 +22,7 @@ import {
   fmtCount,
 } from '@/lib/observations/profile'
 import { reconcileEducation } from '@/lib/observations/education'
+import { professionalNarrative } from '@/lib/person-synthesis/narrative'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { Person } from '@/types'
 
@@ -39,6 +40,9 @@ export function VidaProfesional({ person, observations }: VidaProfesionalProps) 
   // línea de verdad arriba; el registro queda como secundario etiquetado.
   const li = obs ? readLinkedIn(obs.data) : null
   const edu = reconcileEducation(person.education, li?.latestEducation ?? null)
+  // Síntesis narrativa DETERMINÍSTICA (estilo V1, sin LLM): párrafo de corrido
+  // a partir de los campos estructurados + educación reconciliada.
+  const narrative = professionalNarrative({ li, education: edu })
 
   return (
     <Card className="shadow-none mb-4">
@@ -54,6 +58,12 @@ export function VidaProfesional({ person, observations }: VidaProfesionalProps) 
             Vida profesional
           </div>
         </div>
+
+        {/* Párrafo sintetizado (estilo V1): se lee de corrido. Determinístico,
+            sin LLM. El detalle estructurado queda debajo. */}
+        {narrative && (
+          <p className="text-sm text-foreground leading-relaxed mb-4">{narrative}</p>
+        )}
 
         {/* Educación reconciliada (LinkedIn > RENIEC). El registro, si difiere,
             baja a una sub-línea etiquetada para no perder la procedencia legal. */}
@@ -80,25 +90,28 @@ export function VidaProfesional({ person, observations }: VidaProfesionalProps) 
           </div>
         )}
 
-        {obs ? <Body obs={obs} /> : edu.primary ? null : <EmptyState />}
+        {obs ? <Body obs={obs} hideSummary={!!narrative} /> : edu.primary ? null : <EmptyState />}
       </CardContent>
     </Card>
   )
 }
 
-function Body({ obs }: { obs: Observation }) {
+function Body({ obs, hideSummary = false }: { obs: Observation; hideSummary?: boolean }) {
   const li = readLinkedIn(obs.data)
   const summary = professionalSummary(li)
 
   return (
     <div className="space-y-3">
-      {summary ? (
-        <p className="text-sm text-foreground leading-relaxed">{summary}</p>
-      ) : (
-        <p className="text-sm text-muted-foreground italic">
-          Captura de LinkedIn sin campos legibles suficientes para un resumen.
-        </p>
-      )}
+      {/* El lead summary se omite cuando el párrafo sintetizado de arriba ya lo
+          cubre (evita repetir "Rol en Empresa"). */}
+      {!hideSummary &&
+        (summary ? (
+          <p className="text-sm text-foreground leading-relaxed">{summary}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">
+            Captura de LinkedIn sin campos legibles suficientes para un resumen.
+          </p>
+        ))}
 
       <div className="space-y-1.5 text-sm">
         {li.headline && summary !== li.headline && (
