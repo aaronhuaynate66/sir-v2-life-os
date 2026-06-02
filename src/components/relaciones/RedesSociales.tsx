@@ -267,7 +267,22 @@ function InstagramEnrichment({ obs }: { obs: Observation }) {
           Instagram · captura
         </span>
         {ig.handle && (
-          <span className="text-sm font-medium font-mono text-foreground">@{ig.handle}</span>
+          (() => {
+            const href = instagramLink(ig.handle)
+            return href ? (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium font-mono text-brand-soft-foreground hover:underline inline-flex items-center gap-1"
+              >
+                @{ig.handle}
+                <ExternalLink size={11} strokeWidth={1.75} aria-hidden="true" />
+              </a>
+            ) : (
+              <span className="text-sm font-medium font-mono text-foreground">@{ig.handle}</span>
+            )
+          })()
         )}
         {ig.isVerified && (
           <Badge variant="brand" className="text-[10px] font-normal gap-1">

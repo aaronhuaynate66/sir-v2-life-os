@@ -41,6 +41,32 @@ export function twitterLink(handle: string | null | undefined): string | null {
   return h ? `https://x.com/${h}` : null
 }
 
+/** Lee + normaliza el `handle` del JSON de una observation `instagram`
+ *  (data es Record<string, unknown> — coerción defensiva). null si no hay. */
+export function instagramHandleFromExtracted(
+  extracted: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!extracted) return null
+  const raw = typeof extracted.handle === 'string' ? extracted.handle : null
+  return normalizeHandle(raw)
+}
+
+/**
+ * Decide si auto-vincular el Instagram extraído de una captura al campo
+ * `people.instagram_handle`. Paridad V1: el usuario sube la captura de su
+ * perfil de Insta y el handle/enlace se carga SOLO. Regla:
+ *   - Si la persona YA tiene un handle cargado → no pisamos (devolvemos null).
+ *   - Si no, devolvemos el handle normalizado de la captura (o null si no hay).
+ * PURA → testeable sin tocar el store.
+ */
+export function resolveInstagramAutoLink(
+  currentHandle: string | null | undefined,
+  extracted: Record<string, unknown> | null | undefined,
+): string | null {
+  if (normalizeHandle(currentHandle)) return null
+  return instagramHandleFromExtracted(extracted)
+}
+
 /** Valida superficialmente una URL http(s). Devuelve la URL trim o null. */
 export function normalizeUrl(raw: string | null | undefined): string | null {
   if (!raw) return null

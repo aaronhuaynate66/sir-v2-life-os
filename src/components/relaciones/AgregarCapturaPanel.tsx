@@ -32,6 +32,8 @@ import {
   HttpError,
 } from '@/lib/capture/observations/client'
 import { planPersonCapture } from '@/lib/capture/person-capture'
+import { resolveInstagramAutoLink } from '@/lib/social/links'
+import { useRelationshipStore } from '@/stores'
 import { assessExtraction, type ImageDims } from '@/lib/capture/legibility'
 import {
   detectCaptureTypeFromText,
@@ -118,6 +120,10 @@ export interface AgregarCapturaPanelProps {
 
 export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPanelProps) {
   const router = useRouter()
+  // Para auto-vincular el Instagram extraído al perfil (paridad V1): el handle
+  // y su enlace se cargan SOLOS tras escanear, sin re-tipear.
+  const person = useRelationshipStore((s) => s.people.find((p) => p.id === personId))
+  const updatePerson = useRelationshipStore((s) => s.updatePerson)
   const inputRef = useRef<HTMLInputElement>(null)
   // Modo por defecto: TEXTO pegado (la vía confiable, sin OCR ilegible). La
   // imagen sigue disponible como alternativa.
@@ -199,6 +205,19 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
             confirmedData: p.extracted,
           })
         }
+        // Paridad V1: si fue una captura de Instagram y la persona aún no tiene
+        // handle, lo cargamos SOLO desde lo extraído (arma el link automático en
+        // "Redes & social"). updatePerson → store + sync a DB (idempotente). No
+        // pisa un handle ya cargado.
+        if (p.captureType === 'instagram') {
+          const autoHandle = resolveInstagramAutoLink(person?.instagramHandle, p.extracted)
+          if (autoHandle) {
+            updatePerson(personId, {
+              instagramHandle: autoHandle,
+              updatedAt: new Date().toISOString(),
+            })
+          }
+        }
         setSavedType(p.captureType)
         setPhase('done')
         router.refresh()
@@ -207,7 +226,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
         setPhase('review')
       }
     },
-    [file, personId, router],
+    [file, personId, router, person?.instagramHandle, updatePerson],
   )
 
   // Procesa TEXTO pegado: detecta tipo (override del usuario o autodetección),
