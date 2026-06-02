@@ -55,9 +55,14 @@ export interface GraphData {
 export interface GraphFilters {
   category: GraphCategory | 'all'
   minHealth: number  // 0-100
+  /** true = "solo vínculos directos": oculta los nodos de 2º grado (familiares
+   *  de contactos sin interacción directa registrada con self). */
+  onlyDirect: boolean
 }
 
 export const DEFAULT_FILTERS: GraphFilters = {
   category: 'all',
   minHealth: 0,
+  // Arranca activado: Aaron prefiere ver solo su red directa por defecto.
+  onlyDirect: true,
 }

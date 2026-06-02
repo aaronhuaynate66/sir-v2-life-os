@@ -19,6 +19,10 @@ import type { GraphData, GraphFilters, GraphNode } from './types'
 /** ¿Este nodo pasa los filtros activos? Self siempre visible. */
 export function isNodeVisible(node: GraphNode, filters: GraphFilters): boolean {
   if (node.isSelf) return true
+  // "Solo vínculos directos": oculta los de 2º grado (familiares de contactos
+  // sin interacción directa registrada — flag secondDegree del builder, que ya
+  // sale de observations/person_logs). Compone con categoría + salud.
+  if (filters.onlyDirect && node.secondDegree) return false
   if (filters.category !== 'all' && node.category !== filters.category) return false
   if (node.healthScore < filters.minHealth) return false
   return true

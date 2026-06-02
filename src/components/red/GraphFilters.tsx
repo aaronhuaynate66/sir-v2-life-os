@@ -21,8 +21,37 @@ export function GraphFiltersBar({ filters, onChange }: GraphFiltersProps) {
     onChange({ ...filters, minHealth: value })
   }
 
+  function toggleOnlyDirect() {
+    onChange({ ...filters, onlyDirect: !filters.onlyDirect })
+  }
+
   return (
     <div className="space-y-3">
+      {/* Toggle: solo vínculos directos (oculta 2º grado). */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans mr-1">
+          Vínculos
+        </span>
+        <Button
+          type="button"
+          variant={filters.onlyDirect ? 'default' : 'outline'}
+          size="sm"
+          onClick={toggleOnlyDirect}
+          className={cn(
+            'h-7 px-2.5 text-[11px]',
+            filters.onlyDirect && 'bg-primary text-primary-foreground hover:bg-primary/90',
+          )}
+          aria-pressed={filters.onlyDirect}
+        >
+          Solo vínculos directos
+        </Button>
+        <span className="text-[10px] text-muted-foreground/60">
+          {filters.onlyDirect
+            ? 'ocultando 2º grado (familiares de contactos)'
+            : 'mostrando 2º grado'}
+        </span>
+      </div>
+
       {/* Tabs de categoría */}
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[10px] uppercase tracking-widest text-muted-foreground/70 font-sans mr-1">
