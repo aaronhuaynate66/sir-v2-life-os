@@ -6,10 +6,19 @@
 // FIJA: subís la imagen, el detector reconoce el tipo y se procesa hacia el
 // perfil de ESTA persona — sin matcher.
 //
+// MULTI-IMAGEN (mismo perfil): podés subir VARIAS capturas del mismo perfil de
+// una sola vez (p. ej. 3 screenshots de distintas secciones de un LinkedIn).
+// Cada imagen pasa por el pipeline existente (detect → preview Vision → assess)
+// con UNA llamada por imagen (respeta maxDuration de Vercel, sin riesgo de
+// timeout), y luego CONSOLIDAMOS lo extraído en UN solo objeto (lib/capture/
+// merge/consolidateBatch, puro). Se persiste como UNA sola observación vía el
+// path confirmed_data ya existente. El guard de legibilidad se aplica POR
+// imagen: si una es ilegible se omite y se avisa, las demás se procesan.
+//
 // REVIEW-BEFORE-SAVE (hito 2): primero hacemos un PREVIEW (extrae sin guardar).
-// Si la confianza es alta → guardamos directo. Si es media/baja/desconocida →
-// mostramos los campos extraídos para que el usuario los revise y CONFIRME o
-// DESCARTE antes de persistir. Así no entra basura silenciosamente.
+// Una sola imagen con confianza alta → guarda directo. Si hubo consolidación
+// (≥2) o algún descarte, o la confianza es media/baja → mostramos los campos
+// consolidados para revisar y CONFIRMAR o DESCARTAR antes de persistir.
 //
 // Reusa el pipeline existente: detectCaptureType + previewCapture/processCapture
 // (con person_id fijo). La báscula es self (health_metrics, sin persona).
@@ -17,7 +26,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye, FileText, ClipboardPaste } from 'lucide-react'
+import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye, FileText, ClipboardPaste, X, Images } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,6 +44,7 @@ import { planPersonCapture } from '@/lib/capture/person-capture'
 import { resolveInstagramAutoLink } from '@/lib/social/links'
 import { useRelationshipStore } from '@/stores'
 import { assessExtraction, type ImageDims } from '@/lib/capture/legibility'
+import { consolidateBatch, type BatchItemInput } from '@/lib/capture/merge/consolidate'
 import {
   detectCaptureTypeFromText,
   detectorResultFromText,
@@ -52,6 +62,23 @@ interface ErrorState {
   detail?: string
 }
 
+/** Resumen de qué pasó con cada imagen del lote (para la UI de revisión). */
+interface BatchSummary {
+  /** Capturas que entraron en el merge consolidado. */
+  used: number
+  /** Omitidas por ilegibles. */
+  illegible: number
+  /** Eran báscula (van a salud, no al perfil). */
+  scale: number
+  /** Sin extractor asociable a persona. */
+  unsupported: number
+  /** Usables pero de otro tipo distinto al consolidado. */
+  mismatch: number
+  /** Fallaron en detect/preview. */
+  errored: number
+  total: number
+}
+
 interface PreviewState {
   /** De dónde salió: texto pegado (confiable) o imagen (Visión). */
   source: Mode
@@ -61,6 +88,11 @@ interface PreviewState {
   confidence: Confidence | null
   /** Solo en source='text': el texto pegado, para persistir al confirmar. */
   text?: string
+  /** Solo en source='image': la imagen REPRESENTATIVA a archivar (la primera
+   *  usable del lote). Una observación = una imagen fuente. */
+  file?: File
+  /** Solo en source='image' multi: resumen de la consolidación del lote. */
+  batch?: BatchSummary
 }
 
 const TEXT_TYPE_LABEL: Record<TextProfileType, string> = {
@@ -81,6 +113,28 @@ const CONF_META: Record<'high' | 'medium' | 'low' | 'unknown', { label: string; 
   medium: { label: 'confianza media', chip: 'border-warn/30 bg-warn-soft text-warn-foreground' },
   low: { label: 'confianza baja', chip: 'border-bad/30 bg-bad-soft text-bad-foreground' },
   unknown: { label: 'confianza s/d', chip: 'border-border bg-muted text-muted-foreground' },
+}
+
+/** Clave estable de un File para deduplicar la selección. */
+function fileKey(f: File): string {
+  return `${f.name}:${f.size}:${f.lastModified}`
+}
+
+/** Procesa `items` con concurrencia acotada (no saturar Vision/rate-limit ni
+ *  bloquear demasiado). Cada worker corre secuencialmente dentro de su carril. */
+async function runPool<T>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<void>,
+): Promise<void> {
+  let next = 0
+  const lanes = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++
+      await worker(items[i], i)
+    }
+  })
+  await Promise.all(lanes)
 }
 
 /** Filas legibles del JSON extraído para el panel de revisión. */
@@ -128,7 +182,8 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
   // Modo por defecto: TEXTO pegado (la vía confiable, sin OCR ilegible). La
   // imagen sigue disponible como alternativa.
   const [mode, setMode] = useState<Mode>('text')
-  const [file, setFile] = useState<File | null>(null)
+  // Multi-imagen: varias capturas del MISMO perfil en un solo envío.
+  const [files, setFiles] = useState<File[]>([])
   const [pastedText, setPastedText] = useState('')
   // Tipo del perfil pegado: se autodetecta del texto, con override manual.
   const [textType, setTextType] = useState<TextProfileType>('linkedin')
@@ -136,25 +191,52 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState<ErrorState | null>(null)
   const [savedType, setSavedType] = useState<CaptureType | null>(null)
+  const [savedCount, setSavedCount] = useState<number>(1)
   const [preview, setPreview] = useState<PreviewState | null>(null)
+  // Progreso del lote (k de N) mientras se extrae imagen por imagen.
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
 
   const reset = useCallback(() => {
-    setFile(null)
+    setFiles([])
     setPastedText('')
     setTextTypeTouched(false)
     setPhase('idle')
     setError(null)
     setSavedType(null)
+    setSavedCount(1)
     setPreview(null)
+    setProgress(null)
     if (inputRef.current) inputRef.current.value = ''
   }, [])
 
-  const onFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setFile(e.target.files?.[0] ?? null)
+  // Selección MÚLTIPLE: agrega las nuevas a las ya elegidas (dedup por
+  // nombre+tamaño+fecha), permitiendo sumar de a tandas antes de procesar.
+  const onFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? [])
+    if (picked.length > 0) {
+      setFiles((prev) => {
+        const seen = new Set(prev.map(fileKey))
+        const merged = [...prev]
+        for (const f of picked) {
+          const k = fileKey(f)
+          if (!seen.has(k)) {
+            seen.add(k)
+            merged.push(f)
+          }
+        }
+        return merged
+      })
+    }
     setPhase('idle')
     setError(null)
     setSavedType(null)
     setPreview(null)
+    // Resetear el input para poder re-seleccionar el mismo archivo si hace falta.
+    if (inputRef.current) inputRef.current.value = ''
+  }, [])
+
+  const removeFile = useCallback((idx: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== idx))
   }, [])
 
   // Al pegar/tipear texto: si el usuario no fijó el tipo a mano, lo
@@ -192,13 +274,13 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
             confirmedData: p.extracted,
           })
         } else {
-          if (!file) {
+          if (!p.file) {
             setError({ status: 0, message: 'No hay imagen para guardar' })
             setPhase('review')
             return
           }
           await processCapture({
-            file,
+            file: p.file,
             captureType: p.captureType,
             detectorData: p.detectorData,
             personId,
@@ -219,6 +301,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
           }
         }
         setSavedType(p.captureType)
+        setSavedCount(p.batch?.used ?? 1)
         setPhase('done')
         router.refresh()
       } catch (e) {
@@ -226,7 +309,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
         setPhase('review')
       }
     },
-    [file, personId, router, person?.instagramHandle, updatePerson],
+    [personId, router, person?.instagramHandle, updatePerson],
   )
 
   // Procesa TEXTO pegado: detecta tipo (override del usuario o autodetección),
@@ -264,58 +347,131 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
     }
   }, [pastedText, textType, persistConfirmed])
 
-  const run = useCallback(async () => {
-    if (!file) return
+  // Procesa el LOTE de imágenes (1..N) del MISMO perfil: detect + preview por
+  // imagen (una llamada Vision c/u → sin riesgo de timeout), assess de
+  // legibilidad por imagen, y consolidación pura en UN solo objeto.
+  const runImages = useCallback(async () => {
+    if (files.length === 0) return
     setPhase('working')
     setError(null)
-    try {
-      const detection = await detectCaptureType(file)
-      const type = detection.detected.type
-      const plan = planPersonCapture(type)
+    setPreview(null)
+    setProgress({ done: 0, total: files.length })
 
-      if (plan.kind === 'scale') {
-        setSavedType(type)
-        setPhase('scale')
-        return
-      }
-      if (plan.kind === 'unsupported') {
-        setSavedType(type)
-        setPhase('unsupported')
-        return
-      }
+    const detectorById: Record<string, DetectorResult> = {}
+    const items: BatchItemInput[] = []
+    let done = 0
 
-      // PREVIEW (extrae sin guardar) + medir dimensiones de la imagen original
-      // en paralelo (señal de legibilidad modelo-independiente).
-      const [pv, dims] = await Promise.all([
-        previewCapture({ file, captureType: type, detectorData: detection.detected }),
-        readImageDims(file),
-      ])
-      const state: PreviewState = {
-        source: 'image',
-        captureType: type,
-        detectorData: detection.detected,
-        extracted: pv.extracted,
-        confidence: pv.confidence,
+    await runPool(files, 3, async (file, idx) => {
+      const id = String(idx)
+      try {
+        const detection = await detectCaptureType(file)
+        const type = detection.detected.type
+        const plan = planPersonCapture(type)
+        detectorById[id] = detection.detected
+        if (plan.kind !== 'link') {
+          items.push({ id, plan: plan.kind, captureType: type })
+          return
+        }
+        const [pv, dims] = await Promise.all([
+          previewCapture({ file, captureType: type, detectorData: detection.detected }),
+          readImageDims(file),
+        ])
+        const verdict = assessExtraction(pv.extracted, pv.confidence, { dims, captureType: type })
+        items.push({
+          id,
+          plan: 'link',
+          captureType: type,
+          extracted: pv.extracted,
+          confidence: pv.confidence,
+          verdict,
+        })
+      } catch (e) {
+        items.push({
+          id,
+          plan: 'link',
+          captureType: 'unknown',
+          error: e instanceof Error ? e.message : String(e),
+        })
+      } finally {
+        done += 1
+        setProgress({ done, total: files.length })
       }
-      setPreview(state)
+    })
 
-      // Evaluar legibilidad: ilegible → cortar (no mostrar basura); dudoso →
-      // revisar; ok → guardar directo. Combina confianza + flag imageLegible
-      // del extractor + dimensiones (página entera = letra diminuta, aunque
-      // el LLM jure confianza alta).
-      const verdict = assessExtraction(pv.extracted, pv.confidence, { dims, captureType: type })
-      if (verdict === 'unreadable') {
-        setPhase('illegible')
-      } else if (verdict === 'ok') {
-        await persistConfirmed(state)
-      } else {
-        setPhase('review')
-      }
-    } catch (e) {
-      setError(toError(e))
-      setPhase('idle')
+    // runPool puede completar fuera de orden → ordenar por índice para que el
+    // merge (y la imagen representativa) sea determinístico.
+    items.sort((a, b) => Number(a.id) - Number(b.id))
+
+    const batch = consolidateBatch(items)
+    const summary: BatchSummary = {
+      used: batch.usedIds.length,
+      illegible: batch.illegibleIds.length,
+      scale: batch.scaleIds.length,
+      unsupported: batch.unsupportedIds.length,
+      mismatch: batch.mismatchIds.length,
+      errored: batch.erroredIds.length,
+      total: files.length,
     }
-  }, [file, persistConfirmed])
+
+    // Nada usable: elegir el mensaje terminal según qué dominó.
+    if (!batch.consolidatedType || !batch.extracted) {
+      // Si TODAS fueron del mismo callejón sin salida, mostramos su mensaje;
+      // si hubo ilegibles, priorizamos el aviso de ilegibilidad (lo más común).
+      if (summary.errored > 0 && summary.illegible === 0 && summary.scale === 0 && summary.unsupported === 0) {
+        setError({ status: 0, message: 'No se pudo procesar ninguna imagen', detail: `${summary.errored} fallaron.` })
+        setPhase('idle')
+        return
+      }
+      setPreview({
+        source: 'image',
+        captureType: 'unknown',
+        detectorData: { type: 'unknown', confidence: 'low', reasoning: '', suggestedPersonName: null },
+        extracted: {},
+        confidence: null,
+        batch: summary,
+      })
+      if (summary.illegible > 0) setPhase('illegible')
+      else if (summary.scale >= summary.unsupported && summary.scale > 0) setPhase('scale')
+      else setPhase('unsupported')
+      return
+    }
+
+    const repId = batch.usedIds[0]
+    const repFile = files[Number(repId)]
+    const state: PreviewState = {
+      source: 'image',
+      captureType: batch.consolidatedType,
+      detectorData: detectorById[repId] ?? {
+        type: batch.consolidatedType,
+        confidence: batch.confidence ?? 'medium',
+        reasoning: '',
+        suggestedPersonName: null,
+      },
+      extracted: batch.extracted,
+      confidence: batch.confidence,
+      file: repFile,
+      batch: summary,
+    }
+    setPreview(state)
+
+    // Una sola imagen, sin nada omitido y veredicto 'ok' → guardar directo
+    // (paridad EXACTA con la captura simple de antes). Cualquier consolidación
+    // (≥2) o descarte → siempre mostrar revisión.
+    const repItem = items.find((i) => i.id === repId)
+    const singleClean =
+      files.length === 1 &&
+      summary.used === 1 &&
+      summary.illegible === 0 &&
+      summary.scale === 0 &&
+      summary.unsupported === 0 &&
+      summary.mismatch === 0 &&
+      summary.errored === 0
+    if (singleClean && repItem?.verdict === 'ok') {
+      await persistConfirmed(state)
+      return
+    }
+    setPhase('review')
+  }, [files, persistConfirmed])
 
   const working = phase === 'working'
   const confirming = phase === 'confirming'
@@ -339,7 +495,8 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
             <div className="rounded-md border border-ok/30 bg-ok-soft p-3 text-xs flex items-center gap-2">
               <Check size={14} strokeWidth={2} className="text-ok flex-shrink-0" aria-hidden="true" />
               <span className="text-ok">
-                {savedType && TYPE_LABEL[savedType] ? `Captura de ${TYPE_LABEL[savedType]}` : 'Captura'} guardada
+                {savedType && TYPE_LABEL[savedType] ? `Captura de ${TYPE_LABEL[savedType]}` : 'Captura'}
+                {savedCount > 1 ? ` (consolidada de ${savedCount} imágenes)` : ''} guardada
                 y asociada a {personName}.
               </span>
             </div>
@@ -360,8 +517,16 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
                 </Badge>
               )}
             </div>
+
+            {/* Resumen de consolidación del lote (solo multi-imagen / descartes). */}
+            {preview?.batch && <BatchSummaryNote batch={preview.batch} />}
+
             <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
-              La confianza no es alta: confirmá que los datos están bien antes de asociarlos a {personName}.
+              {preview?.batch && preview.batch.used > 1 ? (
+                <>Combiné {preview.batch.used} capturas en un solo perfil. Confirmá que los datos están bien antes de asociarlos a {personName}.</>
+              ) : (
+                <>La confianza no es alta: confirmá que los datos están bien antes de asociarlos a {personName}.</>
+              )}{' '}
               Si la extracción salió mal (foto de baja resolución, datos cruzados), descartala.
             </p>
 
@@ -413,7 +578,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
                 </Link>
               </Button>
               <Button size="sm" variant="outline" onClick={reset} className="w-full sm:w-auto">
-                Elegir otra imagen
+                Elegir otras imágenes
               </Button>
             </div>
           </div>
@@ -423,11 +588,11 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
               <AlertCircle size={14} strokeWidth={1.75} className="text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span className="text-muted-foreground">
                 No reconocí un tipo asociable (chat de WhatsApp, perfil de Instagram/LinkedIn).
-                Probá con otra imagen.
+                Probá con otras imágenes.
               </span>
             </div>
             <Button size="sm" variant="outline" onClick={reset} className="w-full">
-              Elegir otra imagen
+              Elegir otras imágenes
             </Button>
           </div>
         ) : phase === 'illegible' ? (
@@ -442,7 +607,10 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
                   </>
                 ) : (
                   <>
-                    No pude leer bien esta imagen. Probá con una captura más nítida o más cercana —
+                    {preview?.batch && preview.batch.total > 1
+                      ? `Ninguna de las ${preview.batch.total} imágenes se pudo leer bien. `
+                      : 'No pude leer bien esta imagen. '}
+                    Probá con capturas más nítidas o más cercanas —
                     las <span className="font-medium">secciones del perfil</span> (no la página entera),
                     que la letra se lea grande. Tip: pegá el <span className="font-medium">texto</span> del
                     perfil, es más confiable. No guardé nada.
@@ -451,7 +619,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
               </span>
             </div>
             <Button size="sm" variant="outline" onClick={reset} className="w-full">
-              {preview?.source === 'text' ? 'Volver a intentar' : 'Elegir otra imagen'}
+              {preview?.source === 'text' ? 'Volver a intentar' : 'Elegir otras imágenes'}
             </Button>
           </div>
         ) : (
@@ -469,7 +637,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
                 active={mode === 'image'}
                 onClick={() => setMode('image')}
                 icon={<Camera size={12} strokeWidth={1.75} aria-hidden="true" />}
-                label="Subir imagen"
+                label="Subir imágenes"
                 disabled={working}
               />
             </div>
@@ -540,28 +708,60 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
               </>
             ) : (
               <>
+                <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                  Podés subir <span className="font-medium text-foreground">varias capturas del mismo perfil</span>{' '}
+                  a la vez (distintas secciones de un LinkedIn/Instagram): se combinan en un solo perfil.
+                </p>
                 <input
                   ref={inputRef}
                   type="file"
+                  multiple
                   accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={onFile}
+                  onChange={onFiles}
                   disabled={working}
                   className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10 disabled:opacity-50"
                 />
-                {file && (
-                  <div className="text-[11px] text-muted-foreground font-mono">
-                    {file.name} · {(file.size / 1024).toFixed(0)} KB
+
+                {/* Imágenes seleccionadas: lista con tamaño y quitar. */}
+                {files.length > 0 && (
+                  <div className="rounded-md border border-border/60 bg-muted/10 divide-y divide-border/30">
+                    {files.map((f, idx) => (
+                      <div key={`${fileKey(f)}:${idx}`} className="flex items-center gap-2 px-2.5 py-1.5 text-[11px]">
+                        <Images size={12} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0" aria-hidden="true" />
+                        <span className="text-foreground truncate min-w-0 flex-1 font-mono">{f.name}</span>
+                        <span className="text-muted-foreground/70 flex-shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(idx)}
+                          disabled={working}
+                          aria-label={`Quitar ${f.name}`}
+                          className="flex-shrink-0 rounded p-0.5 text-muted-foreground/60 hover:text-bad hover:bg-bad-soft transition-colors disabled:opacity-40"
+                        >
+                          <X size={13} strokeWidth={2} aria-hidden="true" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Progreso del lote mientras se extrae. */}
+                {working && progress && (
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                    <span>Procesando imagen {Math.min(progress.done + 1, progress.total)} de {progress.total}…</span>
                   </div>
                 )}
 
                 {error && <ApiErrorNotice error={error} className="p-2" />}
 
-                <Button size="sm" onClick={run} disabled={!file || working} className="w-full">
+                <Button size="sm" onClick={runImages} disabled={files.length === 0 || working} className="w-full">
                   {working ? (
                     <>
                       <Loader2 size={14} className="mr-2 animate-spin" />
-                      Detectando…
+                      Procesando…
                     </>
+                  ) : files.length > 1 ? (
+                    `Subir y combinar ${files.length} imágenes`
                   ) : (
                     'Subir y revisar'
                   )}
@@ -572,6 +772,28 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/** Línea-resumen de qué pasó con el lote (consolidadas + omitidas). */
+function BatchSummaryNote({ batch }: { batch: BatchSummary }) {
+  const skipped: string[] = []
+  if (batch.illegible > 0) skipped.push(`${batch.illegible} ilegible${batch.illegible > 1 ? 's' : ''}`)
+  if (batch.mismatch > 0) skipped.push(`${batch.mismatch} de otro tipo`)
+  if (batch.scale > 0) skipped.push(`${batch.scale} de báscula`)
+  if (batch.unsupported > 0) skipped.push(`${batch.unsupported} no soportada${batch.unsupported > 1 ? 's' : ''}`)
+  if (batch.errored > 0) skipped.push(`${batch.errored} con error`)
+
+  if (batch.total <= 1 && skipped.length === 0) return null
+
+  return (
+    <div className="rounded-md border border-border/60 bg-muted/10 px-3 py-2 text-[11px] text-muted-foreground flex items-start gap-2">
+      <Images size={13} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0 mt-0.5" aria-hidden="true" />
+      <span>
+        Consolidé <span className="font-medium text-foreground">{batch.used}</span> de {batch.total} capturas.
+        {skipped.length > 0 && <> Omití: {skipped.join(', ')}.</>}
+      </span>
+    </div>
   )
 }
 
