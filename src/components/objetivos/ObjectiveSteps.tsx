@@ -33,10 +33,13 @@ import {
   Pencil,
   Target,
   Gauge,
+  CalendarClock,
+  Lock,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { parseErrorResponse, withTimeoutHint, type ApiError } from '@/lib/api/errors'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
@@ -51,11 +54,34 @@ import {
   computeKeyResultProgress,
   normalizeOrders,
   moveStep,
+  isTask,
+  effectiveTaskStatus,
+  blockedByIncomplete,
+  wouldCreateDependencyCycle,
+  taskStatusPatch,
+  daysUntilStep,
 } from '@/lib/objectives/steps'
+import {
+  TASK_STATUS_META,
+  StatusControl,
+  EffortControl,
+  PriorityControl,
+  EffortChip,
+  PriorityChip,
+  nextTaskStatus,
+} from '@/components/objetivos/taskFields'
 import type { ProposedKeyResult, ProposedTask } from '@/lib/objectives/planPrompt'
 import { buildGroundingContext, renderGroundingForPrompt } from '@/lib/objectives/grounding'
 import { cn } from '@/lib/utils'
-import type { Goal, ObjectiveStep, ObjectiveStepKind, ObjectiveStepStatus } from '@/types'
+import type {
+  Goal,
+  ObjectiveStep,
+  ObjectiveStepKind,
+  ObjectiveStepStatus,
+  TaskStatus,
+  TaskEffort,
+  TaskPriority,
+} from '@/types'
 
 const STATUS_META: Record<ObjectiveStepStatus, { icon: typeof Circle; cls: string; label: string }> = {
   pendiente: { icon: Circle, cls: 'text-text-tertiary', label: 'pendiente' },
@@ -63,7 +89,7 @@ const STATUS_META: Record<ObjectiveStepStatus, { icon: typeof Circle; cls: strin
   hecho: { icon: Check, cls: 'text-ok', label: 'hecho' },
 }
 
-/** Cicla el estado: pendiente → en_progreso → hecho → pendiente. */
+/** Cicla el estado del KR: pendiente → en_progreso → hecho → pendiente. */
 function nextStatus(s: ObjectiveStepStatus): ObjectiveStepStatus {
   return s === 'pendiente' ? 'en_progreso' : s === 'en_progreso' ? 'hecho' : 'pendiente'
 }
@@ -99,6 +125,7 @@ export function ObjectiveSteps({
   const addSteps = useObjectiveStepStore((s) => s.addSteps)
   const updateStep = useObjectiveStepStore((s) => s.updateStep)
   const setStepStatus = useObjectiveStepStore((s) => s.setStepStatus)
+  const setTaskStatus = useObjectiveStepStore((s) => s.setTaskStatus)
   const removeStep = useObjectiveStepStore((s) => s.removeStep)
   const applyOrderChanges = useObjectiveStepStore((s) => s.applyOrderChanges)
 
@@ -131,6 +158,9 @@ export function ObjectiveSteps({
       parentId?: string
       targetDate?: string
       description?: string
+      acceptanceCriteria?: string
+      effort?: TaskEffort
+      priority?: TaskPriority
       salt?: number
     }): ObjectiveStep => ({
       id: `os_${Date.now()}_${opts.kind === 'task' ? 't' : 'k'}_${opts.order}_${opts.salt ?? 0}`,
@@ -143,6 +173,11 @@ export function ObjectiveSteps({
       status: 'pendiente',
       order: opts.order,
       createdAt: new Date().toISOString(),
+      // Campos Jira-light: sólo tienen sentido en tareas (los KRs los dejan vacíos).
+      acceptanceCriteria: opts.kind === 'task' ? opts.acceptanceCriteria?.trim() || undefined : undefined,
+      effort: opts.kind === 'task' ? opts.effort : undefined,
+      priority: opts.kind === 'task' ? opts.priority : undefined,
+      taskStatus: opts.kind === 'task' ? 'todo' : undefined,
     }),
     [goal.id],
   )
@@ -357,6 +392,9 @@ export function ObjectiveSteps({
             order: j,
             targetDate: tp.targetDate,
             description: tp.description,
+            acceptanceCriteria: tp.acceptanceCriteria,
+            effort: tp.effort,
+            priority: tp.priority,
             salt: i * 100 + j,
           }),
         )
@@ -392,12 +430,12 @@ export function ObjectiveSteps({
               key={kr.id}
               kr={kr}
               tasks={tasksForKeyResult(allSteps, kr.id)}
+              allSteps={allSteps}
               index={i}
               total={keyResults.length}
               expanded={!collapsed.has(kr.id)}
               editId={editId}
               editTitle={editTitle}
-              editDate={editDate}
               onToggleCollapse={() => toggleCollapse(kr.id)}
               onMoveKr={handleMoveKr}
               onRemoveKr={handleRemoveKr}
@@ -406,11 +444,14 @@ export function ObjectiveSteps({
               onSaveEdit={saveEdit}
               onCancelEdit={() => setEditId(null)}
               onEditTitle={setEditTitle}
-              onEditDate={setEditDate}
               onAddTask={handleAddTask}
               onMoveTask={handleMoveTask}
               onRemoveTask={handleRemoveTask}
-              onCycleTaskStatus={(id, st) => setStepStatus(id, st)}
+              onSetTaskStatus={(id, ts) => setTaskStatus(id, ts)}
+              onSaveTaskEdit={(id, patch) => {
+                updateStep(id, patch)
+                setEditId(null)
+              }}
             />
           ))}
         </ul>
@@ -479,12 +520,12 @@ export function ObjectiveSteps({
 function KeyResultRow({
   kr,
   tasks,
+  allSteps,
   index,
   total,
   expanded,
   editId,
   editTitle,
-  editDate,
   onToggleCollapse,
   onMoveKr,
   onRemoveKr,
@@ -493,20 +534,21 @@ function KeyResultRow({
   onSaveEdit,
   onCancelEdit,
   onEditTitle,
-  onEditDate,
   onAddTask,
   onMoveTask,
   onRemoveTask,
-  onCycleTaskStatus,
+  onSetTaskStatus,
+  onSaveTaskEdit,
 }: {
   kr: ObjectiveStep
   tasks: ObjectiveStep[]
+  /** Todos los pasos del objetivo: para detectar bloqueos y ofrecer dependencias. */
+  allSteps: ObjectiveStep[]
   index: number
   total: number
   expanded: boolean
   editId: string | null
   editTitle: string
-  editDate: string
   onToggleCollapse: () => void
   onMoveKr: (id: string, dir: 'up' | 'down') => void
   onRemoveKr: (kr: ObjectiveStep) => void
@@ -515,11 +557,11 @@ function KeyResultRow({
   onSaveEdit: () => void
   onCancelEdit: () => void
   onEditTitle: (v: string) => void
-  onEditDate: (v: string) => void
   onAddTask: (kr: ObjectiveStep, title: string, date: string) => void
   onMoveTask: (kr: ObjectiveStep, id: string, dir: 'up' | 'down') => void
   onRemoveTask: (kr: ObjectiveStep, task: ObjectiveStep) => void
-  onCycleTaskStatus: (id: string, st: ObjectiveStepStatus) => void
+  onSetTaskStatus: (id: string, ts: TaskStatus) => void
+  onSaveTaskEdit: (id: string, patch: Partial<ObjectiveStep>) => void
 }) {
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDate, setNewTaskDate] = useState('')
@@ -620,65 +662,29 @@ function KeyResultRow({
       {/* Tareas */}
       {expanded && (
         <div className="pl-8 pr-2.5 pb-2.5 space-y-1">
-          {tasks.map((t, ti) => {
-            const meta = STATUS_META[t.status]
-            const TIcon = meta.icon
-            const editing = editId === t.id
-            return (
-              <div key={t.id} className="flex items-start gap-2 py-0.5">
-                <button
-                  type="button"
-                  onClick={() => onCycleTaskStatus(t.id, nextStatus(t.status))}
-                  className={cn('mt-0.5 flex-shrink-0 transition-colors hover:opacity-80', meta.cls)}
-                  aria-label={`Estado: ${meta.label}. Click para cambiar.`}
-                  title={meta.label}
-                >
-                  <TIcon size={15} strokeWidth={2} />
-                </button>
-                {editing ? (
-                  <div className="flex-1 flex flex-col sm:flex-row gap-1.5">
-                    <Input
-                      value={editTitle}
-                      onChange={(e) => onEditTitle(e.target.value)}
-                      className="flex-1 h-8 text-sm"
-                      placeholder="Tarea"
-                      onKeyDown={(e) => e.key === 'Enter' && onSaveEdit()}
-                    />
-                    <Input
-                      type="date"
-                      value={editDate}
-                      onChange={(e) => onEditDate(e.target.value)}
-                      className="h-8 w-full sm:w-36 font-mono text-xs"
-                    />
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="outline" onClick={onSaveEdit} className="h-8">Guardar</Button>
-                      <Button size="sm" variant="ghost" onClick={onCancelEdit} className="h-8">Cancelar</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex-1 min-w-0">
-                      <div className={cn('text-[13px]', t.status === 'hecho' ? 'text-muted-foreground line-through' : 'text-foreground')}>
-                        {t.title}
-                      </div>
-                      {t.description && (
-                        <div className="text-[11px] text-muted-foreground/80 mt-0.5">{t.description}</div>
-                      )}
-                      {t.targetDate && (
-                        <div className="text-[10px] text-muted-foreground/60 font-mono mt-0.5">{t.targetDate}</div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-0.5 flex-shrink-0">
-                      <IconBtn label="Subir tarea" disabled={ti === 0} onClick={() => onMoveTask(kr, t.id, 'up')}><ChevronUp size={13} /></IconBtn>
-                      <IconBtn label="Bajar tarea" disabled={ti === tasks.length - 1} onClick={() => onMoveTask(kr, t.id, 'down')}><ChevronDown size={13} /></IconBtn>
-                      <IconBtn label="Editar tarea" onClick={() => onStartEdit(t)}><Pencil size={12} /></IconBtn>
-                      <IconBtn label="Borrar tarea" danger onClick={() => onRemoveTask(kr, t)}><Trash2 size={12} /></IconBtn>
-                    </div>
-                  </>
-                )}
-              </div>
-            )
-          })}
+          {tasks.map((t, ti) =>
+            editId === t.id ? (
+              <TaskEditor
+                key={t.id}
+                task={t}
+                allSteps={allSteps}
+                onSave={(patch) => onSaveTaskEdit(t.id, patch)}
+                onCancel={onCancelEdit}
+              />
+            ) : (
+              <TaskRow
+                key={t.id}
+                task={t}
+                allSteps={allSteps}
+                first={ti === 0}
+                last={ti === tasks.length - 1}
+                onSetStatus={onSetTaskStatus}
+                onStartEdit={() => onStartEdit(t)}
+                onMove={(dir) => onMoveTask(kr, t.id, dir)}
+                onRemove={() => onRemoveTask(kr, t)}
+              />
+            ),
+          )}
 
           {/* Alta de tarea */}
           <div className="flex flex-col sm:flex-row gap-1.5 pt-1">
@@ -733,6 +739,256 @@ function IconBtn({
     >
       {children}
     </button>
+  )
+}
+
+/** Frase relativa breve de una fecha de tarea (para el due date). */
+function dueHint(days: number): string {
+  if (days < 0) return `vencida hace ${Math.abs(days)}d`
+  if (days === 0) return 'vence hoy'
+  if (days === 1) return 'vence mañana'
+  return `en ${days}d`
+}
+
+/** Fila de TAREA en modo lectura: estado (4), criterio, fecha, esfuerzo, prioridad,
+ *  bloqueo. Las vencidas/bloqueadas se resaltan con semánticos (urgencia/bloqueo). */
+function TaskRow({
+  task,
+  allSteps,
+  first,
+  last,
+  onSetStatus,
+  onStartEdit,
+  onMove,
+  onRemove,
+}: {
+  task: ObjectiveStep
+  allSteps: ObjectiveStep[]
+  first: boolean
+  last: boolean
+  onSetStatus: (id: string, ts: TaskStatus) => void
+  onStartEdit: () => void
+  onMove: (dir: 'up' | 'down') => void
+  onRemove: () => void
+}) {
+  const effective = effectiveTaskStatus(task)
+  const done = effective === 'done'
+  const depsIncomplete = blockedByIncomplete(task, allSteps)
+  const blocked = effective === 'blocked' || depsIncomplete.length > 0
+  const days = task.targetDate ? daysUntilStep(task, new Date()) : null
+  const overdue = days != null && days < 0 && !done
+
+  // Ícono de estado: si está bloqueada (explícito o por dependencia) mostramos
+  // el ícono de bloqueo; si no, el del estado efectivo. Click cicla el flujo.
+  const display = blocked ? TASK_STATUS_META.blocked : TASK_STATUS_META[effective]
+  const DIcon = display.icon
+
+  return (
+    <div className="flex items-start gap-2 py-0.5">
+      <button
+        type="button"
+        onClick={() => onSetStatus(task.id, nextTaskStatus(effective))}
+        className={cn('mt-0.5 flex-shrink-0 transition-colors hover:opacity-80', display.cls)}
+        aria-label={`Estado: ${display.label}. Click para avanzar.`}
+        title={blocked ? 'Bloqueada' : display.label}
+      >
+        <DIcon size={15} strokeWidth={2} />
+      </button>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={cn('text-[13px]', done ? 'text-muted-foreground line-through' : 'text-foreground')}>
+            {task.title}
+          </span>
+          {task.priority && <PriorityChip priority={task.priority} />}
+          {task.effort && <EffortChip effort={task.effort} />}
+        </div>
+
+        {task.description && (
+          <div className="text-[11px] text-muted-foreground/80 mt-0.5">{task.description}</div>
+        )}
+
+        {task.acceptanceCriteria && (
+          <div className="mt-0.5 flex items-start gap-1 text-[11px] text-text-tertiary">
+            <Check size={11} className="mt-0.5 flex-shrink-0 opacity-70" aria-hidden="true" />
+            <span>{task.acceptanceCriteria}</span>
+          </div>
+        )}
+
+        {(task.targetDate || blocked) && (
+          <div className="mt-0.5 flex items-center gap-2 flex-wrap text-[10px] font-mono">
+            {task.targetDate && (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-1',
+                  overdue ? 'text-bad-foreground' : 'text-muted-foreground/60',
+                )}
+              >
+                <CalendarClock size={10} aria-hidden="true" />
+                {task.targetDate}
+                {days != null && <span className="opacity-80">· {dueHint(days)}</span>}
+              </span>
+            )}
+            {blocked && (
+              <span className="inline-flex items-center gap-1 text-bad-foreground" title="Bloqueada">
+                <Lock size={10} aria-hidden="true" />
+                {depsIncomplete.length > 0
+                  ? `depende de: ${depsIncomplete.map((d) => d.title).join(', ')}`
+                  : 'bloqueada'}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-0.5 flex-shrink-0">
+        <IconBtn label="Subir tarea" disabled={first} onClick={() => onMove('up')}><ChevronUp size={13} /></IconBtn>
+        <IconBtn label="Bajar tarea" disabled={last} onClick={() => onMove('down')}><ChevronDown size={13} /></IconBtn>
+        <IconBtn label="Editar tarea" onClick={onStartEdit}><Pencil size={12} /></IconBtn>
+        <IconBtn label="Borrar tarea" danger onClick={onRemove}><Trash2 size={12} /></IconBtn>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Editor inline de una tarea (Jira-light): título, criterio de aceptación, fecha,
+ * esfuerzo, prioridad, estado de workflow (4) y dependencias. Estado local propio
+ * (no se sube al padre): al guardar emite un patch único. Las dependencias que
+ * crearían un ciclo se ofrecen deshabilitadas.
+ */
+function TaskEditor({
+  task,
+  allSteps,
+  onSave,
+  onCancel,
+}: {
+  task: ObjectiveStep
+  allSteps: ObjectiveStep[]
+  onSave: (patch: Partial<ObjectiveStep>) => void
+  onCancel: () => void
+}) {
+  const [title, setTitle] = useState(task.title)
+  const [date, setDate] = useState(task.targetDate ?? '')
+  const [acceptance, setAcceptance] = useState(task.acceptanceCriteria ?? '')
+  const [effort, setEffort] = useState<TaskEffort | undefined>(task.effort)
+  const [priority, setPriority] = useState<TaskPriority | undefined>(task.priority)
+  const [status, setStatus] = useState<TaskStatus>(effectiveTaskStatus(task))
+  const [deps, setDeps] = useState<string[]>(task.blockedBy ?? [])
+
+  // Candidatas a dependencia: otras tareas del MISMO objetivo (self-ref). Las que
+  // cerrarían un ciclo se muestran deshabilitadas (no se pueden tildar).
+  const candidates = allSteps.filter(
+    (s) => isTask(s) && s.objectiveId === task.objectiveId && s.id !== task.id,
+  )
+
+  function toggleDep(id: string) {
+    setDeps((prev) => (prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]))
+  }
+
+  function save() {
+    const t = title.trim()
+    if (!t) {
+      toast.error('Título requerido', { description: 'La tarea no puede quedar vacía.' })
+      return
+    }
+    onSave({
+      title: t,
+      targetDate: date || undefined,
+      acceptanceCriteria: acceptance.trim() || undefined,
+      effort,
+      priority,
+      blockedBy: deps.length > 0 ? deps : undefined,
+      ...taskStatusPatch(status),
+    })
+  }
+
+  return (
+    <div className="rounded-md border border-brand/30 bg-muted/30 p-2.5 space-y-2">
+      <Input
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        className="h-8 text-sm"
+        placeholder="Tarea"
+        autoFocus
+        onKeyDown={(e) => e.key === 'Enter' && save()}
+      />
+
+      <div>
+        <label className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary">
+          Criterio de aceptación (definición de hecho)
+        </label>
+        <Textarea
+          value={acceptance}
+          onChange={(e) => setAcceptance(e.target.value)}
+          placeholder="¿Cómo sabés que quedó terminada? Ej.: visa aprobada y en pasaporte."
+          className="mt-0.5 min-h-[44px] text-[13px]"
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.07em] text-text-tertiary">
+          Fecha
+          <Input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="h-7 w-36 font-mono text-xs normal-case tracking-normal"
+            aria-label="Fecha objetivo de la tarea"
+          />
+        </label>
+        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.07em] text-text-tertiary">
+          Esfuerzo
+          <EffortControl value={effort} onChange={setEffort} />
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.07em] text-text-tertiary">
+          Prioridad
+          <PriorityControl value={priority} onChange={setPriority} />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.07em] text-text-tertiary">
+        Estado
+        <StatusControl value={status} onChange={setStatus} />
+      </div>
+
+      {candidates.length > 0 && (
+        <div>
+          <span className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary">
+            Depende de
+          </span>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {candidates.map((c) => {
+              const selected = deps.includes(c.id)
+              const cyclic = !selected && wouldCreateDependencyCycle(allSteps, task.id, c.id)
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  disabled={cyclic}
+                  onClick={() => toggleDep(c.id)}
+                  title={cyclic ? 'Crearía una dependencia circular' : c.title}
+                  className={cn(
+                    'max-w-[14rem] truncate rounded border px-1.5 py-0.5 text-[11px] transition-colors',
+                    selected
+                      ? 'border-brand/40 bg-brand-soft text-brand-soft-foreground'
+                      : 'border-border/60 text-text-tertiary hover:text-foreground hover:bg-muted/40',
+                    cyclic && 'opacity-30 cursor-not-allowed hover:bg-transparent',
+                  )}
+                >
+                  {c.title}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-1 pt-0.5">
+        <Button size="sm" variant="outline" onClick={save} className="h-8">Guardar</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel} className="h-8">Cancelar</Button>
+      </div>
+    </div>
   )
 }
 
@@ -805,29 +1061,48 @@ function PlanReview({
               {kr.tasks.length > 0 && (
                 <ul className="pl-5 space-y-1">
                   {kr.tasks.map((t, j) => (
-                    <li key={j} className="flex flex-col sm:flex-row gap-1.5 items-start">
-                      <span className="text-[10px] font-mono text-muted-foreground/50 mt-2 w-4 flex-shrink-0">{j + 1}.</span>
+                    <li key={j} className="space-y-1 border-l border-border/40 pl-2">
+                      <div className="flex gap-1.5 items-start">
+                        <span className="text-[10px] font-mono text-muted-foreground/50 mt-2 w-4 flex-shrink-0">{j + 1}.</span>
+                        <Input
+                          value={t.title}
+                          onChange={(e) => onChangeTask(i, j, { title: e.target.value })}
+                          className="h-7 text-[13px] flex-1"
+                          placeholder="Tarea concreta"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onRemoveTask(i, j)}
+                          className="p-1 text-muted-foreground/50 hover:text-bad flex-shrink-0"
+                          aria-label={`Quitar tarea ${i + 1}.${j + 1}`}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                       <Input
-                        value={t.title}
-                        onChange={(e) => onChangeTask(i, j, { title: e.target.value })}
-                        className="h-7 text-[13px] flex-1"
-                        placeholder="Tarea concreta"
+                        value={t.acceptanceCriteria ?? ''}
+                        onChange={(e) => onChangeTask(i, j, { acceptanceCriteria: e.target.value || undefined })}
+                        className="h-7 text-[12px] ml-5"
+                        placeholder="Criterio de aceptación (definición de hecho)"
+                        aria-label={`Criterio de aceptación tarea ${i + 1}.${j + 1}`}
                       />
-                      <Input
-                        type="date"
-                        value={t.targetDate ?? ''}
-                        onChange={(e) => onChangeTask(i, j, { targetDate: e.target.value || undefined })}
-                        className="h-7 w-full sm:w-36 font-mono text-xs"
-                        aria-label={`Fecha tarea ${i + 1}.${j + 1}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => onRemoveTask(i, j)}
-                        className="p-1 text-muted-foreground/50 hover:text-bad flex-shrink-0"
-                        aria-label={`Quitar tarea ${i + 1}.${j + 1}`}
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                      <div className="ml-5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                        <Input
+                          type="date"
+                          value={t.targetDate ?? ''}
+                          onChange={(e) => onChangeTask(i, j, { targetDate: e.target.value || undefined })}
+                          className="h-7 w-36 font-mono text-xs"
+                          aria-label={`Fecha tarea ${i + 1}.${j + 1}`}
+                        />
+                        <EffortControl
+                          value={t.effort}
+                          onChange={(v) => onChangeTask(i, j, { effort: v })}
+                        />
+                        <PriorityControl
+                          value={t.priority}
+                          onChange={(v) => onChangeTask(i, j, { priority: v })}
+                        />
+                      </div>
                     </li>
                   ))}
                 </ul>
