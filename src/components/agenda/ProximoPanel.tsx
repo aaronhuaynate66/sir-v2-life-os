@@ -72,12 +72,17 @@ export interface ProximoPanelProps {
   showViewAll?: boolean
   /** Override del título del header. */
   title?: string
+  /** Omitir los nudges de relaciones descuidadas (no_contact). Se usa en /agenda,
+   *  donde "Hoy con tu gente" (DailyActionsPanel) ya cubre las relaciones — así
+   *  no duplicamos. /panel lo deja en false (ahí no hay DailyActions). */
+  excludeNoContact?: boolean
 }
 
 export function ProximoPanel({
   limit,
   showViewAll = false,
   title = 'Próximo',
+  excludeNoContact = false,
 }: ProximoPanelProps) {
   const people = useRelationshipStore((s) => s.people)
   const personLinks = useRelationshipStore((s) => s.personLinks)
@@ -96,7 +101,7 @@ export function ProximoPanel({
     now != null
       ? buildAgenda(
           { people, goals, objectiveSteps, signals, identityProfile, personLinks },
-          { limit },
+          { limit, excludeNoContact },
           now,
         )
       : null

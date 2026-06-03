@@ -101,6 +101,10 @@ export interface AgendaOptions {
   highImportanceThresholdDays?: number
   /** Límite de items devueltos (tras ordenar). undefined = sin límite. */
   limit?: number
+  /** Omitir los items 'no_contact' (relaciones descuidadas). Para pantallas
+   *  donde el ranking de relaciones lo cubre OTRA superficie (ej. /agenda monta
+   *  "Hoy con tu gente") y mostrarlos acá duplicaría. Default false. */
+  excludeNoContact?: boolean
 }
 
 const RANK: Record<string, number> = {
@@ -504,7 +508,9 @@ export function buildAgenda(
 
   const items: AgendaItem[] = [
     ...buildCriticalSignals(input.signals),
-    ...buildNoContact(input.people, baseThreshold, highThreshold, kinshipMap, now),
+    ...(options.excludeNoContact
+      ? []
+      : buildNoContact(input.people, baseThreshold, highThreshold, kinshipMap, now)),
     ...buildGoalTargets(input.goals, horizonDays, now),
     ...buildObjectiveSteps(input.goals, input.objectiveSteps ?? [], horizonDays, now),
     ...buildBirthdays(input.people, horizonDays, now),

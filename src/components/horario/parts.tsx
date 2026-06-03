@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CalendarHeart,
   Cake,
+  ChevronRight,
   Clock,
   Gift,
   HeartPulse,
@@ -243,31 +244,72 @@ function Stat({
   )
 }
 
+/** Grid de stats físicos (sueño/energía/peso/FC). Reusado por la tarjeta y por
+ *  el strip plegado de contexto. */
+function PhysicalStats({ state }: { state: PhysicalState }) {
+  return (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
+      {state.sleepHours != null && (
+        <Stat
+          icon={Moon}
+          label="Sueño"
+          value={`${state.sleepHours} h`}
+          hint={state.sleepQuality != null ? `calidad ${state.sleepQuality}/10` : undefined}
+        />
+      )}
+      {state.energy != null && <Stat icon={Zap} label="Energía" value={`${state.energy}/10`} />}
+      {state.weightKg != null && (
+        <Stat icon={Scale} label="Peso" value={`${state.weightKg} kg`} hint={fmtDate(state.weightAt)} />
+      )}
+      {state.heartRate != null && (
+        <Stat icon={HeartPulse} label="FC" value={`${state.heartRate} lpm`} hint={fmtDate(state.heartRateAt)} />
+      )}
+    </div>
+  )
+}
+
 export function PhysicalStateCard({ state }: { state: PhysicalState }) {
   if (state.empty) return null
   return (
     <Card className="shadow-none">
       <CardContent className="p-4 sm:p-5">
         <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-3">Estado del día</div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
-          {state.sleepHours != null && (
-            <Stat
-              icon={Moon}
-              label="Sueño"
-              value={`${state.sleepHours} h`}
-              hint={state.sleepQuality != null ? `calidad ${state.sleepQuality}/10` : undefined}
-            />
-          )}
-          {state.energy != null && <Stat icon={Zap} label="Energía" value={`${state.energy}/10`} />}
-          {state.weightKg != null && (
-            <Stat icon={Scale} label="Peso" value={`${state.weightKg} kg`} hint={fmtDate(state.weightAt)} />
-          )}
-          {state.heartRate != null && (
-            <Stat icon={HeartPulse} label="FC" value={`${state.heartRate} lpm`} hint={fmtDate(state.heartRateAt)} />
-          )}
-        </div>
+        <PhysicalStats state={state} />
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Contexto físico del día PLEGADO y al FINAL: /horario cuenta la historia del
+ * TIEMPO, no la biológica. El peso/sueño/energía viven en /yo; acá quedan como
+ * contexto opcional, cerrado por default, para no abrir la página con ellos.
+ */
+export function DayContextStrip({ state }: { state: PhysicalState }) {
+  if (state.empty) return null
+  return (
+    <details className="group rounded-md border border-border/60 bg-muted/15">
+      <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer list-none text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <HeartPulse size={13} strokeWidth={1.75} className="shrink-0 text-muted-foreground/70" aria-hidden="true" />
+        <span className="flex-1">Contexto del día</span>
+        <ChevronRight
+          size={14}
+          strokeWidth={2}
+          className="shrink-0 text-muted-foreground/40 transition-transform group-open:rotate-90"
+          aria-hidden="true"
+        />
+      </summary>
+      <div className="px-3 pb-3 pt-1">
+        <PhysicalStats state={state} />
+        <p className="mt-3 text-[11px] text-muted-foreground/60">
+          Tu estado físico completo (peso, sueño, salud) vive en{' '}
+          <Link href="/yo" className="underline underline-offset-2 hover:text-foreground">
+            /yo
+          </Link>
+          .
+        </p>
+      </div>
+    </details>
   )
 }
 

@@ -12,6 +12,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
 import { CalendarPanel } from '@/components/agenda/CalendarPanel'
 import { CalendarConnections } from '@/components/agenda/CalendarConnections'
+import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 
@@ -37,8 +38,16 @@ export default function AgendaPage() {
         </p>
       </motion.div>
 
-      {/* PRIMARIO: lo accionable (motor proactivo) manda la página. */}
-      <ProximoPanel title="Lo que importa ahora" />
+      {/* PRIMARIO: lo accionable (motor proactivo) manda la página. Las
+          relaciones descuidadas las cubre "Hoy con tu gente" abajo → acá
+          excluimos no_contact para no duplicar. */}
+      <ProximoPanel title="Lo que importa ahora" excludeNoContact />
+
+      {/* Relaciones que requieren acción (antes vivía en /horario): ranking de
+          descuidadas + rituales, con mensaje copiable on-demand. */}
+      <div className="mb-6">
+        <DailyActionsPanel />
+      </div>
 
       {/* SECUNDARIO: calendario externo con los recurrentes plegados. La vista
           completa de tiempo vive en /horario. */}

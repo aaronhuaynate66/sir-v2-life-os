@@ -2,9 +2,11 @@
 
 // SIR V2 — /horario · vista DÍA.
 //
-// El día operativo: estado físico → sobrecarga → AHORA/PRÓXIMO (countdown en
-// vivo) → línea de tiempo del calendario, CON las tareas OKR que vencen hoy
-// fusionadas arriba. El calendario es una fuente más, no el centro.
+// /horario cuenta UNA historia: CÓMO SE VE TU TIEMPO. La vista Día abre con el
+// día hora por hora — AHORA/PRÓXIMO (countdown en vivo) → línea de tiempo del
+// calendario con las tareas OKR que vencen hoy → y el estado físico queda
+// PLEGADO al final (contexto, no protagonista; vive en /yo). Las relaciones que
+// requieren acción ("Hoy con tu gente") se mudaron a /agenda — acá no van.
 
 import { CalendarDays, Flame, MapPin } from 'lucide-react'
 
@@ -15,14 +17,13 @@ import type { DayTimeline, TimelineBlock, OverloadLevel } from '@/lib/calendar/t
 import type { CockpitTask } from '@/lib/horario/cockpit'
 import type { PhysicalState } from '@/lib/horario/physical'
 import {
-  PhysicalStateCard,
+  DayContextStrip,
   TaskRow,
   CalendarHint,
   EmptyNote,
   limaTime,
   formatCountdown,
 } from './parts'
-import { DailyActionsPanel } from './DailyActionsPanel'
 
 const OVERLOAD_STYLE: Record<OverloadLevel, { text: string; border: string; bg: string }> = {
   ok: { text: 'text-ok', border: 'border-ok/30', bg: 'bg-ok-soft' },
@@ -54,30 +55,30 @@ export function DiaView({
 
   return (
     <div className="space-y-5">
-      {/* Estado físico/energía del día */}
-      <PhysicalStateCard state={physical} />
+      {/* All-day: marco del día */}
+      {timeline.allDay.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {timeline.allDay.map((e) => (
+            <Badge key={e.id} variant="brand" className="text-[11px] font-normal">
+              <CalendarDays size={11} strokeWidth={1.75} className="mr-1" aria-hidden="true" />
+              {e.title}
+            </Badge>
+          ))}
+        </div>
+      )}
 
-      {/* Tareas OKR que vencen hoy (fusión) */}
-      {tasksToday.length > 0 && (
-        <Card className="shadow-none">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Vencen hoy</div>
-              <span className="text-[11px] font-mono tabular-nums text-text-tertiary">{tasksToday.length}</span>
-            </div>
-            <ul className="space-y-0.5">
-              {tasksToday.map((t) => (
-                <li key={t.id}>
-                  <TaskRow task={t} />
-                </li>
-              ))}
-            </ul>
+      {/* AHORA / PRÓXIMO — qué pasa ahora y qué sigue */}
+      <NowNext timeline={timeline} nowMs={nowMs} />
+
+      {/* Sobrecarga del día */}
+      {timeline.overload.level !== 'ok' && (
+        <Card className={cn('shadow-none', o.border, o.bg)}>
+          <CardContent className="p-4 flex items-center gap-3">
+            <Flame size={16} strokeWidth={1.75} className={cn('flex-shrink-0', o.text)} aria-hidden="true" />
+            <span className="text-sm text-foreground/90">{timeline.overload.reason}</span>
           </CardContent>
         </Card>
       )}
-
-      {/* Hoy con tu gente — Daily Actions + rituales (GEMA A+B) */}
-      <DailyActionsPanel />
 
       {/* Leyenda multi-calendario */}
       {showLegend && (
@@ -91,32 +92,7 @@ export function DiaView({
         </div>
       )}
 
-      {/* Sobrecarga */}
-      {timeline.overload.level !== 'ok' && (
-        <Card className={cn('shadow-none', o.border, o.bg)}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Flame size={16} strokeWidth={1.75} className={cn('flex-shrink-0', o.text)} aria-hidden="true" />
-            <span className="text-sm text-foreground/90">{timeline.overload.reason}</span>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* All-day */}
-      {timeline.allDay.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {timeline.allDay.map((e) => (
-            <Badge key={e.id} variant="brand" className="text-[11px] font-normal">
-              <CalendarDays size={11} strokeWidth={1.75} className="mr-1" aria-hidden="true" />
-              {e.title}
-            </Badge>
-          ))}
-        </div>
-      )}
-
-      {/* AHORA / PRÓXIMO */}
-      <NowNext timeline={timeline} nowMs={nowMs} />
-
-      {/* Línea de tiempo del calendario */}
+      {/* Línea de tiempo del calendario — el día hora por hora */}
       {!configured ? (
         <CalendarHint />
       ) : calendarError && !hasCalendar ? (
@@ -135,6 +111,28 @@ export function DiaView({
           </CardContent>
         </Card>
       )}
+
+      {/* Tareas OKR que vencen hoy (acción con fecha del día) */}
+      {tasksToday.length > 0 && (
+        <Card className="shadow-none">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Vencen hoy</div>
+              <span className="text-[11px] font-mono tabular-nums text-text-tertiary">{tasksToday.length}</span>
+            </div>
+            <ul className="space-y-0.5">
+              {tasksToday.map((t) => (
+                <li key={t.id}>
+                  <TaskRow task={t} />
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Contexto físico del día — PLEGADO y al final (vive en /yo) */}
+      <DayContextStrip state={physical} />
     </div>
   )
 }
