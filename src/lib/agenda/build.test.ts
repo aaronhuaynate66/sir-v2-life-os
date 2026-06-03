@@ -10,10 +10,29 @@
 
 import { describe, it, expect } from 'vitest'
 
-import type { Goal, ObjectiveStep, Person, Signal, SpecialDate } from '@/types'
+import type { Goal, ObjectiveStep, Person, PersonLink, Signal, SpecialDate } from '@/types'
+import type { IdentityProfile } from '@/lib/identity'
+import { SELF_ID } from '@/lib/relationships/family'
 import { buildAgenda } from './build'
 
 const NOW = new Date(2026, 5, 1) // 1-jun-2026, medianoche local.
+
+function identity(over: Partial<IdentityProfile>): IdentityProfile {
+  return {
+    id: 'idn_1',
+    fullName: over.fullName ?? 'Aaron',
+    birthDate: over.birthDate ?? null,
+    roles: over.roles ?? [],
+    location: over.location ?? '',
+    specialDates: over.specialDates ?? [],
+    updatedAt: '2026-01-01T00:00:00Z',
+    ...over,
+  }
+}
+
+function selfLink(personBId: string, kind: PersonLink['kind']): PersonLink {
+  return { id: `l_${personBId}`, personAId: SELF_ID, personBId, kind, createdAt: '2026-01-01T00:00:00Z' }
+}
 
 function person(over: Partial<Person>): Person {
   return {
@@ -537,6 +556,158 @@ describe('buildAgenda — orden por urgencia', () => {
     // Las 2 inmediatas ganan al recortar (sortRank 0 antes que 'soon').
     expect(items.map((i) => i.title)).toEqual(['A', 'B'])
     expect(items[2]).toBeUndefined()
+  })
+})
+
+describe('buildAgenda — anticipación (motor proactivo)', () => {
+  it('cumpleaños a <=14 días → actionHint "Prepará algo"', () => {
+    const items = buildAgenda(
+      { ...EMPTY, people: [person({ name: 'Diana', birthDate: '1995-06-10' })] }, // en 9 días
+      {},
+      NOW,
+    )
+    const bday = items.find((i) => i.kind === 'birthday')!
+    expect(bday.actionHint).toBe('Prepará algo con tiempo')
+  })
+
+  it('cumpleaños a <=3 días → actionHint más urgente', () => {
+    const items = buildAgenda(
+      { ...EMPTY, people: [person({ birthDate: '1995-06-03' })] }, // en 2 días
+      {},
+      NOW,
+    )
+    const bday = items.find((i) => i.kind === 'birthday')!
+    expect(bday.actionHint).toBe('Es pronto — no lo dejes pasar')
+  })
+
+  it('cumpleaños lejano (dentro del horizonte pero >14d) → sin actionHint', () => {
+    const items = buildAgenda(
+      { ...EMPTY, people: [person({ birthDate: '1995-06-25' })] }, // en 24 días
+      {},
+      NOW,
+    )
+    const bday = items.find((i) => i.kind === 'birthday')!
+    expect(bday.actionHint).toBeUndefined()
+  })
+})
+
+describe('buildAgenda — fechas propias (identity_profile)', () => {
+  it('cumpleaños propio → item self con edad ("cumplís")', () => {
+    const items = buildAgenda(
+      { ...EMPTY, identityProfile: identity({ birthDate: '1992-06-06' }) },
+      {},
+      NOW,
+    )
+    const self = items.find((i) => i.kind === 'self_special_date')!
+    expect(self.title).toBe('Tu cumpleaños')
+    expect(self.detail).toContain('cumplís 34')
+    expect(self.href).toBe('/yo')
+  })
+
+  it('fechas importantes propias → items self con href /yo', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        identityProfile: identity({
+          specialDates: [{ id: 'sd1', label: 'Aniversario', date: '2020-06-08', recurring: true }],
+        }),
+      },
+      {},
+      NOW,
+    )
+    const self = items.find((i) => i.kind === 'self_special_date')!
+    expect(self.title).toBe('Tu aniversario')
+    expect(self.href).toBe('/yo')
+    expect(self.daysUntil).toBe(7)
+  })
+
+  it('sin identityProfile → sin items self (degrada con gracia)', () => {
+    const items = buildAgenda({ ...EMPTY }, {}, NOW)
+    expect(items.filter((i) => i.kind === 'self_special_date')).toHaveLength(0)
+  })
+})
+
+describe('buildAgenda — fechas por rol/rubro', () => {
+  it('rol comercial → fecha comercial dentro del lead con actionHint', () => {
+    // 20-abr-2026 NOW: Día de la Madre a 20 días (lead 35).
+    const items = buildAgenda(
+      { ...EMPTY, identityProfile: identity({ roles: ['Fundador de Marlab'] }) },
+      {},
+      new Date(2026, 3, 20),
+    )
+    const role = items.find((i) => i.kind === 'role_date' && i.id === 'role_dia_madre')
+    expect(role).toBeDefined()
+    expect(role!.href).toBe('/objetivos')
+    expect(role!.actionHint).toBeTruthy()
+  })
+
+  it('rol atleta → countdown al Mundial WFG26', () => {
+    const items = buildAgenda(
+      { ...EMPTY, identityProfile: identity({ roles: ['Atleta de taekwondo'] }) },
+      {},
+      NOW, // 1-jun-2026
+    )
+    const wfg = items.find((i) => i.id === 'wfg26')
+    expect(wfg).toBeDefined()
+    expect(wfg!.kind).toBe('role_date')
+    expect(wfg!.detail).toContain('meses')
+  })
+
+  it('sin roles que matcheen → sin role_date', () => {
+    const items = buildAgenda(
+      { ...EMPTY, identityProfile: identity({ roles: ['Padre'] }) },
+      {},
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'role_date')).toHaveLength(0)
+  })
+})
+
+describe('buildAgenda — esfuerzo por parentesco (person_links)', () => {
+  it('la pareja se alerta antes (umbral acortado)', () => {
+    // 18 días sin contacto: bajo el umbral base (30) pero sobre el de pareja (~15).
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        people: [person({ id: 'diana', name: 'Diana', lastContact: '2026-05-14' })],
+        personLinks: [selfLink('diana', 'pareja')],
+      },
+      {},
+      NOW,
+    )
+    const nc = items.find((i) => i.kind === 'no_contact')!
+    expect(nc.title).toContain('tu pareja')
+    expect(nc.title).toContain('Diana')
+  })
+
+  it('la pareja ordena por delante de un conocido con los mismos días', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        people: [
+          person({ id: 'conocido', name: 'Conocido', lastContact: '2026-04-20' }), // 42 días
+          person({ id: 'pareja', name: 'Pareja', lastContact: '2026-04-20' }), // 42 días
+        ],
+        personLinks: [selfLink('pareja', 'pareja')],
+      },
+      {},
+      NOW,
+    )
+    const nc = items.filter((i) => i.kind === 'no_contact')
+    // El peso 2.0 hace daysUntil de la pareja = -84 vs -42 → ordena primero.
+    expect(nc[0].personId).toBe('pareja')
+    expect(nc[0].daysUntil).toBe(-84)
+  })
+
+  it('sin person_links → comportamiento clásico (peso 1, título neutro)', () => {
+    const items = buildAgenda(
+      { ...EMPTY, people: [person({ name: 'Leo', lastContact: '2026-04-20' })] },
+      {},
+      NOW,
+    )
+    const nc = items.find((i) => i.kind === 'no_contact')!
+    expect(nc.daysUntil).toBe(-42)
+    expect(nc.title).toBe('Hace tiempo no contactás a Leo')
   })
 })
 

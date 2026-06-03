@@ -21,13 +21,16 @@
 // feb-29 y anniversaries) para birthdays y special_dates: una sola fuente
 // de verdad para "próxima ocurrencia anual" en todo el sistema.
 
-import type { Goal, ObjectiveStep, Person, Signal, SpecialDate } from '@/types'
+import type { Goal, ObjectiveStep, Person, PersonLink, Signal, SpecialDate } from '@/types'
 import {
   computeSpecialDateCountdown,
   type SpecialDateCountdown,
 } from '@/lib/dates/specialDates'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import { nextPendingLeaf, daysUntilStep } from '@/lib/objectives/steps'
+import type { IdentityProfile } from '@/lib/identity'
+import { buildSelfKinshipMap, type SelfKinship } from '@/lib/proactive/kinship'
+import { buildRoleDates } from '@/lib/proactive/roleDates'
 
 const DAY_MS = 86_400_000
 
@@ -38,6 +41,11 @@ export type AgendaKind =
   | 'objective_step'
   | 'birthday'
   | 'special_date'
+  // Fechas PROPIAS del dueño (identity_profile): su cumpleaños + sus fechas
+  // importantes. href → /yo. Motor proactivo Fase 3.
+  | 'self_special_date'
+  // Fechas por ROL/RUBRO (calendario comercial, Mundial WFG26). href → /objetivos.
+  | 'role_date'
 
 export interface AgendaItem {
   /** Id estable derivado de la fuente (para keys de React + dedupe). */
@@ -61,6 +69,9 @@ export interface AgendaItem {
   personSlug?: string
   /** Ruta sugerida al hacer click. */
   href: string
+  /** Sugerencia accionable opcional, un escalón debajo del detail ("Prepará
+   *  algo con tiempo", "¿Campaña para X?"). La anticipación hecha explícita. */
+  actionHint?: string
   /** Rango de grupo para el orden (menor = más arriba). Interno pero
    *  expuesto para tests. */
   sortRank: number
@@ -73,6 +84,12 @@ export interface AgendaInput {
   /** Pasos de objetivos (migración 0040). Opcional: si no se pasan, no se
    *  surfacéa el "próximo paso" (compat con callers viejos). */
   objectiveSteps?: ObjectiveStep[]
+  /** Perfil propio (identity_profile): habilita fechas propias + fechas por
+   *  rubro (roles). Opcional → motor degrada con gracia si aún no se llenó. */
+  identityProfile?: IdentityProfile | null
+  /** Aristas SELF↔persona (person_links): ponderan el esfuerzo relacional
+   *  (familia/pareja pesan más). Opcional. */
+  personLinks?: PersonLink[]
 }
 
 export interface AgendaOptions {
@@ -113,6 +130,30 @@ function futurePhrase(daysUntil: number): string {
   return `en ${pluralDias(daysUntil)}`
 }
 
+/** Frase de cercanía para horizontes LARGOS (fechas por rubro / mundial):
+ *  días → semanas → meses, para no decir "en 155 días". */
+function leadPhrase(daysUntil: number): string {
+  if (daysUntil < 0) return 'en curso'
+  if (daysUntil === 0) return 'hoy'
+  if (daysUntil === 1) return 'mañana'
+  if (daysUntil <= 21) return `en ${pluralDias(daysUntil)}`
+  if (daysUntil <= 75) return `en ~${Math.round(daysUntil / 7)} semanas`
+  return `en ~${Math.round(daysUntil / 30)} meses`
+}
+
+/**
+ * Anticipación EXPLÍCITA para una fecha próxima: el empujón "preparate" según
+ * cuánto falta. Devuelve undefined fuera de la ventana de preparación (la fecha
+ * sigue listada, pero sin nudge). Una sola escala para cumpleaños, fechas
+ * especiales y fechas propias.
+ */
+function prepHint(daysUntil: number): string | undefined {
+  if (daysUntil < 0) return undefined
+  if (daysUntil <= 3) return 'Es pronto — no lo dejes pasar'
+  if (daysUntil <= 14) return 'Prepará algo con tiempo'
+  return undefined
+}
+
 function personHref(person: Person): string {
   return person.slug ? `/relaciones/${person.slug}` : `/relaciones/${person.id}`
 }
@@ -151,6 +192,7 @@ function buildBirthdays(
       personId: p.id,
       personSlug: p.slug,
       href: personHref(p),
+      actionHint: prepHint(cd.daysUntil),
       sortRank: RANK.dated,
     })
   }
@@ -180,6 +222,7 @@ function buildSpecialDates(
         personId: p.id,
         personSlug: p.slug,
         href: personHref(p),
+        actionHint: prepHint(cd.daysUntil),
         sortRank: RANK.dated,
       })
     }
@@ -187,10 +230,20 @@ function buildSpecialDates(
   return items
 }
 
+/**
+ * "No contactás a X hace N días". El ESFUERZO de relación se pondera por
+ * parentesco con el "yo" (kinshipMap, de person_links): la familia directa y la
+ * pareja pesan más en dos dimensiones —
+ *   • umbral: se alerta antes (threshold acortado por el peso del vínculo), y
+ *   • orden: el `daysUntil` (negativo) se escala por el peso, así "tu pareja
+ *     hace 16 días" puede ganarle a "un conocido hace 30".
+ * La etiqueta posesiva ("tu pareja Diana") humaniza la alerta.
+ */
 function buildNoContact(
   people: Person[],
   baseThreshold: number,
   highImportanceThreshold: number,
+  kinshipMap: Map<string, SelfKinship>,
   now: Date,
 ): AgendaItem[] {
   const todayStart = startOfDay(now)
@@ -202,15 +255,27 @@ function buildNoContact(
     if (!last) continue
     const daysSince = Math.floor((todayStart.getTime() - last.getTime()) / DAY_MS)
     if (daysSince < 0) continue // lastContact en el futuro: dato raro, skip.
-    const threshold =
-      p.importanceScore >= 8 ? highImportanceThreshold : baseThreshold
+
+    const kin = kinshipMap.get(p.id)
+    let threshold = p.importanceScore >= 8 ? highImportanceThreshold : baseThreshold
+    if (kin) {
+      // El parentesco acorta el umbral (familia/pareja se atienden antes), con
+      // piso de 7 días para no spamear. Gana el menor de importancia/parentesco.
+      threshold = Math.min(threshold, Math.max(7, Math.round(baseThreshold / kin.weight)))
+    }
     if (daysSince < threshold) continue
+
+    const weight = kin?.weight ?? 1
+    const title = kin
+      ? `Hace tiempo no hablás con ${kin.label} ${p.name}`
+      : `Hace tiempo no contactás a ${p.name}`
     items.push({
       id: `nocontact_${p.id}`,
       kind: 'no_contact',
-      title: `Hace tiempo no contactás a ${p.name}`,
+      title,
       detail: `hace ${pluralDias(daysSince)}`,
-      daysUntil: -daysSince, // más vencido (más negativo) ordena primero.
+      // Escalado por parentesco: más vencido (más negativo) ordena primero.
+      daysUntil: -Math.round(daysSince * weight),
       personId: p.id,
       personSlug: p.slug,
       href: personHref(p),
@@ -338,6 +403,87 @@ function buildCriticalSignals(signals: Signal[]): AgendaItem[] {
 }
 
 /**
+ * Fechas PROPIAS del dueño (identity_profile): su cumpleaños (de birthDate) y
+ * sus fechas importantes. Mismo countdown que las de una persona, con
+ * anticipación explícita. href → /yo. Vacío si no hay perfil cargado.
+ */
+function buildSelfDates(
+  identity: IdentityProfile | null | undefined,
+  horizonDays: number,
+  now: Date,
+): AgendaItem[] {
+  if (!identity) return []
+  const items: AgendaItem[] = []
+
+  // Cumpleaños propio.
+  if (identity.birthDate) {
+    const cd = computeSpecialDateCountdown(
+      { id: 'self_bday', label: 'Cumpleaños', date: identity.birthDate, recurring: true },
+      now,
+    )
+    if (cd && cd.daysUntil <= horizonDays) {
+      const age = ageTurning(identity.birthDate, cd.occurrence)
+      const detail = [age != null ? `cumplís ${age}` : null, futurePhrase(cd.daysUntil)]
+        .filter(Boolean)
+        .join(' · ')
+      items.push({
+        id: 'self_birthday',
+        kind: 'self_special_date',
+        title: 'Tu cumpleaños',
+        detail,
+        daysUntil: cd.daysUntil,
+        href: '/yo',
+        actionHint: prepHint(cd.daysUntil),
+        sortRank: RANK.dated,
+      })
+    }
+  }
+
+  // Fechas importantes propias.
+  for (const sd of identity.specialDates ?? []) {
+    const cd = computeSpecialDateCountdown(sd, now)
+    if (!cd || cd.isPast || cd.daysUntil > horizonDays) continue
+    items.push({
+      id: `self_special_${sd.id}`,
+      kind: 'self_special_date',
+      title: `Tu ${sd.label.toLowerCase()}`,
+      detail: futurePhrase(cd.daysUntil),
+      daysUntil: cd.daysUntil,
+      href: '/yo',
+      actionHint: prepHint(cd.daysUntil),
+      sortRank: RANK.dated,
+    })
+  }
+
+  return items
+}
+
+/**
+ * Fechas por ROL/RUBRO (calendario comercial + Mundial WFG26), derivadas de
+ * identity_profile.roles. La sugerencia accionable (campaña / asegurar visa) va
+ * en actionHint. href → /objetivos (donde se accionan). Vacío si los roles no
+ * matchean ningún rubro con calendario.
+ */
+function buildRoleDateItems(
+  identity: IdentityProfile | null | undefined,
+  goals: Goal[],
+  now: Date,
+): AgendaItem[] {
+  if (!identity) return []
+  const hits = buildRoleDates({ roles: identity.roles, goals }, now)
+  return hits.map((h) => ({
+    id: h.id,
+    kind: 'role_date' as const,
+    title: h.title,
+    detail: leadPhrase(h.daysUntil),
+    daysUntil: h.daysUntil,
+    href: '/objetivos',
+    actionHint: h.hint,
+    sortRank: RANK.dated,
+  }))
+}
+
+/**
  * Construye la agenda "Próximo": agrega todas las fuentes, ordena por
  * urgencia/cercanía y opcionalmente recorta.
  *
@@ -354,13 +500,17 @@ export function buildAgenda(
   const baseThreshold = options.noContactThresholdDays ?? 30
   const highThreshold = options.highImportanceThresholdDays ?? 14
 
+  const kinshipMap = buildSelfKinshipMap(input.personLinks ?? [])
+
   const items: AgendaItem[] = [
     ...buildCriticalSignals(input.signals),
-    ...buildNoContact(input.people, baseThreshold, highThreshold, now),
+    ...buildNoContact(input.people, baseThreshold, highThreshold, kinshipMap, now),
     ...buildGoalTargets(input.goals, horizonDays, now),
     ...buildObjectiveSteps(input.goals, input.objectiveSteps ?? [], horizonDays, now),
     ...buildBirthdays(input.people, horizonDays, now),
     ...buildSpecialDates(input.people, horizonDays, now),
+    ...buildSelfDates(input.identityProfile, horizonDays, now),
+    ...buildRoleDateItems(input.identityProfile, input.goals, now),
   ]
 
   items.sort((a, b) => {

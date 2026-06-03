@@ -1,9 +1,12 @@
 // SIR V2 — ProximoPanel (Feature 1: Agenda "Próximo").
 //
 // Vista accionable que AGREGA data que ya existe en los stores y hoy queda
-// enterrada: señales críticas sin resolver, "no contactás a X hace N días",
-// objetivos con target date cercana, cumpleaños próximos y fechas especiales
-// de TODA la red. Determinístico (buildAgenda), cero LLM.
+// enterrada: señales críticas sin resolver, "no contactás a X hace N días"
+// (con la familia/pareja ponderadas más por person_links), objetivos con target
+// date cercana, cumpleaños y fechas especiales de TODA la red, TUS propias
+// fechas (identity_profile) y las fechas de tu RUBRO (calendario comercial,
+// Mundial WFG26). Anticipación explícita (actionHint). Determinístico
+// (buildAgenda), cero LLM.
 //
 // Mount-safe: el orden depende de "hoy" → diferimos el cómputo a post-mount
 // (igual que CicloPanel / /panel) para no romper hidratación.
@@ -24,6 +27,8 @@ import {
   Target,
   UserX,
   ChevronRight,
+  UserCircle,
+  Briefcase,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -33,6 +38,8 @@ import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useSignalStore } from '@/stores/useSignalStore'
+import { useSelfStore } from '@/stores/useSelfStore'
+import { isIdentityEmpty } from '@/lib/identity'
 import { buildAgenda, type AgendaItem, type AgendaKind } from '@/lib/agenda/build'
 import { cn } from '@/lib/utils'
 
@@ -43,6 +50,8 @@ const KIND_ICON: Record<AgendaKind, LucideIcon> = {
   objective_step: ListChecks,
   birthday: Cake,
   special_date: CalendarHeart,
+  self_special_date: UserCircle,
+  role_date: Briefcase,
 }
 
 const KIND_ACCENT: Record<AgendaKind, string> = {
@@ -52,6 +61,8 @@ const KIND_ACCENT: Record<AgendaKind, string> = {
   objective_step: 'text-ok',
   birthday: 'text-brand-soft-foreground',
   special_date: 'text-brand-soft-foreground',
+  self_special_date: 'text-brand-soft-foreground',
+  role_date: 'text-ok',
 }
 
 export interface ProximoPanelProps {
@@ -69,9 +80,11 @@ export function ProximoPanel({
   title = 'Próximo',
 }: ProximoPanelProps) {
   const people = useRelationshipStore((s) => s.people)
+  const personLinks = useRelationshipStore((s) => s.personLinks)
   const goals = useGoalStore((s) => s.goals)
   const objectiveSteps = useObjectiveStepStore((s) => s.steps)
   const signals = useSignalStore((s) => s.signals)
+  const identityProfile = useSelfStore((s) => s.identityProfile)
 
   // Mount-safe: buildAgenda depende de Date.now() (orden por cercanía).
   const [now, setNow] = useState<Date | null>(null)
@@ -80,7 +93,13 @@ export function ProximoPanel({
   }, [])
 
   const items =
-    now != null ? buildAgenda({ people, goals, objectiveSteps, signals }, { limit }, now) : null
+    now != null
+      ? buildAgenda(
+          { people, goals, objectiveSteps, signals, identityProfile, personLinks },
+          { limit },
+          now,
+        )
+      : null
 
   return (
     <Card className="shadow-none mb-6">
@@ -90,6 +109,12 @@ export function ProximoPanel({
           label={title}
           count={items?.length ?? undefined}
         />
+
+        {/* Degradación con gracia: si el perfil propio está vacío, el motor no
+            puede mirar tus fechas ni tu rubro. Decimos qué falta y para qué. */}
+        {items != null && isIdentityEmpty(identityProfile) && (
+          <IdentityHint />
+        )}
 
         {items == null ? (
           <Placeholder />
@@ -138,6 +163,11 @@ function AgendaRow({ item }: { item: AgendaItem }) {
         <div className="min-w-0 flex-1">
           <div className="text-sm text-foreground truncate">{item.title}</div>
           <div className="text-[11px] text-muted-foreground">{item.detail}</div>
+          {item.actionHint && (
+            <div className="mt-0.5 text-[11px] text-brand-soft-foreground/90 leading-snug">
+              {item.actionHint}
+            </div>
+          )}
         </div>
         <ChevronRight
           size={14}
@@ -147,6 +177,24 @@ function AgendaRow({ item }: { item: AgendaItem }) {
         />
       </Link>
     </li>
+  )
+}
+
+/** Nudge cuando el perfil propio está vacío: el motor proactivo no puede mirar
+ *  tus propias fechas ni vigilar las fechas de tu rubro sin esos datos. */
+function IdentityHint() {
+  return (
+    <Link
+      href="/yo"
+      className="mb-3 flex items-start gap-2 rounded-md border border-brand/25 bg-brand-soft px-2.5 py-2 text-[11px] text-brand-soft-foreground hover:bg-brand/15 transition-colors"
+    >
+      <UserCircle size={13} strokeWidth={1.75} className="mt-[1px] shrink-0" aria-hidden="true" />
+      <span>
+        Completá tu identidad en <span className="underline underline-offset-2">/yo</span> —
+        con tu fecha de nacimiento y tu rol activamos recordatorios de tus
+        propias fechas y del calendario de tu rubro (comercial, mundial…).
+      </span>
+    </Link>
   )
 }
 
