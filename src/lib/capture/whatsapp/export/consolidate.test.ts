@@ -4,6 +4,7 @@ import {
   consolidateInterpretations,
   buildAuthorRoleMap,
   buildExportObservationData,
+  recencyFirstSummary,
 } from './consolidate'
 import type { ChunkInterpretation, ParsedExport, ExportMessage } from './types'
 
@@ -71,6 +72,32 @@ describe('consolidateInterpretations', () => {
     const c = consolidateInterpretations([])
     expect(c.confidence).toBe('low')
     expect(c.summary).toBe('')
+  })
+
+  it('al truncar conserva lo RECIENTE (cola), no lo viejo (bug Dayana)', () => {
+    // 1 bloque viejo enorme + 1 reciente corto. El viejo solo NO debe ganar.
+    const viejo = 'VIEJO '.repeat(400) // ~2400 chars, supera el presupuesto
+    const parts = [
+      interp({ summary: viejo, toneScore: 3 }),
+      interp({ summary: 'RECIENTE: hablaron de la web de la botica.', toneScore: 4 }),
+    ]
+    const c = consolidateInterpretations(parts)
+    expect(c.summary).toContain('RECIENTE: hablaron de la web de la botica.')
+    expect(c.summary.startsWith('…[conversación previa]')).toBe(true)
+    // los bloques completos quedan disponibles igual
+    expect(c.blockSummaries).toHaveLength(2)
+  })
+})
+
+describe('recencyFirstSummary', () => {
+  it('texto corto → sin cambios', () => {
+    expect(recencyFirstSummary(['a', 'b'], 100)).toBe('a b')
+  })
+  it('texto largo → conserva los bloques finales y marca lo previo', () => {
+    const out = recencyFirstSummary(['x'.repeat(60), 'y'.repeat(60), 'nuevo'], 80)
+    expect(out).toContain('nuevo')
+    expect(out).toContain('…[conversación previa]')
+    expect(out).not.toContain('x'.repeat(60))
   })
 })
 

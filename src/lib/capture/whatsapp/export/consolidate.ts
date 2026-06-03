@@ -79,6 +79,32 @@ function dedupDates(lists: ExtractedDate[][], cap: number): ExtractedDate[] {
 const MAX_SUMMARY_CHARS = 1200
 
 /**
+ * Resumen consolidado priorizando lo RECIENTE: une los bloques en orden
+ * cronológico, pero si exceden el presupuesto conserva los del FINAL (los más
+ * nuevos) y antepone una marca de que hubo conversación previa. PURO.
+ */
+export function recencyFirstSummary(blockSummaries: string[], maxChars: number): string {
+  const joined = blockSummaries.join(' ')
+  if (joined.length <= maxChars) return joined
+
+  // Tomar bloques desde el final (recientes) hasta llenar el presupuesto.
+  const marker = '…[conversación previa] '
+  const budget = Math.max(1, maxChars - marker.length)
+  const kept: string[] = []
+  let len = 0
+  for (let i = blockSummaries.length - 1; i >= 0; i--) {
+    const s = blockSummaries[i]
+    if (kept.length > 0 && len + s.length + 1 > budget) break
+    kept.unshift(s)
+    len += s.length + 1
+  }
+  let body = kept.join(' ')
+  // Borde: un único bloque gigante → quedarnos con su cola (lo más reciente).
+  if (body.length > budget) body = body.slice(body.length - budget).trimStart()
+  return `${marker}${body}`
+}
+
+/**
  * Une las interpretaciones de los bloques (en orden cronológico) en una sola
  * lectura consolidada. Bloques vacíos/sin contenido se ignoran.
  */
@@ -87,10 +113,11 @@ export function consolidateInterpretations(parts: ChunkInterpretation[]): Consol
 
   const blockSummaries = valid.map((p) => p.summary).filter((s) => s.length > 0)
   // Narrativa consolidada: secuencia de los resúmenes de bloque (orden = tiempo).
-  let summary = blockSummaries.join(' ')
-  if (summary.length > MAX_SUMMARY_CHARS) {
-    summary = `${summary.slice(0, MAX_SUMMARY_CHARS - 1).trimEnd()}…`
-  }
+  // PESO POR RECENCIA: si no entra todo, conservamos los bloques MÁS RECIENTES
+  // (la cola) y marcamos que hubo conversación previa. (Antes truncábamos desde
+  // el final, dejando solo lo VIEJO → bug Dayana: la síntesis quedaba anclada en
+  // la dinámica antigua. Los bloques completos viven igual en blockSummaries.)
+  const summary = recencyFirstSummary(blockSummaries, MAX_SUMMARY_CHARS)
 
   const topics = unionStrings(valid.map((p) => p.topics), 20)
   const emotionalUser = dominant(valid.map((p) => p.emotionalUser))
