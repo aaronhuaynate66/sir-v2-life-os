@@ -1,12 +1,36 @@
 // SIR V2 — Self store adapters (Sesión 20c)
 // One store, three tables: self_metrics, health_metrics, sleep_records.
 
-import type { SelfMetric, HealthMetric, SleepRecord, SelfDiagnosis, MetricCategory, HealthMetricType } from '@/types'
+import type { SelfMetric, HealthMetric, SleepRecord, SelfDiagnosis, MetricCategory, HealthMetricType, SpecialDate } from '@/types'
+import type { IdentityProfile } from '@/lib/identity'
 import type { TableAdapter } from '../types'
 
 /** Coerce un valor de DB a string[] (Postgres text[] llega como array). */
 function toStringArray(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+}
+
+/** Normaliza el jsonb `identity_profile.special_dates` a SpecialDate[],
+ *  tolerando filas viejas (null / shape parcial). Filtra sin label/date.
+ *  (Copia local del helper de adapters/relationships.ts: cada adapter es
+ *  autocontenido.) */
+function parseSpecialDates(raw: unknown): SpecialDate[] {
+  if (!Array.isArray(raw)) return []
+  const out: SpecialDate[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const r = item as Record<string, unknown>
+    const label = typeof r.label === 'string' ? r.label : ''
+    const date = typeof r.date === 'string' ? r.date : ''
+    if (!label || !date) continue
+    out.push({
+      id: typeof r.id === 'string' && r.id ? r.id : `${date}-${label}`,
+      label,
+      date,
+      recurring: r.recurring === true,
+    })
+  }
+  return out
 }
 
 export const selfMetricAdapter: TableAdapter<SelfMetric> = {
@@ -82,6 +106,32 @@ export const selfDiagnosisAdapter: TableAdapter<SelfDiagnosis> = {
     anchors: toStringArray(row.anchors),
     idealLifeVision: (row.ideal_life_vision as string) ?? '',
     futureSelf: (row.future_self as string) ?? '',
+    updatedAt: (row.updated_at as string) ?? new Date(0).toISOString(),
+  }),
+}
+
+// Anclas de identidad: perfil propio, singleton por usuario, sincronizado como
+// slice-array de 0 o 1 fila (ver useSelfStore). special_dates es jsonb (mismo
+// shape que people.special_dates).
+export const identityProfileAdapter: TableAdapter<IdentityProfile> = {
+  table: 'identity_profile',
+  toRow: (p, userId) => ({
+    id: p.id,
+    user_id: userId,
+    full_name: p.fullName,
+    birth_date: p.birthDate, // null OK (columna date nullable)
+    roles: p.roles,
+    location: p.location,
+    special_dates: p.specialDates,
+    updated_at: p.updatedAt,
+  }),
+  fromRow: (row) => ({
+    id: row.id as string,
+    fullName: (row.full_name as string) ?? '',
+    birthDate: (row.birth_date as string) ?? null,
+    roles: toStringArray(row.roles),
+    location: (row.location as string) ?? '',
+    specialDates: parseSpecialDates(row.special_dates),
     updatedAt: (row.updated_at as string) ?? new Date(0).toISOString(),
   }),
 }

@@ -22,6 +22,7 @@ import { TrendChart } from '@/components/charts/TrendChart'
 import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { SelfDiagnosisPanel } from '@/components/yo/SelfDiagnosisPanel'
+import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 
@@ -116,7 +117,10 @@ function SelfContent() {
         <p className="text-sm text-muted-foreground mt-1">Estado biológico y métricas personales</p>
       </div>
 
-      {/* Espacio personal / diagnóstico — sección privada, lo primero que ve. */}
+      {/* Anclas de identidad — datos básicos del dueño, base del motor proactivo. */}
+      <IdentityProfilePanel />
+
+      {/* Espacio personal / diagnóstico — sección privada. */}
       <SelfDiagnosisPanel />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">

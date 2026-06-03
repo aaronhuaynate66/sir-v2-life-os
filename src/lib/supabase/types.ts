@@ -136,6 +136,31 @@ export type Database = {
         }
         Update: Partial<Database['public']['Tables']['self_diagnosis']['Insert']>
       }
+      identity_profile: {
+        Row: {
+          id: string
+          user_id: string
+          full_name: string
+          birth_date: string | null
+          roles: string[]
+          location: string
+          special_dates: Json
+          updated_at: string
+          created_at: string
+        }
+        Insert: {
+          id: string
+          user_id: string
+          full_name?: string
+          birth_date?: string | null
+          roles?: string[]
+          location?: string
+          special_dates?: Json
+          updated_at?: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['identity_profile']['Insert']>
+      }
       person_links: {
         Row: {
           id: string
