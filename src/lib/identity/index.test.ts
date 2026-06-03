@@ -16,6 +16,9 @@ describe('emptyIdentityProfile', () => {
     expect(p.birthDate).toBeNull()
     expect(p.roles).toEqual([])
     expect(p.location).toBe('')
+    expect(p.interests).toEqual([])
+    expect(p.bio).toBe('')
+    expect(p.trajectory).toBe('')
     expect(p.specialDates).toEqual([])
     expect(new Date(p.updatedAt).getTime()).toBe(0)
   })
@@ -34,12 +37,15 @@ describe('isIdentityEmpty', () => {
     expect(isIdentityEmpty(p)).toBe(true)
   })
 
-  it('false si hay nombre, fecha de nacimiento, rol o ubicación', () => {
+  it('false si hay nombre, fecha de nacimiento, rol, ubicación, interés, bio o trayectoria', () => {
     const base = emptyIdentityProfile('idn_1')
     expect(isIdentityEmpty({ ...base, fullName: 'Aaron' })).toBe(false)
     expect(isIdentityEmpty({ ...base, birthDate: '1990-05-30' })).toBe(false)
     expect(isIdentityEmpty({ ...base, roles: ['Bombero'] })).toBe(false)
     expect(isIdentityEmpty({ ...base, location: 'Lima, Perú' })).toBe(false)
+    expect(isIdentityEmpty({ ...base, interests: ['Taekwondo'] })).toBe(false)
+    expect(isIdentityEmpty({ ...base, bio: 'Bombero y fundador' })).toBe(false)
+    expect(isIdentityEmpty({ ...base, trajectory: 'Ing. Industrial' })).toBe(false)
   })
 })
 
@@ -51,6 +57,9 @@ describe('normalizeIdentityProfile', () => {
       birthDate: '1990-05-30',
       roles: ['Bombero', '  Fundador  ', 'Bombero', '   ', 'Atleta'],
       location: '  Lima, Perú ',
+      interests: ['Taekwondo', ' Fotografía ', 'Taekwondo', '  '],
+      bio: '  Bombero y fundador  ',
+      trajectory: '  Ing. Industrial · Marlab  ',
       specialDates: [],
       updatedAt: new Date(0).toISOString(),
     }
@@ -58,6 +67,9 @@ describe('normalizeIdentityProfile', () => {
     expect(clean.fullName).toBe('Aaron Huaynate')
     expect(clean.roles).toEqual(['Bombero', 'Fundador', 'Atleta'])
     expect(clean.location).toBe('Lima, Perú')
+    expect(clean.interests).toEqual(['Taekwondo', 'Fotografía'])
+    expect(clean.bio).toBe('Bombero y fundador')
+    expect(clean.trajectory).toBe('Ing. Industrial · Marlab')
   })
 
   it('descarta una fecha de nacimiento inválida (queda null)', () => {

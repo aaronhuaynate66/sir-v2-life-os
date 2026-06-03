@@ -83,6 +83,10 @@ export interface RoleDateHit {
 
 export interface RoleDatesInput {
   roles: string[] | undefined | null
+  /** Intereses/hobbies (identity_profile.interests, de la auto-captura). Se
+   *  matchean igual que los roles para detectar rubros: un interés "taekwondo"
+   *  activa el rubro atleta aunque no esté en los roles. */
+  interests?: string[] | undefined | null
   /** Objetivos activos — para colgar una sugerencia comercial concreta. */
   goals?: Goal[]
 }
@@ -113,7 +117,10 @@ export function buildRoleDates(
   input: RoleDatesInput,
   now: Date = new Date(),
 ): RoleDateHit[] {
-  const rubros = detectRubros(input.roles)
+  // Roles + intereses alimentan la misma detección de rubro (un hobby como
+  // "taekwondo" cuenta igual que un rol "Atleta").
+  const signals = [...(input.roles ?? []), ...(input.interests ?? [])]
+  const rubros = detectRubros(signals)
   const hits: RoleDateHit[] = []
 
   // Rubro comercial → calendario comercial de Perú.

@@ -474,7 +474,7 @@ function buildRoleDateItems(
   now: Date,
 ): AgendaItem[] {
   if (!identity) return []
-  const hits = buildRoleDates({ roles: identity.roles, goals }, now)
+  const hits = buildRoleDates({ roles: identity.roles, interests: identity.interests, goals }, now)
   return hits.map((h) => ({
     id: h.id,
     kind: 'role_date' as const,

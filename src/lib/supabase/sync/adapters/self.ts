@@ -122,6 +122,9 @@ export const identityProfileAdapter: TableAdapter<IdentityProfile> = {
     birth_date: p.birthDate, // null OK (columna date nullable)
     roles: p.roles,
     location: p.location,
+    interests: p.interests,
+    bio: p.bio,
+    trajectory: p.trajectory,
     special_dates: p.specialDates,
     updated_at: p.updatedAt,
   }),
@@ -131,6 +134,10 @@ export const identityProfileAdapter: TableAdapter<IdentityProfile> = {
     birthDate: (row.birth_date as string) ?? null,
     roles: toStringArray(row.roles),
     location: (row.location as string) ?? '',
+    // Columnas de 0059 — tolerante si la migración aún no corrió (undefined → default).
+    interests: toStringArray(row.interests),
+    bio: (row.bio as string) ?? '',
+    trajectory: (row.trajectory as string) ?? '',
     specialDates: parseSpecialDates(row.special_dates),
     updatedAt: (row.updated_at as string) ?? new Date(0).toISOString(),
   }),

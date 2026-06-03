@@ -31,6 +31,16 @@ export interface IdentityProfile {
   roles: string[]
   /** Ubicación (texto libre, ej. "Lima, Perú"). */
   location: string
+  /** Intereses / hobbies como tags (ej. "taekwondo", "fotografía", "startups").
+   *  Alimentados por la auto-captura (Instagram + skills de LinkedIn). El motor
+   *  proactivo los matchea junto con los roles. Lista deduplicada. */
+  interests: string[]
+  /** Bio / "sobre mí" corto (texto libre, ej. del About de LinkedIn o la bio
+   *  de Instagram). '' = sin bio. */
+  bio: string
+  /** Educación / trayectoria breve (texto libre, resumen de experiencia +
+   *  estudios). '' = sin trayectoria. */
+  trajectory: string
   /** Fechas importantes PROPIAS (aniversarios, fechas personales). Mismo
    *  shape que las de una persona — se renderizan con specialDates.ts. */
   specialDates: SpecialDate[]
@@ -48,6 +58,9 @@ export function emptyIdentityProfile(id: string): IdentityProfile {
     birthDate: null,
     roles: [],
     location: '',
+    interests: [],
+    bio: '',
+    trajectory: '',
     specialDates: [],
     updatedAt: new Date(0).toISOString(),
   }
@@ -61,8 +74,28 @@ export function isIdentityEmpty(p: IdentityProfile | null | undefined): boolean 
     p.fullName.trim() === '' &&
     !p.birthDate &&
     p.roles.length === 0 &&
-    p.location.trim() === ''
+    p.location.trim() === '' &&
+    p.interests.length === 0 &&
+    p.bio.trim() === '' &&
+    p.trajectory.trim() === ''
   )
+}
+
+/** Limpia una lista de tags: recorta, descarta vacíos y deduplica
+ *  case-insensitive (evita "Bombero" + "bombero") preservando la primera
+ *  grafía y el orden de aparición. */
+export function cleanTagList(xs: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of xs) {
+    const v = raw.trim()
+    if (v === '') continue
+    const key = v.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(v)
+  }
+  return out
 }
 
 /**
@@ -71,14 +104,6 @@ export function isIdentityEmpty(p: IdentityProfile | null | undefined): boolean 
  * preserva las fechas importantes tal cual (se editan aparte). No muta.
  */
 export function normalizeIdentityProfile(draft: IdentityProfile): IdentityProfile {
-  const seen = new Set<string>()
-  const roles: string[] = []
-  for (const raw of draft.roles) {
-    const v = raw.trim()
-    if (v === '' || seen.has(v)) continue
-    seen.add(v)
-    roles.push(v)
-  }
   // Solo aceptamos una fecha de nacimiento válida (round-trip de parseLocalDate);
   // cualquier otra cosa queda null (sin fecha) en vez de persistir basura.
   const birthDate =
@@ -87,8 +112,11 @@ export function normalizeIdentityProfile(draft: IdentityProfile): IdentityProfil
     id: draft.id,
     fullName: draft.fullName.trim(),
     birthDate,
-    roles,
+    roles: cleanTagList(draft.roles),
     location: draft.location.trim(),
+    interests: cleanTagList(draft.interests),
+    bio: draft.bio.trim(),
+    trajectory: draft.trajectory.trim(),
     specialDates: draft.specialDates,
     updatedAt: draft.updatedAt,
   }

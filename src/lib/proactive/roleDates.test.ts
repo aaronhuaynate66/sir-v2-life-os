@@ -46,6 +46,26 @@ describe('detectRubros', () => {
   })
 })
 
+describe('buildRoleDates — intereses alimentan la detección de rubro', () => {
+  it('un interés "taekwondo" activa el rubro atleta sin estar en los roles', () => {
+    // ~jun-2026: WFG26 dentro del horizonte. Sin roles atléticos, pero con el
+    // interés capturado del Instagram propio.
+    const hits = buildRoleDates(
+      { roles: ['Padre de familia'], interests: ['Taekwondo'] },
+      new Date(2026, 5, 3),
+    )
+    expect(hits.find((h) => h.id === 'wfg26')).toBeDefined()
+  })
+
+  it('sin roles ni intereses que matcheen → sin fechas por rubro', () => {
+    const hits = buildRoleDates(
+      { roles: ['Padre de familia'], interests: ['Cocina'] },
+      new Date(2026, 5, 3),
+    )
+    expect(hits).toHaveLength(0)
+  })
+})
+
 describe('buildRoleDates — comercial', () => {
   it('surfacéa fechas comerciales dentro de su lead time', () => {
     // 20-abr-2026: Día de la Madre (10-may) está a 20 días, dentro del lead (35).

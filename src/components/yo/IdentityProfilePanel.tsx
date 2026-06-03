@@ -27,12 +27,18 @@ import {
   CalendarHeart,
   Repeat,
   AlertCircle,
+  Sparkles,
+  GraduationCap,
+  FileText,
+  Camera,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { SelfProfileCapture } from '@/components/yo/SelfProfileCapture'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useMounted } from '@/hooks/useMounted'
 import {
@@ -64,6 +70,7 @@ export function IdentityProfilePanel() {
   const setIdentityProfile = useSelfStore((s) => s.setIdentityProfile)
 
   const [editing, setEditing] = useState(false)
+  const [capturing, setCapturing] = useState(false)
   const [draft, setDraft] = useState<IdentityProfile | null>(null)
 
   function startEdit() {
@@ -102,8 +109,17 @@ export function IdentityProfilePanel() {
               Tus anclas: quién sos, desde cuándo y dónde. Base de los recordatorios y el motor proactivo.
             </p>
           </div>
-          {!editing && (
-            <div className="flex-shrink-0">
+          {!editing && !capturing && (
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCapturing(true)}
+                className="inline-flex items-center gap-1.5"
+              >
+                <Camera size={13} strokeWidth={1.75} aria-hidden="true" />
+                Completar con pantallazos
+              </Button>
               <Button size="sm" variant="outline" onClick={startEdit} className="inline-flex items-center gap-1.5">
                 <Pencil size={13} strokeWidth={1.75} aria-hidden="true" />
                 {empty ? 'Completar' : 'Editar'}
@@ -112,7 +128,9 @@ export function IdentityProfilePanel() {
           )}
         </div>
 
-        {editing && draft ? (
+        {capturing ? (
+          <SelfProfileCapture onClose={() => setCapturing(false)} />
+        ) : editing && draft ? (
           <EditView draft={draft} setDraft={setDraft} onSave={save} onCancel={cancelEdit} />
         ) : empty ? (
           <EmptyState onStart={startEdit} />
@@ -190,6 +208,33 @@ function ReadView({ profile }: { profile: IdentityProfile }) {
           <p className="text-sm text-foreground/90">{profile.location}</p>
         </div>
       )}
+
+      {profile.interests.length > 0 && (
+        <div>
+          <FieldLabel icon={Sparkles} label="Intereses / skills" />
+          <div className="flex flex-wrap gap-1.5">
+            {profile.interests.map((i) => (
+              <Badge key={i} variant="outline" className="font-normal">
+                {i}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {profile.trajectory && (
+        <div>
+          <FieldLabel icon={GraduationCap} label="Trayectoria" />
+          <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{profile.trajectory}</p>
+        </div>
+      )}
+
+      {profile.bio && (
+        <div>
+          <FieldLabel icon={FileText} label="Bio" />
+          <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{profile.bio}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -248,6 +293,35 @@ function EditView({ draft, setDraft, onSave, onCancel }: EditViewProps) {
           value={draft.location}
           placeholder="Ej: Lima, Perú"
           onChange={(e) => setDraft({ ...draft, location: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <FieldLabel icon={Sparkles} label="Intereses / skills" />
+        <TagField
+          items={draft.interests}
+          placeholder="Ej: Taekwondo, Fotografía, Startups…"
+          onChange={(interests) => setDraft({ ...draft, interests })}
+        />
+      </div>
+
+      <div>
+        <FieldLabel icon={GraduationCap} label="Trayectoria" />
+        <Textarea
+          value={draft.trajectory}
+          placeholder="Resumen breve: estudios + experiencia…"
+          onChange={(e) => setDraft({ ...draft, trajectory: e.target.value })}
+          className="min-h-[64px] resize-y"
+        />
+      </div>
+
+      <div>
+        <FieldLabel icon={FileText} label="Bio" />
+        <Textarea
+          value={draft.bio}
+          placeholder="Sobre vos, en pocas líneas…"
+          onChange={(e) => setDraft({ ...draft, bio: e.target.value })}
+          className="min-h-[64px] resize-y"
         />
       </div>
 

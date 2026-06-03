@@ -144,6 +144,9 @@ export type Database = {
           birth_date: string | null
           roles: string[]
           location: string
+          interests: string[]
+          bio: string
+          trajectory: string
           special_dates: Json
           updated_at: string
           created_at: string
@@ -155,6 +158,9 @@ export type Database = {
           birth_date?: string | null
           roles?: string[]
           location?: string
+          interests?: string[]
+          bio?: string
+          trajectory?: string
           special_dates?: Json
           updated_at?: string
           created_at?: string
