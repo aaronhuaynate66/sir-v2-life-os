@@ -202,17 +202,16 @@ describe('mapHealthAutoExport — métricas escalares', () => {
     expect(byType.distance_km).toBe(1.8)
   })
 
-  it('reporta en `skipped` los nombres no mapeados (FC instantánea, altura)', () => {
+  it('reporta en `skipped` los nombres no mapeados (altura), pero NO heart_rate', () => {
     const r = mapHealthAutoExport({
       data: {
         metrics: [
-          { name: 'heart_rate', data: [{ date: '2026-06-02 10:00:00 -0500', Avg: 65 }] },
           { name: 'height', data: [{ date: '2026-06-02 10:00:00 -0500', qty: 176 }] },
         ],
       },
     })
-    expect(r.healthMetrics).toHaveLength(0) // ninguna mapeada
-    expect(r.skipped).toEqual(['heart_rate', 'height']) // ordenado alfabéticamente
+    expect(r.healthMetrics).toHaveLength(0)
+    expect(r.skipped).toEqual(['height'])
   })
 
   it('es case-insensitive con el nombre de la métrica', () => {
@@ -220,6 +219,105 @@ describe('mapHealthAutoExport — métricas escalares', () => {
       data: { metrics: [{ name: 'Step_Count', data: [{ date: '2026-06-02 10:00:00 -0500', qty: 10 }] }] },
     })
     expect(r.healthMetrics[0]?.type).toBe('steps')
+  })
+})
+
+// ─── mapHealthAutoExport: frecuencia cardíaca ─────────────────────────
+
+describe('mapHealthAutoExport — frecuencia cardíaca', () => {
+  it('resting_heart_rate es la SEÑAL principal (type heart_rate, escalar diario)', () => {
+    const r = mapHealthAutoExport({
+      data: {
+        metrics: [
+          { name: 'resting_heart_rate', data: [{ date: '2026-06-02 07:00:00 -0500', qty: 48 }] },
+        ],
+      },
+    })
+    const hr = r.healthMetrics.filter((m) => m.type === 'heart_rate')
+    expect(hr).toHaveLength(1)
+    expect(hr[0].value).toBe(48)
+    expect(hr[0].externalId).toBe('ah:resting_heart_rate:2026-06-02')
+  })
+
+  it('la FC GENERAL se guarda como rango (mín/máx/prom), NUNCA como escalar/reposo', () => {
+    const r = mapHealthAutoExport({
+      data: {
+        metrics: [
+          {
+            name: 'heart_rate',
+            units: 'bpm',
+            data: [
+              { date: '2026-06-02 08:00:00 -0500', Min: 44, Max: 90, Avg: 60 },
+              { date: '2026-06-02 18:00:00 -0500', Min: 70, Max: 143, Avg: 100 },
+            ],
+          },
+        ],
+      },
+    })
+    const byType = Object.fromEntries(r.healthMetrics.map((m) => [m.type, m]))
+    // mín = min de los Min; máx = max de los Max; prom = promedio de los Avg
+    expect(byType.heart_rate_min.value).toBe(44)
+    expect(byType.heart_rate_max.value).toBe(143)
+    expect(byType.heart_rate_avg.value).toBe(80) // (60+100)/2
+    // NUNCA produce un type 'heart_rate' (eso es sólo reposo)
+    expect(r.healthMetrics.some((m) => m.type === 'heart_rate')).toBe(false)
+    // claramente etiquetadas como rango
+    expect(byType.heart_rate_min.note).toContain('Rango')
+    expect(byType.heart_rate_max.externalId).toBe('ah:heart_rate_max:2026-06-02')
+  })
+
+  it('FC general con samples crudos (qty) deriva min=max=avg=qty por día', () => {
+    const r = mapHealthAutoExport({
+      data: {
+        metrics: [
+          {
+            name: 'heart_rate',
+            data: [
+              { date: '2026-06-02 08:00:00 -0500', qty: 55 },
+              { date: '2026-06-02 18:00:00 -0500', qty: 120 },
+            ],
+          },
+        ],
+      },
+    })
+    const byType = Object.fromEntries(r.healthMetrics.map((m) => [m.type, m.value]))
+    expect(byType.heart_rate_min).toBe(55)
+    expect(byType.heart_rate_max).toBe(120)
+    expect(byType.heart_rate_avg).toBe(87.5) // (55+120)/2
+  })
+
+  it('resting y heart_rate general COEXISTEN sin pisarse', () => {
+    const r = mapHealthAutoExport({
+      data: {
+        metrics: [
+          { name: 'resting_heart_rate', data: [{ date: '2026-06-02 07:00:00 -0500', qty: 48 }] },
+          { name: 'heart_rate', data: [{ date: '2026-06-02 18:00:00 -0500', Min: 50, Max: 143, Avg: 80 }] },
+        ],
+      },
+    })
+    const types = r.healthMetrics.map((m) => m.type).sort()
+    expect(types).toEqual(['heart_rate', 'heart_rate_avg', 'heart_rate_max', 'heart_rate_min'])
+    expect(r.healthMetrics.find((m) => m.type === 'heart_rate')!.value).toBe(48)
+  })
+
+  it('sleeping_heart_rate → métrica aparte (promedio del día)', () => {
+    const r = mapHealthAutoExport({
+      data: {
+        metrics: [
+          {
+            name: 'sleeping_heart_rate',
+            data: [
+              { date: '2026-06-02 02:00:00 -0500', qty: 50 },
+              { date: '2026-06-02 04:00:00 -0500', qty: 54 },
+            ],
+          },
+        ],
+      },
+    })
+    expect(r.healthMetrics).toHaveLength(1)
+    expect(r.healthMetrics[0].type).toBe('sleeping_heart_rate')
+    expect(r.healthMetrics[0].value).toBe(52) // promedio
+    expect(r.healthMetrics[0].externalId).toBe('ah:sleeping_heart_rate:2026-06-02')
   })
 })
 

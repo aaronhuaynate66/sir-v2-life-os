@@ -43,7 +43,11 @@ alter table public.health_metrics add constraint health_metrics_type_check check
     'protein_percent', 'visceral_fat_level', 'metabolic_rate_kcal',
     'skeletal_muscle_mass_kg', 'metabolic_age', 'body_score', 'ideal_weight_kg',
     -- actividad de Apple Health (Migration 0049)
-    'active_energy', 'resting_energy', 'vo2_max', 'blood_oxygen', 'distance_km'
+    'active_energy', 'resting_energy', 'vo2_max', 'blood_oxygen', 'distance_km',
+    -- frecuencia cardíaca: reposo va a 'heart_rate' (señal principal). La FC
+    -- general del día es una distribución → se guarda como rango (mín/máx/prom),
+    -- nunca como "reposo". 'sleeping_heart_rate' = FC durante el sueño.
+    'heart_rate_min', 'heart_rate_max', 'heart_rate_avg', 'sleeping_heart_rate'
   )
 );
 

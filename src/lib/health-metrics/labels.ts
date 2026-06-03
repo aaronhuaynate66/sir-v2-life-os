@@ -35,6 +35,11 @@ export const HEALTH_METRIC_LABELS: Record<HealthMetricType, string> = {
   vo2_max: 'VO₂ máx',
   blood_oxygen: 'Oxígeno en sangre',
   distance_km: 'Distancia',
+  // FC: 'heart_rate' = reposo (señal principal). Estas son el rango diario.
+  heart_rate_min: 'FC mínima',
+  heart_rate_max: 'FC máxima',
+  heart_rate_avg: 'FC promedio',
+  sleeping_heart_rate: 'FC durante el sueño',
 }
 
 /**

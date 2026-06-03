@@ -134,6 +134,13 @@ export type HealthMetricType =
   | 'vo2_max'
   | 'blood_oxygen'
   | 'distance_km'
+  // frecuencia cardíaca: reposo va a 'heart_rate' (señal principal). La FC
+  // GENERAL del día es una distribución, no un escalar → se guarda como rango
+  // (mín/máx/prom), nunca como "reposo". (Migration 0049)
+  | 'heart_rate_min'
+  | 'heart_rate_max'
+  | 'heart_rate_avg'
+  | 'sleeping_heart_rate'
 
 export type EventCategory =
   | 'personal'
