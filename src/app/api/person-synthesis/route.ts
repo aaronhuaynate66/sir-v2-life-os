@@ -28,6 +28,8 @@ import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { getObservationsForPerson } from '@/lib/observations/fetch'
 import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
+import { getGoalsForPerson, buildGoalContext } from '@/lib/goals/forPerson'
+import { readConversationSignals, hasRichConversationData } from '@/lib/memories/conversationSignals'
 import { rowToPersonSynthesis } from '@/lib/person-synthesis/fetch'
 import {
   SYNTHESIS_SYSTEM_PROMPT,
@@ -51,9 +53,10 @@ function errorJson(status: number, error: string, detail?: string): NextResponse
   return NextResponse.json({ error, detail }, { status })
 }
 
-/** Lee summary/topics/emotionalStates de una observation whatsapp_chat
- *  de forma defensiva (data es Record<string, unknown>). */
-function toConversation(observedAt: string, data: Record<string, unknown>): SynthesisConversation {
+/** Mapea una observation whatsapp_chat a una conversación PARTIDA POR RECENCIA
+ *  (estado reciente vs histórico + hechos + rango de fechas). Para data sin
+ *  material rico (capturas viejas / por screenshot) cae al summary/topics. */
+function toConversation(observedAt: string, data: Record<string, unknown>, now: Date): SynthesisConversation {
   const summary = typeof data.summary === 'string' && data.summary.trim() ? data.summary.trim() : null
   const topics = Array.isArray(data.topics)
     ? data.topics.filter((t): t is string => typeof t === 'string')
@@ -62,7 +65,24 @@ function toConversation(observedAt: string, data: Record<string, unknown>): Synt
   const emotionalUser = typeof emo.user === 'string' && emo.user.trim() ? emo.user.trim() : null
   const emotionalOther =
     typeof emo.otherPerson === 'string' && emo.otherPerson.trim() ? emo.otherPerson.trim() : null
-  return { observedAt, summary, topics, emotionalUser, emotionalOther }
+
+  if (!hasRichConversationData(data)) {
+    return { observedAt, summary, topics, emotionalUser, emotionalOther }
+  }
+  const s = readConversationSignals(data, observedAt, now)
+  return {
+    observedAt,
+    summary,
+    topics: s.topics.length > 0 ? s.topics : topics,
+    emotionalUser: s.emotionalUser ?? emotionalUser,
+    emotionalOther: s.emotionalOther ?? emotionalOther,
+    recentBlocks: s.recentBlocks,
+    historicalBlocks: s.historicalBlocks,
+    facts: s.facts,
+    firstISO: s.firstISO,
+    lastISO: s.lastISO,
+    messageCount: s.messageCount,
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -116,8 +136,14 @@ export async function POST(req: NextRequest) {
       'Registrá al menos una captura de WhatsApp con esta persona.',
     )
   }
-  const convs = observations.map((o) => toConversation(o.observedAt, o.data))
+  const now = new Date()
+  const convs = observations.map((o) => toConversation(o.observedAt, o.data, now))
   const sourceIds = observations.map((o) => o.id)
+
+  // Contexto de objetivos vinculados (conciencia del deal). Tolerante: sin
+  // objetivos → null y la síntesis corre como antes.
+  const goals = await getGoalsForPerson(supabase, userId, personId)
+  const goalContext = buildGoalContext(goals)
 
   // 5. LLM
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -131,9 +157,9 @@ export async function POST(req: NextRequest) {
   try {
     const msg = await client.messages.create({
       model: MODEL_ID,
-      max_tokens: 800,
+      max_tokens: 1000,
       system: SYNTHESIS_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildSynthesisInput(personName, convs) }],
+      messages: [{ role: 'user', content: buildSynthesisInput(personName, convs, goalContext) }],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
     text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
