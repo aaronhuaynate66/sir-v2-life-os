@@ -270,6 +270,68 @@ export type Database = {
         }
         Update: Partial<Database['public']['Tables']['objective_steps']['Insert']>
       }
+      trackers: {
+        Row: {
+          id: string
+          user_id: string
+          objective_id: string | null
+          objective_step_id: string | null
+          label: string
+          unit: string
+          current_value: number | null
+          current_value_date: string | null
+          condition_kind: 'lte' | 'gte' | 'days_until_lt'
+          condition_value: number
+          condition_date: string | null
+          cadence_days: number | null
+          last_updated: string | null
+          last_alert_kind: 'met' | 'stale' | null
+          last_alert_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          user_id: string
+          objective_id?: string | null
+          objective_step_id?: string | null
+          label: string
+          unit?: string
+          current_value?: number | null
+          current_value_date?: string | null
+          condition_kind?: 'lte' | 'gte' | 'days_until_lt'
+          condition_value?: number
+          condition_date?: string | null
+          cadence_days?: number | null
+          last_updated?: string | null
+          last_alert_kind?: 'met' | 'stale' | null
+          last_alert_at?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['trackers']['Insert']>
+      }
+      tracker_points: {
+        Row: {
+          id: string
+          user_id: string
+          tracker_id: string
+          value: number
+          date: string
+          source: 'manual_screenshot' | 'manual_text' | 'email'
+          note: string
+          created_at: string
+        }
+        Insert: {
+          id: string
+          user_id: string
+          tracker_id: string
+          value: number
+          date: string
+          source?: 'manual_screenshot' | 'manual_text' | 'email'
+          note?: string
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['tracker_points']['Insert']>
+      }
       signals: {
         Row: {
           id: string

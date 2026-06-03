@@ -652,3 +652,65 @@ export interface SystemStatus {
   nextBlock?: string
   dayQuality?: number
 }
+
+// ─── Seguimiento / Trackers (migración 0051) ──────────────────────────
+/**
+ * Tipo de condición/umbral de un tracker:
+ *   - 'lte'           : se cumple cuando current_value ≤ condition_value
+ *                       (ej. "precio del vuelo ≤ 4500").
+ *   - 'gte'           : se cumple cuando current_value ≥ condition_value
+ *                       (ej. "ahorro ≥ 10000").
+ *   - 'days_until_lt' : se cumple cuando faltan menos de condition_value días
+ *                       para conditionDate (ej. "faltan < 30 días para el torneo").
+ */
+export type TrackerConditionKind = 'lte' | 'gte' | 'days_until_lt'
+
+/** De dónde salió un punto de la serie. 'email' queda listo para fase 2 (reenvío). */
+export type TrackerPointSource = 'manual_screenshot' | 'manual_text' | 'email'
+
+/**
+ * Un TRACKER monitorea en el tiempo una MÉTRICA EXTERNA (un número que no vive
+ * en SIR — el precio de un vuelo, un saldo ajeno, días para una fecha) y alerta
+ * cuando se cumple su condición. Se engancha a UN item del plan: un objetivo
+ * (objectiveId) o un paso/KR/tarea (objectiveStepId). El último valor se
+ * denormaliza acá (currentValue) para mostrar el resumen sin leer toda la serie.
+ */
+export interface Tracker {
+  id: string
+  /** FK → Goal.id. Set si cuelga de un objetivo. */
+  objectiveId?: string
+  /** FK → ObjectiveStep.id. Set si cuelga de un KR/tarea. */
+  objectiveStepId?: string
+  label: string
+  /** Unidad de la métrica (ej. "PEN", "USD", "días"). Puede ser ''. */
+  unit: string
+  /** Último valor leído (denormalizado del último TrackerPoint). */
+  currentValue?: number
+  /** Fecha (date-only ISO) del último valor. */
+  currentValueDate?: string
+  conditionKind: TrackerConditionKind
+  /** Umbral (lte/gte) o N días (days_until_lt). */
+  conditionValue: number
+  /** Fecha objetivo (date-only ISO), sólo para days_until_lt. */
+  conditionDate?: string
+  /** Si la última lectura es más vieja que esto (días), el tracker está "viejo". */
+  cadenceDays?: number
+  /** Última vez que se agregó/editó un punto (ISO). */
+  lastUpdated?: string
+  /** Idempotencia del email: última alerta notificada y cuándo. */
+  lastAlertKind?: 'met' | 'stale'
+  lastAlertAt?: string
+  createdAt: string
+}
+
+/** Un punto de la serie temporal de un tracker. */
+export interface TrackerPoint {
+  id: string
+  trackerId: string
+  value: number
+  /** Fecha de la lectura (date-only ISO 'YYYY-MM-DD'). */
+  date: string
+  source: TrackerPointSource
+  note?: string
+  createdAt: string
+}

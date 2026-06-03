@@ -9,6 +9,7 @@ export const STORAGE_KEYS = {
   FINANCE: 'sir-v2-finance',
   SIGNAL: 'sir-v2-signal',
   RECOMMENDATION: 'sir-v2-recommendation',
+  TRACKER: 'sir-v2-tracker',
 } as const
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS]
