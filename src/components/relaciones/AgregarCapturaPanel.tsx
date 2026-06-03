@@ -26,7 +26,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye, FileText, ClipboardPaste, X, Images } from 'lucide-react'
+import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye, FileText, ClipboardPaste, X, Images, MessagesSquare, Upload, CalendarHeart, Repeat } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,11 +50,26 @@ import {
   detectorResultFromText,
   type TextProfileType,
 } from '@/lib/capture/text/detectFromText'
+import {
+  readExportText,
+  interpretChunk,
+  persistWhatsAppExport,
+} from '@/lib/capture/whatsapp/export/client'
+import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
+import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
+import {
+  consolidateInterpretations,
+  buildExportObservationData,
+} from '@/lib/capture/whatsapp/export/consolidate'
+import type { ChunkInterpretation, ConsolidatedExport, ExtractedDate } from '@/lib/capture/whatsapp/export/types'
+import { createPersonLog } from './person-logs/client'
+import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import type { CaptureType, Confidence, DetectorResult } from '@/lib/capture/observations/types'
+import type { SpecialDate } from '@/types'
 import { cn } from '@/lib/utils'
 
 type Phase = 'idle' | 'working' | 'review' | 'confirming' | 'done' | 'scale' | 'unsupported' | 'illegible'
-type Mode = 'text' | 'image'
+type Mode = 'text' | 'image' | 'whatsapp'
 
 interface ErrorState {
   status: number
@@ -80,7 +95,7 @@ interface BatchSummary {
 }
 
 interface PreviewState {
-  /** De dónde salió: texto pegado (confiable) o imagen (Visión). */
+  /** De dónde salió: texto pegado (confiable), imagen (Visión) o export WhatsApp. */
   source: Mode
   captureType: CaptureType
   detectorData: DetectorResult
@@ -93,6 +108,12 @@ interface PreviewState {
   file?: File
   /** Solo en source='image' multi: resumen de la consolidación del lote. */
   batch?: BatchSummary
+  /** Solo en source='whatsapp': el `data` de la observación a persistir +
+   *  la lectura consolidada (para la UI de revisión) + nº de mensajes. */
+  exportData?: Record<string, unknown>
+  consolidated?: ConsolidatedExport
+  messageCount?: number
+  blocksUsed?: number
 }
 
 const TEXT_TYPE_LABEL: Record<TextProfileType, string> = {
@@ -179,12 +200,17 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
   const person = useRelationshipStore((s) => s.people.find((p) => p.id === personId))
   const updatePerson = useRelationshipStore((s) => s.updatePerson)
   const inputRef = useRef<HTMLInputElement>(null)
+  const waInputRef = useRef<HTMLInputElement>(null)
   // Modo por defecto: TEXTO pegado (la vía confiable, sin OCR ilegible). La
-  // imagen sigue disponible como alternativa.
+  // imagen y el export de WhatsApp están como alternativas.
   const [mode, setMode] = useState<Mode>('text')
   // Multi-imagen: varias capturas del MISMO perfil en un solo envío.
   const [files, setFiles] = useState<File[]>([])
   const [pastedText, setPastedText] = useState('')
+  // Export de WhatsApp: el archivo .txt/.zip de la conversación.
+  const [waFile, setWaFile] = useState<File | null>(null)
+  // Fechas extraídas que el usuario eligió agregar a "Fechas importantes".
+  const [selectedDateIdx, setSelectedDateIdx] = useState<Set<number>>(new Set())
   // Tipo del perfil pegado: se autodetecta del texto, con override manual.
   const [textType, setTextType] = useState<TextProfileType>('linkedin')
   const [textTypeTouched, setTextTypeTouched] = useState(false)
@@ -192,21 +218,27 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
   const [error, setError] = useState<ErrorState | null>(null)
   const [savedType, setSavedType] = useState<CaptureType | null>(null)
   const [savedCount, setSavedCount] = useState<number>(1)
+  // Resumen de lo guardado cuando fue un export de WhatsApp (mensaje a medida).
+  const [savedExport, setSavedExport] = useState<{ messageCount: number; datesAdded: number } | null>(null)
   const [preview, setPreview] = useState<PreviewState | null>(null)
-  // Progreso del lote (k de N) mientras se extrae imagen por imagen.
+  // Progreso del lote (k de N) mientras se extrae imagen por imagen / bloque a bloque.
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
 
   const reset = useCallback(() => {
     setFiles([])
     setPastedText('')
+    setWaFile(null)
+    setSelectedDateIdx(new Set())
     setTextTypeTouched(false)
     setPhase('idle')
     setError(null)
     setSavedType(null)
     setSavedCount(1)
+    setSavedExport(null)
     setPreview(null)
     setProgress(null)
     if (inputRef.current) inputRef.current.value = ''
+    if (waInputRef.current) waInputRef.current.value = ''
   }, [])
 
   // Selección MÚLTIPLE: agrega las nuevas a las ya elegidas (dedup por
@@ -253,10 +285,17 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
     [textTypeTouched],
   )
 
-  const toError = (e: unknown): ErrorState =>
-    e instanceof DetectorError || e instanceof HttpError
-      ? { status: e.status, message: e.message, detail: e.detail }
-      : { status: 0, message: e instanceof Error ? e.message : String(e) }
+  const toError = (e: unknown): ErrorState => {
+    if (e instanceof DetectorError || e instanceof HttpError) {
+      return { status: e.status, message: e.message, detail: e.detail }
+    }
+    // ApiError-like (clientes nuevos lanzan { status, message, detail } plano).
+    if (e && typeof e === 'object' && 'status' in e && typeof (e as { status: unknown }).status === 'number') {
+      const a = e as { status: number; message?: string; detail?: string }
+      return { status: a.status, message: a.message ?? `HTTP ${a.status}`, detail: a.detail }
+    }
+    return { status: 0, message: e instanceof Error ? e.message : String(e) }
+  }
 
   // Persiste lo confirmado (sin re-extraer: confirmedData = lo revisado).
   // Rutea por origen: texto → processCaptureFromText; imagen → processCapture.
@@ -265,6 +304,60 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
       setPhase('confirming')
       setError(null)
       try {
+        if (p.source === 'whatsapp') {
+          if (!p.exportData) {
+            setError({ status: 0, message: 'No hay conversación para guardar' })
+            setPhase('review')
+            return
+          }
+          // 1. Persistir la conversación como observación whatsapp_chat.
+          await persistWhatsAppExport({ personId, data: p.exportData })
+
+          // 2. Tono/calidad → reciprocidad: registrar UNA interacción con la
+          //    calidad inferida (best-effort, no bloquea el guardado).
+          const quality = p.consolidated?.interactionQuality
+          if (typeof quality === 'number' && quality >= 1 && quality <= 5) {
+            try {
+              await createPersonLog({
+                personId,
+                kind: 'interaction',
+                value: quality,
+                note: `Importado del export de WhatsApp · ${p.messageCount ?? 0} mensajes`,
+              })
+            } catch {
+              /* no fatal: la observación ya quedó guardada */
+            }
+          }
+
+          // 3. Fechas elegidas → Fechas importantes (people.special_dates).
+          let datesAdded = 0
+          const dates = p.consolidated?.dates ?? []
+          const toAdd: SpecialDate[] = []
+          dates.forEach((d, i) => {
+            if (!selectedDateIdx.has(i) || !d.dateISO) return
+            const dateStr = d.dateISO.slice(0, 10)
+            if (!parseLocalDate(dateStr)) return
+            toAdd.push({
+              id: crypto.randomUUID(),
+              label: d.label,
+              date: dateStr,
+              recurring: d.recurring,
+            })
+          })
+          if (toAdd.length > 0 && person) {
+            updatePerson(personId, {
+              specialDates: [...(person.specialDates ?? []), ...toAdd],
+              updatedAt: new Date().toISOString(),
+            })
+            datesAdded = toAdd.length
+          }
+
+          setSavedType('whatsapp_chat')
+          setSavedExport({ messageCount: p.messageCount ?? 0, datesAdded })
+          setPhase('done')
+          router.refresh()
+          return
+        }
         if (p.source === 'text') {
           await processCaptureFromText({
             text: p.text ?? '',
@@ -309,7 +402,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
         setPhase('review')
       }
     },
-    [personId, router, person?.instagramHandle, updatePerson],
+    [personId, router, person, updatePerson, selectedDateIdx],
   )
 
   // Procesa TEXTO pegado: detecta tipo (override del usuario o autodetección),
@@ -473,6 +566,101 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
     setPhase('review')
   }, [files, persistConfirmed])
 
+  // Procesa el EXPORT de WhatsApp (.txt / .zip) de la conversación con esta
+  // persona. Texto FIEL (no OCR): extrae el chat (zip → client-side, sin subir
+  // media), lo parte en bloques y deriva una interpretación POR BLOQUE (una
+  // llamada LLM corta c/u, con progreso → cero riesgo de timeout). Consolida en
+  // UNA observación whatsapp_chat. Siempre pasa por revisión (es una
+  // consolidación grande + el usuario elige qué fechas guardar).
+  const runWhatsAppExport = useCallback(async () => {
+    if (!waFile) return
+    setPhase('working')
+    setError(null)
+    setPreview(null)
+    setProgress(null)
+    try {
+      // 1. Texto del chat (.txt directo / .zip extraído sin subir la media).
+      const text = await readExportText(waFile)
+      const parsed = parseWhatsAppExport(text)
+      if (!isWhatsAppExport(text) || parsed.messages.length === 0) {
+        setPreview({
+          source: 'whatsapp',
+          captureType: 'whatsapp_chat',
+          detectorData: { type: 'whatsapp_chat', confidence: 'low', reasoning: '', suggestedPersonName: null },
+          extracted: {},
+          confidence: null,
+        })
+        setPhase('illegible')
+        return
+      }
+
+      // 2. Partir en bloques + interpretar bloque a bloque (concurrencia acotada).
+      const chunks = chunkConversation(parsed.messages)
+      setProgress({ done: 0, total: chunks.length })
+      const parts: (ChunkInterpretation | null)[] = new Array(chunks.length).fill(null)
+      let done = 0
+      await runPool(chunks, 3, async (chunk, idx) => {
+        try {
+          parts[idx] = await interpretChunk({
+            chunkText: chunk.text,
+            personName,
+            index: idx,
+            total: chunks.length,
+          })
+        } catch {
+          parts[idx] = null
+        } finally {
+          done += 1
+          setProgress({ done, total: chunks.length })
+        }
+      })
+
+      const valid = parts.filter((p): p is ChunkInterpretation => p !== null)
+      if (valid.length === 0) {
+        setError({
+          status: 0,
+          message: 'No se pudo interpretar la conversación',
+          detail: 'Ningún bloque devolvió resultado. Reintentá en unos segundos.',
+        })
+        setPhase('idle')
+        return
+      }
+
+      // 3. Consolidar + armar el data de la observación whatsapp_chat.
+      const consolidated = consolidateInterpretations(valid)
+      const exportData = buildExportObservationData(parsed, consolidated, personName)
+
+      // Preseleccionar las fechas con fecha resoluble (las únicas agregables a
+      // "Fechas importantes").
+      const preselected = new Set<number>()
+      consolidated.dates.forEach((d, i) => {
+        if (d.dateISO) preselected.add(i)
+      })
+      setSelectedDateIdx(preselected)
+
+      setPreview({
+        source: 'whatsapp',
+        captureType: 'whatsapp_chat',
+        detectorData: {
+          type: 'whatsapp_chat',
+          confidence: consolidated.confidence,
+          reasoning: 'export de WhatsApp (texto fiel)',
+          suggestedPersonName: personName,
+        },
+        extracted: exportData,
+        confidence: consolidated.confidence,
+        exportData,
+        consolidated,
+        messageCount: parsed.messages.length,
+        blocksUsed: valid.length,
+      })
+      setPhase('review')
+    } catch (e) {
+      setError(toError(e))
+      setPhase('idle')
+    }
+  }, [waFile, personName])
+
   const working = phase === 'working'
   const confirming = phase === 'confirming'
 
@@ -494,11 +682,22 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
           <div className="space-y-3">
             <div className="rounded-md border border-ok/30 bg-ok-soft p-3 text-xs flex items-center gap-2">
               <Check size={14} strokeWidth={2} className="text-ok flex-shrink-0" aria-hidden="true" />
-              <span className="text-ok">
-                {savedType && TYPE_LABEL[savedType] ? `Captura de ${TYPE_LABEL[savedType]}` : 'Captura'}
-                {savedCount > 1 ? ` (consolidada de ${savedCount} imágenes)` : ''} guardada
-                y asociada a {personName}.
-              </span>
+              {savedExport ? (
+                <span className="text-ok">
+                  Conversación de WhatsApp guardada y asociada a {personName} (
+                  {savedExport.messageCount} mensajes consolidados
+                  {savedExport.datesAdded > 0
+                    ? `, ${savedExport.datesAdded} fecha${savedExport.datesAdded > 1 ? 's' : ''} agregada${savedExport.datesAdded > 1 ? 's' : ''}`
+                    : ''}
+                  ).
+                </span>
+              ) : (
+                <span className="text-ok">
+                  {savedType && TYPE_LABEL[savedType] ? `Captura de ${TYPE_LABEL[savedType]}` : 'Captura'}
+                  {savedCount > 1 ? ` (consolidada de ${savedCount} imágenes)` : ''} guardada
+                  y asociada a {personName}.
+                </span>
+              )}
             </div>
             <Button size="sm" variant="outline" onClick={reset} className="w-full">
               Agregar otra captura
@@ -518,31 +717,52 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
               )}
             </div>
 
-            {/* Resumen de consolidación del lote (solo multi-imagen / descartes). */}
-            {preview?.batch && <BatchSummaryNote batch={preview.batch} />}
+            {preview?.source === 'whatsapp' && preview.consolidated ? (
+              <WhatsAppExportReview
+                personName={personName}
+                consolidated={preview.consolidated}
+                messageCount={preview.messageCount ?? 0}
+                blocksUsed={preview.blocksUsed ?? 0}
+                selectedDateIdx={selectedDateIdx}
+                onToggleDate={(i) =>
+                  setSelectedDateIdx((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(i)) next.delete(i)
+                    else next.add(i)
+                    return next
+                  })
+                }
+                disabled={confirming}
+              />
+            ) : (
+              <>
+                {/* Resumen de consolidación del lote (solo multi-imagen / descartes). */}
+                {preview?.batch && <BatchSummaryNote batch={preview.batch} />}
 
-            <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
-              {preview?.batch && preview.batch.used > 1 ? (
-                <>Combiné {preview.batch.used} capturas en un solo perfil. Confirmá que los datos están bien antes de asociarlos a {personName}.</>
-              ) : (
-                <>La confianza no es alta: confirmá que los datos están bien antes de asociarlos a {personName}.</>
-              )}{' '}
-              Si la extracción salió mal (foto de baja resolución, datos cruzados), descartala.
-            </p>
+                <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+                  {preview?.batch && preview.batch.used > 1 ? (
+                    <>Combiné {preview.batch.used} capturas en un solo perfil. Confirmá que los datos están bien antes de asociarlos a {personName}.</>
+                  ) : (
+                    <>La confianza no es alta: confirmá que los datos están bien antes de asociarlos a {personName}.</>
+                  )}{' '}
+                  Si la extracción salió mal (foto de baja resolución, datos cruzados), descartala.
+                </p>
 
-            {preview && (
-              <div className="rounded-md border border-border/60 bg-muted/10 p-3 space-y-1">
-                {previewRows(preview.extracted).length === 0 ? (
-                  <p className="text-xs text-muted-foreground italic">El extractor no devolvió campos legibles.</p>
-                ) : (
-                  previewRows(preview.extracted).map((r) => (
-                    <div key={r.k} className="flex gap-2 text-xs py-0.5 border-b border-border/30 last:border-0">
-                      <span className="text-muted-foreground/70 w-28 flex-shrink-0 truncate">{r.k}</span>
-                      <span className="text-foreground min-w-0 break-words">{r.v}</span>
-                    </div>
-                  ))
+                {preview && (
+                  <div className="rounded-md border border-border/60 bg-muted/10 p-3 space-y-1">
+                    {previewRows(preview.extracted).length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">El extractor no devolvió campos legibles.</p>
+                    ) : (
+                      previewRows(preview.extracted).map((r) => (
+                        <div key={r.k} className="flex gap-2 text-xs py-0.5 border-b border-border/30 last:border-0">
+                          <span className="text-muted-foreground/70 w-28 flex-shrink-0 truncate">{r.k}</span>
+                          <span className="text-foreground min-w-0 break-words">{r.v}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
 
             {error && <ApiErrorNotice error={error} className="p-2" />}
@@ -600,7 +820,14 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
             <div className="rounded-md border border-warn/30 bg-warn/5 p-3 text-xs flex items-start gap-2">
               <AlertCircle size={14} strokeWidth={1.75} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span className="text-warn-foreground">
-                {preview?.source === 'text' ? (
+                {preview?.source === 'whatsapp' ? (
+                  <>
+                    No reconocí esto como un <span className="font-medium">export de WhatsApp</span>. Abrí el chat
+                    con {personName} → ⋮/menú → <span className="font-medium">Exportar chat</span> y subí el{' '}
+                    <span className="font-mono">.txt</span> o el <span className="font-mono">.zip</span> resultante.
+                    No guardé nada.
+                  </>
+                ) : preview?.source === 'text' ? (
                   <>
                     No pude extraer datos claros de ese texto. Asegurate de pegar el contenido del{' '}
                     <span className="font-medium">perfil</span> (nombre, headline, experiencia…). No guardé nada.
@@ -619,13 +846,13 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
               </span>
             </div>
             <Button size="sm" variant="outline" onClick={reset} className="w-full">
-              {preview?.source === 'text' ? 'Volver a intentar' : 'Elegir otras imágenes'}
+              {preview?.source === 'text' || preview?.source === 'whatsapp' ? 'Volver a intentar' : 'Elegir otras imágenes'}
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
-            {/* Selector de modo: TEXTO (confiable) vs IMAGEN. */}
-            <div className="inline-flex rounded-md border border-border p-0.5 text-xs">
+            {/* Selector de modo: TEXTO (confiable) · IMAGEN · CONVERSACIÓN (export WA). */}
+            <div className="inline-flex flex-wrap rounded-md border border-border p-0.5 text-xs">
               <ModeTab
                 active={mode === 'text'}
                 onClick={() => setMode('text')}
@@ -640,9 +867,80 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
                 label="Subir imágenes"
                 disabled={working}
               />
+              <ModeTab
+                active={mode === 'whatsapp'}
+                onClick={() => setMode('whatsapp')}
+                icon={<MessagesSquare size={12} strokeWidth={1.75} aria-hidden="true" />}
+                label="Conversación"
+                disabled={working}
+              />
             </div>
 
-            {mode === 'text' ? (
+            {mode === 'whatsapp' ? (
+              <>
+                <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                  Subí el <span className="font-medium text-foreground">export del chat de WhatsApp</span> con{' '}
+                  {personName}: el <span className="font-mono">.txt</span> (exportá «Sin archivos») o el{' '}
+                  <span className="font-mono">.zip</span> (con media — la media se ignora). Es texto{' '}
+                  <span className="font-medium text-foreground">fiel</span>: sin límite de largo, se procesa por
+                  bloques y se consolida en una sola conversación (resumen, tono, fechas y temas).
+                </p>
+                <input
+                  ref={waInputRef}
+                  type="file"
+                  accept=".txt,.zip,text/plain,application/zip"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null
+                    setWaFile(f)
+                    setError(null)
+                    setPreview(null)
+                    setPhase('idle')
+                  }}
+                  disabled={working}
+                  className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10 disabled:opacity-50"
+                />
+
+                {waFile && (
+                  <div className="rounded-md border border-border/60 bg-muted/10 px-2.5 py-1.5 text-[11px] flex items-center gap-2">
+                    <MessagesSquare size={12} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0" aria-hidden="true" />
+                    <span className="text-foreground truncate min-w-0 flex-1 font-mono">{waFile.name}</span>
+                    <span className="text-muted-foreground/70 flex-shrink-0">{(waFile.size / 1024).toFixed(0)} KB</span>
+                  </div>
+                )}
+
+                {/* Progreso bloque a bloque mientras se interpreta. */}
+                {working && progress && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                      <span>Interpretando bloque {Math.min(progress.done + 1, progress.total)} de {progress.total}…</span>
+                    </div>
+                    <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-brand transition-all"
+                        style={{ width: `${progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {error && <ApiErrorNotice error={error} className="p-2" />}
+
+                <Button size="sm" onClick={runWhatsAppExport} disabled={!waFile || working} className="w-full">
+                  {working ? (
+                    <>
+                      <Loader2 size={14} className="mr-2 animate-spin" />
+                      Procesando conversación…
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={14} strokeWidth={1.75} className="mr-2" aria-hidden="true" />
+                      Procesar conversación
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : mode === 'text' ? (
               <>
                 <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
                   Pegá el texto del perfil (LinkedIn/Instagram). Es la vía{' '}
@@ -794,6 +1092,157 @@ function BatchSummaryNote({ batch }: { batch: BatchSummary }) {
         {skipped.length > 0 && <> Omití: {skipped.join(', ')}.</>}
       </span>
     </div>
+  )
+}
+
+/** Etiquetas de calidad/tono de interacción (1-5). */
+const TONE_LABEL: Record<number, string> = {
+  1: 'Tenso / conflictivo',
+  2: 'Frío',
+  3: 'Neutral',
+  4: 'Cálido',
+  5: 'Pleno',
+}
+
+/** Revisión dedicada del export de WhatsApp: resumen consolidado, tono, temas,
+ *  hechos y un checklist de fechas para agregar a "Fechas importantes". */
+function WhatsAppExportReview({
+  personName,
+  consolidated,
+  messageCount,
+  blocksUsed,
+  selectedDateIdx,
+  onToggleDate,
+  disabled,
+}: {
+  personName: string
+  consolidated: ConsolidatedExport
+  messageCount: number
+  blocksUsed: number
+  selectedDateIdx: Set<number>
+  onToggleDate: (i: number) => void
+  disabled?: boolean
+}) {
+  const datesWithISO = consolidated.dates.filter((d) => d.dateISO)
+  return (
+    <div className="space-y-3">
+      <div className="rounded-md border border-border/60 bg-muted/10 px-3 py-2 text-[11px] text-muted-foreground flex items-start gap-2">
+        <MessagesSquare size={13} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <span>
+          Consolidé <span className="font-medium text-foreground">{messageCount}</span> mensajes en{' '}
+          {blocksUsed} bloque{blocksUsed === 1 ? '' : 's'}. Revisá antes de asociar a {personName}.
+        </span>
+      </div>
+
+      {/* Resumen consolidado */}
+      <div>
+        <div className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary mb-1">Resumen</div>
+        <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+          {consolidated.summary || '(sin resumen)'}
+        </p>
+      </div>
+
+      {/* Tono + temas */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline" className="text-[10px] font-normal border-brand/30 bg-brand-soft text-brand-soft-foreground">
+          Tono: {TONE_LABEL[consolidated.interactionQuality] ?? 'Neutral'} ({consolidated.interactionQuality}/5)
+        </Badge>
+        {consolidated.topics.slice(0, 10).map((t) => (
+          <Badge key={t} variant="outline" className="text-[10px] font-normal">
+            {t}
+          </Badge>
+        ))}
+      </div>
+
+      {/* Hechos notables */}
+      {consolidated.facts.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary mb-1">Lo que aprendí</div>
+          <ul className="space-y-0.5">
+            {consolidated.facts.slice(0, 6).map((f, i) => (
+              <li key={i} className="text-xs text-muted-foreground leading-relaxed flex gap-1.5">
+                <span className="text-muted-foreground/40">·</span>
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Fechas detectadas → checklist para Fechas importantes */}
+      {consolidated.dates.length > 0 && (
+        <div>
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
+            <CalendarHeart size={11} strokeWidth={1.75} aria-hidden="true" />
+            Fechas detectadas
+            {datesWithISO.length > 0 && <span className="normal-case tracking-normal text-muted-foreground/60">(tildá las que quieras agregar)</span>}
+          </div>
+          <ul className="space-y-1">
+            {consolidated.dates.map((d, i) => (
+              <DateCheckRow
+                key={i}
+                date={d}
+                checked={selectedDateIdx.has(i)}
+                onToggle={() => onToggleDate(i)}
+                disabled={disabled}
+              />
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DateCheckRow({
+  date,
+  checked,
+  onToggle,
+  disabled,
+}: {
+  date: ExtractedDate
+  checked: boolean
+  onToggle: () => void
+  disabled?: boolean
+}) {
+  const hasDate = Boolean(date.dateISO)
+  return (
+    <li className="flex items-start gap-2 rounded-md border border-border/40 px-2.5 py-1.5 text-xs">
+      {hasDate ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          disabled={disabled}
+          aria-pressed={checked}
+          aria-label={`Agregar ${date.label} a fechas importantes`}
+          className={cn(
+            'mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border transition-colors disabled:opacity-50',
+            checked ? 'border-brand bg-brand text-white' : 'border-border hover:border-brand/50',
+          )}
+        >
+          {checked && <Check size={11} strokeWidth={3} aria-hidden="true" />}
+        </button>
+      ) : (
+        <span className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-medium text-foreground">{date.label}</span>
+          {date.recurring && (
+            <Badge variant="outline" className="text-[9px] font-normal gap-1 px-1.5 py-0">
+              <Repeat size={9} strokeWidth={2} aria-hidden="true" />
+              anual
+            </Badge>
+          )}
+          {hasDate ? (
+            <span className="font-mono text-[10px] text-muted-foreground">{date.dateISO!.slice(0, 10)}</span>
+          ) : (
+            <span className="text-[10px] text-muted-foreground/60 italic">sin fecha exacta</span>
+          )}
+        </div>
+        {date.rawText && <div className="text-[10px] text-muted-foreground/70 truncate">“{date.rawText}”</div>}
+      </div>
+    </li>
   )
 }
 

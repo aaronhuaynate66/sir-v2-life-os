@@ -18,9 +18,16 @@ const HOUR = 3_600_000
 
 /**
  * Buckets → tiers. Asignación por endpoint:
- * - vision:     captura/detector/proceso/báscula (Vision = el driver de costo).
- * - generation: briefings, síntesis, narrativas, derive (texto LLM).
- * - embeddings: search + memories/embed (OpenAI embeddings, baratos).
+ * - vision:          captura/detector/proceso/báscula (Vision = el driver de costo).
+ * - generation:      briefings, síntesis, narrativas, derive (texto LLM).
+ * - embeddings:      search + memories/embed (OpenAI embeddings, baratos).
+ * - whatsapp_export: interpretación POR BLOQUE del export de WhatsApp. Una
+ *   conversación larga se parte en N bloques y cada bloque es UNA llamada LLM
+ *   orquestada desde el cliente (con progreso). El límite acá es deliberadamente
+ *   alto: es UNA acción intencional del usuario (subir un export), no un loop;
+ *   un export grande puede gatillar decenas de llamadas legítimas en pocos
+ *   minutos. El chunker acota el total de bloques (MAX_CHUNKS), así el techo es
+ *   finito por más larga que sea la conversación.
  */
 export const RATE_LIMIT_TIERS = {
   vision: [
@@ -34,6 +41,10 @@ export const RATE_LIMIT_TIERS = {
   embeddings: [
     { limit: 30, windowMs: MINUTE },
     { limit: 300, windowMs: HOUR },
+  ],
+  whatsapp_export: [
+    { limit: 90, windowMs: MINUTE },
+    { limit: 600, windowMs: HOUR },
   ],
 } as const satisfies Record<string, readonly RateTier[]>
 

@@ -24,8 +24,8 @@ describe('buildKey — scoping multi-key', () => {
 describe('RATE_LIMIT_TIERS — integridad de config', () => {
   const buckets = Object.keys(RATE_LIMIT_TIERS) as RateLimitBucket[]
 
-  it('los 3 buckets esperados existen', () => {
-    expect(buckets.sort()).toEqual(['embeddings', 'generation', 'vision'])
+  it('los buckets esperados existen', () => {
+    expect(buckets.sort()).toEqual(['embeddings', 'generation', 'vision', 'whatsapp_export'])
   })
 
   it('cada tier tiene limit y windowMs positivos', () => {
