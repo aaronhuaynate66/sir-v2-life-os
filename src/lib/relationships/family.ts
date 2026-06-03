@@ -15,6 +15,11 @@
 
 import type { FamilyKind } from '@/types'
 
+/** Sentinel del nodo "yo" (Aaron) en person_links. NO es una fila de `people`:
+ *  el grafo ya usa id='self' para el nodo central. Una arista con
+ *  person_a_id===SELF_ID es un vínculo SELF↔persona ("X es mi <kind>"). */
+export const SELF_ID = 'self'
+
 /** Etiqueta directa de un parentesco ("B es <label> de A"). */
 export const KIND_LABEL: Record<FamilyKind, string> = {
   madre: 'Madre',
@@ -142,6 +147,10 @@ export function inverseRoleLabel(kind: FamilyKind): string {
  *   • hermano/a de A, y hermano/a de mi hermano/a      ⇒ mi hermano/a.
  *   • madre/padre de A, y madre/padre de mi madre/padre⇒ mi abuela/abuelo.
  *   • madre/padre de A, y hermano/a de mi madre/padre  ⇒ mi tía/tío.
+ *   • madre/padre de A, y hijo/a de mi madre/padre     ⇒ mi hermano/a.
+ *     (el hijo/a de mi madre/padre, excluyéndome a mí, es mi hermano/a — habilita
+ *      la inferencia inversa con el self: "María es mi madre" + "Nicolle es hija
+ *      de María" ⇒ "Nicolle es tu hermana".)
  */
 export function composeKinds(k1: FamilyKind, k2: FamilyKind): FamilyKind | null {
   const a = categoryOf(k1)
@@ -154,10 +163,11 @@ export function composeKinds(k1: FamilyKind, k2: FamilyKind): FamilyKind | null 
     return null
   }
 
-  // El ascendiente de mi ascendiente / su colateral.
+  // El ascendiente de mi ascendiente / su colateral / su descendiente.
   if (a === 'parent') {
     if (b === 'parent') return k2 === 'madre' ? 'abuela' : 'abuelo'
     if (b === 'sibling') return k2 === 'hermana' ? 'tia' : 'tio'
+    if (b === 'child') return k2 === 'hija' ? 'hermana' : 'hermano'
     return null
   }
 

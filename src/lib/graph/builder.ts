@@ -2,6 +2,7 @@
 // Pure function: convierte people + relationships + profile en GraphData.
 
 import type { Person, Relationship, PersonLink } from '@/types'
+import { SELF_ID } from '@/lib/relationships/family'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from './colors'
 import type { GraphCategory, GraphData, GraphEdge, GraphNode } from './types'
 
@@ -144,8 +145,13 @@ export function buildGraphData({
   // (está en directContactIds) conserva su arista al centro.
   const directSet = new Set(directContactIds)
   const linkTargetIds = new Set(personLinks.map((l) => l.personBId))
+  // Familia DIRECTA del self (person_a_id='self'): es 1º grado — cuelga del
+  // centro vía la arista de familia con su parentesco, no de un contacto.
+  const selfLinkTargetIds = new Set(
+    personLinks.filter((l) => l.personAId === SELF_ID).map((l) => l.personBId),
+  )
   const isSecondDegree = (personId: string): boolean =>
-    linkTargetIds.has(personId) && !directSet.has(personId)
+    linkTargetIds.has(personId) && !directSet.has(personId) && !selfLinkTargetIds.has(personId)
 
   const relByPerson = new Map<string, Relationship>()
   for (const r of relationships) {
@@ -195,8 +201,11 @@ export function buildGraphData({
       hover: hoverById[p.id],
     })
     // Los de 2º grado NO se conectan al centro: cuelgan de su contacto vía la
-    // arista de familia (abajo). Los contactos directos sí van al centro.
-    if (!secondDegree) {
+    // arista de familia (abajo). Los contactos directos sí van al centro. La
+    // familia directa del self (selfLinkTargetIds) tampoco lleva la arista
+    // genérica: la reemplaza la arista de familia self↔persona con su
+    // parentesco específico (abajo) — así no se dibuja doble.
+    if (!secondDegree && !selfLinkTargetIds.has(p.id)) {
       edges.push({
         source: 'self',
         target: id,
@@ -207,11 +216,13 @@ export function buildGraphData({
     }
   }
 
-  // Aristas de familia persona↔persona (migration 0035). Se dibujan en color
-  // 'familia' con el parentesco como label. Se omiten si algún extremo no
-  // resuelve a un nodo (persona borrada) o si apuntan a sí mismas.
+  // Aristas de familia persona↔persona (migration 0035) y self↔persona (0058,
+  // person_a_id='self'). Se dibujan en color 'familia' con el parentesco como
+  // label. Se omiten si algún extremo no resuelve a un nodo (persona borrada) o
+  // si apuntan a sí mismas.
   for (const link of personLinks) {
-    const source = nodeIdByPersonId.get(link.personAId)
+    const source =
+      link.personAId === SELF_ID ? selfNode.id : nodeIdByPersonId.get(link.personAId)
     const target = nodeIdByPersonId.get(link.personBId)
     if (!source || !target || source === target) continue
     edges.push({

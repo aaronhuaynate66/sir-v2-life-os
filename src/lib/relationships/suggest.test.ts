@@ -59,6 +59,22 @@ describe('inferFamilyLinks', () => {
     const s = inferFamilyLinks('a', links)
     expect(s.every((x) => x.targetId !== 'a')).toBe(true)
   })
+
+  it('SELF forward: Nicolle es mi hermana + María madre de Nicolle ⇒ María es tu madre', () => {
+    const links = [link('self', 'nicolle', 'hermana'), link('nicolle', 'maria', 'madre')]
+    const s = inferFamilyLinks('self', links)
+    expect(s).toContainEqual(
+      expect.objectContaining({ subjectId: 'self', targetId: 'maria', kind: 'madre', viaId: 'nicolle' }),
+    )
+  })
+
+  it('SELF reverse: María es mi madre + Nicolle hija de María ⇒ Nicolle es tu hermana', () => {
+    const links = [link('self', 'maria', 'madre'), link('maria', 'nicolle', 'hija')]
+    const s = inferFamilyLinks('self', links)
+    expect(s).toContainEqual(
+      expect.objectContaining({ subjectId: 'self', targetId: 'nicolle', kind: 'hermana', viaId: 'maria' }),
+    )
+  })
 })
 
 describe('parseFamilyMentions', () => {

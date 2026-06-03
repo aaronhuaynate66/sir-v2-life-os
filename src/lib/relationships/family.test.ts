@@ -59,6 +59,11 @@ describe('composeKinds (inferencia transitiva)', () => {
     expect(composeKinds('padre', 'hermana')).toBe('tia')
   })
 
+  it('la hija de mi madre es mi hermana (inversa con el self)', () => {
+    expect(composeKinds('madre', 'hija')).toBe('hermana')
+    expect(composeKinds('padre', 'hijo')).toBe('hermano')
+  })
+
   it('no infiere lo arriesgado (devuelve null)', () => {
     expect(composeKinds('pareja', 'madre')).toBeNull()
     expect(composeKinds('madre', 'pareja')).toBeNull()

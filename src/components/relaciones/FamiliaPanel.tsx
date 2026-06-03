@@ -1,19 +1,22 @@
 'use client'
-// SIR V2 — FamiliaPanel (Fase 1): FAMILIA como VÍNCULO REAL persona↔persona.
+// SIR V2 — FamiliaPanel (Fase 1 + 1.5): FAMILIA como VÍNCULO REAL.
 //
 // El problema que resuelve: la familia se cargaba como texto ("MADRE: maria")
 // y no reconciliaba contra la persona que YA existe ("María Isabel Espinoza
 // Vidaurre"). Ahora:
 //
-//   • AUTOCOMPLETAR: al agregar un familiar buscás entre las personas que ya
-//     tenés (match tolerante a tildes/primer nombre) y elegís UNA, o creás una
-//     nueva si no existe. Se guarda la ARISTA (person_links, 0035), no texto.
+//   • TU VÍNCULO (self↔persona): "¿Quién es esta persona para vos?" — madre,
+//     hermana, etc. Se guarda como arista self→persona (person_links con
+//     person_a_id='self', migration 0058). El dropdown genérico "Relación"
+//     (PersonDetail) sigue intacto; esto es el parentesco específico.
+//   • AUTOCOMPLETAR: al agregar un familiar de ESTA persona buscás entre las
+//     personas que ya tenés (match tolerante a tildes/primer nombre) y elegís
+//     UNA, o creás una nueva. Se guarda la ARISTA, no texto.
 //   • BIDIRECCIONAL: una arista dirigida link(A→B, kind) se ve como "B es <kind>
-//     de A" en la ficha de A y como "A es <inverso> de B" en la ficha de B. Acá
-//     mostramos las dos direcciones unificadas, con el rol correcto.
-//   • SUGERENCIAS (nunca automáticas): inferencia transitiva (tu hermana + la
-//     madre de tu hermana ⇒ tu madre) y reconciliación del texto libre viejo de
-//     las notas contra personas existentes. Aaron acepta o descarta; los
+//     de A" en la ficha de A y como "A es <inverso> de B" en la ficha de B.
+//   • SUGERENCIAS (nunca automáticas): inferencia transitiva — incluyendo con el
+//     self (tu hermana + la madre de tu hermana ⇒ tu madre, y la inversa) — y
+//     reconciliación del texto libre de las notas. Aaron acepta o descarta; los
 //     descartes se recuerdan (localStorage).
 //
 // Persiste vía el store (sync engine): addPerson + addPersonLink → upsert a
@@ -22,7 +25,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Users, Plus, X, Check, Sparkles, Search, UserPlus } from 'lucide-react'
+import { Users, Plus, X, Check, Sparkles, Search, UserPlus, Heart } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -33,12 +36,13 @@ import { useRelationshipStore } from '@/stores'
 import { useMounted } from '@/hooks/useMounted'
 import { generateSlug } from '@/lib/people/slug'
 import { cn } from '@/lib/utils'
-import { KIND_OPTIONS, KIND_LABEL, inverseRoleLabel } from '@/lib/relationships/family'
+import { KIND_OPTIONS, KIND_LABEL, inverseRoleLabel, SELF_ID } from '@/lib/relationships/family'
 import { matchStrength } from '@/lib/relationships/nameMatch'
 import {
   inferFamilyLinks,
   reconcileFamilyFromNotes,
   type FamilySuggestion,
+  type InferenceSuggestion,
 } from '@/lib/relationships/suggest'
 import type { Person, FamilyKind, PersonLink } from '@/types'
 
@@ -58,6 +62,10 @@ function localUniqueSlug(base: string, taken: Set<string>): string {
     if (!taken.has(candidate)) return candidate
   }
   return `${base}-${rand(4)}`
+}
+
+function firstNameOf(name: string): string {
+  return name.trim().split(/\s+/)[0] || name
 }
 
 /** Una fila de familia ya vinculada, normalizada para mostrar el rol correcto
@@ -84,6 +92,10 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
   const [query, setQuery] = useState('')
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null)
   const [kind, setKind] = useState<FamilyKind>('madre')
+
+  // "Tu vínculo con esta persona" (self↔persona).
+  const [editingSelf, setEditingSelf] = useState(false)
+  const [selfKind, setSelfKind] = useState<FamilyKind>('madre')
 
   // Descartes recordados entre sesiones (no re-sugerir lo que Aaron rechazó).
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
@@ -112,11 +124,19 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
   const peopleById = useMemo(() => new Map(people.map((p) => [p.id, p])), [people])
   const links = useMemo(() => personLinks ?? [], [personLinks])
 
-  // Vista bidireccional: salientes (B es <kind> de la ficha) + entrantes (A es
-  // <inverso> de la ficha), unificadas con el rol correcto.
+  // Vínculo SELF↔esta persona (si existe). Es único por persona en la UI.
+  const selfLink = useMemo(
+    () => links.find((l) => l.personAId === SELF_ID && l.personBId === person.id) ?? null,
+    [links, person.id],
+  )
+
+  // Vista bidireccional de la familia de ESTA persona: salientes (B es <kind>
+  // de la ficha) + entrantes (A es <inverso> de la ficha). Excluye las aristas
+  // del self — esas viven en "Tu vínculo con esta persona", no en su familia.
   const familyRows: FamilyRow[] = useMemo(() => {
     const rows: FamilyRow[] = []
     for (const l of links) {
+      if (l.personAId === SELF_ID) continue
       if (l.personAId === person.id) {
         rows.push({ link: l, otherId: l.personBId, roleLabel: KIND_LABEL[l.kind] ?? l.kind })
       } else if (l.personBId === person.id) {
@@ -145,9 +165,16 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
       .slice(0, 6)
   }, [people, person.id, linkedIds, query])
 
-  // Sugerencias (inferencia + reconciliación), sin las descartadas. Solo tras
-  // montar (dependen del store cliente + localStorage).
-  const suggestions: FamilySuggestion[] = useMemo(() => {
+  // Sugerencias self↔esta persona: inferencia desde el nodo "yo" cuyo destino
+  // es ESTA persona ("María Isabel es tu madre"). Solo si aún no hay self-link.
+  const selfSuggestions: InferenceSuggestion[] = useMemo(() => {
+    if (!mounted || selfLink) return []
+    return inferFamilyLinks(SELF_ID, links)
+      .filter((s) => s.targetId === person.id && !dismissed.has(s.key))
+  }, [mounted, selfLink, links, person.id, dismissed])
+
+  // Sugerencias sobre la familia de ESTA persona (inferencia + reconciliación).
+  const personSuggestions: FamilySuggestion[] = useMemo(() => {
     if (!mounted) return []
     const inferred = inferFamilyLinks(person.id, links)
     const reconciled = reconcileFamilyFromNotes(person, people, links)
@@ -191,16 +218,16 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
     return id
   }
 
-  /** Vincula la ficha → targetId con el parentesco `linkKind` (dirigido). */
-  function link(targetId: string, linkKind: FamilyKind, label: string) {
-    if (targetId === person.id) {
+  /** Vincula fromId → toId con el parentesco `linkKind` (dirigido). */
+  function createLink(fromId: string, toId: string, linkKind: FamilyKind, label: string) {
+    if (toId === fromId) {
       toast.error('No podés vincular a la persona consigo misma')
       return false
     }
     const dup = links.some(
       (l) =>
-        (l.personAId === person.id && l.personBId === targetId && l.kind === linkKind) ||
-        (l.personAId === targetId && l.personBId === person.id),
+        (l.personAId === fromId && l.personBId === toId && l.kind === linkKind) ||
+        (l.personAId === toId && l.personBId === fromId),
     )
     if (dup) {
       toast.error('Ese vínculo ya existe')
@@ -208,19 +235,23 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
     }
     addPersonLink({
       id: `lnk_${Date.now()}_${rand(6)}`,
-      personAId: person.id,
-      personBId: targetId,
+      personAId: fromId,
+      personBId: toId,
       kind: linkKind,
       createdAt: new Date().toISOString(),
     })
-    toast.success('Familiar vinculado', { description: `${label}: ${peopleById.get(targetId)?.name ?? query.trim()}` })
     return true
   }
 
   function handleLink() {
     const targetId = ensureTargetPerson()
     if (!targetId) return
-    if (link(targetId, kind, KIND_LABEL[kind])) resetForm()
+    if (createLink(person.id, targetId, kind, KIND_LABEL[kind])) {
+      toast.success('Familiar vinculado', {
+        description: `${KIND_LABEL[kind]}: ${peopleById.get(targetId)?.name ?? query.trim()}`,
+      })
+      resetForm()
+    }
   }
 
   function handleRemove(l: PersonLink) {
@@ -228,9 +259,36 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
     toast.success('Vínculo de familia eliminado')
   }
 
-  function acceptSuggestion(s: FamilySuggestion, targetId: string) {
-    if (link(targetId, s.kind, KIND_LABEL[s.kind])) dismiss(s.key)
+  function acceptPersonSuggestion(s: FamilySuggestion, targetId: string) {
+    if (createLink(person.id, targetId, s.kind, KIND_LABEL[s.kind])) {
+      toast.success('Familiar vinculado', { description: `${KIND_LABEL[s.kind]}: ${peopleById.get(targetId)?.name ?? ''}` })
+      dismiss(s.key)
+    }
   }
+
+  /** Setea (reemplazando) "esta persona es mi <kind>". Un único self-link por persona. */
+  function setSelfLink(linkKind: FamilyKind) {
+    for (const l of links) {
+      if (l.personAId === SELF_ID && l.personBId === person.id) removePersonLink(l.id)
+    }
+    addPersonLink({
+      id: `lnk_${Date.now()}_${rand(6)}`,
+      personAId: SELF_ID,
+      personBId: person.id,
+      kind: linkKind,
+      createdAt: new Date().toISOString(),
+    })
+    setEditingSelf(false)
+    toast.success(`Es tu ${KIND_LABEL[linkKind].toLowerCase()}`, { description: person.name })
+  }
+
+  function removeSelfLink() {
+    if (selfLink) removePersonLink(selfLink.id)
+    setEditingSelf(false)
+    toast.success('Vínculo personal eliminado')
+  }
+
+  const showSelfSetter = !selfLink || editingSelf
 
   return (
     <Card className="shadow-none mb-4">
@@ -250,10 +308,87 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
           )}
         </div>
 
+        {/* ─── Tu vínculo con esta persona (self↔persona) ──────────────── */}
+        <div className="mb-4 rounded-md border border-border/60 p-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Heart size={12} strokeWidth={1.75} className="text-brand/80" aria-hidden="true" />
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tu vínculo con esta persona</span>
+          </div>
+
+          {selfLink && !editingSelf ? (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm">
+                Es tu <span className="text-foreground font-medium">{(KIND_LABEL[selfLink.kind] ?? selfLink.kind).toLowerCase()}</span>.
+              </p>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button type="button" className="text-[11px] underline text-muted-foreground hover:text-foreground" onClick={() => { setSelfKind(selfLink.kind); setEditingSelf(true) }}>
+                  cambiar
+                </button>
+                <button
+                  type="button"
+                  onClick={removeSelfLink}
+                  className="flex items-center justify-center h-7 w-7 rounded text-muted-foreground/50 hover:text-bad"
+                  aria-label="Quitar tu vínculo con esta persona"
+                >
+                  <X size={13} strokeWidth={1.75} />
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {showSelfSetter && (
+            <div className="space-y-2">
+              <p className="text-[11px] text-muted-foreground/70">¿Quién es esta persona para vos?</p>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Select value={selfKind} onValueChange={(v) => setSelfKind(v as FamilyKind)}>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {KIND_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button size="sm" onClick={() => setSelfLink(selfKind)}>
+                  Es mi {KIND_LABEL[selfKind].toLowerCase()}
+                </Button>
+                {selfLink && (
+                  <Button size="sm" variant="ghost" onClick={() => setEditingSelf(false)}>Cancelar</Button>
+                )}
+              </div>
+
+              {/* Sugerencias self↔persona (inferencia transitiva con el nodo "yo"). */}
+              {selfSuggestions.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  {selfSuggestions.map((s) => {
+                    const via = peopleById.get(s.viaId)
+                    return (
+                      <div key={s.key} className="flex items-center justify-between gap-2 rounded-md bg-brand/[0.05] px-2.5 py-1.5">
+                        <div className="min-w-0 text-[13px]">
+                          <Sparkles size={11} strokeWidth={1.75} className="inline mr-1 text-brand align-[-1px]" aria-hidden="true" />
+                          ¿Es tu <span className="text-foreground">{(KIND_LABEL[s.kind] ?? s.kind).toLowerCase()}</span>?
+                          {via && <span className="text-muted-foreground/60"> vía {firstNameOf(via.name)}</span>}
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button type="button" onClick={() => { setSelfLink(s.kind); dismiss(s.key) }} className="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-ok hover:bg-ok/10">
+                            <Check size={12} strokeWidth={2} /> Sí
+                          </button>
+                          <button type="button" onClick={() => dismiss(s.key)} className="flex items-center justify-center h-7 w-7 rounded text-muted-foreground/50 hover:text-bad" aria-label="Descartar">
+                            <X size={12} strokeWidth={2} />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {adding && (
           <div className="mb-4 space-y-3 rounded-md border border-border/60 p-3">
             <div>
-              <Label htmlFor="fam-search" className="text-xs">Buscar persona o nombrar familiar</Label>
+              <Label htmlFor="fam-search" className="text-xs">Agregar familiar de esta persona</Label>
               <div className="relative mt-1">
                 <Search
                   size={13}
@@ -319,7 +454,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
             </div>
 
             <div>
-              <Label htmlFor="fam-kind" className="text-xs">Parentesco</Label>
+              <Label htmlFor="fam-kind" className="text-xs">Parentesco (respecto de {firstNameOf(person.name)})</Label>
               <Select value={kind} onValueChange={(v) => setKind(v as FamilyKind)}>
                 <SelectTrigger id="fam-kind" className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -337,20 +472,21 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
           </div>
         )}
 
-        {/* Sugerencias: inferencia + reconciliación del texto libre. */}
-        {suggestions.length > 0 && (
+        {/* Sugerencias sobre la familia de esta persona (inferencia + reconciliación). */}
+        {personSuggestions.length > 0 && (
           <div className="mb-4 space-y-2 rounded-md border border-brand/25 bg-brand/[0.04] p-3">
             <div className="flex items-center gap-1.5">
               <Sparkles size={12} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
               <span className="text-[11px] uppercase tracking-[0.07em] text-brand/90">Sugerencias</span>
             </div>
             <ul className="space-y-2">
-              {suggestions.map((s) => (
+              {personSuggestions.map((s) => (
                 <SuggestionRow
                   key={s.key}
                   suggestion={s}
+                  subjectFirstName={firstNameOf(person.name)}
                   peopleById={peopleById}
-                  onAccept={(targetId) => acceptSuggestion(s, targetId)}
+                  onAccept={(targetId) => acceptPersonSuggestion(s, targetId)}
                   onDismiss={() => dismiss(s.key)}
                 />
               ))}
@@ -402,14 +538,17 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
   )
 }
 
-/** Una fila de sugerencia (inferencia o reconciliación), con aceptar/descartar. */
+/** Una fila de sugerencia sobre la familia de ESTA persona (inferencia o
+ *  reconciliación), con aceptar/descartar. */
 function SuggestionRow({
   suggestion,
+  subjectFirstName,
   peopleById,
   onAccept,
   onDismiss,
 }: {
   suggestion: FamilySuggestion
+  subjectFirstName: string
   peopleById: Map<string, Person>
   onAccept: (targetId: string) => void
   onDismiss: () => void
@@ -424,7 +563,7 @@ function SuggestionRow({
       <li className="flex items-start justify-between gap-2">
         <div className="min-w-0 text-sm">
           <span className="text-foreground">{target.name}</span>{' '}
-          <span className="text-muted-foreground">podría ser tu <span className="text-foreground">{kindLabel.toLowerCase()}</span></span>
+          <span className="text-muted-foreground">podría ser <span className="text-foreground">{kindLabel.toLowerCase()}</span> de {subjectFirstName}</span>
           {via && (
             <span className="block text-[11px] text-muted-foreground/60">vía {via.name}</span>
           )}

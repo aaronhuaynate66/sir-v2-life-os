@@ -116,3 +116,23 @@ describe('buildGraphData — aristas de familia persona↔persona (A.4)', () => 
     expect(g.nodes.every((n) => !n.secondDegree)).toBe(true)
   })
 })
+
+describe('buildGraphData — aristas self↔persona (0058, sentinel "self")', () => {
+  const maria = person({ id: 'p_maria', name: 'María Isabel', slug: 'maria', relationship: 'family', category: 'close' })
+  const selfLink: PersonLink = { id: 'sl1', personAId: 'self', personBId: 'p_maria', kind: 'madre', createdAt: '2026-06-03T00:00:00Z' }
+
+  it('dibuja la arista self→persona en color familia con el parentesco', () => {
+    const g = buildGraphData({ people: [maria], relationships: [], personLinks: [selfLink], selfFullName: 'Aaron', selfEmail: 'a@x.com' })
+    const fam = g.edges.find((e) => e.source === 'self' && e.target === 'maria' && e.category === 'familia')
+    expect(fam).toBeTruthy()
+    expect(fam!.label).toBe('Madre')
+  })
+
+  it('la familia directa del self NO se duplica con la arista genérica ni queda 2º grado', () => {
+    const g = buildGraphData({ people: [maria], relationships: [], personLinks: [selfLink], selfFullName: 'A', selfEmail: 'a@x.com' })
+    const selfEdges = g.edges.filter((e) => e.source === 'self' && e.target === 'maria')
+    expect(selfEdges).toHaveLength(1) // solo la de familia, no la genérica
+    expect(selfEdges[0].category).toBe('familia')
+    expect(g.nodes.find((n) => n.id === 'maria')?.secondDegree).toBe(false)
+  })
+})
