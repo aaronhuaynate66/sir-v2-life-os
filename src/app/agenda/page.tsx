@@ -33,17 +33,19 @@ export default function AgendaPage() {
         </div>
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Próximo</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Todo lo accionable de tu red, ordenado por urgencia.
+          Todo lo accionable, ordenado por urgencia. El calendario queda abajo, como contexto.
         </p>
       </motion.div>
 
-      {/* Calendario(s) externo(s) — multi-calendario; degrada limpio si no hay nada conectado. */}
+      {/* PRIMARIO: lo accionable (motor proactivo) manda la página. */}
+      <ProximoPanel title="Lo que importa ahora" />
+
+      {/* SECUNDARIO: calendario externo con los recurrentes plegados. La vista
+          completa de tiempo vive en /horario. */}
       <CalendarPanel reloadKey={calReload} />
 
       {/* Gestión de calendarios conectados (agregar/editar/eliminar/toggle). */}
       <CalendarConnections onChange={() => setCalReload((k) => k + 1)} />
-
-      <ProximoPanel title="Recordatorios" />
     </AppShell>
   )
 }

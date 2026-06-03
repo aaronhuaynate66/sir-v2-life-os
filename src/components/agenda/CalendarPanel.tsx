@@ -3,13 +3,21 @@
 // Consume /api/calendar (server lee OUTLOOK_ICS_URL; el token nunca llega acá).
 // Degrada limpio: si no está configurado, muestra cómo activarlo; si falla,
 // lo dice sin romper. Agrupa por día en TZ Lima.
+//
+// CONTEXTO SECUNDARIO (Fase 3): en /agenda manda lo accionable (ProximoPanel).
+// Acá plegamos el RUIDO: los eventos recurrentes que ya se saben de memoria
+// (Gym, "Aaron OS — …", dailies de Teams) se colapsan a una fila por serie
+// dentro de un acordeón cerrado, y dejamos visibles las reuniones ÚNICAS. La
+// vista completa de tiempo vive en /horario; acá no competimos con eso.
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { CalendarDays, Clock, MapPin, Settings2, AlertCircle } from 'lucide-react'
+import { CalendarDays, Clock, MapPin, Settings2, AlertCircle, Repeat, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
 import { LIMA_TZ_LABEL } from '@/lib/calendar/tz'
+import { collapseRecurring } from '@/lib/calendar/collapse'
 import type { CalendarEvent, CalendarFeedResult } from '@/lib/calendar/types'
 
 const cardClass = 'shadow-none mb-6'
@@ -117,7 +125,10 @@ function Body({ state }: { state: State }) {
 
   const todayKey = todayKeyLima(0)
   const tomorrowKey = todayKeyLima(1)
-  const groups = groupByDay(events)
+  // Colapsa el ruido recurrente: las reuniones ÚNICAS se muestran por día; las
+  // series recurrentes se pliegan a una fila (próxima ocurrencia) cada una.
+  const { oneOff, series } = collapseRecurring(events)
+  const groups = groupByDay(oneOff)
   // Leyenda solo si hay más de un calendario (con multi-calendario tiene sentido).
   const legend = (state.data.calendars ?? []).filter((c) => c.label)
   const showLegend = legend.length > 1
@@ -138,19 +149,91 @@ function Body({ state }: { state: State }) {
           ))}
         </div>
       )}
-      {groups.map((g) => (
-        <div key={g.dateKey}>
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
-            {dayHeader(g.dateKey, todayKey, tomorrowKey)}
+
+      {groups.length > 0 ? (
+        groups.map((g) => (
+          <div key={g.dateKey}>
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
+              {dayHeader(g.dateKey, todayKey, tomorrowKey)}
+            </div>
+            <ul className="space-y-1.5">
+              {g.events.map((ev) => (
+                <EventRow key={ev.id} ev={ev} />
+              ))}
+            </ul>
           </div>
-          <ul className="space-y-1.5">
-            {g.events.map((ev) => (
-              <EventRow key={ev.id} ev={ev} />
-            ))}
-          </ul>
-        </div>
-      ))}
+        ))
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Sin reuniones puntuales próximas{series.length > 0 ? ' (solo rituales recurrentes).' : '.'}
+        </p>
+      )}
+
+      {series.length > 0 && (
+        <RecurringSummary series={series} todayKey={todayKey} tomorrowKey={tomorrowKey} />
+      )}
+
+      <p className="text-[11px] text-muted-foreground/70 pt-1">
+        Tu agenda completa de tiempo vive en{' '}
+        <Link href="/horario" className="underline underline-offset-2 hover:text-foreground">
+          /horario
+        </Link>
+        .
+      </p>
     </div>
+  )
+}
+
+/** Etiqueta compacta de la próxima ocurrencia de una serie ("Hoy · 09:00"). */
+function nextLabel(ev: CalendarEvent, todayKey: string, tomorrowKey: string): string {
+  const day = dayHeader(limaDateKey(ev), todayKey, tomorrowKey)
+  return ev.allDay ? day : `${day} · ${limaTime(ev.start)}`
+}
+
+/** Acordeón CERRADO por default con los rituales/eventos recurrentes plegados:
+ *  una fila por serie con su próxima ocurrencia. Quita el ruido sin esconder
+ *  que existen. */
+function RecurringSummary({
+  series,
+  todayKey,
+  tomorrowKey,
+}: {
+  series: CalendarEvent[]
+  todayKey: string
+  tomorrowKey: string
+}) {
+  return (
+    <details className="group rounded-md border border-border/60 bg-muted/15">
+      <summary className="flex items-center gap-2 px-3 py-2 cursor-pointer list-none text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Repeat size={13} strokeWidth={1.75} className="shrink-0 text-muted-foreground/70" aria-hidden="true" />
+        <span className="flex-1">Rituales y recurrentes</span>
+        <span className="text-[11px] font-mono tabular-nums text-text-tertiary">{series.length}</span>
+        <ChevronRight
+          size={14}
+          strokeWidth={2}
+          className="shrink-0 text-muted-foreground/40 transition-transform group-open:rotate-90"
+          aria-hidden="true"
+        />
+      </summary>
+      <ul className="px-3 pb-2.5 pt-0.5 space-y-1">
+        {series.map((ev) => (
+          <li key={ev.id} className="flex items-center gap-2 text-[13px]">
+            {ev.calendarColor && (
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: ev.calendarColor }}
+                aria-hidden="true"
+                title={ev.calendarLabel}
+              />
+            )}
+            <span className="min-w-0 flex-1 truncate text-foreground/80">{ev.title}</span>
+            <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+              {nextLabel(ev, todayKey, tomorrowKey)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
   )
 }
 
