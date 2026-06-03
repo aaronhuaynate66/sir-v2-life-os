@@ -4,9 +4,11 @@
 // curadas de una persona, usando Anthropic para la síntesis (fallback
 // determinístico si el modelo falla o no devuelve nada parseable).
 //
-// NO toca el flujo viejo: /captura/whatsapp, relationships.history y el
-// backfill 0012 siguen intactos. Idempotente vía el PRIMARY KEY `id`
-// (determinístico `mem_obs:<observationId>:<n>`, existe desde 0001).
+// Todas las capturas (incluido el export de WhatsApp) escriben `observations`;
+// el flujo dedicado /captura/whatsapp y su dual-write a relationships.history
+// quedaron deprecados (la columna history se conserva, sin escritores nuevos).
+// Idempotente vía el PRIMARY KEY `id` (determinístico
+// `mem_obs:<observationId>:<n>`, existe desde 0001).
 //
 // MEJORAS (caso Dayana, 03/06/2026):
 //   - RECENCIA + CONCIENCIA DEL OBJETIVO: el digest llega partido por recencia

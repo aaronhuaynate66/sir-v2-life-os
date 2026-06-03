@@ -193,14 +193,15 @@ function SelfContent() {
             <div className="min-w-0">
               <div className="text-sm font-medium text-foreground">Capturar conversación WhatsApp</div>
               <div className="text-xs text-muted-foreground leading-snug">
-                Subí un screenshot y Claude Sonnet identifica el contacto, infiere
-                el tono emocional, y guarda el resumen en el historial de la persona.
+                Subí un screenshot en la captura universal: SIR detecta el contacto, infiere
+                el tono y guarda el resumen en su perfil. Para chats largos, subí el export
+                (.txt/.zip) desde la ficha de la persona.
               </div>
             </div>
           </div>
           <Button size="sm" asChild className="flex-shrink-0">
-            <Link href="/captura/whatsapp" className="inline-flex items-center gap-1.5">
-              + Subir foto
+            <Link href="/captura" className="inline-flex items-center gap-1.5">
+              + Capturar
               <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
             </Link>
           </Button>
