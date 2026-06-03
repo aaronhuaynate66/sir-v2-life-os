@@ -13,7 +13,11 @@
 //     PROHIBIDO lo abstracto: "evaluar requisitos", "investigar opciones",
 //     "diseñar programa", "prepararse", "planificar".
 //   - Fechas en tareas: crecientes y <= fecha objetivo si existe.
+//   - Cada tarea trae además: acceptanceCriteria (definición de hecho), effort
+//     (S/M/L) y priority (low/med/high) → tareas ejecutables "Jira-light".
 //   - Devuelve SOLO JSON; el parser es tolerante a ruido/markdown.
+
+import type { TaskEffort, TaskPriority } from '@/types'
 
 export interface PlanPromptInput {
   title: string
@@ -38,8 +42,14 @@ export interface PlanPromptInput {
 export interface ProposedTask {
   title: string
   description?: string
-  /** Fecha sugerida date-only ISO, opcional. */
+  /** Fecha sugerida date-only ISO, opcional (= due date). */
   targetDate?: string
+  /** Definición de hecho verificable ("visa aprobada y en pasaporte"). */
+  acceptanceCriteria?: string
+  /** Estimación de esfuerzo camiseta. */
+  effort?: TaskEffort
+  /** Prioridad sugerida. */
+  priority?: TaskPriority
 }
 
 /** Resultado Clave propuesto, con sus tareas (aún no persistido). */
@@ -54,7 +64,7 @@ export const OBJECTIVE_PLAN_SYSTEM_PROMPT = `Eres el módulo de Planificación d
 Recibís UN objetivo declarado por el usuario (título, descripción, dominio, su definición SMART si existe, una fecha objetivo si existe) y, cuando hay, un bloque de DATOS REALES del usuario (finanzas, cuerpo/báscula, bienestar, señales, personas). Tu tarea: descomponerlo en un plan OKR de DOS niveles APOYADO en esos datos, y devolver notas de viabilidad aterrizadas.
 
 Devolvé EXCLUSIVAMENTE un objeto JSON (sin texto adicional, sin markdown, sin comentarios):
-{ "keyResults": [ { "title": "...", "description": "...", "tasks": [ { "title": "...", "description": "...", "targetDate": "YYYY-MM-DD" } ] } ], "feasibility": [ "nota corta aterrizada en los datos", "..." ] }
+{ "keyResults": [ { "title": "...", "description": "...", "tasks": [ { "title": "...", "description": "...", "acceptanceCriteria": "...", "targetDate": "YYYY-MM-DD", "effort": "S|M|L", "priority": "low|med|high" } ] } ], "feasibility": [ "nota corta aterrizada en los datos", "..." ] }
 
 NIVEL 1 — RESULTADOS CLAVE (keyResults):
 - Entre 2 y 5. Cada uno es un OUTCOME o ÁREA medible que, completada, acerca el objetivo. NO es una acción.
@@ -66,19 +76,22 @@ NIVEL 2 — TAREAS (tasks dentro de cada KR):
 - Cada "title" empieza con un VERBO de acción ejecutable y describe algo que una persona REALMENTE hace en el mundo: trámites, compras, pagos, reservas, llamados, registros, citas. Máx ~90 caracteres.
 - PROHIBIDO lo vago/abstracto: NADA de "evaluar requisitos", "investigar opciones", "analizar", "diseñar un programa", "prepararse", "planificar", "definir estrategia". Si una tarea no se puede tachar de una lista tras hacerla, está mal.
 - "description" opcional: detalle logístico (dónde, cuánto, con quién).
+- "acceptanceCriteria" (recomendado): la DEFINICIÓN DE HECHO verificable de esa tarea — cómo sabés objetivamente que quedó terminada. Es un ESTADO observable, no una acción ni una repetición del título. Ej.: para "Tramitar la eVisa" → "eVisa aprobada y guardada en PDF". Máx ~120 caracteres.
+- "effort" (recomendado): esfuerzo estimado, uno de "S" (rápido, <1h o trivial), "M" (medio, algunas horas/un día), "L" (grande, varios días o costoso/complejo).
+- "priority" (recomendado): "high" (en el camino crítico o con deadline cercano), "med" (importante, no urgente), "low" (deseable/secundaria).
 - "targetDate" opcional date-only ISO.
 
 EJEMPLO de concreción (objetivo "Competir en el Mundial de la disciplina en el exterior"):
 { "keyResults": [
   { "title": "Visa y viaje", "tasks": [
-    { "title": "Tramitar la eVisa en el portal oficial del país anfitrión" },
-    { "title": "Comprar el pasaje aéreo ida y vuelta" },
-    { "title": "Conseguir el dinero del pasaje (ahorro mensual + venta de equipo viejo)" }
+    { "title": "Tramitar la eVisa en el portal oficial del país anfitrión", "acceptanceCriteria": "eVisa aprobada y guardada en PDF", "effort": "M", "priority": "high" },
+    { "title": "Comprar el pasaje aéreo ida y vuelta", "acceptanceCriteria": "Boleto emitido y con localizador confirmado", "effort": "S", "priority": "high" },
+    { "title": "Conseguir el dinero del pasaje (ahorro mensual + venta de equipo viejo)", "acceptanceCriteria": "Monto del pasaje juntado en la cuenta", "effort": "L", "priority": "med" }
   ] },
   { "title": "Inscripción a la competencia", "tasks": [
-    { "title": "Pre-registrarme en el sitio del torneo antes del cierre" },
-    { "title": "Pagar el fee de inscripción" },
-    { "title": "Subir certificado médico y documentación requerida" }
+    { "title": "Pre-registrarme en el sitio del torneo antes del cierre", "acceptanceCriteria": "Registro confirmado por email", "effort": "S", "priority": "high" },
+    { "title": "Pagar el fee de inscripción", "acceptanceCriteria": "Pago acreditado y comprobante recibido", "effort": "S", "priority": "high" },
+    { "title": "Subir certificado médico y documentación requerida", "acceptanceCriteria": "Documentos aceptados por la organización", "effort": "M", "priority": "med" }
   ] }
 ] }
 
@@ -118,7 +131,7 @@ export function buildPlanInput(input: PlanPromptInput): string {
   if (input.context && input.context.trim()) {
     lines.push('', input.context.trim())
   }
-  lines.push('', 'Devolvé el plan OKR + feasibility en el JSON especificado: keyResults con sus tasks concretas, y feasibility aterrizada en los datos reales (o [] si no hay datos).')
+  lines.push('', 'Devolvé el plan OKR + feasibility en el JSON especificado: keyResults con sus tasks concretas (cada tarea con acceptanceCriteria, effort y priority), y feasibility aterrizada en los datos reales (o [] si no hay datos).')
   return lines.join('\n')
 }
 
@@ -191,7 +204,18 @@ function stripTrailingCommas(s: string): string {
  * intento vino vacío/no-parseable (p. ej. truncado). Pide JSON COMPLETO y
  * conciso para no volver a pasarse de largo.
  */
-export const OBJECTIVE_PLAN_RETRY_NUDGE = `IMPORTANTE: tu salida debe ser EXCLUSIVAMENTE un objeto JSON válido y COMPLETO (todas las llaves y corchetes cerrados), sin ningún texto fuera del JSON ni fences \`\`\`. Sé CONCISO para que entre completo: 3 a 4 keyResults, 3 a 4 tasks por keyResult, títulos cortos y descripciones breves u omitidas. Incluí al menos 3 keyResults.`
+export const OBJECTIVE_PLAN_RETRY_NUDGE = `IMPORTANTE: tu salida debe ser EXCLUSIVAMENTE un objeto JSON válido y COMPLETO (todas las llaves y corchetes cerrados), sin ningún texto fuera del JSON ni fences \`\`\`. Sé CONCISO para que entre completo: 3 a 4 keyResults, 3 a 4 tasks por keyResult, títulos cortos y descripciones breves u omitidas. En cada tarea incluí "acceptanceCriteria" (breve), "effort" (S/M/L) y "priority" (low/med/high). Incluí al menos 3 keyResults.`
+
+const VALID_EFFORT: readonly TaskEffort[] = ['S', 'M', 'L']
+const VALID_PRIORITY: readonly TaskPriority[] = ['low', 'med', 'high']
+
+/** Normaliza un enum del LLM: matchea case-insensitive, descarta lo inválido. */
+function parseEnum<T extends string>(raw: unknown, valid: readonly T[]): T | undefined {
+  const s = cleanString(raw)
+  if (!s) return undefined
+  const hit = valid.find((v) => v.toLowerCase() === s.toLowerCase())
+  return hit
+}
 
 function parseTask(item: unknown): ProposedTask | null {
   if (typeof item !== 'object' || item === null) return null
@@ -201,7 +225,10 @@ function parseTask(item: unknown): ProposedTask | null {
   const description = cleanString(obj.description) || undefined
   const td = cleanString(obj.targetDate)
   const targetDate = ISO_DATE.test(td) ? td : undefined
-  return { title, description, targetDate }
+  const acceptanceCriteria = cleanString(obj.acceptanceCriteria) || undefined
+  const effort = parseEnum<TaskEffort>(obj.effort, VALID_EFFORT)
+  const priority = parseEnum<TaskPriority>(obj.priority, VALID_PRIORITY)
+  return { title, description, targetDate, acceptanceCriteria, effort, priority }
 }
 
 /**

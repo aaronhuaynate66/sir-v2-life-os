@@ -41,9 +41,12 @@ const MODEL_ID = 'claude-sonnet-4-5-20250929'
 // largo se TRUNQUE a la mitad (truncado → JSON inválido → "plan vacío"/502, que
 // es lo que pasaba con 1600 para objetivos verbosos como los financieros). La
 // latencia la acota maxDuration=60 + los topes de tamaño del prompt.
-const PLAN_MAX_TOKENS = 3000
+//
+// 0050: cada tarea ahora trae acceptanceCriteria + effort + priority → el JSON
+// crece ~40-60%. Subimos los techos para no volver a truncar planes verbosos.
+const PLAN_MAX_TOKENS = 4500
 // Reintento conciso: pedimos un plan más chico para que entre completo y rápido.
-const RETRY_MAX_TOKENS = 2200
+const RETRY_MAX_TOKENS = 3200
 
 interface ErrorBody {
   error: string

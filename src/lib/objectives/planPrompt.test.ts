@@ -24,6 +24,10 @@ describe('buildPlanInput', () => {
     expect(msg).toContain('Hoy es: 2026-06-01')
     expect(msg).toContain('Fecha objetivo: 2026-11-01')
     expect(msg).toContain('keyResults')
+    // 0050: el cierre pide los campos Jira-light por tarea.
+    expect(msg).toContain('acceptanceCriteria')
+    expect(msg).toContain('effort')
+    expect(msg).toContain('priority')
   })
 
   it('sin fecha objetivo → lo aclara', () => {
@@ -102,9 +106,69 @@ describe('parseObjectivePlan', () => {
     expect(krs).toHaveLength(2)
     expect(krs[0].title).toBe('Visa y viaje')
     expect(krs[0].tasks).toHaveLength(2)
-    expect(krs[0].tasks[0]).toEqual({ title: 'Tramitar la eVisa', description: undefined, targetDate: '2026-07-01' })
+    expect(krs[0].tasks[0]).toEqual({
+      title: 'Tramitar la eVisa',
+      description: undefined,
+      targetDate: '2026-07-01',
+      acceptanceCriteria: undefined,
+      effort: undefined,
+      priority: undefined,
+    })
     expect(krs[0].tasks[1].description).toBe('ida y vuelta')
-    expect(krs[1].tasks[0]).toEqual({ title: 'Pagar el fee', description: undefined, targetDate: undefined })
+    expect(krs[1].tasks[0]).toEqual({
+      title: 'Pagar el fee',
+      description: undefined,
+      targetDate: undefined,
+      acceptanceCriteria: undefined,
+      effort: undefined,
+      priority: undefined,
+    })
+  })
+
+  it('parsea los campos Jira-light (acceptanceCriteria, effort, priority)', () => {
+    const raw = JSON.stringify({
+      keyResults: [
+        {
+          title: 'Visa y viaje',
+          tasks: [
+            {
+              title: 'Tramitar la eVisa',
+              acceptanceCriteria: 'eVisa aprobada y guardada en PDF',
+              effort: 'M',
+              priority: 'high',
+              targetDate: '2026-07-01',
+            },
+          ],
+        },
+      ],
+    })
+    expect(parseObjectivePlan(raw)[0].tasks[0]).toEqual({
+      title: 'Tramitar la eVisa',
+      description: undefined,
+      targetDate: '2026-07-01',
+      acceptanceCriteria: 'eVisa aprobada y guardada en PDF',
+      effort: 'M',
+      priority: 'high',
+    })
+  })
+
+  it('normaliza effort/priority case-insensitive y descarta valores inválidos', () => {
+    const raw = JSON.stringify({
+      keyResults: [
+        {
+          title: 'KR',
+          tasks: [
+            { title: 'A', effort: 'm', priority: 'HIGH' }, // case mix → normaliza
+            { title: 'B', effort: 'XL', priority: 'urgent' }, // inválidos → undefined
+          ],
+        },
+      ],
+    })
+    const tasks = parseObjectivePlan(raw)[0].tasks
+    expect(tasks[0].effort).toBe('M')
+    expect(tasks[0].priority).toBe('high')
+    expect(tasks[1].effort).toBeUndefined()
+    expect(tasks[1].priority).toBeUndefined()
   })
 
   it('tolera markdown/ruido alrededor del JSON', () => {
