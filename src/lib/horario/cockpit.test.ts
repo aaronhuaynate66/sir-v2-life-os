@@ -226,6 +226,50 @@ describe('tasksDueInRange — fusión OKR', () => {
     )
     expect(tasks.map((t) => t.title)).toEqual(['A', 'B', 'C'])
   })
+
+  // ─── Jira-light (0050): blocked / priority / effort ──────────────────
+  it('marca blocked por taskStatus explícito y por dependencia incompleta', () => {
+    const tasks = tasksDueInRange(
+      [goal({ id: 'g1' })],
+      [
+        ostep({ id: 'dep', title: 'Dep', status: 'pendiente', targetDate: '2026-06-01' }),
+        ostep({ id: 't1', title: 'Explícita', taskStatus: 'blocked', targetDate: '2026-06-01' }),
+        ostep({ id: 't2', title: 'Por dep', blockedBy: ['dep'], targetDate: '2026-06-01' }),
+        ostep({ id: 't3', title: 'Libre', targetDate: '2026-06-01' }),
+      ],
+      { maxDays: 6 },
+      NOW,
+    )
+    const byTitle = Object.fromEntries(tasks.map((t) => [t.title, t.blocked]))
+    expect(byTitle['Explícita']).toBe(true)
+    expect(byTitle['Por dep']).toBe(true)
+    expect(byTitle['Libre']).toBe(false)
+  })
+
+  it('expone priority y effort de la tarea', () => {
+    const tasks = tasksDueInRange(
+      [goal({ id: 'g1' })],
+      [ostep({ id: 't1', priority: 'high', effort: 'L', targetDate: '2026-06-01' })],
+      { maxDays: 6 },
+      NOW,
+    )
+    expect(tasks[0].priority).toBe('high')
+    expect(tasks[0].effort).toBe('L')
+  })
+
+  it('desempata por prioridad cuando vencen el mismo día (alta primero)', () => {
+    const tasks = tasksDueInRange(
+      [goal({ id: 'g1' })],
+      [
+        ostep({ id: 't1', title: 'baja', priority: 'low', targetDate: '2026-06-03' }),
+        ostep({ id: 't2', title: 'alta', priority: 'high', targetDate: '2026-06-03' }),
+        ostep({ id: 't3', title: 'media', priority: 'med', targetDate: '2026-06-03' }),
+      ],
+      { maxDays: 6 },
+      NOW,
+    )
+    expect(tasks.map((t) => t.title)).toEqual(['alta', 'media', 'baja'])
+  })
 })
 
 // ─── focusKeyResults ───────────────────────────────────────────────────

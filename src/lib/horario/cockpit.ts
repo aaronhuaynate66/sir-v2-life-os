@@ -21,7 +21,15 @@
 
 import type { CalendarEvent } from '@/lib/calendar/types'
 import { toLimaDateOnly } from '@/lib/calendar/ics'
-import type { Goal, GoalPriority, ObjectiveStep, ObjectiveStepStatus, Person } from '@/types'
+import type {
+  Goal,
+  GoalPriority,
+  ObjectiveStep,
+  ObjectiveStepStatus,
+  Person,
+  TaskEffort,
+  TaskPriority,
+} from '@/types'
 import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import {
@@ -31,6 +39,7 @@ import {
   tasksForKeyResult,
   computeKeyResultProgress,
   daysUntilStep,
+  isStepBlocked,
 } from '@/lib/objectives/steps'
 
 const DAY_MS = 86_400_000
@@ -61,7 +70,19 @@ export interface CockpitTask {
   /** Días con signo hasta la fecha (0 = hoy, <0 = vencida). */
   daysUntil: number
   overdue: boolean
+  /** Bloqueada: marcada 'blocked' o con una dependencia sin completar (0050). */
+  blocked: boolean
+  /** Prioridad Jira-light, si la tarea la tiene (0050). */
+  priority?: TaskPriority
+  /** Esfuerzo Jira-light, si la tarea lo tiene (0050). */
+  effort?: TaskEffort
   href: string
+}
+
+/** Rank de prioridad para ordenar (high primero); ausente = lo último. */
+const TASK_PRIORITY_RANK: Record<TaskPriority, number> = { high: 0, med: 1, low: 2 }
+function priorityRank(p: TaskPriority | undefined): number {
+  return p ? TASK_PRIORITY_RANK[p] : 3
 }
 
 /** Una fecha de la red (cumpleaños o fecha especial) con aviso anticipado. */
@@ -250,10 +271,20 @@ export function tasksDueInRange(
       status: s.status,
       daysUntil: days,
       overdue: days < 0,
+      blocked: isStepBlocked(s, steps),
+      priority: s.priority,
+      effort: s.effort,
       href: '/objetivos',
     })
   }
-  out.sort((a, b) => a.daysUntil - b.daysUntil || a.title.localeCompare(b.title, 'es'))
+  // Orden: por cercanía (vencido/próximo primero), luego prioridad (alta primero),
+  // desempate por título. La prioridad desempata tareas que vencen el mismo día.
+  out.sort(
+    (a, b) =>
+      a.daysUntil - b.daysUntil ||
+      priorityRank(a.priority) - priorityRank(b.priority) ||
+      a.title.localeCompare(b.title, 'es'),
+  )
   return out
 }
 

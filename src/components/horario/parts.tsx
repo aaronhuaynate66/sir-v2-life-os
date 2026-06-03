@@ -15,6 +15,7 @@ import {
   Gift,
   HeartPulse,
   ListChecks,
+  Lock,
   Moon,
   Scale,
   Settings2,
@@ -90,22 +91,28 @@ function phraseFor(daysUntil: number, overdue: boolean): string {
 }
 
 export function TaskRow({ task, showObjective = true }: { task: CockpitTask; showObjective?: boolean }) {
+  // Bloqueada (urgencia/bloqueo) gana el ícono y color; si no, vencida=bad, ok si no.
+  const Icon = task.blocked ? Lock : ListChecks
+  const iconCls = task.blocked || task.overdue ? 'text-bad' : 'text-ok'
   return (
     <Link
       href={task.href}
       className="flex items-center gap-3 rounded-md px-2 py-2 -mx-2 hover:bg-accent/10 transition-colors group"
     >
-      <ListChecks
-        size={15}
-        strokeWidth={1.75}
-        className={cn('shrink-0', task.overdue ? 'text-bad' : 'text-ok')}
-        aria-hidden="true"
-      />
+      <Icon size={15} strokeWidth={1.75} className={cn('shrink-0', iconCls)} aria-hidden="true" />
       <div className="min-w-0 flex-1">
-        <div className="text-sm text-foreground truncate">{task.title}</div>
+        <div className="flex items-center gap-1.5 min-w-0">
+          {task.priority === 'high' && (
+            <span className="text-brand-soft-foreground text-[10px]" title="Prioridad alta" aria-hidden="true">
+              ●
+            </span>
+          )}
+          <span className="text-sm text-foreground truncate">{task.title}</span>
+        </div>
         <div className="text-[11px] text-muted-foreground truncate">
           {showObjective ? `${task.objectiveTitle} · ` : ''}
           <span className={urgencyClass(task.daysUntil)}>{phraseFor(task.daysUntil, task.overdue)}</span>
+          {task.blocked && <span className="text-bad"> · bloqueada</span>}
         </div>
       </div>
     </Link>
