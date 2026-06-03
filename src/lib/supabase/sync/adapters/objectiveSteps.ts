@@ -9,10 +9,20 @@
 // no creadas), fromRow cae a kind='key_result'/parentId ausente — el paso viejo
 // se reinterpreta como KR del objetivo, sin tareas.
 
-import type { ObjectiveStep, ObjectiveStepKind, ObjectiveStepStatus } from '@/types'
+import type {
+  ObjectiveStep,
+  ObjectiveStepKind,
+  ObjectiveStepStatus,
+  TaskEffort,
+  TaskPriority,
+  TaskStatus,
+} from '@/types'
 import type { TableAdapter } from '../types'
 
 const VALID_STATUS: readonly ObjectiveStepStatus[] = ['pendiente', 'en_progreso', 'hecho']
+const VALID_TASK_STATUS: readonly TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
+const VALID_EFFORT: readonly TaskEffort[] = ['S', 'M', 'L']
+const VALID_PRIORITY: readonly TaskPriority[] = ['low', 'med', 'high']
 
 function coerceStatus(raw: unknown): ObjectiveStepStatus {
   return typeof raw === 'string' && VALID_STATUS.includes(raw as ObjectiveStepStatus)
@@ -22,6 +32,18 @@ function coerceStatus(raw: unknown): ObjectiveStepStatus {
 
 function coerceKind(raw: unknown): ObjectiveStepKind {
   return raw === 'task' ? 'task' : 'key_result'
+}
+
+/** Valida un enum nullable de la fila: devuelve el valor o undefined. */
+function coerceEnum<T extends string>(raw: unknown, valid: readonly T[]): T | undefined {
+  return typeof raw === 'string' && valid.includes(raw as T) ? (raw as T) : undefined
+}
+
+/** blocked_by viaja como text[] / jsonb; toleramos null, array o ausencia. */
+function coerceBlockedBy(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const ids = raw.filter((x): x is string => typeof x === 'string' && x.length > 0)
+  return ids.length > 0 ? ids : undefined
 }
 
 export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
@@ -40,6 +62,12 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     status: s.status,
     sort_order: s.order,
     created_at: s.createdAt,
+    // Campos Jira-light (0050). Solo tienen sentido en tareas; en KRs van null.
+    acceptance_criteria: s.acceptanceCriteria ?? null,
+    effort: s.effort ?? null,
+    priority: s.priority ?? null,
+    task_status: s.taskStatus ?? null,
+    blocked_by: s.blockedBy ?? null,
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -52,5 +80,10 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     status: coerceStatus(row.status),
     order: Number(row.sort_order) || 0,
     createdAt: row.created_at as string,
+    acceptanceCriteria: (row.acceptance_criteria as string) || undefined,
+    effort: coerceEnum<TaskEffort>(row.effort, VALID_EFFORT),
+    priority: coerceEnum<TaskPriority>(row.priority, VALID_PRIORITY),
+    taskStatus: coerceEnum<TaskStatus>(row.task_status, VALID_TASK_STATUS),
+    blockedBy: coerceBlockedBy(row.blocked_by),
   }),
 }

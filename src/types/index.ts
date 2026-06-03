@@ -351,6 +351,24 @@ export type ObjectiveStepStatus = 'pendiente' | 'en_progreso' | 'hecho'
 export type ObjectiveStepKind = 'key_result' | 'task'
 
 /**
+ * Estado de workflow "Jira-light" de una TAREA (migración 0050). Sustituye, para
+ * la vista de tarea, al binario hecho/pendiente con 4 estados. NO reemplaza a
+ * `ObjectiveStep.status` (que sigue siendo la fuente de verdad del rollup): se
+ * mantiene sincronizado con él (done↔hecho, in_progress↔en_progreso,
+ * todo/blocked↔pendiente). 'blocked' cuenta como NO-hecho en el rollup.
+ *
+ * Nullable/back-compat: una tarea pre-0050 no lo trae → la UI deriva el estado
+ * efectivo desde su `status` legado (ver effectiveTaskStatus en lib/objectives/steps).
+ */
+export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done'
+
+/** Estimación de esfuerzo (camiseta), liviana — sin story points (0050). */
+export type TaskEffort = 'S' | 'M' | 'L'
+
+/** Prioridad de una tarea (0050). */
+export type TaskPriority = 'low' | 'med' | 'high'
+
+/**
  * Nodo del plan OKR de un objetivo (tabla objective_steps, migración 0040 +
  * 0041). El objetivo (Goal) se descompone en RESULTADOS CLAVE (KRs) medibles, y
  * cada KR en TAREAS concretas (las hojas accionables). El progreso del KR es el
@@ -370,12 +388,28 @@ export interface ObjectiveStep {
   parentId?: string
   title: string
   description?: string
-  /** Fecha objetivo opcional (date-only ISO 'YYYY-MM-DD'). */
+  /** Fecha objetivo opcional (date-only ISO 'YYYY-MM-DD'). Es el "due date". */
   targetDate?: string
   status: ObjectiveStepStatus
   /** Orden dentro del grupo de hermanos (KRs entre KRs; tareas dentro de su KR). */
   order: number
   createdAt: string
+
+  // ─── Campos "Jira-light" de TAREA (migración 0050, todos nullable) ──────
+  // Solo aplican a kind='task'. Backward-compatible: ausentes en data vieja.
+  /** Definición de hecho verificable ("visa saudí aprobada y en pasaporte"). */
+  acceptanceCriteria?: string
+  /** Estimación de esfuerzo (camiseta): S / M / L. */
+  effort?: TaskEffort
+  /** Prioridad: low / med / high. */
+  priority?: TaskPriority
+  /**
+   * Estado de workflow de 4 valores. Si está, prevalece para la VISTA; igual se
+   * mantiene `status` en sync para el rollup. Si falta, se deriva de `status`.
+   */
+  taskStatus?: TaskStatus
+  /** IDs de otras tareas del MISMO objetivo que deben completarse antes ("depende de"). */
+  blockedBy?: string[]
 }
 
 export interface Signal {

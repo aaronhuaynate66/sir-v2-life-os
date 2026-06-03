@@ -18,6 +18,13 @@ import {
   normalizeOrders,
   moveStep,
   daysUntilStep,
+  taskStatusToLegacy,
+  legacyToTaskStatus,
+  effectiveTaskStatus,
+  taskStatusPatch,
+  blockedByIncomplete,
+  isStepBlocked,
+  wouldCreateDependencyCycle,
 } from './steps'
 
 function step(over: Partial<ObjectiveStep>): ObjectiveStep {
@@ -336,5 +343,101 @@ describe('nextPendingLeaf', () => {
 
   it('sin nodos → null', () => {
     expect(nextPendingLeaf([])).toBeNull()
+  })
+})
+
+// ─── Jira-light: estado de workflow de 4 valores (migración 0050) ────
+
+describe('taskStatusToLegacy / legacyToTaskStatus', () => {
+  it('mapea ida y vuelta los estados equivalentes', () => {
+    expect(taskStatusToLegacy('done')).toBe('hecho')
+    expect(taskStatusToLegacy('in_progress')).toBe('en_progreso')
+    expect(taskStatusToLegacy('todo')).toBe('pendiente')
+    // 'blocked' no está hecho → pendiente en el legado (el rollup no lo cuenta).
+    expect(taskStatusToLegacy('blocked')).toBe('pendiente')
+
+    expect(legacyToTaskStatus('hecho')).toBe('done')
+    expect(legacyToTaskStatus('en_progreso')).toBe('in_progress')
+    expect(legacyToTaskStatus('pendiente')).toBe('todo')
+  })
+})
+
+describe('effectiveTaskStatus', () => {
+  it('usa taskStatus si está', () => {
+    expect(effectiveTaskStatus(task({ taskStatus: 'blocked', status: 'pendiente' }))).toBe('blocked')
+  })
+  it('deriva del status legado si falta taskStatus (tarea pre-0050)', () => {
+    expect(effectiveTaskStatus(task({ status: 'hecho' }))).toBe('done')
+    expect(effectiveTaskStatus(task({ status: 'en_progreso' }))).toBe('in_progress')
+    expect(effectiveTaskStatus(task({ status: 'pendiente' }))).toBe('todo')
+  })
+})
+
+describe('taskStatusPatch', () => {
+  it('persiste taskStatus y sincroniza el status legado', () => {
+    expect(taskStatusPatch('done')).toEqual({ taskStatus: 'done', status: 'hecho' })
+    expect(taskStatusPatch('blocked')).toEqual({ taskStatus: 'blocked', status: 'pendiente' })
+    expect(taskStatusPatch('in_progress')).toEqual({ taskStatus: 'in_progress', status: 'en_progreso' })
+    expect(taskStatusPatch('todo')).toEqual({ taskStatus: 'todo', status: 'pendiente' })
+  })
+
+  it('un patch a done sigue contando en el rollup del KR', () => {
+    // Garantía clave: cambiar via taskStatus mantiene el rollup andando.
+    const k = kr({ id: 'k1' })
+    const t = task({ id: 't1', parentId: 'k1', status: 'pendiente' })
+    const after = { ...t, ...taskStatusPatch('done') }
+    expect(computeKeyResultProgress([after], k)).toEqual({ done: 1, total: 1, percent: 100 })
+  })
+})
+
+describe('blockedByIncomplete', () => {
+  const a = task({ id: 'a', parentId: 'k1', status: 'hecho' })
+  const b = task({ id: 'b', parentId: 'k1', status: 'pendiente' })
+
+  it('sin deps → []', () => {
+    expect(blockedByIncomplete(task({ id: 't' }), [a, b])).toEqual([])
+  })
+  it('lista sólo las deps no-hechas; ignora IDs inexistentes', () => {
+    const t = task({ id: 't', blockedBy: ['a', 'b', 'zzz'] })
+    expect(blockedByIncomplete(t, [a, b]).map((s) => s.id)).toEqual(['b'])
+  })
+  it('todas las deps hechas → []', () => {
+    const t = task({ id: 't', blockedBy: ['a'] })
+    expect(blockedByIncomplete(t, [a, b])).toEqual([])
+  })
+})
+
+describe('isStepBlocked', () => {
+  it('estado efectivo blocked → bloqueada', () => {
+    expect(isStepBlocked(task({ id: 't', taskStatus: 'blocked' }), [])).toBe(true)
+  })
+  it('dependencia sin completar → bloqueada', () => {
+    const dep = task({ id: 'a', status: 'pendiente' })
+    const t = task({ id: 't', blockedBy: ['a'] })
+    expect(isStepBlocked(t, [dep, t])).toBe(true)
+  })
+  it('sin marca ni deps pendientes → no bloqueada', () => {
+    const dep = task({ id: 'a', status: 'hecho' })
+    const t = task({ id: 't', blockedBy: ['a'], taskStatus: 'todo' })
+    expect(isStepBlocked(t, [dep, t])).toBe(false)
+  })
+})
+
+describe('wouldCreateDependencyCycle', () => {
+  it('self-ref es ciclo', () => {
+    expect(wouldCreateDependencyCycle([task({ id: 't' })], 't', 't')).toBe(true)
+  })
+  it('detecta un ciclo indirecto (a→b→t crearía t→a→b→t)', () => {
+    const steps = [
+      task({ id: 't', blockedBy: ['a'] }), // t depende de a
+      task({ id: 'a', blockedBy: ['b'] }), // a depende de b
+      task({ id: 'b' }),
+    ]
+    // agregar dep b→t cerraría el ciclo: b depende de t, y t→a→b.
+    expect(wouldCreateDependencyCycle(steps, 'b', 't')).toBe(true)
+  })
+  it('dep limpia (sin ciclo) → false', () => {
+    const steps = [task({ id: 't' }), task({ id: 'a' })]
+    expect(wouldCreateDependencyCycle(steps, 't', 'a')).toBe(false)
   })
 })

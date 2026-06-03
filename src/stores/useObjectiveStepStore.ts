@@ -13,9 +13,10 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ObjectiveStep, ObjectiveStepStatus } from '@/types'
+import type { ObjectiveStep, ObjectiveStepStatus, TaskStatus } from '@/types'
 import { STORAGE_KEYS } from './storage'
 import { attachSupabaseSync, objectiveStepAdapter } from '@/lib/supabase/sync'
+import { taskStatusPatch } from '@/lib/objectives/steps'
 
 interface ObjectiveStepState {
   steps: ObjectiveStep[]
@@ -27,7 +28,13 @@ interface ObjectiveStepActions {
   /** Inserta varios pasos de una (aceptar un plan generado por IA). */
   addSteps: (steps: ObjectiveStep[]) => void
   updateStep: (id: string, patch: Partial<ObjectiveStep>) => void
+  /** Estado legado (3 valores). Lo usan los KRs (su ciclo pendiente→…→hecho). */
   setStepStatus: (id: string, status: ObjectiveStepStatus) => void
+  /**
+   * Estado de workflow de TAREA (4 valores): persiste `taskStatus` Y sincroniza
+   * el `status` legado para que el rollup del KR siga contando 'done' como hecho.
+   */
+  setTaskStatus: (id: string, taskStatus: TaskStatus) => void
   removeStep: (id: string) => void
   /** Aplica un set de cambios de `order` (reordenar). */
   applyOrderChanges: (changed: ObjectiveStep[]) => void
@@ -56,6 +63,13 @@ export const useObjectiveStepStore = create<ObjectiveStepStore>()(
       setStepStatus: (id, status) =>
         set((s) => ({
           steps: s.steps.map((st) => (st.id === id ? { ...st, status } : st)),
+        })),
+
+      setTaskStatus: (id, taskStatus) =>
+        set((s) => ({
+          steps: s.steps.map((st) =>
+            st.id === id ? { ...st, ...taskStatusPatch(taskStatus) } : st,
+          ),
         })),
 
       removeStep: (id) => set((s) => ({ steps: s.steps.filter((st) => st.id !== id) })),

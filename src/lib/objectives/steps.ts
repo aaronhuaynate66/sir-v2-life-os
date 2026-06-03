@@ -14,7 +14,7 @@
 // `createdAt` y luego `id` (dos nodos con el mismo `order` — ej. importados por
 // IA — quedan en orden determinístico).
 
-import type { ObjectiveStep } from '@/types'
+import type { ObjectiveStep, ObjectiveStepStatus, TaskStatus } from '@/types'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 
 /** ¿Es un Resultado Clave? (KR explícito o data pre-0041 sin `kind`). */
@@ -201,4 +201,105 @@ export function daysUntilStep(step: ObjectiveStep, now: Date): number | null {
   if (!d) return null
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   return Math.round((d.getTime() - todayStart.getTime()) / 86_400_000)
+}
+
+// ─── Estado de workflow "Jira-light" de tareas (migración 0050) ────────
+//
+// El binario hecho/pendiente de `status` no alcanza para una tarea ejecutable:
+// queremos 4 estados (todo / in_progress / blocked / done). En vez de cambiar
+// `status` (que es la fuente de verdad del rollup del KR y de nextPendingLeaf, y
+// también lo usan los KRs), agregamos `taskStatus` como CAPA sobre `status` y los
+// mantenemos sincronizados. Reglas de equivalencia:
+//   done        ↔ hecho        (único que el rollup cuenta como completado)
+//   in_progress ↔ en_progreso
+//   todo        ↔ pendiente
+//   blocked     → pendiente    (es NO-hecho; al volver de legado no se distingue
+//                               de 'todo', por eso `taskStatus` se persiste)
+
+/** TaskStatus (4 estados) → status legado (3 estados) para mantener el rollup. */
+export function taskStatusToLegacy(ts: TaskStatus): ObjectiveStepStatus {
+  if (ts === 'done') return 'hecho'
+  if (ts === 'in_progress') return 'en_progreso'
+  return 'pendiente' // 'todo' y 'blocked' no están hechos
+}
+
+/** status legado → TaskStatus, para mostrar tareas viejas sin `taskStatus`. */
+export function legacyToTaskStatus(status: ObjectiveStepStatus): TaskStatus {
+  if (status === 'hecho') return 'done'
+  if (status === 'en_progreso') return 'in_progress'
+  return 'todo'
+}
+
+/**
+ * Estado de workflow EFECTIVO de un paso para la vista: usa `taskStatus` si está
+ * (data 0050+), si no lo deriva del `status` legado. Así una tarea vieja se ve
+ * como todo/in_progress/done sin romper, y una nueva puede además estar 'blocked'.
+ */
+export function effectiveTaskStatus(step: ObjectiveStep): TaskStatus {
+  return step.taskStatus ?? legacyToTaskStatus(step.status)
+}
+
+/**
+ * El patch a aplicar al elegir un `taskStatus`: persiste el de 4 estados Y
+ * sincroniza el `status` legado (para que rollup/nextPendingLeaf sigan andando
+ * sin tocarse). Lo usa el store (setTaskStatus) y cualquier mutación de tarea.
+ */
+export function taskStatusPatch(ts: TaskStatus): Pick<ObjectiveStep, 'taskStatus' | 'status'> {
+  return { taskStatus: ts, status: taskStatusToLegacy(ts) }
+}
+
+/**
+ * ¿La tarea tiene dependencias ('blockedBy') aún sin completar? Una dependencia
+ * cuenta como cumplida si está 'hecho' (status legado, que `done` mantiene en
+ * sync). IDs inexistentes se ignoran (data borrada no bloquea para siempre).
+ */
+export function blockedByIncomplete(
+  step: ObjectiveStep,
+  allSteps: ObjectiveStep[],
+): ObjectiveStep[] {
+  const deps = step.blockedBy
+  if (!deps || deps.length === 0) return []
+  const byId = new Map(allSteps.map((s) => [s.id, s]))
+  const out: ObjectiveStep[] = []
+  for (const id of deps) {
+    const dep = byId.get(id)
+    if (dep && dep.status !== 'hecho') out.push(dep)
+  }
+  return out
+}
+
+/**
+ * ¿La tarea está bloqueada? Lo está si su estado efectivo es 'blocked' (marcado a
+ * mano) O si tiene dependencias sin completar. Fuente única para resaltar
+ * bloqueos en /horario y en la ficha del objetivo.
+ */
+export function isStepBlocked(step: ObjectiveStep, allSteps: ObjectiveStep[]): boolean {
+  if (effectiveTaskStatus(step) === 'blocked') return true
+  return blockedByIncomplete(step, allSteps).length > 0
+}
+
+/**
+ * ¿Agregar `depId` a las dependencias de `taskId` crearía un ciclo? Recorre el
+ * grafo de `blockedBy` (DFS) desde `depId`: si alcanza `taskId`, hay ciclo.
+ * También es ciclo el self-ref (depId === taskId). PURO; usado por la UI para no
+ * ofrecer dependencias que se muerdan la cola. `taskId` que no existe → false.
+ */
+export function wouldCreateDependencyCycle(
+  allSteps: ObjectiveStep[],
+  taskId: string,
+  depId: string,
+): boolean {
+  if (taskId === depId) return true
+  const byId = new Map(allSteps.map((s) => [s.id, s]))
+  const seen = new Set<string>()
+  const stack = [depId]
+  while (stack.length) {
+    const cur = stack.pop()!
+    if (cur === taskId) return true
+    if (seen.has(cur)) continue
+    seen.add(cur)
+    const node = byId.get(cur)
+    for (const next of node?.blockedBy ?? []) stack.push(next)
+  }
+  return false
 }
