@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1e1b84c`
+**Hash del último commit humano:** `1013385`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `1e1b84c` | Aaron Huaynate | chore(migrations): renumera mi 0047 → 0048 para resolver colisión | 2026-06-02 |
-| `0b96875` | Aaron Huaynate | feat(relaciones): GEMA A+B superficie — "Hoy con tu gente" en /horario y /relaciones | 2026-06-02 |
-| `0588c84` | Aaron Huaynate | @ | 2026-06-02 |
-| `5002970` | Aaron Huaynate | feat(relaciones): GEMA A — API de Daily Actions (scoring sin IA + mensaje on-demand) | 2026-06-02 |
-| `c46b9a3` | Aaron Huaynate | feat(relaciones): GEMA A+B — motor de urgencia de contacto + rituales (puro) | 2026-06-02 |
-| `c1d9e0b` | Aaron Huaynate | @ | 2026-06-02 |
-| `e4dfaeb` | Aaron Huaynate | feat(relaciones): GEMA C — Reciprocidad por delta de calidad (destraba el NULL) | 2026-06-02 |
-| `c42f586` | Aaron Huaynate | @ | 2026-06-02 |
-| `0a4b716` | Aaron Huaynate | @ | 2026-06-02 |
-| `f6cd4e3` | Aaron Huaynate | @ | 2026-06-02 |
+| `1013385` | Aaron Huaynate | feat(proactivo): motor de fechas por rubro + esfuerzo relacional por parentesco | 2026-06-03 |
+| `f3e25d0` | Aaron Huaynate | feat(familia): vínculo SELF<->persona con parentesco específico + inferencia con el "yo" | 2026-06-03 |
+| `11ed9f4` | Aaron Huaynate | refactor(captura): deprecar el flujo WhatsApp legacy (página dedicada + dual-write) | 2026-06-03 |
+| `2a0804e` | Aaron Huaynate | @ | 2026-06-03 |
+| `af2ab93` | Aaron Huaynate | feat(familia): FAMILIA como vínculo real persona↔persona (autocompletar + bidireccional + sugerencias) | 2026-06-03 |
+| `a7debe0` | Aaron Huaynate | feat(seguimiento): alertas por email (provider opcional) + cron + seed del vuelo | 2026-06-03 |
+| `6da095f` | Aaron Huaynate | feat(seguimiento): ingesta Vision/texto + tablero /seguimiento + resumen en objetivos | 2026-06-03 |
+| `97ee74a` | Aaron Huaynate | feat(seguimiento): modelo de datos + lógica pura de trackers | 2026-06-03 |
+| `eaa0e0d` | Aaron Huaynate | @ | 2026-06-03 |
+| `f44d1d7` | Aaron Huaynate | @ | 2026-06-03 |
 
 ---
 
