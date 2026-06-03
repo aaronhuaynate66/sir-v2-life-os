@@ -22,6 +22,7 @@ import { useSignalStore } from '@/stores/useSignalStore'
 import { useMemoryStore } from '@/stores'
 import { buildSignalContext } from '@/engines/signal'
 import { createSignalAddedMemory } from '@/engines/memory'
+import { TrackerAlerts } from '@/components/trackers/TrackerAlerts'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { cn } from '@/lib/utils'
@@ -169,6 +170,8 @@ function SignalsContent() {
           </Card>
         ))}
       </div>
+
+      <TrackerAlerts className={cn('mb-4', cardClass)} title="Alertas de seguimiento" />
 
       <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-4 sm:p-6">

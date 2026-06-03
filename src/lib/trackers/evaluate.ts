@@ -119,6 +119,13 @@ export function conditionLabel(tracker: Tracker): string {
   }
 }
 
+/** Formatea un valor con su unidad: 5075 + "PEN" → "5,075 PEN". null → "—". */
+export function formatTrackerValue(value: number | null | undefined, unit: string): string {
+  if (value == null || !Number.isFinite(value)) return '—'
+  const n = Number.isInteger(value) ? value.toLocaleString('en-US') : value.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  return unit ? `${n} ${unit}` : n
+}
+
 /** Frase corta del estado, para chips/alertas. */
 export function statusLabel(status: TrackerStatus): string {
   switch (status) {

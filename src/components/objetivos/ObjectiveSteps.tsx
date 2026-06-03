@@ -72,6 +72,7 @@ import {
 } from '@/components/objetivos/taskFields'
 import type { ProposedKeyResult, ProposedTask } from '@/lib/objectives/planPrompt'
 import { buildGroundingContext, renderGroundingForPrompt } from '@/lib/objectives/grounding'
+import { TrackerStrip } from '@/components/trackers/TrackerStrip'
 import { cn } from '@/lib/utils'
 import type {
   Goal,
@@ -648,6 +649,7 @@ function KeyResultRow({
                   <div className="h-1 rounded-full bg-brand transition-all" style={{ width: krProgress.percent + '%' }} />
                 </div>
               )}
+              <TrackerStrip objectiveStepId={kr.id} className="mt-1.5" />
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">
               <IconBtn label="Subir KR" disabled={index === 0} onClick={() => onMoveKr(kr.id, 'up')}><ChevronUp size={14} /></IconBtn>
@@ -839,6 +841,8 @@ function TaskRow({
             )}
           </div>
         )}
+
+        <TrackerStrip objectiveStepId={task.id} className="mt-1.5" />
       </div>
 
       <div className="flex items-center gap-0.5 flex-shrink-0">

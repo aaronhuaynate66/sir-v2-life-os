@@ -22,6 +22,7 @@ import { useMemoryStore } from '@/stores'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
 import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
+import { TrackerStrip } from '@/components/trackers/TrackerStrip'
 import { SmartAssist } from '@/components/objetivos/SmartAssist'
 import { SmartWizard } from '@/components/objetivos/SmartWizard'
 import { computeObjectiveProgress } from '@/lib/objectives/steps'
@@ -464,6 +465,7 @@ function GoalsContent() {
                     </AlertDialog>
                   </div>
                 </div>
+                <TrackerStrip objectiveId={g.id} className="mt-3" />
                 <AnimatePresence initial={false}>
                   {stepsOpen && (
                     <motion.div
