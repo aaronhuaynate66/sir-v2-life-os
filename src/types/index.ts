@@ -241,7 +241,13 @@ export interface Relationship {
   nextActionDate?: string
 }
 
-/** Parentesco de una arista de familia persona↔persona. */
+/** Parentesco de una arista de familia persona↔persona.
+ *
+ *  Valores gendered cuando aplica (madre/padre, hijo/hija, …) — el género del
+ *  vínculo permite calcular el rol INVERSO con precisión (ver
+ *  lib/relationships/family). 'familiar' es legacy (rows pre-0052 que no
+ *  especificaban parentesco); se mantiene para no romper la lectura. 'amigo/a'
+ *  modela vínculos no-familiares dentro del mismo grafo de personas. */
 export type FamilyKind =
   | 'padre'
   | 'madre'
@@ -250,6 +256,16 @@ export type FamilyKind =
   | 'hermano'
   | 'hermana'
   | 'pareja'
+  | 'abuelo'
+  | 'abuela'
+  | 'tio'
+  | 'tia'
+  | 'primo'
+  | 'prima'
+  | 'amigo'
+  | 'amiga'
+  | 'otro'
+  // legacy (pre-0052): parentesco genérico sin especificar.
   | 'familiar'
 
 /** Arista de familia persona↔persona (tabla `person_links`, migration 0035).
