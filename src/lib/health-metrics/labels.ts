@@ -28,6 +28,13 @@ export const HEALTH_METRIC_LABELS: Record<HealthMetricType, string> = {
   metabolic_age: 'Edad metabólica',
   body_score: 'Score corporal',
   ideal_weight_kg: 'Peso ideal',
+
+  // Tipos de Apple Health (Migration 0049)
+  active_energy: 'Energía activa',
+  resting_energy: 'Energía en reposo',
+  vo2_max: 'VO₂ máx',
+  blood_oxygen: 'Oxígeno en sangre',
+  distance_km: 'Distancia',
 }
 
 /**

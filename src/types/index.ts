@@ -128,6 +128,12 @@ export type HealthMetricType =
   | 'metabolic_age'
   | 'body_score'
   | 'ideal_weight_kg'
+  // actividad/salud de Apple Health (Migration 0049)
+  | 'active_energy'
+  | 'resting_energy'
+  | 'vo2_max'
+  | 'blood_oxygen'
+  | 'distance_km'
 
 export type EventCategory =
   | 'personal'
