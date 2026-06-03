@@ -23,6 +23,12 @@
 
 import type { Memory } from '@/types'
 import type { CaptureType, Observation } from '@/lib/capture/observations/types'
+import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
+import {
+  readConversationSignals,
+  hasRichConversationData,
+  type ConversationSignals,
+} from './conversationSignals'
 
 /** Tipos de observation que califican para derivar memorias. Conversaciones
  *  (las más ricas) + perfiles sociales/profesionales + notas. */
@@ -164,12 +170,29 @@ export interface ObservationDigest {
   topics: string[]
   emotionalUser: string | null
   emotionalOther: string | null
+  /** Señales partidas por recencia (sólo conversaciones con material rico). El
+   *  prompt las usa para priorizar lo reciente y degradar lo viejo. */
+  conversation?: ConversationSignals
 }
 
-/** Resumen compacto de una observation para el prompt del LLM (indexado). */
-export function digestObservations(observations: Observation[]): ObservationDigest[] {
+/** ¿Es una observación de conversación (whatsapp_chat / whatsapp_web)? */
+export function isConversationCapture(captureType: CaptureType): boolean {
+  return (CONVERSATION_CAPTURE_TYPES as readonly CaptureType[]).includes(captureType)
+}
+
+/** Resumen compacto de una observation para el prompt del LLM (indexado).
+ *  Para conversaciones con material rico, adjunta las señales por recencia
+ *  (`now` inyectable para tests). */
+export function digestObservations(
+  observations: Observation[],
+  now: Date = new Date(),
+): ObservationDigest[] {
   return observations.map((o, index) => {
     const emo = extractEmotionalStates(o)
+    const conversation =
+      isConversationCapture(o.captureType) && hasRichConversationData(o.data ?? {})
+        ? readConversationSignals(o.data ?? {}, o.observedAt, now)
+        : undefined
     return {
       index,
       observationId: o.id,
@@ -179,6 +202,7 @@ export function digestObservations(observations: Observation[]): ObservationDige
       topics: extractTopics(o),
       emotionalUser: emo.user,
       emotionalOther: emo.other,
+      conversation,
     }
   })
 }
@@ -256,6 +280,20 @@ export function baseMemoriesFromObservations(
 
 // ─── Mapeo de items del LLM → Memory ────────────────────────────────
 
+/** Categoría de la señal extraída (conciencia del objetivo/relación). Mapea a
+ *  un tag legible; opcional y tolerante (valor libre → tag tal cual). */
+export type DerivedCategory =
+  | 'profesional'
+  | 'comercial'
+  | 'reciprocidad'
+  | 'riesgo'
+  | 'objecion'
+  | 'personal'
+  | 'proxima_accion'
+
+/** Recencia auto-reportada por el LLM para la señal (estado actual vs contexto). */
+export type DerivedRecency = 'recent' | 'historical'
+
 /** Item crudo que esperamos del LLM (validado defensivamente). */
 export interface DerivedMemoryItem {
   observationIndex: number
@@ -265,21 +303,118 @@ export interface DerivedMemoryItem {
   emotionalCharge?: number
   importance?: number
   tags?: string[]
+  /** Categoría de la señal (negocio, reciprocidad, riesgo, próxima acción…). */
+  category?: string
+  /** 'recent' = estado actual/accionable; 'historical' = contexto viejo. */
+  recency?: string
+  /** true si el hecho ya NO está vigente (ej. un rol de hace años). */
+  isStale?: boolean
+}
+
+/** Tope de memorias por conversación (más rico que un perfil/nota). */
+export const MAX_MEMORIES_PER_CONVERSATION = 8
+/** Importancia máxima de una memoria histórica/obsoleta: no debe dominar. */
+const HISTORICAL_IMPORTANCE_CAP = 4
+const STALE_IMPORTANCE_CAP = 2
+
+/** Tag canónico de cada categoría conocida (las desconocidas pasan tal cual). */
+const CATEGORY_TAG: Record<DerivedCategory, string> = {
+  profesional: 'profesional',
+  comercial: 'comercial',
+  reciprocidad: 'reciprocidad',
+  riesgo: 'riesgo',
+  objecion: 'objeción',
+  personal: 'personal',
+  proxima_accion: 'próximo_paso',
+}
+
+/**
+ * Asigna `count` índices NUEVOS para las memorias de una observación, evitando
+ * un conjunto de índices RESERVADOS (típicamente los de memorias que el usuario
+ * descartó: tombstones is_obsolete=true). Devuelve los índices libres más bajos
+ * (0,1,2…) que no estén reservados, para no resucitar un descarte vía el PK
+ * determinístico y mantener los ids chicos. PURO.
+ */
+export function assignDerivedIndices(reserved: Set<number>, count: number): number[] {
+  const out: number[] = []
+  let i = 0
+  while (out.length < count) {
+    if (!reserved.has(i)) out.push(i)
+    i += 1
+  }
+  return out
+}
+
+export interface MemoriesFromLlmOptions {
+  /** Máximo de memorias NUEVAS por observation. Number o función del obs (ej.
+   *  conversaciones admiten más que un perfil). Default 2 (compat histórica). */
+  maxPerObservation?: number | ((obs: Observation) => number)
+  /** Índices RESERVADOS por observación (memorias descartadas/tombstones) para
+   *  no reusar su PK determinístico ni resucitarlas. */
+  reservedIndices?: Map<string, Set<number>>
+}
+
+/** Aplica la degradación por recencia a la importancia: histórico y obsoleto NO
+ *  deben dominar la síntesis. Devuelve la importancia ya clampeada. */
+function importanceWithRecency(item: DerivedMemoryItem): number {
+  let importance = clampImportance(item.importance)
+  if (item.isStale) return Math.min(importance, STALE_IMPORTANCE_CAP)
+  if (item.recency === 'historical') importance = Math.min(importance, HISTORICAL_IMPORTANCE_CAP)
+  return importance
+}
+
+/** Tags finales de una memoria derivada: tags del item + tag de categoría +
+ *  marcas de recencia (histórico/obsoleto), deduplicados y acotados. */
+function tagsForItem(obs: Observation, item: DerivedMemoryItem): string[] {
+  const base = Array.isArray(item.tags)
+    ? item.tags.filter((t): t is string => typeof t === 'string' && t.trim().length > 0).map((t) => t.trim())
+    : extractTopics(obs)
+  const extra: string[] = []
+  if (item.category) {
+    const cat = item.category.trim().toLowerCase()
+    extra.push(CATEGORY_TAG[cat as DerivedCategory] ?? cat)
+  }
+  if (item.isStale) extra.push('obsoleto')
+  else if (item.recency === 'historical') extra.push('histórico')
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const t of [...extra, ...base]) {
+    const key = t.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(t)
+    if (out.length >= 10) break
+  }
+  return out
 }
 
 /**
  * Mapea items del LLM a Memory[] con claves estables por observation. Los
- * items inválidos (índice fuera de rango, sin content, tipo no permitido)
- * se descartan. Se respeta un máximo por observation y se enumeran 0..n-1
- * para construir claves únicas.
+ * items inválidos (índice fuera de rango, sin content, tipo no permitido) se
+ * descartan. Se respeta un máximo por observation y se asignan índices libres
+ * (saltando los reservados/descartados) para construir PKs únicos y estables.
+ *
+ * Recencia: los items marcados como 'historical' u `isStale` se DEGRADAN en
+ * importancia y se taggean ('histórico'/'obsoleto') para que el contexto viejo
+ * no domine la ficha (caso Dayana: el rol de delegada de hace años deja de
+ * pesar como si fuera estado actual).
  */
 export function memoriesFromLlmItems(
   personName: string,
   observations: Observation[],
   items: DerivedMemoryItem[],
+  opts: MemoriesFromLlmOptions = {},
 ): Memory[] {
   const out: Memory[] = []
-  const perObsCount = new Map<string, number>()
+  // Índices ya usados por obs (semilla = reservados); y conteo de NUEVAS.
+  const usedIdx = new Map<string, Set<number>>()
+  const addedCount = new Map<string, number>()
+
+  const capFor = (obs: Observation): number => {
+    const m = opts.maxPerObservation
+    if (typeof m === 'function') return m(obs)
+    return m ?? MAX_MEMORIES_PER_OBSERVATION
+  }
 
   for (const item of items) {
     const idx = item.observationIndex
@@ -289,8 +424,18 @@ export function memoriesFromLlmItems(
     const content = str(item.content)
     if (!content) continue
 
-    const used = perObsCount.get(obs.id) ?? 0
-    if (used >= MAX_MEMORIES_PER_OBSERVATION) continue
+    const added = addedCount.get(obs.id) ?? 0
+    if (added >= capFor(obs)) continue
+
+    // Índice libre más bajo que no choque con reservados ni con lo ya usado.
+    let set = usedIdx.get(obs.id)
+    if (!set) {
+      set = new Set(opts.reservedIndices?.get(obs.id) ?? [])
+      usedIdx.set(obs.id, set)
+    }
+    let assigned = 0
+    while (set.has(assigned)) assigned += 1
+    set.add(assigned)
 
     const type =
       typeof item.type === 'string' &&
@@ -299,30 +444,27 @@ export function memoriesFromLlmItems(
         : (BASE_MEMORY_TYPE[obs.captureType] ?? 'semantic')
 
     const title = str(item.title) ?? `Con ${personName}`
-    const tags = Array.isArray(item.tags)
-      ? item.tags.filter((t): t is string => typeof t === 'string' && t.trim().length > 0).slice(0, 8)
-      : extractTopics(obs)
     const timestamp = obs.observedAt || obs.capturedAt || obs.createdAt
-    const key = deriveKey(obs.id, used)
+    const key = deriveKey(obs.id, assigned)
 
     out.push({
-      id: derivedMemoryId(obs.id, used),
+      id: derivedMemoryId(obs.id, assigned),
       type,
       title,
       content,
       entities: obs.personId ? [obs.personId] : [],
       emotionalCharge: clampCharge(item.emotionalCharge),
-      importance: clampImportance(item.importance),
+      importance: importanceWithRecency(item),
       timestamp,
       lastAccessed: timestamp,
       decayRate: DEFAULT_DECAY_RATE,
-      tags,
+      tags: tagsForItem(obs, item),
       relatedMemories: [],
       personId: obs.personId ?? undefined,
       source: 'inferred',
       sourceEventId: key,
     })
-    perObsCount.set(obs.id, used + 1)
+    addedCount.set(obs.id, added + 1)
   }
 
   return out

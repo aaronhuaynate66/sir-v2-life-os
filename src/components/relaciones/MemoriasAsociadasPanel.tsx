@@ -55,6 +55,8 @@ interface DeriveSuccess {
   skipped: number
   alreadyCovered: number
   usedLlm: boolean
+  /** Memorias de conversación reemplazadas por la re-derivación mejorada. */
+  refreshed?: number
 }
 
 const TYPE_LABEL: Record<Memory['type'], string> = {
@@ -235,12 +237,14 @@ export function MemoriasAsociadasPanel({
             <span className="text-brand-soft-foreground font-medium">
               {deriveResult.inserted === 0
                 ? deriveResult.alreadyCovered > 0
-                  ? 'Todo al día — tus conversaciones ya estaban derivadas.'
+                  ? 'Todo al día — tus perfiles y notas ya estaban derivados.'
                   : 'Sin memorias nuevas para derivar.'
-                : `Se derivaron ${deriveResult.inserted} memoria${deriveResult.inserted === 1 ? '' : 's'} desde tus conversaciones.`}
+                : (deriveResult.refreshed ?? 0) > 0
+                  ? `Se actualizaron tus conversaciones: ${deriveResult.inserted} memoria${deriveResult.inserted === 1 ? '' : 's'} (priorizando lo reciente).`
+                  : `Se derivaron ${deriveResult.inserted} memoria${deriveResult.inserted === 1 ? '' : 's'} desde tus conversaciones.`}
             </span>{' '}
             <span className="text-muted-foreground font-mono">
-              inserted={deriveResult.inserted} · skipped={deriveResult.skipped} · ya-cubiertas=
+              inserted={deriveResult.inserted} · reemplazadas={deriveResult.refreshed ?? 0} · ya-cubiertas=
               {deriveResult.alreadyCovered} · {deriveResult.usedLlm ? 'IA' : 'base'}
             </span>
           </div>
