@@ -245,6 +245,8 @@ export type Database = {
           target: string | null
           baseline: string | null
           why: string | null
+          is_anchor: boolean
+          anchor_subtitle: string | null
           created_at: string
           updated_at: string
         }
@@ -267,6 +269,8 @@ export type Database = {
           target?: string | null
           baseline?: string | null
           why?: string | null
+          is_anchor?: boolean
+          anchor_subtitle?: string | null
           created_at?: string
           updated_at?: string
         }

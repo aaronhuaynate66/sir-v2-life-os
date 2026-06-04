@@ -1,8 +1,9 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Target, Plus, Archive, ListChecks, ChevronRight, Sparkles } from 'lucide-react'
+import { Target, Plus, Archive, ListChecks, ChevronRight, Sparkles, Anchor } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -60,11 +61,28 @@ const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 export default function GoalsPage() {
   const hydrated = useHasHydrated()
   if (!hydrated) return <RouteSkeleton cards={4} />
-  return <GoalsContent />
+  return (
+    <Suspense fallback={<RouteSkeleton cards={4} />}>
+      <GoalsContent />
+    </Suspense>
+  )
 }
 
 function GoalsContent() {
-  const { goals, addGoal, updateGoal, updateGoalProgress, completeGoal, pauseGoal } = useGoalStore()
+  const { goals, addGoal, updateGoal, updateGoalProgress, completeGoal, pauseGoal, setAnchor } = useGoalStore()
+  // Deep-link desde "TU AÑO" (Mission Control): ?goal=<id> → scroll + highlight.
+  const params = useSearchParams()
+  const focusGoalId = params.get('goal')
+  const [highlightId, setHighlightId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!focusGoalId) return
+    const el = document.getElementById(`goal-${focusGoalId}`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setHighlightId(focusGoalId)
+    const t = setTimeout(() => setHighlightId(null), 2200)
+    return () => clearTimeout(t)
+  }, [focusGoalId])
   const objectiveSteps = useObjectiveStepStore((s) => s.steps)
   const { addMemory } = useMemoryStore()
   const { people, relationships } = useRelationshipStore()
@@ -116,11 +134,13 @@ function GoalsContent() {
   const [target, setTarget] = useState('')
   const [baseline, setBaseline] = useState('')
   const [why, setWhy] = useState('')
+  // Ancla del año (mig 0060): subtítulo corto opcional.
+  const [anchorSubtitle, setAnchorSubtitle] = useState('')
 
   function resetForm() {
     setTitle(''); setDesc(''); setCat('personal'); setPrio('medium')
     setTargetDate(''); setNextAction(''); setPeaceImpact('5'); setRelatedPersons([])
-    setTarget(''); setBaseline(''); setWhy('')
+    setTarget(''); setBaseline(''); setWhy(''); setAnchorSubtitle('')
     setAdding(false); setEditId(null)
   }
   function saveGoal() {
@@ -130,15 +150,16 @@ function GoalsContent() {
     const now = new Date().toISOString()
     const linkedPersons = sanitizePersonIds(relatedPersons, new Set(people.map((p) => p.id)))
     const smart = { target: target.trim() || undefined, baseline: baseline.trim() || undefined, why: why.trim() || undefined }
+    const anchorMeta = { anchorSubtitle: anchorSubtitle.trim() || undefined }
     if (editId) {
-      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction, peaceImpact: pi, relatedPersons: linkedPersons, ...smart })
+      updateGoal(editId, { title, description: desc, category: cat, priority: prio, targetDate: targetDate || undefined, nextAction, peaceImpact: pi, relatedPersons: linkedPersons, ...smart, ...anchorMeta })
       toast.success('Objetivo actualizado', { description: title })
     } else {
       const g: Goal = {
         id: 'g_' + Date.now(), title, description: desc, category: cat, priority: prio,
         status: 'active', progress: 0, milestones: [], relatedGoals: [], relatedPersons: linkedPersons,
         peaceImpact: pi, obstacles: [], nextAction, targetDate: targetDate || undefined,
-        ...smart,
+        ...smart, ...anchorMeta,
         createdAt: now, updatedAt: now,
       }
       addGoal(g)
@@ -151,7 +172,16 @@ function GoalsContent() {
     setPrio(g.priority); setTargetDate(g.targetDate || ''); setNextAction(g.nextAction || '')
     setPeaceImpact(String(g.peaceImpact)); setRelatedPersons(g.relatedPersons ?? [])
     setTarget(g.target ?? ''); setBaseline(g.baseline ?? ''); setWhy(g.why ?? '')
+    setAnchorSubtitle(g.anchorSubtitle ?? '')
     setAdding(true)
+  }
+
+  function handleToggleAnchor(g: Goal) {
+    const next = !g.isAnchor
+    setAnchor(g.id, next)
+    toast.success(next ? 'Ancla del año' : 'Ancla quitada', {
+      description: next ? `"${g.title}" es ahora el norte de tu año.` : g.title,
+    })
   }
   function cancelProgress() {
     setProgressId(null); setProgressVal('')
@@ -253,6 +283,12 @@ function GoalsContent() {
                   <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="font-mono" />
                   <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
                   <Input placeholder="Siguiente acción" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
+                  <div className="col-span-2">
+                    <Input placeholder="Subtítulo del ancla (ej. Al Khobar · Taekwondo +80kg) · opcional" value={anchorSubtitle} onChange={e => setAnchorSubtitle(e.target.value)} />
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">
+                      Solo si marcás este objetivo como <span className="font-mono text-foreground/80">ancla del año</span>. Si lo dejás vacío, la brújula deriva el detalle del target o la descripción.
+                    </p>
+                  </div>
 
                   {/* ─── Definición SMART (medible + por qué) ─── */}
                   <div className="col-span-2 rounded-md border border-border/50 bg-muted/20 p-3 space-y-2">
@@ -341,12 +377,26 @@ function GoalsContent() {
             const smartOk = isGoalSmartComplete(g)
             const smartMissing = missingSmartFields(g).length
             return (
-            <Card key={g.id} className={cardClass}>
+            <Card
+              key={g.id}
+              id={`goal-${g.id}`}
+              className={cn(
+                cardClass,
+                'scroll-mt-24 transition-shadow',
+                highlightId === g.id && 'ring-2 ring-brand/60',
+                g.isAnchor && 'border-brand/40',
+              )}
+            >
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-sm font-medium text-foreground">{g.title}</span>
+                      {g.isAnchor && (
+                        <Badge variant="outline" className="text-[10px] font-normal border-brand/30 bg-brand-soft text-brand-soft-foreground gap-1">
+                          <Anchor size={10} strokeWidth={2} /> Ancla del año
+                        </Badge>
+                      )}
                       <Badge variant="outline" className={cn('text-[10px] font-normal', PRIO_CLASS[g.priority])}>{PRIO_LABEL[g.priority]}</Badge>
                       <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[g.category]}</Badge>
                     </div>
@@ -425,6 +475,17 @@ function GoalsContent() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-wrap sm:flex-shrink-0 sm:justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleAnchor(g)}
+                      aria-pressed={!!g.isAnchor}
+                      title={g.isAnchor ? 'Quitar como ancla del año' : 'Marcar como ancla del año'}
+                      className={cn(g.isAnchor && 'text-brand-soft-foreground')}
+                    >
+                      <Anchor size={14} strokeWidth={1.75} className={cn(g.isAnchor && 'fill-current')} />
+                      Ancla
+                    </Button>
                     {!hasSteps && (
                       <Button variant="ghost" size="sm" onClick={() => { setProgressId(g.id === progressId ? null : g.id); setProgressVal(String(g.progress)) }}>%</Button>
                     )}

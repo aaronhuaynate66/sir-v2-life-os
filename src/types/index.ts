@@ -352,6 +352,13 @@ export interface Goal {
   baseline?: string
   /** Relevant: por qué importa este objetivo. */
   why?: string
+  // ─── Ancla del año (migración 0060) ─────────────────────────────────
+  /** El "norte" del año: brújula anual en Mission Control. Solo uno a la vez
+   *  (setear uno desmarca el resto). */
+  isAnchor?: boolean
+  /** Detalle corto del ancla (ej. "Al Khobar · Taekwondo +80kg"). Opcional:
+   *  si está vacío, la brújula deriva el subtítulo del target/descripción. */
+  anchorSubtitle?: string
   createdAt: string
   updatedAt: string
 }

@@ -32,6 +32,7 @@ import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
+import { YearCompass } from '@/components/panel/YearCompass'
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { AppShell } from '@/components/layout/AppShell'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
@@ -276,6 +277,10 @@ function DashboardContent() {
 
   return (
     <AppShell rightRail={dashboardRail}>
+      {/* "TU AÑO": brújula anual minimalista — el norte del año (ancla) y los
+          próximos hitos, sobre todo lo demás. */}
+      <YearCompass />
+
       {/* El estado de recuperación se comunica inline (RecoveryPanel, abajo) y
           en el badge de modo del header. Antes había un banner `fixed top-0`
           que en mobile tapaba el header sticky y el botón de menú — removido. */}

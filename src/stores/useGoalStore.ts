@@ -21,6 +21,9 @@ interface GoalActions {
   updateGoalProgress: (id: string, progress: number) => void
   completeGoal: (id: string) => void
   pauseGoal: (id: string) => void
+  /** Marca un objetivo como ancla del año (o lo desmarca si on=false).
+   *  Invariante: solo un ancla a la vez — marcar uno desmarca el resto. */
+  setAnchor: (id: string, on: boolean) => void
   resetToFixtures: () => void
   clearAll: () => void
 }
@@ -65,6 +68,22 @@ export const useGoalStore = create<GoalStore>()(
             g.id === id ? { ...g, status: 'paused', updatedAt: new Date().toISOString() } : g
           ),
         })),
+
+      setAnchor: (id, on) =>
+        set((s) => {
+          const now = new Date().toISOString()
+          return {
+            goals: s.goals.map((g) => {
+              if (g.id === id) {
+                if (g.isAnchor === on) return g
+                return { ...g, isAnchor: on, updatedAt: now }
+              }
+              // Desmarcar cualquier otro ancla al encender uno (un ancla a la vez).
+              if (on && g.isAnchor) return { ...g, isAnchor: false, updatedAt: now }
+              return g
+            }),
+          }
+        }),
 
       resetToFixtures: () => set(INITIAL_STATE),
 
