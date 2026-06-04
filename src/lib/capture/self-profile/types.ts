@@ -16,6 +16,10 @@ export interface SelfProfileExtracted {
   source: SelfProfileSource
   /** Nombre completo, literal o null si ilegible. */
   fullName: string | null
+  /** Fecha de nacimiento ISO date-only (YYYY-MM-DD) o null. Casi siempre null
+   *  desde imágenes (los perfiles no la muestran); la aporta el modo narrativo
+   *  cuando Aaron dice cuándo nació. */
+  birthDate: string | null
   /** Roles / ocupación (del headline, experiencia, categoría). Tags. */
   roles: string[]
   /** Ubicación literal ("Lima, Perú") o null. */

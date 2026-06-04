@@ -6,6 +6,7 @@ function ex(over: Partial<SelfProfileExtracted>): SelfProfileExtracted {
   return {
     source: 'linkedin',
     fullName: null,
+    birthDate: null,
     roles: [],
     location: null,
     skills: [],
@@ -51,6 +52,15 @@ describe('consolidateSelfProfiles', () => {
     const merged = consolidateSelfProfiles([a, b])!
     expect(merged.confidence).toBe('high')
     expect(merged.imageLegible).toBe(true)
+  })
+
+  it('birthDate: toma el primer no-nulo', () => {
+    const merged = consolidateSelfProfiles([
+      ex({ birthDate: null }),
+      ex({ birthDate: '1990-05-30' }),
+      ex({ birthDate: '1991-01-01' }),
+    ])!
+    expect(merged.birthDate).toBe('1990-05-30')
   })
 
   it('source: la red mayoritaria no-unknown', () => {

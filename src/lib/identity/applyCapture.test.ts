@@ -10,6 +10,7 @@ function ex(over: Partial<SelfProfileExtracted>): SelfProfileExtracted {
   return {
     source: 'linkedin',
     fullName: null,
+    birthDate: null,
     roles: [],
     location: null,
     skills: [],
@@ -54,14 +55,24 @@ describe('buildCaptureProposal', () => {
     expect(diff.filled).toEqual([{ field: 'location', value: 'Lima, Perú' }])
   })
 
-  it('no toca birthDate ni specialDates', () => {
+  it('no toca specialDates, ni pisa un birthDate existente', () => {
     const existing = profile({
       birthDate: '1990-05-30',
       specialDates: [{ id: 'sd1', label: 'Aniversario', date: '2018-09-12', recurring: true }],
     })
-    const { proposed } = buildCaptureProposal(existing, ex({ roles: ['Atleta'] }))
+    // Aunque el relato traiga otra fecha, NO pisa la que ya estaba.
+    const { proposed } = buildCaptureProposal(existing, ex({ birthDate: '1985-01-01', roles: ['Atleta'] }))
     expect(proposed.birthDate).toBe('1990-05-30')
     expect(proposed.specialDates).toHaveLength(1)
+  })
+
+  it('rellena birthDate cuando no había, y lo reporta en filled', () => {
+    const { proposed, diff } = buildCaptureProposal(
+      profile({ birthDate: null }),
+      ex({ birthDate: '1990-05-30' }),
+    )
+    expect(proposed.birthDate).toBe('1990-05-30')
+    expect(diff.filled).toContainEqual({ field: 'birthDate', value: '1990-05-30' })
   })
 
   it('hasChanges=false cuando la captura no aporta nada nuevo', () => {

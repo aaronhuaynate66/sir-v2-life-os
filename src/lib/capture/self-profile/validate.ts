@@ -4,6 +4,7 @@
 // (defaults seguros); el sanitizer recorta, deduplica tags y clampa largos.
 
 import type { Confidence } from '@/lib/capture/observations/types'
+import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import {
   SELF_PROFILE_MAX_TAGS,
   SELF_PROFILE_MAX_BIO,
@@ -51,6 +52,18 @@ function cleanText(raw: unknown, max: number): string | null {
   return v.length > max ? v.slice(0, max).trim() : v
 }
 
+/** Acepta una fecha de nacimiento solo si es un date-only válido y plausible
+ *  (round-trip de parseLocalDate, año >= 1900). Cualquier otra cosa → null. */
+function cleanBirthDate(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const m = raw.trim().match(/^\d{4}-\d{2}-\d{2}/)
+  if (!m) return null
+  const iso = m[0]
+  const d = parseLocalDate(iso)
+  if (!d || d.getFullYear() < 1900) return null
+  return iso
+}
+
 /** Limpia y normaliza el output del extractor a SelfProfileExtracted. */
 export function sanitizeSelfProfile(x: unknown): SelfProfileExtracted {
   const r = isRec(x) ? x : {}
@@ -63,6 +76,7 @@ export function sanitizeSelfProfile(x: unknown): SelfProfileExtracted {
   return {
     source,
     fullName: cleanText(r.fullName, 200),
+    birthDate: cleanBirthDate(r.birthDate),
     roles: cleanTags(r.roles),
     location: cleanText(r.location, 200),
     skills: cleanTags(r.skills),

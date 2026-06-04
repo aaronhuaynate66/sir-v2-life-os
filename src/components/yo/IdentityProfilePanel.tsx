@@ -30,7 +30,6 @@ import {
   Sparkles,
   GraduationCap,
   FileText,
-  Camera,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -117,8 +116,8 @@ export function IdentityProfilePanel() {
                 onClick={() => setCapturing(true)}
                 className="inline-flex items-center gap-1.5"
               >
-                <Camera size={13} strokeWidth={1.75} aria-hidden="true" />
-                Completar con pantallazos
+                <Sparkles size={13} strokeWidth={1.75} aria-hidden="true" />
+                Que SIR me conozca
               </Button>
               <Button size="sm" variant="outline" onClick={startEdit} className="inline-flex items-center gap-1.5">
                 <Pencil size={13} strokeWidth={1.75} aria-hidden="true" />

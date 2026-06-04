@@ -40,6 +40,12 @@ function longest(values: (string | null)[]): string | null {
   return best
 }
 
+/** Primer valor no-nulo (para campos donde "más largo" no aplica, ej. fecha). */
+function firstDefined(values: (string | null)[]): string | null {
+  for (const v of values) if (v) return v
+  return null
+}
+
 function dominantSource(items: SelfProfileExtracted[]): SelfProfileSource {
   const counts: Record<SelfProfileSource, number> = { linkedin: 0, instagram: 0, unknown: 0 }
   for (const it of items) counts[it.source] += 1
@@ -65,6 +71,7 @@ export function consolidateSelfProfiles(
   return {
     source: dominantSource(items),
     fullName: longest(items.map((i) => i.fullName)),
+    birthDate: firstDefined(items.map((i) => i.birthDate)),
     roles: mergeTags(items.map((i) => i.roles)),
     location: longest(items.map((i) => i.location)),
     skills: mergeTags(items.map((i) => i.skills)),

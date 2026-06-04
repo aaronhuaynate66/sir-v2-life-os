@@ -10,8 +10,11 @@
 // concurrencia acotada, igual que la captura multi-imagen de personas) →
 // respeta maxDuration de Vercel, sin riesgo de timeout.
 //
-// Recibe FormData: { file: Blob }  ·  Respuesta 200: { extracted, confidence }
-// Auth: requiere sesión activa. Rate limit: bucket 'vision'.
+// Dos fuentes (misma extracción → mismo SelfProfileExtracted):
+//   - { file: Blob }  → Visión sobre el screenshot (rate limit 'vision').
+//   - { text: string }→ relato libre "contale a SIR quién sos" (rate limit
+//                       'generation'; sin OCR, texto fiel).
+// Respuesta 200: { extracted, confidence }. Auth: requiere sesión activa.
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
@@ -19,7 +22,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
-import { SELF_PROFILE_SYSTEM_PROMPT } from '@/lib/capture/self-profile/prompt'
+import { SELF_PROFILE_SYSTEM_PROMPT, SELF_PROFILE_TEXT_EXTRA } from '@/lib/capture/self-profile/prompt'
 import {
   isValidSelfProfileExtracted,
   sanitizeSelfProfile,
@@ -35,6 +38,8 @@ const EXTRACTOR_MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_TOKENS = 1800
 const ALLOWED_MIME = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif'])
 const MAX_FILE_BYTES = 10 * 1024 * 1024
+const MAX_TEXT_CHARS = 20_000
+const MIN_TEXT_CHARS = 12
 
 type MediaType = 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
 
@@ -87,6 +92,28 @@ async function callVision(
   return textBlock && textBlock.type === 'text' ? textBlock.text : ''
 }
 
+async function callText(
+  client: Anthropic,
+  profileText: string,
+  systemExtra = '',
+): Promise<string> {
+  const base = `${SELF_PROFILE_SYSTEM_PROMPT}\n\n${SELF_PROFILE_TEXT_EXTRA}`
+  const system = systemExtra ? `${base}\n\n${systemExtra}` : base
+  const msg = await client.messages.create({
+    model: EXTRACTOR_MODEL_ID,
+    max_tokens: MAX_TOKENS,
+    system,
+    messages: [
+      {
+        role: 'user',
+        content: [{ type: 'text', text: `RELATO DEL USUARIO (en sus palabras):\n\n${profileText}` }],
+      },
+    ],
+  })
+  const textBlock = msg.content.find((b) => b.type === 'text')
+  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+}
+
 const RETRY_EXTRA =
   'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá con `{` y terminá con `}`.'
 
@@ -99,55 +126,93 @@ export async function POST(req: NextRequest) {
   }
   const userId = authData.user.id
 
-  // 2. Rate limit (Visión)
-  const rl = await enforceRateLimit(supabase, userId, 'vision')
-  if (!rl.ok) return rl.response
-
-  // 3. FormData
+  // 2. FormData
   let formData: FormData
   try {
     formData = await req.formData()
   } catch {
     return errorJson(400, 'FormData inválido en el body')
   }
+
   const file = formData.get('file')
-  if (!(file instanceof Blob)) {
-    return errorJson(400, 'Body inválido', 'Se esperaba un campo "file" (Blob).')
+  const textRaw = formData.get('text')
+
+  // Modo: TEXTO (relato libre) si vino `text` y no un file; si no, IMAGEN.
+  const isTextMode =
+    !(file instanceof Blob) && typeof textRaw === 'string' && textRaw.trim().length > 0
+  const profileText = isTextMode ? (textRaw as string).trim() : ''
+
+  if (isTextMode) {
+    if (profileText.length < MIN_TEXT_CHARS) {
+      return errorJson(400, 'Contanos un poco más', `Mín ${MIN_TEXT_CHARS} caracteres.`)
+    }
+    if (profileText.length > MAX_TEXT_CHARS) {
+      return errorJson(413, 'Texto demasiado largo', `Máx ${MAX_TEXT_CHARS} caracteres.`)
+    }
+  } else {
+    if (!(file instanceof Blob)) {
+      return errorJson(400, 'Body inválido', 'Se esperaba un campo "file" (Blob) o "text" (string).')
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      return errorJson(413, 'Imagen demasiado grande', `Máx ${MAX_FILE_BYTES / 1024 / 1024} MB.`)
+    }
+    if (!ALLOWED_MIME.has(file.type)) {
+      return errorJson(415, 'Tipo de imagen no soportado', `mimeType=${file.type || '(vacío)'}.`)
+    }
   }
-  if (file.size > MAX_FILE_BYTES) {
-    return errorJson(413, 'Imagen demasiado grande', `Máx ${MAX_FILE_BYTES / 1024 / 1024} MB.`)
-  }
-  if (!ALLOWED_MIME.has(file.type)) {
-    return errorJson(415, 'Tipo de imagen no soportado', `mimeType=${file.type || '(vacío)'}.`)
-  }
+
+  // 3. Rate limit: texto → 'generation' (completion); imagen → 'vision'.
+  const rl = await enforceRateLimit(supabase, userId, isTextMode ? 'generation' : 'vision')
+  if (!rl.ok) return rl.response
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
   }
 
-  // 4. Vision (1 retry si el JSON sale mal)
+  // 4. Extracción (1 retry si el JSON sale mal). La vía depende del modo.
   const client = new Anthropic({ maxRetries: 2 })
-  const imageBase64 = await blobToBase64(file)
-  const mediaType = file.type as MediaType
-
   let raw = ''
   let parsed: unknown = null
-  try {
-    raw = await callVision(client, imageBase64, mediaType)
-  } catch (e) {
-    reportApiError(e)
-    const msg = e instanceof Error ? e.message : String(e)
-    return errorJson(502, 'Falló la llamada Vision', msg.slice(0, 300))
-  }
-  try {
-    parsed = JSON.parse(stripJsonFences(raw))
-  } catch {
+
+  if (isTextMode) {
     try {
-      raw = await callVision(client, imageBase64, mediaType, RETRY_EXTRA)
-      parsed = JSON.parse(stripJsonFences(raw))
+      raw = await callText(client, profileText)
     } catch (e) {
+      reportApiError(e)
       const msg = e instanceof Error ? e.message : String(e)
-      return errorJson(502, 'El extractor devolvió JSON inválido', msg.slice(0, 200))
+      return errorJson(502, 'Falló la extracción del relato', msg.slice(0, 300))
+    }
+    try {
+      parsed = JSON.parse(stripJsonFences(raw))
+    } catch {
+      try {
+        raw = await callText(client, profileText, RETRY_EXTRA)
+        parsed = JSON.parse(stripJsonFences(raw))
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return errorJson(502, 'El extractor devolvió JSON inválido', msg.slice(0, 200))
+      }
+    }
+  } else {
+    const imageBase64 = await blobToBase64(file as Blob)
+    const mediaType = (file as Blob).type as MediaType
+    try {
+      raw = await callVision(client, imageBase64, mediaType)
+    } catch (e) {
+      reportApiError(e)
+      const msg = e instanceof Error ? e.message : String(e)
+      return errorJson(502, 'Falló la llamada Vision', msg.slice(0, 300))
+    }
+    try {
+      parsed = JSON.parse(stripJsonFences(raw))
+    } catch {
+      try {
+        raw = await callVision(client, imageBase64, mediaType, RETRY_EXTRA)
+        parsed = JSON.parse(stripJsonFences(raw))
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        return errorJson(502, 'El extractor devolvió JSON inválido', msg.slice(0, 200))
+      }
     }
   }
 

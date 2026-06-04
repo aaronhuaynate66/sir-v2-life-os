@@ -53,4 +53,24 @@ export async function extractSelfProfileImage(
   return json.extracted
 }
 
+/**
+ * Extrae las anclas de un RELATO libre ("contale a SIR quién sos"): mismo
+ * endpoint y misma extracción, pero por texto fiel (sin Visión/OCR).
+ */
+export async function extractSelfProfileText(
+  text: string,
+  signal?: AbortSignal,
+): Promise<SelfProfileExtracted> {
+  const formData = new FormData()
+  formData.append('text', text)
+
+  const res = await fetch('/api/identity/capture', { method: 'POST', body: formData, signal })
+  if (!res.ok) {
+    const body = await readErrorBody(res)
+    throw new HttpError(res.status, body.error, body.detail)
+  }
+  const json = (await res.json()) as { extracted: SelfProfileExtracted }
+  return json.extracted
+}
+
 export { HttpError }

@@ -22,6 +22,13 @@ La diferencia:
 4. **Un foco a la vez** — la pantalla principal tiene un solo mensaje primario
 5. **Estabilidad sobre dinamismo** — no animaciones innecesarias
 6. **No SaaS** — sin métricas vacías, sin gamification, sin onboarding
+7. **Nunca un formulario vacío para datos extraíbles** — si un dato se puede sacar
+   de un pantallazo/export o preguntar conversacionalmente (relato libre), NUNCA
+   se le presenta a Aaron un campo en blanco para que lo tipee. Lo extraído llega
+   SIEMPRE como **propuesta editable** que **suma y nunca pisa** lo que él ya
+   escribió a mano. (Origen: el bloque de Identidad "se sintió raro" pidiéndole
+   datos que ya están en internet o ya conversó. Implementado en
+   `SelfProfileCapture` / `buildCaptureProposal`.)
 
 ---
 

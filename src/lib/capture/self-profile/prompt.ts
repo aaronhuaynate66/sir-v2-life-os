@@ -33,6 +33,7 @@ Schema EXACTO (debe parsear con JSON.parse — sin prosa, sin markdown fences):
 {
   "source": "linkedin" | "instagram" | "unknown",
   "fullName": "<nombre completo literal o null>",
+  "birthDate": "<YYYY-MM-DD o null>",
   "roles": [ "<rol/ocupación>", ... ],
   "location": "<ubicación literal o null>",
   "skills": [ "<skill>", ... ],
@@ -70,6 +71,13 @@ QUÉ EXTRAER SEGÚN LA RED:
   - location: si aparece en la bio; si no, null.
   - skills: normalmente [] en Instagram.
 
+• birthDate (cualquier fuente):
+  - Solo si aparece una fecha de nacimiento COMPLETA y resoluble → "YYYY-MM-DD".
+    Los perfiles casi nunca la muestran → normalmente null.
+  - Si sólo hay edad ("35 años") o una fecha parcial (sólo día/mes) → null (no
+    inventes el año ni el día). No confundas fechas de experiencia/estudios con
+    el nacimiento.
+
 REGLAS GENERALES:
 - Tags (roles/skills/interests): cortos, sin duplicar, sin "#" ni viñetas.
 - Si la imagen NO es un perfil propio reconocible, devolvé igual el JSON con
@@ -84,3 +92,24 @@ CRÍTICO:
 - Solo JSON. Sin prosa antes/después. Sin markdown fences.
 - Empezá la respuesta con \`{\` y terminá con \`}\`.
 `
+
+// Extra que se ANTEPONE/añade al system prompt cuando la fuente NO es una
+// imagen sino un texto libre: Aaron le CUENTA a SIR quién es (escribe o dicta un
+// párrafo). Versión mínima del onboarding conversacional.
+export const SELF_PROFILE_TEXT_EXTRA = `MODO NARRATIVO (la fuente NO es una imagen):
+En vez de un screenshot, el usuario te CUENTA en sus propias palabras quién es
+(lo escribió o lo dictó): a qué se dedica, qué le importa, cuándo nació, dónde
+vive, sus intereses. Es texto fiel — NO es OCR. Reglas:
+- source = "unknown" (no es LinkedIn ni Instagram).
+- Extraé los MISMOS campos del relato, en sus palabras:
+  · roles: a qué se dedica / cómo se define ("bombero", "fundador de Marlab").
+  · interests: lo que le gusta / hobbies / lo que le importa.
+  · location: dónde vive si lo dice.
+  · birthDate: si menciona su fecha de nacimiento COMPLETA → "YYYY-MM-DD". Si
+    sólo dice la edad o una fecha parcial → null.
+  · bio: un resumen breve y fiel de cómo se describe (en tercera o primera
+    persona, como venga), sin inventar.
+  · trajectory: estudios/experiencia si los cuenta.
+- Mantené la regla anti-invención: lo que no diga, va null / []. Pero NO bajes la
+  confianza por "imagen ilegible" — acá no hay imagen. Si el relato es claro,
+  usá confidence='high' y imageLegible=true.`

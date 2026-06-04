@@ -21,8 +21,8 @@ export interface CaptureProposalDiff {
   addedRoles: string[]
   /** Intereses que la captura agrega (incluye skills de LinkedIn). */
   addedInterests: string[]
-  /** Campos de texto que estaban vacíos y la captura propone rellenar. */
-  filled: Array<{ field: 'fullName' | 'location' | 'bio' | 'trajectory'; value: string }>
+  /** Campos que estaban vacíos y la captura propone rellenar. */
+  filled: Array<{ field: 'fullName' | 'birthDate' | 'location' | 'bio' | 'trajectory'; value: string }>
 }
 
 export interface CaptureProposal {
@@ -68,6 +68,11 @@ export function buildCaptureProposal(
   const filled: CaptureProposalDiff['filled'] = []
   const name = fillIfEmpty(existing.fullName, extracted.fullName)
   if (name.filled) filled.push({ field: 'fullName', value: name.filled })
+  // birthDate: rellena solo si no había una fecha; nunca pisa la existente.
+  const birthDate = existing.birthDate ?? extracted.birthDate ?? null
+  if (!existing.birthDate && extracted.birthDate) {
+    filled.push({ field: 'birthDate', value: extracted.birthDate })
+  }
   const loc = fillIfEmpty(existing.location, extracted.location)
   if (loc.filled) filled.push({ field: 'location', value: loc.filled })
   const bio = fillIfEmpty(existing.bio, extracted.bio)
@@ -78,6 +83,7 @@ export function buildCaptureProposal(
   const proposed: IdentityProfile = {
     ...existing,
     fullName: name.value,
+    birthDate,
     location: loc.value,
     bio: bio.value,
     trajectory: traj.value,
