@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f02bf9c`
+**Hash del último commit humano:** `96f8a75`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `96f8a75` | Aaron Huaynate | @ | 2026-06-05 |
 | `f02bf9c` | Aaron Huaynate | feat(panel): "TU AÑO" — brújula anual sobre Mission Control | 2026-06-04 |
 | `fcc75f5` | Aaron Huaynate | @ | 2026-06-04 |
 | `3cb4c02` | Aaron Huaynate | @ | 2026-06-03 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `f3e25d0` | Aaron Huaynate | feat(familia): vínculo SELF<->persona con parentesco específico + inferencia con el "yo" | 2026-06-03 |
 | `11ed9f4` | Aaron Huaynate | refactor(captura): deprecar el flujo WhatsApp legacy (página dedicada + dual-write) | 2026-06-03 |
 | `2a0804e` | Aaron Huaynate | @ | 2026-06-03 |
-| `af2ab93` | Aaron Huaynate | feat(familia): FAMILIA como vínculo real persona↔persona (autocompletar + bidireccional + sugerencias) | 2026-06-03 |
 
 ---
 
