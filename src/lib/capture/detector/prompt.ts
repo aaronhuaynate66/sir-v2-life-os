@@ -14,7 +14,7 @@ Schema EXACTO de respuesta (debe parsear con JSON.parse() sin error —
 sin prosa, sin markdown fences):
 
 {
-  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "linkedin" | "scale" | "unknown",
+  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "linkedin" | "scale" | "sleep_panel" | "unknown",
   "confidence": "high" | "medium" | "low",
   "reasoning": "<<=80 chars: pista visual concreta que disparó la decisión>",
   "suggestedPersonName": "<nombre visible en el header si aplica, null si no>"
@@ -96,8 +96,24 @@ REGLAS DE CLASIFICACION:
    chat — no hay bubbles, ni @handle, ni lista de chats. Es la capa
    biológica del propio usuario, NO una persona de sus relaciones.
 
-6. unknown
-   Cualquier cosa que NO cumpla los signos visuales de los 5 anteriores.
+6. sleep_panel (PANEL DE SUEÑO — app de monitoreo del sueño)
+   Pantallazo de una app de sueño (Huawei Health/Salud, Apple Health/Salud,
+   Samsung Health, Fitbit, Garmin Connect, Oura, AutoSleep, Sleep Cycle,
+   etc.). Señales visuales DECISIVAS:
+   - Título tipo "Sueño" / "Dormir" / "Sleep" y a veces una vista Día/Semana/Mes.
+   - Una DURACIÓN total de sueño grande (ej. "5 h 55 min", "5h55", "7:12").
+   - Un GRÁFICO DE FASES del sueño: barras/bandas apiladas o un hipnograma con
+     etiquetas Profundo / Liviano (ligero) / REM / Vigilia (despierto), a veces
+     con minutos por fase (ej. "Profundo 1 h 21 min").
+   - Una HORA de dormir + hora de despertar (ej. "01:29 - 07:42").
+   - Frecuentemente una PUNTUACIÓN de calidad 0-100 (ej. "75 puntos", "Score 82").
+   REGLA CLAVE: si ves una duración de sueño + un gráfico de fases (profundo/
+   liviano/REM) y/o una puntuación de sueño, es sleep_panel. NO hay bubbles, ni
+   @handle, ni gauge de peso en kg. Es la capa biológica del PROPIO usuario, NO
+   una persona de sus relaciones.
+
+7. unknown
+   Cualquier cosa que NO cumpla los signos visuales de los 6 anteriores.
    Ejemplos: pantallas de configuracion, otras apps de chat (Telegram,
    Signal, Threads), screenshots de codigo, fotos sin texto, etc.
 
@@ -113,8 +129,9 @@ REGLAS GENERALES:
 - suggestedPersonName: si ves un nombre claro en el header (whatsapp_chat,
   whatsapp_web [header del centro o panel derecho], whatsapp_info, linkedin)
   o @handle (instagram), copialo literal. Si no hay nombre visible, null.
-  Para type='scale' SIEMPRE null: la báscula mide al PROPIO usuario, no a
-  una persona de sus relaciones (aunque el header diga "Usuario actual: X").
+  Para type='scale' y type='sleep_panel' SIEMPRE null: miden al PROPIO
+  usuario, no a una persona de sus relaciones (aunque el header diga
+  "Usuario actual: X").
 - reasoning: 1 frase concreta, en español, mencionando la señal visual
   especifica (ej. "Bubbles verde/gris en columnas + header con nombre").
   NO uses jerga interna como "high confidence", "tipo whatsapp_chat".

@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, UserPlus, Users, X } from 'lucide-react'
+import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, UserPlus, Users, X } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -24,6 +24,7 @@ import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
 import type { DetectResult } from '@/lib/capture/detector/client'
 import { ScaleCaptureBranch } from '@/components/capture/scale/ScaleCaptureBranch'
+import { SleepCaptureBranch } from '@/components/capture/sleep/SleepCaptureBranch'
 import {
   HttpError,
   createPerson,
@@ -256,8 +257,11 @@ function CapturaIndexContent() {
   // La báscula tiene su propio sub-flujo (health_metrics, sin persona).
   const isScale = detection !== null && detection.detected.type === 'scale'
 
-  // Reset total para "otra captura" desde el branch de báscula: vuelve al paso 1.
-  const onResetScale = useCallback(() => {
+  // El panel de sueño también: sub-flujo propio (sleep_records, sin persona).
+  const isSleep = detection !== null && detection.detected.type === 'sleep_panel'
+
+  // Reset total para "otra captura" desde un branch self (báscula/sueño): vuelve al paso 1.
+  const onResetSelf = useCallback(() => {
     setFile(null)
     resetForNewFile()
   }, [resetForNewFile])
@@ -285,9 +289,10 @@ function CapturaIndexContent() {
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
           Subí un pantallazo de un chat de <span className="text-foreground">WhatsApp</span>, de un
           perfil de <span className="text-foreground">Instagram</span> /{' '}
-          <span className="text-foreground">LinkedIn</span>, o del panel de tu{' '}
-          <span className="text-foreground">báscula inteligente</span>. SIR detecta el tipo, extrae
-          los datos y los asocia a una persona — o, si es báscula, los guarda como tus métricas.
+          <span className="text-foreground">LinkedIn</span>, del panel de tu{' '}
+          <span className="text-foreground">báscula inteligente</span> o de tu{' '}
+          <span className="text-foreground">app de sueño</span>. SIR detecta el tipo, extrae los
+          datos y los asocia a una persona — o, si es báscula o sueño, los guarda como tus métricas.
         </p>
       </header>
 
@@ -566,18 +571,32 @@ function CapturaIndexContent() {
               capa biológica · self
             </span>
           </div>
-          <ScaleCaptureBranch file={file} onReset={onResetScale} />
+          <ScaleCaptureBranch file={file} onReset={onResetSelf} />
         </div>
       )}
 
-      {!canExtract && !isScale && detection && (
+      {/* SUEÑO: sub-flujo propio (extrae la noche → sleep_records, sin persona). */}
+      {isSleep && detection && file && (
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Moon size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+            <h2 className="text-sm font-semibold tracking-tight">Panel de sueño</h2>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
+              capa biológica · self
+            </span>
+          </div>
+          <SleepCaptureBranch file={file} onReset={onResetSelf} />
+        </div>
+      )}
+
+      {!canExtract && !isScale && !isSleep && detection && (
         <Card className="shadow-none mb-6">
           <CardContent className="p-4 sm:p-6">
             <p className="text-xs text-muted-foreground">
               Esta imagen se detectó como{' '}
               <span className="font-mono">{detection.detected.type}</span>, que todavía no se puede
               extraer automáticamente. Probá con un pantallazo de un chat de WhatsApp, un perfil de
-              Instagram / LinkedIn, o el panel de tu báscula inteligente.
+              Instagram / LinkedIn, el panel de tu báscula inteligente o el panel de tu app de sueño.
             </p>
           </CardContent>
         </Card>

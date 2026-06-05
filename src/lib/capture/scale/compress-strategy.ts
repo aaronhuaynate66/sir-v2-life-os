@@ -48,6 +48,9 @@ export const COMPRESSION_STRATEGIES = {
   // Báscula: grilla densa de números pequeños -> hace falta resolución y
   // calidad para que Vision lea decimales (81.85, 23.4%, etc.) sin alucinar.
   scale: { maxWidth: 1280, quality: 0.9, minOutputKB: 150 },
+  // Panel de sueño: duración + minutos por fase + score en texto pequeño ->
+  // mismo perfil que báscula para leer "5 h 55 min", "1 h 21 min", "75".
+  sleep_panel: { maxWidth: 1280, quality: 0.9, minOutputKB: 150 },
   manual_note: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },
   voice_note: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },
   unknown: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },

@@ -65,8 +65,9 @@ export function signalsFromExtracted(
       break
     }
     case 'scale':
-      // La báscula no aporta señales de persona: mide al propio usuario.
-      // No hay nombre/handle/teléfono que matchear.
+    case 'sleep_panel':
+      // Báscula y panel de sueño no aportan señales de persona: miden al
+      // propio usuario. No hay nombre/handle/teléfono que matchear.
       break
     case 'manual_note':
     case 'voice_note':

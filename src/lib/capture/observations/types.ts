@@ -27,6 +27,11 @@ export type CaptureType =
   // el flujo client-side de /lib/capture/scale. Por eso NO está en el CHECK
   // de observations.capture_type (0010) — es un tipo "self", sin persona.
   | 'scale'
+  // 'sleep_panel' = captura del panel de una app de sueño (Huawei/Apple/Samsung
+  // Health, Fitbit…). Igual que 'scale': es data PROPIA (capa biológica, self),
+  // NO se materializa como observation. Va a `sleep_records` vía el flujo
+  // client-side de /lib/capture/sleep. Tampoco está en el CHECK de 0010.
+  | 'sleep_panel'
   | 'unknown'
 
 /** Tipos de captura que SON una conversación real (no snapshot de perfil).
@@ -103,6 +108,10 @@ export function storageBucketFor(captureType: CaptureType): string | null {
       // privado (migration 0005). El upload lo hace persistScaleCapture,
       // no el pipeline de observations.
       return 'scale-captures'
+    case 'sleep_panel':
+      // El panel de sueño NO se archiva: persistSleepCapture sólo escribe la
+      // noche normalizada en sleep_records (sin imagen). Sin bucket.
+      return null
     case 'manual_note':
     case 'voice_note':
     case 'unknown':

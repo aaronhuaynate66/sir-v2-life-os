@@ -119,6 +119,11 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
       // está en VALID_CAPTURE_TYPES_WITH_EXTRACTOR) y el caller lo rutea
       // al flujo de báscula en su lugar.
       return null
+    case 'sleep_panel':
+      // El panel de sueño tampoco usa observations: tiene su propio endpoint
+      // (/api/capture/sleep) + persistencia a sleep_records. Mismo trato que
+      // scale: null aquí, el caller lo rutea al flujo de sueño.
+      return null
     case 'manual_note':
     case 'voice_note':
     case 'unknown':
