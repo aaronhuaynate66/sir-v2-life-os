@@ -23,6 +23,7 @@ function ev(hStartLima: number, hEndLima: number, title: string): CalendarEvent 
 
 function task(over: Partial<CockpitTask> & { id: string }): CockpitTask {
   return {
+    stepId: over.stepId ?? over.id.replace(/^task_/, ''),
     title: over.title ?? 'Tarea',
     objectiveId: 'g1',
     objectiveTitle: 'Objetivo',

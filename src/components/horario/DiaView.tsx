@@ -15,9 +15,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { DayTimeline, TimelineBlock, OverloadLevel } from '@/lib/calendar/timeline'
-import type { CockpitTask } from '@/lib/horario/cockpit'
+import type { CockpitDate, CockpitTask } from '@/lib/horario/cockpit'
 import { buildDayPlan, type GapRowItem, type TaskRowItem } from '@/lib/horario/dayPlan'
+import { buildBriefSignals } from '@/lib/horario/brief'
 import type { PhysicalState } from '@/lib/horario/physical'
+import { BriefPanel } from './BriefPanel'
+import { PlanDelDiaPanel } from './PlanDelDiaPanel'
 import {
   DayContextStrip,
   TaskRow,
@@ -38,6 +41,7 @@ const OVERLOAD_STYLE: Record<OverloadLevel, { text: string; border: string; bg: 
 export function DiaView({
   timeline,
   tasksToday,
+  contactDates,
   physical,
   nowMs,
   configured,
@@ -46,6 +50,7 @@ export function DiaView({
 }: {
   timeline: DayTimeline
   tasksToday: CockpitTask[]
+  contactDates: CockpitDate[]
   physical: PhysicalState
   nowMs: number
   configured: boolean
@@ -62,8 +67,20 @@ export function DiaView({
   const hasTimedRows = plan.rows.some((r) => r.type !== 'gap')
   const hasCalendar = hasTimedRows || timeline.allDay.length > 0
 
+  // Huecos libres del plan (para el "Plan del día" — slotting de tareas sin hora).
+  const gaps = useMemo(() => plan.rows.filter((r): r is GapRowItem => r.type === 'gap'), [plan])
+
+  // Señales del Brief del día — hechos ya computados; el modelo sólo reformula.
+  const briefSignals = useMemo(
+    () => buildBriefSignals({ timeline, plan, contactDates }),
+    [timeline, plan, contactDates],
+  )
+
   return (
     <div className="space-y-5">
+      {/* Brief del día — resumen escaneable arriba de todo */}
+      <BriefPanel signals={briefSignals} />
+
       {/* All-day: marco del día */}
       {timeline.allDay.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -140,6 +157,11 @@ export function DiaView({
             </ul>
           </CardContent>
         </Card>
+      )}
+
+      {/* Plan del día — propone meter las tareas sin hora en los huecos libres */}
+      {plan.untimedTasks.length > 0 && (
+        <PlanDelDiaPanel untimedTasks={plan.untimedTasks} gaps={gaps} dateKey={timeline.dateKey} />
       )}
 
       {/* Contexto físico del día — PLEGADO y al final (vive en /yo) */}

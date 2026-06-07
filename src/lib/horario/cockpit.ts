@@ -58,11 +58,18 @@ export const HORIZON_WINDOW_DAYS: Record<Horizon, number> = { dia: 0, semana: 6,
  *  en Mes. */
 export const CONTACT_LEAD_DAYS: Record<Exclude<Horizon, 'dia'>, number> = { semana: 14, mes: 31 }
 
+/** Lead-time de fechas de la red para el horizonte DÍA: alimenta el "Brief del
+ *  día" (las fechas que se acercan) sin abarrotar la vista — 2 semanas. */
+export const DIA_CONTACT_LEAD_DAYS = 14
+
 // ─── Modelo del cockpit ───────────────────────────────────────────────
 
 /** Una tarea/hoja OKR con fecha que cae en el horizonte. */
 export interface CockpitTask {
   id: string
+  /** Id REAL del ObjectiveStep (sin el prefijo `task_` de `id`). Lo usa el plan
+   *  del día para persistir `due_time`/`target_date` con updateStep (0061). */
+  stepId: string
   title: string
   objectiveId: string
   objectiveTitle: string
@@ -292,6 +299,7 @@ export function tasksDueInRange(
     if (!includeOverdue && days < 0) continue
     out.push({
       id: `task_${s.id}`,
+      stepId: s.id,
       title: s.title,
       objectiveId: s.objectiveId,
       objectiveTitle: goalTitle,
@@ -559,6 +567,8 @@ export function buildCockpit(input: CockpitInput, horizon: Horizon, now: Date = 
 
   if (horizon === 'dia') {
     base.tasksToday = tasksDueInRange(input.goals, input.objectiveSteps, { maxDays: 0 }, now)
+    // Fechas de la red que se acercan → alimentan el "Brief del día" (Fase 2).
+    base.contactDates = contactDatesInRange(input.people, DIA_CONTACT_LEAD_DAYS, now)
     return base
   }
 

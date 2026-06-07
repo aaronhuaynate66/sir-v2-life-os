@@ -152,6 +152,7 @@ function HorarioContent() {
           <DiaView
             timeline={buildDayTimeline(events, nowMs)}
             tasksToday={cockpit.tasksToday}
+            contactDates={cockpit.contactDates}
             physical={physical}
             nowMs={nowMs}
             configured={configured}
