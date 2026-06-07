@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `96f8a75`
+**Hash del último commit humano:** `eccf733`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `96f8a75` | Aaron Huaynate | @ | 2026-06-05 |
-| `f02bf9c` | Aaron Huaynate | feat(panel): "TU AÑO" — brújula anual sobre Mission Control | 2026-06-04 |
-| `fcc75f5` | Aaron Huaynate | @ | 2026-06-04 |
-| `3cb4c02` | Aaron Huaynate | @ | 2026-06-03 |
-| `ec57a8c` | Aaron Huaynate | feat(horario): vista Dia cuenta solo TIEMPO; relaciones y peso fuera | 2026-06-03 |
-| `1fee711` | Aaron Huaynate | feat(agenda): invertir jerarquia — accionable arriba, calendario plegado | 2026-06-03 |
-| `1013385` | Aaron Huaynate | feat(proactivo): motor de fechas por rubro + esfuerzo relacional por parentesco | 2026-06-03 |
-| `f3e25d0` | Aaron Huaynate | feat(familia): vínculo SELF<->persona con parentesco específico + inferencia con el "yo" | 2026-06-03 |
-| `11ed9f4` | Aaron Huaynate | refactor(captura): deprecar el flujo WhatsApp legacy (página dedicada + dual-write) | 2026-06-03 |
-| `2a0804e` | Aaron Huaynate | @ | 2026-06-03 |
+| `eccf733` | Aaron Huaynate | @ | 2026-06-07 |
+| `02475a6` | Aaron Huaynate | @ | 2026-06-07 |
+| `54ca6c3` | Aaron Huaynate | @ | 2026-06-07 |
+| `cad2e9a` | Aaron Huaynate | @ | 2026-06-07 |
+| `c8946cf` | Aaron Huaynate | @ | 2026-06-07 |
+| `3293416` | Aaron Huaynate | @ | 2026-06-07 |
+| `28956b6` | Aaron Huaynate | @ | 2026-06-07 |
+| `17e168c` | Aaron Huaynate | @ | 2026-06-07 |
+| `97a63b5` | Aaron Huaynate | @ | 2026-06-07 |
+| `a51876d` | Aaron Huaynate | @ | 2026-06-07 |
 
 ---
 
