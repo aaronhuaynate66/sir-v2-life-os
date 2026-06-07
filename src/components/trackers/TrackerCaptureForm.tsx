@@ -127,7 +127,7 @@ export function TrackerCaptureForm({ tracker, className }: TrackerCaptureFormPro
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-end">
         <label className="text-xs text-muted-foreground">
           Fecha si falta en la captura
           <Input type="date" value={fallbackDate} onChange={(e) => setFallbackDate(e.target.value)} className="mt-1" />

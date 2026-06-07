@@ -283,7 +283,12 @@ function SelfContent() {
             <Button onClick={addHealth} variant="outline" size="sm" className="w-full sm:w-auto">+ Agregar</Button>
           </div>
           {healthMetrics.length === 0 ? (
-            <EmptyState icon={Heart} size="sm" title="Sin registros de salud." />
+            <EmptyState
+              icon={Heart}
+              size="sm"
+              title="Sin registros de salud."
+              hint="Agregá una medición con el formulario de arriba, o importá Apple Health desde Mis capturas."
+            />
           ) : (
             <div className="space-y-1">
               {[...healthMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 8).map((h) => (

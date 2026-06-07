@@ -735,7 +735,7 @@ function IconBtn({
       disabled={disabled}
       aria-label={label}
       className={cn(
-        'p-1 text-text-tertiary transition-colors disabled:opacity-25',
+        'p-2 text-text-tertiary transition-colors disabled:opacity-25',
         danger ? 'hover:text-bad' : 'hover:text-foreground',
       )}
     >

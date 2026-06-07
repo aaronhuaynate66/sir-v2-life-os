@@ -266,8 +266,8 @@ function GoalsContent() {
               <CardContent className="p-4 sm:p-6">
                 <SectionTitle icon={Plus} label={editId ? 'Editar objetivo' : 'Nuevo objetivo'} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                  <Input placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} className="col-span-2" />
-                  <Input placeholder="Descripción" value={desc} onChange={e => setDesc(e.target.value)} className="col-span-2" />
+                  <Input placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} className="sm:col-span-2" />
+                  <Input placeholder="Descripción" value={desc} onChange={e => setDesc(e.target.value)} className="sm:col-span-2" />
                   <Select value={cat} onValueChange={(v) => setCat(v as GoalCategory)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -282,8 +282,8 @@ function GoalsContent() {
                   </Select>
                   <Input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="font-mono" />
                   <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
-                  <Input placeholder="Siguiente acción" value={nextAction} onChange={e => setNextAction(e.target.value)} className="col-span-2" />
-                  <div className="col-span-2">
+                  <Input placeholder="Siguiente acción" value={nextAction} onChange={e => setNextAction(e.target.value)} className="sm:col-span-2" />
+                  <div className="sm:col-span-2">
                     <Input placeholder="Subtítulo del ancla (ej. Al Khobar · Taekwondo +80kg) · opcional" value={anchorSubtitle} onChange={e => setAnchorSubtitle(e.target.value)} />
                     <p className="text-[10px] text-muted-foreground/60 mt-1">
                       Solo si marcás este objetivo como <span className="font-mono text-foreground/80">ancla del año</span>. Si lo dejás vacío, la brújula deriva el detalle del target o la descripción.
@@ -291,7 +291,7 @@ function GoalsContent() {
                   </div>
 
                   {/* ─── Definición SMART (medible + por qué) ─── */}
-                  <div className="col-span-2 rounded-md border border-border/50 bg-muted/20 p-3 space-y-2">
+                  <div className="sm:col-span-2 rounded-md border border-border/50 bg-muted/20 p-3 space-y-2">
                     <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
                       Definición SMART <span className="text-muted-foreground/50 normal-case tracking-normal">· medible + por qué</span>
                     </div>
@@ -312,7 +312,7 @@ function GoalsContent() {
                     />
                   </div>
 
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
                       Personas vinculadas <span className="text-muted-foreground/50 normal-case tracking-normal">· opcional</span>
                     </div>

@@ -178,7 +178,7 @@ export function PlanDelDiaPanel({
                     )}
 
                     <Select value={value} onValueChange={(v) => setGap(task.id, v)}>
-                      <SelectTrigger className="h-8 w-[170px] text-xs bg-card shrink-0">
+                      <SelectTrigger className="h-8 w-full sm:w-[170px] text-xs bg-card sm:shrink-0">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
