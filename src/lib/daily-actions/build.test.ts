@@ -5,7 +5,12 @@ import {
   computeAvailability,
   type DailyActionPersonInput,
 } from './build'
-import type { Person } from '@/types'
+import type { Person, PersonLink } from '@/types'
+import { SELF_ID } from '@/lib/relationships/family'
+
+function selfLink(personBId: string, kind: PersonLink['kind']): PersonLink {
+  return { id: `l_${personBId}`, personAId: SELF_ID, personBId, kind, createdAt: NOW.toISOString() }
+}
 
 const NOW = new Date('2026-06-02T12:00:00')
 
@@ -114,6 +119,39 @@ describe('buildDailyActions', () => {
     )
     const r = buildDailyActions(many, { limit: 3 }, NOW)
     expect(r.length).toBe(3)
+  })
+
+  it('el parentesco (pareja) sube el score de contacto sobre un par igual no-familiar', () => {
+    const partner = input({ person: person({ id: 'diana', name: 'Diana', slug: 'diana' }), daysSinceContact: 40 })
+    const acquaintance = input({ person: person({ id: 'x', name: 'X', slug: 'x' }), daysSinceContact: 40 })
+    const r = buildDailyActions([partner, acquaintance], { personLinks: [selfLink('diana', 'pareja')] }, NOW)
+    const diana = r.find((a) => a.personId === 'diana')!
+    const x = r.find((a) => a.personId === 'x')!
+    expect(diana.score).toBeGreaterThan(x.score) // mismo input, sólo el parentesco los separa
+    expect(r[0].personId).toBe('diana') // la pareja ordena primero
+    expect(diana.kinLabel).toBe('tu pareja') // copy posesivo reusado de /panel
+    expect(x.kinLabel).toBeUndefined()
+  })
+
+  it('el parentesco baja la barra de inclusión: la pareja con poca urgencia igual aparece', () => {
+    // Vínculo apenas tibio: sin parentesco no califica; como pareja, sí.
+    const tibio = (over = {}): DailyActionPersonInput =>
+      input({ daysSinceContact: 18, contactFrequencyDays: 30, fuerza: 70, confianza: 70, ...over })
+    const sinLink = buildDailyActions([tibio()], {}, NOW)
+    const conLink = buildDailyActions([tibio()], { personLinks: [selfLink('p1', 'pareja')] }, NOW)
+    expect(sinLink.length).toBe(0)
+    expect(conLink.length).toBe(1)
+    expect(conLink[0].kinLabel).toBe('tu pareja')
+  })
+
+  it('una FECHA (cumpleaños) no se pondera por parentesco', () => {
+    const p = person({ id: 'diana', name: 'Diana', slug: 'diana', birthDate: '1990-06-02' })
+    const sin = buildDailyActions([input({ person: p, daysSinceContact: 3 })], {}, NOW)
+    const con = buildDailyActions([input({ person: p, daysSinceContact: 3 })], { personLinks: [selfLink('diana', 'pareja')] }, NOW)
+    expect(sin[0].kind).toBe('birthday')
+    expect(con[0].kind).toBe('birthday')
+    expect(con[0].score).toBe(sin[0].score) // la fecha no la mueve el parentesco
+    expect(con[0].kinLabel).toBe('tu pareja') // pero sí etiqueta la copy
   })
 
   it('ordena por score desc', () => {

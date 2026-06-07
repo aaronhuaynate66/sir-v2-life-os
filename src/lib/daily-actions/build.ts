@@ -10,9 +10,10 @@
 // Una tarjeta por persona (la razón más urgente gana), ordenadas por score.
 // PURA + determinística: `now` inyectable, sin I/O. Testeable.
 
-import type { Person, PersonCategory, RelationshipStatus, RelationshipType } from '@/types'
+import type { Person, PersonCategory, PersonLink, RelationshipStatus, RelationshipType } from '@/types'
 import { scoreContactUrgency } from '@/lib/people/urgency'
 import { generateRituals, type Ritual, type RitualSignal } from '@/lib/people/rituals'
+import { buildSelfKinshipMap, type SelfKinship } from '@/lib/proactive/kinship'
 
 export type DailyActionKind = 'contact' | 'birthday' | 'special_date' | 'cooling' | 'acknowledge'
 
@@ -39,6 +40,10 @@ export interface DailyAction {
   daysUntil?: number
   /** ¿Puede pedir un mensaje copiable al LLM? */
   canGenerateMessage: boolean
+  /** Etiqueta posesiva de parentesco con el "yo" ("tu pareja", "tu mamá"),
+   *  derivada de las aristas SELF↔persona (person_links). Sólo presente si la
+   *  persona es familia directa/pareja. Humaniza la copy, igual que en /panel. */
+  kinLabel?: string
 }
 
 /** Una persona ya enriquecida con su score relacional y contexto de contacto. */
@@ -124,6 +129,11 @@ export interface BuildDailyActionsOptions {
   availability?: number | null
   /** Máximo de tarjetas. Default 6. */
   limit?: number
+  /** Aristas SELF↔persona (person_links): ponderan el esfuerzo relacional —
+   *  familia directa/pareja pesan más en el orden y se atienden antes (umbral
+   *  de inclusión). MISMA lógica que /panel (agenda no_contact). Opcional →
+   *  sin links, todos pesan 1 (comportamiento previo intacto). */
+  personLinks?: PersonLink[]
 }
 
 /**
@@ -138,6 +148,10 @@ export function buildDailyActions(
   const availability = opts.availability ?? null
   const factor = availabilityFactor(availability)
   const limit = opts.limit ?? 6
+
+  // Parentesco con el "yo" (person_links): mismo mapa que usa /panel para
+  // ponderar las relaciones descuidadas. Familia directa/pareja pesan más.
+  const kinshipMap = buildSelfKinshipMap(opts.personLinks ?? [])
 
   const byId = new Map(inputs.map((i) => [i.person.id, i]))
   const candidates: DailyAction[] = []
@@ -156,8 +170,15 @@ export function buildDailyActions(
       hasUpcomingDate: i.hasUpcomingDate,
       recentSignalCount: i.recentSignals.length,
     })
+    // El contacto es una acción RELACIONAL → la pondera el parentesco: la
+    // familia/pareja sube su score (orden) y baja la barra de inclusión
+    // (umbral) para que aparezcan antes y alerten antes. Igual que en /panel.
+    const kin = kinshipMap.get(i.person.id)
+    const boosted = u.score * (kin?.weight ?? 1)
     // Sólo proponemos un "contacto" si hay algo que decir (no los "al día").
-    if (u.urgency === 'low' && u.score < 35) continue
+    // Comparamos contra el score ponderado: así la pareja con poca urgencia
+    // bruta igual pasa el filtro.
+    if (u.urgency === 'low' && boosted < 35) continue
     candidates.push({
       personId: i.person.id,
       personName: i.person.name,
@@ -166,13 +187,14 @@ export function buildDailyActions(
       category: i.person.category,
       kind: 'contact',
       urgency: u.urgency,
-      score: u.score * factor,
+      score: boosted * factor,
       headline: u.reason,
       action: 'Escribile para retomar el contacto',
       reciprocidad: i.reciprocidad,
       fuerza: i.fuerza,
       daysSinceContact: i.daysSinceContact,
       canGenerateMessage: true,
+      kinLabel: kin?.label,
     })
   }
 
@@ -194,6 +216,12 @@ export function buildDailyActions(
     if (!i) continue
     const kind = kindFromRitual(r.type)
     const proactive = PROACTIVE.has(kind)
+    const kin = kinshipMap.get(r.personId)
+    // El parentesco pondera sólo los rituales RELACIONALES (proactivos:
+    // contacto/cooling/acknowledge). Los de FECHA (cumple/fecha especial) no se
+    // tocan — un cumpleaños no pesa más por ser de un familiar; eso ya lo
+    // decide la fecha. Mismo criterio que /panel (sólo escala no_contact).
+    const weight = proactive ? (kin?.weight ?? 1) : 1
     candidates.push({
       personId: r.personId,
       personName: r.personName,
@@ -202,7 +230,7 @@ export function buildDailyActions(
       category: i.person.category,
       kind,
       urgency: ritualUrgency(r),
-      score: proactive ? ritualScore(r) * factor : ritualScore(r),
+      score: proactive ? ritualScore(r) * factor * weight : ritualScore(r),
       headline: r.message,
       action: r.action,
       reciprocidad: i.reciprocidad,
@@ -210,6 +238,7 @@ export function buildDailyActions(
       daysSinceContact: i.daysSinceContact,
       daysUntil: r.daysUntil,
       canGenerateMessage: true,
+      kinLabel: kin?.label,
     })
   }
 

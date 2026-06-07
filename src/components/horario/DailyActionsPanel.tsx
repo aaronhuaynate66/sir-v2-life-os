@@ -186,6 +186,9 @@ function ActionRow({ action, variant }: { action: DailyAction; variant: 'full' |
             ) : (
               <span className="font-medium text-sm text-foreground">{action.personName}</span>
             )}
+            {action.kinLabel && (
+              <span className="text-[10px] text-text-tertiary">· {action.kinLabel}</span>
+            )}
             <span className="inline-flex items-center gap-1 text-[10px] text-text-tertiary">
               <meta.Icon size={11} strokeWidth={1.75} aria-hidden="true" />
               {meta.label}

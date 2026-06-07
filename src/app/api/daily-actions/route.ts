@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { personAdapter, relationshipAdapter } from '@/lib/supabase/sync/adapters/relationships'
+import { personAdapter, personLinkAdapter, relationshipAdapter } from '@/lib/supabase/sync/adapters/relationships'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
 import { contactFrequencyDays } from '@/lib/people/urgency'
 import { contactDatesInRange } from '@/lib/horario/cockpit'
@@ -23,7 +23,7 @@ import {
   type DailyActionPersonInput,
 } from '@/lib/daily-actions/build'
 import type { RitualSignal } from '@/lib/people/rituals'
-import type { Person, RelationshipStatus, SignalType } from '@/types'
+import type { Person, PersonLink, RelationshipStatus, SignalType } from '@/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -51,9 +51,10 @@ export async function GET(): Promise<NextResponse> {
   const sinceIso = new Date(now.getTime() - SIGNAL_LOOKBACK_DAYS * DAY_MS).toISOString()
 
   try {
-    const [peopleRes, relsRes, chatsRes, logsRes, signalsRes, metricsRes] = await Promise.all([
+    const [peopleRes, relsRes, linksRes, chatsRes, logsRes, signalsRes, metricsRes] = await Promise.all([
       supabase.from('people').select('*').eq('user_id', userId),
       supabase.from('relationships').select('person_id, status').eq('user_id', userId),
+      supabase.from('person_links').select('*').eq('user_id', userId),
       supabase
         .from('observations')
         .select('person_id, observed_at')
@@ -83,6 +84,12 @@ export async function GET(): Promise<NextResponse> {
 
     const people: Person[] = (peopleRes.data ?? []).map((r) =>
       personAdapter.fromRow(r as Record<string, unknown>),
+    )
+
+    // Aristas SELF↔persona: ponderan el esfuerzo relacional por parentesco
+    // (familia/pareja pesan más), igual que el ranking no_contact de /panel.
+    const personLinks: PersonLink[] = (linksRes.data ?? []).map((r) =>
+      personLinkAdapter.fromRow(r as Record<string, unknown>),
     )
 
     // Status por persona (de relationships).
@@ -176,7 +183,7 @@ export async function GET(): Promise<NextResponse> {
       }
     })
 
-    const actions = buildDailyActions(inputs, { availability, limit: 6 }, now)
+    const actions = buildDailyActions(inputs, { availability, limit: 6, personLinks }, now)
 
     const body: DailyActionsResponse = { actions, availability, generatedAt: now.toISOString() }
     return NextResponse.json(body, { status: 200 })
