@@ -54,6 +54,7 @@ import {
 import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
+import { AntesDeContactar } from './AntesDeContactar'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
 import { BirthdayCountdown } from './BirthdayCountdown'
@@ -342,6 +343,13 @@ export function PersonDetail({
           />
         </div>
       </header>
+
+      {/* "Antes de contactar": cabecera discreta que COMPLEMENTA la franja de
+          resumen de abajo. Lo que el strip no cubre y te deja listo para el
+          momento justo — actividad reciente (tags de memorias) + notas privadas
+          verbatim (discretas, nunca a IA). Determinístico; se oculta si no hay
+          nada que aportar. */}
+      <AntesDeContactar personId={live.id} memories={memories} />
 
       {/* Franja de resumen (síntesis V1): lo primero que se ve al abrir la
           persona. Ciclo + próxima fecha + última interacción + score + próxima
