@@ -20,6 +20,9 @@ const VALID_TYPES: ReadonlySet<CaptureType> = new Set<CaptureType>([
   // 'sleep_panel' SÍ sale de screenshot (panel de app de sueño). Igual que
   // scale: el caller lo rutea al flujo self de sleep_records.
   'sleep_panel',
+  // 'heart_rate_panel' SÍ sale de screenshot (vista FC > Día). Igual que
+  // scale/sleep_panel: el caller lo rutea al flujo self de health_metrics.
+  'heart_rate_panel',
   // 'manual_note', 'voice_note', 'unknown' — el detector NO emite los dos
   // primeros (manual/voice no salen de screenshot; unknown si). Permitimos
   // unknown porque es output legitimo del prompt cuando nada matchea.

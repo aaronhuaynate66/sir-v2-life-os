@@ -51,6 +51,9 @@ export const COMPRESSION_STRATEGIES = {
   // Panel de sueño: duración + minutos por fase + score en texto pequeño ->
   // mismo perfil que báscula para leer "5 h 55 min", "1 h 21 min", "75".
   sleep_panel: { maxWidth: 1280, quality: 0.9, minOutputKB: 150 },
+  // Panel de FC: valor de reposo + rango + p.p.m. en texto pequeño junto a un
+  // gráfico intradía -> mismo perfil que báscula/sueño para leer "45", "44-138".
+  heart_rate_panel: { maxWidth: 1280, quality: 0.9, minOutputKB: 150 },
   manual_note: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },
   voice_note: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },
   unknown: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },

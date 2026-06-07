@@ -13,7 +13,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, UserPlus, Users, X } from 'lucide-react'
+import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, Heart, UserPlus, Users, X } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -25,6 +25,7 @@ import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
 import type { DetectResult } from '@/lib/capture/detector/client'
 import { ScaleCaptureBranch } from '@/components/capture/scale/ScaleCaptureBranch'
 import { SleepCaptureBranch } from '@/components/capture/sleep/SleepCaptureBranch'
+import { HeartRateCaptureBranch } from '@/components/capture/hr/HeartRateCaptureBranch'
 import {
   HttpError,
   createPerson,
@@ -260,6 +261,9 @@ function CapturaIndexContent() {
   // El panel de sueño también: sub-flujo propio (sleep_records, sin persona).
   const isSleep = detection !== null && detection.detected.type === 'sleep_panel'
 
+  // El panel de FC también: sub-flujo propio (health_metrics, sin persona).
+  const isHr = detection !== null && detection.detected.type === 'heart_rate_panel'
+
   // Reset total para "otra captura" desde un branch self (báscula/sueño): vuelve al paso 1.
   const onResetSelf = useCallback(() => {
     setFile(null)
@@ -290,9 +294,11 @@ function CapturaIndexContent() {
           Subí un pantallazo de un chat de <span className="text-foreground">WhatsApp</span>, de un
           perfil de <span className="text-foreground">Instagram</span> /{' '}
           <span className="text-foreground">LinkedIn</span>, del panel de tu{' '}
-          <span className="text-foreground">báscula inteligente</span> o de tu{' '}
-          <span className="text-foreground">app de sueño</span>. SIR detecta el tipo, extrae los
-          datos y los asocia a una persona — o, si es báscula o sueño, los guarda como tus métricas.
+          <span className="text-foreground">báscula inteligente</span>, de tu{' '}
+          <span className="text-foreground">app de sueño</span> o de tu{' '}
+          <span className="text-foreground">frecuencia cardíaca</span>. SIR detecta el tipo, extrae
+          los datos y los asocia a una persona — o, si es báscula, sueño o frecuencia cardíaca, los
+          guarda como tus métricas.
         </p>
       </header>
 
@@ -589,14 +595,29 @@ function CapturaIndexContent() {
         </div>
       )}
 
-      {!canExtract && !isScale && !isSleep && detection && (
+      {/* FRECUENCIA CARDÍACA: sub-flujo propio (extrae FC → health_metrics, sin persona). */}
+      {isHr && detection && file && (
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Heart size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+            <h2 className="text-sm font-semibold tracking-tight">Panel de frecuencia cardíaca</h2>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
+              capa biológica · self
+            </span>
+          </div>
+          <HeartRateCaptureBranch file={file} onReset={onResetSelf} />
+        </div>
+      )}
+
+      {!canExtract && !isScale && !isSleep && !isHr && detection && (
         <Card className="shadow-none mb-6">
           <CardContent className="p-4 sm:p-6">
             <p className="text-xs text-muted-foreground">
               Esta imagen se detectó como{' '}
               <span className="font-mono">{detection.detected.type}</span>, que todavía no se puede
               extraer automáticamente. Probá con un pantallazo de un chat de WhatsApp, un perfil de
-              Instagram / LinkedIn, el panel de tu báscula inteligente o el panel de tu app de sueño.
+              Instagram / LinkedIn, el panel de tu báscula inteligente, el panel de tu app de sueño
+              o el panel de tu frecuencia cardíaca.
             </p>
           </CardContent>
         </Card>

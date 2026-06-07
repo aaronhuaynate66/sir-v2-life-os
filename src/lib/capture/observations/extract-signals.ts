@@ -66,8 +66,9 @@ export function signalsFromExtracted(
     }
     case 'scale':
     case 'sleep_panel':
-      // Báscula y panel de sueño no aportan señales de persona: miden al
-      // propio usuario. No hay nombre/handle/teléfono que matchear.
+    case 'heart_rate_panel':
+      // Báscula, panel de sueño y panel de FC no aportan señales de persona:
+      // miden al propio usuario. No hay nombre/handle/teléfono que matchear.
       break
     case 'manual_note':
     case 'voice_note':

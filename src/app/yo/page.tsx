@@ -211,6 +211,30 @@ function SelfContent() {
         <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
+              <Heart size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-foreground">Captura frecuencia cardíaca con foto</div>
+              <div className="text-xs text-muted-foreground leading-snug">
+                Subí el screenshot de tu app de salud (Huawei, Apple, Samsung Health…) y Claude
+                Vision extrae tu FC en reposo, el rango del día y el promedio. Tu FC en reposo pasa
+                a ser tu FC actual.
+              </div>
+            </div>
+          </div>
+          <Button size="sm" asChild className="flex-shrink-0">
+            <Link href="/captura/fc" className="inline-flex items-center gap-1.5">
+              + Subir foto
+              <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className={cn('mb-4', cardClass)}>
+        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
               <MessageSquare size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
             </div>
             <div className="min-w-0">

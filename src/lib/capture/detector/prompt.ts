@@ -14,7 +14,7 @@ Schema EXACTO de respuesta (debe parsear con JSON.parse() sin error —
 sin prosa, sin markdown fences):
 
 {
-  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "linkedin" | "scale" | "sleep_panel" | "unknown",
+  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "linkedin" | "scale" | "sleep_panel" | "heart_rate_panel" | "unknown",
   "confidence": "high" | "medium" | "low",
   "reasoning": "<<=80 chars: pista visual concreta que disparó la decisión>",
   "suggestedPersonName": "<nombre visible en el header si aplica, null si no>"
@@ -112,8 +112,23 @@ REGLAS DE CLASIFICACION:
    @handle, ni gauge de peso en kg. Es la capa biológica del PROPIO usuario, NO
    una persona de sus relaciones.
 
-7. unknown
-   Cualquier cosa que NO cumpla los signos visuales de los 6 anteriores.
+7. heart_rate_panel (PANEL DE FRECUENCIA CARDÍACA — app de salud)
+   Pantallazo de la vista "Frecuencia cardíaca" (normalmente "FC > Día") de una
+   app de salud (Huawei Health/Salud, Apple Health/Salud, Samsung Health,
+   Fitbit, Garmin Connect, etc.). Señales visuales DECISIVAS:
+   - Título tipo "Frecuencia cardíaca" / "Heart rate" / "Ritmo cardíaco" y a
+     veces una vista Día/Semana/Mes.
+   - Un GRÁFICO INTRADÍA de FC (línea o barras a lo largo del día) en p.p.m.
+   - Un valor de FC EN REPOSO destacado (ej. "En reposo 45 p.p.m.").
+   - Un RANGO del día (ej. "44-138 p.p.m." / "Mín 44 · Máx 138").
+   - Unidad "p.p.m." / "lpm" / "bpm" repetida.
+   REGLA CLAVE: si ves un gráfico de FC a lo largo del día + un valor en reposo
+   y/o un rango en p.p.m., es heart_rate_panel. NO hay bubbles, ni @handle, ni
+   gauge de peso en kg, ni gráfico de fases de sueño. Es la capa biológica del
+   PROPIO usuario, NO una persona de sus relaciones.
+
+8. unknown
+   Cualquier cosa que NO cumpla los signos visuales de los 7 anteriores.
    Ejemplos: pantallas de configuracion, otras apps de chat (Telegram,
    Signal, Threads), screenshots de codigo, fotos sin texto, etc.
 
@@ -129,9 +144,9 @@ REGLAS GENERALES:
 - suggestedPersonName: si ves un nombre claro en el header (whatsapp_chat,
   whatsapp_web [header del centro o panel derecho], whatsapp_info, linkedin)
   o @handle (instagram), copialo literal. Si no hay nombre visible, null.
-  Para type='scale' y type='sleep_panel' SIEMPRE null: miden al PROPIO
-  usuario, no a una persona de sus relaciones (aunque el header diga
-  "Usuario actual: X").
+  Para type='scale', type='sleep_panel' y type='heart_rate_panel' SIEMPRE
+  null: miden al PROPIO usuario, no a una persona de sus relaciones (aunque
+  el header diga "Usuario actual: X").
 - reasoning: 1 frase concreta, en español, mencionando la señal visual
   especifica (ej. "Bubbles verde/gris en columnas + header con nombre").
   NO uses jerga interna como "high confidence", "tipo whatsapp_chat".

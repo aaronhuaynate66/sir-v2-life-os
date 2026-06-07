@@ -57,6 +57,7 @@ const CAPTURE_LABEL: Record<CaptureType, string> = {
   linkedin: 'LinkedIn',
   scale: 'Báscula',
   sleep_panel: 'Sueño',
+  heart_rate_panel: 'FC',
   manual_note: 'Nota',
   voice_note: 'Nota de voz',
   unknown: 'Captura',

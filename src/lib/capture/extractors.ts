@@ -124,6 +124,11 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
       // (/api/capture/sleep) + persistencia a sleep_records. Mismo trato que
       // scale: null aquí, el caller lo rutea al flujo de sueño.
       return null
+    case 'heart_rate_panel':
+      // El panel de FC tampoco usa observations: tiene su propio endpoint
+      // (/api/capture/hr) + persistencia a health_metrics. Mismo trato que
+      // scale/sleep_panel: null aquí, el caller lo rutea al flujo de FC.
+      return null
     case 'manual_note':
     case 'voice_note':
     case 'unknown':

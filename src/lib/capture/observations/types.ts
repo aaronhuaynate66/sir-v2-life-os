@@ -32,6 +32,12 @@ export type CaptureType =
   // NO se materializa como observation. Va a `sleep_records` vía el flujo
   // client-side de /lib/capture/sleep. Tampoco está en el CHECK de 0010.
   | 'sleep_panel'
+  // 'heart_rate_panel' = captura de la vista "Frecuencia cardíaca > Día" de una
+  // app de salud (Huawei/Apple/Samsung Health…). Igual que 'scale'/'sleep_panel':
+  // data PROPIA (capa biológica, self), NO se materializa como observation. Va a
+  // `health_metrics` (heart_rate + heart_rate_min/max/avg) vía el flujo
+  // client-side de /lib/capture/hr. Tampoco está en el CHECK de 0010.
+  | 'heart_rate_panel'
   | 'unknown'
 
 /** Tipos de captura que SON una conversación real (no snapshot de perfil).
@@ -111,6 +117,10 @@ export function storageBucketFor(captureType: CaptureType): string | null {
     case 'sleep_panel':
       // El panel de sueño NO se archiva: persistSleepCapture sólo escribe la
       // noche normalizada en sleep_records (sin imagen). Sin bucket.
+      return null
+    case 'heart_rate_panel':
+      // El panel de FC NO se archiva: persistHeartRateCapture sólo escribe las
+      // métricas normalizadas en health_metrics (sin imagen). Sin bucket.
       return null
     case 'manual_note':
     case 'voice_note':
