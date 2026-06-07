@@ -470,6 +470,119 @@ export function memoriesFromLlmItems(
   return out
 }
 
+// ─── Supresión por firma (memorias privadas/excluidas) ──────────────
+//
+// PROBLEMA: marcar una memoria como privada (is_private, mig 0064) la saca de
+// la vista general y de la IA, pero la conversación FUENTE sigue conteniendo el
+// hecho. Sin esto, re-derivar la resucitaría con un PK nuevo (el reservado-por-
+// índice de los tombstones sólo protege el slot exacto, no el contenido).
+//
+// SOLUCIÓN: antes de insertar las memorias nuevas, las comparamos contra las
+// PRIVADAS existentes de la persona por una firma normalizada del contenido
+// (+tags). Equivalente = match normalizado exacto O solape de tokens (Jaccard)
+// por encima del umbral → se descarta la nueva. Tolerante a reformulaciones del
+// LLM ("le gusta el fútbol" ≈ "es fanático del fútbol") sin sobre-suprimir
+// hechos genuinamente distintos. PURO + determinístico.
+
+/** Stopwords ES (+ relleno frecuente) que no aportan a la firma de un hecho. */
+const SIGNATURE_STOPWORDS = new Set([
+  'que', 'con', 'por', 'para', 'una', 'unos', 'unas', 'los', 'las', 'del', 'sus',
+  'este', 'esta', 'esto', 'esa', 'ese', 'eso', 'como', 'pero', 'muy', 'mas',
+  'has', 'han', 'hay', 'fue', 'son', 'era', 'tiene', 'tienen', 'estan',
+  'sobre', 'entre', 'cuando', 'donde', 'porque', 'tambien', 'desde', 'hasta',
+  'su', 'se', 'al', 'es', 'un', 'no', 'si', 'me', 'mi', 'te', 'tu',
+])
+
+/** Normaliza texto para firma: minúsculas, sin acentos, sólo alfanumérico (con
+ *  ñ), espacios colapsados. Determinístico. */
+export function normalizeForSignature(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9ñ\s]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Conjunto de tokens significativos del CONTENIDO de una memoria, descartando
+ *  stopwords y tokens cortos. Base del solape Jaccard.
+ *
+ *  Sólo el contenido (el HECHO), no los tags: los tags son categorías derivadas
+ *  que el LLM puede no re-emitir igual entre corridas; incluirlos rompe el
+ *  solape de forma asimétrica (una privada con tag 'personal' vs su misma
+ *  reformulación sin tags). El hecho en prosa es la señal estable. */
+export function signatureTokens(content: string): Set<string> {
+  const text = normalizeForSignature(content ?? '')
+  const out = new Set<string>()
+  if (!text) return out
+  for (const tok of text.split(' ')) {
+    if (tok.length < 3) continue
+    if (SIGNATURE_STOPWORDS.has(tok)) continue
+    out.add(tok)
+  }
+  return out
+}
+
+/** Índice de supresión construido desde las memorias privadas de una persona. */
+export interface SuppressionIndex {
+  /** Contenidos normalizados exactos (match barato y seguro). */
+  exact: Set<string>
+  /** Sets de tokens por memoria privada (para el solape Jaccard). */
+  tokenSets: Set<string>[]
+}
+
+export function buildSuppressionIndex(items: { content: string }[]): SuppressionIndex {
+  const exact = new Set<string>()
+  const tokenSets: Set<string>[] = []
+  for (const it of items) {
+    const norm = normalizeForSignature(it.content ?? '')
+    if (norm) exact.add(norm)
+    const ts = signatureTokens(it.content ?? '')
+    if (ts.size > 0) tokenSets.push(ts)
+  }
+  return { exact, tokenSets }
+}
+
+/** Similitud de Jaccard entre dos conjuntos de tokens (0..1). */
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0
+  let inter = 0
+  for (const x of a) if (b.has(x)) inter += 1
+  return inter / (a.size + b.size - inter)
+}
+
+/** Umbral de solape para considerar dos memorias EQUIVALENTES. 0.6 atrapa
+ *  reformulaciones del LLM sin colapsar hechos distintos que comparten unas
+ *  pocas palabras. */
+export const SUPPRESSION_JACCARD_THRESHOLD = 0.6
+
+/** ¿La memoria candidata (por su contenido) es equivalente a alguna privada? */
+export function isEquivalentToSuppressed(content: string, index: SuppressionIndex): boolean {
+  if (index.exact.size === 0 && index.tokenSets.length === 0) return false
+  const norm = normalizeForSignature(content ?? '')
+  if (norm && index.exact.has(norm)) return true
+  const ts = signatureTokens(content ?? '')
+  if (ts.size === 0) return false
+  for (const other of index.tokenSets) {
+    if (jaccard(ts, other) >= SUPPRESSION_JACCARD_THRESHOLD) return true
+  }
+  return false
+}
+
+/** Filtra las memorias nuevas, descartando las equivalentes a una privada.
+ *  Devuelve {kept, suppressed}. PURO. */
+export function suppressEquivalentToPrivate(
+  memories: Memory[],
+  index: SuppressionIndex,
+): { kept: Memory[]; suppressed: number } {
+  if (index.exact.size === 0 && index.tokenSets.length === 0) {
+    return { kept: memories, suppressed: 0 }
+  }
+  const kept = memories.filter((m) => !isEquivalentToSuppressed(m.content, index))
+  return { kept, suppressed: memories.length - kept.length }
+}
+
 // ─── Row builder para INSERT ─────────────────────────────────────────
 //
 // NO escribe source_event_id (columna de 0012, ausente en prod). El PK

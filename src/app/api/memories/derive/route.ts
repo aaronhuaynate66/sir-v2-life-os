@@ -43,6 +43,8 @@ import {
   baseMemoriesFromObservations,
   memoriesFromLlmItems,
   derivedMemoryToRow,
+  buildSuppressionIndex,
+  suppressEquivalentToPrivate,
 } from '@/lib/memories/deriveFromObservations'
 import type { Observation } from '@/lib/capture/observations/types'
 import {
@@ -68,8 +70,11 @@ function errorJson(status: number, error: string, detail?: string): NextResponse
 }
 
 /** Memorias derivadas existentes de un conjunto de observaciones: índices
- *  RESERVADOS (descartes/tombstones is_obsolete=true) e ids VIVOS a reemplazar
- *  en un refresh. Sólo el namespace derivado (`mem_obs:`). */
+ *  RESERVADOS (no reusar el PK; tombstones is_obsolete=true Y privadas
+ *  is_private=true) e ids VIVOS a reemplazar en un refresh (NI obsoletas NI
+ *  privadas). Las PRIVADAS son reservadas-y-conservadas: no se borran en el
+ *  refresh y su índice no se reasigna, así sobreviven a la re-derivación.
+ *  Sólo el namespace derivado (`mem_obs:`). */
 interface ExistingDerived {
   reservedByObs: Map<string, Set<number>>
   liveIdsByObs: Map<string, string[]>
@@ -84,17 +89,25 @@ async function fetchExistingDerived(
   const liveIdsByObs = new Map<string, string[]>()
   if (observationIds.length === 0) return { reservedByObs, liveIdsByObs }
 
-  // is_obsolete es de la migración 0045 (puede no estar en prod). Si el filtro
-  // rompe, reintentamos sin la columna (todos cuentan como vivos: sin tombstones).
-  const build = (withObsolete: boolean) => {
-    const cols = withObsolete ? 'id, observation_id, is_obsolete' : 'id, observation_id'
-    return supabase.from('memories').select(cols).eq('user_id', userId).in('observation_id', observationIds)
+  // is_obsolete (0045) e is_private (0064) pueden no estar en prod. Si el
+  // SELECT de una columna rompe, reintentamos sin ella (degradación: sin esa
+  // marca, todos cuentan como vivos).
+  const build = (withObsolete: boolean, withPrivate: boolean) => {
+    const cols = ['id', 'observation_id']
+    if (withObsolete) cols.push('is_obsolete')
+    if (withPrivate) cols.push('is_private')
+    return supabase.from('memories').select(cols.join(', ')).eq('user_id', userId).in('observation_id', observationIds)
   }
-  let { data, error } = await build(true)
   let hasObsoleteCol = true
+  let hasPrivateCol = true
+  let { data, error } = await build(true, true)
+  if (error) {
+    hasPrivateCol = false
+    ;({ data, error } = await build(true, false))
+  }
   if (error) {
     hasObsoleteCol = false
-    ;({ data, error } = await build(false))
+    ;({ data, error } = await build(false, false))
   }
   if (error || !data) return { reservedByObs, liveIdsByObs }
 
@@ -105,7 +118,10 @@ async function fetchExistingDerived(
     const parsed = parseDerivedKey(id.slice(4))
     if (!parsed) continue
     const isObsolete = hasObsoleteCol && raw.is_obsolete === true
-    if (isObsolete) {
+    const isPrivate = hasPrivateCol && raw.is_private === true
+    if (isObsolete || isPrivate) {
+      // Reservada: NO reusar este índice (no resucitar el descarte ni pisar la
+      // privada). Las privadas además NO entran a liveIds → no se borran.
       const set = reservedByObs.get(obsId) ?? new Set<number>()
       set.add(parsed.index)
       reservedByObs.set(obsId, set)
@@ -116,6 +132,27 @@ async function fetchExistingDerived(
     }
   }
   return { reservedByObs, liveIdsByObs }
+}
+
+/** Memorias PRIVADAS de la persona (person-wide) para construir el índice de
+ *  supresión por firma: la re-derivación no debe recrear un equivalente a algo
+ *  que el usuario excluyó, venga de la conversación que venga. Pre-migration
+ *  -safe: si is_private (0064) no existe, devuelve [] (no hay privadas todavía). */
+async function fetchPrivateSuppressionItems(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  personId: string,
+): Promise<{ content: string }[]> {
+  const { data, error } = await supabase
+    .from('memories')
+    .select('content')
+    .eq('user_id', userId)
+    .eq('person_id', personId)
+    .eq('is_private', true)
+  if (error || !data) return []
+  return (data as unknown as Record<string, unknown>[])
+    .map((r) => ({ content: typeof r.content === 'string' ? r.content : '' }))
+    .filter((it) => it.content.length > 0)
 }
 
 export async function POST(req: NextRequest) {
@@ -211,18 +248,23 @@ export async function POST(req: NextRequest) {
     otherUncovered = selectUncoveredObservations(otherObs, covered)
   }
 
-  // Para el refresh de conversaciones: índices reservados (descartes a NO
-  // resucitar) + ids vivos a reemplazar.
+  // Para el refresh de conversaciones: índices reservados (descartes + privadas
+  // a NO resucitar/pisar) + ids vivos a reemplazar.
   const { reservedByObs, liveIdsByObs } = await fetchExistingDerived(
     supabase,
     userId,
     conversationObs.map((o) => o.id),
   )
 
+  // Índice de supresión por firma: hechos que el usuario marcó PRIVADOS (de
+  // cualquier observación de esta persona) NO deben recrearse al re-derivar.
+  const privateItems = await fetchPrivateSuppressionItems(supabase, userId, personId)
+  const suppressionIndex = buildSuppressionIndex(privateItems)
+
   const toProcess = [...conversationObs, ...otherUncovered]
   if (toProcess.length === 0) {
     return NextResponse.json(
-      { generated: 0, inserted: 0, skipped: 0, alreadyCovered, usedLlm: false, refreshed: 0 },
+      { generated: 0, inserted: 0, skipped: 0, alreadyCovered, usedLlm: false, refreshed: 0, suppressed: 0 },
       { status: 200 },
     )
   }
@@ -267,6 +309,12 @@ export async function POST(req: NextRequest) {
   if (memories.length === 0) {
     memories = baseMemoriesFromObservations(personName, toProcess)
   }
+
+  // Supresión por firma: descartar las nuevas equivalentes a una privada
+  // existente. CLAVE del requisito: una vez que el usuario excluye un hecho,
+  // re-derivar no lo resucita aunque la conversación fuente lo siga conteniendo.
+  const { kept, suppressed } = suppressEquivalentToPrivate(memories, suppressionIndex)
+  memories = kept
 
   const rows = memories.map((m) => derivedMemoryToRow(m, userId))
 
@@ -315,6 +363,8 @@ export async function POST(req: NextRequest) {
       alreadyCovered,
       usedLlm,
       refreshed,
+      // Nuevas equivalentes a una memoria PRIVADA, descartadas (no resucitadas).
+      suppressed,
     },
     { status: 200 },
   )

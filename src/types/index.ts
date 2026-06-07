@@ -483,6 +483,12 @@ export interface Memory {
   /** Id estable del RelationshipEvent que origino la memoria — usado para
    *  el dedupe del backfill (unique index parcial en migration 0012). */
   sourceEventId?: string
+  /** Marcada privada/excluida por el usuario (memories.is_private, mig 0064).
+   *  Se conserva pero queda FUERA de la vista general y de todo prompt de IA;
+   *  la re-derivación suprime equivalentes por firma. Default false/undefined.
+   *  getMemoriesForPerson filtra is_private=false → las lecturas de IA no la ven;
+   *  sólo getPrivateMemoriesForPerson la trae (con isPrivate=true). */
+  isPrivate?: boolean
 }
 
 export interface SelfMetric {

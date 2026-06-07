@@ -22,7 +22,7 @@ import {
   getObservationsForPerson,
 } from '@/lib/observations/fetch'
 import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
-import { getMemoriesForPerson } from '@/lib/memories/fetch'
+import { getMemoriesForPerson, getPrivateMemoriesForPerson } from '@/lib/memories/fetch'
 import { getLogsForPerson } from '@/lib/person-logs/fetch'
 import { getCurrentSynthesis } from '@/lib/person-synthesis/fetch'
 import { getProfileAxes } from '@/lib/person-axes/fetch'
@@ -87,11 +87,22 @@ export default async function RelacionPage({ params }: PageProps) {
   // Ambos helpers tienen .eq('is_obsolete', false) baked in — vale el
   // principio critico de Sesion 3.
   const personId = String(row.id)
-  const [lastChat, curatedObservations, memories, personLogs, correlationLogs, synthesis, profileAxes] =
+  const [
+    lastChat,
+    curatedObservations,
+    memories,
+    privateMemories,
+    personLogs,
+    correlationLogs,
+    synthesis,
+    profileAxes,
+  ] =
     await Promise.all([
       getLatestObservation(supabase, userId, personId, CONVERSATION_CAPTURE_TYPES),
       getObservationsForPerson(supabase, userId, personId, { limit: 50 }),
       getMemoriesForPerson(supabase, userId, personId, { limit: 100 }),
+      // Privadas/excluidas: aparte (no van a IA ni a la vista general).
+      getPrivateMemoriesForPerson(supabase, userId, personId, { limit: 100 }),
       getLogsForPerson(supabase, userId, personId, { limit: 50 }),
       // Set amplio (≈2 años) SOLO para la vista de correlación (Fase 3c).
       // Separado de `personLogs` (últimos 50) para no cambiar la semántica
@@ -114,6 +125,7 @@ export default async function RelacionPage({ params }: PageProps) {
       lastChat={lastChat}
       curatedObservations={curatedObservations}
       memories={memories}
+      privateMemories={privateMemories}
       personLogs={personLogs}
       correlationLogs={correlationLogs}
       synthesis={synthesis}

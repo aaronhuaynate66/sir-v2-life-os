@@ -21,9 +21,15 @@ import {
   baseMemoriesFromObservations,
   memoriesFromLlmItems,
   derivedMemoryToRow,
+  normalizeForSignature,
+  signatureTokens,
+  buildSuppressionIndex,
+  isEquivalentToSuppressed,
+  suppressEquivalentToPrivate,
   type DerivedMemoryItem,
 } from './deriveFromObservations'
 import { parseDeriveResponse } from './derivePrompt'
+import type { Memory } from '@/types'
 
 function obs(over: Partial<Observation> & { id: string; captureType?: CaptureType }): Observation {
   return {
@@ -263,5 +269,102 @@ describe('derivedMemoryToRow', () => {
     expect(row.occurred_at).toBe(m.timestamp)
     // source_event_id NO debe estar en el row (columna ausente en prod).
     expect('source_event_id' in row).toBe(false)
+  })
+})
+
+// ─── Supresión por firma (memorias privadas/excluidas, mig 0064) ────────
+
+function mem(over: Partial<Memory> & { id: string; content: string }): Memory {
+  return {
+    id: over.id,
+    type: over.type ?? 'episodic',
+    title: over.title ?? 'T',
+    content: over.content,
+    entities: [],
+    emotionalCharge: 0,
+    importance: 5,
+    timestamp: '2026-06-01T00:00:00Z',
+    lastAccessed: '2026-06-01T00:00:00Z',
+    decayRate: 0.05,
+    tags: over.tags ?? [],
+    relatedMemories: [],
+  }
+}
+
+describe('normalizeForSignature / signatureTokens', () => {
+  it('normaliza minúsculas, acentos y puntuación', () => {
+    expect(normalizeForSignature('  ¡Está EN Perú!, ¿sí?  ')).toBe('esta en peru si')
+  })
+
+  it('descarta stopwords y tokens cortos para los tokens de firma', () => {
+    const t = signatureTokens('Le gusta el fútbol con sus amigos')
+    expect(t.has('gusta')).toBe(true)
+    expect(t.has('futbol')).toBe(true)
+    expect(t.has('amigos')).toBe(true)
+    // stopwords / cortas fuera
+    expect(t.has('con')).toBe(false)
+    expect(t.has('el')).toBe(false)
+    expect(t.has('le')).toBe(false)
+  })
+})
+
+describe('isEquivalentToSuppressed', () => {
+  const index = buildSuppressionIndex([
+    { content: 'Está separándose de su esposa y atraviesa un divorcio difícil' },
+  ])
+
+  it('detecta el match normalizado exacto', () => {
+    expect(
+      isEquivalentToSuppressed('Esta separandose de su esposa y atraviesa un divorcio dificil', index),
+    ).toBe(true)
+  })
+
+  it('detecta una reformulación con alto solape de tokens', () => {
+    expect(
+      isEquivalentToSuppressed('Atraviesa un divorcio difícil; se está separando de su esposa', index),
+    ).toBe(true)
+  })
+
+  it('NO suprime un hecho genuinamente distinto de la misma persona', () => {
+    expect(isEquivalentToSuppressed('Trabaja como ingeniero en una minera', index)).toBe(false)
+  })
+
+  it('índice vacío no suprime nada', () => {
+    const empty = buildSuppressionIndex([])
+    expect(isEquivalentToSuppressed('cualquier cosa', empty)).toBe(false)
+  })
+})
+
+describe('suppressEquivalentToPrivate — re-derivar NO recrea una privada', () => {
+  it('descarta la nueva equivalente a una memoria privada existente, conserva el resto', () => {
+    // Memoria que el usuario marcó PRIVADA (hecho sensible).
+    const privateIndex = buildSuppressionIndex([
+      { content: 'Le diagnosticaron depresión y está en tratamiento' },
+    ])
+
+    // Lo que la re-derivación volvió a generar desde la MISMA conversación:
+    // el hecho sensible re-aparece (reformulado) + un hecho nuevo legítimo.
+    const regenerated: Memory[] = [
+      mem({
+        id: 'mem_obs:c1:0',
+        content: 'Está en tratamiento porque le diagnosticaron una depresión',
+        tags: ['personal'],
+      }),
+      mem({ id: 'mem_obs:c1:1', content: 'Cerró un trato comercial nuevo esta semana', tags: ['comercial'] }),
+    ]
+
+    const { kept, suppressed } = suppressEquivalentToPrivate(regenerated, privateIndex)
+    expect(suppressed).toBe(1)
+    expect(kept).toHaveLength(1)
+    expect(kept[0].content).toContain('trato comercial')
+    // El hecho sensible NO vuelve a la circulación.
+    expect(kept.some((m) => /depres/i.test(m.content))).toBe(false)
+  })
+
+  it('sin privadas, no suprime nada (camino normal intacto)', () => {
+    const regenerated = [mem({ id: 'm1', content: 'algo' }), mem({ id: 'm2', content: 'otra cosa' })]
+    const { kept, suppressed } = suppressEquivalentToPrivate(regenerated, buildSuppressionIndex([]))
+    expect(suppressed).toBe(0)
+    expect(kept).toHaveLength(2)
   })
 })

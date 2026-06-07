@@ -47,4 +47,27 @@ export async function discardMemory(
   return { ok: true }
 }
 
+/**
+ * PATCH /api/memories/{id} para MARCAR PRIVADA / EXCLUIR una memoria
+ * (is_private=true) o devolverla a la vista (is_private=false). A diferencia de
+ * descartar, la memoria se CONSERVA: queda fuera de la vista general y de toda
+ * IA, y la re-derivación no la resucita (supresión por firma). RLS asegura
+ * ownership.
+ */
+export async function setMemoryPrivate(
+  memoryId: string,
+  isPrivate: boolean,
+): Promise<{ ok: true }> {
+  const res = await fetch(`/api/memories/${encodeURIComponent(memoryId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_private: isPrivate }),
+  })
+  if (!res.ok) {
+    const body = await readErrorBody(res)
+    throw new MemoryHttpError(res.status, body.error, body.detail)
+  }
+  return { ok: true }
+}
+
 export { MemoryHttpError }

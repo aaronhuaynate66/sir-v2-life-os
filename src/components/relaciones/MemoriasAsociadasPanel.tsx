@@ -19,11 +19,14 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Sparkles, Loader2, Camera, ChevronDown, Wand2 } from 'lucide-react'
 
+import { Lock } from 'lucide-react'
+
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { DiscardMemoryButton } from '@/components/relaciones/DiscardMemoryButton'
+import { TogglePrivateMemoryButton } from '@/components/relaciones/TogglePrivateMemoryButton'
 import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
 import { useMounted } from '@/hooks/useMounted'
@@ -33,9 +36,12 @@ import type { Memory, MemoryType } from '@/types'
 const INITIAL_VISIBLE = 8
 
 export interface MemoriasAsociadasPanelProps {
-  /** Memorias ya fetched server-side via getMemoriesForPerson, ordenadas
-   *  por occurred_at DESC. */
+  /** Memorias VISIBLES (NI descartadas NI privadas) fetched server-side via
+   *  getMemoriesForPerson, ordenadas por occurred_at DESC. */
   memories: Memory[]
+  /** Memorias PRIVADAS/excluidas (getPrivateMemoriesForPerson). Se muestran
+   *  aparte, bajo un affordance, y NUNCA alimentan IA ni la vista general. */
+  privateMemories?: Memory[]
   /** id de la persona — necesario para el POST de backfill. */
   personId: string
   /** Cantidad de observations curadas (capturas/notas) de la persona.
@@ -57,6 +63,9 @@ interface DeriveSuccess {
   usedLlm: boolean
   /** Memorias de conversación reemplazadas por la re-derivación mejorada. */
   refreshed?: number
+  /** Memorias nuevas descartadas por ser equivalentes a una privada existente
+   *  (no se resucitó nada que el usuario excluyó). */
+  suppressed?: number
 }
 
 const TYPE_LABEL: Record<Memory['type'], string> = {
@@ -84,6 +93,7 @@ const TYPE_BADGE_VARIANT: Record<
 
 export function MemoriasAsociadasPanel({
   memories,
+  privateMemories = [],
   personId,
   derivableCount,
 }: MemoriasAsociadasPanelProps) {
@@ -102,6 +112,8 @@ export function MemoriasAsociadasPanel({
   // arriba (Vida profesional/social, Lo personal); las tarjetas crudas no van
   // "en la cara" — se abren bajo demanda.
   const [listOpen, setListOpen] = useState(false)
+  // Affordance de privadas/excluidas: colapsado por defecto.
+  const [privateOpen, setPrivateOpen] = useState(false)
 
   // Conteo por tipo presente (para los chips de filtro).
   const typeCounts = useMemo(() => {
@@ -245,7 +257,9 @@ export function MemoriasAsociadasPanel({
             </span>{' '}
             <span className="text-muted-foreground font-mono">
               inserted={deriveResult.inserted} · reemplazadas={deriveResult.refreshed ?? 0} · ya-cubiertas=
-              {deriveResult.alreadyCovered} · {deriveResult.usedLlm ? 'IA' : 'base'}
+              {deriveResult.alreadyCovered}
+              {(deriveResult.suppressed ?? 0) > 0 ? ` · privadas-omitidas=${deriveResult.suppressed}` : ''} ·{' '}
+              {deriveResult.usedLlm ? 'IA' : 'base'}
             </span>
           </div>
         )}
@@ -346,6 +360,44 @@ export function MemoriasAsociadasPanel({
             </Button>
           </>
         )}
+
+        {/* Privadas/excluidas: aparte, bajo un affordance discreto. NUNCA
+            alimentan IA ni la vista general; re-derivar no las resucita. */}
+        {privateMemories.length > 0 && (
+          <div className="mt-3 border-t border-border/50 pt-3">
+            {!privateOpen ? (
+              <button
+                type="button"
+                onClick={() => setPrivateOpen(true)}
+                className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1.5 text-left transition-colors hover:text-foreground"
+              >
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Lock size={12} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+                  {privateMemories.length} memoria{privateMemories.length === 1 ? '' : 's'} privada
+                  {privateMemories.length === 1 ? '' : 's'} (fuera de la IA y de la vista general)
+                </span>
+                <ChevronDown size={13} strokeWidth={1.75} className="shrink-0 text-muted-foreground/70" aria-hidden="true" />
+              </button>
+            ) : (
+              <>
+                <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
+                  <Lock size={12} strokeWidth={1.75} aria-hidden="true" />
+                  Privadas / excluidas
+                </div>
+                <PrivateMemoryList memories={privateMemories} />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setPrivateOpen(false)}
+                  className="mt-2 w-full text-muted-foreground"
+                >
+                  <ChevronDown size={13} strokeWidth={1.75} className="mr-1.5 rotate-180" />
+                  Ocultar privadas
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -421,6 +473,7 @@ function MemoryList({ memories }: { memories: Memory[] }) {
               <span className="text-[10px] text-muted-foreground/70 font-mono">
                 {mounted ? formatRelative(m.timestamp) : ''}
               </span>
+              <TogglePrivateMemoryButton memoryId={m.id} isPrivate={false} preview={m.content} />
               <DiscardMemoryButton memoryId={m.id} preview={m.content} />
             </div>
           </div>
@@ -434,6 +487,36 @@ function MemoryList({ memories }: { memories: Memory[] }) {
               ))}
             </div>
           )}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** Lista de memorias PRIVADAS/excluidas: mismo formato pero atenuado, con la
+ *  acción de reincorporar. No alimentan IA ni la vista general. */
+function PrivateMemoryList({ memories }: { memories: Memory[] }) {
+  const mounted = useMounted()
+  return (
+    <ul className="space-y-2.5">
+      {memories.map((m) => (
+        <li
+          key={m.id}
+          className="rounded-md border border-border/40 bg-muted/5 p-3 space-y-1.5 opacity-80"
+        >
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <Badge variant="outline" className="text-[10px] font-mono uppercase tracking-wider">
+              <Lock size={9} strokeWidth={2} className="mr-1" aria-hidden="true" />
+              {TYPE_LABEL[m.type] ?? m.type}
+            </Badge>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-muted-foreground/70 font-mono">
+                {mounted ? formatRelative(m.timestamp) : ''}
+              </span>
+              <TogglePrivateMemoryButton memoryId={m.id} isPrivate preview={m.content} />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">{m.content}</p>
         </li>
       ))}
     </ul>

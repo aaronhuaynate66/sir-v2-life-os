@@ -95,9 +95,13 @@ interface PersonDetailProps {
    *  ordenadas por observed_at DESC. PR-A solo usa la longitud + breakdown
    *  para validar el filtro; PR-B+ consume el contenido. */
   curatedObservations?: Observation[]
-  /** Memorias materializadas en tabla `memories` (PR-B Sesion 4 backend).
-   *  Server-fetched, ordenadas por occurred_at DESC. */
+  /** Memorias VISIBLES (NI descartadas NI privadas) materializadas en `memories`.
+   *  Server-fetched, ordenadas por occurred_at DESC. Únicas que alimentan IA y
+   *  "Antes de contactar". */
   memories?: Memory[]
+  /** Memorias PRIVADAS/excluidas de la persona (server-fetched aparte). Sólo se
+   *  muestran bajo el affordance de MemoriasAsociadasPanel; nunca a IA. */
+  privateMemories?: Memory[]
   /** Logs de la persona (mood/energy/sleep/pain/interaction). Sesion 6.
    *  Server-fetched, ordenados por logged_at DESC. */
   personLogs?: PersonLog[]
@@ -182,6 +186,7 @@ export function PersonDetail({
   lastChat = null,
   curatedObservations = [],
   memories = [],
+  privateMemories = [],
   personLogs = [],
   correlationLogs = [],
   synthesis = null,
@@ -666,6 +671,7 @@ export function PersonDetail({
           backfill idempotente desde relationships.history. */}
       <MemoriasAsociadasPanel
         memories={memories}
+        privateMemories={privateMemories}
         personId={live.id}
         derivableCount={
           curatedObservations.filter((o) =>
