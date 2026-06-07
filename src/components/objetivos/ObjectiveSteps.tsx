@@ -50,6 +50,8 @@ import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import {
   keyResultsForObjective,
   tasksForKeyResult,
+  stepsForObjective,
+  buildPlanSteps,
   computeObjectiveProgress,
   computeKeyResultProgress,
   normalizeOrders,
@@ -369,37 +371,26 @@ export function ObjectiveSteps({
   function discardPlan() {
     setPlan({ loading: false, proposed: null, feasibility: [], error: null })
   }
-  function acceptPlan() {
+  /**
+   * Materializa el plan propuesto en ObjectiveSteps y lo aplica al store.
+   *   - 'append'  : suma sobre el plan actual (los KRs nuevos van detrás).
+   *   - 'replace' : borra TODOS los pasos del objetivo (KRs + tareas) y deja sólo
+   *                 los nuevos. El borrado es el mismo mecanismo que "Borrar KR"
+   *                 (removeStep → el sync engine propaga el delete a DB por diff).
+   */
+  function commitPlan(mode: 'append' | 'replace') {
     if (!plan.proposed || plan.proposed.length === 0) return
-    const base = keyResults.length
-    const toAdd: ObjectiveStep[] = []
-    plan.proposed.forEach((krp, i) => {
-      if (!krp.title.trim()) return
-      const krStep = makeStep({
-        title: krp.title,
-        kind: 'key_result',
-        order: base + i,
-        description: krp.description,
-        salt: i,
-      })
-      toAdd.push(krStep)
-      krp.tasks.forEach((tp, j) => {
-        if (!tp.title.trim()) return
-        toAdd.push(
-          makeStep({
-            title: tp.title,
-            kind: 'task',
-            parentId: krStep.id,
-            order: j,
-            targetDate: tp.targetDate,
-            description: tp.description,
-            acceptanceCriteria: tp.acceptanceCriteria,
-            effort: tp.effort,
-            priority: tp.priority,
-            salt: i * 100 + j,
-          }),
-        )
-      })
+    // ids/timestamp inyectados al builder puro (mismo formato que makeStep).
+    const stamp = Date.now()
+    const createdAt = new Date(stamp).toISOString()
+    const baseOrder = mode === 'append' ? keyResults.length : 0
+    const toAdd = buildPlanSteps({
+      proposed: plan.proposed,
+      objectiveId: goal.id,
+      baseOrder,
+      createdAt,
+      makeId: (i, j) =>
+        j === null ? `os_${stamp}_k_${baseOrder + i}_${i}` : `os_${stamp}_t_${j}_${i * 100 + j}`,
     })
     if (toAdd.length === 0) {
       toast.error('Plan vacío', { description: 'Ningún resultado clave tenía título.' })
@@ -407,10 +398,17 @@ export function ObjectiveSteps({
     }
     const krCount = toAdd.filter((s) => s.kind === 'key_result').length
     const taskCount = toAdd.length - krCount
+    if (mode === 'replace') {
+      // Limpiamos sólo los pasos de ESTE objetivo (KRs y sus tareas hijas).
+      stepsForObjective(allSteps, goal.id).forEach((s) => removeStep(s.id))
+    }
     addSteps(toAdd)
     discardPlan()
-    toast.success('Plan agregado', {
-      description: `${krCount} resultados clave y ${taskCount} tareas sumadas.`,
+    toast.success(mode === 'replace' ? 'Plan reemplazado' : 'Plan agregado', {
+      description:
+        mode === 'replace'
+          ? `${krCount} resultados clave y ${taskCount} tareas (reemplazaron el plan anterior).`
+          : `${krCount} resultados clave y ${taskCount} tareas sumadas.`,
     })
   }
 
@@ -491,11 +489,13 @@ export function ObjectiveSteps({
           <PlanReview
             proposed={plan.proposed}
             feasibility={plan.feasibility}
+            hasExistingPlan={keyResults.length > 0}
             onChangeKr={updateProposedKr}
             onRemoveKr={removeProposedKr}
             onChangeTask={updateProposedTask}
             onRemoveTask={removeProposedTask}
-            onAccept={acceptPlan}
+            onReplace={() => commitPlan('replace')}
+            onAppend={() => commitPlan('append')}
             onDiscard={discardPlan}
           />
         ) : smartComplete ? (
@@ -1000,22 +1000,32 @@ function TaskEditor({
 function PlanReview({
   proposed,
   feasibility,
+  hasExistingPlan,
   onChangeKr,
   onRemoveKr,
   onChangeTask,
   onRemoveTask,
-  onAccept,
+  onReplace,
+  onAppend,
   onDiscard,
 }: {
   proposed: ProposedKeyResult[]
   feasibility: string[]
+  /** ¿El objetivo YA tiene un plan no vacío? Gatea la confirmación reemplazar/sumar. */
+  hasExistingPlan: boolean
   onChangeKr: (i: number, patch: Partial<Omit<ProposedKeyResult, 'tasks'>>) => void
   onRemoveKr: (i: number) => void
   onChangeTask: (i: number, j: number, patch: Partial<ProposedTask>) => void
   onRemoveTask: (i: number, j: number) => void
-  onAccept: () => void
+  /** Reemplazar el plan actual por el propuesto (borra KRs/tareas existentes). */
+  onReplace: () => void
+  /** Sumar el plan propuesto al actual (comportamiento histórico). */
+  onAppend: () => void
   onDiscard: () => void
 }) {
+  // Cuando hay plan previo, "Aceptar" abre una confirmación con dos caminos
+  // (reemplazar vs sumar) en vez de aplicar de una. Sin plan previo, se suma directo.
+  const [confirming, setConfirming] = useState(false)
   const krCount = proposed.filter((kr) => kr.title.trim()).length
   const taskCount = proposed.reduce((n, kr) => n + kr.tasks.filter((t) => t.title.trim()).length, 0)
 
@@ -1134,17 +1144,40 @@ function PlanReview({
         </div>
       )}
 
-      <div className="flex gap-2 pt-1">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onAccept}
-          className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground"
-        >
-          Aceptar plan ({krCount} KR · {taskCount} tareas)
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onDiscard}>Descartar</Button>
-      </div>
+      {confirming && hasExistingPlan ? (
+        <div className="rounded-md border border-warn/30 bg-warn-soft p-2.5 space-y-2">
+          <p className="text-[12px] text-foreground/90 leading-snug">
+            Este objetivo ya tiene un plan. ¿Querés <strong>reemplazarlo</strong> por el nuevo o{' '}
+            <strong>sumar</strong> los nuevos a los actuales?
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onReplace}
+              className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground"
+            >
+              Reemplazar plan actual ({krCount} KR · {taskCount} tareas)
+            </Button>
+            <Button size="sm" variant="outline" onClick={onAppend}>
+              Agregar al plan actual (+{krCount} KR · +{taskCount} tareas)
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>Cancelar</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2 pt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => (hasExistingPlan ? setConfirming(true) : onAppend())}
+            className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground"
+          >
+            Aceptar plan ({krCount} KR · {taskCount} tareas)
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onDiscard}>Descartar</Button>
+        </div>
+      )}
     </div>
   )
 }

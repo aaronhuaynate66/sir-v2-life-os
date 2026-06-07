@@ -15,6 +15,7 @@
 // IA — quedan en orden determinístico).
 
 import type { ObjectiveStep, ObjectiveStepStatus, TaskStatus } from '@/types'
+import type { ProposedKeyResult } from '@/lib/objectives/planPrompt'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 
 /** ¿Es un Resultado Clave? (KR explícito o data pre-0041 sin `kind`). */
@@ -276,6 +277,74 @@ export function blockedByIncomplete(
 export function isStepBlocked(step: ObjectiveStep, allSteps: ObjectiveStep[]): boolean {
   if (effectiveTaskStatus(step) === 'blocked') return true
   return blockedByIncomplete(step, allSteps).length > 0
+}
+
+// ─── Aceptar un plan generado por IA: builder puro (KRs + tareas) ──────
+//
+// El "Aceptar plan" de /objetivos materializa el plan propuesto (ProposedKeyResult[])
+// en ObjectiveSteps planos. Vive acá (no en el componente) para testear el
+// REEMPLAZO vs el AGREGADO sin React: la diferencia es sólo el `baseOrder` de los
+// KRs (0 al reemplazar; cantidad de KRs existentes al agregar). La generación de
+// id y el timestamp se inyectan para que el builder sea determinístico.
+
+export interface BuildPlanStepsOptions {
+  /** Plan propuesto por el LLM (ya editado por el usuario en la review). */
+  proposed: ProposedKeyResult[]
+  /** Goal.id al que cuelgan todos los nodos. */
+  objectiveId: string
+  /** Orden del primer KR: 0 al reemplazar, keyResults.length al agregar. */
+  baseOrder: number
+  /** id único de un nodo: (índice de KR, índice de tarea | null para el KR). */
+  makeId: (krIndex: number, taskIndex: number | null) => string
+  /** Timestamp ISO de creación (mismo para todos los nodos del lote). */
+  createdAt: string
+}
+
+/**
+ * Construye la lista plana de ObjectiveSteps (KRs seguidos de sus tareas) a partir
+ * de un plan propuesto. PURO y determinístico (id/timestamp inyectados). Descarta
+ * KRs y tareas sin título. Los KRs toman `order = baseOrder + i`; las tareas, su
+ * índice dentro del KR. Los campos "Jira-light" (acceptanceCriteria/effort/
+ * priority/taskStatus) sólo se setean en tareas — réplica fiel del `makeStep` de
+ * la UI, para que aceptar/reemplazar quede cubierto por tests.
+ */
+export function buildPlanSteps(opts: BuildPlanStepsOptions): ObjectiveStep[] {
+  const { proposed, objectiveId, baseOrder, makeId, createdAt } = opts
+  const out: ObjectiveStep[] = []
+  proposed.forEach((krp, i) => {
+    if (!krp.title.trim()) return
+    const krId = makeId(i, null)
+    out.push({
+      id: krId,
+      objectiveId,
+      kind: 'key_result',
+      title: krp.title.trim(),
+      description: krp.description?.trim() || undefined,
+      status: 'pendiente',
+      order: baseOrder + i,
+      createdAt,
+    })
+    krp.tasks.forEach((tp, j) => {
+      if (!tp.title.trim()) return
+      out.push({
+        id: makeId(i, j),
+        objectiveId,
+        kind: 'task',
+        parentId: krId,
+        title: tp.title.trim(),
+        description: tp.description?.trim() || undefined,
+        targetDate: tp.targetDate || undefined,
+        status: 'pendiente',
+        order: j,
+        createdAt,
+        acceptanceCriteria: tp.acceptanceCriteria?.trim() || undefined,
+        effort: tp.effort,
+        priority: tp.priority,
+        taskStatus: 'todo',
+      })
+    })
+  })
+  return out
 }
 
 /**

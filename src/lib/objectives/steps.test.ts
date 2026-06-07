@@ -25,7 +25,9 @@ import {
   blockedByIncomplete,
   isStepBlocked,
   wouldCreateDependencyCycle,
+  buildPlanSteps,
 } from './steps'
+import type { ProposedKeyResult } from './planPrompt'
 
 function step(over: Partial<ObjectiveStep>): ObjectiveStep {
   return {
@@ -439,5 +441,85 @@ describe('wouldCreateDependencyCycle', () => {
   it('dep limpia (sin ciclo) → false', () => {
     const steps = [task({ id: 't' }), task({ id: 'a' })]
     expect(wouldCreateDependencyCycle(steps, 't', 'a')).toBe(false)
+  })
+})
+
+describe('buildPlanSteps', () => {
+  const proposed: ProposedKeyResult[] = [
+    {
+      title: 'Visa y viaje',
+      description: 'Documentación lista',
+      tasks: [
+        {
+          title: 'Tramitar la eVisa',
+          targetDate: '2026-07-01',
+          acceptanceCriteria: 'eVisa aprobada',
+          effort: 'M',
+          priority: 'high',
+        },
+        { title: 'Comprar pasaje', effort: 'S', priority: 'high' },
+      ],
+    },
+    { title: 'Inscripción', tasks: [{ title: 'Pagar fee' }] },
+  ]
+  // makeId determinístico (réplica del de la UI con un stamp fijo).
+  const makeId = (i: number, j: number | null) =>
+    j === null ? `k_${i}` : `t_${i}_${j}`
+  const opts = { proposed, objectiveId: 'g1', createdAt: '2026-06-06T00:00:00Z', makeId }
+
+  it('arma KRs seguidos de sus tareas, con campos Jira-light sólo en tareas', () => {
+    const out = buildPlanSteps({ ...opts, baseOrder: 0 })
+    // 2 KRs + 3 tareas
+    expect(out.filter((s) => s.kind === 'key_result')).toHaveLength(2)
+    expect(out.filter((s) => s.kind === 'task')).toHaveLength(3)
+
+    const kr0 = out.find((s) => s.id === 'k_0')!
+    expect(kr0).toMatchObject({ kind: 'key_result', order: 0, status: 'pendiente', objectiveId: 'g1' })
+    expect(kr0.parentId).toBeUndefined()
+    // KR no lleva campos de tarea.
+    expect(kr0.acceptanceCriteria).toBeUndefined()
+    expect(kr0.effort).toBeUndefined()
+    expect(kr0.taskStatus).toBeUndefined()
+
+    const t00 = out.find((s) => s.id === 't_0_0')!
+    expect(t00).toMatchObject({
+      kind: 'task',
+      parentId: 'k_0',
+      order: 0,
+      targetDate: '2026-07-01',
+      acceptanceCriteria: 'eVisa aprobada',
+      effort: 'M',
+      priority: 'high',
+      taskStatus: 'todo',
+    })
+  })
+
+  it('baseOrder=0 (reemplazar) numera los KRs desde 0', () => {
+    const out = buildPlanSteps({ ...opts, baseOrder: 0 })
+    const krOrders = out.filter((s) => s.kind === 'key_result').map((s) => s.order)
+    expect(krOrders).toEqual([0, 1])
+  })
+
+  it('baseOrder=N (agregar) desplaza los KRs detrás de los existentes', () => {
+    const out = buildPlanSteps({ ...opts, baseOrder: 4 })
+    const krOrders = out.filter((s) => s.kind === 'key_result').map((s) => s.order)
+    expect(krOrders).toEqual([4, 5])
+    // las tareas conservan su orden local dentro del KR (no se desplazan).
+    expect(out.find((s) => s.id === 't_0_1')!.order).toBe(1)
+  })
+
+  it('descarta KRs y tareas sin título', () => {
+    const noisy: ProposedKeyResult[] = [
+      { title: '   ', tasks: [{ title: 'x' }] }, // KR sin título → se ignora con sus tareas
+      { title: 'OK', tasks: [{ title: '  ' }, { title: 'Tarea real' }] },
+    ]
+    const out = buildPlanSteps({ ...opts, proposed: noisy, baseOrder: 0 })
+    expect(out.filter((s) => s.kind === 'key_result')).toHaveLength(1)
+    expect(out.filter((s) => s.kind === 'task')).toHaveLength(1)
+    expect(out.find((s) => s.kind === 'task')!.title).toBe('Tarea real')
+  })
+
+  it('plan totalmente vacío → []', () => {
+    expect(buildPlanSteps({ ...opts, proposed: [], baseOrder: 0 })).toEqual([])
   })
 })
