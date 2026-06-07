@@ -6,10 +6,32 @@
 
 import { describe, it, expect } from 'vitest'
 
-import type { Goal, Person, Relationship } from '@/types'
-import { computeGoalAlignment, computeAlignments } from './index'
+import type { Goal, Memory, Person, Relationship } from '@/types'
+import {
+  computeGoalAlignment,
+  computeAlignments,
+  goalKeywords,
+  matchMemoryTags,
+} from './index'
 
 const NOW = new Date('2026-06-01T12:00:00.000Z')
+
+function memory(o: Partial<Memory> & { id: string }): Memory {
+  return {
+    type: 'episodic',
+    title: o.id,
+    content: '',
+    entities: [],
+    emotionalCharge: 0,
+    importance: 5,
+    timestamp: '2026-05-30T00:00:00.000Z',
+    lastAccessed: '2026-05-30T00:00:00.000Z',
+    decayRate: 0.05,
+    tags: [],
+    relatedMemories: [],
+    ...o,
+  }
+}
 
 function person(o: Partial<Person> & { id: string }): Person {
   return {
@@ -41,7 +63,12 @@ function goal(o: Partial<Goal> & { id: string }): Goal {
   }
 }
 
-const ctx = (people: Person[], relationships: Relationship[] = []) => ({ people, relationships, now: NOW })
+const ctx = (people: Person[], relationships: Relationship[] = [], memories: Memory[] = []) => ({
+  people,
+  relationships,
+  memories,
+  now: NOW,
+})
 
 describe('computeGoalAlignment — estados', () => {
   it('ALINEADO: contacto reciente + relación activa + vínculo energizante', () => {
@@ -130,5 +157,132 @@ describe('computeAlignments — múltiples objetivos', () => {
 
   it('sin objetivos activos → []', () => {
     expect(computeAlignments([goal({ id: 'g', status: 'completed' })], ctx([]))).toEqual([])
+  })
+})
+
+// ─── Señales TAGGED (cruce objetivo ↔ memorias derivadas) ───────────────
+
+describe('goalKeywords', () => {
+  it('extrae palabras clave del texto, normaliza acentos y descarta stopwords', () => {
+    const g = goal({ id: 'g', title: 'Cerrar Boticas Jhodaal', description: 'avanzar con Openmed' })
+    const kw = goalKeywords(g)
+    expect(kw.has('jhodaal')).toBe(true)
+    expect(kw.has('boticas')).toBe(true)
+    expect(kw.has('openmed')).toBe(true)
+    expect(kw.has('cerrar')).toBe(false) // stopword (verbo de acción)
+    expect(kw.has('con')).toBe(false) // < 4 chars
+  })
+})
+
+describe('matchMemoryTags', () => {
+  // Contrato: los sets de keywords/categoryTags llegan YA normalizados (sin
+  // acentos ni guiones), igual que los produce goalKeywords y el engine.
+  const kw = new Set(['jhodaal', 'openmed'])
+  const cat = new Set(['comercial', 'proximopaso'])
+
+  it('matchea por tag canónico del rubro y por palabra clave (conserva el tag original)', () => {
+    const matched = matchMemoryTags(['comercial', 'próximo_paso', 'jhodaal', 'random'], kw, cat)
+    expect(matched).toEqual(['comercial', 'próximo_paso', 'jhodaal'])
+  })
+
+  it('excluye las marcas de recencia (histórico/obsoleto)', () => {
+    expect(matchMemoryTags(['comercial', 'histórico', 'obsoleto'], kw, cat)).toEqual(['comercial'])
+  })
+
+  it('sin cruce → []', () => {
+    expect(matchMemoryTags(['personal', 'familia'], kw, cat)).toEqual([])
+  })
+})
+
+describe('computeGoalAlignment — señales tagged (goal_activity)', () => {
+  const dayana = (over: Partial<Person> = {}) =>
+    person({ id: 'dayana', name: 'Dayana', relationship: 'friend', ...over })
+  const jhodaalGoal = (over: Partial<Goal> = {}) =>
+    goal({
+      id: 'jhodaal',
+      title: 'Cerrar Boticas Jhodaal',
+      category: 'financial',
+      relatedPersons: ['dayana'],
+      ...over,
+    })
+
+  it('memoria reciente con tag comercial → cita la actividad como señal (concern 0) + evidencia', () => {
+    const m = memory({
+      id: 'm1',
+      personId: 'dayana',
+      tags: ['comercial', 'jhodaal'],
+      content: 'Mencionó que necesita la cotización de Openmed esta semana.',
+      timestamp: '2026-05-28T00:00:00.000Z', // 4 días
+    })
+    const a = computeGoalAlignment(jhodaalGoal(), ctx([dayana()], [], [m]))
+    const act = a.signals.find((s) => s.kind === 'goal_activity')
+    expect(act).toBeDefined()
+    expect(act?.concern).toBe(0)
+    expect(act?.label).toContain('Dayana')
+    expect(act?.label).toContain('comercial')
+    expect(act?.detail).toContain('cotización')
+    // Sin señales relacionales preocupantes → la actividad acompaña → aligned.
+    expect(a.state).toBe('aligned')
+  })
+
+  it('objetivo financiero SIN actividad reciente ni señal relacional → no_recent_signal', () => {
+    const a = computeGoalAlignment(jhodaalGoal(), ctx([dayana()], [], []))
+    expect(a.state).toBe('no_recent_signal')
+    expect(a.signals).toEqual([])
+    expect(a.summary).toContain('Sin señales recientes')
+    expect(a.summary).toContain('Dayana')
+  })
+
+  it('tags relevantes pero VIEJOS → no_recent_signal con summary de "quedó viejo"', () => {
+    const old = memory({
+      id: 'mold',
+      personId: 'dayana',
+      tags: ['comercial', 'jhodaal'],
+      content: 'Hablaron del deal el año pasado.',
+      timestamp: '2026-01-01T00:00:00.000Z', // > 45 días
+    })
+    const a = computeGoalAlignment(jhodaalGoal(), ctx([dayana()], [], [old]))
+    expect(a.state).toBe('no_recent_signal')
+    expect(a.summary).toContain('quedó viejo')
+  })
+
+  it('memoria marcada como obsoleta NO cuenta como actividad reciente', () => {
+    const obsolete = memory({
+      id: 'mobs',
+      personId: 'dayana',
+      tags: ['comercial', 'obsoleto'],
+      content: 'Rol viejo, ya no aplica.',
+      timestamp: '2026-05-30T00:00:00.000Z', // reciente pero obsoleta
+    })
+    const a = computeGoalAlignment(jhodaalGoal(), ctx([dayana()], [], [obsolete]))
+    expect(a.signals.some((s) => s.kind === 'goal_activity')).toBe(false)
+    expect(a.state).toBe('no_recent_signal')
+  })
+
+  it('objetivo RELACIONAL sin actividad ni contacto → sigue insufficient_data (no no_recent_signal)', () => {
+    const g = goal({ id: 'g', title: 'Ser mejor pareja', category: 'relational', relatedPersons: ['dayana'] })
+    const a = computeGoalAlignment(g, ctx([dayana()], [], []))
+    expect(a.state).toBe('insufficient_data')
+  })
+
+  it('actividad tagged convive con señal relacional preocupante (peor señal manda)', () => {
+    const m = memory({ id: 'm', personId: 'dayana', tags: ['comercial'], content: 'avance', timestamp: '2026-05-30T00:00:00.000Z' })
+    const p = dayana({ lastContact: '2026-04-15' }) // > 30d → concern 2
+    const a = computeGoalAlignment(jhodaalGoal(), ctx([p], [], [m]))
+    expect(a.signals.some((s) => s.kind === 'goal_activity' && s.concern === 0)).toBe(true)
+    expect(a.signals.some((s) => s.kind === 'contact_recency' && s.concern === 2)).toBe(true)
+    expect(a.state).toBe('needs_attention')
+  })
+
+  it('matchea memoria por entities[] cuando personId no está seteado', () => {
+    const m = memory({ id: 'm', entities: ['dayana'], tags: ['comercial'], content: 'x', timestamp: '2026-05-30T00:00:00.000Z' })
+    const a = computeGoalAlignment(jhodaalGoal(), ctx([dayana()], [], [m]))
+    expect(a.signals.some((s) => s.kind === 'goal_activity')).toBe(true)
+  })
+
+  it('memoria de OTRA persona no contamina el objetivo', () => {
+    const m = memory({ id: 'm', personId: 'otra', tags: ['comercial', 'jhodaal'], content: 'x', timestamp: '2026-05-30T00:00:00.000Z' })
+    const a = computeGoalAlignment(jhodaalGoal(), ctx([dayana()], [], [m]))
+    expect(a.state).toBe('no_recent_signal')
   })
 })

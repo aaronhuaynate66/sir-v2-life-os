@@ -36,8 +36,12 @@ const VALID_STATES: readonly AlignmentState[] = [
   'aligned',
   'drifting',
   'needs_attention',
+  'no_recent_signal',
   'insufficient_data',
 ]
+
+/** Estados sin señales reformulables: no llamamos al LLM (no inventamos brecha). */
+const NO_NARRATIVE_STATES: readonly AlignmentState[] = ['insufficient_data', 'no_recent_signal']
 
 interface ErrorBody {
   error: string
@@ -48,9 +52,11 @@ function errorJson(status: number, error: string, detail?: string): NextResponse
   return NextResponse.json({ error, detail }, { status })
 }
 
-function sanitizeSignals(raw: unknown): Array<{ label: string; concern: ConcernLevel }> {
+const MAX_DETAIL_CHARS = 280
+
+function sanitizeSignals(raw: unknown): Array<{ label: string; concern: ConcernLevel; detail?: string }> {
   if (!Array.isArray(raw)) return []
-  const out: Array<{ label: string; concern: ConcernLevel }> = []
+  const out: Array<{ label: string; concern: ConcernLevel; detail?: string }> = []
   for (const s of raw) {
     if (typeof s !== 'object' || s === null) continue
     const obj = s as Record<string, unknown>
@@ -58,7 +64,9 @@ function sanitizeSignals(raw: unknown): Array<{ label: string; concern: ConcernL
     const concern = obj.concern
     if (!label) continue
     if (concern !== 0 && concern !== 1 && concern !== 2) continue
-    out.push({ label, concern })
+    const rawDetail = typeof obj.detail === 'string' ? obj.detail.trim() : ''
+    const detail = rawDetail ? rawDetail.slice(0, MAX_DETAIL_CHARS) : undefined
+    out.push({ label, concern, detail })
   }
   return out
 }
@@ -87,11 +95,11 @@ export async function POST(req: NextRequest) {
   if (typeof state !== 'string' || !VALID_STATES.includes(state as AlignmentState)) {
     return errorJson(400, 'state invalido')
   }
-  if (state === 'insufficient_data') {
+  if (NO_NARRATIVE_STATES.includes(state as AlignmentState)) {
     return errorJson(
       422,
-      'Datos insuficientes',
-      'No hay señales suficientes para una reflexión honesta. Vinculá personas y registrá contacto/estado.',
+      'Sin señales para reformular',
+      'No hay señales suficientes para una reflexión honesta. Vinculá personas, registrá contacto/estado o capturá una conversación reciente.',
     )
   }
 

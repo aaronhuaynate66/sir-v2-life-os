@@ -84,7 +84,7 @@ function GoalsContent() {
     return () => clearTimeout(t)
   }, [focusGoalId])
   const objectiveSteps = useObjectiveStepStore((s) => s.steps)
-  const { addMemory } = useMemoryStore()
+  const { addMemory, memories } = useMemoryStore()
   const { people, relationships } = useRelationshipStore()
   const dash = useMemo(() => buildGoalDashboard(goals), [goals])
 
@@ -250,7 +250,7 @@ function GoalsContent() {
         ))}
       </div>
 
-      <AlignmentPanel goals={goals} people={people} relationships={relationships} />
+      <AlignmentPanel goals={goals} people={people} relationships={relationships} memories={memories} />
 
       <AnimatePresence initial={false}>
         {adding && (

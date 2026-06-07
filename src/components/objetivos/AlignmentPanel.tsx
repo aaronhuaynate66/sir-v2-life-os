@@ -21,12 +21,14 @@ import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import { SectionTitle } from '@/components/ui/section-title'
 import { cn } from '@/lib/utils'
 import { computeAlignments, type AlignmentState, type GoalAlignment, type ConcernLevel } from '@/engines/alignment'
-import type { Goal, Person, Relationship } from '@/types'
+import type { Goal, Memory, Person, Relationship } from '@/types'
 
 export interface AlignmentPanelProps {
   goals: Goal[]
   people: Person[]
   relationships: Relationship[]
+  /** Memorias derivadas (tags estructurados): habilitan las señales tagged. */
+  memories?: Memory[]
 }
 
 const STATE_META: Record<AlignmentState, { label: string; chip: string; dot: string }> = {
@@ -44,6 +46,11 @@ const STATE_META: Record<AlignmentState, { label: string; chip: string; dot: str
     label: 'Necesita atención',
     chip: 'border-bad/30 bg-bad-soft text-bad-foreground',
     dot: 'bg-bad',
+  },
+  no_recent_signal: {
+    label: 'Sin señales recientes',
+    chip: 'border-border bg-muted text-muted-foreground',
+    dot: 'bg-muted-foreground/40',
   },
   insufficient_data: {
     label: 'Datos insuficientes',
@@ -80,10 +87,10 @@ function ReflectionSkeleton() {
   )
 }
 
-export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelProps) {
+export function AlignmentPanel({ goals, people, relationships, memories }: AlignmentPanelProps) {
   const alignments = useMemo(
-    () => computeAlignments(goals, { people, relationships }),
-    [goals, people, relationships],
+    () => computeAlignments(goals, { people, relationships, memories }),
+    [goals, people, relationships, memories],
   )
   // Solo objetivos con ≥1 PERSONA vinculada: comparar "lo declarado vs el
   // comportamiento observado" solo tiene sentido ahí. Vincular personas es
@@ -106,7 +113,7 @@ export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelP
           category: a.category,
           state: a.state,
           linkedPersonNames: a.linkedPersonNames,
-          signals: a.signals.map((s) => ({ label: s.label, concern: s.concern })),
+          signals: a.signals.map((s) => ({ label: s.label, concern: s.concern, detail: s.detail })),
         }),
       })
       if (!res.ok) {
@@ -160,7 +167,7 @@ export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelP
           {linkedAlignments.map((a) => {
             const meta = STATE_META[a.state]
             const n = narratives[a.goalId]
-            const canReflect = a.state !== 'insufficient_data'
+            const canReflect = a.state !== 'insufficient_data' && a.state !== 'no_recent_signal'
             return (
               <div key={a.goalId} className="rounded-md border border-border/60 bg-muted/10 p-3 space-y-2">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -180,11 +187,18 @@ export function AlignmentPanel({ goals, people, relationships }: AlignmentPanelP
                 <p className="text-xs text-muted-foreground leading-relaxed">{a.summary}</p>
 
                 {a.signals.length > 0 && (
-                  <ul className="space-y-1">
+                  <ul className="space-y-1.5">
                     {a.signals.map((s, i) => (
-                      <li key={`${a.goalId}-${i}`} className="flex items-center gap-2 text-xs text-foreground/90">
-                        <span className={cn('h-1.5 w-1.5 rounded-full flex-shrink-0', CONCERN_DOT[s.concern])} aria-hidden="true" />
-                        {s.label}
+                      <li key={`${a.goalId}-${i}`} className="text-xs text-foreground/90">
+                        <div className="flex items-center gap-2">
+                          <span className={cn('h-1.5 w-1.5 rounded-full flex-shrink-0', CONCERN_DOT[s.concern])} aria-hidden="true" />
+                          {s.label}
+                        </div>
+                        {s.detail && (
+                          <p className="text-[11px] text-muted-foreground/70 italic leading-relaxed pl-3.5 mt-0.5">
+                            “{s.detail}”
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>

@@ -23,12 +23,14 @@ Recibís UN objetivo declarado por el usuario y un conjunto de señales OBSERVAD
 Devolvé EXCLUSIVAMENTE un objeto JSON (sin texto adicional, sin markdown):
 { "insight": "2 a 3 oraciones en español neutro" }
 
+Algunas señales traen una "evidencia" textual: es un fragmento de las PROPIAS capturas del usuario (un mensaje, una nota). Podés apoyarte en ella y PARAFRASEARLA para que el insight cite algo concreto, pero NUNCA inventes nada más allá de lo que dice.
+
 INVARIANTES ESTRICTOS (no negociables):
 - Tono REFLEXIVO y de APOYO. JAMÁS culpabilizador, moralizante ni con vergüenza. No uses "deberías", "fallaste", "estás mal".
 - Es una OBSERVACIÓN para pensar, no un juicio ni una orden. Ofrecé perspectiva, no dictes qué hacer.
 - PROHIBIDO afirmar causa-efecto ("esto causó", "por esto"). Correlación ≠ causa. Las señales acompañan o se desvían; no explican el porqué.
 - PROHIBIDO diagnóstico, etiquetas de salud mental, consejo clínico, o predicciones del futuro.
-- Hablá SOLO de las señales provistas. No inventes hechos, personas, fechas ni sentimientos no listados.
+- Hablá SOLO de las señales y evidencias provistas. No inventes hechos, personas, fechas ni sentimientos no listados.
 - Recordá implícitamente que el usuario decide: el insight es una invitación a mirar, revisable y descartable.
 - Breve (máx 3 oraciones). Cálido pero sobrio, sin dramatizar.`
 
@@ -38,13 +40,14 @@ export interface AlignmentNarrativeInput {
   description?: string
   state: AlignmentState
   linkedPersonNames: string[]
-  signals: Array<{ label: string; concern: ConcernLevel }>
+  signals: Array<{ label: string; concern: ConcernLevel; detail?: string }>
 }
 
 const STATE_LABEL: Record<AlignmentState, string> = {
   aligned: 'las señales acompañan el objetivo',
   drifting: 'algunas señales se desvían del objetivo',
   needs_attention: 'varias señales no acompañan el objetivo',
+  no_recent_signal: 'sin señales recientes sobre el objetivo',
   insufficient_data: 'datos insuficientes',
 }
 
@@ -62,6 +65,7 @@ export function buildAlignmentInput(input: AlignmentNarrativeInput): string {
   for (const s of input.signals) {
     const tag = s.concern === 2 ? '[se desvía]' : s.concern === 1 ? '[a vigilar]' : '[acompaña]'
     lines.push(`- ${tag} ${s.label}`)
+    if (s.detail) lines.push(`    evidencia (de tus capturas): "${s.detail}"`)
   }
   lines.push('', 'Devolvé el insight reflexivo en el JSON especificado.')
   return lines.join('\n')

@@ -43,6 +43,21 @@ describe('buildAlignmentInput', () => {
     expect(out).not.toContain('Descripción:')
     expect(out).not.toContain('Personas vinculadas:')
   })
+
+  it('incluye la evidencia textual de una señal cuando viene detail', () => {
+    const out = buildAlignmentInput({
+      ...input,
+      signals: [
+        {
+          label: 'Actividad reciente con Maria sobre este objetivo: comercial (hace 3 días)',
+          concern: 0,
+          detail: 'Pidió la cotización antes del viernes.',
+        },
+      ],
+    })
+    expect(out).toContain('evidencia (de tus capturas)')
+    expect(out).toContain('Pidió la cotización antes del viernes.')
+  })
 })
 
 describe('parseAlignmentNarrative', () => {
