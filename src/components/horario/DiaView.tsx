@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
 import type { DayTimeline, TimelineBlock, OverloadLevel } from '@/lib/calendar/timeline'
 import type { CockpitDate, CockpitTask } from '@/lib/horario/cockpit'
 import { buildDayPlan, type GapRowItem, type TaskRowItem } from '@/lib/horario/dayPlan'
-import { buildBriefSignals } from '@/lib/horario/brief'
+import { buildBriefSignals, briefSummaryLine, hasBriefContent } from '@/lib/horario/brief'
 import type { PhysicalState } from '@/lib/horario/physical'
 import { BriefPanel } from './BriefPanel'
 import { PlanDelDiaPanel } from './PlanDelDiaPanel'
@@ -75,11 +75,19 @@ export function DiaView({
     () => buildBriefSignals({ timeline, plan, contactDates }),
     [timeline, plan, contactDates],
   )
+  const briefSummary = useMemo(() => briefSummaryLine(briefSignals), [briefSignals])
 
   return (
     <div className="space-y-5">
       {/* Brief del día — resumen escaneable arriba de todo */}
-      <BriefPanel signals={briefSignals} />
+      <BriefPanel
+        scope="day"
+        bucket={briefSignals.date}
+        summary={briefSummary}
+        empty={!hasBriefContent(briefSignals)}
+        signals={briefSignals as unknown as Record<string, unknown>}
+        enrichRelations
+      />
 
       {/* All-day: marco del día */}
       {timeline.allDay.length > 0 && (

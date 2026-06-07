@@ -32,6 +32,7 @@ import { LIMA_TZ_LABEL } from '@/lib/calendar/tz'
 import type { CalendarEvent, CalendarFeedResult } from '@/lib/calendar/types'
 import { buildCockpit, type Horizon } from '@/lib/horario/cockpit'
 import { buildPhysicalState } from '@/lib/horario/physical'
+import { buildYearCompass } from '@/lib/year-compass/build'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
@@ -117,6 +118,8 @@ function HorarioContent() {
     () => buildPhysicalState({ healthMetrics, sleepRecords, selfMetrics }),
     [healthMetrics, sleepRecords, selfMetrics],
   )
+  // Ancla del año (Tu Año) — sólo para el contexto del Brief del mes.
+  const yearAnchor = useMemo(() => (now ? buildYearCompass(goals, now).anchor : null), [now, goals])
 
   const calendarLoading = calendar.kind === 'loading'
 
@@ -166,9 +169,10 @@ function HorarioContent() {
           weekDays={cockpit.weekDays}
           contactDates={cockpit.contactDates}
           configured={configured}
+          nowMs={nowMs}
         />
       ) : (
-        <MesView milestones={cockpit.milestones} />
+        <MesView milestones={cockpit.milestones} anchor={yearAnchor} nowMs={nowMs} />
       )}
     </AppShell>
   )

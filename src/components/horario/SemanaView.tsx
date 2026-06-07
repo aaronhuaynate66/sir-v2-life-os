@@ -2,15 +2,25 @@
 
 // SIR V2 — /horario · vista SEMANA.
 //
-// La semana operativa: FOCO (1–3 KRs más urgentes/prioritarios) → los 7 días
-// (hoy..+6) con eventos del calendario + tareas OKR que vencen → FECHAS de la
-// red con aviso anticipado (cumple/aniversario + empujón accionable).
+// La semana operativa: BRIEF de la semana (resumen escaneable + narrativa IA
+// on-demand) → FOCO (1–3 KRs más urgentes/prioritarios) → los 7 días (hoy..+6)
+// con eventos del calendario + tareas OKR que vencen → FECHAS de la red con
+// aviso anticipado (cumple/aniversario + empujón accionable).
 
+import { useMemo } from 'react'
 import { CalendarHeart, MapPin, Target } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import type { CockpitDate, CockpitDayBucket, FocusKR } from '@/lib/horario/cockpit'
+import { HORIZON_WINDOW_DAYS, type CockpitDate, type CockpitDayBucket, type FocusKR } from '@/lib/horario/cockpit'
+import {
+  buildWeekBriefSignals,
+  weekSummaryLine,
+  hasWeekContent,
+  periodStartKey,
+  periodEndKey,
+} from '@/lib/horario/briefPeriod'
+import { BriefPanel } from './BriefPanel'
 import { DateRow, FocusRow, TaskRow, CalendarHint, limaTime, dayLabel } from './parts'
 
 export function SemanaView({
@@ -18,19 +28,44 @@ export function SemanaView({
   weekDays,
   contactDates,
   configured,
+  nowMs,
 }: {
   focus: FocusKR[]
   weekDays: CockpitDayBucket[]
   contactDates: CockpitDate[]
   configured: boolean
+  nowMs: number
 }) {
   const empty =
     focus.length === 0 &&
     contactDates.length === 0 &&
     weekDays.every((d) => d.events.length === 0 && d.tasks.length === 0)
 
+  // Señales del Brief de la semana — agregados ya computados; el modelo reformula.
+  const briefSignals = useMemo(
+    () =>
+      buildWeekBriefSignals({
+        weekStart: periodStartKey(nowMs),
+        weekEnd: periodEndKey(nowMs, HORIZON_WINDOW_DAYS.semana),
+        weekDays,
+        focus,
+        contactDates,
+      }),
+    [nowMs, weekDays, focus, contactDates],
+  )
+  const briefSummary = useMemo(() => weekSummaryLine(briefSignals), [briefSignals])
+
   return (
     <div className="space-y-5">
+      {/* Brief de la semana — resumen escaneable arriba de todo */}
+      <BriefPanel
+        scope="week"
+        bucket={briefSignals.weekStart}
+        summary={briefSummary}
+        empty={!hasWeekContent(briefSignals)}
+        signals={briefSignals as unknown as Record<string, unknown>}
+      />
+
       {/* Foco de la semana */}
       {focus.length > 0 && (
         <Card className="shadow-none border-brand/30 bg-brand-soft/40">

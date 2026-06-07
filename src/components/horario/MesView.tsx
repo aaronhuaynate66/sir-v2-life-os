@@ -2,14 +2,26 @@
 
 // SIR V2 — /horario · vista MES.
 //
-// Overview de carga del mes: hitos y deadlines (target dates de objetivos,
-// deadlines de tareas OKR, y fechas de la red) agrupados por proximidad. Una
-// lectura de "qué se viene" para planear el mes, no el calendario crudo.
+// Overview de carga del mes: BRIEF del mes (resumen de alto nivel + narrativa IA
+// on-demand) → hitos y deadlines (target dates de objetivos, deadlines de tareas
+// OKR, y fechas de la red) agrupados por proximidad. Una lectura de "qué se
+// viene" para planear el mes, no el calendario crudo.
 
+import { useMemo } from 'react'
 import { CalendarRange } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
-import type { CockpitMilestone } from '@/lib/horario/cockpit'
+import { HORIZON_WINDOW_DAYS, type CockpitMilestone } from '@/lib/horario/cockpit'
+import type { YearAnchor } from '@/lib/year-compass/build'
+import {
+  buildMonthBriefSignals,
+  monthSummaryLine,
+  hasMonthContent,
+  periodStartKey,
+  periodEndKey,
+  type MonthBriefAnchor,
+} from '@/lib/horario/briefPeriod'
+import { BriefPanel } from './BriefPanel'
 import { MilestoneRow, EmptyNote } from './parts'
 
 interface Group {
@@ -44,15 +56,60 @@ function summarize(milestones: CockpitMilestone[]): string {
   return parts.join(' · ')
 }
 
-export function MesView({ milestones }: { milestones: CockpitMilestone[] }) {
+/** Aplana el ancla del año (Tu Año) al shape que consume el brief del mes. */
+function toBriefAnchor(anchor: YearAnchor | null): MonthBriefAnchor | null {
+  if (!anchor) return null
+  return { title: anchor.title, subtitle: anchor.subtitle, monthLabel: anchor.monthLabel, daysUntil: anchor.daysUntil }
+}
+
+export function MesView({
+  milestones,
+  anchor,
+  nowMs,
+}: {
+  milestones: CockpitMilestone[]
+  anchor: YearAnchor | null
+  nowMs: number
+}) {
+  // Señales del Brief del mes — hitos ya computados + ancla del año.
+  const briefSignals = useMemo(
+    () =>
+      buildMonthBriefSignals({
+        monthStart: periodStartKey(nowMs),
+        monthEnd: periodEndKey(nowMs, HORIZON_WINDOW_DAYS.mes),
+        milestones,
+        anchor: toBriefAnchor(anchor),
+      }),
+    [nowMs, milestones, anchor],
+  )
+  const briefSummary = useMemo(() => monthSummaryLine(briefSignals), [briefSignals])
+
+  const brief = (
+    <BriefPanel
+      scope="month"
+      bucket={briefSignals.monthStart}
+      summary={briefSummary}
+      empty={!hasMonthContent(briefSignals)}
+      signals={briefSignals as unknown as Record<string, unknown>}
+    />
+  )
+
   if (milestones.length === 0) {
-    return <EmptyNote>Sin hitos ni deadlines en el próximo mes. Mes despejado. 🌤️</EmptyNote>
+    return (
+      <div className="space-y-5">
+        {brief}
+        <EmptyNote>Sin hitos ni deadlines en el próximo mes. Mes despejado. 🌤️</EmptyNote>
+      </div>
+    )
   }
 
   const groups = groupByProximity(milestones)
 
   return (
     <div className="space-y-5">
+      {/* Brief del mes — resumen de alto nivel arriba de todo */}
+      {brief}
+
       {/* Carga del mes */}
       <Card className="shadow-none">
         <CardContent className="p-4 sm:p-5 flex items-center gap-3">

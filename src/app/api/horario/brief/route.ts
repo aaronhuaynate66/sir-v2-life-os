@@ -1,18 +1,23 @@
-// SIR V2 — /api/horario/brief (Brief del día — /horario Fase 2)
+// SIR V2 — /api/horario/brief (Brief del día / semana / mes — /horario Fase 2)
 //
-// Genera el "Brief del día": un resumen corto y accionable de HOY a partir de
-// señales que el CLIENTE ya computó con datos reales (eventos, tareas que vencen
-// hoy, huecos libres, fechas que se acercan, relaciones a atender). El modelo
-// SÓLO reformula esas señales — no inventa data (mismo contrato que
-// alignment/narrative). La capa pura vive en lib/horario/brief.
+// Genera el "Brief" de un horizonte (`scope`): un resumen corto y accionable a
+// partir de señales que el CLIENTE ya computó con datos reales (el cockpit del
+// horizonte + fechas de la red + ancla del año). El modelo SÓLO reformula esas
+// señales — no inventa data (mismo contrato que alignment/narrative). La capa
+// pura vive en lib/horario/brief (día) y lib/horario/briefPeriod (semana/mes).
 //
-//   GET  ?date=YYYY-MM-DD  → peek del cache del día (sin generar, sin gastar).
-//   POST { signals, force } → genera (con cache fail-open por día) y devuelve.
+//   GET  ?scope=day|week|month&date=YYYY-MM-DD → peek del cache (sin generar).
+//   POST { scope, signals, force } → genera (cache fail-open por scope+día).
 //
-// Cache fail-open: si la tabla daily_briefs existe (mig 0062) cacheamos por
-// (user, día) e idempotamos; si NO existe, generamos on-demand y seguimos (igual
+// Cache fail-open: si la tabla daily_briefs existe Y tiene la columna `scope`
+// (mig 0062 + 0065) cacheamos por (user, scope, día) e idempotamos; si NO
+// existe (o falta `scope`), generamos on-demand y seguimos sin cachear (igual
 // que action_suggestions/0048). Sin ANTHROPIC_API_KEY → 503: el brief es
 // opcional; el resumen determinístico del cliente se muestra igual.
+//
+// IMPORTANTE — entre el deploy de este código y aplicar 0065, NINGÚN brief
+// (incluido el del día) cachea: las queries con `scope` devuelven error y
+// degradamos a on-demand. Al correr 0065 vuelve el cache. Fail-open, sin romper.
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
@@ -32,6 +37,18 @@ import {
   type BriefSignals,
   type BriefResult,
 } from '@/lib/horario/brief'
+import {
+  WEEK_BRIEF_SYSTEM_PROMPT,
+  MONTH_BRIEF_SYSTEM_PROMPT,
+  buildWeekBriefInput,
+  buildMonthBriefInput,
+  WEEK_BRIEF_FOCUS_CAP,
+  WEEK_BRIEF_DATE_CAP,
+  MONTH_BRIEF_MILESTONE_CAP,
+  type WeekBriefSignals,
+  type MonthBriefSignals,
+  type MonthBriefAnchor,
+} from '@/lib/horario/briefPeriod'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -39,6 +56,11 @@ export const maxDuration = 45
 
 const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+type Scope = 'day' | 'week' | 'month'
+function scopeOf(v: unknown): Scope {
+  return v === 'week' || v === 'month' ? v : 'day'
+}
 
 interface ErrorBody {
   error: string
@@ -53,6 +75,13 @@ function str(v: unknown, max = 200): string {
 }
 function num(v: unknown): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : 0
+}
+function numOrNull(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null
+}
+function nullableStr(v: unknown, max = 200): string | null {
+  const s = str(v, max)
+  return s || null
 }
 function arr(v: unknown): unknown[] {
   return Array.isArray(v) ? v : []
@@ -147,9 +176,123 @@ function sanitizeSignals(raw: unknown): BriefSignals | null {
   return s
 }
 
+/** Sanea las señales de la SEMANA recibidas del cliente (mismo criterio que el
+ *  día: caps, recortes, tipado). El bucket sale de `weekStart`. */
+function sanitizeWeekSignals(raw: unknown): WeekBriefSignals | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const o = raw as Record<string, unknown>
+  const weekStart = str(o.weekStart, 10)
+  if (!DATE_RE.test(weekStart)) return null
+  const weekEnd = DATE_RE.test(str(o.weekEnd, 10)) ? str(o.weekEnd, 10) : weekStart
+
+  return {
+    weekStart,
+    weekEnd,
+    eventCount: num(o.eventCount),
+    tasksDueCount: num(o.tasksDueCount),
+    overdueCount: num(o.overdueCount),
+    freeDays: num(o.freeDays),
+    days: arr(o.days)
+      .map((d) => {
+        const x = d as Record<string, unknown>
+        return { offset: num(x?.offset), eventCount: num(x?.eventCount), taskCount: num(x?.taskCount) }
+      })
+      .slice(0, 7),
+    focus: arr(o.focus)
+      .map((f) => {
+        const x = f as Record<string, unknown>
+        const title = str(x?.title, 160)
+        if (!title) return null
+        return { title, objective: str(x?.objective, 120), daysUntil: numOrNull(x?.daysUntil), progressPct: num(x?.progressPct) }
+      })
+      .filter((f): f is NonNullable<typeof f> => f !== null)
+      .slice(0, WEEK_BRIEF_FOCUS_CAP),
+    upcomingDates: arr(o.upcomingDates)
+      .map((d) => {
+        const x = d as Record<string, unknown>
+        const title = str(x?.title, 120)
+        if (!title) return null
+        return { title, daysUntil: num(x?.daysUntil), nudge: str(x?.nudge, 120) }
+      })
+      .filter((d): d is NonNullable<typeof d> => d !== null)
+      .slice(0, WEEK_BRIEF_DATE_CAP),
+  }
+}
+
+function milestoneKindOf(v: unknown): MonthBriefSignals['milestones'][number]['kind'] {
+  return v === 'goal_target' || v === 'step_deadline' || v === 'date' ? v : 'step_deadline'
+}
+
+/** Sanea las señales del MES. El bucket sale de `monthStart`. */
+function sanitizeMonthSignals(raw: unknown): MonthBriefSignals | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  const o = raw as Record<string, unknown>
+  const monthStart = str(o.monthStart, 10)
+  if (!DATE_RE.test(monthStart)) return null
+  const monthEnd = DATE_RE.test(str(o.monthEnd, 10)) ? str(o.monthEnd, 10) : monthStart
+
+  let anchor: MonthBriefAnchor | null = null
+  if (typeof o.anchor === 'object' && o.anchor !== null) {
+    const a = o.anchor as Record<string, unknown>
+    const title = str(a.title, 120)
+    if (title) {
+      anchor = {
+        title,
+        subtitle: nullableStr(a.subtitle, 160),
+        monthLabel: nullableStr(a.monthLabel, 12),
+        daysUntil: numOrNull(a.daysUntil),
+      }
+    }
+  }
+
+  return {
+    monthStart,
+    monthEnd,
+    milestoneCount: num(o.milestoneCount),
+    goalTargetCount: num(o.goalTargetCount),
+    deadlineCount: num(o.deadlineCount),
+    dateCount: num(o.dateCount),
+    milestones: arr(o.milestones)
+      .map((m) => {
+        const x = m as Record<string, unknown>
+        const title = str(x?.title, 160)
+        if (!title) return null
+        return {
+          title,
+          detail: str(x?.detail, 160),
+          kind: milestoneKindOf(x?.kind),
+          daysUntil: num(x?.daysUntil),
+          overdue: x?.overdue === true,
+        }
+      })
+      .filter((m): m is NonNullable<typeof m> => m !== null)
+      .slice(0, MONTH_BRIEF_MILESTONE_CAP),
+    anchor,
+  }
+}
+
+/** Despacha por scope: sanea las señales y devuelve el prompt + bucket de cache.
+ *  null si las señales son inválidas. */
+function prepare(scope: Scope, raw: unknown): { system: string; input: string; bucket: string } | null {
+  if (scope === 'week') {
+    const s = sanitizeWeekSignals(raw)
+    if (!s) return null
+    return { system: WEEK_BRIEF_SYSTEM_PROMPT, input: buildWeekBriefInput(s), bucket: s.weekStart }
+  }
+  if (scope === 'month') {
+    const s = sanitizeMonthSignals(raw)
+    if (!s) return null
+    return { system: MONTH_BRIEF_SYSTEM_PROMPT, input: buildMonthBriefInput(s), bucket: s.monthStart }
+  }
+  const s = sanitizeSignals(raw)
+  if (!s) return null
+  return { system: BRIEF_SYSTEM_PROMPT, input: buildBriefInput(s), bucket: s.date }
+}
+
 async function readCache(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
+  scope: Scope,
   dateBucket: string,
 ): Promise<BriefResult | null> {
   try {
@@ -157,13 +300,14 @@ async function readCache(
       .from('daily_briefs')
       .select('brief, focus')
       .eq('user_id', userId)
+      .eq('scope', scope)
       .eq('date_bucket', dateBucket)
       .maybeSingle()
     if (data && typeof data.brief === 'string' && data.brief) {
       return { brief: data.brief, focus: typeof data.focus === 'string' ? data.focus : '' }
     }
   } catch {
-    /* tabla no aplicada todavía → sin cache */
+    /* tabla/columna no aplicada todavía → sin cache */
   }
   return null
 }
@@ -173,10 +317,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) return errorJson(401, 'No autenticado')
 
+  const scope = scopeOf(req.nextUrl.searchParams.get('scope'))
   const date = req.nextUrl.searchParams.get('date') ?? ''
   if (!DATE_RE.test(date)) return errorJson(400, 'date inválida (YYYY-MM-DD)')
 
-  const cached = await readCache(supabase, authData.user.id, date)
+  const cached = await readCache(supabase, authData.user.id, scope, date)
   return NextResponse.json(cached ? { ...cached, cached: true } : { brief: null }, { status: 200 })
 }
 
@@ -196,14 +341,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorJson(400, 'Body JSON inválido')
   }
 
-  const signals = sanitizeSignals(body.signals)
-  if (!signals) return errorJson(400, 'signals inválidas o sin fecha')
+  const scope = scopeOf(body.scope)
+  const prepared = prepare(scope, body.signals)
+  if (!prepared) return errorJson(400, 'signals inválidas o sin fecha')
   const force = body.force === true
-  const dateBucket = signals.date
+  const dateBucket = prepared.bucket
 
   // Cache (fail-open): salvo regeneración explícita.
   if (!force) {
-    const cached = await readCache(supabase, userId, dateBucket)
+    const cached = await readCache(supabase, userId, scope, dateBucket)
     if (cached) return NextResponse.json({ ...cached, cached: true }, { status: 200 })
   }
 
@@ -211,7 +357,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorJson(
       503,
       'Brief no disponible',
-      'Falta ANTHROPIC_API_KEY. El resumen del día se muestra igual sin la narrativa.',
+      'Falta ANTHROPIC_API_KEY. El resumen se muestra igual sin la narrativa.',
     )
   }
 
@@ -220,31 +366,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const client = new Anthropic({ maxRetries: 2 })
     const msg = await client.messages.create({
       model: MODEL_ID,
-      max_tokens: 350,
-      system: BRIEF_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildBriefInput(signals) }],
+      max_tokens: 400,
+      system: prepared.system,
+      messages: [{ role: 'user', content: prepared.input }],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
     const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
     result = parseBriefJson(text, extractJsonObject)
   } catch (e) {
-    reportApiError(e, { route: 'horario/brief' })
+    reportApiError(e, { route: 'horario/brief', scope })
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar el brief', detail)
   }
 
   if (!result) return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
 
-  // Cachear (fail-open / idempotente por día).
+  // Cachear (fail-open / idempotente por scope+día).
   try {
     await supabase.from('daily_briefs').upsert(
       {
         user_id: userId,
+        scope,
         date_bucket: dateBucket,
         brief: result.brief,
         focus: result.focus,
       },
-      { onConflict: 'user_id,date_bucket' },
+      { onConflict: 'user_id,scope,date_bucket' },
     )
   } catch {
     /* sin cache, ya devolvimos el brief igual */
