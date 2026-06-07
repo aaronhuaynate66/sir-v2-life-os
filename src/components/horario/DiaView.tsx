@@ -8,13 +8,15 @@
 // PLEGADO al final (contexto, no protagonista; vive en /yo). Las relaciones que
 // requieren acción ("Hoy con tu gente") se mudaron a /agenda — acá no van.
 
-import { CalendarDays, Flame, MapPin } from 'lucide-react'
+import { useMemo } from 'react'
+import { CalendarDays, Flame, ListChecks, MapPin } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { DayTimeline, TimelineBlock, OverloadLevel } from '@/lib/calendar/timeline'
 import type { CockpitTask } from '@/lib/horario/cockpit'
+import { buildDayPlan, type GapRowItem, type TaskRowItem } from '@/lib/horario/dayPlan'
 import type { PhysicalState } from '@/lib/horario/physical'
 import {
   DayContextStrip,
@@ -22,6 +24,8 @@ import {
   CalendarHint,
   EmptyNote,
   limaTime,
+  limaTimeMs,
+  formatGapDuration,
   formatCountdown,
 } from './parts'
 
@@ -51,7 +55,12 @@ export function DiaView({
   const o = OVERLOAD_STYLE[timeline.overload.level]
   const legend = calendars.filter((c) => c.label)
   const showLegend = legend.length > 1
-  const hasCalendar = timeline.blocks.length > 0 || timeline.allDay.length > 0
+
+  // Plan del día: eventos del calendario + tareas con hora fusionadas + huecos
+  // libres en un solo eje. Las tareas de hoy SIN hora quedan para "Vencen hoy".
+  const plan = useMemo(() => buildDayPlan(timeline, tasksToday, nowMs), [timeline, tasksToday, nowMs])
+  const hasTimedRows = plan.rows.some((r) => r.type !== 'gap')
+  const hasCalendar = hasTimedRows || timeline.allDay.length > 0
 
   return (
     <div className="space-y-5">
@@ -92,36 +101,38 @@ export function DiaView({
         </div>
       )}
 
-      {/* Línea de tiempo del calendario — el día hora por hora */}
+      {/* Línea de tiempo del día — calendario + tareas con hora + huecos libres */}
       {!configured ? (
         <CalendarHint />
       ) : calendarError && !hasCalendar ? (
         <EmptyNote tone="warn">No pude leer el feed del calendario.</EmptyNote>
-      ) : !hasCalendar ? (
-        <EmptyNote>Sin eventos en el calendario hoy. 🌤️</EmptyNote>
+      ) : !hasTimedRows ? (
+        <EmptyNote>Sin eventos ni tareas con hora hoy. 🌤️</EmptyNote>
       ) : (
         <Card className="shadow-none">
           <CardContent className="p-4 sm:p-6">
             <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-3">El día</div>
             <ol className="space-y-0.5">
-              {timeline.blocks.map((b) => (
-                <BlockRow key={b.event.id} block={b} nowMs={nowMs} />
-              ))}
+              {plan.rows.map((row) => {
+                if (row.type === 'event') return <BlockRow key={row.key} block={row.block} nowMs={nowMs} />
+                if (row.type === 'task') return <TaskBlockRow key={row.key} row={row} nowMs={nowMs} />
+                return <GapRow key={row.key} row={row} />
+              })}
             </ol>
           </CardContent>
         </Card>
       )}
 
-      {/* Tareas OKR que vencen hoy (acción con fecha del día) */}
-      {tasksToday.length > 0 && (
+      {/* Tareas OKR que vencen hoy SIN hora (las que tienen hora ya están arriba) */}
+      {plan.untimedTasks.length > 0 && (
         <Card className="shadow-none">
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Vencen hoy</div>
-              <span className="text-[11px] font-mono tabular-nums text-text-tertiary">{tasksToday.length}</span>
+              <span className="text-[11px] font-mono tabular-nums text-text-tertiary">{plan.untimedTasks.length}</span>
             </div>
             <ul className="space-y-0.5">
-              {tasksToday.map((t) => (
+              {plan.untimedTasks.map((t) => (
                 <li key={t.id}>
                   <TaskRow task={t} />
                 </li>
@@ -223,6 +234,49 @@ function BlockRow({ block, nowMs }: { block: TimelineBlock; nowMs: number }) {
           {formatCountdown(block.endMs - nowMs)}
         </Badge>
       )}
+    </li>
+  )
+}
+
+/** Tarea OKR con hora, en la línea del día. Acento de marca (violeta) + ícono de
+ *  tarea para distinguirla de un evento del calendario, en el mismo eje horario. */
+function TaskBlockRow({ row, nowMs }: { row: TaskRowItem; nowMs: number }) {
+  const { task } = row
+  const isPast = row.status === 'past'
+  const isCurrent = row.status === 'current'
+  return (
+    <li className={cn('flex items-center gap-3 py-2 border-b border-border/40 last:border-0', isPast && 'opacity-40')}>
+      <div className="w-14 flex-shrink-0 text-xs font-mono tabular-nums text-muted-foreground">{limaTimeMs(row.startMs)}</div>
+      <ListChecks
+        size={14}
+        strokeWidth={1.75}
+        className={cn('flex-shrink-0', isCurrent ? 'text-brand animate-pulse' : 'text-brand-soft-foreground')}
+        aria-hidden="true"
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {task.priority === 'high' && (
+            <span className="text-brand-soft-foreground text-[10px]" title="Prioridad alta" aria-hidden="true">
+              ●
+            </span>
+          )}
+          <span className={cn('text-sm truncate', isCurrent ? 'text-foreground font-medium' : 'text-foreground/90')}>{task.title}</span>
+        </div>
+        <div className="text-[11px] text-brand-soft-foreground truncate">{task.objectiveTitle} · tarea</div>
+      </div>
+    </li>
+  )
+}
+
+/** Hueco libre entre bloques ocupados: separador tenue con duración. */
+function GapRow({ row }: { row: GapRowItem }) {
+  return (
+    <li className={cn('flex items-center gap-3 py-1.5 text-muted-foreground/60', row.status === 'past' && 'opacity-40')}>
+      <div className="w-14 flex-shrink-0 text-xs font-mono tabular-nums text-muted-foreground/40">{limaTimeMs(row.startMs)}</div>
+      <div className="h-px flex-1 border-t border-dashed border-border/60" aria-hidden="true" />
+      <span className="text-[11px] whitespace-nowrap">
+        libre hasta {limaTimeMs(row.endMs)} · {formatGapDuration(row.minutes)}
+      </span>
     </li>
   )
 }

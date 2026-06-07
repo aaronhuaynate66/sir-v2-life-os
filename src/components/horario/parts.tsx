@@ -46,6 +46,20 @@ export function limaTime(iso: string): string {
   }).format(new Date(iso))
 }
 
+/** Igual que limaTime pero desde un timestamp en ms (para filas del plan del día). */
+export function limaTimeMs(ms: number): string {
+  return limaTime(new Date(ms).toISOString())
+}
+
+/** Duración de un hueco libre en formato corto ("2h", "1h 30m", "45m"). */
+export function formatGapDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h > 0 && m > 0) return `${h}h ${m}m`
+  if (h > 0) return `${h}h`
+  return `${m}m`
+}
+
 /** ms → "2h 05m" o "05m 12s" (countdowns cortos). */
 export function formatCountdown(ms: number): string {
   if (ms <= 0) return 'ahora'

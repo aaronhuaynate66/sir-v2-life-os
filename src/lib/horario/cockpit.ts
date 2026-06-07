@@ -76,7 +76,26 @@ export interface CockpitTask {
   priority?: TaskPriority
   /** Esfuerzo Jira-light, si la tarea lo tiene (0050). */
   effort?: TaskEffort
+  /**
+   * Hora del día asignada ('HH:mm', reloj Lima) si `targetDate` trae componente
+   * horario ('YYYY-MM-DDTHH:mm'). Hoy la columna `target_date` es date-only, así
+   * que esto suele ser undefined → la tarea va a "Vencen hoy". Cuando SÍ hay
+   * hora, /horario la fusiona en la línea del día (lib/horario/dayPlan).
+   */
+  dueTime?: string
   href: string
+}
+
+/** 'HH:mm' (reloj Lima) si `targetDate` trae componente horario; si no, undefined. */
+const STEP_TIME_RE = /T(\d{2}):(\d{2})/
+function parseStepTime(targetDate: string | undefined): string | undefined {
+  if (!targetDate) return undefined
+  const m = STEP_TIME_RE.exec(targetDate)
+  if (!m) return undefined
+  const hh = Number(m[1])
+  const mm = Number(m[2])
+  if (hh > 23 || mm > 59) return undefined
+  return `${m[1]}:${m[2]}`
 }
 
 /** Rank de prioridad para ordenar (high primero); ausente = lo último. */
@@ -274,6 +293,7 @@ export function tasksDueInRange(
       blocked: isStepBlocked(s, steps),
       priority: s.priority,
       effort: s.effort,
+      dueTime: parseStepTime(s.targetDate),
       href: '/objetivos',
     })
   }

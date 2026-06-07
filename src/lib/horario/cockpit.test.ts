@@ -120,6 +120,23 @@ describe('tasksDueInRange — fusión OKR', () => {
     expect(tasks[0].overdue).toBe(false)
   })
 
+  it('dueTime: targetDate con hora → "HH:mm"; date-only o inválida → undefined', () => {
+    const tasks = tasksDueInRange(
+      [goal({ id: 'g1' })],
+      [
+        ostep({ id: 't1', title: 'Con hora', targetDate: '2026-06-01T14:30' }),
+        ostep({ id: 't2', title: 'Sin hora', targetDate: '2026-06-01' }),
+        ostep({ id: 't3', title: 'Hora inválida', targetDate: '2026-06-01T99:00' }),
+      ],
+      { maxDays: 0 },
+      NOW,
+    )
+    const byTitle = Object.fromEntries(tasks.map((t) => [t.title, t.dueTime]))
+    expect(byTitle['Con hora']).toBe('14:30')
+    expect(byTitle['Sin hora']).toBeUndefined()
+    expect(byTitle['Hora inválida']).toBeUndefined()
+  })
+
   it('tarea vencida → incluida por default (sigue siendo trabajo de hoy)', () => {
     const tasks = tasksDueInRange(
       [goal({ id: 'g1' })],
