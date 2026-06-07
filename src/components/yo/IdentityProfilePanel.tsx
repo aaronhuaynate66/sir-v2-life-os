@@ -37,7 +37,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { SelfProfileCapture } from '@/components/yo/SelfProfileCapture'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useMounted } from '@/hooks/useMounted'
 import {
@@ -69,7 +68,6 @@ export function IdentityProfilePanel() {
   const setIdentityProfile = useSelfStore((s) => s.setIdentityProfile)
 
   const [editing, setEditing] = useState(false)
-  const [capturing, setCapturing] = useState(false)
   const [draft, setDraft] = useState<IdentityProfile | null>(null)
 
   function startEdit() {
@@ -108,17 +106,8 @@ export function IdentityProfilePanel() {
               Tus anclas: quién sos, desde cuándo y dónde. Base de los recordatorios y el motor proactivo.
             </p>
           </div>
-          {!editing && !capturing && (
+          {!editing && (
             <div className="flex flex-shrink-0 items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setCapturing(true)}
-                className="inline-flex items-center gap-1.5"
-              >
-                <Sparkles size={13} strokeWidth={1.75} aria-hidden="true" />
-                Que SIR me conozca
-              </Button>
               <Button size="sm" variant="outline" onClick={startEdit} className="inline-flex items-center gap-1.5">
                 <Pencil size={13} strokeWidth={1.75} aria-hidden="true" />
                 {empty ? 'Completar' : 'Editar'}
@@ -127,9 +116,7 @@ export function IdentityProfilePanel() {
           )}
         </div>
 
-        {capturing ? (
-          <SelfProfileCapture onClose={() => setCapturing(false)} />
-        ) : editing && draft ? (
+        {editing && draft ? (
           <EditView draft={draft} setDraft={setDraft} onSave={save} onCancel={cancelEdit} />
         ) : empty ? (
           <EmptyState onStart={startEdit} />

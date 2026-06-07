@@ -27,8 +27,9 @@ La diferencia:
    se le presenta a Aaron un campo en blanco para que lo tipee. Lo extraído llega
    SIEMPRE como **propuesta editable** que **suma y nunca pisa** lo que él ya
    escribió a mano. (Origen: el bloque de Identidad "se sintió raro" pidiéndole
-   datos que ya están en internet o ya conversó. Implementado en
-   `SelfProfileCapture` / `buildCaptureProposal`.)
+   datos que ya están en internet o ya conversó. Implementado en el panel
+   unificado `MisCapturas` (caja multi-archivo que detecta y rutea) + `ContaleASir`
+   (relato) / `IdentityProposalReview` / `buildCaptureProposal`.)
 
 ---
 

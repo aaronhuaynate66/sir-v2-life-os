@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Brain, Activity, Plus, Moon, Heart, Clock, Scale, ArrowRight, MessageSquare } from 'lucide-react'
+import { Brain, Activity, Plus, Moon, Heart, Clock, ArrowRight, MessageSquare } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +23,7 @@ import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { SelfDiagnosisPanel } from '@/components/yo/SelfDiagnosisPanel'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
+import { MisCapturas } from '@/components/yo/MisCapturas'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 
@@ -120,6 +121,10 @@ function SelfContent() {
       {/* Anclas de identidad — datos básicos del dueño, base del motor proactivo. */}
       <IdentityProfilePanel />
 
+      {/* Mis capturas — caja única multi-archivo: báscula, sueño, FC y perfil
+          propio se detectan y rutean solos. Reemplaza las cards separadas. */}
+      <MisCapturas />
+
       {/* Espacio personal / diagnóstico — sección privada. */}
       <SelfDiagnosisPanel />
 
@@ -161,75 +166,6 @@ function SelfContent() {
       <div className="mb-6">
         <BodyMetricsTrend metrics={healthMetrics} />
       </div>
-
-      <Card className={cn('mb-4', cardClass)}>
-        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <Scale size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-foreground">Captura báscula con foto</div>
-              <div className="text-xs text-muted-foreground leading-snug">
-                Subí el screenshot y Claude Vision extrae las 13 métricas automáticamente.
-              </div>
-            </div>
-          </div>
-          <Button size="sm" asChild className="flex-shrink-0">
-            <Link href="/captura/bascula" className="inline-flex items-center gap-1.5">
-              + Subir foto
-              <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className={cn('mb-4', cardClass)}>
-        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <Moon size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-foreground">Captura sueño con foto</div>
-              <div className="text-xs text-muted-foreground leading-snug">
-                Subí el screenshot de tu app de sueño (Huawei, Apple, Samsung Health…) y Claude
-                Vision extrae duración, horario, fases y puntuación de la noche.
-              </div>
-            </div>
-          </div>
-          <Button size="sm" asChild className="flex-shrink-0">
-            <Link href="/captura/sueno" className="inline-flex items-center gap-1.5">
-              + Subir foto
-              <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card className={cn('mb-4', cardClass)}>
-        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <Heart size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-foreground">Captura frecuencia cardíaca con foto</div>
-              <div className="text-xs text-muted-foreground leading-snug">
-                Subí el screenshot de tu app de salud (Huawei, Apple, Samsung Health…) y Claude
-                Vision extrae tu FC en reposo, el rango del día y el promedio. Tu FC en reposo pasa
-                a ser tu FC actual.
-              </div>
-            </div>
-          </div>
-          <Button size="sm" asChild className="flex-shrink-0">
-            <Link href="/captura/fc" className="inline-flex items-center gap-1.5">
-              + Subir foto
-              <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
 
       <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
