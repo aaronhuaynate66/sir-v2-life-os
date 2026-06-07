@@ -828,6 +828,7 @@ function TaskRow({
               >
                 <CalendarClock size={10} aria-hidden="true" />
                 {task.targetDate}
+                {task.dueTime && <span className="opacity-90">· {task.dueTime}</span>}
                 {days != null && <span className="opacity-80">· {dueHint(days)}</span>}
               </span>
             )}
@@ -874,6 +875,7 @@ function TaskEditor({
 }) {
   const [title, setTitle] = useState(task.title)
   const [date, setDate] = useState(task.targetDate ?? '')
+  const [time, setTime] = useState(task.dueTime ?? '')
   const [acceptance, setAcceptance] = useState(task.acceptanceCriteria ?? '')
   const [effort, setEffort] = useState<TaskEffort | undefined>(task.effort)
   const [priority, setPriority] = useState<TaskPriority | undefined>(task.priority)
@@ -899,6 +901,8 @@ function TaskEditor({
     onSave({
       title: t,
       targetDate: date || undefined,
+      // Una hora sin fecha no ubica nada en el día → sólo se guarda con fecha.
+      dueTime: date && time ? time : undefined,
       acceptanceCriteria: acceptance.trim() || undefined,
       effort,
       priority,
@@ -936,10 +940,37 @@ function TaskEditor({
           <Input
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value
+              setDate(v)
+              if (!v) setTime('') // sin fecha no tiene sentido una hora
+            }}
             className="h-7 w-36 font-mono text-xs normal-case tracking-normal"
             aria-label="Fecha objetivo de la tarea"
           />
+        </label>
+        <label className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.07em] text-text-tertiary">
+          Hora
+          <Input
+            type="time"
+            value={time}
+            disabled={!date}
+            onChange={(e) => setTime(e.target.value)}
+            className="h-7 w-28 font-mono text-xs normal-case tracking-normal disabled:opacity-50"
+            aria-label="Hora de la tarea (opcional)"
+            title={date ? 'Hora opcional: cae en la franja del día en /horario' : 'Primero elegí una fecha'}
+          />
+          {time && (
+            <button
+              type="button"
+              onClick={() => setTime('')}
+              className="text-text-tertiary hover:text-foreground"
+              aria-label="Quitar hora"
+              title="Quitar hora"
+            >
+              <X size={12} />
+            </button>
+          )}
         </label>
         <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.07em] text-text-tertiary">
           Esfuerzo

@@ -77,20 +77,28 @@ export interface CockpitTask {
   /** Esfuerzo Jira-light, si la tarea lo tiene (0050). */
   effort?: TaskEffort
   /**
-   * Hora del día asignada ('HH:mm', reloj Lima) si `targetDate` trae componente
-   * horario ('YYYY-MM-DDTHH:mm'). Hoy la columna `target_date` es date-only, así
-   * que esto suele ser undefined → la tarea va a "Vencen hoy". Cuando SÍ hay
-   * hora, /horario la fusiona en la línea del día (lib/horario/dayPlan).
+   * Hora del día asignada ('HH:mm', reloj Lima) — viene de la columna `due_time`
+   * (0061), pero SÓLO si la tarea tiene `targetDate` (una hora sin fecha no cae
+   * en ningún día). Sin hora → undefined → la tarea va a "Vencen hoy". Cuando SÍ
+   * hay hora y la tarea vence hoy, /horario la fusiona en la línea del día
+   * (lib/horario/dayPlan combina `targetDate` + 'HH:mm' en reloj Lima).
    */
   dueTime?: string
   href: string
 }
 
-/** 'HH:mm' (reloj Lima) si `targetDate` trae componente horario; si no, undefined. */
-const STEP_TIME_RE = /T(\d{2}):(\d{2})/
-function parseStepTime(targetDate: string | undefined): string | undefined {
-  if (!targetDate) return undefined
-  const m = STEP_TIME_RE.exec(targetDate)
+/**
+ * 'HH:mm' (reloj Lima) de una tarea: la columna `due_time` (0061), validada y
+ * sólo si hay `targetDate` (una hora sin fecha no ubica nada). Formato/rango
+ * inválido → undefined.
+ */
+const STEP_TIME_RE = /^(\d{2}):(\d{2})$/
+function parseStepTime(
+  dueTime: string | undefined,
+  targetDate: string | undefined,
+): string | undefined {
+  if (!dueTime || !targetDate) return undefined
+  const m = STEP_TIME_RE.exec(dueTime)
   if (!m) return undefined
   const hh = Number(m[1])
   const mm = Number(m[2])
@@ -293,7 +301,7 @@ export function tasksDueInRange(
       blocked: isStepBlocked(s, steps),
       priority: s.priority,
       effort: s.effort,
-      dueTime: parseStepTime(s.targetDate),
+      dueTime: parseStepTime(s.dueTime, s.targetDate),
       href: '/objetivos',
     })
   }

@@ -413,6 +413,13 @@ export interface ObjectiveStep {
   description?: string
   /** Fecha objetivo opcional (date-only ISO 'YYYY-MM-DD'). Es el "due date". */
   targetDate?: string
+  /**
+   * Hora del día opcional ('HH:MM' 24h, reloj Lima) — columna `due_time` (0061).
+   * Sólo aplica a tareas y sólo tiene sentido junto a `targetDate` (una hora sin
+   * fecha no cae en ningún día). Cuando está y la tarea vence HOY, /horario la
+   * ubica EN su franja del día (lib/horario/dayPlan); sin hora va a "Vencen hoy".
+   */
+  dueTime?: string
   status: ObjectiveStepStatus
   /** Orden dentro del grupo de hermanos (KRs entre KRs; tareas dentro de su KR). */
   order: number

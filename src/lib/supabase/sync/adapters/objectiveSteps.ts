@@ -46,6 +46,15 @@ function coerceBlockedBy(raw: unknown): string[] | undefined {
   return ids.length > 0 ? ids : undefined
 }
 
+/** due_time (0061): 'HH:MM' 24h válido o undefined (tolera null / formato raro). */
+const DUE_TIME_RE = /^(\d{2}):(\d{2})$/
+function coerceDueTime(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined
+  const m = DUE_TIME_RE.exec(raw)
+  if (!m) return undefined
+  return Number(m[1]) > 23 || Number(m[2]) > 59 ? undefined : raw
+}
+
 export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
   table: 'objective_steps',
   toRow: (s, userId) => ({
@@ -59,6 +68,8 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     title: s.title,
     description: s.description ?? '',
     target_date: s.targetDate ?? null,
+    // Hora del día (0061): 'HH:MM' o null. Solo en tareas; en KRs va null.
+    due_time: s.dueTime ?? null,
     status: s.status,
     sort_order: s.order,
     created_at: s.createdAt,
@@ -77,6 +88,7 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     title: row.title as string,
     description: (row.description as string) ?? '',
     targetDate: (row.target_date as string) ?? undefined,
+    dueTime: coerceDueTime(row.due_time),
     status: coerceStatus(row.status),
     order: Number(row.sort_order) || 0,
     createdAt: row.created_at as string,

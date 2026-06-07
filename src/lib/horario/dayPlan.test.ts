@@ -137,4 +137,21 @@ describe('buildDayPlan — huecos libres', () => {
     const plan = buildDayPlan(timeline, [], NOW_08)
     expect(plan.rows.map((r) => r.type)).toEqual(['event'])
   })
+
+  it('una tarea con hora cuenta como bloque ocupado: parte el hueco en dos', () => {
+    // Eventos 09–10 y 17–18 → sin tareas sería un único hueco 10–17. Una tarea
+    // con hora a las 13:00 (dura DEFAULT_TASK_MINUTES=30 → 13:00–13:30) lo parte.
+    const timeline = buildDayTimeline([ev(9, 10, 'A'), ev(17, 18, 'B')], NOW_08)
+    const plan = buildDayPlan(
+      timeline,
+      [task({ id: 'task_t1', title: 'Llamada', dueTime: '13:00' })],
+      NOW_08,
+    )
+    const gaps = plan.rows.filter((r) => r.type === 'gap')
+    expect(gaps).toHaveLength(2)
+    expect(gaps[0].type === 'gap' && gaps[0].startMs).toBe(limaMs(10))
+    expect(gaps[0].type === 'gap' && gaps[0].endMs).toBe(limaMs(13))
+    expect(gaps[1].type === 'gap' && gaps[1].startMs).toBe(limaMs(13, 30))
+    expect(gaps[1].type === 'gap' && gaps[1].endMs).toBe(limaMs(17))
+  })
 })

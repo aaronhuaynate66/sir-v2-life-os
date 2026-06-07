@@ -120,13 +120,16 @@ describe('tasksDueInRange — fusión OKR', () => {
     expect(tasks[0].overdue).toBe(false)
   })
 
-  it('dueTime: targetDate con hora → "HH:mm"; date-only o inválida → undefined', () => {
+  it('dueTime (0061): fecha+hora válida → "HH:mm"; sin fecha, sin hora o inválida → undefined', () => {
     const tasks = tasksDueInRange(
       [goal({ id: 'g1' })],
       [
-        ostep({ id: 't1', title: 'Con hora', targetDate: '2026-06-01T14:30' }),
+        ostep({ id: 't1', title: 'Con hora', targetDate: '2026-06-01', dueTime: '14:30' }),
         ostep({ id: 't2', title: 'Sin hora', targetDate: '2026-06-01' }),
-        ostep({ id: 't3', title: 'Hora inválida', targetDate: '2026-06-01T99:00' }),
+        ostep({ id: 't3', title: 'Hora inválida', targetDate: '2026-06-01', dueTime: '99:00' }),
+        ostep({ id: 't4', title: 'Hora mal formada', targetDate: '2026-06-01', dueTime: '9:5' }),
+        // Hora SIN fecha: no cae en ningún día → se descarta (además sin fecha no entra al rango).
+        ostep({ id: 't5', title: 'Hora sin fecha', dueTime: '10:00' }),
       ],
       { maxDays: 0 },
       NOW,
@@ -135,6 +138,9 @@ describe('tasksDueInRange — fusión OKR', () => {
     expect(byTitle['Con hora']).toBe('14:30')
     expect(byTitle['Sin hora']).toBeUndefined()
     expect(byTitle['Hora inválida']).toBeUndefined()
+    expect(byTitle['Hora mal formada']).toBeUndefined()
+    // La tarea sin fecha ni siquiera entra al rango (daysUntil null).
+    expect(byTitle['Hora sin fecha']).toBeUndefined()
   })
 
   it('tarea vencida → incluida por default (sigue siendo trabajo de hoy)', () => {
