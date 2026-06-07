@@ -32,6 +32,7 @@ import {
   Check,
   ArrowRight,
   MessageSquareHeart,
+  Activity,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -61,6 +62,16 @@ import { ContaleASir } from '@/components/yo/ContaleASir'
 import { extractSelfProfileImage } from '@/lib/identity/captureClient'
 import { consolidateSelfProfiles } from '@/lib/capture/self-profile/consolidate'
 import type { SelfProfileExtracted } from '@/lib/capture/self-profile/types'
+import {
+  isAppleHealthCandidate,
+  readHaePayloadFromFile,
+  previewHae,
+  importAppleHealth,
+  HaeImportError,
+  type HaeImportSummary,
+} from '@/lib/health/import/client'
+import type { HealthAutoExportPayload } from '@/lib/health/ingest/types'
+
 import { buildCaptureProposal, type CaptureProposalDiff } from '@/lib/identity/applyCapture'
 import {
   emptyIdentityProfile,
@@ -92,6 +103,19 @@ interface RejectItem {
   id: string
   fileName: string
   reason: string
+}
+
+// Apple Health (archivo .json/.zip del "Manual Export → JSON" de Health Auto Export).
+type HealthStatus = 'parsing' | 'ready' | 'saving' | 'saved' | 'error'
+
+interface HealthFileItem {
+  id: string
+  fileName: string
+  status: HealthStatus
+  error?: string
+  payload?: HealthAutoExportPayload
+  preview?: HaeImportSummary
+  savedSummary?: string
 }
 
 type IdStatus = 'extracting' | 'ready' | 'saving' | 'saved' | 'illegible' | 'error'
@@ -147,6 +171,7 @@ export function MisCapturas() {
   const [bioItems, setBioItems] = useState<BioItem[]>([])
   const [rejectItems, setRejectItems] = useState<RejectItem[]>([])
   const [identity, setIdentity] = useState<IdentityState | null>(null)
+  const [healthItems, setHealthItems] = useState<HealthFileItem[]>([])
 
   // Revocar object URLs al desmontar.
   useEffect(() => {
@@ -165,6 +190,10 @@ export function MisCapturas() {
 
   const patchBio = useCallback((id: string, patch: Partial<BioItem>) => {
     setBioItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)))
+  }, [])
+
+  const patchHealth = useCallback((id: string, patch: Partial<HealthFileItem>) => {
+    setHealthItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)))
   }, [])
 
   const onFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,12 +219,14 @@ export function MisCapturas() {
     setFiles((prev) => prev.filter((_, i) => i !== idx))
   }, [])
 
-  const hasResults = bioItems.length > 0 || rejectItems.length > 0 || identity !== null
+  const hasResults =
+    bioItems.length > 0 || rejectItems.length > 0 || identity !== null || healthItems.length > 0
 
   const resetResults = useCallback(() => {
     setBioItems([])
     setRejectItems([])
     setIdentity(null)
+    setHealthItems([])
   }, [])
 
   // ─── procesar el lote ─────────────────────────────────────────────
@@ -205,16 +236,64 @@ export function MisCapturas() {
     resetResults()
     const batch = files
     setFiles([])
-    setDetectProgress({ done: 0, total: batch.length })
 
-    // 1) Detectar el tipo de cada archivo (independiente: si falla, rechazo).
+    // 0) Apartar los archivos de Apple Health (.json/.zip): no van por Visión,
+    //    se parsean como datos estructurados. El resto son imágenes (pantallazos).
+    const healthFiles = batch.filter(isAppleHealthCandidate)
+    const imageFiles = batch.filter((f) => !isAppleHealthCandidate(f))
+
+    // Apple Health: cada archivo es independiente; parseamos para el PREVIEW.
+    if (healthFiles.length > 0) {
+      const seededHealth = healthFiles.map((file, i) => ({
+        id: `hae_${Date.now()}_${i}`,
+        file,
+      }))
+      setHealthItems(
+        seededHealth.map(({ id, file }) => ({
+          id,
+          fileName: file.name,
+          status: 'parsing' as HealthStatus,
+        })),
+      )
+      void runPool(seededHealth, 3, async ({ id, file }) => {
+        try {
+          const payload = await readHaePayloadFromFile(file)
+          const preview = previewHae(payload)
+          if (preview.healthMetrics === 0 && preview.sleepRecords === 0) {
+            const detail = preview.skipped.length
+              ? `No encontré métricas que SIR sepa importar. Apple mandó: ${preview.skipped.join(', ')}.`
+              : 'El archivo no trae métricas para importar (revisá el rango exportado).'
+            patchHealth(id, { status: 'error', error: detail })
+            return
+          }
+          patchHealth(id, { status: 'ready', payload, preview })
+        } catch (e) {
+          const msg =
+            e instanceof HaeImportError
+              ? e.message
+              : e instanceof Error
+                ? e.message
+                : 'No pude leer el archivo de Apple Health.'
+          patchHealth(id, { status: 'error', error: msg })
+        }
+      })
+    }
+
+    if (imageFiles.length === 0) {
+      setProcessing(false)
+      setDetectProgress(null)
+      return
+    }
+    setDetectProgress({ done: 0, total: imageFiles.length })
+
+    // 1) Detectar el tipo de cada imagen (independiente: si falla, rechazo).
     type Plan =
       | { file: File; route: 'scale' | 'sleep' | 'hr' }
       | { file: File; route: 'identity' }
       | { file: File; route: 'reject'; reason: string }
     const plans: Plan[] = []
     let done = 0
-    await runPool(batch, 3, async (file) => {
+    await runPool(imageFiles, 3, async (file) => {
       try {
         const res = await detectCaptureType(file)
         const decision = routeSelfCapture(res.detected.type)
@@ -230,7 +309,7 @@ export function MisCapturas() {
         plans.push({ file, route: 'reject', reason: `No se pudo analizar: ${msg}` })
       } finally {
         done += 1
-        setDetectProgress({ done, total: batch.length })
+        setDetectProgress({ done, total: imageFiles.length })
       }
     })
 
@@ -350,9 +429,30 @@ export function MisCapturas() {
         )
       })()
     }
-  }, [files, processing, resetResults, makeUrl, patchBio])
+  }, [files, processing, resetResults, makeUrl, patchBio, patchHealth])
 
   // ─── guardado por tipo ────────────────────────────────────────────
+
+  const saveHealth = useCallback(
+    async (item: HealthFileItem) => {
+      if (!item.payload) return
+      patchHealth(item.id, { status: 'saving' })
+      try {
+        const result = await importAppleHealth(item.payload)
+        const parts: string[] = []
+        if (result.healthMetrics > 0) parts.push(`${result.healthMetrics} métricas`)
+        if (result.sleepRecords > 0) parts.push(`${result.sleepRecords} noches`)
+        const summary = `${parts.join(' · ') || 'Sin novedades'}${result.daysCovered ? ` · ${result.daysCovered} día${result.daysCovered === 1 ? '' : 's'}` : ''}`
+        patchHealth(item.id, { status: 'saved', savedSummary: summary })
+        toast.success('Apple Health importado', { description: summary })
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Falló al importar.'
+        toast.error('No se pudo importar', { description: msg })
+        patchHealth(item.id, { status: 'ready' })
+      }
+    },
+    [patchHealth],
+  )
 
   const saveScale = useCallback(
     async (item: BioItem, finalMetrics: Partial<Record<ScaleMetric, number>>, measuredAt: string) => {
@@ -443,10 +543,15 @@ export function MisCapturas() {
       node?.querySelector('form')?.requestSubmit()
     }
     if (identity?.status === 'ready') saveIdentity()
-  }, [bioItems, identity, saveIdentity])
+    for (const it of healthItems) {
+      if (it.status === 'ready') void saveHealth(it)
+    }
+  }, [bioItems, identity, saveIdentity, healthItems, saveHealth])
 
   const pendingCount =
-    bioItems.filter((it) => it.status === 'ready').length + (identity?.status === 'ready' ? 1 : 0)
+    bioItems.filter((it) => it.status === 'ready').length +
+    (identity?.status === 'ready' ? 1 : 0) +
+    healthItems.filter((it) => it.status === 'ready').length
 
   // ─── render ───────────────────────────────────────────────────────
 
@@ -459,8 +564,10 @@ export function MisCapturas() {
         </div>
         <p className="text-xs text-muted-foreground mb-4 leading-snug">
           Una sola caja para tu data: subí varios pantallazos a la vez (báscula, sueño, frecuencia
-          cardíaca o tu propio perfil de LinkedIn/Instagram). SIR detecta cada uno y lo manda al lugar
-          correcto. Revisás y guardás. Las capturas de <span className="font-medium">otras personas</span> van por{' '}
+          cardíaca o tu propio perfil de LinkedIn/Instagram), o el archivo de{' '}
+          <span className="font-medium">Apple Health</span> (Health Auto Export → Manual Export → JSON,
+          también .zip). SIR detecta cada uno y lo manda al lugar correcto. Revisás y guardás. Las
+          capturas de <span className="font-medium">otras personas</span> van por{' '}
           <Link href="/captura" className="underline underline-offset-2 hover:text-foreground">Captura</Link>.
         </p>
 
@@ -470,7 +577,7 @@ export function MisCapturas() {
             ref={inputRef}
             type="file"
             multiple
-            accept="image/jpeg,image/png,image/webp,image/gif"
+            accept="image/jpeg,image/png,image/webp,image/gif,application/json,application/zip,.json,.zip"
             onChange={onFiles}
             disabled={processing}
             className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10 disabled:opacity-50"
@@ -539,6 +646,16 @@ export function MisCapturas() {
                 onDismiss={() => setIdentity(null)}
               />
             )}
+
+            {/* Apple Health (archivo) */}
+            {healthItems.map((item) => (
+              <HealthResult
+                key={item.id}
+                item={item}
+                onSave={() => saveHealth(item)}
+                onDismiss={() => setHealthItems((prev) => prev.filter((h) => h.id !== item.id))}
+              />
+            ))}
 
             {/* Biométricas */}
             {bioItems.map((item) => (
@@ -789,6 +906,96 @@ function IdentityResult({
         onCancel={onDismiss}
         cancelLabel="Quitar"
       />
+    </div>
+  )
+}
+
+// ─── sub-render: item de Apple Health (archivo) ─────────────────────
+
+function HealthResult({
+  item,
+  onSave,
+  onDismiss,
+}: {
+  item: HealthFileItem
+  onSave: () => void
+  onDismiss: () => void
+}) {
+  if (item.status === 'parsing') {
+    return (
+      <div className="rounded-md border border-border/60 bg-muted/10 p-3 flex items-center gap-2.5">
+        <Activity size={15} strokeWidth={1.75} className="text-primary/70 flex-shrink-0" aria-hidden="true" />
+        <span className="text-xs font-medium text-foreground">Apple Health</span>
+        <span className="text-[11px] text-muted-foreground font-mono truncate min-w-0 flex-1">{item.fileName}</span>
+        <Loader2 size={13} className="animate-spin text-muted-foreground flex-shrink-0" aria-hidden="true" />
+      </div>
+    )
+  }
+
+  if (item.status === 'saved') {
+    return (
+      <div className="rounded-md border border-ok/30 bg-ok-soft p-3 flex items-center gap-2.5">
+        <Check size={15} strokeWidth={2} className="text-ok flex-shrink-0" aria-hidden="true" />
+        <span className="text-xs font-medium text-foreground">Apple Health</span>
+        <span className="text-[11px] text-ok flex-1 min-w-0 truncate">{item.savedSummary ?? 'Importado.'}</span>
+      </div>
+    )
+  }
+
+  if (item.status === 'error') {
+    return (
+      <div className="rounded-md border border-bad/30 bg-bad-soft p-3 flex items-start gap-2.5">
+        <Activity size={15} strokeWidth={1.75} className="text-bad flex-shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-medium text-foreground">Apple Health · {item.fileName}</div>
+          <div className="text-[11px] text-bad leading-snug mt-0.5">{item.error ?? 'No se pudo leer el archivo.'}</div>
+        </div>
+        <Button size="sm" variant="ghost" onClick={onDismiss} className="flex-shrink-0 -my-1">Quitar</Button>
+      </div>
+    )
+  }
+
+  // ready / saving → preview con el resumen de lo que entraría.
+  const p = item.preview
+  return (
+    <div className="rounded-md border border-primary/20 bg-muted/10 p-3">
+      <div className="flex items-center gap-2 pb-2">
+        <Activity size={14} strokeWidth={1.75} className="text-primary/80 flex-shrink-0" aria-hidden="true" />
+        <span className="text-xs font-medium text-foreground">Apple Health</span>
+        <Badge variant="outline" className="text-[9px] font-mono uppercase tracking-wider truncate max-w-[12rem]">{item.fileName}</Badge>
+      </div>
+
+      {p && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground mb-2">
+          <span><span className="font-semibold text-foreground">{p.healthMetrics}</span> métricas</span>
+          <span><span className="font-semibold text-foreground">{p.sleepRecords}</span> noches de sueño</span>
+          <span><span className="font-semibold text-foreground">{p.daysCovered}</span> día{p.daysCovered === 1 ? '' : 's'}</span>
+          {p.days.length > 0 && (
+            <span className="text-text-tertiary">{p.days[0]} → {p.days[p.days.length - 1]}</span>
+          )}
+        </div>
+      )}
+
+      {p && p.skipped.length > 0 && (
+        <div className="text-[10px] text-text-tertiary leading-snug mb-2">
+          No mapeadas (se ignoran): {p.skipped.join(', ')}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={onSave} disabled={item.status === 'saving'} className="inline-flex items-center gap-1.5">
+          {item.status === 'saving' ? (
+            <><Loader2 size={13} className="animate-spin" aria-hidden="true" />Importando…</>
+          ) : (
+            <><Check size={13} strokeWidth={2} aria-hidden="true" />Importar</>
+          )}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onDismiss} disabled={item.status === 'saving'}>Descartar</Button>
+      </div>
+
+      <p className="text-[10px] text-text-tertiary leading-snug mt-2">
+        Reimportar el mismo rango no duplica nada (dedupe por día y métrica).
+      </p>
     </div>
   )
 }
