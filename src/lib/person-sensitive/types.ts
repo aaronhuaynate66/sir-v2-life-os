@@ -12,4 +12,8 @@ export interface PersonSensitiveData {
   pasaporteVencimiento?: string
   /** Path en el bucket privado person-documents ({userId}/{personId}/...). */
   fotoDocumentoPath?: string | null
+  /** Notas privadas en prosa (contexto sensible que NO va al resumen general).
+   *  Vive en `person_sensitive_data` a propósito: NUNCA viaja a IA/embeddings/
+   *  grafo/síntesis ni a dossier/CSV. Solo se ve en su sección sensible. */
+  privateNotes?: string
 }

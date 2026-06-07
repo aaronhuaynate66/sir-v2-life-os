@@ -1,12 +1,15 @@
 // SIR V2 — GET/PUT /api/person-sensitive (información sensible por persona).
 //
-// Datos de identidad-dura (DNI, pasaporte, foto del documento) — tabla
-// person_sensitive_data (1:1 people, migration 0025), RLS por user_id.
+// Datos de identidad-dura (DNI, pasaporte, foto del documento) + notas privadas
+// en prosa (private_notes, migration 0063) — tabla person_sensitive_data
+// (1:1 people, migration 0025), RLS por user_id.
 //
 // MANEJO SENSIBLE:
 //   - NO se loguean valores (ni en console ni en Sentry: reportApiError captura
 //     la excepción, nunca el body).
-//   - Estos datos NO los lee ningún engine / grafo / embedding / síntesis.
+//   - Estos datos NO los lee ningún engine / grafo / embedding / síntesis. En
+//     particular private_notes NUNCA entra a un prompt de IA (a diferencia de
+//     people.notes, que sí viaja): vive en esta tabla aislada justamente por eso.
 //   - Ownership doble: RLS + verificación explícita de que la persona es del
 //     usuario antes de leer/escribir.
 //
@@ -36,7 +39,13 @@ interface SensitiveRow {
   pasaporte_numero: string | null
   pasaporte_vencimiento: string | null
   foto_documento_path: string | null
+  private_notes: string | null
 }
+
+// Columnas que leemos. private_notes (0063) va al final: si la migración aún no
+// corrió, el select la incluye igual y el catch tolerante devuelve {} (no rompe).
+const SELECT_COLS =
+  'documento_tipo, documento_numero, pasaporte_numero, pasaporte_vencimiento, foto_documento_path, private_notes'
 
 function toDto(row: Partial<SensitiveRow> | null) {
   return {
@@ -45,6 +54,7 @@ function toDto(row: Partial<SensitiveRow> | null) {
     pasaporteNumero: row?.pasaporte_numero ?? undefined,
     pasaporteVencimiento: row?.pasaporte_vencimiento ?? undefined,
     fotoDocumentoPath: row?.foto_documento_path ?? null,
+    privateNotes: row?.private_notes ?? undefined,
   }
 }
 
@@ -76,7 +86,7 @@ export async function GET(req: NextRequest) {
   try {
     const { data, error } = await supabase
       .from('person_sensitive_data')
-      .select('documento_tipo, documento_numero, pasaporte_numero, pasaporte_vencimiento, foto_documento_path')
+      .select(SELECT_COLS)
       .eq('person_id', personId)
       .maybeSingle()
     if (error) return NextResponse.json(toDto(null))
@@ -93,6 +103,7 @@ interface PutBody {
   pasaporteNumero?: unknown
   pasaporteVencimiento?: unknown
   fotoDocumentoPath?: unknown
+  privateNotes?: unknown
 }
 
 function cleanStr(v: unknown, max = 200): string | null {
@@ -126,32 +137,52 @@ export async function PUT(req: NextRequest) {
   // pasaporte_vencimiento: date 'YYYY-MM-DD' o null.
   const venc = cleanStr(body.pasaporteVencimiento, 10)
   const vencValid = venc && /^\d{4}-\d{2}-\d{2}$/.test(venc) ? venc : null
+  // Notas privadas (0063): prosa libre, cap generoso. null = borradas.
+  const privateNotes = cleanStr(body.privateNotes, 5000)
+
+  // Base de doc/identidad (existe desde 0025).
+  const basePayload = {
+    person_id: personId,
+    user_id: userId,
+    documento_tipo: cleanStr(body.documentoTipo),
+    documento_numero: cleanStr(body.documentoNumero),
+    pasaporte_numero: cleanStr(body.pasaporteNumero),
+    pasaporte_vencimiento: vencValid,
+    foto_documento_path: cleanStr(body.fotoDocumentoPath, 400),
+    updated_at: new Date().toISOString(),
+  }
 
   try {
+    // Intento con private_notes (0063). Si la columna aún no existe en prod
+    // (migración pendiente), reintentamos sin ella para no romper el guardado
+    // de los datos de documento — fail-open, mismo espíritu que el resto.
     const { data, error } = await supabase
       .from('person_sensitive_data')
-      .upsert(
-        {
-          person_id: personId,
-          user_id: userId,
-          documento_tipo: cleanStr(body.documentoTipo),
-          documento_numero: cleanStr(body.documentoNumero),
-          pasaporte_numero: cleanStr(body.pasaporteNumero),
-          pasaporte_vencimiento: vencValid,
-          foto_documento_path: cleanStr(body.fotoDocumentoPath, 400),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'person_id' },
-      )
-      .select('documento_tipo, documento_numero, pasaporte_numero, pasaporte_vencimiento, foto_documento_path')
+      .upsert({ ...basePayload, private_notes: privateNotes }, { onConflict: 'person_id' })
+      .select(SELECT_COLS)
       .maybeSingle()
-    if (error) {
-      // No incluimos el body (sensible) en el detalle.
-      return errorJson(500, 'No se pudo guardar', error.message.slice(0, 200))
+    if (!error) return NextResponse.json(toDto(data as SensitiveRow | null))
+
+    if (isMissingColumn(error)) {
+      const fallback = await supabase
+        .from('person_sensitive_data')
+        .upsert(basePayload, { onConflict: 'person_id' })
+        .select('documento_tipo, documento_numero, pasaporte_numero, pasaporte_vencimiento, foto_documento_path')
+        .maybeSingle()
+      if (fallback.error) return errorJson(500, 'No se pudo guardar', fallback.error.message.slice(0, 200))
+      return NextResponse.json(toDto(fallback.data as SensitiveRow | null))
     }
-    return NextResponse.json(toDto(data as SensitiveRow | null))
+    // No incluimos el body (sensible) en el detalle.
+    return errorJson(500, 'No se pudo guardar', error.message.slice(0, 200))
   } catch (e) {
     reportApiError(e) // captura la excepción, NO el payload sensible
     return errorJson(500, 'No se pudo guardar')
   }
+}
+
+/** ¿El error es "la columna no existe"? (migración 0063 sin correr). */
+function isMissingColumn(error: { code?: string; message?: string }): boolean {
+  if (error.code === '42703' || error.code === 'PGRST204') return true
+  const m = (error.message ?? '').toLowerCase()
+  return m.includes('private_notes') && m.includes('column')
 }

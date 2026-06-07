@@ -1,7 +1,8 @@
 'use client'
 // SIR V2 — Información sensible / datos adicionales (colapsable, al fondo de la
-// ficha). Documento (DNI), pasaporte y foto del documento de la persona, para
-// tenerlos a mano. Colapsado por defecto y marcado como sensible.
+// ficha). Documento (DNI), pasaporte, foto del documento y NOTAS PRIVADAS en
+// prosa (0063) de la persona, para tenerlos a mano. Colapsado por defecto y
+// marcado como sensible.
 //
 // - Carga lazy (al abrir) via /api/person-sensitive (RLS). Tolerante: si la
 //   tabla/bucket aún no existen, muestra el form vacío (no rompe la ficha).
@@ -16,6 +17,7 @@ import { ShieldAlert, ChevronDown, Loader2, Upload, ImageIcon, Eye, ScanLine } f
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import {
@@ -42,6 +44,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
   const [documentoNumero, setDocumentoNumero] = useState('')
   const [pasaporteNumero, setPasaporteNumero] = useState('')
   const [pasaporteVencimiento, setPasaporteVencimiento] = useState('')
+  const [privateNotes, setPrivateNotes] = useState('')
   const [fotoPath, setFotoPath] = useState<string | null>(null)
   const [fotoUrl, setFotoUrl] = useState<string | null>(null)
 
@@ -53,6 +56,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
       setDocumentoNumero(d.documentoNumero ?? '')
       setPasaporteNumero(d.pasaporteNumero ?? '')
       setPasaporteVencimiento(d.pasaporteVencimiento ?? '')
+      setPrivateNotes(d.privateNotes ?? '')
       setFotoPath(d.fotoDocumentoPath ?? null)
       setLoaded(true)
     } catch {
@@ -78,7 +82,16 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
         const path = await uploadDocumentPhoto(personId, file)
         setFotoPath(path)
         setFotoUrl(null) // se regenera con "Ver"
-        await saveSensitiveData(personId, { fotoDocumentoPath: path })
+        // Reenviamos el resto del estado (el upsert es de fila completa) para no
+        // pisar documento/notas privadas que ya estén cargadas.
+        await saveSensitiveData(personId, {
+          documentoTipo: documentoTipo.trim() || undefined,
+          documentoNumero: documentoNumero.trim() || undefined,
+          pasaporteNumero: pasaporteNumero.trim() || undefined,
+          pasaporteVencimiento: pasaporteVencimiento || undefined,
+          privateNotes: privateNotes.trim() || undefined,
+          fotoDocumentoPath: path,
+        })
         toast.success('Foto del documento guardada')
       } catch (err) {
         toast.error('No se pudo subir la foto', {
@@ -89,7 +102,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
         if (e.target) e.target.value = ''
       }
     },
-    [personId],
+    [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes],
   )
 
   // Capturar documento: sube la foto al bucket privado + extrae los campos por
@@ -123,6 +136,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
           documentoNumero: dni.trim() || undefined,
           pasaporteNumero: pasNum.trim() || undefined,
           pasaporteVencimiento: pasVenc || undefined,
+          privateNotes: privateNotes.trim() || undefined,
           fotoDocumentoPath: path,
         })
         toast.success('Documento leído y guardado', { description: 'Revisá los datos y corregí si hace falta.' })
@@ -134,7 +148,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
         setScanning(false)
       }
     },
-    [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento],
+    [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes],
   )
 
   const viewPhoto = useCallback(async () => {
@@ -156,6 +170,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
         documentoNumero: documentoNumero.trim() || undefined,
         pasaporteNumero: pasaporteNumero.trim() || undefined,
         pasaporteVencimiento: pasaporteVencimiento || undefined,
+        privateNotes: privateNotes.trim() || undefined,
         fotoDocumentoPath: fotoPath,
       })
       toast.success('Datos guardados')
@@ -166,7 +181,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
     } finally {
       setSaving(false)
     }
-  }, [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, fotoPath])
+  }, [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes, fotoPath])
 
   return (
     <Card className="shadow-none mb-4 border-warn/20">
@@ -194,8 +209,9 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
         {open && (
           <div className="mt-4">
             <p className="text-[11px] text-warn/80 bg-warn-soft border border-warn/20 rounded-md p-2.5 mb-4 leading-relaxed">
-              Datos privados (documento, pasaporte). Se guardan cifrados en reposo por Supabase, con
-              acceso solo tuyo (RLS), y <span className="font-medium">no</span> se usan en IA, grafo ni resúmenes.
+              Datos privados (documento, pasaporte, notas privadas). Se guardan cifrados en reposo por
+              Supabase, con acceso solo tuyo (RLS), y <span className="font-medium">no</span> se usan en
+              IA, grafo, resúmenes, dossier ni export.
             </p>
 
             {loading ? (
@@ -225,6 +241,24 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
                     <Input id="sd-pass-venc" type="date" value={pasaporteVencimiento} onChange={(e) => setPasaporteVencimiento(e.target.value)}
                       disabled={saving} className="mt-1 font-mono" />
                   </div>
+                </div>
+
+                {/* Notas privadas (prosa libre). Viven en person_sensitive_data:
+                    NUNCA van a IA, dossier, CSV ni a las vistas resumen. */}
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="sd-private-notes" className="text-xs">Notas privadas</Label>
+                    <span className="text-[10px] text-warn/70">Solo vos lo ves · nunca se envía a IA</span>
+                  </div>
+                  <Textarea
+                    id="sd-private-notes"
+                    value={privateNotes}
+                    onChange={(e) => setPrivateNotes(e.target.value)}
+                    placeholder="Contexto sensible en tus palabras: temas personales, cosas a tener presente… (no aparece en el resumen general ni se manda a la IA)"
+                    disabled={saving}
+                    rows={4}
+                    className="mt-1 resize-y"
+                  />
                 </div>
 
                 {/* Foto del documento (bucket privado) + lectura por IA. */}
