@@ -352,7 +352,8 @@ function FinanceContent() {
             key={t}
             onClick={() => setFilterType(t)}
             className={cn(
-              'text-[10px] font-mono px-2.5 py-1.5 rounded border transition-colors',
+              // Hit-area táctil ≥44px en mobile (WCAG 2.5.5); en desktop revierte a la altura compacta.
+              'inline-flex items-center min-h-11 sm:min-h-0 text-[10px] font-mono px-2.5 py-1.5 rounded border transition-colors',
               filterType === t
                 ? 'border-primary/40 text-primary bg-primary/10'
                 : 'border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground',

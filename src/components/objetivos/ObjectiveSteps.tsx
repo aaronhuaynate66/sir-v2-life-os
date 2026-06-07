@@ -735,7 +735,8 @@ function IconBtn({
       disabled={disabled}
       aria-label={label}
       className={cn(
-        'p-2 text-text-tertiary transition-colors disabled:opacity-25',
+        // Hit-area táctil ≥44px en mobile (WCAG 2.5.5); en desktop revierte a p-2 compacto.
+        'inline-flex items-center justify-center min-h-11 min-w-11 sm:min-h-0 sm:min-w-0 p-2 text-text-tertiary transition-colors disabled:opacity-25',
         danger ? 'hover:text-bad' : 'hover:text-foreground',
       )}
     >

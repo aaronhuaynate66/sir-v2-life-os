@@ -38,7 +38,8 @@ export function GraphFiltersBar({ filters, onChange }: GraphFiltersProps) {
           size="sm"
           onClick={toggleOnlyDirect}
           className={cn(
-            'h-7 px-2.5 text-[11px]',
+            // Hit-area táctil ≥44px en mobile (WCAG 2.5.5); en desktop revierte a h-7.
+            'h-11 sm:h-7 px-2.5 text-[11px]',
             filters.onlyDirect && 'bg-primary text-primary-foreground hover:bg-primary/90',
           )}
           aria-pressed={filters.onlyDirect}
@@ -110,7 +111,8 @@ function CategoryTab({
       size="sm"
       onClick={onClick}
       className={cn(
-        'h-7 px-2.5 text-[11px] font-mono',
+        // Hit-area táctil ≥44px en mobile (WCAG 2.5.5); en desktop revierte a h-7.
+        'h-11 sm:h-7 px-2.5 text-[11px] font-mono',
         active && 'bg-primary text-primary-foreground hover:bg-primary/90',
       )}
       aria-pressed={active}

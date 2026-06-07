@@ -34,6 +34,7 @@ import type { LucideIcon } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
@@ -124,7 +125,7 @@ export function ProximoPanel({
         {items == null ? (
           <Placeholder />
         ) : items.length === 0 ? (
-          <EmptyState />
+          <NothingUpcoming />
         ) : (
           <ul className="space-y-1.5" aria-label="Recordatorios próximos">
             {items.map((item) => (
@@ -220,24 +221,31 @@ function Placeholder() {
   )
 }
 
-function EmptyState() {
+// Empty state propio del panel: usa el primitivo canónico (icono + título +
+// acción) pero la "acción" es copy pedagógico con links navegables — el campo
+// `hint` es string y no puede llevar <Link>, así que va por `action`.
+function NothingUpcoming() {
   return (
-    <div className="text-sm text-muted-foreground space-y-2 py-2">
-      <p className="text-foreground/80">Nada urgente en el horizonte. 🌤️</p>
-      <p className="text-xs leading-relaxed">
-        Esta vista agrega lo accionable de tu red: cumpleaños y fechas
-        especiales próximas, objetivos por vencer, señales sin resolver y
-        contactos que hace tiempo no tocás. Va a poblarse sola a medida que
-        registres{' '}
-        <Link href="/relaciones" className="underline underline-offset-2 hover:text-foreground">
-          fechas de tus personas
-        </Link>{' '}
-        y{' '}
-        <Link href="/objetivos" className="underline underline-offset-2 hover:text-foreground">
-          objetivos con fecha
-        </Link>
-        .
-      </p>
-    </div>
+    <EmptyState
+      icon={CalendarClock}
+      size="sm"
+      title="Nada urgente en el horizonte. 🌤️"
+      action={
+        <p className="text-xs leading-relaxed text-muted-foreground max-w-md">
+          Esta vista agrega lo accionable de tu red: cumpleaños y fechas
+          especiales próximas, objetivos por vencer, señales sin resolver y
+          contactos que hace tiempo no tocás. Va a poblarse sola a medida que
+          registres{' '}
+          <Link href="/relaciones" className="underline underline-offset-2 hover:text-foreground">
+            fechas de tus personas
+          </Link>{' '}
+          y{' '}
+          <Link href="/objetivos" className="underline underline-offset-2 hover:text-foreground">
+            objetivos con fecha
+          </Link>
+          .
+        </p>
+      }
+    />
   )
 }

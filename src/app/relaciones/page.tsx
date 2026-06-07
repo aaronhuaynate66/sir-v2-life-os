@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Avatar } from '@/components/ui/avatar'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
@@ -380,15 +381,17 @@ function RelationshipsContent() {
       </AnimatePresence>
 
       {people.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-          <Users size={28} strokeWidth={1.5} className="text-muted-foreground/40" />
-          <div className="text-sm text-muted-foreground">Sin personas registradas todavia.</div>
-          <p className="text-xs text-muted-foreground/60">Agrega tu primera persona para mapear tus relaciones.</p>
-          <Button variant="outline" size="sm" onClick={openAdd} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
-            <UserPlus size={14} strokeWidth={1.75} />
-            Agregar persona
-          </Button>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Sin personas registradas todavia."
+          hint="Agrega tu primera persona para mapear tus relaciones."
+          action={
+            <Button variant="outline" size="sm" onClick={openAdd} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
+              <UserPlus size={14} strokeWidth={1.75} />
+              Agregar persona
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {people.map((person) => {

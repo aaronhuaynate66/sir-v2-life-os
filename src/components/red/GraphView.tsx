@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Network } from 'lucide-react'
 
 import { GraphFiltersBar } from './GraphFilters'
@@ -135,10 +136,8 @@ export function GraphView({ selfFullName, selfEmail, directContactIds = [], inte
 
       {emptyStateMessage ? (
         <Card className="shadow-none">
-          <CardContent className="p-8 sm:p-12 flex flex-col items-center text-center gap-3">
-            <Network size={28} strokeWidth={1.25} className="text-muted-foreground/60" aria-hidden="true" />
-            <div className="text-sm font-medium text-foreground">{emptyStateMessage.title}</div>
-            <div className="text-xs text-muted-foreground max-w-md">{emptyStateMessage.body}</div>
+          <CardContent className="py-0">
+            <EmptyState icon={Network} title={emptyStateMessage.title} hint={emptyStateMessage.body} />
           </CardContent>
         </Card>
       ) : (
