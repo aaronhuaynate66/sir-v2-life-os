@@ -29,6 +29,7 @@ import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { useMemoryStore } from '@/stores'
 import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
+import { HabitsStrip } from '@/components/panel/HabitsStrip'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
@@ -301,6 +302,9 @@ function DashboardContent() {
 
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
       <DailyBriefingCard />
+
+      {/* Hábitos (Etapa 3): check-in del día + racha, donde aterriza el usuario. */}
+      <HabitsStrip />
 
       {/* Agenda "Próximo", alertas relacionales y señales viven ahora en la
           columna derecha (rightRail) para descomprimir el centro. */}
