@@ -356,6 +356,8 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
 Mejoras incrementales. Hacer cuando aporte valor concreto.
 
+- **`/captura` — subir VARIAS imágenes a la vez** (pedido 2026-06-08): hoy la ruta `/captura` procesa **una** imagen por vez (Elegí imagen → Detectar tipo → Vincular → Guardar). Permitir seleccionar/soltar múltiples archivos y procesarlos en lote (detectar tipo + vincular + guardar cada uno). **Distinto** de "varias imágenes del MISMO perfil → consolidar en 1" (ya existe) y del panel "Mis capturas" de `/yo`: acá son capturas potencialmente de tipos/personas distintas subidas juntas. Considerar: cola con estado por imagen, detección de tipo por archivo, y resolución de persona por archivo. Esfuerzo: medio.
+
 - **Storage buckets — cleanup de huérfanos**: las observations soft-deleteadas el 29/05 dejaron imágenes en `linkedin-captures`, `instagram-captures`, `whatsapp-captures`, `person-avatars` bajo `{user_id}/...`. Tarea de datos, no de código: listar paths por bucket vs observations vivas y borrar las huérfanas. Esfuerzo: 30 min con script. **No ejecutar hasta que se decida la política de retención de imágenes asociadas a `observations.is_obsolete=true`** (¿borrar al obsoletar? ¿quedan como referencia?). Pendiente decisión.
 
 - ~~**Sentry + Vercel Analytics**~~ ✅ INSTALADO: `@sentry/nextjs` + `@vercel/analytics` cableados (`instrumentation.ts`/`instrumentation-client.ts`, `onRequestError`; no-op sin DSN). Falta solo cargar el DSN en prod para que capture.
