@@ -21,9 +21,13 @@ import {
   buildWeekDays,
 } from './cockpit'
 
-// 1-jun-2026, medianoche local. La TZ del runner es la local del proyecto
-// (Lima en prod). Los eventos del calendario usan ISO con Z explícito.
-const NOW = new Date(2026, 5, 1)
+// 1-jun-2026, mediodía UTC. Instante ABSOLUTO (no hora local) para que el test
+// sea TZ-independiente: a las 12:00Z el día calendario es 1-jun tanto en hora
+// local del runner (UTC en CI, Lima en dev) como en día Lima (toLimaDateOnly,
+// UTC-5 → 07:00). Antes era `new Date(2026, 5, 1)` (medianoche LOCAL): en un
+// runner UTC su día-Lima caía 31-may y el grid de la semana arrancaba un día
+// antes, dejando los eventos fuera de bucket (fallaba solo en CI/UTC).
+const NOW = new Date('2026-06-01T12:00:00.000Z')
 
 function goal(over: Partial<Goal>): Goal {
   return {
