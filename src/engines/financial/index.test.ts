@@ -31,13 +31,12 @@ function mv(type: FinancialMovement['type'], amountPEN: number): FinancialMoveme
 }
 
 describe('analyzeFinancialStability', () => {
-  it('sin movimientos ni liquidez → balanceScore base 5, stability 2.5, critical/stable', () => {
+  it('sin movimientos → estado NEUTRAL (no critical): no penaliza la ausencia de datos', () => {
     const r = analyzeFinancialStability([], 0)
     expect(r.monthlyBalance).toBe(0)
     expect(r.savingsRate).toBe(0)
-    expect(r.liquidityScore).toBe(0)
-    expect(r.stability).toBe(2.5)
-    expect(r.riskLevel).toBe('critical')
+    expect(r.stability).toBe(7) // NEUTRAL_STABILITY
+    expect(r.riskLevel).toBe('low') // antes 'critical' — bug que arrastraba el Peace Score
     expect(r.trend).toBe('stable')
   })
 
@@ -119,6 +118,15 @@ describe('detectFinancialAlerts', () => {
   it('NO falso positivo de sobregasto con ingreso 0 y gasto 0', () => {
     // 0 > 0*0.9 === 0 > 0 === false → sin overspend.
     expect(detectFinancialAlerts([], 5)).toHaveLength(0)
+  })
+
+  it('sin movimientos → sin alertas (ni liquidez): no penaliza la ausencia', () => {
+    expect(detectFinancialAlerts([], 0)).toHaveLength(0)
+  })
+
+  it('liquidityMonths 0 = desconocido (con movimientos) → NO alerta de liquidez', () => {
+    const alerts = detectFinancialAlerts([mv('income', 1000), mv('expense', 500)], 0)
+    expect(alerts.find((a) => a.type === 'liquidity')).toBeUndefined()
   })
 })
 
