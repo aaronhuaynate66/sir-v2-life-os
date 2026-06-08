@@ -10,7 +10,7 @@
 // El veredicto se computa client-side desde los stores (goals + people +
 // relationships) → sin red para el estado; la red sólo entra para la narrativa.
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Compass, Loader2, Sparkles, X } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -88,9 +88,27 @@ function ReflectionSkeleton() {
 }
 
 export function AlignmentPanel({ goals, people, relationships, memories }: AlignmentPanelProps) {
+  const [interactionTones, setInteractionTones] = useState<Record<string, number[]>>({})
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/person-logs/interactions')
+        if (!res.ok) return
+        const data = (await res.json()) as { tones?: Record<string, number[]> }
+        if (!cancelled && data.tones) setInteractionTones(data.tones)
+      } catch {
+        // fail-soft: sin tonos, el engine corre igual (señales relacionales).
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const alignments = useMemo(
-    () => computeAlignments(goals, { people, relationships, memories }),
-    [goals, people, relationships, memories],
+    () => computeAlignments(goals, { people, relationships, memories, interactionTones }),
+    [goals, people, relationships, memories, interactionTones],
   )
   // Solo objetivos con ≥1 PERSONA vinculada: comparar "lo declarado vs el
   // comportamiento observado" solo tiene sentido ahí. Vincular personas es

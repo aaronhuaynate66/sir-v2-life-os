@@ -70,6 +70,42 @@ const ctx = (people: Person[], relationships: Relationship[] = [], memories: Mem
   now: NOW,
 })
 
+describe('computeGoalAlignment — señal de tono (A, Etapa 4)', () => {
+  it('interacciones positivas (avg ≥3.5) → señal concern 0 (acompaña)', () => {
+    const p = person({ id: 'p', name: 'Diana' })
+    const g = goal({ id: 'g', relatedPersons: ['p'] })
+    const a = computeGoalAlignment(g, { people: [p], relationships: [], memories: [], now: NOW, interactionTones: { p: [4, 5, 4] } })
+    const tone = a.signals.find((s) => s.kind === 'interaction_tone')
+    expect(tone).toBeTruthy()
+    expect(tone?.concern).toBe(0)
+    expect(a.state).toBe('aligned')
+  })
+
+  it('interacciones tensas (≤2, ≥2 registros) → concern 2 → needs_attention', () => {
+    const p = person({ id: 'p', name: 'Diana' })
+    const g = goal({ id: 'g', relatedPersons: ['p'] })
+    const a = computeGoalAlignment(g, { people: [p], relationships: [], memories: [], now: NOW, interactionTones: { p: [1, 2] } })
+    const tone = a.signals.find((s) => s.kind === 'interaction_tone')
+    expect(tone?.concern).toBe(2)
+    expect(a.state).toBe('needs_attention')
+  })
+
+  it('sin tonos → no hay señal de tono', () => {
+    const p = person({ id: 'p', name: 'Diana' })
+    const g = goal({ id: 'g', relatedPersons: ['p'] })
+    const a = computeGoalAlignment(g, { people: [p], relationships: [], memories: [], now: NOW })
+    expect(a.signals.find((s) => s.kind === 'interaction_tone')).toBeUndefined()
+  })
+
+  it('usa solo las últimas 5 interacciones', () => {
+    const p = person({ id: 'p', name: 'Diana' })
+    const g = goal({ id: 'g', relatedPersons: ['p'] })
+    // viejas malas + últimas 5 buenas → debe leerse positivo
+    const a = computeGoalAlignment(g, { people: [p], relationships: [], memories: [], now: NOW, interactionTones: { p: [1, 1, 1, 4, 5, 4, 5, 4] } })
+    expect(a.signals.find((s) => s.kind === 'interaction_tone')?.concern).toBe(0)
+  })
+})
+
 describe('computeGoalAlignment — inferencia por evidencia (B, Etapa 4)', () => {
   it('objetivo SIN personas vinculadas pero con memoria que lo menciona → INFERIDO', () => {
     const g = goal({ id: 'venta', title: 'cerrar venta farmacia', category: 'financial', relatedPersons: [] })
