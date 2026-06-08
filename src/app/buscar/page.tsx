@@ -32,6 +32,7 @@ export default function BuscarPage() {
   const [error, setError] = useState<ApiError | null>(null)
 
   const [indexing, setIndexing] = useState(false)
+  const [rebuilding, setRebuilding] = useState(false)
   const [indexMsg, setIndexMsg] = useState<string | null>(null)
 
   async function runSearch(e?: React.FormEvent) {
@@ -70,6 +71,43 @@ export default function BuscarPage() {
     }
   }
 
+  async function rebuildIndex() {
+    if (rebuilding || indexing) return
+    setRebuilding(true)
+    setIndexMsg(null)
+    setError(null)
+    try {
+      // 1. Derivar memorias de TODAS las personas (paginado por offset).
+      let offset = 0
+      let derivedInserted = 0
+      let guard = 0
+      for (;;) {
+        const r = await postJson<{ nextOffset: number; remaining: number; totals: { inserted: number } }>(
+          '/api/memories/derive-all',
+          { offset },
+        )
+        derivedInserted += r.totals?.inserted ?? 0
+        offset = r.nextOffset
+        if (r.remaining <= 0 || ++guard > 200) break
+      }
+      // 2. Indexar (embeddear) las memorias que quedaron sin vector.
+      let embedded = 0
+      guard = 0
+      for (;;) {
+        const r = await postJson<{ embedded: number; remaining: number }>('/api/memories/embed', {})
+        embedded += r.embedded
+        if (r.remaining <= 0 || ++guard > 200) break
+      }
+      setIndexMsg(
+        `Índice actualizado: ${derivedInserted} memoria${derivedInserted === 1 ? '' : 's'} nueva${derivedInserted === 1 ? '' : 's'} derivada${derivedInserted === 1 ? '' : 's'}, ${embedded} indexada${embedded === 1 ? '' : 's'}.`,
+      )
+    } catch (e) {
+      setError(toApiError(e))
+    } finally {
+      setRebuilding(false)
+    }
+  }
+
   return (
     <AppShell>
       <div className="mb-6">
@@ -101,10 +139,16 @@ export default function BuscarPage() {
         <p className="text-[11px] text-muted-foreground/70">
           ¿Resultados vacíos? Indexá tus memorias primero (genera los embeddings).
         </p>
-        <Button size="sm" variant="ghost" onClick={indexMemories} disabled={indexing}>
-          {indexing ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <RefreshCw size={13} strokeWidth={1.75} className="mr-1.5" />}
-          Indexar memorias
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button size="sm" variant="ghost" onClick={indexMemories} disabled={indexing || rebuilding}>
+            {indexing ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <RefreshCw size={13} strokeWidth={1.75} className="mr-1.5" />}
+            Indexar memorias
+          </Button>
+          <Button size="sm" variant="outline" onClick={rebuildIndex} disabled={rebuilding || indexing}>
+            {rebuilding ? <Loader2 size={13} className="animate-spin mr-1.5" /> : <Sparkles size={13} strokeWidth={1.75} className="mr-1.5" />}
+            Actualizar índice completo
+          </Button>
+        </div>
       </div>
 
       {indexMsg && (
