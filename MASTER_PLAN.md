@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1c6ad91`
+**Hash del último commit humano:** `e4f5a6d`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e4f5a6d` | aaronhuaynate66 | test(horario): cockpit TZ-independiente — desbloquea Validate (y el runner) (#105) | 2026-06-08 |
 | `1c6ad91` | aaronhuaynate66 | feat(score): fundación historial del score relacional (PR-A) (#104) | 2026-06-08 |
 | `18da965` | aaronhuaynate66 | fix(peace): finanzas sin datos = neutral, no critical (+ ADR 0007 scope) (#103) | 2026-06-08 |
 | `7568641` | aaronhuaynate66 | ci(migrate): agregar --include-all a db push para aplicar 0063 | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e3d3161` | aaronhuaynate66 | feat(buscar): derivar todas las personas + indexar en un click (#100) | 2026-06-08 |
 | `781b248` | aaronhuaynate66 | docs(roadmap): Etapa 2 (búsqueda semántica) ACTIVA — 3b desbloqueada (#99) | 2026-06-08 |
 | `5f6380e` | aaronhuaynate66 | docs(roadmap): re-sync BACKLOG + STRATEGIC con el push de junio 2026 (#98) | 2026-06-08 |
-| `abc76ae` | Aaron Huaynate | @ | 2026-06-07 |
 
 ---
 
