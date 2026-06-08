@@ -451,6 +451,7 @@ export function ObjectiveSteps({
                 updateStep(id, patch)
                 setEditId(null)
               }}
+              onUpdateKr={updateStep}
             />
           ))}
         </ul>
@@ -518,6 +519,87 @@ export function ObjectiveSteps({
 }
 
 /** Una fila de Resultado Clave con sus tareas (expandibles) y alta de tarea. */
+function fmtMetric(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(1)
+}
+
+/** Editor inline de la métrica numérica de un KR (0068). Autocontenido. */
+function MetricEditor({
+  kr,
+  onUpdateKr,
+}: {
+  kr: ObjectiveStep
+  onUpdateKr: (id: string, patch: Partial<ObjectiveStep>) => void
+}) {
+  const hasMetric = typeof kr.metricTarget === 'number' && kr.metricTarget > 0
+  const [editing, setEditing] = useState(false)
+  const [cur, setCur] = useState('')
+  const [tar, setTar] = useState('')
+  const [unit, setUnit] = useState('')
+
+  function open() {
+    setCur(kr.metricCurrent != null ? String(kr.metricCurrent) : '')
+    setTar(kr.metricTarget != null ? String(kr.metricTarget) : '')
+    setUnit(kr.metricUnit ?? '')
+    setEditing(true)
+  }
+  function save() {
+    const t = tar.trim() === '' ? NaN : Number(tar)
+    const c = cur.trim() === '' ? NaN : Number(cur)
+    onUpdateKr(kr.id, {
+      metricTarget: Number.isFinite(t) ? t : undefined,
+      metricCurrent: Number.isFinite(c) ? c : undefined,
+      metricUnit: unit.trim() || undefined,
+    })
+    setEditing(false)
+  }
+  function clear() {
+    onUpdateKr(kr.id, { metricTarget: undefined, metricCurrent: undefined, metricUnit: undefined })
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+        <Input value={cur} onChange={(e) => setCur(e.target.value)} inputMode="decimal" placeholder="actual" className="h-7 w-20 text-xs" />
+        <span className="text-xs text-text-tertiary">/</span>
+        <Input value={tar} onChange={(e) => setTar(e.target.value)} inputMode="decimal" placeholder="meta" className="h-7 w-20 text-xs" />
+        <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="unidad" className="h-7 w-24 text-xs" />
+        <Button size="sm" variant="outline" onClick={save} className="h-7">Guardar</Button>
+        <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-7">Cancelar</Button>
+        {hasMetric && (
+          <Button size="sm" variant="ghost" onClick={clear} className="h-7 text-destructive">Quitar</Button>
+        )}
+      </div>
+    )
+  }
+
+  if (hasMetric) {
+    const curVal = typeof kr.metricCurrent === 'number' ? kr.metricCurrent : 0
+    const u = kr.metricUnit ? ` ${kr.metricUnit}` : ''
+    return (
+      <button
+        type="button"
+        onClick={open}
+        className="mt-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+        title="Editar métrica"
+      >
+        Medible: {fmtMetric(curVal)}{u} / {fmtMetric(kr.metricTarget as number)}{u}
+      </button>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={open}
+      className="mt-1.5 text-[11px] text-text-tertiary hover:text-foreground underline underline-offset-2"
+    >
+      + métrica medible
+    </button>
+  )
+}
+
 function KeyResultRow({
   kr,
   tasks,
@@ -540,6 +622,7 @@ function KeyResultRow({
   onRemoveTask,
   onSetTaskStatus,
   onSaveTaskEdit,
+  onUpdateKr,
 }: {
   kr: ObjectiveStep
   tasks: ObjectiveStep[]
@@ -563,12 +646,14 @@ function KeyResultRow({
   onRemoveTask: (kr: ObjectiveStep, task: ObjectiveStep) => void
   onSetTaskStatus: (id: string, ts: TaskStatus) => void
   onSaveTaskEdit: (id: string, patch: Partial<ObjectiveStep>) => void
+  onUpdateKr: (id: string, patch: Partial<ObjectiveStep>) => void
 }) {
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDate, setNewTaskDate] = useState('')
   const hasTasks = tasks.length > 0
   const krProgress = computeKeyResultProgress(tasks, kr)
   const krDone = krProgress.percent === 100
+  const hasMetric = typeof kr.metricTarget === 'number' && kr.metricTarget > 0
   const krEditing = editId === kr.id
 
   function submitTask() {
@@ -641,14 +726,15 @@ function KeyResultRow({
                   {kr.title}
                 </span>
                 <span className="text-[10px] font-mono tabular-nums text-text-tertiary">
-                  {hasTasks ? `${krProgress.done}/${krProgress.total} · ${krProgress.percent}%` : 'sin tareas'}
+                  {hasMetric ? `${krProgress.percent}%` : hasTasks ? `${krProgress.done}/${krProgress.total} · ${krProgress.percent}%` : 'sin tareas'}
                 </span>
               </div>
-              {hasTasks && (
+              {(hasTasks || hasMetric) && (
                 <div className="mt-1.5 h-1 bg-secondary rounded-full max-w-[12rem]">
                   <div className="h-1 rounded-full bg-brand transition-all" style={{ width: krProgress.percent + '%' }} />
                 </div>
               )}
+              <MetricEditor kr={kr} onUpdateKr={onUpdateKr} />
               <TrackerStrip objectiveStepId={kr.id} className="mt-1.5" />
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">

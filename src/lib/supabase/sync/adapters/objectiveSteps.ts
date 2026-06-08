@@ -20,6 +20,12 @@ import type {
 import type { TableAdapter } from '../types'
 
 const VALID_STATUS: readonly ObjectiveStepStatus[] = ['pendiente', 'en_progreso', 'hecho']
+function coerceNum(raw: unknown): number | undefined {
+  if (raw === null || raw === undefined || raw === '') return undefined
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  return Number.isFinite(n) ? n : undefined
+}
+
 const VALID_TASK_STATUS: readonly TaskStatus[] = ['todo', 'in_progress', 'blocked', 'done']
 const VALID_EFFORT: readonly TaskEffort[] = ['S', 'M', 'L']
 const VALID_PRIORITY: readonly TaskPriority[] = ['low', 'med', 'high']
@@ -79,6 +85,9 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     priority: s.priority ?? null,
     task_status: s.taskStatus ?? null,
     blocked_by: s.blockedBy ?? null,
+    metric_target: s.metricTarget ?? null,
+    metric_current: s.metricCurrent ?? null,
+    metric_unit: s.metricUnit ?? null,
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -97,5 +106,8 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     priority: coerceEnum<TaskPriority>(row.priority, VALID_PRIORITY),
     taskStatus: coerceEnum<TaskStatus>(row.task_status, VALID_TASK_STATUS),
     blockedBy: coerceBlockedBy(row.blocked_by),
+    metricTarget: coerceNum(row.metric_target),
+    metricCurrent: coerceNum(row.metric_current),
+    metricUnit: (row.metric_unit as string) || undefined,
   }),
 }
