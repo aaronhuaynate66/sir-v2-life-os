@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `108cc50`
+**Hash del último commit humano:** `0c873e8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `0c873e8` | aaronhuaynate66 | feat(score): cron diario de snapshots del score relacional (PR-C) (#107) | 2026-06-08 |
 | `108cc50` | aaronhuaynate66 | feat(relaciones): tendencia del score relacional en la ficha (PR-B) (#106) | 2026-06-08 |
 | `e4f5a6d` | aaronhuaynate66 | test(horario): cockpit TZ-independiente — desbloquea Validate (y el runner) (#105) | 2026-06-08 |
 | `1c6ad91` | aaronhuaynate66 | feat(score): fundación historial del score relacional (PR-A) (#104) | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `fddab8f` | aaronhuaynate66 | docs(backlog): /captura — subir varias imágenes a la vez (pendiente menor) [skip ci] (#102) | 2026-06-08 |
 | `cc50cdc` | aaronhuaynate66 | docs(roadmap): cierra cobertura E2 vía derivar-todo; decisión de no embeddear observations [skip ci] (#101) | 2026-06-08 |
 | `e3d3161` | aaronhuaynate66 | feat(buscar): derivar todas las personas + indexar en un click (#100) | 2026-06-08 |
-| `781b248` | aaronhuaynate66 | docs(roadmap): Etapa 2 (búsqueda semántica) ACTIVA — 3b desbloqueada (#99) | 2026-06-08 |
 
 ---
 
