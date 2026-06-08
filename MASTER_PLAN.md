@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `55dd728`
+**Hash del último commit humano:** `9c23c25`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `9c23c25` | aaronhuaynate66 | feat(objetivos): KR numéricos medibles (E4 · punto E) (#117) | 2026-06-08 |
 | `55dd728` | aaronhuaynate66 | feat(alineación): tono de interacción como señal (E4 · punto A) (#116) | 2026-06-08 |
 | `b86341f` | aaronhuaynate66 | feat(alineación): inferir vínculo de objetivos por evidencia (E4 · punto B) (#115) | 2026-06-08 |
 | `f9a8592` | aaronhuaynate66 | feat(habitos): nudge proactivo en Mission Control (Etapa 3 — loop) (#114) | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `83c0d3f` | aaronhuaynate66 | fix(captura): el lote ACUMULA archivos entre selecciones + quitar item (#110) | 2026-06-08 |
 | `4b0afe1` | aaronhuaynate66 | feat(captura): subir varias imágenes a la vez en /captura (#102) (#109) | 2026-06-08 |
 | `e3ac8c5` | aaronhuaynate66 | fix(cron): observabilidad en score-snapshots — logear causa del 500 (#108) | 2026-06-08 |
-| `0c873e8` | aaronhuaynate66 | feat(score): cron diario de snapshots del score relacional (PR-C) (#107) | 2026-06-08 |
 
 ---
 
