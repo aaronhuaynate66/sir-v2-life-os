@@ -72,4 +72,4 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         # Tras el baseline (ver docs/MIGRATIONS.md) esto es NO-OP hasta que se
         # agregue un 00NN nuevo. `db push` aplica sólo lo que falte, en orden.
-        run: supabase db push
+        run: supabase db push --include-all
