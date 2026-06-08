@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `83c0d3f`
+**Hash del último commit humano:** `6cf0980`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6cf0980` | aaronhuaynate66 | feat(habitos): fundación Etapa 3 — modelo + lógica de racha (incremento 1) (#111) | 2026-06-08 |
 | `83c0d3f` | aaronhuaynate66 | fix(captura): el lote ACUMULA archivos entre selecciones + quitar item (#110) | 2026-06-08 |
 | `4b0afe1` | aaronhuaynate66 | feat(captura): subir varias imágenes a la vez en /captura (#102) (#109) | 2026-06-08 |
 | `e3ac8c5` | aaronhuaynate66 | fix(cron): observabilidad en score-snapshots — logear causa del 500 (#108) | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1c6ad91` | aaronhuaynate66 | feat(score): fundación historial del score relacional (PR-A) (#104) | 2026-06-08 |
 | `18da965` | aaronhuaynate66 | fix(peace): finanzas sin datos = neutral, no critical (+ ADR 0007 scope) (#103) | 2026-06-08 |
 | `7568641` | aaronhuaynate66 | ci(migrate): agregar --include-all a db push para aplicar 0063 | 2026-06-08 |
-| `cad68dd` | aaronhuaynate66 | docs(migrations): actualizar baseline a 0001..0065 + activación 2026-06-08 | 2026-06-08 |
 
 ---
 
