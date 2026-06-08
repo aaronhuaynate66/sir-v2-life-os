@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e3ac8c5`
+**Hash del último commit humano:** `4b0afe1`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `4b0afe1` | aaronhuaynate66 | feat(captura): subir varias imágenes a la vez en /captura (#102) (#109) | 2026-06-08 |
 | `e3ac8c5` | aaronhuaynate66 | fix(cron): observabilidad en score-snapshots — logear causa del 500 (#108) | 2026-06-08 |
 | `0c873e8` | aaronhuaynate66 | feat(score): cron diario de snapshots del score relacional (PR-C) (#107) | 2026-06-08 |
 | `108cc50` | aaronhuaynate66 | feat(relaciones): tendencia del score relacional en la ficha (PR-B) (#106) | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `7568641` | aaronhuaynate66 | ci(migrate): agregar --include-all a db push para aplicar 0063 | 2026-06-08 |
 | `cad68dd` | aaronhuaynate66 | docs(migrations): actualizar baseline a 0001..0065 + activación 2026-06-08 | 2026-06-08 |
 | `fddab8f` | aaronhuaynate66 | docs(backlog): /captura — subir varias imágenes a la vez (pendiente menor) [skip ci] (#102) | 2026-06-08 |
-| `cc50cdc` | aaronhuaynate66 | docs(roadmap): cierra cobertura E2 vía derivar-todo; decisión de no embeddear observations [skip ci] (#101) | 2026-06-08 |
 
 ---
 
