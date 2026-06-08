@@ -8,6 +8,18 @@
 
 ---
 
+## Actualización 2026-06-08 (re-sync con el push de junio)
+
+> Los bloques "Estado (2026-05-31)" de abajo siguen válidos en lo esencial; esto registra lo entregado entre el 1 y 7 de junio. Detalle táctico en [`BACKLOG.md`](./BACKLOG.md).
+
+- **Etapa 1 (relacional):** aún más superada — cockpit `/horario` Día/Semana/Mes, síntesis narrativa de la ficha (serie GEMA), familia como vínculo real, motor de proactividad "Hoy con tu gente" ponderado por parentesco.
+- **Etapa 2 (memoria semántica):** **SIN CAMBIOS — sigue DORMIDA** por falta de `OPENAI_API_KEY`. Continúa siendo el bloqueo de mayor ROI.
+- **Etapa 3 (comportamiento):** más sembrada — ingesta Apple Health (archivo + Health Auto Export), capturas de sueño/FC, módulo `/seguimiento` (trackers con alertas).
+- **Etapa 4 (identidad/alineación):** progresa — objetivos SMART + tareas "Jira-light" estructuradas (acercan los Human OKRs medibles), señales TAGGED cableadas al panel de Alineación, onboarding/anclas de identidad en `/yo`.
+- **Tensión Principio #4 (scope):** el push de junio amplió superficies (salud, seguimiento; finanzas ya existía). Refuerza la necesidad de la decisión de scope pendiente.
+
+---
+
 ## Visión
 
 Evolucionar de una herramienta de **inteligencia relacional** a un **AI-Native Human Operating System**: un sistema que acompaña a la persona a lo largo de la vida, no una app de features sueltas.
