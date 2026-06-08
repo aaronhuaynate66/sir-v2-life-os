@@ -7,6 +7,42 @@
 
 ---
 
+## ✅ EN PRODUCCIÓN — actualización (2026-06-08)
+
+> Re-sincronización con `git log` tras el push del 1–7 jun 2026. La reconciliación del 31-may (más abajo) quedó atrás; esto la complementa con lo entregado después.
+
+**Horario / Cockpit operativo:**
+- Cockpit `/horario` Día/Semana/Mes cruzando calendario con tareas/OKR/estado físico (lógica pura + UI conmutable).
+- Brief del día/semana/mes generado por IA (extiende el brief diario de Fase 5).
+- Reader multi-calendario unificado con color por feed; checklist OAuth Google + Microsoft/Graph (`docs/CALENDAR_V2_OAUTH.md`).
+- Vista Día: tareas con hora opcional caen en su franja; cuenta solo TIEMPO (relaciones/peso fuera).
+
+**Relaciones — serie GEMA (síntesis + proactividad):**
+- Síntesis narrativa de la ficha: franja de resumen al tope, secciones narrativas sintetizadas, memorias colapsadas, tercer eje "Vida social".
+- "Hoy con tu gente": motor de urgencia de contacto (puro) ponderado por parentesco, en `/horario` y `/relaciones`; API de Daily Actions (scoring sin IA + mensaje on-demand).
+- Reciprocidad por delta de calidad; superficie "Antes de contactar" en la ficha.
+- Redes sociales funcionando: auto-link de handle, @ clickeable, seguidores en común de IG (extracción + enlace a la red).
+- Notas privadas en la sección sensible; excluir/marcar memoria como privada (fuera de IA, no se re-deriva).
+
+**Familia:** vínculo real persona↔persona con parentesco (autocompletar, bidireccional, sugerencias) y vínculo SELF↔persona con inferencia desde el "yo".
+
+**Objetivos:** wizard guiado SMART antes del plan IA (gating + baseline); tareas "Jira-light" por objetivo (criterio, fecha, esfuerzo, prioridad, dependencias, estado; migración 0050); fixes de confiabilidad del plan IA (504/502 por max_tokens/maxDuration).
+
+**Seguimiento (`/seguimiento`):** modelo + lógica pura de trackers, ingesta Vision/texto, tablero, resumen en objetivos, alertas por email (provider opcional) + cron.
+
+**Yo / Identidad y Salud:**
+- Onboarding conversacional "Contale a SIR quién sos" (anti-formulario-vacío) + auto-captura del perfil propio → anclas de identidad en `/yo`.
+- Apple Health: ingesta Health Auto Export (endpoint, Fase 1) + importar como archivo .json/.zip (camino $0).
+- Capturas nuevas: `sleep_panel` (pantallazo app de sueño → sleep_records), `heart_rate_panel` (FC → health_metrics), FC en reposo vs general.
+
+**Panel:** "TU AÑO" — brújula anual sobre Mission Control.
+
+**Alineación (Etapa 4):** señales TAGGED cableadas al panel de Alineación.
+
+**Migraciones nuevas:** hasta `0050` (objective steps/OKR/SMART 0040–0042, calendar_connections 0046, person_profile_axes 0047, action_suggestions 0048, tareas Jira-light 0050). **Pendiente:** re-verificar drift de `0046`–`0050` contra prod.
+
+---
+
 ## ✅ EN PRODUCCIÓN — reconciliación (2026-05-31)
 
 > Estado verificado contra `git log` y el código. Lo de abajo **ya está en prod**; las secciones históricas más abajo se conservan como bitácora pero pueden estar desactualizadas frente a esto.
