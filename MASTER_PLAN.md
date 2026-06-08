@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e3d3161`
+**Hash del último commit humano:** `18da965`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `18da965` | aaronhuaynate66 | fix(peace): finanzas sin datos = neutral, no critical (+ ADR 0007 scope) (#103) | 2026-06-08 |
+| `7568641` | aaronhuaynate66 | ci(migrate): agregar --include-all a db push para aplicar 0063 | 2026-06-08 |
+| `cad68dd` | aaronhuaynate66 | docs(migrations): actualizar baseline a 0001..0065 + activación 2026-06-08 | 2026-06-08 |
+| `fddab8f` | aaronhuaynate66 | docs(backlog): /captura — subir varias imágenes a la vez (pendiente menor) [skip ci] (#102) | 2026-06-08 |
+| `cc50cdc` | aaronhuaynate66 | docs(roadmap): cierra cobertura E2 vía derivar-todo; decisión de no embeddear observations [skip ci] (#101) | 2026-06-08 |
 | `e3d3161` | aaronhuaynate66 | feat(buscar): derivar todas las personas + indexar en un click (#100) | 2026-06-08 |
 | `781b248` | aaronhuaynate66 | docs(roadmap): Etapa 2 (búsqueda semántica) ACTIVA — 3b desbloqueada (#99) | 2026-06-08 |
 | `5f6380e` | aaronhuaynate66 | docs(roadmap): re-sync BACKLOG + STRATEGIC con el push de junio 2026 (#98) | 2026-06-08 |
 | `abc76ae` | Aaron Huaynate | @ | 2026-06-07 |
 | `d941498` | Aaron Huaynate | @ | 2026-06-07 |
-| `0381b12` | Aaron Huaynate | @ | 2026-06-07 |
-| `138472c` | Aaron Huaynate | @ | 2026-06-07 |
-| `eccf733` | Aaron Huaynate | @ | 2026-06-07 |
-| `02475a6` | Aaron Huaynate | @ | 2026-06-07 |
-| `54ca6c3` | Aaron Huaynate | @ | 2026-06-07 |
 
 ---
 
@@ -455,7 +455,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 - **0023** (`rate_limits`, runner de rate limiting) sigue requiriendo aplicarse (idempotente); el baseline asume que ya está en prod.
 
 **Pendiente real (lo que NO está hecho):**
-- ~~**Activar Fase 3b (búsqueda semántica)**~~ ✅ **HECHO (2026-06-08):** `OPENAI_API_KEY` cargada en Vercel (Production), 23 memorias indexadas (`/api/memories/embed`), `/buscar` validado con resultados semánticos coherentes. Pendiente menor: embeddear `observations` además de `memories`.
+- ~~**Activar Fase 3b (búsqueda semántica)**~~ ✅ **HECHO (2026-06-08):** `OPENAI_API_KEY` cargada en Vercel (Production), 23 memorias indexadas (`/api/memories/embed`), `/buscar` validado. **Cobertura cerrada** con el botón "Actualizar índice completo" (PR #100): deriva todas las personas + indexa en un click. **Decisión:** NO embeddear `observations` crudas (ruido/duplicación; contradice la vista curada) — la cobertura se logra derivando.
 - **Fase 3d** — memoria que aprende (RAG cross-session).
 - **Etapa 4 follow-ups:** Human OKRs estructurados, Narrative Intelligence, delta de relationship score (necesita snapshots históricos), tono de interacción desde `person_logs` en el engine, inferencia LLM de dominio para objetivos de texto libre.
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
@@ -688,7 +688,7 @@ Sub-fases ya estructuradas como milestones en GitHub.
 | Sub-fase | Capacidad | Estado | Nota |
 |----------|-----------|--------|------|
 | 3a | Historial Profundo | ✅ CERRADA | (cerrada 28/05) |
-| 3b | Búsqueda semántica (pgvector + embeddings) | ✅ ACTIVA (2026-06-08) | key cargada + memorias indexadas; pendiente menor: embeddear `observations` |
+| 3b | Búsqueda semántica (pgvector + embeddings) | ✅ ACTIVA (2026-06-08) | key + memorias indexadas; cobertura cerrada con "Actualizar índice completo" (PR #100); decisión: no embeddear `observations` crudas |
 | 3c | Resumen automático de patrones longitudinales | ✅ ENTREGADA | correlación lunar/ciclo + resumen semanal (`874f019`, 0016) |
 | 3d | Memoria que aprende (RAG cross-session) | ⬜ Pendiente | 5-8 sesiones; depende de 3b activa |
 
@@ -734,6 +734,8 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 ## ⏳ PENDIENTES MENORES (no urgentes)
 
 Mejoras incrementales. Hacer cuando aporte valor concreto.
+
+- **`/captura` — subir VARIAS imágenes a la vez** (pedido 2026-06-08): hoy la ruta `/captura` procesa **una** imagen por vez (Elegí imagen → Detectar tipo → Vincular → Guardar). Permitir seleccionar/soltar múltiples archivos y procesarlos en lote (detectar tipo + vincular + guardar cada uno). **Distinto** de "varias imágenes del MISMO perfil → consolidar en 1" (ya existe) y del panel "Mis capturas" de `/yo`: acá son capturas potencialmente de tipos/personas distintas subidas juntas. Considerar: cola con estado por imagen, detección de tipo por archivo, y resolución de persona por archivo. Esfuerzo: medio.
 
 - **Storage buckets — cleanup de huérfanos**: las observations soft-deleteadas el 29/05 dejaron imágenes en `linkedin-captures`, `instagram-captures`, `whatsapp-captures`, `person-avatars` bajo `{user_id}/...`. Tarea de datos, no de código: listar paths por bucket vs observations vivas y borrar las huérfanas. Esfuerzo: 30 min con script. **No ejecutar hasta que se decida la política de retención de imágenes asociadas a `observations.is_obsolete=true`** (¿borrar al obsoletar? ¿quedan como referencia?). Pendiente decisión.
 
