@@ -65,8 +65,20 @@ export function BatchCapturePanel() {
   const [running, setRunning] = useState(false)
 
   const onFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? [])
-    setItems(files.map((f) => ({ id: nextId(), file: f, status: 'pending' as ItemStatus })))
+    const picked = Array.from(e.target.files ?? [])
+    setItems((prev) => {
+      const seen = new Set(prev.map((it) => `${it.file.name}:${it.file.size}`))
+      const added = picked
+        .filter((f) => !seen.has(`${f.name}:${f.size}`))
+        .map((f) => ({ id: nextId(), file: f, status: 'pending' as ItemStatus }))
+      return [...prev, ...added]
+    })
+    // Permite volver a elegir el MISMO archivo luego (reset del input).
+    e.target.value = ''
+  }, [])
+
+  const removeItem = useCallback((id: string) => {
+    setItems((prev) => prev.filter((it) => it.id !== id))
   }, [])
 
   const patch = useCallback((id: string, p: Partial<BatchItem>) => {
@@ -175,15 +187,27 @@ export function BatchCapturePanel() {
                         {it.detectedType && ` · ${it.detectedType}`}
                       </div>
                     </div>
-                    <Badge
-                      variant={it.status === 'done' ? 'default' : it.status === 'error' ? 'destructive' : 'secondary'}
-                      className="text-[10px] font-mono shrink-0"
-                    >
-                      {(it.status === 'detecting' || it.status === 'processing') && (
-                        <Loader2 size={10} className="mr-1 animate-spin" />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge
+                        variant={it.status === 'done' ? 'default' : it.status === 'error' ? 'destructive' : 'secondary'}
+                        className="text-[10px] font-mono"
+                      >
+                        {(it.status === 'detecting' || it.status === 'processing') && (
+                          <Loader2 size={10} className="mr-1 animate-spin" />
+                        )}
+                        {STATUS_LABEL[it.status]}
+                      </Badge>
+                      {(it.status === 'pending' || it.status === 'error' || it.status === 'skipped') && !running && (
+                        <button
+                          type="button"
+                          onClick={() => removeItem(it.id)}
+                          className="text-muted-foreground/60 hover:text-foreground"
+                          aria-label="Quitar de la lista"
+                        >
+                          <X size={13} />
+                        </button>
                       )}
-                      {STATUS_LABEL[it.status]}
-                    </Badge>
+                    </div>
                   </div>
 
                   {it.status === 'error' && it.error && (
