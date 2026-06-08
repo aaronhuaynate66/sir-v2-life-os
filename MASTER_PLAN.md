@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ad660bf`
+**Hash del último commit humano:** `6368536`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6368536` | aaronhuaynate66 | feat(habitos): tira de hábitos en Mission Control (Etapa 3) (#113) | 2026-06-08 |
 | `ad660bf` | aaronhuaynate66 | feat(habitos): API + página /habitos + nav (incremento 2) (#112) | 2026-06-08 |
 | `6cf0980` | aaronhuaynate66 | feat(habitos): fundación Etapa 3 — modelo + lógica de racha (incremento 1) (#111) | 2026-06-08 |
 | `83c0d3f` | aaronhuaynate66 | fix(captura): el lote ACUMULA archivos entre selecciones + quitar item (#110) | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `108cc50` | aaronhuaynate66 | feat(relaciones): tendencia del score relacional en la ficha (PR-B) (#106) | 2026-06-08 |
 | `e4f5a6d` | aaronhuaynate66 | test(horario): cockpit TZ-independiente — desbloquea Validate (y el runner) (#105) | 2026-06-08 |
 | `1c6ad91` | aaronhuaynate66 | feat(score): fundación historial del score relacional (PR-A) (#104) | 2026-06-08 |
-| `18da965` | aaronhuaynate66 | fix(peace): finanzas sin datos = neutral, no critical (+ ADR 0007 scope) (#103) | 2026-06-08 |
 
 ---
 
