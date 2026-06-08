@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { postJson } from '@/lib/api/errors'
 import { computeHabitStreak } from '@/lib/habits/streak'
+import { habitNudge } from '@/lib/habits/nudge'
 
 interface HabitDTO {
   id: string
@@ -93,6 +94,13 @@ export function HabitsStrip() {
             {habits.length > 0 ? 'ver todos' : 'crear'}
           </Link>
         </div>
+
+        {habits.length > 0 && (() => {
+          const n = habitNudge(habits)
+          if (!n) return null
+          const cls = n.tone === 'recover' ? 'text-warn' : n.tone === 'win' ? 'text-ok' : 'text-muted-foreground'
+          return <p className={cn('text-xs mb-3 -mt-1', cls)}>{n.text}</p>
+        })()}
 
         {habits.length === 0 ? (
           <p className="text-xs text-muted-foreground">
