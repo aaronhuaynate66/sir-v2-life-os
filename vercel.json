@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/tracker-alerts",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/score-snapshots",
+      "schedule": "25 11 * * *"
     }
   ]
 }
