@@ -48,6 +48,7 @@ export type SignalKind =
   | 'relationship_status'
   | 'energy_impact'
   | 'goal_activity'
+  | 'interaction_tone'
 
 /** Nivel de preocupación de una señal: 0 = acompaña, 1 = se desvía, 2 = brecha. */
 export type ConcernLevel = 0 | 1 | 2
@@ -87,6 +88,9 @@ export interface AlignmentContext {
   /** Memorias derivadas (tags estructurados + recencia). Opcional: sin ellas el
    *  engine se comporta como el MVP (sólo señales relacionales). */
   memories?: Memory[]
+  /** Tonos de interacción recientes por persona (person_logs kind='interaction',
+   *  valor 1-5, en orden CRONOLÓGICO). Opcional: alimenta la señal de tono. */
+  interactionTones?: Record<string, number[]>
   /** Override de "ahora" para tests. Default: new Date(). */
   now?: Date
 }
@@ -140,6 +144,36 @@ function statusSignal(person: Person, rel: Relationship | undefined): ObservedSi
           ? `Relación con ${person.name} dormida`
           : `Relación con ${person.name} activa`
   return { kind: 'relationship_status', label, concern, personId: person.id, personName: person.name }
+}
+
+/** Señal de TONO: promedio de las últimas interacciones (person_logs, 1-5).
+ *  Positivas (≥3.5) acompañan (concern 0); tensas (≤2 con ≥2 registros) marcan
+ *  brecha (concern 2); el resto se desvía (concern 1). null si no hay tonos. */
+function toneSignal(person: Person, tones: number[] | undefined): ObservedSignal | null {
+  const vals = (tones ?? []).filter((v) => typeof v === 'number' && v >= 1 && v <= 5)
+  if (vals.length === 0) return null
+  const recent = vals.slice(-5)
+  const avg = recent.reduce((a, b) => a + b, 0) / recent.length
+  let concern: ConcernLevel
+  let mood: string
+  if (avg >= 3.5) {
+    concern = 0
+    mood = 'positivas'
+  } else if (avg <= 2 && recent.length >= 2) {
+    concern = 2
+    mood = 'tensas'
+  } else {
+    concern = 1
+    mood = 'mixtas'
+  }
+  const n = recent.length
+  return {
+    kind: 'interaction_tone',
+    label: `Tus últimas ${n === 1 ? 'interacción' : `${n} interacciones`} con ${person.name} ${n === 1 ? 'fue' : 'fueron'} ${mood} (promedio ${avg.toFixed(1)}/5)`,
+    concern,
+    personId: person.id,
+    personName: person.name,
+  }
 }
 
 function energySignal(person: Person): ObservedSignal | null {
@@ -394,9 +428,11 @@ export function computeGoalAlignment(goal: Goal, ctx: AlignmentContext): GoalAli
     const c = contactSignal(person, now)
     const s = statusSignal(person, rel)
     const e = energySignal(person)
+    const t = toneSignal(person, ctx.interactionTones?.[person.id])
     if (c) signals.push(c)
     if (s) signals.push(s)
     if (e) signals.push(e)
+    if (t) signals.push(t)
   }
 
   // Señales TAGGED: actividad reciente sobre el objetivo extraída de los tags de
