@@ -60,7 +60,7 @@ Memoria semántica + embeddings, relationship graph, recuperación contextual, d
 - **Detección de evolución:** parcial — correlaciones longitudinales (Fase 3c) y resumen semanal, pero no un tracking estructurado del cambio del vínculo en el tiempo.
 - **Schema:** ✅ **prod 100% sincronizado con el repo** (drift de migraciones reconciliado el 31/05; `0012` restaurada vía `0022`, sin migraciones pendientes — 21/21 índices, `whatsapp_web`/`social` en sus enums, realtime y policies completos). El único bloqueo de E2 es la key, no el esquema.
 
-**E2 — eslabón cerrado (2026-06-08):** 3b activada (key cargada + embeddings indexados); `/buscar` operativo. Pendiente menor: embeddear también `observations` (hoy se indexan `memories`) y una detección estructurada de evolución del vínculo.
+**E2 — eslabón cerrado (2026-06-08):** 3b activada (key cargada + embeddings indexados); `/buscar` operativo. **Cobertura cerrada:** botón "Actualizar índice completo" en `/buscar` (PR #100) deriva TODAS las personas a `memories` y las indexa en un click. **Decisión:** NO se embeddean `observations` crudas — el contenido vive en `jsonb` heterogéneo por tipo, sería ruido/duplicación y rompería la vista curada; la cobertura se logra derivando, no embeddeando lo crudo. Pendiente real: detección estructurada de evolución del vínculo.
 
 ---
 
