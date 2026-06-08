@@ -91,6 +91,14 @@ export function computeKeyResultProgress(
   tasks: ObjectiveStep[],
   kr: ObjectiveStep,
 ): StepProgress {
+  // Métrica numérica explícita (0068) tiene PRIORIDAD: si hay meta > 0, el
+  // progreso es current/target (el usuario cuantificó el KR), por encima del
+  // rollup de tareas o el status.
+  if (typeof kr.metricTarget === 'number' && kr.metricTarget > 0) {
+    const cur = typeof kr.metricCurrent === 'number' ? kr.metricCurrent : 0
+    const percent = Math.max(0, Math.min(100, Math.round((cur / kr.metricTarget) * 100)))
+    return { done: percent >= 100 ? 1 : 0, total: 1, percent }
+  }
   const rollup = computeStepProgress(tasks)
   if (rollup) return rollup
   const done = kr.status === 'hecho' ? 1 : 0

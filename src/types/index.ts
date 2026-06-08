@@ -440,6 +440,14 @@ export interface ObjectiveStep {
   taskStatus?: TaskStatus
   /** IDs de otras tareas del MISMO objetivo que deben completarse antes ("depende de"). */
   blockedBy?: string[]
+  // ── Métrica medible del KR (0068). Solo kind='key_result'. Si metricTarget>0,
+  //    el progreso del KR = current/target (prioridad sobre el rollup de tareas). ──
+  /** Meta numérica del resultado clave (ej. 5000). */
+  metricTarget?: number
+  /** Valor actual hacia la meta (ej. 3200). */
+  metricCurrent?: number
+  /** Unidad para mostrar (ej. 'S/', 'kg', 'clientes'). */
+  metricUnit?: string
 }
 
 export interface Signal {

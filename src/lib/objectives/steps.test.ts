@@ -244,6 +244,35 @@ describe('tasksForKeyResult', () => {
   })
 })
 
+describe('computeKeyResultProgress — métrica numérica (0068)', () => {
+  it('métrica current/target → porcentaje', () => {
+    const k = kr({ id: 'k', metricTarget: 5000, metricCurrent: 3200 })
+    expect(computeKeyResultProgress([], k)).toEqual({ done: 0, total: 1, percent: 64 })
+  })
+
+  it('current ≥ target → 100% (done)', () => {
+    const k = kr({ id: 'k', metricTarget: 100, metricCurrent: 120 })
+    expect(computeKeyResultProgress([], k)).toEqual({ done: 1, total: 1, percent: 100 })
+  })
+
+  it('métrica tiene PRIORIDAD sobre el rollup de tareas', () => {
+    const k = kr({ id: 'k', metricTarget: 10, metricCurrent: 2 })
+    const tasks = [task({ id: 't1', parentId: 'k', status: 'hecho' }), task({ id: 't2', parentId: 'k', status: 'hecho' })]
+    // tareas dirían 100%, pero la métrica manda → 20%
+    expect(computeKeyResultProgress(tasks, k)).toEqual({ done: 0, total: 1, percent: 20 })
+  })
+
+  it('metricTarget 0 o ausente → cae al comportamiento previo (rollup/status)', () => {
+    const k = kr({ id: 'k', metricTarget: 0, status: 'hecho' })
+    expect(computeKeyResultProgress([], k)).toEqual({ done: 1, total: 1, percent: 100 })
+  })
+
+  it('current ausente con target → 0%', () => {
+    const k = kr({ id: 'k', metricTarget: 50 })
+    expect(computeKeyResultProgress([], k)).toEqual({ done: 0, total: 1, percent: 0 })
+  })
+})
+
 describe('computeKeyResultProgress', () => {
   it('con tareas → rollup hechas/total', () => {
     const k = kr({ id: 'k1' })
