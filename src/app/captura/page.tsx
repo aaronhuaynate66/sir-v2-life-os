@@ -36,6 +36,7 @@ import {
   type ProcessCaptureResponse,
 } from '@/lib/capture/observations/client'
 import type { CaptureType, Observation } from '@/lib/capture/observations/types'
+import { BatchCapturePanel } from '@/components/capture/BatchCapturePanel'
 
 const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
   'whatsapp_chat',
@@ -608,6 +609,8 @@ function CapturaIndexContent() {
           <HeartRateCaptureBranch file={file} onReset={onResetSelf} />
         </div>
       )}
+
+      <BatchCapturePanel />
 
       {!canExtract && !isScale && !isSleep && !isHr && detection && (
         <Card className="shadow-none mb-6">
