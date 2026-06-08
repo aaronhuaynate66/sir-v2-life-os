@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f9a8592`
+**Hash del último commit humano:** `b86341f`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b86341f` | aaronhuaynate66 | feat(alineación): inferir vínculo de objetivos por evidencia (E4 · punto B) (#115) | 2026-06-08 |
 | `f9a8592` | aaronhuaynate66 | feat(habitos): nudge proactivo en Mission Control (Etapa 3 — loop) (#114) | 2026-06-08 |
 | `6368536` | aaronhuaynate66 | feat(habitos): tira de hábitos en Mission Control (Etapa 3) (#113) | 2026-06-08 |
 | `ad660bf` | aaronhuaynate66 | feat(habitos): API + página /habitos + nav (incremento 2) (#112) | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e3ac8c5` | aaronhuaynate66 | fix(cron): observabilidad en score-snapshots — logear causa del 500 (#108) | 2026-06-08 |
 | `0c873e8` | aaronhuaynate66 | feat(score): cron diario de snapshots del score relacional (PR-C) (#107) | 2026-06-08 |
 | `108cc50` | aaronhuaynate66 | feat(relaciones): tendencia del score relacional en la ficha (PR-B) (#106) | 2026-06-08 |
-| `e4f5a6d` | aaronhuaynate66 | test(horario): cockpit TZ-independiente — desbloquea Validate (y el runner) (#105) | 2026-06-08 |
 
 ---
 
