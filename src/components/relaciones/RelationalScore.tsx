@@ -30,8 +30,9 @@
 
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Activity, Info } from 'lucide-react'
+import { Activity, Info, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import type { Observation } from '@/lib/capture/observations/types'
@@ -40,6 +41,7 @@ import { cn } from '@/lib/utils'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import { useMounted } from '@/hooks/useMounted'
 import { computeRelationalScore, healthBand } from '@/lib/people/relationalScore'
+import { computeScoreTrend, type ScoreTrend } from '@/lib/people/scoreTrend'
 
 export interface RelationalScoreProps {
   person: Person
@@ -80,6 +82,47 @@ function ScoreContent({ person, lastChat }: RelationalScoreProps) {
   )
   const band = healthBand(breakdown.global)
 
+  // PR-B: captura fire-and-forget del snapshot diario del score + tendencia.
+  // No debe romper la ficha: si falla (tabla ausente, red caída) simplemente no
+  // mostramos tendencia. El backend es idempotente por (persona, día).
+  const [trend, setTrend] = useState<ScoreTrend | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/person-score/snapshot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            person_id: person.id,
+            global: breakdown.global,
+            fuerza: breakdown.fuerza,
+            reciprocidad: breakdown.reciprocidad,
+            confianza: breakdown.confianza,
+            daysSinceLastChat: breakdown.daysSinceLastChat,
+          }),
+        })
+        if (!res.ok) return
+        const data = (await res.json()) as { snapshots?: { dateBucket: string; global: number }[] }
+        if (!cancelled && Array.isArray(data.snapshots)) {
+          setTrend(computeScoreTrend(data.snapshots))
+        }
+      } catch {
+        // best-effort: la tendencia es opcional.
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [
+    person.id,
+    breakdown.global,
+    breakdown.fuerza,
+    breakdown.confianza,
+    breakdown.reciprocidad,
+    breakdown.daysSinceLastChat,
+  ])
+
   return (
     <>
       <div className="flex items-center gap-5 mb-5">
@@ -109,6 +152,7 @@ function ScoreContent({ person, lastChat }: RelationalScoreProps) {
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
             Promedio de las dimensiones con datos.
           </p>
+          <TrendBadge trend={trend} />
         </div>
       </div>
 
@@ -124,6 +168,30 @@ function ScoreContent({ person, lastChat }: RelationalScoreProps) {
 
       <FooterLine person={person} daysSinceLastChat={breakdown.daysSinceLastChat} />
     </>
+  )
+}
+
+/** Indicador de tendencia del score global vs el snapshot más antiguo de la
+ *  ventana (person_score_snapshots). Null hasta que haya ≥2 días de historial. */
+function TrendBadge({ trend }: { trend: ScoreTrend | null }) {
+  if (!trend || trend.direction === 'insufficient_data' || trend.delta === null) return null
+  const cfg =
+    trend.direction === 'improving'
+      ? { Icon: TrendingUp, cls: 'text-ok' }
+      : trend.direction === 'declining'
+        ? { Icon: TrendingDown, cls: 'text-warn' }
+        : { Icon: Minus, cls: 'text-muted-foreground' }
+  const sign = trend.delta > 0 ? '+' : ''
+  const days = trend.comparedDays
+  const when = days && days > 0 ? ` vs hace ${days === 1 ? '1 día' : `${days} días`}` : ''
+  return (
+    <div className={cn('mt-1.5 flex items-center gap-1 text-[11px] font-medium', cfg.cls)}>
+      <cfg.Icon size={12} strokeWidth={2} aria-hidden="true" />
+      <span className="tabular-nums">
+        {sign}
+        {trend.delta} pts{when}
+      </span>
+    </div>
   )
 }
 
