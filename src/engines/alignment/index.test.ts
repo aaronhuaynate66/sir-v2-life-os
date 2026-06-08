@@ -70,6 +70,36 @@ const ctx = (people: Person[], relationships: Relationship[] = [], memories: Mem
   now: NOW,
 })
 
+describe('computeGoalAlignment — inferencia por evidencia (B, Etapa 4)', () => {
+  it('objetivo SIN personas vinculadas pero con memoria que lo menciona → INFERIDO', () => {
+    const g = goal({ id: 'venta', title: 'cerrar venta farmacia', category: 'financial', relatedPersons: [] })
+    const p = person({ id: 'diana', name: 'Diana' })
+    const m = memory({ id: 'm1', personId: 'diana', timestamp: '2026-05-30T00:00:00.000Z', tags: ['comercial'] })
+    const a = computeGoalAlignment(g, ctx([p], [], [m]))
+    expect(a.inferred).toBe(true)
+    expect(a.linkedPersonNames).toContain('Diana')
+    expect(a.signals.length).toBeGreaterThan(0)
+    expect(a.state).not.toBe('insufficient_data')
+  })
+
+  it('sin vínculo y sin evidencia → insufficient_data con mensaje nuevo (no inferred)', () => {
+    const g = goal({ id: 'x', title: 'aprender piano', category: 'personal', relatedPersons: [] })
+    const a = computeGoalAlignment(g, ctx([person({ id: 'diana' })], [], []))
+    expect(a.state).toBe('insufficient_data')
+    expect(a.inferred).toBeFalsy()
+    expect(a.summary).toContain('No encontramos')
+  })
+
+  it('memoria vieja (>45d) NO infiere vínculo', () => {
+    const g = goal({ id: 'venta', title: 'cerrar venta farmacia', category: 'financial', relatedPersons: [] })
+    const p = person({ id: 'diana', name: 'Diana' })
+    const m = memory({ id: 'm1', personId: 'diana', timestamp: '2026-01-01T00:00:00.000Z', tags: ['comercial'] })
+    const a = computeGoalAlignment(g, ctx([p], [], [m]))
+    expect(a.inferred).toBeFalsy()
+    expect(a.state).toBe('insufficient_data')
+  })
+})
+
 describe('computeGoalAlignment — estados', () => {
   it('ALINEADO: contacto reciente + relación activa + vínculo energizante', () => {
     const p = person({ id: 'pareja', lastContact: '2026-05-30', energyImpact: 'energizing' }) // 2d

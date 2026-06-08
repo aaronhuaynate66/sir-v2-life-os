@@ -76,6 +76,9 @@ export interface GoalAlignment {
   signals: ObservedSignal[]
   /** Razón legible del estado o de por qué faltan datos (reflexiva, no culposa). */
   summary: string
+  /** true si las personas no estaban vinculadas a mano y se INFIRIERON desde la
+   *  evidencia (memorias/conversaciones que mencionan el objetivo). */
+  inferred?: boolean
 }
 
 export interface AlignmentContext {
@@ -354,13 +357,34 @@ export function computeGoalAlignment(goal: Goal, ctx: AlignmentContext): GoalAli
     .filter((p): p is Person => Boolean(p))
 
   if (linkedPeople.length === 0) {
+    // B (Etapa 4) — inferencia por EVIDENCIA: sin personas vinculadas a mano,
+    // inferimos el vínculo desde las memorias. Si el objetivo aparece (por
+    // tags/keywords) en conversaciones recientes con alguien, esa persona queda
+    // inferida. Se apoya en evidencia real, no en una corazonada del LLM (que
+    // queda como capa futura para objetivos sin ninguna evidencia).
+    const inferredActivity = goalActivitySignals(goal, ctx.people, ctx.memories ?? [], now)
+    if (inferredActivity.signals.length > 0) {
+      const names: string[] = []
+      for (const sig of inferredActivity.signals) {
+        if (sig.personName && !names.includes(sig.personName)) names.push(sig.personName)
+      }
+      const inferredState = stateFromSignals(inferredActivity.signals)
+      return {
+        ...base,
+        state: inferredState,
+        linkedPersonNames: names,
+        signals: inferredActivity.signals,
+        inferred: true,
+        summary: `Inferido de tus conversaciones (sin vínculo manual). ${STATE_SUMMARY[inferredState]}`,
+      }
+    }
     return {
       ...base,
       state: 'insufficient_data',
       linkedPersonNames: [],
       signals: [],
       summary:
-        'Vinculá personas a este objetivo para ver señales de alineación con tu comportamiento.',
+        'No encontramos personas ni conversaciones recientes ligadas a este objetivo. Vinculá personas a mano, o capturá una charla que lo mencione.',
     }
   }
 
