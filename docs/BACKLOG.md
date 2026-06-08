@@ -76,7 +76,7 @@
 - **0023** (`rate_limits`, runner de rate limiting) sigue requiriendo aplicarse (idempotente); el baseline asume que ya está en prod.
 
 **Pendiente real (lo que NO está hecho):**
-- **Activar Fase 3b (búsqueda semántica):** cargar `OPENAI_API_KEY` (server) + correr embeddings sobre la data existente (`observations`/`memories`) + validar `/buscar`. **Hoy el código está completo pero DORMIDO** (sin key, `embedText` lanza error claro).
+- ~~**Activar Fase 3b (búsqueda semántica)**~~ ✅ **HECHO (2026-06-08):** `OPENAI_API_KEY` cargada en Vercel (Production), 23 memorias indexadas (`/api/memories/embed`), `/buscar` validado con resultados semánticos coherentes. Pendiente menor: embeddear `observations` además de `memories`.
 - **Fase 3d** — memoria que aprende (RAG cross-session).
 - **Etapa 4 follow-ups:** Human OKRs estructurados, Narrative Intelligence, delta de relationship score (necesita snapshots históricos), tono de interacción desde `person_logs` en el engine, inferencia LLM de dominio para objetivos de texto libre.
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
@@ -170,7 +170,7 @@ Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_I
 
 ## 🎯 EN CURSO
 
-- **Fase 3b — Búsqueda Semántica**: 🟡 **CÓDIGO COMPLETO, DORMIDA.** pgvector (0015) + `src/lib/embeddings/client.ts` + `POST /api/memories/embed` + `POST /api/search` + página `/buscar` ya existen. **Bloqueada por falta de `OPENAI_API_KEY`** (server-side, OpenAI `text-embedding-3-small`).
+- **Fase 3b — Búsqueda Semántica**: ✅ **ACTIVA (2026-06-08).** pgvector (0015) + `src/lib/embeddings/client.ts` + `POST /api/memories/embed` + `POST /api/search` + `/buscar`. `OPENAI_API_KEY` cargada (server, OpenAI `text-embedding-3-small`); memorias indexadas y búsqueda validada.
   - **Próximo paso para activarla:** cargar `OPENAI_API_KEY` en el server → correr el embed sobre `observations`/`memories` existentes → validar `/buscar` end-to-end.
 
 ---
@@ -309,7 +309,7 @@ Sub-fases ya estructuradas como milestones en GitHub.
 | Sub-fase | Capacidad | Estado | Nota |
 |----------|-----------|--------|------|
 | 3a | Historial Profundo | ✅ CERRADA | (cerrada 28/05) |
-| 3b | Búsqueda semántica (pgvector + embeddings) | 🟡 CÓDIGO COMPLETO, DORMIDA | falta `OPENAI_API_KEY` + embeddear data existente |
+| 3b | Búsqueda semántica (pgvector + embeddings) | ✅ ACTIVA (2026-06-08) | key cargada + memorias indexadas; pendiente menor: embeddear `observations` |
 | 3c | Resumen automático de patrones longitudinales | ✅ ENTREGADA | correlación lunar/ciclo + resumen semanal (`874f019`, 0016) |
 | 3d | Memoria que aprende (RAG cross-session) | ⬜ Pendiente | 5-8 sesiones; depende de 3b activa |
 

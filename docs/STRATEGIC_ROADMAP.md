@@ -13,7 +13,7 @@
 > Los bloques "Estado (2026-05-31)" de abajo siguen válidos en lo esencial; esto registra lo entregado entre el 1 y 7 de junio. Detalle táctico en [`BACKLOG.md`](./BACKLOG.md).
 
 - **Etapa 1 (relacional):** aún más superada — cockpit `/horario` Día/Semana/Mes, síntesis narrativa de la ficha (serie GEMA), familia como vínculo real, motor de proactividad "Hoy con tu gente" ponderado por parentesco.
-- **Etapa 2 (memoria semántica):** **SIN CAMBIOS — sigue DORMIDA** por falta de `OPENAI_API_KEY`. Continúa siendo el bloqueo de mayor ROI.
+- **Etapa 2 (memoria semántica):** ✅ **ACTIVADA (2026-06-08).** Se cargó `OPENAI_API_KEY` en Vercel (Production), se indexaron los embeddings (23 memorias) y `/buscar` devuelve resultados semánticos coherentes. Cierra el único bloqueo de la etapa.
 - **Etapa 3 (comportamiento):** más sembrada — ingesta Apple Health (archivo + Health Auto Export), capturas de sueño/FC, módulo `/seguimiento` (trackers con alertas).
 - **Etapa 4 (identidad/alineación):** progresa — objetivos SMART + tareas "Jira-light" estructuradas (acercan los Human OKRs medibles), señales TAGGED cableadas al panel de Alineación, onboarding/anclas de identidad en `/yo`.
 - **Tensión Principio #4 (scope):** el push de junio amplió superficies (salud, seguimiento; finanzas ya existía). Refuerza la necesidad de la decisión de scope pendiente.
@@ -52,7 +52,7 @@ En producción y excedida respecto del MVP planteado: `/relaciones` (CRUD + graf
 ### Etapa 2 — Relational Memory Engine `(12–24 meses)`
 Memoria semántica + embeddings, relationship graph, recuperación contextual, detección de evolución del vínculo.
 
-**Estado (2026-05-31): 🟡 CONSTRUIDA, con la búsqueda semántica DORMIDA.**
+**Estado (2026-06-08): 🟢 ACTIVA — búsqueda semántica operativa.** _(Estuvo 🟡 DORMIDA hasta el 2026-06-08; se cargó `OPENAI_API_KEY` + se indexaron las memorias.)_
 - **Memoria:** tabla `memories` + engine (`queryMemories`/`decayMemories`/`buildMemoryContext`), derivación desde `observations` (`POST /api/memories/derive`, Anthropic + fallback determinístico), memorias asociadas por persona en el detail page. ✅ vivo.
 - **Embeddings / búsqueda semántica:** **code-complete pero DORMIDA.** pgvector + columna `memories.embedding` (migración 0015), `src/lib/embeddings/client.ts`, `POST /api/memories/embed`, `POST /api/search` y la página `/buscar` existen — pero **requieren `OPENAI_API_KEY`** (OpenAI `text-embedding-3-small`, server-side) que **no está configurada**. Sin la key, el camino lanza error claro y no embeddea. **Activar = cargar la key + correr el embed sobre la data existente.**
 - **Relationship graph:** `/red/grafo` en prod.
@@ -60,7 +60,7 @@ Memoria semántica + embeddings, relationship graph, recuperación contextual, d
 - **Detección de evolución:** parcial — correlaciones longitudinales (Fase 3c) y resumen semanal, pero no un tracking estructurado del cambio del vínculo en el tiempo.
 - **Schema:** ✅ **prod 100% sincronizado con el repo** (drift de migraciones reconciliado el 31/05; `0012` restaurada vía `0022`, sin migraciones pendientes — 21/21 índices, `whatsapp_web`/`social` en sus enums, realtime y policies completos). El único bloqueo de E2 es la key, no el esquema.
 
-**Eslabón faltante para cerrar E2:** activar 3b (key + embeddings sobre `observations`/`memories`) y la búsqueda semántica real. **No hay deuda de schema.**
+**E2 — eslabón cerrado (2026-06-08):** 3b activada (key cargada + embeddings indexados); `/buscar` operativo. Pendiente menor: embeddear también `observations` (hoy se indexan `memories`) y una detección estructurada de evolución del vínculo.
 
 ---
 
