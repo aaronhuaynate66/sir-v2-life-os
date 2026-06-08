@@ -106,14 +106,14 @@ La capa final: SIR como sistema operativo humano nativo de IA.
 
 ---
 
-## ⚠️ Tensión con el Principio #4 (scope) — decisión de producto ABIERTA
+## ✅ Tensión con el Principio #4 (scope) — RESUELTA 2026-06-08 (ADR 0007)
 
 Hay módulos en prod que **empujan hacia un "life OS" antes de tiempo** y conviven en tensión con el principio de claridad conceptual / evitar scope infinito:
 
 - **Finanzas** (`/finanzas`: movimientos, multi-moneda PEN/USD, `financial` engine, charts) es robusto y útil, pero **no pertenece al arco relacional→identidad** de las etapas. Es una capa "life OS" adelantada.
 - En menor medida, salud/báscula (`health_metrics`, captura báscula) apunta a lo mismo.
 
-**Lectura honesta:** esto **no es necesariamente un error** —puede ser parte del wedge de retención personal del propio Aaron— pero **debe ser una decisión de producto explícita**, no un hecho consumado por inercia. Preguntas abiertas: ¿finanzas/salud son parte del producto SIR o un anexo personal? ¿Se mantienen, se modularizan (toggle) o se acotan para no diluir el foco relacional? **Se deja como decisión de producto pendiente, no como dirección establecida.**
+**Lectura honesta:** esto **no es necesariamente un error** —puede ser parte del wedge de retención personal del propio Aaron— pero **debe ser una decisión de producto explícita**, no un hecho consumado por inercia. Preguntas abiertas: ¿finanzas/salud son parte del producto SIR o un anexo personal? ¿Se mantienen, se modularizan (toggle) o se acotan para no diluir el foco relacional? **RESUELTO (2026-06-08, ver `docs/decisions/0007-scope-finanzas-salud.md`):** Salud SE QUEDA — es literalmente la Etapa 3 (Behavioral Intelligence), no scope creep. Finanzas SE MANTIENE como **input de bienestar personal, NO pilar de producto**: se congela el agregado de features ahí (Opción A); no se saca porque está cableada al Peace Score (2 de 5 componentes) y sacarla costaría más de lo que aporta. Decidido: no quitar lo que funciona; priorizar avanzar en el arco relacional→identidad. Quick-win asociado: el Peace Score ya no penaliza por ausencia de datos financieros (antes daba 'critical' + falsa alerta de liquidez).
 
 ---
 

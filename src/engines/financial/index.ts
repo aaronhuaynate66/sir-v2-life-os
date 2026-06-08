@@ -9,7 +9,18 @@ import type { FinancialMovement, SpendIntent } from '@/types'
 export interface FinancialScore { stability: number; liquidityScore: number; savingsRate: number; monthlyBalance: number; riskLevel: 'low'|'medium'|'high'|'critical'; trend: 'improving'|'stable'|'declining' }
 export interface FinancialAlert { type: string; severity: 'info'|'warning'|'critical'; message: string; suggestedAction: string }
 
+// "Sin datos" NO es "mal estado". Si no hay movimientos no se puede evaluar la
+// situación financiera, así que devolvemos un estado NEUTRAL (no 'critical').
+// Antes esto daba stability 2.5 → riskLevel 'critical', arrastraba el Peace
+// Score y disparaba una falsa "Alerta financiera critica" cuando el usuario
+// simplemente no usa el módulo de finanzas. (Decisión de scope 2026-06-08, ADR
+// 0007: finanzas es input de bienestar opcional; no debe penalizar por ausencia.)
+export const NEUTRAL_STABILITY = 7
+
 export function analyzeFinancialStability(movements: FinancialMovement[], liquidityMonths = 0): FinancialScore {
+  if (movements.length === 0) {
+    return { stability: NEUTRAL_STABILITY, liquidityScore: 0, savingsRate: 0, monthlyBalance: 0, riskLevel: 'low', trend: 'stable' }
+  }
   const income = movements.filter(m => m.type === 'income').reduce((s, m) => s + m.amountPEN, 0)
   const expenses = movements.filter(m => m.type === 'expense').reduce((s, m) => s + m.amountPEN, 0)
   const balance = income - expenses
@@ -22,7 +33,11 @@ export function analyzeFinancialStability(movements: FinancialMovement[], liquid
 
 export function detectFinancialAlerts(movements: FinancialMovement[], liquidityMonths: number): FinancialAlert[] {
   const alerts: FinancialAlert[] = []
-  if (liquidityMonths < 2) alerts.push({ type: 'liquidity', severity: 'critical', message: `Liquidez critica: ${liquidityMonths} mes(es)`, suggestedAction: 'Reducir gastos no esenciales' })
+  // Sin movimientos = sin datos para evaluar → sin alertas (no falsos positivos).
+  if (movements.length === 0) return alerts
+  // liquidityMonths === 0 se trata como "desconocido" (no hay fuente real de meses
+  // de runway en el store), NO como "cero meses". Solo alertamos con dato real (>0).
+  if (liquidityMonths > 0 && liquidityMonths < 2) alerts.push({ type: 'liquidity', severity: 'critical', message: `Liquidez critica: ${liquidityMonths} mes(es)`, suggestedAction: 'Reducir gastos no esenciales' })
   const income = movements.filter(m => m.type === 'income').reduce((s, m) => s + m.amountPEN, 0)
   const expenses = movements.filter(m => m.type === 'expense').reduce((s, m) => s + m.amountPEN, 0)
   if (expenses > income * 0.9) alerts.push({ type: 'overspend', severity: 'warning', message: 'Gastos >90% del ingreso', suggestedAction: 'Revisar gastos' })
