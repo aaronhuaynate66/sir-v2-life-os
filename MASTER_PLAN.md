@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `eccf733`
+**Hash del último commit humano:** `e3d3161`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e3d3161` | aaronhuaynate66 | feat(buscar): derivar todas las personas + indexar en un click (#100) | 2026-06-08 |
+| `781b248` | aaronhuaynate66 | docs(roadmap): Etapa 2 (búsqueda semántica) ACTIVA — 3b desbloqueada (#99) | 2026-06-08 |
+| `5f6380e` | aaronhuaynate66 | docs(roadmap): re-sync BACKLOG + STRATEGIC con el push de junio 2026 (#98) | 2026-06-08 |
+| `abc76ae` | Aaron Huaynate | @ | 2026-06-07 |
+| `d941498` | Aaron Huaynate | @ | 2026-06-07 |
+| `0381b12` | Aaron Huaynate | @ | 2026-06-07 |
+| `138472c` | Aaron Huaynate | @ | 2026-06-07 |
 | `eccf733` | Aaron Huaynate | @ | 2026-06-07 |
 | `02475a6` | Aaron Huaynate | @ | 2026-06-07 |
 | `54ca6c3` | Aaron Huaynate | @ | 2026-06-07 |
-| `cad2e9a` | Aaron Huaynate | @ | 2026-06-07 |
-| `c8946cf` | Aaron Huaynate | @ | 2026-06-07 |
-| `3293416` | Aaron Huaynate | @ | 2026-06-07 |
-| `28956b6` | Aaron Huaynate | @ | 2026-06-07 |
-| `17e168c` | Aaron Huaynate | @ | 2026-06-07 |
-| `97a63b5` | Aaron Huaynate | @ | 2026-06-07 |
-| `a51876d` | Aaron Huaynate | @ | 2026-06-07 |
 
 ---
 
@@ -383,6 +383,42 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## ✅ EN PRODUCCIÓN — actualización (2026-06-08)
+
+> Re-sincronización con `git log` tras el push del 1–7 jun 2026. La reconciliación del 31-may (más abajo) quedó atrás; esto la complementa con lo entregado después.
+
+**Horario / Cockpit operativo:**
+- Cockpit `/horario` Día/Semana/Mes cruzando calendario con tareas/OKR/estado físico (lógica pura + UI conmutable).
+- Brief del día/semana/mes generado por IA (extiende el brief diario de Fase 5).
+- Reader multi-calendario unificado con color por feed; checklist OAuth Google + Microsoft/Graph (`docs/CALENDAR_V2_OAUTH.md`).
+- Vista Día: tareas con hora opcional caen en su franja; cuenta solo TIEMPO (relaciones/peso fuera).
+
+**Relaciones — serie GEMA (síntesis + proactividad):**
+- Síntesis narrativa de la ficha: franja de resumen al tope, secciones narrativas sintetizadas, memorias colapsadas, tercer eje "Vida social".
+- "Hoy con tu gente": motor de urgencia de contacto (puro) ponderado por parentesco, en `/horario` y `/relaciones`; API de Daily Actions (scoring sin IA + mensaje on-demand).
+- Reciprocidad por delta de calidad; superficie "Antes de contactar" en la ficha.
+- Redes sociales funcionando: auto-link de handle, @ clickeable, seguidores en común de IG (extracción + enlace a la red).
+- Notas privadas en la sección sensible; excluir/marcar memoria como privada (fuera de IA, no se re-deriva).
+
+**Familia:** vínculo real persona↔persona con parentesco (autocompletar, bidireccional, sugerencias) y vínculo SELF↔persona con inferencia desde el "yo".
+
+**Objetivos:** wizard guiado SMART antes del plan IA (gating + baseline); tareas "Jira-light" por objetivo (criterio, fecha, esfuerzo, prioridad, dependencias, estado; migración 0050); fixes de confiabilidad del plan IA (504/502 por max_tokens/maxDuration).
+
+**Seguimiento (`/seguimiento`):** modelo + lógica pura de trackers, ingesta Vision/texto, tablero, resumen en objetivos, alertas por email (provider opcional) + cron.
+
+**Yo / Identidad y Salud:**
+- Onboarding conversacional "Contale a SIR quién sos" (anti-formulario-vacío) + auto-captura del perfil propio → anclas de identidad en `/yo`.
+- Apple Health: ingesta Health Auto Export (endpoint, Fase 1) + importar como archivo .json/.zip (camino $0).
+- Capturas nuevas: `sleep_panel` (pantallazo app de sueño → sleep_records), `heart_rate_panel` (FC → health_metrics), FC en reposo vs general.
+
+**Panel:** "TU AÑO" — brújula anual sobre Mission Control.
+
+**Alineación (Etapa 4):** señales TAGGED cableadas al panel de Alineación.
+
+**Migraciones nuevas:** hasta `0050` (objective steps/OKR/SMART 0040–0042, calendar_connections 0046, person_profile_axes 0047, action_suggestions 0048, tareas Jira-light 0050). **Pendiente:** re-verificar drift de `0046`–`0050` contra prod.
 
 ---
 
@@ -419,7 +455,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 - **0023** (`rate_limits`, runner de rate limiting) sigue requiriendo aplicarse (idempotente); el baseline asume que ya está en prod.
 
 **Pendiente real (lo que NO está hecho):**
-- **Activar Fase 3b (búsqueda semántica):** cargar `OPENAI_API_KEY` (server) + correr embeddings sobre la data existente (`observations`/`memories`) + validar `/buscar`. **Hoy el código está completo pero DORMIDO** (sin key, `embedText` lanza error claro).
+- ~~**Activar Fase 3b (búsqueda semántica)**~~ ✅ **HECHO (2026-06-08):** `OPENAI_API_KEY` cargada en Vercel (Production), 23 memorias indexadas (`/api/memories/embed`), `/buscar` validado con resultados semánticos coherentes. Pendiente menor: embeddear `observations` además de `memories`.
 - **Fase 3d** — memoria que aprende (RAG cross-session).
 - **Etapa 4 follow-ups:** Human OKRs estructurados, Narrative Intelligence, delta de relationship score (necesita snapshots históricos), tono de interacción desde `person_logs` en el engine, inferencia LLM de dominio para objetivos de texto libre.
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
@@ -513,7 +549,7 @@ Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_I
 
 ## 🎯 EN CURSO
 
-- **Fase 3b — Búsqueda Semántica**: 🟡 **CÓDIGO COMPLETO, DORMIDA.** pgvector (0015) + `src/lib/embeddings/client.ts` + `POST /api/memories/embed` + `POST /api/search` + página `/buscar` ya existen. **Bloqueada por falta de `OPENAI_API_KEY`** (server-side, OpenAI `text-embedding-3-small`).
+- **Fase 3b — Búsqueda Semántica**: ✅ **ACTIVA (2026-06-08).** pgvector (0015) + `src/lib/embeddings/client.ts` + `POST /api/memories/embed` + `POST /api/search` + `/buscar`. `OPENAI_API_KEY` cargada (server, OpenAI `text-embedding-3-small`); memorias indexadas y búsqueda validada.
   - **Próximo paso para activarla:** cargar `OPENAI_API_KEY` en el server → correr el embed sobre `observations`/`memories` existentes → validar `/buscar` end-to-end.
 
 ---
@@ -652,7 +688,7 @@ Sub-fases ya estructuradas como milestones en GitHub.
 | Sub-fase | Capacidad | Estado | Nota |
 |----------|-----------|--------|------|
 | 3a | Historial Profundo | ✅ CERRADA | (cerrada 28/05) |
-| 3b | Búsqueda semántica (pgvector + embeddings) | 🟡 CÓDIGO COMPLETO, DORMIDA | falta `OPENAI_API_KEY` + embeddear data existente |
+| 3b | Búsqueda semántica (pgvector + embeddings) | ✅ ACTIVA (2026-06-08) | key cargada + memorias indexadas; pendiente menor: embeddear `observations` |
 | 3c | Resumen automático de patrones longitudinales | ✅ ENTREGADA | correlación lunar/ciclo + resumen semanal (`874f019`, 0016) |
 | 3d | Memoria que aprende (RAG cross-session) | ⬜ Pendiente | 5-8 sesiones; depende de 3b activa |
 
