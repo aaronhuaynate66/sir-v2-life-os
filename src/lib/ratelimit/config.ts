@@ -31,8 +31,11 @@ const HOUR = 3_600_000
  */
 export const RATE_LIMIT_TIERS = {
   vision: [
-    { limit: 10, windowMs: MINUTE },
-    { limit: 100, windowMs: HOUR },
+    // Subido para soportar el LOTE de /captura: cada imagen gasta 2 llamadas
+    // vision (detectar tipo + extraer), así que 10/min topaba a ~5 imágenes.
+    // 30/min ≈ 15 imágenes/min; el tope por hora sigue como guard anti-abuso.
+    { limit: 30, windowMs: MINUTE },
+    { limit: 150, windowMs: HOUR },
   ],
   generation: [
     { limit: 20, windowMs: MINUTE },
