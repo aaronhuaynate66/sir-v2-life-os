@@ -61,6 +61,19 @@ function unionStrings(lists: string[][], cap: number): string[] {
   return out
 }
 
+/** Normaliza el label de un evento recurrente para reconciliar variantes del
+ *  MISMO evento: saca paréntesis ("(30 años)"), cantidades de años y espacios.
+ *  Así "Cumpleaños de Nicolle (30 años)" y "Cumpleaños de Nicolle" colapsan en
+ *  uno (gana el primero, cronológico). */
+function normRecurringLabel(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/\(.*?\)/g, '')
+    .replace(/\d+\s*a[nñ]os?/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function dedupDates(lists: ExtractedDate[][], cap: number): ExtractedDate[] {
   const seen = new Set<string>()
   const out: ExtractedDate[] = []
@@ -75,7 +88,7 @@ function dedupDates(lists: ExtractedDate[][], cap: number): ExtractedDate[] {
       // entradas contradictorias del mismo evento (ej. dos "cumpleaños de X" con
       // meses distintos) en una sola (gana la primera, cronológica).
       const key = d.recurring
-        ? `recurring|${d.label.toLowerCase()}`
+        ? `recurring|${normRecurringLabel(d.label)}`
         : `${d.label.toLowerCase()}|${d.dateISO ?? d.rawText.toLowerCase()}`
       if (seen.has(key)) continue
       seen.add(key)

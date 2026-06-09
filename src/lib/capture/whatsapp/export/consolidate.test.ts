@@ -43,6 +43,17 @@ describe('dedupDates — subject + reconciliación de cumpleaños', () => {
     expect(labels).not.toContain('Cumple de tata') // tercero
   })
 
+  it('fusiona cumpleaños con label variante "(30 años)" en uno', () => {
+    const parts = [
+      interp({ summary: 'a', dates: [{ label: 'Cumpleaños de Nicolle (30 años)', dateISO: '2024-10-03', rawText: 'cumplo 30 en octubre', recurring: true, subject: 'contact' }] }),
+      interp({ summary: 'b', dates: [{ label: 'Cumpleaños de Nicolle', dateISO: '2025-05-03', rawText: 'me cantan a las 12', recurring: true, subject: 'contact' }] }),
+    ]
+    const c = consolidateInterpretations(parts)
+    const bdays = c.dates.filter((d) => d.label.toLowerCase().includes('cumpleaños de nicolle'))
+    expect(bdays).toHaveLength(1)
+    expect(bdays[0].dateISO).toBe('2024-10-03') // gana el primero (octubre)
+  })
+
   it('reconcilia cumpleaños recurring contradictorios del mismo label en uno', () => {
     const parts = [
       interp({ summary: 'a', dates: [{ label: 'Cumpleaños de Nicolle', dateISO: '2024-10-03', rawText: 'en octubre', recurring: true, subject: 'contact' }] }),
