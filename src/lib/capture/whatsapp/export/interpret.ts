@@ -67,8 +67,15 @@ REGLAS:
      "te canto"), "tercero" si es de otra persona nombrada (ej. "el cumple de tata",
      "cumpleaños de Analia"), "contact" si es de ${contact}. Cumpleaños/aniversarios → recurring=true.
 7. events: planes o hechos notables SIN fecha precisa (ej. "planean mudarse").
-8. facts: hechos estables sobre ${contact} (gustos, trabajo, familia, salud)
-   afirmados en la charla. Nada de suposiciones.
+8. facts: hechos ESTABLES y DEFINITORIOS sobre ${contact} afirmados en la charla.
+   PRIORIZÁ lo que define su vida/identidad por encima de la rutina repetida:
+   - dónde vive y mudanzas grandes (ciudad/país; ej. "se mudó a Alicante", "vive en X").
+   - etapa de vida: estudios (maestría, universidad), trabajo, profesión.
+   - VÍNCULO con el usuario si se declara explícito (ej. "eres mi hermana" => es hermana del usuario).
+   - hitos: viajes largos al exterior, cambios grandes de vida, salud relevante, estado civil.
+   ATRIBUCIÓN (clave): no asumas propiedad. Si algo (mascota, casa, auto) es del USUARIO y
+   ${contact} solo lo cuida/usa/comparte, decílo así (ej. "cuida al perro de Aaron cuando él viaja"),
+   NUNCA como suyo ("tiene un perro"). Nada de suposiciones.
 9. IGNORÁ contenido de DIFUSIÓN (no es del vínculo): noticias reenviadas (🚨,
    #HASHTAG, titulares, "Gobierno declara…"), flyers/invitaciones masivas a eventos
    (formato afiche con 🗓/🕒), cadenas y publicidad. No generes dates, facts ni

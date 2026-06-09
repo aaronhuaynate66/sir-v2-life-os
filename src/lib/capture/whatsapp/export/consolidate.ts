@@ -70,6 +70,7 @@ function normRecurringLabel(label: string): string {
     .toLowerCase()
     .replace(/\(.*?\)/g, '')
     .replace(/\d+\s*a[nñ]os?/g, '')
+    .replace(/\d+/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 }
