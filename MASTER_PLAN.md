@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `9c23c25`
+**Hash del último commit humano:** `7e8b2c8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `7e8b2c8` | aaronhuaynate66 | fix(captura-wa): afinar extractor del export de WhatsApp (6 fixes) (#118) | 2026-06-09 |
 | `9c23c25` | aaronhuaynate66 | feat(objetivos): KR numéricos medibles (E4 · punto E) (#117) | 2026-06-08 |
 | `55dd728` | aaronhuaynate66 | feat(alineación): tono de interacción como señal (E4 · punto A) (#116) | 2026-06-08 |
 | `b86341f` | aaronhuaynate66 | feat(alineación): inferir vínculo de objetivos por evidencia (E4 · punto B) (#115) | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6cf0980` | aaronhuaynate66 | feat(habitos): fundación Etapa 3 — modelo + lógica de racha (incremento 1) (#111) | 2026-06-08 |
 | `83c0d3f` | aaronhuaynate66 | fix(captura): el lote ACUMULA archivos entre selecciones + quitar item (#110) | 2026-06-08 |
 | `4b0afe1` | aaronhuaynate66 | feat(captura): subir varias imágenes a la vez en /captura (#102) (#109) | 2026-06-08 |
-| `e3ac8c5` | aaronhuaynate66 | fix(cron): observabilidad en score-snapshots — logear causa del 500 (#108) | 2026-06-08 |
 
 ---
 
