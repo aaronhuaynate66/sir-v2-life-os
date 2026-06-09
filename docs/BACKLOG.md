@@ -319,6 +319,19 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
 ## 🏗️ DEUDA ARQUITECTÓNICA
 
+### Consistencia temporal de hechos derivados (detectado 2026-06-08, arco futuro)
+
+**Síntoma:** la derivación de memorias/hechos (WhatsApp export, observations → memories) UNE hechos de distintas épocas sin saber que el más reciente reemplaza al viejo. Caso real: en la ficha de Nicolle coexisten "vive con Aaron (comparten vivienda)" (cierto en 2024) y "Llegó a Alicante" (se mudó a España para su maestría) — el sistema no marca el primero como obsoleto.
+
+**Causa raíz:** los `facts`/`memories` no llevan validez temporal ni relación de supersesión. `unionStrings` dedupe por texto exacto, no reconcilia hechos contradictorios sobre el mismo atributo (dónde vive, estado civil, trabajo).
+
+**Alcance:** transversal a TODA la derivación, no solo al export de WhatsApp.
+
+**Dirección (no para ahora):** marcar cada hecho con fecha/origen + una capa de reconciliación por ATRIBUTO (residencia, civil, ocupación…) que prefiera el más reciente y degrade el viejo (como ya hace la lógica de recencia del summary). Encaja con la "Memoria que aprende" (Fase 3d) y con el arco de identidad (E4). Esfuerzo: alto.
+
+**Mitigación hoy:** la identidad estable (dónde vive, parentesco, estado civil) va en el PERFIL de la persona (campos + vínculo familiar), no se deja depender de la derivación del chat.
+
+
 ### Split-brain `localStorage` ↔ Supabase (detectado 29/05/2026)
 
 **Síntoma:** la lista `/relaciones` lee del store Zustand (hidratado de `localStorage`); el detail page `/relaciones/[slug]` lee Supabase directo. El sync engine hace merge **aditivo** (nunca borra el lado local), entonces los `removePerson` solo se propagan por la UI del store — **no emiten DELETE a Supabase**. Mismo patrón en `observations`/`memories` afectó el cleanup-saga del 29/05 (filas alucinadas que parecían borradas en una vista y seguían en la otra).
