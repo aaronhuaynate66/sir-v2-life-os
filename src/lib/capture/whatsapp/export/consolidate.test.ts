@@ -43,6 +43,15 @@ describe('dedupDates — subject + reconciliación de cumpleaños', () => {
     expect(labels).not.toContain('Cumple de tata') // tercero
   })
 
+  it('fusiona "Cumpleaños 30 de Nicolle" (dígito suelto) con "Cumpleaños de Nicolle"', () => {
+    const parts = [
+      interp({ summary: 'a', dates: [{ label: 'Cumpleaños 30 de Nicolle', dateISO: '2024-10-03', rawText: 'cumplo 30 en octubre', recurring: true, subject: 'contact' }] }),
+      interp({ summary: 'b', dates: [{ label: 'Cumpleaños de Nicolle', dateISO: '2025-05-03', rawText: 'me cantan', recurring: true, subject: 'contact' }] }),
+    ]
+    const c = consolidateInterpretations(parts)
+    expect(c.dates.filter((d) => d.label.toLowerCase().includes('cumpleaños') && d.label.toLowerCase().includes('nicolle'))).toHaveLength(1)
+  })
+
   it('fusiona cumpleaños con label variante "(30 años)" en uno', () => {
     const parts = [
       interp({ summary: 'a', dates: [{ label: 'Cumpleaños de Nicolle (30 años)', dateISO: '2024-10-03', rawText: 'cumplo 30 en octubre', recurring: true, subject: 'contact' }] }),
