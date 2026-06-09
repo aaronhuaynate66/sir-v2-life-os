@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `face8ed`
+**Hash del último commit humano:** `2e26bd8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2e26bd8` | aaronhuaynate66 | fix(captura-wa): priorizar hechos durables + atribución + cumpleaños 30 (#120) | 2026-06-09 |
 | `face8ed` | aaronhuaynate66 | fix(captura-wa): reconciliar cumpleaños con label variante + menos ruido de fechas (#119) | 2026-06-09 |
 | `7e8b2c8` | aaronhuaynate66 | fix(captura-wa): afinar extractor del export de WhatsApp (6 fixes) (#118) | 2026-06-09 |
 | `9c23c25` | aaronhuaynate66 | feat(objetivos): KR numéricos medibles (E4 · punto E) (#117) | 2026-06-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6368536` | aaronhuaynate66 | feat(habitos): tira de hábitos en Mission Control (Etapa 3) (#113) | 2026-06-08 |
 | `ad660bf` | aaronhuaynate66 | feat(habitos): API + página /habitos + nav (incremento 2) (#112) | 2026-06-08 |
 | `6cf0980` | aaronhuaynate66 | feat(habitos): fundación Etapa 3 — modelo + lógica de racha (incremento 1) (#111) | 2026-06-08 |
-| `83c0d3f` | aaronhuaynate66 | fix(captura): el lote ACUMULA archivos entre selecciones + quitar item (#110) | 2026-06-08 |
 
 ---
 
