@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `0873da1`
+**Hash del último commit humano:** `2dab852`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2dab852` | aaronhuaynate66 | fix(ratelimit): subir bucket vision a 30/min·150/hr para soportar lotes (#124) | 2026-06-09 |
 | `0873da1` | aaronhuaynate66 | feat(yo): registrar ánimo/energía con CARITAS (1 toque) en vez de input numérico (#123) | 2026-06-09 |
 | `4839ee3` | aaronhuaynate66 | feat(captura): procesar paneles de salud (sueño/FC/báscula) en lote (auto-guardar) (#122) | 2026-06-09 |
 | `e51bb28` | aaronhuaynate66 | docs(backlog): consistencia temporal de hechos derivados (arco futuro) [skip ci] (#121) | 2026-06-09 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `9c23c25` | aaronhuaynate66 | feat(objetivos): KR numéricos medibles (E4 · punto E) (#117) | 2026-06-08 |
 | `55dd728` | aaronhuaynate66 | feat(alineación): tono de interacción como señal (E4 · punto A) (#116) | 2026-06-08 |
 | `b86341f` | aaronhuaynate66 | feat(alineación): inferir vínculo de objetivos por evidencia (E4 · punto B) (#115) | 2026-06-08 |
-| `f9a8592` | aaronhuaynate66 | feat(habitos): nudge proactivo en Mission Control (Etapa 3 — loop) (#114) | 2026-06-08 |
 
 ---
 
