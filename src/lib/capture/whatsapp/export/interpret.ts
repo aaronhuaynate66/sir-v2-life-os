@@ -16,7 +16,8 @@ conversación entre el usuario y su contacto "${contact}" (texto exportado,
 fiel y exacto — NO es OCR, no hay nada que adivinar). Tu única tarea: devolver
 UN JSON ESTRICTO (parseable con JSON.parse(), sin prosa, sin markdown fences).
 
-Cada línea del bloque viene como "HH:mm — Autor: contenido". "[media]" marca un
+Cada línea del bloque viene como "[YYYY-MM-DD HH:mm] Autor: contenido". Usá ESA
+fecha para resolver fechas relativas (ver regla de fechas). "[media]" marca un
 adjunto omitido (foto/audio/sticker/etc.) que NO podés ver: NO inventes su
 contenido.
 
@@ -24,7 +25,7 @@ Schema EXACTO:
 
 {
   "summary": "<2-4 frases en español, observacional, sin juicio: qué se habló>",
-  "topics": ["snake_case_en_ingles", ...],
+  "topics": ["snake_case_en_espanol", ...],
   "emotionalUser": "<snake_case combinable con '+'>" | null,
   "emotionalOther": "<snake_case>" | null,
   "toneScore": <1-5: 1=tenso/conflictivo, 3=neutral, 5=cálido/pleno>,
@@ -33,7 +34,8 @@ Schema EXACTO:
       "label": "<etiqueta corta, ej. 'Cumpleaños de Ana', 'Viaje a Cusco'>",
       "dateISO": "<YYYY-MM-DD o ISO con hora>" | null,
       "rawText": "<cita literal de la charla de donde sale>",
-      "recurring": <true si es cumpleaños/aniversario; false si no>
+      "recurring": <true si es cumpleaños/aniversario; false si no>,
+      "subject": "contact" | "self" | "tercero"
     }
   ],
   "events": ["<evento o plan notable mencionado, texto corto>", ...],
@@ -46,19 +48,28 @@ REGLAS:
    válidas y preferibles a inventar.
 2. summary: describí QUÉ pasó/se habló, no si estuvo bien o mal. Mencioná a
    ${contact} por su nombre. Máx ~400 caracteres.
-3. topics: 2-6 tags en snake_case (inglés). Ej: health, work, plans_weekend,
-   family, conflict_resolution, daily_check_in, money, relationship.
+3. topics: 2-6 tags en snake_case, EN ESPAÑOL. Ej: salud, trabajo, plan_finde,
+   familia, resolucion_conflicto, saludo_diario, dinero, relacion, mascota, pago.
 4. emotionalUser/emotionalOther: estado del INTERCAMBIO observable en el bloque
    (ej. affectionate_routine, tense_unresolved, seeking_support). null si no se
    puede inferir con base en el texto.
 5. toneScore: leé el tono GENERAL del bloque. Discusión/reproches → 1-2;
    logístico/neutro → 3; afecto/risas/apoyo → 4-5.
-6. dates: SOLO fechas/eventos con fecha explícita o claramente resoluble desde
-   la charla. Si mencionan "el viernes" sin fecha exacta, dateISO=null pero
-   guardá el rawText. Cumpleaños/aniversarios → recurring=true.
+6. dates: SOLO eventos REALES del vínculo con una cita textual clara (rawText).
+   - ANCLÁ las fechas relativas al día del mensaje (está en el prefijo [YYYY-MM-DD]):
+     "mañana" = día+1; "del 1 al 4" / "el sábado" → resolvé contra ESE mes/año, nunca
+     asumas enero ni un año por defecto. Si no se puede resolver, dateISO=null + rawText.
+   - NO combines fragmentos no relacionados para fabricar una fecha. Una cita, una fecha.
+   - subject: de QUIÉN es el evento. "self" si es del usuario (ej. "tu cumpleaños",
+     "te canto"), "tercero" si es de otra persona nombrada (ej. "el cumple de tata",
+     "cumpleaños de Analia"), "contact" si es de ${contact}. Cumpleaños/aniversarios → recurring=true.
 7. events: planes o hechos notables SIN fecha precisa (ej. "planean mudarse").
 8. facts: hechos estables sobre ${contact} (gustos, trabajo, familia, salud)
    afirmados en la charla. Nada de suposiciones.
+9. IGNORÁ contenido de DIFUSIÓN (no es del vínculo): noticias reenviadas (🚨,
+   #HASHTAG, titulares, "Gobierno declara…"), flyers/invitaciones masivas a eventos
+   (formato afiche con 🗓/🕒), cadenas y publicidad. No generes dates, facts ni
+   events a partir de ellos; tampoco cuentan para el tono.
 
 CRÍTICO: empezá con \`{\` y terminá con \`}\`. Solo JSON.`
 }
@@ -110,11 +121,13 @@ function sanitizeDates(v: unknown): ExtractedDate[] {
       const d = new Date(di.length === 10 ? `${di}T00:00:00Z` : di)
       if (!Number.isNaN(d.getTime())) dateISO = di
     }
+    const subj = o.subject === 'self' || o.subject === 'tercero' || o.subject === 'contact' ? o.subject : undefined
     out.push({
       label: label.slice(0, 120),
       dateISO,
       rawText: (str(o.rawText) ?? '').slice(0, 240),
       recurring: o.recurring === true,
+      subject: subj,
     })
     if (out.length >= 12) break
   }
