@@ -27,6 +27,7 @@ import {
   type PersonCandidate,
 } from '@/lib/capture/observations/client'
 import type { CaptureType, Observation } from '@/lib/capture/observations/types'
+import { HEALTH_BATCH_TYPES, processHealthCaptureInBatch } from '@/lib/capture/batch/healthBatch'
 
 const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
   'whatsapp_chat',
@@ -44,6 +45,7 @@ interface BatchItem {
   status: ItemStatus
   detectedType?: CaptureType
   result?: ProcessCaptureResponse
+  healthSummary?: string
   error?: string
 }
 
@@ -95,8 +97,16 @@ export function BatchCapturePanel() {
         try {
           const det = await detectCaptureType(it.file)
           const type = det.detected.type
+          if (HEALTH_BATCH_TYPES.has(type)) {
+            // Salud (báscula/sueño/FC): auto-guardar. Cada panel trae su fecha,
+            // así que varias mediciones no se pisan. Sin persona.
+            patch(it.id, { status: 'processing', detectedType: type })
+            const { label } = await processHealthCaptureInBatch(it.file, type)
+            patch(it.id, { status: 'done', detectedType: type, healthSummary: label })
+            continue
+          }
           if (!TYPES_WITH_EXTRACTOR.has(type)) {
-            // Báscula/sueño/FC/otros: no se procesan en lote (son self o sin extractor).
+            // Tipos sin extractor (unknown, etc.): no se procesan en lote.
             patch(it.id, { status: 'skipped', detectedType: type })
             continue
           }
@@ -145,8 +155,8 @@ export function BatchCapturePanel() {
           <>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Elegí varios pantallazos (WhatsApp, Instagram o LinkedIn). Se procesan en cola, uno por
-              uno, y después vinculás la persona de cada captura. Báscula / sueño / FC se omiten acá —
-              esas subilas de a una arriba.
+              uno, y después vinculás la persona de cada captura. Báscula / sueño / FC también se
+              procesan (se guardan como tus métricas, con la fecha de cada panel).
             </p>
 
             <input
@@ -219,6 +229,9 @@ export function BatchCapturePanel() {
                     </div>
                   )}
                   {it.status === 'done' && it.result && <BatchResultRow result={it.result} />}
+                  {it.status === 'done' && !it.result && it.healthSummary && (
+                    <div className="text-[11px] text-ok">Guardado: {it.healthSummary}</div>
+                  )}
                 </li>
               ))}
             </ul>
