@@ -26,6 +26,7 @@ import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
+import { MetricScale } from '@/components/yo/MetricScale'
 
 const METRIC_CATS: MetricCategory[] = ['energy', 'mood', 'stress', 'focus', 'motivation', 'confidence']
 const HEALTH_TYPES: HealthMetricType[] = ['weight', 'heart_rate', 'steps', 'calories', 'hydration', 'blood_pressure', 'custom']
@@ -202,7 +203,7 @@ function SelfContent() {
                   {METRIC_CATS.map(c => <SelectItem key={c} value={c}>{CAT_LABEL[c]}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Input type="number" min="1" max="10" step="0.5" placeholder="Valor (1-10)" value={mVal} onChange={e => setMVal(e.target.value)} className="font-mono tabular-nums" />
+              <MetricScale category={mCat} value={mVal} onChange={setMVal} />
               <Input type="text" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
               <Button onClick={addMetric} variant="outline" className="w-full">+ Registrar</Button>
             </div>
