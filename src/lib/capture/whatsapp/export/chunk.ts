@@ -26,9 +26,16 @@ export interface ChunkOptions {
 const DEFAULT_TARGET = 16_000
 const DEFAULT_MAX_CHUNKS = 50
 
-/** Renderiza un mensaje como línea de bloque: "HH:mm — Autor: contenido". */
+/** Fecha YYYY-MM-DD del mensaje (de su ISO), o '????-??-??' si no se resolvió. */
+function lineDate(iso: string | null): string {
+  return iso ? iso.slice(0, 10) : '????-??-??'
+}
+
+/** Renderiza un mensaje como línea de bloque: "[YYYY-MM-DD HH:mm] Autor: contenido".
+ *  Incluir la FECHA (no solo la hora) es clave: deja que el modelo ancle fechas
+ *  relativas ("mañana", "del 1 al 4", "el sábado") al día real del mensaje. */
 function renderLine(m: ExportMessage): string {
-  return `${m.time} — ${m.author}: ${m.content.replace(/\n/g, ' ')}`
+  return `[${lineDate(m.iso)} ${m.time}] ${m.author}: ${m.content.replace(/\n/g, ' ')}`
 }
 
 /**

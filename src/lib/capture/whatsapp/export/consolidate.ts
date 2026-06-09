@@ -66,7 +66,17 @@ function dedupDates(lists: ExtractedDate[][], cap: number): ExtractedDate[] {
   const out: ExtractedDate[] = []
   for (const list of lists) {
     for (const d of list) {
-      const key = `${d.label.toLowerCase()}|${d.dateISO ?? d.rawText.toLowerCase()}`
+      // Solo fechas del CONTACTO se adjuntan a la ficha. Las explícitamente
+      // marcadas del usuario ('self', ej. "tu cumpleaños") o de terceros
+      // ('tercero', ej. "cumple de tata") se descartan. Ausente = legacy → se
+      // mantiene (no perdemos data vieja sin subject).
+      if (d.subject === 'self' || d.subject === 'tercero') continue
+      // Recurring (cumpleaños/aniversario) → dedupe por LABEL solo: reconcilia
+      // entradas contradictorias del mismo evento (ej. dos "cumpleaños de X" con
+      // meses distintos) en una sola (gana la primera, cronológica).
+      const key = d.recurring
+        ? `recurring|${d.label.toLowerCase()}`
+        : `${d.label.toLowerCase()}|${d.dateISO ?? d.rawText.toLowerCase()}`
       if (seen.has(key)) continue
       seen.add(key)
       out.push(d)

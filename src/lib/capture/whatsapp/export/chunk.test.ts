@@ -13,6 +13,13 @@ function msg(i: number, content: string): ExportMessage {
   }
 }
 
+describe('renderLine (fecha en cada línea)', () => {
+  it('cada línea del bloque incluye la fecha YYYY-MM-DD del mensaje', () => {
+    const chunks = chunkConversation([msg(0, 'hola')], {})
+    expect(chunks[0].text).toMatch(/\[2024-05-\d{2} 10:00\]/)
+  })
+})
+
 describe('chunkConversation', () => {
   it('lista vacía → sin bloques', () => {
     expect(chunkConversation([])).toEqual([])

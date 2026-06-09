@@ -77,6 +77,10 @@ export interface ExtractedDate {
   rawText: string
   /** Si parece repetirse cada año (cumpleaños, aniversario). */
   recurring: boolean
+  /** De QUIÉN es el evento: 'contact' (del contacto de la ficha), 'self' (del
+   *  usuario, ej. "tu cumpleaños"), 'tercero' (otra persona, ej. "cumple de tata").
+   *  Solo las de 'contact' (o ausente=legacy) se adjuntan a la ficha. */
+  subject?: 'contact' | 'self' | 'tercero'
 }
 
 /** Interpretación de UN bloque devuelta por el modelo. */

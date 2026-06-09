@@ -22,6 +22,37 @@ function interp(over: Partial<ChunkInterpretation>): ChunkInterpretation {
   }
 }
 
+describe('dedupDates — subject + reconciliación de cumpleaños', () => {
+  it("descarta fechas de 'self' y 'tercero'; mantiene 'contact' y ausentes", () => {
+    const parts = [
+      interp({
+        summary: 'Charla.',
+        dates: [
+          { label: 'Cumple de Nicolle', dateISO: '2024-10-03', rawText: 'cumplo 30 en octubre', recurring: true, subject: 'contact' },
+          { label: 'Tu cumpleaños', dateISO: '2026-05-09', rawText: 'me regreso pa tu cumpleaños', recurring: true, subject: 'self' },
+          { label: 'Cumple de tata', dateISO: null, rawText: 'cumple de tata', recurring: true, subject: 'tercero' },
+          { label: 'Viaje a Cusco', dateISO: '2025-07-01', rawText: 'viajo a cusco', recurring: false },
+        ],
+      }),
+    ]
+    const c = consolidateInterpretations(parts)
+    const labels = c.dates.map((d) => d.label)
+    expect(labels).toContain('Cumple de Nicolle')
+    expect(labels).toContain('Viaje a Cusco') // subject ausente = legacy, se mantiene
+    expect(labels).not.toContain('Tu cumpleaños') // self
+    expect(labels).not.toContain('Cumple de tata') // tercero
+  })
+
+  it('reconcilia cumpleaños recurring contradictorios del mismo label en uno', () => {
+    const parts = [
+      interp({ summary: 'a', dates: [{ label: 'Cumpleaños de Nicolle', dateISO: '2024-10-03', rawText: 'en octubre', recurring: true, subject: 'contact' }] }),
+      interp({ summary: 'b', dates: [{ label: 'Cumpleaños de Nicolle', dateISO: '2025-05-01', rawText: 'mayo', recurring: true, subject: 'contact' }] }),
+    ]
+    const c = consolidateInterpretations(parts)
+    expect(c.dates.filter((d) => d.label.toLowerCase() === 'cumpleaños de nicolle')).toHaveLength(1)
+  })
+})
+
 describe('consolidateInterpretations', () => {
   it('une resúmenes, topics y elige emoción dominante', () => {
     const parts = [
