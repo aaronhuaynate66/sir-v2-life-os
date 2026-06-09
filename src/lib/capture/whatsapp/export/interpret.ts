@@ -60,6 +60,9 @@ REGLAS:
      "mañana" = día+1; "del 1 al 4" / "el sábado" → resolvé contra ESE mes/año, nunca
      asumas enero ni un año por defecto. Si no se puede resolver, dateISO=null + rawText.
    - NO combines fragmentos no relacionados para fabricar una fecha. Una cita, una fecha.
+   - NO inventes el TIPO de evento si no se nombra (no asumas "bautizo", "boda" si la cita no lo dice).
+   - PRIORIZÁ eventos notables o a futuro (cumpleaños, viajes, trámites, hitos). NO incluyas
+     logística efímera pasada (almuerzos, "salimos 10:50", horarios puntuales de un día).
    - subject: de QUIÉN es el evento. "self" si es del usuario (ej. "tu cumpleaños",
      "te canto"), "tercero" si es de otra persona nombrada (ej. "el cumple de tata",
      "cumpleaños de Analia"), "contact" si es de ${contact}. Cumpleaños/aniversarios → recurring=true.
