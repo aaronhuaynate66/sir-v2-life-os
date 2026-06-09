@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2e26bd8`
+**Hash del último commit humano:** `4839ee3`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `4839ee3` | aaronhuaynate66 | feat(captura): procesar paneles de salud (sueño/FC/báscula) en lote (auto-guardar) (#122) | 2026-06-09 |
+| `e51bb28` | aaronhuaynate66 | docs(backlog): consistencia temporal de hechos derivados (arco futuro) [skip ci] (#121) | 2026-06-09 |
 | `2e26bd8` | aaronhuaynate66 | fix(captura-wa): priorizar hechos durables + atribución + cumpleaños 30 (#120) | 2026-06-09 |
 | `face8ed` | aaronhuaynate66 | fix(captura-wa): reconciliar cumpleaños con label variante + menos ruido de fechas (#119) | 2026-06-09 |
 | `7e8b2c8` | aaronhuaynate66 | fix(captura-wa): afinar extractor del export de WhatsApp (6 fixes) (#118) | 2026-06-09 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b86341f` | aaronhuaynate66 | feat(alineación): inferir vínculo de objetivos por evidencia (E4 · punto B) (#115) | 2026-06-08 |
 | `f9a8592` | aaronhuaynate66 | feat(habitos): nudge proactivo en Mission Control (Etapa 3 — loop) (#114) | 2026-06-08 |
 | `6368536` | aaronhuaynate66 | feat(habitos): tira de hábitos en Mission Control (Etapa 3) (#113) | 2026-06-08 |
-| `ad660bf` | aaronhuaynate66 | feat(habitos): API + página /habitos + nav (incremento 2) (#112) | 2026-06-08 |
-| `6cf0980` | aaronhuaynate66 | feat(habitos): fundación Etapa 3 — modelo + lógica de racha (incremento 1) (#111) | 2026-06-08 |
 
 ---
 
@@ -697,6 +697,19 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 ---
 
 ## 🏗️ DEUDA ARQUITECTÓNICA
+
+### Consistencia temporal de hechos derivados (detectado 2026-06-08, arco futuro)
+
+**Síntoma:** la derivación de memorias/hechos (WhatsApp export, observations → memories) UNE hechos de distintas épocas sin saber que el más reciente reemplaza al viejo. Caso real: en la ficha de Nicolle coexisten "vive con Aaron (comparten vivienda)" (cierto en 2024) y "Llegó a Alicante" (se mudó a España para su maestría) — el sistema no marca el primero como obsoleto.
+
+**Causa raíz:** los `facts`/`memories` no llevan validez temporal ni relación de supersesión. `unionStrings` dedupe por texto exacto, no reconcilia hechos contradictorios sobre el mismo atributo (dónde vive, estado civil, trabajo).
+
+**Alcance:** transversal a TODA la derivación, no solo al export de WhatsApp.
+
+**Dirección (no para ahora):** marcar cada hecho con fecha/origen + una capa de reconciliación por ATRIBUTO (residencia, civil, ocupación…) que prefiera el más reciente y degrade el viejo (como ya hace la lógica de recencia del summary). Encaja con la "Memoria que aprende" (Fase 3d) y con el arco de identidad (E4). Esfuerzo: alto.
+
+**Mitigación hoy:** la identidad estable (dónde vive, parentesco, estado civil) va en el PERFIL de la persona (campos + vínculo familiar), no se deja depender de la derivación del chat.
+
 
 ### Split-brain `localStorage` ↔ Supabase (detectado 29/05/2026)
 
