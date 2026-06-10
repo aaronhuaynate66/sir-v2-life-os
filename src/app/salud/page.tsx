@@ -41,6 +41,14 @@ function statTextClass(t: Tone): string {
   return t === 'ok' ? 'text-ok' : t === 'warn' ? 'text-warn' : 'text-bad'
 }
 
+// Métricas donde MENOS es mejor (estrés): el color se invierte. Para el resto
+// (energía, ánimo, enfoque, motivación, confianza) más alto = mejor.
+const INVERSE_METRICS: MetricCategory[] = ['stress']
+function metricValueClass(category: MetricCategory, value: number): string {
+  const v = INVERSE_METRICS.includes(category) ? 11 - value : value
+  return v >= 7 ? 'text-ok' : v >= 4 ? 'text-warn' : 'text-bad'
+}
+
 export default function SaludPage() {
   const hydrated = useHasHydrated()
   if (!hydrated) return <RouteSkeleton cards={4} />
@@ -212,7 +220,7 @@ function SaludContent() {
                     {m.note && <span className="text-xs text-muted-foreground">{m.note}</span>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn('text-sm font-mono tabular-nums', m.value >= 7 ? 'text-ok' : m.value >= 4 ? 'text-warn' : 'text-bad')}>{m.value}/10</span>
+                    <span className={cn('text-sm font-mono tabular-nums', metricValueClass(m.category, m.value))}>{m.value}/10</span>
                     <span className="text-[10px] text-muted-foreground/60 font-mono tabular-nums">{new Date(m.timestamp).toLocaleDateString('es', { day: '2-digit', month: '2-digit' })}</span>
                   </div>
                 </div>
