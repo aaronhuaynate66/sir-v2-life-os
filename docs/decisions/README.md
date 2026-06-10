@@ -89,3 +89,4 @@ El índice se mantiene como tabla rápida; el sistema Living Roadmap también li
 | [0005](0005-timeline-architecture.md) | Arquitectura del Timeline (Fase 3a): multi-query paralela, estado en React, shape unificada | Proposed | 2026-05-28 |
 | [0006](0006-wellbeing-not-engagement.md) | SIR optimiza bienestar relacional, NO engagement | Accepted | 2026-05-30 |
 | [0007](0007-scope-finanzas-salud.md) | Scope de Finanzas y Salud: salud se queda (Etapa 3); finanzas se congela como input de bienestar, no pilar | Accepted | 2026-06-08 |
+| [0008](0008-analytics-ga4-clarity.md) | Analytics GA4 + Clarity (tensión de privacidad aceptada; Clarity masking estricto obligatorio) | Accepted | 2026-06-09 |
