@@ -171,5 +171,29 @@ export function composeKinds(k1: FamilyKind, k2: FamilyKind): FamilyKind | null 
     return null
   }
 
+  // El hermano/a de mi hijo/a es también mi hijo/a (habilita la inferencia por
+  // pivote en "yo": inverso(mi padre)=hijo · mi hermana ⇒ mi hermana es hija de
+  // mi padre). Género tomado del hermano/a (k2).
+  if (a === 'child') {
+    if (b === 'sibling') return k2 === 'hermana' ? 'hija' : 'hijo'
+    return null
+  }
+
   return null
+}
+
+/**
+ * Parentesco INVERSO aproximado (solo CATEGORÍA, no género) de A respecto a B
+ * dado "B es <kind> de A". Lo usa la inferencia por pivote: composeKinds keyea
+ * por categoría del primer argumento, así que el género del literal no importa.
+ * Devuelve null para categorías sin parentesco inverso simple (abuelos, tíos…).
+ */
+export function inverseKindApprox(kind: FamilyKind): FamilyKind | null {
+  switch (categoryOf(kind)) {
+    case 'parent': return 'hijo'   // si B es mi padre/madre, yo soy su hijo/a
+    case 'child': return 'padre'   // si B es mi hijo/a, yo soy su padre/madre
+    case 'sibling': return 'hermano'
+    case 'partner': return 'pareja'
+    default: return null
+  }
 }

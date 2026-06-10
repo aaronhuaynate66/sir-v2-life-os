@@ -42,8 +42,7 @@ import {
   inferFamilyLinks,
   reconcileFamilyFromNotes,
   type FamilySuggestion,
-  type InferenceSuggestion,
-} from '@/lib/relationships/suggest'
+  type InferenceSuggestion, inferSelfPivotLinks} from '@/lib/relationships/suggest'
 import type { Person, FamilyKind, PersonLink } from '@/types'
 
 const DISMISSED_KEY = 'sir:family-suggest-dismissed'
@@ -177,8 +176,17 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
   const personSuggestions: FamilySuggestion[] = useMemo(() => {
     if (!mounted) return []
     const inferred = inferFamilyLinks(person.id, links)
+    const pivot = inferSelfPivotLinks(person.id, links)
     const reconciled = reconcileFamilyFromNotes(person, people, links)
-    return [...inferred, ...reconciled].filter((s) => !dismissed.has(s.key))
+    // Dedupe: pivote e inferencia directa pueden proponer el mismo destino+rol.
+    const byTarget = new Set<string>()
+    const merged = [...inferred, ...pivot].filter((s) => {
+      const k = `${s.targetId}:${s.kind}`
+      if (byTarget.has(k)) return false
+      byTarget.add(k)
+      return true
+    })
+    return [...merged, ...reconciled].filter((s) => !dismissed.has(s.key))
   }, [mounted, person, people, links, dismissed])
 
   function resetForm() {
