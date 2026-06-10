@@ -47,7 +47,7 @@ export function SleepCaptureSuccess({
             Otra captura
           </Button>
           <Button size="sm" asChild>
-            <Link href="/yo">Ver en Self</Link>
+            <Link href="/salud">Ver en Salud</Link>
           </Button>
         </div>
       </CardContent>
