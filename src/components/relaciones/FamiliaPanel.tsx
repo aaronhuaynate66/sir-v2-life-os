@@ -23,6 +23,7 @@
 // Supabase. Dedupe por (familiar, parentesco).
 
 import { useEffect, useMemo, useState } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { Users, Plus, X, Check, Sparkles, Search, UserPlus, Heart } from 'lucide-react'
@@ -248,6 +249,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
       kind: linkKind,
       createdAt: new Date().toISOString(),
     })
+    track(EVENTS.familyLinkAdded, { kind: linkKind })
     return true
   }
 

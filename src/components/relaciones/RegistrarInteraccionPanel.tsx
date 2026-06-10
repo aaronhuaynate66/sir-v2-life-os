@@ -10,6 +10,7 @@
 // relacional).
 
 import { useCallback, useState } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { useRouter } from 'next/navigation'
 import { HeartCrack, Frown, Meh, Smile, Heart, Loader2, Check } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -66,6 +67,7 @@ export function RegistrarInteraccionPanel({
         value: selected,
         note: note.trim() || undefined,
       })
+      track(EVENTS.interactionLogged, { value: selected })
       setSuccess({ value: selected })
       setSelected(null)
       setNote('')

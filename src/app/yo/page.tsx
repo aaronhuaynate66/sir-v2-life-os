@@ -26,6 +26,7 @@ import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
+import { track, EVENTS } from '@/lib/analytics/track'
 
 const METRIC_CATS: MetricCategory[] = ['energy', 'mood', 'stress', 'focus', 'motivation', 'confidence']
 const HEALTH_TYPES: HealthMetricType[] = ['weight', 'heart_rate', 'steps', 'calories', 'hydration', 'blood_pressure', 'custom']
@@ -74,6 +75,7 @@ function SelfContent() {
     if (isNaN(v) || v < 1 || v > 10) { toast.error('Valor inválido', { description: 'Debe estar entre 1 y 10.' }); return }
     const metric = { id: 'm_' + Date.now(), category: mCat, value: v, timestamp: new Date().toISOString(), note: mNote || undefined }
     addSelfMetric(metric); addMemory(createSelfMetricMemory(metric))
+    track(EVENTS.moodLogged, { category: mCat })
     setMVal(''); setMNote('')
     toast.success('Métrica registrada', { description: `${CAT_LABEL[mCat]}: ${v}/10` })
   }
