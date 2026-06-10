@@ -23,7 +23,7 @@ function interp(over: Partial<ChunkInterpretation>): ChunkInterpretation {
 }
 
 describe('dedupDates — subject + reconciliación de cumpleaños', () => {
-  it("descarta fechas de 'self' y 'tercero'; mantiene 'contact' y ausentes", () => {
+  it("descarta 'self', 'tercero' y ausentes NO recurrentes; mantiene 'contact' y ausentes recurrentes", () => {
     const parts = [
       interp({
         summary: 'Charla.',
@@ -38,7 +38,7 @@ describe('dedupDates — subject + reconciliación de cumpleaños', () => {
     const c = consolidateInterpretations(parts)
     const labels = c.dates.map((d) => d.label)
     expect(labels).toContain('Cumple de Nicolle')
-    expect(labels).toContain('Viaje a Cusco') // subject ausente = legacy, se mantiene
+    expect(labels).not.toContain('Viaje a Cusco') // ausente + no recurrente = logística sin dueño → fuera
     expect(labels).not.toContain('Tu cumpleaños') // self
     expect(labels).not.toContain('Cumple de tata') // tercero
   })

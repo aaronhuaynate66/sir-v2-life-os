@@ -55,17 +55,22 @@ REGLAS:
    puede inferir con base en el texto.
 5. toneScore: leé el tono GENERAL del bloque. Discusión/reproches → 1-2;
    logístico/neutro → 3; afecto/risas/apoyo → 4-5.
-6. dates: SOLO eventos REALES del vínculo con una cita textual clara (rawText).
-   - ANCLÁ las fechas relativas al día del mensaje (está en el prefijo [YYYY-MM-DD]):
-     "mañana" = día+1; "del 1 al 4" / "el sábado" → resolvé contra ESE mes/año, nunca
-     asumas enero ni un año por defecto. Si no se puede resolver, dateISO=null + rawText.
-   - NO combines fragmentos no relacionados para fabricar una fecha. Una cita, una fecha.
-   - NO inventes el TIPO de evento si no se nombra (no asumas "bautizo", "boda" si la cita no lo dice).
-   - PRIORIZÁ eventos notables o a futuro (cumpleaños, viajes, trámites, hitos). NO incluyas
-     logística efímera pasada (almuerzos, "salimos 10:50", horarios puntuales de un día).
-   - subject: de QUIÉN es el evento. "self" si es del usuario (ej. "tu cumpleaños",
-     "te canto"), "tercero" si es de otra persona nombrada (ej. "el cumple de tata",
-     "cumpleaños de Analia"), "contact" si es de ${contact}. Cumpleaños/aniversarios → recurring=true.
+6. dates: SOLO fechas/eventos PERSONALES Y DURADEROS de ${contact} con cita textual (rawText).
+   La ficha de ${contact} solo debe acumular SUS fechas (su cumpleaños, su aniversario, su viaje,
+   su trámite). Misma regla de protagonista que en facts: si la fecha es de OTRO, marcá su subject
+   y NO la trates como de ${contact}.
+   - ANCLÁ las fechas relativas al día del mensaje (prefijo [YYYY-MM-DD]): "mañana"=día+1;
+     "del 1 al 4"/"el sábado" → contra ESE mes/año, nunca enero ni año por defecto. Si no se
+     resuelve, dateISO=null + rawText.
+   - NO combines fragmentos no relacionados. Una cita, una fecha. NO inventes el TIPO de evento.
+   - subject (OBLIGATORIO, pensalo antes de incluir): de QUIÉN es la fecha.
+       "contact" = de ${contact} (su cumpleaños, su aniversario, su viaje/trámite/hito).
+       "self" = del usuario (ej. SU examen, SU viaje, SU visa, SU competencia, "tu cumpleaños").
+       "tercero" = de otra persona nombrada, INCLUIDOS los familiares/hijos de ${contact}
+         (ej. "cumpleaños de su hija", "examen de su hijo", "cumple de tata").
+     Cumpleaños/aniversarios → recurring=true. Ante la duda de quién es, marcá self/tercero.
+   - DESCARTÁ (no las generes): logística efímera pasada (almuerzos, "salimos 10:50", horarios
+     de un día, reuniones puntuales ya ocurridas) y cualquier evento cuyo protagonista no sea ${contact}.
 7. events: planes o hechos notables SIN fecha precisa (ej. "planean mudarse").
 8. facts: hechos ESTABLES y DEFINITORIOS sobre ${contact} afirmados en la charla.
    PRIORIZÁ lo que define su vida/identidad por encima de la rutina repetida:
