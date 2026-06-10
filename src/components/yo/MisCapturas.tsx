@@ -581,6 +581,12 @@ export function MisCapturas() {
             className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10 disabled:opacity-50"
           />
 
+          <p className="text-[11px] text-muted-foreground/70 -mt-1">
+            Podés elegir <span className="text-foreground/80">varias a la vez</span> en el diálogo, o agregarlas
+            de a una: se van acumulando en la lista de abajo (el control dice &ldquo;ningún archivo&rdquo; a
+            propósito, para dejarte sumar más). Tocá ✕ para quitar.
+          </p>
+
           {files.length > 0 && (
             <div className="rounded-md border border-border/60 bg-background divide-y divide-border/30">
               {files.map((f, idx) => (
