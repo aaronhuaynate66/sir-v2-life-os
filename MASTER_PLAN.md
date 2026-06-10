@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a5c6611`
+**Hash del último commit humano:** `991dc12`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `991dc12` | aaronhuaynate66 | refactor(captura): una sola puerta — Mis capturas se mueve a /captura (#127) | 2026-06-10 |
 | `a5c6611` | aaronhuaynate66 | feat(analytics): GA4 + Microsoft Clarity gated por env (ADR 0008) (#126) | 2026-06-10 |
 | `c424043` | aaronhuaynate66 | fix(yo): datos arriba, formularios de carga/perfil abajo (#125) | 2026-06-10 |
 | `2dab852` | aaronhuaynate66 | fix(ratelimit): subir bucket vision a 30/min·150/hr para soportar lotes (#124) | 2026-06-09 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `2e26bd8` | aaronhuaynate66 | fix(captura-wa): priorizar hechos durables + atribución + cumpleaños 30 (#120) | 2026-06-09 |
 | `face8ed` | aaronhuaynate66 | fix(captura-wa): reconciliar cumpleaños con label variante + menos ruido de fechas (#119) | 2026-06-09 |
 | `7e8b2c8` | aaronhuaynate66 | fix(captura-wa): afinar extractor del export de WhatsApp (6 fixes) (#118) | 2026-06-09 |
-| `9c23c25` | aaronhuaynate66 | feat(objetivos): KR numéricos medibles (E4 · punto E) (#117) | 2026-06-08 |
 
 ---
 
