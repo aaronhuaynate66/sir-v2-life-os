@@ -59,7 +59,7 @@ describe('buildLineSeries — escala y orden', () => {
     expect(g.points.map((p) => p.value)).toEqual([1, 2, 3])
     expect(g.first!.value).toBe(1)
     expect(g.last!.value).toBe(3)
-    expect(g.delta).toBe(2)
+    expect(g.delta).toBe(1) // último vs anterior (3-2), no vs el primero
   })
 
   it('mapea min→piso y max→techo', () => {

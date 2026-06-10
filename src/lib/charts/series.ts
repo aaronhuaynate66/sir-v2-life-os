@@ -136,7 +136,9 @@ export function buildLineSeries(
     max,
     first: sorted[0],
     last: sorted[n - 1],
-    delta: n >= 2 ? sorted[n - 1].value - sorted[0].value : null,
+    // Delta = último vs el registro ANTERIOR (cambio reciente, día contra día),
+    // no contra el primero de la ventana — así el ↗/↘ coincide con lo que se ve.
+    delta: n >= 2 ? sorted[n - 1].value - sorted[n - 2].value : null,
   }
 }
 
