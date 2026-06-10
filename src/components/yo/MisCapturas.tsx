@@ -31,7 +31,6 @@ import {
   Ban,
   Check,
   ArrowRight,
-  MessageSquareHeart,
   Activity,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -58,7 +57,6 @@ import { extractHeartRatePanel, persistHeartRateCapture } from '@/lib/capture/hr
 import type { HeartRateCaptureFinal, HeartRatePanelExtracted } from '@/lib/capture/hr/types'
 
 import { IdentityProposalReview } from '@/components/yo/IdentityProposalReview'
-import { ContaleASir } from '@/components/yo/ContaleASir'
 import { extractSelfProfileImage } from '@/lib/identity/captureClient'
 import { consolidateSelfProfiles } from '@/lib/capture/self-profile/consolidate'
 import type { SelfProfileExtracted } from '@/lib/capture/self-profile/types'
@@ -697,16 +695,6 @@ export function MisCapturas() {
           </div>
         )}
 
-        {/* Contale a SIR (relato de identidad) */}
-        <div className="mt-6 pt-5 border-t border-border/40">
-          <div className="flex items-center gap-2 mb-3">
-            <MessageSquareHeart size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
-              Contale a SIR quién sos
-            </div>
-          </div>
-          <ContaleASir />
-        </div>
       </CardContent>
     </Card>
   )
