@@ -23,6 +23,7 @@ import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { SelfDiagnosisPanel } from '@/components/yo/SelfDiagnosisPanel'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
+import { ContaleASir } from '@/components/yo/ContaleASir'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
@@ -295,6 +296,16 @@ function SelfContent() {
       </Card>
       {/* ── Cargar y perfil — debajo de tus datos para aterrizar en lo tuyo primero. ── */}
       <div className="mt-8 pt-5 border-t border-border/40 space-y-4">
+        {/* Identidad: primero contás quién sos (relato), luego el perfil que alimenta. */}
+        <Card className={cardClass}>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Contale a SIR quién sos</div>
+            </div>
+            <ContaleASir />
+          </CardContent>
+        </Card>
         <IdentityProfilePanel />
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-5">
