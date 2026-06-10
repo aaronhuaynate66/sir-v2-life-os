@@ -22,7 +22,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Clock } from 'lucide-react'
+import { Clock, ChevronRight } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -186,10 +186,17 @@ function HorarioContent() {
         <MesView milestones={cockpit.milestones} anchor={yearAnchor} nowMs={nowMs} />
       )}
 
-      {/* Gestión de calendarios conectados (movido de /agenda al fusionar). */}
-      <div className="mt-8">
-        <CalendarConnections onChange={() => setCalReload((k) => k + 1)} />
-      </div>
+      {/* Gestión de calendarios conectados (setup, no contenido diario) →
+          colapsable para no alargar la página. */}
+      <details className="mt-8 group">
+        <summary className="cursor-pointer list-none flex items-center gap-1.5 py-1 text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans select-none hover:text-foreground transition-colors">
+          <ChevronRight size={13} strokeWidth={2} className="transition-transform group-open:rotate-90" aria-hidden="true" />
+          Calendarios conectados
+        </summary>
+        <div className="pt-3">
+          <CalendarConnections onChange={() => setCalReload((k) => k + 1)} />
+        </div>
+      </details>
     </AppShell>
   )
 }

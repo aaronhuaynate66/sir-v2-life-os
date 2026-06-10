@@ -2,7 +2,7 @@
 // SIR V2 - /memory
 // Vista de memorias del sistema. Solo lectura.
 import { useState, useMemo } from 'react'
-import { Archive, Search, Tag, Sparkles, BookOpen } from 'lucide-react'
+import { Archive, Search, Tag, Sparkles, BookOpen, ChevronRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -95,38 +95,50 @@ function MemoryContent() {
         ))}
       </div>
 
-      {Object.keys(memoryContext.memoriesByType).length > 0 && (
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Tag size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
-            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Distribucion por tipo</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(Object.entries(memoryContext.memoriesByType) as [MemoryType, number][]).map(([type, count]) => (
-              <div key={type} className="flex items-center gap-1.5">
-                <Badge variant="outline" className={cn('text-[10px] font-normal', TYPE_CLASS[type])}>{TYPE_LABEL[type]}</Badge>
-                <span className="text-xs font-mono tabular-nums text-muted-foreground">{count}</span>
+      {/* Analítica (distribución + entidades): secundaria → colapsable, para que
+          el buscador y la lista queden arriba. Cerrada por defecto. */}
+      {(Object.keys(memoryContext.memoriesByType).length > 0 || memoryContext.criticalEntities.length > 0) && (
+        <details className="mb-4 group">
+          <summary className="cursor-pointer list-none flex items-center gap-1.5 py-1 text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans select-none hover:text-foreground transition-colors">
+            <ChevronRight size={13} strokeWidth={2} className="transition-transform group-open:rotate-90" aria-hidden="true" />
+            Distribución y entidades
+          </summary>
+          <div className="pt-3">
+            {Object.keys(memoryContext.memoriesByType).length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
+                  <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Distribucion por tipo</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.entries(memoryContext.memoriesByType) as [MemoryType, number][]).map(([type, count]) => (
+                    <div key={type} className="flex items-center gap-1.5">
+                      <Badge variant="outline" className={cn('text-[10px] font-normal', TYPE_CLASS[type])}>{TYPE_LABEL[type]}</Badge>
+                      <span className="text-xs font-mono tabular-nums text-muted-foreground">{count}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            )}
 
-      {memoryContext.criticalEntities.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
-            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Entidades criticas</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {memoryContext.criticalEntities.slice(0, 5).map(({ entityId, count }) => (
-              <div key={entityId} className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-border bg-card">
-                <span className="text-xs font-mono text-foreground">{entityId}</span>
-                <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60">×{count}</span>
+            {memoryContext.criticalEntities.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
+                  <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Entidades criticas</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {memoryContext.criticalEntities.slice(0, 5).map(({ entityId, count }) => (
+                    <div key={entityId} className="flex items-center gap-2 px-2.5 py-1 rounded-md border border-border bg-card">
+                      <span className="text-xs font-mono text-foreground">{entityId}</span>
+                      <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60">×{count}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
-        </div>
+        </details>
       )}
 
       {/* Toggle: filtro por texto (store local) vs búsqueda semántica (embeddings). */}
