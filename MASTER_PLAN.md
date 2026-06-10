@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `af5d329`
+**Hash del último commit humano:** `9799e2f`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `9799e2f` | aaronhuaynate66 | feat(analytics): eventos del loop central (10 acciones) (#134) | 2026-06-10 |
 | `af5d329` | aaronhuaynate66 | feat(analytics): base de tracking — helper track() + pageviews SPA (#133) | 2026-06-10 |
 | `f3417d9` | aaronhuaynate66 | fix(red): grafo sin frame roto inicial + menos cruces (#132) | 2026-06-10 |
 | `11e871b` | aaronhuaynate66 | feat(relaciones): inferencia familiar por pivote en 'yo' (#131) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `991dc12` | aaronhuaynate66 | refactor(captura): una sola puerta — Mis capturas se mueve a /captura (#127) | 2026-06-10 |
 | `a5c6611` | aaronhuaynate66 | feat(analytics): GA4 + Microsoft Clarity gated por env (ADR 0008) (#126) | 2026-06-10 |
 | `c424043` | aaronhuaynate66 | fix(yo): datos arriba, formularios de carga/perfil abajo (#125) | 2026-06-10 |
-| `2dab852` | aaronhuaynate66 | fix(ratelimit): subir bucket vision a 30/min·150/hr para soportar lotes (#124) | 2026-06-09 |
 
 ---
 
