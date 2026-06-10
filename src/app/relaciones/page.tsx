@@ -1,9 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { toast } from 'sonner'
-import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
 import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
@@ -12,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { SectionTitle } from '@/components/ui/section-title'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Avatar } from '@/components/ui/avatar'
 import {
@@ -94,21 +93,6 @@ function RelationshipsContent() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<PersonForm>(EMPTY_FORM)
-
-  // Al abrir el form (que vive debajo de las tarjetas de "hoy"), traerlo a la
-  // vista y enfocar el nombre — si no, el usuario tiene que cazarlo scrolleando.
-  const formRef = useRef<HTMLDivElement>(null)
-  const nameRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (!showForm) return
-    nameRef.current?.focus({ preventScroll: true })
-    // Pequeño delay: el form anima su altura (0→auto) en ~200ms; esperamos a
-    // que exista altura real para que el scroll aterrice en su inicio.
-    const t = setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 80)
-    return () => clearTimeout(t)
-  }, [showForm, editingId])
 
   const alerts = detectRelationshipAlerts(people, relationships)
 
@@ -276,24 +260,19 @@ function RelationshipsContent() {
         </div>
       )}
 
-      <AnimatePresence initial={false}>
-        {showForm && (
-          <motion.div
-            ref={formRef}
-            key="person-form"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            style={{ overflow: 'hidden' }}
-          >
-            <Card className={cn('mb-6', cardClass)}>
-              <CardContent className="p-4 sm:p-6">
-                <SectionTitle icon={editingId ? Edit : UserPlus} label={editingId ? 'Editar persona' : 'Nueva persona'} />
+      <Sheet open={showForm} onOpenChange={(o) => { if (!o) handleCancel() }}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader className="mb-4 text-left">
+            <SheetTitle className="flex items-center gap-2">
+              {editingId ? <Edit size={18} strokeWidth={1.75} /> : <UserPlus size={18} strokeWidth={1.75} />}
+              {editingId ? 'Editar persona' : 'Nueva persona'}
+            </SheetTitle>
+            <SheetDescription className="sr-only">Formulario con los datos de la persona.</SheetDescription>
+          </SheetHeader>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Nombre *</label>
-                <Input ref={nameRef} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre completo" />
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre completo" />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Alias</label>
@@ -404,17 +383,14 @@ function RelationshipsContent() {
               </div>
               </>)}
             </div>
-            <div className="mt-4 flex gap-2 justify-end">
+            <div className="mt-6 flex gap-2 justify-end">
               <Button variant="ghost" size="sm" onClick={handleCancel}>Cancelar</Button>
               <Button variant="outline" size="sm" onClick={handleSubmit} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
                 {editingId ? 'Guardar cambios' : 'Agregar'}
               </Button>
             </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </SheetContent>
+      </Sheet>
 
       {people.length === 0 ? (
         <EmptyState
