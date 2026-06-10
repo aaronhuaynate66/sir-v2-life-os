@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `61dcc2b`
+**Hash del último commit humano:** `2fe831b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2fe831b` | aaronhuaynate66 | feat(relaciones): sexo de la persona + panel de ciclo solo si es mujer (#130) | 2026-06-10 |
 | `61dcc2b` | aaronhuaynate66 | fix(relaciones): al abrir 'Agregar persona', traer el form a la vista + enfocar nombre (#129) | 2026-06-10 |
 | `a5c2d69` | aaronhuaynate66 | fix(whatsapp-export): blindar atribución — eventos del usuario no son hechos del contacto (#128) | 2026-06-10 |
 | `991dc12` | aaronhuaynate66 | refactor(captura): una sola puerta — Mis capturas se mueve a /captura (#127) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `0873da1` | aaronhuaynate66 | feat(yo): registrar ánimo/energía con CARITAS (1 toque) en vez de input numérico (#123) | 2026-06-09 |
 | `4839ee3` | aaronhuaynate66 | feat(captura): procesar paneles de salud (sueño/FC/báscula) en lote (auto-guardar) (#122) | 2026-06-09 |
 | `e51bb28` | aaronhuaynate66 | docs(backlog): consistencia temporal de hechos derivados (arco futuro) [skip ci] (#121) | 2026-06-09 |
-| `2e26bd8` | aaronhuaynate66 | fix(captura-wa): priorizar hechos durables + atribución + cumpleaños 30 (#120) | 2026-06-09 |
 
 ---
 
