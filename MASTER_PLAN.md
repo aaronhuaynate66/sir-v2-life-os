@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1997163`
+**Hash del último commit humano:** `1c20188`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `1c20188` | aaronhuaynate66 | feat(ux): pase de densidad — analítica/setup secundario en colapsables (#142) | 2026-06-10 |
+| `4f9f944` | aaronhuaynate66 | feat(captura): importar chat de WhatsApp y crear contacto en un paso (#141) | 2026-06-10 |
 | `1997163` | aaronhuaynate66 | feat(ux): menú lateral agrupado (16 ítems planos → 5 secciones) (#140) | 2026-06-10 |
 | `d52adf2` | aaronhuaynate66 | feat(ux): fusionar Agenda en Horario (un solo hogar para tu tiempo) (#139) | 2026-06-10 |
 | `8445a55` | aaronhuaynate66 | feat(ux): fusionar Buscar en Memoria (toggle texto / semántica) (#138) | 2026-06-10 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `58137b2` | aaronhuaynate66 | fix(whatsapp-export): endurecer extracción de fechas (atribución por protagonista) (#135) | 2026-06-10 |
 | `9799e2f` | aaronhuaynate66 | feat(analytics): eventos del loop central (10 acciones) (#134) | 2026-06-10 |
 | `af5d329` | aaronhuaynate66 | feat(analytics): base de tracking — helper track() + pageviews SPA (#133) | 2026-06-10 |
-| `f3417d9` | aaronhuaynate66 | fix(red): grafo sin frame roto inicial + menos cruces (#132) | 2026-06-10 |
-| `11e871b` | aaronhuaynate66 | feat(relaciones): inferencia familiar por pivote en 'yo' (#131) | 2026-06-10 |
 
 ---
 
