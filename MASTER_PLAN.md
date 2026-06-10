@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d52adf2`
+**Hash del último commit humano:** `1997163`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `1997163` | aaronhuaynate66 | feat(ux): menú lateral agrupado (16 ítems planos → 5 secciones) (#140) | 2026-06-10 |
 | `d52adf2` | aaronhuaynate66 | feat(ux): fusionar Agenda en Horario (un solo hogar para tu tiempo) (#139) | 2026-06-10 |
 | `8445a55` | aaronhuaynate66 | feat(ux): fusionar Buscar en Memoria (toggle texto / semántica) (#138) | 2026-06-10 |
 | `3a9bdae` | aaronhuaynate66 | fix(ux): dedupe alertas de tracker — quitar de /senales (su hogar es /seguimiento) (#137) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `af5d329` | aaronhuaynate66 | feat(analytics): base de tracking — helper track() + pageviews SPA (#133) | 2026-06-10 |
 | `f3417d9` | aaronhuaynate66 | fix(red): grafo sin frame roto inicial + menos cruces (#132) | 2026-06-10 |
 | `11e871b` | aaronhuaynate66 | feat(relaciones): inferencia familiar por pivote en 'yo' (#131) | 2026-06-10 |
-| `2fe831b` | aaronhuaynate66 | feat(relaciones): sexo de la persona + panel de ciclo solo si es mujer (#130) | 2026-06-10 |
 
 ---
 
