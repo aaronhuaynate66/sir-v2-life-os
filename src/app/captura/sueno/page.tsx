@@ -20,7 +20,7 @@ function CaptureSleepContent() {
   return (
     <AppShell>
       <Link
-        href="/yo"
+        href="/salud"
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-4"
       >
         <ArrowLeft size={13} strokeWidth={1.75} aria-hidden="true" />

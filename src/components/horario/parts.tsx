@@ -317,8 +317,8 @@ export function DayContextStrip({ state }: { state: PhysicalState }) {
         <PhysicalStats state={state} />
         <p className="mt-3 text-[11px] text-muted-foreground/60">
           Tu estado físico completo (peso, sueño, salud) vive en{' '}
-          <Link href="/yo" className="underline underline-offset-2 hover:text-foreground">
-            /yo
+          <Link href="/salud" className="underline underline-offset-2 hover:text-foreground">
+            /salud
           </Link>
           .
         </p>
