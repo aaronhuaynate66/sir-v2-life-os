@@ -192,9 +192,12 @@ async function readImageDims(file: File): Promise<ImageDims | null> {
 export interface AgregarCapturaPanelProps {
   personId: string
   personName: string
+  /** Modo inicial del selector (text/image/whatsapp). Default 'text'. Lo usa el
+   *  flujo "importar chat desde /captura" para aterrizar directo en WhatsApp. */
+  defaultMode?: 'text' | 'image' | 'whatsapp'
 }
 
-export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPanelProps) {
+export function AgregarCapturaPanel({ personId, personName, defaultMode }: AgregarCapturaPanelProps) {
   const router = useRouter()
   // Para auto-vincular el Instagram extraído al perfil (paridad V1): el handle
   // y su enlace se cargan SOLOS tras escanear, sin re-tipear.
@@ -204,7 +207,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
   const waInputRef = useRef<HTMLInputElement>(null)
   // Modo por defecto: TEXTO pegado (la vía confiable, sin OCR ilegible). La
   // imagen y el export de WhatsApp están como alternativas.
-  const [mode, setMode] = useState<Mode>('text')
+  const [mode, setMode] = useState<Mode>(defaultMode ?? 'text')
   // Multi-imagen: varias capturas del MISMO perfil en un solo envío.
   const [files, setFiles] = useState<File[]>([])
   const [pastedText, setPastedText] = useState('')
