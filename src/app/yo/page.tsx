@@ -1,8 +1,7 @@
 'use client'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import Link from 'next/link'
-import { Brain, Activity, Plus, Moon, Heart, Clock, ArrowRight, MessageSquare } from 'lucide-react'
+import { Brain, Activity, Plus, Moon, Heart, Clock, MessageSquare } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +26,7 @@ import { ContaleASir } from '@/components/yo/ContaleASir'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
+import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
 
 const METRIC_CATS: MetricCategory[] = ['energy', 'mood', 'stress', 'focus', 'motivation', 'confidence']
@@ -121,6 +121,11 @@ function SelfContent() {
         <p className="text-sm text-muted-foreground mt-1">Estado biológico y métricas personales</p>
       </div>
 
+      <div className="flex items-center gap-2 mb-3">
+        <Heart size={15} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+        <span className="text-[11px] uppercase tracking-[0.1em] text-text-tertiary font-sans">Salud</span>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
@@ -160,29 +165,6 @@ function SelfContent() {
         <BodyMetricsTrend metrics={healthMetrics} />
       </div>
 
-      <Card className={cn('mb-4', cardClass)}>
-        <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center">
-              <MessageSquare size={18} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-foreground">Capturar conversación WhatsApp</div>
-              <div className="text-xs text-muted-foreground leading-snug">
-                Subí un screenshot en la captura universal: SIR detecta el contacto, infiere
-                el tono y guarda el resumen en su perfil. Para chats largos, subí el export
-                (.txt/.zip) desde la ficha de la persona.
-              </div>
-            </div>
-          </div>
-          <Button size="sm" asChild className="flex-shrink-0">
-            <Link href="/captura" className="inline-flex items-center gap-1.5">
-              + Capturar
-              <ArrowRight size={13} strokeWidth={1.75} aria-hidden="true" />
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card className={cardClass}>
@@ -294,8 +276,16 @@ function SelfContent() {
           )}
         </CardContent>
       </Card>
-      {/* ── Cargar y perfil — debajo de tus datos para aterrizar en lo tuyo primero. ── */}
+      {/* Subir tus capturas de salud (báscula, sueño, frecuencia, Apple Health) — acá,
+          no en /captura, que es solo para capturas de OTRAS personas. */}
+      <MisCapturas />
+
+      {/* ── Identidad / quién sos — separado de la sección Salud. ── */}
       <div className="mt-8 pt-5 border-t border-border/40 space-y-4">
+        <div className="flex items-center gap-2">
+          <Brain size={15} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+          <span className="text-[11px] uppercase tracking-[0.1em] text-text-tertiary font-sans">Identidad</span>
+        </div>
         {/* Identidad: primero contás quién sos (relato), luego el perfil que alimenta. */}
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-5">
@@ -307,14 +297,6 @@ function SelfContent() {
           </CardContent>
         </Card>
         <IdentityProfilePanel />
-        <Card className={cardClass}>
-          <CardContent className="p-4 sm:p-5">
-            <Link href="/captura" className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-foreground font-medium">Subir tus datos (salud, perfil, Apple Health)</span>
-              <span className="text-muted-foreground whitespace-nowrap">en Captura →</span>
-            </Link>
-          </CardContent>
-        </Card>
         <SelfDiagnosisPanel />
       </div>
     </AppShell>

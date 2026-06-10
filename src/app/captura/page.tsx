@@ -38,7 +38,6 @@ import {
 } from '@/lib/capture/observations/client'
 import type { CaptureType, Observation } from '@/lib/capture/observations/types'
 import { BatchCapturePanel } from '@/components/capture/BatchCapturePanel'
-import { MisCapturas } from '@/components/yo/MisCapturas'
 import { ImportarChat } from '@/components/captura/ImportarChat'
 
 const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
@@ -329,8 +328,6 @@ function CapturaIndexContent() {
       {/* TUS PROPIOS DATOS (salud, tu perfil, Apple Health) — caja multi-archivo.
           Vive acá para que /captura sea la ÚNICA puerta de captura. */}
       <ImportarChat />
-
-      <MisCapturas />
 
       <Card className="shadow-none mb-6">
         <CardContent className="p-4 sm:p-6 space-y-4">
