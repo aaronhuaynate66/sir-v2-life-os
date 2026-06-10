@@ -38,6 +38,9 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { HorizonToggle } from '@/components/horario/HorizonToggle'
+import { ProximoPanel } from '@/components/agenda/ProximoPanel'
+import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
+import { CalendarConnections } from '@/components/agenda/CalendarConnections'
 import { DiaView } from '@/components/horario/DiaView'
 import { SemanaView } from '@/components/horario/SemanaView'
 import { MesView } from '@/components/horario/MesView'
@@ -55,6 +58,7 @@ export default function HorarioPage() {
 
 function HorarioContent() {
   const [horizon, setHorizon] = useState<Horizon>('dia')
+  const [calReload, setCalReload] = useState(0)
   const [calendar, setCalendar] = useState<CalendarState>({ kind: 'loading' })
   // `now` estable (post-mount) para la fusión determinística; `nowMs` tickea
   // sólo en Día para el countdown en vivo.
@@ -99,7 +103,7 @@ function HorarioContent() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [calReload])
 
   // Estable mientras el feed no cambie (evita recomputar el cockpit por render).
   const events: CalendarEvent[] = useMemo(
@@ -142,6 +146,13 @@ function HorarioContent() {
         <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mt-2">{LIMA_TZ_LABEL}</span>
       </motion.div>
 
+      {/* Lo accionable primero (antes vivía en /agenda, ahora fusionado acá). */}
+      <ProximoPanel title="Lo que importa ahora" excludeNoContact />
+      <div className="mb-6">
+        <DailyActionsPanel />
+      </div>
+
+      {/* Cockpit de calendario en sus tres horizontes. */}
       <div className="mb-5">
         <HorizonToggle value={horizon} onChange={setHorizon} />
       </div>
@@ -174,6 +185,11 @@ function HorarioContent() {
       ) : (
         <MesView milestones={cockpit.milestones} anchor={yearAnchor} nowMs={nowMs} />
       )}
+
+      {/* Gestión de calendarios conectados (movido de /agenda al fusionar). */}
+      <div className="mt-8">
+        <CalendarConnections onChange={() => setCalReload((k) => k + 1)} />
+      </div>
     </AppShell>
   )
 }

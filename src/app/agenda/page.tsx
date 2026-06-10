@@ -1,60 +1,8 @@
-'use client'
-
-// SIR V2 — /agenda (Feature 1: Agenda "Próximo", vista completa).
-//
-// Misma agregación determinística que el panel de Mission Control, sin
-// recorte: toda la lista accionable ordenada por urgencia/cercanía.
-
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-
-import { AppShell } from '@/components/layout/AppShell'
-import { ProximoPanel } from '@/components/agenda/ProximoPanel'
-import { CalendarPanel } from '@/components/agenda/CalendarPanel'
-import { CalendarConnections } from '@/components/agenda/CalendarConnections'
-import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
-import { useHasHydrated } from '@/hooks/useHasHydrated'
-import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+// SIR V2 — /agenda fusionada en /horario (lo accionable "Próximo" + el cockpit
+// de calendario viven ahora en una sola sección). Redirect para no romper
+// enlaces/marcadores viejos.
+import { redirect } from 'next/navigation'
 
 export default function AgendaPage() {
-  const hydrated = useHasHydrated()
-  const [calReload, setCalReload] = useState(0)
-  if (!hydrated) return <RouteSkeleton cards={2} />
-
-  return (
-    <AppShell>
-      <motion.div
-        initial={{ opacity: 0, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="mb-6 sm:mb-8"
-      >
-        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">
-          SIR V2 &mdash; Agenda
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Próximo</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Todo lo accionable, ordenado por urgencia. El calendario queda abajo, como contexto.
-        </p>
-      </motion.div>
-
-      {/* PRIMARIO: lo accionable (motor proactivo) manda la página. Las
-          relaciones descuidadas las cubre "Hoy con tu gente" abajo → acá
-          excluimos no_contact para no duplicar. */}
-      <ProximoPanel title="Lo que importa ahora" excludeNoContact />
-
-      {/* Relaciones que requieren acción (antes vivía en /horario): ranking de
-          descuidadas + rituales, con mensaje copiable on-demand. */}
-      <div className="mb-6">
-        <DailyActionsPanel />
-      </div>
-
-      {/* SECUNDARIO: calendario externo con los recurrentes plegados. La vista
-          completa de tiempo vive en /horario. */}
-      <CalendarPanel reloadKey={calReload} />
-
-      {/* Gestión de calendarios conectados (agregar/editar/eliminar/toggle). */}
-      <CalendarConnections onChange={() => setCalReload((k) => k + 1)} />
-    </AppShell>
-  )
+  redirect('/horario')
 }
