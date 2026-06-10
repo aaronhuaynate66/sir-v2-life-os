@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5197b6e`
+**Hash del último commit humano:** `7233b86`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `7233b86` | aaronhuaynate66 | fix(salud): hacer visible la selección de carita en MetricScale (#151) | 2026-06-10 |
 | `5197b6e` | aaronhuaynate66 | feat(charts): TrendChart interactivo (dots + etiquetas mín/máx + tooltip scrubber) (#150) | 2026-06-10 |
 | `68f4d82` | aaronhuaynate66 | fix(charts): delta de tendencia = último vs anterior (no vs el primero de la ventana) (#149) | 2026-06-10 |
 | `f58ca4b` | aaronhuaynate66 | fix(salud): aclarar que Mis capturas acepta varias (no es one-at-a-time) (#148) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `a518972` | aaronhuaynate66 | feat(ux): /yo personal — secciones Salud/Identidad + subidor de salud acá; /captura solo otros (#144) | 2026-06-10 |
 | `1b16415` | aaronhuaynate66 | feat(ux): form de persona como drawer (Sheet) en vez de bloque inline (#143) | 2026-06-10 |
 | `1c20188` | aaronhuaynate66 | feat(ux): pase de densidad — analítica/setup secundario en colapsables (#142) | 2026-06-10 |
-| `4f9f944` | aaronhuaynate66 | feat(captura): importar chat de WhatsApp y crear contacto en un paso (#141) | 2026-06-10 |
 
 ---
 
