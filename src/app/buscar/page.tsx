@@ -7,6 +7,7 @@
 // memorias que falten, vía /api/memories/embed.
 
 import { useState } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { Search, Sparkles, Loader2, RefreshCw } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -44,6 +45,7 @@ export default function BuscarPage() {
     try {
       const { results } = await postJson<{ results: SemanticSearchResult[] }>('/api/search', { query: q })
       setResults(results)
+      track(EVENTS.searchPerformed, { results: results.length })
     } catch (e) {
       setError(toApiError(e))
       setResults(null)

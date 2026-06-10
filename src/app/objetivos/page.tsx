@@ -1,5 +1,6 @@
 'use client'
 import { Suspense, useEffect, useMemo, useState } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -163,6 +164,7 @@ function GoalsContent() {
         createdAt: now, updatedAt: now,
       }
       addGoal(g)
+      track(EVENTS.objectiveCreated)
       toast.success('Objetivo creado', { description: title })
     }
     resetForm()

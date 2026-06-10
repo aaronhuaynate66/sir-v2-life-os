@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
@@ -214,6 +215,7 @@ function RelationshipsContent() {
         updatedAt: now,
       }
       addPerson(newPerson)
+      track(EVENTS.personAdded, { relationship: form.relationship })
       addMemory(createPersonAddedMemory(newPerson))
       toast.success('Persona agregada', { description: newPerson.name })
     }

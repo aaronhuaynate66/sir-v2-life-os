@@ -15,6 +15,7 @@
 // la DB, no estado local).
 
 import { useState } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Loader2, RefreshCw } from 'lucide-react'
 
@@ -54,6 +55,7 @@ export function LoPersonal({ personId, synthesis, conversationCount }: LoPersona
     setError(null)
     try {
       await generatePersonSynthesis(personId)
+      track(EVENTS.messageGenerated, { source: 'ficha' })
       router.refresh()
     } catch (e) {
       setError(toApiError(e))

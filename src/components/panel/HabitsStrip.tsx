@@ -6,6 +6,7 @@
 // /api/habits, fail-soft (si no hay hábitos o falla, muestra el acceso a /habitos).
 
 import { useCallback, useEffect, useState } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import Link from 'next/link'
 import { Activity, Flame, Check, Circle, Loader2 } from 'lucide-react'
 
@@ -56,6 +57,7 @@ export function HabitsStrip() {
       setToggling(id)
       try {
         const { done } = await postJson<{ done: boolean }>('/api/habits/checkin', { habit_id: id })
+        track(EVENTS.habitChecked, { done })
         const today = TODAY()
         setHabits((prev) =>
           (prev ?? []).map((h) =>

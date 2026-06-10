@@ -24,6 +24,7 @@
 // (con person_id fijo). La báscula es self (health_metrics, sin persona).
 
 import { useCallback, useRef, useState } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye, FileText, ClipboardPaste, X, Images, MessagesSquare, Upload, CalendarHeart, Repeat } from 'lucide-react'
@@ -312,6 +313,7 @@ export function AgregarCapturaPanel({ personId, personName }: AgregarCapturaPane
           }
           // 1. Persistir la conversación como observación whatsapp_chat.
           await persistWhatsAppExport({ personId, data: p.exportData })
+          track(EVENTS.exportUploaded, { messages: p.messageCount ?? 0, blocks: p.blocksUsed ?? 0 })
 
           // 2. Tono/calidad → reciprocidad: registrar UNA interacción con la
           //    calidad inferida (best-effort, no bloquea el guardado).

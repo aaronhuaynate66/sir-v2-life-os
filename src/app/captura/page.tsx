@@ -12,6 +12,7 @@
 // que B.2 / B.3 / B.4 + persistencia + matcher andan correctos.
 
 import { useCallback, useEffect, useState } from 'react'
+import { track, EVENTS } from '@/lib/analytics/track'
 import Link from 'next/link'
 import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, Heart, UserPlus, Users, X } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
@@ -242,6 +243,7 @@ function CapturaIndexContent() {
         personId: selectedPersonId,
       })
       setProcessed(r)
+      track(EVENTS.captureSaved, { capture_type: detection.detected.type, linked: !!selectedPersonId })
     } catch (e) {
       if (e instanceof HttpError) {
         setProcessError({ status: e.status, message: e.message, detail: e.detail })
