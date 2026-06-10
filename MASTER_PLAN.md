@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `11e871b`
+**Hash del último commit humano:** `f3417d9`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f3417d9` | aaronhuaynate66 | fix(red): grafo sin frame roto inicial + menos cruces (#132) | 2026-06-10 |
 | `11e871b` | aaronhuaynate66 | feat(relaciones): inferencia familiar por pivote en 'yo' (#131) | 2026-06-10 |
 | `2fe831b` | aaronhuaynate66 | feat(relaciones): sexo de la persona + panel de ciclo solo si es mujer (#130) | 2026-06-10 |
 | `61dcc2b` | aaronhuaynate66 | fix(relaciones): al abrir 'Agregar persona', traer el form a la vista + enfocar nombre (#129) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c424043` | aaronhuaynate66 | fix(yo): datos arriba, formularios de carga/perfil abajo (#125) | 2026-06-10 |
 | `2dab852` | aaronhuaynate66 | fix(ratelimit): subir bucket vision a 30/min·150/hr para soportar lotes (#124) | 2026-06-09 |
 | `0873da1` | aaronhuaynate66 | feat(yo): registrar ánimo/energía con CARITAS (1 toque) en vez de input numérico (#123) | 2026-06-09 |
-| `4839ee3` | aaronhuaynate66 | feat(captura): procesar paneles de salud (sueño/FC/báscula) en lote (auto-guardar) (#122) | 2026-06-09 |
 
 ---
 
