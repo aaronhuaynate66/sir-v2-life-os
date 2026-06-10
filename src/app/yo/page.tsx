@@ -119,16 +119,6 @@ function SelfContent() {
         <p className="text-sm text-muted-foreground mt-1">Estado biológico y métricas personales</p>
       </div>
 
-      {/* Anclas de identidad — datos básicos del dueño, base del motor proactivo. */}
-      <IdentityProfilePanel />
-
-      {/* Mis capturas — caja única multi-archivo: báscula, sueño, FC y perfil
-          propio se detectan y rutean solos. Reemplaza las cards separadas. */}
-      <MisCapturas />
-
-      {/* Espacio personal / diagnóstico — sección privada. */}
-      <SelfDiagnosisPanel />
-
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
           <Card key={s.label} className={cardClass}>
@@ -302,6 +292,12 @@ function SelfContent() {
           )}
         </CardContent>
       </Card>
+      {/* ── Cargar y perfil — debajo de tus datos para aterrizar en lo tuyo primero. ── */}
+      <div className="mt-8 pt-5 border-t border-border/40 space-y-4">
+        <IdentityProfilePanel />
+        <MisCapturas />
+        <SelfDiagnosisPanel />
+      </div>
     </AppShell>
   )
 }
