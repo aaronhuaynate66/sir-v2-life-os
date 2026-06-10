@@ -23,7 +23,6 @@ import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { SelfDiagnosisPanel } from '@/components/yo/SelfDiagnosisPanel'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
-import { MisCapturas } from '@/components/yo/MisCapturas'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
@@ -295,7 +294,14 @@ function SelfContent() {
       {/* ── Cargar y perfil — debajo de tus datos para aterrizar en lo tuyo primero. ── */}
       <div className="mt-8 pt-5 border-t border-border/40 space-y-4">
         <IdentityProfilePanel />
-        <MisCapturas />
+        <Card className={cardClass}>
+          <CardContent className="p-4 sm:p-5">
+            <Link href="/captura" className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-foreground font-medium">Subir tus datos (salud, perfil, Apple Health)</span>
+              <span className="text-muted-foreground whitespace-nowrap">en Captura →</span>
+            </Link>
+          </CardContent>
+        </Card>
         <SelfDiagnosisPanel />
       </div>
     </AppShell>
