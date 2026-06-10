@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3a9bdae`
+**Hash del último commit humano:** `8445a55`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8445a55` | aaronhuaynate66 | feat(ux): fusionar Buscar en Memoria (toggle texto / semántica) (#138) | 2026-06-10 |
 | `3a9bdae` | aaronhuaynate66 | fix(ux): dedupe alertas de tracker — quitar de /senales (su hogar es /seguimiento) (#137) | 2026-06-10 |
 | `6ba47b7` | aaronhuaynate66 | fix(ux): mover 'Contale a SIR quién sos' de /captura a /yo (#136) | 2026-06-10 |
 | `58137b2` | aaronhuaynate66 | fix(whatsapp-export): endurecer extracción de fechas (atribución por protagonista) (#135) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `11e871b` | aaronhuaynate66 | feat(relaciones): inferencia familiar por pivote en 'yo' (#131) | 2026-06-10 |
 | `2fe831b` | aaronhuaynate66 | feat(relaciones): sexo de la persona + panel de ciclo solo si es mujer (#130) | 2026-06-10 |
 | `61dcc2b` | aaronhuaynate66 | fix(relaciones): al abrir 'Agregar persona', traer el form a la vista + enfocar nombre (#129) | 2026-06-10 |
-| `a5c2d69` | aaronhuaynate66 | fix(whatsapp-export): blindar atribución — eventos del usuario no son hechos del contacto (#128) | 2026-06-10 |
 
 ---
 
