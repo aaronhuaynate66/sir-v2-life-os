@@ -62,6 +62,7 @@ export const personAdapter: TableAdapter<Person> = {
     // Solo cuando el usuario carga el valor (post-migración) viaja la key.
     ...(p.estadoCivil !== undefined ? { estado_civil: p.estadoCivil } : {}),
     ...(p.education !== undefined ? { education: p.education } : {}),
+    ...(p.gender !== undefined ? { gender: p.gender } : {}),
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -93,6 +94,7 @@ export const personAdapter: TableAdapter<Person> = {
     // → undefined, sin romper la lectura.
     estadoCivil: (row.estado_civil as string) ?? undefined,
     education: (row.education as string) ?? undefined,
+    gender: (row.gender as Person['gender']) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }),

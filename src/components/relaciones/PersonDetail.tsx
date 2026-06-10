@@ -84,7 +84,7 @@ import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 import type { PersonSynthesis } from '@/lib/person-synthesis/types'
 import type { PersonProfileAxes } from '@/lib/person-axes/types'
-import type { Memory, Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
+import type { Memory, Person, RelationshipType, PersonCategory, EnergyImpact, PersonGender } from '@/types'
 
 interface PersonDetailProps {
   initialPerson: Person
@@ -144,6 +144,7 @@ interface EditForm {
   energyImpact: EnergyImpact
   trustLevel: number
   importanceScore: number
+  gender: '' | PersonGender
   contactFrequency: string
   lastContact: string
   location: string
@@ -166,6 +167,7 @@ function formFromPerson(p: Person): EditForm {
     energyImpact: p.energyImpact,
     trustLevel: p.trustLevel,
     importanceScore: p.importanceScore,
+    gender: p.gender ?? '',
     contactFrequency: p.contactFrequency ?? '',
     // date-only: tomamos el prefijo YYYY-MM-DD (lastContact puede venir como
     // ISO completo de fixtures viejos; el input date necesita solo la fecha).
@@ -273,9 +275,10 @@ export function PersonDetail({
         location: form.location.trim() || undefined,
         estadoCivil: form.estadoCivil.trim() || undefined,
         education: form.education.trim() || undefined,
+        gender: form.gender || undefined,
         birthDate: form.birthDate || undefined,
-        cycleStartDate: form.cycleStartDate || undefined,
-        cycleLengthDays: form.cycleStartDate ? form.cycleLengthDays : undefined,
+        cycleStartDate: form.gender === 'female' ? (form.cycleStartDate || undefined) : undefined,
+        cycleLengthDays: form.gender === 'female' && form.cycleStartDate ? form.cycleLengthDays : undefined,
         tags,
         notes: form.notes,
         updatedAt: now,
@@ -498,9 +501,22 @@ export function PersonDetail({
                   <Input id="person-education" value={form.education} onChange={(e) => patch('education', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. Universitario · Ing. Industrial (UNI)" />
                 </div>
                 <div>
+                  <Label htmlFor="person-gender" className="text-xs">Sexo</Label>
+                  <Select value={form.gender || 'unspecified'} onValueChange={(v) => patch('gender', v === 'unspecified' ? '' : (v as PersonGender))} disabled={saving}>
+                    <SelectTrigger id="person-gender" className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unspecified">Sin especificar</SelectItem>
+                      <SelectItem value="female">Mujer</SelectItem>
+                      <SelectItem value="male">Hombre</SelectItem>
+                      <SelectItem value="other">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label htmlFor="person-birth" className="text-xs">Fecha de nacimiento</Label>
                   <Input id="person-birth" type="date" value={form.birthDate} onChange={(e) => patch('birthDate', e.target.value)} disabled={saving} className="mt-1 font-mono" />
                 </div>
+                {(form.gender === 'female' || !!form.cycleStartDate) && (<>
                 <div>
                   <Label htmlFor="person-cyclestart" className="text-xs">Inicio último período</Label>
                   <Input id="person-cyclestart" type="date" value={form.cycleStartDate} onChange={(e) => patch('cycleStartDate', e.target.value)} disabled={saving} className="mt-1 font-mono" />
@@ -509,6 +525,7 @@ export function PersonDetail({
                   <Label htmlFor="person-cyclelen" className="text-xs">Largo del ciclo (días)</Label>
                   <Input id="person-cyclelen" type="number" min={15} max={60} value={form.cycleLengthDays} onChange={(e) => patch('cycleLengthDays', Number(e.target.value) || 28)} disabled={saving || !form.cycleStartDate} className="mt-1 font-mono" />
                 </div>
+                </>)}
                 <div className="sm:col-span-2">
                   <Label htmlFor="person-tags" className="text-xs">Tags / etiquetas</Label>
                   <Input id="person-tags" value={form.tags} onChange={(e) => patch('tags', e.target.value)} disabled={saving} className="mt-1" placeholder="separados por coma: familia, trabajo, …" />
@@ -578,13 +595,16 @@ export function PersonDetail({
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
       <FechasImportantes person={live} />
 
-      {/* ─── Lunar + Ciclo: estado actual por persona ─────────────────── */}
-      <div className="mb-4">
-        <CicloPanel
-          cycleStartDate={live.cycleStartDate ?? null}
-          cycleLengthDays={live.cycleLengthDays ?? null}
-        />
-      </div>
+      {/* ─── Lunar + Ciclo: estado actual por persona. Solo si es mujer
+          (o ya tiene datos de ciclo cargados, p. ej. registros legacy). ─── */}
+      {(live.gender === 'female' || live.cycleStartDate) && (
+        <div className="mb-4">
+          <CicloPanel
+            cycleStartDate={live.cycleStartDate ?? null}
+            cycleLengthDays={live.cycleLengthDays ?? null}
+          />
+        </div>
+      )}
 
       {/* Correlación longitudinal (Fase 3c): person_logs × fase lunar ×
           fase del ciclo. Determinístico; narrativa IA opcional detrás de
