@@ -73,9 +73,18 @@ REGLAS:
    - etapa de vida: estudios (maestría, universidad), trabajo, profesión.
    - VÍNCULO con el usuario si se declara explícito (ej. "eres mi hermana" => es hermana del usuario).
    - hitos: viajes largos al exterior, cambios grandes de vida, salud relevante, estado civil.
-   ATRIBUCIÓN (clave): no asumas propiedad. Si algo (mascota, casa, auto) es del USUARIO y
-   ${contact} solo lo cuida/usa/comparte, decílo así (ej. "cuida al perro de Aaron cuando él viaja"),
-   NUNCA como suyo ("tiene un perro"). Nada de suposiciones.
+   ATRIBUCIÓN (clave, error #1 a evitar): un hecho va a "facts" SOLO si el PROTAGONISTA es
+   ${contact}. Test: "¿de quién es este hecho?". Si la respuesta es el usuario u otra persona,
+   NO es un fact de ${contact}, por más que ${contact} lo comente, lo pregunte, lo celebre,
+   lo apoye o participe en la logística.
+   - Propiedad: si una mascota/casa/auto es del USUARIO y ${contact} solo lo cuida/usa/comparte,
+     decílo así (ej. "cuida al perro de Aaron"), NUNCA como suyo ("tiene un perro").
+   - Eventos/hitos del USUARIO (sus viajes, su visa, su lesión/operación, su competencia, su mudanza,
+     su trabajo, sus exámenes) NO son hechos de ${contact} aunque ocupen gran parte de la charla y
+     ${contact} esté pendiente. Ej: el usuario viaja al exterior por una competencia y ${contact}
+     lo alienta y pide fotos → NO generes "viajó al exterior" ni "compite" como fact de ${contact}.
+   - Hechos de TERCEROS nombrados (hermana, primos, amigos, abuela) tampoco son de ${contact}.
+   - Ante la duda de quién es el protagonista, NO generes el fact. Listas vacías > inventar.
 9. IGNORÁ contenido de DIFUSIÓN (no es del vínculo): noticias reenviadas (🚨,
    #HASHTAG, titulares, "Gobierno declara…"), flyers/invitaciones masivas a eventos
    (formato afiche con 🗓/🕒), cadenas y publicidad. No generes dates, facts ni
