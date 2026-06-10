@@ -44,12 +44,14 @@ export function MetricScale({
             aria-label={`${LEVEL_LABELS[i]} (${v}/10)`}
             onClick={() => onChange(String(v))}
             className={cn(
-              'flex-1 rounded-md border py-2 flex flex-col items-center gap-0.5 transition-colors',
-              selected ? 'border-accent bg-accent/15' : 'border-border hover:border-accent/50 hover:bg-accent/5',
+              'flex-1 rounded-md border py-2 flex flex-col items-center gap-0.5 transition-all',
+              selected
+                ? 'border-primary bg-primary/20 ring-2 ring-primary/60 shadow-sm'
+                : 'border-border opacity-70 hover:opacity-100 hover:border-primary/40 hover:bg-primary/5',
             )}
           >
-            <span className="text-xl leading-none" aria-hidden="true">{face}</span>
-            <span className={cn('text-[10px]', selected ? 'text-accent-foreground' : 'text-muted-foreground')}>
+            <span className={cn('text-xl leading-none transition-transform', selected && 'scale-125')} aria-hidden="true">{face}</span>
+            <span className={cn('text-[10px]', selected ? 'text-foreground font-semibold' : 'text-muted-foreground')}>
               {LEVEL_LABELS[i]}
             </span>
           </button>
