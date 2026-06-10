@@ -121,9 +121,9 @@ function SelfContent() {
         <p className="text-sm text-muted-foreground mt-1">Estado biológico y métricas personales</p>
       </div>
 
-      <div className="flex items-center gap-2 mb-3">
-        <Heart size={15} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-        <span className="text-[11px] uppercase tracking-[0.1em] text-text-tertiary font-sans">Salud</span>
+      <div className="flex items-center gap-2.5 mb-4 pb-2 border-b border-border">
+        <Heart size={20} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">Salud</h2>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -282,9 +282,9 @@ function SelfContent() {
 
       {/* ── Identidad / quién sos — separado de la sección Salud. ── */}
       <div className="mt-8 pt-5 border-t border-border/40 space-y-4">
-        <div className="flex items-center gap-2">
-          <Brain size={15} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <span className="text-[11px] uppercase tracking-[0.1em] text-text-tertiary font-sans">Identidad</span>
+        <div className="flex items-center gap-2.5 mb-1">
+          <Brain size={20} strokeWidth={1.75} className="text-primary" aria-hidden="true" />
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">Identidad</h2>
         </div>
         {/* Identidad: primero contás quién sos (relato), luego el perfil que alimenta. */}
         <Card className={cardClass}>
