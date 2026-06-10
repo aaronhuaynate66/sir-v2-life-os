@@ -153,6 +153,9 @@ export type ReflectionType = 'daily' | 'weekly' | 'monthly' | 'event' | 'spontan
 
 // ─── CORE ENTITIES ────────────────────────────────────────────
 
+/** Sexo/género de una persona. 'other' cubre no-binario/otro. */
+export type PersonGender = 'female' | 'male' | 'other'
+
 export interface Person {
   id: string
   /** Slug user-facing para URLs /relaciones/[slug]. Auto-generado desde
@@ -161,6 +164,10 @@ export interface Person {
   slug?: string
   name: string
   alias?: string
+  /** Sexo biológico/género. Gatea el panel de ciclo menstrual (solo 'female')
+   *  y habilita mensajes gendered. Canonical en `people.gender` (migración
+   *  0069). undefined = sin especificar (legacy/no declarado). */
+  gender?: PersonGender
   relationship: RelationshipType
   category: PersonCategory
   importanceScore: number

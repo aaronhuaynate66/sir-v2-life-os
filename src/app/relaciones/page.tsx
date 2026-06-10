@@ -34,13 +34,14 @@ import {
   alertUrgencyLabel,
 } from '@/lib/people/labels'
 import { cn } from '@/lib/utils'
-import type { Person, RelationshipType, PersonCategory, EnergyImpact } from '@/types'
+import type { Person, RelationshipType, PersonCategory, EnergyImpact, PersonGender } from '@/types'
 
 interface PersonForm {
   name: string
   alias: string
   relationship: RelationshipType
   category: PersonCategory
+  gender: '' | PersonGender
   importanceScore: number
   energyImpact: EnergyImpact
   trustLevel: number
@@ -54,7 +55,7 @@ interface PersonForm {
 }
 
 const EMPTY_FORM: PersonForm = {
-  name: '', alias: '', relationship: 'friend', category: 'network',
+  name: '', alias: '', relationship: 'friend', category: 'network', gender: '',
   importanceScore: 5, energyImpact: 'neutral', trustLevel: 5,
   lastContact: '', contactFrequency: '', location: '', notes: '',
   birthDate: '',
@@ -131,6 +132,7 @@ function RelationshipsContent() {
       alias: person.alias ?? '',
       relationship: person.relationship,
       category: person.category,
+      gender: person.gender ?? '',
       importanceScore: person.importanceScore,
       energyImpact: person.energyImpact,
       trustLevel: person.trustLevel,
@@ -158,6 +160,7 @@ function RelationshipsContent() {
         alias: form.alias.trim() || undefined,
         relationship: form.relationship,
         category: form.category,
+        gender: form.gender || undefined,
         importanceScore: form.importanceScore,
         energyImpact: form.energyImpact,
         trustLevel: form.trustLevel,
@@ -166,8 +169,8 @@ function RelationshipsContent() {
         location: form.location.trim() || undefined,
         notes: form.notes,
         birthDate: form.birthDate || undefined,
-        cycleStartDate: form.cycleStartDate || undefined,
-        cycleLengthDays: form.cycleStartDate ? form.cycleLengthDays : undefined,
+        cycleStartDate: form.gender === 'female' ? (form.cycleStartDate || undefined) : undefined,
+        cycleLengthDays: form.gender === 'female' && form.cycleStartDate ? form.cycleLengthDays : undefined,
         updatedAt: now,
       }
       updatePerson(editingId, patch)
@@ -195,6 +198,7 @@ function RelationshipsContent() {
         alias: form.alias.trim() || undefined,
         relationship: form.relationship,
         category: form.category,
+        gender: form.gender || undefined,
         importanceScore: form.importanceScore,
         energyImpact: form.energyImpact,
         trustLevel: form.trustLevel,
@@ -203,8 +207,8 @@ function RelationshipsContent() {
         location: form.location.trim() || undefined,
         notes: form.notes,
         birthDate: form.birthDate || undefined,
-        cycleStartDate: form.cycleStartDate || undefined,
-        cycleLengthDays: form.cycleStartDate ? form.cycleLengthDays : undefined,
+        cycleStartDate: form.gender === 'female' ? (form.cycleStartDate || undefined) : undefined,
+        cycleLengthDays: form.gender === 'female' && form.cycleStartDate ? form.cycleLengthDays : undefined,
         tags: [],
         createdAt: now,
         updatedAt: now,
@@ -321,6 +325,18 @@ function RelationshipsContent() {
                 </Select>
               </div>
               <div>
+                <label className="block text-xs text-muted-foreground mb-1">Sexo</label>
+                <Select value={form.gender || 'unspecified'} onValueChange={(v) => setForm({ ...form, gender: v === 'unspecified' ? '' : (v as PersonGender) })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unspecified">Sin especificar</SelectItem>
+                    <SelectItem value="female">Mujer</SelectItem>
+                    <SelectItem value="male">Hombre</SelectItem>
+                    <SelectItem value="other">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <label className="block text-xs text-muted-foreground mb-1">Impacto energetico</label>
                 <Select value={form.energyImpact} onValueChange={(v) => setForm({ ...form, energyImpact: v as EnergyImpact })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -365,6 +381,7 @@ function RelationshipsContent() {
                 <label className="block text-xs text-muted-foreground mb-1">Fecha de nacimiento</label>
                 <Input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} className="font-mono" />
               </div>
+              {form.gender === 'female' && (<>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Inicio del último período</label>
                 <Input type="date" value={form.cycleStartDate} onChange={(e) => setForm({ ...form, cycleStartDate: e.target.value })} className="font-mono" />
@@ -383,6 +400,7 @@ function RelationshipsContent() {
                 />
                 <p className="text-[10px] text-muted-foreground/70 mt-1">Default 28. Rango 15-60.</p>
               </div>
+              </>)}
             </div>
             <div className="mt-4 flex gap-2 justify-end">
               <Button variant="ghost" size="sm" onClick={handleCancel}>Cancelar</Button>
