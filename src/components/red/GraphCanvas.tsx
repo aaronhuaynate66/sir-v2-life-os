@@ -25,8 +25,29 @@ interface GraphCanvasProps {
 }
 
 function toForceGraphData(data: GraphData) {
+  // Layout inicial determinístico: "yo" anclado al centro (fx/fy=0) y los
+  // contactos sembrados en un círculo, AGRUPADOS por categoría. Sin esto la
+  // simulación arranca amontonada en el origen (frame inicial "roto") y cae en
+  // mínimos con cruces innecesarios. Sembrar posiciones + anclar el centro la
+  // hace converger limpia y estable. (vx/vy quedan en 0 por defecto.)
+  const others = data.nodes.filter((n) => !n.isSelf)
+  const ordered = [...others].sort((a, b) =>
+    String((a as { category?: string }).category ?? '').localeCompare(
+      String((b as { category?: string }).category ?? ''),
+    ),
+  )
+  const R = 170
+  const pos = new Map<string, { x: number; y: number }>()
+  ordered.forEach((n, i) => {
+    const angle = (2 * Math.PI * i) / Math.max(1, ordered.length) - Math.PI / 2
+    pos.set((n as { id: string }).id, { x: Math.cos(angle) * R, y: Math.sin(angle) * R })
+  })
   return {
-    nodes: data.nodes,
+    nodes: data.nodes.map((n) =>
+      n.isSelf
+        ? { ...n, fx: 0, fy: 0 }
+        : { ...n, ...(pos.get((n as { id: string }).id) ?? {}) },
+    ),
     links: data.edges.map((e) => ({
       source: e.source,
       target: e.target,
@@ -313,6 +334,7 @@ export function GraphCanvas({ data, onNavigate }: GraphCanvasProps) {
         linkWidth={linkWidth}
         linkCurvature={0.18}
         linkDirectionalArrowLength={0}
+        warmupTicks={150}
         cooldownTicks={140}
         d3AlphaDecay={0.03}
         d3VelocityDecay={0.42}
