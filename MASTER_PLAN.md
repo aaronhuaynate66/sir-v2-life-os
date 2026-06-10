@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `6cf8a58`
+**Hash del último commit humano:** `f58ca4b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f58ca4b` | aaronhuaynate66 | fix(salud): aclarar que Mis capturas acepta varias (no es one-at-a-time) (#148) | 2026-06-10 |
 | `6cf8a58` | aaronhuaynate66 | fix(salud): color de métricas según polaridad (estrés bajo = bueno = verde) (#147) | 2026-06-10 |
 | `370caa8` | aaronhuaynate66 | feat(ux): extraer Salud a su propia página /salud; /yo queda como Identidad (#146) | 2026-06-10 |
 | `c383fe2` | aaronhuaynate66 | fix(ux): headers de sección de /yo prominentes (Salud / Identidad) (#145) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `4f9f944` | aaronhuaynate66 | feat(captura): importar chat de WhatsApp y crear contacto en un paso (#141) | 2026-06-10 |
 | `1997163` | aaronhuaynate66 | feat(ux): menú lateral agrupado (16 ítems planos → 5 secciones) (#140) | 2026-06-10 |
 | `d52adf2` | aaronhuaynate66 | feat(ux): fusionar Agenda en Horario (un solo hogar para tu tiempo) (#139) | 2026-06-10 |
-| `8445a55` | aaronhuaynate66 | feat(ux): fusionar Buscar en Memoria (toggle texto / semántica) (#138) | 2026-06-10 |
 
 ---
 
