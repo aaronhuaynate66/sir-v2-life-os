@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   inferFamilyLinks,
+  inferSelfPivotLinks,
   parseFamilyMentions,
   reconcileFamilyFromNotes,
 } from './suggest'
@@ -74,6 +75,29 @@ describe('inferFamilyLinks', () => {
     expect(s).toContainEqual(
       expect.objectContaining({ subjectId: 'self', targetId: 'nicolle', kind: 'hermana', viaId: 'maria' }),
     )
+  })
+})
+
+describe('inferSelfPivotLinks (pivote en "yo")', () => {
+  it('mi padre + mi hermana ⇒ mi hermana es hija de mi padre (ficha del padre)', () => {
+    const links = [link('self', 'esteban', 'padre'), link('self', 'nicolle', 'hermana')]
+    const s = inferSelfPivotLinks('esteban', links)
+    expect(s).toContainEqual(
+      expect.objectContaining({ subjectId: 'esteban', targetId: 'nicolle', kind: 'hija', viaId: 'self' }),
+    )
+  })
+
+  it('reverso: desde la ficha de mi hermana, mi padre es su padre', () => {
+    const links = [link('self', 'esteban', 'padre'), link('self', 'nicolle', 'hermana')]
+    const s = inferSelfPivotLinks('nicolle', links)
+    expect(s).toContainEqual(
+      expect.objectContaining({ subjectId: 'nicolle', targetId: 'esteban', kind: 'padre', viaId: 'self' }),
+    )
+  })
+
+  it('no infiere si el sujeto no cuelga de self', () => {
+    const links = [link('self', 'nicolle', 'hermana')]
+    expect(inferSelfPivotLinks('esteban', links)).toHaveLength(0)
   })
 })
 

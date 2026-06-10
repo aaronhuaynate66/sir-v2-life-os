@@ -16,7 +16,7 @@
 // addPersonLink / addPerson.
 
 import type { FamilyKind, Person, PersonLink } from '@/types'
-import { composeKinds } from './family'
+import { composeKinds, inverseKindApprox, SELF_ID } from './family'
 import { matchStrength } from './nameMatch'
 
 /** Sugerencia de vincular subject → un familiar por inferencia transitiva. */
@@ -91,6 +91,42 @@ export function inferFamilyLinks(
       seen.add(key)
       out.push({ source: 'inference', key, subjectId, targetId: cId, kind, viaId: bId })
     }
+  }
+  return out
+}
+
+/**
+ * Inferencia por PIVOTE en "yo": si DOS personas cuelgan de mí (ej. mi padre y
+ * mi hermana), propone el vínculo ENTRE ellas (mi padre es padre de mi hermana).
+ * Pivotea invirtiendo la arista self→subject y componiendo con cada otra arista
+ * self→C. NO toca inferFamilyLinks (cuyos tests asumen longitudes exactas).
+ */
+export function inferSelfPivotLinks(
+  subjectId: string,
+  links: PersonLink[],
+): InferenceSuggestion[] {
+  if (subjectId === SELF_ID) return []
+  const selfToSubject = links.find(
+    (l) => l.personAId === SELF_ID && l.personBId === subjectId,
+  )
+  if (!selfToSubject) return []
+  const k1 = inverseKindApprox(selfToSubject.kind) // subject → self (categoría)
+  if (!k1) return []
+
+  const existing = existingPairKeys(links)
+  const out: InferenceSuggestion[] = []
+  const seen = new Set<string>()
+  for (const l of links) {
+    if (l.personAId !== SELF_ID) continue
+    const cId = l.personBId
+    if (cId === subjectId) continue
+    const kind = composeKinds(k1, l.kind) // subject → C
+    if (!kind) continue
+    if (existing.has(`${subjectId}|${cId}`)) continue
+    const key = `selfpiv:${subjectId}:${cId}:${kind}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ source: 'inference', key, subjectId, targetId: cId, kind, viaId: SELF_ID })
   }
   return out
 }
