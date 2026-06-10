@@ -8,6 +8,7 @@ import { Menu } from 'lucide-react'
 import { Nav } from './Nav'
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+import { trackPageView } from '@/lib/analytics/track'
 
 interface AppShellProps {
   children: ReactNode
@@ -26,6 +27,12 @@ export function AppShell({ children, wide = false, rightRail }: AppShellProps) {
   // Auto-cerrar el drawer al navegar (cuando cambia el path).
   useEffect(() => {
     setOpen(false)
+  }, [pathname])
+
+  // Pageview SPA: gtag('config') ya no manda page_view (send_page_view:false),
+  // así que lo emitimos acá en cada cambio de ruta — incluido el mount inicial.
+  useEffect(() => {
+    if (pathname) trackPageView(pathname)
   }, [pathname])
 
   return (
