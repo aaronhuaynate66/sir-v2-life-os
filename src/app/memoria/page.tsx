@@ -7,6 +7,8 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { SemanticSearchPanel } from '@/components/memoria/SemanticSearchPanel'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
 import { useMemoryStore } from '@/stores'
@@ -51,6 +53,7 @@ function MemoryContent() {
 
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<MemoryType | 'all'>('all')
+  const [mode, setMode] = useState<'filter' | 'semantic'>('filter')
 
   const allMemories = useMemo(() => getRecentMemories(50), [getRecentMemories])
   const memoryContext = useMemo(() => buildMemoryContext(allMemories), [allMemories])
@@ -126,6 +129,20 @@ function MemoryContent() {
         </div>
       )}
 
+      {/* Toggle: filtro por texto (store local) vs búsqueda semántica (embeddings). */}
+      <div className="flex gap-2 mb-4">
+        <Button size="sm" variant={mode === 'filter' ? 'default' : 'outline'} onClick={() => setMode('filter')}>
+          Filtrar
+        </Button>
+        <Button size="sm" variant={mode === 'semantic' ? 'default' : 'outline'} onClick={() => setMode('semantic')}>
+          <Sparkles size={13} strokeWidth={1.75} className="mr-1.5" aria-hidden="true" />
+          Buscar con IA
+        </Button>
+      </div>
+
+      {mode === 'semantic' && <SemanticSearchPanel />}
+
+      {mode === 'filter' && (<>
       <div className="flex gap-2 mb-4 flex-wrap items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={14} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" />
@@ -214,6 +231,7 @@ function MemoryContent() {
           ))}
         </div>
       )}
+      </>)}
     </AppShell>
   )
 }
