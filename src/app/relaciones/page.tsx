@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
@@ -92,6 +92,21 @@ function RelationshipsContent() {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<PersonForm>(EMPTY_FORM)
+
+  // Al abrir el form (que vive debajo de las tarjetas de "hoy"), traerlo a la
+  // vista y enfocar el nombre — si no, el usuario tiene que cazarlo scrolleando.
+  const formRef = useRef<HTMLDivElement>(null)
+  const nameRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (!showForm) return
+    nameRef.current?.focus({ preventScroll: true })
+    // Pequeño delay: el form anima su altura (0→auto) en ~200ms; esperamos a
+    // que exista altura real para que el scroll aterrice en su inicio.
+    const t = setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 80)
+    return () => clearTimeout(t)
+  }, [showForm, editingId])
 
   const alerts = detectRelationshipAlerts(people, relationships)
 
@@ -258,6 +273,7 @@ function RelationshipsContent() {
       <AnimatePresence initial={false}>
         {showForm && (
           <motion.div
+            ref={formRef}
             key="person-form"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -271,7 +287,7 @@ function RelationshipsContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Nombre *</label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre completo" />
+                <Input ref={nameRef} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre completo" />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Alias</label>
