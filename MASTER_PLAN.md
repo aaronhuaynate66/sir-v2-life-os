@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1b16415`
+**Hash del último commit humano:** `a518972`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `a518972` | aaronhuaynate66 | feat(ux): /yo personal — secciones Salud/Identidad + subidor de salud acá; /captura solo otros (#144) | 2026-06-10 |
 | `1b16415` | aaronhuaynate66 | feat(ux): form de persona como drawer (Sheet) en vez de bloque inline (#143) | 2026-06-10 |
 | `1c20188` | aaronhuaynate66 | feat(ux): pase de densidad — analítica/setup secundario en colapsables (#142) | 2026-06-10 |
 | `4f9f944` | aaronhuaynate66 | feat(captura): importar chat de WhatsApp y crear contacto en un paso (#141) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `3a9bdae` | aaronhuaynate66 | fix(ux): dedupe alertas de tracker — quitar de /senales (su hogar es /seguimiento) (#137) | 2026-06-10 |
 | `6ba47b7` | aaronhuaynate66 | fix(ux): mover 'Contale a SIR quién sos' de /captura a /yo (#136) | 2026-06-10 |
 | `58137b2` | aaronhuaynate66 | fix(whatsapp-export): endurecer extracción de fechas (atribución por protagonista) (#135) | 2026-06-10 |
-| `9799e2f` | aaronhuaynate66 | feat(analytics): eventos del loop central (10 acciones) (#134) | 2026-06-10 |
 
 ---
 
