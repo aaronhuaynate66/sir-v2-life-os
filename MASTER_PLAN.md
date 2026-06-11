@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `44d76ed`
+**Hash del último commit humano:** `8a62057`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8a62057` | aaronhuaynate66 | fix(horario): semana lunes→domingo + títulos del board a 2 líneas (#154) | 2026-06-11 |
 | `44d76ed` | aaronhuaynate66 | feat(horario): agenda semanal como calendario (port Claude Design) (#152) | 2026-06-11 |
 | `7233b86` | aaronhuaynate66 | fix(salud): hacer visible la selección de carita en MetricScale (#151) | 2026-06-10 |
 | `5197b6e` | aaronhuaynate66 | feat(charts): TrendChart interactivo (dots + etiquetas mín/máx + tooltip scrubber) (#150) | 2026-06-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `370caa8` | aaronhuaynate66 | feat(ux): extraer Salud a su propia página /salud; /yo queda como Identidad (#146) | 2026-06-10 |
 | `c383fe2` | aaronhuaynate66 | fix(ux): headers de sección de /yo prominentes (Salud / Identidad) (#145) | 2026-06-10 |
 | `a518972` | aaronhuaynate66 | feat(ux): /yo personal — secciones Salud/Identidad + subidor de salud acá; /captura solo otros (#144) | 2026-06-10 |
-| `1b16415` | aaronhuaynate66 | feat(ux): form de persona como drawer (Sheet) en vez de bloque inline (#143) | 2026-06-10 |
 
 ---
 
