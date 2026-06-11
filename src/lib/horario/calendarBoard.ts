@@ -140,9 +140,17 @@ export function buildBoardEvents(input: BoardInput, now: Date): BoardEvent[] {
     }
   }
   for (const st of input.completedSteps ?? []) {
-    if (st.kind === 'task' && st.status === 'hecho' && st.targetDate) {
-      out.push(completedStepToBoard(st.id, st.title, st.targetDate, st.dueTime))
+    if (st.kind !== 'task' || st.status !== 'hecho') continue
+    // Preferir la fecha REAL de completado (0070); si falta, caer al proxy de
+    // la fecha objetivo.
+    if (st.completedAt) {
+      const ms = Date.parse(st.completedAt)
+      if (!Number.isNaN(ms)) {
+        out.push({ id: `done_${st.id}`, date: toLimaDateOnly(ms), s: 0, e: 0, origin: 'task', title: st.title, allDay: true, done: true })
+        continue
+      }
     }
+    if (st.targetDate) out.push(completedStepToBoard(st.id, st.title, st.targetDate, st.dueTime))
   }
   return out
 }

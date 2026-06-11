@@ -18,6 +18,14 @@ import { STORAGE_KEYS } from './storage'
 import { attachSupabaseSync, objectiveStepAdapter } from '@/lib/supabase/sync'
 import { taskStatusPatch } from '@/lib/objectives/steps'
 
+/** Stamp de fecha real de completado (migración 0070): al pasar a 'hecho' setea
+ *  completedAt=now (si no lo tenía); al salir de 'hecho' lo limpia. Centraliza
+ *  la lógica para los 3 setters de status. Idempotente. */
+function completedStamp(prev: ObjectiveStep, nextStatus: ObjectiveStepStatus): Partial<ObjectiveStep> {
+  if (nextStatus === 'hecho') return prev.completedAt ? {} : { completedAt: new Date().toISOString() }
+  return prev.completedAt ? { completedAt: undefined } : {}
+}
+
 interface ObjectiveStepState {
   steps: ObjectiveStep[]
 }
@@ -57,20 +65,27 @@ export const useObjectiveStepStore = create<ObjectiveStepStore>()(
 
       updateStep: (id, patch) =>
         set((s) => ({
-          steps: s.steps.map((st) => (st.id === id ? { ...st, ...patch } : st)),
+          steps: s.steps.map((st) =>
+            st.id === id
+              ? { ...st, ...patch, ...(patch.status !== undefined ? completedStamp(st, patch.status) : {}) }
+              : st,
+          ),
         })),
 
       setStepStatus: (id, status) =>
         set((s) => ({
-          steps: s.steps.map((st) => (st.id === id ? { ...st, status } : st)),
+          steps: s.steps.map((st) => (st.id === id ? { ...st, status, ...completedStamp(st, status) } : st)),
         })),
 
       setTaskStatus: (id, taskStatus) =>
-        set((s) => ({
-          steps: s.steps.map((st) =>
-            st.id === id ? { ...st, ...taskStatusPatch(taskStatus) } : st,
-          ),
-        })),
+        set((s) => {
+          const patch = taskStatusPatch(taskStatus)
+          return {
+            steps: s.steps.map((st) =>
+              st.id === id ? { ...st, ...patch, ...completedStamp(st, patch.status) } : st,
+            ),
+          }
+        }),
 
       removeStep: (id) => set((s) => ({ steps: s.steps.filter((st) => st.id !== id) })),
 

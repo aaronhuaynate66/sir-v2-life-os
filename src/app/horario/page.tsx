@@ -96,9 +96,12 @@ function HorarioContent() {
     if (!now) return []
     const cutoff = new Date(now.getTime() - 14 * 86_400_000)
     const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`
-    return objectiveSteps.filter(
-      (st) => st.kind === 'task' && st.status === 'hecho' && !!st.targetDate && st.targetDate >= cutoffStr,
-    )
+    return objectiveSteps.filter((st) => {
+      if (st.kind !== 'task' || st.status !== 'hecho') return false
+      // Fecha efectiva: completado real (0070) o, si falta, la fecha objetivo.
+      const eff = st.completedAt ? st.completedAt.slice(0, 10) : st.targetDate
+      return !!eff && eff >= cutoffStr
+    })
   }, [now, objectiveSteps])
   const boardEvents = useMemo(
     () => (now && cockpit ? buildBoardEvents({ events, weekDays: cockpit.weekDays, contactDates: cockpit.contactDates, completedSteps }, now) : []),
