@@ -7,9 +7,10 @@
 // vivo propio (tick 1s) y datos reales vía el adapter (lib/horario/calendarBoard).
 //
 // Tres vistas conmutables:
-//   - Semana (board): 7 columnas de agenda, sin horas vacías, ancladas a HOY
-//     (ventana rodante hoy..+6) — el feed de calendario es forward-only (60d).
-//   - Grilla: 7×24 con eje de tiempo ELÁSTICO (colapsa la madrugada/huecos).
+//   - Semana (DEFAULT): grilla 7 días × horas con eje ELÁSTICO (colapsa
+//     madrugada/huecos). Eventos con hora caen en su franja; las tareas SIN
+//     hora viven en la banda "Sin hora" de arriba (scrollable).
+//   - Agenda (board): 7 columnas de lista, sin horas vacías.
 //   - Día (spine): el día como un riel vertical; el tiempo libre es de 1ra clase.
 //
 // El layout es 1:1 con el prototipo; lo único que cambia es el origen de datos
@@ -577,7 +578,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
   // `now` real, recalculado cada tick (sin red).
   const now = new Date(mount.current + (Date.now() - mount.current))
 
-  const [view, setView] = useState<View>('board')
+  const [view, setView] = useState<View>('week')
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()))
   const [dayDate, setDayDate] = useState<Date>(() => startOfDay(new Date()))
   const origins = useMemo(() => presentOrigins(events), [events])
@@ -620,8 +621,8 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
           <div className="mono" style={{ fontSize: 14, color: 'var(--fg2)', fontWeight: 500 }}>{rangeLabel}</div>
           <div style={{ flex: 1 }} />
           <div className="seg">
-            <button aria-pressed={view === 'board'} onClick={() => { setWeekStart(mondayOf(dayDate)); setView('board') }}>Semana</button>
-            <button aria-pressed={view === 'week'} onClick={() => { setWeekStart(mondayOf(dayDate)); setView('week') }}>Grilla</button>
+            <button aria-pressed={view === 'week'} onClick={() => { setWeekStart(mondayOf(dayDate)); setView('week') }}>Semana</button>
+            <button aria-pressed={view === 'board'} onClick={() => { setWeekStart(mondayOf(dayDate)); setView('board') }}>Agenda</button>
             <button aria-pressed={view === 'spine'} onClick={() => setView('spine')}>Día</button>
           </div>
         </div>
@@ -661,14 +662,14 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
               })}
             </div>
             {/* all-day band */}
-            <div style={{ height: L.allDay, display: 'flex', borderBottom: '.5px solid var(--border)', flex: '0 0 auto', background: 'var(--bg)' }}>
+            <div style={{ minHeight: L.allDay, maxHeight: 150, display: 'flex', borderBottom: '.5px solid var(--border)', flex: '0 0 auto', background: 'var(--bg)' }}>
               <div style={{ width: L.gutter, flex: '0 0 auto', borderRight: '.5px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '8px 8px 0 0' }}>
-                <span className="eyebrow" style={{ fontSize: 9, textAlign: 'right', lineHeight: 1.2 }}>Todo<br />el día</span>
+                <span className="eyebrow" style={{ fontSize: 9, textAlign: 'right', lineHeight: 1.2 }}>Sin<br />hora</span>
               </div>
               {cols.map((d, i) => {
                 const items = visible.filter((e) => e.allDay && e.date === ymd(d))
                 return (
-                  <div key={i} style={{ flex: 1, borderLeft: i ? '.5px solid var(--border)' : 'none', padding: 5, display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
+                  <div key={i} style={{ flex: 1, borderLeft: i ? '.5px solid var(--border)' : 'none', padding: 5, display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', overflowX: 'hidden' }}>
                     {items.map((e) => (
                       <button key={e.id} onClick={() => setSel(e)} title={e.title}
                         style={{ textAlign: 'left', border: 'none', cursor: 'pointer', borderRadius: 6, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, background: `var(${ORIGIN_SOFT[e.origin]})`, color: `var(${ORIGIN_TXT[e.origin]})`, boxShadow: `inset 2px 0 0 var(${ORIGIN_VAR[e.origin]})` }}>
