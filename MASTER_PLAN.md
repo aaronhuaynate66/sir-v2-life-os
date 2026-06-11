@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b77203a`
+**Hash del último commit humano:** `8573384`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8573384` | aaronhuaynate66 | fix(horario): 'Hoy con tu gente' solo muestra lo accionable (#157) | 2026-06-11 |
 | `b77203a` | aaronhuaynate66 | feat(horario): mostrar días pasados de la semana (no 'Libre') (#156) | 2026-06-11 |
 | `f63996e` | aaronhuaynate66 | fix(horario): el calendario primero; saca ProximoPanel duplicado (#155) | 2026-06-11 |
 | `8a62057` | aaronhuaynate66 | fix(horario): semana lunes→domingo + títulos del board a 2 líneas (#154) | 2026-06-11 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `68f4d82` | aaronhuaynate66 | fix(charts): delta de tendencia = último vs anterior (no vs el primero de la ventana) (#149) | 2026-06-10 |
 | `f58ca4b` | aaronhuaynate66 | fix(salud): aclarar que Mis capturas acepta varias (no es one-at-a-time) (#148) | 2026-06-10 |
 | `6cf8a58` | aaronhuaynate66 | fix(salud): color de métricas según polaridad (estrés bajo = bueno = verde) (#147) | 2026-06-10 |
-| `370caa8` | aaronhuaynate66 | feat(ux): extraer Salud a su propia página /salud; /yo queda como Identidad (#146) | 2026-06-10 |
 
 ---
 
