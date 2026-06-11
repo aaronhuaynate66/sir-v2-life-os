@@ -126,7 +126,7 @@ function HorarioContent() {
           "Lo que importa ahora" (ProximoPanel) NO va acá: ya vive en Mission
           Control (/panel); duplicarlo era ruido. */}
       <div className="mt-8">
-        <DailyActionsPanel />
+        <DailyActionsPanel actionableOnly />
       </div>
 
       {/* Gestión de calendarios conectados (setup, no contenido diario) →
