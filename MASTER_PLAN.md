@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `85b3b1a`
+**Hash del último commit humano:** `6d78dc1`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6d78dc1` | aaronhuaynate66 | feat(horario): fecha real de completado (completed_at) (#163) | 2026-06-11 |
 | `85b3b1a` | aaronhuaynate66 | feat(alignment): señal de tendencia del score relacional (PR-D / E4) (#162) | 2026-06-11 |
 | `36ba24f` | aaronhuaynate66 | feat(horario): mostrar tareas OKR completadas en días pasados (#161) | 2026-06-11 |
 | `eefaf07` | aaronhuaynate66 | fix(mobile): guard global contra overflow horizontal por strings largos (#160) | 2026-06-11 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b77203a` | aaronhuaynate66 | feat(horario): mostrar días pasados de la semana (no 'Libre') (#156) | 2026-06-11 |
 | `f63996e` | aaronhuaynate66 | fix(horario): el calendario primero; saca ProximoPanel duplicado (#155) | 2026-06-11 |
 | `8a62057` | aaronhuaynate66 | fix(horario): semana lunes→domingo + títulos del board a 2 líneas (#154) | 2026-06-11 |
-| `44d76ed` | aaronhuaynate66 | feat(horario): agenda semanal como calendario (port Claude Design) (#152) | 2026-06-11 |
 
 ---
 
