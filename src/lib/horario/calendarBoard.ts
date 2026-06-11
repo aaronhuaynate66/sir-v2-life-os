@@ -37,6 +37,8 @@ export interface BoardEvent {
   allDay: boolean
   /** Tarea OKR ya completada ('hecho') — se muestra tachada como "qué se hizo". */
   done?: boolean
+  /** Id REAL del ObjectiveStep (solo origin 'task') — para asignarle hora. */
+  stepId?: string
 }
 
 export const ORIGIN_LABEL: Record<BoardOrigin, string> = {
@@ -96,9 +98,9 @@ function dateToBoard(d: CockpitDate, nowMs: number): BoardEvent {
 function taskToBoard(t: CockpitTask, dateKey: string): BoardEvent {
   const min = parseHHmm(t.dueTime)
   if (min == null) {
-    return { id: t.id, date: dateKey, s: 0, e: 0, origin: 'task', title: t.title, note: t.objectiveTitle, allDay: true }
+    return { id: t.id, date: dateKey, s: 0, e: 0, origin: 'task', title: t.title, note: t.objectiveTitle, allDay: true, stepId: t.stepId }
   }
-  return { id: t.id, date: dateKey, s: min, e: Math.min(min + MIN_BLOCK, 1440), origin: 'task', title: t.title, note: t.objectiveTitle, allDay: false }
+  return { id: t.id, date: dateKey, s: min, e: Math.min(min + MIN_BLOCK, 1440), origin: 'task', title: t.title, note: t.objectiveTitle, allDay: false, stepId: t.stepId }
 }
 
 /** Tarea OKR completada → evento del board en su fecha objetivo (proxy de

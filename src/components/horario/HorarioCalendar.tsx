@@ -224,8 +224,10 @@ function Row({ icon, text, mono }: { icon: string; text: string; mono?: boolean 
     </div>
   )
 }
-function Detail({ ev, onClose }: { ev: Ev | null; onClose: () => void }) {
+function Detail({ ev, onClose, onAssignTime }: { ev: Ev | null; onClose: () => void; onAssignTime?: (stepId: string, hhmm: string, date: string) => void }) {
+  const timeRef = useRef<HTMLInputElement>(null)
   if (!ev) return null
+  const canAssign = ev.origin === 'task' && !!ev.stepId && ev.allDay && !!onAssignTime
   const d = parseYmd(ev.date)
   const dateLong = `${DOW_FULL[dowMon(d)]} ${d.getDate()} ${MON_FULL[d.getMonth()]}`
   const cta = { cal: ev.loc ? 'Unirse' : 'Ver evento', date: 'Escribíle para saludar', task: 'Abrir tarea', health: 'Ver en Salud' }[ev.origin]
@@ -245,7 +247,20 @@ function Detail({ ev, onClose }: { ev: Ev | null; onClose: () => void }) {
           {ev.loc && <Row icon="pin" text={ev.loc} />}
         </div>
         {ev.note && <div style={{ fontSize: 13.5, color: 'var(--fg2)', lineHeight: 1.55, background: 'var(--s2)', border: '.5px solid var(--border)', borderRadius: 9, padding: '11px 13px', marginBottom: 18 }}>{ev.note}</div>}
-        <button className="btn btn-pri" style={{ width: '100%', height: 38 }}>{cta}<Icon n="arrowR" s={15} /></button>
+        {canAssign && (
+          <div style={{ marginBottom: 14 }}>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Ponela en tu día</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input key={ev.id} ref={timeRef} type="time" defaultValue="09:00"
+                style={{ height: 38, flex: '0 0 auto', background: 'var(--s2)', border: '.5px solid var(--border)', borderRadius: 'var(--r-ctrl)', color: 'var(--fg1)', fontFamily: 'var(--mono)', fontSize: 14, padding: '0 10px', colorScheme: 'dark' }} />
+              <button className="btn btn-pri" style={{ flex: 1, height: 38 }}
+                onClick={() => { const v = timeRef.current?.value; if (v && onAssignTime && ev.stepId) { onAssignTime(ev.stepId, v, ev.date); onClose() } }}>
+                Poner en la grilla<Icon n="arrowR" s={15} />
+              </button>
+            </div>
+          </div>
+        )}
+        {!canAssign && <button className="btn btn-pri" style={{ width: '100%', height: 38 }}>{cta}<Icon n="arrowR" s={15} /></button>}
       </div>
     </div>
   )
@@ -570,8 +585,10 @@ export interface HorarioCalendarProps {
   rangeEnd?: number
   rowHeight?: number
   showGaps?: boolean
+  /** Asignar hora a una tarea OKR sin hora (desde el detalle) → persiste dueTime+targetDate. */
+  onAssignTime?: (stepId: string, hhmm: string, date: string) => void
 }
-export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEnd = 24, rowHeight = 40, showGaps = true }: HorarioCalendarProps) {
+export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEnd = 24, rowHeight = 40, showGaps = true, onAssignTime }: HorarioCalendarProps) {
   const mount = useRef(Date.now())
   const [, setTick] = useState(0)
   useEffect(() => { const id = setInterval(() => setTick((x) => x + 1), 1000); return () => clearInterval(id) }, [])
@@ -758,7 +775,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
         )}
       </div>
 
-      <Detail ev={sel} onClose={() => setSel(null)} />
+      <Detail ev={sel} onClose={() => setSel(null)} onAssignTime={onAssignTime} />
     </div>
   )
 }
