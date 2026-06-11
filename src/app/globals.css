@@ -132,3 +132,56 @@ body {
   }
   @page { margin: 16mm; }
 }
+
+/* ─── /horario — tokens planos del calendario (port del prototipo de Claude
+   Design). Scopeados bajo .sir-horario para NO chocar con los tokens HSL
+   globales: acá el componente usa var(--x) directo (no hsl(var(--x))), con los
+   hex de SIR-DESIGN.md. Nada fuera de .sir-horario se ve afectado. ─── */
+.sir-horario {
+  --sans: var(--font-geist-sans), 'Inter', system-ui, sans-serif;
+  --mono: var(--font-geist-mono), 'JetBrains Mono', ui-monospace, monospace;
+  --bg: #0a0a0a;
+  --s1: #111113; --s2: #18181b; --s3: #232327;
+  --fg1: #ededed; --fg2: #a1a1aa; --fg3: #6b6b73;
+  --border: #1f1f1f; --border-strong: #2b2b2b;
+  --brand: #6e56cf; --brand-text: #b9a9f5;
+  --brand-soft: color-mix(in oklab, var(--brand) 14%, transparent);
+  --brand-soft-20: color-mix(in oklab, var(--brand) 20%, transparent);
+  --warn: #e0a93b; --warn-soft: color-mix(in oklab, var(--warn) 12%, transparent); --warn-text: #f0cd8a;
+  --bad: #e5564c; --bad-soft: color-mix(in oklab, var(--bad) 12%, transparent); --bad-text: #f0a09a;
+  --ok: #2dd4a7; --ok-soft: color-mix(in oklab, var(--ok) 12%, transparent); --ok-text: #7fe9cf;
+  --o-cal: #5b8cff; --o-cal-soft: color-mix(in oklab, var(--o-cal) 15%, transparent); --o-cal-text: #aec6ff;
+  --o-date: var(--warn); --o-date-soft: var(--warn-soft); --o-date-text: var(--warn-text);
+  --o-task: var(--brand); --o-task-soft: var(--brand-soft); --o-task-text: var(--brand-text);
+  --o-health: var(--bad); --o-health-soft: var(--bad-soft); --o-health-text: var(--bad-text);
+  --r-card: 12px; --r-ctrl: 9px; --r-chip: 7px;
+  --pri-bg: #ededed; --pri-fg: #0a0a0a;
+  font-family: var(--sans);
+  color: var(--fg1);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.sir-horario .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+.sir-horario .eyebrow { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; color: var(--fg3); }
+.sir-horario .btn { font-family: var(--sans); font-size: 13px; font-weight: 500; height: 34px; padding: 0 12px; border-radius: var(--r-ctrl); display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: .5px solid var(--border); background: transparent; color: var(--fg1); cursor: pointer; transition: background .12s, border-color .12s, transform .06s; white-space: nowrap; }
+.sir-horario .btn:hover { background: var(--s2); border-color: var(--border-strong); }
+.sir-horario .btn:active { transform: scale(.98); }
+.sir-horario .btn-icon { width: 34px; padding: 0; }
+.sir-horario .btn-pri { background: var(--pri-bg); color: var(--pri-fg); border-color: transparent; }
+.sir-horario .btn-pri:hover { background: #fff; }
+.sir-horario .seg { display: inline-flex; background: var(--s2); border: .5px solid var(--border); border-radius: var(--r-ctrl); padding: 2px; gap: 2px; }
+.sir-horario .seg button { font-family: var(--sans); font-size: 12.5px; font-weight: 500; color: var(--fg2); height: 28px; padding: 0 12px; border: 0; background: transparent; border-radius: 7px; cursor: pointer; transition: background .12s, color .12s; }
+.sir-horario .seg button:hover { color: var(--fg1); }
+.sir-horario .seg button[aria-pressed="true"] { background: var(--s3); color: var(--fg1); }
+.sir-horario .chip { font-family: var(--sans); font-size: 12px; font-weight: 500; height: 28px; padding: 0 11px; border-radius: var(--r-chip); display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: .5px solid var(--border); background: var(--s1); color: var(--fg2); transition: background .12s, border-color .12s, color .12s, opacity .12s; user-select: none; }
+.sir-horario .chip:hover { border-color: var(--border-strong); }
+.sir-horario .chip .dot { width: 8px; height: 8px; border-radius: 3px; flex: 0 0 auto; }
+.sir-horario .chip[data-off="true"] { opacity: .42; }
+.sir-horario .chip[data-off="true"] .dot { background: var(--fg3) !important; }
+.sir-horario .pulse { animation: sirPulse 2.2s ease-out infinite; }
+@keyframes sirPulse {
+  0% { box-shadow: 0 0 0 0 rgba(229, 86, 76, .5); }
+  70% { box-shadow: 0 0 0 6px rgba(229, 86, 76, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(229, 86, 76, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .sir-horario .pulse { animation: none; } }
