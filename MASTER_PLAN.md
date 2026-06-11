@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5f6a5d0`
+**Hash del último commit humano:** `eefaf07`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `eefaf07` | aaronhuaynate66 | fix(mobile): guard global contra overflow horizontal por strings largos (#160) | 2026-06-11 |
 | `5f6a5d0` | aaronhuaynate66 | fix(objetivos): legibilidad mobile (overflow de tarjeta + título apretado) (#159) | 2026-06-11 |
 | `64ec4a7` | aaronhuaynate66 | fix(agenda): expirar señales estancadas de 'Lo que importa ahora' (#158) | 2026-06-11 |
 | `8573384` | aaronhuaynate66 | fix(horario): 'Hoy con tu gente' solo muestra lo accionable (#157) | 2026-06-11 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `44d76ed` | aaronhuaynate66 | feat(horario): agenda semanal como calendario (port Claude Design) (#152) | 2026-06-11 |
 | `7233b86` | aaronhuaynate66 | fix(salud): hacer visible la selección de carita en MetricScale (#151) | 2026-06-10 |
 | `5197b6e` | aaronhuaynate66 | feat(charts): TrendChart interactivo (dots + etiquetas mín/máx + tooltip scrubber) (#150) | 2026-06-10 |
-| `68f4d82` | aaronhuaynate66 | fix(charts): delta de tendencia = último vs anterior (no vs el primero de la ventana) (#149) | 2026-06-10 |
 
 ---
 
