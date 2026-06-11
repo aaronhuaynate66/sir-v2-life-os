@@ -21,6 +21,7 @@ import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import { SectionTitle } from '@/components/ui/section-title'
 import { cn } from '@/lib/utils'
 import { computeAlignments, type AlignmentState, type GoalAlignment, type ConcernLevel } from '@/engines/alignment'
+import { computeScoreTrend, type ScoreTrend, type ScoreSnapshot } from '@/lib/people/scoreTrend'
 import type { Goal, Memory, Person, Relationship } from '@/types'
 
 export interface AlignmentPanelProps {
@@ -106,9 +107,37 @@ export function AlignmentPanel({ goals, people, relationships, memories }: Align
     }
   }, [])
 
+  // Tendencia del score relacional por persona (PR-D): trae los snapshots
+  // diarios en lote y computa la tendencia → alimenta la señal `score_trend`
+  // del engine (lee si el vínculo mejora o baja en el tiempo).
+  const [scoreTrends, setScoreTrends] = useState<Record<string, ScoreTrend>>({})
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/person-score/snapshot')
+        if (!res.ok) return
+        const data = (await res.json()) as { snapshots?: { personId: string; dateBucket: string; global: number }[] }
+        if (cancelled || !Array.isArray(data.snapshots)) return
+        const byPerson: Record<string, ScoreSnapshot[]> = {}
+        for (const sn of data.snapshots) {
+          ;(byPerson[sn.personId] ??= []).push({ dateBucket: sn.dateBucket, global: sn.global })
+        }
+        const trends: Record<string, ScoreTrend> = {}
+        for (const [pid, snaps] of Object.entries(byPerson)) trends[pid] = computeScoreTrend(snaps)
+        setScoreTrends(trends)
+      } catch {
+        // fail-soft: sin tendencias, el engine corre igual.
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const alignments = useMemo(
-    () => computeAlignments(goals, { people, relationships, memories, interactionTones }),
-    [goals, people, relationships, memories, interactionTones],
+    () => computeAlignments(goals, { people, relationships, memories, interactionTones, scoreTrends }),
+    [goals, people, relationships, memories, interactionTones, scoreTrends],
   )
   // Solo objetivos con ≥1 PERSONA vinculada: comparar "lo declarado vs el
   // comportamiento observado" solo tiene sentido ahí. Vincular personas es

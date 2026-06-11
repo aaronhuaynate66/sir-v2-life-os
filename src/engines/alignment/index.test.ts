@@ -352,3 +352,42 @@ describe('computeGoalAlignment — señales tagged (goal_activity)', () => {
     expect(a.state).toBe('no_recent_signal')
   })
 })
+
+describe('computeGoalAlignment — señal de tendencia del score (PR-D)', () => {
+  const p = person({ id: 'fran', name: 'Francisco' }) // sin lastContact ni rel → aísla la señal
+  const g = goal({ id: 'rel', category: 'relational', relatedPersons: ['fran'] })
+
+  it('score bajando → señal score_trend concern 1 (drifting)', () => {
+    const a = computeGoalAlignment(g, {
+      people: [p], relationships: [], memories: [], now: NOW,
+      scoreTrends: { fran: { direction: 'declining', delta: -8, current: 62, baseline: 70, comparedDays: 9 } },
+    })
+    const sig = a.signals.find((s) => s.kind === 'score_trend')
+    expect(sig?.concern).toBe(1)
+    expect(sig?.label).toBe('El score de tu relación con Francisco viene bajando (-8 pts en 9 días)')
+    expect(a.state).toBe('drifting')
+  })
+
+  it('score subiendo → señal concern 0 (aligned)', () => {
+    const a = computeGoalAlignment(g, {
+      people: [p], relationships: [], memories: [], now: NOW,
+      scoreTrends: { fran: { direction: 'improving', delta: 12, current: 80, baseline: 68, comparedDays: 7 } },
+    })
+    const sig = a.signals.find((s) => s.kind === 'score_trend')
+    expect(sig?.concern).toBe(0)
+    expect(sig?.label).toBe('El score de tu relación con Francisco viene subiendo (+12 pts en 7 días)')
+    expect(a.state).toBe('aligned')
+  })
+
+  it('stable / insufficient_data / ausente → sin señal de tendencia', () => {
+    for (const trend of [
+      { direction: 'stable' as const, delta: 2, current: 70, baseline: 68, comparedDays: 5 },
+      { direction: 'insufficient_data' as const, delta: null, current: 70, baseline: null, comparedDays: null },
+    ]) {
+      const a = computeGoalAlignment(g, { people: [p], relationships: [], memories: [], now: NOW, scoreTrends: { fran: trend } })
+      expect(a.signals.some((s) => s.kind === 'score_trend')).toBe(false)
+    }
+    const noTrend = computeGoalAlignment(g, { people: [p], relationships: [], memories: [], now: NOW })
+    expect(noTrend.signals.some((s) => s.kind === 'score_trend')).toBe(false)
+  })
+})

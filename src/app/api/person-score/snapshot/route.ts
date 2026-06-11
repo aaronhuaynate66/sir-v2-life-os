@@ -38,6 +38,41 @@ function clampInt(n: unknown, lo: number, hi: number): number | null {
 
 const RECENT_LIMIT = 30
 
+const GET_DAYS = 30
+
+/**
+ * GET /api/person-score/snapshot
+ * Devuelve los snapshots recientes de TODAS las personas del usuario (últimos
+ * GET_DAYS días), para computar tendencias en lote (ej. Alignment Engine).
+ * Read-only, RLS-scoped, FAIL-OPEN (tabla ausente → snapshots:[]).
+ * Response 200: { snapshots: { personId, dateBucket, global }[] }
+ */
+export async function GET() {
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) {
+    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  }
+  const userId = authData.user.id
+  const since = new Date(Date.now() - GET_DAYS * 86_400_000).toISOString().slice(0, 10)
+  try {
+    const { data: rows } = await supabase
+      .from('person_score_snapshots')
+      .select('person_id, date_bucket, global')
+      .eq('user_id', userId)
+      .gte('date_bucket', since)
+      .order('date_bucket', { ascending: true })
+    const snapshots = (rows ?? []).map((r) => ({
+      personId: (r as { person_id: string }).person_id,
+      dateBucket: (r as { date_bucket: string }).date_bucket,
+      global: (r as { global: number }).global,
+    }))
+    return NextResponse.json({ snapshots }, { status: 200 })
+  } catch {
+    return NextResponse.json({ snapshots: [] }, { status: 200 })
+  }
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()

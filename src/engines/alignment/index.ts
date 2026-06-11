@@ -35,6 +35,7 @@
 // en la lógica de clasificación.
 
 import type { Goal, GoalCategory, Memory, Person, Relationship } from '@/types'
+import type { ScoreTrend } from '@/lib/people/scoreTrend'
 
 export type AlignmentState =
   | 'aligned'
@@ -49,6 +50,7 @@ export type SignalKind =
   | 'energy_impact'
   | 'goal_activity'
   | 'interaction_tone'
+  | 'score_trend'
 
 /** Nivel de preocupación de una señal: 0 = acompaña, 1 = se desvía, 2 = brecha. */
 export type ConcernLevel = 0 | 1 | 2
@@ -91,6 +93,10 @@ export interface AlignmentContext {
   /** Tonos de interacción recientes por persona (person_logs kind='interaction',
    *  valor 1-5, en orden CRONOLÓGICO). Opcional: alimenta la señal de tono. */
   interactionTones?: Record<string, number[]>
+  /** Tendencia del score relacional por persona (computeScoreTrend sobre los
+   *  snapshots diarios). Opcional: alimenta la señal de TENDENCIA — lee si el
+   *  vínculo viene mejorando o bajando en el tiempo, no solo su estado de hoy. */
+  scoreTrends?: Record<string, ScoreTrend>
   /** Override de "ahora" para tests. Default: new Date(). */
   now?: Date
 }
@@ -174,6 +180,35 @@ function toneSignal(person: Person, tones: number[] | undefined): ObservedSignal
     personId: person.id,
     personName: person.name,
   }
+}
+
+/** Señal de TENDENCIA del score relacional: lee la dirección del score en el
+ *  tiempo (computeScoreTrend). Bajando = se desvía (concern 1); subiendo =
+ *  acompaña (concern 0). 'stable'/'insufficient_data' no aportan señal (evita
+ *  ruido). Es la lectura TEMPORAL que el snapshot de contacto/estado no da. */
+function scoreTrendSignal(person: Person, trend: ScoreTrend | undefined): ObservedSignal | null {
+  if (!trend || trend.delta === null) return null
+  const days = trend.comparedDays ?? 0
+  const span = days > 0 ? ` en ${days} día${days === 1 ? '' : 's'}` : ''
+  if (trend.direction === 'declining') {
+    return {
+      kind: 'score_trend',
+      label: `El score de tu relación con ${person.name} viene bajando (${trend.delta} pts${span})`,
+      concern: 1,
+      personId: person.id,
+      personName: person.name,
+    }
+  }
+  if (trend.direction === 'improving') {
+    return {
+      kind: 'score_trend',
+      label: `El score de tu relación con ${person.name} viene subiendo (+${trend.delta} pts${span})`,
+      concern: 0,
+      personId: person.id,
+      personName: person.name,
+    }
+  }
+  return null
 }
 
 function energySignal(person: Person): ObservedSignal | null {
@@ -429,10 +464,12 @@ export function computeGoalAlignment(goal: Goal, ctx: AlignmentContext): GoalAli
     const s = statusSignal(person, rel)
     const e = energySignal(person)
     const t = toneSignal(person, ctx.interactionTones?.[person.id])
+    const tr = scoreTrendSignal(person, ctx.scoreTrends?.[person.id])
     if (c) signals.push(c)
     if (s) signals.push(s)
     if (e) signals.push(e)
     if (t) signals.push(t)
+    if (tr) signals.push(tr)
   }
 
   // Señales TAGGED: actividad reciente sobre el objetivo extraída de los tags de
