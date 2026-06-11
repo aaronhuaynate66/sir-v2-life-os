@@ -28,7 +28,6 @@ import { buildBoardEvents } from '@/lib/horario/calendarBoard'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
-import { ProximoPanel } from '@/components/agenda/ProximoPanel'
 import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
 import { CalendarConnections } from '@/components/agenda/CalendarConnections'
 import { HorarioCalendar } from '@/components/horario/HorarioCalendar'
@@ -116,18 +115,19 @@ function HorarioContent() {
         <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mt-2">{LIMA_TZ_LABEL}</span>
       </motion.div>
 
-      {/* Lo accionable primero (antes vivía en /agenda, ahora fusionado acá). */}
-      <ProximoPanel title="Lo que importa ahora" excludeNoContact />
-      <div className="mb-6">
-        <DailyActionsPanel />
-      </div>
-
-      {/* El calendario (agenda semanal / grilla elástica / día). */}
+      {/* El calendario primero: es lo que el usuario vino a ver. */}
       {now == null || calendarLoading ? (
         <SkeletonBlocks cards={3} header={false} />
       ) : (
         <HorarioCalendar events={boardEvents} />
       )}
+
+      {/* Acciones del día con la gente, DEBAJO de la agenda (no la empuja).
+          "Lo que importa ahora" (ProximoPanel) NO va acá: ya vive en Mission
+          Control (/panel); duplicarlo era ruido. */}
+      <div className="mt-8">
+        <DailyActionsPanel />
+      </div>
 
       {/* Gestión de calendarios conectados (setup, no contenido diario) →
           colapsable para no alargar la página. */}
