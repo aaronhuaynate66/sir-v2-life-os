@@ -88,6 +88,7 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     metric_target: s.metricTarget ?? null,
     metric_current: s.metricCurrent ?? null,
     metric_unit: s.metricUnit ?? null,
+    completed_at: s.completedAt ?? null,
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -109,5 +110,6 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     metricTarget: coerceNum(row.metric_target),
     metricCurrent: coerceNum(row.metric_current),
     metricUnit: (row.metric_unit as string) || undefined,
+    completedAt: (row.completed_at as string) ?? undefined,
   }),
 }

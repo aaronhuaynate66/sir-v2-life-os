@@ -431,6 +431,9 @@ export interface ObjectiveStep {
   /** Orden dentro del grupo de hermanos (KRs entre KRs; tareas dentro de su KR). */
   order: number
   createdAt: string
+  /** Fecha/hora ISO de cuándo pasó a 'hecho' (migración 0070). Se setea sola en
+   *  el store al completar; null en data vieja → el calendario cae a targetDate. */
+  completedAt?: string
 
   // ─── Campos "Jira-light" de TAREA (migración 0050, todos nullable) ──────
   // Solo aplican a kind='task'. Backward-compatible: ausentes en data vieja.
