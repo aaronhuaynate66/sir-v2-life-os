@@ -43,6 +43,8 @@ export interface FetchCalendarOptions {
   supabase?: ServerSupabase
   /** Días hacia adelante a considerar. Default 60. */
   horizonDays?: number
+  /** Días hacia ATRÁS a incluir (para ver qué se hizo). Default 0 = solo futuro. */
+  pastDays?: number
   /** Máximo de eventos (tras mergear todos los calendarios). Default 50. */
   limit?: number
   /** Fuerza recarga ignorando cache. */
@@ -155,10 +157,11 @@ function tagEvent(ev: CalendarEvent, conn: { id: string; label: string; color?: 
 
 export async function fetchCalendarEvents(opts: FetchCalendarOptions = {}): Promise<CalendarFeedResult> {
   const horizonDays = opts.horizonDays ?? DEFAULT_HORIZON_DAYS
+  const pastDays = opts.pastDays ?? 0
   const limit = opts.limit ?? DEFAULT_LIMIT
   const nowMs = opts.nowMs ?? Date.now()
   const w: FeedWindow = {
-    fromMs: nowMs,
+    fromMs: nowMs - pastDays * 86_400_000,
     toMs: nowMs + horizonDays * 86_400_000,
     limit,
     nowMs,

@@ -64,7 +64,7 @@ function HorarioContent() {
     let cancelled = false
     void (async () => {
       try {
-        const res = await fetch('/api/calendar', { cache: 'no-store' })
+        const res = await fetch('/api/calendar?past=7&limit=120', { cache: 'no-store' })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = (await res.json()) as CalendarFeedResult
         if (!cancelled) setCalendar({ kind: 'ready', data })

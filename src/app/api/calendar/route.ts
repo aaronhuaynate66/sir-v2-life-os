@@ -10,7 +10,7 @@
 //   { configured: true, events: [...], calendars, fetchedAt} → ok (cada evento etiquetado)
 //   { configured: true, events: [], error }                  → configurado pero falló el fetch
 //
-// Query (opcional): ?days=NN (1-180), ?limit=NN (1-200)
+// Query (opcional): ?days=NN (1-180), ?past=NN (0-31), ?limit=NN (1-200)
 
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -30,11 +30,12 @@ export async function GET(req: NextRequest) {
 
   const sp = req.nextUrl.searchParams
   const days = clampInt(sp.get('days'), 60, 1, 180)
+  const past = clampInt(sp.get('past'), 0, 0, 31)
   const limit = clampInt(sp.get('limit'), 50, 1, 200)
 
   // Pasa el cliente autenticado → el reader lee las conexiones del usuario
   // (multi-calendario) y, si no hay, cae al fallback OUTLOOK_ICS_URL.
-  const result = await fetchCalendarEvents({ supabase, horizonDays: days, limit })
+  const result = await fetchCalendarEvents({ supabase, horizonDays: days, pastDays: past, limit })
   return NextResponse.json(result, { status: 200 })
 }
 
