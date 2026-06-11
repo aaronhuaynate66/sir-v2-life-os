@@ -104,6 +104,11 @@ body {
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.01em;
+  /* Guard mobile: un string largo sin espacios (email, URL, handle, id) jamás
+     fuerza scroll horizontal — se quiebra antes de desbordar. Heredado por todo
+     el árbol. Solo actúa cuando una palabra excede el ancho; no afecta el wrap
+     normal por espacios. */
+  overflow-wrap: break-word;
 }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: hsl(var(--card)); }
