@@ -48,6 +48,7 @@ const MOMENT_MAX = 45
 const MOMENT_H = 24
 const EV_MIN_H = 26
 const RAIL_X = 70
+const clamp2: CSSProperties = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }
 
 /* ── icons (lucide-ish) ── */
 function Icon({ n, s = 16, sw = 1.6, style }: { n: string; s?: number; sw?: number; style?: CSSProperties }) {
@@ -460,9 +461,9 @@ function BoardItem({ ev, live, past, nowMin, onSelect }: { ev: Ev; live?: boolea
   if (ev.allDay) {
     return (
       <button onClick={() => onSelect(ev)} title={ev.title}
-        style={{ textAlign: 'left', border: 'none', cursor: 'pointer', borderRadius: 6, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, background: `var(${ORIGIN_SOFT[ev.origin]})`, color: `var(${ORIGIN_TXT[ev.origin]})`, boxShadow: `inset 2px 0 0 var(${ORIGIN_VAR[ev.origin]})`, fontFamily: 'var(--sans)', opacity: past ? .5 : 1, overflow: 'hidden' }}>
+        style={{ textAlign: 'left', border: 'none', cursor: 'pointer', borderRadius: 6, padding: '5px 8px', display: 'flex', alignItems: 'flex-start', gap: 6, background: `var(${ORIGIN_SOFT[ev.origin]})`, color: `var(${ORIGIN_TXT[ev.origin]})`, boxShadow: `inset 2px 0 0 var(${ORIGIN_VAR[ev.origin]})`, fontFamily: 'var(--sans)', opacity: past ? .5 : 1, overflow: 'hidden' }}>
         <Icon n={ORIGIN_ICON[ev.origin]} s={12} sw={1.7} style={{ flex: '0 0 auto' }} />
-        <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--fg1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.title}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--fg1)', lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
       </button>
     )
   }
@@ -472,14 +473,14 @@ function BoardItem({ ev, live, past, nowMin, onSelect }: { ev: Ev; live?: boolea
         style={{ textAlign: 'left', cursor: 'pointer', height: 24, flex: '0 0 auto', padding: '0 8px', display: 'flex', alignItems: 'center', gap: 6, border: '.5px solid var(--border-strong)', borderRadius: 999, background: 'var(--s2)', fontFamily: 'var(--sans)', opacity: past ? .5 : 1, overflow: 'hidden' }}>
         <span style={{ width: 6, height: 6, borderRadius: 3, background: `var(${ORIGIN_VAR[ev.origin]})`, flex: '0 0 auto' }} />
         <span className="mono" style={{ fontSize: 10, color: 'var(--fg3)', flex: '0 0 auto' }}>{fmtT(ev.s)}</span>
-        <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--fg1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.title}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--fg1)', lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
       </button>
     )
   }
   return (
     <button onClick={() => onSelect(ev)}
       style={{ textAlign: 'left', cursor: 'pointer', borderRadius: 7, padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 1, background: `var(${ORIGIN_SOFT[ev.origin]})`, border: live ? '1px solid var(--brand)' : 'none', boxShadow: `inset 2px 0 0 var(${ORIGIN_VAR[ev.origin]})`, fontFamily: 'var(--sans)', opacity: past ? .5 : 1, overflow: 'hidden' }}>
-      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev.title}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg1)', lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
       <span className="mono" style={{ fontSize: 10.5, color: `var(${ORIGIN_TXT[ev.origin]})` }}>{fmtT(ev.s)}–{fmtT(ev.e)}{live && nowMin != null ? ` · quedan ${fmtDur(ev.e - nowMin)}` : ''}</span>
     </button>
   )
@@ -577,7 +578,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
   const now = new Date(mount.current + (Date.now() - mount.current))
 
   const [view, setView] = useState<View>('board')
-  const [weekStart, setWeekStart] = useState<Date>(() => startOfDay(new Date()))
+  const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()))
   const [dayDate, setDayDate] = useState<Date>(() => startOfDay(new Date()))
   const origins = useMemo(() => presentOrigins(events), [events])
   const [filters, setFilters] = useState<Record<Origin, boolean>>({ cal: true, date: true, task: true, health: true })
@@ -594,7 +595,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
 
   const goWeek = (n: number) => setWeekStart((w) => addDays(w, n * 7))
   const goDay = (n: number) => setDayDate((d) => addDays(d, n))
-  const today = () => { setWeekStart(startOfDay(now)); setDayDate(startOfDay(now)) }
+  const today = () => { setWeekStart(mondayOf(now)); setDayDate(startOfDay(now)) }
 
   let rangeLabel: string
   if (view !== 'spine') {
@@ -619,8 +620,8 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
           <div className="mono" style={{ fontSize: 14, color: 'var(--fg2)', fontWeight: 500 }}>{rangeLabel}</div>
           <div style={{ flex: 1 }} />
           <div className="seg">
-            <button aria-pressed={view === 'board'} onClick={() => { setWeekStart(startOfDay(dayDate)); setView('board') }}>Semana</button>
-            <button aria-pressed={view === 'week'} onClick={() => { setWeekStart(startOfDay(dayDate)); setView('week') }}>Grilla</button>
+            <button aria-pressed={view === 'board'} onClick={() => { setWeekStart(mondayOf(dayDate)); setView('board') }}>Semana</button>
+            <button aria-pressed={view === 'week'} onClick={() => { setWeekStart(mondayOf(dayDate)); setView('week') }}>Grilla</button>
             <button aria-pressed={view === 'spine'} onClick={() => setView('spine')}>Día</button>
           </div>
         </div>
