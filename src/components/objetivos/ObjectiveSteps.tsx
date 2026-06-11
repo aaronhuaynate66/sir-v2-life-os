@@ -722,7 +722,7 @@ function KeyResultRow({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <Target size={12} className="text-brand-soft-foreground flex-shrink-0" aria-hidden="true" />
-                <span className={cn('text-sm font-medium', krDone ? 'text-muted-foreground line-through' : 'text-foreground')}>
+                <span className={cn('text-sm font-medium break-words min-w-0', krDone ? 'text-muted-foreground line-through' : 'text-foreground')}>
                   {kr.title}
                 </span>
                 <span className="text-[10px] font-mono tabular-nums text-text-tertiary">
@@ -738,8 +738,10 @@ function KeyResultRow({
               <TrackerStrip objectiveStepId={kr.id} className="mt-1.5" />
             </div>
             <div className="flex items-center gap-0.5 flex-shrink-0">
-              <IconBtn label="Subir KR" disabled={index === 0} onClick={() => onMoveKr(kr.id, 'up')}><ChevronUp size={14} /></IconBtn>
-              <IconBtn label="Bajar KR" disabled={index === total - 1} onClick={() => onMoveKr(kr.id, 'down')}><ChevronDown size={14} /></IconBtn>
+              <div className="hidden sm:flex items-center gap-0.5">
+                <IconBtn label="Subir KR" disabled={index === 0} onClick={() => onMoveKr(kr.id, 'up')}><ChevronUp size={14} /></IconBtn>
+                <IconBtn label="Bajar KR" disabled={index === total - 1} onClick={() => onMoveKr(kr.id, 'down')}><ChevronDown size={14} /></IconBtn>
+              </div>
               <IconBtn label="Editar KR" onClick={() => onStartEdit(kr)}><Pencil size={13} /></IconBtn>
               <IconBtn label="Borrar KR" danger onClick={() => onRemoveKr(kr)}><Trash2 size={13} /></IconBtn>
             </div>
@@ -886,7 +888,7 @@ function TaskRow({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={cn('text-[13px]', done ? 'text-muted-foreground line-through' : 'text-foreground')}>
+          <span className={cn('text-[13px] break-words min-w-0', done ? 'text-muted-foreground line-through' : 'text-foreground')}>
             {task.title}
           </span>
           {task.priority && <PriorityChip priority={task.priority} />}
@@ -934,8 +936,10 @@ function TaskRow({
       </div>
 
       <div className="flex items-center gap-0.5 flex-shrink-0">
-        <IconBtn label="Subir tarea" disabled={first} onClick={() => onMove('up')}><ChevronUp size={13} /></IconBtn>
-        <IconBtn label="Bajar tarea" disabled={last} onClick={() => onMove('down')}><ChevronDown size={13} /></IconBtn>
+        <div className="hidden sm:flex items-center gap-0.5">
+          <IconBtn label="Subir tarea" disabled={first} onClick={() => onMove('up')}><ChevronUp size={13} /></IconBtn>
+          <IconBtn label="Bajar tarea" disabled={last} onClick={() => onMove('down')}><ChevronDown size={13} /></IconBtn>
+        </div>
         <IconBtn label="Editar tarea" onClick={onStartEdit}><Pencil size={12} /></IconBtn>
         <IconBtn label="Borrar tarea" danger onClick={onRemove}><Trash2 size={12} /></IconBtn>
       </div>

@@ -406,10 +406,10 @@ function GoalsContent() {
                     {(g.target || g.why) && (
                       <div className="mb-2 space-y-0.5">
                         {g.target && (
-                          <div className="flex items-center gap-1.5 text-xs text-foreground/90">
-                            <Target size={11} className="text-brand-soft-foreground flex-shrink-0" aria-hidden="true" />
-                            <span className="font-medium">{g.target}</span>
-                            {g.baseline && <span className="text-muted-foreground">· hoy: {g.baseline}</span>}
+                          <div className="flex items-start gap-1.5 text-xs text-foreground/90 flex-wrap">
+                            <Target size={11} className="mt-0.5 text-brand-soft-foreground flex-shrink-0" aria-hidden="true" />
+                            <span className="font-medium break-words min-w-0">{g.target}</span>
+                            {g.baseline && <span className="text-muted-foreground break-words min-w-0">· hoy: {g.baseline}</span>}
                           </div>
                         )}
                         {g.why && <div className="text-[11px] text-muted-foreground/80 italic">Por qué: {g.why}</div>}
