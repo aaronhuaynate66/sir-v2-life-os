@@ -668,15 +668,23 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
               </div>
               {cols.map((d, i) => {
                 const items = visible.filter((e) => e.allDay && e.date === ymd(d))
+                const shown = items.slice(0, 3)
+                const extra = items.length - shown.length
                 return (
-                  <div key={i} style={{ flex: 1, borderLeft: i ? '.5px solid var(--border)' : 'none', padding: 5, display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto', overflowX: 'hidden' }}>
-                    {items.map((e) => (
+                  <div key={i} style={{ flex: 1, borderLeft: i ? '.5px solid var(--border)' : 'none', padding: 5, display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
+                    {shown.map((e) => (
                       <button key={e.id} onClick={() => setSel(e)} title={e.title}
                         style={{ textAlign: 'left', border: 'none', cursor: 'pointer', borderRadius: 6, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, background: `var(${ORIGIN_SOFT[e.origin]})`, color: `var(${ORIGIN_TXT[e.origin]})`, boxShadow: `inset 2px 0 0 var(${ORIGIN_VAR[e.origin]})` }}>
                         <Icon n={ORIGIN_ICON[e.origin]} s={12.5} sw={1.7} style={{ flex: '0 0 auto' }} />
                         <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.title}</span>
                       </button>
                     ))}
+                    {extra > 0 && (
+                      <button onClick={() => { setDayDate(d); setView('spine') }} title="Ver el día"
+                        style={{ textAlign: 'left', border: 'none', cursor: 'pointer', background: 'transparent', padding: '2px 8px', fontSize: 11, color: 'var(--fg3)', fontFamily: 'var(--sans)' }}>
+                        +{extra} más
+                      </button>
+                    )}
                   </div>
                 )
               })}
@@ -686,8 +694,8 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
               {tl.mapped.filter((s) => s.collapse).map((s, i) => {
                 const night = s.s <= tl.lo + 1
                 return (
-                  <div key={'g' + i} style={{ position: 'absolute', left: 0, right: 0, top: s.y0, height: s.h, background: 'var(--bg)', borderTop: '.5px dashed var(--border)', borderBottom: '.5px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 0 }}>
-                    <span className="mono" style={{ fontSize: 10, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{night ? 'madrugada' : `${fmtT(s.s)}–${fmtT(s.e)}`} · {fmtDur(s.e - s.s)}</span>
+                  <div key={'g' + i} style={{ position: 'absolute', left: 0, right: 0, top: s.y0, height: s.h, background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 0 }}>
+                    <span className="mono" style={{ fontSize: 9.5, color: 'var(--fg3)', opacity: .45, letterSpacing: '.08em' }}>{night ? 'madrugada' : 'libre'}</span>
                   </div>
                 )
               })}
