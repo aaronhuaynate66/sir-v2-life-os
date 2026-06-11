@@ -93,7 +93,7 @@ function signal(over: Partial<Signal>): Signal {
     relatedGoals: [],
     actionRequired: over.actionRequired ?? true,
     resolved: over.resolved ?? false,
-    detectedAt: '2026-05-01T00:00:00Z',
+    detectedAt: '2026-05-30T00:00:00Z',
     ...over,
   }
 }
@@ -493,6 +493,33 @@ describe('buildAgenda — señales críticas', () => {
       NOW,
     )
     expect(items.filter((i) => i.kind === 'critical_signal')).toHaveLength(0)
+  })
+
+  it('señal estancada (detectada hace > 7 días) → excluida', () => {
+    const items = buildAgenda(
+      { ...EMPTY, signals: [signal({ id: 'old', urgency: 'immediate', detectedAt: '2026-05-01T00:00:00Z' })] },
+      {},
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'critical_signal')).toHaveLength(0)
+  })
+
+  it('señal con expiresAt ya pasado → excluida', () => {
+    const items = buildAgenda(
+      { ...EMPTY, signals: [signal({ id: 'exp', urgency: 'immediate', detectedAt: '2026-05-30T00:00:00Z', expiresAt: '2026-05-31T00:00:00Z' })] },
+      {},
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'critical_signal')).toHaveLength(0)
+  })
+
+  it('señal con expiresAt futuro → se mantiene', () => {
+    const items = buildAgenda(
+      { ...EMPTY, signals: [signal({ id: 'fut', urgency: 'immediate', detectedAt: '2026-05-30T00:00:00Z', expiresAt: '2026-06-30T00:00:00Z' })] },
+      {},
+      NOW,
+    )
+    expect(items.filter((i) => i.kind === 'critical_signal')).toHaveLength(1)
   })
 })
 
