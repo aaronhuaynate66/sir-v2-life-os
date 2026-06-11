@@ -463,7 +463,7 @@ function BoardItem({ ev, live, past, nowMin, onSelect }: { ev: Ev; live?: boolea
       <button onClick={() => onSelect(ev)} title={ev.title}
         style={{ textAlign: 'left', border: 'none', cursor: 'pointer', borderRadius: 6, padding: '5px 8px', display: 'flex', alignItems: 'flex-start', gap: 6, background: `var(${ORIGIN_SOFT[ev.origin]})`, color: `var(${ORIGIN_TXT[ev.origin]})`, boxShadow: `inset 2px 0 0 var(${ORIGIN_VAR[ev.origin]})`, fontFamily: 'var(--sans)', opacity: past ? .5 : 1, overflow: 'hidden' }}>
         <Icon n={ORIGIN_ICON[ev.origin]} s={12} sw={1.7} style={{ flex: '0 0 auto' }} />
-        <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--fg1)', lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 500, color: ev.done ? 'var(--fg3)' : 'var(--fg1)', textDecoration: ev.done ? 'line-through' : undefined, lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
       </button>
     )
   }
@@ -473,14 +473,14 @@ function BoardItem({ ev, live, past, nowMin, onSelect }: { ev: Ev; live?: boolea
         style={{ textAlign: 'left', cursor: 'pointer', height: 24, flex: '0 0 auto', padding: '0 8px', display: 'flex', alignItems: 'center', gap: 6, border: '.5px solid var(--border-strong)', borderRadius: 999, background: 'var(--s2)', fontFamily: 'var(--sans)', opacity: past ? .5 : 1, overflow: 'hidden' }}>
         <span style={{ width: 6, height: 6, borderRadius: 3, background: `var(${ORIGIN_VAR[ev.origin]})`, flex: '0 0 auto' }} />
         <span className="mono" style={{ fontSize: 10, color: 'var(--fg3)', flex: '0 0 auto' }}>{fmtT(ev.s)}</span>
-        <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--fg1)', lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 500, color: ev.done ? 'var(--fg3)' : 'var(--fg1)', textDecoration: ev.done ? 'line-through' : undefined, lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
       </button>
     )
   }
   return (
     <button onClick={() => onSelect(ev)}
       style={{ textAlign: 'left', cursor: 'pointer', borderRadius: 7, padding: '5px 8px', display: 'flex', flexDirection: 'column', gap: 1, background: `var(${ORIGIN_SOFT[ev.origin]})`, border: live ? '1px solid var(--brand)' : 'none', boxShadow: `inset 2px 0 0 var(${ORIGIN_VAR[ev.origin]})`, fontFamily: 'var(--sans)', opacity: past ? .5 : 1, overflow: 'hidden' }}>
-      <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg1)', lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, color: ev.done ? 'var(--fg3)' : 'var(--fg1)', textDecoration: ev.done ? 'line-through' : undefined, lineHeight: 1.25, ...clamp2 }}>{ev.title}</span>
       <span className="mono" style={{ fontSize: 10.5, color: `var(${ORIGIN_TXT[ev.origin]})` }}>{fmtT(ev.s)}–{fmtT(ev.e)}{live && nowMin != null ? ` · quedan ${fmtDur(ev.e - nowMin)}` : ''}</span>
     </button>
   )

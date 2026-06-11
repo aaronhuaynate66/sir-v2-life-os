@@ -89,9 +89,20 @@ function HorarioContent() {
     () => (now ? buildCockpit({ goals, objectiveSteps, people, events }, 'semana', now) : null),
     [now, goals, objectiveSteps, people, events],
   )
+  // Tareas OKR completadas ('hecho') con fecha objetivo en las últimas ~2
+  // semanas → "qué se hizo" en los días pasados del board (proxy: ObjectiveStep
+  // no guarda fecha de completado, así que se ubican en su targetDate).
+  const completedSteps = useMemo(() => {
+    if (!now) return []
+    const cutoff = new Date(now.getTime() - 14 * 86_400_000)
+    const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`
+    return objectiveSteps.filter(
+      (st) => st.kind === 'task' && st.status === 'hecho' && !!st.targetDate && st.targetDate >= cutoffStr,
+    )
+  }, [now, objectiveSteps])
   const boardEvents = useMemo(
-    () => (now && cockpit ? buildBoardEvents({ events, weekDays: cockpit.weekDays, contactDates: cockpit.contactDates }, now) : []),
-    [now, cockpit, events],
+    () => (now && cockpit ? buildBoardEvents({ events, weekDays: cockpit.weekDays, contactDates: cockpit.contactDates, completedSteps }, now) : []),
+    [now, cockpit, events, completedSteps],
   )
 
   const calendarLoading = calendar.kind === 'loading'

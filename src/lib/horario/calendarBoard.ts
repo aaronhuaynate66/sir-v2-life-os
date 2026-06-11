@@ -16,6 +16,7 @@ import { LIMA_UTC_OFFSET_HOURS } from '@/lib/calendar/tz'
 import { toLimaDateOnly } from '@/lib/calendar/ics'
 import type { CalendarEvent } from '@/lib/calendar/types'
 import type { CockpitDate, CockpitDayBucket, CockpitTask } from '@/lib/horario/cockpit'
+import type { ObjectiveStep } from '@/types'
 
 export type BoardOrigin = 'cal' | 'date' | 'task' | 'health'
 
@@ -34,6 +35,8 @@ export interface BoardEvent {
   loc?: string
   note?: string
   allDay: boolean
+  /** Tarea OKR ya completada ('hecho') — se muestra tachada como "qué se hizo". */
+  done?: boolean
 }
 
 export const ORIGIN_LABEL: Record<BoardOrigin, string> = {
@@ -98,10 +101,24 @@ function taskToBoard(t: CockpitTask, dateKey: string): BoardEvent {
   return { id: t.id, date: dateKey, s: min, e: Math.min(min + MIN_BLOCK, 1440), origin: 'task', title: t.title, note: t.objectiveTitle, allDay: false }
 }
 
+/** Tarea OKR completada → evento del board en su fecha objetivo (proxy de
+ *  "cuándo se hizo": ObjectiveStep no guarda fecha de completado). Solo
+ *  kind='task', status='hecho' y con targetDate. */
+function completedStepToBoard(stepId: string, title: string, targetDate: string, dueTime: string | undefined): BoardEvent {
+  const min = parseHHmm(dueTime)
+  if (min == null) {
+    return { id: `done_${stepId}`, date: targetDate, s: 0, e: 0, origin: 'task', title, allDay: true, done: true }
+  }
+  return { id: `done_${stepId}`, date: targetDate, s: min, e: Math.min(min + MIN_BLOCK, 1440), origin: 'task', title, allDay: false, done: true }
+}
+
 export interface BoardInput {
   events: CalendarEvent[]
   weekDays: CockpitDayBucket[]
   contactDates: CockpitDate[]
+  /** Tareas OKR completadas (status 'hecho') con targetDate — "qué se hizo".
+   *  Idealmente ya acotadas a la ventana visible por el llamador. */
+  completedSteps?: ObjectiveStep[]
 }
 
 /** Arma los eventos del board desde las fuentes del cockpit. Determinístico:
@@ -120,6 +137,11 @@ export function buildBoardEvents(input: BoardInput, now: Date): BoardEvent[] {
   for (const bucket of input.weekDays) {
     for (const t of bucket.tasks) {
       out.push(taskToBoard(t, bucket.dateKey))
+    }
+  }
+  for (const st of input.completedSteps ?? []) {
+    if (st.kind === 'task' && st.status === 'hecho' && st.targetDate) {
+      out.push(completedStepToBoard(st.id, st.title, st.targetDate, st.dueTime))
     }
   }
   return out
