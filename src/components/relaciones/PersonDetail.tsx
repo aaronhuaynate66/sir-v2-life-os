@@ -57,6 +57,7 @@ import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
+import { BondEvolutionPanel } from './BondEvolutionPanel'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
@@ -590,6 +591,9 @@ export function PersonDetail({
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
         <RelationalScore person={live} lastChat={lastChat} />
         <BirthdayCountdown person={live} />
+      </div>
+      <div className="mb-4">
+        <BondEvolutionPanel personId={live.id} />
       </div>
 
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
