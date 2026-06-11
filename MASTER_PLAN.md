@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `4d01618`
+**Hash del último commit humano:** `6f271b4`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6f271b4` | aaronhuaynate66 | feat(yo): 'Tu rumbo' — espinazo de Narrative Intelligence (E4→E5, Capa 1) (#169) | 2026-06-11 |
 | `4d01618` | aaronhuaynate66 | feat(relaciones): panel 'Evolución del vínculo' en la ficha (E2 visible) (#168) | 2026-06-11 |
 | `afeede0` | aaronhuaynate66 | feat(relaciones): detector de evolución del vínculo (fundación E2) (#167) | 2026-06-11 |
 | `c69099c` | aaronhuaynate66 | feat(horario): asignar hora a una tarea desde el calendario (#166) | 2026-06-11 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `85b3b1a` | aaronhuaynate66 | feat(alignment): señal de tendencia del score relacional (PR-D / E4) (#162) | 2026-06-11 |
 | `36ba24f` | aaronhuaynate66 | feat(horario): mostrar tareas OKR completadas en días pasados (#161) | 2026-06-11 |
 | `eefaf07` | aaronhuaynate66 | fix(mobile): guard global contra overflow horizontal por strings largos (#160) | 2026-06-11 |
-| `5f6a5d0` | aaronhuaynate66 | fix(objetivos): legibilidad mobile (overflow de tarjeta + título apretado) (#159) | 2026-06-11 |
 
 ---
 
