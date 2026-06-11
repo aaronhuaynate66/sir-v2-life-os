@@ -14,7 +14,7 @@
 // día); abajo, la gestión de calendarios conectados (colapsable). El board se
 // ancla rodante a HOY porque el feed es forward-only (60d, sin pasado).
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Clock, ChevronRight } from 'lucide-react'
 
@@ -54,6 +54,14 @@ function HorarioContent() {
   const people = useRelationshipStore((s) => s.people)
   const goals = useGoalStore((s) => s.goals)
   const objectiveSteps = useObjectiveStepStore((s) => s.steps)
+  const updateStep = useObjectiveStepStore((s) => s.updateStep)
+  // Asignar hora a una tarea OKR desde el calendario: persiste dueTime + targetDate
+  // (el día donde estaba). El store sincroniza a Supabase; el cockpit recomputa y
+  // la tarea pasa de "Sin hora" a su franja.
+  const handleAssignTime = useCallback(
+    (stepId: string, hhmm: string, date: string) => updateStep(stepId, { dueTime: hhmm, targetDate: date }),
+    [updateStep],
+  )
 
   useEffect(() => {
     setNow(new Date())
@@ -133,7 +141,7 @@ function HorarioContent() {
       {now == null || calendarLoading ? (
         <SkeletonBlocks cards={3} header={false} />
       ) : (
-        <HorarioCalendar events={boardEvents} />
+        <HorarioCalendar events={boardEvents} onAssignTime={handleAssignTime} />
       )}
 
       {/* Acciones del día con la gente, DEBAJO de la agenda (no la empuja).
