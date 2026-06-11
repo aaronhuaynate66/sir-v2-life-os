@@ -7,8 +7,8 @@
 // Determinístico, calmo, honesto — no inventa. (Capa 2, futura: una pasada de
 // IA que reformule este hilo en una reflexión, sin inventar.)
 
-import { useMemo } from 'react'
-import { Compass, Flag, Check, Pause, X } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+import { Compass, Flag, Check, Pause, X, Sparkles, Loader2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { useGoalStore } from '@/stores/useGoalStore'
@@ -34,6 +34,25 @@ export function LifeThreadPanel() {
   const goals = useGoalStore((s) => s.goals)
   const thread = useMemo(() => buildLifeThread(goals), [goals])
   const shown = thread.slice(0, 10)
+  const [refl, setRefl] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; text?: string }>({ status: 'idle' })
+  const generar = useCallback(async () => {
+    setRefl({ status: 'loading' })
+    try {
+      const res = await fetch('/api/self/rumbo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })) }),
+      })
+      const data = (await res.json()) as { insight?: string; detail?: string; error?: string }
+      if (!res.ok || !data.insight) {
+        setRefl({ status: 'error', text: data.detail || data.error || 'No se pudo generar la reflexión.' })
+        return
+      }
+      setRefl({ status: 'ready', text: data.insight })
+    } catch {
+      setRefl({ status: 'error', text: 'No se pudo generar la reflexión.' })
+    }
+  }, [shown])
 
   return (
     <Card className="shadow-none">
@@ -69,6 +88,34 @@ export function LifeThreadPanel() {
               )
             })}
           </ul>
+        )}
+
+        {hydrated && shown.length >= 2 && (
+          <div className="mt-4 pt-4 border-t border-border/40">
+            {refl.status === 'ready' && refl.text ? (
+              <div className="flex items-start gap-2.5">
+                <Sparkles size={14} strokeWidth={1.75} className="mt-0.5 shrink-0 text-brand-soft-foreground" aria-hidden="true" />
+                <p className="text-[13px] leading-relaxed text-foreground/90 break-words">{refl.text}</p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={generar}
+                disabled={refl.status === 'loading'}
+                className="inline-flex items-center gap-1.5 text-[13px] text-brand-soft-foreground hover:underline disabled:opacity-50"
+              >
+                {refl.status === 'loading' ? (
+                  <Loader2 size={14} strokeWidth={1.75} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <Sparkles size={14} strokeWidth={1.75} aria-hidden="true" />
+                )}
+                {refl.status === 'loading' ? 'Leyendo tu rumbo…' : 'Generar una reflexión sobre tu rumbo'}
+              </button>
+            )}
+            {refl.status === 'error' && refl.text && (
+              <p className="text-[12px] text-muted-foreground mt-2">{refl.text}</p>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>
