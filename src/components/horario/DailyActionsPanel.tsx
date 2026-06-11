@@ -66,9 +66,12 @@ type MsgState =
 export interface DailyActionsPanelProps {
   /** 'compact' achica paddings/labels para la lista de /relaciones. */
   variant?: 'full' | 'compact'
+  /** Solo acciones que piden algo HOY: oculta la urgencia baja ("al día —
+   *  mantené el ritmo"). Para /horario, que es agenda accionable. */
+  actionableOnly?: boolean
 }
 
-export function DailyActionsPanel({ variant = 'full' }: DailyActionsPanelProps) {
+export function DailyActionsPanel({ variant = 'full', actionableOnly = false }: DailyActionsPanelProps) {
   const [state, setState] = useState<
     | { kind: 'loading' }
     | { kind: 'error'; error: ApiError }
@@ -92,15 +95,24 @@ export function DailyActionsPanel({ variant = 'full' }: DailyActionsPanelProps) 
     }
   }, [])
 
+  // En modo accionable, ocultamos la urgencia baja (los "al día — mantené el
+  // ritmo"): no piden nada hoy y diluían a los que sí.
+  const shown =
+    state.kind === 'ready'
+      ? actionableOnly
+        ? state.data.actions.filter((a) => a.urgency !== 'low')
+        : state.data.actions
+      : []
+
   return (
     <Card className="shadow-none">
       <CardContent className={cn(variant === 'compact' ? 'p-4' : 'p-4 sm:p-5')}>
         <div className="flex items-center gap-2 mb-3">
           <MessageCircle size={13} strokeWidth={1.75} className="text-text-tertiary" aria-hidden="true" />
           <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Hoy con tu gente</div>
-          {state.kind === 'ready' && state.data.actions.length > 0 && (
+          {state.kind === 'ready' && shown.length > 0 && (
             <span className="ml-auto text-[11px] font-mono tabular-nums text-text-tertiary">
-              {state.data.actions.length}
+              {shown.length}
             </span>
           )}
         </div>
@@ -118,11 +130,11 @@ export function DailyActionsPanel({ variant = 'full' }: DailyActionsPanelProps) 
               </div>
             )}
 
-            {state.data.actions.length === 0 ? (
+            {shown.length === 0 ? (
               <p className="text-sm text-muted-foreground py-1">Tu red está al día. Nada urgente hoy. 🌿</p>
             ) : (
               <ul className="space-y-2">
-                {state.data.actions.map((a) => (
+                {shown.map((a) => (
                   <li key={`${a.personId}_${a.kind}`}>
                     <ActionRow action={a} variant={variant} />
                   </li>
