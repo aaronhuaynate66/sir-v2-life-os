@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c36a2cf`
+**Hash del último commit humano:** `34adc96`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `34adc96` | aaronhuaynate66 | feat(charts): etiquetas de día de la semana en los TrendChart (#173) | 2026-06-12 |
 | `c36a2cf` | aaronhuaynate66 | fix: expirar señales viejas en Mission Control + extractor FC no confunde VFC(ms) (#172) | 2026-06-12 |
 | `a1159b2` | aaronhuaynate66 | feat(captura): 'Pegar texto' autodetecta perfil vs nota libre (#171) | 2026-06-12 |
 | `5adf3e6` | aaronhuaynate66 | feat(yo): reflexión de IA sobre 'Tu rumbo' (Narrative Intelligence Capa 2) (#170) | 2026-06-11 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c69099c` | aaronhuaynate66 | feat(horario): asignar hora a una tarea desde el calendario (#166) | 2026-06-11 |
 | `c9a1601` | aaronhuaynate66 | fix(horario): calmar la grilla (filtro paz) — hueco sin corte + banda sin pila (#165) | 2026-06-11 |
 | `2d52869` | aaronhuaynate66 | feat(horario): grilla por horas como vista primaria + banda 'Sin hora' (#164) | 2026-06-11 |
-| `6d78dc1` | aaronhuaynate66 | feat(horario): fecha real de completado (completed_at) (#163) | 2026-06-11 |
 
 ---
 
