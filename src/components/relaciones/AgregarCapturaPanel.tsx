@@ -41,6 +41,7 @@ import {
   processCaptureFromText,
   HttpError,
 } from '@/lib/capture/observations/client'
+import type { NoteExtract } from '@/lib/capture/note/notePrompt'
 import { planPersonCapture } from '@/lib/capture/person-capture'
 import { resolveInstagramAutoLink } from '@/lib/social/links'
 import { useRelationshipStore } from '@/stores'
@@ -66,10 +67,10 @@ import type { ChunkInterpretation, ConsolidatedExport, ExtractedDate } from '@/l
 import { createPersonLog } from './person-logs/client'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import type { CaptureType, Confidence, DetectorResult } from '@/lib/capture/observations/types'
-import type { SpecialDate } from '@/types'
+import type { Person, SpecialDate } from '@/types'
 import { cn } from '@/lib/utils'
 
-type Phase = 'idle' | 'working' | 'review' | 'confirming' | 'done' | 'scale' | 'unsupported' | 'illegible'
+type Phase = 'idle' | 'working' | 'review' | 'confirming' | 'done' | 'scale' | 'unsupported' | 'illegible' | 'noteReview'
 type Mode = 'text' | 'image' | 'whatsapp'
 
 interface ErrorState {
@@ -224,6 +225,8 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
   const [savedCount, setSavedCount] = useState<number>(1)
   // Resumen de lo guardado cuando fue un export de WhatsApp (mensaje a medida).
   const [savedExport, setSavedExport] = useState<{ messageCount: number; datesAdded: number } | null>(null)
+  const [noteData, setNoteData] = useState<NoteExtract | null>(null)
+  const [savedNote, setSavedNote] = useState<NoteExtract | null>(null)
   const [preview, setPreview] = useState<PreviewState | null>(null)
   // Progreso del lote (k de N) mientras se extrae imagen por imagen / bloque a bloque.
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
@@ -237,6 +240,8 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
     setPhase('idle')
     setError(null)
     setSavedType(null)
+    setNoteData(null)
+    setSavedNote(null)
     setSavedCount(1)
     setSavedExport(null)
     setPreview(null)
@@ -436,14 +441,56 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
       // Texto = fuente confiable; igual pasa por assess (sin dims): si el
       // extractor reporta confianza baja/ningún campo, va a revisión.
       const verdict = assessExtraction(pv.extracted, pv.confidence, { captureType })
-      if (verdict === 'unreadable') setPhase('illegible')
-      else if (verdict === 'ok') await persistConfirmed(state)
+      if (verdict === 'unreadable') {
+        // Autodetect: no era un perfil → lo leemos como NOTA libre.
+        try {
+          const res = await fetch('/api/capture/note', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+          })
+          if (res.ok) {
+            const { extract } = (await res.json()) as { extract: NoteExtract }
+            setNoteData(extract)
+            setPhase('noteReview')
+            return
+          }
+        } catch {
+          // cae al estado 'illegible' (perfil) si la nota tampoco da nada
+        }
+        setPhase('illegible')
+      } else if (verdict === 'ok') await persistConfirmed(state)
       else setPhase('review')
     } catch (e) {
       setError(toError(e))
       setPhase('idle')
     }
   }, [pastedText, textType, persistConfirmed])
+
+  // Guarda la NOTA revisada: aplica los datos estructurados a la ficha y adjunta
+  // el resumen a las notas de la persona (updatePerson → store + sync DB).
+  const confirmNote = useCallback(() => {
+    if (!noteData) return
+    setPhase('working')
+    try {
+      const patch: Partial<Person> = { updatedAt: new Date().toISOString() }
+      if (noteData.birthDate) patch.birthDate = noteData.birthDate
+      if (noteData.location && !person?.location) patch.location = noteData.location
+      if (noteData.summary) {
+        const stamp = new Date().toLocaleDateString('es-PE')
+        const line = `[${stamp}] ${noteData.summary}`
+        const prev = (person?.notes ?? '').trim()
+        patch.notes = prev ? `${prev}\n${line}` : line
+      }
+      updatePerson(personId, patch)
+      setSavedNote(noteData)
+      setPhase('done')
+      router.refresh()
+    } catch (e) {
+      setError(toError(e))
+      setPhase('noteReview')
+    }
+  }, [noteData, person, personId, updatePerson, router])
 
   // Procesa el LOTE de imágenes (1..N) del MISMO perfil: detect + preview por
   // imagen (una llamada Vision c/u → sin riesgo de timeout), assess de
@@ -687,7 +734,12 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
           <div className="space-y-3">
             <div className="rounded-md border border-ok/30 bg-ok-soft p-3 text-xs flex items-center gap-2">
               <Check size={14} strokeWidth={2} className="text-ok flex-shrink-0" aria-hidden="true" />
-              {savedExport ? (
+              {savedNote ? (
+                <span className="text-ok">
+                  Nota guardada y asociada a {personName}
+                  {savedNote.birthDate ? ` · cumpleaños ${savedNote.birthDate} en la ficha` : ''}.
+                </span>
+              ) : savedExport ? (
                 <span className="text-ok">
                   Conversación de WhatsApp guardada y asociada a {personName} (
                   {savedExport.messageCount} mensajes consolidados
@@ -805,6 +857,29 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
               <Button size="sm" variant="outline" onClick={reset} className="w-full sm:w-auto">
                 Elegir otras imágenes
               </Button>
+            </div>
+          </div>
+        ) : phase === 'noteReview' ? (
+          <div className="space-y-3">
+            <div className="rounded-md border border-brand/30 bg-brand-soft p-3 text-xs">
+              <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.07em] text-brand-soft-foreground mb-2">
+                <FileText size={12} strokeWidth={1.75} aria-hidden="true" />
+                Nota — esto detecté
+              </div>
+              {noteData?.summary && <p className="text-foreground/90 mb-2 leading-relaxed">{noteData.summary}</p>}
+              <ul className="space-y-1">
+                {noteData?.birthDate && (
+                  <li className="text-muted-foreground">Cumpleaños → <span className="font-mono text-foreground">{noteData.birthDate}</span> (se carga en la ficha)</li>
+                )}
+                {noteData?.location && <li className="text-muted-foreground">Lugar → <span className="text-foreground">{noteData.location}</span></li>}
+                {noteData?.facts.map((fc, i) => (
+                  <li key={i} className="text-muted-foreground">· {fc}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={confirmNote} className="flex-1">Guardar en {personName}</Button>
+              <Button size="sm" variant="ghost" onClick={reset}>Descartar</Button>
             </div>
           </div>
         ) : phase === 'unsupported' ? (
@@ -948,7 +1023,8 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
             ) : mode === 'text' ? (
               <>
                 <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
-                  Pegá el texto del perfil (LinkedIn/Instagram). Es la vía{' '}
+                  Pegá el texto de un <span className="font-medium text-foreground">perfil</span> (LinkedIn/Instagram) o una{' '}
+                  <span className="font-medium text-foreground">nota</span> de lo que te enteraste — SIR detecta cuál es. Es la vía{' '}
                   <span className="font-medium text-foreground">confiable</span>: se lee exacto, sin
                   los errores de las capturas de página entera.
                 </p>
@@ -957,7 +1033,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
                   onChange={(e) => onPastedTextChange(e.target.value)}
                   disabled={working}
                   rows={6}
-                  placeholder="Pegá acá el texto del perfil — nombre, headline, experiencia, ubicación…"
+                  placeholder="Pegá un perfil (nombre, headline, experiencia…) o una nota (“me contó que cumple el 20 de junio”)…"
                   className="w-full rounded-md border border-border bg-background p-2.5 text-sm leading-relaxed disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-accent/40"
                 />
                 {/* Tipo detectado, con override. */}
