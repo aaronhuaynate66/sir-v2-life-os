@@ -37,6 +37,8 @@ Reglas estrictas:
    "44–138 lpm", "Mín 44 / Máx 138", o como extremos del gráfico intradía.
    min_bpm = el menor (ej. 44), max_bpm = el mayor (ej. 138). Este rango NO es
    la FC en reposo: la FC sube con la actividad. Mantenelos separados.
+   OJO CON LA UNIDAD: si el rango está en MILISEGUNDOS (ms) — ej. "40-100 ms" —
+   NO es FC, es VFC (ver regla 11). NUNCA pongas valores en ms en min_bpm/max_bpm.
 
 4. avg_bpm: la FC PROMEDIO del día si el panel la muestra explícitamente
    ("Promedio 72", "Avg 72 bpm"). Si no hay promedio visible, null.
@@ -67,6 +69,15 @@ Reglas estrictas:
      "avg_bpm": null, "high_alerts": null, "low_alerts": null,
      "confidence": "low",
      "raw_observations": "No es un panel de frecuencia cardíaca."}
+
+11. VFC / HRV (Variabilidad de la Frecuencia Cardíaca / Heart Rate Variability)
+    es OTRA métrica DISTINTA de la FC, medida en MILISEGUNDOS (ms), NO en p.p.m.
+    Si la imagen muestra "VFC", "HRV", "Variabilidad" o un "Rango VFC" en ms
+    (ej. "40-100 ms"), NO es un panel de FC. En ese caso NO completes
+    resting_bpm/min_bpm/max_bpm/avg_bpm con esos valores — devolvé TODOS los
+    campos numéricos en null, "confidence": "low", y en raw_observations aclará:
+    "Panel de VFC (ms), no de FC (bpm) — no se extrae como FC." Solo extraé FC
+    cuando la unidad sea p.p.m./lpm/bpm (pulsaciones), nunca ms.
 
 CRITICO: la respuesta debe ser JSON válido parseable. No incluyas \`\`\`json
 ni explicaciones antes o después.`
