@@ -25,6 +25,7 @@ import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useSignalStore } from '@/stores/useSignalStore'
+import { isSignalStale } from '@/lib/signals/relevance'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
 import { useMemoryStore } from '@/stores'
 import { SEED_FIXTURES } from '@/data/fixtures/seed'
@@ -150,7 +151,7 @@ function DashboardContent() {
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
   const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
   const topRec = recommendations.find(r => r.status === 'pending') ?? recs[0] ?? null
-  const activeSignals = signalCtx.activeSignals.filter(s => !s.resolved)
+  const activeSignals = signalCtx.activeSignals.filter(s => !s.resolved && !isSignalStale(s, now ?? new Date()))
   // Reconciliación de "sin datos" vs default fabricado: el engine biológico
   // devuelve 6.0 de energía / 7h de sueño por defecto cuando no hay registros.
   // No los mostramos como lecturas reales (coherente con el Weekly Score).

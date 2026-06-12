@@ -27,6 +27,7 @@ import {
   type SpecialDateCountdown,
 } from '@/lib/dates/specialDates'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+import { isSignalStale } from '@/lib/signals/relevance'
 import { nextPendingLeaf, daysUntilStep } from '@/lib/objectives/steps'
 import type { IdentityProfile } from '@/lib/identity'
 import { buildSelfKinshipMap, type SelfKinship } from '@/lib/proactive/kinship'
@@ -388,24 +389,15 @@ function buildObjectiveSteps(
 }
 
 /** Una señal sin resolver deja de ser "lo que importa AHORA" cuando está
- *  estancada: ya pasó su `expiresAt`, o lleva más de STALE_SIGNAL_DAYS días
- *  sin resolverse (ej. una alerta de FC de hace 9 días). Sale del panel; sigue
- *  viva en /senales. */
-const STALE_SIGNAL_DAYS = 7
+ *  estancada (isSignalStale: expiresAt pasado o detectada hace > umbral días).
+ *  Sale del panel; sigue viva en /senales. */
 function buildCriticalSignals(signals: Signal[], now: Date): AgendaItem[] {
   const items: AgendaItem[] = []
-  const nowMs = now.getTime()
   for (const s of signals) {
     if (s.resolved) continue
     if (!s.actionRequired) continue
     if (s.urgency !== 'immediate' && s.urgency !== 'soon') continue
-    // Relevancia temporal: expirada explícitamente, o estancada hace tiempo.
-    if (s.expiresAt) {
-      const exp = Date.parse(s.expiresAt)
-      if (!Number.isNaN(exp) && exp < nowMs) continue
-    }
-    const det = Date.parse(s.detectedAt)
-    if (!Number.isNaN(det) && nowMs - det > STALE_SIGNAL_DAYS * 86_400_000) continue
+    if (isSignalStale(s, now)) continue
     items.push({
       id: `signal_${s.id}`,
       kind: 'critical_signal',
