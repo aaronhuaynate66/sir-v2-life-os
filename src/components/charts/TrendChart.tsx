@@ -21,6 +21,23 @@ import { buildLineSeries } from '@/lib/charts/series'
 import type { SeriesPoint } from '@/lib/charts/series'
 import { cn } from '@/lib/utils'
 
+const DOW_ABBR = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
+const MON_ABBR = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+/** 'YYYY-MM-DD…' → 'vie 12' (día de la semana + número). Parse local (sin TZ). */
+function fmtDayLabel(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  if (!y || !m || !d) return iso.slice(0, 10)
+  const dt = new Date(y, m - 1, d)
+  return `${DOW_ABBR[dt.getDay()]} ${d}`
+}
+/** 'YYYY-MM-DD…' → 'vie 12 jun' (para el tooltip). */
+function fmtDayLong(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  if (!y || !m || !d) return iso.slice(0, 10)
+  const dt = new Date(y, m - 1, d)
+  return `${DOW_ABBR[dt.getDay()]} ${d} ${MON_ABBR[m - 1]}`
+}
+
 export interface TrendChartProps {
   label: string
   icon: LucideIcon
@@ -98,8 +115,8 @@ export function TrendChart({
             <ChartViz geo={geo} colorClass={colorClass} label={label} formatValue={formatValue} />
 
             <div className="flex justify-between text-[10px] font-mono text-muted-foreground/50">
-              <span>{geo.first!.date.slice(0, 10)}</span>
-              <span>{geo.last!.date.slice(0, 10)}</span>
+              <span>{fmtDayLabel(geo.first!.date)}</span>
+              <span>{fmtDayLabel(geo.last!.date)}</span>
             </div>
           </div>
         )}
@@ -239,7 +256,7 @@ function ChartViz({
               {formatValue(hp.value)}
             </div>
             <div className="text-[9px] font-mono text-muted-foreground/70 leading-tight">
-              {hp.date.slice(0, 10)}
+              {fmtDayLong(hp.date)}
             </div>
           </div>
         </div>
