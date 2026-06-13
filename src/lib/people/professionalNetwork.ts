@@ -44,11 +44,36 @@ export function sharesProfessionalOrg(a: OrgBearer, b: OrgBearer): boolean {
   return ka !== '' && ka === kb
 }
 
+/** Días hasta el próximo cumpleaños (aniversario de mes/día) desde `now`.
+ *  null si no hay fecha válida. 0 = es hoy. Aproximación en fecha local; un
+ *  desfase de ±1 día en el borde de medianoche es tolerable para un hint. */
+export function daysUntilNextBirthday(
+  birthDate: string | null | undefined,
+  now: Date,
+): number | null {
+  if (typeof birthDate !== 'string') return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(birthDate)
+  if (!m) return null
+  const month = Number(m[2])
+  const day = Number(m[3])
+  if (!(month >= 1 && month <= 12 && day >= 1 && day <= 31)) return null
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  let next = new Date(now.getFullYear(), month - 1, day)
+  if (next.getTime() < today.getTime()) next = new Date(now.getFullYear() + 1, month - 1, day)
+  return Math.round((next.getTime() - today.getTime()) / 86_400_000)
+}
+
 export interface NetworkPerson extends OrgBearer {
   id: string
   name: string
   /** importanceScore 1-10 (jerarquía). Opcional. */
   importance?: number
+  /** Fecha de nacimiento (YYYY-MM-DD) para timing de cumpleaños. */
+  birthDate?: string | null
+  /** Último contacto registrado (YYYY-MM-DD). */
+  lastContact?: string | null
+  /** Score del vínculo 0-100 (último snapshot). */
+  relScore?: number
 }
 
 export interface ColleagueContext {
@@ -60,6 +85,10 @@ export interface ColleagueContext {
   /** Título de un objetivo activo del usuario que involucra a esta persona,
    *  si lo hay. Señal de que ya hay una agenda en juego con el colega. */
   activeGoalTitle?: string
+  /** Estado del vínculo (para calibrar a quién/cómo apoyarse + timing). */
+  birthDate?: string | null
+  lastContact?: string | null
+  relScore?: number
 }
 
 /**
@@ -85,6 +114,9 @@ export function findColleagues(
       orgGroup: p.orgGroup ?? null,
       importance: p.importance,
       activeGoalTitle: goalByPerson[p.id],
+      birthDate: p.birthDate ?? null,
+      lastContact: p.lastContact ?? null,
+      relScore: p.relScore,
     }))
 }
 

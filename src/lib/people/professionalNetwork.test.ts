@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  normalizeOrgKey, orgJoinKey, sharesProfessionalOrg, findColleagues, professionalPairs,
+  normalizeOrgKey, orgJoinKey, sharesProfessionalOrg, findColleagues, professionalPairs, daysUntilNextBirthday,
   type NetworkPerson,
 } from './professionalNetwork'
 
@@ -69,5 +69,24 @@ describe('orgJoinKey + registro (resolución automática del grupo)', () => {
   })
   it('empresa desconocida sin grupo no se cuelga de HNG', () => {
     expect(sharesProfessionalOrg({ organization: 'Acme Inc' }, { orgGroup: 'Grupo HNG' })).toBe(false)
+  })
+})
+
+describe('daysUntilNextBirthday', () => {
+  it('calcula días al próximo cumple (mismo año)', () => {
+    const now = new Date(2026, 5, 13) // 13 jun 2026
+    expect(daysUntilNextBirthday('1993-06-20', now)).toBe(7)
+  })
+  it('0 = cumple hoy', () => {
+    expect(daysUntilNextBirthday('1990-06-13', new Date(2026, 5, 13))).toBe(0)
+  })
+  it('rueda al año siguiente si ya pasó', () => {
+    const now = new Date(2026, 5, 13)
+    const d = daysUntilNextBirthday('1990-06-10', now) // 10 jun ya pasó
+    expect(d).toBeGreaterThan(360)
+  })
+  it('null si no hay fecha válida', () => {
+    expect(daysUntilNextBirthday(null, new Date())).toBeNull()
+    expect(daysUntilNextBirthday('basura', new Date())).toBeNull()
   })
 })
