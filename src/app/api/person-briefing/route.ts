@@ -254,6 +254,8 @@ export async function POST(req: NextRequest) {
                   ? Number(personRow.importance_score)
                   : undefined,
               energyImpact: (personRow.energy_impact as string) ?? undefined,
+              organization: (personRow.organization as string | null) ?? undefined,
+              orgGroup: (personRow.org_group as string | null) ?? undefined,
             },
             briefingMemories,
             selfStats,

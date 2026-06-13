@@ -50,6 +50,11 @@ export interface BriefingPersonFacts {
   lastContact?: string | null
   importanceScore?: number
   energyImpact?: string
+  /** Empresa/empleador del SUJETO del briefing (no de los colegas). Ancla el
+   *  Contexto para no confundir quién trabaja dónde. */
+  organization?: string
+  /** Grupo/holding del sujeto. */
+  orgGroup?: string
 }
 
 export interface BriefingMemory {
@@ -110,6 +115,8 @@ export function buildBriefingInput(
   if (facts.lastContact) lines.push(`Último contacto registrado: ${facts.lastContact}`)
   if (typeof facts.importanceScore === 'number') lines.push(`Importancia: ${facts.importanceScore}/10`)
   if (facts.energyImpact) lines.push(`Impacto energético: ${facts.energyImpact}`)
+  if (facts.organization) lines.push(`Empresa/empleador de ${facts.name}: ${facts.organization}`)
+  if (facts.orgGroup) lines.push(`Grupo/holding de ${facts.name}: ${facts.orgGroup}`)
 
   // Estado reciente del USUARIO (sólo los numéricos relevantes para timing/tono).
   const relevant = selfStats.filter((s) => SELF_KIND_ES[s.kind] && s.count > 0)
