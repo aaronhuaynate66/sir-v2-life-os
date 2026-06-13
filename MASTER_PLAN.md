@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b635e0f`
+**Hash del último commit humano:** `6c8b99f`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6c8b99f` | aaronhuaynate66 | test(red): corregir aserción de orgJoinKey rota por la resolución vía registro (#185) | 2026-06-13 |
 | `b635e0f` | aaronhuaynate66 | feat(red): registro empresa→holding + extracción de empresa desde LinkedIn (#184) | 2026-06-13 |
 | `c8da1e1` | aaronhuaynate66 | feat(red): organización estructurada + hilos profesionales en grafo + briefing con red (#183) | 2026-06-13 |
 | `680c8fa` | aaronhuaynate66 | feat(briefing): interacción manual → memoria + bloque Oportunidad con estado propio (#182) | 2026-06-13 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b4982a1` | aaronhuaynate66 | feat(pwa): base PWA instalable + service worker (cimiento de push) (#178) | 2026-06-13 |
 | `7229a69` | aaronhuaynate66 | docs(spike): SIR por WhatsApp — decisión go/no-go (#50) (#177) | 2026-06-13 |
 | `8a5da2b` | aaronhuaynate66 | feat(charts): toggle Semana/Mes + ventana lun→dom en los TrendChart (#49) (#176) | 2026-06-13 |
-| `ce827d3` | aaronhuaynate66 | fix(ux): briefing con vacío calmo + no exponer 'Error HTTP' al usuario (#175) | 2026-06-13 |
 
 ---
 
