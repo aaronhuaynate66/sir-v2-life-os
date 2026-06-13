@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c822fec`
+**Hash del último commit humano:** `ce827d3`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `ce827d3` | aaronhuaynate66 | fix(ux): briefing con vacío calmo + no exponer 'Error HTTP' al usuario (#175) | 2026-06-13 |
 | `c822fec` | aaronhuaynate66 | docs(backlog): fixture futuro 'SIR por WhatsApp' + spike de exploración (#174) | 2026-06-13 |
 | `34adc96` | aaronhuaynate66 | feat(charts): etiquetas de día de la semana en los TrendChart (#173) | 2026-06-12 |
 | `c36a2cf` | aaronhuaynate66 | fix: expirar señales viejas en Mission Control + extractor FC no confunde VFC(ms) (#172) | 2026-06-12 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `4d01618` | aaronhuaynate66 | feat(relaciones): panel 'Evolución del vínculo' en la ficha (E2 visible) (#168) | 2026-06-11 |
 | `afeede0` | aaronhuaynate66 | feat(relaciones): detector de evolución del vínculo (fundación E2) (#167) | 2026-06-11 |
 | `c69099c` | aaronhuaynate66 | feat(horario): asignar hora a una tarea desde el calendario (#166) | 2026-06-11 |
-| `c9a1601` | aaronhuaynate66 | fix(horario): calmar la grilla (filtro paz) — hueco sin corte + banda sin pila (#165) | 2026-06-11 |
 
 ---
 
