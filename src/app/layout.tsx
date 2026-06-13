@@ -1,16 +1,25 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Script from 'next/script'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { DataMigrationGate } from '@/components/system/DataMigrationGate'
+import { ServiceWorkerRegister } from '@/components/system/ServiceWorkerRegister'
 import './globals.css'
 
 export const metadata: Metadata = {
   title: 'SIR V2 — Life Operating System',
   description: 'Private cognitive-relational OS. Mission Control of life.',
   robots: { index: false, follow: false },
+  manifest: '/manifest.webmanifest',
+  applicationName: 'SIR',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'SIR' },
+  icons: { icon: '/icon-192.png', apple: '/apple-icon.png' },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0a0a0a',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans bg-background text-foreground antialiased">
         {children}
         <DataMigrationGate />
+        <ServiceWorkerRegister />
         <Toaster />
         <Analytics />
         {gaId ? (
