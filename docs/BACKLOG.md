@@ -602,7 +602,7 @@ fricción #1 del producto: la captura.
   solo plantillas pre-aprobadas por Meta → los nudges proactivos están regulados.
 - **Dependencia de Meta:** ToS, costo por conversación, riesgo de cambio de reglas.
 
-**Spike de exploración pendiente** (ver tarea de exploración): validar la
+**Spike de exploración — HECHO 2026-06-12** (ver `docs/SIR-WHATSAPP-SPIKE.md`): GO condicional para uso personal de Aaron (MVP captura iniciada por usuario = ~$0, sin plantillas); NO-GO/diferido como producto para terceros hasta resolver privacidad (el Cloud API descifra en Meta; On-Premises deprecado). Lo que faltaba investigar era: validar la
 materialización — Cloud API vs proveedor (Twilio/360dialog), modelo de privacidad
 real, costo, MVP mínimo (solo captura por texto/voz → reusar nota-autodetect +
 export), y la regla de 24h para nudges. Salida del spike: doc de decisión
