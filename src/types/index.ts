@@ -214,6 +214,13 @@ export interface Person {
    *  Ing. Industrial"). Se muestra en Vida profesional. Canonical en
    *  `people.education` (migration 0024). */
   education?: string
+  /** Empleador / empresa específica de la persona (ej. "K2 Seguridad y
+   *  Resguardo"). Canonical en `people.organization` (migration 0072). */
+  organization?: string
+  /** Grupo / holding al que pertenece (ej. "Grupo HNG"). Clave de unión de la
+   *  red profesional: dos personas con el mismo org_group quedan conectadas.
+   *  Canonical en `people.org_group` (migration 0072). */
+  orgGroup?: string
   createdAt: string
   updatedAt: string
 }

@@ -151,6 +151,8 @@ interface EditForm {
   location: string
   estadoCivil: string
   education: string
+  organization: string
+  orgGroup: string
   birthDate: string
   cycleStartDate: string
   cycleLengthDays: number
@@ -176,6 +178,8 @@ function formFromPerson(p: Person): EditForm {
     location: p.location ?? '',
     estadoCivil: p.estadoCivil ?? '',
     education: p.education ?? '',
+    organization: p.organization ?? '',
+    orgGroup: p.orgGroup ?? '',
     birthDate: (p.birthDate ?? '').slice(0, 10),
     cycleStartDate: (p.cycleStartDate ?? '').slice(0, 10),
     cycleLengthDays: p.cycleLengthDays ?? 28,
@@ -276,6 +280,8 @@ export function PersonDetail({
         location: form.location.trim() || undefined,
         estadoCivil: form.estadoCivil.trim() || undefined,
         education: form.education.trim() || undefined,
+        organization: form.organization.trim() || undefined,
+        orgGroup: form.orgGroup.trim() || undefined,
         gender: form.gender || undefined,
         birthDate: form.birthDate || undefined,
         cycleStartDate: form.gender === 'female' ? (form.cycleStartDate || undefined) : undefined,
@@ -500,6 +506,14 @@ export function PersonDetail({
                 <div className="sm:col-span-2">
                   <Label htmlFor="person-education" className="text-xs">Educación / grado de instrucción</Label>
                   <Input id="person-education" value={form.education} onChange={(e) => patch('education', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. Universitario · Ing. Industrial (UNI)" />
+                </div>
+                <div>
+                  <Label htmlFor="person-organization" className="text-xs">Empresa / empleador</Label>
+                  <Input id="person-organization" value={form.organization} onChange={(e) => patch('organization', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. K2 Seguridad y Resguardo" />
+                </div>
+                <div>
+                  <Label htmlFor="person-orggroup" className="text-xs">Grupo / holding</Label>
+                  <Input id="person-orggroup" value={form.orgGroup} onChange={(e) => patch('orgGroup', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. Grupo HNG — conecta a las personas del mismo grupo" />
                 </div>
                 <div>
                   <Label htmlFor="person-gender" className="text-xs">Sexo</Label>

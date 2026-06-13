@@ -4,6 +4,7 @@
 import type { Person, Relationship, PersonLink } from '@/types'
 import { SELF_ID } from '@/lib/relationships/family'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from './colors'
+import { professionalPairs } from '@/lib/people/professionalNetwork'
 import type { GraphCategory, GraphData, GraphEdge, GraphNode } from './types'
 
 /**
@@ -231,6 +232,29 @@ export function buildGraphData({
       category: 'familia',
       label: kindLabel(link.kind),
       color: CATEGORY_COLOR.familia,
+    })
+  }
+
+  // Aristas PROFESIONALES persona↔persona (migration 0072): personas que
+  // comparten empleador/grupo (org_group, fallback organization). Se dibujan en
+  // color 'profesional'. Se omiten pares ya unidos por otra arista (ej. familia)
+  // y los que no resuelven a un nodo. Acotado por professionalPairs (maxPairs).
+  const existingPair = new Set(
+    edges.map((e) => [e.source, e.target].sort().join('::')),
+  )
+  for (const pair of professionalPairs(people)) {
+    const source = nodeIdByPersonId.get(pair.a)
+    const target = nodeIdByPersonId.get(pair.b)
+    if (!source || !target || source === target) continue
+    const key = [source, target].sort().join('::')
+    if (existingPair.has(key)) continue
+    existingPair.add(key)
+    edges.push({
+      source,
+      target,
+      category: 'profesional',
+      label: CATEGORY_LABEL.profesional,
+      color: CATEGORY_COLOR.profesional,
     })
   }
 
