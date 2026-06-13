@@ -85,6 +85,9 @@ export function GraphView({ selfFullName, selfEmail, directContactIds = [], inte
   // Clic en nodo → navegar a la ficha (self → /yo).
   const onNavigate = useCallback(
     (nodeId: string, isSelf: boolean) => {
+      // Nodo-empresa (hub, id 'org:<key>'): no es una persona → no navega
+      // (la ficha de empresa llega en el escalón 3). Evita un 404.
+      if (nodeId.startsWith('org:')) return
       router.push(isSelf ? '/yo' : `/relaciones/${encodeURIComponent(nodeId)}`)
     },
     [router],

@@ -63,6 +63,17 @@ export function daysUntilNextBirthday(
   return Math.round((next.getTime() - today.getTime()) / 86_400_000)
 }
 
+/** Etiqueta legible del grupo/holding de una persona, para el nodo-empresa del
+ *  grafo. Prefiere org_group explícito; si no, el grupo resuelto por el registro
+ *  (ej. organization "K2…" → "Grupo HNG"); si no, la empresa. '' si no hay nada. */
+export function orgGroupLabel(p: OrgBearer): string {
+  const group = (p.orgGroup ?? '').trim()
+  if (group) return group
+  const resolved = resolveOrgGroup(p.organization)
+  if (resolved) return resolved
+  return (p.organization ?? '').trim()
+}
+
 export interface NetworkPerson extends OrgBearer {
   id: string
   name: string

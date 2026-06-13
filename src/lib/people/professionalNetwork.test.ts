@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  normalizeOrgKey, orgJoinKey, sharesProfessionalOrg, findColleagues, professionalPairs, daysUntilNextBirthday,
+  normalizeOrgKey, orgJoinKey, sharesProfessionalOrg, findColleagues, professionalPairs, daysUntilNextBirthday, orgGroupLabel,
   type NetworkPerson,
 } from './professionalNetwork'
 
@@ -88,5 +88,14 @@ describe('daysUntilNextBirthday', () => {
   it('null si no hay fecha válida', () => {
     expect(daysUntilNextBirthday(null, new Date())).toBeNull()
     expect(daysUntilNextBirthday('basura', new Date())).toBeNull()
+  })
+})
+
+describe('orgGroupLabel', () => {
+  it('prefiere org_group; si no, resuelve por registro; si no, la empresa', () => {
+    expect(orgGroupLabel({ orgGroup: 'Grupo HNG' })).toBe('Grupo HNG')
+    expect(orgGroupLabel({ organization: 'K2 Seguridad y Resguardo' })).toBe('Grupo HNG')
+    expect(orgGroupLabel({ organization: 'Acme Inc' })).toBe('Acme Inc')
+    expect(orgGroupLabel({})).toBe('')
   })
 })

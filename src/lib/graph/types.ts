@@ -10,6 +10,7 @@ export type GraphCategory =
   | 'networking'
   | 'estrategico'
   | 'desarrollo'
+  | 'organizacion'
   | 'self'
 
 export interface GraphNode {

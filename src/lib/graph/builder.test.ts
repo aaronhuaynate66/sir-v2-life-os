@@ -136,3 +136,26 @@ describe('buildGraphData — aristas self↔persona (0058, sentinel "self")', ()
     expect(g.nodes.find((n) => n.id === 'maria')?.secondDegree).toBe(false)
   })
 })
+
+describe('nodo-empresa HUB (escalón 2)', () => {
+  it('≥2 personas del mismo grupo → 1 nodo-empresa + aristas persona→empresa (no N²)', () => {
+    const alex = person({ id: 'alex', name: 'Alex', relationship: 'professional', category: 'close', organization: 'Grupo HNG Corporación' })
+    const fran = person({ id: 'fran', name: 'Francisco', relationship: 'professional', category: 'network', organization: 'K2 Seguridad y Resguardo' })
+    const g = buildGraphData({ people: [alex, fran], relationships: [], selfFullName: 'A', selfEmail: 'a@x.com' })
+    const orgNode = g.nodes.find((n) => n.category === 'organizacion')
+    expect(orgNode).toBeTruthy()
+    expect(orgNode!.shortName).toBe('Grupo HNG') // resuelto vía registro
+    // aristas persona→empresa (no persona↔persona)
+    const toOrg = g.edges.filter((e) => e.category === 'organizacion')
+    expect(toOrg.length).toBe(2)
+    expect(toOrg.every((e) => e.target === orgNode!.id)).toBe(true)
+    // no hay arista directa alex↔fran
+    expect(g.edges.some((e) => (e.source === 'alex' && e.target === 'fran') || (e.source === 'fran' && e.target === 'alex'))).toBe(false)
+  })
+
+  it('1 sola persona con empresa → NO crea hub', () => {
+    const solo = person({ id: 'solo', name: 'Solo', relationship: 'professional', category: 'network', organization: 'Acme Inc' })
+    const g = buildGraphData({ people: [solo], relationships: [], selfFullName: 'A', selfEmail: 'a@x.com' })
+    expect(g.nodes.some((n) => n.category === 'organizacion')).toBe(false)
+  })
+})
