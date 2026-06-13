@@ -171,6 +171,21 @@ function buildStoragePath(userId: string, captureType: CaptureType): string {
  * afectar la captura ya persistida. La síntesis se computa "al capturar" — no
  * en cada carga — evitando el riesgo de timeout/502 en el render.
  */
+/** Empleador actual desde la extracción de LinkedIn: currentCompany (del
+ *  headline) o, si falta, la empresa del trabajo más reciente (workHistory[0]).
+ *  null si no hay nada legible. Puro. */
+function employerFromLinkedIn(extracted: Record<string, unknown>): string | null {
+  const cc = extracted.currentCompany
+  if (typeof cc === 'string' && cc.trim().length > 0) return cc.trim().slice(0, 160)
+  const wh = extracted.workHistory
+  if (Array.isArray(wh) && wh.length > 0) {
+    const first = wh[0] as Record<string, unknown> | null
+    const name = first && typeof first.name === 'string' ? first.name.trim() : ''
+    if (name.length > 0) return name.slice(0, 160)
+  }
+  return null
+}
+
 async function persistAxisBestEffort(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
@@ -184,13 +199,29 @@ async function persistAxisBestEffort(
       // El eje profesional reconcilia educación con el campo people.education.
       const { data: personRow } = await supabase
         .from('people')
-        .select('education')
+        .select('education, organization')
         .eq('user_id', userId)
         .eq('id', personId)
         .maybeSingle()
       const education = (personRow?.education as string | null) ?? null
       const text = computeProfessionalAxis(extracted, education)
       await upsertAxisAuto(supabase, userId, personId, 'professional', text, observationId)
+
+      // Empresa/empleador: del headline (currentCompany) o del trabajo más
+      // reciente (workHistory[0]). RELLENA SOLO SI ESTÁ VACÍO — nunca pisa lo
+      // que Aaron escribió a mano. El grupo/holding se resuelve en lectura vía
+      // orgRegistry (no se persiste acá). Best-effort.
+      const existingOrg = (personRow?.organization as string | null) ?? null
+      if (!existingOrg || existingOrg.trim().length === 0) {
+        const employer = employerFromLinkedIn(extracted)
+        if (employer) {
+          await supabase
+            .from('people')
+            .update({ organization: employer })
+            .eq('user_id', userId)
+            .eq('id', personId)
+        }
+      }
     } else {
       const text = computeSocialAxis(extracted)
       await upsertAxisAuto(supabase, userId, personId, 'social', text, observationId)
