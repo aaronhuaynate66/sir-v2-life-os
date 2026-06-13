@@ -88,13 +88,9 @@ export async function POST(req: NextRequest) {
   }
 
   const memories = await getMemoriesForPerson(supabase, userId, personId, { limit: MAX_MEMORIES })
-  if (memories.length === 0) {
-    return errorJson(
-      422,
-      'Sin memorias para el briefing',
-      'Generá memorias primero (botón en "Memorias asociadas") o registrá conversaciones.',
-    )
-  }
+  // NOTA: NO cortamos acá por falta de memorias. El briefing también puede
+  // apoyarse en la RED PROFESIONAL (colegas del mismo grupo) y el estado del
+  // usuario. El gate combinado se evalúa más abajo, ya con los colegas cargados.
   const briefingMemories: BriefingMemory[] = memories.map((m) => ({
     type: m.type,
     content: m.content,
@@ -191,6 +187,17 @@ export async function POST(req: NextRequest) {
     }
   } catch {
     colleagues = []
+  }
+
+  // Gate combinado: necesitamos ALGO de material. Memorias O red profesional.
+  // (Antes exigía ≥1 memoria; ahora una persona con colegas del mismo grupo
+  // —aunque sin memorias propias todavía— igual da un briefing útil.)
+  if (briefingMemories.length === 0 && colleagues.length === 0) {
+    return errorJson(
+      422,
+      'Sin material para el briefing',
+      'Registrá una interacción con nota, derivá memorias, o asigná su empresa para conectarla a su red.',
+    )
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
