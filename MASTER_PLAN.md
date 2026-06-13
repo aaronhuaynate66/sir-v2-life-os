@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1a46503`
+**Hash del último commit humano:** `12250a3`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `12250a3` | aaronhuaynate66 | feat(grafo): nodo-empresa como hub (escalón 2) — reemplaza aristas N² (#194) | 2026-06-13 |
 | `1a46503` | aaronhuaynate66 | feat(briefing): memoria de ventana reciente desde el export de WhatsApp (#193) | 2026-06-13 |
 | `271d287` | aaronhuaynate66 | fix(briefing): anclar la recencia en 'Último contacto registrado', no en la memoria más nueva (#192) | 2026-06-13 |
 | `c5f7d87` | aaronhuaynate66 | fix(whatsapp-import): sincronizar last_contact + excluir meta-notas del briefing (#191) | 2026-06-13 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e030204` | aaronhuaynate66 | fix(0073): castear person_logs.user_id (text) a uuid para memories.user_id (#187) | 2026-06-13 |
 | `20a45cc` | aaronhuaynate66 | feat(briefing): materialización retroactiva de interacciones + gate por red profesional (#186) | 2026-06-13 |
 | `6c8b99f` | aaronhuaynate66 | test(red): corregir aserción de orgJoinKey rota por la resolución vía registro (#185) | 2026-06-13 |
-| `b635e0f` | aaronhuaynate66 | feat(red): registro empresa→holding + extracción de empresa desde LinkedIn (#184) | 2026-06-13 |
 
 ---
 
