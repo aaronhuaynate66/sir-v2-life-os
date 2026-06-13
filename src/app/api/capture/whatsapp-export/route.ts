@@ -188,6 +188,33 @@ export async function POST(req: NextRequest) {
       observedAt,
       needsReview: false,
     })
+
+    // Sincronizar people.last_contact con el ÚLTIMO mensaje del export. Sin esto
+    // el campo queda viejo y el briefing ancla la recencia en una fecha pasada
+    // (bug observado: brief de pareja hablaba del "30 de mayo" tras importar
+    // junio). Best-effort, y sólo si adelanta la fecha (no pisa una más nueva).
+    try {
+      const lastDay = (observedAt || '').slice(0, 10)
+      if (lastDay) {
+        const { data: prow } = await supabase
+          .from('people')
+          .select('last_contact')
+          .eq('user_id', userId)
+          .eq('id', personId)
+          .maybeSingle()
+        const current = (prow?.last_contact as string | null) ?? null
+        if (!current || current.slice(0, 10) < lastDay) {
+          await supabase
+            .from('people')
+            .update({ last_contact: lastDay })
+            .eq('user_id', userId)
+            .eq('id', personId)
+        }
+      }
+    } catch {
+      /* no fatal: la observación ya quedó guardada */
+    }
+
     return NextResponse.json({ observation }, { status: 200 })
   } catch (e) {
     reportApiError(e)
