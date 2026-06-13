@@ -38,6 +38,7 @@ REGLAS ESTRICTAS:
 - Usá SOLO la información provista. No inventes nombres, fechas, eventos ni rasgos.
 - El ESTADO RECIENTE del usuario sirve únicamente para calibrar el TIMING y el TONO de la oportunidad (ej: si viene con poca energía o durmió poco, sugerí un primer paso liviano y dejar lo difícil para cuando esté entero). PROHIBIDO usarlo para explicar por qué la relación va mal, para atribuir causas a lo que pasó, o para dar consejo de salud. Mirá hacia adelante, no hacia atrás.
 - La RED PROFESIONAL (otras personas del usuario en la misma empresa/grupo) es inteligencia estratégica legítima: usala para leer el tablero (quién se relaciona con quién, intereses compartidos, vías de influencia, con quién ya hay un objetivo en juego) y, si aplica, proponé en la Oportunidad un movimiento que apalanque esas conexiones reales. Esto NO es manipulación: la línea es que el movimiento se apoye en vínculos GENUINOS y en intereses reales, sin engaño, sin coerción y sin usar a nadie en contra de su propio interés. Si una jugada requeriría mentir, presionar o dañar a alguien, no la sugieras.
+- Si un colega tiene un cumpleaños cerca, un contacto frío o un vínculo a cuidar, usalo para TIMING y para sugerir un acercamiento GENUINO (saludar, retomar). PERO un gesto de cuidado —como saludar un cumpleaños— vale por sí mismo y NO debe presentarse como un pretexto para extraer información o sacar ventaja. El saludo se sostiene aunque no hubiera nada que ganar; si de esa conexión real surge contexto útil, mejor, pero ese no es el motivo del gesto.
 - PROHIBIDO: diagnósticos clínicos, etiquetas de salud mental, consejo médico/psicológico, tácticas de manipulación, jugadas para "obtener" algo o "recuperar terreno", generar dependencia.
 - Tono cálido, directo y honesto. Si hay poca información, decilo y mantené el briefing corto.
 - Español neutro. Sin markdown, sin viñetas con guiones, sin emojis. Respetá las etiquetas "TL;DR:", "Contexto:", "Dinámica:", "Oportunidad:" tal cual, cada una en su propio bloque separado por una línea en blanco.`
@@ -87,6 +88,13 @@ export interface BriefingColleague {
   importance?: number
   /** Título de un objetivo activo del usuario que ya involucra a este colega. */
   activeGoalTitle?: string
+  /** Días hasta el próximo cumpleaños del colega (0 = hoy). Señal de timing y
+   *  de oportunidad de cuidado GENUINA. */
+  birthdayInDays?: number
+  /** Último contacto registrado con el colega (YYYY-MM-DD). */
+  lastContact?: string | null
+  /** Score del vínculo con el colega 0-100. */
+  relScore?: number
 }
 
 export function buildBriefingInput(
@@ -119,6 +127,17 @@ export function buildBriefingInput(
       const bits: string[] = []
       if (c.orgLabel) bits.push(c.orgLabel)
       if (typeof c.importance === 'number') bits.push(`importancia ${c.importance}/10 para vos`)
+      if (typeof c.relScore === 'number') bits.push(`vínculo ${c.relScore}/100`)
+      if (c.lastContact) bits.push(`último contacto ${c.lastContact}`)
+      if (typeof c.birthdayInDays === 'number') {
+        const b =
+          c.birthdayInDays === 0
+            ? 'cumple HOY'
+            : c.birthdayInDays === 1
+              ? 'cumple mañana'
+              : `cumple en ${c.birthdayInDays} días`
+        bits.push(b)
+      }
       if (c.activeGoalTitle) bits.push(`tenés un objetivo activo que lo involucra: "${c.activeGoalTitle}"`)
       lines.push(`  - ${c.name}${bits.length ? ' — ' + bits.join(' · ') : ''}`)
     }

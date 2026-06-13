@@ -29,6 +29,7 @@ import {
 import {
   findColleagues,
   orgJoinKey,
+  daysUntilNextBirthday,
   type NetworkPerson,
 } from '@/lib/people/professionalNetwork'
 
@@ -140,9 +141,27 @@ export async function POST(req: NextRequest) {
     if (orgJoinKey(targetOrg) !== '') {
       const { data: peopleRows } = await supabase
         .from('people')
-        .select('id, name, organization, org_group, importance_score')
+        .select('id, name, organization, org_group, importance_score, birth_date, last_contact')
         .eq('user_id', userId)
         .limit(500)
+      // Score del vínculo: último snapshot por persona (person_score_snapshots).
+      const scoreByPerson: Record<string, number> = {}
+      try {
+        const { data: snapRows } = await supabase
+          .from('person_score_snapshots')
+          .select('person_id, global, date_bucket')
+          .eq('user_id', userId)
+          .order('date_bucket', { ascending: false })
+          .limit(1000)
+        for (const sn of (snapRows ?? []) as Array<{ person_id: string; global: number }>) {
+          if (sn.person_id && scoreByPerson[sn.person_id] === undefined && typeof sn.global === 'number') {
+            scoreByPerson[sn.person_id] = sn.global
+          }
+        }
+      } catch {
+        /* fail-soft: sin score igual hay briefing */
+      }
+
       const all: NetworkPerson[] = (peopleRows ?? []).map((r) => {
         const row = r as Record<string, unknown>
         return {
@@ -154,6 +173,9 @@ export async function POST(req: NextRequest) {
             row.importance_score !== null && row.importance_score !== undefined
               ? Number(row.importance_score)
               : undefined,
+          birthDate: (row.birth_date as string | null) ?? null,
+          lastContact: (row.last_contact as string | null) ?? null,
+          relScore: scoreByPerson[row.id as string],
         }
       })
 
@@ -178,12 +200,19 @@ export async function POST(req: NextRequest) {
         organization: targetOrg.organization,
         orgGroup: targetOrg.orgGroup,
       }
-      colleagues = findColleagues(target, all, goalByPerson).map((c) => ({
-        name: c.name,
-        orgLabel: c.orgGroup ?? c.organization ?? undefined,
-        importance: c.importance,
-        activeGoalTitle: c.activeGoalTitle,
-      }))
+      const nowForBday = new Date()
+      colleagues = findColleagues(target, all, goalByPerson).map((c) => {
+        const bday = daysUntilNextBirthday(c.birthDate, nowForBday)
+        return {
+          name: c.name,
+          orgLabel: c.orgGroup ?? c.organization ?? undefined,
+          importance: c.importance,
+          activeGoalTitle: c.activeGoalTitle,
+          birthdayInDays: bday !== null && bday <= 30 ? bday : undefined,
+          lastContact: c.lastContact ?? undefined,
+          relScore: c.relScore,
+        }
+      })
     }
   } catch {
     colleagues = []
