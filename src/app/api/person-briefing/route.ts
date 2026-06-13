@@ -24,7 +24,13 @@ import {
   buildBriefingInput,
   type BriefingMemory,
   type BriefingSelfStat,
+  type BriefingColleague,
 } from '@/lib/person-briefing/prompt'
+import {
+  findColleagues,
+  orgJoinKey,
+  type NetworkPerson,
+} from '@/lib/people/professionalNetwork'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -70,7 +76,7 @@ export async function POST(req: NextRequest) {
   // Person ownership + facts para el prompt.
   const { data: personRow, error: personErr } = await supabase
     .from('people')
-    .select('id, name, relationship, category, last_contact, importance_score, energy_impact')
+    .select('id, name, relationship, category, last_contact, importance_score, energy_impact, organization, org_group')
     .eq('user_id', userId)
     .eq('id', personId)
     .maybeSingle()
@@ -127,6 +133,66 @@ export async function POST(req: NextRequest) {
     selfStats = []
   }
 
+  // Red profesional: colegas del mismo empleador/grupo + objetivos activos que
+  // los involucran. Inteligencia estratégica para la Oportunidad. Fail-soft.
+  let colleagues: BriefingColleague[] = []
+  try {
+    const targetOrg = {
+      organization: (personRow.organization as string | null) ?? null,
+      orgGroup: (personRow.org_group as string | null) ?? null,
+    }
+    if (orgJoinKey(targetOrg) !== '') {
+      const { data: peopleRows } = await supabase
+        .from('people')
+        .select('id, name, organization, org_group, importance_score')
+        .eq('user_id', userId)
+        .limit(500)
+      const all: NetworkPerson[] = (peopleRows ?? []).map((r) => {
+        const row = r as Record<string, unknown>
+        return {
+          id: row.id as string,
+          name: (row.name as string) ?? 'alguien',
+          organization: (row.organization as string | null) ?? null,
+          orgGroup: (row.org_group as string | null) ?? null,
+          importance:
+            row.importance_score !== null && row.importance_score !== undefined
+              ? Number(row.importance_score)
+              : undefined,
+        }
+      })
+
+      // Objetivos activos → mapa personId → título (solo el primero por persona).
+      const goalByPerson: Record<string, string> = {}
+      const { data: goalRows } = await supabase
+        .from('goals')
+        .select('title, related_persons, status')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .limit(100)
+      for (const g of (goalRows ?? []) as Array<{ title: string; related_persons: unknown }>) {
+        const ids = Array.isArray(g.related_persons) ? (g.related_persons as string[]) : []
+        for (const pid of ids) {
+          if (typeof pid === 'string' && !goalByPerson[pid]) goalByPerson[pid] = g.title
+        }
+      }
+
+      const target: NetworkPerson = {
+        id: personId,
+        name: (personRow.name as string) ?? 'esta persona',
+        organization: targetOrg.organization,
+        orgGroup: targetOrg.orgGroup,
+      }
+      colleagues = findColleagues(target, all, goalByPerson).map((c) => ({
+        name: c.name,
+        orgLabel: c.orgGroup ?? c.organization ?? undefined,
+        importance: c.importance,
+        activeGoalTitle: c.activeGoalTitle,
+      }))
+    }
+  } catch {
+    colleagues = []
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
   }
@@ -155,6 +221,7 @@ export async function POST(req: NextRequest) {
             },
             briefingMemories,
             selfStats,
+            colleagues,
           ),
         },
       ],

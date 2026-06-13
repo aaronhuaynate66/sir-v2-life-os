@@ -32,11 +32,12 @@ Contexto: 1-2 oraciones sobre quién es y qué pasó recientemente entre ustedes
 
 Dinámica: 1-2 oraciones sobre el tono y los temas que vienen apareciendo.
 
-Oportunidad: 1 acción concreta hacia ADELANTE para el próximo contacto. Debe servir al vínculo y al bienestar del usuario. Puede ser un acercamiento (un tema para retomar, algo por lo que preguntar, un gesto de cuidado) O un límite sano / una conversación franca: mejorar una relación no siempre es acercarse.
+Oportunidad: 1 acción concreta hacia ADELANTE para el próximo contacto. Debe servir al vínculo y al bienestar del usuario. Puede ser un acercamiento (un tema para retomar, algo por lo que preguntar, un gesto de cuidado), un movimiento estratégico que apalanque la red profesional (ej. apoyarse en un colega de confianza del mismo grupo, conectar un objetivo en juego), O un límite sano / una conversación franca: mejorar una relación no siempre es acercarse.
 
 REGLAS ESTRICTAS:
 - Usá SOLO la información provista. No inventes nombres, fechas, eventos ni rasgos.
 - El ESTADO RECIENTE del usuario sirve únicamente para calibrar el TIMING y el TONO de la oportunidad (ej: si viene con poca energía o durmió poco, sugerí un primer paso liviano y dejar lo difícil para cuando esté entero). PROHIBIDO usarlo para explicar por qué la relación va mal, para atribuir causas a lo que pasó, o para dar consejo de salud. Mirá hacia adelante, no hacia atrás.
+- La RED PROFESIONAL (otras personas del usuario en la misma empresa/grupo) es inteligencia estratégica legítima: usala para leer el tablero (quién se relaciona con quién, intereses compartidos, vías de influencia, con quién ya hay un objetivo en juego) y, si aplica, proponé en la Oportunidad un movimiento que apalanque esas conexiones reales. Esto NO es manipulación: la línea es que el movimiento se apoye en vínculos GENUINOS y en intereses reales, sin engaño, sin coerción y sin usar a nadie en contra de su propio interés. Si una jugada requeriría mentir, presionar o dañar a alguien, no la sugieras.
 - PROHIBIDO: diagnósticos clínicos, etiquetas de salud mental, consejo médico/psicológico, tácticas de manipulación, jugadas para "obtener" algo o "recuperar terreno", generar dependencia.
 - Tono cálido, directo y honesto. Si hay poca información, decilo y mantené el briefing corto.
 - Español neutro. Sin markdown, sin viñetas con guiones, sin emojis. Respetá las etiquetas "TL;DR:", "Contexto:", "Dinámica:", "Oportunidad:" tal cual, cada una en su propio bloque separado por una línea en blanco.`
@@ -75,10 +76,24 @@ const SELF_KIND_ES: Record<string, string> = {
   pain: 'dolor',
 }
 
+/** Una persona de la red profesional del usuario (mismo empleador/grupo que la
+ *  persona del briefing). Contexto estratégico: con quién más se cruza este
+ *  vínculo dentro de la misma organización. */
+export interface BriefingColleague {
+  name: string
+  /** Empresa/empleador o grupo que comparten (para nombrar el lazo). */
+  orgLabel?: string
+  /** importancia 1-10 del colega para el usuario. */
+  importance?: number
+  /** Título de un objetivo activo del usuario que ya involucra a este colega. */
+  activeGoalTitle?: string
+}
+
 export function buildBriefingInput(
   facts: BriefingPersonFacts,
   memories: BriefingMemory[],
   selfStats: BriefingSelfStat[] = [],
+  colleagues: BriefingColleague[] = [],
 ): string {
   const lines: string[] = [
     `Persona: ${facts.name}`,
@@ -94,6 +109,18 @@ export function buildBriefingInput(
     lines.push('', 'Tu estado reciente (últimos días, promedio 1-5 — para calibrar timing/tono, NO como causa):')
     for (const s of relevant) {
       lines.push(`  - ${SELF_KIND_ES[s.kind]}: ${s.avg.toFixed(1)}/5 (n=${s.count})`)
+    }
+  }
+
+  // Red profesional: colegas del mismo empleador/grupo (inteligencia estratégica).
+  if (colleagues.length > 0) {
+    lines.push('', `Red profesional relevante (misma empresa/grupo — ${colleagues.length}):`)
+    for (const c of colleagues) {
+      const bits: string[] = []
+      if (c.orgLabel) bits.push(c.orgLabel)
+      if (typeof c.importance === 'number') bits.push(`importancia ${c.importance}/10 para vos`)
+      if (c.activeGoalTitle) bits.push(`tenés un objetivo activo que lo involucra: "${c.activeGoalTitle}"`)
+      lines.push(`  - ${c.name}${bits.length ? ' — ' + bits.join(' · ') : ''}`)
     }
   }
 
