@@ -146,6 +146,7 @@ function SaludContent() {
           label="Energía"
           icon={Activity}
           points={energySeries}
+          windowable
           colorClass="text-brand"
           formatValue={(n) => n.toFixed(1)}
           emptyHint="Registrá tu energía para ver la evolución."
@@ -154,6 +155,7 @@ function SaludContent() {
           label="Sueño (horas)"
           icon={Moon}
           points={sleepSeries}
+          windowable
           colorClass="text-brand"
           formatValue={(n) => `${n.toFixed(1)}h`}
           emptyHint="Registrá tus noches para ver la tendencia."

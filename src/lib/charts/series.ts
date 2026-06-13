@@ -176,3 +176,29 @@ export function aggregateByDay(
   }
   return out
 }
+
+export type ChartRange = 'semana' | 'mes'
+
+/** Filtra puntos a la VENTANA elegida: 'semana' = semana calendario lun→dom de
+ *  `now`; 'mes' = mes calendario de `now`. Parse local (sin TZ). PURO. */
+export function filterPointsByRange(points: SeriesPoint[], range: ChartRange, now: Date = new Date()): SeriesPoint[] {
+  const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate()
+  const dayMs = (iso: string): number | null => {
+    const [a, b, c] = iso.slice(0, 10).split('-').map(Number)
+    if (!a || !b || !c) return null
+    return new Date(a, b - 1, c).getTime()
+  }
+  if (range === 'mes') {
+    return points.filter((p) => {
+      const [py, pm] = p.date.slice(0, 10).split('-').map(Number)
+      return py === y && pm === mo + 1
+    })
+  }
+  const dow = (now.getDay() + 6) % 7 // lunes = 0
+  const lo = new Date(y, mo, d - dow).getTime()
+  const hi = new Date(y, mo, d - dow + 6, 23, 59, 59).getTime()
+  return points.filter((p) => {
+    const t = dayMs(p.date)
+    return t != null && t >= lo && t <= hi
+  })
+}
