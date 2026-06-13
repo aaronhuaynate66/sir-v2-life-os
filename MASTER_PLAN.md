@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `6e2de89`
+**Hash del último commit humano:** `680c8fa`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `680c8fa` | aaronhuaynate66 | feat(briefing): interacción manual → memoria + bloque Oportunidad con estado propio (#182) | 2026-06-13 |
 | `6e2de89` | aaronhuaynate66 | fix(deps): actualizar pnpm-lock con web-push (deploy de Vercel) (#181) | 2026-06-13 |
 | `6ced636` | aaronhuaynate66 | fix(push): cast applicationServerKey a BufferSource (TS 5.7 Uint8Array) (#180) | 2026-06-13 |
 | `2ff9de4` | aaronhuaynate66 | feat(push): suscripción + envío de Web Push (PR2) (#179) | 2026-06-13 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ce827d3` | aaronhuaynate66 | fix(ux): briefing con vacío calmo + no exponer 'Error HTTP' al usuario (#175) | 2026-06-13 |
 | `c822fec` | aaronhuaynate66 | docs(backlog): fixture futuro 'SIR por WhatsApp' + spike de exploración (#174) | 2026-06-13 |
 | `34adc96` | aaronhuaynate66 | feat(charts): etiquetas de día de la semana en los TrendChart (#173) | 2026-06-12 |
-| `c36a2cf` | aaronhuaynate66 | fix: expirar señales viejas en Mission Control + extractor FC no confunde VFC(ms) (#172) | 2026-06-12 |
 
 ---
 
