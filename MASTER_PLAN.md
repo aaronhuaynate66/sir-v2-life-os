@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `7229a69`
+**Hash del último commit humano:** `b4982a1`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b4982a1` | aaronhuaynate66 | feat(pwa): base PWA instalable + service worker (cimiento de push) (#178) | 2026-06-13 |
 | `7229a69` | aaronhuaynate66 | docs(spike): SIR por WhatsApp — decisión go/no-go (#50) (#177) | 2026-06-13 |
 | `8a5da2b` | aaronhuaynate66 | feat(charts): toggle Semana/Mes + ventana lun→dom en los TrendChart (#49) (#176) | 2026-06-13 |
 | `ce827d3` | aaronhuaynate66 | fix(ux): briefing con vacío calmo + no exponer 'Error HTTP' al usuario (#175) | 2026-06-13 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `a1159b2` | aaronhuaynate66 | feat(captura): 'Pegar texto' autodetecta perfil vs nota libre (#171) | 2026-06-12 |
 | `5adf3e6` | aaronhuaynate66 | feat(yo): reflexión de IA sobre 'Tu rumbo' (Narrative Intelligence Capa 2) (#170) | 2026-06-11 |
 | `6f271b4` | aaronhuaynate66 | feat(yo): 'Tu rumbo' — espinazo de Narrative Intelligence (E4→E5, Capa 1) (#169) | 2026-06-11 |
-| `4d01618` | aaronhuaynate66 | feat(relaciones): panel 'Evolución del vínculo' en la ficha (E2 visible) (#168) | 2026-06-11 |
 
 ---
 
