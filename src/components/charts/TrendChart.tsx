@@ -17,7 +17,7 @@ import type { LucideIcon } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
-import { buildLineSeries } from '@/lib/charts/series'
+import { buildLineSeries, filterPointsByRange, type ChartRange } from '@/lib/charts/series'
 import type { SeriesPoint } from '@/lib/charts/series'
 import { cn } from '@/lib/utils'
 
@@ -47,6 +47,8 @@ export interface TrendChartProps {
   height?: number
   emptyHint?: string
   className?: string
+  /** Muestra un toggle Semana/Mes que filtra los puntos a esa ventana. */
+  windowable?: boolean
 }
 
 const VIEW_W = 320
@@ -60,10 +62,16 @@ export function TrendChart({
   height = 72,
   emptyHint,
   className,
+  windowable = false,
 }: TrendChartProps) {
+  const [range, setRange] = useState<ChartRange>('semana')
+  const shown = useMemo(
+    () => (windowable ? filterPointsByRange(points, range) : points),
+    [windowable, points, range],
+  )
   const geo = useMemo(
-    () => buildLineSeries(points, { width: VIEW_W, height, padding: 6 }),
-    [points, height],
+    () => buildLineSeries(shown, { width: VIEW_W, height, padding: 6 }),
+    [shown, height],
   )
 
   const hasData = geo.points.length > 0
@@ -81,11 +89,30 @@ export function TrendChart({
   return (
     <Card className={cn('shadow-none', className)}>
       <CardContent className="p-4 sm:p-6">
-        <SectionTitle icon={icon} label={label} count={hasData ? geo.points.length : undefined} />
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle icon={icon} label={label} count={hasData ? geo.points.length : undefined} />
+          {windowable && (
+            <div className="flex items-center gap-0.5 rounded-md bg-muted/40 p-0.5 text-[11px] flex-shrink-0">
+              {(['semana', 'mes'] as ChartRange[]).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRange(r)}
+                  className={cn(
+                    'px-2 py-0.5 rounded capitalize transition-colors',
+                    range === r ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {!hasData ? (
           <p className="text-sm text-muted-foreground py-2">
-            {emptyHint ?? 'Sin datos todavía. Registrá algunos para ver la tendencia.'}
+            {windowable ? `Sin datos ${range === 'semana' ? 'esta semana' : 'este mes'}.` : (emptyHint ?? 'Sin datos todavía. Registrá algunos para ver la tendencia.')}
           </p>
         ) : (
           <div className="space-y-3">
