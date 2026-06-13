@@ -4,7 +4,7 @@
 import type { Person, Relationship, PersonLink } from '@/types'
 import { SELF_ID } from '@/lib/relationships/family'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from './colors'
-import { professionalPairs } from '@/lib/people/professionalNetwork'
+import { orgJoinKey, orgGroupLabel } from '@/lib/people/professionalNetwork'
 import type { GraphCategory, GraphData, GraphEdge, GraphNode } from './types'
 
 /**
@@ -235,31 +235,50 @@ export function buildGraphData({
     })
   }
 
-  // Aristas PROFESIONALES persona↔persona (migration 0072): personas que
-  // comparten empleador/grupo (org_group, fallback organization). Se dibujan en
-  // color 'profesional'. Se omiten pares ya unidos por otra arista (ej. familia)
-  // y los que no resuelven a un nodo. Acotado por professionalPairs (maxPairs).
-  const existingPair = new Set(
-    edges.map((e) => [e.source, e.target].sort().join('::')),
-  )
-  for (const pair of professionalPairs(people)) {
-    const source = nodeIdByPersonId.get(pair.a)
-    const target = nodeIdByPersonId.get(pair.b)
-    if (!source || !target || source === target) continue
-    const key = [source, target].sort().join('::')
-    if (existingPair.has(key)) continue
-    existingPair.add(key)
-    edges.push({
-      source,
-      target,
-      category: 'profesional',
-      label: CATEGORY_LABEL.profesional,
-      color: CATEGORY_COLOR.profesional,
+  // Nodo-empresa HUB (escalón 2): en vez de aristas persona↔persona N², las
+  // personas que comparten empleador/grupo (org_group, o el grupo resuelto vía
+  // orgRegistry) cuelgan de UN nodo-empresa común. Más fiel y legible
+  // (Francisco y Alex cuelgan de "Grupo HNG") y no explota en grupos grandes.
+  // Solo se crea el hub si conecta a ≥2 personas (si no, no aporta).
+  const orgHubs = new Map<string, { label: string; personIds: string[] }>()
+  for (const p of people) {
+    const key = orgJoinKey(p)
+    if (!key) continue
+    const entry = orgHubs.get(key) ?? { label: '', personIds: [] }
+    if (!entry.label) entry.label = orgGroupLabel(p)
+    entry.personIds.push(p.id)
+    orgHubs.set(key, entry)
+  }
+  const companyNodes: GraphNode[] = []
+  for (const [key, hub] of orgHubs) {
+    if (hub.personIds.length < 2) continue
+    const orgNodeId = `org:${key}`
+    const label = hub.label || key
+    companyNodes.push({
+      id: orgNodeId,
+      label: initialsFromName(label) || 'OR',
+      shortName: label,
+      fullName: label,
+      category: 'organizacion',
+      healthScore: 100,
+      interactionCount: 0,
+      score: 7,
     })
+    for (const personId of hub.personIds) {
+      const source = nodeIdByPersonId.get(personId)
+      if (!source) continue
+      edges.push({
+        source,
+        target: orgNodeId,
+        category: 'organizacion',
+        label: CATEGORY_LABEL.organizacion,
+        color: CATEGORY_COLOR.organizacion,
+      })
+    }
   }
 
   return {
-    nodes: [selfNode, ...personNodes],
+    nodes: [selfNode, ...personNodes, ...companyNodes],
     edges,
   }
 }
