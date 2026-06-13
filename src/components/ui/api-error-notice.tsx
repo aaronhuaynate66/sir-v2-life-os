@@ -19,7 +19,7 @@ export function ApiErrorNotice({
   children,
 }: {
   error: ApiError
-  /** Override del título por defecto `Error HTTP <status>: <message>`. */
+  /** Override del título por defecto (`error.message`, sin código HTTP). */
   title?: string
   /** Clases extra (padding/margen propios de cada vista). */
   className?: string
@@ -36,7 +36,7 @@ export function ApiErrorNotice({
     >
       <div className="flex items-center gap-1.5 font-medium text-bad">
         <AlertCircle size={12} strokeWidth={2} aria-hidden="true" />
-        {title ?? `Error HTTP ${error.status}: ${error.message}`}
+        {title ?? error.message}
       </div>
       {error.detail && <div className="text-muted-foreground">{error.detail}</div>}
       {children}
