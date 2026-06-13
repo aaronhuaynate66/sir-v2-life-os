@@ -9,6 +9,7 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { SelfDiagnosisPanel } from '@/components/yo/SelfDiagnosisPanel'
 import { LifeThreadPanel } from '@/components/yo/LifeThreadPanel'
+import { NotificationsCard } from '@/components/system/NotificationsCard'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { ContaleASir } from '@/components/yo/ContaleASir'
 
@@ -56,6 +57,7 @@ export default function SelfPage() {
         </Card>
         <IdentityProfilePanel />
         <LifeThreadPanel />
+        <NotificationsCard />
         <SelfDiagnosisPanel />
       </div>
     </AppShell>
