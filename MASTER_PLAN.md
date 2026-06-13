@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `34adc96`
+**Hash del último commit humano:** `c822fec`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c822fec` | aaronhuaynate66 | docs(backlog): fixture futuro 'SIR por WhatsApp' + spike de exploración (#174) | 2026-06-13 |
 | `34adc96` | aaronhuaynate66 | feat(charts): etiquetas de día de la semana en los TrendChart (#173) | 2026-06-12 |
 | `c36a2cf` | aaronhuaynate66 | fix: expirar señales viejas en Mission Control + extractor FC no confunde VFC(ms) (#172) | 2026-06-12 |
 | `a1159b2` | aaronhuaynate66 | feat(captura): 'Pegar texto' autodetecta perfil vs nota libre (#171) | 2026-06-12 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `afeede0` | aaronhuaynate66 | feat(relaciones): detector de evolución del vínculo (fundación E2) (#167) | 2026-06-11 |
 | `c69099c` | aaronhuaynate66 | feat(horario): asignar hora a una tarea desde el calendario (#166) | 2026-06-11 |
 | `c9a1601` | aaronhuaynate66 | fix(horario): calmar la grilla (filtro paz) — hueco sin corte + banda sin pila (#165) | 2026-06-11 |
-| `2d52869` | aaronhuaynate66 | feat(horario): grilla por horas como vista primaria + banda 'Sin hora' (#164) | 2026-06-11 |
 
 ---
 
@@ -951,6 +951,43 @@ Invariantes del sistema. NO se contradicen por nuevas features.
 - `docs/phase-3a/` → docs específicos de sub-fase 3a (cerrada).
 - GitHub Issues → tracking de sesiones operativas.
 - GitHub Milestones → fases formales (3a/3b/3c/3d + 5).
+
+## 🔭 FIXTURE FUTURO — SIR por WhatsApp (canal de captura + nudges)
+
+**Idea (2026-06-12, a partir del análisis Bizum vs WhatsApp Payments):** la gente
+ya vive en WhatsApp; ahí nace la materia prima de SIR (conversaciones, datos de
+la gente, momentos que valen recordar). Un canal de SIR sobre WhatsApp ataca la
+fricción #1 del producto: la captura.
+
+**Forma propuesta (NO "ejecutar todo SIR en WhatsApp"):**
+- **WhatsApp = carril rápido de I/O.** Mandás texto/nota de voz a un número SIR
+  ("me crucé con Fran, cumple 20 jun") → SIR captura/deriva y confirma. Reenviás
+  un chat → lo ingiere (reusa el pipeline de export, ya existe). Brief/nudge
+  proactivo a la mañana ("Francisco viene bajando — ¿le escribís?").
+- **La web sigue siendo el cockpit.** Calendario, "Tu rumbo", tendencias, grilla
+  → nada de eso entra en un chat sin volverse ruido (anti-paz). El chat captura
+  y empuja; la web piensa y muestra.
+- **Adaptador, no columna vertebral.** El caño de WhatsApp es UN canal más (como
+  el de export). Si Meta cambia las reglas, se pierde un canal, no el producto.
+
+**Tensiones / restricciones a resolver antes (lo que hace que sea fixture y no ya):**
+- **Privacidad (lo más caro):** un bot de WhatsApp Business NO tiene la privacidad
+  de un chat personal — Meta ve metadata y según el setup, contenido. Choca con
+  el principio #5 (privacidad radical). Aceptable para uso personal de Aaron;
+  difícil de defender si SIR es producto para terceros. Ver [[sir-filtro-paz-objetivos]].
+- **No es runtime, es canal:** WhatsApp Business / Cloud API (texto/voz/botones in,
+  links out). El cerebro de SIR sigue server-side.
+- **Regla de 24h:** fuera de la ventana de 24h desde el último mensaje del usuario,
+  solo plantillas pre-aprobadas por Meta → los nudges proactivos están regulados.
+- **Dependencia de Meta:** ToS, costo por conversación, riesgo de cambio de reglas.
+
+**Spike de exploración pendiente** (ver tarea de exploración): validar la
+materialización — Cloud API vs proveedor (Twilio/360dialog), modelo de privacidad
+real, costo, MVP mínimo (solo captura por texto/voz → reusar nota-autodetect +
+export), y la regla de 24h para nudges. Salida del spike: doc de decisión
+go/no-go + scope del MVP.
+
+---
 
 ---
 
