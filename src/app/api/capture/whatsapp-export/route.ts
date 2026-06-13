@@ -19,6 +19,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@/lib/supabase/server'
 import { insertObservation } from '@/lib/capture/observations/insert'
 import { deriveObservedAt } from '@/lib/capture/observations/observed-at'
+import { recentWindowContent, recentWindowMemoryRow } from '@/lib/memories/recentWindow'
 import type { Confidence } from '@/lib/capture/observations/types'
 
 export const runtime = 'nodejs'
@@ -210,6 +211,26 @@ export async function POST(req: NextRequest) {
             .eq('user_id', userId)
             .eq('id', personId)
         }
+      }
+    } catch {
+      /* no fatal: la observación ya quedó guardada */
+    }
+
+    // Memoria de VENTANA RECIENTE: lo más nuevo del chat (últimos bloques) con
+    // fecha = último mensaje. Encabeza getMemoriesForPerson (orden por
+    // occurred_at DESC) → el briefing lee la textura reciente, no el promedio
+    // histórico. Idempotente (id mem_recent:<observationId>). Best-effort.
+    try {
+      const content = recentWindowContent(
+        (data.blockSummaries as string[] | undefined) ?? null,
+        (data.summary as string | undefined) ?? null,
+      )
+      if (content && observation?.id) {
+        const row = recentWindowMemoryRow(
+          { observationId: observation.id, personId, content, occurredAt: observedAt },
+          userId,
+        )
+        await supabase.from('memories').upsert([row], { onConflict: 'id', ignoreDuplicates: true })
       }
     } catch {
       /* no fatal: la observación ya quedó guardada */
