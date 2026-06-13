@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `8a5da2b`
+**Hash del último commit humano:** `7229a69`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `7229a69` | aaronhuaynate66 | docs(spike): SIR por WhatsApp — decisión go/no-go (#50) (#177) | 2026-06-13 |
 | `8a5da2b` | aaronhuaynate66 | feat(charts): toggle Semana/Mes + ventana lun→dom en los TrendChart (#49) (#176) | 2026-06-13 |
 | `ce827d3` | aaronhuaynate66 | fix(ux): briefing con vacío calmo + no exponer 'Error HTTP' al usuario (#175) | 2026-06-13 |
 | `c822fec` | aaronhuaynate66 | docs(backlog): fixture futuro 'SIR por WhatsApp' + spike de exploración (#174) | 2026-06-13 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5adf3e6` | aaronhuaynate66 | feat(yo): reflexión de IA sobre 'Tu rumbo' (Narrative Intelligence Capa 2) (#170) | 2026-06-11 |
 | `6f271b4` | aaronhuaynate66 | feat(yo): 'Tu rumbo' — espinazo de Narrative Intelligence (E4→E5, Capa 1) (#169) | 2026-06-11 |
 | `4d01618` | aaronhuaynate66 | feat(relaciones): panel 'Evolución del vínculo' en la ficha (E2 visible) (#168) | 2026-06-11 |
-| `afeede0` | aaronhuaynate66 | feat(relaciones): detector de evolución del vínculo (fundación E2) (#167) | 2026-06-11 |
 
 ---
 
@@ -981,7 +981,7 @@ fricción #1 del producto: la captura.
   solo plantillas pre-aprobadas por Meta → los nudges proactivos están regulados.
 - **Dependencia de Meta:** ToS, costo por conversación, riesgo de cambio de reglas.
 
-**Spike de exploración pendiente** (ver tarea de exploración): validar la
+**Spike de exploración — HECHO 2026-06-12** (ver `docs/SIR-WHATSAPP-SPIKE.md`): GO condicional para uso personal de Aaron (MVP captura iniciada por usuario = ~$0, sin plantillas); NO-GO/diferido como producto para terceros hasta resolver privacidad (el Cloud API descifra en Meta; On-Premises deprecado). Lo que faltaba investigar era: validar la
 materialización — Cloud API vs proveedor (Twilio/360dialog), modelo de privacidad
 real, costo, MVP mínimo (solo captura por texto/voz → reusar nota-autodetect +
 export), y la regla de 24h para nudges. Salida del spike: doc de decisión
