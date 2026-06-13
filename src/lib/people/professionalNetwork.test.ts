@@ -8,7 +8,9 @@ describe('normalizeOrgKey / orgJoinKey', () => {
   it('normaliza y prefiere grupo sobre empresa', () => {
     expect(normalizeOrgKey('  Grupo  HNG ')).toBe('grupo hng')
     expect(orgJoinKey({ organization: 'K2', orgGroup: 'Grupo HNG' })).toBe('grupo hng')
-    expect(orgJoinKey({ organization: 'K2 Seguridad' })).toBe('k2 seguridad')
+    // 'K2 Seguridad' ahora resuelve a 'Grupo HNG' vía orgRegistry; para probar
+    // el fallback puro a organization usamos una empresa fuera del registro.
+    expect(orgJoinKey({ organization: 'Acme Inc' })).toBe('acme inc')
     expect(orgJoinKey({})).toBe('')
   })
 })
