@@ -23,6 +23,7 @@ import {
   BRIEFING_SYSTEM_PROMPT,
   buildBriefingInput,
   type BriefingMemory,
+  type BriefingSelfStat,
 } from '@/lib/person-briefing/prompt'
 
 export const runtime = 'nodejs'
@@ -31,6 +32,9 @@ export const maxDuration = 45
 
 const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_MEMORIES = 60
+const SELF_STATE_DAYS = 3
+const DAY_MS = 86_400_000
+const SELF_KINDS = ['mood', 'energy', 'sleep', 'pain'] as const
 
 interface ErrorBody {
   error: string
@@ -91,6 +95,38 @@ export async function POST(req: NextRequest) {
     timestamp: m.timestamp,
   }))
 
+  // Estado reciente del USUARIO (no de la persona): promedios de los registros
+  // numéricos (mood/energy/sleep/pain) de los últimos días. Sólo calibra el
+  // timing/tono de la Oportunidad — el prompt tiene prohibido usarlo como causa.
+  // Fail-soft: si la lectura falla, el briefing corre igual sin esta señal.
+  let selfStats: BriefingSelfStat[] = []
+  try {
+    const recentIso = new Date(Date.now() - SELF_STATE_DAYS * DAY_MS).toISOString()
+    const { data: logRows } = await supabase
+      .from('person_logs')
+      .select('kind, value, logged_at')
+      .eq('user_id', userId)
+      .in('kind', SELF_KINDS as unknown as string[])
+      .gte('logged_at', recentIso)
+      .limit(200)
+    const byKind = new Map<string, { count: number; sum: number }>()
+    for (const r of (logRows ?? []) as Array<{ kind: string; value: number }>) {
+      const v = Number(r.value)
+      if (!Number.isFinite(v)) continue
+      const e = byKind.get(r.kind) ?? { count: 0, sum: 0 }
+      e.count += 1
+      e.sum += v
+      byKind.set(r.kind, e)
+    }
+    selfStats = [...byKind.entries()].map(([kind, e]) => ({
+      kind,
+      count: e.count,
+      avg: e.count ? e.sum / e.count : 0,
+    }))
+  } catch {
+    selfStats = []
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
   }
@@ -118,6 +154,7 @@ export async function POST(req: NextRequest) {
               energyImpact: (personRow.energy_impact as string) ?? undefined,
             },
             briefingMemories,
+            selfStats,
           ),
         },
       ],
