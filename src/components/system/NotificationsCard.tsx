@@ -67,7 +67,7 @@ export function NotificationsCard() {
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapid),
+        applicationServerKey: urlBase64ToUint8Array(vapid) as BufferSource,
       })
       const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } }
       const res = await fetch('/api/push/subscribe', {
