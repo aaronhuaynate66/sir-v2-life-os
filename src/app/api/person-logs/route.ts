@@ -28,6 +28,10 @@ import {
   type PersonLogKind,
 } from '@/lib/person-logs/types'
 import { rowToPersonLog } from '@/lib/person-logs/fetch'
+import {
+  shouldMaterializeInteraction,
+  interactionLogToMemoryRow,
+} from '@/lib/memories/fromInteractionLog'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -134,5 +138,24 @@ export async function POST(req: NextRequest) {
   }
 
   const log: PersonLog = rowToPersonLog(data as Record<string, unknown>)
+
+  // 9. Materializar la interacción como memoria (ADITIVO, fail-soft).
+  //    Una interacción registrada a mano CON nota es material narrativo real:
+  //    la volvemos memoria para que el briefing de persona tenga de qué partir
+  //    (sin esto, el briefing lee `memories` vacío y dice "nada que resumir").
+  //    Idempotente por PK (id = mem_log:<logId>). Si falla, el log YA quedó
+  //    guardado: no rompemos el registro por un efecto secundario.
+  if (shouldMaterializeInteraction(log.kind, log.note)) {
+    try {
+      const row = interactionLogToMemoryRow(
+        { id: log.id, personId: log.personId, note: log.note ?? '', value: log.value, loggedAt: log.loggedAt },
+        userId,
+      )
+      await supabase.from('memories').upsert([row], { onConflict: 'id', ignoreDuplicates: true })
+    } catch {
+      // fail-soft: la memoria es un extra; el log es la fuente de verdad.
+    }
+  }
+
   return NextResponse.json({ log }, { status: 201 })
 }
