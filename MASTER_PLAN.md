@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2ff9de4`
+**Hash del último commit humano:** `6ced636`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6ced636` | aaronhuaynate66 | fix(push): cast applicationServerKey a BufferSource (TS 5.7 Uint8Array) (#180) | 2026-06-13 |
 | `2ff9de4` | aaronhuaynate66 | feat(push): suscripción + envío de Web Push (PR2) (#179) | 2026-06-13 |
 | `b4982a1` | aaronhuaynate66 | feat(pwa): base PWA instalable + service worker (cimiento de push) (#178) | 2026-06-13 |
 | `7229a69` | aaronhuaynate66 | docs(spike): SIR por WhatsApp — decisión go/no-go (#50) (#177) | 2026-06-13 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `34adc96` | aaronhuaynate66 | feat(charts): etiquetas de día de la semana en los TrendChart (#173) | 2026-06-12 |
 | `c36a2cf` | aaronhuaynate66 | fix: expirar señales viejas en Mission Control + extractor FC no confunde VFC(ms) (#172) | 2026-06-12 |
 | `a1159b2` | aaronhuaynate66 | feat(captura): 'Pegar texto' autodetecta perfil vs nota libre (#171) | 2026-06-12 |
-| `5adf3e6` | aaronhuaynate66 | feat(yo): reflexión de IA sobre 'Tu rumbo' (Narrative Intelligence Capa 2) (#170) | 2026-06-11 |
 
 ---
 
