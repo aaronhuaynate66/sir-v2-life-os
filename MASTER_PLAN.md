@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `010fcdd`
+**Hash del último commit humano:** `c5f7d87`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c5f7d87` | aaronhuaynate66 | fix(whatsapp-import): sincronizar last_contact + excluir meta-notas del briefing (#191) | 2026-06-13 |
 | `010fcdd` | aaronhuaynate66 | feat(push): cron del brief de la mañana — UN push diario consolidado (#190) | 2026-06-13 |
 | `a18fb26` | aaronhuaynate66 | fix(briefing): anclar la empresa/grupo del SUJETO en el contexto (#189) | 2026-06-13 |
 | `d570ae8` | aaronhuaynate66 | feat(briefing): contexto del colega enriquecido (cumpleaños + estado del vínculo) (#188) | 2026-06-13 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b635e0f` | aaronhuaynate66 | feat(red): registro empresa→holding + extracción de empresa desde LinkedIn (#184) | 2026-06-13 |
 | `c8da1e1` | aaronhuaynate66 | feat(red): organización estructurada + hilos profesionales en grafo + briefing con red (#183) | 2026-06-13 |
 | `680c8fa` | aaronhuaynate66 | feat(briefing): interacción manual → memoria + bloque Oportunidad con estado propio (#182) | 2026-06-13 |
-| `6e2de89` | aaronhuaynate66 | fix(deps): actualizar pnpm-lock con web-push (deploy de Vercel) (#181) | 2026-06-13 |
 
 ---
 
