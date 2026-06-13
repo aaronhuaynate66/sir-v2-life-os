@@ -20,7 +20,7 @@ insert into public.memories
    occurred_at, last_accessed, source)
 select
   'mem_log:' || pl.id,
-  pl.user_id,
+  pl.user_id::uuid,
   pl.person_id,
   'episodic',
   'Interacción registrada',
