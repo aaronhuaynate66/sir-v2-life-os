@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d570ae8`
+**Hash del último commit humano:** `a18fb26`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `a18fb26` | aaronhuaynate66 | fix(briefing): anclar la empresa/grupo del SUJETO en el contexto (#189) | 2026-06-13 |
 | `d570ae8` | aaronhuaynate66 | feat(briefing): contexto del colega enriquecido (cumpleaños + estado del vínculo) (#188) | 2026-06-13 |
 | `e030204` | aaronhuaynate66 | fix(0073): castear person_logs.user_id (text) a uuid para memories.user_id (#187) | 2026-06-13 |
 | `20a45cc` | aaronhuaynate66 | feat(briefing): materialización retroactiva de interacciones + gate por red profesional (#186) | 2026-06-13 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `680c8fa` | aaronhuaynate66 | feat(briefing): interacción manual → memoria + bloque Oportunidad con estado propio (#182) | 2026-06-13 |
 | `6e2de89` | aaronhuaynate66 | fix(deps): actualizar pnpm-lock con web-push (deploy de Vercel) (#181) | 2026-06-13 |
 | `6ced636` | aaronhuaynate66 | fix(push): cast applicationServerKey a BufferSource (TS 5.7 Uint8Array) (#180) | 2026-06-13 |
-| `2ff9de4` | aaronhuaynate66 | feat(push): suscripción + envío de Web Push (PR2) (#179) | 2026-06-13 |
 
 ---
 
