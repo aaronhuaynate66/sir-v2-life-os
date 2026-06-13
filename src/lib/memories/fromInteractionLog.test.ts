@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   interactionLogMemoryId,
   shouldMaterializeInteraction,
+  isSystemNote,
   toneToCharge,
   interactionLogToMemory,
   interactionLogToMemoryRow,
@@ -67,5 +68,19 @@ describe('interactionLogToMemory / Row', () => {
     expect(row.occurred_at).toBe(log.loggedAt)
     expect(row.emotional_charge).toBe(-1)
     expect('observation_id' in row).toBe(false)
+  })
+})
+
+describe('isSystemNote / exclusión de meta-notas', () => {
+  it('marca notas de sistema', () => {
+    expect(isSystemNote('Importado del export de WhatsApp · 69818 mensajes')).toBe(true)
+    expect(isSystemNote('  importado del export …')).toBe(true)
+  })
+  it('no marca notas reales', () => {
+    expect(isSystemNote('Hoy hablamos de su emprendimiento')).toBe(false)
+  })
+  it('shouldMaterializeInteraction NO materializa meta-notas', () => {
+    expect(shouldMaterializeInteraction('interaction', 'Importado del export de WhatsApp · 100 mensajes')).toBe(false)
+    expect(shouldMaterializeInteraction('interaction', 'Reunión dura sobre growth')).toBe(true)
   })
 })

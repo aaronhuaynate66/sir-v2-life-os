@@ -26,14 +26,31 @@ export function interactionLogMemoryId(logId: string): string {
   return `${INTERACTION_MEMORY_PREFIX}:${logId}`
 }
 
+/** Prefijos de notas de SISTEMA: metadata generada por SIR (no es algo que
+ *  Aaron escribió sobre la persona). NO deben volverse memorias — son ruido
+ *  para el briefing (ej. el log que deja la importación de un export). */
+export const SYSTEM_NOTE_PREFIXES: readonly string[] = [
+  'Importado del export',
+  'Importado de',
+]
+
+/** ¿La nota es generada por el sistema (metadata), no contenido real? */
+export function isSystemNote(note: string): boolean {
+  const n = note.trim().toLowerCase()
+  return SYSTEM_NOTE_PREFIXES.some((p) => n.startsWith(p.toLowerCase()))
+}
+
 /** ¿Este log debe materializarse como memoria? Sólo interacciones con nota
- *  real (texto no vacío). Los registros numéricos (mood/energy/sleep/pain) NO
- *  son material narrativo y no se materializan. */
+ *  REAL (texto no vacío y no generado por el sistema). Los registros numéricos
+ *  (mood/energy/sleep/pain) y las meta-notas de SIR NO se materializan. */
 export function shouldMaterializeInteraction(
   kind: string,
   note: string | null | undefined,
 ): boolean {
-  return kind === 'interaction' && typeof note === 'string' && note.trim().length > 0
+  if (kind !== 'interaction') return false
+  if (typeof note !== 'string' || note.trim().length === 0) return false
+  if (isSystemNote(note)) return false
+  return true
 }
 
 /** Tono 1-5 → carga emocional [-1, 1]. 3 = neutral, 1 = muy negativo (-1),
