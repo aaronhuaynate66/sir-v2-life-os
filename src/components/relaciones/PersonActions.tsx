@@ -113,7 +113,19 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
               </div>
             )}
 
-            {error && !loading && <ApiErrorNotice error={error} />}
+            {error && !loading && (
+              error.status === 422 ? (
+                <div className="rounded-md border border-border bg-muted/20 p-3 text-xs flex items-start gap-2">
+                  <Sparkles size={13} strokeWidth={1.75} className="text-muted-foreground/70 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <span className="text-muted-foreground">
+                    Todavía no hay nada que resumir de {personName}. Cuando registres una conversación o
+                    captures algo sobre esta persona, el briefing aparece solo.
+                  </span>
+                </div>
+              ) : (
+                <ApiErrorNotice error={error} />
+              )
+            )}
 
             {briefing && !loading && <BriefingBody text={briefing} />}
 
