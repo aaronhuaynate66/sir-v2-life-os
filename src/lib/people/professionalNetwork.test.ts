@@ -58,3 +58,14 @@ describe('professionalPairs', () => {
     expect([pairs[0].a, pairs[0].b].sort()).toEqual(['a', 'f'])
   })
 })
+
+describe('orgJoinKey + registro (resolución automática del grupo)', () => {
+  it('conecta por empresa sin grupo explícito vía orgRegistry', () => {
+    const alex = { orgGroup: 'Grupo HNG' }
+    const fran = { organization: 'K2 Seguridad y Resguardo' } // sin orgGroup
+    expect(sharesProfessionalOrg(alex, fran)).toBe(true)
+  })
+  it('empresa desconocida sin grupo no se cuelga de HNG', () => {
+    expect(sharesProfessionalOrg({ organization: 'Acme Inc' }, { orgGroup: 'Grupo HNG' })).toBe(false)
+  })
+})

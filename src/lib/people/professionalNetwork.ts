@@ -12,6 +12,8 @@
 
 /** Normaliza una clave de organización para comparar: trim + lower + colapsa
  *  espacios. Devuelve '' si no hay valor usable. */
+import { resolveOrgGroup } from './orgRegistry'
+
 export function normalizeOrgKey(value: string | null | undefined): string {
   if (typeof value !== 'string') return ''
   return value.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -27,6 +29,11 @@ export interface OrgBearer {
 export function orgJoinKey(p: OrgBearer): string {
   const group = normalizeOrgKey(p.orgGroup)
   if (group) return group
+  // Sin grupo explícito: intentar resolverlo desde el empleador vía el registro
+  // (ej. organization "K2 Seguridad y Resguardo" → grupo "Grupo HNG"). Así la
+  // red se enciende con solo tener la empresa, sin tipear el grupo a mano.
+  const resolved = resolveOrgGroup(p.organization)
+  if (resolved) return normalizeOrgKey(resolved)
   return normalizeOrgKey(p.organization)
 }
 
