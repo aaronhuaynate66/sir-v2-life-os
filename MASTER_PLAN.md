@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f471ee0`
+**Hash del último commit humano:** `b1e87f6`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b1e87f6` | aaronhuaynate66 | test(linkedin): actualizar aserción a la nueva tolerancia de orgRef (#221) | 2026-06-14 |
 | `f471ee0` | aaronhuaynate66 | fix(linkedin): validador tolerante al shape de experiencia/educación (path texto) (#220) | 2026-06-14 |
 | `ed30c73` | aaronhuaynate66 | fix(linkedin): el extractor por TEXTO ya no falla el schema por campos de imagen (#219) | 2026-06-14 |
 | `29979d4` | aaronhuaynate66 | feat(intake): multi-chat (personal+corporativo) + cruce de fechas a Fechas importantes (#218) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `a53ff63` | aaronhuaynate66 | feat(empresas): Fase B — autocompletar ficha por URL (meta) o pegando texto (IA) (#214) | 2026-06-14 |
 | `60a12fa` | aaronhuaynate66 | feat(relaciones): detector read-only de posibles duplicados (#213) | 2026-06-14 |
 | `9137753` | aaronhuaynate66 | feat(captura): matcher difuso en ImportarChat (sugerencias en vivo, sin duplicados) (#212) | 2026-06-14 |
-| `b1091b6` | aaronhuaynate66 | fix(captura): consolidar import de WhatsApp en un solo panel (#211) | 2026-06-14 |
 
 ---
 
