@@ -55,9 +55,13 @@ describe('isValidLinkedInProfileExtracted', () => {
     expect(isValidLinkedInProfileExtracted(o)).toBe(true)
   })
 
-  it('rechaza workHistory con entradas inválidas (sin name)', () => {
+  it('tolera workHistory con entradas sin name (las descarta en sanitize, no rechaza el perfil)', () => {
+    // El path de texto produce entradas sin empresa clara (ej. rol suelto).
+    // Antes esto rechazaba TODO el perfil; ahora la entrada inválida se descarta
+    // en sanitize y el perfil sigue válido.
     const o = base({ workHistory: [{ title: 'x' } as unknown as never] }) as unknown as Record<string, unknown>
-    expect(isValidLinkedInProfileExtracted(o)).toBe(false)
+    expect(isValidLinkedInProfileExtracted(o)).toBe(true)
+    expect(sanitizeLinkedInProfile(o as never).workHistory).toHaveLength(0)
   })
 
   it('rechaza profileUrl con tipo inválido', () => {
