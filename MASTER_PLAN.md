@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `6a3fd11`
+**Hash del último commit humano:** `29979d4`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `29979d4` | aaronhuaynate66 | feat(intake): multi-chat (personal+corporativo) + cruce de fechas a Fechas importantes (#218) | 2026-06-14 |
 | `6a3fd11` | aaronhuaynate66 | fix(intake): no bloquear con 'Sin señales'; tolerante + diagnóstico por archivo (#217) | 2026-06-14 |
 | `94dd187` | aaronhuaynate66 | feat(relaciones): la tarjeta Cumpleaños usa el cumple detectado del chat (#216) | 2026-06-14 |
 | `8dfd823` | aaronhuaynate66 | feat(relaciones): intake inteligente file-first (multi-archivo → IA identifica + sugiere relación) (#215) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b1091b6` | aaronhuaynate66 | fix(captura): consolidar import de WhatsApp en un solo panel (#211) | 2026-06-14 |
 | `b93137d` | aaronhuaynate66 | fix(captura): lucide-react 0.383 no exporta Linkedin → usar FileText en ImportarConversacion (#210) | 2026-06-14 |
 | `6b647d2` | aaronhuaynate66 | feat(captura): importar conversación WhatsApp → crear/adjuntar persona (+ LinkedIn opcional) (#209) | 2026-06-14 |
-| `c16d6ca` | aaronhuaynate66 | feat(empresa): entidad guardable + carga manual de info en la ficha (escalón 3) (#208) | 2026-06-14 |
 
 ---
 
