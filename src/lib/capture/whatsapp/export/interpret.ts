@@ -71,7 +71,12 @@ REGLAS:
      Cumpleaños/aniversarios → recurring=true. Ante la duda de quién es, marcá self/tercero.
    - DESCARTÁ (no las generes): logística efímera pasada (almuerzos, "salimos 10:50", horarios
      de un día, reuniones puntuales ya ocurridas) y cualquier evento cuyo protagonista no sea ${contact}.
-7. events: planes o hechos notables SIN fecha precisa (ej. "planean mudarse").
+7. events: HITOS, LOGROS y planes notables mencionados (sin fecha precisa). A diferencia de
+   facts, events SÍ incluye lo relevante del USUARIO o lo COMPARTIDO cuando ${contact} lo
+   celebra, coordina o apoya — suele ser el corazón del vínculo. Ejemplos: "Aaron ganó medalla
+   de bronce en los World Firefighter Games 2024", "objetivo en común: Mundial de Policías y
+   Bomberos 2025 en Birmingham", "se prepara para una competencia". NOMBRÁ el evento específico
+   (nombre/lugar/año) cuando se diga; no lo aplanes a algo genérico ("un mundial", "un viaje").
 8. facts: hechos ESTABLES y DEFINITORIOS sobre ${contact} afirmados en la charla.
    PRIORIZÁ lo que define su vida/identidad por encima de la rutina repetida:
    - dónde vive y mudanzas grandes (ciudad/país; ej. "se mudó a Alicante", "vive en X").
