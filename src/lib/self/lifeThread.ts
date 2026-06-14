@@ -9,7 +9,7 @@
 import type { Goal, GoalCategory } from '@/types'
 import type { BondShift } from '@/lib/people/bondEvolution'
 
-export type LifeMilestoneKind = 'set' | 'done' | 'paused' | 'let_go' | 'bond_rise' | 'bond_drop'
+export type LifeMilestoneKind = 'set' | 'done' | 'paused' | 'let_go' | 'bond_rise' | 'bond_drop' | 'event'
 
 export interface LifeMilestone {
   id: string
@@ -77,4 +77,47 @@ export function relationshipMilestones(personName: string, shifts: BondShift[]):
 export function mergeLifeThread(...threads: LifeMilestone[][]): LifeMilestone[] {
   const all = threads.flat()
   return all.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+}
+
+
+// ─── Hitos de EVENTOS (E5): memorias clave como hitos del rumbo ─────────────
+// El rumbo no es solo metas y scores: los eventos reales (lo que viviste,
+// guardado como memorias) son parte del hilo. Tomamos las memorias EPISÓDICAS/
+// emocionales relevantes (importancia alta o registradas a mano) y las tejemos
+// como hitos fechados. PURO; no inventa: cada hito es una memoria real.
+
+export interface MemoryLike {
+  id: string
+  type: string
+  title?: string
+  content: string
+  importance: number
+  timestamp: string
+  source?: string
+  isPrivate?: boolean
+}
+
+const EVENT_TYPES = new Set(['episodic', 'emotional', 'temporal'])
+// Títulos genéricos de memorias materializadas: preferimos el contenido real.
+const GENERIC_TITLES = new Set(['Interacción registrada', 'Conversación reciente (WhatsApp)'])
+
+export function memoryMilestones(mems: MemoryLike[]): LifeMilestone[] {
+  const out: LifeMilestone[] = []
+  for (const m of mems ?? []) {
+    if (m.isPrivate) continue
+    if (!EVENT_TYPES.has(m.type)) continue
+    if (!(m.importance >= 7 || m.source === 'manual')) continue
+    if (!valid(m.timestamp)) continue
+    const t = (m.title ?? '').trim()
+    const text = t && !GENERIC_TITLES.has(t) ? t : (m.content ?? '').trim()
+    if (!text) continue
+    out.push({
+      id: `mem_${m.id}`,
+      date: m.timestamp,
+      kind: 'event',
+      title: text.slice(0, 110),
+      label: text.length > 110 ? text.slice(0, 109) + '…' : text,
+    })
+  }
+  return out
 }

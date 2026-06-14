@@ -8,14 +8,15 @@
 // IA que reformule este hilo en una reflexión, sin inventar.)
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Compass, Flag, Check, Pause, X, Sparkles, Loader2, TrendingUp, TrendingDown } from 'lucide-react'
+import { Compass, Flag, Check, Pause, X, Sparkles, Loader2, TrendingUp, TrendingDown, Star } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useSelfStore } from '@/stores/useSelfStore'
+import { useMemoryStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
-import { buildLifeThread, relationshipMilestones, mergeLifeThread, type LifeMilestoneKind, type LifeMilestone } from '@/lib/self/lifeThread'
+import { buildLifeThread, relationshipMilestones, memoryMilestones, mergeLifeThread, type LifeMilestoneKind, type LifeMilestone } from '@/lib/self/lifeThread'
 import { buildBondEvolution } from '@/lib/people/bondEvolution'
 import type { ScoreSnapshot } from '@/lib/people/scoreTrend'
 
@@ -26,9 +27,10 @@ function fmtDate(iso: string): string {
   return `${d.getDate()} ${MES[d.getMonth()]} ${d.getFullYear()}`
 }
 
-const ICON: Record<LifeMilestoneKind, typeof Flag> = { set: Flag, done: Check, paused: Pause, let_go: X, bond_rise: TrendingUp, bond_drop: TrendingDown }
+const ICON: Record<LifeMilestoneKind, typeof Flag> = { set: Flag, done: Check, paused: Pause, let_go: X, bond_rise: TrendingUp, bond_drop: TrendingDown, event: Star }
 function dotColor(kind: LifeMilestoneKind): string {
   if (kind === 'done' || kind === 'bond_rise') return 'hsl(var(--success))'
+  if (kind === 'event') return 'hsl(var(--brand))'
   if (kind === 'let_go' || kind === 'paused' || kind === 'bond_drop') return 'hsl(var(--text-tertiary))'
   return 'hsl(var(--brand))'
 }
@@ -75,7 +77,12 @@ export function LifeThreadPanel() {
     }
   }, [people])
 
-  const thread = useMemo(() => mergeLifeThread(buildLifeThread(goals), relMilestones), [goals, relMilestones])
+  const memories = useMemoryStore((s) => s.memories)
+  const memMilestones = useMemo(() => memoryMilestones(memories), [memories])
+  const thread = useMemo(
+    () => mergeLifeThread(buildLifeThread(goals), relMilestones, memMilestones),
+    [goals, relMilestones, memMilestones],
+  )
   const shown = thread.slice(0, 10)
   const anchorText = useMemo(() => {
     const a = goals.find((g) => g.isAnchor)
