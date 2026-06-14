@@ -76,6 +76,12 @@ export function LifeThreadPanel() {
 
   const thread = useMemo(() => mergeLifeThread(buildLifeThread(goals), relMilestones), [goals, relMilestones])
   const shown = thread.slice(0, 10)
+  const anchorText = useMemo(() => {
+    const a = goals.find((g) => g.isAnchor)
+    if (!a) return null
+    const sub = (a.anchorSubtitle ?? '').trim()
+    return `${a.title}${sub ? ` · ${sub}` : ''}`
+  }, [goals])
   const [refl, setRefl] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; text?: string }>({ status: 'idle' })
   const generar = useCallback(async () => {
     setRefl({ status: 'loading' })
@@ -83,7 +89,7 @@ export function LifeThreadPanel() {
       const res = await fetch('/api/self/rumbo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })) }),
+        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText }),
       })
       const data = (await res.json()) as { insight?: string; detail?: string; error?: string }
       if (!res.ok || !data.insight) {
@@ -94,7 +100,7 @@ export function LifeThreadPanel() {
     } catch {
       setRefl({ status: 'error', text: 'No se pudo generar la reflexión.' })
     }
-  }, [shown])
+  }, [shown, anchorText])
 
   return (
     <Card className="shadow-none">
@@ -103,7 +109,13 @@ export function LifeThreadPanel() {
           <Compass size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
           <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tu rumbo</div>
         </div>
-        <p className="text-xs text-muted-foreground mb-4">Qué te propusiste y hacia dónde venís yendo, en el tiempo.</p>
+        <p className="text-xs text-muted-foreground mb-3">Qué te propusiste y hacia dónde venís yendo, en el tiempo.</p>
+        {hydrated && anchorText && (
+          <div className="mb-4 rounded-lg border border-brand/30 bg-brand/5 px-3 py-2">
+            <div className="text-[10px] uppercase tracking-[0.07em] text-brand-soft-foreground mb-0.5">Tu norte del año</div>
+            <div className="text-[13px] text-foreground/90 break-words">{anchorText}</div>
+          </div>
+        )}
 
         {!hydrated ? null : shown.length === 0 ? (
           <p className="text-sm text-muted-foreground py-1">

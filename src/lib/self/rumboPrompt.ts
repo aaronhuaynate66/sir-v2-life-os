@@ -22,7 +22,8 @@ INVARIANTES ESTRICTOS (no negociables):
 - PROHIBIDO inventar: hablá SOLO de los hitos provistos. No agregues objetivos, personas, fechas, logros ni emociones que no estén en la lista.
 - PROHIBIDO diagnóstico, etiquetas, predicción del futuro o causa-efecto inventada.
 - Pausar o dejar ir un objetivo NO es un fracaso: enmarcá los cambios de rumbo como elecciones válidas, no como abandono.
-- Breve (máx 4 oraciones). Cálido pero sobrio, sin dramatizar ni inflar.`
+- Breve (máx 4 oraciones). Cálido pero sobrio, sin dramatizar ni inflar.
+- Si se incluye un "norte declarado" (el ancla del año), podés relacionar el hilo con él —¿lo que viene haciendo acompaña ese norte?— como observación abierta, sin juzgar y sin inventar nada que no esté en los hitos.`
 
 export interface RumboMilestoneInput {
   label: string
@@ -31,13 +32,21 @@ export interface RumboMilestoneInput {
 }
 
 /** Arma el mensaje de usuario desde los hitos ya computados (Capa 1). */
-export function buildRumboInput(milestones: RumboMilestoneInput[]): string {
-  const lines: string[] = ['Hitos de tu trayectoria (del más reciente al más antiguo):', '']
+export function buildRumboInput(milestones: RumboMilestoneInput[], anchor?: string | null): string {
+  const lines: string[] = []
+  const north = (anchor ?? '').trim()
+  if (north) lines.push(`Tu norte declarado para el año: ${north}`, '')
+  lines.push('Hitos de tu trayectoria (del más reciente al más antiguo):', '')
   for (const m of milestones) {
     const when = m.date.slice(0, 10)
     lines.push(`- ${when} · ${m.label}`)
   }
-  lines.push('', 'Devolvé la reflexión sobre el rumbo en el JSON especificado. Solo usá estos hitos.')
+  lines.push(
+    '',
+    north
+      ? 'Devolvé la reflexión sobre el rumbo en el JSON. Usá SOLO estos hitos; si tiene sentido, relacioná el hilo con el norte declarado, sin inventar nada que no esté.'
+      : 'Devolvé la reflexión sobre el rumbo en el JSON especificado. Solo usá estos hitos.',
+  )
   return lines.join('\n')
 }
 
