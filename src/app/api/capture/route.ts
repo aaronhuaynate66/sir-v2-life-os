@@ -21,6 +21,7 @@ import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { DETECTOR_SYSTEM_PROMPT } from '@/lib/capture/detector/prompt'
 import { isValidDetectorResult, sanitizeDetectorResult } from '@/lib/capture/detector/validate'
+import { isAiCreditError, AI_CREDIT_BANNER } from '@/lib/ai/billingError'
 import type {
   CaptureDetectError,
   CaptureDetectResponse,
@@ -158,6 +159,8 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
+    // Sin créditos de Anthropic: mensaje accionable en vez del error críptico.
+    if (isAiCreditError(e)) return errorJson(402, 'Sin créditos de IA', AI_CREDIT_BANNER)
     return errorJson(502, 'Falló la llamada al detector Vision', msg.slice(0, 300))
   }
 
