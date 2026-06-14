@@ -19,13 +19,11 @@ function isNonNegIntOrNull(v: unknown): v is number | null {
 }
 
 function isValidOrgRefOrNull(v: unknown): v is LinkedInOrgRef | null {
+  // Tolerante al SHAPE: aceptamos null o cualquier objeto. El path de TEXTO
+  // a veces nombra los campos distinto (company/role/organization/position);
+  // sanitizeOrgRef los normaliza. Items sin nombre resoluble se descartan ahí.
   if (v === null) return true
-  if (!v || typeof v !== 'object') return false
-  const o = v as Record<string, unknown>
-  if (typeof o.name !== 'string') return false
-  if (!isStringOrNull(o.title)) return false
-  if (!isStringOrNull(o.dateRange)) return false
-  return true
+  return !!v && typeof v === 'object' && !Array.isArray(v)
 }
 
 /** Array de orgRefs tolerante: acepta ausente/no-array (rows viejos, modelo
@@ -33,7 +31,8 @@ function isValidOrgRefOrNull(v: unknown): v is LinkedInOrgRef | null {
 function isValidOrgRefArrayOptional(v: unknown): boolean {
   if (v === undefined || v === null) return true
   if (!Array.isArray(v)) return false
-  return v.every((item) => isValidOrgRefOrNull(item) && item !== null)
+  // Cada item debe ser un objeto (shape tolerante); sanitize normaliza/descarta.
+  return v.every((item) => !!item && typeof item === 'object' && !Array.isArray(item))
 }
 
 export function isValidLinkedInProfileExtracted(x: unknown): x is LinkedInProfileExtracted {
@@ -75,14 +74,24 @@ function trimOrNull(v: string | null, maxLen: number): string | null {
   return t.length === 0 ? null : t.slice(0, maxLen)
 }
 
+function pickStr(o: Record<string, unknown>, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = o[k]
+    if (typeof v === 'string' && v.trim().length > 0) return v.trim()
+  }
+  return null
+}
+
 function sanitizeOrgRef(v: LinkedInOrgRef | null): LinkedInOrgRef | null {
-  if (v === null) return null
-  const name = v.name.trim().slice(0, 200)
+  if (v === null || typeof v !== 'object') return null
+  const o = v as unknown as Record<string, unknown>
+  // Nombre de la empresa/institución: tolera variantes de naming del modelo.
+  const name = (pickStr(o, ['name', 'company', 'organization', 'institution', 'school', 'employer']) ?? '').slice(0, 200)
   if (name.length === 0) return null
   return {
     name,
-    title: trimOrNull(v.title, 200),
-    dateRange: trimOrNull(v.dateRange, 80),
+    title: (pickStr(o, ['title', 'role', 'position', 'degree', 'program', 'cargo']) ?? '').slice(0, 200) || null,
+    dateRange: (pickStr(o, ['dateRange', 'dates', 'period', 'duration', 'rango']) ?? '').slice(0, 80) || null,
   }
 }
 

@@ -158,3 +158,30 @@ describe('path de TEXTO pegado (sin campos de imagen)', () => {
     expect(isValidLinkedInProfileExtracted({ ...textPayload, isOpenToWork: 'no' })).toBe(false)
   })
 })
+
+describe('orgRef tolerante al shape del path de texto', () => {
+  const payload = {
+    fullName: 'Cristina Fuentes Chacaltana',
+    headline: 'Transformation and Culture Lead en GRUPO HNG',
+    location: 'Perú', currentRole: 'Lead', currentCompany: 'GRUPO HNG', about: null,
+    latestExperience: null, latestEducation: null,
+    // entradas como las arma el modelo desde texto: alguna sin empresa clara,
+    // otra con naming alternativo (company/role/dates).
+    workHistory: [
+      { name: 'GRUPO HNG', title: 'Transformation and Culture Lead', dateRange: null },
+      { name: null, title: 'Agile Coach corporativo', dateRange: null },
+      { company: 'Hipermercados Tottus', role: 'Scrum Master', dates: '2019 - 2020' },
+    ],
+    educationHistory: [{ institution: 'UPC', degree: 'Marketing' }],
+  }
+  it('valida aunque haya entradas sin nombre o con naming alterno', () => {
+    expect(isValidLinkedInProfileExtracted(payload)).toBe(true)
+  })
+  it('sanitize descarta las sin empresa y normaliza el resto', () => {
+    const s = sanitizeLinkedInProfile(payload as unknown as LinkedInProfileExtracted)
+    // la entrada con name:null se descarta; quedan GRUPO HNG y Tottus
+    expect(s.workHistory.map((w) => w.name)).toEqual(['GRUPO HNG', 'Hipermercados Tottus'])
+    expect(s.workHistory[1].title).toBe('Scrum Master')
+    expect(s.educationHistory[0].name).toBe('UPC')
+  })
+})
