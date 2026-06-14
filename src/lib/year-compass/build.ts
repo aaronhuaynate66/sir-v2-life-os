@@ -124,8 +124,10 @@ export function buildYearCompass(goals: Goal[], now: Date): YearCompass {
   // ─── Ancla ─────────────────────────────────────────────────────────
   // 1) Explícita: objetivo activo marcado is_anchor (el más reciente si hay
   //    más de uno — no debería, setear uno desmarca el resto).
-  // 2) Fallback: objetivo activo con fecha en el año (hoy/futuro), de mayor
-  //    prioridad y fecha más lejana.
+  // 2) Fallback (auto): objetivo activo con fecha en el año (hoy/futuro), de
+  //    mayor prioridad y fecha más lejana — pero NUNCA un objetivo relacional
+  //    mientras exista un objetivo no relacional elegible (algo de mí, no de
+  //    los demás). El usuario igual puede fijar uno relacional como is_anchor.
   let anchorGoal: Goal | null =
     active
       .filter((g) => g.isAnchor)
@@ -144,7 +146,11 @@ export function buildYearCompass(goals: Goal[], now: Date): YearCompass {
       const db = parseLocalDate(b.targetDate)!.getTime()
       return db - da
     })
-    anchorGoal = candidates[0] ?? null
+    // El auto-norte debe ser "algo de mí": prioriza objetivos NO relacionales.
+    // Regla de Aaron: lo primero que ve en Mission Control es algo suyo, no de
+    // los demás. Solo cae a un relacional si no hay ningún otro candidato.
+    const selfFirst = candidates.filter((g) => g.category !== 'relational')
+    anchorGoal = selfFirst[0] ?? candidates[0] ?? null
   }
 
   let anchor: YearAnchor | null = null

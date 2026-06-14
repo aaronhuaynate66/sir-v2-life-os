@@ -348,7 +348,7 @@ export function buildMonthBriefInput(s: MonthBriefSignals): string {
     const a = s.anchor
     const when = a.daysUntil == null ? null : a.daysUntil < 0 ? `hace ${Math.abs(a.daysUntil)} días` : `en ${a.daysUntil} días`
     const bits = [a.subtitle, a.monthLabel, when].filter(Boolean).join(' · ')
-    lines.push(`Ancla del año (el norte): ${a.title}${bits ? ` (${bits})` : ''}`)
+    lines.push(`Tu norte del año: ${a.title}${bits ? ` (${bits})` : ''}`)
   }
 
   return lines.join('\n')
