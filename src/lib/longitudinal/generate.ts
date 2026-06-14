@@ -47,9 +47,11 @@ export interface GenerateResult {
 export interface GenerateOptions {
   /** Ventana en días (default 7, clamp 1-31). */
   days?: number
-  /** Si ya existe un resumen weekly con el mismo period_end, no regenerar.
+  /** Si ya existe un resumen con el mismo period_kind+period_end, no regenerar.
    *  El cron lo usa para no duplicar; el botón on-demand lo deja en false. */
   skipIfExists?: boolean
+  /** Tipo de período. 'weekly' (default) o 'monthly' (retrospectiva del mes). */
+  periodKind?: 'weekly' | 'monthly'
 }
 
 export async function generateWeeklySummaryForUser(
@@ -58,6 +60,7 @@ export async function generateWeeklySummaryForUser(
   opts: GenerateOptions = {},
 ): Promise<GenerateResult> {
   const days = Math.max(1, Math.min(31, Math.floor(opts.days ?? 7)))
+  const periodKind: 'weekly' | 'monthly' = opts.periodKind === 'monthly' ? 'monthly' : 'weekly'
 
   // Ventana [start, end] en fechas UTC date-only.
   const now = new Date()
@@ -73,7 +76,7 @@ export async function generateWeeklySummaryForUser(
       .from('longitudinal_summaries')
       .select('id')
       .eq('user_id', userId)
-      .eq('period_kind', 'weekly')
+      .eq('period_kind', periodKind)
       .eq('period_end', periodEnd)
       .limit(1)
       .maybeSingle()
@@ -230,7 +233,7 @@ export async function generateWeeklySummaryForUser(
     .from('longitudinal_summaries')
     .insert({
       user_id: userId,
-      period_kind: 'weekly',
+      period_kind: periodKind,
       period_start: periodStart,
       period_end: periodEnd,
       summary_text: text,
