@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { buildCompanyHub, type HubPerson, type HubGoal } from '@/lib/people/companyHub'
+import { CompanyStrategicRead } from '@/components/empresas/CompanyStrategicRead'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -78,6 +79,8 @@ export default async function EmpresaPage({ params }: PageProps) {
           </p>
         )}
       </header>
+
+      <CompanyStrategicRead slug={slug} />
 
       {hub.subCompanies.length > 0 && (
         <section className="space-y-3">
