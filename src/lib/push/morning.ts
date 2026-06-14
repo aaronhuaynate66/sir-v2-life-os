@@ -20,6 +20,8 @@ export interface MorningInput {
   focus?: string
   /** Una señal que merece atención hoy (texto corto). */
   topSignal?: string
+  /** Nudge de hábito (ej. racha rota que vale recuperar). Texto ya formado. */
+  habitNudge?: string
 }
 
 export interface MorningPush {
@@ -51,6 +53,12 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   if (due.length > 0 && parts.length < MAX_PARTS) {
     if (due.length === 1) parts.push(`Hoy vence: ${due[0]}`)
     else parts.push(`${due.length} tareas para hoy (${due[0]}…)`)
+  }
+
+  // 2.5 Hábito a retomar (solo cosas notables, ej. racha rota — el cron ya
+  //     filtra; a las 6am "te faltan hábitos" sería ruido obvio).
+  if (input.habitNudge && parts.length < MAX_PARTS) {
+    parts.push(input.habitNudge)
   }
 
   // 3. Foco del día.
