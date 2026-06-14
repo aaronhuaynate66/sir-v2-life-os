@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ed30c73`
+**Hash del último commit humano:** `f471ee0`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f471ee0` | aaronhuaynate66 | fix(linkedin): validador tolerante al shape de experiencia/educación (path texto) (#220) | 2026-06-14 |
 | `ed30c73` | aaronhuaynate66 | fix(linkedin): el extractor por TEXTO ya no falla el schema por campos de imagen (#219) | 2026-06-14 |
 | `29979d4` | aaronhuaynate66 | feat(intake): multi-chat (personal+corporativo) + cruce de fechas a Fechas importantes (#218) | 2026-06-14 |
 | `6a3fd11` | aaronhuaynate66 | fix(intake): no bloquear con 'Sin señales'; tolerante + diagnóstico por archivo (#217) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `60a12fa` | aaronhuaynate66 | feat(relaciones): detector read-only de posibles duplicados (#213) | 2026-06-14 |
 | `9137753` | aaronhuaynate66 | feat(captura): matcher difuso en ImportarChat (sugerencias en vivo, sin duplicados) (#212) | 2026-06-14 |
 | `b1091b6` | aaronhuaynate66 | fix(captura): consolidar import de WhatsApp en un solo panel (#211) | 2026-06-14 |
-| `b93137d` | aaronhuaynate66 | fix(captura): lucide-react 0.383 no exporta Linkedin → usar FileText en ImportarConversacion (#210) | 2026-06-14 |
 
 ---
 
