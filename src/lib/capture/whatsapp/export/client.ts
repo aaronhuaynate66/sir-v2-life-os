@@ -83,6 +83,8 @@ export async function interpretChunk(
 export interface PersistWhatsAppExportInput {
   personId: string
   data: Record<string, unknown>
+  /** Si true, el server promueve las fechas extraídas a special_dates. */
+  promoteDates?: boolean
 }
 
 /** Persiste el `data` consolidado como UNA observación whatsapp_chat. */
@@ -92,7 +94,7 @@ export async function persistWhatsAppExport(
   const res = await fetch('/api/capture/whatsapp-export', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ person_id: input.personId, data: input.data }),
+    body: JSON.stringify({ person_id: input.personId, data: input.data, promote_dates: input.promoteDates === true }),
   })
   if (!res.ok) throw await parseErrorResponse(res)
   const json = (await res.json()) as { observation: Observation }
