@@ -31,3 +31,20 @@ describe('buildMorningPush', () => {
     expect(p.body).toContain('3 tareas para hoy (T1…)')
   })
 })
+
+describe('buildMorningPush — hábito a retomar', () => {
+  it('incluye el nudge de hábito cuando viene', () => {
+    const p = buildMorningPush({ habitNudge: 'Se cortó tu racha de "Meditar". Retomala hoy.' })
+    expect(p.body).toContain('Se cortó tu racha de "Meditar"')
+  })
+  it('respeta el cap de 3 partes con hábito', () => {
+    const p = buildMorningPush({
+      birthdays: [{ name: 'A', days: 1 }],
+      dueTasks: ['T1'],
+      habitNudge: 'Racha rota X',
+      focus: 'Foco',
+    })
+    expect(p.body.split(' · ').length).toBe(3)
+    expect(p.body).not.toContain('Foco') // quedó fuera del cap (hábito entró antes)
+  })
+})

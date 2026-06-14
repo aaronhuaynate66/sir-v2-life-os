@@ -15,6 +15,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
+import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -115,7 +116,43 @@ export async function GET(req: NextRequest) {
       sigs.sort((a, b) => (rank[b.urgency] ?? 0) - (rank[a.urgency] ?? 0))
       const topSignal = sigs[0]?.content
 
-      const push = buildMorningPush({ birthdays, dueTasks, focus, topSignal })
+      // Hábito a retomar: solo si una racha se cortó (tone 'recover'); a las
+      // 6am los pendientes del día son obvios y serían ruido.
+      let habitNudgeText: string | undefined
+      try {
+        const { data: habitRows } = await admin
+          .from('habits')
+          .select('id, title')
+          .eq('user_id', uid)
+          .eq('active', true)
+          .limit(50)
+        const habitList = (habitRows ?? []) as Array<{ id: string; title: string }>
+        if (habitList.length > 0) {
+          const since = new Date(now.getTime() - 40 * 86_400_000).toISOString().slice(0, 10)
+          const { data: ckRows } = await admin
+            .from('habit_checkins')
+            .select('habit_id, date')
+            .eq('user_id', uid)
+            .gte('date', since)
+            .limit(2000)
+          const byHabit = new Map<string, string[]>()
+          for (const c of (ckRows ?? []) as Array<{ habit_id: string; date: string }>) {
+            const arr = byHabit.get(c.habit_id) ?? []
+            arr.push(c.date)
+            byHabit.set(c.habit_id, arr)
+          }
+          const nudgeHabits: NudgeHabit[] = habitList.map((h) => ({
+            title: h.title,
+            checkinDates: byHabit.get(h.id) ?? [],
+          }))
+          const n = habitNudge(nudgeHabits, now)
+          if (n && n.tone === 'recover') habitNudgeText = n.text
+        }
+      } catch {
+        /* fail-soft */
+      }
+
+      const push = buildMorningPush({ birthdays, dueTasks, focus, topSignal, habitNudge: habitNudgeText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
