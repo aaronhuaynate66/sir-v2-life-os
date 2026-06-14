@@ -280,6 +280,16 @@ function RelationshipsContent() {
             </SheetTitle>
             <SheetDescription className="sr-only">Formulario con los datos de la persona.</SheetDescription>
           </SheetHeader>
+
+          {!editingId && (
+            <div className="mb-4 rounded-md border border-border/60 bg-muted/20 p-3 text-xs text-muted-foreground leading-relaxed">
+              ¿Tenés su LinkedIn o un chat? En vez de llenar todo a mano, usá{' '}
+              <Link href="/relaciones/intake" className="text-brand-soft-foreground underline underline-offset-2">
+                Intake inteligente
+              </Link>{' '}
+              — pegás el perfil (o arrastrás el chat) y SIR lo crea con su Vida Profesional ya cargada.
+            </div>
+          )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Nombre *</label>
