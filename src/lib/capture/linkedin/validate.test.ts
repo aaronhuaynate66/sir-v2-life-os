@@ -120,3 +120,41 @@ describe('sanitizeLinkedInProfile — profileUrl (construcción/normalización)'
     expect(sanitizeLinkedInProfile(base({ profileUrl: null })).profileUrl).toBeNull()
   })
 })
+
+describe('path de TEXTO pegado (sin campos de imagen)', () => {
+  // El extractor por texto no devuelve connectionsCount/isOpenToWork/
+  // hasProfilePhoto/hasBannerImage/rawObservations/confidence. Antes el schema
+  // los exigía y rechazaba la extracción ("no cumple el schema esperado").
+  const textPayload = {
+    fullName: 'Cristina Fuentes Chacaltana',
+    headline: 'Transformation and Culture Lead en GRUPO HNG',
+    location: 'Perú',
+    currentRole: 'Transformation and Culture Lead',
+    currentCompany: 'GRUPO HNG',
+    about: 'Líder en transformación organizacional',
+    latestExperience: null,
+    latestEducation: null,
+    workHistory: [{ name: 'GRUPO HNG', title: 'Transformation and Culture Lead', dateRange: 'jun 2025 - actualidad' }],
+    educationHistory: [{ name: 'Universidad del Pacífico', title: 'Dirección Organizacional', dateRange: null }],
+  }
+
+  it('valida aunque falten los campos de imagen', () => {
+    expect(isValidLinkedInProfileExtracted(textPayload)).toBe(true)
+  })
+
+  it('sanea con defaults seguros', () => {
+    expect(isValidLinkedInProfileExtracted(textPayload)).toBe(true)
+    const s = sanitizeLinkedInProfile(textPayload as unknown as LinkedInProfileExtracted)
+    expect(s.currentCompany).toBe('GRUPO HNG')
+    expect(s.isOpenToWork).toBe(false)
+    expect(s.hasProfilePhoto).toBe(false)
+    expect(s.hasBannerImage).toBe(false)
+    expect(s.connectionsCount).toBeNull()
+    expect(s.confidence).toBe('medium')
+    expect(s.workHistory).toHaveLength(1)
+  })
+
+  it('un tipo errado en un campo de imagen sí invalida', () => {
+    expect(isValidLinkedInProfileExtracted({ ...textPayload, isOpenToWork: 'no' })).toBe(false)
+  })
+})

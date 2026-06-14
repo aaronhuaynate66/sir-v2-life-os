@@ -54,17 +54,17 @@ export function isValidLinkedInProfileExtracted(x: unknown): x is LinkedInProfil
   if (!isValidOrgRefArrayOptional(o.educationHistory)) return false
   // profileUrl: nuevo y tolerante a omisión.
   if ('profileUrl' in o && !isStringOrNull(o.profileUrl)) return false
-  if (!isNonNegIntOrNull(o.connectionsCount)) return false
-  if (typeof o.isOpenToWork !== 'boolean') return false
-  if (typeof o.hasProfilePhoto !== 'boolean') return false
-  if (typeof o.hasBannerImage !== 'boolean') return false
-  // imageLegible: tolerante — el modelo podría omitirlo. No invalida la
-  // extracción si falta; sanitize lo normaliza (omitido → true, backstop de
-  // dimensiones client-side cubre el caso página-entera).
+  // Campos PROPIOS de la captura de imagen (connectionsCount, isOpenToWork,
+  // hasProfilePhoto, hasBannerImage, rawObservations, confidence): el path de
+  // TEXTO pegado NO los provee. Toleramos su ausencia (solo invalidan si vienen
+  // con tipo errado); sanitize los normaliza con defaults seguros.
+  if ('connectionsCount' in o && !isNonNegIntOrNull(o.connectionsCount)) return false
+  if ('isOpenToWork' in o && typeof o.isOpenToWork !== 'boolean') return false
+  if ('hasProfilePhoto' in o && typeof o.hasProfilePhoto !== 'boolean') return false
+  if ('hasBannerImage' in o && typeof o.hasBannerImage !== 'boolean') return false
   if ('imageLegible' in o && typeof o.imageLegible !== 'boolean') return false
-  if (typeof o.confidence !== 'string') return false
-  if (!VALID_CONFIDENCES.has(o.confidence as Confidence)) return false
-  if (!isStringOrNull(o.rawObservations)) return false
+  if ('confidence' in o && (typeof o.confidence !== 'string' || !VALID_CONFIDENCES.has(o.confidence as Confidence))) return false
+  if ('rawObservations' in o && !isStringOrNull(o.rawObservations)) return false
 
   return true
 }
@@ -155,14 +155,13 @@ export function sanitizeLinkedInProfile(
     workHistory,
     educationHistory,
     profileUrl: normalizeLinkedinProfileUrl((rawRec.profileUrl as string | null) ?? null),
-    connectionsCount: raw.connectionsCount,
-    isOpenToWork: raw.isOpenToWork,
-    hasProfilePhoto: raw.hasProfilePhoto,
-    hasBannerImage: raw.hasBannerImage,
-    // Omitido o no-boolean → true (legible); solo un false explícito corta.
-    // El guard de dimensiones client-side respalda el caso página-entera.
-    imageLegible: raw.imageLegible === false ? false : true,
-    confidence: raw.confidence,
-    rawObservations: trimOrNull(raw.rawObservations, 240),
+    // Campos de imagen: defaults seguros cuando el path de texto los omite.
+    connectionsCount: isNonNegIntOrNull(rawRec.connectionsCount) ? (rawRec.connectionsCount as number | null) : null,
+    isOpenToWork: rawRec.isOpenToWork === true,
+    hasProfilePhoto: rawRec.hasProfilePhoto === true,
+    hasBannerImage: rawRec.hasBannerImage === true,
+    imageLegible: rawRec.imageLegible === false ? false : true,
+    confidence: VALID_CONFIDENCES.has(raw.confidence as Confidence) ? raw.confidence : 'medium',
+    rawObservations: trimOrNull((rawRec.rawObservations as string | null) ?? null, 240),
   }
 }
