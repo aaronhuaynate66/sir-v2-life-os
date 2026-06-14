@@ -27,6 +27,9 @@ const WEIGHT_BY_CATEGORY: Record<KindCategory, number> = {
   auntuncle: 1.2,
   nibling: 1.2,
   cousin: 1.15,
+  stepparent: 1.8,
+  stepchild: 1.8,
+  halfsibling: 1.5,
   friend: 1.1,
   other: 1.0,
 }
