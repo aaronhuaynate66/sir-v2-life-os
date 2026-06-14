@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b1e87f6`
+**Hash del último commit humano:** `f003722`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f003722` | aaronhuaynate66 | feat(intake): pegar texto de perfil (LinkedIn/Instagram) → crea persona con Vida Profesional (#222) | 2026-06-14 |
 | `b1e87f6` | aaronhuaynate66 | test(linkedin): actualizar aserción a la nueva tolerancia de orgRef (#221) | 2026-06-14 |
 | `f471ee0` | aaronhuaynate66 | fix(linkedin): validador tolerante al shape de experiencia/educación (path texto) (#220) | 2026-06-14 |
 | `ed30c73` | aaronhuaynate66 | fix(linkedin): el extractor por TEXTO ya no falla el schema por campos de imagen (#219) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8dfd823` | aaronhuaynate66 | feat(relaciones): intake inteligente file-first (multi-archivo → IA identifica + sugiere relación) (#215) | 2026-06-14 |
 | `a53ff63` | aaronhuaynate66 | feat(empresas): Fase B — autocompletar ficha por URL (meta) o pegando texto (IA) (#214) | 2026-06-14 |
 | `60a12fa` | aaronhuaynate66 | feat(relaciones): detector read-only de posibles duplicados (#213) | 2026-06-14 |
-| `9137753` | aaronhuaynate66 | feat(captura): matcher difuso en ImportarChat (sugerencias en vivo, sin duplicados) (#212) | 2026-06-14 |
 
 ---
 
