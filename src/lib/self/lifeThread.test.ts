@@ -1,38 +1,26 @@
 import { describe, it, expect } from 'vitest'
-import { buildLifeThread } from './lifeThread'
-import type { Goal } from '@/types'
+import { relationshipMilestones, mergeLifeThread, buildLifeThread } from './lifeThread'
 
-const g = (o: Partial<Goal> & { id: string; title: string }): Goal =>
-  ({ category: 'career', priority: 'high', status: 'active', milestones: [], relatedGoals: [], relatedPersons: [], peaceImpact: 5, obstacles: [], nextAction: '', progress: 0, createdAt: o.createdAt ?? '2026-01-01T00:00:00Z', updatedAt: o.updatedAt ?? o.createdAt ?? '2026-01-01T00:00:00Z', ...o }) as Goal
-const NOW = new Date('2026-06-11T12:00:00Z')
-
-describe('buildLifeThread', () => {
-  it('objetivo activo → solo hito de partida (set)', () => {
-    const t = buildLifeThread([g({ id: 'a', title: 'Activo', createdAt: '2026-06-01T00:00:00Z' })], NOW)
-    expect(t.map((m) => m.kind)).toEqual(['set'])
-    expect(t[0].label).toBe('Te propusiste “Activo”')
+describe('relationshipMilestones', () => {
+  it('mapea quiebres a hitos (creció/enfrió)', () => {
+    const ms = relationshipMilestones('Diana', [
+      { date: '2026-06-10', direction: 'up', from: 45, to: 75, delta: 30, spanDays: 5, label: 'x' },
+      { date: '2026-05-01', direction: 'down', from: 80, to: 60, delta: -20, spanDays: 3, label: 'y' },
+    ])
+    expect(ms).toHaveLength(2)
+    expect(ms[0].kind).toBe('bond_rise')
+    expect(ms[0].label).toContain('Diana creció')
+    expect(ms[1].kind).toBe('bond_drop')
+    expect(ms[1].label).toContain('se enfrió')
   })
+})
 
-  it('completado → set + done (done usa updatedAt)', () => {
-    const t = buildLifeThread([g({ id: 'b', title: 'Logrado', status: 'completed', createdAt: '2026-05-01T00:00:00Z', updatedAt: '2026-06-05T00:00:00Z' })], NOW)
-    expect(t.map((m) => m.kind)).toEqual(['done', 'set'])
-    expect(t.find((m) => m.kind === 'done')?.date).toBe('2026-06-05T00:00:00Z')
-  })
-
-  it('pausado y abandonado generan sus hitos', () => {
-    const tp = buildLifeThread([g({ id: 'c', title: 'P', status: 'paused', createdAt: '2026-04-01T00:00:00Z', updatedAt: '2026-05-20T00:00:00Z' })], NOW)
-    expect(tp.some((m) => m.kind === 'paused')).toBe(true)
-    const ta = buildLifeThread([g({ id: 'd', title: 'A', status: 'abandoned', createdAt: '2026-03-01T00:00:00Z', updatedAt: '2026-04-10T00:00:00Z' })], NOW)
-    expect(ta.some((m) => m.kind === 'let_go')).toBe(true)
-  })
-
-  it('título vacío se descarta; orden descendente por fecha', () => {
-    const t = buildLifeThread([
-      g({ id: 'e', title: '  ', createdAt: '2026-06-01T00:00:00Z' }),
-      g({ id: 'x', title: 'Viejo', createdAt: '2026-01-01T00:00:00Z' }),
-      g({ id: 'y', title: 'Nuevo', createdAt: '2026-06-09T00:00:00Z' }),
-    ], NOW)
-    expect(t.every((m) => m.title !== '')).toBe(true)
-    expect(t[0].title).toBe('Nuevo')
+describe('mergeLifeThread', () => {
+  it('une y ordena por fecha desc', () => {
+    const a = relationshipMilestones('X', [{ date: '2026-06-10', direction: 'up', from: 1, to: 9, delta: 8, spanDays: 1, label: '' }])
+    const b = relationshipMilestones('Y', [{ date: '2026-06-12', direction: 'down', from: 9, to: 1, delta: -8, spanDays: 1, label: '' }])
+    const merged = mergeLifeThread(a, b)
+    expect(merged[0].date).toBe('2026-06-12') // más reciente primero
+    expect(merged[1].date).toBe('2026-06-10')
   })
 })

@@ -7,13 +7,16 @@
 // Determinístico, calmo, honesto — no inventa. (Capa 2, futura: una pasada de
 // IA que reformule este hilo en una reflexión, sin inventar.)
 
-import { useCallback, useMemo, useState } from 'react'
-import { Compass, Flag, Check, Pause, X, Sparkles, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Compass, Flag, Check, Pause, X, Sparkles, Loader2, TrendingUp, TrendingDown } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { useGoalStore } from '@/stores/useGoalStore'
+import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
-import { buildLifeThread, type LifeMilestoneKind } from '@/lib/self/lifeThread'
+import { buildLifeThread, relationshipMilestones, mergeLifeThread, type LifeMilestoneKind, type LifeMilestone } from '@/lib/self/lifeThread'
+import { buildBondEvolution } from '@/lib/people/bondEvolution'
+import type { ScoreSnapshot } from '@/lib/people/scoreTrend'
 
 const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 function fmtDate(iso: string): string {
@@ -22,17 +25,56 @@ function fmtDate(iso: string): string {
   return `${d.getDate()} ${MES[d.getMonth()]} ${d.getFullYear()}`
 }
 
-const ICON: Record<LifeMilestoneKind, typeof Flag> = { set: Flag, done: Check, paused: Pause, let_go: X }
+const ICON: Record<LifeMilestoneKind, typeof Flag> = { set: Flag, done: Check, paused: Pause, let_go: X, bond_rise: TrendingUp, bond_drop: TrendingDown }
 function dotColor(kind: LifeMilestoneKind): string {
-  if (kind === 'done') return 'hsl(var(--success))'
-  if (kind === 'let_go' || kind === 'paused') return 'hsl(var(--text-tertiary))'
+  if (kind === 'done' || kind === 'bond_rise') return 'hsl(var(--success))'
+  if (kind === 'let_go' || kind === 'paused' || kind === 'bond_drop') return 'hsl(var(--text-tertiary))'
   return 'hsl(var(--brand))'
 }
 
 export function LifeThreadPanel() {
   const hydrated = useHasHydrated()
   const goals = useGoalStore((s) => s.goals)
-  const thread = useMemo(() => buildLifeThread(goals), [goals])
+  const people = useRelationshipStore((s) => s.people)
+  const [relMilestones, setRelMilestones] = useState<LifeMilestone[]>([])
+
+  // Hitos relacionales (E5): quiebres del vínculo desde los snapshots de score.
+  // Fetch best-effort; si falla o no hay, el hilo queda solo con objetivos.
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/person-score/snapshot')
+        if (!res.ok) return
+        const data = (await res.json()) as { snapshots?: { personId: string; dateBucket: string; global: number }[] }
+        const rows = data.snapshots ?? []
+        if (rows.length === 0) return
+        const nameById = new Map(people.map((p) => [p.id, p.name]))
+        const byPerson = new Map<string, ScoreSnapshot[]>()
+        for (const r of rows) {
+          const arr = byPerson.get(r.personId) ?? []
+          arr.push({ dateBucket: r.dateBucket, global: r.global })
+          byPerson.set(r.personId, arr)
+        }
+        const now = new Date()
+        const out: LifeMilestone[] = []
+        for (const [pid, snaps] of byPerson) {
+          const name = nameById.get(pid)
+          if (!name) continue
+          const evo = buildBondEvolution(snaps, now)
+          out.push(...relationshipMilestones(name, evo.shifts))
+        }
+        if (!cancelled) setRelMilestones(out)
+      } catch {
+        /* fail-soft */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [people])
+
+  const thread = useMemo(() => mergeLifeThread(buildLifeThread(goals), relMilestones), [goals, relMilestones])
   const shown = thread.slice(0, 10)
   const [refl, setRefl] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; text?: string }>({ status: 'idle' })
   const generar = useCallback(async () => {
