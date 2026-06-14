@@ -9,6 +9,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { buildCompanyHub, type HubPerson, type HubGoal } from '@/lib/people/companyHub'
 import { CompanyStrategicRead } from '@/components/empresas/CompanyStrategicRead'
+import { EditOrgProfile } from '@/components/empresas/EditOrgProfile'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -56,6 +57,14 @@ export default async function EmpresaPage({ params }: PageProps) {
     }
   })
 
+  const { data: profileRow } = await supabase
+    .from('org_profiles')
+    .select('website, description, notes')
+    .eq('user_id', userId)
+    .eq('org_slug', slug)
+    .maybeSingle()
+  const profile = (profileRow as { website: string | null; description: string | null; notes: string | null } | null) ?? null
+
   const hub = buildCompanyHub(slug, people, goals)
   if (!hub.found) notFound()
 
@@ -79,6 +88,29 @@ export default async function EmpresaPage({ params }: PageProps) {
           </p>
         )}
       </header>
+
+      <section className="space-y-3">
+        <h2 className="text-sm uppercase tracking-wide text-muted-foreground">Sobre la empresa</h2>
+        {profile?.description && (
+          <p className="text-[14px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{profile.description}</p>
+        )}
+        {profile?.website && (
+          <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-[#14b8a6] hover:underline">
+            {profile.website}
+          </a>
+        )}
+        {profile?.notes && (
+          <p className="text-[13px] leading-relaxed text-muted-foreground whitespace-pre-wrap">{profile.notes}</p>
+        )}
+        {!profile?.description && !profile?.website && !profile?.notes && (
+          <p className="text-sm text-muted-foreground">Sin info cargada todavía.</p>
+        )}
+        <EditOrgProfile
+          slug={slug}
+          label={hub.label}
+          initial={{ website: profile?.website ?? null, description: profile?.description ?? null, notes: profile?.notes ?? null }}
+        />
+      </section>
 
       <CompanyStrategicRead slug={slug} />
 
