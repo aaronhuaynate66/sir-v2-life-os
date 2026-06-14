@@ -39,7 +39,6 @@ import {
 import type { CaptureType, Observation } from '@/lib/capture/observations/types'
 import { BatchCapturePanel } from '@/components/capture/BatchCapturePanel'
 import { ImportarChat } from '@/components/captura/ImportarChat'
-import { ImportarConversacion } from '@/components/captura/ImportarConversacion'
 
 const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
   'whatsapp_chat',
@@ -328,8 +327,6 @@ function CapturaIndexContent() {
 
       {/* TUS PROPIOS DATOS (salud, tu perfil, Apple Health) — caja multi-archivo.
           Vive acá para que /captura sea la ÚNICA puerta de captura. */}
-      <ImportarConversacion />
-
       <ImportarChat />
 
       <Card className="shadow-none mb-6">

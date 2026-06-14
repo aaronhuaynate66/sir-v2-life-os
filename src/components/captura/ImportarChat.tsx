@@ -65,6 +65,11 @@ export function ImportarChat() {
             cambiar
           </Button>
         </div>
+        <p className="text-[11px] text-muted-foreground mb-2 leading-relaxed">
+          Tip: este mismo panel también suma su perfil — tras importar el chat, tocá la pestaña{' '}
+          <span className="text-foreground font-medium">Imagen</span> y subí su captura de
+          LinkedIn/Instagram para enriquecer a <span className="text-foreground">{resolved.name}</span>.
+        </p>
         <AgregarCapturaPanel personId={resolved.id} personName={resolved.name} defaultMode="whatsapp" />
       </div>
     )
