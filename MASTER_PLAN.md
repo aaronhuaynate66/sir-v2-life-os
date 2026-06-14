@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `6b647d2`
+**Hash del último commit humano:** `b93137d`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b93137d` | aaronhuaynate66 | fix(captura): lucide-react 0.383 no exporta Linkedin → usar FileText en ImportarConversacion (#210) | 2026-06-14 |
 | `6b647d2` | aaronhuaynate66 | feat(captura): importar conversación WhatsApp → crear/adjuntar persona (+ LinkedIn opcional) (#209) | 2026-06-14 |
 | `c16d6ca` | aaronhuaynate66 | feat(empresa): entidad guardable + carga manual de info en la ficha (escalón 3) (#208) | 2026-06-14 |
 | `f17a38e` | aaronhuaynate66 | feat(e5): memorias clave como hitos del rumbo (#207) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d95765c` | aaronhuaynate66 | feat(e5): el norte del año en 'Tu rumbo' (hacia dónde vas) (#203) | 2026-06-14 |
 | `a5a1c17` | aaronhuaynate66 | fix(e5): acotar el tipo de VERB a los kinds de objetivo (#202) | 2026-06-14 |
 | `17a104b` | aaronhuaynate66 | feat(e5): 'Tu rumbo' teje hitos relacionales, no solo objetivos (#201) | 2026-06-14 |
-| `39914b1` | aaronhuaynate66 | feat(e3): retrospectiva mensual (E3-5) (#200) | 2026-06-14 |
 
 ---
 
