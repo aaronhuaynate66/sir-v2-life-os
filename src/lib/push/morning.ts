@@ -22,6 +22,8 @@ export interface MorningInput {
   topSignal?: string
   /** Nudge de hábito (ej. racha rota que vale recuperar). Texto ya formado. */
   habitNudge?: string
+  /** Señal del cuerpo (ej. deuda de sueño). Texto ya formado. */
+  bodySignal?: string
 }
 
 export interface MorningPush {
@@ -59,6 +61,11 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //     filtra; a las 6am "te faltan hábitos" sería ruido obvio).
   if (input.habitNudge && parts.length < MAX_PARTS) {
     parts.push(input.habitNudge)
+  }
+
+  // 2.6 Señal del cuerpo (deuda de sueño) — cuidado, no reproche.
+  if (input.bodySignal && parts.length < MAX_PARTS) {
+    parts.push(input.bodySignal)
   }
 
   // 3. Foco del día.

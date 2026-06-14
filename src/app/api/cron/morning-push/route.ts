@@ -16,6 +16,7 @@ import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
+import { bodySignal } from '@/lib/health/bodySignal'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -152,7 +153,26 @@ export async function GET(req: NextRequest) {
         /* fail-soft */
       }
 
-      const push = buildMorningPush({ birthdays, dueTasks, focus, topSignal, habitNudge: habitNudgeText })
+      // Señal del cuerpo: deuda de sueño desde sleep_records (Apple Health).
+      let bodySignalText: string | undefined
+      try {
+        const since = new Date(now.getTime() - 7 * 86_400_000).toISOString().slice(0, 10)
+        const { data: sleepRows } = await admin
+          .from('sleep_records')
+          .select('duration, date')
+          .eq('user_id', uid)
+          .gte('date', since)
+          .limit(30)
+        const hrs = (sleepRows ?? [])
+          .map((r) => Number((r as { duration: unknown }).duration))
+          .filter((n) => Number.isFinite(n))
+        const sig = bodySignal({ recentSleepHours: hrs })
+        if (sig) bodySignalText = sig
+      } catch {
+        /* fail-soft */
+      }
+
+      const push = buildMorningPush({ birthdays, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
