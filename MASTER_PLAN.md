@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `46b4a98`
+**Hash del último commit humano:** `1ece920`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `1ece920` | aaronhuaynate66 | fix(kinship): WEIGHT_BY_CATEGORY exhaustivo con stepparent/stepchild/halfsibling (#226) | 2026-06-14 |
 | `46b4a98` | aaronhuaynate66 | fix(intake): import resiliente (reintento por bloque, tolera bloque caído, error legible) (#225) | 2026-06-14 |
 | `a09f164` | aaronhuaynate66 | feat(familia): vínculos de familia política (padrastro/madrastra/hijastro/a/medio hermano/a) (#224) | 2026-06-14 |
 | `ebf57f3` | aaronhuaynate66 | fix(linkedin): validador a prueba de balas para pegar-texto (no rechazar por campos de captura) (#223) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ed30c73` | aaronhuaynate66 | fix(linkedin): el extractor por TEXTO ya no falla el schema por campos de imagen (#219) | 2026-06-14 |
 | `29979d4` | aaronhuaynate66 | feat(intake): multi-chat (personal+corporativo) + cruce de fechas a Fechas importantes (#218) | 2026-06-14 |
 | `6a3fd11` | aaronhuaynate66 | fix(intake): no bloquear con 'Sin señales'; tolerante + diagnóstico por archivo (#217) | 2026-06-14 |
-| `94dd187` | aaronhuaynate66 | feat(relaciones): la tarjeta Cumpleaños usa el cumple detectado del chat (#216) | 2026-06-14 |
 
 ---
 
