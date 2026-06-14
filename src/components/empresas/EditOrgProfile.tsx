@@ -1,6 +1,8 @@
 'use client'
-// SIR V2 — Editar la info de una empresa/holding (escalón 3, carga manual).
+// SIR V2 — Editar la info de una empresa/holding (escalón 3 + Fase B).
 // Form colapsable prefijado → POST /api/empresas/profile → refresh.
+// Fase B: autocompletar desde URL (meta best-effort) o pegando texto (IA
+// estructura) → prefila los campos para REVISIÓN antes de guardar.
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -19,6 +21,48 @@ export function EditOrgProfile({ slug, label, initial }: Props) {
   const [website, setWebsite] = useState(initial.website ?? '')
   const [description, setDescription] = useState(initial.description ?? '')
   const [notes, setNotes] = useState(initial.notes ?? '')
+
+  // Fase B — autocompletar.
+  const [autoUrl, setAutoUrl] = useState(initial.website ?? '')
+  const [autoText, setAutoText] = useState('')
+  const [extracting, setExtracting] = useState<'url' | 'text' | null>(null)
+  const [autoMsg, setAutoMsg] = useState<string | null>(null)
+
+  async function extract(mode: 'url' | 'text') {
+    if (extracting) return
+    const payload =
+      mode === 'url' ? { url: autoUrl.trim(), label } : { text: autoText.trim(), label }
+    if (mode === 'url' && !payload.url) return
+    if (mode === 'text' && !payload.text) return
+    setExtracting(mode)
+    setAutoMsg(null)
+    try {
+      const res = await fetch('/api/empresas/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        website?: string
+        description?: string
+        notes?: string
+        error?: string
+        detail?: string
+      }
+      if (!res.ok) {
+        setAutoMsg(data.error ?? 'No se pudo autocompletar')
+        return
+      }
+      if (data.website) setWebsite((w) => w || data.website!)
+      if (data.description) setDescription(data.description)
+      if (data.notes) setNotes((n) => (n ? `${n}\n${data.notes}` : data.notes!))
+      setAutoMsg('Listo — revisá los campos abajo y guardá.')
+    } catch {
+      setAutoMsg('No se pudo autocompletar')
+    } finally {
+      setExtracting(null)
+    }
+  }
 
   async function save() {
     if (saving) return
@@ -52,6 +96,47 @@ export function EditOrgProfile({ slug, label, initial }: Props) {
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+      {/* Fase B — autocompletar */}
+      <div className="space-y-2 rounded-md border border-border/60 bg-muted/20 p-3">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+          Autocompletar
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={autoUrl}
+            onChange={(e) => setAutoUrl(e.target.value)}
+            placeholder="https://… (trae lo público de la web)"
+            className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+          />
+          <button
+            type="button"
+            onClick={() => void extract('url')}
+            disabled={extracting !== null || !autoUrl.trim()}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
+            {extracting === 'url' ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Traer de la URL
+          </button>
+        </div>
+        <textarea
+          value={autoText}
+          onChange={(e) => setAutoText(e.target.value)}
+          rows={3}
+          placeholder="…o pegá acá el texto de la web/LinkedIn (Quiénes somos, portafolio) y la IA lo estructura. Más confiable que la URL en sitios modernos."
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+        />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void extract('text')}
+            disabled={extracting !== null || !autoText.trim()}
+            className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-sm text-brand-foreground disabled:opacity-50"
+          >
+            {extracting === 'text' ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Extraer del texto
+          </button>
+          {autoMsg && <span className="text-xs text-muted-foreground">{autoMsg}</span>}
+        </div>
+      </div>
+
       <div>
         <label className="text-xs text-muted-foreground">Sitio web</label>
         <input
