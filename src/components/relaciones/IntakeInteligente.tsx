@@ -71,6 +71,8 @@ const CAT_OPTS: { v: PersonCategory; l: string }[] = [
   { v: 'peripheral', l: 'Periférico' },
 ]
 
+const LINKABLE_TYPES = ['linkedin', 'instagram', 'whatsapp_chat', 'whatsapp_web', 'whatsapp_info']
+
 async function runPool<T>(items: T[], limit: number, worker: (item: T, i: number) => Promise<void>): Promise<void> {
   let next = 0
   const lanes = Array.from({ length: Math.min(limit, items.length) }, async () => {
@@ -106,6 +108,7 @@ export function IntakeInteligente() {
   const [parsedWa, setParsedWa] = useState<ParsedExport | null>(null)
   const [waName, setWaName] = useState('')
   const [imgs, setImgs] = useState<ImgItem[]>([])
+  const [imgDiag, setImgDiag] = useState<{ name: string; type: string; detail: string }[]>([])
 
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [name, setName] = useState('')
@@ -119,30 +122,41 @@ export function IntakeInteligente() {
   const [result, setResult] = useState<{ name: string; slug: string | null; messages: number; imgs: number } | null>(null)
 
   function reset() {
-    setPhase('idle'); setError(null); setFiles([]); setParsedWa(null); setWaName(''); setImgs([])
+    setPhase('idle'); setError(null); setFiles([]); setParsedWa(null); setWaName(''); setImgs([]); setImgDiag([])
     setSuggestion(null); setName(''); setRelationship('professional'); setCategory('network')
     setCandidates([]); setSelected(null); setProgress(null); setResult(null)
   }
 
   async function analyze() {
     if (files.length === 0 || phase === 'analyzing') return
-    setPhase('analyzing'); setError(null)
+    setPhase('analyzing'); setError(null); setImgDiag([])
     try {
       const exportFiles = files.filter((f) => isExportName(f.name))
       const imageFiles = files.filter((f) => f.type.startsWith('image/'))
 
-      // 1) Imágenes → detectar + preview (sin persistir).
+      // 1) Imágenes → detectar + preview (best-effort, no bloquea).
       const imgItems: ImgItem[] = []
+      const diag: { name: string; type: string; detail: string }[] = []
       for (const f of imageFiles) {
         try {
           const det = await detectCaptureType(f)
-          const pv = await previewCapture({ file: f, captureType: det.detected.type, detectorData: det.detected })
-          imgItems.push({ file: f, captureType: det.detected.type, detectorData: det.detected, extracted: pv.extracted })
+          let extracted: Record<string, unknown> = {}
+          try {
+            const pv = await previewCapture({ file: f, captureType: det.detected.type, detectorData: det.detected })
+            extracted = pv.extracted
+          } catch {
+            /* el extractor no pudo leerla (ej. captura de página completa); guardamos igual el detect */
+          }
+          const nm =
+            read(extracted, 'fullName') || read(extracted, 'displayName') || read(extracted, 'handle') ||
+            (det.detected.suggestedPersonName ?? '')
+          imgItems.push({ file: f, captureType: det.detected.type, detectorData: det.detected, extracted })
+          diag.push({ name: f.name, type: det.detected.type, detail: nm ? `→ ${nm}` : 'sin nombre legible' })
         } catch {
-          /* imagen ilegible/no soportada: se omite del análisis */
+          diag.push({ name: f.name, type: 'no detectada', detail: 'no se pudo leer la imagen' })
         }
       }
-      setImgs(imgItems)
+      setImgs(imgItems); setImgDiag(diag)
 
       // 2) WhatsApp → parse.
       let parsed: ParsedExport | null = null
@@ -157,48 +171,60 @@ export function IntakeInteligente() {
       setParsedWa(parsed)
       setWaName(waFileName)
 
-      // 3) Señales → IA.
-      const li = imgItems.find((it) => it.captureType === 'linkedin')
+      // 3) Señales → IA (lenientes: usamos el nombre de cualquier imagen aunque
+      //    el detector la haya clasificado distinto).
+      const li = imgItems.find((it) => it.captureType === 'linkedin') ?? imgItems.find((it) => !!read(it.extracted, 'fullName'))
       const ig = imgItems.find((it) => it.captureType === 'instagram')
+      const anyName =
+        imgItems
+          .map((it) => read(it.extracted, 'fullName') || read(it.extracted, 'displayName') || read(it.extracted, 'handle') || (it.detectorData.suggestedPersonName ?? ''))
+          .find((x) => !!x) || ''
       const excerpt = parsed
         ? parsed.messages.slice(-25).map((m) => `${m.author}: ${m.content}`).join('\n').slice(0, 800)
         : undefined
       const signals = {
         linkedin: li
-          ? { fullName: read(li.extracted, 'fullName'), headline: read(li.extracted, 'headline'), company: read(li.extracted, 'currentCompany') ?? read(li.extracted, 'company') }
+          ? { fullName: read(li.extracted, 'fullName') || anyName || undefined, headline: read(li.extracted, 'headline'), company: read(li.extracted, 'currentCompany') ?? read(li.extracted, 'company') }
           : undefined,
         instagram: ig ? { displayName: read(ig.extracted, 'displayName'), handle: read(ig.extracted, 'handle') } : undefined,
         whatsapp: parsed ? { name: waFileName, participants: parsed.participants, excerpt } : undefined,
       }
+      const hasSignal = !!(signals.linkedin || signals.instagram || signals.whatsapp)
 
-      const res = await fetch('/api/relaciones/intake-suggest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signals }),
-      })
-      const data = (await res.json().catch(() => ({}))) as { suggestion?: Suggestion; error?: string; detail?: string }
-      if (!res.ok || !data.suggestion) {
-        // Fallback sin IA: nombre del LinkedIn o del archivo.
-        const fallbackName = (li && read(li.extracted, 'fullName')) || waFileName || ''
-        if (!fallbackName) {
-          setError({ status: res.status, message: data.error ?? 'No se pudo identificar', detail: data.detail })
-          setPhase('idle')
-          return
+      // 4) IA (si hay alguna señal). Nunca bloquea: si falla, caemos a manual.
+      let sug: Suggestion | null = null
+      if (hasSignal) {
+        try {
+          const res = await fetch('/api/relaciones/intake-suggest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ signals }),
+          })
+          const data = (await res.json().catch(() => ({}))) as { suggestion?: Suggestion }
+          if (res.ok && data.suggestion) sug = data.suggestion
+        } catch {
+          /* sin IA: seguimos con lo que tengamos */
         }
-        setSuggestion({ name: fallbackName, organization: '', relationship: li ? 'professional' : 'friend', category: 'network', reason: 'Sin IA: inferido del archivo.' })
-        setName(fallbackName); setRelationship(li ? 'professional' : 'friend'); setCategory('network')
-      } else {
-        setSuggestion(data.suggestion)
-        setName(data.suggestion.name)
-        setRelationship(data.suggestion.relationship)
-        setCategory(data.suggestion.category)
       }
 
-      // 4) Matcher sobre el nombre propuesto.
-      const propName = (data.suggestion?.name) || (li && read(li.extracted, 'fullName')) || waFileName
-      if (propName) {
+      const bestName = sug?.name || anyName || waFileName || ''
+      if (sug) {
+        setSuggestion(sug); setName(sug.name); setRelationship(sug.relationship); setCategory(sug.category)
+      } else {
+        setSuggestion({
+          name: bestName,
+          organization: '',
+          relationship: li ? 'professional' : 'friend',
+          category: 'network',
+          reason: bestName ? 'Inferido del archivo (sin IA).' : 'No pude leer la imagen — escribí el nombre abajo y seguí.',
+        })
+        setName(bestName); setRelationship(li ? 'professional' : 'friend'); setCategory('network')
+      }
+
+      // 5) Matcher (si hay nombre).
+      if (bestName) {
         try {
-          const sr = await searchPeople(propName, { captureType: 'whatsapp_chat' })
+          const sr = await searchPeople(bestName, { captureType: 'whatsapp_chat' })
           setCandidates(sr.candidates)
         } catch {
           setCandidates([])
@@ -250,6 +276,7 @@ export function IntakeInteligente() {
       // Imágenes → adjuntar.
       let imgOk = 0
       for (const it of imgs) {
+        if (!LINKABLE_TYPES.includes(it.captureType)) continue
         try {
           await processCapture({ file: it.file, captureType: it.captureType, detectorData: it.detectorData, personId })
           imgOk += 1
@@ -346,6 +373,15 @@ export function IntakeInteligente() {
               <h3 className="text-sm font-semibold tracking-tight">Propuesta de SIR</h3>
             </div>
             {suggestion.reason && <p className="text-[11px] text-muted-foreground italic">{suggestion.reason}</p>}
+            {imgDiag.length > 0 && (
+              <ul className="text-[11px] text-muted-foreground space-y-0.5">
+                {imgDiag.map((d, i) => (
+                  <li key={i} className="font-mono">
+                    <span className="text-foreground/80">{d.type}</span> · {d.detail}
+                  </li>
+                ))}
+              </ul>
+            )}
 
             <div className="space-y-2">
               <div>
