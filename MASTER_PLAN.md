@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `60a12fa`
+**Hash del último commit humano:** `a53ff63`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `a53ff63` | aaronhuaynate66 | feat(empresas): Fase B — autocompletar ficha por URL (meta) o pegando texto (IA) (#214) | 2026-06-14 |
 | `60a12fa` | aaronhuaynate66 | feat(relaciones): detector read-only de posibles duplicados (#213) | 2026-06-14 |
 | `9137753` | aaronhuaynate66 | feat(captura): matcher difuso en ImportarChat (sugerencias en vivo, sin duplicados) (#212) | 2026-06-14 |
 | `b1091b6` | aaronhuaynate66 | fix(captura): consolidar import de WhatsApp en un solo panel (#211) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `f17a38e` | aaronhuaynate66 | feat(e5): memorias clave como hitos del rumbo (#207) | 2026-06-14 |
 | `8f8a84d` | aaronhuaynate66 | docs(roadmap): estado al día — E3 4/5, E5 en marcha, red profesional completa (3b) (#206) | 2026-06-14 |
 | `d9547a7` | aaronhuaynate66 | feat(3b): lectura estratégica IA en la ficha de empresa (#205) | 2026-06-14 |
-| `516c8a7` | aaronhuaynate66 | feat(e5): 'Tu rumbo' enmarcado por tu identidad (quién sos) (#204) | 2026-06-14 |
 
 ---
 
