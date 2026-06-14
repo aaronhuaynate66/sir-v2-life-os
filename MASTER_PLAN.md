@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `39914b1`
+**Hash del último commit humano:** `17a104b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `17a104b` | aaronhuaynate66 | feat(e5): 'Tu rumbo' teje hitos relacionales, no solo objetivos (#201) | 2026-06-14 |
 | `39914b1` | aaronhuaynate66 | feat(e3): retrospectiva mensual (E3-5) (#200) | 2026-06-14 |
 | `45d2d13` | aaronhuaynate66 | feat(e3): quick-log de estado (ánimo/energía) de un tap en el panel (#199) | 2026-06-14 |
 | `bf87d40` | aaronhuaynate66 | docs(roadmap): bloque de estado real 2026-06-13 (single source of truth) (#198) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `12250a3` | aaronhuaynate66 | feat(grafo): nodo-empresa como hub (escalón 2) — reemplaza aristas N² (#194) | 2026-06-13 |
 | `1a46503` | aaronhuaynate66 | feat(briefing): memoria de ventana reciente desde el export de WhatsApp (#193) | 2026-06-13 |
 | `271d287` | aaronhuaynate66 | fix(briefing): anclar la recencia en 'Último contacto registrado', no en la memoria más nueva (#192) | 2026-06-13 |
-| `c5f7d87` | aaronhuaynate66 | fix(whatsapp-import): sincronizar last_contact + excluir meta-notas del briefing (#191) | 2026-06-13 |
 
 ---
 
