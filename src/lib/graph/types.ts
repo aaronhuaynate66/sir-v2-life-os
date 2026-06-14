@@ -64,6 +64,10 @@ export interface GraphFilters {
   /** true = "solo vínculos directos": oculta los nodos de 2º grado (familiares
    *  de contactos sin interacción directa registrada con self). */
   onlyDirect: boolean
+  /** true = muestra los nodos de organización (hubs de empresa/grupo). Por
+   *  defecto FALSE: el grafo es de PERSONAS; las orgs aparecen solo si se marcan
+   *  (no deben estar encima de todo). Las orgs son category 'organizacion'. */
+  showOrgs: boolean
 }
 
 export const DEFAULT_FILTERS: GraphFilters = {
@@ -71,4 +75,7 @@ export const DEFAULT_FILTERS: GraphFilters = {
   minHealth: 0,
   // Arranca activado: Aaron prefiere ver solo su red directa por defecto.
   onlyDirect: true,
+  // Arranca DESACTIVADO: las organizaciones (HNG, etc.) no van encima de todo;
+  // se muestran solo al marcar el toggle.
+  showOrgs: false,
 }

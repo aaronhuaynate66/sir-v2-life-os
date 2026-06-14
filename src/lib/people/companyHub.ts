@@ -131,3 +131,29 @@ function goalsFor(people: HubPerson[], goals: HubGoal[]): Array<{ title: string 
     .filter((g) => (g.personIds ?? []).some((pid) => ids.has(pid)))
     .map((g) => ({ title: g.title }))
 }
+
+export interface OrgListItem {
+  label: string
+  slug: string
+  /** Cantidad de personas conocidas en esa organización/grupo. */
+  count: number
+}
+
+/** Lista las organizaciones de la red (1 por orgJoinKey, igual criterio que los
+ *  nodos `org:<key>` del grafo). Para el índice /empresas. Orden: más gente
+ *  primero, luego alfabético. Pura. */
+export function listOrganizations(people: HubPerson[]): OrgListItem[] {
+  const byKey = new Map<string, { label: string; ids: Set<string> }>()
+  for (const p of people) {
+    const key = orgJoinKey(p)
+    if (!key) continue
+    const label = orgGroupLabel(p)
+    if (!label) continue
+    const entry = byKey.get(key) ?? { label, ids: new Set<string>() }
+    entry.ids.add(p.id)
+    byKey.set(key, entry)
+  }
+  return [...byKey.values()]
+    .map((e) => ({ label: e.label, slug: orgSlug(e.label), count: e.ids.size }))
+    .sort((a, b) => (b.count - a.count) || a.label.localeCompare(b.label))
+}
