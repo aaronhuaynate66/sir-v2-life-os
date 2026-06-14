@@ -29,9 +29,8 @@ function isValidOrgRefOrNull(v: unknown): v is LinkedInOrgRef | null {
 /** Array de orgRefs tolerante: acepta ausente/no-array (rows viejos, modelo
  *  que omitió el campo) o un array donde cada item valida como orgRef. */
 function isValidOrgRefArrayOptional(v: unknown): boolean {
-  if (v === undefined || v === null) return true
-  if (!Array.isArray(v)) return false
-  // Cada item debe ser un objeto (shape tolerante); sanitize normaliza/descarta.
+  // Tolerante total: ausente/null/no-array → ok (sanitize normaliza a []).
+  if (!Array.isArray(v)) return true
   return v.every((item) => !!item && typeof item === 'object' && !Array.isArray(item))
 }
 
@@ -51,25 +50,16 @@ export function isValidLinkedInProfileExtracted(x: unknown): x is LinkedInProfil
   // tienen; el modelo puede omitirlos). sanitize los normaliza a []/derivados.
   if (!isValidOrgRefArrayOptional(o.workHistory)) return false
   if (!isValidOrgRefArrayOptional(o.educationHistory)) return false
-  // profileUrl: nuevo y tolerante a omisión.
-  if ('profileUrl' in o && !isStringOrNull(o.profileUrl)) return false
-  // Campos PROPIOS de la captura de imagen (connectionsCount, isOpenToWork,
-  // hasProfilePhoto, hasBannerImage, rawObservations, confidence): el path de
-  // TEXTO pegado NO los provee. Toleramos su ausencia (solo invalidan si vienen
-  // con tipo errado); sanitize los normaliza con defaults seguros.
-  if ('connectionsCount' in o && !isNonNegIntOrNull(o.connectionsCount)) return false
-  if ('isOpenToWork' in o && typeof o.isOpenToWork !== 'boolean') return false
-  if ('hasProfilePhoto' in o && typeof o.hasProfilePhoto !== 'boolean') return false
-  if ('hasBannerImage' in o && typeof o.hasBannerImage !== 'boolean') return false
-  if ('imageLegible' in o && typeof o.imageLegible !== 'boolean') return false
-  if ('confidence' in o && (typeof o.confidence !== 'string' || !VALID_CONFIDENCES.has(o.confidence as Confidence))) return false
-  if ('rawObservations' in o && !isStringOrNull(o.rawObservations)) return false
-
+  // profileUrl + campos PROPIOS de la captura de imagen (connectionsCount,
+  // isOpenToWork, hasProfilePhoto, hasBannerImage, imageLegible, confidence,
+  // rawObservations): el path de TEXTO no los provee o el modelo los devuelve
+  // con tipo flojo. NO invalidan la extracción — sanitize los coacciona con
+  // defaults seguros. Así el pegar-texto nunca falla el schema por estos.
   return true
 }
 
-function trimOrNull(v: string | null, maxLen: number): string | null {
-  if (v === null) return null
+function trimOrNull(v: unknown, maxLen: number): string | null {
+  if (typeof v !== 'string') return null
   const t = v.trim()
   return t.length === 0 ? null : t.slice(0, maxLen)
 }
