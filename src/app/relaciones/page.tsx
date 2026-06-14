@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight } from 'lucide-react'
+import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight, Upload } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -223,10 +223,18 @@ function RelationshipsContent() {
           </div>
           <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">{people.length} personas &middot; {alerts.length} alertas</p>
         </div>
-        <Button variant="outline" size="sm" onClick={openAdd} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
-          <UserPlus size={14} strokeWidth={1.75} />
-          Agregar persona
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/relaciones/intake">
+              <Upload size={14} strokeWidth={1.75} />
+              Intake inteligente
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" onClick={openAdd} className="border-ok/30 bg-ok-soft text-ok hover:bg-ok/20 hover:text-ok">
+            <UserPlus size={14} strokeWidth={1.75} />
+            Agregar persona
+          </Button>
+        </div>
       </div>
 
       {alerts.length > 0 && (
