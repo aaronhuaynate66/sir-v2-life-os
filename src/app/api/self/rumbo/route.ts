@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
 
   const milestones = sanitizeMilestones(body.milestones)
   const anchor = typeof body.anchor === 'string' ? body.anchor.trim().slice(0, 200) : null
+  const identity = typeof body.identity === 'string' ? body.identity.trim().slice(0, 300) : null
   if (milestones.length < 2) {
     return errorJson(
       422,
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
       model: MODEL_ID,
       max_tokens: 400,
       system: RUMBO_NARRATIVE_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildRumboInput(milestones, anchor) }],
+      messages: [{ role: 'user', content: buildRumboInput(milestones, anchor, identity) }],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
     const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''

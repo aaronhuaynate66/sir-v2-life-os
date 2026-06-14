@@ -23,7 +23,8 @@ INVARIANTES ESTRICTOS (no negociables):
 - PROHIBIDO diagnóstico, etiquetas, predicción del futuro o causa-efecto inventada.
 - Pausar o dejar ir un objetivo NO es un fracaso: enmarcá los cambios de rumbo como elecciones válidas, no como abandono.
 - Breve (máx 4 oraciones). Cálido pero sobrio, sin dramatizar ni inflar.
-- Si se incluye un "norte declarado" (el ancla del año), podés relacionar el hilo con él —¿lo que viene haciendo acompaña ese norte?— como observación abierta, sin juzgar y sin inventar nada que no esté en los hitos.`
+- Si se incluye un "norte declarado" (el ancla del año), podés relacionar el hilo con él —¿lo que viene haciendo acompaña ese norte?— como observación abierta, sin juzgar y sin inventar nada que no esté en los hitos.
+- Si se incluye "quién es" (roles/bio del usuario), podés enmarcar el rumbo a la luz de su identidad, sin inventar rasgos ni atribuirle motivaciones que no estén.`
 
 export interface RumboMilestoneInput {
   label: string
@@ -32,8 +33,14 @@ export interface RumboMilestoneInput {
 }
 
 /** Arma el mensaje de usuario desde los hitos ya computados (Capa 1). */
-export function buildRumboInput(milestones: RumboMilestoneInput[], anchor?: string | null): string {
+export function buildRumboInput(
+  milestones: RumboMilestoneInput[],
+  anchor?: string | null,
+  identity?: string | null,
+): string {
   const lines: string[] = []
+  const who = (identity ?? '').trim()
+  if (who) lines.push(`Quién es (según su perfil): ${who}`, '')
   const north = (anchor ?? '').trim()
   if (north) lines.push(`Tu norte declarado para el año: ${north}`, '')
   lines.push('Hitos de tu trayectoria (del más reciente al más antiguo):', '')
