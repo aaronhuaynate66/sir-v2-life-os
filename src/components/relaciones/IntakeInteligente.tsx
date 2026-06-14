@@ -76,6 +76,32 @@ const CAT_OPTS: { v: PersonCategory; l: string }[] = [
 
 const LINKABLE_TYPES = ['linkedin', 'instagram', 'whatsapp_chat', 'whatsapp_web', 'whatsapp_info']
 
+/** Mensaje de error legible para cualquier throw (Error, ApiError {message}, u objeto). */
+function errMsg(e: unknown): string {
+  if (e instanceof Error) return e.message
+  if (e && typeof e === 'object' && 'message' in e && typeof (e as { message: unknown }).message === 'string') {
+    return (e as { message: string }).message
+  }
+  try { return JSON.stringify(e) } catch { return String(e) }
+}
+
+/** Interpreta un bloque con reintentos (transitorios/rate-limit). Devuelve null
+ *  si tras los reintentos sigue fallando — el import NO se aborta por un bloque. */
+async function interpretChunkResilient(
+  input: Parameters<typeof interpretChunk>[0],
+  retries = 2,
+): Promise<ChunkInterpretation | null> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await interpretChunk(input)
+    } catch {
+      if (attempt === retries) return null
+      await new Promise((r) => setTimeout(r, 700 * (attempt + 1)))
+    }
+  }
+  return null
+}
+
 async function runPool<T>(items: T[], limit: number, worker: (item: T, i: number) => Promise<void>): Promise<void> {
   let next = 0
   const lanes = Array.from({ length: Math.min(limit, items.length) }, async () => {
@@ -268,8 +294,7 @@ export function IntakeInteligente() {
       }
       setPhase('review')
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      setError({ status: e instanceof HttpError ? e.status : 0, message: 'No se pudo analizar', detail: msg })
+      setError({ status: e instanceof HttpError ? e.status : 0, message: 'No se pudo analizar', detail: errMsg(e) })
       setPhase('idle')
     }
   }
@@ -301,13 +326,13 @@ export function IntakeInteligente() {
         setProgress({ done: 0, total: totalChunks })
         for (let ci = 0; ci < waChats.length; ci++) {
           const chunks = perChat[ci]
-          const interps: ChunkInterpretation[] = new Array(chunks.length)
-          await runPool(chunks, 4, async (chunk, i) => {
-            interps[i] = await interpretChunk({ chunkText: chunk.text, personName, index: i, total: chunks.length })
+          const interps: (ChunkInterpretation | null)[] = new Array(chunks.length)
+          await runPool(chunks, 3, async (chunk, i) => {
+            interps[i] = await interpretChunkResilient({ chunkText: chunk.text, personName, index: i, total: chunks.length })
             done += 1
             setProgress({ done, total: totalChunks })
           })
-          const consolidated = consolidateInterpretations(interps.filter(Boolean))
+          const consolidated = consolidateInterpretations(interps.filter((x): x is ChunkInterpretation => !!x))
           const data = buildExportObservationData(waChats[ci].parsed, consolidated, personName)
           await persistWhatsAppExport({ personId, data, promoteDates: true })
           messages += waChats[ci].parsed.messages.length
@@ -346,8 +371,7 @@ export function IntakeInteligente() {
       setResult({ name: personName, slug, messages, imgs: imgOk, profile: profileOk })
       setPhase('done')
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      setError({ status: e instanceof HttpError ? e.status : 0, message: 'No se pudo crear/importar', detail: msg })
+      setError({ status: e instanceof HttpError ? e.status : 0, message: 'No se pudo crear/importar', detail: errMsg(e) })
       setPhase('review')
     }
   }
