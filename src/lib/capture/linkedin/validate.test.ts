@@ -64,10 +64,11 @@ describe('isValidLinkedInProfileExtracted', () => {
     expect(sanitizeLinkedInProfile(o as never).workHistory).toHaveLength(0)
   })
 
-  it('rechaza profileUrl con tipo inválido', () => {
+  it('tolera profileUrl con tipo inválido (sanitize → null, no rechaza)', () => {
     const o = base() as unknown as Record<string, unknown>
     o.profileUrl = 42
-    expect(isValidLinkedInProfileExtracted(o)).toBe(false)
+    expect(isValidLinkedInProfileExtracted(o)).toBe(true)
+    expect(sanitizeLinkedInProfile(o as never).profileUrl).toBeNull()
   })
 })
 
@@ -158,8 +159,12 @@ describe('path de TEXTO pegado (sin campos de imagen)', () => {
     expect(s.workHistory).toHaveLength(1)
   })
 
-  it('un tipo errado en un campo de imagen sí invalida', () => {
-    expect(isValidLinkedInProfileExtracted({ ...textPayload, isOpenToWork: 'no' })).toBe(false)
+  it('un tipo errado en un campo de imagen NO invalida (sanitize lo coacciona)', () => {
+    const bad = { ...textPayload, isOpenToWork: 'no', connectionsCount: '500+' }
+    expect(isValidLinkedInProfileExtracted(bad)).toBe(true)
+    const s = sanitizeLinkedInProfile(bad as unknown as LinkedInProfileExtracted)
+    expect(s.isOpenToWork).toBe(false)
+    expect(s.connectionsCount).toBeNull()
   })
 })
 
