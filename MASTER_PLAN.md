@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `516c8a7`
+**Hash del último commit humano:** `d9547a7`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `d9547a7` | aaronhuaynate66 | feat(3b): lectura estratégica IA en la ficha de empresa (#205) | 2026-06-14 |
 | `516c8a7` | aaronhuaynate66 | feat(e5): 'Tu rumbo' enmarcado por tu identidad (quién sos) (#204) | 2026-06-14 |
 | `d95765c` | aaronhuaynate66 | feat(e5): el norte del año en 'Tu rumbo' (hacia dónde vas) (#203) | 2026-06-14 |
 | `a5a1c17` | aaronhuaynate66 | fix(e5): acotar el tipo de VERB a los kinds de objetivo (#202) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `bf87d40` | aaronhuaynate66 | docs(roadmap): bloque de estado real 2026-06-13 (single source of truth) (#198) | 2026-06-14 |
 | `c2caa92` | aaronhuaynate66 | feat(e3): señal de deuda de sueño en el push de la mañana (#197) | 2026-06-14 |
 | `c1e1ef2` | aaronhuaynate66 | feat(e3): hábito a retomar en el push de la mañana (#196) | 2026-06-14 |
-| `f6390db` | aaronhuaynate66 | feat(empresas): ficha de empresa/holding (escalón 3, doble nivel) (#195) | 2026-06-14 |
 
 ---
 
