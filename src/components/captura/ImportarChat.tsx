@@ -3,47 +3,71 @@
 // vincular su contacto EN UN PASO (antes había que crear la persona primero y
 // subir desde su ficha).
 //
-// Portón "¿de quién es?": si el nombre matchea una persona existente, se vincula;
-// si no, se crea vía POST /api/people (persiste en DB → el endpoint del export ya
-// no da 404 por FK). Resuelta la persona, se reusa AgregarCapturaPanel en modo
-// 'whatsapp' (todo el pipeline parse→chunk→interpret→consolidate + revisión + persist).
+// Portón "¿de quién es?": a medida que escribís, SUGERIMOS personas existentes
+// (searchPeople, matcher difuso server-side). Elegís una para VINCULAR, o creás
+// una nueva EXPLÍCITAMENTE. Antes el match era por nombre EXACTO → un nombre con
+// otra grafía creaba un duplicado (caso Nicolle). Resuelta la persona, se reusa
+// AgregarCapturaPanel en modo 'whatsapp' (pipeline completo + revisión + persist).
 
-import { useState } from 'react'
-import { Loader2, MessagesSquare, ArrowRight, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Loader2, MessagesSquare, UserPlus, X } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useRelationshipStore } from '@/stores'
-import { createPerson } from '@/lib/capture/observations/client'
+import { Badge } from '@/components/ui/badge'
+import { createPerson, searchPeople, type PersonCandidate } from '@/lib/capture/observations/client'
 import { AgregarCapturaPanel } from '@/components/relaciones/AgregarCapturaPanel'
 
-function norm(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
-}
-
 export function ImportarChat() {
-  const people = useRelationshipStore((s) => s.people)
   const [name, setName] = useState('')
+  const [candidates, setCandidates] = useState<PersonCandidate[]>([])
+  const [searching, setSearching] = useState(false)
   const [resolved, setResolved] = useState<{ id: string; name: string; created: boolean } | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
-  async function resolvePerson() {
+  // Sugerencias en vivo (debounce). Solo mientras no haya persona resuelta.
+  useEffect(() => {
+    if (resolved) return
+    const q = name.trim()
+    if (q.length < 2) {
+      setCandidates([])
+      return
+    }
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      setSearching(true)
+      try {
+        const r = await searchPeople(q, { captureType: 'whatsapp_chat', signal: controller.signal })
+        setCandidates(r.candidates)
+      } catch {
+        if (!controller.signal.aborted) setCandidates([])
+      } finally {
+        if (!controller.signal.aborted) setSearching(false)
+      }
+    }, 250)
+    return () => {
+      controller.abort()
+      clearTimeout(timer)
+    }
+  }, [name, resolved])
+
+  function vincularExistente(c: PersonCandidate) {
+    setErr(null)
+    setResolved({ id: c.id, name: c.name, created: false })
+  }
+
+  async function crearNueva() {
     const n = name.trim()
     if (!n || busy) return
     setBusy(true)
     setErr(null)
     try {
-      const existing = people.find((p) => norm(p.name) === norm(n))
-      if (existing) {
-        setResolved({ id: existing.id, name: existing.name, created: false })
-      } else {
-        // Crea el row en DB (server genera id + slug). El sync por realtime lo
-        // baja al store; el export usa este id directo, sin esperar.
-        const c = await createPerson({ name: n })
-        setResolved({ id: c.person.id, name: c.person.name, created: true })
-      }
+      // Crea el row en DB (server genera id + slug). El sync por realtime lo
+      // baja al store; el export usa este id directo, sin esperar.
+      const c = await createPerson({ name: n })
+      setResolved({ id: c.person.id, name: c.person.name, created: true })
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
@@ -60,7 +84,7 @@ export function ImportarChat() {
             <span className="font-medium text-foreground">{resolved.name}</span>
             {resolved.created && <span className="text-xs text-ok"> · contacto creado</span>}
           </div>
-          <Button size="sm" variant="ghost" onClick={() => { setResolved(null); setName('') }}>
+          <Button size="sm" variant="ghost" onClick={() => { setResolved(null); setName(''); setCandidates([]) }}>
             <X size={13} strokeWidth={2} className="mr-1" aria-hidden="true" />
             cambiar
           </Button>
@@ -75,6 +99,8 @@ export function ImportarChat() {
     )
   }
 
+  const showCreate = name.trim().length >= 2
+
   return (
     <Card className="mb-6 shadow-none">
       <CardContent className="p-4 sm:p-6">
@@ -85,23 +111,71 @@ export function ImportarChat() {
         <p className="text-sm text-muted-foreground mb-3">
           Subí el export de una conversación y creá o vinculá su contacto en un paso. ¿De quién es el chat?
         </p>
-        <div className="flex gap-2">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nombre del contacto (nuevo o existente)"
-            list="importar-chat-people"
-            className="flex-1"
-            onKeyDown={(e) => { if (e.key === 'Enter') void resolvePerson() }}
-          />
-          <datalist id="importar-chat-people">
-            {people.map((p) => <option key={p.id} value={p.name} />)}
-          </datalist>
-          <Button onClick={() => void resolvePerson()} disabled={!name.trim() || busy}>
-            {busy ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} strokeWidth={1.75} />}
-            <span className="ml-1.5 hidden sm:inline">Continuar</span>
-          </Button>
-        </div>
+
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Empezá a escribir el nombre del contacto…"
+          className="w-full"
+        />
+
+        {searching && (
+          <div className="text-xs text-muted-foreground flex items-center gap-2 mt-2">
+            <Loader2 size={12} className="animate-spin" /> Buscando…
+          </div>
+        )}
+
+        {/* Sugerencias: vincular a alguien que YA existe (evita duplicados). */}
+        {candidates.length > 0 && (
+          <div className="mt-2">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
+              ¿Es alguno de estos?
+            </div>
+            <ul className="space-y-1.5 max-h-56 overflow-y-auto">
+              {candidates.map((c) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => vincularExistente(c)}
+                    className="w-full text-left rounded border border-border hover:border-accent/50 px-3 py-2 text-xs flex items-center justify-between gap-3"
+                  >
+                    <div>
+                      <div className="font-medium text-foreground">{c.name}</div>
+                      <div className="text-muted-foreground font-mono text-[10px]">
+                        {c.slug ?? c.id}
+                        {c.alias && ` · alias: ${c.alias}`}
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] font-mono shrink-0">
+                      {c.matchReason} {c.matchScore}
+                    </Badge>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {name.trim().length >= 2 && !searching && candidates.length === 0 && (
+          <div className="text-xs text-muted-foreground italic mt-2">
+            Sin coincidencias — creá el contacto nuevo abajo.
+          </div>
+        )}
+
+        {/* Crear NUEVA: acción explícita (no auto-merge). */}
+        {showCreate && (
+          <div className="mt-3">
+            <Button onClick={() => void crearNueva()} disabled={busy}>
+              {busy ? (
+                <Loader2 size={15} className="animate-spin mr-2" />
+              ) : (
+                <UserPlus size={15} strokeWidth={1.75} className="mr-2" />
+              )}
+              Crear contacto nuevo: «{name.trim()}»
+            </Button>
+          </div>
+        )}
+
         {err && <div className="text-xs text-bad mt-2">{err}</div>}
       </CardContent>
     </Card>
