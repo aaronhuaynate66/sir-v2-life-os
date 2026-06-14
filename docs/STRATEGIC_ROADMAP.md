@@ -20,6 +20,28 @@
 
 ---
 
+## Actualización 2026-06-13 (sesiones de junio — estado REAL al día)
+
+> Este bloque manda sobre los "Estado (2026-05-31/06-08)" de cada etapa más abajo cuando difieran. `MASTER_PLAN.md` (autogenerado por el bot desde issues de mayo) está desfasado y NO es fuente de verdad.
+
+**Lectura por etapa, hoy:**
+- **E1 Relacional:** ✅ superada (sin cambios — madura).
+- **E2 Memoria relacional:** ✅ activa y reforzada. Se sumó: materialización de interacciones a memoria, **memoria de "ventana reciente"** desde exports de WhatsApp (el briefing lee lo último, no el promedio), detección de evolución del vínculo (`bondEvolution`).
+- **E3 Comportamiento:** 🟢 **~80% — en curso de cierre.** Hábitos completos (CRUD/checkin/racha/nudge + `/habitos`), retrospectiva semanal (`/resumen`), motor biológico (recovery/deuda de sueño). **Cerrado esta sesión:** el loop salud/hábitos→día — el push de la mañana ahora trae *hábito a retomar* (racha rota) y *deuda de sueño* (de Apple Health). **Pendiente para cerrar E3:** (#2) quick-log de estado (1 tap, genera los datos subjetivos que faltan), (#4) que la correlación cierre en una sugerencia conductual no-clínica, (#5) retrospectiva mensual.
+- **E4 Identidad & Alineación:** ✅ **prácticamente completa.** Se cerró todo lo que estaba pendiente: Human OKRs (objetivos SMART + tareas), **Narrative Intelligence ("Tu rumbo" Capa 1+2)**, **delta de score** al Alignment Engine (PR-D), tono de interacción, y el arco completo de **red profesional**: organización estructurada en `people` (mig 0072) + extracción/registro empresa→holding → **nodo-empresa hub en el grafo** → **fichas `/empresas/[slug]` doble nivel** (grupo↔empresa). El briefing de persona ahora cruza estado propio + red profesional (colegas con cumpleaños/vínculo) con guardrail "estrategia sí, engaño no".
+- **E5 Dirección de vida:** 🌱 **sembrada** (antes "no iniciada"). "Tu rumbo" (espinazo determinístico + reflexión IA on-demand) es el primer brote; se apoya en E4 ya madura.
+- **E6 AI-Native Human OS:** ⬜ visión norte.
+
+**Infra/canales nuevos:** Web Push (PWA) operativo — push de la mañana consolidado (gente/fechas + tareas + foco + hábito + sueño, cap 3, filtro paz). Crons: score-snapshots, tracker-alerts, weekly-summary, **morning-push**.
+
+**Deuda transversal viva (a decidir/atender):**
+- **Privacidad de terceros (Principio #5):** SIR ahora guarda datos sensibles de personas que no son el usuario (salud de familiares mencionada en chats importados). Falta política explícita de profundidad de guardado/visualización.
+- **3b empresa:** lectura estratégica con IA en la ficha de empresa (hoy determinística).
+- **Mobile (#44):** pulido pantalla-por-pantalla en iPhone (uso diario); requiere capturas del usuario.
+- **MASTER_PLAN desfasado:** considerar apagar/ajustar el `sync-roadmap` o re-baseline para que deje de mostrar un estado falso.
+
+---
+
 ## Visión
 
 Evolucionar de una herramienta de **inteligencia relacional** a un **AI-Native Human Operating System**: un sistema que acompaña a la persona a lo largo de la vida, no una app de features sueltas.
