@@ -32,7 +32,8 @@ import { Label } from '@/components/ui/label'
 import { useRelationshipStore } from '@/stores'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import { useMounted } from '@/hooks/useMounted'
-import type { Person } from '@/types'
+import { findBirthdaySpecialDate, nextOccurrence } from '@/lib/dates/birthdayDetect'
+import type { Person, SpecialDate } from '@/types'
 
 export interface BirthdayCountdownProps {
   person: Person
@@ -96,11 +97,20 @@ export function BirthdayCountdown({ person }: BirthdayCountdownProps) {
   const mounted = useMounted()
 
   const birthDate = person.birthDate ?? null
+  // Si no hay fecha de nacimiento, intentamos el cumpleaños detectado del chat
+  // (vive en Fechas importantes). Da el countdown sin afirmar edad (no sabemos
+  // el año), y el usuario puede confirmar el año.
+  const detected = !birthDate ? findBirthdaySpecialDate(person.specialDates, person.name) : null
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
 
   function openEdit() {
     setDraft(birthDate ? birthDate.slice(0, 10) : '')
+    setEditing(true)
+  }
+
+  function openEditWith(date: string) {
+    setDraft(date.slice(0, 10))
     setEditing(true)
   }
 
@@ -142,6 +152,8 @@ export function BirthdayCountdown({ person }: BirthdayCountdownProps) {
           <EditForm draft={draft} setDraft={setDraft} onSave={save} onCancel={cancel} hasPrevious={!!birthDate} />
         ) : birthDate ? (
           mounted ? <Body birthDate={birthDate} /> : <Placeholder />
+        ) : detected ? (
+          mounted ? <DetectedBody sd={detected} onConfirm={() => openEditWith(detected.date)} /> : <Placeholder />
         ) : (
           <EmptyState onAdd={openEdit} />
         )}
@@ -243,6 +255,34 @@ function Body({ birthDate }: { birthDate: string }) {
         </span>{' '}
         · cumple {ageTurning} año{ageTurning === 1 ? '' : 's'}
       </div>
+    </div>
+  )
+}
+
+function DetectedBody({ sd, onConfirm }: { sd: SpecialDate; onConfirm: () => void }) {
+  const occ = nextOccurrence(sd.date)
+  if (!occ) return <EmptyState onAdd={onConfirm} />
+  const { daysUntil, date } = occ
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline gap-2 flex-wrap">
+        {daysUntil === 0 ? (
+          <span className="text-2xl font-semibold tracking-tight">¡Hoy!</span>
+        ) : (
+          <>
+            <span className="text-2xl font-semibold tracking-tight tabular-nums">en {daysUntil}</span>
+            <span className="text-sm text-muted-foreground">día{daysUntil === 1 ? '' : 's'}</span>
+          </>
+        )}
+      </div>
+      <div className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
+        {ABS_FORMATTER.format(date)} ·{' '}
+        <span className="text-foreground/80">detectado del chat</span> — sin año, no muestro la edad.
+      </div>
+      <Button size="sm" variant="outline" onClick={onConfirm} className="w-full">
+        <Cake size={13} strokeWidth={1.75} className="mr-1.5" aria-hidden="true" />
+        Confirmar año / edad
+      </Button>
     </div>
   )
 }
