@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `8dfd823`
+**Hash del último commit humano:** `94dd187`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `94dd187` | aaronhuaynate66 | feat(relaciones): la tarjeta Cumpleaños usa el cumple detectado del chat (#216) | 2026-06-14 |
 | `8dfd823` | aaronhuaynate66 | feat(relaciones): intake inteligente file-first (multi-archivo → IA identifica + sugiere relación) (#215) | 2026-06-14 |
 | `a53ff63` | aaronhuaynate66 | feat(empresas): Fase B — autocompletar ficha por URL (meta) o pegando texto (IA) (#214) | 2026-06-14 |
 | `60a12fa` | aaronhuaynate66 | feat(relaciones): detector read-only de posibles duplicados (#213) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6b647d2` | aaronhuaynate66 | feat(captura): importar conversación WhatsApp → crear/adjuntar persona (+ LinkedIn opcional) (#209) | 2026-06-14 |
 | `c16d6ca` | aaronhuaynate66 | feat(empresa): entidad guardable + carga manual de info en la ficha (escalón 3) (#208) | 2026-06-14 |
 | `f17a38e` | aaronhuaynate66 | feat(e5): memorias clave como hitos del rumbo (#207) | 2026-06-14 |
-| `8f8a84d` | aaronhuaynate66 | docs(roadmap): estado al día — E3 4/5, E5 en marcha, red profesional completa (3b) (#206) | 2026-06-14 |
 
 ---
 
