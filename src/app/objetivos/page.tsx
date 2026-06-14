@@ -181,7 +181,7 @@ function GoalsContent() {
   function handleToggleAnchor(g: Goal) {
     const next = !g.isAnchor
     setAnchor(g.id, next)
-    toast.success(next ? 'Ancla del año' : 'Ancla quitada', {
+    toast.success(next ? 'Norte del año' : 'Norte quitado', {
       description: next ? `"${g.title}" es ahora el norte de tu año.` : g.title,
     })
   }
@@ -286,9 +286,9 @@ function GoalsContent() {
                   <Input type="number" min="1" max="10" placeholder="Impacto paz (1-10)" value={peaceImpact} onChange={e => setPeaceImpact(e.target.value)} className="font-mono" />
                   <Input placeholder="Siguiente acción" value={nextAction} onChange={e => setNextAction(e.target.value)} className="sm:col-span-2" />
                   <div className="sm:col-span-2">
-                    <Input placeholder="Subtítulo del ancla (ej. Al Khobar · Taekwondo +80kg) · opcional" value={anchorSubtitle} onChange={e => setAnchorSubtitle(e.target.value)} />
+                    <Input placeholder="Subtítulo del norte (ej. Al Khobar · Taekwondo +80kg) · opcional" value={anchorSubtitle} onChange={e => setAnchorSubtitle(e.target.value)} />
                     <p className="text-[10px] text-muted-foreground/60 mt-1">
-                      Solo si marcás este objetivo como <span className="font-mono text-foreground/80">ancla del año</span>. Si lo dejás vacío, la brújula deriva el detalle del target o la descripción.
+                      Solo si marcás este objetivo como <span className="font-mono text-foreground/80">tu norte del año</span>. Si lo dejás vacío, la brújula deriva el detalle del target o la descripción.
                     </p>
                   </div>
 
@@ -396,7 +396,7 @@ function GoalsContent() {
                       <span className="text-sm font-medium text-foreground">{g.title}</span>
                       {g.isAnchor && (
                         <Badge variant="outline" className="text-[10px] font-normal border-brand/30 bg-brand-soft text-brand-soft-foreground gap-1">
-                          <Anchor size={10} strokeWidth={2} /> Ancla del año
+                          <Anchor size={10} strokeWidth={2} /> Norte del año
                         </Badge>
                       )}
                       <Badge variant="outline" className={cn('text-[10px] font-normal', PRIO_CLASS[g.priority])}>{PRIO_LABEL[g.priority]}</Badge>
@@ -482,7 +482,7 @@ function GoalsContent() {
                       size="sm"
                       onClick={() => handleToggleAnchor(g)}
                       aria-pressed={!!g.isAnchor}
-                      title={g.isAnchor ? 'Quitar como ancla del año' : 'Marcar como ancla del año'}
+                      title={g.isAnchor ? 'Quitar como norte del año' : 'Marcar como norte del año'}
                       className={cn(g.isAnchor && 'text-brand-soft-foreground')}
                     >
                       <Anchor size={14} strokeWidth={1.75} className={cn(g.isAnchor && 'fill-current')} />

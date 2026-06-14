@@ -165,7 +165,7 @@ function Anchor({ compass }: { compass: YearCompass }) {
       className="mt-10 block group"
     >
       <div className="font-mono text-[9px] tracking-[0.25em] mb-2" style={{ color: C_DOT }}>
-        EL ANCLA
+        TU NORTE
       </div>
       <h2 className="font-mono font-bold text-white text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-none uppercase group-hover:opacity-90 transition-opacity">
         {a.title}

@@ -3,3 +3,5 @@ allowBuilds:
   # usamos: Sentry corre sin withSentryConfig). false = no construir, sin
   # romper el install (Vercel incluido).
   '@sentry/cli': false
+  sharp: set this to true or false
+  unrs-resolver: set this to true or false

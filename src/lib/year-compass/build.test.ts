@@ -116,6 +116,36 @@ describe('buildYearCompass — ancla', () => {
     expect(c.months[7].isAnchorMonth).toBe(true) // AGO
   })
 
+  it('auto-norte: NO corona un objetivo relacional si hay uno no relacional elegible', () => {
+    const goals = [
+      // El relacional es el de fecha futura más cercana y misma prioridad,
+      // pero no debe ser el héroe: gana el no relacional.
+      goal({ id: 'rel', title: 'Mejorar relación con X', category: 'relational', priority: 'high', targetDate: '2026-06-30' }),
+      goal({ id: 'mio', title: 'Ganar el Mundial', category: 'personal', priority: 'high', targetDate: '2026-11-01' }),
+    ]
+    const c = buildYearCompass(goals, NOW)
+    expect(c.anchor?.id).toBe('mio')
+    // El relacional queda en Próximo, no de norte.
+    expect(c.upcoming.some((m) => m.id === 'rel')).toBe(true)
+  })
+
+  it('auto-norte: cae a un relacional solo si es el único candidato', () => {
+    const c = buildYearCompass(
+      [goal({ id: 'rel', category: 'relational', priority: 'high', targetDate: '2026-09-01' })],
+      NOW,
+    )
+    expect(c.anchor?.id).toBe('rel')
+  })
+
+  it('explícita: un objetivo relacional fijado como is_anchor SÍ gana (el usuario manda)', () => {
+    const goals = [
+      goal({ id: 'mio', category: 'personal', priority: 'critical', targetDate: '2026-12-01' }),
+      goal({ id: 'rel', category: 'relational', priority: 'low', targetDate: '2026-08-01', isAnchor: true }),
+    ]
+    const c = buildYearCompass(goals, NOW)
+    expect(c.anchor?.id).toBe('rel')
+  })
+
   it('fallback: mayor prioridad, luego fecha más lejana', () => {
     const goals = [
       goal({ id: 'hi-near', title: 'Alto cerca', priority: 'high', targetDate: '2026-07-01' }),

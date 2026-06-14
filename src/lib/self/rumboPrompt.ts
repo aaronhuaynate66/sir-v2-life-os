@@ -23,7 +23,7 @@ INVARIANTES ESTRICTOS (no negociables):
 - PROHIBIDO diagnóstico, etiquetas, predicción del futuro o causa-efecto inventada.
 - Pausar o dejar ir un objetivo NO es un fracaso: enmarcá los cambios de rumbo como elecciones válidas, no como abandono.
 - Breve (máx 4 oraciones). Cálido pero sobrio, sin dramatizar ni inflar.
-- Si se incluye un "norte declarado" (el ancla del año), podés relacionar el hilo con él —¿lo que viene haciendo acompaña ese norte?— como observación abierta, sin juzgar y sin inventar nada que no esté en los hitos.
+- Si se incluye un "norte declarado" (tu norte del año), podés relacionar el hilo con él —¿lo que viene haciendo acompaña ese norte?— como observación abierta, sin juzgar y sin inventar nada que no esté en los hitos.
 - Si se incluye "quién es" (roles/bio del usuario), podés enmarcar el rumbo a la luz de su identidad, sin inventar rasgos ni atribuirle motivaciones que no estén.`
 
 export interface RumboMilestoneInput {
