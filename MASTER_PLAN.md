@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `51648be`
+**Hash del último commit humano:** `8474a1f`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8474a1f` | aaronhuaynate66 | feat(ai): banner global 'sin créditos de IA' + chequeo de salud (#229) | 2026-06-14 |
 | `51648be` | aaronhuaynate66 | feat(brujula): 'EL ANCLA' -> 'TU NORTE' + auto-norte nunca corona objetivo relacional (#228) | 2026-06-14 |
 | `ca07980` | aaronhuaynate66 | calibrate(extractor): events captura hitos/logros/eventos nombrados (incl. del usuario) (#227) | 2026-06-14 |
 | `1ece920` | aaronhuaynate66 | fix(kinship): WEIGHT_BY_CATEGORY exhaustivo con stepparent/stepchild/halfsibling (#226) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `f003722` | aaronhuaynate66 | feat(intake): pegar texto de perfil (LinkedIn/Instagram) → crea persona con Vida Profesional (#222) | 2026-06-14 |
 | `b1e87f6` | aaronhuaynate66 | test(linkedin): actualizar aserción a la nueva tolerancia de orgRef (#221) | 2026-06-14 |
 | `f471ee0` | aaronhuaynate66 | fix(linkedin): validador tolerante al shape de experiencia/educación (path texto) (#220) | 2026-06-14 |
-| `ed30c73` | aaronhuaynate66 | fix(linkedin): el extractor por TEXTO ya no falla el schema por campos de imagen (#219) | 2026-06-14 |
 
 ---
 
