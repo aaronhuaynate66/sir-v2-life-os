@@ -23,6 +23,8 @@ export function isNodeVisible(node: GraphNode, filters: GraphFilters): boolean {
   // sin interacción directa registrada — flag secondDegree del builder, que ya
   // sale de observations/person_logs). Compone con categoría + salud.
   if (filters.onlyDirect && node.secondDegree) return false
+  // Organizaciones ocultas salvo que se pidan explícitamente (no encima de todo).
+  if (node.category === 'organizacion' && !filters.showOrgs) return false
   if (filters.category !== 'all' && node.category !== filters.category) return false
   if (node.healthScore < filters.minHealth) return false
   return true

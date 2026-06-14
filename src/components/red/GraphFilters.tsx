@@ -25,6 +25,10 @@ export function GraphFiltersBar({ filters, onChange }: GraphFiltersProps) {
     onChange({ ...filters, onlyDirect: !filters.onlyDirect })
   }
 
+  function toggleShowOrgs() {
+    onChange({ ...filters, showOrgs: !filters.showOrgs })
+  }
+
   return (
     <div className="space-y-3">
       {/* Toggle: solo vínculos directos (oculta 2º grado). */}
@@ -50,6 +54,22 @@ export function GraphFiltersBar({ filters, onChange }: GraphFiltersProps) {
           {filters.onlyDirect
             ? 'ocultando 2º grado (familiares de contactos)'
             : 'mostrando 2º grado'}
+        </span>
+        <Button
+          type="button"
+          variant={filters.showOrgs ? 'default' : 'outline'}
+          size="sm"
+          onClick={toggleShowOrgs}
+          className={cn(
+            'h-11 sm:h-7 px-2.5 text-[11px]',
+            filters.showOrgs && 'bg-primary text-primary-foreground hover:bg-primary/90',
+          )}
+          aria-pressed={filters.showOrgs}
+        >
+          Mostrar organizaciones
+        </Button>
+        <span className="text-[10px] text-muted-foreground/60">
+          {filters.showOrgs ? 'mostrando empresas/grupos' : 'ocultas por defecto'}
         </span>
       </div>
 

@@ -18,7 +18,7 @@ function node(partial: Partial<GraphNode> & Pick<GraphNode, 'id'>): GraphNode {
 
 /** Filtros con defaults; onlyDirect=false salvo que el test lo pida. */
 function f(partial: Partial<GraphFilters> = {}): GraphFilters {
-  return { category: 'all', minHealth: 0, onlyDirect: false, ...partial }
+  return { category: 'all', minHealth: 0, onlyDirect: false, showOrgs: false, ...partial }
 }
 
 const self = node({ id: 'self', category: 'self', healthScore: 100, isSelf: true, fx: 0, fy: 0 })
@@ -94,5 +94,35 @@ describe('filterGraph — toggle "solo vínculos directos" (oculta 2º grado)', 
   it('compone con categoría: onlyDirect oculta 2º grado aunque matchee la categoría', () => {
     // jorge es 'familia'; con categoría=familia + onlyDirect igual se oculta.
     expect(isNodeVisible(jorge, f({ onlyDirect: true, category: 'familia' }))).toBe(false)
+  })
+})
+
+describe('filterGraph — toggle "Mostrar organizaciones" (orgs ocultas por defecto)', () => {
+  const org = node({ id: 'org:grupo-hng', fullName: 'Grupo HNG', category: 'organizacion', healthScore: 100 })
+  const dataOrg: GraphData = {
+    nodes: [self, diana, org],
+    edges: [
+      { source: 'self', target: 'diana-carolina', category: 'personal', label: 'Personal', color: '#000' },
+      { source: 'self', target: 'org:grupo-hng', category: 'organizacion', label: 'Org', color: '#000' },
+    ],
+  }
+
+  it('por defecto (showOrgs=false) la organización NO aparece', () => {
+    const out = filterGraph(dataOrg, f())
+    expect(out.nodes.map((n) => n.id).sort()).toEqual(['diana-carolina', 'self'])
+    // El edge a la org se poda.
+    expect(out.edges.map((e) => e.target)).toEqual(['diana-carolina'])
+    expect(isNodeVisible(org, f())).toBe(false)
+  })
+
+  it('con showOrgs=true la organización SÍ aparece', () => {
+    const out = filterGraph(dataOrg, f({ showOrgs: true }))
+    expect(out.nodes.map((n) => n.id)).toContain('org:grupo-hng')
+    expect(isNodeVisible(org, f({ showOrgs: true }))).toBe(true)
+  })
+
+  it('showOrgs no afecta a las personas', () => {
+    expect(isNodeVisible(diana, f({ showOrgs: false }))).toBe(true)
+    expect(isNodeVisible(diana, f({ showOrgs: true }))).toBe(true)
   })
 })
