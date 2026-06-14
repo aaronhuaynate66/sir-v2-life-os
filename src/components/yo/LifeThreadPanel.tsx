@@ -13,6 +13,7 @@ import { Compass, Flag, Check, Pause, X, Sparkles, Loader2, TrendingUp, Trending
 import { Card, CardContent } from '@/components/ui/card'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
+import { useSelfStore } from '@/stores/useSelfStore'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { buildLifeThread, relationshipMilestones, mergeLifeThread, type LifeMilestoneKind, type LifeMilestone } from '@/lib/self/lifeThread'
 import { buildBondEvolution } from '@/lib/people/bondEvolution'
@@ -82,6 +83,15 @@ export function LifeThreadPanel() {
     const sub = (a.anchorSubtitle ?? '').trim()
     return `${a.title}${sub ? ` · ${sub}` : ''}`
   }, [goals])
+  const identityProfile = useSelfStore((s) => s.identityProfile)
+  const identitySummary = useMemo(() => {
+    const p = identityProfile
+    if (!p) return null
+    const parts: string[] = []
+    if (p.roles && p.roles.length > 0) parts.push(p.roles.slice(0, 4).join(', '))
+    if (p.bio && p.bio.trim()) parts.push(p.bio.trim().slice(0, 160))
+    return parts.length > 0 ? parts.join(' · ') : null
+  }, [identityProfile])
   const [refl, setRefl] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; text?: string }>({ status: 'idle' })
   const generar = useCallback(async () => {
     setRefl({ status: 'loading' })
@@ -89,7 +99,7 @@ export function LifeThreadPanel() {
       const res = await fetch('/api/self/rumbo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText }),
+        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText, identity: identitySummary }),
       })
       const data = (await res.json()) as { insight?: string; detail?: string; error?: string }
       if (!res.ok || !data.insight) {
@@ -100,7 +110,7 @@ export function LifeThreadPanel() {
     } catch {
       setRefl({ status: 'error', text: 'No se pudo generar la reflexión.' })
     }
-  }, [shown, anchorText])
+  }, [shown, anchorText, identitySummary])
 
   return (
     <Card className="shadow-none">
