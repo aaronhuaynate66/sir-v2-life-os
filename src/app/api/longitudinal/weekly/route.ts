@@ -37,16 +37,21 @@ export async function POST(req: NextRequest) {
   if (!rl.ok) return rl.response
 
   let days = 7
+  let periodKind: 'weekly' | 'monthly' = 'weekly'
   try {
-    const body = (await req.json()) as { days?: unknown }
+    const body = (await req.json()) as { days?: unknown; periodKind?: unknown }
     if (typeof body?.days === 'number' && Number.isFinite(body.days)) {
       days = Math.max(1, Math.min(31, Math.floor(body.days)))
     }
+    if (body?.periodKind === 'monthly') {
+      periodKind = 'monthly'
+      if (days === 7) days = 30 // default del mes si no mandaron días
+    }
   } catch {
-    /* sin body -> default 7 */
+    /* sin body -> default 7 weekly */
   }
 
-  const r = await generateWeeklySummaryForUser(supabase, authData.user.id, { days })
+  const r = await generateWeeklySummaryForUser(supabase, authData.user.id, { days, periodKind })
 
   switch (r.status) {
     case 'ok':

@@ -40,7 +40,7 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
   const latest = initialSummaries[0] ?? null
   const history = initialSummaries.slice(1)
 
-  async function generate() {
+  async function generate(periodKind: 'weekly' | 'monthly' = 'weekly') {
     if (generating) return
     setGenerating(true)
     setError(null)
@@ -48,7 +48,7 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
       const res = await fetch('/api/longitudinal/weekly', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ days: 7 }),
+        body: JSON.stringify(periodKind === 'monthly' ? { periodKind: 'monthly' } : { days: 7 }),
       })
       if (!res.ok) {
         setError(await parseErrorResponse(res))
@@ -75,10 +75,15 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
             Patrones observados de tu semana (estado, conversaciones y memorias), con una acción para la próxima.
           </p>
         </div>
-        <Button onClick={generate} disabled={generating}>
-          {generating ? <Loader2 size={15} className="animate-spin mr-1.5" /> : <Sparkles size={15} strokeWidth={1.75} className="mr-1.5" />}
-          {generating ? 'Generando…' : 'Generar resumen de la semana'}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => generate('weekly')} disabled={generating}>
+            {generating ? <Loader2 size={15} className="animate-spin mr-1.5" /> : <Sparkles size={15} strokeWidth={1.75} className="mr-1.5" />}
+            {generating ? 'Generando…' : 'Resumen de la semana'}
+          </Button>
+          <Button variant="outline" onClick={() => generate('monthly')} disabled={generating}>
+            Resumen del mes
+          </Button>
+        </div>
       </div>
 
       {error && <ApiErrorNotice error={error} className="mb-4" />}
@@ -99,6 +104,7 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                 <Badge variant="outline" className="text-[10px] font-mono">{fmtRange(latest)}</Badge>
+                <Badge variant="outline" className="text-[10px]">{latest.periodKind === 'monthly' ? 'Mes' : 'Semana'}</Badge>
                 <span className="text-[10px] font-mono text-muted-foreground/50">
                   {latest.sourceCounts.logs ?? 0} regs · {latest.sourceCounts.observations ?? 0} obs · {latest.sourceCounts.memories ?? 0} mem
                 </span>
@@ -204,7 +210,7 @@ function History({ items }: { items: LongitudinalSummary[] }) {
           <div className="mt-4 space-y-4">
             {items.map((s) => (
               <div key={s.id} className="border-t border-border/40 pt-3 first:border-0 first:pt-0">
-                <Badge variant="outline" className="text-[10px] font-mono mb-2">{fmtRange(s)}</Badge>
+                <Badge variant="outline" className="text-[10px] font-mono mb-2">{fmtRange(s)} · {s.periodKind === 'monthly' ? 'Mes' : 'Semana'}</Badge>
                 <SummaryBody text={s.summaryText} />
               </div>
             ))}
