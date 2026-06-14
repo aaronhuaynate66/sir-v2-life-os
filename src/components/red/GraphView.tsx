@@ -5,6 +5,7 @@
 // de <canvas>. Mientras carga, mostramos un skeleton.
 
 import { useCallback, useMemo, useState } from 'react'
+import { orgSlug } from '@/lib/people/companyHub'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -85,9 +86,11 @@ export function GraphView({ selfFullName, selfEmail, directContactIds = [], inte
   // Clic en nodo → navegar a la ficha (self → /yo).
   const onNavigate = useCallback(
     (nodeId: string, isSelf: boolean) => {
-      // Nodo-empresa (hub, id 'org:<key>'): no es una persona → no navega
-      // (la ficha de empresa llega en el escalón 3). Evita un 404.
-      if (nodeId.startsWith('org:')) return
+      // Nodo-empresa (hub, id 'org:<key>'): abre su ficha de empresa/holding.
+      if (nodeId.startsWith('org:')) {
+        router.push(`/empresas/${orgSlug(nodeId.slice(4))}`)
+        return
+      }
       router.push(isSelf ? '/yo' : `/relaciones/${encodeURIComponent(nodeId)}`)
     },
     [router],
