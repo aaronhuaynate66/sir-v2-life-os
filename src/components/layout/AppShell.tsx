@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Nav } from './Nav'
+import { AiCreditBanner } from '@/components/system/AiCreditBanner'
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { trackPageView } from '@/lib/analytics/track'
@@ -70,6 +71,7 @@ export function AppShell({ children, wide = false, rightRail }: AppShellProps) {
 
       {/* Main content. Al imprimir: sin margen de sidebar ni padding/ancho. */}
       <main className="lg:ml-60 print:ml-0">
+        <AiCreditBanner />
         <div
           className={cn(
             'mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 print:max-w-none print:p-0',
