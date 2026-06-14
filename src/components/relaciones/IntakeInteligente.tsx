@@ -27,9 +27,12 @@ import {
   searchPeople,
   previewCapture,
   processCapture,
+  previewCaptureFromText,
+  processCaptureFromText,
   type PersonCandidate,
 } from '@/lib/capture/observations/client'
 import { detectCaptureType } from '@/lib/capture/detector/client'
+import { detectorResultFromText } from '@/lib/capture/text/detectFromText'
 import type { CaptureType, DetectorResult } from '@/lib/capture/observations/types'
 import type { RelationshipType, PersonCategory } from '@/types'
 
@@ -108,6 +111,8 @@ export function IntakeInteligente() {
   const [waChats, setWaChats] = useState<{ parsed: ParsedExport; name: string }[]>([])
   const [imgs, setImgs] = useState<ImgItem[]>([])
   const [imgDiag, setImgDiag] = useState<{ name: string; type: string; detail: string }[]>([])
+  const [profileText, setProfileText] = useState('')
+  const [profileCap, setProfileCap] = useState<{ text: string; captureType: CaptureType; detectorData: DetectorResult; extracted: Record<string, unknown> } | null>(null)
 
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null)
   const [name, setName] = useState('')
@@ -118,16 +123,16 @@ export function IntakeInteligente() {
   const [selected, setSelected] = useState<{ id: string; name: string; slug: string | null } | null>(null)
 
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
-  const [result, setResult] = useState<{ name: string; slug: string | null; messages: number; imgs: number } | null>(null)
+  const [result, setResult] = useState<{ name: string; slug: string | null; messages: number; imgs: number; profile: boolean } | null>(null)
 
   function reset() {
-    setPhase('idle'); setError(null); setFiles([]); setWaChats([]); setImgs([]); setImgDiag([])
+    setPhase('idle'); setError(null); setFiles([]); setWaChats([]); setImgs([]); setImgDiag([]); setProfileText(''); setProfileCap(null)
     setSuggestion(null); setName(''); setRelationship('professional'); setCategory('network')
     setCandidates([]); setSelected(null); setProgress(null); setResult(null)
   }
 
   async function analyze() {
-    if (files.length === 0 || phase === 'analyzing') return
+    if ((files.length === 0 && !profileText.trim()) || phase === 'analyzing') return
     setPhase('analyzing'); setError(null); setImgDiag([])
     try {
       const exportFiles = files.filter((f) => isExportName(f.name))
@@ -186,17 +191,38 @@ export function IntakeInteligente() {
         imgItems
           .map((it) => read(it.extracted, 'fullName') || read(it.extracted, 'displayName') || read(it.extracted, 'handle') || (it.detectorData.suggestedPersonName ?? ''))
           .find((x) => !!x) || ''
+      // 2b) Perfil pegado como TEXTO (LinkedIn/Instagram) → extraer sin persistir.
+      let prof: { text: string; captureType: CaptureType; detectorData: DetectorResult; extracted: Record<string, unknown> } | null = null
+      if (profileText.trim().length >= 20) {
+        try {
+          const det = detectorResultFromText(profileText)
+          const pv = await previewCaptureFromText({ text: profileText, captureType: det.type, detectorData: det })
+          prof = { text: profileText, captureType: det.type, detectorData: det, extracted: pv.extracted }
+          const nm = read(pv.extracted, 'fullName') || read(pv.extracted, 'displayName') || read(pv.extracted, 'handle') || ''
+          diag.push({ name: 'perfil pegado', type: det.type, detail: nm ? `→ ${nm}` : 'leído' })
+          setImgDiag([...diag])
+        } catch {
+          diag.push({ name: 'perfil pegado', type: 'texto', detail: 'no se pudo leer' })
+          setImgDiag([...diag])
+        }
+      }
+      setProfileCap(prof)
+
       const allParticipants = Array.from(new Set(chats.flatMap((c) => c.parsed.participants)))
       // Excerpt del chat más reciente (mayor lastISO).
       const recentChat = chats.slice().sort((a, b) => (b.parsed.lastISO ?? '').localeCompare(a.parsed.lastISO ?? ''))[0]
       const excerpt = recentChat
         ? recentChat.parsed.messages.slice(-25).map((m) => `${m.author}: ${m.content}`).join('\n').slice(0, 800)
         : undefined
+      // El perfil pegado alimenta la señal del tipo que sea (li/ig) si no hubo imagen.
+      const liExtracted = li?.extracted ?? (prof?.captureType === 'linkedin' ? prof.extracted : undefined)
+      const igExtracted = ig?.extracted ?? (prof?.captureType === 'instagram' ? prof.extracted : undefined)
+      const profName = prof ? (read(prof.extracted, 'fullName') || read(prof.extracted, 'displayName') || read(prof.extracted, 'handle') || '') : ''
       const signals = {
-        linkedin: li
-          ? { fullName: read(li.extracted, 'fullName') || anyName || undefined, headline: read(li.extracted, 'headline'), company: read(li.extracted, 'currentCompany') ?? read(li.extracted, 'company') }
+        linkedin: liExtracted
+          ? { fullName: read(liExtracted, 'fullName') || anyName || profName || undefined, headline: read(liExtracted, 'headline'), company: read(liExtracted, 'currentCompany') ?? read(liExtracted, 'company') }
           : undefined,
-        instagram: ig ? { displayName: read(ig.extracted, 'displayName'), handle: read(ig.extracted, 'handle') } : undefined,
+        instagram: igExtracted ? { displayName: read(igExtracted, 'displayName'), handle: read(igExtracted, 'handle') } : undefined,
         whatsapp: chats.length > 0 ? { name: waFileName, participants: allParticipants, excerpt } : undefined,
       }
       const hasSignal = !!(signals.linkedin || signals.instagram || signals.whatsapp)
@@ -217,18 +243,18 @@ export function IntakeInteligente() {
         }
       }
 
-      const bestName = sug?.name || anyName || waFileName || ''
+      const bestName = sug?.name || anyName || profName || waFileName || ''
       if (sug) {
         setSuggestion(sug); setName(sug.name); setRelationship(sug.relationship); setCategory(sug.category)
       } else {
         setSuggestion({
           name: bestName,
           organization: '',
-          relationship: li ? 'professional' : 'friend',
+          relationship: (li || prof?.captureType === 'linkedin') ? 'professional' : 'friend',
           category: 'network',
           reason: bestName ? 'Inferido del archivo (sin IA).' : 'No pude leer la imagen — escribí el nombre abajo y seguí.',
         })
-        setName(bestName); setRelationship(li ? 'professional' : 'friend'); setCategory('network')
+        setName(bestName); setRelationship((li || prof?.captureType === 'linkedin') ? 'professional' : 'friend'); setCategory('network')
       }
 
       // 5) Matcher (si hay nombre).
@@ -300,7 +326,24 @@ export function IntakeInteligente() {
         }
       }
 
-      setResult({ name: personName, slug, messages, imgs: imgOk })
+      // Perfil pegado → persistir Vida Profesional (texto, confirmado).
+      let profileOk = false
+      if (profileCap) {
+        try {
+          await processCaptureFromText({
+            text: profileCap.text,
+            captureType: profileCap.captureType,
+            detectorData: profileCap.detectorData,
+            personId,
+            confirmedData: profileCap.extracted,
+          })
+          profileOk = true
+        } catch {
+          /* no fatal: la persona ya quedó creada */
+        }
+      }
+
+      setResult({ name: personName, slug, messages, imgs: imgOk, profile: profileOk })
       setPhase('done')
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -322,7 +365,8 @@ export function IntakeInteligente() {
             <span className="text-foreground font-medium">{result.name}</span> quedó{' '}
             {selected ? 'actualizado' : 'creado'}
             {result.messages > 0 && ` · ${result.messages} mensajes importados`}
-            {result.imgs > 0 && ` · ${result.imgs} captura(s) adjunta(s)`}.
+            {result.imgs > 0 && ` · ${result.imgs} captura(s) adjunta(s)`}
+            {result.profile && ' · perfil cargado en Vida Profesional'}.
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {result.slug && (
@@ -349,7 +393,7 @@ export function IntakeInteligente() {
         <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
           Arrastrá varios archivos de una misma persona — el export de WhatsApp (.zip/.txt) y su
           captura de LinkedIn/Instagram. SIR extrae los datos, te dice <span className="text-foreground">quién es</span> y
-          propone el <span className="text-foreground">tipo de relación</span>. Confirmás y queda todo en su perfil.
+          propone el <span className="text-foreground">tipo de relación</span>. También podés <span className="text-foreground">pegar el texto de su LinkedIn</span> y lo crea con su Vida Profesional. Confirmás y queda todo en su perfil.
         </p>
 
         {/* Archivos */}
@@ -371,8 +415,21 @@ export function IntakeInteligente() {
               ))}
             </ul>
           )}
+          <div className="pt-1">
+            <label className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary block mb-1">
+              …o pegá el texto de su perfil (LinkedIn / Instagram)
+            </label>
+            <textarea
+              value={profileText}
+              onChange={(e) => { setProfileText(e.target.value); setSuggestion(null); setPhase('idle'); setError(null); setSelected(null) }}
+              rows={3}
+              placeholder="Pegá el 'Acerca de' + experiencia del perfil. Más confiable que la captura de página entera."
+              className="w-full rounded border border-border bg-background px-3 py-2 text-sm"
+              disabled={phase === 'analyzing' || phase === 'importing'}
+            />
+          </div>
           {phase !== 'review' && phase !== 'importing' && (
-            <Button size="sm" onClick={() => void analyze()} disabled={files.length === 0 || phase === 'analyzing'}>
+            <Button size="sm" onClick={() => void analyze()} disabled={(files.length === 0 && !profileText.trim()) || phase === 'analyzing'}>
               {phase === 'analyzing' ? (<><Loader2 size={14} className="mr-2 animate-spin" /> Analizando…</>) : 'Analizar y proponer'}
             </Button>
           )}
