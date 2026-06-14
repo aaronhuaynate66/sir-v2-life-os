@@ -31,6 +31,7 @@ import { useMemoryStore } from '@/stores'
 import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { HabitsStrip } from '@/components/panel/HabitsStrip'
+import { QuickStateLog } from '@/components/panel/QuickStateLog'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
@@ -303,6 +304,10 @@ function DashboardContent() {
 
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
       <DailyBriefingCard />
+
+      {/* Estado propio (Etapa 3): quick-log de ánimo/energía de un tap, para que
+          el analytics tenga datos sin fricción. */}
+      <QuickStateLog />
 
       {/* Hábitos (Etapa 3): check-in del día + racha, donde aterriza el usuario. */}
       <HabitsStrip />
