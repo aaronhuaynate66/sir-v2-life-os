@@ -25,6 +25,7 @@ import { createPersonAddedMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
+import { PosiblesDuplicados } from '@/components/relaciones/PosiblesDuplicados'
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
 import {
@@ -259,6 +260,8 @@ function RelationshipsContent() {
           <DailyActionsPanel variant="compact" />
         </div>
       )}
+
+      {people.length > 0 && <PosiblesDuplicados />}
 
       <Sheet open={showForm} onOpenChange={(o) => { if (!o) handleCancel() }}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
