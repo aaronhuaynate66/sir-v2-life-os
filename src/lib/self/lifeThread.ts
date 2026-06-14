@@ -20,7 +20,7 @@ export interface LifeMilestone {
   label: string
 }
 
-const VERB: Record<LifeMilestoneKind, (t: string) => string> = {
+const VERB: Record<'set' | 'done' | 'paused' | 'let_go', (t: string) => string> = {
   set: (t) => `Te propusiste “${t}”`,
   done: (t) => `Lograste “${t}”`,
   paused: (t) => `Pausaste “${t}”`,
