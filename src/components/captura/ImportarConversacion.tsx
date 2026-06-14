@@ -21,7 +21,7 @@ import {
   CheckCircle2,
   X,
   ArrowRight,
-  Linkedin,
+  FileText,
 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -528,7 +528,7 @@ export function ImportarConversacion() {
             {/* Paso 3 (opcional): LinkedIn */}
             <div className="pt-2 border-t border-border/50 space-y-2">
               <label className="text-xs uppercase tracking-[0.07em] text-text-tertiary font-sans flex items-center gap-1.5">
-                <Linkedin size={13} /> 3. Captura de LinkedIn (opcional)
+                <FileText size={13} /> 3. Captura de LinkedIn (opcional)
               </label>
               <input
                 ref={liInputRef}
