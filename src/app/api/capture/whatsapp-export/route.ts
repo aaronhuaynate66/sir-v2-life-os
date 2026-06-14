@@ -14,6 +14,7 @@
 // queda en el SIR del usuario.
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
@@ -128,6 +129,55 @@ function sanitizeData(raw: unknown): { data: Record<string, unknown>; confidence
 interface PostBody {
   person_id?: unknown
   data?: unknown
+  promote_dates?: unknown
+}
+
+/** Normaliza una etiqueta para deduplicar fechas. */
+function normLabel(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+interface SpecialDateRow {
+  id: string
+  label: string
+  date: string
+  recurring: boolean
+}
+
+/** Promueve extractedDates (del export) a people.special_dates, dedup por
+ *  (label normalizado + fecha). RELLENA-SI-FALTA, no pisa. Best-effort. */
+async function promoteDatesToSpecialDates(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  personId: string,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const extracted = Array.isArray(data.extractedDates) ? (data.extractedDates as Record<string, unknown>[]) : []
+  if (extracted.length === 0) return
+  const { data: prow } = await supabase
+    .from('people')
+    .select('special_dates')
+    .eq('user_id', userId)
+    .eq('id', personId)
+    .maybeSingle()
+  const existing: SpecialDateRow[] = Array.isArray(prow?.special_dates) ? (prow!.special_dates as SpecialDateRow[]) : []
+  const seen = new Set(existing.map((d) => `${normLabel(d.label ?? '')}|${(d.date ?? '').slice(0, 10)}`))
+  const additions: SpecialDateRow[] = []
+  for (const d of extracted) {
+    const label = typeof d.label === 'string' ? d.label.trim().slice(0, 160) : ''
+    const iso = typeof d.dateISO === 'string' ? d.dateISO.slice(0, 10) : ''
+    if (!label || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue
+    const key = `${normLabel(label)}|${iso}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    additions.push({ id: randomUUID(), label, date: iso, recurring: d.recurring === true })
+  }
+  if (additions.length === 0) return
+  await supabase
+    .from('people')
+    .update({ special_dates: [...existing, ...additions] })
+    .eq('user_id', userId)
+    .eq('id', personId)
 }
 
 export async function POST(req: NextRequest) {
@@ -234,6 +284,16 @@ export async function POST(req: NextRequest) {
       }
     } catch {
       /* no fatal: la observación ya quedó guardada */
+    }
+
+    // Promoción de fechas → "Fechas importantes" (solo si el cliente lo pide;
+    // el intake lo activa para que las fechas crucen al perfil sin paso manual).
+    if (body.promote_dates === true) {
+      try {
+        await promoteDatesToSpecialDates(supabase, userId, personId, data)
+      } catch {
+        /* no fatal: la observación ya quedó guardada */
+      }
     }
 
     return NextResponse.json({ observation }, { status: 200 })

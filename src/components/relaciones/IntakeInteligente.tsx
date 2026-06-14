@@ -105,8 +105,7 @@ export function IntakeInteligente() {
   const [error, setError] = useState<ErrorState | null>(null)
   const [files, setFiles] = useState<File[]>([])
 
-  const [parsedWa, setParsedWa] = useState<ParsedExport | null>(null)
-  const [waName, setWaName] = useState('')
+  const [waChats, setWaChats] = useState<{ parsed: ParsedExport; name: string }[]>([])
   const [imgs, setImgs] = useState<ImgItem[]>([])
   const [imgDiag, setImgDiag] = useState<{ name: string; type: string; detail: string }[]>([])
 
@@ -122,7 +121,7 @@ export function IntakeInteligente() {
   const [result, setResult] = useState<{ name: string; slug: string | null; messages: number; imgs: number } | null>(null)
 
   function reset() {
-    setPhase('idle'); setError(null); setFiles([]); setParsedWa(null); setWaName(''); setImgs([]); setImgDiag([])
+    setPhase('idle'); setError(null); setFiles([]); setWaChats([]); setImgs([]); setImgDiag([])
     setSuggestion(null); setName(''); setRelationship('professional'); setCategory('network')
     setCandidates([]); setSelected(null); setProgress(null); setResult(null)
   }
@@ -158,18 +157,26 @@ export function IntakeInteligente() {
       }
       setImgs(imgItems); setImgDiag(diag)
 
-      // 2) WhatsApp → parse.
-      let parsed: ParsedExport | null = null
-      let waFileName = ''
-      if (exportFiles.length > 0) {
-        const text = await readExportText(exportFiles[0])
-        if (isWhatsAppExport(text)) {
-          parsed = parseWhatsAppExport(text)
-          waFileName = cleanExportFileName(exportFiles[0].name)
+      // 2) WhatsApp → parse TODOS los exports (una persona puede tener varios
+      //    chats: teléfono personal + corporativo). Se cruzan después.
+      const chats: { parsed: ParsedExport; name: string }[] = []
+      for (const f of exportFiles) {
+        try {
+          const text = await readExportText(f)
+          if (isWhatsAppExport(text)) {
+            chats.push({ parsed: parseWhatsAppExport(text), name: cleanExportFileName(f.name) })
+            diag.push({ name: f.name, type: 'whatsapp', detail: '→ chat leído' })
+          } else {
+            diag.push({ name: f.name, type: 'archivo', detail: 'no parece export de WhatsApp' })
+          }
+        } catch {
+          diag.push({ name: f.name, type: 'archivo', detail: 'no se pudo leer' })
         }
       }
-      setParsedWa(parsed)
-      setWaName(waFileName)
+      setWaChats(chats)
+      setImgDiag([...diag])
+      // Nombre más limpio entre los archivos de chat (sin sufijos tipo "Hv").
+      const waFileName = chats.map((c) => c.name).sort((a, b) => a.length - b.length)[0] ?? '' 
 
       // 3) Señales → IA (lenientes: usamos el nombre de cualquier imagen aunque
       //    el detector la haya clasificado distinto).
@@ -179,15 +186,18 @@ export function IntakeInteligente() {
         imgItems
           .map((it) => read(it.extracted, 'fullName') || read(it.extracted, 'displayName') || read(it.extracted, 'handle') || (it.detectorData.suggestedPersonName ?? ''))
           .find((x) => !!x) || ''
-      const excerpt = parsed
-        ? parsed.messages.slice(-25).map((m) => `${m.author}: ${m.content}`).join('\n').slice(0, 800)
+      const allParticipants = Array.from(new Set(chats.flatMap((c) => c.parsed.participants)))
+      // Excerpt del chat más reciente (mayor lastISO).
+      const recentChat = chats.slice().sort((a, b) => (b.parsed.lastISO ?? '').localeCompare(a.parsed.lastISO ?? ''))[0]
+      const excerpt = recentChat
+        ? recentChat.parsed.messages.slice(-25).map((m) => `${m.author}: ${m.content}`).join('\n').slice(0, 800)
         : undefined
       const signals = {
         linkedin: li
           ? { fullName: read(li.extracted, 'fullName') || anyName || undefined, headline: read(li.extracted, 'headline'), company: read(li.extracted, 'currentCompany') ?? read(li.extracted, 'company') }
           : undefined,
         instagram: ig ? { displayName: read(ig.extracted, 'displayName'), handle: read(ig.extracted, 'handle') } : undefined,
-        whatsapp: parsed ? { name: waFileName, participants: parsed.participants, excerpt } : undefined,
+        whatsapp: chats.length > 0 ? { name: waFileName, participants: allParticipants, excerpt } : undefined,
       }
       const hasSignal = !!(signals.linkedin || signals.instagram || signals.whatsapp)
 
@@ -255,22 +265,27 @@ export function IntakeInteligente() {
         personId = c.person.id; personName = c.person.name; slug = c.person.slug
       }
 
-      // WhatsApp → persistir.
+      // WhatsApp → persistir CADA chat (personal + corporativo). promoteDates
+      //    activa el cruce de fechas → "Fechas importantes" (dedup server-side).
       let messages = 0
-      if (parsedWa) {
-        const chunks = chunkConversation(parsedWa.messages)
-        const interps: ChunkInterpretation[] = new Array(chunks.length)
-        setProgress({ done: 0, total: chunks.length })
+      if (waChats.length > 0) {
+        const perChat = waChats.map((c) => chunkConversation(c.parsed.messages))
+        const totalChunks = perChat.reduce((a, ch) => a + ch.length, 0)
         let done = 0
-        await runPool(chunks, 4, async (chunk, i) => {
-          interps[i] = await interpretChunk({ chunkText: chunk.text, personName, index: i, total: chunks.length })
-          done += 1
-          setProgress({ done, total: chunks.length })
-        })
-        const consolidated = consolidateInterpretations(interps.filter(Boolean))
-        const data = buildExportObservationData(parsedWa, consolidated, personName)
-        await persistWhatsAppExport({ personId, data })
-        messages = parsedWa.messages.length
+        setProgress({ done: 0, total: totalChunks })
+        for (let ci = 0; ci < waChats.length; ci++) {
+          const chunks = perChat[ci]
+          const interps: ChunkInterpretation[] = new Array(chunks.length)
+          await runPool(chunks, 4, async (chunk, i) => {
+            interps[i] = await interpretChunk({ chunkText: chunk.text, personName, index: i, total: chunks.length })
+            done += 1
+            setProgress({ done, total: totalChunks })
+          })
+          const consolidated = consolidateInterpretations(interps.filter(Boolean))
+          const data = buildExportObservationData(waChats[ci].parsed, consolidated, personName)
+          await persistWhatsAppExport({ personId, data, promoteDates: true })
+          messages += waChats[ci].parsed.messages.length
+        }
       }
 
       // Imágenes → adjuntar.
