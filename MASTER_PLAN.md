@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c16d6ca`
+**Hash del último commit humano:** `6b647d2`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6b647d2` | aaronhuaynate66 | feat(captura): importar conversación WhatsApp → crear/adjuntar persona (+ LinkedIn opcional) (#209) | 2026-06-14 |
 | `c16d6ca` | aaronhuaynate66 | feat(empresa): entidad guardable + carga manual de info en la ficha (escalón 3) (#208) | 2026-06-14 |
 | `f17a38e` | aaronhuaynate66 | feat(e5): memorias clave como hitos del rumbo (#207) | 2026-06-14 |
 | `8f8a84d` | aaronhuaynate66 | docs(roadmap): estado al día — E3 4/5, E5 en marcha, red profesional completa (3b) (#206) | 2026-06-14 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `a5a1c17` | aaronhuaynate66 | fix(e5): acotar el tipo de VERB a los kinds de objetivo (#202) | 2026-06-14 |
 | `17a104b` | aaronhuaynate66 | feat(e5): 'Tu rumbo' teje hitos relacionales, no solo objetivos (#201) | 2026-06-14 |
 | `39914b1` | aaronhuaynate66 | feat(e3): retrospectiva mensual (E3-5) (#200) | 2026-06-14 |
-| `45d2d13` | aaronhuaynate66 | feat(e3): quick-log de estado (ánimo/energía) de un tap en el panel (#199) | 2026-06-14 |
 
 ---
 
