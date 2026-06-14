@@ -35,6 +35,12 @@ export const KIND_LABEL: Record<FamilyKind, string> = {
   tio: 'Tío',
   prima: 'Prima',
   primo: 'Primo',
+  padrastro: 'Padrastro',
+  madrastra: 'Madrastra',
+  hijastro: 'Hijastro',
+  hijastra: 'Hijastra',
+  medio_hermano: 'Medio hermano',
+  medio_hermana: 'Media hermana',
   amiga: 'Amiga',
   amigo: 'Amigo',
   otro: 'Otro',
@@ -57,6 +63,12 @@ export const KIND_OPTIONS: { value: FamilyKind; label: string }[] = [
   { value: 'tio', label: 'Tío' },
   { value: 'prima', label: 'Prima' },
   { value: 'primo', label: 'Primo' },
+  { value: 'padrastro', label: 'Padrastro' },
+  { value: 'madrastra', label: 'Madrastra' },
+  { value: 'hijastro', label: 'Hijastro' },
+  { value: 'hijastra', label: 'Hijastra' },
+  { value: 'medio_hermano', label: 'Medio hermano' },
+  { value: 'medio_hermana', label: 'Media hermana' },
   { value: 'amiga', label: 'Amiga' },
   { value: 'amigo', label: 'Amigo' },
   { value: 'otro', label: 'Otro' },
@@ -73,6 +85,9 @@ export type KindCategory =
   | 'auntuncle'
   | 'nibling' // sobrino/a
   | 'cousin'
+  | 'stepparent'
+  | 'stepchild'
+  | 'halfsibling'
   | 'friend'
   | 'other'
 
@@ -90,6 +105,12 @@ const CATEGORY_OF: Record<FamilyKind, KindCategory> = {
   tio: 'auntuncle',
   prima: 'cousin',
   primo: 'cousin',
+  padrastro: 'stepparent',
+  madrastra: 'stepparent',
+  hijastro: 'stepchild',
+  hijastra: 'stepchild',
+  medio_hermano: 'halfsibling',
+  medio_hermana: 'halfsibling',
   amiga: 'friend',
   amigo: 'friend',
   otro: 'other',
@@ -126,6 +147,12 @@ export function inverseRoleLabel(kind: FamilyKind): string {
       return 'Tío/a'
     case 'cousin':
       return 'Primo/a'
+    case 'stepparent':
+      return 'Hijastro/a'
+    case 'stepchild':
+      return 'Padrastro/Madrastra'
+    case 'halfsibling':
+      return 'Medio hermano/a'
     case 'friend':
       return 'Amigo/a'
     default:
