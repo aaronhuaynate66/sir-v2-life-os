@@ -56,6 +56,8 @@ export const COMPRESSION_STRATEGIES = {
   // Panel de FC: valor de reposo + rango + p.p.m. en texto pequeño junto a un
   // gráfico intradía -> mismo perfil que báscula/sueño para leer "45", "44-138".
   heart_rate_panel: { maxWidth: 1280, quality: 0.9, minOutputKB: 150 },
+  // Panel de VFC: rango en ms en texto pequeño junto a un gráfico -> igual perfil.
+  hrv_panel: { maxWidth: 1280, quality: 0.9, minOutputKB: 150 },
   manual_note: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },
   voice_note: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },
   unknown: { maxWidth: 1600, quality: 0.85, minOutputKB: 100 },

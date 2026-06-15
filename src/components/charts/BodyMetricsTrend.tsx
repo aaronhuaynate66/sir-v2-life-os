@@ -34,6 +34,9 @@ const PRIORITY: HealthMetricType[] = [
   'metabolic_age',
   'body_score',
   'ideal_weight_kg',
+  'hrv_avg',
+  'hrv_min',
+  'hrv_max',
 ]
 
 function rank(t: HealthMetricType): number {

@@ -56,6 +56,10 @@ import { HeartRateCapturePreview } from '@/components/capture/hr/HeartRateCaptur
 import { extractHeartRatePanel, persistHeartRateCapture } from '@/lib/capture/hr/client'
 import type { HeartRateCaptureFinal, HeartRatePanelExtracted } from '@/lib/capture/hr/types'
 
+import { HrvCapturePreview } from '@/components/capture/hrv/HrvCapturePreview'
+import { extractHrvPanel, persistHrvCapture } from '@/lib/capture/hrv/client'
+import type { HrvCaptureFinal, HrvPanelExtracted } from '@/lib/capture/hrv/types'
+
 import { IdentityProposalReview } from '@/components/yo/IdentityProposalReview'
 import { extractSelfProfileImage } from '@/lib/identity/captureClient'
 import { consolidateSelfProfiles } from '@/lib/capture/self-profile/consolidate'
@@ -80,7 +84,7 @@ import { useSelfStore } from '@/stores/useSelfStore'
 
 // ─── modelo de items ────────────────────────────────────────────────
 
-type BioKind = 'scale' | 'sleep' | 'hr'
+type BioKind = 'scale' | 'sleep' | 'hr' | 'hrv'
 type BioStatus = 'extracting' | 'ready' | 'saving' | 'saved' | 'error'
 
 interface BioItem {
@@ -95,6 +99,7 @@ interface BioItem {
   scale?: ScaleCaptureExtracted
   sleep?: SleepPanelExtracted
   hr?: HeartRatePanelExtracted
+  hrv?: HrvPanelExtracted
 }
 
 interface RejectItem {
@@ -131,6 +136,7 @@ const BIO_META: Record<BioKind, { icon: typeof Scale; label: string }> = {
   scale: { icon: Scale, label: 'Báscula' },
   sleep: { icon: Moon, label: 'Sueño' },
   hr: { icon: Heart, label: 'Frecuencia cardíaca' },
+  hrv: { icon: Activity, label: 'VFC' },
 }
 
 function fileKey(f: File): string {
@@ -286,7 +292,7 @@ export function MisCapturas() {
 
     // 1) Detectar el tipo de cada imagen (independiente: si falla, rechazo).
     type Plan =
-      | { file: File; route: 'scale' | 'sleep' | 'hr' }
+      | { file: File; route: 'scale' | 'sleep' | 'hr' | 'hrv' }
       | { file: File; route: 'identity' }
       | { file: File; route: 'reject'; reason: string }
     const plans: Plan[] = []
@@ -315,8 +321,8 @@ export function MisCapturas() {
     const rejects = plans.filter((p) => p.route === 'reject') as Extract<Plan, { route: 'reject' }>[]
     const identityFiles = plans.filter((p) => p.route === 'identity').map((p) => p.file)
     const bioPlans = plans.filter(
-      (p) => p.route === 'scale' || p.route === 'sleep' || p.route === 'hr',
-    ) as Extract<Plan, { route: 'scale' | 'sleep' | 'hr' }>[]
+      (p) => p.route === 'scale' || p.route === 'sleep' || p.route === 'hr' || p.route === 'hrv',
+    ) as Extract<Plan, { route: 'scale' | 'sleep' | 'hr' | 'hrv' }>[]
 
     setRejectItems(
       rejects.map((r, i) => ({ id: `rej_${Date.now()}_${i}`, fileName: r.file.name, reason: r.reason })),
@@ -327,7 +333,7 @@ export function MisCapturas() {
     // 3) Extraer biométricas (cada una independiente).
     if (bioPlans.length > 0) {
       // Sembrar items "extracting" en orden estable.
-      const seeded: { id: string; plan: Extract<Plan, { route: 'scale' | 'sleep' | 'hr' }> }[] = []
+      const seeded: { id: string; plan: Extract<Plan, { route: 'scale' | 'sleep' | 'hr' | 'hrv' }> }[] = []
       for (let i = 0; i < bioPlans.length; i++) {
         seeded.push({ id: `bio_${Date.now()}_${i}`, plan: bioPlans[i] })
       }
@@ -353,11 +359,16 @@ export function MisCapturas() {
             const url = makeUrl(compressed.blob)
             const extracted = await extractSleepPanel(compressed.blob)
             patchBio(id, { previewUrl: url, blob: compressed.blob, sleep: extracted, status: 'ready' })
-          } else {
+          } else if (plan.route === 'hr') {
             const compressed = await compressImage(plan.file, { maxSize: 1280, quality: 0.9 })
             const url = makeUrl(compressed.blob)
             const extracted = await extractHeartRatePanel(compressed.blob)
             patchBio(id, { previewUrl: url, blob: compressed.blob, hr: extracted, status: 'ready' })
+          } else {
+            const compressed = await compressImage(plan.file, { maxSize: 1280, quality: 0.9 })
+            const url = makeUrl(compressed.blob)
+            const extracted = await extractHrvPanel(compressed.blob)
+            patchBio(id, { previewUrl: url, blob: compressed.blob, hrv: extracted, status: 'ready' })
           }
         } catch (e) {
           const msg = e instanceof Error ? e.message : 'Error al procesar la imagen.'
@@ -505,6 +516,25 @@ export function MisCapturas() {
           : `${result.insertedCount} métrica(s)${result.replaced ? ' (actualizada)' : ''}`
         patchBio(item.id, { status: 'saved', savedSummary: summary })
         toast.success(result.replaced ? 'FC actualizada' : 'FC guardada')
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Falló al guardar.'
+        toast.error('No se pudo guardar', { description: msg })
+        patchBio(item.id, { status: 'ready' })
+      }
+    },
+    [patchBio],
+  )
+
+  const saveHrv = useCallback(
+    (item: BioItem, final: HrvCaptureFinal) => {
+      patchBio(item.id, { status: 'saving' })
+      try {
+        const result = persistHrvCapture(final)
+        patchBio(item.id, {
+          status: 'saved',
+          savedSummary: `VFC guardada${result.replaced ? ' (actualizada)' : ''}`,
+        })
+        toast.success(result.replaced ? 'VFC actualizada' : 'VFC guardada')
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Falló al guardar.'
         toast.error('No se pudo guardar', { description: msg })
@@ -675,6 +705,7 @@ export function MisCapturas() {
                   onSaveScale={saveScale}
                   onSaveSleep={saveSleep}
                   onSaveHr={saveHr}
+                  onSaveHrv={saveHrv}
                   onDismiss={() => setBioItems((prev) => prev.filter((b) => b.id !== item.id))}
                 />
               </div>
@@ -713,12 +744,14 @@ function BioResult({
   onSaveScale,
   onSaveSleep,
   onSaveHr,
+  onSaveHrv,
   onDismiss,
 }: {
   item: BioItem
   onSaveScale: (item: BioItem, finalMetrics: Partial<Record<ScaleMetric, number>>, measuredAt: string) => void
   onSaveSleep: (item: BioItem, final: SleepCaptureFinal) => void
   onSaveHr: (item: BioItem, final: HeartRateCaptureFinal) => void
+  onSaveHrv: (item: BioItem, final: HrvCaptureFinal) => void
   onDismiss: () => void
 }) {
   const meta = BIO_META[item.kind]
@@ -807,6 +840,21 @@ function BioResult({
           saving={item.status === 'saving'}
           onCancel={onDismiss}
           onConfirm={(final) => onSaveHr(item, final)}
+        />
+      </div>
+    )
+  }
+  if (item.kind === 'hrv' && item.hrv) {
+    return (
+      <div>
+        {header}
+        <HrvCapturePreview
+          previewUrl={item.previewUrl}
+          extracted={item.hrv}
+          fallbackDay={todayInLima()}
+          saving={item.status === 'saving'}
+          onCancel={onDismiss}
+          onConfirm={(final) => onSaveHrv(item, final)}
         />
       </div>
     )

@@ -28,7 +28,7 @@ import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
 
 const METRIC_CATS: MetricCategory[] = ['energy', 'mood', 'stress', 'focus', 'motivation', 'confidence']
-const HEALTH_TYPES: HealthMetricType[] = ['weight', 'heart_rate', 'steps', 'calories', 'hydration', 'blood_pressure', 'custom']
+const HEALTH_TYPES: HealthMetricType[] = ['weight', 'heart_rate', 'hrv_avg', 'steps', 'calories', 'hydration', 'blood_pressure', 'custom']
 const CAT_LABEL: Record<MetricCategory, string> = {
   energy: 'Energía', mood: 'Ánimo', stress: 'Estrés',
   focus: 'Enfoque', motivation: 'Motivación', confidence: 'Confianza',

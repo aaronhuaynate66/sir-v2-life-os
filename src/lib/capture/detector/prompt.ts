@@ -14,7 +14,7 @@ Schema EXACTO de respuesta (debe parsear con JSON.parse() sin error —
 sin prosa, sin markdown fences):
 
 {
-  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "dm_conversation" | "linkedin" | "scale" | "sleep_panel" | "heart_rate_panel" | "unknown",
+  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "dm_conversation" | "linkedin" | "scale" | "sleep_panel" | "heart_rate_panel" | "hrv_panel" | "unknown",
   "confidence": "high" | "medium" | "low",
   "reasoning": "<<=80 chars: pista visual concreta que disparó la decisión>",
   "suggestedPersonName": "<nombre visible en el header si aplica, null si no>"
@@ -143,6 +143,23 @@ REGLAS DE CLASIFICACION:
    y/o un rango en p.p.m., es heart_rate_panel. NO hay bubbles, ni @handle, ni
    gauge de peso en kg, ni gráfico de fases de sueño. Es la capa biológica del
    PROPIO usuario, NO una persona de sus relaciones.
+   ⚠️ DISCRIMINADOR FC vs VFC: si en la misma pantalla hay un toggle
+   "Frecuencia cardíaca | VFC" y la pestaña ACTIVA es **VFC** (los valores están
+   en MILISEGUNDOS, ej. "Rango VFC 21-134 ms"), NO es heart_rate_panel → es
+   hrv_panel (ver 7b). Solo es heart_rate_panel cuando los valores están en
+   p.p.m./lpm/bpm.
+
+7b. hrv_panel (PANEL DE VFC / HRV — variabilidad de la frecuencia cardíaca)
+   La MISMA familia de apps de salud, pero la vista/pestaña activa es **VFC**
+   (HRV / "Variabilidad de la frecuencia cardíaca"). Señales DECISIVAS:
+   - Título o pestaña activa "VFC" / "HRV" / "Variabilidad".
+   - Valores en MILISEGUNDOS (ms), NO en p.p.m. — ej. "Rango VFC 21-134 ms",
+     "21–134 ms", "VFC en reposo 48 ms".
+   - Suele haber un toggle "Frecuencia cardíaca | VFC" con VFC seleccionado, y
+     un gráfico intradía.
+   REGLA CLAVE: unidad en **ms** + etiqueta VFC/HRV/Variabilidad = hrv_panel.
+   Si la unidad es p.p.m./lpm/bpm es heart_rate_panel, NO hrv_panel. Es data
+   biológica del PROPIO usuario (suggestedPersonName=null).
 
 8. unknown
    Cualquier cosa que NO cumpla los signos visuales de los 7 anteriores.
@@ -163,7 +180,8 @@ REGLAS GENERALES:
   whatsapp_web [header del centro o panel derecho], whatsapp_info, linkedin)
   o @handle (instagram perfil / dm_conversation), copialo literal. Si no hay
   nombre visible, null.
-  Para type='scale', type='sleep_panel' y type='heart_rate_panel' SIEMPRE
+  Para type='scale', type='sleep_panel', type='heart_rate_panel' y
+  type='hrv_panel' SIEMPRE
   null: miden al PROPIO usuario, no a una persona de sus relaciones (aunque
   el header diga "Usuario actual: X").
 - reasoning: 1 frase concreta, en español, mencionando la señal visual

@@ -18,7 +18,7 @@
 import type { CaptureType } from '@/lib/capture/observations/types'
 
 /** Destino de una captura dentro del panel "Mis capturas". */
-export type SelfCaptureRoute = 'scale' | 'sleep' | 'hr' | 'identity' | 'reject'
+export type SelfCaptureRoute = 'scale' | 'sleep' | 'hr' | 'hrv' | 'identity' | 'reject'
 
 export interface SelfRouteDecision {
   route: SelfCaptureRoute
@@ -50,6 +50,8 @@ export function routeSelfCapture(type: CaptureType): SelfRouteDecision {
       return { route: 'sleep' }
     case 'heart_rate_panel':
       return { route: 'hr' }
+    case 'hrv_panel':
+      return { route: 'hrv' }
     case 'linkedin':
     case 'instagram':
       // En "Mis capturas" un perfil es el propio → anclas de identidad.
