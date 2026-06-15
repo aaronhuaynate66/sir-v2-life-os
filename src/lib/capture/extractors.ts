@@ -41,6 +41,7 @@ import {
   sanitizeLinkedInProfile,
 } from './linkedin/validate'
 
+import { isValidDmExtracted, sanitizeDmExtracted } from './dmConversation/extract'
 import type { CaptureType } from './observations/types'
 
 /** Spec runtime de un extractor. */
@@ -73,14 +74,12 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
     // DM de Instagram/Telegram/Messenger: misma estructura de burbujas que un
     // chat de WhatsApp → reusa el MISMO extractor (sin reflection).
     case 'dm_conversation':
+      // Reusa el prompt de whatsapp_chat pero con validador/sanitizador
+      // TOLERANTES (un DM puede venir con shape parcial → no 422; coerce).
       return {
         getSystemPrompt: () => getWhatsAppChatSystemPrompt(false),
-        isValid: isValidWhatsAppCaptureExtracted,
-        sanitize: (x) =>
-          sanitizeWhatsAppChat(x as Parameters<typeof sanitizeWhatsAppChat>[0]) as unknown as Record<
-            string,
-            unknown
-          >,
+        isValid: isValidDmExtracted,
+        sanitize: (x) => sanitizeDmExtracted(x) as unknown as Record<string, unknown>,
         maxTokens: 2000,
       }
     case 'whatsapp_web':
