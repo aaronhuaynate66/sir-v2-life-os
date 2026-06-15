@@ -26,6 +26,8 @@ const VALID_TYPES: ReadonlySet<CaptureType> = new Set<CaptureType>([
   // 'heart_rate_panel' SÍ sale de screenshot (vista FC > Día). Igual que
   // scale/sleep_panel: el caller lo rutea al flujo self de health_metrics.
   'heart_rate_panel',
+  // 'hrv_panel' = pestaña VFC/HRV (ms). Self → flujo hrv (health_metrics).
+  'hrv_panel',
   // 'manual_note', 'voice_note', 'unknown' — el detector NO emite los dos
   // primeros (manual/voice no salen de screenshot; unknown si). Permitimos
   // unknown porque es output legitimo del prompt cuando nada matchea.

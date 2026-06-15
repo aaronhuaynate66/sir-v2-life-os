@@ -142,6 +142,7 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
       // (/api/capture/hr) + persistencia a health_metrics. Mismo trato que
       // scale/sleep_panel: null aquí, el caller lo rutea al flujo de FC.
       return null
+    case 'hrv_panel':
     case 'manual_note':
     case 'voice_note':
     case 'unknown':
