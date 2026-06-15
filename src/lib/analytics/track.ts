@@ -59,6 +59,7 @@ export const EVENTS = {
   stepCompleted: 'step_completed',
   searchPerformed: 'search_performed',
   goalSuggested: 'goal_suggested',
+  sirAsked: 'sir_asked',
 } as const
 
 // ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────
