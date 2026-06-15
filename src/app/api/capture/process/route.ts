@@ -28,6 +28,7 @@ import { getExtractorSpec } from '@/lib/capture/extractors'
 import { isValidDetectorResult } from '@/lib/capture/detector/validate'
 import { insertObservation } from '@/lib/capture/observations/insert'
 import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
+import { inferInteractionQuality } from '@/lib/capture/interactionTone'
 import { deriveObservedAt } from '@/lib/capture/observations/observed-at'
 import { signalsFromExtracted } from '@/lib/capture/observations/extract-signals'
 import { findCandidates, type ScoredCandidate } from '@/lib/people/matcher'
@@ -531,6 +532,50 @@ export async function POST(req: NextRequest) {
         }
       } catch {
         /* best-effort */
+      }
+    }
+
+    // 10d. AUTO-TONO → Reciprocidad. Una conversación con carga emocional clara
+    //      debe mover la Reciprocidad del relationalScore (no solo la recencia).
+    //      Inferimos calidad 1-5 del estado emocional extraído (determinístico,
+    //      sin LLM) e insertamos un person_logs kind='interaction'. Best-effort.
+    //      Guardas: (a) solo si hay señal de sentimiento (inferInteractionQuality
+    //      devuelve null si no) → no inventamos neutros; (b) anti-doble-conteo:
+    //      si YA hay una interacción ese día (re-proceso del mismo screenshot o
+    //      tono cargado a mano), no insertamos otra.
+    if (finalPersonId && observedAt && CONVERSATION_CAPTURE_TYPES.includes(captureType)) {
+      try {
+        const tone = inferInteractionQuality({
+          emotionalStates: (extracted as { emotionalStates?: { user?: string | null; otherPerson?: string | null } }).emotionalStates ?? null,
+          summary: (extracted as { summary?: string | null }).summary ?? null,
+          topics: (extracted as { topics?: string[] | null }).topics ?? null,
+        })
+        if (tone) {
+          const dayStart = `${observedAt.slice(0, 10)}T00:00:00.000Z`
+          const dayEnd = `${observedAt.slice(0, 10)}T23:59:59.999Z`
+          const { data: existing } = await supabase
+            .from('person_logs')
+            .select('id')
+            .eq('person_id', finalPersonId)
+            .eq('kind', 'interaction')
+            .gte('logged_at', dayStart)
+            .lte('logged_at', dayEnd)
+            .limit(1)
+          if (!existing || existing.length === 0) {
+            await supabase.from('person_logs').insert({
+              user_id: userId,
+              person_id: finalPersonId,
+              kind: 'interaction',
+              value: tone.quality,
+              note: tone.emoLabel
+                ? `Tono inferido de la conversación capturada (${tone.emoLabel})`
+                : 'Tono inferido de la conversación capturada',
+              logged_at: observedAt,
+            })
+          }
+        }
+      } catch {
+        /* best-effort: el tono no debe romper la captura ya guardada */
       }
     }
 
