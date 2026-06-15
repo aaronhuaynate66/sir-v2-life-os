@@ -4,12 +4,14 @@
 // cliente al confirmar). Regla de oro: el chat PROPONE, Aaron CONFIRMA, recién
 // ahí se escribe. Nunca escritura silenciosa.
 
-import type { GoalCategory, GoalPriority } from '@/types'
+import type { GoalCategory, GoalPriority, RelationshipType, PersonCategory } from '@/types'
 
 const GOAL_CATEGORIES: readonly GoalCategory[] = [
   'financial', 'personal', 'relational', 'health', 'career', 'spiritual', 'creative',
 ]
 const GOAL_PRIORITIES: readonly GoalPriority[] = ['critical', 'high', 'medium', 'low']
+const REL_TYPES: readonly RelationshipType[] = ['family', 'friend', 'romantic', 'professional', 'mentor', 'mentee', 'acquaintance']
+const PERSON_CATEGORIES: readonly PersonCategory[] = ['inner_circle', 'close', 'network', 'peripheral']
 
 /** Definiciones de tools para Anthropic (input_schema JSON Schema). */
 export const SIR_ACTION_TOOLS = [
@@ -44,6 +46,20 @@ export const SIR_ACTION_TOOLS = [
       required: ['titulo'],
     },
   },
+  {
+    name: 'proponer_crear_persona',
+    description:
+      'Proponé crear una persona nueva en la red de Aaron (NO la crees vos, solo proponela para que confirme). Usá esto cuando Aaron quiere agregar/dar de alta a alguien que todavía no está.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        nombre: { type: 'string', description: 'Nombre de la persona.' },
+        relacion: { type: 'string', enum: REL_TYPES as unknown as string[], description: 'Tipo de vínculo.' },
+        categoria: { type: 'string', enum: PERSON_CATEGORIES as unknown as string[], description: 'Cercanía: inner_circle/close/network/peripheral.' },
+      },
+      required: ['nombre'],
+    },
+  },
 ] as const
 
 export interface ProposedInteraccion {
@@ -61,7 +77,13 @@ export interface ProposedObjetivo {
   impactoPaz: number
   personaRelacionada: string | null
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo
+export interface ProposedPersona {
+  kind: 'crear_persona'
+  nombre: string
+  relacion: RelationshipType
+  categoria: PersonCategory
+}
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -107,6 +129,17 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
       impactoPaz: clampInt(o.impacto_paz, 1, 10, 5),
       personaRelacionada: persona || null,
     }
+  }
+  if (toolName === 'proponer_crear_persona') {
+    const nombre = str(o.nombre, 120)
+    if (!nombre) return null
+    const relacion = (REL_TYPES as readonly string[]).includes(String(o.relacion))
+      ? (o.relacion as RelationshipType)
+      : 'acquaintance'
+    const categoria = (PERSON_CATEGORIES as readonly string[]).includes(String(o.categoria))
+      ? (o.categoria as PersonCategory)
+      : 'network'
+    return { kind: 'crear_persona', nombre, relacion, categoria }
   }
   return null
 }

@@ -16,6 +16,14 @@ describe('parseProposedAction', () => {
     const a = parseProposedAction('proponer_crear_objetivo', { titulo: 'RIT', categoria: 'career', prioridad: 'critical', persona_relacionada: 'Cornejo' })
     expect(a).toMatchObject({ categoria: 'career', prioridad: 'critical', personaRelacionada: 'Cornejo' })
   })
+  it('crear_persona: valida enums con defaults y exige nombre', () => {
+    const a = parseProposedAction('proponer_crear_persona', { nombre: 'Emilio', relacion: 'friend', categoria: 'close' })
+    expect(a).toEqual({ kind: 'crear_persona', nombre: 'Emilio', relacion: 'friend', categoria: 'close' })
+    const b = parseProposedAction('proponer_crear_persona', { nombre: 'X', relacion: 'zzz', categoria: 'qqq' })
+    expect(b).toMatchObject({ relacion: 'acquaintance', categoria: 'network' })
+    expect(parseProposedAction('proponer_crear_persona', { relacion: 'friend' })).toBeNull()
+  })
+
   it('toolName desconocido → null', () => {
     expect(parseProposedAction('otra_cosa', {})).toBeNull()
   })

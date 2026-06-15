@@ -246,6 +246,8 @@ export async function POST(req: NextRequest) {
       } else if (parsed?.kind === 'crear_objetivo') {
         const r = parsed.personaRelacionada ? resolvePersonId(parsed.personaRelacionada) : { id: null, name: null }
         proposedAction = { ...parsed, personaRelacionada: r.name, personId: r.id }
+      } else if (parsed?.kind === 'crear_persona') {
+        proposedAction = { ...parsed }
       }
     }
 
