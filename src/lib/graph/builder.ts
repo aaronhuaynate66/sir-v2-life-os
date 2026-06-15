@@ -4,7 +4,7 @@
 import type { Person, Relationship, PersonLink } from '@/types'
 import { SELF_ID } from '@/lib/relationships/family'
 import { CATEGORY_COLOR, CATEGORY_LABEL } from './colors'
-import { orgJoinKey, orgGroupLabel } from '@/lib/people/professionalNetwork'
+import { orgJoinKey, orgGroupLabel, transversalUnitSlugs, prettyUnitLabel } from '@/lib/people/professionalNetwork'
 import type { GraphCategory, GraphData, GraphEdge, GraphNode } from './types'
 
 /**
@@ -277,8 +277,58 @@ export function buildGraphData({
     }
   }
 
+  // Unidades TRANSVERSALES (RIT, etc.): cortan a través de las organizaciones.
+  // Membresía vía tag de convención `unidad:<slug>`. Cada unidad es un hub
+  // `org:<slug>` (linkea a /empresas/<slug>) de categoría 'organizacion' → se
+  // oculta/muestra con el mismo toggle que las empresas (no encima por defecto).
+  // A diferencia del hub de empleador (≥2), una unidad declarada por tag es
+  // intencional → la mostramos desde 1 miembro.
+  const unitHubs = new Map<string, string[]>()
+  for (const p of people) {
+    for (const slug of transversalUnitSlugs(p.tags)) {
+      const arr = unitHubs.get(slug) ?? []
+      arr.push(p.id)
+      unitHubs.set(slug, arr)
+    }
+  }
+  const existingNodeIds = new Set<string>([
+    selfNode.id,
+    ...personNodes.map((n) => n.id),
+    ...companyNodes.map((n) => n.id),
+  ])
+  const unitNodes: GraphNode[] = []
+  for (const [slug, ids] of unitHubs) {
+    if (ids.length < 1) continue
+    const nodeId = `org:${slug}`
+    if (!existingNodeIds.has(nodeId)) {
+      const label = prettyUnitLabel(slug)
+      unitNodes.push({
+        id: nodeId,
+        label: label.length <= 4 ? label : (initialsFromName(label) || 'UN'),
+        shortName: label,
+        fullName: label,
+        category: 'organizacion',
+        healthScore: 100,
+        interactionCount: 0,
+        score: 7,
+      })
+      existingNodeIds.add(nodeId)
+    }
+    for (const personId of ids) {
+      const source = nodeIdByPersonId.get(personId)
+      if (!source) continue
+      edges.push({
+        source,
+        target: nodeId,
+        category: 'organizacion',
+        label: CATEGORY_LABEL.organizacion,
+        color: CATEGORY_COLOR.organizacion,
+      })
+    }
+  }
+
   return {
-    nodes: [selfNode, ...personNodes, ...companyNodes],
+    nodes: [selfNode, ...personNodes, ...companyNodes, ...unitNodes],
     edges,
   }
 }

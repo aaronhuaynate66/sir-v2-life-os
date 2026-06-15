@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { buildCompanyHub, type HubPerson, type HubGoal } from '@/lib/people/companyHub'
+import { transversalUnitSlugs } from '@/lib/people/professionalNetwork'
 import { CompanyStrategicRead } from '@/components/empresas/CompanyStrategicRead'
 import { EditOrgProfile } from '@/components/empresas/EditOrgProfile'
 
@@ -24,7 +25,7 @@ export default async function EmpresaPage({ params }: PageProps) {
 
   const { data: peopleRows } = await supabase
     .from('people')
-    .select('id, name, slug, organization, org_group, importance_score, last_contact')
+    .select('id, name, slug, organization, org_group, importance_score, last_contact, tags')
     .eq('user_id', userId)
     .limit(1000)
   const people: HubPerson[] = (peopleRows ?? []).map((r) => {
@@ -73,6 +74,33 @@ export default async function EmpresaPage({ params }: PageProps) {
     const deslug = slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
     hub = { found: true, level: 'empresa', label: profile.name || deslug, subCompanies: [], people: [], goals: [] }
   }
+  // Miembros de una UNIDAD TRANSVERSAL (ej. RIT): no se derivan por org/grupo
+  // sino por el tag `unidad:<slug>`. Los sumamos a "Tu gente acá" para que la
+  // ficha sea consistente con el nodo `org:<slug>` del grafo (que sí los liga).
+  {
+    const unitMembers: HubPerson[] = (peopleRows ?? [])
+      .filter((r) => transversalUnitSlugs((r as Record<string, unknown>).tags as string[] | null).includes(slug.trim().toLowerCase()))
+      .map((r) => {
+        const row = r as Record<string, unknown>
+        return {
+          id: row.id as string,
+          name: (row.name as string) ?? 'alguien',
+          slug: (row.slug as string | null) ?? null,
+          organization: (row.organization as string | null) ?? null,
+          orgGroup: (row.org_group as string | null) ?? null,
+          importance:
+            row.importance_score !== null && row.importance_score !== undefined
+              ? Number(row.importance_score)
+              : undefined,
+          lastContact: (row.last_contact as string | null) ?? null,
+        }
+      })
+    if (unitMembers.length > 0) {
+      const seen = new Set(hub.people.map((p) => p.id))
+      hub = { ...hub, people: [...hub.people, ...unitMembers.filter((m) => !seen.has(m.id))] }
+    }
+  }
+
   if (!hub.found) notFound()
 
   return (
