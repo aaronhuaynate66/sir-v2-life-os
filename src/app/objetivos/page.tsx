@@ -116,6 +116,13 @@ function GoalsContent() {
   }, [goals, stepsByGoal, updateGoalProgress])
 
   const [adding, setAdding] = useState(false)
+  // "Contale a SIR": relato libre → IA propone el objetivo → prefilla el form.
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiText, setAiText] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [aiReason, setAiReason] = useState<string | null>(null)
+  const [aiUnmatched, setAiUnmatched] = useState<string[]>([])
   const [stepsOpenId, setStepsOpenId] = useState<string | null>(null)
   // Wizard de definición SMART (gating del plan IA) + disparo de generación.
   const [wizardGoalId, setWizardGoalId] = useState<string | null>(null)
@@ -138,10 +145,48 @@ function GoalsContent() {
   // Ancla del año (mig 0060): subtítulo corto opcional.
   const [anchorSubtitle, setAnchorSubtitle] = useState('')
 
+  async function runGoalSuggest() {
+    const text = aiText.trim()
+    if (text.length < 8 || aiLoading) return
+    setAiLoading(true); setAiError(null)
+    try {
+      const res = await fetch('/api/objetivos/suggest', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setAiError(data?.error ?? 'No se pudo armar el objetivo'); return }
+      const sug = data.suggestion as {
+        title: string; description: string; category: GoalCategory; priority: GoalPriority
+        peaceImpact: number; nextAction: string; targetDate: string | null
+        relatedPersonNames: string[]; reasoning: string
+      }
+      setEditId(null)
+      setTitle(sug.title); setDesc(sug.description); setCat(sug.category); setPrio(sug.priority)
+      setPeaceImpact(String(sug.peaceImpact)); setNextAction(sug.nextAction)
+      setTargetDate(sug.targetDate ?? '')
+      setTarget(''); setBaseline(''); setWhy(''); setAnchorSubtitle('')
+      // Matchear personas mencionadas a contactos existentes.
+      const matched: string[] = []; const unmatched: string[] = []
+      for (const nm of sug.relatedPersonNames) {
+        const low = nm.toLowerCase()
+        const hit = people.find((pp) => pp.name.toLowerCase().includes(low) || low.includes(pp.name.toLowerCase()))
+        if (hit) matched.push(hit.id); else unmatched.push(nm)
+      }
+      setRelatedPersons(matched); setAiUnmatched(unmatched); setAiReason(sug.reasoning)
+      setAiOpen(false); setAiText(''); setAdding(true)
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'Error de red')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   function resetForm() {
     setTitle(''); setDesc(''); setCat('personal'); setPrio('medium')
     setTargetDate(''); setNextAction(''); setPeaceImpact('5'); setRelatedPersons([])
     setTarget(''); setBaseline(''); setWhy(''); setAnchorSubtitle('')
+    setAiReason(null); setAiUnmatched([])
     setAdding(false); setEditId(null)
   }
   function saveGoal() {
@@ -238,8 +283,38 @@ function GoalsContent() {
           </div>
           <p className="text-sm text-muted-foreground mt-1">Dirección, paz e impacto en vida</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Nuevo objetivo'}</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => { setAiOpen((v) => !v); setAiError(null) }}>
+            <Sparkles size={13} className="mr-1.5" />{aiOpen ? 'Cerrar' : 'Contale a SIR'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Nuevo objetivo'}</Button>
+        </div>
       </div>
+
+      {aiOpen && (
+        <Card className={cn('mb-4', cardClass)}>
+          <CardContent className="p-4 sm:p-6 space-y-3">
+            <SectionTitle icon={Sparkles} label="Contale a SIR" />
+            <p className="text-xs text-muted-foreground">
+              Escribí en tus palabras qué objetivo querés (ej. una charla que tuviste). SIR arma un borrador editable — vos confirmás. No inventa fechas.
+            </p>
+            <textarea
+              value={aiText}
+              onChange={(e) => setAiText(e.target.value)}
+              disabled={aiLoading}
+              rows={5}
+              placeholder="Ej: Hablé con Guillermo y me dijo que el RIT de los bomberos quizás abra un curso. Quiero entrar cuando se abra; el aviso depende de él. Me pongo a entrenar."
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+            />
+            {aiError && <p className="text-xs text-bad">{aiError}</p>}
+            <div className="flex justify-end">
+              <Button size="sm" onClick={runGoalSuggest} disabled={aiLoading || aiText.trim().length < 8}>
+                {aiLoading ? 'Armando…' : 'Armar objetivo'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {stats.map((s) => (
@@ -267,6 +342,19 @@ function GoalsContent() {
             <Card className={cn('mb-4', cardClass)}>
               <CardContent className="p-4 sm:p-6">
                 <SectionTitle icon={Plus} label={editId ? 'Editar objetivo' : 'Nuevo objetivo'} />
+                {aiReason && !editId && (
+                  <div className="mb-3 rounded-md border border-brand/20 bg-brand-soft/20 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono mb-1">
+                      <Sparkles size={11} className="inline mr-1" />Propuesta de SIR — revisá y ajustá
+                    </p>
+                    <p className="text-xs text-foreground/90 leading-snug">{aiReason}</p>
+                    {aiUnmatched.length > 0 && (
+                      <p className="text-[11px] text-warn mt-1.5">
+                        No encontré en tus contactos: {aiUnmatched.join(', ')}. Crealos en Relaciones y vinculalos después.
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                   <Input placeholder="Título" value={title} onChange={e => setTitle(e.target.value)} className="sm:col-span-2" />
                   <Input placeholder="Descripción" value={desc} onChange={e => setDesc(e.target.value)} className="sm:col-span-2" />
