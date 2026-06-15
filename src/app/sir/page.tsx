@@ -12,21 +12,25 @@ import { toast } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { useGoalStore } from '@/stores/useGoalStore'
-import type { Goal } from '@/types'
+import { useRelationshipStore } from '@/stores'
+import { generateSlug } from '@/lib/people/slug'
+import type { Goal, GoalCategory, Person, RelationshipType, PersonCategory } from '@/types'
 import { SIR_MODELS, normalizeTier, type SirModelTier } from '@/lib/sir/model'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona'
   persona?: string
   calidad?: number
   nota?: string
   titulo?: string
-  categoria?: Goal['category']
+  categoria?: GoalCategory | PersonCategory
   prioridad?: Goal['priority']
   proximoPaso?: string
   impactoPaz?: number
   personaRelacionada?: string | null
   personId?: string | null
+  nombre?: string
+  relacion?: RelationshipType
 }
 
 interface Turn {
@@ -51,7 +55,28 @@ export default function SirChatPage() {
   const [error, setError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const addGoal = useGoalStore((st) => st.addGoal)
+  const addPerson = useRelationshipStore((st) => st.addPerson)
+  const people = useRelationshipStore((st) => st.people)
   const [model, setModel] = useState<SirModelTier>('sonnet')
+
+  const THREAD_KEY = 'sir_chat_thread'
+  // Cargar el hilo guardado al montar (persiste entre recargas/sesiones).
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(THREAD_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) setTurns(parsed as Turn[])
+      }
+    } catch { /* noop */ }
+  }, [])
+  // Guardar el hilo (acotado a los últimos 40 turnos) cuando cambia.
+  useEffect(() => {
+    try {
+      if (turns.length === 0) localStorage.removeItem(THREAD_KEY)
+      else localStorage.setItem(THREAD_KEY, JSON.stringify(turns.slice(-40)))
+    } catch { /* noop */ }
+  }, [turns])
 
   useEffect(() => {
     fetch('/api/sir/settings')
@@ -67,6 +92,10 @@ export default function SirChatPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_model: tier }),
     }).catch(() => {})
+  }
+
+  function randSuffix(n: number): string {
+    return Math.random().toString(36).slice(2, 2 + n)
   }
 
   function setTurnState(idx: number, state: 'done' | 'discarded') {
@@ -95,7 +124,7 @@ export default function SirChatPage() {
           id: 'g_' + Date.now(),
           title: a.titulo ?? 'Objetivo',
           description: '',
-          category: a.categoria ?? 'personal',
+          category: (a.categoria as GoalCategory) ?? 'personal',
           priority: a.prioridad ?? 'high',
           status: 'active',
           progress: 0,
@@ -110,6 +139,32 @@ export default function SirChatPage() {
         }
         addGoal(g)
         toast.success('Objetivo creado', { description: g.title })
+        setTurnState(idx, 'done')
+      } else if (a.kind === 'crear_persona') {
+        const name = (a.nombre ?? '').trim()
+        if (name.length < 2) { toast.error('Falta el nombre'); return }
+        const taken = new Set(people.map((p) => p.slug).filter(Boolean) as string[])
+        let slug = generateSlug(name)
+        while (taken.has(slug)) slug = `${slug}-${randSuffix(3)}`
+        const now = new Date().toISOString()
+        const person: Person = {
+          id: `per_${Date.now()}_${randSuffix(6)}`,
+          slug,
+          name,
+          relationship: a.relacion ?? 'acquaintance',
+          category: (a.categoria as PersonCategory) ?? 'network',
+          importanceScore: 5,
+          energyImpact: 'neutral',
+          trustLevel: 5,
+          contactFrequency: '',
+          tags: [],
+          notes: 'Creado desde el chat de SIR.',
+          createdAt: now,
+          updatedAt: now,
+        }
+        addPerson(person)
+        track(EVENTS.personAdded, { method: 'sir_chat' })
+        toast.success(`${name} agregado`, { description: 'Lo creé en tu red.' })
         setTurnState(idx, 'done')
       }
     } catch {
@@ -231,7 +286,7 @@ export default function SirChatPage() {
                   <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
                       <CalendarCheck size={12} />
-                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : 'Crear objetivo'}
+                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : 'Crear persona'}
                     </div>
                     {t.action.kind === 'registrar_interaccion' ? (
                       <div className="text-[13px] text-foreground/90">
@@ -240,7 +295,7 @@ export default function SirChatPage() {
                         {t.action.nota && <div className="mt-0.5 text-muted-foreground">{t.action.nota}</div>}
                         {!t.action.personId && <div className="mt-1 text-[12px] text-amber-400">⚠ No la tengo registrada — no podré vincularla.</div>}
                       </div>
-                    ) : (
+                    ) : t.action.kind === 'crear_objetivo' ? (
                       <div className="text-[13px] text-foreground/90">
                         <span className="font-medium">{t.action.titulo}</span>
                         <div className="mt-0.5 text-muted-foreground">
@@ -248,6 +303,11 @@ export default function SirChatPage() {
                           {t.action.personaRelacionada ? ` · ${t.action.personaRelacionada}` : ''}
                         </div>
                         {t.action.proximoPaso && <div className="mt-0.5 text-muted-foreground">Próximo paso: {t.action.proximoPaso}</div>}
+                      </div>
+                    ) : (
+                      <div className="text-[13px] text-foreground/90">
+                        <span className="font-medium">{t.action.nombre}</span>
+                        <div className="mt-0.5 text-muted-foreground">{t.action.relacion} · {t.action.categoria}</div>
                       </div>
                     )}
                     {t.actionState === 'done' ? (
