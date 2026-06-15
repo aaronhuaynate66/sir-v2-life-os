@@ -159,3 +159,30 @@ describe('nodo-empresa HUB (escalón 2)', () => {
     expect(g.nodes.some((n) => n.category === 'organizacion')).toBe(false)
   })
 })
+
+describe('unidades transversales (tag unidad:<slug>) en el grafo', () => {
+  it('crea un hub org:<slug> que conecta miembros de compañías distintas', () => {
+    const victor = person({ id: 'victor', name: 'Victor R', relationship: 'friend', category: 'close', organization: 'Compañía Salamanca 127', tags: ['unidad:rit'] })
+    const cornejo = person({ id: 'cornejo', name: 'Guillermo C', relationship: 'professional', category: 'network', organization: 'Compañía Rímac 21', tags: ['unidad:rit'] })
+    const data = buildGraphData({
+      people: [victor, cornejo],
+      relationships: [],
+      personLinks: [],
+      directContactIds: ['victor', 'cornejo'],
+      selfFullName: 'Aaron',
+      selfEmail: 'a@x.com',
+    })
+    const ritNode = data.nodes.find((n) => n.id === 'org:rit')
+    expect(ritNode).toBeDefined()
+    expect(ritNode?.shortName).toBe('RIT')
+    expect(ritNode?.category).toBe('organizacion')
+    const ritEdges = data.edges.filter((e) => e.target === 'org:rit')
+    expect(ritEdges.map((e) => e.source).sort()).toEqual(['cornejo', 'victor'])
+  })
+
+  it('una unidad con 1 miembro también aparece (intencional por tag)', () => {
+    const solo = person({ id: 'solo', name: 'Solo', relationship: 'friend', category: 'close', tags: ['unidad:rit'] })
+    const data = buildGraphData({ people: [solo], relationships: [], personLinks: [], directContactIds: ['solo'], selfFullName: 'A', selfEmail: 'a@x.com' })
+    expect(data.nodes.some((n) => n.id === 'org:rit')).toBe(true)
+  })
+})

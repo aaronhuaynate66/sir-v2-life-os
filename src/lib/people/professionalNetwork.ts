@@ -150,3 +150,41 @@ export function professionalPairs(
   }
   return out
 }
+
+// ─── Unidades transversales (RIT, etc.) ───────────────────────────────
+// Una unidad transversal corta a través de las organizaciones: sus miembros
+// pueden pertenecer a compañías distintas (Victor=Salamanca 127, Cornejo=
+// Rímac 21) pero comparten la unidad (RIT). El modelo de people tiene UN solo
+// org_group/organization, así que la membresía transversal se marca con un
+// TAG de convención `unidad:<slug>` — cero migración, reutiliza el editor de
+// tags. El builder del grafo arma un hub `org:<slug>` por cada unidad.
+
+const UNIT_TAG_PREFIX = 'unidad:'
+
+/** Slugs de unidades transversales declaradas en los tags de una persona.
+ *  "unidad:rit" → "rit". Normaliza (minúsculas, sin prefijo, sin vacíos). */
+export function transversalUnitSlugs(tags: readonly string[] | null | undefined): string[] {
+  if (!Array.isArray(tags)) return []
+  const out: string[] = []
+  for (const t of tags) {
+    if (typeof t !== 'string') continue
+    const norm = t.trim().toLowerCase()
+    if (!norm.startsWith(UNIT_TAG_PREFIX)) continue
+    const slug = norm.slice(UNIT_TAG_PREFIX.length).trim()
+    if (slug && !out.includes(slug)) out.push(slug)
+  }
+  return out
+}
+
+/** Etiqueta legible de una unidad a partir del slug. Acrónimos cortos (≤4)
+ *  van en MAYÚSCULA ("rit" → "RIT"); el resto, Title Case con espacios. */
+export function prettyUnitLabel(slug: string): string {
+  const s = slug.trim()
+  if (!s) return ''
+  if (s.length <= 4 && /^[a-z]+$/.test(s)) return s.toUpperCase()
+  return s
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}

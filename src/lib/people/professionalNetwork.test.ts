@@ -99,3 +99,30 @@ describe('orgGroupLabel', () => {
     expect(orgGroupLabel({})).toBe('')
   })
 })
+
+import { transversalUnitSlugs, prettyUnitLabel } from './professionalNetwork'
+
+describe('transversalUnitSlugs', () => {
+  it('extrae slugs de tags unidad:<slug>', () => {
+    expect(transversalUnitSlugs(['amigo', 'unidad:rit', 'bomberos'])).toEqual(['rit'])
+  })
+  it('normaliza mayúsculas y dedupe', () => {
+    expect(transversalUnitSlugs(['UNIDAD:RIT', 'unidad:rit'])).toEqual(['rit'])
+  })
+  it('ignora tags sin prefijo o vacíos', () => {
+    expect(transversalUnitSlugs(['unidad:', 'rit', 'x'])).toEqual([])
+  })
+  it('tolera null/no-array', () => {
+    expect(transversalUnitSlugs(null)).toEqual([])
+    expect(transversalUnitSlugs(undefined)).toEqual([])
+  })
+})
+
+describe('prettyUnitLabel', () => {
+  it('acrónimo corto en mayúscula', () => {
+    expect(prettyUnitLabel('rit')).toBe('RIT')
+  })
+  it('frase larga en Title Case', () => {
+    expect(prettyUnitLabel('grupo-de-rescate')).toBe('Grupo De Rescate')
+  })
+})
