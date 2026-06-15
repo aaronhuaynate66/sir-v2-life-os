@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2b9d40c`
+**Hash del último commit humano:** `004c5d9`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `004c5d9` | aaronhuaynate66 | feat(captura): auto-tono de conversación → Reciprocidad (person_logs) (#243) | 2026-06-15 |
 | `2b9d40c` | aaronhuaynate66 | feat(relaciones): PR-B Personas mencionadas (crear + vincular + cumple) (#242) | 2026-06-15 |
 | `bd09e4a` | aaronhuaynate66 | fix(ficha): una sola 'última interacción' + un DM adelanta last_contact (#241) | 2026-06-15 |
 | `e838d5d` | aaronhuaynate66 | fix(captura): extractor de DM tolerante (no 422) (#240) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `14c485d` | aaronhuaynate66 | fix(objetivos): el form ya no queda fantasma tras guardar (evita duplicados) (#236) | 2026-06-15 |
 | `65ec863` | aaronhuaynate66 | fix(objetivos): Eliminar objetivo + guarda anti-doble (#235) | 2026-06-15 |
 | `f224b75` | aaronhuaynate66 | feat(objetivos): crear objetivo desde texto ('Contale a SIR') (#234) | 2026-06-15 |
-| `ce6c608` | aaronhuaynate66 | fix(ficha): aceptar DM (dm_conversation) en captura de persona + tarjeta 'Última interacción' (#233) | 2026-06-15 |
 
 ---
 
