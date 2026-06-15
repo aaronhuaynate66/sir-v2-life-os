@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `8f1b804`
+**Hash del último commit humano:** `70bcdf8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `70bcdf8` | aaronhuaynate66 | feat(sir): #86 PR1 — 'Preguntá a SIR' (chat solo lectura, aterrizado) (#246) | 2026-06-15 |
 | `8f1b804` | aaronhuaynate66 | feat(analytics): taxonomía estándar + instrumentar features nuevas (#245) | 2026-06-15 |
 | `e503008` | aaronhuaynate66 | feat(red): unidad transversal (RIT) como nodo del grafo (#244) | 2026-06-15 |
 | `004c5d9` | aaronhuaynate66 | feat(captura): auto-tono de conversación → Reciprocidad (person_logs) (#243) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6ebda66` | aaronhuaynate66 | fix(captura): /api/capture/process acepta dm_conversation (DM se podía detectar pero no procesar) (#239) | 2026-06-15 |
 | `5708885` | aaronhuaynate66 | feat(empresas): botón 'Nueva organización' (crear desde cero) (#238) | 2026-06-15 |
 | `9e86528` | aaronhuaynate66 | feat(empresas): orgs creadas a mano (perfiles) aparecen en el índice y su ficha (#237) | 2026-06-15 |
-| `14c485d` | aaronhuaynate66 | fix(objetivos): el form ya no queda fantasma tras guardar (evita duplicados) (#236) | 2026-06-15 |
 
 ---
 
