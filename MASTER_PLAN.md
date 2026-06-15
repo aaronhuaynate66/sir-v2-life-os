@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c22441f`
+**Hash del último commit humano:** `6161f26`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6161f26` | aaronhuaynate66 | feat(e5): chip de deriva del norte en Mission Control (#258) | 2026-06-15 |
 | `c22441f` | aaronhuaynate66 | feat(e5): indicador de deriva hacia el norte (#257) | 2026-06-15 |
 | `40697c0` | aaronhuaynate66 | feat(scores): página /scores 'Cómo se calcula' (educativa, autocontenida) (#256) | 2026-06-15 |
 | `f67c526` | aaronhuaynate66 | feat(sir): capa de proveedor + modelos OSS vía OpenRouter (BYOK por env) (#255) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `17fa86c` | aaronhuaynate66 | fix(salud): caveat preciso en alertas de FC elevada (#251) | 2026-06-15 |
 | `a994204` | aaronhuaynate66 | feat(salud): alertas de FC elevada como métrica + panel (#90 Fase 1) (#250) | 2026-06-15 |
 | `c6555c3` | aaronhuaynate66 | feat(sir): #86 multi-turno — el chat recuerda el hilo (#249) | 2026-06-15 |
-| `9f10786` | aaronhuaynate66 | feat(sir): #86 PR3 — config de modelo del chat (costo/calidad) (#248) | 2026-06-15 |
 
 ---
 
