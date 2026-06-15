@@ -60,6 +60,8 @@ export const EVENTS = {
   searchPerformed: 'search_performed',
   goalSuggested: 'goal_suggested',
   sirAsked: 'sir_asked',
+  sirActionProposed: 'sir_action_proposed',
+  sirActionConfirmed: 'sir_action_confirmed',
 } as const
 
 // ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────
@@ -88,6 +90,7 @@ export type CreateMethod =
   | 'intake'       // intake inteligente
   | 'mencionada'   // auto-crear persona mencionada (PR-B)
   | 'captura'      // derivada de una captura
+  | 'sir_chat'     // confirmada desde el chat de SIR
 
 /** Captura: fuerza `capture_type` + `surface`. */
 export function trackCapture(
