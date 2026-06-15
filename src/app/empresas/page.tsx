@@ -40,6 +40,22 @@ export default async function EmpresasPage() {
 
   const orgs = listOrganizations(people)
 
+  // Además de las orgs derivadas de personas, incluí las creadas a mano
+  // (org_profiles) — así una org sin miembros aún (ej. una unidad transversal)
+  // también aparece. Dedup por slug.
+  const { data: profileRows } = await supabase
+    .from('org_profiles')
+    .select('org_slug, name')
+    .eq('user_id', userId)
+    .limit(300)
+  const deslug = (sg: string) => sg.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const seen = new Set(orgs.map((o) => o.slug))
+  const profileOrgs = (profileRows ?? [])
+    .map((r) => r as { org_slug: string | null; name: string | null })
+    .filter((r) => r.org_slug && !seen.has(r.org_slug))
+    .map((r) => ({ label: r.name || deslug(r.org_slug as string), slug: r.org_slug as string, count: 0 }))
+  const allOrgs = [...orgs, ...profileOrgs]
+
   return (
     <AppShell>
       <header className="mb-6 flex items-center gap-3">
@@ -47,18 +63,18 @@ export default async function EmpresasPage() {
         <div>
           <h1 className="text-xl font-semibold">Empresas</h1>
           <p className="text-sm text-muted-foreground">
-            Organizaciones y grupos de tu red. {orgs.length} {orgs.length === 1 ? 'organización' : 'organizaciones'}.
+            Organizaciones y grupos de tu red. {allOrgs.length} {allOrgs.length === 1 ? 'organización' : 'organizaciones'}.
           </p>
         </div>
       </header>
 
-      {orgs.length === 0 ? (
+      {allOrgs.length === 0 ? (
         <div className="rounded-lg border border-border p-6 text-sm text-muted-foreground">
           Todavía no hay organizaciones. Cuando una persona tenga empresa o grupo cargado, aparece acá.
         </div>
       ) : (
         <ul className="space-y-2">
-          {orgs.map((o) => (
+          {allOrgs.map((o) => (
             <li key={o.slug}>
               <Link
                 href={`/empresas/${o.slug}`}
@@ -66,7 +82,7 @@ export default async function EmpresasPage() {
               >
                 <span className="font-medium">{o.label}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {o.count} {o.count === 1 ? 'persona' : 'personas'}
+                  {o.count === 0 ? 'perfil' : `${o.count} ${o.count === 1 ? 'persona' : 'personas'}`}
                 </span>
               </Link>
             </li>
