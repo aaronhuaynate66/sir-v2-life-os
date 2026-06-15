@@ -1,8 +1,9 @@
 // SIR V2 — Panel "Alertas de FC elevada" (#90 Fase 1).
 // Lista los DÍAS en que el wearable registró alertas de frecuencia cardíaca
 // elevada (métrica heart_rate_high_alerts). Señal episódica de activación.
-// CAVEAT explícito: NO es prueba de estrés (el reloj también marca por
-// ejercicio, café, escaleras). Es para que Aaron mire patrones, no diagnostique.
+// La alerta del wearable salta con FC elevada sostenida ~10 min EN REPOSO
+// (descarta esfuerzo). Es activación real — probablemente estrés, pero también
+// cafeína/sueño/deshidratación/enfermedad. Es para mirar patrones, no diagnosticar.
 
 'use client'
 
@@ -43,8 +44,10 @@ export function HeartRateAlertsPanel({ metrics }: Props) {
       <CardContent className="p-4 sm:p-6">
         <SectionTitle icon={HeartPulse} label="Alertas de FC elevada" count={totalDays} />
         <p className="mt-1 text-[12px] text-muted-foreground">
-          {totalDays} día(s) con alertas · {totalAlerts} alerta(s) en total. Señal de activación posible —
-          el reloj también la marca por ejercicio, café o esfuerzo, no solo por estrés.
+          {totalDays} día(s) con alertas · {totalAlerts} alerta(s) en total. El reloj las marca solo con
+          FC elevada sostenida ~10 min en reposo, así que descarta el ejercicio. Es activación real:
+          lo más probable es estrés, aunque también la disparan cafeína, dormir poco, deshidratación o
+          estar incubando algo.
         </p>
         <ul className="mt-3 space-y-1.5">
           {alerts.map((a) => (
