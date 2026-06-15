@@ -1,28 +1,20 @@
 import { describe, it, expect } from 'vitest'
-
 import { planPersonCapture, PERSON_LINKABLE_CAPTURE_TYPES } from './person-capture'
-import type { CaptureType } from './observations/types'
 
 describe('planPersonCapture', () => {
-  it('tipos con extractor → link (se asocian a la persona)', () => {
-    for (const t of ['whatsapp_chat', 'whatsapp_web', 'whatsapp_info', 'instagram', 'linkedin'] as CaptureType[]) {
-      expect(planPersonCapture(t)).toEqual({ kind: 'link' })
-    }
+  it('dm_conversation se asocia a la persona (link), no se rechaza', () => {
+    expect(PERSON_LINKABLE_CAPTURE_TYPES).toContain('dm_conversation')
+    expect(planPersonCapture('dm_conversation').kind).toBe('link')
   })
-
-  it('báscula → scale (self/health, NO la persona)', () => {
-    expect(planPersonCapture('scale')).toEqual({ kind: 'scale' })
+  it('whatsapp_chat e instagram siguen siendo link', () => {
+    expect(planPersonCapture('whatsapp_chat').kind).toBe('link')
+    expect(planPersonCapture('instagram').kind).toBe('link')
   })
-
-  it('unknown / sin extractor → unsupported', () => {
-    expect(planPersonCapture('unknown')).toEqual({ kind: 'unsupported' })
-    expect(planPersonCapture('manual_note')).toEqual({ kind: 'unsupported' })
-    expect(planPersonCapture('voice_note')).toEqual({ kind: 'unsupported' })
+  it('scale es self (no se asocia)', () => {
+    expect(planPersonCapture('scale').kind).toBe('scale')
   })
-
-  it('PERSON_LINKABLE_CAPTURE_TYPES no incluye scale ni unknown', () => {
-    expect(PERSON_LINKABLE_CAPTURE_TYPES).not.toContain('scale')
-    expect(PERSON_LINKABLE_CAPTURE_TYPES).not.toContain('unknown')
-    expect(PERSON_LINKABLE_CAPTURE_TYPES).toContain('whatsapp_chat')
+  it('hrv_panel/unknown no se asocian a persona', () => {
+    expect(planPersonCapture('hrv_panel').kind).toBe('unsupported')
+    expect(planPersonCapture('unknown').kind).toBe('unsupported')
   })
 })

@@ -55,6 +55,8 @@ import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
+import { buildLastInteraction } from '@/lib/relaciones/lastInteraction'
+import { relativeEs } from '@/lib/graph/hover'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
 import { BondEvolutionPanel } from './BondEvolutionPanel'
@@ -358,6 +360,39 @@ export function PersonDetail({
           />
         </div>
       </header>
+
+      {/* Última interacción: lo PRIMERO arriba — fecha + qué pasó/qué detectó SIR
+          (memoria más reciente o nota de interacción). Se oculta si no hay nada. */}
+      {(() => {
+        const li = buildLastInteraction({
+          lastContact: live.lastContact ?? null,
+          memories,
+          conversationObservations: (curatedObservations ?? []).filter((o) =>
+            CONVERSATION_CAPTURE_TYPES.includes(o.captureType),
+          ),
+          personLogs,
+        })
+        if (!li.dateISO && !li.text) return null
+        return (
+          <Card className="shadow-none mb-4 border-brand/20 bg-brand-soft/20">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-start gap-2">
+                <MessageSquareHeart size={15} strokeWidth={1.75} className="text-brand-soft-foreground mt-0.5 shrink-0" aria-hidden="true" />
+                <div className="min-w-0">
+                  <div className="text-[11px] uppercase tracking-[0.07em] text-muted-foreground font-mono">
+                    Última interacción{li.dateISO ? ` · ${relativeEs(li.dateISO, new Date())}` : ''}
+                  </div>
+                  {li.text ? (
+                    <p className="text-sm text-foreground/90 mt-1 leading-snug">{li.text}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-1">Sin detalle registrado todavía — subí un chat o registrá una interacción.</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       {/* "Antes de contactar": cabecera discreta que COMPLEMENTA la franja de
           resumen de abajo. Lo que el strip no cubre y te deja listo para el
