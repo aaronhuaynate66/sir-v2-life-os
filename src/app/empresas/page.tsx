@@ -12,6 +12,7 @@ import { Building2 } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { createClient } from '@/lib/supabase/server'
 import { listOrganizations, type HubPerson } from '@/lib/people/companyHub'
+import { NuevaOrganizacion } from '@/components/empresas/NuevaOrganizacion'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,14 +59,17 @@ export default async function EmpresasPage() {
 
   return (
     <AppShell>
-      <header className="mb-6 flex items-center gap-3">
-        <Building2 className="text-muted-foreground" size={22} strokeWidth={1.75} />
-        <div>
-          <h1 className="text-xl font-semibold">Empresas</h1>
-          <p className="text-sm text-muted-foreground">
-            Organizaciones y grupos de tu red. {allOrgs.length} {allOrgs.length === 1 ? 'organización' : 'organizaciones'}.
-          </p>
+      <header className="mb-6 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Building2 className="text-muted-foreground" size={22} strokeWidth={1.75} />
+          <div>
+            <h1 className="text-xl font-semibold">Empresas</h1>
+            <p className="text-sm text-muted-foreground">
+              Organizaciones y grupos de tu red. {allOrgs.length} {allOrgs.length === 1 ? 'organización' : 'organizaciones'}.
+            </p>
+          </div>
         </div>
+        <NuevaOrganizacion />
       </header>
 
       {allOrgs.length === 0 ? (
