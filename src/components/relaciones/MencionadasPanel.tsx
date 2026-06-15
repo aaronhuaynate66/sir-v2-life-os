@@ -6,6 +6,7 @@
 // Reusa el patrón addPerson + addPersonLink de FamiliaPanel (client-side).
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { trackCreated, track, EVENTS } from '@/lib/analytics/track'
 import { UserPlus, X } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -93,6 +94,8 @@ export function MencionadasPanel({ personId, personName, specialDates }: Props) 
     if (m.isBirthday) {
       updatePerson(id, { birthDate: m.dateISO })
     }
+    trackCreated(EVENTS.personAdded, { method: 'mencionada' })
+    track(EVENTS.familyLinkAdded, { kind: kindFor(m), source: 'mencionada' })
     setDismissed((prev) => new Set(prev).add(m.sourceId))
     toast.success(`${name} creado y vinculado`, { description: `${personName} → ${name}` })
   }

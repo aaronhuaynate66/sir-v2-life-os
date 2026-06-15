@@ -243,7 +243,7 @@ function CapturaIndexContent() {
         personId: selectedPersonId,
       })
       setProcessed(r)
-      track(EVENTS.captureSaved, { capture_type: detection.detected.type, linked: !!selectedPersonId })
+      track(EVENTS.captureSaved, { capture_type: detection.detected.type, surface: 'captura', linked: !!selectedPersonId })
     } catch (e) {
       if (e instanceof HttpError) {
         setProcessError({ status: e.status, message: e.message, detail: e.detail })
