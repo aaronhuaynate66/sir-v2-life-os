@@ -54,6 +54,7 @@ const CAPTURE_LABEL: Record<CaptureType, string> = {
   whatsapp_web: 'WhatsApp Web',
   whatsapp_info: 'WhatsApp · info',
   instagram: 'Instagram',
+  dm_conversation: 'DM / Chat',
   linkedin: 'LinkedIn',
   scale: 'Báscula',
   sleep_panel: 'Sueño',

@@ -12,6 +12,9 @@ const VALID_TYPES: ReadonlySet<CaptureType> = new Set<CaptureType>([
   'whatsapp_web',
   'whatsapp_info',
   'instagram',
+  // 'dm_conversation' = screenshot de DM/chat (IG/Telegram/Messenger). El caller
+  // lo rutea como conversación (igual que whatsapp_chat) → interacción.
+  'dm_conversation',
   'linkedin',
   // 'scale' SÍ sale de screenshot (panel de báscula inteligente). Lo
   // emite el detector aunque no sea person-centric: el caller lo rutea al

@@ -43,6 +43,8 @@ export const COMPRESSION_STRATEGIES = {
   // teléfono del panel derecho queden legibles para Vision.
   whatsapp_web: { maxWidth: 1920, quality: 0.9, minOutputKB: 200 },
   whatsapp_info: { maxWidth: 1080, quality: 0.75, minOutputKB: 50 },
+  // DM (IG/Telegram/Messenger): chat móvil denso en texto, igual que whatsapp_chat.
+  dm_conversation: { maxWidth: 1080, quality: 0.75, minOutputKB: 50 },
   instagram: { maxWidth: 1080, quality: 0.85, minOutputKB: 100 },
   linkedin: { maxWidth: 1600, quality: 0.95, minOutputKB: 300 },
   // Báscula: grilla densa de números pequeños -> hace falta resolución y

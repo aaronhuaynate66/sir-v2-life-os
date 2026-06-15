@@ -18,6 +18,11 @@ export type CaptureType =
   | 'whatsapp_web'
   | 'whatsapp_info'
   | 'instagram'
+  // 'dm_conversation' = captura (screenshot) de un DM/chat de Instagram,
+  // Telegram, Messenger, etc. — NO un perfil. Es una conversación real con una
+  // persona → cuenta como interacción (igual que whatsapp_chat). Reusa el
+  // extractor de whatsapp_chat (misma estructura de burbujas).
+  | 'dm_conversation'
   | 'linkedin'
   | 'manual_note'
   | 'voice_note'
@@ -46,6 +51,7 @@ export type CaptureType =
 export const CONVERSATION_CAPTURE_TYPES: readonly CaptureType[] = [
   'whatsapp_chat',
   'whatsapp_web',
+  'dm_conversation',
 ]
 
 /**
@@ -104,6 +110,7 @@ export function storageBucketFor(captureType: CaptureType): string | null {
     case 'whatsapp_chat':
     case 'whatsapp_web':
     case 'whatsapp_info':
+    case 'dm_conversation':
       return 'whatsapp-captures'
     case 'instagram':
       return 'instagram-captures'

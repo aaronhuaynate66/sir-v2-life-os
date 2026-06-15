@@ -14,7 +14,7 @@ Schema EXACTO de respuesta (debe parsear con JSON.parse() sin error —
 sin prosa, sin markdown fences):
 
 {
-  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "linkedin" | "scale" | "sleep_panel" | "heart_rate_panel" | "unknown",
+  "type": "whatsapp_chat" | "whatsapp_web" | "whatsapp_info" | "instagram" | "dm_conversation" | "linkedin" | "scale" | "sleep_panel" | "heart_rate_panel" | "unknown",
   "confidence": "high" | "medium" | "low",
   "reasoning": "<<=80 chars: pista visual concreta que disparó la decisión>",
   "suggestedPersonName": "<nombre visible en el header si aplica, null si no>"
@@ -65,6 +65,23 @@ REGLAS DE CLASIFICACION:
    - Stories destacadas como circulos arriba.
    - Bio multi-linea debajo del nombre.
    - Tab bar inferior con iconos: home, search, reels, shop, perfil.
+
+3b. dm_conversation (DM / CHAT de Instagram, Telegram, Messenger — NO perfil)
+   Es una CONVERSACIÓN con una persona, NO un perfil. Señales visuales:
+   - Burbujas de mensaje en columnas izquierda (la otra persona) / derecha (vos).
+   - Header arriba: flecha "atrás" + nombre o @handle de la persona + íconos de
+     llamada/videollamada (NO botón Follow, NO contadores).
+   - Barra de escribir abajo: "Mensaje…", ícono de cámara/micrófono/galería.
+   - Propio de Instagram DM: bloques "Respondió a tu historia" / "Reaccionó a tu
+     historia", reacciones con emoji, "Visto el …".
+   - NO hay grid de posts, NI followers/following, NI bio: eso es un PERFIL
+     (type=instagram), no un DM.
+   REGLA CLAVE: burbujas de chat + header con nombre/@handle + barra de escribir
+   = dm_conversation. Si en cambio ves contadores de seguidores + grid de posts,
+   es instagram (perfil). Si es claramente WhatsApp (burbujas verdes, UI de
+   WhatsApp), usá whatsapp_chat, no dm_conversation. Telegram/Messenger/IG DM y
+   otras apps de mensajería = dm_conversation.
+   suggestedPersonName: el nombre o @handle del header.
 
 4. linkedin
    Señales visuales:
@@ -129,8 +146,9 @@ REGLAS DE CLASIFICACION:
 
 8. unknown
    Cualquier cosa que NO cumpla los signos visuales de los 7 anteriores.
-   Ejemplos: pantallas de configuracion, otras apps de chat (Telegram,
-   Signal, Threads), screenshots de codigo, fotos sin texto, etc.
+   Ejemplos: pantallas de configuracion, screenshots de codigo, fotos sin
+   texto, etc. (OJO: un DM de Telegram/Messenger/Instagram NO es unknown —
+   es dm_conversation.)
 
 REGLAS DE CONFIANZA:
 
@@ -143,7 +161,8 @@ REGLAS GENERALES:
 
 - suggestedPersonName: si ves un nombre claro en el header (whatsapp_chat,
   whatsapp_web [header del centro o panel derecho], whatsapp_info, linkedin)
-  o @handle (instagram), copialo literal. Si no hay nombre visible, null.
+  o @handle (instagram perfil / dm_conversation), copialo literal. Si no hay
+  nombre visible, null.
   Para type='scale', type='sleep_panel' y type='heart_rate_panel' SIEMPRE
   null: miden al PROPIO usuario, no a una persona de sus relaciones (aunque
   el header diga "Usuario actual: X").
