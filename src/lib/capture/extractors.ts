@@ -70,6 +70,19 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
           >,
         maxTokens: 2000,
       }
+    // DM de Instagram/Telegram/Messenger: misma estructura de burbujas que un
+    // chat de WhatsApp → reusa el MISMO extractor (sin reflection).
+    case 'dm_conversation':
+      return {
+        getSystemPrompt: () => getWhatsAppChatSystemPrompt(false),
+        isValid: isValidWhatsAppCaptureExtracted,
+        sanitize: (x) =>
+          sanitizeWhatsAppChat(x as Parameters<typeof sanitizeWhatsAppChat>[0]) as unknown as Record<
+            string,
+            unknown
+          >,
+        maxTokens: 2000,
+      }
     case 'whatsapp_web':
       return {
         getSystemPrompt: () => WHATSAPP_WEB_SYSTEM_PROMPT,
