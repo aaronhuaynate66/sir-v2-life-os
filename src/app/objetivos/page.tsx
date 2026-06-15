@@ -1,5 +1,5 @@
 'use client'
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
@@ -70,7 +70,7 @@ export default function GoalsPage() {
 }
 
 function GoalsContent() {
-  const { goals, addGoal, updateGoal, updateGoalProgress, completeGoal, pauseGoal, setAnchor } = useGoalStore()
+  const { goals, addGoal, updateGoal, updateGoalProgress, completeGoal, pauseGoal, removeGoal, setAnchor } = useGoalStore()
   // Deep-link desde "TU AÑO" (Mission Control): ?goal=<id> → scroll + highlight.
   const params = useSearchParams()
   const focusGoalId = params.get('goal')
@@ -189,7 +189,9 @@ function GoalsContent() {
     setAiReason(null); setAiUnmatched([])
     setAdding(false); setEditId(null)
   }
+  const savingGuardRef = useRef(false)
   function saveGoal() {
+    if (savingGuardRef.current) return
     if (!title.trim()) { toast.error('Título requerido', { description: 'El título no puede estar vacío.' }); return }
     const pi = parseInt(peaceImpact)
     if (isNaN(pi) || pi < 1 || pi > 10) { toast.error('Impacto inválido', { description: 'El impacto de paz debe estar entre 1 y 10.' }); return }
@@ -212,7 +214,9 @@ function GoalsContent() {
       track(EVENTS.objectiveCreated)
       toast.success('Objetivo creado', { description: title })
     }
+    savingGuardRef.current = true
     resetForm()
+    setTimeout(() => { savingGuardRef.current = false }, 600)
   }
   function startEdit(g: Goal) {
     setEditId(g.id); setTitle(g.title); setDesc(g.description); setCat(g.category)
@@ -250,6 +254,10 @@ function GoalsContent() {
   }
   function handlePause(g: Goal) {
     pauseGoal(g.id)
+  }
+  function handleDelete(g: Goal) {
+    removeGoal(g.id)
+    toast.success('Objetivo eliminado', { description: g.title })
     toast.success('Objetivo pausado', { description: g.title })
   }
   function handleReactivate(g: Goal) {
@@ -611,6 +619,23 @@ function GoalsContent() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
                           <AlertDialogAction onClick={() => handlePause(g)}>Pausar</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-bad hover:text-bad hover:bg-bad/10">Eliminar</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar este objetivo?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            &ldquo;{g.title}&rdquo; se borra para siempre (no va al historial). Esta acción no se puede deshacer.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(g)}>Eliminar</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
