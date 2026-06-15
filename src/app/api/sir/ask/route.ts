@@ -26,6 +26,7 @@ import {
   type AskMemoryHit,
   type AskGoalCtx,
 } from '@/lib/sir/ask'
+import { SIR_ACTION_TOOLS, parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -176,12 +177,25 @@ export async function POST(req: NextRequest) {
     goals: goalsCtx,
   })
 
+  // Resolver el nombre que proponga una acción → personId (con la gente cargada).
+  function resolvePersonId(name: string): { id: string | null; name: string } {
+    if (!name) return { id: null, name }
+    const hits = extractCandidateNames(name, allPeople.map((p) => (p.name as string) ?? ''), 1)
+    if (hits.length === 0) return { id: null, name }
+    const match = allPeople.find((p) => ((p.name as string) ?? '') === hits[0])
+    return { id: (match?.id as string) ?? null, name: hits[0] }
+  }
+
+  const ACTION_RULE =
+    '\n\nSi Aaron pide HACER algo (registrar/anotar una interacción, o crear/fijar un objetivo), NO lo hagas ni digas que está hecho: llamá a la tool correspondiente para PROPONERLO. Aaron lo confirma aparte. Si solo pregunta, respondé en texto sin tools.'
+
   try {
     const anthropic = new Anthropic({ apiKey })
     const msg = await anthropic.messages.create({
       model: MODEL_ID,
       max_tokens: 900,
-      system: SIR_ASK_SYSTEM_PROMPT,
+      system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE,
+      tools: SIR_ACTION_TOOLS as unknown as Anthropic.Tool[],
       messages: [{ role: 'user', content: context }],
     })
     const answer = msg.content
@@ -189,8 +203,28 @@ export async function POST(req: NextRequest) {
       .map((b) => b.text)
       .join('\n')
       .trim()
+
+    // ¿El modelo propuso una acción? La normalizamos y resolvemos la persona.
+    // NO se ejecuta acá: el cliente la confirma.
+    let proposedAction: (ProposedAction & { personId?: string | null }) | null = null
+    const toolUse = msg.content.find((b) => b.type === 'tool_use') as Anthropic.ToolUseBlock | undefined
+    if (toolUse) {
+      const parsed = parseProposedAction(toolUse.name, toolUse.input)
+      if (parsed?.kind === 'registrar_interaccion') {
+        const r = resolvePersonId(parsed.persona)
+        proposedAction = { ...parsed, persona: r.name, personId: r.id }
+      } else if (parsed?.kind === 'crear_objetivo') {
+        const r = parsed.personaRelacionada ? resolvePersonId(parsed.personaRelacionada) : { id: null, name: null }
+        proposedAction = { ...parsed, personaRelacionada: r.name, personId: r.id }
+      }
+    }
+
     return NextResponse.json(
-      { answer, sources: { people: peopleCtx.map((p) => p.name), memories: memoryHits.length } },
+      {
+        answer,
+        proposedAction,
+        sources: { people: peopleCtx.map((p) => p.name), memories: memoryHits.length },
+      },
       { status: 200 },
     )
   } catch (e) {
