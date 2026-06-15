@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `6ebda66`
+**Hash del último commit humano:** `e838d5d`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e838d5d` | aaronhuaynate66 | fix(captura): extractor de DM tolerante (no 422) (#240) | 2026-06-15 |
 | `6ebda66` | aaronhuaynate66 | fix(captura): /api/capture/process acepta dm_conversation (DM se podía detectar pero no procesar) (#239) | 2026-06-15 |
 | `5708885` | aaronhuaynate66 | feat(empresas): botón 'Nueva organización' (crear desde cero) (#238) | 2026-06-15 |
 | `9e86528` | aaronhuaynate66 | feat(empresas): orgs creadas a mano (perfiles) aparecen en el índice y su ficha (#237) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ce6c608` | aaronhuaynate66 | fix(ficha): aceptar DM (dm_conversation) en captura de persona + tarjeta 'Última interacción' (#233) | 2026-06-15 |
 | `ebfd8a9` | aaronhuaynate66 | feat(salud): VFC/HRV como métrica propia (#232) | 2026-06-15 |
 | `35102ee` | aaronhuaynate66 | feat(captura): dm_conversation — DMs de IG/Telegram/Messenger como interacción (#231) | 2026-06-15 |
-| `17f5f36` | aaronhuaynate66 | feat(red): organizaciones ocultas por defecto en el grafo + sección /empresas (#230) | 2026-06-14 |
 
 ---
 
