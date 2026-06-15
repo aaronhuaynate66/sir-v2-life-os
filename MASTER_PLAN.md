@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c11fcb0`
+**Hash del último commit humano:** `7ecc4ca`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `7ecc4ca` | aaronhuaynate66 | chore(analytics): cablear eventos GA4 muertos (capture_started, step_completed) (#254) | 2026-06-15 |
 | `c11fcb0` | aaronhuaynate66 | feat(sir): #86 persistir hilo + acción crear-persona (#253) | 2026-06-15 |
 | `079cfcf` | aaronhuaynate66 | feat(salud): mapa de calor para alertas de FC elevada (UX) (#252) | 2026-06-15 |
 | `17fa86c` | aaronhuaynate66 | fix(salud): caveat preciso en alertas de FC elevada (#251) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `11903da` | aaronhuaynate66 | feat(sir): #86 PR2 — acciones con confirmación desde el chat (#247) | 2026-06-15 |
 | `70bcdf8` | aaronhuaynate66 | feat(sir): #86 PR1 — 'Preguntá a SIR' (chat solo lectura, aterrizado) (#246) | 2026-06-15 |
 | `8f1b804` | aaronhuaynate66 | feat(analytics): taxonomía estándar + instrumentar features nuevas (#245) | 2026-06-15 |
-| `e503008` | aaronhuaynate66 | feat(red): unidad transversal (RIT) como nodo del grafo (#244) | 2026-06-15 |
 
 ---
 
