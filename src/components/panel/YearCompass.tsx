@@ -24,6 +24,7 @@ import { useEffect, useState } from 'react'
 
 import { useGoalStore } from '@/stores/useGoalStore'
 import { buildYearCompass, type YearCompass } from '@/lib/year-compass/build'
+import { computeNorteDrift, type NorteDrift } from '@/lib/self/norteDrift'
 import { cn } from '@/lib/utils'
 
 // Grises exactos del mockup (monocromático).
@@ -43,6 +44,7 @@ export function YearCompass() {
   }, [])
 
   const compass: YearCompass | null = now ? buildYearCompass(goals, now) : null
+  const drift: NorteDrift | null = now ? computeNorteDrift(goals, now) : null
 
   return (
     <section
@@ -55,7 +57,7 @@ export function YearCompass() {
         <>
           <YearLine compass={compass} />
           <UpcomingList compass={compass} />
-          <Anchor compass={compass} />
+          <Anchor compass={compass} drift={drift} />
         </>
       )}
     </section>
@@ -155,9 +157,12 @@ function UpcomingList({ compass }: { compass: YearCompass }) {
 }
 
 // ─── 3. El ancla ──────────────────────────────────────────────────────
-function Anchor({ compass }: { compass: YearCompass }) {
+function Anchor({ compass, drift }: { compass: YearCompass; drift: NorteDrift | null }) {
   const a = compass.anchor
   if (!a) return null
+
+  const DRIFT_COLOR: Record<string, string> = { enfocado: '#2dd4a7', a_medias: '#e0a93b', disperso: '#e5564c', estancado: '#e5564c', sin_norte: '#8A8A8E' }
+  const DRIFT_LABEL: Record<string, string> = { enfocado: 'ENFOCADO', a_medias: 'A MEDIAS', disperso: 'DISPERSO', estancado: 'ESTANCADO', sin_norte: '' }
 
   return (
     <Link
@@ -185,6 +190,19 @@ function Anchor({ compass }: { compass: YearCompass }) {
       {!a.monthLabel && (
         <div className="mt-3 font-mono text-xs tracking-[0.15em]" style={{ color: C_DOT }}>
           SIN FECHA OBJETIVO
+        </div>
+      )}
+      {drift && drift.state !== 'sin_norte' && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: DRIFT_COLOR[drift.state] }} />
+          <span className="font-mono text-[10px] tracking-[0.2em]" style={{ color: DRIFT_COLOR[drift.state] }}>
+            {DRIFT_LABEL[drift.state]}
+          </span>
+          {drift.daysSinceTouch != null && (
+            <span className="font-mono text-[10px] tracking-[0.15em] text-white/40">
+              · ÚLTIMO AVANCE HACE {drift.daysSinceTouch}D
+            </span>
+          )}
         </div>
       )}
     </Link>
