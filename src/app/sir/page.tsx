@@ -5,7 +5,7 @@
 // "¿qué pasó con Dayana?" o "¿cómo me acerco a Francisco esta semana?".
 // v1 NO ejecuta acciones — solo lee y responde/sugiere (POST /api/sir/ask).
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Sparkles, Send, Loader2, ArrowLeft, User, Check, X, CalendarCheck } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -13,6 +13,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { useGoalStore } from '@/stores/useGoalStore'
 import type { Goal } from '@/types'
+import { SIR_MODELS, normalizeTier, type SirModelTier } from '@/lib/sir/model'
 
 interface ProposedAction {
   kind: 'registrar_interaccion' | 'crear_objetivo'
@@ -50,6 +51,23 @@ export default function SirChatPage() {
   const [error, setError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const addGoal = useGoalStore((st) => st.addGoal)
+  const [model, setModel] = useState<SirModelTier>('sonnet')
+
+  useEffect(() => {
+    fetch('/api/sir/settings')
+      .then((r) => r.json())
+      .then((d) => setModel(normalizeTier(d?.chatModel)))
+      .catch(() => {})
+  }, [])
+
+  function changeModel(tier: SirModelTier) {
+    setModel(tier)
+    fetch('/api/sir/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_model: tier }),
+    }).catch(() => {})
+  }
 
   function setTurnState(idx: number, state: 'done' | 'discarded') {
     setTurns((t) => t.map((tu, i) => (i === idx ? { ...tu, actionState: state } : tu)))
@@ -145,6 +163,19 @@ export default function SirChatPage() {
             Pregunto sobre tu gente, tus vínculos y tus objetivos. Respondo con lo que tengo registrado —
             si no lo sé, te lo digo. Si me pedís registrar algo o crear un objetivo, te lo propongo y vos confirmás.
           </p>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Modelo</span>
+            <select
+              value={model}
+              onChange={(e) => changeModel(e.target.value as SirModelTier)}
+              className="rounded-lg border border-border bg-card px-2 py-1 text-[12px] text-foreground/90 outline-none"
+            >
+              {Object.values(SIR_MODELS).map((m) => (
+                <option key={m.tier} value={m.tier}>{m.label}</option>
+              ))}
+            </select>
+            <span className="text-[11px] text-muted-foreground">{SIR_MODELS[model].hint}</span>
+          </div>
         </header>
 
         {turns.length === 0 && (
