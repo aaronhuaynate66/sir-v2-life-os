@@ -9,7 +9,6 @@
 // Body JSON: { question: string }
 // Response 200: { answer: string, sources: { people: string[], memories: number } }
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -26,8 +25,9 @@ import {
   type AskMemoryHit,
   type AskGoalCtx,
 } from '@/lib/sir/ask'
-import { SIR_ACTION_TOOLS, parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
-import { resolveModelId } from '@/lib/sir/model'
+import { parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
+import { resolveModel } from '@/lib/sir/model'
+import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -182,19 +182,25 @@ export async function POST(req: NextRequest) {
   }))
 
   // 7. Armar prompt + llamar al modelo.
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return errorJson(500, 'Falta ANTHROPIC_API_KEY')
-
   // Modelo elegido por el usuario (sir_settings). Best-effort → default sonnet.
-  let modelId = resolveModelId('sonnet')
+  let chatModel: unknown = 'sonnet'
   try {
     const { data: settings } = await supabase
       .from('sir_settings')
       .select('chat_model')
       .eq('user_id', userId)
       .maybeSingle()
-    modelId = resolveModelId(settings?.chat_model)
+    chatModel = settings?.chat_model ?? 'sonnet'
   } catch { /* default */ }
+  const model = resolveModel(chatModel)
+
+  // La key del proveedor del modelo elegido vive en env (nunca en la base).
+  const providerKey = process.env[model.envKey]
+  if (!providerKey) {
+    return errorJson(500, `Falta ${model.envKey}`, model.provider === 'openrouter'
+      ? 'Agregá OPENROUTER_API_KEY en Vercel para usar modelos OSS, o elegí un modelo Claude.'
+      : 'Configurá la API key de Anthropic.')
+  }
 
   const context = buildAskContext({
     question,
@@ -216,30 +222,26 @@ export async function POST(req: NextRequest) {
   const ACTION_RULE =
     '\n\nSi Aaron pide HACER algo (registrar/anotar una interacción, o crear/fijar un objetivo), NO lo hagas ni digas que está hecho: llamá a la tool correspondiente para PROPONERLO. Aaron lo confirma aparte. Si solo pregunta, respondé en texto sin tools.'
 
+  const chatHistory: ChatTurn[] = history.map((h) => ({
+    role: h.role === 'sir' ? 'assistant' : 'user',
+    content: h.text,
+  }))
+
   try {
-    const anthropic = new Anthropic({ apiKey })
-    const msg = await anthropic.messages.create({
-      model: modelId,
-      max_tokens: 900,
+    const { answer, tool } = await runSirChat({
+      model,
       system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE,
-      tools: SIR_ACTION_TOOLS as unknown as Anthropic.Tool[],
-      messages: [
-        ...history.map((h) => ({ role: (h.role === 'sir' ? 'assistant' : 'user') as 'user' | 'assistant', content: h.text })),
-        { role: 'user' as const, content: context },
-      ],
+      history: chatHistory,
+      userContent: context,
+      anthropicKey: model.provider === 'anthropic' ? providerKey : undefined,
+      openrouterKey: model.provider === 'openrouter' ? providerKey : undefined,
     })
-    const answer = msg.content
-      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-      .map((b) => b.text)
-      .join('\n')
-      .trim()
 
     // ¿El modelo propuso una acción? La normalizamos y resolvemos la persona.
     // NO se ejecuta acá: el cliente la confirma.
     let proposedAction: (ProposedAction & { personId?: string | null }) | null = null
-    const toolUse = msg.content.find((b) => b.type === 'tool_use') as Anthropic.ToolUseBlock | undefined
-    if (toolUse) {
-      const parsed = parseProposedAction(toolUse.name, toolUse.input)
+    if (tool) {
+      const parsed = parseProposedAction(tool.name, tool.input)
       if (parsed?.kind === 'registrar_interaccion') {
         const r = resolvePersonId(parsed.persona)
         proposedAction = { ...parsed, persona: r.name, personId: r.id }
