@@ -56,7 +56,9 @@ export function BodyMetricsTrend({ metrics }: BodyMetricsTrendProps) {
   // Tipos presentes en la data, ordenados por prioridad.
   const availableTypes = useMemo(() => {
     const present = new Set<HealthMetricType>()
-    for (const m of metrics) present.add(m.type)
+    // heart_rate_high_alerts es un CONTEO episódico, no una serie corporal en
+    // unidades comparables → tiene su propio panel (HeartRateAlertsPanel).
+    for (const m of metrics) if (m.type !== 'heart_rate_high_alerts') present.add(m.type)
     return [...present].sort((a, b) => rank(a) - rank(b))
   }, [metrics])
 
