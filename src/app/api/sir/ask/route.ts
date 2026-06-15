@@ -27,12 +27,12 @@ import {
   type AskGoalCtx,
 } from '@/lib/sir/ask'
 import { SIR_ACTION_TOOLS, parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
+import { resolveModelId } from '@/lib/sir/model'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_PEOPLE = 5
 const MAX_MEM_PER_PERSON = 12
 
@@ -169,6 +169,17 @@ export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return errorJson(500, 'Falta ANTHROPIC_API_KEY')
 
+  // Modelo elegido por el usuario (sir_settings). Best-effort → default sonnet.
+  let modelId = resolveModelId('sonnet')
+  try {
+    const { data: settings } = await supabase
+      .from('sir_settings')
+      .select('chat_model')
+      .eq('user_id', userId)
+      .maybeSingle()
+    modelId = resolveModelId(settings?.chat_model)
+  } catch { /* default */ }
+
   const context = buildAskContext({
     question,
     todayISO: new Date().toISOString().slice(0, 10),
@@ -192,7 +203,7 @@ export async function POST(req: NextRequest) {
   try {
     const anthropic = new Anthropic({ apiKey })
     const msg = await anthropic.messages.create({
-      model: MODEL_ID,
+      model: modelId,
       max_tokens: 900,
       system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE,
       tools: SIR_ACTION_TOOLS as unknown as Anthropic.Tool[],
