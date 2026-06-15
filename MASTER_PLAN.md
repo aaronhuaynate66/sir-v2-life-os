@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f224b75`
+**Hash del último commit humano:** `65ec863`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `65ec863` | aaronhuaynate66 | fix(objetivos): Eliminar objetivo + guarda anti-doble (#235) | 2026-06-15 |
 | `f224b75` | aaronhuaynate66 | feat(objetivos): crear objetivo desde texto ('Contale a SIR') (#234) | 2026-06-15 |
 | `ce6c608` | aaronhuaynate66 | fix(ficha): aceptar DM (dm_conversation) en captura de persona + tarjeta 'Última interacción' (#233) | 2026-06-15 |
 | `ebfd8a9` | aaronhuaynate66 | feat(salud): VFC/HRV como métrica propia (#232) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `51648be` | aaronhuaynate66 | feat(brujula): 'EL ANCLA' -> 'TU NORTE' + auto-norte nunca corona objetivo relacional (#228) | 2026-06-14 |
 | `ca07980` | aaronhuaynate66 | calibrate(extractor): events captura hitos/logros/eventos nombrados (incl. del usuario) (#227) | 2026-06-14 |
 | `1ece920` | aaronhuaynate66 | fix(kinship): WEIGHT_BY_CATEGORY exhaustivo con stepparent/stepchild/halfsibling (#226) | 2026-06-14 |
-| `46b4a98` | aaronhuaynate66 | fix(intake): import resiliente (reintento por bloque, tolera bloque caído, error legible) (#225) | 2026-06-14 |
 
 ---
 
