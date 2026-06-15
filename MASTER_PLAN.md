@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c6555c3`
+**Hash del último commit humano:** `a994204`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `a994204` | aaronhuaynate66 | feat(salud): alertas de FC elevada como métrica + panel (#90 Fase 1) (#250) | 2026-06-15 |
 | `c6555c3` | aaronhuaynate66 | feat(sir): #86 multi-turno — el chat recuerda el hilo (#249) | 2026-06-15 |
 | `9f10786` | aaronhuaynate66 | feat(sir): #86 PR3 — config de modelo del chat (costo/calidad) (#248) | 2026-06-15 |
 | `11903da` | aaronhuaynate66 | feat(sir): #86 PR2 — acciones con confirmación desde el chat (#247) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `004c5d9` | aaronhuaynate66 | feat(captura): auto-tono de conversación → Reciprocidad (person_logs) (#243) | 2026-06-15 |
 | `2b9d40c` | aaronhuaynate66 | feat(relaciones): PR-B Personas mencionadas (crear + vincular + cumple) (#242) | 2026-06-15 |
 | `bd09e4a` | aaronhuaynate66 | fix(ficha): una sola 'última interacción' + un DM adelanta last_contact (#241) | 2026-06-15 |
-| `e838d5d` | aaronhuaynate66 | fix(captura): extractor de DM tolerante (no 422) (#240) | 2026-06-15 |
 
 ---
 
