@@ -337,16 +337,11 @@ function GoalsContent() {
 
       <AlignmentPanel goals={goals} people={people} relationships={relationships} memories={memories} />
 
-      <AnimatePresence initial={false}>
-        {adding && (
-          <motion.div
-            key="goal-form"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            style={{ overflow: 'hidden' }}
-          >
+      {/* Render condicional simple (sin AnimatePresence): la animación de salida
+          con height:auto dejaba el form como FANTASMA en el DOM tras guardar
+          (no desmontaba), permitiendo un segundo submit → duplicados. */}
+      {adding && (
+        <div className="mb-1">
             <Card className={cn('mb-4', cardClass)}>
               <CardContent className="p-4 sm:p-6">
                 <SectionTitle icon={Plus} label={editId ? 'Editar objetivo' : 'Nuevo objetivo'} />
@@ -453,9 +448,8 @@ function GoalsContent() {
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {activeGoals.length === 0 && !adding ? (
         <EmptyState
