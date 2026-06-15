@@ -55,6 +55,7 @@ import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
+import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
 import { BondEvolutionPanel } from './BondEvolutionPanel'
@@ -365,6 +366,8 @@ export function PersonDetail({
           momento justo — actividad reciente (tags de memorias) + notas privadas
           verbatim (discretas, nunca a IA). Determinístico; se oculta si no hay
           nada que aportar. */}
+      <MencionadasPanel personId={live.id} personName={live.name} specialDates={live.specialDates} />
+
       <AntesDeContactar personId={live.id} memories={memories} />
 
       {/* Franja de resumen (síntesis V1): lo primero que se ve al abrir la
