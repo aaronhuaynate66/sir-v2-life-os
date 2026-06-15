@@ -59,13 +59,20 @@ export default async function EmpresaPage({ params }: PageProps) {
 
   const { data: profileRow } = await supabase
     .from('org_profiles')
-    .select('website, description, notes')
+    .select('name, website, description, notes')
     .eq('user_id', userId)
     .eq('org_slug', slug)
     .maybeSingle()
-  const profile = (profileRow as { website: string | null; description: string | null; notes: string | null } | null) ?? null
+  const profile = (profileRow as { name: string | null; website: string | null; description: string | null; notes: string | null } | null) ?? null
 
-  const hub = buildCompanyHub(slug, people, goals)
+  let hub = buildCompanyHub(slug, people, goals)
+  // Org creada a mano (org_profile) sin miembros todavía (ej. unidad transversal
+  // como el RIT): no derivamos del set de personas → la renderizamos desde el
+  // perfil en vez de 404.
+  if (!hub.found && profile) {
+    const deslug = slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    hub = { found: true, level: 'empresa', label: profile.name || deslug, subCompanies: [], people: [], goals: [] }
+  }
   if (!hub.found) notFound()
 
   return (
