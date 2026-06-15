@@ -57,6 +57,22 @@ export async function POST(req: NextRequest) {
   }
   const question = body.question.trim().slice(0, 1000)
 
+  // Historial de la conversación (multi-turno). Solo texto, acotado. Sirve
+  // para (a) resolver referentes ("¿y ella?") en el retrieval y (b) darle al
+  // modelo el hilo. Formato: [{ role:'user'|'sir', text }].
+  const rawHistory = Array.isArray((body as { history?: unknown }).history)
+    ? ((body as { history?: unknown }).history as Array<Record<string, unknown>>)
+    : []
+  const history = rawHistory
+    .filter((h) => (h.role === 'user' || h.role === 'sir') && typeof h.text === 'string')
+    .slice(-6)
+    .map((h) => ({ role: h.role as 'user' | 'sir', text: (h.text as string).slice(0, 2000) }))
+
+  // Texto para el RETRIEVAL: pregunta actual + últimos turnos del usuario (para
+  // arrastrar a quién se refiere un follow-up sin nombre propio).
+  const recentUserText = history.filter((h) => h.role === 'user').slice(-2).map((h) => h.text).join(' ')
+  const retrievalText = `${recentUserText} ${question}`.trim().slice(0, 1500)
+
   // 1. Todas las personas (para resolver nombres + traer su contexto).
   const { data: peopleRows } = await supabase
     .from('people')
@@ -72,7 +88,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Personas mencionadas por nombre en la pregunta.
-  const mentioned = extractCandidateNames(question, allPeople.map((p) => (p.name as string) ?? ''))
+  const mentioned = extractCandidateNames(retrievalText, allPeople.map((p) => (p.name as string) ?? ''))
   const targetIds = new Set<string>()
   for (const p of allPeople) {
     if (mentioned.includes((p.name as string) ?? '')) targetIds.add(p.id as string)
@@ -82,7 +98,7 @@ export async function POST(req: NextRequest) {
   //    o embeddings, seguimos sin esta señal). Sus personas se suman al set.
   const memoryHits: AskMemoryHit[] = []
   try {
-    const emb = await embedText(question)
+    const emb = await embedText(retrievalText)
     const { data: matches } = await supabase.rpc('match_memories', {
       query_embedding: toPgVector(emb),
       match_count: 10,
@@ -207,7 +223,10 @@ export async function POST(req: NextRequest) {
       max_tokens: 900,
       system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE,
       tools: SIR_ACTION_TOOLS as unknown as Anthropic.Tool[],
-      messages: [{ role: 'user', content: context }],
+      messages: [
+        ...history.map((h) => ({ role: (h.role === 'sir' ? 'assistant' : 'user') as 'user' | 'assistant', content: h.text })),
+        { role: 'user' as const, content: context },
+      ],
     })
     const answer = msg.content
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')

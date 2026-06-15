@@ -129,7 +129,10 @@ export default function SirChatPage() {
       const res = await fetch('/api/sir/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q }),
+        body: JSON.stringify({
+          question: q,
+          history: turns.map((t) => ({ role: t.role, text: t.text })),
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -150,9 +153,19 @@ export default function SirChatPage() {
   return (
     <AppShell>
       <main className="mx-auto max-w-2xl px-4 py-6 space-y-5">
-        <Link href="/panel" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft size={14} /> Mission Control
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/panel" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft size={14} /> Mission Control
+          </Link>
+          {turns.length > 0 && (
+            <button
+              onClick={() => { setTurns([]); setError(null) }}
+              className="text-[12px] text-muted-foreground hover:text-foreground"
+            >
+              Nueva conversación
+            </button>
+          )}
+        </div>
 
         <header className="space-y-1">
           <div className="flex items-center gap-2">
