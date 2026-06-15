@@ -18,6 +18,8 @@ export const PERSON_LINKABLE_CAPTURE_TYPES: readonly CaptureType[] = [
   'whatsapp_chat',
   'whatsapp_web',
   'whatsapp_info',
+  // DM (IG/Telegram/Messenger): conversación → se asocia como interacción.
+  'dm_conversation',
   'instagram',
   'linkedin',
 ]
