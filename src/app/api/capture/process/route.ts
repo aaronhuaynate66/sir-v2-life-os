@@ -27,6 +27,7 @@ import { enforceRateLimit } from '@/lib/ratelimit'
 import { getExtractorSpec } from '@/lib/capture/extractors'
 import { isValidDetectorResult } from '@/lib/capture/detector/validate'
 import { insertObservation } from '@/lib/capture/observations/insert'
+import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { deriveObservedAt } from '@/lib/capture/observations/observed-at'
 import { signalsFromExtracted } from '@/lib/capture/observations/extract-signals'
 import { findCandidates, type ScoredCandidate } from '@/lib/people/matcher'
@@ -511,6 +512,26 @@ export async function POST(req: NextRequest) {
     //      migrar, etc.) se traga y NO afecta la captura ya persistida.
     if (finalPersonId && (captureType === 'linkedin' || captureType === 'instagram')) {
       await persistAxisBestEffort(supabase, userId, finalPersonId, captureType, extracted, observation.id)
+    }
+
+    // 10c. Una conversación (incluido un DM) ES un contacto → adelantar
+    //      people.last_contact al observed_at si es más reciente. Best-effort:
+    //      no rompe la captura ya guardada. Sin esto, la recencia (briefing,
+    //      score, "última interacción") quedaba anclada en una fecha vieja.
+    if (finalPersonId && observedAt && CONVERSATION_CAPTURE_TYPES.includes(captureType)) {
+      try {
+        const { data: pRow } = await supabase
+          .from('people')
+          .select('last_contact')
+          .eq('id', finalPersonId)
+          .maybeSingle()
+        const current = (pRow?.last_contact as string | null | undefined) ?? null
+        if (!current || observedAt > current) {
+          await supabase.from('people').update({ last_contact: observedAt }).eq('id', finalPersonId)
+        }
+      } catch {
+        /* best-effort */
+      }
     }
 
     return NextResponse.json(
