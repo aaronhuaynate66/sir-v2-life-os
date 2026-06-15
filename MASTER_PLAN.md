@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ce6c608`
+**Hash del último commit humano:** `f224b75`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f224b75` | aaronhuaynate66 | feat(objetivos): crear objetivo desde texto ('Contale a SIR') (#234) | 2026-06-15 |
 | `ce6c608` | aaronhuaynate66 | fix(ficha): aceptar DM (dm_conversation) en captura de persona + tarjeta 'Última interacción' (#233) | 2026-06-15 |
 | `ebfd8a9` | aaronhuaynate66 | feat(salud): VFC/HRV como métrica propia (#232) | 2026-06-15 |
 | `35102ee` | aaronhuaynate66 | feat(captura): dm_conversation — DMs de IG/Telegram/Messenger como interacción (#231) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ca07980` | aaronhuaynate66 | calibrate(extractor): events captura hitos/logros/eventos nombrados (incl. del usuario) (#227) | 2026-06-14 |
 | `1ece920` | aaronhuaynate66 | fix(kinship): WEIGHT_BY_CATEGORY exhaustivo con stepparent/stepchild/halfsibling (#226) | 2026-06-14 |
 | `46b4a98` | aaronhuaynate66 | fix(intake): import resiliente (reintento por bloque, tolera bloque caído, error legible) (#225) | 2026-06-14 |
-| `a09f164` | aaronhuaynate66 | feat(familia): vínculos de familia política (padrastro/madrastra/hijastro/a/medio hermano/a) (#224) | 2026-06-14 |
 
 ---
 
