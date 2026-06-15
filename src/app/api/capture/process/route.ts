@@ -50,6 +50,10 @@ const VALID_CAPTURE_TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
   'whatsapp_chat',
   'whatsapp_web',
   'whatsapp_info',
+  // DM de IG/Telegram/Messenger: reusa el extractor de whatsapp_chat (ver
+  // getExtractorSpec). Sin esto, /process rechazaba el dm_conversation que el
+  // detector sí reconocía → la captura de DM fallaba ('No se pudo procesar').
+  'dm_conversation',
   'instagram',
   'linkedin',
 ])
