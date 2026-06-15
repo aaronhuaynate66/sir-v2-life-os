@@ -24,7 +24,7 @@
 // (con person_id fijo). La báscula es self (health_metrics, sin persona).
 
 import { useCallback, useRef, useState } from 'react'
-import { track, EVENTS } from '@/lib/analytics/track'
+import { track, trackCapture, EVENTS } from '@/lib/analytics/track'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye, FileText, ClipboardPaste, X, Images, MessagesSquare, Upload, CalendarHeart, Repeat } from 'lucide-react'
@@ -403,6 +403,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
             })
           }
         }
+        trackCapture(EVENTS.captureSaved, { capture_type: p.captureType, surface: 'ficha', linked: true })
         setSavedType(p.captureType)
         setSavedCount(p.batch?.used ?? 1)
         setPhase('done')

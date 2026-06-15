@@ -58,4 +58,48 @@ export const EVENTS = {
   objectiveCreated: 'objective_created',
   stepCompleted: 'step_completed',
   searchPerformed: 'search_performed',
+  goalSuggested: 'goal_suggested',
 } as const
+
+// ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────
+// Convención:
+//  - Nombre de evento: `objeto_accion` en snake_case (en EVENTS, única fuente).
+//  - Parámetros obligatorios por familia:
+//      · Capturas (capture_*): SIEMPRE `capture_type` + `surface`.
+//      · Creación de entidad (*_created/_added): SIEMPRE `method`.
+//  - Usar los wrappers tipados (trackCapture / trackCreated) para que el
+//    compilador obligue a pasar esos params → no se vuelven a olvidar.
+
+/** Superficie desde donde ocurre la acción (param `surface`). */
+export type Surface =
+  | 'ficha'        // PersonDetail
+  | 'captura'      // /captura
+  | 'intake'       // /relaciones/intake
+  | 'objetivos'    // /objetivos
+  | 'panel'        // Mission Control
+  | 'relaciones'   // /relaciones
+  | 'salud'        // /salud
+
+/** Método de creación de una entidad (param `method`). */
+export type CreateMethod =
+  | 'form'         // formulario manual
+  | 'texto_ia'     // "Contale a SIR" (relato → IA)
+  | 'intake'       // intake inteligente
+  | 'mencionada'   // auto-crear persona mencionada (PR-B)
+  | 'captura'      // derivada de una captura
+
+/** Captura: fuerza `capture_type` + `surface`. */
+export function trackCapture(
+  event: string,
+  params: { capture_type: string; surface: Surface } & GtagParams,
+): void {
+  track(event, params)
+}
+
+/** Creación de entidad: fuerza `method`. */
+export function trackCreated(
+  event: string,
+  params: { method: CreateMethod } & GtagParams,
+): void {
+  track(event, params)
+}

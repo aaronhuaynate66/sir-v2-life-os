@@ -1,6 +1,6 @@
 'use client'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { track, EVENTS } from '@/lib/analytics/track'
+import { track, trackCreated, EVENTS } from '@/lib/analytics/track'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -174,6 +174,7 @@ function GoalsContent() {
         if (hit) matched.push(hit.id); else unmatched.push(nm)
       }
       setRelatedPersons(matched); setAiUnmatched(unmatched); setAiReason(sug.reasoning)
+      track(EVENTS.goalSuggested, { matched_people: matched.length, unmatched_people: unmatched.length })
       setAiOpen(false); setAiText(''); setAdding(true)
     } catch (e) {
       setAiError(e instanceof Error ? e.message : 'Error de red')
@@ -211,7 +212,7 @@ function GoalsContent() {
         createdAt: now, updatedAt: now,
       }
       addGoal(g)
-      track(EVENTS.objectiveCreated)
+      trackCreated(EVENTS.objectiveCreated, { method: aiReason ? 'texto_ia' : 'form' })
       toast.success('Objetivo creado', { description: title })
     }
     savingGuardRef.current = true

@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 
 import { readExportText, interpretChunk, persistWhatsAppExport } from '@/lib/capture/whatsapp/export/client'
+import { trackCreated, EVENTS } from '@/lib/analytics/track'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import { consolidateInterpretations, buildExportObservationData } from '@/lib/capture/whatsapp/export/consolidate'
@@ -314,6 +315,7 @@ export function IntakeInteligente() {
       } else {
         const c = await createPerson({ name: finalName, relationship, category })
         personId = c.person.id; personName = c.person.name; slug = c.person.slug
+        trackCreated(EVENTS.personAdded, { method: 'intake' })
       }
 
       // WhatsApp → persistir CADA chat (personal + corporativo). promoteDates
