@@ -507,6 +507,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
     const items: BatchItemInput[] = []
     let done = 0
 
+    track(EVENTS.captureStarted, { surface: 'ficha', files: files.length })
     await runPool(files, 3, async (file, idx) => {
       const id = String(idx)
       try {

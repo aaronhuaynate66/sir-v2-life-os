@@ -17,6 +17,7 @@ import type { ObjectiveStep, ObjectiveStepStatus, TaskStatus } from '@/types'
 import { STORAGE_KEYS } from './storage'
 import { attachSupabaseSync, objectiveStepAdapter } from '@/lib/supabase/sync'
 import { taskStatusPatch } from '@/lib/objectives/steps'
+import { track, EVENTS } from '@/lib/analytics/track'
 
 /** Stamp de fecha real de completado (migración 0070): al pasar a 'hecho' setea
  *  completedAt=now (si no lo tenía); al salir de 'hecho' lo limpia. Centraliza
@@ -73,13 +74,19 @@ export const useObjectiveStepStore = create<ObjectiveStepStore>()(
         })),
 
       setStepStatus: (id, status) =>
-        set((s) => ({
-          steps: s.steps.map((st) => (st.id === id ? { ...st, status, ...completedStamp(st, status) } : st)),
-        })),
+        set((s) => {
+          const prev = s.steps.find((st) => st.id === id)
+          if (status === 'hecho' && prev && prev.status !== 'hecho') track(EVENTS.stepCompleted, { from: 'step' })
+          return {
+            steps: s.steps.map((st) => (st.id === id ? { ...st, status, ...completedStamp(st, status) } : st)),
+          }
+        }),
 
       setTaskStatus: (id, taskStatus) =>
         set((s) => {
           const patch = taskStatusPatch(taskStatus)
+          const prev = s.steps.find((st) => st.id === id)
+          if (patch.status === 'hecho' && prev && prev.status !== 'hecho') track(EVENTS.stepCompleted, { from: 'task' })
           return {
             steps: s.steps.map((st) =>
               st.id === id ? { ...st, ...patch, ...completedStamp(st, patch.status) } : st,

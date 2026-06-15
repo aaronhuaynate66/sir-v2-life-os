@@ -112,6 +112,7 @@ function CapturaIndexContent() {
 
   const onDetect = useCallback(async () => {
     if (!file) return
+    track(EVENTS.captureStarted, { surface: 'captura' })
     setDetectLoading(true)
     setDetectError(null)
     setDetection(null)
