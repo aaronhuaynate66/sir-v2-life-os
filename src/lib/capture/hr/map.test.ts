@@ -130,3 +130,19 @@ describe('resolveHrDay', () => {
     expect(resolveHrDay('2026-02-30', '2026-01-01')).toBe('2026-01-01') // round-trip inválido
   })
 })
+
+
+describe('buildHeartRateHealthMetrics — alertas de FC elevada', () => {
+  it('persiste una fila heart_rate_high_alerts cuando hay alertas > 0', () => {
+    const rows = buildHeartRateHealthMetrics({ ...BASE, highAlerts: 2 })
+    const alert = rows.find((r) => r.type === 'heart_rate_high_alerts')
+    expect(alert).toBeDefined()
+    expect(alert?.value).toBe(2)
+    expect(alert?.unit).toBe('alertas')
+    expect(alert?.id).toBe('shot:hr:2026-06-05:heart_rate_high_alerts')
+  })
+  it('NO crea fila de alertas si es 0 o null', () => {
+    expect(buildHeartRateHealthMetrics({ ...BASE, highAlerts: 0 }).some((r) => r.type === 'heart_rate_high_alerts')).toBe(false)
+    expect(buildHeartRateHealthMetrics({ ...BASE, highAlerts: null }).some((r) => r.type === 'heart_rate_high_alerts')).toBe(false)
+  })
+})

@@ -26,6 +26,7 @@ const UNIT = 'lpm'
 const REST_NOTE = 'En reposo · captura FC'
 const RANGE_NOTE = 'Rango diario · captura FC'
 const AVG_NOTE = 'Promedio del día · captura FC'
+const ALERTS_NOTE = 'Alertas de FC elevada del día · captura FC'
 
 /** Prefijo de dedupe por día. Cada fila usa `${base}:${type}` como primary key. */
 export function hrDedupeBaseId(day: string): string {
@@ -109,6 +110,21 @@ export function buildHeartRateHealthMetrics(final: HeartRateCaptureFinal): Healt
   push('heart_rate_min', minBpm, RANGE_NOTE)
   push('heart_rate_max', maxBpm, RANGE_NOTE)
   push('heart_rate_avg', final.avgBpm, AVG_NOTE)
+
+  // Alertas de FC elevada: métrica EPISÓDICA propia (conteo/día). Solo se
+  // guarda fila si hubo al menos 1 (la ausencia = sin alertas ese día, no se
+  // registra un 0 para no ensuciar el panel "días con alerta"). El conteo
+  // también queda legible en la nota de reposo (buildRestingNote).
+  if (final.highAlerts !== null && Number.isFinite(final.highAlerts) && final.highAlerts > 0) {
+    rows.push({
+      id: hrMetricId(final.day, 'heart_rate_high_alerts'),
+      type: 'heart_rate_high_alerts',
+      value: final.highAlerts,
+      unit: 'alertas',
+      timestamp,
+      note: ALERTS_NOTE,
+    })
+  }
 
   return rows
 }

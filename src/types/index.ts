@@ -145,6 +145,9 @@ export type HealthMetricType =
   | 'hrv_min'
   | 'hrv_max'
   | 'hrv_avg'
+  // Alertas de FC elevada del wearable (conteo/día) — señal episódica de
+  // estrés/activación, no una medición continua (Migration 0081)
+  | 'heart_rate_high_alerts'
 
 export type EventCategory =
   | 'personal'
