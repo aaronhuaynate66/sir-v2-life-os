@@ -33,6 +33,7 @@ export function stageUrgency(
   category: PersonCategory,
   status: RelationshipStatus | undefined,
 ): number {
+  if (status === 'ended') return 0 // vínculo cerrado: nunca urge retomar contacto
   if (status === 'dormant') return 80 // hay que reactivar antes de que cueste
   if (status === 'strained') return 70 // tensión sin resolver = riesgo
   // status 'active' (o sin relación registrada): por cercanía deseada.
