@@ -34,6 +34,7 @@ import {
   energyImpactLabel,
   alertUrgencyLabel,
 } from '@/lib/people/labels'
+import { CommercialPipelinePanel } from '@/components/relaciones/CommercialPipelinePanel'
 import { cn } from '@/lib/utils'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact, PersonGender } from '@/types'
 
@@ -262,6 +263,8 @@ function RelationshipsContent() {
           ))}
         </div>
       )}
+
+      {people.length > 0 && <CommercialPipelinePanel people={people} />}
 
       {people.length > 0 && (
         <div className="mb-6">
