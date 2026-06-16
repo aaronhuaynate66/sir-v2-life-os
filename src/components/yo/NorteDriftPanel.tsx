@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { computeNorteDrift, type NorteDriftState } from '@/lib/self/norteDrift'
+import { computeNorteMomentum } from '@/lib/self/norteMomentum'
+import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 
 const STATE_META: Record<NorteDriftState, { label: string; color: string }> = {
   enfocado: { label: 'Enfocado', color: '#2dd4a7' },
@@ -20,7 +22,9 @@ const STATE_META: Record<NorteDriftState, { label: string; color: string }> = {
 
 export function NorteDriftPanel() {
   const goals = useGoalStore((s) => s.goals)
+  const steps = useObjectiveStepStore((s) => s.steps)
   const drift = useMemo(() => computeNorteDrift(goals), [goals])
+  const momentum = useMemo(() => computeNorteMomentum(goals, steps), [goals, steps])
   const meta = STATE_META[drift.state]
 
   return (
@@ -46,6 +50,26 @@ export function NorteDriftPanel() {
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
             {drift.daysSinceTouch !== null && <span>último avance del norte: hace {drift.daysSinceTouch} día(s)</span>}
             <span>frentes activos en paralelo: {drift.activeOthers}</span>
+          </div>
+        )}
+
+        {momentum.efficacy !== 'sin_norte' && (
+          <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+            <div className="flex items-center gap-2 text-[13px]">
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground w-16">Eficacia</span>
+              <span style={{ color: momentum.efficacy === 'avanzando' ? '#2dd4a7' : '#e0a93b' }}>
+                {momentum.norteStepsDone30d} avance(s) real(es) del norte en 30 días
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[13px]">
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground w-16">Cadencia</span>
+              <span className="text-foreground/90">
+                este mes {momentum.monthDone} paso(s) vs {momentum.prevMonthDone} el anterior
+                {momentum.cadence === 'mejor' && <span className="ml-1 text-[#2dd4a7]">▲</span>}
+                {momentum.cadence === 'peor' && <span className="ml-1 text-[#e5564c]">▼</span>}
+              </span>
+            </div>
+            <p className="text-[12px] text-muted-foreground">{momentum.message}</p>
           </div>
         )}
 
