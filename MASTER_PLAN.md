@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `bc1a618`
+**Hash del último commit humano:** `adbe0f7`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `adbe0f7` | aaronhuaynate66 | feat(sir): al cerrar un vínculo, ofrecer cerrar los objetivos ligados (#260) | 2026-06-16 |
 | `bc1a618` | aaronhuaynate66 | feat(sir): cerrar vínculo desde el chat + tira 7d en hábitos (#259) | 2026-06-16 |
 | `6161f26` | aaronhuaynate66 | feat(e5): chip de deriva del norte en Mission Control (#258) | 2026-06-15 |
 | `c22441f` | aaronhuaynate66 | feat(e5): indicador de deriva hacia el norte (#257) | 2026-06-15 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c11fcb0` | aaronhuaynate66 | feat(sir): #86 persistir hilo + acción crear-persona (#253) | 2026-06-15 |
 | `079cfcf` | aaronhuaynate66 | feat(salud): mapa de calor para alertas de FC elevada (UX) (#252) | 2026-06-15 |
 | `17fa86c` | aaronhuaynate66 | fix(salud): caveat preciso en alertas de FC elevada (#251) | 2026-06-15 |
-| `a994204` | aaronhuaynate66 | feat(salud): alertas de FC elevada como métrica + panel (#90 Fase 1) (#250) | 2026-06-15 |
 
 ---
 
