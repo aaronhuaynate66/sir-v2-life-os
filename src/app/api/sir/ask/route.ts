@@ -250,6 +250,9 @@ export async function POST(req: NextRequest) {
         proposedAction = { ...parsed, personaRelacionada: r.name, personId: r.id }
       } else if (parsed?.kind === 'crear_persona') {
         proposedAction = { ...parsed }
+      } else if (parsed?.kind === 'cerrar_relacion') {
+        const r = resolvePersonId(parsed.persona)
+        proposedAction = { ...parsed, persona: r.name, personId: r.id }
       }
     }
 

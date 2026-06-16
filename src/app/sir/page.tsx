@@ -18,7 +18,7 @@ import type { Goal, GoalCategory, Person, RelationshipType, PersonCategory } fro
 import { SIR_MODELS, normalizeTier, type SirModelTier } from '@/lib/sir/model'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion'
   persona?: string
   calidad?: number
   nota?: string
@@ -31,6 +31,7 @@ interface ProposedAction {
   personId?: string | null
   nombre?: string
   relacion?: RelationshipType
+  motivo?: string
 }
 
 interface Turn {
@@ -57,6 +58,10 @@ export default function SirChatPage() {
   const addGoal = useGoalStore((st) => st.addGoal)
   const addPerson = useRelationshipStore((st) => st.addPerson)
   const people = useRelationshipStore((st) => st.people)
+  const updatePerson = useRelationshipStore((st) => st.updatePerson)
+  const relationships = useRelationshipStore((st) => st.relationships)
+  const updateRelationship = useRelationshipStore((st) => st.updateRelationship)
+  const addRelationship = useRelationshipStore((st) => st.addRelationship)
   const [model, setModel] = useState<SirModelTier>('sonnet')
 
   const THREAD_KEY = 'sir_chat_thread'
@@ -165,6 +170,39 @@ export default function SirChatPage() {
         addPerson(person)
         track(EVENTS.personAdded, { method: 'sir_chat' })
         toast.success(`${name} agregado`, { description: 'Lo creé en tu red.' })
+        setTurnState(idx, 'done')
+      } else if (a.kind === 'cerrar_relacion') {
+        if (!a.personId) {
+          toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Cerrá el vínculo desde su ficha.' })
+          return
+        }
+        const person = people.find((p) => p.id === a.personId)
+        const now = new Date().toISOString()
+        // El status del vínculo vive en Relationship (no en Person).
+        const rel = relationships.find((r) => r.personId === a.personId)
+        if (rel) {
+          updateRelationship(rel.id, { status: 'ended' })
+        } else {
+          addRelationship({
+            id: `rel_${Date.now()}_${randSuffix(6)}`,
+            personId: a.personId,
+            type: person?.relationship ?? 'acquaintance',
+            status: 'ended',
+            depth: 0,
+            reciprocity: 0,
+            history: [],
+            sharedGoals: [],
+            tensions: [],
+            strengths: [],
+          })
+        }
+        // Nota de cierre en la persona (no se borra nada).
+        const closingNote = `Vínculo cerrado el ${now.slice(0, 10)}${a.motivo ? ` — ${a.motivo}` : ''}.`
+        updatePerson(a.personId, {
+          notes: person?.notes ? `${person.notes}\n${closingNote}` : closingNote,
+          updatedAt: now,
+        })
+        toast.success(`Cerré tu vínculo con ${a.persona}`, { description: 'SIR deja de sugerirte retomar contacto. No borré nada.' })
         setTurnState(idx, 'done')
       }
     } catch {
@@ -286,7 +324,7 @@ export default function SirChatPage() {
                   <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
                       <CalendarCheck size={12} />
-                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : 'Crear persona'}
+                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : 'Cerrar vínculo'}
                     </div>
                     {t.action.kind === 'registrar_interaccion' ? (
                       <div className="text-[13px] text-foreground/90">
@@ -304,10 +342,17 @@ export default function SirChatPage() {
                         </div>
                         {t.action.proximoPaso && <div className="mt-0.5 text-muted-foreground">Próximo paso: {t.action.proximoPaso}</div>}
                       </div>
-                    ) : (
+                    ) : t.action.kind === 'crear_persona' ? (
                       <div className="text-[13px] text-foreground/90">
                         <span className="font-medium">{t.action.nombre}</span>
                         <div className="mt-0.5 text-muted-foreground">{t.action.relacion} · {t.action.categoria}</div>
+                      </div>
+                    ) : (
+                      <div className="text-[13px] text-foreground/90">
+                        <span className="font-medium">{t.action.persona}</span>
+                        {t.action.motivo && <div className="mt-0.5 text-muted-foreground">{t.action.motivo}</div>}
+                        <div className="mt-1 text-[12px] text-muted-foreground">SIR deja de sugerirte retomar contacto. No se borra nada.</div>
+                        {!t.action.personId && <div className="mt-1 text-[12px] text-amber-400">⚠ No la tengo registrada con ese nombre.</div>}
                       </div>
                     )}
                     {t.actionState === 'done' ? (

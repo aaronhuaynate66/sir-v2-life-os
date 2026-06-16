@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
-import { computeHabitStreak } from '@/lib/habits/streak'
+import { computeHabitStreak, recentDayMarks } from '@/lib/habits/streak'
 
 interface HabitDTO {
   id: string
@@ -135,6 +135,7 @@ export default function HabitosPage() {
         <div className="space-y-3">
           {habits.map((h) => {
             const s = computeHabitStreak(h.checkinDates)
+            const marks = recentDayMarks(h.checkinDates)
             return (
               <Card key={h.id} className="shadow-none">
                 <CardContent className="p-4 flex items-center gap-4">
@@ -160,6 +161,22 @@ export default function HabitosPage() {
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
                       consistencia {s.consistency}% · 30 días
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-1" aria-label="Últimos 7 días">
+                      {marks.map((m) => (
+                        <span
+                          key={m.iso}
+                          title={`${m.iso}${m.isToday ? ' · hoy' : ''}${m.done ? ' · hecho' : ''}`}
+                          className={
+                            'h-2.5 w-2.5 rounded-full ' +
+                            (m.done ? 'bg-ok' : 'bg-muted-foreground/20') +
+                            (m.isToday ? ' ring-2 ring-offset-1 ring-offset-card ring-ok/60' : '')
+                          }
+                        />
+                      ))}
+                      <span className="ml-1.5 text-[10px] text-muted-foreground">
+                        {marks[6].done ? 'hoy ✓' : 'hoy pendiente'}
+                      </span>
                     </div>
                   </div>
 

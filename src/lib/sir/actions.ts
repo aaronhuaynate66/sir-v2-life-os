@@ -60,6 +60,19 @@ export const SIR_ACTION_TOOLS = [
       required: ['nombre'],
     },
   },
+  {
+    name: 'proponer_cerrar_relacion',
+    description:
+      'Proponé CERRAR un vínculo (NO lo cierres vos, solo proponelo para que Aaron confirme). Usá esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        persona: { type: 'string', description: 'Nombre de la persona tal como Aaron la nombró.' },
+        motivo: { type: 'string', description: 'Opcional: en una frase, qué pasó (para la nota de cierre).' },
+      },
+      required: ['persona'],
+    },
+  },
 ] as const
 
 export interface ProposedInteraccion {
@@ -83,7 +96,12 @@ export interface ProposedPersona {
   relacion: RelationshipType
   categoria: PersonCategory
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona
+export interface ProposedCierre {
+  kind: 'cerrar_relacion'
+  persona: string
+  motivo: string
+}
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -140,6 +158,11 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
       ? (o.categoria as PersonCategory)
       : 'network'
     return { kind: 'crear_persona', nombre, relacion, categoria }
+  }
+  if (toolName === 'proponer_cerrar_relacion') {
+    const persona = str(o.persona, 120)
+    if (!persona) return null
+    return { kind: 'cerrar_relacion', persona, motivo: str(o.motivo, 280) }
   }
   return null
 }

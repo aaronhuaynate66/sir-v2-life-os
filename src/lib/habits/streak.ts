@@ -86,3 +86,31 @@ export function computeHabitStreak(
 
   return { current, longest, consistency, doneToday }
 }
+
+// ─── Tira de los últimos N días (para ver QUÉ días se marcó, incl. hoy) ──────
+export interface DayMark {
+  /** 'YYYY-MM-DD'. */
+  iso: string
+  /** ¿Se marcó ese día? */
+  done: boolean
+  /** ¿Es hoy? */
+  isToday: boolean
+}
+
+/** Devuelve los últimos `n` días (más viejo → hoy) con si estaban marcados.
+ *  Resuelve la confusión "¿el check es de hoy o de otra fecha?". Puro. */
+export function recentDayMarks(
+  checkinDates: string[],
+  today: Date = new Date(),
+  n = 7,
+): DayMark[] {
+  const set = new Set(checkinDates.map((d) => d.slice(0, 10)))
+  const out: DayMark[] = []
+  const base = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(base - i * 86_400_000)
+    const iso = d.toISOString().slice(0, 10)
+    out.push({ iso, done: set.has(iso), isToday: i === 0 })
+  }
+  return out
+}
