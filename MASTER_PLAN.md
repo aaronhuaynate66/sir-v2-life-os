@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f5a051d`
+**Hash del último commit humano:** `4bf0cc6`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `4bf0cc6` | aaronhuaynate66 | fix(intake): multi-persona — no fusionar 5 chats en 1 (#268) | 2026-06-16 |
 | `f5a051d` | aaronhuaynate66 | feat(relaciones): pipeline comercial — leads de tus vínculos por enfriamiento (#267) | 2026-06-16 |
 | `a6f5c03` | aaronhuaynate66 | docs(adr): 0009 privacidad de terceros + auditoría de fugas (#266) | 2026-06-16 |
 | `bd725c9` | aaronhuaynate66 | feat(objetivos): salud del vínculo en la tarjeta de objetivos relacionales (#265) | 2026-06-16 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c720306` | aaronhuaynate66 | feat(e5): momentum del norte — eficacia + cadencia (no solo atención) (#261) | 2026-06-16 |
 | `adbe0f7` | aaronhuaynate66 | feat(sir): al cerrar un vínculo, ofrecer cerrar los objetivos ligados (#260) | 2026-06-16 |
 | `bc1a618` | aaronhuaynate66 | feat(sir): cerrar vínculo desde el chat + tira 7d en hábitos (#259) | 2026-06-16 |
-| `6161f26` | aaronhuaynate66 | feat(e5): chip de deriva del norte en Mission Control (#258) | 2026-06-15 |
 
 ---
 
