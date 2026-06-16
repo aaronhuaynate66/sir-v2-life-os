@@ -483,6 +483,22 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
         const prev = (person?.notes ?? '').trim()
         patch.notes = prev ? `${prev}\n${line}` : line
       }
+      // Promover fechas detectadas (cumpleaños, casamiento, etc.) a "Fechas
+      // importantes" (special_dates), dedup por label+fecha contra lo existente.
+      if (noteData.specialDates && noteData.specialDates.length > 0) {
+        const existing = person?.specialDates ?? []
+        const key = (l: string, d: string) => `${l.trim().toLowerCase()}|${d}`
+        const seen = new Set(existing.map((sd) => key(sd.label, sd.date)))
+        const toAdd = noteData.specialDates
+          .filter((sd) => !seen.has(key(sd.label, sd.date)))
+          .map((sd) => ({
+            id: (globalThis.crypto?.randomUUID?.() ?? `sd_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
+            label: sd.label,
+            date: sd.date,
+            recurring: sd.recurring,
+          }))
+        if (toAdd.length > 0) patch.specialDates = [...existing, ...toAdd]
+      }
       updatePerson(personId, patch)
       setSavedNote(noteData)
       setPhase('done')
@@ -874,6 +890,9 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
                   <li className="text-muted-foreground">Cumpleaños → <span className="font-mono text-foreground">{noteData.birthDate}</span> (se carga en la ficha)</li>
                 )}
                 {noteData?.location && <li className="text-muted-foreground">Lugar → <span className="text-foreground">{noteData.location}</span></li>}
+                {noteData?.specialDates?.map((sd, i) => (
+                  <li key={`sd-${i}`} className="text-[#14b8a6]">📅 {sd.label} → <span className="font-mono">{sd.date}</span>{sd.recurring ? ' (cada año)' : ''} <span className="text-muted-foreground">→ Fechas importantes</span></li>
+                ))}
                 {noteData?.facts.map((fc, i) => (
                   <li key={i} className="text-muted-foreground">· {fc}</li>
                 ))}

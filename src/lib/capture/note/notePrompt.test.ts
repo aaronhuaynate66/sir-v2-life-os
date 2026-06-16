@@ -22,3 +22,23 @@ describe('parseNoteExtract', () => {
     expect(m.toLowerCase()).toContain('solo lo que dice la nota')
   })
 })
+
+
+describe('parseNoteExtract — specialDates (Fechas importantes)', () => {
+  it('extrae specialDates con fecha ISO + recurring', () => {
+    const r = parseNoteExtract('{"birthDate":null,"location":null,"summary":"Le festejaron el cumple y se casó.","facts":[],"specialDates":[{"label":"Cumpleaños","date":"2026-06-16","recurring":true},{"label":"Aniversario de boda","date":"2026-06-13","recurring":true}]}')
+    expect(r?.specialDates).toHaveLength(2)
+    expect(r?.specialDates[0]).toEqual({ label: 'Cumpleaños', date: '2026-06-16', recurring: true })
+  })
+  it('descarta fechas sin ISO válido', () => {
+    const r = parseNoteExtract('{"summary":"x","facts":[],"specialDates":[{"label":"Casamiento","date":"sábado pasado","recurring":true}]}')
+    expect(r?.specialDates).toHaveLength(0)
+  })
+  it('una nota con SOLO specialDates ya no es null', () => {
+    const r = parseNoteExtract('{"birthDate":null,"location":null,"summary":"","facts":[],"specialDates":[{"label":"Mudanza","date":"2026-06-01","recurring":false}]}')
+    expect(r?.specialDates).toHaveLength(1)
+  })
+  it('buildNoteInput incluye "Hoy es" cuando se pasa la fecha', () => {
+    expect(buildNoteInput('se casó el sábado pasado', '2026-06-16')).toContain('Hoy es 2026-06-16')
+  })
+})
