@@ -30,6 +30,11 @@ function errorJson(status: number, error: string, detail?: string): NextResponse
   return NextResponse.json({ error, detail }, { status })
 }
 
+/** 'YYYY-MM-DD' de hoy en TZ Lima — para resolver fechas relativas de la nota. */
+function todayInLima(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
@@ -59,7 +64,7 @@ export async function POST(req: NextRequest) {
       model: MODEL_ID,
       max_tokens: 600,
       system: NOTE_EXTRACT_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildNoteInput(text) }],
+      messages: [{ role: 'user', content: buildNoteInput(text, todayInLima()) }],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
     const raw = textBlock && textBlock.type === 'text' ? textBlock.text : ''
