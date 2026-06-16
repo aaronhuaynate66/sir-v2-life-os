@@ -148,6 +148,7 @@ export type HealthMetricType =
   // Alertas de FC elevada del wearable (conteo/día) — señal episódica de
   // estrés/activación, no una medición continua (Migration 0081)
   | 'heart_rate_high_alerts'
+  | 'respiratory_rate'
 
 export type EventCategory =
   | 'personal'

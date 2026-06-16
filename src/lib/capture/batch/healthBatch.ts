@@ -38,6 +38,10 @@ export function sleepFinalFromExtracted(ex: SleepPanelExtracted, fallbackDay: st
     wakeTime: ex.wake_time,
     stages: ex.stages,
     score: ex.score,
+    awakenings: ex.awakenings,
+    respiratoryRate: ex.respiratory_rate,
+    spo2Avg: ex.spo2_avg,
+    napMinutes: ex.nap_minutes,
     confidence: ex.confidence,
   }
 }

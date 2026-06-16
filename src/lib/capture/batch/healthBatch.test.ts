@@ -4,7 +4,7 @@ import { sleepFinalFromExtracted, hrFinalFromExtracted } from './healthBatch'
 describe('sleepFinalFromExtracted', () => {
   it('usa total_minutes del panel y copia campos', () => {
     const f = sleepFinalFromExtracted(
-      { date: '2026-04-05', total_minutes: 372, bedtime: '23:30', wake_time: '06:42', stages: { deep_minutes: 60, light_minutes: 200, rem_minutes: 112, awake_minutes: 10 }, score: 80, confidence: 'high' },
+      { date: '2026-04-05', total_minutes: 372, bedtime: '23:30', wake_time: '06:42', stages: { deep_minutes: 60, light_minutes: 200, rem_minutes: 112, awake_minutes: 10 }, score: 80, awakenings: null, respiratory_rate: null, spo2_avg: null, nap_minutes: null, confidence: 'high' },
       '2026-06-08',
     )
     expect(f.totalMinutes).toBe(372)
@@ -15,7 +15,7 @@ describe('sleepFinalFromExtracted', () => {
 
   it('cae a la suma de fases (deep+light+rem) si falta total_minutes', () => {
     const f = sleepFinalFromExtracted(
-      { date: null, total_minutes: null, bedtime: null, wake_time: null, stages: { deep_minutes: 60, light_minutes: 200, rem_minutes: 100, awake_minutes: 10 }, score: null, confidence: 'medium' },
+      { date: null, total_minutes: null, bedtime: null, wake_time: null, stages: { deep_minutes: 60, light_minutes: 200, rem_minutes: 100, awake_minutes: 10 }, score: null, awakenings: null, respiratory_rate: null, spo2_avg: null, nap_minutes: null, confidence: 'medium' },
       '2026-06-08',
     )
     expect(f.totalMinutes).toBe(360)

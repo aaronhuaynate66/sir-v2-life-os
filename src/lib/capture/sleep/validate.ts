@@ -36,6 +36,10 @@ export function isValidSleepPanelExtracted(x: unknown): x is SleepPanelExtracted
   if (!isStringOrNull(o.wake_time)) return false
   if (!isStagesShape(o.stages)) return false
   if (!isNumberOrNullish(o.score)) return false
+  if (!isNumberOrNullish(o.awakenings)) return false
+  if (!isNumberOrNullish(o.respiratory_rate)) return false
+  if (!isNumberOrNullish(o.spo2_avg)) return false
+  if (!isNumberOrNullish(o.nap_minutes)) return false
 
   if (o.confidence !== 'high' && o.confidence !== 'medium' && o.confidence !== 'low') {
     return false
@@ -86,6 +90,22 @@ function sanitizeScore(v: unknown): number | null {
   return Math.min(100, Math.max(0, Math.round(v)))
 }
 
+/** Conteo entero >= 0 o null. */
+function sanitizeCount(v: unknown): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return null
+  return Math.round(v)
+}
+/** Número positivo (1 decimal) o null. */
+function sanitizePos(v: unknown): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) return null
+  return Math.round(v * 10) / 10
+}
+/** Porcentaje 0-100 o null. */
+function sanitizePct(v: unknown): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null
+  return Math.min(100, Math.max(0, Math.round(v)))
+}
+
 /**
  * Sanitiza el objeto: normaliza horas, minutos, día y score; trim de notas.
  */
@@ -97,6 +117,10 @@ export function sanitizeSleepPanelExtracted(raw: SleepPanelExtracted): SleepPane
     wake_time: sanitizeHm(raw.wake_time),
     stages: sanitizeStages(raw.stages),
     score: sanitizeScore(raw.score),
+    awakenings: sanitizeCount(raw.awakenings),
+    respiratory_rate: sanitizePos(raw.respiratory_rate),
+    spo2_avg: sanitizePct(raw.spo2_avg),
+    nap_minutes: sanitizeMinutes(raw.nap_minutes),
     confidence: raw.confidence,
     raw_observations:
       typeof raw.raw_observations === 'string'

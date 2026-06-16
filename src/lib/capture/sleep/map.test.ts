@@ -30,6 +30,10 @@ const BASE: SleepCaptureFinal = {
   wakeTime: '07:42',
   stages: STAGES,
   score: 75,
+  awakenings: null,
+  respiratoryRate: null,
+  spo2Avg: null,
+  napMinutes: null,
   confidence: 'high',
 }
 
@@ -113,5 +117,32 @@ describe('resolveSleepDay', () => {
   it('cae al fallback con fecha nula o inválida', () => {
     expect(resolveSleepDay(null, '2026-01-01')).toBe('2026-01-01')
     expect(resolveSleepDay('2026-02-30', '2026-01-01')).toBe('2026-01-01') // round-trip inválido
+  })
+})
+
+import { buildSleepHealthMetrics } from './map'
+
+describe('sueño: extras (despertares, siesta, resp, SpO2)', () => {
+  const base = {
+    day: '2026-06-16', totalMinutes: 480, bedtime: null, wakeTime: null,
+    stages: { deep_minutes: null, light_minutes: null, rem_minutes: 82, awake_minutes: null },
+    score: 81, awakenings: 1, respiratoryRate: 15, spo2Avg: 98, napMinutes: 56, confidence: 'medium' as const,
+  }
+  it('buildSleepHealthMetrics: SpO2→blood_oxygen + resp→respiratory_rate, dedupe por día', () => {
+    const rows = buildSleepHealthMetrics(base)
+    const byType = Object.fromEntries(rows.map((r) => [r.type, r]))
+    expect(byType.blood_oxygen.value).toBe(98)
+    expect(byType.blood_oxygen.unit).toBe('%')
+    expect(byType.respiratory_rate.value).toBe(15)
+    expect(byType.blood_oxygen.id).toBe('shot:sleep:2026-06-16:blood_oxygen')
+  })
+  it('no crea métricas si faltan los datos', () => {
+    expect(buildSleepHealthMetrics({ ...base, spo2Avg: null, respiratoryRate: null })).toHaveLength(0)
+  })
+  it('buildSleepNotes incluye despertares y siesta', () => {
+    const n = buildSleepNotes(base.stages, base.score, 'medium', { awakenings: 1, napMinutes: 56, respiratoryRate: 15, spo2Avg: 98 })
+    expect(n).toContain('Despertares 1')
+    expect(n).toContain('Siesta')
+    expect(n).toContain('SpO₂ 98%')
   })
 })

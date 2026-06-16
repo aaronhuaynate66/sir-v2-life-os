@@ -22,11 +22,21 @@ Schema EXACTO de respuesta:
     "awake_minutes": <number> | null
   },
   "score": <number 0-100 — puntuación de calidad del sueño> | null,
+  "awakenings": <number — veces que se despertó esa noche, ej. 1> | null,
+  "respiratory_rate": <number — frecuencia respiratoria promedio en resp/min, ej. 15> | null,
+  "spo2_avg": <number — SpO₂/oxígeno en sangre promedio en %, ej. 98> | null,
+  "nap_minutes": <number — minutos de SIESTA diurna si el panel la muestra aparte> | null,
   "confidence": "high" | "medium" | "low",
   "raw_observations": "<máximo 200 chars con observaciones útiles>"
 }
 
 Reglas estrictas:
+
+0. total_minutes es el SUEÑO NOCTURNO. Si el panel separa una SIESTA (ej.
+   "Siestas 20:00-20:56 56 min") o muestra un "sueño total" mayor que las horas
+   de la noche, NO sumes la siesta al total_minutes: ponela en nap_minutes.
+   awakenings = "Veces que te despertaste". respiratory_rate = "Frecuencia
+   respiratoria promedio". spo2_avg = "SpO₂ prom". Si alguno no aparece, null.
 
 1. Si un valor no es visible o ilegible, usar null. NUNCA inventar.
 

@@ -17,7 +17,7 @@
 //     la báscula no escribe las columnas de 0049.)
 //   - las FASES no tienen columnas propias → se guardan legibles en `notes`.
 
-import type { SleepRecord } from '@/types'
+import type { SleepRecord, HealthMetric, HealthMetricType } from '@/types'
 import { qualityFromScore, qualityFromDuration } from '@/lib/health/ingest/parse'
 import { parseLocalDate, toIsoLocal } from '@/lib/dates/parseLocalDate'
 import type { SleepCaptureFinal, SleepStageMinutes } from './types'
@@ -64,6 +64,7 @@ export function buildSleepNotes(
   stages: SleepStageMinutes,
   score: number | null,
   confidence: 'high' | 'medium' | 'low',
+  extras?: { awakenings?: number | null; napMinutes?: number | null; respiratoryRate?: number | null; spo2Avg?: number | null },
 ): string {
   const parts: string[] = [`Captura sueño (pantallazo, conf. ${confidence})`]
   if (score !== null) parts.push(`score ${score}/100`)
@@ -75,6 +76,13 @@ export function buildSleepNotes(
   if (light) parts.push(`Liviano ${light}`)
   if (rem) parts.push(`REM ${rem}`)
   if (awake) parts.push(`Vigilia ${awake}`)
+  if (extras) {
+    if (typeof extras.awakenings === 'number') parts.push(`Despertares ${extras.awakenings}`)
+    const nap = fmtMin(extras.napMinutes ?? null)
+    if (nap) parts.push(`Siesta ${nap}`)
+    if (typeof extras.respiratoryRate === 'number') parts.push(`Resp ${extras.respiratoryRate}/min`)
+    if (typeof extras.spo2Avg === 'number') parts.push(`SpO₂ ${extras.spo2Avg}%`)
+  }
   return parts.join(' · ')
 }
 
@@ -94,6 +102,32 @@ export function buildSleepRecordFromPanel(final: SleepCaptureFinal): SleepRecord
     wakeTime: final.wakeTime ?? '00:00',
     duration,
     quality,
-    notes: buildSleepNotes(final.stages, final.score, final.confidence),
+    notes: buildSleepNotes(final.stages, final.score, final.confidence, {
+      awakenings: final.awakenings,
+      napMinutes: final.napMinutes,
+      respiratoryRate: final.respiratoryRate,
+      spo2Avg: final.spo2Avg,
+    }),
   }
+}
+
+
+/** Timestamp determinístico (mediodía UTC del día) — estable y comparable. */
+function sleepTimestampForDay(day: string): string {
+  return `${day}T12:00:00.000Z`
+}
+
+/** Métricas de salud derivadas del sueño que SÍ tienen tendencia propia:
+ *  SpO₂ promedio (blood_oxygen) y frecuencia respiratoria (respiratory_rate).
+ *  Dedupe por día con id `shot:sleep:DAY:<type>`. Solo crea fila si hay dato. */
+export function buildSleepHealthMetrics(final: SleepCaptureFinal): HealthMetric[] {
+  const ts = sleepTimestampForDay(final.day)
+  const rows: HealthMetric[] = []
+  const push = (type: HealthMetricType, value: number | null, unit: string, note: string) => {
+    if (value === null || !Number.isFinite(value)) return
+    rows.push({ id: `${sleepDedupeId(final.day)}:${type}`, type, value, unit, timestamp: ts, note })
+  }
+  push('blood_oxygen', final.spo2Avg, '%', 'SpO₂ durante el sueño · captura')
+  push('respiratory_rate', final.respiratoryRate, 'rpm', 'Frecuencia respiratoria al dormir · captura')
+  return rows
 }
