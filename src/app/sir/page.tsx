@@ -32,6 +32,7 @@ interface ProposedAction {
   nombre?: string
   relacion?: RelationshipType
   motivo?: string
+  linkedGoals?: { id: string; title: string }[]
 }
 
 interface Turn {
@@ -56,6 +57,7 @@ export default function SirChatPage() {
   const [error, setError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const addGoal = useGoalStore((st) => st.addGoal)
+  const pauseGoal = useGoalStore((st) => st.pauseGoal)
   const addPerson = useRelationshipStore((st) => st.addPerson)
   const people = useRelationshipStore((st) => st.people)
   const updatePerson = useRelationshipStore((st) => st.updatePerson)
@@ -64,6 +66,7 @@ export default function SirChatPage() {
   const addRelationship = useRelationshipStore((st) => st.addRelationship)
   const [model, setModel] = useState<SirModelTier>('sonnet')
 
+  const [goalSel, setGoalSel] = useState<Record<string, boolean>>({})
   const THREAD_KEY = 'sir_chat_thread'
   // Cargar el hilo guardado al montar (persiste entre recargas/sesiones).
   useEffect(() => {
@@ -202,7 +205,17 @@ export default function SirChatPage() {
           notes: person?.notes ? `${person.notes}\n${closingNote}` : closingNote,
           updatedAt: now,
         })
-        toast.success(`Cerré tu vínculo con ${a.persona}`, { description: 'SIR deja de sugerirte retomar contacto. No borré nada.' })
+        // Cerrar (pausar) los objetivos ligados que sigan tildados.
+        const linked = a.linkedGoals ?? []
+        let paused = 0
+        for (const g of linked) {
+          if (goalSel[`${idx}:${g.id}`] !== false) { pauseGoal(g.id); paused += 1 }
+        }
+        toast.success(`Cerré tu vínculo con ${a.persona}`, {
+          description: paused > 0
+            ? `${paused} objetivo(s) ligado(s) pausado(s). No borré nada.`
+            : 'SIR deja de sugerirte retomar contacto. No borré nada.',
+        })
         setTurnState(idx, 'done')
       }
     } catch {
@@ -353,6 +366,28 @@ export default function SirChatPage() {
                         {t.action.motivo && <div className="mt-0.5 text-muted-foreground">{t.action.motivo}</div>}
                         <div className="mt-1 text-[12px] text-muted-foreground">SIR deja de sugerirte retomar contacto. No se borra nada.</div>
                         {!t.action.personId && <div className="mt-1 text-[12px] text-amber-400">⚠ No la tengo registrada con ese nombre.</div>}
+                        {t.action.linkedGoals && t.action.linkedGoals.length > 0 && (
+                          <div className="mt-2 rounded-lg border border-border bg-card/60 p-2">
+                            <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Objetivos ligados — ¿cerrar también?</div>
+                            {t.action.linkedGoals.map((g) => {
+                              const key = `${i}:${g.id}`
+                              const checked = goalSel[key] !== false
+                              return (
+                                <label key={g.id} className="flex items-center gap-2 py-0.5 text-[13px] text-foreground/90 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    disabled={t.actionState === 'done' || t.actionState === 'discarded'}
+                                    onChange={(e) => setGoalSel((prev) => ({ ...prev, [key]: e.target.checked }))}
+                                    className="accent-[#14b8a6]"
+                                  />
+                                  {g.title}
+                                </label>
+                              )
+                            })}
+                            <div className="mt-0.5 text-[11px] text-muted-foreground">Se pausan (reversibles), no se borran.</div>
+                          </div>
+                        )}
                       </div>
                     )}
                     {t.actionState === 'done' ? (

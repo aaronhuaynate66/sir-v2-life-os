@@ -120,11 +120,11 @@ export async function POST(req: NextRequest) {
   // 4. Objetivos activos → mapa personId → título.
   const { data: goalRows } = await supabase
     .from('goals')
-    .select('title, related_persons, status, next_action')
+    .select('id, title, related_persons, status, next_action')
     .eq('user_id', userId)
     .eq('status', 'active')
     .limit(100)
-  const goals = (goalRows ?? []) as Array<{ title: string; related_persons: unknown; next_action?: string | null }>
+  const goals = (goalRows ?? []) as Array<{ id: string; title: string; related_persons: unknown; next_action?: string | null }>
   const goalByPerson: Record<string, string> = {}
   for (const g of goals) {
     const ids = Array.isArray(g.related_persons) ? (g.related_persons as string[]) : []
@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
 
     // ¿El modelo propuso una acción? La normalizamos y resolvemos la persona.
     // NO se ejecuta acá: el cliente la confirma.
-    let proposedAction: (ProposedAction & { personId?: string | null }) | null = null
+    let proposedAction: (ProposedAction & { personId?: string | null; linkedGoals?: { id: string; title: string }[] }) | null = null
     if (tool) {
       const parsed = parseProposedAction(tool.name, tool.input)
       if (parsed?.kind === 'registrar_interaccion') {
@@ -252,7 +252,13 @@ export async function POST(req: NextRequest) {
         proposedAction = { ...parsed }
       } else if (parsed?.kind === 'cerrar_relacion') {
         const r = resolvePersonId(parsed.persona)
-        proposedAction = { ...parsed, persona: r.name, personId: r.id }
+        // Objetivos ACTIVOS ligados a esa persona → para ofrecer cerrarlos también.
+        const linkedGoals = r.id
+          ? goals
+              .filter((g) => Array.isArray(g.related_persons) && (g.related_persons as string[]).includes(r.id as string))
+              .map((g) => ({ id: g.id, title: g.title }))
+          : []
+        proposedAction = { ...parsed, persona: r.name, personId: r.id, linkedGoals }
       }
     }
 
