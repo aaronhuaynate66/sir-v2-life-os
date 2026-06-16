@@ -130,10 +130,27 @@ function read(extracted: Record<string, unknown>, k: string): string | undefined
   return typeof v === 'string' && v.trim().length > 0 ? v.trim() : undefined
 }
 
+/** Agrupa archivos por PERSONA: cada export de WhatsApp por su contacto (nombre
+ *  del archivo); cada imagen suelta en su propio grupo. Así subir 5 chats de 5
+ *  personas distintas produce 5 grupos en vez de fusionarse en uno. */
+function groupFilesByPerson(files: File[]): File[][] {
+  const groups = new Map<string, File[]>()
+  for (const f of files) {
+    const key = isExportName(f.name) ? `wa:${cleanExportFileName(f.name).toLowerCase()}` : `img:${f.name.toLowerCase()}`
+    const arr = groups.get(key) ?? []
+    arr.push(f)
+    groups.set(key, arr)
+  }
+  return [...groups.values()]
+}
+
 export function IntakeInteligente() {
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState<ErrorState | null>(null)
   const [files, setFiles] = useState<File[]>([])
+  // Cola multi-persona: si subís archivos de varias personas, se procesan de a una.
+  const [queue, setQueue] = useState<File[][]>([])
+  const [queueIdx, setQueueIdx] = useState(0)
 
   const [waChats, setWaChats] = useState<{ parsed: ParsedExport; name: string }[]>([])
   const [imgs, setImgs] = useState<ImgItem[]>([])
@@ -156,6 +173,7 @@ export function IntakeInteligente() {
     setPhase('idle'); setError(null); setFiles([]); setWaChats([]); setImgs([]); setImgDiag([]); setProfileText(''); setProfileCap(null)
     setSuggestion(null); setName(''); setRelationship('professional'); setCategory('network')
     setCandidates([]); setSelected(null); setProgress(null); setResult(null)
+    setQueue([]); setQueueIdx(0)
   }
 
   async function analyze() {
@@ -379,6 +397,17 @@ export function IntakeInteligente() {
   }
 
   // ─────────────── UI ───────────────
+  function nextInQueue() {
+    const ni = queueIdx + 1
+    if (ni >= queue.length) return
+    setQueueIdx(ni)
+    setFiles(queue[ni])
+    setWaChats([]); setImgs([]); setImgDiag([]); setProfileText(''); setProfileCap(null)
+    setSuggestion(null); setName(''); setRelationship('professional'); setCategory('network')
+    setCandidates([]); setSelected(null); setProgress(null); setResult(null)
+    setPhase('idle'); setError(null)
+  }
+
   if (phase === 'done' && result) {
     return (
       <Card className="shadow-none border-ok/30">
@@ -402,7 +431,13 @@ export function IntakeInteligente() {
                 </Link>
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={reset}>Cargar otra persona</Button>
+            {queueIdx + 1 < queue.length ? (
+              <Button size="sm" onClick={nextInQueue}>
+                Siguiente persona ({queueIdx + 2} de {queue.length}) <ArrowRight size={14} className="ml-1" />
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={reset}>Cargar otra persona</Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -429,9 +464,20 @@ export function IntakeInteligente() {
             multiple
             accept=".zip,.txt,image/jpeg,image/png,image/webp"
             disabled={phase === 'analyzing' || phase === 'importing'}
-            onChange={(e) => { setFiles(Array.from(e.target.files ?? [])); setSuggestion(null); setPhase('idle'); setError(null); setSelected(null) }}
+            onChange={(e) => {
+              const all = Array.from(e.target.files ?? [])
+              const groups = groupFilesByPerson(all)
+              setQueue(groups); setQueueIdx(0)
+              setFiles(groups[0] ?? all)
+              setSuggestion(null); setPhase('idle'); setError(null); setSelected(null)
+            }}
             className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10"
           />
+          {queue.length > 1 && (
+            <div className="rounded-md border border-[#14b8a6]/40 bg-[#14b8a6]/5 px-3 py-1.5 text-[12px] text-foreground">
+              Detecté <span className="font-semibold">{queue.length} personas distintas</span>. Procesando <span className="font-semibold">persona {queueIdx + 1} de {queue.length}</span> — revisás y confirmás una por una.
+            </div>
+          )}
           {files.length > 0 && (
             <ul className="text-[11px] text-muted-foreground font-mono space-y-0.5">
               {files.map((f, i) => (
