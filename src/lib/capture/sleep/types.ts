@@ -39,6 +39,14 @@ export interface SleepPanelExtracted {
   stages: SleepStageMinutes
   /** Puntuación de calidad 0-100 (ej. 75), o null. */
   score: number | null
+  /** Cantidad de despertares durante la noche (ej. 1), o null. */
+  awakenings: number | null
+  /** Frecuencia respiratoria promedio en respiraciones/min (ej. 15), o null. */
+  respiratory_rate: number | null
+  /** SpO₂ promedio durante el sueño en % (ej. 98), o null. */
+  spo2_avg: number | null
+  /** Minutos de SIESTA (diurna), separados del sueño nocturno, o null. */
+  nap_minutes: number | null
   confidence: 'high' | 'medium' | 'low'
   /** Notas breves del modelo en español (max ~200 chars). */
   raw_observations?: string
@@ -62,5 +70,9 @@ export interface SleepCaptureFinal {
   wakeTime: string | null
   stages: SleepStageMinutes
   score: number | null
+  awakenings: number | null
+  respiratoryRate: number | null
+  spo2Avg: number | null
+  napMinutes: number | null
   confidence: 'high' | 'medium' | 'low'
 }

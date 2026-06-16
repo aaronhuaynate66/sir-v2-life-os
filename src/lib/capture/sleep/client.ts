@@ -10,7 +10,7 @@
 
 import { useSelfStore } from '@/stores/useSelfStore'
 import { blobToBase64 } from '@/lib/capture/scale/compress'
-import { buildSleepRecordFromPanel } from './map'
+import { buildSleepRecordFromPanel, buildSleepHealthMetrics, sleepDedupeId } from './map'
 import type { SleepCaptureFinal, SleepPanelExtracted } from './types'
 
 const LIMA_TZ = 'America/Lima'
@@ -74,6 +74,9 @@ export interface PersistSleepResult {
 export function persistSleepCapture(final: SleepCaptureFinal): PersistSleepResult {
   const record = buildSleepRecordFromPanel(final)
 
+  const metrics = buildSleepHealthMetrics(final)
+  const metricPrefix = `${sleepDedupeId(final.day)}:`
+
   let replaced = false
   useSelfStore.setState((s) => {
     const rest = s.sleepRecords.filter((r) => {
@@ -83,7 +86,9 @@ export function persistSleepCapture(final: SleepCaptureFinal): PersistSleepResul
       }
       return true
     })
-    return { sleepRecords: [...rest, record] }
+    // Reemplaza las métricas de sueño del mismo día (mismo prefijo de id).
+    const restMetrics = s.healthMetrics.filter((m) => !m.id.startsWith(metricPrefix))
+    return { sleepRecords: [...rest, record], healthMetrics: [...restMetrics, ...metrics] }
   })
 
   return {

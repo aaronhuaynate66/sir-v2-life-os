@@ -45,6 +45,7 @@ export const HEALTH_METRIC_LABELS: Record<HealthMetricType, string> = {
   hrv_max: 'VFC máxima',
   hrv_avg: 'VFC',
   heart_rate_high_alerts: 'Alertas FC alta',
+  respiratory_rate: 'Frecuencia respiratoria',
 }
 
 /**

@@ -124,6 +124,10 @@ export function SleepCapturePreview({
         awake_minutes: parseMinutes(stageRaw.awake_minutes),
       },
       score,
+      awakenings: extracted.awakenings,
+      respiratoryRate: extracted.respiratory_rate,
+      spo2Avg: extracted.spo2_avg,
+      napMinutes: extracted.nap_minutes,
       confidence: extracted.confidence,
     }
     onConfirm(final)
@@ -284,6 +288,16 @@ export function SleepCapturePreview({
                   Se guarda como calidad 1-10 (la escala de SIR).
                 </p>
               </div>
+
+              {(extracted.awakenings !== null || extracted.respiratory_rate !== null || extracted.spo2_avg !== null || extracted.nap_minutes !== null) && (
+                <div className="text-[12px] text-foreground/90 bg-muted/30 border border-border rounded-md px-3 py-2 space-y-0.5">
+                  <div className="font-mono uppercase tracking-wider text-[10px] text-muted-foreground/70 mb-1">Otros datos del panel</div>
+                  {extracted.awakenings !== null && <div>Despertares: <span className="font-medium">{extracted.awakenings}</span></div>}
+                  {extracted.nap_minutes !== null && <div>Siesta: <span className="font-medium">{extracted.nap_minutes} min</span> <span className="text-muted-foreground">(aparte del sueño nocturno)</span></div>}
+                  {extracted.respiratory_rate !== null && <div>Frecuencia respiratoria: <span className="font-medium">{extracted.respiratory_rate}/min</span> <span className="text-muted-foreground">→ tendencia en Salud</span></div>}
+                  {extracted.spo2_avg !== null && <div>SpO₂ promedio: <span className="font-medium">{extracted.spo2_avg}%</span> <span className="text-muted-foreground">→ tendencia en Salud</span></div>}
+                </div>
+              )}
 
               {extracted.raw_observations && (
                 <div className="text-[11px] text-muted-foreground leading-relaxed bg-muted/30 border border-border rounded-md px-3 py-2">
