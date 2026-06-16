@@ -30,6 +30,7 @@ import { SmartWizard } from '@/components/objetivos/SmartWizard'
 import { computeObjectiveProgress } from '@/lib/objectives/steps'
 import { isGoalSmartComplete, missingSmartFields } from '@/lib/objectives/smart'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
+import { RelationalGoalHealth } from '@/components/objetivos/RelationalGoalHealth'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -87,6 +88,20 @@ function GoalsContent() {
   const objectiveSteps = useObjectiveStepStore((s) => s.steps)
   const { addMemory, memories } = useMemoryStore()
   const { people, relationships } = useRelationshipStore()
+  // Calidades de interacción por persona (para la salud del vínculo en objetivos relacionales).
+  const [interactionTones, setInteractionTones] = useState<Record<string, number[]>>({})
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/person-logs/interactions')
+        if (!res.ok) return
+        const data = (await res.json()) as { tones?: Record<string, number[]> }
+        if (!cancelled && data.tones) setInteractionTones(data.tones)
+      } catch { /* best-effort */ }
+    })()
+    return () => { cancelled = true }
+  }, [])
   const dash = useMemo(() => buildGoalDashboard(goals), [goals])
 
   // Pasos por objetivo (para rollup y para el toggle de la lista).
@@ -512,6 +527,9 @@ function GoalsContent() {
                       </div>
                       <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{displayPct}%</span>
                     </div>
+                    {g.relatedPersons.length > 0 && (
+                      <RelationalGoalHealth personIds={g.relatedPersons} people={people} tones={interactionTones} />
+                    )}
                     <div className="mb-2">
                       <button
                         type="button"
