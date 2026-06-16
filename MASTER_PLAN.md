@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `bd725c9`
+**Hash del último commit humano:** `a6f5c03`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `a6f5c03` | aaronhuaynate66 | docs(adr): 0009 privacidad de terceros + auditoría de fugas (#266) | 2026-06-16 |
 | `bd725c9` | aaronhuaynate66 | feat(objetivos): salud del vínculo en la tarjeta de objetivos relacionales (#265) | 2026-06-16 |
 | `b3c9c58` | aaronhuaynate66 | fix(score): el score del vínculo ahora SÍ usa las interacciones (Reciprocidad) (#264) | 2026-06-16 |
 | `08cea62` | aaronhuaynate66 | fix(captura): la nota de texto promueve fechas a 'Fechas importantes' (#263) | 2026-06-16 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `bc1a618` | aaronhuaynate66 | feat(sir): cerrar vínculo desde el chat + tira 7d en hábitos (#259) | 2026-06-16 |
 | `6161f26` | aaronhuaynate66 | feat(e5): chip de deriva del norte en Mission Control (#258) | 2026-06-15 |
 | `c22441f` | aaronhuaynate66 | feat(e5): indicador de deriva hacia el norte (#257) | 2026-06-15 |
-| `40697c0` | aaronhuaynate66 | feat(scores): página /scores 'Cómo se calcula' (educativa, autocontenida) (#256) | 2026-06-15 |
 
 ---
 
