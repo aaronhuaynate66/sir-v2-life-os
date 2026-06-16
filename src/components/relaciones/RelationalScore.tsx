@@ -72,11 +72,31 @@ export function RelationalScore({ person, lastChat }: RelationalScoreProps) {
 }
 
 function ScoreContent({ person, lastChat }: RelationalScoreProps) {
+  // Calidades de interacción (person_logs) → alimentan la RECIPROCIDAD. Sin
+  // esto el score ignoraba las interacciones marcadas a mano (la carita feliz).
+  const [qualities, setQualities] = useState<number[]>([])
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/person-logs/interactions')
+        if (!res.ok) return
+        const data = (await res.json()) as { tones?: Record<string, number[]> }
+        const q = data.tones?.[person.id]
+        if (!cancelled && Array.isArray(q)) setQualities(q)
+      } catch {
+        /* best-effort: sin interacciones, Reciprocidad queda null como antes */
+      }
+    })()
+    return () => { cancelled = true }
+  }, [person.id])
+
   const breakdown = computeRelationalScore(
     {
       importanceScore: person.importanceScore,
       trustLevel: person.trustLevel,
       lastChatObservedAt: lastChat?.observedAt ?? null,
+      interactionQualities: qualities,
     },
     new Date(),
   )
