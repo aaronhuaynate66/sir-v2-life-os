@@ -266,6 +266,43 @@ export async function POST(req: NextRequest) {
       /* no fatal: la observación ya quedó guardada */
     }
 
+    // AUTO-TONO del import → Reciprocidad. El extractor ya calcula el tono de la
+    // conversación (interactionQuality 1-5; una pelea = 1-2). Sin esto el import
+    // NO movía el score aunque la IA detectara el conflicto. Escribimos UNA
+    // interacción person_logs con ese tono → baja/sube la Reciprocidad sola.
+    // Guarda anti-doble-conteo: no duplica si ya hay una interacción ese día
+    // (re-import del mismo chat, o tono cargado a mano).
+    try {
+      const iq = typeof (data as { interactionQuality?: unknown }).interactionQuality === 'number'
+        ? Math.max(1, Math.min(5, Math.round((data as { interactionQuality: number }).interactionQuality)))
+        : null
+      const day = (observedAt || '').slice(0, 10)
+      if (iq !== null && day) {
+        const { data: existing } = await supabase
+          .from('person_logs')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('person_id', personId)
+          .eq('kind', 'interaction')
+          .gte('logged_at', `${day}T00:00:00.000Z`)
+          .lte('logged_at', `${day}T23:59:59.999Z`)
+          .limit(1)
+        if (!existing || existing.length === 0) {
+          const summary = typeof (data as { summary?: unknown }).summary === 'string' ? (data as { summary: string }).summary : ''
+          await supabase.from('person_logs').insert({
+            user_id: userId,
+            person_id: personId,
+            kind: 'interaction',
+            value: iq,
+            note: `Tono inferido del chat importado${summary ? ` — ${summary.slice(0, 160)}` : ''}`,
+            logged_at: `${day}T12:00:00.000Z`,
+          })
+        }
+      }
+    } catch {
+      /* best-effort: el tono no debe romper el import */
+    }
+
     // Memoria de VENTANA RECIENTE: lo más nuevo del chat (últimos bloques) con
     // fecha = último mensaje. Encabeza getMemoriesForPerson (orden por
     // occurred_at DESC) → el briefing lee la textura reciente, no el promedio
