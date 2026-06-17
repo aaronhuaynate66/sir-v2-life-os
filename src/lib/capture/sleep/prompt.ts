@@ -65,9 +65,18 @@ Reglas estrictas:
    Si la app muestra "1:29 AM" -> "01:29"; "7:42 AM" -> "07:42";
    "11:30 PM" -> "23:30".
 
-6. score: la puntuación de calidad del sueño (0-100), ej. "75 puntos",
-   "Puntuación 75", "Sleep score 82". Si no hay puntuación visible, null.
-   NO confundas la puntuación con la duración ni con un porcentaje de fase.
+6. score: la puntuación GLOBAL de la noche (0-100). Es el número GRANDE y
+   destacado, normalmente con estrellas y/o "mejor que un X% de usuarios"
+   (ej. "68 puntos ★★★★", "Puntuación 75", "Sleep score 82").
+   CRÍTICO — NO es un sub-puntaje de una dimensión. Estos NO son el score de la
+   noche y debés IGNORARLOS como score:
+     · "Continuidad de sueño profundo, 81 puntos"
+     · "Calidad de la respiración, 98 puntos"
+     · cualquier "<dimensión>, N puntos" dentro de una lista de métricas.
+   Tampoco es la duración ni un porcentaje de fase ("Sueño profundo 14%").
+   Si la pantalla es el DETALLE de métricas (lista de dimensiones con sus
+   sub-puntajes) y NO se ve el número global con estrellas, devolvé score: null
+   — NO tomes un sub-puntaje como si fuera el score de la noche.
 
 7. "confidence":
    - high   : imagen nítida + duración/horario/fases legibles + sin ambigüedad
