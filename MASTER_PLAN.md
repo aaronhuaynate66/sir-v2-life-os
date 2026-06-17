@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `111d721`
+**Hash del último commit humano:** `03c1f33`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `03c1f33` | aaronhuaynate66 | feat(import): import de WhatsApp incremental + sellado por fecha (#271) | 2026-06-17 |
 | `111d721` | aaronhuaynate66 | feat(import): el chat importado mueve el score (auto-tono → Reciprocidad) (#270) | 2026-06-17 |
 | `fc74e67` | aaronhuaynate66 | fix(relaciones): 'Personas mencionadas' no propone eventos como personas (#269) | 2026-06-17 |
 | `4bf0cc6` | aaronhuaynate66 | fix(intake): multi-persona — no fusionar 5 chats en 1 (#268) | 2026-06-16 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b3c9c58` | aaronhuaynate66 | fix(score): el score del vínculo ahora SÍ usa las interacciones (Reciprocidad) (#264) | 2026-06-16 |
 | `08cea62` | aaronhuaynate66 | fix(captura): la nota de texto promueve fechas a 'Fechas importantes' (#263) | 2026-06-16 |
 | `1055594` | aaronhuaynate66 | feat(salud): captura de sueño — rescatar despertares, siesta, resp y SpO2 (#262) | 2026-06-16 |
-| `c720306` | aaronhuaynate66 | feat(e5): momentum del norte — eficacia + cadencia (no solo atención) (#261) | 2026-06-16 |
 
 ---
 
