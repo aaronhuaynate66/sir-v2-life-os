@@ -15,11 +15,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 
-import { readExportText, interpretChunk, persistWhatsAppExport } from '@/lib/capture/whatsapp/export/client'
+import { readExportText, interpretChunk, persistWhatsAppExport, getLastImportedISO } from '@/lib/capture/whatsapp/export/client'
 import { trackCreated, EVENTS } from '@/lib/analytics/track'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import { consolidateInterpretations, buildExportObservationData } from '@/lib/capture/whatsapp/export/consolidate'
+import { sliceParsedSince } from '@/lib/capture/whatsapp/export/incremental'
 import type { ChunkInterpretation, ParsedExport } from '@/lib/capture/whatsapp/export/types'
 
 import {
@@ -340,11 +341,23 @@ export function IntakeInteligente() {
       //    activa el cruce de fechas → "Fechas importantes" (dedup server-side).
       let messages = 0
       if (waChats.length > 0) {
-        const perChat = waChats.map((c) => chunkConversation(c.parsed.messages))
+        // INCREMENTAL: recorto cada export a lo nuevo desde el último import de
+        // esta persona. Re-subir el mismo chat no duplica; uno que creció
+        // procesa solo la cola nueva. El watermark avanza dentro del batch por
+        // si hay varios exports de la misma persona.
+        let watermark = await getLastImportedISO(personId)
+        const freshChats = waChats.map((c) => {
+          const fresh = sliceParsedSince(c.parsed, watermark)
+          if (fresh.messages.length > 0 && fresh.lastISO) watermark = fresh.lastISO
+          return fresh
+        })
+        const perChat = freshChats.map((fp) => (fp.messages.length > 0 ? chunkConversation(fp.messages) : []))
         const totalChunks = perChat.reduce((a, ch) => a + ch.length, 0)
         let done = 0
         setProgress({ done: 0, total: totalChunks })
-        for (let ci = 0; ci < waChats.length; ci++) {
+        for (let ci = 0; ci < freshChats.length; ci++) {
+          const fresh = freshChats[ci]
+          if (fresh.messages.length === 0) continue // archivo ya conocido, nada nuevo
           const chunks = perChat[ci]
           const interps: (ChunkInterpretation | null)[] = new Array(chunks.length)
           await runPool(chunks, 3, async (chunk, i) => {
@@ -353,9 +366,9 @@ export function IntakeInteligente() {
             setProgress({ done, total: totalChunks })
           })
           const consolidated = consolidateInterpretations(interps.filter((x): x is ChunkInterpretation => !!x))
-          const data = buildExportObservationData(waChats[ci].parsed, consolidated, personName)
+          const data = buildExportObservationData(fresh, consolidated, personName)
           await persistWhatsAppExport({ personId, data, promoteDates: true })
-          messages += waChats[ci].parsed.messages.length
+          messages += fresh.messages.length
         }
       }
 

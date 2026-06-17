@@ -56,8 +56,10 @@ import {
   readExportText,
   interpretChunk,
   persistWhatsAppExport,
+  getLastImportedISO,
 } from '@/lib/capture/whatsapp/export/client'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
+import { sliceParsedSince, incrementalSummary } from '@/lib/capture/whatsapp/export/incremental'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import {
   consolidateInterpretations,
@@ -224,7 +226,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
   const [savedType, setSavedType] = useState<CaptureType | null>(null)
   const [savedCount, setSavedCount] = useState<number>(1)
   // Resumen de lo guardado cuando fue un export de WhatsApp (mensaje a medida).
-  const [savedExport, setSavedExport] = useState<{ messageCount: number; datesAdded: number } | null>(null)
+  const [savedExport, setSavedExport] = useState<{ messageCount: number; datesAdded: number; alreadyImported?: boolean; sinceISO?: string | null } | null>(null)
   const [noteData, setNoteData] = useState<NoteExtract | null>(null)
   const [savedNote, setSavedNote] = useState<NoteExtract | null>(null)
   const [preview, setPreview] = useState<PreviewState | null>(null)
@@ -664,8 +666,21 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
         return
       }
 
+      // 1b. INCREMENTAL: ¿hasta qué fecha ya importé a esta persona? Me quedo
+      //     solo con los mensajes nuevos (re-subir el mismo chat es seguro;
+      //     un chat que creció procesa solo la cola nueva). Cero renombrar.
+      const lastImportedISO = await getLastImportedISO(personId)
+      const incr = incrementalSummary(parsed, lastImportedISO)
+      if (incr.isDuplicate) {
+        setSavedType('whatsapp_chat')
+        setSavedExport({ messageCount: 0, datesAdded: 0, alreadyImported: true, sinceISO: lastImportedISO })
+        setPhase('done')
+        return
+      }
+      const fresh = sliceParsedSince(parsed, lastImportedISO)
+
       // 2. Partir en bloques + interpretar bloque a bloque (concurrencia acotada).
-      const chunks = chunkConversation(parsed.messages)
+      const chunks = chunkConversation(fresh.messages)
       setProgress({ done: 0, total: chunks.length })
       const parts: (ChunkInterpretation | null)[] = new Array(chunks.length).fill(null)
       let done = 0
@@ -698,7 +713,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
 
       // 3. Consolidar + armar el data de la observación whatsapp_chat.
       const consolidated = consolidateInterpretations(valid)
-      const exportData = buildExportObservationData(parsed, consolidated, personName)
+      const exportData = buildExportObservationData(fresh, consolidated, personName)
 
       // Preseleccionar las fechas con fecha resoluble (las únicas agregables a
       // "Fechas importantes").
@@ -721,7 +736,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
         confidence: consolidated.confidence,
         exportData,
         consolidated,
-        messageCount: parsed.messages.length,
+        messageCount: fresh.messages.length,
         blocksUsed: valid.length,
       })
       setPhase('review')
@@ -729,7 +744,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
       setError(toError(e))
       setPhase('idle')
     }
-  }, [waFile, personName])
+  }, [waFile, personName, personId])
 
   const working = phase === 'working'
   const confirming = phase === 'confirming'
@@ -756,6 +771,12 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
                 <span className="text-ok">
                   Nota guardada y asociada a {personName}
                   {savedNote.birthDate ? ` · cumpleaños ${savedNote.birthDate} en la ficha` : ''}.
+                </span>
+              ) : savedExport?.alreadyImported ? (
+                <span className="text-ok">
+                  Ya tenías importada esta conversación con {personName}
+                  {savedExport.sinceISO ? ` hasta el ${savedExport.sinceISO.slice(0, 10)}` : ''}. No
+                  había mensajes nuevos, así que no dupliqué nada.
                 </span>
               ) : savedExport ? (
                 <span className="text-ok">

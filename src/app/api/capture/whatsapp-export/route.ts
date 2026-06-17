@@ -180,6 +180,43 @@ async function promoteDatesToSpecialDates(
     .eq('id', personId)
 }
 
+/**
+ * GET /api/capture/whatsapp-export/state?person_id=...
+ * Devuelve hasta qué fecha (ISO) ya se importó WhatsApp de esa persona, para
+ * el import INCREMENTAL: el cliente recorta el export a los mensajes
+ * posteriores a `lastImportedISO`. Es el MAX(observed_at) de las observaciones
+ * whatsapp_chat de la persona (observed_at = último mensaje del export). RLS
+ * + ownership. Sin observaciones previas → null (primer import).
+ */
+export async function GET(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) {
+    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  }
+  const userId = authData.user.id
+
+  const personId = req.nextUrl.searchParams.get('person_id')
+  if (!personId) {
+    return errorJson(400, 'person_id requerido')
+  }
+
+  const { data: rows, error } = await supabase
+    .from('observations')
+    .select('observed_at')
+    .eq('user_id', userId)
+    .eq('person_id', personId)
+    .eq('capture_type', 'whatsapp_chat')
+    .order('observed_at', { ascending: false })
+    .limit(1)
+  if (error) {
+    return errorJson(500, 'No se pudo leer el estado de import', error.message)
+  }
+  const lastImportedISO =
+    rows && rows.length > 0 && typeof rows[0].observed_at === 'string' ? rows[0].observed_at : null
+  return NextResponse.json({ lastImportedISO })
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
@@ -220,6 +257,7 @@ export async function POST(req: NextRequest) {
   }
 
   const observedAt = deriveObservedAt('whatsapp_chat', data)
+  data.importedAt = new Date().toISOString()
 
   try {
     const observation = await insertObservation(supabase, {
