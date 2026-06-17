@@ -101,4 +101,20 @@ export async function persistWhatsAppExport(
   return json.observation
 }
 
+/** Lee hasta qué fecha (ISO) ya se importó WhatsApp de esta persona, para el
+ *  import incremental. null = primer import (o sin red → tratamos como primer
+ *  import: el server igual deduplica por día en el auto-tono). */
+export async function getLastImportedISO(personId: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `/api/capture/whatsapp-export/state?person_id=${encodeURIComponent(personId)}`,
+    )
+    if (!res.ok) return null
+    const json = (await res.json()) as { lastImportedISO?: string | null }
+    return typeof json.lastImportedISO === 'string' ? json.lastImportedISO : null
+  } catch {
+    return null
+  }
+}
+
 export type { ApiError }
