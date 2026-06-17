@@ -154,6 +154,16 @@ export function consolidateInterpretations(parts: ChunkInterpretation[]): Consol
   const interactionQuality = Math.max(1, Math.min(5, Math.round(avgTone)))
   const emotionalTone = Math.max(-1, Math.min(1, (avgTone - 3) / 2))
 
+  // TONO RECIENTE: el mínimo de los ÚLTIMOS bloques (los más nuevos = la cola
+  // cronológica). Captura un conflicto reciente que el promedio histórico
+  // ahogaría (una pelea de ayer entre 18k mensajes de años buenos). Mínimo (no
+  // promedio) para que una charla tensa en la ventana NO se diluya con un
+  // intercambio cordial el mismo tramo. Si no hay bloques → cae al promedio.
+  const RECENT_CHUNKS = 2
+  const recentTones = tones.slice(-RECENT_CHUNKS)
+  const recentTone =
+    recentTones.length > 0 ? Math.max(1, Math.min(5, Math.min(...recentTones))) : interactionQuality
+
   const dates = dedupDates(valid.map((p) => p.dates), 20)
   const events = unionStrings(valid.map((p) => p.events), 20)
   const facts = unionStrings(valid.map((p) => p.facts), 30)
@@ -164,6 +174,7 @@ export function consolidateInterpretations(parts: ChunkInterpretation[]): Consol
     emotionalUser,
     emotionalOther,
     interactionQuality,
+    recentTone,
     emotionalTone,
     dates,
     events,
@@ -270,6 +281,7 @@ export function buildExportObservationData(
     events: consolidated.events,
     extractedDates: consolidated.dates,
     interactionQuality: consolidated.interactionQuality,
+    recentTone: consolidated.recentTone,
     emotionalTone: consolidated.emotionalTone,
   }
 }

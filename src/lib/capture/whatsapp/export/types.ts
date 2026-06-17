@@ -109,8 +109,13 @@ export interface ConsolidatedExport {
   topics: string[]
   emotionalUser: string | null
   emotionalOther: string | null
-  /** Calidad de interacción consolidada (1-5) — alimenta reciprocidad. */
+  /** Calidad de interacción consolidada (1-5), PROMEDIO de toda la charla —
+   *  para la narrativa histórica. */
   interactionQuality: number
+  /** Tono de la VENTANA RECIENTE (1-5): mínimo de los últimos bloques. Es el
+   *  "¿cómo estamos AHORA?" — una pelea reciente lo hunde aunque atrás haya
+   *  años buenos. Alimenta el score (Reciprocidad), no el promedio histórico. */
+  recentTone: number
   /** Tono emocional normalizado [-1, 1] derivado de la calidad. */
   emotionalTone: number
   dates: ExtractedDate[]

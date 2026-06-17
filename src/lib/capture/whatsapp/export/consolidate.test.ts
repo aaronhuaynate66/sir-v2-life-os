@@ -196,3 +196,24 @@ describe('buildExportObservationData', () => {
     expect(raw.find((m) => m.content === 'buenas')!.author).toBe('user')
   })
 })
+
+
+describe('recentTone (ventana reciente)', () => {
+  function chunk(tone: number, summary = 's'): import('./types').ChunkInterpretation {
+    return { summary, topics: [], emotionalUser: null, emotionalOther: null, toneScore: tone, dates: [], events: [], facts: [] }
+  }
+  it('una pelea reciente hunde recentTone aunque el promedio sea bueno', () => {
+    const parts = [chunk(5), chunk(5), chunk(5), chunk(4), chunk(1)]
+    const c = consolidateInterpretations(parts)
+    expect(c.interactionQuality).toBeGreaterThanOrEqual(4) // promedio histórico bueno
+    expect(c.recentTone).toBe(1) // pero lo reciente fue tenso
+  })
+  it('sin conflicto reciente, recentTone alto', () => {
+    const c = consolidateInterpretations([chunk(2), chunk(3), chunk(5), chunk(5)])
+    expect(c.recentTone).toBe(5)
+  })
+  it('toma el mínimo de los últimos 2 bloques', () => {
+    const c = consolidateInterpretations([chunk(5), chunk(5), chunk(2), chunk(4)])
+    expect(c.recentTone).toBe(2)
+  })
+})
