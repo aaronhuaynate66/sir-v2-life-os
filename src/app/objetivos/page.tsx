@@ -31,6 +31,7 @@ import { computeObjectiveProgress } from '@/lib/objectives/steps'
 import { isGoalSmartComplete, missingSmartFields } from '@/lib/objectives/smart'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { RelationalGoalHealth } from '@/components/objetivos/RelationalGoalHealth'
+import { GoalConflictFriction } from '@/components/objetivos/GoalConflictFriction'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -90,6 +91,7 @@ function GoalsContent() {
   const { people, relationships } = useRelationshipStore()
   // Calidades de interacción por persona (para la salud del vínculo en objetivos relacionales).
   const [interactionEvents, setInteractionEvents] = useState<Record<string, import('@/lib/people/relationalScore').InteractionEvent[]>>({})
+  const [recentConflicts, setRecentConflicts] = useState<{ personId: string; value: number; note: string; date: string }[]>([])
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -98,6 +100,11 @@ function GoalsContent() {
         if (!res.ok) return
         const data = (await res.json()) as { events?: Record<string, { q: number; at: string }[]> }
         if (!cancelled && data.events) setInteractionEvents(Object.fromEntries(Object.entries(data.events).map(([k, v]) => [k, v.map((e) => ({ quality: e.q, at: e.at }))])))
+        const cRes = await fetch('/api/relaciones/recent-conflicts')
+        if (cRes.ok) {
+          const cData = (await cRes.json()) as { conflicts?: { personId: string; value: number; note: string; date: string }[] }
+          if (!cancelled && Array.isArray(cData.conflicts)) setRecentConflicts(cData.conflicts)
+        }
       } catch { /* best-effort */ }
     })()
     return () => { cancelled = true }
@@ -527,6 +534,12 @@ function GoalsContent() {
                       </div>
                       <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{displayPct}%</span>
                     </div>
+                    <GoalConflictFriction
+                      goal={{ title: g.title, description: g.description, relatedPersons: g.relatedPersons }}
+                      conflicts={recentConflicts}
+                      people={people}
+                      isNorte={g.isAnchor === true}
+                    />
                     {g.relatedPersons.length > 0 && (
                       <RelationalGoalHealth personIds={g.relatedPersons} people={people} events={interactionEvents} />
                     )}
