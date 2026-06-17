@@ -95,12 +95,34 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Interacciones (person_logs) → eventos fechados por persona, para que el
+    // snapshot de Reciprocidad use el mismo cálculo ponderado por recencia que
+    // la ficha (antes el cron no las leía → reciprocidad siempre null en el
+    // historial). No fatal.
+    const eventsByPerson = new Map<string, { quality: number; at: string }[]>()
+    const { data: logData, error: logErr } = await admin
+      .from('person_logs')
+      .select('person_id, value, logged_at')
+      .eq('kind', 'interaction')
+      .in('person_id', personIds)
+      .order('logged_at', { ascending: true })
+    if (logErr) {
+      console.error(`${TAG} error leyendo person_logs (no fatal):`, logErr.message)
+    }
+    for (const r of (logData ?? []) as unknown as { person_id: string | null; value: number; logged_at: string }[]) {
+      if (!r.person_id || typeof r.value !== 'number') continue
+      const arr = eventsByPerson.get(r.person_id) ?? []
+      arr.push({ quality: r.value, at: r.logged_at })
+      eventsByPerson.set(r.person_id, arr)
+    }
+
     const rows = people.map((p) => {
       const b = computeRelationalScore(
         {
           importanceScore: p.importance_score,
           trustLevel: p.trust_level,
           lastChatObservedAt: lastChatByPerson.get(p.id) ?? null,
+          interactionEvents: eventsByPerson.get(p.id) ?? [],
         },
         now,
       )

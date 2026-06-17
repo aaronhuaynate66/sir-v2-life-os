@@ -7,20 +7,20 @@
 
 import { HeartHandshake } from 'lucide-react'
 import type { Person } from '@/types'
-import { computeRelationalScore, healthBand } from '@/lib/people/relationalScore'
+import { computeRelationalScore, healthBand, type InteractionEvent } from '@/lib/people/relationalScore'
 
 interface Props {
   personIds: string[]
   people: Person[]
-  /** tones[personId] = calidades de interacción (person_logs). */
-  tones: Record<string, number[]>
+  /** events[personId] = interacciones con fecha (person_logs) → score ponderado. */
+  events: Record<string, InteractionEvent[]>
 }
 
 function firstName(name: string): string {
   return (name || '').trim().split(/\s+/)[0] || name
 }
 
-export function RelationalGoalHealth({ personIds, people, tones }: Props) {
+export function RelationalGoalHealth({ personIds, people, events }: Props) {
   const linked = personIds.map((id) => people.find((p) => p.id === id)).filter((p): p is Person => !!p)
   if (linked.length === 0) return null
 
@@ -33,7 +33,7 @@ export function RelationalGoalHealth({ personIds, people, tones }: Props) {
           importanceScore: p.importanceScore,
           trustLevel: p.trustLevel,
           lastChatObservedAt: p.lastContact ?? null,
-          interactionQualities: tones[p.id] ?? [],
+          interactionEvents: events[p.id] ?? [],
         },
         new Date(),
       )

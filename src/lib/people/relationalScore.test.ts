@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   computeRelationalScore,
   computeReciprocity,
+  computeReciprocityWeighted,
   healthBand,
   QUALITY_DELTA,
   RECIPROCITY_BASELINE,
@@ -135,5 +136,53 @@ describe('healthBand', () => {
     expect(healthBand(55).id).toBe('care')
     expect(healthBand(40).id).toBe('care')
     expect(healthBand(20).id).toBe('risk')
+  })
+})
+
+
+describe('computeReciprocityWeighted (RFM-R · decaimiento por recencia)', () => {
+  const NOW2 = new Date('2026-06-17T12:00:00Z')
+  it('sin eventos → null', () => {
+    expect(computeReciprocityWeighted([], NOW2)).toBeNull()
+  })
+  it('una pelea de HOY pesa full: 50 + round(-5*0.6*1) = 47', () => {
+    expect(computeReciprocityWeighted([{ quality: 1, at: '2026-06-17T00:00:00Z' }], NOW2)).toBe(47)
+  })
+  it('una pelea de hace un half-life (45d) pesa la mitad: 50 + (-5*0.6*0.5=-1.5) → round(48.5)=49', () => {
+    const at = new Date(NOW2.getTime() - 45 * 86_400_000).toISOString()
+    expect(computeReciprocityWeighted([{ quality: 1, at }], NOW2)).toBe(49)
+  })
+  it('lo reciente domina sobre lo viejo: pelea hoy + años de cariño viejo → baja', () => {
+    const viejo = new Date(NOW2.getTime() - 400 * 86_400_000).toISOString()
+    const r = computeReciprocityWeighted(
+      [
+        { quality: 5, at: viejo },
+        { quality: 5, at: viejo },
+        { quality: 5, at: viejo },
+        { quality: 1, at: '2026-06-17T00:00:00Z' },
+      ],
+      NOW2,
+    )
+    expect(r).toBeLessThan(RECIPROCITY_BASELINE) // la pelea de hoy manda
+  })
+  it('una interacción muy vieja casi no mueve la aguja', () => {
+    const viejo = new Date(NOW2.getTime() - 365 * 86_400_000).toISOString()
+    expect(computeReciprocityWeighted([{ quality: 1, at: viejo }], NOW2)).toBe(RECIPROCITY_BASELINE)
+  })
+})
+
+describe('computeRelationalScore con interactionEvents (precedencia sobre qualities)', () => {
+  const NOW3 = new Date('2026-06-17T12:00:00Z')
+  it('usa el camino ponderado cuando hay eventos fechados', () => {
+    const b = computeRelationalScore(
+      {
+        importanceScore: 5,
+        trustLevel: 5,
+        lastChatObservedAt: null,
+        interactionEvents: [{ quality: 1, at: '2026-06-17T00:00:00Z' }],
+      },
+      NOW3,
+    )
+    expect(b.reciprocidad).toBe(47)
   })
 })
