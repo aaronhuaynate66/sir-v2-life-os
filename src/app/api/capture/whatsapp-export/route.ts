@@ -93,6 +93,7 @@ function sanitizeData(raw: unknown): { data: Record<string, unknown>; confidence
 
   const iq = typeof d.interactionQuality === 'number' ? Math.max(1, Math.min(5, Math.round(d.interactionQuality))) : null
   const et = typeof d.emotionalTone === 'number' ? Math.max(-1, Math.min(1, d.emotionalTone)) : null
+  const rt = typeof d.recentTone === 'number' ? Math.max(1, Math.min(5, Math.round(d.recentTone))) : null
 
   return {
     confidence,
@@ -121,6 +122,7 @@ function sanitizeData(raw: unknown): { data: Record<string, unknown>; confidence
       events: strArray(d.events, 20, 200),
       extractedDates,
       ...(iq !== null ? { interactionQuality: iq } : {}),
+      ...(rt !== null ? { recentTone: rt } : {}),
       ...(et !== null ? { emotionalTone: et } : {}),
     },
   }
@@ -311,9 +313,17 @@ export async function POST(req: NextRequest) {
     // Guarda anti-doble-conteo: no duplica si ya hay una interacción ese día
     // (re-import del mismo chat, o tono cargado a mano).
     try {
-      const iq = typeof (data as { interactionQuality?: unknown }).interactionQuality === 'number'
+      // El score (Reciprocidad) debe reflejar "¿cómo estamos AHORA?": usamos el
+      // TONO RECIENTE (mínimo de la ventana nueva), no el promedio histórico que
+      // ahogaría una pelea reciente entre años de charla cordial. Fallback al
+      // promedio si no vino el reciente (imports viejos).
+      const recent = typeof (data as { recentTone?: unknown }).recentTone === 'number'
+        ? Math.max(1, Math.min(5, Math.round((data as { recentTone: number }).recentTone)))
+        : null
+      const avg = typeof (data as { interactionQuality?: unknown }).interactionQuality === 'number'
         ? Math.max(1, Math.min(5, Math.round((data as { interactionQuality: number }).interactionQuality)))
         : null
+      const iq = recent ?? avg
       const day = (observedAt || '').slice(0, 10)
       if (iq !== null && day) {
         const { data: existing } = await supabase
@@ -327,12 +337,14 @@ export async function POST(req: NextRequest) {
           .limit(1)
         if (!existing || existing.length === 0) {
           const summary = typeof (data as { summary?: unknown }).summary === 'string' ? (data as { summary: string }).summary : ''
+          const tense = iq <= 2
+          const prefix = tense ? 'Conversación reciente TENSA' : 'Tono inferido del chat importado'
           await supabase.from('person_logs').insert({
             user_id: userId,
             person_id: personId,
             kind: 'interaction',
             value: iq,
-            note: `Tono inferido del chat importado${summary ? ` — ${summary.slice(0, 160)}` : ''}`,
+            note: `${prefix}${summary ? ` — ${summary.slice(0, 160)}` : ''}`,
             logged_at: `${day}T12:00:00.000Z`,
           })
         }

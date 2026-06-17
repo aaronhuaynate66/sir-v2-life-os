@@ -40,6 +40,8 @@ REGLAS ESTRICTAS:
 - El ESTADO RECIENTE del usuario sirve únicamente para calibrar el TIMING y el TONO de la oportunidad (ej: si viene con poca energía o durmió poco, sugerí un primer paso liviano y dejar lo difícil para cuando esté entero). PROHIBIDO usarlo para explicar por qué la relación va mal, para atribuir causas a lo que pasó, o para dar consejo de salud. Mirá hacia adelante, no hacia atrás.
 - La RED PROFESIONAL (otras personas del usuario en la misma empresa/grupo) es inteligencia estratégica legítima: usala para leer el tablero (quién se relaciona con quién, intereses compartidos, vías de influencia, con quién ya hay un objetivo en juego) y, si aplica, proponé en la Oportunidad un movimiento que apalanque esas conexiones reales. Esto NO es manipulación: la línea es que el movimiento se apoye en vínculos GENUINOS y en intereses reales, sin engaño, sin coerción y sin usar a nadie en contra de su propio interés. Si una jugada requeriría mentir, presionar o dañar a alguien, no la sugieras.
 - Si un colega tiene un cumpleaños cerca, un contacto frío o un vínculo a cuidar, usalo para TIMING y para sugerir un acercamiento GENUINO (saludar, retomar). PERO un gesto de cuidado —como saludar un cumpleaños— vale por sí mismo y NO debe presentarse como un pretexto para extraer información o sacar ventaja. El saludo se sostiene aunque no hubiera nada que ganar; si de esa conexión real surge contexto útil, mejor, pero ese no es el motivo del gesto.
+- CONFLICTO RECIENTE: si en los datos aparece una "ALERTA: conversación reciente tensa", NO la ignores ni la suavices hasta volverla invisible. Nombrala explícitamente en Dinámica (qué pasó, en términos del usuario, sin diagnosticar ni psicoanalizar a nadie) y hacé que la Oportunidad sea un paso concreto para MANEJAR la situación: puede ser reparar, poner un límite sano, o una conversación franca. La reparación NUNCA exige que el usuario renuncie a sus objetivos para apaciguar al otro.
+- OBJETIVO EN JUEGO: si el conflicto reciente es sobre uno de los objetivos del usuario (sobre todo TU NORTE, el objetivo ancla), nombrá esa tensión con honestidad — el vínculo de un lado, el objetivo del otro — y orientá la Oportunidad a sostener AMBOS: cuidar la relación sin abandonar el objetivo. No tomes partido por el otro contra el objetivo del usuario, ni al revés; mostrá el trade-off real y un siguiente paso.
 - PROHIBIDO: diagnósticos clínicos, etiquetas de salud mental, consejo médico/psicológico, tácticas de manipulación, jugadas para "obtener" algo o "recuperar terreno", generar dependencia.
 - Tono cálido, directo y honesto. Si hay poca información, decilo y mantené el briefing corto.
 - Español neutro. Sin markdown, sin viñetas con guiones, sin emojis. Respetá las etiquetas "TL;DR:", "Contexto:", "Dinámica:", "Oportunidad:" tal cual, cada una en su propio bloque separado por una línea en blanco.`
@@ -56,6 +58,25 @@ export interface BriefingPersonFacts {
   organization?: string
   /** Grupo/holding del sujeto. */
   orgGroup?: string
+  /** Conversación reciente TENSA detectada (tono ≤2 en la ventana reciente del
+   *  chat importado o una interacción reciente). El briefing debe nombrarla y
+   *  ayudar a manejarla, no enterrarla. */
+  recentConflict?: {
+    /** YYYY-MM-DD del conflicto. */
+    date: string
+    /** Tono 1-5 (≤2 = tenso). */
+    toneScore: number
+    /** Textura del conflicto (resumen/nota), para que el briefing sepa de qué fue. */
+    note: string
+  }
+}
+
+/** Un objetivo activo del usuario, para que el briefing pueda conectar un
+ *  conflicto con el objetivo que está en juego (sobre todo el norte). */
+export interface BriefingActiveGoal {
+  title: string
+  /** true si es el objetivo ANCLA (TU NORTE). */
+  isNorte: boolean
 }
 
 export interface BriefingMemory {
@@ -108,6 +129,7 @@ export function buildBriefingInput(
   memories: BriefingMemory[],
   selfStats: BriefingSelfStat[] = [],
   colleagues: BriefingColleague[] = [],
+  activeGoals: BriefingActiveGoal[] = [],
 ): string {
   const lines: string[] = [
     `Persona: ${facts.name}`,
@@ -118,6 +140,24 @@ export function buildBriefingInput(
   if (facts.energyImpact) lines.push(`Impacto energético: ${facts.energyImpact}`)
   if (facts.organization) lines.push(`Empresa/empleador de ${facts.name}: ${facts.organization}`)
   if (facts.orgGroup) lines.push(`Grupo/holding de ${facts.name}: ${facts.orgGroup}`)
+
+  // ALERTA de conflicto reciente: lo primero que el briefing tiene que ver.
+  if (facts.recentConflict) {
+    const c = facts.recentConflict
+    lines.push(
+      '',
+      `ALERTA: conversación reciente tensa (${c.date}, tono ${c.toneScore}/5). Algo se tensó en el último contacto. Texto: ${c.note}`,
+    )
+  }
+
+  // Objetivos activos del usuario — para conectar el conflicto con lo que está
+  // en juego (sobre todo el norte). El prompt decide si aplica.
+  if (activeGoals.length > 0) {
+    lines.push('', 'Tus objetivos activos (por si el conflicto toca alguno):')
+    for (const g of activeGoals) {
+      lines.push(`  - ${g.title}${g.isNorte ? ' (TU NORTE / objetivo ancla)' : ''}`)
+    }
+  }
 
   // Estado reciente del USUARIO (sólo los numéricos relevantes para timing/tono).
   const relevant = selfStats.filter((s) => SELF_KIND_ES[s.kind] && s.count > 0)

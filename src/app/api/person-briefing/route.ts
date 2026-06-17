@@ -23,6 +23,7 @@ import {
   BRIEFING_SYSTEM_PROMPT,
   buildBriefingInput,
   type BriefingMemory,
+  type BriefingActiveGoal,
   type BriefingSelfStat,
   type BriefingColleague,
 } from '@/lib/person-briefing/prompt'
@@ -218,6 +219,53 @@ export async function POST(req: NextRequest) {
     colleagues = []
   }
 
+  // CONFLICTO RECIENTE: la interacción tensa más nueva (tono ≤2) de los últimos
+  // ~45 días. Es lo que el usuario siente que SIR debería reportarle. Fail-soft.
+  let recentConflict: { date: string; toneScore: number; note: string } | undefined
+  try {
+    const since = new Date(Date.now() - 45 * DAY_MS).toISOString()
+    const { data: confRows } = await supabase
+      .from('person_logs')
+      .select('value, note, logged_at')
+      .eq('user_id', userId)
+      .eq('person_id', personId)
+      .eq('kind', 'interaction')
+      .lte('value', 2)
+      .gte('logged_at', since)
+      .order('logged_at', { ascending: false })
+      .limit(1)
+    const r = (confRows ?? [])[0] as { value: number; note: string | null; logged_at: string } | undefined
+    if (r) {
+      recentConflict = {
+        date: (r.logged_at || '').slice(0, 10),
+        toneScore: Math.max(1, Math.min(5, Math.round(Number(r.value)))),
+        note: (r.note ?? '').slice(0, 400),
+      }
+    }
+  } catch {
+    recentConflict = undefined
+  }
+
+  // OBJETIVOS ACTIVOS del usuario (para conectar el conflicto con lo que está en
+  // juego, sobre todo el norte). Solo se pasan si hay un conflicto reciente —
+  // sin conflicto no aportan y solo agregan ruido al prompt. Fail-soft.
+  let activeGoals: BriefingActiveGoal[] = []
+  if (recentConflict) {
+    try {
+      const { data: gRows } = await supabase
+        .from('goals')
+        .select('title, is_anchor, status')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .limit(20)
+      activeGoals = ((gRows ?? []) as Array<{ title: string; is_anchor: boolean | null }>)
+        .filter((g) => typeof g.title === 'string' && g.title.trim().length > 0)
+        .map((g) => ({ title: g.title.trim().slice(0, 120), isNorte: g.is_anchor === true }))
+    } catch {
+      activeGoals = []
+    }
+  }
+
   // Gate combinado: necesitamos ALGO de material. Memorias O red profesional.
   // (Antes exigía ≥1 memoria; ahora una persona con colegas del mismo grupo
   // —aunque sin memorias propias todavía— igual da un briefing útil.)
@@ -256,10 +304,12 @@ export async function POST(req: NextRequest) {
               energyImpact: (personRow.energy_impact as string) ?? undefined,
               organization: (personRow.organization as string | null) ?? undefined,
               orgGroup: (personRow.org_group as string | null) ?? undefined,
+              recentConflict,
             },
             briefingMemories,
             selfStats,
             colleagues,
+            activeGoals,
           ),
         },
       ],
