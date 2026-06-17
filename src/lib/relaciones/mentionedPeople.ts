@@ -64,19 +64,26 @@ export function parseThirdPartyMentions(
     if (!rest) continue
     const restLow = rest.toLowerCase()
 
-    // Caso A: "{Nombre} ({rel} de {contacto})"
+    // Caso A: "{Nombre} ({rel} de {contacto})" — SOLO si el paréntesis trae una
+    // palabra de PARENTESCO. Sin parentesco, "Algo (algo)" NO es una persona
+    // (ej. "Llegada a Alicante (mudanza/viaje)") → no proponer.
     const paren = rest.match(/^(.+?)\s*\(([^)]+)\)\s*$/)
     if (paren) {
       const name = paren[1].trim()
       const inside = paren[2].toLowerCase()
-      const relW = RELATION_WORDS.find((w) => inside.includes(w)) ?? null
-      out.push({
-        sourceId: sd.id, rawLabel: label,
-        name: name || null,
-        relationWord: relW,
-        kind: relW ? RELATION_TO_KIND[relW] : 'familiar',
-        dateISO: sd.date.slice(0, 10), isBirthday,
-      })
+      const relW = RELATION_WORDS.find((w) => new RegExp(`\\b${w}\\b`).test(inside)) ?? null
+      const nameFirst = name.split(/\s+/)[0]?.toLowerCase() ?? ''
+      // Sin parentesco real, o el "nombre" es el propio contacto / una frase de
+      // evento (verbo) → no es un tercero. Saltar.
+      if (relW && nameFirst && nameFirst !== contactFirst) {
+        out.push({
+          sourceId: sd.id, rawLabel: label,
+          name: name || null,
+          relationWord: relW,
+          kind: RELATION_TO_KIND[relW],
+          dateISO: sd.date.slice(0, 10), isBirthday,
+        })
+      }
       continue
     }
 

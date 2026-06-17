@@ -30,6 +30,19 @@ describe('parseThirdPartyMentions', () => {
     const m = parseThirdPartyMentions([sd('Cumpleaños de la hija de Marita')], 'Marita Huaynate')
     expect(m[0].kind).toBe('hija')
   })
+  it('NO propone eventos con paréntesis sin parentesco ("Llegada a Alicante (mudanza/viaje)")', () => {
+    const r = parseThirdPartyMentions([{ id: '1', label: 'Llegada a Alicante (mudanza/viaje)', date: '2026-07-01', recurring: false }], 'Nicolle')
+    expect(r).toEqual([])
+  })
+  it('NO propone eventos sobre el propio contacto ("Nicolle sale de vacaciones (martes)")', () => {
+    const r = parseThirdPartyMentions([{ id: '2', label: 'Nicolle sale de vacaciones (martes)', date: '2026-07-08', recurring: false }], 'Nicolle Huaynate')
+    expect(r).toEqual([])
+  })
+  it('sigue proponiendo cuando el paréntesis SÍ trae parentesco', () => {
+    const r = parseThirdPartyMentions([{ id: '3', label: 'Nacimiento de Emilio (hijo de Adrian)', date: '2025-06-04', recurring: false }], 'Adrian')
+    expect(r).toHaveLength(1)
+    expect(r[0].name).toBe('Emilio')
+  })
   it('sin special_dates → vacío', () => {
     expect(parseThirdPartyMentions(undefined, 'X')).toEqual([])
   })
