@@ -40,7 +40,7 @@ import type { Person } from '@/types'
 import { cn } from '@/lib/utils'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import { useMounted } from '@/hooks/useMounted'
-import { computeRelationalScore, healthBand } from '@/lib/people/relationalScore'
+import { computeRelationalScore, healthBand, type InteractionEvent } from '@/lib/people/relationalScore'
 import { computeScoreTrend, type ScoreTrend } from '@/lib/people/scoreTrend'
 
 export interface RelationalScoreProps {
@@ -74,16 +74,16 @@ export function RelationalScore({ person, lastChat }: RelationalScoreProps) {
 function ScoreContent({ person, lastChat }: RelationalScoreProps) {
   // Calidades de interacción (person_logs) → alimentan la RECIPROCIDAD. Sin
   // esto el score ignoraba las interacciones marcadas a mano (la carita feliz).
-  const [qualities, setQualities] = useState<number[]>([])
+  const [events, setEvents] = useState<InteractionEvent[]>([])
   useEffect(() => {
     let cancelled = false
     void (async () => {
       try {
         const res = await fetch('/api/person-logs/interactions')
         if (!res.ok) return
-        const data = (await res.json()) as { tones?: Record<string, number[]> }
-        const q = data.tones?.[person.id]
-        if (!cancelled && Array.isArray(q)) setQualities(q)
+        const data = (await res.json()) as { events?: Record<string, { q: number; at: string }[]> }
+        const ev = data.events?.[person.id]
+        if (!cancelled && Array.isArray(ev)) setEvents(ev.map((e) => ({ quality: e.q, at: e.at })))
       } catch {
         /* best-effort: sin interacciones, Reciprocidad queda null como antes */
       }
@@ -96,7 +96,7 @@ function ScoreContent({ person, lastChat }: RelationalScoreProps) {
       importanceScore: person.importanceScore,
       trustLevel: person.trustLevel,
       lastChatObservedAt: lastChat?.observedAt ?? null,
-      interactionQualities: qualities,
+      interactionEvents: events,
     },
     new Date(),
   )

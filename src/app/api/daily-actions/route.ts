@@ -108,12 +108,12 @@ export async function GET(): Promise<NextResponse> {
     }
 
     // Calidades de interacción por persona (orden cronológico) + último log.
-    const qualitiesByPerson = new Map<string, number[]>()
+    const eventsByPerson = new Map<string, { quality: number; at: string }[]>()
     const lastLogByPerson = new Map<string, string>()
     for (const row of (logsRes.data ?? []) as Array<{ person_id: string; value: number; logged_at: string }>) {
-      const arr = qualitiesByPerson.get(row.person_id) ?? []
-      arr.push(Number(row.value) || 0)
-      qualitiesByPerson.set(row.person_id, arr)
+      const arr = eventsByPerson.get(row.person_id) ?? []
+      arr.push({ quality: Number(row.value) || 0, at: row.logged_at })
+      eventsByPerson.set(row.person_id, arr)
       lastLogByPerson.set(row.person_id, row.logged_at) // asc → queda el más nuevo
     }
 
@@ -152,13 +152,13 @@ export async function GET(): Promise<NextResponse> {
     // Ensamblar input por persona.
     const inputs: DailyActionPersonInput[] = people.map((person) => {
       const lastChatIso = lastChatByPerson.get(person.id) ?? null
-      const qualities = qualitiesByPerson.get(person.id) ?? []
+      const interactionEvents = eventsByPerson.get(person.id) ?? []
       const breakdown = computeRelationalScore(
         {
           importanceScore: person.importanceScore,
           trustLevel: person.trustLevel,
           lastChatObservedAt: lastChatIso,
-          interactionQualities: qualities,
+          interactionEvents,
         },
         now,
       )

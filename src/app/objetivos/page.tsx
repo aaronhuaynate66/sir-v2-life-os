@@ -89,15 +89,15 @@ function GoalsContent() {
   const { addMemory, memories } = useMemoryStore()
   const { people, relationships } = useRelationshipStore()
   // Calidades de interacción por persona (para la salud del vínculo en objetivos relacionales).
-  const [interactionTones, setInteractionTones] = useState<Record<string, number[]>>({})
+  const [interactionEvents, setInteractionEvents] = useState<Record<string, import('@/lib/people/relationalScore').InteractionEvent[]>>({})
   useEffect(() => {
     let cancelled = false
     void (async () => {
       try {
         const res = await fetch('/api/person-logs/interactions')
         if (!res.ok) return
-        const data = (await res.json()) as { tones?: Record<string, number[]> }
-        if (!cancelled && data.tones) setInteractionTones(data.tones)
+        const data = (await res.json()) as { events?: Record<string, { q: number; at: string }[]> }
+        if (!cancelled && data.events) setInteractionEvents(Object.fromEntries(Object.entries(data.events).map(([k, v]) => [k, v.map((e) => ({ quality: e.q, at: e.at }))])))
       } catch { /* best-effort */ }
     })()
     return () => { cancelled = true }
@@ -528,7 +528,7 @@ function GoalsContent() {
                       <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{displayPct}%</span>
                     </div>
                     {g.relatedPersons.length > 0 && (
-                      <RelationalGoalHealth personIds={g.relatedPersons} people={people} tones={interactionTones} />
+                      <RelationalGoalHealth personIds={g.relatedPersons} people={people} events={interactionEvents} />
                     )}
                     <div className="mb-2">
                       <button

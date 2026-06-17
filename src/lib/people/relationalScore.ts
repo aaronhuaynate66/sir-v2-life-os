@@ -52,6 +52,52 @@ export function computeReciprocity(qualities: number[]): number | null {
   return r
 }
 
+/** Half-life (días) del decaimiento de recencia de la Reciprocidad. Una
+ *  interacción de hace HALF_LIFE días pesa la mitad; el doble, un cuarto. Es la
+ *  "R" de un RFM relacional: lo reciente manda. Tuneable. 45d ≈ una pelea pesa
+ *  full hoy, mitad al mes y medio, ~un cuarto a los 3 meses. */
+export const RECIPROCITY_HALF_LIFE_DAYS = 45
+
+/** Una interacción con su fecha, para ponderar por recencia. */
+export interface InteractionEvent {
+  /** Calidad 1-5 (person_logs.value). */
+  quality: number
+  /** ISO 8601 del registro (person_logs.logged_at). */
+  at: string
+}
+
+/**
+ * Reciprocidad PONDERADA POR RECENCIA (RFM-R). A diferencia de
+ * `computeReciprocity` (que trata todas las interacciones por igual), acá cada
+ * delta por calidad se multiplica por un peso exponencial w = 0.5^(edad/half-life):
+ * lo nuevo domina, lo viejo se desvanece sin desaparecer del todo. Así una
+ * pelea de ayer hunde el vínculo aunque atrás haya años de interacciones
+ * cálidas, y una reconciliación reciente lo levanta. Mantiene la asimetría de
+ * V1 (QUALITY_DELTA: romper cuesta menos que reconstruir) y la atenuación 0.6.
+ * Suma los deltas ponderados sobre el baseline y clampa una vez. Sin eventos →
+ * null (datos insuficientes). `now` inyectable (TZ-independiente en tests).
+ */
+export function computeReciprocityWeighted(
+  events: InteractionEvent[],
+  now: Date = new Date(),
+  halfLifeDays: number = RECIPROCITY_HALF_LIFE_DAYS,
+): number | null {
+  if (!events || events.length === 0) return null
+  const nowMs = now.getTime()
+  const hl = halfLifeDays > 0 ? halfLifeDays : RECIPROCITY_HALF_LIFE_DAYS
+  let acc = 0
+  for (const e of events) {
+    const q = Math.round(Number(e.quality))
+    const delta = QUALITY_DELTA[q] ?? 0
+    if (delta === 0) continue
+    const t = new Date(e.at).getTime()
+    const ageDays = Number.isNaN(t) ? 0 : Math.max(0, (nowMs - t) / DAY_MS)
+    const w = Math.pow(0.5, ageDays / hl)
+    acc += delta * 0.6 * w
+  }
+  return clamp(Math.round(RECIPROCITY_BASELINE + acc), 0, 100)
+}
+
 export interface RelationalScoreInput {
   /** people.importance_score (1-10). Cae a 5 si no es un número válido. */
   importanceScore: number
@@ -61,8 +107,12 @@ export interface RelationalScoreInput {
   lastChatObservedAt: string | null
   /** Calidades (1-5) de person_logs kind='interaction', en orden CRONOLÓGICO
    *  (más vieja → más nueva). Opcional: si se omite o va vacío, Reciprocidad
-   *  queda null (datos insuficientes), preservando el comportamiento previo. */
+   *  queda null (datos insuficientes), preservando el comportamiento previo.
+   *  LEGACY: sin fecha → sin decaimiento. Preferí `interactionEvents`. */
   interactionQualities?: number[]
+  /** Interacciones CON fecha → Reciprocidad ponderada por recencia (RFM-R).
+   *  Si se provee y tiene elementos, TIENE PRECEDENCIA sobre interactionQualities. */
+  interactionEvents?: InteractionEvent[]
 }
 
 export interface RelationalScoreBreakdown {
@@ -104,9 +154,13 @@ export function computeRelationalScore(
   }
   fuerza = clamp(fuerza, 0, 100)
 
-  // Reciprocidad: GEMA C — reproyecta los deltas por calidad del historial de
-  // interacciones (person_logs). null sólo si no hay ninguna registrada.
-  const reciprocidad: number | null = computeReciprocity(input.interactionQualities ?? [])
+  // Reciprocidad: ponderada por recencia (RFM-R) si hay eventos fechados;
+  // si no, cae al cálculo legacy por calidades sin fecha. null sólo si no hay
+  // ninguna interacción registrada.
+  const reciprocidad: number | null =
+    input.interactionEvents && input.interactionEvents.length > 0
+      ? computeReciprocityWeighted(input.interactionEvents, now)
+      : computeReciprocity(input.interactionQualities ?? [])
 
   const confianza = trust * 10
 

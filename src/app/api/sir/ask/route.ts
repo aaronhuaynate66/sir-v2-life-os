@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
   for (const pid of [...targetIds].slice(0, MAX_PEOPLE)) {
     const row = byId.get(pid)
     if (!row) continue
-    let qualities: number[] = []
+    let interactionEvents: { quality: number; at: string }[] = []
     try {
       const { data: logs } = await supabase
         .from('person_logs')
@@ -146,14 +146,16 @@ export async function POST(req: NextRequest) {
         .eq('kind', 'interaction')
         .order('logged_at', { ascending: true })
         .limit(50)
-      qualities = ((logs as Array<{ value: number }>) ?? []).map((l) => Number(l.value)).filter((v) => Number.isFinite(v))
-    } catch { qualities = [] }
+      interactionEvents = ((logs as Array<{ value: number; logged_at: string }>) ?? [])
+        .filter((l) => Number.isFinite(Number(l.value)))
+        .map((l) => ({ quality: Number(l.value), at: l.logged_at }))
+    } catch { interactionEvents = [] }
 
     const score = computeRelationalScore({
       importanceScore: Number(row.importance_score) || 5,
       trustLevel: Number(row.trust_level) || 5,
       lastChatObservedAt: (row.last_contact as string | null) ?? null,
-      interactionQualities: qualities,
+      interactionEvents,
     })
 
     let recent: string[] = []
