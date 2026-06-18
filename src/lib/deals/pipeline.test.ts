@@ -5,7 +5,7 @@ import type { Deal } from '@/types'
 function deal(p: Partial<Deal>): Deal {
   return {
     id: p.id ?? 'd1', title: p.title ?? 'x', stage: p.stage ?? 'lead', status: p.status ?? 'open',
-    relatedPersons: [], createdAt: '2026-06-01T00:00:00Z', updatedAt: p.updatedAt ?? '2026-06-10T00:00:00Z', ...p,
+    relatedPersons: [], impactTypes: [], internalStakeholders: [], createdAt: '2026-06-01T00:00:00Z', updatedAt: p.updatedAt ?? '2026-06-10T00:00:00Z', ...p,
   }
 }
 
