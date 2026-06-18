@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d8476ee`
+**Hash del último commit humano:** `8e170a5`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8e170a5` | aaronhuaynate66 | feat(crm): cargo en persona + RUC/dirección/matriz/tier en empresa (PR-1 de Oportunidades) (#276) | 2026-06-18 |
 | `d8476ee` | aaronhuaynate66 | fix(captura-sueño): no confundir un sub-puntaje con el score de la noche (#275) | 2026-06-17 |
 | `20b53e0` | aaronhuaynate66 | feat(objetivos): fricción conflicto↔objetivo en la tarjeta (#92) (#274) | 2026-06-17 |
 | `76d9dca` | aaronhuaynate66 | feat(score): Reciprocidad ponderada por recencia (RFM-R) — lo nuevo manda (#273) | 2026-06-17 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `fc74e67` | aaronhuaynate66 | fix(relaciones): 'Personas mencionadas' no propone eventos como personas (#269) | 2026-06-17 |
 | `4bf0cc6` | aaronhuaynate66 | fix(intake): multi-persona — no fusionar 5 chats en 1 (#268) | 2026-06-16 |
 | `f5a051d` | aaronhuaynate66 | feat(relaciones): pipeline comercial — leads de tus vínculos por enfriamiento (#267) | 2026-06-16 |
-| `a6f5c03` | aaronhuaynate66 | docs(adr): 0009 privacidad de terceros + auditoría de fugas (#266) | 2026-06-16 |
 
 ---
 
