@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `cf7685d`
+**Hash del último commit humano:** `8cdabd1`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8cdabd1` | aaronhuaynate66 | feat(oportunidades): eje de impacto + stakeholders internos (PR-A) (#278) | 2026-06-18 |
 | `cf7685d` | aaronhuaynate66 | feat(crm): entidad Oportunidad/Deal + página /oportunidades (PR-2) (#277) | 2026-06-18 |
 | `8e170a5` | aaronhuaynate66 | feat(crm): cargo en persona + RUC/dirección/matriz/tier en empresa (PR-1 de Oportunidades) (#276) | 2026-06-18 |
 | `d8476ee` | aaronhuaynate66 | fix(captura-sueño): no confundir un sub-puntaje con el score de la noche (#275) | 2026-06-17 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `03c1f33` | aaronhuaynate66 | feat(import): import de WhatsApp incremental + sellado por fecha (#271) | 2026-06-17 |
 | `111d721` | aaronhuaynate66 | feat(import): el chat importado mueve el score (auto-tono → Reciprocidad) (#270) | 2026-06-17 |
 | `fc74e67` | aaronhuaynate66 | fix(relaciones): 'Personas mencionadas' no propone eventos como personas (#269) | 2026-06-17 |
-| `4bf0cc6` | aaronhuaynate66 | fix(intake): multi-persona — no fusionar 5 chats en 1 (#268) | 2026-06-16 |
 
 ---
 
