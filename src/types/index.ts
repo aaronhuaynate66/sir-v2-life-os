@@ -792,3 +792,51 @@ export interface TrackerPoint {
   note?: string
   createdAt: string
 }
+
+
+// ─── Oportunidades / Deals (pipeline comercial estructurado, migración 0084) ───
+
+export type DealStage =
+  | 'lead'          // entró, sin contacto aún
+  | 'reunion'       // reunión agendada/hecha
+  | 'relevamiento'  // visita técnica / dimensionar
+  | 'propuesta'     // propuesta enviada
+  | 'negociacion'   // negociando
+  | 'ganado'        // cerrado ganado
+  | 'perdido'       // cerrado perdido
+
+export type DealStatus = 'open' | 'won' | 'lost' | 'paused'
+export type DealTier = 'chico' | 'mediano' | 'grande'
+
+export interface Deal {
+  id: string
+  title: string
+  /** Empresa que compra (nombre legible). */
+  clientOrg?: string
+  /** Slug de la empresa para linkear a /empresas/[slug]. */
+  clientOrgSlug?: string
+  /** person_id del contacto/decisor. */
+  contactPersonId?: string
+  /** Nuestra entidad que vende (ej. "K2", "Marlab"). */
+  seller?: string
+  stage: DealStage
+  status: DealStatus
+  /** Fuente del lead (ej. "Formulario web", "Referido"). */
+  source?: string
+  /** Ticket estimado. */
+  amount?: number
+  currency?: string
+  tier?: DealTier
+  /** Alcance (ej. "5→20 agentes armados"). */
+  scope?: string
+  /** Ventana de cierre en texto (permite rangos, ej. "jul-ago 2026"). */
+  closeWindow?: string
+  nextAction?: string
+  /** ISO YYYY-MM-DD. */
+  nextActionDate?: string
+  relatedPersons: string[]
+  /** Dossier / notas completas. */
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
