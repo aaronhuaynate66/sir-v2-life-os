@@ -1,4 +1,5 @@
 'use client'
+import { StakeholderDealImpact } from '@/components/relaciones/StakeholderDealImpact'
 // SIR V2 — /relaciones/[slug] detail UI
 //
 // Render de la persona + EDICIÓN INLINE COMPLETA (#5): el formulario de
@@ -615,6 +616,7 @@ export function PersonDetail({
       {/* ─── Sesion 3 PR-B: RelationalScore + BirthdayCountdown reales ── */}
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
         <RelationalScore person={live} lastChat={lastChat} />
+          <StakeholderDealImpact person={live} />
         <BirthdayCountdown person={live} />
       </div>
       <div className="mb-4">
