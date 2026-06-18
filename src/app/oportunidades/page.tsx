@@ -6,16 +6,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { Handshake, Plus, Loader2, Building2, User } from 'lucide-react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
-import type { Deal, DealStage, DealStatus, DealTier } from '@/types'
+import type { Deal, DealStage, DealStatus, DealTier, DealImpactType } from '@/types'
 import { groupByStage, STAGE_LABEL, STAGE_ORDER, daysSinceUpdate } from '@/lib/deals/pipeline'
+import { useRelationshipStore } from '@/stores'
 
 const TIERS: DealTier[] = ['chico', 'mediano', 'grande']
 const STATUSES: DealStatus[] = ['open', 'won', 'lost', 'paused']
+const IMPACTS: DealImpactType[] = ['financiero', 'profesional', 'relacional', 'emocional']
 
 type Draft = Partial<Deal>
 
 function emptyDraft(): Draft {
-  return { title: '', stage: 'lead', status: 'open', currency: 'PEN', relatedPersons: [] }
+  return { title: '', stage: 'lead', status: 'open', currency: 'PEN', relatedPersons: [], impactTypes: [], internalStakeholders: [] }
 }
 
 export default function OportunidadesPage() {
@@ -23,6 +25,8 @@ export default function OportunidadesPage() {
   const [loading, setLoading] = useState(true)
   const [draft, setDraft] = useState<Draft | null>(null)
   const [saving, setSaving] = useState(false)
+  const people = useRelationshipStore((st) => st.people)
+  const nameById = new Map(people.map((p) => [p.id, p.name]))
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -80,7 +84,7 @@ export default function OportunidadesPage() {
           </button>
         </header>
 
-        {draft && <DealForm draft={draft} setDraft={setDraft} onSave={save} onCancel={() => setDraft(null)} saving={saving} />}
+        {draft && <DealForm draft={draft} setDraft={setDraft} onSave={save} onCancel={() => setDraft(null)} saving={saving} people={people} />}
 
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando…</div>
@@ -92,7 +96,7 @@ export default function OportunidadesPage() {
               <section key={stage} className="space-y-2">
                 <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{STAGE_LABEL[stage]} · {ds.length}</h2>
                 <div className="space-y-2">
-                  {ds.map((d) => <DealCard key={d.id} deal={d} onEdit={() => setDraft(d)} />)}
+                  {ds.map((d) => <DealCard key={d.id} deal={d} onEdit={() => setDraft(d)} nameById={nameById} />)}
                 </div>
               </section>
             ))}
@@ -108,7 +112,7 @@ function money(d: Deal): string | null {
   return `${d.currency ?? 'PEN'} ${d.amount.toLocaleString('es-PE')}`
 }
 
-function DealCard({ deal, onEdit }: { deal: Deal; onEdit: () => void }) {
+function DealCard({ deal, onEdit, nameById }: { deal: Deal; onEdit: () => void; nameById: Map<string, string> }) {
   const cold = (daysSinceUpdate(deal) ?? 0) > 7 && deal.stage !== 'ganado' && deal.stage !== 'perdido'
   return (
     <button type="button" onClick={onEdit} className="block w-full rounded-lg border border-border bg-card p-3 text-left hover:border-border/80">
@@ -126,13 +130,24 @@ function DealCard({ deal, onEdit }: { deal: Deal; onEdit: () => void }) {
       {deal.nextAction && (
         <div className="mt-1 text-[12px] text-foreground/85">→ {deal.nextAction}{deal.nextActionDate ? ` (${deal.nextActionDate})` : ''}</div>
       )}
+      {(deal.impactTypes.length > 0 || deal.internalStakeholders.length > 0) && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+          {deal.impactTypes.map((t) => (
+            <span key={t} className="rounded border border-brand/30 bg-brand-soft/30 px-1.5 py-0.5 text-brand-soft-foreground">{t}</span>
+          ))}
+          {deal.internalStakeholders.length > 0 && (
+            <span className="text-muted-foreground">te acerca a: {deal.internalStakeholders.map((id) => (nameById.get(id) ?? '—').split(' ')[0]).join(', ')}</span>
+          )}
+        </div>
+      )}
     </button>
   )
 }
 
-function DealForm({ draft, setDraft, onSave, onCancel, saving }: {
-  draft: Draft; setDraft: (d: Draft) => void; onSave: () => void; onCancel: () => void; saving: boolean
+function DealForm({ draft, setDraft, onSave, onCancel, saving, people }: {
+  draft: Draft; setDraft: (d: Draft) => void; onSave: () => void; onCancel: () => void; saving: boolean; people: { id: string; name: string }[]
 }) {
+  const [skQuery, setSkQuery] = useState('')
   const set = (k: keyof Deal, v: unknown) => setDraft({ ...draft, [k]: v })
   const inputCls = 'mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground'
   const lblCls = 'text-xs text-muted-foreground'
@@ -206,6 +221,52 @@ function DealForm({ draft, setDraft, onSave, onCancel, saving }: {
           <label className={lblCls}>Fecha próximo paso</label>
           <input type="date" value={draft.nextActionDate ?? ''} onChange={(e) => set('nextActionDate', e.target.value || undefined)} className={inputCls} />
         </div>
+      </div>
+      <div>
+        <label className={lblCls}>¿Por qué te importa? (impacto)</label>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {IMPACTS.map((imp) => {
+            const on = (draft.impactTypes ?? []).includes(imp)
+            return (
+              <button key={imp} type="button" onClick={() => set('impactTypes', on ? (draft.impactTypes ?? []).filter((x) => x !== imp) : [...(draft.impactTypes ?? []), imp])}
+                className={`rounded-full border px-3 py-1 text-xs ${on ? 'border-brand bg-brand text-brand-foreground' : 'border-border text-muted-foreground'}`}>
+                {imp}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div>
+        <label className={lblCls}>Por qué importa / qué te mueve</label>
+        <input value={draft.whyMatters ?? ''} onChange={(e) => set('whyMatters', e.target.value)} placeholder="ej. me hace quedar bien en K2 y acerca a Francisco y Alex" className={inputCls} />
+      </div>
+      <div>
+        <label className={lblCls}>Te acerca a (tu lado — Francisco, Alex…)</label>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {(draft.internalStakeholders ?? []).map((id) => {
+            const nm = people.find((p) => p.id === id)?.name ?? id
+            return (
+              <span key={id} className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs text-foreground">
+                {nm.split(' ')[0]}
+                <button type="button" onClick={() => set('internalStakeholders', (draft.internalStakeholders ?? []).filter((x) => x !== id))} className="text-muted-foreground hover:text-foreground">×</button>
+              </span>
+            )
+          })}
+        </div>
+        <input value={skQuery} onChange={(e) => setSkQuery(e.target.value)} placeholder="Buscar persona…" className={inputCls} />
+        {skQuery.trim().length > 1 && (
+          <div className="mt-1 max-h-40 overflow-auto rounded-md border border-border bg-card">
+            {people
+              .filter((p) => p.name.toLowerCase().includes(skQuery.toLowerCase()) && !(draft.internalStakeholders ?? []).includes(p.id))
+              .slice(0, 8)
+              .map((p) => (
+                <button key={p.id} type="button" onClick={() => { set('internalStakeholders', [...(draft.internalStakeholders ?? []), p.id]); setSkQuery('') }}
+                  className="block w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-secondary">
+                  {p.name}
+                </button>
+              ))}
+          </div>
+        )}
       </div>
       <div>
         <label className={lblCls}>Notas / dossier</label>

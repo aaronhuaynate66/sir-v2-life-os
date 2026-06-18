@@ -5,7 +5,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { createClient } from '@/lib/supabase/server'
-import type { Deal, DealStage, DealStatus, DealTier } from '@/types'
+import type { Deal, DealStage, DealStatus, DealTier, DealImpactType } from '@/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,6 +40,9 @@ function rowToDeal(r: Record<string, unknown>): Deal {
     nextAction: (r.next_action as string) ?? undefined,
     nextActionDate: (r.next_action_date as string) ?? undefined,
     relatedPersons: Array.isArray(r.related_persons) ? (r.related_persons as string[]) : [],
+    impactTypes: Array.isArray(r.impact_types) ? (r.impact_types as DealImpactType[]) : [],
+    whyMatters: (r.why_matters as string) ?? undefined,
+    internalStakeholders: Array.isArray(r.internal_stakeholders) ? (r.internal_stakeholders as string[]) : [],
     notes: (r.notes as string) ?? undefined,
     createdAt: (r.created_at as string) ?? new Date().toISOString(),
     updatedAt: (r.updated_at as string) ?? new Date().toISOString(),
@@ -82,6 +85,13 @@ export async function POST(req: NextRequest) {
   const persons = Array.isArray(b.relatedPersons)
     ? (b.relatedPersons as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 20)
     : []
+  const IMPACTS = ['financiero', 'profesional', 'relacional', 'emocional']
+  const impactTypes = Array.isArray(b.impactTypes)
+    ? (b.impactTypes as unknown[]).filter((x): x is string => typeof x === 'string' && IMPACTS.includes(x)).slice(0, 4)
+    : []
+  const stakeholders = Array.isArray(b.internalStakeholders)
+    ? (b.internalStakeholders as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 20)
+    : []
   const now = new Date().toISOString()
 
   const row: Record<string, unknown> = {
@@ -103,6 +113,9 @@ export async function POST(req: NextRequest) {
     next_action: str(b.nextAction, 400),
     next_action_date: str(b.nextActionDate, 12),
     related_persons: persons,
+    impact_types: impactTypes,
+    why_matters: str(b.whyMatters, 1000),
+    internal_stakeholders: stakeholders,
     notes: str(b.notes, 20000),
     updated_at: now,
   }

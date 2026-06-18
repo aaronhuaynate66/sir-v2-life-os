@@ -806,6 +806,7 @@ export type DealStage =
   | 'perdido'       // cerrado perdido
 
 export type DealStatus = 'open' | 'won' | 'lost' | 'paused'
+export type DealImpactType = 'financiero' | 'profesional' | 'relacional' | 'emocional'
 export type DealTier = 'chico' | 'mediano' | 'grande'
 
 export interface Deal {
@@ -835,6 +836,13 @@ export interface Deal {
   /** ISO YYYY-MM-DD. */
   nextActionDate?: string
   relatedPersons: string[]
+  /** Por qué te importa este deal (puede ser no-financiero). */
+  impactTypes: DealImpactType[]
+  /** Texto libre: por qué importa / qué te mueve. */
+  whyMatters?: string
+  /** Personas de TU lado a las que este deal te acerca (ids), distinto del
+   *  contacto cliente. Habilita el plus relacional al avanzar. */
+  internalStakeholders: string[]
   /** Dossier / notas completas. */
   notes?: string
   createdAt: string
