@@ -39,6 +39,10 @@ export async function POST(req: NextRequest) {
     website: str(body.website, 300),
     description: str(body.description, 2000),
     notes: str(body.notes, 4000),
+    ruc: str(body.ruc, 20),
+    address: str(body.address, 300),
+    parent_org: str(body.parentOrg, 160),
+    tier: str(body.tier, 20),
     source: str(body.source, 40) ?? 'manual',
     updated_at: new Date().toISOString(),
   }

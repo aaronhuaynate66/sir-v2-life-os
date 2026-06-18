@@ -222,6 +222,9 @@ export interface Person {
    *  Ing. Industrial"). Se muestra en Vida profesional. Canonical en
    *  `people.education` (migration 0024). */
   education?: string
+  /** Cargo / rol de la persona en su empresa (ej. "Jefe de Seguridad
+   *  Patrimonial"). Canonical en `people.title` (migration 0083). Texto libre. */
+  title?: string
   /** Empleador / empresa específica de la persona (ej. "K2 Seguridad y
    *  Resguardo"). Canonical en `people.organization` (migration 0072). */
   organization?: string
