@@ -62,6 +62,7 @@ export const personAdapter: TableAdapter<Person> = {
     // Solo cuando el usuario carga el valor (post-migración) viaja la key.
     ...(p.estadoCivil !== undefined ? { estado_civil: p.estadoCivil } : {}),
     ...(p.education !== undefined ? { education: p.education } : {}),
+    ...(p.title !== undefined ? { title: p.title } : {}),
     ...(p.organization !== undefined ? { organization: p.organization } : {}),
     ...(p.orgGroup !== undefined ? { org_group: p.orgGroup } : {}),
     ...(p.gender !== undefined ? { gender: p.gender } : {}),
@@ -96,6 +97,7 @@ export const personAdapter: TableAdapter<Person> = {
     // → undefined, sin romper la lectura.
     estadoCivil: (row.estado_civil as string) ?? undefined,
     education: (row.education as string) ?? undefined,
+    title: (row.title as string) ?? undefined,
     organization: (row.organization as string) ?? undefined,
     orgGroup: (row.org_group as string) ?? undefined,
     gender: (row.gender as Person['gender']) ?? undefined,

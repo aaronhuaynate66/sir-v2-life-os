@@ -60,11 +60,11 @@ export default async function EmpresaPage({ params }: PageProps) {
 
   const { data: profileRow } = await supabase
     .from('org_profiles')
-    .select('name, website, description, notes')
+    .select('name, website, description, notes, ruc, address, parent_org, tier')
     .eq('user_id', userId)
     .eq('org_slug', slug)
     .maybeSingle()
-  const profile = (profileRow as { name: string | null; website: string | null; description: string | null; notes: string | null } | null) ?? null
+  const profile = (profileRow as { name: string | null; website: string | null; description: string | null; notes: string | null; ruc: string | null; address: string | null; parent_org: string | null; tier: string | null } | null) ?? null
 
   let hub = buildCompanyHub(slug, people, goals)
   // Org creada a mano (org_profile) sin miembros todavía (ej. unidad transversal
@@ -140,10 +140,18 @@ export default async function EmpresaPage({ params }: PageProps) {
         {!profile?.description && !profile?.website && !profile?.notes && (
           <p className="text-sm text-muted-foreground">Sin info cargada todavía.</p>
         )}
+        {(profile?.ruc || profile?.address || profile?.parent_org || profile?.tier) && (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px] text-foreground/90">
+            {profile?.ruc && <div><span className="text-muted-foreground">RUC:</span> {profile.ruc}</div>}
+            {profile?.tier && <div><span className="text-muted-foreground">Tier:</span> {profile.tier}</div>}
+            {profile?.parent_org && <div className="col-span-2"><span className="text-muted-foreground">Matriz:</span> {profile.parent_org}</div>}
+            {profile?.address && <div className="col-span-2"><span className="text-muted-foreground">Dirección:</span> {profile.address}</div>}
+          </div>
+        )}
         <EditOrgProfile
           slug={slug}
           label={hub.label}
-          initial={{ website: profile?.website ?? null, description: profile?.description ?? null, notes: profile?.notes ?? null }}
+          initial={{ website: profile?.website ?? null, description: profile?.description ?? null, notes: profile?.notes ?? null, ruc: profile?.ruc ?? null, address: profile?.address ?? null, parentOrg: profile?.parent_org ?? null, tier: profile?.tier ?? null }}
         />
       </section>
 

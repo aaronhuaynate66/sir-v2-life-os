@@ -152,6 +152,7 @@ interface EditForm {
   location: string
   estadoCivil: string
   education: string
+  title: string
   organization: string
   orgGroup: string
   birthDate: string
@@ -179,6 +180,7 @@ function formFromPerson(p: Person): EditForm {
     location: p.location ?? '',
     estadoCivil: p.estadoCivil ?? '',
     education: p.education ?? '',
+    title: p.title ?? '',
     organization: p.organization ?? '',
     orgGroup: p.orgGroup ?? '',
     birthDate: (p.birthDate ?? '').slice(0, 10),
@@ -281,6 +283,7 @@ export function PersonDetail({
         location: form.location.trim() || undefined,
         estadoCivil: form.estadoCivil.trim() || undefined,
         education: form.education.trim() || undefined,
+        title: form.title.trim() || undefined,
         organization: form.organization.trim() || undefined,
         orgGroup: form.orgGroup.trim() || undefined,
         gender: form.gender || undefined,
@@ -510,6 +513,10 @@ export function PersonDetail({
                 <div className="sm:col-span-2">
                   <Label htmlFor="person-education" className="text-xs">Educación / grado de instrucción</Label>
                   <Input id="person-education" value={form.education} onChange={(e) => patch('education', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. Universitario · Ing. Industrial (UNI)" />
+                </div>
+                <div>
+                  <Label htmlFor="person-title" className="text-xs">Cargo / rol</Label>
+                  <Input id="person-title" value={form.title} onChange={(e) => patch('title', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. Jefe de Seguridad Patrimonial" />
                 </div>
                 <div>
                   <Label htmlFor="person-organization" className="text-xs">Empresa / empleador</Label>

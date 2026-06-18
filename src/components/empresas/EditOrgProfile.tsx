@@ -11,7 +11,7 @@ import { Pencil, Loader2 } from 'lucide-react'
 interface Props {
   slug: string
   label: string
-  initial: { website?: string | null; description?: string | null; notes?: string | null }
+  initial: { website?: string | null; description?: string | null; notes?: string | null; ruc?: string | null; address?: string | null; parentOrg?: string | null; tier?: string | null }
 }
 
 export function EditOrgProfile({ slug, label, initial }: Props) {
@@ -21,6 +21,10 @@ export function EditOrgProfile({ slug, label, initial }: Props) {
   const [website, setWebsite] = useState(initial.website ?? '')
   const [description, setDescription] = useState(initial.description ?? '')
   const [notes, setNotes] = useState(initial.notes ?? '')
+  const [ruc, setRuc] = useState(initial.ruc ?? '')
+  const [address, setAddress] = useState(initial.address ?? '')
+  const [parentOrg, setParentOrg] = useState(initial.parentOrg ?? '')
+  const [tier, setTier] = useState(initial.tier ?? '')
 
   // Fase B — autocompletar.
   const [autoUrl, setAutoUrl] = useState(initial.website ?? '')
@@ -71,7 +75,7 @@ export function EditOrgProfile({ slug, label, initial }: Props) {
       const res = await fetch('/api/empresas/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, name: label, website, description, notes }),
+        body: JSON.stringify({ slug, name: label, website, description, notes, ruc, address, parentOrg, tier }),
       })
       if (res.ok) {
         setOpen(false)
@@ -143,6 +147,44 @@ export function EditOrgProfile({ slug, label, initial }: Props) {
           value={website}
           onChange={(e) => setWebsite(e.target.value)}
           placeholder="https://…"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-muted-foreground">RUC</label>
+          <input
+            value={ruc}
+            onChange={(e) => setRuc(e.target.value)}
+            placeholder="20510106394"
+            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Tier / tamaño</label>
+          <input
+            value={tier}
+            onChange={(e) => setTier(e.target.value)}
+            placeholder="chico / mediano / grande"
+            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+          />
+        </div>
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Dirección fiscal</label>
+        <input
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Av. … Distrito, Ciudad"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+        />
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Empresa matriz / holding</label>
+        <input
+          value={parentOrg}
+          onChange={(e) => setParentOrg(e.target.value)}
+          placeholder="ej. PPX Mining Corp"
           className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
       </div>
