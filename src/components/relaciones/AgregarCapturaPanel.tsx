@@ -57,6 +57,7 @@ import {
   interpretChunk,
   persistWhatsAppExport,
   getLastImportedISO,
+  archiveConversation,
 } from '@/lib/capture/whatsapp/export/client'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { sliceParsedSince, incrementalSummary } from '@/lib/capture/whatsapp/export/incremental'
@@ -115,6 +116,8 @@ interface PreviewState {
   /** Solo en source='whatsapp': el `data` de la observación a persistir +
    *  la lectura consolidada (para la UI de revisión) + nº de mensajes. */
   exportData?: Record<string, unknown>
+  /** Solo whatsapp: texto crudo del export, para archivar (bitácora). */
+  rawText?: string
   consolidated?: ConsolidatedExport
   messageCount?: number
   blocksUsed?: number
@@ -324,6 +327,12 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
           // 1. Persistir la conversación como observación whatsapp_chat.
           await persistWhatsAppExport({ personId, data: p.exportData })
           track(EVENTS.exportUploaded, { messages: p.messageCount ?? 0, blocks: p.blocksUsed ?? 0 })
+
+          // 1b. Archivar el CRUDO para registro completo + búsqueda (bitácora).
+          if (p.rawText) {
+            const dr = (p.exportData?.dateRange ?? {}) as { first?: string | null; last?: string | null }
+            void archiveConversation({ personId, rawText: p.rawText, dateFirst: dr.first ?? null, dateLast: dr.last ?? null, messageCount: p.messageCount })
+          }
 
           // 2. Tono/calidad → reciprocidad: registrar UNA interacción con la
           //    calidad inferida (best-effort, no bloquea el guardado).
@@ -735,6 +744,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
         extracted: exportData,
         confidence: consolidated.confidence,
         exportData,
+        rawText: text,
         consolidated,
         messageCount: fresh.messages.length,
         blocksUsed: valid.length,

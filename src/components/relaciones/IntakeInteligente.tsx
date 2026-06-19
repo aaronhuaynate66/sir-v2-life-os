@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 
-import { readExportText, interpretChunk, persistWhatsAppExport, getLastImportedISO } from '@/lib/capture/whatsapp/export/client'
+import { readExportText, interpretChunk, persistWhatsAppExport, getLastImportedISO, archiveConversation } from '@/lib/capture/whatsapp/export/client'
 import { trackCreated, EVENTS } from '@/lib/analytics/track'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
@@ -153,7 +153,7 @@ export function IntakeInteligente() {
   const [queue, setQueue] = useState<File[][]>([])
   const [queueIdx, setQueueIdx] = useState(0)
 
-  const [waChats, setWaChats] = useState<{ parsed: ParsedExport; name: string }[]>([])
+  const [waChats, setWaChats] = useState<{ parsed: ParsedExport; name: string; raw: string }[]>([])
   const [imgs, setImgs] = useState<ImgItem[]>([])
   const [imgDiag, setImgDiag] = useState<{ name: string; type: string; detail: string }[]>([])
   const [profileText, setProfileText] = useState('')
@@ -210,12 +210,12 @@ export function IntakeInteligente() {
 
       // 2) WhatsApp → parse TODOS los exports (una persona puede tener varios
       //    chats: teléfono personal + corporativo). Se cruzan después.
-      const chats: { parsed: ParsedExport; name: string }[] = []
+      const chats: { parsed: ParsedExport; name: string; raw: string }[] = []
       for (const f of exportFiles) {
         try {
           const text = await readExportText(f)
           if (isWhatsAppExport(text)) {
-            chats.push({ parsed: parseWhatsAppExport(text), name: cleanExportFileName(f.name) })
+            chats.push({ parsed: parseWhatsAppExport(text), name: cleanExportFileName(f.name), raw: text })
             diag.push({ name: f.name, type: 'whatsapp', detail: '→ chat leído' })
           } else {
             diag.push({ name: f.name, type: 'archivo', detail: 'no parece export de WhatsApp' })
@@ -368,6 +368,8 @@ export function IntakeInteligente() {
           const consolidated = consolidateInterpretations(interps.filter((x): x is ChunkInterpretation => !!x))
           const data = buildExportObservationData(fresh, consolidated, personName)
           await persistWhatsAppExport({ personId, data, promoteDates: true })
+          const rawFull = (waChats[ci] as { raw?: string }).raw
+          if (rawFull) void archiveConversation({ personId, rawText: rawFull, dateFirst: waChats[ci].parsed.firstISO, dateLast: waChats[ci].parsed.lastISO, messageCount: waChats[ci].parsed.messages.length })
           messages += fresh.messages.length
         }
       }
