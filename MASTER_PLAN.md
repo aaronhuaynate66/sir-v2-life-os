@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `affdc6f`
+**Hash del último commit humano:** `cbe3982`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `cbe3982` | aaronhuaynate66 | feat(dia-x): motor de contexto temporal '¿qué pasó el día X?' (#283) | 2026-06-19 |
 | `affdc6f` | aaronhuaynate66 | fix(sync): no pisar a null el ciclo/cumple en updates parciales (caso Diana) (#282) | 2026-06-19 |
 | `69c3d43` | aaronhuaynate66 | feat(relaciones): variación de métricas de redes en el tiempo (#281) | 2026-06-19 |
 | `92a79bf` | aaronhuaynate66 | fix(fechas): derivar el DÍA en zona Lima, no UTC (registros caían 'mañana') (#280) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8e170a5` | aaronhuaynate66 | feat(crm): cargo en persona + RUC/dirección/matriz/tier en empresa (PR-1 de Oportunidades) (#276) | 2026-06-18 |
 | `d8476ee` | aaronhuaynate66 | fix(captura-sueño): no confundir un sub-puntaje con el score de la noche (#275) | 2026-06-17 |
 | `20b53e0` | aaronhuaynate66 | feat(objetivos): fricción conflicto↔objetivo en la tarjeta (#92) (#274) | 2026-06-17 |
-| `76d9dca` | aaronhuaynate66 | feat(score): Reciprocidad ponderada por recencia (RFM-R) — lo nuevo manda (#273) | 2026-06-17 |
 
 ---
 
