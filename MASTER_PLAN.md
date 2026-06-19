@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `035c364`
+**Hash del último commit humano:** `af6b253`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `af6b253` | aaronhuaynate66 | feat(relaciones): barra de búsqueda que filtra al tipear (P1) (#298) | 2026-06-19 |
 | `035c364` | aaronhuaynate66 | feat(relaciones): personas mencionadas idempotentes (P2) (#297) | 2026-06-19 |
 | `bfef451` | aaronhuaynate66 | feat(sir): gap-engine contextual — pregunta por la SITUACIÓN, no solo el dato (#296) | 2026-06-19 |
 | `380d5ec` | aaronhuaynate66 | feat(sir): gap-engine inline — SIR pregunta UNA pieza clave antes de responder (#295) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1d0287e` | aaronhuaynate66 | feat(oportunidades): marcar los deals de Marlab (tuyos) vs del empleador (#291) | 2026-06-19 |
 | `2f1b98e` | aaronhuaynate66 | feat(dia-x): página visual /dia (qué pasó el día X) (#290) | 2026-06-19 |
 | `c0d281c` | aaronhuaynate66 | feat(relaciones): filtro por ámbito + badge + ámbito en alta (la línea visible) (#289) | 2026-06-19 |
-| `e4388e4` | aaronhuaynate66 | fix(gap-engine): pedir el cumple de leads/colegas también (encuadre comercial) (#288) | 2026-06-19 |
 
 ---
 
