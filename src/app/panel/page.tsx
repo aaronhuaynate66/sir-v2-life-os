@@ -32,6 +32,7 @@ import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { HabitsStrip } from '@/components/panel/HabitsStrip'
 import { QuickStateLog } from '@/components/panel/QuickStateLog'
+import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
@@ -304,6 +305,10 @@ function DashboardContent() {
 
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
       <DailyBriefingCard />
+
+      {/* SIR quiere saber (Knowledge Gap Engine): SIR te pregunta lo que le falta
+          —a vos, nunca a terceros—, aprende y no repite. */}
+      <KnowledgeGapPanel />
 
       {/* Estado propio (Etapa 3): quick-log de ánimo/energía de un tap, para que
           el analytics tenga datos sin fricción. */}
