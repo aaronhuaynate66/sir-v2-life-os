@@ -37,12 +37,14 @@ interface ProposedAction {
 
 interface ClarifyingGap {
   key: string
-  kind: 'birthday' | 'cycle' | 'goal_next_action'
+  kind: 'birthday' | 'cycle' | 'goal_next_action' | 'post_conflict_contact'
   entity: 'person' | 'goal'
   entityId: string
   entityName: string
-  field: 'birthDate' | 'cycleStartDate' | 'nextAction'
+  field: 'birthDate' | 'cycleStartDate' | 'nextAction' | null
   inputType: 'date' | 'text'
+  /** Contextual: la respuesta NO persiste; se re-inyecta en la pregunta. */
+  ephemeral?: boolean
 }
 
 interface Turn {
@@ -251,7 +253,7 @@ export default function SirChatPage() {
 
   async function ask(
     question: string,
-    opts: { skipInlineGaps?: boolean; dismissedGaps?: string[]; suppressUserTurn?: boolean } = {},
+    opts: { skipInlineGaps?: boolean; dismissedGaps?: string[]; suppressUserTurn?: boolean; userContext?: string } = {},
   ) {
     const q = question.trim()
     if (!q || loading) return
@@ -269,6 +271,7 @@ export default function SirChatPage() {
           history: turns.map((t) => ({ role: t.role, text: t.text })),
           skipInlineGaps: opts.skipInlineGaps ?? false,
           dismissedGaps: opts.dismissedGaps ?? readDismissedGaps(),
+          userContext: opts.userContext,
         }),
       })
       const data = await res.json()
@@ -305,10 +308,16 @@ export default function SirChatPage() {
     const c = turn?.clarifying
     const val = (clarifyDraft[idx] ?? '').trim()
     if (!c || !val) return
-    if (c.entity === 'person') updatePerson(c.entityId, { [c.field]: val })
-    else updateGoal(c.entityId, { [c.field]: val })
     setTurnClarifyState(idx, 'answered')
     track(EVENTS.sirGapAnswered, { kind: c.kind })
+    if (c.ephemeral || !c.field) {
+      // Contextual: NO se guarda (la situación cambia); se re-inyecta en la consulta.
+      if (turn.originalQuestion) void ask(turn.originalQuestion, { skipInlineGaps: true, suppressUserTurn: true, userContext: val })
+      return
+    }
+    // De campo: persiste el dato → auto-resuelve el hueco para siempre.
+    if (c.entity === 'person') updatePerson(c.entityId, { [c.field]: val })
+    else updateGoal(c.entityId, { [c.field]: val })
     toast.success('Anotado', { description: `${c.entityName}: lo guardé.` })
     if (turn.originalQuestion) void ask(turn.originalQuestion, { skipInlineGaps: true, suppressUserTurn: true })
   }
@@ -319,8 +328,9 @@ export default function SirChatPage() {
     const turn = turns[idx]
     const c = turn?.clarifying
     if (!c) return
-    const next = [...readDismissedGaps(), c.key]
-    writeDismissedGaps(next)
+    // Hueco de CAMPO → descarte permanente (no repetir). Contextual → solo salta
+    // este turno (mañana la situación puede cambiar; no lo silencio para siempre).
+    if (!c.ephemeral) writeDismissedGaps([...readDismissedGaps(), c.key])
     setTurnClarifyState(idx, 'dismissed')
     if (turn.originalQuestion) void ask(turn.originalQuestion, { skipInlineGaps: true, suppressUserTurn: true })
   }
@@ -409,10 +419,10 @@ export default function SirChatPage() {
                 {t.clarifying && (
                   <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
-                      <Sparkles size={12} /> SIR necesita un dato
+                      <Sparkles size={12} /> {t.clarifying.ephemeral ? 'SIR necesita contexto' : 'SIR necesita un dato'}
                     </div>
                     {t.clarifyState === 'answered' ? (
-                      <div className="flex items-center gap-1 text-[12px] text-[#14b8a6]"><Check size={13} /> Anotado — sigo con eso</div>
+                      <div className="flex items-center gap-1 text-[12px] text-[#14b8a6]"><Check size={13} /> {t.clarifying.ephemeral ? 'Gracias — con eso te respondo' : 'Anotado — sigo con eso'}</div>
                     ) : t.clarifyState === 'dismissed' ? (
                       <div className="text-[12px] text-muted-foreground">Sin ese dato — te respondo con lo que tengo</div>
                     ) : (
@@ -431,7 +441,7 @@ export default function SirChatPage() {
                         </button>
                         <button onClick={() => dismissClarifying(i)}
                           className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground">
-                          <X size={13} /> No sé
+                          <X size={13} /> {t.clarifying.ephemeral ? 'Saltar' : 'No sé'}
                         </button>
                       </div>
                     )}

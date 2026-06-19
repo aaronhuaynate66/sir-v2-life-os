@@ -75,3 +75,68 @@ export function selectInlineGap(
   }
   return null
 }
+
+
+// ─── CAPA CONTEXTUAL ────────────────────────────────────────────────────────
+// A diferencia de los huecos de CAMPO (cumple/ciclo/próximo paso), un hueco
+// CONTEXTUAL es una SITUACIÓN que SIR no conoce y que cambia el consejo —p.ej.
+// si Aaron pregunta "¿le escribo?" y lo último que SIR sabe de esa persona fue
+// una interacción tensa, falta saber si ya hablaron después. La respuesta es
+// EFÍMERA: se re-inyecta en esa pregunta, NO se guarda como dato permanente
+// (mañana la situación cambió). Determinístico, sobre señales que SIR ya tiene.
+
+export interface ContextualGap {
+  key: string
+  kind: 'post_conflict_contact'
+  entity: 'person'
+  entityId: string
+  entityName: string
+  question: string
+  inputType: 'text'
+  /** La respuesta NO persiste un campo: se re-inyecta como contexto de la consulta. */
+  ephemeral: true
+}
+
+export interface ContextualSignal {
+  id: string
+  name: string
+  /** Calidad (1-5) de la interacción conocida más RECIENTE, o null si no hay. */
+  latestInteractionQuality: number | null
+  latestInteractionAt: string | null
+}
+
+const CONTACT_INTENT = [
+  'le escribo', 'le hablo', 'que le digo', 'que le escribo', 'me acerco',
+  'la llamo', 'lo llamo', 'le mando', 'le escribir', 'escribirle', 'hablarle',
+  'deberia escribir', 'deberia hablar', 'retomo', 'retomar', 'la contacto',
+  'lo contacto', 'le contesto', 'le respondo',
+]
+
+/**
+ * Detecta UN hueco contextual material a la consulta, o null. Hoy cubre el caso
+ * insignia: intención de contacto sobre alguien cuya última interacción conocida
+ * fue tensa (quality<=2) → "¿hablaron después?". Determinístico.
+ */
+export function detectContextualGap(
+  question: string,
+  signals: ContextualSignal[],
+  dismissed: Set<string> = new Set(),
+): ContextualGap | null {
+  const q = norm(question)
+  if (!CONTACT_INTENT.some((k) => q.includes(k))) return null
+  for (const s of signals) {
+    const first = norm((s.name || '').split(/\s+/)[0] || '')
+    if (!(first.length >= 3 && q.includes(first))) continue
+    if (s.latestInteractionQuality != null && s.latestInteractionQuality <= 2) {
+      const key = `ctx_postconflict:${s.id}`
+      if (dismissed.has(key)) continue
+      return {
+        key, kind: 'post_conflict_contact', entity: 'person', entityId: s.id,
+        entityName: s.name,
+        question: `Lo último que tengo con ${first} fue una interacción tensa. ¿Hablaron después de eso?`,
+        inputType: 'text', ephemeral: true,
+      }
+    }
+  }
+  return null
+}
