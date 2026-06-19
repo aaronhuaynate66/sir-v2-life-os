@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1d0287e`
+**Hash del último commit humano:** `2997124`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2997124` | aaronhuaynate66 | feat(daily-actions): no tratar a un lead como vínculo personal descuidado (#292) | 2026-06-19 |
 | `1d0287e` | aaronhuaynate66 | feat(oportunidades): marcar los deals de Marlab (tuyos) vs del empleador (#291) | 2026-06-19 |
 | `2f1b98e` | aaronhuaynate66 | feat(dia-x): página visual /dia (qué pasó el día X) (#290) | 2026-06-19 |
 | `c0d281c` | aaronhuaynate66 | feat(relaciones): filtro por ámbito + badge + ámbito en alta (la línea visible) (#289) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `3c2c2ee` | aaronhuaynate66 | fix(bitácora): archivar el crudo SIEMPRE al subir un export (no solo si hay nuevo) (#285) | 2026-06-19 |
 | `1c09460` | aaronhuaynate66 | feat(bitácora): archivar el historial crudo + búsqueda por persona (1→3) (#284) | 2026-06-19 |
 | `cbe3982` | aaronhuaynate66 | feat(dia-x): motor de contexto temporal '¿qué pasó el día X?' (#283) | 2026-06-19 |
-| `affdc6f` | aaronhuaynate66 | fix(sync): no pisar a null el ciclo/cumple en updates parciales (caso Diana) (#282) | 2026-06-19 |
 
 ---
 
