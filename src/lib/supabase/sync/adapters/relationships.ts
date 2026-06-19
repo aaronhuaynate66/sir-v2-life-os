@@ -46,9 +46,6 @@ export const personAdapter: TableAdapter<Person> = {
     location: p.location ?? null,
     tags: p.tags ?? [],
     notes: p.notes ?? '',
-    birth_date: p.birthDate ?? null,
-    cycle_start_date: p.cycleStartDate ?? null,
-    cycle_length_days: p.cycleLengthDays ?? null,
     special_dates: p.specialDates ?? [],
     phone_number: p.phoneNumber ?? null,
     instagram_handle: p.instagramHandle ?? null,
@@ -66,6 +63,13 @@ export const personAdapter: TableAdapter<Person> = {
     ...(p.organization !== undefined ? { organization: p.organization } : {}),
     ...(p.orgGroup !== undefined ? { org_group: p.orgGroup } : {}),
     ...(p.gender !== undefined ? { gender: p.gender } : {}),
+    // birth_date + ciclo: CONDICIONAL (como gender). Si el objeto en memoria no
+    // los trae, NO mandamos la key → un update parcial NUNCA los pisa a null.
+    // (Antes iban como `?? null` incondicional → un updatePerson({notes}) sobre
+    //  una persona sin el campo en memoria borraba el ciclo. Caso Diana.)
+    ...(p.birthDate !== undefined ? { birth_date: p.birthDate } : {}),
+    ...(p.cycleStartDate !== undefined ? { cycle_start_date: p.cycleStartDate } : {}),
+    ...(p.cycleLengthDays !== undefined ? { cycle_length_days: p.cycleLengthDays } : {}),
   }),
   fromRow: (row) => ({
     id: row.id as string,
