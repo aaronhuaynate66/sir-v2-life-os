@@ -42,12 +42,19 @@ export function detectGaps(
   for (const p of people) {
     const imp = Number(p.importanceScore) || 0
     const ambito = effectiveAmbito(p)
-    // Cumpleaños faltante en un vínculo que importa (≥6/10) — NO a leads.
-    if (imp >= 6 && !p.birthDate && ambito !== 'lead') {
+    // Cumpleaños faltante en un vínculo que importa (≥6/10). Aplica a TODOS los
+    // ámbitos — pero el PARA QUÉ cambia: en personal es afecto; en colega/lead
+    // es estratégico (un saludo posiciona, entra en su mente). Distinto dato no,
+    // distinto encuadre sí. Personal pesa un poco más (afecto > táctica).
+    if (imp >= 6 && !p.birthDate) {
+      const comercial = ambito === 'lead' || ambito === 'colega'
       push({
         key: `birthday:${p.id}`, kind: 'birthday', entity: 'person', entityId: p.id,
-        entityName: p.name, question: `¿Cuándo cumple ${firstName(p.name)}?`,
-        field: 'birthDate', inputType: 'date', priority: 40 + imp,
+        entityName: p.name,
+        question: comercial
+          ? `¿Cuándo cumple ${firstName(p.name)}? Un saludo de cumpleaños lo posiciona.`
+          : `¿Cuándo cumple ${firstName(p.name)}?`,
+        field: 'birthDate', inputType: 'date', priority: (comercial ? 25 : 40) + imp,
       })
     }
     // Ciclo faltante (mujer) → habilita el panel de ciclo (caso Diana).
