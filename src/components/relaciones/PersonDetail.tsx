@@ -59,6 +59,7 @@ import { AntesDeContactar } from './AntesDeContactar'
 import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
+import { AMBITO_LABEL, inferAmbito } from '@/lib/people/ambito'
 import { BondEvolutionPanel } from './BondEvolutionPanel'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
@@ -155,6 +156,7 @@ interface EditForm {
   estadoCivil: string
   education: string
   title: string
+  ambito: string
   organization: string
   orgGroup: string
   birthDate: string
@@ -183,6 +185,7 @@ function formFromPerson(p: Person): EditForm {
     estadoCivil: p.estadoCivil ?? '',
     education: p.education ?? '',
     title: p.title ?? '',
+    ambito: p.ambito ?? inferAmbito(p.relationship),
     organization: p.organization ?? '',
     orgGroup: p.orgGroup ?? '',
     birthDate: (p.birthDate ?? '').slice(0, 10),
@@ -286,6 +289,7 @@ export function PersonDetail({
         estadoCivil: form.estadoCivil.trim() || undefined,
         education: form.education.trim() || undefined,
         title: form.title.trim() || undefined,
+        ambito: (form.ambito || undefined) as import('@/types').PersonAmbito | undefined,
         organization: form.organization.trim() || undefined,
         orgGroup: form.orgGroup.trim() || undefined,
         gender: form.gender || undefined,
@@ -516,6 +520,15 @@ export function PersonDetail({
                 <div className="sm:col-span-2">
                   <Label htmlFor="person-education" className="text-xs">Educación / grado de instrucción</Label>
                   <Input id="person-education" value={form.education} onChange={(e) => patch('education', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. Universitario · Ing. Industrial (UNI)" />
+                </div>
+                <div>
+                  <Label htmlFor="person-ambito" className="text-xs">Ámbito (qué es para vos)</Label>
+                  <Select value={form.ambito || 'personal'} onValueChange={(v) => patch('ambito', v)} disabled={saving}>
+                    <SelectTrigger id="person-ambito" className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(['personal', 'colega', 'lead'] as const).map((a) => <SelectItem key={a} value={a}>{AMBITO_LABEL[a]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="person-title" className="text-xs">Cargo / rol</Label>
