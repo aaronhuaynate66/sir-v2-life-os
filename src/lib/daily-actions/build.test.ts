@@ -166,3 +166,28 @@ describe('buildDailyActions', () => {
     expect(r[0].score).toBeGreaterThanOrEqual(r[1].score)
   })
 })
+
+
+describe('buildDailyActions · ámbito lead (seguimiento comercial, no afectivo)', () => {
+  it('un lead frío NO genera acción de contacto/cooling afectiva', () => {
+    const acts = buildDailyActions(
+      [input({ person: person({ id: 'lead1', name: 'Ivis', slug: 'ivis', ambito: 'lead' }), daysSinceContact: 90 })],
+      {}, NOW,
+    )
+    expect(acts.find((a) => a.personId === 'lead1' && (a.kind === 'contact' || a.kind === 'cooling'))).toBeFalsy()
+  })
+  it('pero el cumpleaños de un lead SÍ aparece (saludo que posiciona)', () => {
+    const acts = buildDailyActions(
+      [input({ person: person({ id: 'lead2', name: 'Ricardo', slug: 'ricardo', ambito: 'lead', birthDate: '1990-06-21' }) })],
+      {}, new Date('2026-06-19T12:00:00Z'),
+    )
+    expect(acts.find((a) => a.personId === 'lead2' && a.kind === 'birthday')).toBeTruthy()
+  })
+  it('un personal frío SÍ genera contacto (no se toca lo afectivo)', () => {
+    const acts = buildDailyActions(
+      [input({ person: person({ id: 'amiga', name: 'Ana', slug: 'ana', ambito: 'personal' }), daysSinceContact: 90 })],
+      {}, NOW,
+    )
+    expect(acts.find((a) => a.personId === 'amiga' && a.kind === 'contact')).toBeTruthy()
+  })
+})
