@@ -37,6 +37,7 @@ import {
   whatsappLink, instagramLink, twitterLink, normalizeUrl, normalizeHandle,
 } from '@/lib/social/links'
 import { latestOfType, readInstagram, readLinkedIn, fmtCount } from '@/lib/observations/profile'
+import { RedesVariacion } from './RedesVariacion'
 import { DiscardCaptureButton } from './DiscardCaptureButton'
 import type { Observation, Confidence } from '@/lib/capture/observations/types'
 import type { InstagramMutualFollowers } from '@/lib/capture/instagram/mutual'
@@ -212,6 +213,9 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
 
             {/* Enriquecimiento de la captura de Instagram (datos extraídos). */}
             {igObs && <InstagramEnrichment obs={igObs} />}
+
+            {/* Variación de seguidores/seguidos/posts en el tiempo (historial de capturas). */}
+            {igObs && <RedesVariacion personId={person.id} />}
           </div>
         )}
       </CardContent>
