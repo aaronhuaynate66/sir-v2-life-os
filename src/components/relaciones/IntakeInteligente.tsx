@@ -308,6 +308,15 @@ export function IntakeInteligente() {
         try {
           const sr = await searchPeople(bestName, { captureType: 'whatsapp_chat' })
           setCandidates(sr.candidates)
+          // Pre-seleccionar SOLO si el mejor match es fuerte e inequívoco (nivel exacto:
+          // exact_name/slug/handle/phone, score>=90) y claramente por encima del 2º.
+          // Un match difuso/parcial (fuzzy/prefix/substring) NUNCA se auto-selecciona:
+          // ahí decide el usuario para no vincular un duplicado por error.
+          const top = sr.candidates[0]
+          const second = sr.candidates[1]
+          if (top && top.matchScore >= 90 && (!second || top.matchScore - second.matchScore >= 15)) {
+            setSelected({ id: top.id, name: top.name, slug: top.slug })
+          }
         } catch {
           setCandidates([])
         }
@@ -578,7 +587,7 @@ export function IntakeInteligente() {
             {/* Matcher: ¿ya existe? */}
             {candidates.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">¿Es alguno que ya tenés?</div>
+                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{selected && candidates.some((c) => c.id === selected.id) ? 'Lo vinculamos a este (cambialo si no es)' : '¿Es alguno que ya tenés?'}</div>
                 {candidates.map((c) => (
                   <button key={c.id} type="button"
                     onClick={() => setSelected(selected?.id === c.id ? null : { id: c.id, name: c.name, slug: c.slug })}
