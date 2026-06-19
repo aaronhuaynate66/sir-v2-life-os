@@ -1,4 +1,5 @@
 // SIR V2 — Daily Actions: fusión de urgencia + rituales + disponibilidad.
+import { effectiveAmbito } from '@/lib/people/ambito'
 //
 // "Qué hacer hoy con quién." Mezcla dos motores puros:
 //   - scoreContactUrgency (lib/people/urgency) — a quién contactar y por qué.
@@ -159,6 +160,7 @@ export function buildDailyActions(
   // 1. Acción de contacto por persona (urgencia).
   for (const i of inputs) {
     if (i.status === 'ended') continue // vínculo terminado: no sugerimos retomar
+    if (effectiveAmbito(i.person) === 'lead') continue // lead: el seguimiento es comercial (/oportunidades), no afectivo
     const u = scoreContactUrgency({
       fuerza: i.fuerza,
       reciprocidad: i.reciprocidad,
@@ -215,6 +217,9 @@ export function buildDailyActions(
     const i = byId.get(r.personId)
     if (!i) continue
     const kind = kindFromRitual(r.type)
+    // Lead: mantené solo las de FECHA (cumple/especial = saludo que posiciona);
+    // cooling/acknowledge afectivos no aplican a un lead.
+    if (effectiveAmbito(i.person) === 'lead' && kind !== 'birthday' && kind !== 'special_date') continue
     const proactive = PROACTIVE.has(kind)
     const kin = kinshipMap.get(r.personId)
     // El parentesco pondera sólo los rituales RELACIONALES (proactivos:
