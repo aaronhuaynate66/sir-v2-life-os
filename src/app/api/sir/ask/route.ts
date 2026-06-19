@@ -28,6 +28,9 @@ import {
 import { parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
 import { resolveModel } from '@/lib/sir/model'
 import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
+import { todayLimaKey } from '@/lib/dates/limaDay'
+import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
+import { fetchDayContext } from '@/lib/day/fetch'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -206,11 +209,24 @@ export async function POST(req: NextRequest) {
 
   const context = buildAskContext({
     question,
-    todayISO: new Date().toISOString().slice(0, 10),
+    todayISO: todayLimaKey(),
     people: peopleCtx,
     memories: memoryHits,
     goals: goalsCtx,
   })
+
+  // MOTOR "¿qué pasó el día X?": si la pregunta apunta a una fecha, cruzamos
+  // TODO lo de ese día (interacciones, capturas, deals, pasos OKR, salud, score,
+  // luna) y lo sumamos al grounding. Best-effort. Día calendario de Lima.
+  let dayBlock = ''
+  try {
+    const dayRef = extractDayRef(`${question} ${recentUserText}`, todayLimaKey())
+    if (dayRef) {
+      const slices = await fetchDayContext(supabase, userId, dayRef)
+      dayBlock = '\n\n' + renderDayContext(slices)
+    }
+  } catch { /* best-effort: el día no debe romper la respuesta */ }
+  const groundedContext = context + dayBlock
 
   // Resolver el nombre que proponga una acción → personId (con la gente cargada).
   function resolvePersonId(name: string): { id: string | null; name: string } {
@@ -234,7 +250,7 @@ export async function POST(req: NextRequest) {
       model,
       system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE,
       history: chatHistory,
-      userContent: context,
+      userContent: groundedContext,
       anthropicKey: model.provider === 'anthropic' ? providerKey : undefined,
       openrouterKey: model.provider === 'openrouter' ? providerKey : undefined,
     })
