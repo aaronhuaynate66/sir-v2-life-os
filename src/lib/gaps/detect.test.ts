@@ -37,9 +37,17 @@ describe('detectGaps', () => {
     const gaps = detectGaps([person({ id: 'a', importanceScore: 8 })], [], new Set(['birthday:a']))
     expect(gaps).toHaveLength(0)
   })
-  it('NO pide cumple a un lead (lente comercial, no afectivo)', () => {
+  it('SÍ pide cumple a un lead, pero con encuadre comercial (posicionar)', () => {
     const gaps = detectGaps([person({ id: 'L', importanceScore: 8, ambito: 'lead' })], [])
-    expect(gaps.find((g) => g.entityId === 'L')).toBeFalsy()
+    const g = gaps.find((x) => x.entityId === 'L' && x.kind === 'birthday')
+    expect(g).toBeTruthy()
+    expect(g!.question).toContain('posiciona')
+  })
+  it('cumple personal NO trae el encuadre comercial y prioriza más', () => {
+    const lead = detectGaps([person({ id: 'L', importanceScore: 8, ambito: 'lead' })], [])[0]
+    const personal = detectGaps([person({ id: 'P', importanceScore: 8, ambito: 'personal' })], [])[0]
+    expect(personal.question).not.toContain('posiciona')
+    expect(personal.priority).toBeGreaterThan(lead.priority)
   })
   it('NO pide ciclo a una colega/lead (solo personal)', () => {
     const gaps = detectGaps([person({ id: 'c', gender: 'female', importanceScore: 8, birthDate: '1990-01-01', ambito: 'colega' })], [])
