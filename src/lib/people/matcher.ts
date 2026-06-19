@@ -90,6 +90,36 @@ export function normalizeName(s: string): string {
 
 /** Tokeniza un nombre normalizado: NFD + strip diacritics + lowercase +
  *  split por espacio + filter empty. */
+/** Distancia de edición (Levenshtein) — para tolerar typos/variantes de
+ *  spelling en nombres (ej. "Prochazka" vs "Prochazca"). */
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length
+  if (m === 0) return n
+  if (n === 0) return m
+  let prev = Array.from({ length: n + 1 }, (_, i) => i)
+  for (let i = 1; i <= m; i++) {
+    const cur = [i]
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost)
+    }
+    prev = cur
+  }
+  return prev[n]
+}
+
+/** Dos tokens "casi iguales": distancia ≤1 (cortos) o ≤2 (≥6 chars). */
+function tokenFuzzy(a: string, b: string): boolean {
+  if (a === b) return true
+  const thr = Math.max(a.length, b.length) >= 6 ? 2 : 1
+  return levenshtein(a, b) <= thr
+}
+
+/** Todos los tokens del set CORTO matchean (fuzzy) algún token del LARGO. */
+function allTokensFuzzy(short: string[], long: string[]): boolean {
+  return short.length > 0 && short.every((t) => long.some((u) => tokenFuzzy(t, u)))
+}
+
 function tokenizeName(s: string): string[] {
   return normalizeName(s)
     .toLowerCase()
@@ -274,6 +304,19 @@ function scoreRow(row: PeopleRow, ctx: ScoreContext): ScoredHit {
         (rowAlias && (rowAlias.includes(q) || q.includes(rowAlias)))
       ) {
         return { score: 50, reason: 'name_substring', isExactStrong: false }
+      }
+
+      // 2f. name_fuzzy: tolera typos/variantes de spelling (ej. "Prochazka"
+      // vs "Prochazca"). Todos los tokens del nombre más corto matchean (con
+      // distancia de edición chica) algún token del más largo. NUNCA auto-link
+      // (igual que el resto) — solo surfacea el candidato para que el usuario
+      // confirme "vincular", evitando duplicados por una letra.
+      {
+        const shortT = qTokens.length <= nameTokens.length ? qTokens : nameTokens
+        const longT = qTokens.length <= nameTokens.length ? nameTokens : qTokens
+        if (allTokensFuzzy(shortT, longT) && shortT.some((t) => t.length >= 4)) {
+          return { score: 48, reason: 'name_fuzzy', isExactStrong: false }
+        }
       }
     }
   }

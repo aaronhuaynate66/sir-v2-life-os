@@ -187,3 +187,18 @@ describe('findCandidates — ranking y guardas', () => {
     expect(r.candidates).toEqual([])
   })
 })
+
+
+describe('findCandidates — name_fuzzy (variantes de spelling, sin auto-link)', () => {
+  it('"Adrian Prochazka" encuentra a "ADRIAN PROCHAZCA" (1 letra distinta)', async () => {
+    const sb = fakeSupabase([row({ id: 'adr', name: 'ADRIAN PROCHAZCA', slug: 'adrian-prochazca' })])
+    const r = await findCandidates(sb, 'u1', { name: 'Adrian Prochazka' })
+    expect(r.candidates.find((c) => c.id === 'adr')).toBeTruthy()
+    expect(r.autoLink).toBeNull() // por nombre NUNCA auto-linkea
+  })
+  it('no matchea nombres realmente distintos', async () => {
+    const sb = fakeSupabase([row({ id: 'x', name: 'Ricardo Martinez', slug: 'ricardo' })])
+    const r = await findCandidates(sb, 'u1', { name: 'Adrian Prochazka' })
+    expect(r.candidates.find((c) => c.id === 'x')).toBeFalsy()
+  })
+})
