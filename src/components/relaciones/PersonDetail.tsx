@@ -327,6 +327,7 @@ export function PersonDetail({
       <LastInteractionPanel
         lastChat={lastChat}
         lastManualInteraction={personLogs.find((l) => l.kind === 'interaction') ?? null}
+        personName={live.name}
       />
       <HistorialSearch personId={live.id} />
       <Bitacora personLogs={personLogs} observations={curatedObservations} />

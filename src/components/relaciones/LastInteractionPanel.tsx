@@ -39,11 +39,14 @@ export interface LastInteractionPanelProps {
    *  no hay ninguno. Se compara por fecha con lastChat y gana el más
    *  reciente. */
   lastManualInteraction?: PersonLog | null
+  /** Nombre del contacto, para etiquetar el lado del otro en el transcript. */
+  personName?: string
 }
 
 export function LastInteractionPanel({
   lastChat,
   lastManualInteraction = null,
+  personName = '',
 }: LastInteractionPanelProps) {
   // Decidir qué mostrar: el más reciente por fecha. lastChat usa
   // observedAt (timestamp completo); el log manual usa loggedAt (timestamptz).
@@ -66,7 +69,7 @@ export function LastInteractionPanel({
   } else if (manualTime > chatTime) {
     body = <ManualInteractionBody log={lastManualInteraction as PersonLog} />
   } else {
-    body = <LastChatBody obs={lastChat as Observation} />
+    body = <LastChatBody obs={lastChat as Observation} personName={personName} />
   }
 
   return (
@@ -129,7 +132,7 @@ function ManualInteractionBody({ log }: { log: PersonLog }) {
   )
 }
 
-function LastChatBody({ obs }: { obs: Observation }) {
+function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?: string }) {
   const observedAt = new Date(obs.observedAt)
   const ago = formatTimeAgo(observedAt)
   const absoluteDate = formatAbsoluteDate(observedAt)
@@ -144,6 +147,16 @@ function LastChatBody({ obs }: { obs: Observation }) {
   const topics = Array.isArray(obs.data?.topics)
     ? (obs.data.topics as unknown[]).filter((t): t is string => typeof t === 'string')
     : []
+
+  // ÚLTIMO INTERCAMBIO REAL: los últimos mensajes verbatim (rawMessages ya es el
+  // tramo final del export). Filtra media/omitidos y vacíos; toma los últimos 6.
+  // Esto es "lo último que hablaron" — NO el resumen global del vínculo.
+  const otherLabel = (personName || '').trim().split(/\s+/)[0] || ''
+  const rawMsgs = Array.isArray(obs.data?.rawMessages) ? (obs.data.rawMessages as Array<{ author?: string; content?: string }>) : []
+  const lastMsgs = rawMsgs
+    .map((m) => ({ author: m.author === 'user' ? 'user' : 'other', content: (m.content || '').trim() }))
+    .filter((m) => m.content.length > 0 && !/omitid[oa]|^\u200e|sticker|<multimedia/i.test(m.content))
+    .slice(-6)
 
   return (
     <div className="space-y-3">
@@ -168,8 +181,34 @@ function LastChatBody({ obs }: { obs: Observation }) {
         )}
       </div>
 
-      {summary && (
+      {lastMsgs.length > 0 ? (
+        <div className="space-y-1.5">
+          {lastMsgs.map((m, i) => (
+            <div key={i} className={m.author === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+              <div className={
+                m.author === 'user'
+                  ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-[#14b8a6]/15 px-3 py-1.5 text-[13px] text-foreground'
+                  : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-card px-3 py-1.5 text-[13px] text-foreground/90'
+              }>
+                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
+                  {m.author === 'user' ? 'Vos' : (otherLabel || 'Contacto')}
+                </span>
+                {m.content}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : summary ? (
         <p className="text-sm text-foreground leading-relaxed">{summary}</p>
+      ) : null}
+
+      {lastMsgs.length > 0 && summary && (
+        <details className="group">
+          <summary className="cursor-pointer text-[11px] uppercase tracking-[0.07em] text-text-tertiary hover:text-foreground select-none">
+            Resumen de la conversación
+          </summary>
+          <p className="mt-1.5 text-sm text-foreground/80 leading-relaxed">{summary}</p>
+        </details>
       )}
 
       {topics.length > 0 && (
