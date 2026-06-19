@@ -357,6 +357,11 @@ export function IntakeInteligente() {
         setProgress({ done: 0, total: totalChunks })
         for (let ci = 0; ci < freshChats.length; ci++) {
           const fresh = freshChats[ci]
+          // Archivar el CRUDO completo SIEMPRE (aunque no haya mensajes nuevos).
+          {
+            const rawFull0 = (waChats[ci] as { raw?: string }).raw
+            if (rawFull0) void archiveConversation({ personId, rawText: rawFull0, dateFirst: waChats[ci].parsed.firstISO, dateLast: waChats[ci].parsed.lastISO, messageCount: waChats[ci].parsed.messages.length })
+          }
           if (fresh.messages.length === 0) continue // archivo ya conocido, nada nuevo
           const chunks = perChat[ci]
           const interps: (ChunkInterpretation | null)[] = new Array(chunks.length)
@@ -368,8 +373,6 @@ export function IntakeInteligente() {
           const consolidated = consolidateInterpretations(interps.filter((x): x is ChunkInterpretation => !!x))
           const data = buildExportObservationData(fresh, consolidated, personName)
           await persistWhatsAppExport({ personId, data, promoteDates: true })
-          const rawFull = (waChats[ci] as { raw?: string }).raw
-          if (rawFull) void archiveConversation({ personId, rawText: rawFull, dateFirst: waChats[ci].parsed.firstISO, dateLast: waChats[ci].parsed.lastISO, messageCount: waChats[ci].parsed.messages.length })
           messages += fresh.messages.length
         }
       }

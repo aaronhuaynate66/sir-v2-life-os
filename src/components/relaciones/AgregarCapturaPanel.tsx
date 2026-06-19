@@ -328,11 +328,6 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
           await persistWhatsAppExport({ personId, data: p.exportData })
           track(EVENTS.exportUploaded, { messages: p.messageCount ?? 0, blocks: p.blocksUsed ?? 0 })
 
-          // 1b. Archivar el CRUDO para registro completo + búsqueda (bitácora).
-          if (p.rawText) {
-            const dr = (p.exportData?.dateRange ?? {}) as { first?: string | null; last?: string | null }
-            void archiveConversation({ personId, rawText: p.rawText, dateFirst: dr.first ?? null, dateLast: dr.last ?? null, messageCount: p.messageCount })
-          }
 
           // 2. Tono/calidad → reciprocidad: registrar UNA interacción con la
           //    calidad inferida (best-effort, no bloquea el guardado).
@@ -674,6 +669,10 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
         setPhase('illegible')
         return
       }
+
+      // 1a-bis. Archivar el CRUDO SIEMPRE (registro completo + búsqueda), aunque
+      //   el import sea "duplicado" y no haya nada nuevo. Best-effort.
+      void archiveConversation({ personId, rawText: text, dateFirst: parsed.firstISO, dateLast: parsed.lastISO, messageCount: parsed.messages.length })
 
       // 1b. INCREMENTAL: ¿hasta qué fecha ya importé a esta persona? Me quedo
       //     solo con los mensajes nuevos (re-subir el mismo chat es seguro;
