@@ -117,4 +117,36 @@ export async function getLastImportedISO(personId: string): Promise<string | nul
   }
 }
 
+/** Archiva el TEXTO CRUDO del export para "registro completo" + búsqueda
+ *  (bitácora). Capa el tramo más reciente (~3MB) para no pegar contra el límite
+ *  de body. Best-effort: no debe romper el guardado de la observación. */
+export async function archiveConversation(input: {
+  personId: string
+  rawText: string
+  dateFirst?: string | null
+  dateLast?: string | null
+  messageCount?: number
+  source?: string
+}): Promise<void> {
+  try {
+    const MAX = 3_000_000
+    let raw = input.rawText || ''
+    if (raw.length > MAX) {
+      const s = raw.slice(raw.length - MAX)
+      const nl = s.indexOf('\n')
+      raw = nl > 0 ? s.slice(nl + 1) : s
+    }
+    if (!raw) return
+    await fetch('/api/conversation-archive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personId: input.personId, rawText: raw,
+        dateFirst: input.dateFirst ?? null, dateLast: input.dateLast ?? null,
+        messageCount: input.messageCount, source: input.source ?? 'whatsapp',
+      }),
+    })
+  } catch { /* best-effort */ }
+}
+
 export type { ApiError }

@@ -67,6 +67,7 @@ import { VidaSocial } from './VidaSocial'
 import { PerfilProfesional } from './PerfilProfesional'
 import { RedesSociales } from './RedesSociales'
 import { Bitacora } from './Bitacora'
+import { HistorialSearch } from './HistorialSearch'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
 import { CicloPanel } from './CicloPanel'
@@ -323,6 +324,7 @@ export function PersonDetail({
         lastChat={lastChat}
         lastManualInteraction={personLogs.find((l) => l.kind === 'interaction') ?? null}
       />
+      <HistorialSearch personId={live.id} />
       <Bitacora personLogs={personLogs} observations={curatedObservations} />
     </div>
   )
