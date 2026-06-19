@@ -75,3 +75,34 @@ describe('gapMatchesIntent — gate determinístico', () => {
     expect(gapMatchesIntent(cycleGap!, '¿cuál es el RUC de Diana?')).toBe(false)
   })
 })
+
+
+import { detectContextualGap } from './inline'
+
+describe('detectContextualGap — post-conflicto', () => {
+  const sig = (over: Partial<{ id: string; name: string; latestInteractionQuality: number | null; latestInteractionAt: string | null }> = {}) => ({
+    id: 'p1', name: 'Maria Torres', latestInteractionQuality: 2, latestInteractionAt: '2026-06-18', ...over,
+  })
+
+  it('pregunta si hablaron después cuando hay intención de contacto y la última fue tensa', () => {
+    const g = detectContextualGap('¿le escribo a Maria hoy?', [sig()])
+    expect(g?.kind).toBe('post_conflict_contact')
+    expect(g?.ephemeral).toBe(true)
+  })
+
+  it('NO pregunta si la última interacción fue buena', () => {
+    expect(detectContextualGap('¿le escribo a Maria hoy?', [sig({ latestInteractionQuality: 5 })])).toBeNull()
+  })
+
+  it('NO pregunta sin intención de contacto', () => {
+    expect(detectContextualGap('¿cuándo cumple Maria?', [sig()])).toBeNull()
+  })
+
+  it('NO pregunta si no la nombra', () => {
+    expect(detectContextualGap('¿le escribo a alguien?', [sig()])).toBeNull()
+  })
+
+  it('respeta el descarte de este turno', () => {
+    expect(detectContextualGap('¿le escribo a Maria hoy?', [sig()], new Set(['ctx_postconflict:p1']))).toBeNull()
+  })
+})

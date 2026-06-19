@@ -31,7 +31,7 @@ import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
-import { selectInlineGap } from '@/lib/gaps/inline'
+import { selectInlineGap, detectContextualGap, type ContextualSignal } from '@/lib/gaps/inline'
 import type { Person, Goal } from '@/types'
 
 export const runtime = 'nodejs'
@@ -184,6 +184,7 @@ export async function POST(req: NextRequest) {
 
   // 5. Contexto por persona (cap MAX_PEOPLE): score + memorias recientes.
   const peopleCtx: AskPersonCtx[] = []
+  const ctxSignals: ContextualSignal[] = []
   for (const pid of [...targetIds].slice(0, MAX_PEOPLE)) {
     const row = byId.get(pid)
     if (!row) continue
@@ -201,6 +202,12 @@ export async function POST(req: NextRequest) {
         .filter((l) => Number.isFinite(Number(l.value)))
         .map((l) => ({ quality: Number(l.value), at: l.logged_at }))
     } catch { interactionEvents = [] }
+    const latestEv = interactionEvents.length ? interactionEvents[interactionEvents.length - 1] : null
+    ctxSignals.push({
+      id: pid, name: (row.name as string) ?? '',
+      latestInteractionQuality: latestEv ? latestEv.quality : null,
+      latestInteractionAt: latestEv ? latestEv.at : null,
+    })
 
     const score = computeRelationalScore({
       importanceScore: Number(row.importance_score) || 5,
@@ -227,6 +234,28 @@ export async function POST(req: NextRequest) {
       recentMemories: recent,
       activeGoal: goalByPerson[pid] ?? null,
     })
+  }
+
+  // GAP-ENGINE INLINE · capa CONTEXTUAL: si la consulta es de contacto y lo
+  // último que SIR sabe de esa persona fue tenso, pregunta si ya hablaron antes
+  // de aconsejar. Respuesta efímera (no persiste). Corta antes del modelo.
+  if (!skipInlineGaps) {
+    const ctxGap = detectContextualGap(question, ctxSignals, dismissedGaps)
+    if (ctxGap) {
+      return NextResponse.json(
+        {
+          answer: ctxGap.question,
+          clarifying: {
+            key: ctxGap.key, kind: ctxGap.kind, entity: ctxGap.entity,
+            entityId: ctxGap.entityId, entityName: ctxGap.entityName,
+            field: null, inputType: ctxGap.inputType, ephemeral: true,
+          },
+          proposedAction: null,
+          sources: { people: [], memories: 0 },
+        },
+        { status: 200 },
+      )
+    }
   }
 
   // 6. Objetivos para el contexto (todos los activos, acotado).
@@ -274,7 +303,12 @@ export async function POST(req: NextRequest) {
       dayBlock = '\n\n' + renderDayContext(slices)
     }
   } catch { /* best-effort: el día no debe romper la respuesta */ }
-  const groundedContext = context + dayBlock
+  // Contexto efímero que Aaron agregó al responder un hueco contextual (no se
+  // guarda; solo informa ESTA respuesta).
+  const userContext = typeof (body as { userContext?: unknown }).userContext === 'string'
+    ? ((body as { userContext?: unknown }).userContext as string).trim().slice(0, 500)
+    : ''
+  const groundedContext = context + dayBlock + (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 
   // Resolver el nombre que proponga una acción → personId (con la gente cargada).
   function resolvePersonId(name: string): { id: string | null; name: string } {
