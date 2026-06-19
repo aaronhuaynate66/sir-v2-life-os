@@ -62,6 +62,8 @@ export const EVENTS = {
   sirAsked: 'sir_asked',
   sirActionProposed: 'sir_action_proposed',
   sirActionConfirmed: 'sir_action_confirmed',
+  sirGapAsked: 'sir_gap_asked',
+  sirGapAnswered: 'sir_gap_answered',
 } as const
 
 // ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────

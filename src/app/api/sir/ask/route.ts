@@ -31,6 +31,8 @@ import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
+import { selectInlineGap } from '@/lib/gaps/inline'
+import type { Person, Goal } from '@/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
   // 1. Todas las personas (para resolver nombres + traer su contexto).
   const { data: peopleRows } = await supabase
     .from('people')
-    .select('id, name, slug, relationship, last_contact, importance_score, trust_level, organization, org_group')
+    .select('id, name, slug, relationship, last_contact, importance_score, trust_level, organization, org_group, birth_date, gender, cycle_start_date, ambito')
     .eq('user_id', userId)
     .limit(1000)
   const allPeople = (peopleRows ?? []) as Array<Record<string, unknown>>
@@ -123,15 +125,61 @@ export async function POST(req: NextRequest) {
   // 4. Objetivos activos → mapa personId → título.
   const { data: goalRows } = await supabase
     .from('goals')
-    .select('id, title, related_persons, status, next_action')
+    .select('id, title, related_persons, status, next_action, is_anchor')
     .eq('user_id', userId)
     .eq('status', 'active')
     .limit(100)
-  const goals = (goalRows ?? []) as Array<{ id: string; title: string; related_persons: unknown; next_action?: string | null }>
+  const goals = (goalRows ?? []) as Array<{ id: string; title: string; related_persons: unknown; next_action?: string | null; is_anchor?: boolean | null }>
   const goalByPerson: Record<string, string> = {}
   for (const g of goals) {
     const ids = Array.isArray(g.related_persons) ? (g.related_persons as string[]) : []
     for (const pid of ids) if (typeof pid === 'string' && !goalByPerson[pid]) goalByPerson[pid] = g.title
+  }
+
+  // GAP-ENGINE INLINE (la mitad proactiva de SIR): antes de gastar el modelo,
+  // si a SIR le falta UNA pieza clave para responder BIEN esta pregunta —y la
+  // pregunta es del TIPO que esa pieza cambia— pregunta primero. SOLO a Aaron,
+  // NUNCA a terceros (= guardrail ADR 0009). Ahorra créditos: corta acá.
+  const dismissedGaps = new Set(
+    Array.isArray((body as { dismissedGaps?: unknown }).dismissedGaps)
+      ? ((body as { dismissedGaps?: unknown }).dismissedGaps as unknown[]).filter((x): x is string => typeof x === 'string')
+      : [],
+  )
+  const skipInlineGaps = (body as { skipInlineGaps?: unknown }).skipInlineGaps === true
+  if (!skipInlineGaps) {
+    const targetPeople = [...targetIds]
+      .map((pid) => byId.get(pid))
+      .filter((r): r is Record<string, unknown> => !!r)
+      .map((r) => ({
+        id: r.id as string,
+        name: (r.name as string) ?? '',
+        relationship: (r.relationship as string | null) ?? undefined,
+        importanceScore: Number(r.importance_score) || 0,
+        birthDate: (r.birth_date as string | null) ?? undefined,
+        gender: (r.gender as string | null) ?? undefined,
+        cycleStartDate: (r.cycle_start_date as string | null) ?? undefined,
+        ambito: (r.ambito as string | null) ?? undefined,
+      })) as unknown as Person[]
+    const inlineGoals = goals.map((g) => ({
+      id: g.id, title: g.title, status: 'active',
+      nextAction: (g.next_action ?? '') as string,
+      isAnchor: Boolean(g.is_anchor),
+    })) as unknown as Goal[]
+    const gap = selectInlineGap(question, targetPeople, inlineGoals, dismissedGaps)
+    if (gap) {
+      return NextResponse.json(
+        {
+          answer: gap.question,
+          clarifying: {
+            key: gap.key, kind: gap.kind, entity: gap.entity, entityId: gap.entityId,
+            entityName: gap.entityName, field: gap.field, inputType: gap.inputType,
+          },
+          proposedAction: null,
+          sources: { people: [], memories: 0 },
+        },
+        { status: 200 },
+      )
+    }
   }
 
   // 5. Contexto por persona (cap MAX_PEOPLE): score + memorias recientes.
