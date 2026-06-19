@@ -17,8 +17,9 @@ import { createSelfMetricMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { track, EVENTS } from '@/lib/analytics/track'
 import type { MetricCategory } from '@/types'
+import { limaDayKey, todayLimaKey } from '@/lib/dates/limaDay'
 
-const TODAY = () => new Date().toISOString().slice(0, 10)
+const TODAY = () => todayLimaKey()
 const LEVELS = [1, 2, 3, 4, 5] // se guarda value = nivel*2 (escala 0-10 de self_metrics)
 
 const ROWS: { category: MetricCategory; label: string; Icon: typeof Smile }[] = [
@@ -36,7 +37,7 @@ export function QuickStateLog() {
   function loggedTodayValue(category: MetricCategory): number | null {
     const today = TODAY()
     const hit = selfMetrics.find(
-      (m) => m.category === category && (m.timestamp ?? '').slice(0, 10) === today,
+      (m) => m.category === category && limaDayKey(m.timestamp ?? '') === today,
     )
     return hit ? hit.value : (justLogged[category] ?? null)
   }
