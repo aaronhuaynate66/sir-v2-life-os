@@ -4,6 +4,7 @@
 // + descarte ("no sé") persistido para no repetir.
 
 import type { Person, Goal } from '@/types'
+import { effectiveAmbito } from '@/lib/people/ambito'
 
 export type GapKind = 'birthday' | 'cycle' | 'goal_next_action'
 
@@ -40,8 +41,9 @@ export function detectGaps(
 
   for (const p of people) {
     const imp = Number(p.importanceScore) || 0
-    // Cumpleaños faltante en un vínculo que importa (≥6/10).
-    if (imp >= 6 && !p.birthDate) {
+    const ambito = effectiveAmbito(p)
+    // Cumpleaños faltante en un vínculo que importa (≥6/10) — NO a leads.
+    if (imp >= 6 && !p.birthDate && ambito !== 'lead') {
       push({
         key: `birthday:${p.id}`, kind: 'birthday', entity: 'person', entityId: p.id,
         entityName: p.name, question: `¿Cuándo cumple ${firstName(p.name)}?`,
@@ -49,7 +51,7 @@ export function detectGaps(
       })
     }
     // Ciclo faltante (mujer) → habilita el panel de ciclo (caso Diana).
-    if (p.gender === 'female' && !p.cycleStartDate) {
+    if (p.gender === 'female' && !p.cycleStartDate && ambito === 'personal') {
       push({
         key: `cycle:${p.id}`, kind: 'cycle', entity: 'person', entityId: p.id,
         entityName: p.name, question: `Para seguir el ciclo de ${firstName(p.name)}, ¿cuándo empezó su último período?`,

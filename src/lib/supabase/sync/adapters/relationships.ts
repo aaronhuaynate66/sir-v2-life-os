@@ -63,6 +63,7 @@ export const personAdapter: TableAdapter<Person> = {
     ...(p.organization !== undefined ? { organization: p.organization } : {}),
     ...(p.orgGroup !== undefined ? { org_group: p.orgGroup } : {}),
     ...(p.gender !== undefined ? { gender: p.gender } : {}),
+    ...(p.ambito !== undefined ? { ambito: p.ambito } : {}),
     // birth_date + ciclo: CONDICIONAL (como gender). Si el objeto en memoria no
     // los trae, NO mandamos la key → un update parcial NUNCA los pisa a null.
     // (Antes iban como `?? null` incondicional → un updatePerson({notes}) sobre
@@ -105,6 +106,7 @@ export const personAdapter: TableAdapter<Person> = {
     organization: (row.organization as string) ?? undefined,
     orgGroup: (row.org_group as string) ?? undefined,
     gender: (row.gender as Person['gender']) ?? undefined,
+    ambito: (row.ambito as Person['ambito']) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }),

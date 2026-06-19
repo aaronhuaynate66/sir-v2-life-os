@@ -14,6 +14,8 @@ export type RelationshipType =
   | 'mentee'
   | 'acquaintance'
 
+export type PersonAmbito = 'personal' | 'colega' | 'lead'
+
 export type PersonCategory =
   | 'inner_circle'
   | 'close'
@@ -178,6 +180,11 @@ export interface Person {
   gender?: PersonGender
   relationship: RelationshipType
   category: PersonCategory
+  /** La LÍNEA: qué tipo de persona representa para vos. 'personal' (familia/
+   *  amigos/pareja → lente afectivo), 'colega' (interno de tu trabajo), 'lead'
+   *  (contacto/prospecto comercial → lente de oportunidad). Canonical en
+   *  `people.ambito` (migración 0087). undefined = sin clasificar (legacy). */
+  ambito?: PersonAmbito
   importanceScore: number
   energyImpact: EnergyImpact
   trustLevel: number
