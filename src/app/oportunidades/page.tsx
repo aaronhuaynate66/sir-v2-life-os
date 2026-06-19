@@ -118,7 +118,12 @@ function DealCard({ deal, onEdit, nameById }: { deal: Deal; onEdit: () => void; 
     <button type="button" onClick={onEdit} className="block w-full rounded-lg border border-border bg-card p-3 text-left hover:border-border/80">
       <div className="flex items-start justify-between gap-2">
         <span className="font-medium text-foreground text-sm">{deal.title}</span>
-        {deal.tier && <span className="text-[10px] uppercase tracking-wide text-muted-foreground border border-border rounded px-1.5 py-0.5">{deal.tier}</span>}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/(^|\s)marlab/i.test(deal.seller ?? '') && (
+            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 border border-brand/40 bg-brand-soft/40 text-brand-soft-foreground" title="Lead de tu propia empresa (Marlab) — cercano a vos">Tuyo · Marlab</span>
+          )}
+          {deal.tier && <span className="text-[10px] uppercase tracking-wide text-muted-foreground border border-border rounded px-1.5 py-0.5">{deal.tier}</span>}
+        </div>
       </div>
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] text-muted-foreground">
         {deal.clientOrg && <span className="inline-flex items-center gap-1"><Building2 size={11} />{deal.clientOrg}</span>}
