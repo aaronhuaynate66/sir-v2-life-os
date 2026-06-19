@@ -47,3 +47,55 @@ describe('parseThirdPartyMentions', () => {
     expect(parseThirdPartyMentions(undefined, 'X')).toEqual([])
   })
 })
+
+import { dedupeMentions, findExistingByName, mentionKey } from './mentionedPeople'
+import type { MentionedPerson } from './mentionedPeople'
+
+const mk = (over: Partial<MentionedPerson>): MentionedPerson => ({
+  sourceId: 's1', rawLabel: 'x', name: null, relationWord: null,
+  kind: 'familiar', dateISO: '2025-06-04', isBirthday: true, ...over,
+})
+
+describe('dedupeMentions', () => {
+  it('colapsa dos menciones del mismo nombre (Emilio x2)', () => {
+    const out = dedupeMentions([
+      mk({ sourceId: 'a', name: 'Emilio', kind: 'hijo' }),
+      mk({ sourceId: 'b', name: 'Emilio', kind: 'hijo' }),
+    ])
+    expect(out).toHaveLength(1)
+  })
+
+  it('colapsa el sobrino sin nombre a uno solo', () => {
+    const out = dedupeMentions([
+      mk({ sourceId: 'a', name: null, relationWord: 'sobrino', isBirthday: false }),
+      mk({ sourceId: 'b', name: null, relationWord: 'sobrino', isBirthday: true }),
+    ])
+    expect(out).toHaveLength(1)
+    expect(out[0].isBirthday).toBe(true) // prefiere el que trae cumple
+  })
+
+  it('mantiene personas distintas separadas', () => {
+    const out = dedupeMentions([
+      mk({ name: 'Emilio' }), mk({ name: 'Mateo' }),
+    ])
+    expect(out).toHaveLength(2)
+  })
+})
+
+describe('findExistingByName', () => {
+  const people = [{ id: 'p1', name: 'Emilio Prochazka' }, { id: 'p2', name: 'Diana Diaz' }]
+  it('encuentra por subconjunto de tokens (Emilio → Emilio Prochazka)', () => {
+    expect(findExistingByName('Emilio', people)?.id).toBe('p1')
+  })
+  it('no matchea nombres genéricos cortos / null', () => {
+    expect(findExistingByName(null, people)).toBeNull()
+    expect(findExistingByName('Mateo', people)).toBeNull()
+  })
+})
+
+describe('mentionKey', () => {
+  it('mismo key para el mismo nombre, distinto entre personas', () => {
+    expect(mentionKey(mk({ name: 'Emilio' }))).toBe(mentionKey(mk({ name: 'emilio' })))
+    expect(mentionKey(mk({ name: 'Emilio' }))).not.toBe(mentionKey(mk({ name: 'Mateo' })))
+  })
+})

@@ -5,6 +5,7 @@
 // PURO + testeable. NO escribe: el componente confirma y persiste vía el store.
 
 import type { FamilyKind, SpecialDate } from '@/types'
+import { normalizeName } from '@/lib/people/matcher'
 
 /** Palabra de parentesco (en el label) → FamilyKind. Lo no mapeable → 'familiar'
  *  (vínculo genérico; el usuario afina con el selector). 'sobrino/a' aún no es
@@ -123,4 +124,54 @@ export function placeholderName(m: MentionedPerson, contactName: string): string
   const rel = m.relationWord ? titleCase(m.relationWord) : 'Familiar'
   const first = (contactName || '').trim().split(/\s+/)[0] || contactName
   return `${rel} de ${first}`
+}
+
+
+/**
+ * Colapsa menciones que apuntan a la MISMA persona (el import suele crear
+ * special_dates duplicadas: "Nacimiento de Emilio" dos veces, sobrino dos veces).
+ * Clave: nombre normalizado si lo trae; si no, el parentesco (un solo "sobrino").
+ * Entre duplicados, prefiere la que tiene NOMBRE y la que es cumpleaños (dato útil).
+ */
+export function dedupeMentions(mentions: MentionedPerson[]): MentionedPerson[] {
+  const byKey = new Map<string, MentionedPerson>()
+  for (const m of mentions) {
+    const key = m.name ? `name:${normalizeName(m.name).toLowerCase()}` : `rel:${m.relationWord ?? m.kind}`
+    const prev = byKey.get(key)
+    if (!prev) { byKey.set(key, m); continue }
+    const better = (!prev.name && !!m.name) || (!prev.isBirthday && m.isBirthday)
+    if (better) byKey.set(key, m)
+  }
+  return [...byKey.values()]
+}
+
+/** Clave estable de una mención para persistir "ya manejada" (creada/descartada). */
+export function mentionKey(m: MentionedPerson): string {
+  return m.name ? `name:${normalizeName(m.name).toLowerCase()}` : `rel:${m.relationWord ?? m.kind}`
+}
+
+/**
+ * ¿Esta mención (con nombre) ya corresponde a una persona EXISTENTE? Match puro
+ * de cliente sobre la red en memoria: exacto o subconjunto de tokens (todos los
+ * tokens del nombre más corto presentes en el más largo). Solo para menciones
+ * CON nombre — las genéricas ("sobrino") no se matchean para no inventar.
+ */
+export function findExistingByName<T extends { id: string; name: string }>(
+  name: string | null,
+  people: T[],
+): T | null {
+  if (!name) return null
+  const target = normalizeName(name).toLowerCase()
+  if (target.length < 2) return null
+  const tt = target.split(/\s+/).filter(Boolean)
+  for (const p of people) {
+    const pn = normalizeName(p.name).toLowerCase()
+    if (pn === target) return p
+    const pt = pn.split(/\s+/).filter(Boolean)
+    const [short, long] = tt.length <= pt.length ? [tt, pt] : [pt, tt]
+    if (short.length >= 1 && short.every((t) => long.includes(t)) && short.some((t) => t.length >= 3)) {
+      return p
+    }
+  }
+  return null
 }
