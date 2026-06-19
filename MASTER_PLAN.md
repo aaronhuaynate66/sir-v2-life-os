@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a0f69c1`
+**Hash del último commit humano:** `92a79bf`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `92a79bf` | aaronhuaynate66 | fix(fechas): derivar el DÍA en zona Lima, no UTC (registros caían 'mañana') (#280) | 2026-06-19 |
 | `a0f69c1` | aaronhuaynate66 | feat(relaciones): espejo positivo — avance de deal suma al vínculo interno (PR-B) (#279) | 2026-06-18 |
 | `8cdabd1` | aaronhuaynate66 | feat(oportunidades): eje de impacto + stakeholders internos (PR-A) (#278) | 2026-06-18 |
 | `cf7685d` | aaronhuaynate66 | feat(crm): entidad Oportunidad/Deal + página /oportunidades (PR-2) (#277) | 2026-06-18 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `76d9dca` | aaronhuaynate66 | feat(score): Reciprocidad ponderada por recencia (RFM-R) — lo nuevo manda (#273) | 2026-06-17 |
 | `51e0953` | aaronhuaynate66 | feat(relaciones): conflicto reciente que SIR detecta, reporta y ayuda a manejar (#272) | 2026-06-17 |
 | `03c1f33` | aaronhuaynate66 | feat(import): import de WhatsApp incremental + sellado por fecha (#271) | 2026-06-17 |
-| `111d721` | aaronhuaynate66 | feat(import): el chat importado mueve el score (auto-tono → Reciprocidad) (#270) | 2026-06-17 |
 
 ---
 
