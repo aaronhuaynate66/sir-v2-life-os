@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c45733b`
+**Hash del último commit humano:** `380d5ec`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `380d5ec` | aaronhuaynate66 | feat(sir): gap-engine inline — SIR pregunta UNA pieza clave antes de responder (#295) | 2026-06-19 |
 | `c45733b` | aaronhuaynate66 | feat(intake): pre-seleccionar match fuerte e inequívoco (confirmar en 1 click) (#294) | 2026-06-19 |
 | `5a38fc1` | aaronhuaynate66 | fix(matcher): match difuso por spelling para no duplicar personas (#293) | 2026-06-19 |
 | `2997124` | aaronhuaynate66 | feat(daily-actions): no tratar a un lead como vínculo personal descuidado (#292) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e4388e4` | aaronhuaynate66 | fix(gap-engine): pedir el cumple de leads/colegas también (encuadre comercial) (#288) | 2026-06-19 |
 | `bb55368` | aaronhuaynate66 | feat(relaciones): ámbito de la persona (personal/colega/lead) — la línea (#287) | 2026-06-19 |
 | `38ea2d8` | aaronhuaynate66 | feat(sir-proactivo): Knowledge Gap Engine — SIR te pregunta lo que le falta (#286) | 2026-06-19 |
-| `3c2c2ee` | aaronhuaynate66 | fix(bitácora): archivar el crudo SIEMPRE al subir un export (no solo si hay nuevo) (#285) | 2026-06-19 |
 
 ---
 
