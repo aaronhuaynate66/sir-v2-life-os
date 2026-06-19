@@ -1,4 +1,5 @@
 // SIR V2 — Series temporales para charts SVG (Feature 3, lógica pura).
+import { limaDayKey } from '@/lib/dates/limaDay'
 //
 // Prepara puntos {date, value} para una viz SVG propia (sin librerías
 // pesadas de charting): ordena por fecha, descarta inválidos, escala a
@@ -146,8 +147,10 @@ export function buildLineSeries(
 
 /** Clave de día (YYYY-MM-DD) desde una fecha/timestamp ISO. null si inválida. */
 function dayKey(iso: string): string | null {
-  const m = iso.match(/^(\d{4}-\d{2}-\d{2})/)
-  return m ? m[1] : null
+  // Día calendario de Lima: un instante (con hora) se convierte a la fecha de
+  // pared de Lima; una fecha date-only se respeta tal cual. Antes tomaba la
+  // fecha UTC → un registro de las 22:28 caía "mañana" en el gráfico.
+  return limaDayKey(iso)
 }
 
 /**
