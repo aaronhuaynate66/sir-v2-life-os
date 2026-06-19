@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c0d281c`
+**Hash del último commit humano:** `2f1b98e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2f1b98e` | aaronhuaynate66 | feat(dia-x): página visual /dia (qué pasó el día X) (#290) | 2026-06-19 |
 | `c0d281c` | aaronhuaynate66 | feat(relaciones): filtro por ámbito + badge + ámbito en alta (la línea visible) (#289) | 2026-06-19 |
 | `e4388e4` | aaronhuaynate66 | fix(gap-engine): pedir el cumple de leads/colegas también (encuadre comercial) (#288) | 2026-06-19 |
 | `bb55368` | aaronhuaynate66 | feat(relaciones): ámbito de la persona (personal/colega/lead) — la línea (#287) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `cbe3982` | aaronhuaynate66 | feat(dia-x): motor de contexto temporal '¿qué pasó el día X?' (#283) | 2026-06-19 |
 | `affdc6f` | aaronhuaynate66 | fix(sync): no pisar a null el ciclo/cumple en updates parciales (caso Diana) (#282) | 2026-06-19 |
 | `69c3d43` | aaronhuaynate66 | feat(relaciones): variación de métricas de redes en el tiempo (#281) | 2026-06-19 |
-| `92a79bf` | aaronhuaynate66 | fix(fechas): derivar el DÍA en zona Lima, no UTC (registros caían 'mañana') (#280) | 2026-06-19 |
 
 ---
 
