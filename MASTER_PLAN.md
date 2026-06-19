@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `bb55368`
+**Hash del último commit humano:** `e4388e4`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e4388e4` | aaronhuaynate66 | fix(gap-engine): pedir el cumple de leads/colegas también (encuadre comercial) (#288) | 2026-06-19 |
 | `bb55368` | aaronhuaynate66 | feat(relaciones): ámbito de la persona (personal/colega/lead) — la línea (#287) | 2026-06-19 |
 | `38ea2d8` | aaronhuaynate66 | feat(sir-proactivo): Knowledge Gap Engine — SIR te pregunta lo que le falta (#286) | 2026-06-19 |
 | `3c2c2ee` | aaronhuaynate66 | fix(bitácora): archivar el crudo SIEMPRE al subir un export (no solo si hay nuevo) (#285) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `69c3d43` | aaronhuaynate66 | feat(relaciones): variación de métricas de redes en el tiempo (#281) | 2026-06-19 |
 | `92a79bf` | aaronhuaynate66 | fix(fechas): derivar el DÍA en zona Lima, no UTC (registros caían 'mañana') (#280) | 2026-06-19 |
 | `a0f69c1` | aaronhuaynate66 | feat(relaciones): espejo positivo — avance de deal suma al vínculo interno (PR-B) (#279) | 2026-06-18 |
-| `8cdabd1` | aaronhuaynate66 | feat(oportunidades): eje de impacto + stakeholders internos (PR-A) (#278) | 2026-06-18 |
 
 ---
 
