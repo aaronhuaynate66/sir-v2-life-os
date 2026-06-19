@@ -35,12 +35,36 @@ interface ProposedAction {
   linkedGoals?: { id: string; title: string }[]
 }
 
+interface ClarifyingGap {
+  key: string
+  kind: 'birthday' | 'cycle' | 'goal_next_action'
+  entity: 'person' | 'goal'
+  entityId: string
+  entityName: string
+  field: 'birthDate' | 'cycleStartDate' | 'nextAction'
+  inputType: 'date' | 'text'
+}
+
 interface Turn {
   role: 'user' | 'sir'
   text: string
   sources?: { people: string[]; memories: number }
   action?: ProposedAction
   actionState?: 'pending' | 'done' | 'discarded'
+  // Gap-engine inline: SIR pide UNA pieza antes de responder.
+  clarifying?: ClarifyingGap
+  clarifyState?: 'pending' | 'answered' | 'dismissed'
+  // Pregunta original, para re-preguntar una vez resuelto/descartado el hueco.
+  originalQuestion?: string
+}
+
+const GAPS_LS_KEY = 'sir-knowledge-gaps-dismissed'
+function readDismissedGaps(): string[] {
+  if (typeof window === 'undefined') return []
+  try { return JSON.parse(localStorage.getItem(GAPS_LS_KEY) || '[]') as string[] } catch { return [] }
+}
+function writeDismissedGaps(keys: string[]): void {
+  try { localStorage.setItem(GAPS_LS_KEY, JSON.stringify(keys.slice(-200))) } catch { /* */ }
 }
 
 const SUGGESTIONS = [
@@ -57,6 +81,7 @@ export default function SirChatPage() {
   const [error, setError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const addGoal = useGoalStore((st) => st.addGoal)
+  const updateGoal = useGoalStore((st) => st.updateGoal)
   const pauseGoal = useGoalStore((st) => st.pauseGoal)
   const addPerson = useRelationshipStore((st) => st.addPerson)
   const people = useRelationshipStore((st) => st.people)
@@ -67,6 +92,7 @@ export default function SirChatPage() {
   const [model, setModel] = useState<SirModelTier>('sonnet')
 
   const [goalSel, setGoalSel] = useState<Record<string, boolean>>({})
+  const [clarifyDraft, setClarifyDraft] = useState<Record<number, string>>({})
   const THREAD_KEY = 'sir_chat_thread'
   // Cargar el hilo guardado al montar (persiste entre recargas/sesiones).
   useEffect(() => {
@@ -223,12 +249,15 @@ export default function SirChatPage() {
     }
   }
 
-  async function ask(question: string) {
+  async function ask(
+    question: string,
+    opts: { skipInlineGaps?: boolean; dismissedGaps?: string[]; suppressUserTurn?: boolean } = {},
+  ) {
     const q = question.trim()
     if (!q || loading) return
     setError(null)
     setInput('')
-    setTurns((t) => [...t, { role: 'user', text: q }])
+    if (!opts.suppressUserTurn) setTurns((t) => [...t, { role: 'user', text: q }])
     setLoading(true)
     track(EVENTS.sirAsked, { length: q.length })
     try {
@@ -238,11 +267,24 @@ export default function SirChatPage() {
         body: JSON.stringify({
           question: q,
           history: turns.map((t) => ({ role: t.role, text: t.text })),
+          skipInlineGaps: opts.skipInlineGaps ?? false,
+          dismissedGaps: opts.dismissedGaps ?? readDismissedGaps(),
         }),
       })
       const data = await res.json()
       if (!res.ok) {
         setError(data?.error ?? 'No se pudo responder')
+        return
+      }
+      // Gap-engine inline: SIR pide UNA pieza antes de responder.
+      const clarifying = data.clarifying as ClarifyingGap | null
+      if (clarifying) {
+        track(EVENTS.sirGapAsked, { kind: clarifying.kind })
+        setTurns((t) => [...t, {
+          role: 'sir', text: data.answer ?? '', clarifying,
+          clarifyState: 'pending', originalQuestion: q,
+        }])
+        setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
         return
       }
       const action = data.proposedAction as ProposedAction | null
@@ -254,6 +296,37 @@ export default function SirChatPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Aaron respondió la pregunta inline → persiste el campo (se auto-resuelve el
+  // hueco) y SIR retoma la pregunta original, ahora con la pieza completa.
+  function answerClarifying(idx: number) {
+    const turn = turns[idx]
+    const c = turn?.clarifying
+    const val = (clarifyDraft[idx] ?? '').trim()
+    if (!c || !val) return
+    if (c.entity === 'person') updatePerson(c.entityId, { [c.field]: val })
+    else updateGoal(c.entityId, { [c.field]: val })
+    setTurnClarifyState(idx, 'answered')
+    track(EVENTS.sirGapAnswered, { kind: c.kind })
+    toast.success('Anotado', { description: `${c.entityName}: lo guardé.` })
+    if (turn.originalQuestion) void ask(turn.originalQuestion, { skipInlineGaps: true, suppressUserTurn: true })
+  }
+
+  // "No sé / ahora no": descarta el hueco (no vuelve a preguntar) y SIR responde
+  // igual con lo que tiene.
+  function dismissClarifying(idx: number) {
+    const turn = turns[idx]
+    const c = turn?.clarifying
+    if (!c) return
+    const next = [...readDismissedGaps(), c.key]
+    writeDismissedGaps(next)
+    setTurnClarifyState(idx, 'dismissed')
+    if (turn.originalQuestion) void ask(turn.originalQuestion, { skipInlineGaps: true, suppressUserTurn: true })
+  }
+
+  function setTurnClarifyState(idx: number, state: 'answered' | 'dismissed') {
+    setTurns((t) => t.map((x, i) => (i === idx ? { ...x, clarifyState: state } : x)))
   }
 
   return (
@@ -331,6 +404,37 @@ export default function SirChatPage() {
                   <div className="mt-2 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
                     <User size={11} />
                     {t.sources.people.join(' · ')}
+                  </div>
+                )}
+                {t.clarifying && (
+                  <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
+                    <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
+                      <Sparkles size={12} /> SIR necesita un dato
+                    </div>
+                    {t.clarifyState === 'answered' ? (
+                      <div className="flex items-center gap-1 text-[12px] text-[#14b8a6]"><Check size={13} /> Anotado — sigo con eso</div>
+                    ) : t.clarifyState === 'dismissed' ? (
+                      <div className="text-[12px] text-muted-foreground">Sin ese dato — te respondo con lo que tengo</div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type={t.clarifying.inputType}
+                          value={clarifyDraft[i] ?? ''}
+                          onChange={(e) => setClarifyDraft((d) => ({ ...d, [i]: e.target.value }))}
+                          placeholder={t.clarifying.inputType === 'text' ? 'Tu respuesta…' : ''}
+                          className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+                          onKeyDown={(e) => { if (e.key === 'Enter') answerClarifying(i) }}
+                        />
+                        <button onClick={() => answerClarifying(i)} disabled={!(clarifyDraft[i] ?? '').trim()}
+                          className="inline-flex items-center gap-1 rounded-lg bg-[#14b8a6] px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50">
+                          <Check size={13} /> Guardar
+                        </button>
+                        <button onClick={() => dismissClarifying(i)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[13px] text-muted-foreground hover:text-foreground">
+                          <X size={13} /> No sé
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
                 {t.action && (
