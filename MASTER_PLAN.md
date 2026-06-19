@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5a38fc1`
+**Hash del último commit humano:** `c45733b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c45733b` | aaronhuaynate66 | feat(intake): pre-seleccionar match fuerte e inequívoco (confirmar en 1 click) (#294) | 2026-06-19 |
 | `5a38fc1` | aaronhuaynate66 | fix(matcher): match difuso por spelling para no duplicar personas (#293) | 2026-06-19 |
 | `2997124` | aaronhuaynate66 | feat(daily-actions): no tratar a un lead como vínculo personal descuidado (#292) | 2026-06-19 |
 | `1d0287e` | aaronhuaynate66 | feat(oportunidades): marcar los deals de Marlab (tuyos) vs del empleador (#291) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `bb55368` | aaronhuaynate66 | feat(relaciones): ámbito de la persona (personal/colega/lead) — la línea (#287) | 2026-06-19 |
 | `38ea2d8` | aaronhuaynate66 | feat(sir-proactivo): Knowledge Gap Engine — SIR te pregunta lo que le falta (#286) | 2026-06-19 |
 | `3c2c2ee` | aaronhuaynate66 | fix(bitácora): archivar el crudo SIEMPRE al subir un export (no solo si hay nuevo) (#285) | 2026-06-19 |
-| `1c09460` | aaronhuaynate66 | feat(bitácora): archivar el historial crudo + búsqueda por persona (1→3) (#284) | 2026-06-19 |
 
 ---
 
