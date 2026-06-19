@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3c2c2ee`
+**Hash del último commit humano:** `38ea2d8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `38ea2d8` | aaronhuaynate66 | feat(sir-proactivo): Knowledge Gap Engine — SIR te pregunta lo que le falta (#286) | 2026-06-19 |
 | `3c2c2ee` | aaronhuaynate66 | fix(bitácora): archivar el crudo SIEMPRE al subir un export (no solo si hay nuevo) (#285) | 2026-06-19 |
 | `1c09460` | aaronhuaynate66 | feat(bitácora): archivar el historial crudo + búsqueda por persona (1→3) (#284) | 2026-06-19 |
 | `cbe3982` | aaronhuaynate66 | feat(dia-x): motor de contexto temporal '¿qué pasó el día X?' (#283) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `a0f69c1` | aaronhuaynate66 | feat(relaciones): espejo positivo — avance de deal suma al vínculo interno (PR-B) (#279) | 2026-06-18 |
 | `8cdabd1` | aaronhuaynate66 | feat(oportunidades): eje de impacto + stakeholders internos (PR-A) (#278) | 2026-06-18 |
 | `cf7685d` | aaronhuaynate66 | feat(crm): entidad Oportunidad/Deal + página /oportunidades (PR-2) (#277) | 2026-06-18 |
-| `8e170a5` | aaronhuaynate66 | feat(crm): cargo en persona + RUC/dirección/matriz/tier en empresa (PR-1 de Oportunidades) (#276) | 2026-06-18 |
 
 ---
 
