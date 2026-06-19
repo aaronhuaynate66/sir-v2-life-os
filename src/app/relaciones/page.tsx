@@ -37,12 +37,15 @@ import {
 import { CommercialPipelinePanel } from '@/components/relaciones/CommercialPipelinePanel'
 import { cn } from '@/lib/utils'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact, PersonGender } from '@/types'
+import { effectiveAmbito, inferAmbito, AMBITO_LABEL } from '@/lib/people/ambito'
+import type { PersonAmbito } from '@/types'
 
 interface PersonForm {
   name: string
   alias: string
   relationship: RelationshipType
   category: PersonCategory
+  ambito: '' | PersonAmbito
   gender: '' | PersonGender
   importanceScore: number
   energyImpact: EnergyImpact
@@ -57,7 +60,7 @@ interface PersonForm {
 }
 
 const EMPTY_FORM: PersonForm = {
-  name: '', alias: '', relationship: 'friend', category: 'network', gender: '',
+  name: '', alias: '', relationship: 'friend', category: 'network', ambito: '', gender: '',
   importanceScore: 5, energyImpact: 'neutral', trustLevel: 5,
   lastContact: '', contactFrequency: '', location: '', notes: '',
   birthDate: '',
@@ -93,6 +96,7 @@ function RelationshipsContent() {
   const { addMemory } = useMemoryStore()
 
   const [showForm, setShowForm] = useState(false)
+  const [ambitoFilter, setAmbitoFilter] = useState<'todos' | PersonAmbito>('todos')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<PersonForm>(EMPTY_FORM)
 
@@ -119,6 +123,7 @@ function RelationshipsContent() {
       alias: person.alias ?? '',
       relationship: person.relationship,
       category: person.category,
+      ambito: person.ambito ?? '',
       gender: person.gender ?? '',
       importanceScore: person.importanceScore,
       energyImpact: person.energyImpact,
@@ -147,6 +152,7 @@ function RelationshipsContent() {
         alias: form.alias.trim() || undefined,
         relationship: form.relationship,
         category: form.category,
+        ambito: (form.ambito || inferAmbito(form.relationship)),
         gender: form.gender || undefined,
         importanceScore: form.importanceScore,
         energyImpact: form.energyImpact,
@@ -185,6 +191,7 @@ function RelationshipsContent() {
         alias: form.alias.trim() || undefined,
         relationship: form.relationship,
         category: form.category,
+        ambito: (form.ambito || inferAmbito(form.relationship)),
         gender: form.gender || undefined,
         importanceScore: form.importanceScore,
         energyImpact: form.energyImpact,
@@ -330,6 +337,17 @@ function RelationshipsContent() {
                 </Select>
               </div>
               <div>
+                <label className="block text-xs text-muted-foreground mb-1">Ámbito (qué es para vos)</label>
+                <Select value={form.ambito || inferAmbito(form.relationship)} onValueChange={(v) => setForm({ ...form, ambito: v as PersonAmbito })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="personal">Personal</SelectItem>
+                    <SelectItem value="colega">Colega</SelectItem>
+                    <SelectItem value="lead">Lead</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <label className="block text-xs text-muted-foreground mb-1">Sexo</label>
                 <Select value={form.gender || 'unspecified'} onValueChange={(v) => setForm({ ...form, gender: v === 'unspecified' ? '' : (v as PersonGender) })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -416,6 +434,22 @@ function RelationshipsContent() {
         </SheetContent>
       </Sheet>
 
+      {people.length > 0 && (
+        <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+          {([
+            ['todos', `Todos (${people.length})`],
+            ['personal', `Personal (${people.filter((p) => effectiveAmbito(p) === 'personal').length})`],
+            ['colega', `Colegas (${people.filter((p) => effectiveAmbito(p) === 'colega').length})`],
+            ['lead', `Leads (${people.filter((p) => effectiveAmbito(p) === 'lead').length})`],
+          ] as const).map(([k, label]) => (
+            <button key={k} type="button" onClick={() => setAmbitoFilter(k as 'todos' | PersonAmbito)}
+              className={`rounded-full border px-3 py-1 text-xs ${ambitoFilter === k ? 'border-brand bg-brand text-brand-foreground' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {people.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -430,7 +464,7 @@ function RelationshipsContent() {
         />
       ) : (
         <div className="space-y-3">
-          {people.map((person) => {
+          {people.filter((p) => ambitoFilter === 'todos' || effectiveAmbito(p) === ambitoFilter).map((person) => {
             const rel = relationships.find((r) => r.personId === person.id)
             const lastContactDisplay = person.lastContact
               ? `Hace ${daysSince(person.lastContact)} dias`
@@ -448,6 +482,7 @@ function RelationshipsContent() {
                           {person.alias && <span className="text-xs text-muted-foreground">({person.alias})</span>}
                           <Badge variant="outline" className="text-[10px] font-normal">{relationshipTypeLabel(person.relationship)}</Badge>
                           <Badge variant="outline" className="text-[10px] font-normal">{personCategoryLabel(person.category)}</Badge>
+                          <Badge variant="outline" className="text-[10px] font-normal border-brand/40 text-brand-soft-foreground">{AMBITO_LABEL[effectiveAmbito(person)]}</Badge>
                         </div>
 
                         <div className="flex items-center gap-4 mt-2 flex-wrap">
