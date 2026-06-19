@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight, Upload } from 'lucide-react'
+import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight, Upload, Search } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -97,6 +97,14 @@ function RelationshipsContent() {
 
   const [showForm, setShowForm] = useState(false)
   const [ambitoFilter, setAmbitoFilter] = useState<'todos' | PersonAmbito>('todos')
+  const [query, setQuery] = useState('')
+  const normQ = query.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const matchesQuery = (p: typeof people[number]) => {
+    if (!normQ) return true
+    const hay = `${p.name} ${p.alias ?? ''} ${p.organization ?? ''} ${p.title ?? ''}`
+      .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    return hay.includes(normQ)
+  }
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<PersonForm>(EMPTY_FORM)
 
@@ -435,6 +443,25 @@ function RelationshipsContent() {
       </Sheet>
 
       {people.length > 0 && (
+        <div className="relative mb-3">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por nombre, alias o empresa…"
+            className="pl-9 pr-9"
+            aria-label="Buscar contactos"
+          />
+          {query && (
+            <button type="button" onClick={() => setQuery('')} aria-label="Limpiar búsqueda"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X size={15} />
+            </button>
+          )}
+        </div>
+      )}
+
+      {people.length > 0 && (
         <div className="flex items-center gap-1.5 mb-3 flex-wrap">
           {([
             ['todos', `Todos (${people.length})`],
@@ -464,7 +491,14 @@ function RelationshipsContent() {
         />
       ) : (
         <div className="space-y-3">
-          {people.filter((p) => ambitoFilter === 'todos' || effectiveAmbito(p) === ambitoFilter).map((person) => {
+          {(() => {
+            const filtered = people.filter((p) => (ambitoFilter === 'todos' || effectiveAmbito(p) === ambitoFilter) && matchesQuery(p))
+            if (filtered.length === 0) {
+              return (
+                <p className="text-sm text-muted-foreground py-6 text-center">Sin resultados para &ldquo;{query}&rdquo;.</p>
+              )
+            }
+            return filtered.map((person) => {
             const rel = relationships.find((r) => r.personId === person.id)
             const lastContactDisplay = person.lastContact
               ? `Hace ${daysSince(person.lastContact)} dias`
@@ -545,7 +579,8 @@ function RelationshipsContent() {
                 </CardContent>
               </Card>
             )
-          })}
+            })
+          })()}
         </div>
       )}
     </AppShell>
