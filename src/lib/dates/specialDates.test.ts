@@ -7,7 +7,6 @@
 
 import { describe, it, expect } from 'vitest'
 
-import type { SpecialDate } from '@/types'
 import {
   computeSpecialDateCountdown,
   sortSpecialDates,
@@ -205,5 +204,35 @@ describe('formatCountdownPhrase', () => {
   it('pasado -> "hace N día(s)" con plural correcto', () => {
     expect(phrase('2026-06-13', false, new Date(2026, 5, 14))).toBe('hace 1 día')
     expect(phrase('2026-06-09', false, new Date(2026, 5, 14))).toBe('hace 5 días')
+  })
+})
+
+import { dedupeSpecialDates } from './specialDates'
+import type { SpecialDate } from '@/types'
+
+describe('dedupeSpecialDates', () => {
+  const sd = (over: Partial<SpecialDate>): SpecialDate => ({
+    id: Math.random().toString(36).slice(2), label: 'x', date: '2025-06-04', recurring: false, ...over,
+  })
+  it('colapsa mismo label+fecha (Emilio x2)', () => {
+    const out = dedupeSpecialDates([
+      sd({ label: 'Nacimiento de Emilio (hijo de Adrian)', date: '2025-06-04' }),
+      sd({ label: 'Nacimiento de Emilio (hijo de Adrian)', date: '2025-06-04' }),
+    ])
+    expect(out).toHaveLength(1)
+  })
+  it('colapsa con diferencias de acento/mayúsculas/espacios', () => {
+    const out = dedupeSpecialDates([
+      sd({ label: 'Cumpleaños del Sobrino', date: '2023-06-29' }),
+      sd({ label: 'cumpleanos del  sobrino', date: '2023-06-29' }),
+    ])
+    expect(out).toHaveLength(1)
+  })
+  it('mantiene fechas distintas del mismo label', () => {
+    const out = dedupeSpecialDates([
+      sd({ label: 'Aniversario', date: '2020-06-29' }),
+      sd({ label: 'Aniversario', date: '2021-06-29' }),
+    ])
+    expect(out).toHaveLength(2)
   })
 })
