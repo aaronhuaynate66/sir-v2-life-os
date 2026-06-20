@@ -139,3 +139,37 @@ export function renderDayContext(s: DaySlices): string {
 export function limaDayUtcWindow(date: string): { startUtc: string; endUtc: string } {
   return { startUtc: `${date}T05:00:00.000Z`, endUtc: `${shiftDays(date, 1)}T05:00:00.000Z` }
 }
+
+
+// ─── ÁNIMO DEL DÍA (peso emocional, determinístico, sin IA) ─────────────────
+export type DayTone = 'tense' | 'warm' | 'calm' | 'empty'
+export interface DayMood {
+  tone: DayTone
+  /** Frase corta del evento más saliente del día. */
+  headline: string
+}
+
+const firstNameMood = (n: string) => (n || '').trim().split(/\s+/)[0] || n
+
+/** Resume el "ánimo" del día a partir de interacciones + movimientos de score.
+ *  Tenso si hubo roce (calidad ≤2); cálido si hubo momentos plenos (≥4) sin
+ *  roce; tranquilo si hubo registro pero nada marcado; vacío si no hubo nada. */
+export function dayMood(s: DaySlices): DayMood {
+  const hasAny = !!(s.interactions.length || s.observations.length || s.deals.length ||
+    s.steps.length || s.health.length || s.scoreMoves.length)
+  if (!hasAny) return { tone: 'empty', headline: 'Sin registros ese día.' }
+
+  const tense = s.interactions.filter((i) => i.quality != null && i.quality <= 2)
+  const warm = s.interactions.filter((i) => i.quality != null && i.quality >= 4)
+  const worstDrop = [...s.scoreMoves].filter((m) => (m.delta ?? 0) < 0).sort((a, b) => (a.delta ?? 0) - (b.delta ?? 0))[0]
+
+  if (tense.length) {
+    const t = tense[0]
+    const extra = worstDrop ? ` · ${firstNameMood(worstDrop.person)} ${worstDrop.delta}` : ''
+    return { tone: 'tense', headline: `Roce con ${firstNameMood(t.person)}${t.note ? `: ${t.note.replace(/^Conversación reciente TENSA\s*[—-]\s*/i, '').slice(0, 70)}` : ''}${extra}` }
+  }
+  if (warm.length) {
+    return { tone: 'warm', headline: `Buen momento con ${firstNameMood(warm[0].person)}${warm.length > 1 ? ` y ${warm.length - 1} más` : ''}.` }
+  }
+  return { tone: 'calm', headline: 'Día tranquilo, sin roces ni hitos marcados.' }
+}

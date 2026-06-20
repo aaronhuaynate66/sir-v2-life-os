@@ -52,3 +52,28 @@ describe('renderDayContext', () => {
     expect(out).toContain('-6 vs día previo')
   })
 })
+
+import { dayMood } from './dayContext'
+
+const base = (over: Partial<DaySlices> = {}): DaySlices => ({
+  date: '2026-06-18', moonLabel: null, interactions: [], observations: [],
+  deals: [], steps: [], health: [], scoreMoves: [], ...over,
+})
+
+describe('dayMood', () => {
+  it('vacío sin registros', () => {
+    expect(dayMood(base()).tone).toBe('empty')
+  })
+  it('tenso si hubo roce (calidad<=2)', () => {
+    const m = dayMood(base({ interactions: [{ person: 'Maria Isabel', quality: 2, note: 'Conversación reciente TENSA — pelea por el Mundial' }] }))
+    expect(m.tone).toBe('tense')
+    expect(m.headline).toMatch(/Roce con Maria/)
+    expect(m.headline).not.toMatch(/Conversación reciente TENSA/)
+  })
+  it('cálido si hubo momento pleno sin roce', () => {
+    expect(dayMood(base({ interactions: [{ person: 'Pablo', quality: 5, note: null }] })).tone).toBe('warm')
+  })
+  it('tranquilo si hubo registro pero nada marcado', () => {
+    expect(dayMood(base({ health: [{ label: 'Sueño', value: '7h' }] })).tone).toBe('calm')
+  })
+})
