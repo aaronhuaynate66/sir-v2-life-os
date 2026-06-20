@@ -106,3 +106,36 @@ describe('detectContextualGap — post-conflicto', () => {
     expect(detectContextualGap('¿le escribo a Maria hoy?', [sig()], new Set(['ctx_postconflict:p1']))).toBeNull()
   })
 })
+
+describe('detectContextualGap — conocimiento viejo (stale)', () => {
+  const NOW = new Date('2026-06-20T12:00:00Z')
+  const sig = (over: Partial<{ id: string; name: string; latestInteractionQuality: number | null; latestInteractionAt: string | null; importance: number }> = {}) => ({
+    id: 'p9', name: 'Alvaro Gabriel', latestInteractionQuality: 4, latestInteractionAt: '2026-01-10', importance: 8, ...over,
+  })
+
+  it('pregunta si pasó algo nuevo en vínculo importante sin novedad hace >30d', () => {
+    const g = detectContextualGap('¿cómo está Alvaro?', [sig()], new Set(), NOW)
+    expect(g?.kind).toBe('stale_knowledge')
+  })
+
+  it('NO pregunta si la interacción es reciente', () => {
+    expect(detectContextualGap('¿cómo está Alvaro?', [sig({ latestInteractionAt: '2026-06-15' })], new Set(), NOW)).toBeNull()
+  })
+
+  it('NO pregunta si el vínculo no es importante', () => {
+    expect(detectContextualGap('¿cómo está Alvaro?', [sig({ importance: 3 })], new Set(), NOW)).toBeNull()
+  })
+
+  it('NO pregunta sin intención de consejo/estado', () => {
+    expect(detectContextualGap('¿cuál es el RUC de Alvaro?', [sig()], new Set(), NOW)).toBeNull()
+  })
+
+  it('post-conflicto gana sobre stale cuando ambos aplican', () => {
+    const g = detectContextualGap('¿le escribo a Alvaro?', [sig({ latestInteractionQuality: 2 })], new Set(), NOW)
+    expect(g?.kind).toBe('post_conflict_contact')
+  })
+
+  it('respeta el descarte del stale (este turno)', () => {
+    expect(detectContextualGap('¿cómo está Alvaro?', [sig()], new Set(['ctx_stale:p9']), NOW)).toBeNull()
+  })
+})

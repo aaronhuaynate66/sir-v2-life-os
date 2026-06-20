@@ -37,7 +37,7 @@ interface ProposedAction {
 
 interface ClarifyingGap {
   key: string
-  kind: 'birthday' | 'cycle' | 'goal_next_action' | 'post_conflict_contact'
+  kind: 'birthday' | 'cycle' | 'goal_next_action' | 'post_conflict_contact' | 'stale_knowledge'
   entity: 'person' | 'goal'
   entityId: string
   entityName: string

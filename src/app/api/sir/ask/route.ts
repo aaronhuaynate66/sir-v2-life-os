@@ -206,7 +206,8 @@ export async function POST(req: NextRequest) {
     ctxSignals.push({
       id: pid, name: (row.name as string) ?? '',
       latestInteractionQuality: latestEv ? latestEv.quality : null,
-      latestInteractionAt: latestEv ? latestEv.at : null,
+      latestInteractionAt: latestEv ? latestEv.at : (row.last_contact as string | null) ?? null,
+      importance: Number(row.importance_score) || 0,
     })
 
     const score = computeRelationalScore({

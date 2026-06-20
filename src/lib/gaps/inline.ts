@@ -87,7 +87,7 @@ export function selectInlineGap(
 
 export interface ContextualGap {
   key: string
-  kind: 'post_conflict_contact'
+  kind: 'post_conflict_contact' | 'stale_knowledge'
   entity: 'person'
   entityId: string
   entityName: string
@@ -103,6 +103,8 @@ export interface ContextualSignal {
   /** Calidad (1-5) de la interacción conocida más RECIENTE, o null si no hay. */
   latestInteractionQuality: number | null
   latestInteractionAt: string | null
+  /** Importancia del vínculo (1-10). Para gatear 'conocimiento viejo'. */
+  importance?: number
 }
 
 const CONTACT_INTENT = [
@@ -111,6 +113,22 @@ const CONTACT_INTENT = [
   'deberia escribir', 'deberia hablar', 'retomo', 'retomar', 'la contacto',
   'lo contacto', 'le contesto', 'le respondo',
 ]
+
+// Intención de consejo/estado sobre la persona (no solo contacto): habilita el
+// hueco de "conocimiento viejo".
+const ADVICE_INTENT = [
+  ...CONTACT_INTENT,
+  'como esta', 'como anda', 'como va', 'como sigue', 'que hago con', 'que sabes de',
+  'contame de', 'que onda con', 'como la veo', 'como lo veo', 'que tal', 'novedad',
+  'como esta la cosa con', 'que pasa con',
+]
+const STALE_DAYS = 30
+
+function daysBetween(fromISO: string, now: Date): number {
+  const t = new Date(fromISO).getTime()
+  if (!Number.isFinite(t)) return NaN
+  return Math.floor((now.getTime() - t) / 86_400_000)
+}
 
 /**
  * Detecta UN hueco contextual material a la consulta, o null. Hoy cubre el caso
@@ -121,20 +139,45 @@ export function detectContextualGap(
   question: string,
   signals: ContextualSignal[],
   dismissed: Set<string> = new Set(),
+  now: Date = new Date(),
 ): ContextualGap | null {
   const q = norm(question)
-  if (!CONTACT_INTENT.some((k) => q.includes(k))) return null
+  const hasContactIntent = CONTACT_INTENT.some((k) => q.includes(k))
+  const hasAdviceIntent = ADVICE_INTENT.some((k) => q.includes(k))
+  if (!hasAdviceIntent) return null
+
   for (const s of signals) {
     const first = norm((s.name || '').split(/\s+/)[0] || '')
     if (!(first.length >= 3 && q.includes(first))) continue
-    if (s.latestInteractionQuality != null && s.latestInteractionQuality <= 2) {
+
+    // (1) Post-conflicto: intención de CONTACTO + última interacción tensa.
+    if (hasContactIntent && s.latestInteractionQuality != null && s.latestInteractionQuality <= 2) {
       const key = `ctx_postconflict:${s.id}`
-      if (dismissed.has(key)) continue
-      return {
-        key, kind: 'post_conflict_contact', entity: 'person', entityId: s.id,
-        entityName: s.name,
-        question: `Lo último que tengo con ${first} fue una interacción tensa. ¿Hablaron después de eso?`,
-        inputType: 'text', ephemeral: true,
+      if (!dismissed.has(key)) {
+        return {
+          key, kind: 'post_conflict_contact', entity: 'person', entityId: s.id,
+          entityName: s.name,
+          question: `Lo último que tengo con ${first} fue una interacción tensa. ¿Hablaron después de eso?`,
+          inputType: 'text', ephemeral: true,
+        }
+      }
+    }
+
+    // (2) Conocimiento viejo: vínculo importante (>=6) del que no sé nada hace
+    //     >30 días → puede haber pasado algo que cambia el consejo.
+    const imp = Number(s.importance) || 0
+    if (imp >= 6 && s.latestInteractionAt) {
+      const d = daysBetween(s.latestInteractionAt, now)
+      if (Number.isFinite(d) && d >= STALE_DAYS) {
+        const key = `ctx_stale:${s.id}`
+        if (!dismissed.has(key)) {
+          return {
+            key, kind: 'stale_knowledge', entity: 'person', entityId: s.id,
+            entityName: s.name,
+            question: `Lo último que tengo de ${first} es de hace ${d} días. ¿Pasó algo nuevo con ${first} desde entonces?`,
+            inputType: 'text', ephemeral: true,
+          }
+        }
       }
     }
   }
