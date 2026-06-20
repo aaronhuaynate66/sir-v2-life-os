@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `14d90d8`
+**Hash del último commit humano:** `c50986d`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c50986d` | aaronhuaynate66 | fix(fechas): dedup de fechas especiales al mostrar (legacy) (#300) | 2026-06-20 |
 | `14d90d8` | aaronhuaynate66 | feat(relaciones): última interacción honesta — muestra el último intercambio real (P3) (#299) | 2026-06-19 |
 | `af6b253` | aaronhuaynate66 | feat(relaciones): barra de búsqueda que filtra al tipear (P1) (#298) | 2026-06-19 |
 | `035c364` | aaronhuaynate66 | feat(relaciones): personas mencionadas idempotentes (P2) (#297) | 2026-06-19 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5a38fc1` | aaronhuaynate66 | fix(matcher): match difuso por spelling para no duplicar personas (#293) | 2026-06-19 |
 | `2997124` | aaronhuaynate66 | feat(daily-actions): no tratar a un lead como vínculo personal descuidado (#292) | 2026-06-19 |
 | `1d0287e` | aaronhuaynate66 | feat(oportunidades): marcar los deals de Marlab (tuyos) vs del empleador (#291) | 2026-06-19 |
-| `2f1b98e` | aaronhuaynate66 | feat(dia-x): página visual /dia (qué pasó el día X) (#290) | 2026-06-19 |
 
 ---
 
