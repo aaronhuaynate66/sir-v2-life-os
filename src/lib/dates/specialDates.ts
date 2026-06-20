@@ -123,6 +123,26 @@ export function computeSpecialDateCountdown(
  *   2. Pasadas (solo one-time) al final, las más recientes primero.
  * Las fechas con formato inválido se devuelven aparte para un render honesto.
  */
+/** Normaliza un label para deduplicar (minúsculas, sin acentos, espacios colapsados). */
+function normSpecialLabel(s: string): string {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim()
+}
+
+/** Colapsa fechas especiales duplicadas por (label normalizado + fecha YYYY-MM-DD).
+ *  Conserva la primera aparición. Necesario porque imports viejos (antes del
+ *  dedup en el promote) dejaron duplicados en la data — limpiarlos al mostrar. */
+export function dedupeSpecialDates(dates: SpecialDate[]): SpecialDate[] {
+  const seen = new Set<string>()
+  const out: SpecialDate[] = []
+  for (const d of dates) {
+    const key = `${normSpecialLabel(d.label ?? '')}|${(d.date ?? '').slice(0, 10)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(d)
+  }
+  return out
+}
+
 export function sortSpecialDates(
   dates: SpecialDate[],
   now: Date = new Date(),
@@ -130,7 +150,7 @@ export function sortSpecialDates(
   const valid: SpecialDateCountdown[] = []
   const invalid: SpecialDate[] = []
 
-  for (const sd of dates) {
+  for (const sd of dedupeSpecialDates(dates)) {
     const cd = computeSpecialDateCountdown(sd, now)
     if (cd) valid.push(cd)
     else invalid.push(sd)
