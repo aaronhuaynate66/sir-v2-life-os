@@ -21,6 +21,12 @@ function norm(s: string): string {
  * clave, por tipo de hueco. Para huecos de persona exige además que la persona
  * esté NOMBRADA en la pregunta (no preguntar de la nada).
  */
+const GOAL_TITLE_STOP = new Set([
+  'como', 'cliente', 'clientes', 'nuevo', 'nueva', 'para', 'sobre', 'desde', 'hasta',
+  'cuando', 'donde', 'cada', 'todo', 'toda', 'todos', 'mejor', 'mejorar', 'mas',
+  'cosa', 'tema', 'parte', 'forma', 'cosas', 'recurrente', 'mensual', 'anual',
+])
+
 export function gapMatchesIntent(gap: KnowledgeGap, question: string): boolean {
   const q = norm(question)
   const firstName = norm(gap.entityName.split(/\s+/)[0] || '')
@@ -43,7 +49,9 @@ export function gapMatchesIntent(gap: KnowledgeGap, question: string): boolean {
     }
     case 'goal_next_action': {
       // Pregunta sobre AVANZAR ese objetivo (por título o por "objetivo").
-      const titleTokens = norm(gap.entityName).split(/\s+/).filter((t) => t.length >= 4)
+      // Filtra palabras COMUNES del título (como/cliente/nuevo…) para no matchear
+      // por ruido (bug: "Cerrar X como cliente" matcheaba "¿cómo voy?").
+      const titleTokens = norm(gap.entityName).split(/\s+/).filter((t) => t.length >= 4 && !GOAL_TITLE_STOP.has(t))
       const mentionsGoal = titleTokens.some((t) => q.includes(t)) || q.includes('objetivo') || q.includes('meta')
       const kw = [
         'que hago', 'que deberia hacer', 'proximo paso', 'siguiente paso',
