@@ -372,16 +372,9 @@ export function PersonDetail({
       </header>
 
 
-      {/* "Antes de contactar": cabecera discreta que COMPLEMENTA la franja de
-          resumen de abajo. Lo que el strip no cubre y te deja listo para el
-          momento justo — actividad reciente (tags de memorias) + notas privadas
-          verbatim (discretas, nunca a IA). Determinístico; se oculta si no hay
-          nada que aportar. */}
-      <AntesDeContactar personId={live.id} memories={memories} />
-
-      {/* Franja de resumen (síntesis V1): lo primero que se ve al abrir la
-          persona. Ciclo + próxima fecha + última interacción + score + próxima
-          acción accionable, todo sintetizado por buildPersonSummary (pura). */}
+      {/* F2: INFORMACIÓN primero. La franja de resumen (síntesis: quién es +
+          estado + score + próxima acción) lidera la ficha; recién después lo
+          accionable de "Antes de contactar". */}
       <ResumenPersona
         person={live}
         lastChatObservedAt={lastChat?.observedAt ?? null}
@@ -389,6 +382,11 @@ export function PersonDetail({
           personLogs.find((l) => l.kind === 'interaction')?.loggedAt ?? null
         }
       />
+
+      {/* "Antes de contactar": lo accionable que te deja listo para el momento
+          justo — actividad reciente (tags de memorias) + notas privadas verbatim
+          (discretas, nunca a IA). Determinístico; se oculta si no aporta nada. */}
+      <AntesDeContactar personId={live.id} memories={memories} />
 
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
