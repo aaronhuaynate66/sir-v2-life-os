@@ -31,7 +31,7 @@ import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
-import { selectInlineGap, detectContextualGap, type ContextualSignal } from '@/lib/gaps/inline'
+import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
 import type { Person, Goal } from '@/types'
 
 export const runtime = 'nodejs'
@@ -241,7 +241,33 @@ export async function POST(req: NextRequest) {
   // último que SIR sabe de esa persona fue tenso, pregunta si ya hablaron antes
   // de aconsejar. Respuesta efímera (no persiste). Corta antes del modelo.
   if (!skipInlineGaps) {
+    // Deals abiertos → señal de "deal estancado" (best-effort; la tabla deals no
+    // está en el tipo generado, el .from() compila igual).
+    let dealSignals: DealSignal[] = []
+    try {
+      const { data: dealRows } = await supabase
+        .from('deals')
+        .select('id, title, contact_person_id, status, next_action, next_action_date, updated_at')
+        .eq('user_id', userId)
+        .eq('status', 'open')
+        .limit(50)
+      dealSignals = ((dealRows as Array<Record<string, unknown>>) ?? []).map((d) => {
+        const cpid = (d.contact_person_id as string | null) ?? null
+        const cname = cpid ? namesById.get(cpid) ?? null : null
+        return {
+          id: d.id as string,
+          title: (d.title as string) ?? '',
+          contactFirst: cname ? cname.split(/\s+/)[0] : null,
+          status: (d.status as string) ?? 'open',
+          nextAction: (d.next_action as string | null) ?? null,
+          nextActionDate: (d.next_action_date as string | null) ?? null,
+          updatedAt: (d.updated_at as string | null) ?? null,
+        }
+      })
+    } catch { dealSignals = [] }
+
     const ctxGap = detectContextualGap(question, ctxSignals, dismissedGaps)
+      ?? detectDealGap(question, dealSignals, dismissedGaps)
     if (ctxGap) {
       return NextResponse.json(
         {

@@ -87,8 +87,8 @@ export function selectInlineGap(
 
 export interface ContextualGap {
   key: string
-  kind: 'post_conflict_contact' | 'stale_knowledge'
-  entity: 'person'
+  kind: 'post_conflict_contact' | 'stale_knowledge' | 'deal_stalled'
+  entity: 'person' | 'deal'
   entityId: string
   entityName: string
   question: string
@@ -118,7 +118,7 @@ const CONTACT_INTENT = [
 // hueco de "conocimiento viejo".
 const ADVICE_INTENT = [
   ...CONTACT_INTENT,
-  'como esta', 'como anda', 'como va', 'como sigue', 'que hago con', 'que sabes de',
+  'como esta', 'como anda', 'como va', 'como voy', 'voy con', 'como sigue', 'que hago con', 'que sabes de',
   'contame de', 'que onda con', 'como la veo', 'como lo veo', 'que tal', 'novedad',
   'como esta la cosa con', 'que pasa con',
 ]
@@ -179,6 +179,62 @@ export function detectContextualGap(
           }
         }
       }
+    }
+  }
+  return null
+}
+
+
+export interface DealSignal {
+  id: string
+  title: string
+  /** Primer nombre del contacto del deal (para matchear por persona). */
+  contactFirst: string | null
+  status: string            // open|won|lost|paused
+  nextAction: string | null
+  nextActionDate: string | null  // YYYY-MM-DD
+  updatedAt: string | null        // ISO
+}
+
+const DEAL_WORDS = ['oportunidad', 'deal', 'lead', 'cliente', 'negocio', 'propuesta', 'cuenta', 'venta', 'licitacion', 'licitación']
+const DEAL_STALE_DAYS = 14
+
+/**
+ * ¿Hay un deal ABIERTO, estancado y mencionado en la consulta? Estancado =
+ * sin próximo paso, o con próximo paso VENCIDO, o sin novedad hace >14 días.
+ * Mencionado = por título, por el contacto, o por palabra genérica de deal +
+ * intención de estado/consejo. Pregunta efímera (no persiste).
+ */
+export function detectDealGap(
+  question: string,
+  deals: DealSignal[],
+  dismissed: Set<string> = new Set(),
+  now: Date = new Date(),
+): ContextualGap | null {
+  const q = norm(question)
+  if (!ADVICE_INTENT.some((k) => q.includes(k)) && !DEAL_WORDS.some((k) => q.includes(k))) return null
+  const todayISO = now.toISOString().slice(0, 10)
+  for (const d of deals) {
+    if (d.status !== 'open') continue
+    const titleTokens = norm(d.title).split(/\s+/).filter((t) => t.length >= 4)
+    const byTitle = titleTokens.some((t) => q.includes(t))
+    const byContact = !!d.contactFirst && norm(d.contactFirst).length >= 3 && q.includes(norm(d.contactFirst))
+    const byGeneric = DEAL_WORDS.some((k) => q.includes(k))
+    if (!(byTitle || byContact || byGeneric)) continue
+
+    const noNext = !(d.nextAction ?? '').trim()
+    const overdue = !!d.nextActionDate && d.nextActionDate < todayISO
+    const staleUpdate = !!d.updatedAt && Number.isFinite(daysBetween(d.updatedAt.slice(0, 10), now)) && daysBetween(d.updatedAt.slice(0, 10), now) >= DEAL_STALE_DAYS
+    if (!(noNext || overdue || staleUpdate)) continue
+
+    const key = `ctx_dealstalled:${d.id}`
+    if (dismissed.has(key)) continue
+    const why = noNext ? 'no le tengo próximo paso' : overdue ? 'el próximo paso quedó vencido' : 'no registro novedad hace rato'
+    return {
+      key, kind: 'deal_stalled', entity: 'deal', entityId: d.id,
+      entityName: d.title,
+      question: `Con "${d.title}" ${why}. ¿Avanzó algo o sigue igual?`,
+      inputType: 'text', ephemeral: true,
     }
   }
   return null
