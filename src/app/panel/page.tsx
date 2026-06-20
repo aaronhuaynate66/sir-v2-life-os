@@ -469,6 +469,32 @@ function DashboardContent() {
 
       {!simplified && (
         <>
+      {/* Objetivos: SIEMPRE visible (Aaron) — fuera del cluster colapsable. */}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.08 }} className="mb-6">
+        <Card className={cardClass}>
+          <CardContent className="p-4 sm:p-6">
+            <SectionTitle icon={Target} label="Objetivos" count={`${goalsDash.criticalGoals.length} criticos`} />
+            {goalsDash.criticalGoals.length === 0 ? (
+              <div className="text-xs text-muted-foreground/70 py-2">Sin objetivos críticos.</div>
+            ) : (
+              <div className="space-y-3">
+                {goalsDash.criticalGoals.slice(0, 3).map((g) => (
+                  <div key={g.id}>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm truncate">{g.title}</span>
+                      <span className="text-xs font-mono tabular-nums text-muted-foreground">{g.progress}%</span>
+                    </div>
+                    <div className="h-1 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-1 rounded-full bg-brand transition-all duration-300" style={{ width: `${g.progress}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* M1: encabezado-toggle del cluster secundario (métricas + registro). */}
       <button type="button" onClick={toggleSecondary}
         className="w-full flex items-center gap-2 mb-4 py-2 text-left border-t border-border/40 pt-4 group">
@@ -478,7 +504,7 @@ function DashboardContent() {
       {secondaryOpen && (
         <>
       {/* Métricas secundarias: Bio, Finanzas, Objetivos */}
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <Card className={cardClass}>
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Brain} label="Estado Biológico" />
@@ -527,28 +553,6 @@ function DashboardContent() {
           </CardContent>
         </Card>
 
-        <Card className={cn('sm:col-span-2 lg:col-span-1', cardClass)}>
-          <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Target} label="Objetivos" count={`${goalsDash.criticalGoals.length} criticos`} />
-            {goalsDash.criticalGoals.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-2">Sin objetivos críticos.</div>
-            ) : (
-              <div className="space-y-3">
-                {goalsDash.criticalGoals.slice(0, 3).map((g) => (
-                  <div key={g.id}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm truncate">{g.title}</span>
-                      <span className="text-xs font-mono tabular-nums text-muted-foreground">{g.progress}%</span>
-                    </div>
-                    <div className="h-1 bg-secondary rounded-full overflow-hidden">
-                      <div className="h-1 rounded-full bg-brand transition-all duration-300" style={{ width: `${g.progress}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </motion.div>
 
       {/* (Alertas relacionales + señales activas se movieron a la columna
