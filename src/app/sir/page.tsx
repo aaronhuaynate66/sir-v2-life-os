@@ -6,7 +6,7 @@
 // v1 NO ejecuta acciones — solo lee y responde/sugiere (POST /api/sir/ask).
 
 import { useEffect, useRef, useState } from 'react'
-import { Sparkles, Send, Loader2, ArrowLeft, User, Check, X, CalendarCheck } from 'lucide-react'
+import { Sparkles, Send, Loader2, ArrowLeft, User, Check, X, CalendarCheck, Mic, MicOff } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
@@ -76,9 +76,47 @@ const SUGGESTIONS = [
   '¿Cómo voy con mis objetivos?',
 ]
 
+interface SpeechLike {
+  lang: string
+  interimResults: boolean
+  continuous: boolean
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
+  onend: (() => void) | null
+  onerror: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+
 export default function SirChatPage() {
   const [turns, setTurns] = useState<Turn[]>([])
   const [input, setInput] = useState('')
+  // Dictado por voz (#86): Web Speech API nativa. Feature-detect; si no hay, no
+  // se muestra el botón. Reemplaza el input con la transcripción (es-PE).
+  const recognitionRef = useRef<SpeechLike | null>(null)
+  const [listening, setListening] = useState(false)
+  const [voiceOk, setVoiceOk] = useState(false)
+  useEffect(() => {
+    const w = window as unknown as { SpeechRecognition?: new () => SpeechLike; webkitSpeechRecognition?: new () => SpeechLike }
+    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition
+    if (!Ctor) return
+    const rec = new Ctor()
+    rec.lang = 'es-PE'; rec.interimResults = true; rec.continuous = false
+    rec.onresult = (e) => {
+      let txt = ''
+      for (let i = 0; i < e.results.length; i++) txt += e.results[i][0]?.transcript ?? ''
+      setInput(txt)
+    }
+    rec.onend = () => setListening(false)
+    rec.onerror = () => setListening(false)
+    recognitionRef.current = rec
+    setVoiceOk(true)
+  }, [])
+  function toggleVoice() {
+    const rec = recognitionRef.current
+    if (!rec) return
+    if (listening) { try { rec.stop() } catch { /* */ }; setListening(false) }
+    else { setInput(''); try { rec.start(); setListening(true); track(EVENTS.sirVoiceUsed) } catch { /* */ } }
+  }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -547,6 +585,17 @@ export default function SirChatPage() {
             className="flex-1 resize-none bg-transparent px-2 py-1.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
             disabled={loading}
           />
+          {voiceOk && (
+            <button
+              type="button"
+              onClick={toggleVoice}
+              className={`rounded-xl p-2 ${listening ? 'bg-bad text-white animate-pulse' : 'text-muted-foreground hover:text-foreground'}`}
+              aria-label={listening ? 'Detener dictado' : 'Dictar por voz'}
+              title={listening ? 'Detener dictado' : 'Dictar por voz'}
+            >
+              {listening ? <MicOff size={18} /> : <Mic size={18} />}
+            </button>
+          )}
           <button
             type="submit"
             disabled={loading || !input.trim()}
