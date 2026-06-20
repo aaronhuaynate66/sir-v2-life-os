@@ -2,12 +2,13 @@
 // SIR V2 — Página visual del motor "¿qué pasó el día X?". Elegís una fecha y SIR
 // cruza TODO lo de ese día (interacciones, capturas, deals, pasos OKR, salud,
 // score relacional, luna). Reusa GET /api/day. Complementa el chat.
+// Cabecera de ÁNIMO del día (dayMood, determinístico) para darle peso emocional.
 
 import { useCallback, useEffect, useState } from 'react'
-import { CalendarDays, Loader2, ChevronLeft, ChevronRight, Moon } from 'lucide-react'
+import { CalendarDays, Loader2, ChevronLeft, ChevronRight, Moon, AlertTriangle, Heart, Minus } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { todayLimaKey } from '@/lib/dates/limaDay'
-import type { DaySlices } from '@/lib/day/dayContext'
+import { dayMood, type DaySlices, type DayTone } from '@/lib/day/dayContext'
 
 function shift(date: string, d: number): string {
   const [y, m, dd] = date.split('-').map(Number)
@@ -15,6 +16,18 @@ function shift(date: string, d: number): string {
   return dt.toISOString().slice(0, 10)
 }
 const QUAL = ['', 'muy tensa', 'tensa', 'neutral', 'cálida', 'plena']
+
+const MOOD_STYLE: Record<DayTone, { box: string; icon: typeof AlertTriangle; label: string }> = {
+  tense: { box: 'border-warn/40 bg-warn-soft/40 text-warn-foreground', icon: AlertTriangle, label: 'Día tenso' },
+  warm: { box: 'border-ok/40 bg-ok-soft/40 text-ok', icon: Heart, label: 'Buen día' },
+  calm: { box: 'border-border bg-card text-foreground/80', icon: Minus, label: 'Día tranquilo' },
+  empty: { box: 'border-border bg-card text-muted-foreground', icon: Minus, label: 'Sin registros' },
+}
+
+function fmtLong(date: string): string {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+}
 
 export default function DiaPage() {
   const [date, setDate] = useState(() => todayLimaKey())
@@ -30,8 +43,9 @@ export default function DiaPage() {
   }, [])
   useEffect(() => { void load(date) }, [date, load])
 
-  const empty = slices && !slices.interactions.length && !slices.observations.length &&
-    !slices.deals.length && !slices.steps.length && !slices.health.length && !slices.scoreMoves.length
+  const mood = slices ? dayMood(slices) : null
+  const today = todayLimaKey()
+  const quick: [string, string][] = [['Hoy', today], ['Ayer', shift(today, -1)], ['Anteayer', shift(today, -2)]]
 
   return (
     <AppShell>
@@ -41,27 +55,67 @@ export default function DiaPage() {
           <h1 className="text-2xl font-bold text-foreground">¿Qué pasó el día…?</h1>
         </header>
 
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setDate((d) => shift(d, -1))} className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground"><ChevronLeft size={16} /></button>
-          <input type="date" value={date} max={todayLimaKey()} onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground" />
-          <button type="button" onClick={() => setDate((d) => (d < todayLimaKey() ? shift(d, 1) : d))} className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground"><ChevronRight size={16} /></button>
-          {slices?.moonLabel && <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground"><Moon size={13} /> {slices.moonLabel}</span>}
+        <div className="flex items-center gap-2 flex-wrap">
+          {quick.map(([label, d]) => (
+            <button key={label} type="button" onClick={() => setDate(d)}
+              className={`rounded-full border px-3 py-1 text-xs ${date === d ? 'border-brand bg-brand text-brand-foreground' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+              {label}
+            </button>
+          ))}
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" onClick={() => setDate((d) => shift(d, -1))} aria-label="Día anterior" className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground"><ChevronLeft size={16} /></button>
+            <input type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)}
+              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground" />
+            <button type="button" onClick={() => setDate((d) => (d < today ? shift(d, 1) : d))} aria-label="Día siguiente" className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground"><ChevronRight size={16} /></button>
+          </div>
         </div>
 
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cruzando el día…</div>
-        ) : !slices ? null : empty ? (
-          <p className="text-sm text-muted-foreground">Sin registros ese día.</p>
-        ) : (
-          <div className="space-y-4">
-            <Block title="Interacciones" rows={slices.interactions.map((i) => ({ k: i.person, v: `${i.quality != null ? (QUAL[i.quality] ?? i.quality) + (i.note ? ' · ' : '') : ''}${i.note ?? ''}` }))} />
-            <Block title="Conversaciones / capturas" rows={slices.observations.map((o) => ({ k: o.person, v: o.summary }))} />
-            <Block title="Oportunidades" rows={slices.deals.map((d) => ({ k: d.title, v: d.what }))} />
-            <Block title="Objetivos (pasos)" rows={slices.steps.map((s) => ({ k: s.goal, v: s.step }))} />
-            <Block title="Salud" rows={slices.health.map((h) => ({ k: h.label, v: h.value }))} />
-            <Block title="Vínculos (score ese día)" rows={slices.scoreMoves.map((m) => ({ k: m.person, v: `${m.global}/100${m.delta != null && m.delta !== 0 ? ` (${m.delta > 0 ? '+' : ''}${m.delta})` : ''}` }))} />
-          </div>
+        ) : !slices || !mood ? null : (
+          <>
+            {(() => {
+              const st = MOOD_STYLE[mood.tone]; const Icon = st.icon
+              return (
+                <div className={`rounded-lg border p-4 ${st.box}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon size={15} aria-hidden="true" />
+                    <span className="text-[11px] uppercase tracking-[0.07em] font-medium">{st.label}</span>
+                    <span className="ml-auto text-xs opacity-70 capitalize">{fmtLong(date)}</span>
+                    {slices.moonLabel && <span className="inline-flex items-center gap-1 text-xs opacity-70"><Moon size={12} /> {slices.moonLabel}</span>}
+                  </div>
+                  <p className="text-sm leading-relaxed">{mood.headline}</p>
+                </div>
+              )
+            })()}
+
+            {mood.tone === 'empty' ? null : (
+              <div className="space-y-4">
+                {slices.interactions.length > 0 && (
+                  <section className="rounded-lg border border-border bg-card p-4">
+                    <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">Interacciones</h2>
+                    <div className="space-y-1.5">
+                      {slices.interactions.map((i, idx) => {
+                        const tense = i.quality != null && i.quality <= 2
+                        const warm = i.quality != null && i.quality >= 4
+                        return (
+                          <div key={idx} className={`text-[13px] border-l-2 pl-2 ${tense ? 'border-l-warn' : warm ? 'border-l-ok' : 'border-l-border'}`}>
+                            <span className="font-medium text-foreground">{i.person}</span>
+                            <span className="text-muted-foreground">{i.quality != null ? ` · ${QUAL[i.quality] ?? i.quality}` : ''}{i.note ? ` — ${i.note}` : ''}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )}
+                <Block title="Conversaciones / capturas" rows={slices.observations.map((o) => ({ k: o.person, v: o.summary }))} />
+                <Block title="Oportunidades" rows={slices.deals.map((d) => ({ k: d.title, v: d.what }))} />
+                <Block title="Objetivos (pasos)" rows={slices.steps.map((s) => ({ k: s.goal, v: s.step }))} />
+                <Block title="Salud" rows={slices.health.map((h) => ({ k: h.label, v: h.value }))} />
+                <Block title="Vínculos (score ese día)" rows={slices.scoreMoves.map((m) => ({ k: m.person, v: `${m.global}/100${m.delta != null && m.delta !== 0 ? ` (${m.delta > 0 ? '+' : ''}${m.delta})` : ''}` }))} />
+              </div>
+            )}
+          </>
         )}
       </div>
     </AppShell>
