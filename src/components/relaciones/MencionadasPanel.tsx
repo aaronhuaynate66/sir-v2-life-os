@@ -144,11 +144,17 @@ export function MencionadasPanel({ personId, personName, specialDates }: Props) 
   return (
     <Card className="shadow-none mb-4 border-brand/20 bg-brand-soft/10">
       <CardContent className="p-4 sm:p-5">
-        <div className="flex items-center gap-2 mb-1">
-          <UserPlus size={15} strokeWidth={1.75} className="text-brand-soft-foreground" aria-hidden="true" />
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Personas mencionadas — ¿crear?</div>
-        </div>
-        <p className="text-[11px] text-muted-foreground mb-3">
+        {/* Colapsable (F1): es una TAREA, no info — cerrada por defecto para no
+            dominar la ficha. El badge con el conteo deja claro que hay algo. */}
+        <details className="group">
+          <summary className="flex items-center gap-2 cursor-pointer select-none list-none">
+            <UserPlus size={15} strokeWidth={1.75} className="text-brand-soft-foreground" aria-hidden="true" />
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Personas mencionadas — ¿revisar?</span>
+            <span className="ml-1 rounded-full bg-brand/15 text-brand-soft-foreground text-[10px] font-mono px-1.5 py-0.5">{visible.length}</span>
+            <span className="ml-auto text-[11px] text-muted-foreground group-open:hidden">ver ▸</span>
+            <span className="ml-auto text-[11px] text-muted-foreground hidden group-open:inline">ocultar ▾</span>
+          </summary>
+        <p className="text-[11px] text-muted-foreground mb-3 mt-3">
           Detecté terceros en sus fechas importantes. Confirmá para crearlos como contacto + vínculo + cumple. Si ya lo tenés, te ofrezco vincularlo.
         </p>
         <div className="space-y-3">
@@ -200,6 +206,7 @@ export function MencionadasPanel({ personId, personName, specialDates }: Props) 
             )
           })}
         </div>
+        </details>
       </CardContent>
     </Card>
   )

@@ -377,8 +377,6 @@ export function PersonDetail({
           momento justo — actividad reciente (tags de memorias) + notas privadas
           verbatim (discretas, nunca a IA). Determinístico; se oculta si no hay
           nada que aportar. */}
-      <MencionadasPanel personId={live.id} personName={live.name} specialDates={live.specialDates} />
-
       <AntesDeContactar personId={live.id} memories={memories} />
 
       {/* Franja de resumen (síntesis V1): lo primero que se ve al abrir la
@@ -641,6 +639,10 @@ export function PersonDetail({
 
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
       <FechasImportantes person={live} />
+
+      {/* Personas mencionadas (F1): es una TAREA derivada de las fechas →
+          vive acá, junto a ellas, y colapsada por defecto (no domina la ficha). */}
+      <MencionadasPanel personId={live.id} personName={live.name} specialDates={live.specialDates} />
 
       {/* ─── Lunar + Ciclo: estado actual por persona. Solo si es mujer
           (o ya tiene datos de ciclo cargados, p. ej. registros legacy). ─── */}
