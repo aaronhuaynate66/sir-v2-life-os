@@ -1,3 +1,4 @@
+import { detectDealGap } from './inline'
 import { describe, it, expect } from 'vitest'
 import { selectInlineGap, gapMatchesIntent } from './inline'
 import type { Person, Goal } from '@/types'
@@ -137,5 +138,34 @@ describe('detectContextualGap — conocimiento viejo (stale)', () => {
 
   it('respeta el descarte del stale (este turno)', () => {
     expect(detectContextualGap('¿cómo está Alvaro?', [sig()], new Set(['ctx_stale:p9']), NOW)).toBeNull()
+  })
+})
+
+describe('detectDealGap — deal estancado', () => {
+  const NOW = new Date('2026-06-20T12:00:00Z')
+  const deal = (over: Partial<{ id: string; title: string; contactFirst: string | null; status: string; nextAction: string | null; nextActionDate: string | null; updatedAt: string | null }> = {}) => ({
+    id: 'd1', title: 'Sienna Minerals seguridad', contactFirst: 'Ivis', status: 'open', nextAction: null, nextActionDate: null, updatedAt: '2026-06-18', ...over,
+  })
+  it('pregunta si menciona el deal por título y no hay próximo paso', () => {
+    const g = detectDealGap('¿cómo voy con Sienna?', [deal()], new Set(), NOW)
+    expect(g?.kind).toBe('deal_stalled')
+    expect(g?.entity).toBe('deal')
+  })
+  it('pregunta por contacto + palabra genérica', () => {
+    const g = detectDealGap('¿qué hago con la oportunidad de Ivis?', [deal()], new Set(), NOW)
+    expect(g?.kind).toBe('deal_stalled')
+  })
+  it('NO pregunta si el deal tiene próximo paso futuro y update reciente', () => {
+    expect(detectDealGap('¿cómo voy con Sienna?', [deal({ nextAction: 'Reunión Teams', nextActionDate: '2026-06-22', updatedAt: '2026-06-19' })], new Set(), NOW)).toBeNull()
+  })
+  it('pregunta si el próximo paso quedó vencido', () => {
+    const g = detectDealGap('¿cómo voy con Sienna?', [deal({ nextAction: 'Llamar', nextActionDate: '2026-06-10', updatedAt: '2026-06-19' })], new Set(), NOW)
+    expect(g?.kind).toBe('deal_stalled')
+  })
+  it('NO pregunta si el deal está cerrado', () => {
+    expect(detectDealGap('¿cómo voy con Sienna?', [deal({ status: 'won' })], new Set(), NOW)).toBeNull()
+  })
+  it('respeta el descarte', () => {
+    expect(detectDealGap('¿cómo voy con Sienna?', [deal()], new Set(['ctx_dealstalled:d1']), NOW)).toBeNull()
   })
 })
