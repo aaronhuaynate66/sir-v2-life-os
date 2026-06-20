@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b4a9750`
+**Hash del último commit humano:** `2ee3d38`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2ee3d38` | aaronhuaynate66 | feat(sir): gap contextual 'conocimiento viejo' (#114) (#304) | 2026-06-20 |
 | `b4a9750` | aaronhuaynate66 | feat(ui): Objetivos siempre visible en Mission Control (#303) | 2026-06-20 |
 | `07a873b` | aaronhuaynate66 | feat(ui): P4 M1+M2 — Mission Control menos denso (#302) | 2026-06-20 |
 | `451c405` | aaronhuaynate66 | feat(ui): P4 F1+R1 — info antes que tareas (#301) | 2026-06-20 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `035c364` | aaronhuaynate66 | feat(relaciones): personas mencionadas idempotentes (P2) (#297) | 2026-06-19 |
 | `bfef451` | aaronhuaynate66 | feat(sir): gap-engine contextual — pregunta por la SITUACIÓN, no solo el dato (#296) | 2026-06-19 |
 | `380d5ec` | aaronhuaynate66 | feat(sir): gap-engine inline — SIR pregunta UNA pieza clave antes de responder (#295) | 2026-06-19 |
-| `c45733b` | aaronhuaynate66 | feat(intake): pre-seleccionar match fuerte e inequívoco (confirmar en 1 click) (#294) | 2026-06-19 |
 
 ---
 
