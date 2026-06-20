@@ -146,6 +146,19 @@ function DashboardContent() {
   const recoveryHard = recoveryAssessment.severity === 'hard'
   // En recuperación dura simplificamos la UI; el usuario puede expandir igual.
   const [showAll, setShowAll] = useState(false)
+  // M1: el cluster de métricas secundarias arranca COLAPSADO (menos densidad al
+  // entrar); la preferencia se recuerda en localStorage.
+  const [secondaryOpen, setSecondaryOpen] = useState(false)
+  useEffect(() => {
+    try { setSecondaryOpen(localStorage.getItem('sir-panel-secondary-open') === '1') } catch { /* */ }
+  }, [])
+  function toggleSecondary() {
+    setSecondaryOpen((v) => {
+      const next = !v
+      try { localStorage.setItem('sir-panel-secondary-open', next ? '1' : '0') } catch { /* */ }
+      return next
+    })
+  }
   const simplified = recoveryHard && !showAll
   // Captura rápida colapsada por defecto (silencio visual): la captura
   // principal vive en /captura; estos formularios quedan a un tap.
@@ -290,8 +303,7 @@ function DashboardContent() {
           que en mobile tapaba el header sticky y el botón de menú — removido. */}
       <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex justify-between items-start gap-4 mb-6 sm:mb-8">
         <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">SIR V2 &mdash; Life Operating System</div>
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Mission Control</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Mission Control</h1>
           <div className="flex items-center gap-2 flex-wrap mt-1">
             <span className="text-xs sm:text-sm text-muted-foreground capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</span>
             {now && <LunarChip date={now} />}
@@ -456,6 +468,14 @@ function DashboardContent() {
       )}
 
       {!simplified && (
+        <>
+      {/* M1: encabezado-toggle del cluster secundario (métricas + registro). */}
+      <button type="button" onClick={toggleSecondary}
+        className="w-full flex items-center gap-2 mb-4 py-2 text-left border-t border-border/40 pt-4 group">
+        <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Métricas y registro</span>
+        <span className="ml-auto text-[11px] text-muted-foreground">{secondaryOpen ? 'ocultar ▾' : 'mostrar ▸'}</span>
+      </button>
+      {secondaryOpen && (
         <>
       {/* Métricas secundarias: Bio, Finanzas, Objetivos */}
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -628,6 +648,8 @@ function DashboardContent() {
             Volver al modo recuperación (vista simple)
           </Button>
         </div>
+      )}
+        </>
       )}
         </>
       )}
