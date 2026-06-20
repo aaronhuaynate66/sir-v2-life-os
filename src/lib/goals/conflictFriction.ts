@@ -21,6 +21,10 @@ const STOPWORDS = new Set([
   'mi','tu','su','el','la','de','en','un','y','a','o','e','u','se','le','lo','al',
   'me','te','nos','es','son','fue','han','hay','ya','si','no','conversacion',
   'reciente','tensa','tono','inferido','chat','importado','pelea','contarle',
+  // genéricas de conversación (evitan match por ruido; las específicas como
+  // 'mundial'/'bomberos'/'dubai' SÍ pasan):
+  'reunion','reunión','tema','temas','area','área','equipo','empresa','empresas',
+  'cosa','cosas','charla','llamada','hoy','ayer','vimos','tocamos','dijo','dije',
 ])
 
 /** Tokens significativos de un texto: normaliza (sin tildes, minúsculas),
