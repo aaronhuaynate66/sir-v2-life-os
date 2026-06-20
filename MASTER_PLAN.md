@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ee67ceb`
+**Hash del último commit humano:** `5178128`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `5178128` | aaronhuaynate66 | feat(sir): gap contextual 'deal estancado' (#114) (#306) | 2026-06-20 |
 | `ee67ceb` | aaronhuaynate66 | feat(dia): página /dia con ánimo del día + navegación (visión norte) (#305) | 2026-06-20 |
 | `2ee3d38` | aaronhuaynate66 | feat(sir): gap contextual 'conocimiento viejo' (#114) (#304) | 2026-06-20 |
 | `b4a9750` | aaronhuaynate66 | feat(ui): Objetivos siempre visible en Mission Control (#303) | 2026-06-20 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `14d90d8` | aaronhuaynate66 | feat(relaciones): última interacción honesta — muestra el último intercambio real (P3) (#299) | 2026-06-19 |
 | `af6b253` | aaronhuaynate66 | feat(relaciones): barra de búsqueda que filtra al tipear (P1) (#298) | 2026-06-19 |
 | `035c364` | aaronhuaynate66 | feat(relaciones): personas mencionadas idempotentes (P2) (#297) | 2026-06-19 |
-| `bfef451` | aaronhuaynate66 | feat(sir): gap-engine contextual — pregunta por la SITUACIÓN, no solo el dato (#296) | 2026-06-19 |
 
 ---
 
