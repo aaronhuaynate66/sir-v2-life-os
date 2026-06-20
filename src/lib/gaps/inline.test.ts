@@ -10,7 +10,7 @@ const person = (over: Partial<Person>): Person => ({
   ...over,
 }) as Person
 
-const goal = (over: Partial<Goal>): Goal => ({
+const goal = (over: Partial<Goal> = {}): Goal => ({
   id: 'g1', title: 'Ir al Mundial', description: '', category: 'personal',
   priority: 'high', status: 'active', progress: 0, milestones: [], relatedGoals: [],
   relatedPersons: [], peaceImpact: 8, obstacles: [], nextAction: '',
@@ -167,5 +167,22 @@ describe('detectDealGap — deal estancado', () => {
   })
   it('respeta el descarte', () => {
     expect(detectDealGap('¿cómo voy con Sienna?', [deal()], new Set(['ctx_dealstalled:d1']), NOW)).toBeNull()
+  })
+})
+
+
+describe('gap de objetivo — no falso positivo por palabras comunes', () => {
+  const goal = (over: Partial<Goal> = {}): Goal => ({
+    id: 'g1', title: 'Cerrar Boticas Jhodaal como cliente de Marlab', description: '', category: 'work',
+    priority: 'high', status: 'active', progress: 0, milestones: [], relatedGoals: [],
+    relatedPersons: [], peaceImpact: 5, obstacles: [], nextAction: '', createdAt: '', updatedAt: '',
+    ...over,
+  }) as Goal
+  it('NO matchea por "como" cuando la consulta es de otra cosa', () => {
+    expect(selectInlineGap('¿cómo voy con la oportunidad de Sienna?', [], [goal()])).toBeNull()
+  })
+  it('SÍ matchea por un token real del título', () => {
+    const g = selectInlineGap('¿qué hago para avanzar con Boticas?', [], [goal()])
+    expect(g?.kind).toBe('goal_next_action')
   })
 })
