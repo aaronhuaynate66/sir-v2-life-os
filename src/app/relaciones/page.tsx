@@ -253,6 +253,29 @@ function RelationshipsContent() {
         </div>
       </div>
 
+      {/* Buscador (R1): al TOPE, sticky, antes de los paneles de oportunidades/
+          acciones — para encontrar un contacto sin pasar todos los paneles. */}
+      {people.length > 0 && (
+        <div className="sticky top-0 z-20 -mx-1 mb-4 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por nombre, alias o empresa…"
+              className="pl-9 pr-9"
+              aria-label="Buscar contactos"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery('')} aria-label="Limpiar búsqueda"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {alerts.length > 0 && (
         <div className="mb-6 space-y-2">
           <div className="flex items-center gap-2 mb-2">
@@ -441,25 +464,6 @@ function RelationshipsContent() {
             </div>
         </SheetContent>
       </Sheet>
-
-      {people.length > 0 && (
-        <div className="relative mb-3">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por nombre, alias o empresa…"
-            className="pl-9 pr-9"
-            aria-label="Buscar contactos"
-          />
-          {query && (
-            <button type="button" onClick={() => setQuery('')} aria-label="Limpiar búsqueda"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-              <X size={15} />
-            </button>
-          )}
-        </div>
-      )}
 
       {people.length > 0 && (
         <div className="flex items-center gap-1.5 mb-3 flex-wrap">
