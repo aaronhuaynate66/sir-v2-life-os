@@ -95,6 +95,7 @@ export default function DiaPage() {
                     <Icon size={15} aria-hidden="true" />
                     <span className="text-[11px] uppercase tracking-[0.07em] font-medium">{st.label}</span>
                     <span className="ml-auto text-xs opacity-70 capitalize">{fmtLong(date)}</span>
+                    {slices.weather && <span className="text-xs opacity-70">{slices.weather}</span>}
                     {slices.moonLabel && <span className="inline-flex items-center gap-1 text-xs opacity-70"><Moon size={12} /> {slices.moonLabel}</span>}
                   </div>
                   <p className="text-sm leading-relaxed">{mood.headline}</p>

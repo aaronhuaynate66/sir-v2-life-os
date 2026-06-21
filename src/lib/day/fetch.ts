@@ -7,6 +7,7 @@ import { moonPhase } from '@/lib/lunar/phase'
 import { HEALTH_METRIC_LABELS } from '@/lib/health-metrics/labels'
 import type { HealthMetricType } from '@/types'
 import { limaDayUtcWindow, type DaySlices } from './dayContext'
+import { fetchWeather } from './weather'
 
 const SELF_LABEL: Record<string, string> = {
   energy: 'Energía', mood: 'Ánimo', sleep: 'Sueño', pain: 'Dolor', stress: 'Estrés',
@@ -19,7 +20,7 @@ export async function fetchDayContext(
 ): Promise<DaySlices> {
   const { startUtc, endUtc } = limaDayUtcWindow(date)
   const slices: DaySlices = {
-    date, moonLabel: null, interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [],
+    date, moonLabel: null, interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null,
   }
   try { slices.moonLabel = moonPhase(new Date(`${date}T12:00:00.000Z`)).label } catch { /* */ }
 
@@ -151,6 +152,9 @@ export async function fetchDayContext(
       slices.signals.push({ content: (r.content || '').slice(0, 160), urgency: r.urgency || 'monitor' })
     }
   } catch { /* */ }
+
+  // 9. Señal externa: clima del día (Open-Meteo, Lima). Best-effort.
+  try { const w = await fetchWeather(date); if (w) slices.weather = w.label } catch { /* */ }
 
   return slices
 }
