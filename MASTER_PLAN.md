@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `8e78fba`
+**Hash del último commit humano:** `e2d87dd`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e2d87dd` | aaronhuaynate66 | feat(sir): modo perspectiva/espejo con guardrails de bienestar (#310) | 2026-06-21 |
 | `8e78fba` | aaronhuaynate66 | feat(ui): P4 F2 (ficha lidera con info) + #92 stopwords genéricas (#309) | 2026-06-20 |
 | `05650ab` | aaronhuaynate66 | feat(sir): dictado por voz en el chat (#86) (#308) | 2026-06-20 |
 | `6426e9e` | aaronhuaynate66 | fix(gap): no matchear el gap de objetivo por palabras comunes del título (#307) | 2026-06-20 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b4a9750` | aaronhuaynate66 | feat(ui): Objetivos siempre visible en Mission Control (#303) | 2026-06-20 |
 | `07a873b` | aaronhuaynate66 | feat(ui): P4 M1+M2 — Mission Control menos denso (#302) | 2026-06-20 |
 | `451c405` | aaronhuaynate66 | feat(ui): P4 F1+R1 — info antes que tareas (#301) | 2026-06-20 |
-| `c50986d` | aaronhuaynate66 | fix(fechas): dedup de fechas especiales al mostrar (legacy) (#300) | 2026-06-20 |
 
 ---
 
