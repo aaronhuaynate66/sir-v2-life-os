@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `8394b64`
+**Hash del último commit humano:** `df6ec04`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `df6ec04` | aaronhuaynate66 | feat(gaps): descarte del gap-engine cross-device (tabla gap_dismissals) (#312) | 2026-06-21 |
 | `8394b64` | aaronhuaynate66 | feat(sir): espejo de fuerza — el modo perspectiva trae tus propias palabras de fortaleza (#311) | 2026-06-21 |
 | `e2d87dd` | aaronhuaynate66 | feat(sir): modo perspectiva/espejo con guardrails de bienestar (#310) | 2026-06-21 |
 | `8e78fba` | aaronhuaynate66 | feat(ui): P4 F2 (ficha lidera con info) + #92 stopwords genéricas (#309) | 2026-06-20 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ee67ceb` | aaronhuaynate66 | feat(dia): página /dia con ánimo del día + navegación (visión norte) (#305) | 2026-06-20 |
 | `2ee3d38` | aaronhuaynate66 | feat(sir): gap contextual 'conocimiento viejo' (#114) (#304) | 2026-06-20 |
 | `b4a9750` | aaronhuaynate66 | feat(ui): Objetivos siempre visible en Mission Control (#303) | 2026-06-20 |
-| `07a873b` | aaronhuaynate66 | feat(ui): P4 M1+M2 — Mission Control menos denso (#302) | 2026-06-20 |
 
 ---
 
