@@ -75,6 +75,8 @@ export interface DayDeal { title: string; what: string }      // creado/actualiz
 export interface DayStep { goal: string; step: string }        // paso OKR completado
 export interface DayMetric { label: string; value: string }    // salud/score
 export interface DayScoreMove { person: string; global: number; delta: number | null }
+export interface DayFinance { type: string; amount: number; currency: string; description: string }
+export interface DaySignal { content: string; urgency: string }
 
 export interface DaySlices {
   date: string
@@ -85,6 +87,8 @@ export interface DaySlices {
   steps: DayStep[]
   health: DayMetric[]
   scoreMoves: DayScoreMove[]
+  finances: DayFinance[]
+  signals: DaySignal[]
 }
 
 const QUAL = ['', 'muy tensa', 'tensa', 'neutral', 'cálida', 'plena']
@@ -122,6 +126,16 @@ export function renderDayContext(s: DaySlices): string {
     L.push('Salud:')
     for (const h of s.health) L.push(`  - ${h.label}: ${h.value}`)
   }
+  if (s.finances.length) {
+    any = true
+    L.push('Finanzas:')
+    for (const fn of s.finances) L.push(`  - ${fn.type} ${fn.amount} ${fn.currency}: ${fn.description}`)
+  }
+  if (s.signals.length) {
+    any = true
+    L.push('Señales activas:')
+    for (const sg of s.signals) L.push(`  - [${sg.urgency}] ${sg.content}`)
+  }
   if (s.scoreMoves.length) {
     any = true
     L.push('Vínculos (score ese día):')
@@ -156,7 +170,7 @@ const firstNameMood = (n: string) => (n || '').trim().split(/\s+/)[0] || n
  *  roce; tranquilo si hubo registro pero nada marcado; vacío si no hubo nada. */
 export function dayMood(s: DaySlices): DayMood {
   const hasAny = !!(s.interactions.length || s.observations.length || s.deals.length ||
-    s.steps.length || s.health.length || s.scoreMoves.length)
+    s.steps.length || s.health.length || s.scoreMoves.length || s.finances.length || s.signals.length)
   if (!hasAny) return { tone: 'empty', headline: 'Sin registros ese día.' }
 
   const tense = s.interactions.filter((i) => i.quality != null && i.quality <= 2)
