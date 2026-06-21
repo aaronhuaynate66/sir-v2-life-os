@@ -203,6 +203,7 @@ export interface DealSignal {
   nextActionDate: string | null  // YYYY-MM-DD
   updatedAt: string | null        // ISO
   amount: number | null           // ticket; null/0 = sin cargar
+  stage: string                   // lead|reunion|relevamiento|propuesta|negociacion|...
 }
 
 const DEAL_WORDS = ['oportunidad', 'deal', 'lead', 'cliente', 'negocio', 'propuesta', 'cuenta', 'venta', 'licitacion', 'licitación']
@@ -246,8 +247,11 @@ export function detectDealGap(
         }
       }
     }
-    // Ticket sin cargar: deal abierto y mencionado pero sin monto.
-    if (!(d.amount != null && d.amount > 0)) {
+    // Ticket sin cargar: SOLO en etapas avanzadas (propuesta/negociación), donde
+    // ya tendrías un número. En lead/reunión/relevamiento el monto aún no se sabe
+    // (proceso B2B: reunión → técnica → propuesta) → no molestar.
+    const advanced = d.stage === 'propuesta' || d.stage === 'negociacion'
+    if (advanced && !(d.amount != null && d.amount > 0)) {
       const key = `ctx_dealticket:${d.id}`
       if (!dismissed.has(key)) {
         return {
