@@ -20,6 +20,8 @@ import { embedText, toPgVector } from '@/lib/embeddings/client'
 import {
   SIR_ASK_SYSTEM_PROMPT,
   buildAskContext,
+  isPerspectiveQuery,
+  selectStrengthMemories,
   extractCandidateNames,
   type AskPersonCtx,
   type AskMemoryHit,
@@ -311,12 +313,32 @@ export async function POST(req: NextRequest) {
       : 'Configurá la API key de Anthropic.')
   }
 
+  // ESPEJO DE FUERZA: si Aaron habla de cómo está, traemos SUS propias palabras
+  // de fortaleza (de todas sus memorias) para que SIR se las devuelva.
+  let strengths: string[] = []
+  if (isPerspectiveQuery(question)) {
+    try {
+      const { data: allMems } = await supabase
+        .from('memories')
+        .select('content, occurred_at')
+        .eq('user_id', userId)
+        .order('occurred_at', { ascending: false })
+        .limit(400)
+      strengths = selectStrengthMemories(
+        ((allMems as Array<{ content: string; occurred_at: string | null }>) ?? [])
+          .map((m) => ({ content: m.content, occurredAt: m.occurred_at })),
+        6,
+      )
+    } catch { strengths = [] }
+  }
+
   const context = buildAskContext({
     question,
     todayISO: todayLimaKey(),
     people: peopleCtx,
     memories: memoryHits,
     goals: goalsCtx,
+    strengths,
   })
 
   // MOTOR "¿qué pasó el día X?": si la pregunta apunta a una fecha, cruzamos

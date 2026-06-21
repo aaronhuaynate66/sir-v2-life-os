@@ -41,3 +41,32 @@ describe('buildAskContext', () => {
     expect(ctx).toContain('No se encontró data')
   })
 })
+
+import { isPerspectiveQuery, selectStrengthMemories } from './ask'
+
+describe('isPerspectiveQuery', () => {
+  it('detecta consultas de estado/ánimo', () => {
+    expect(isPerspectiveQuery('me siento como un barco hundiéndose')).toBe(true)
+    expect(isPerspectiveQuery('no doy más con todo')).toBe(true)
+    expect(isPerspectiveQuery('dame perspectiva')).toBe(true)
+  })
+  it('no se activa en consultas normales', () => {
+    expect(isPerspectiveQuery('¿cuándo cumple Francisco?')).toBe(false)
+    expect(isPerspectiveQuery('¿cómo voy con Sienna?')).toBe(false)
+  })
+})
+
+describe('selectStrengthMemories', () => {
+  it('selecciona memorias con léxico de fuerza, más recientes primero', () => {
+    const out = selectStrengthMemories([
+      { content: 'Hoy llovió', occurredAt: '2026-06-18' },
+      { content: 'Aaron: yo siempre puedo con todo, salí adelante antes', occurredAt: '2026-06-17' },
+      { content: 'Gané la medalla, fui campeón', occurredAt: '2026-06-19' },
+    ], 5)
+    expect(out.length).toBe(2)
+    expect(out[0]).toMatch(/campeón/i)   // 19 antes que 17
+  })
+  it('ignora memorias sin fuerza', () => {
+    expect(selectStrengthMemories([{ content: 'compré pan', occurredAt: '2026-06-18' }])).toHaveLength(0)
+  })
+})
