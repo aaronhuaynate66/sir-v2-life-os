@@ -4,7 +4,7 @@
 // terceros. Respondés → rellena el campo → el hueco desaparece. "No sé" →
 // no vuelve a preguntar (descarte persistido). Capa fina.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { HelpCircle, Check, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
@@ -31,6 +31,23 @@ export function KnowledgeGapPanel() {
   const updateGoal = useGoalStore((s) => s.updateGoal)
 
   const [dismissed, setDismissed] = useState<string[]>(() => (typeof window !== 'undefined' ? readDismissed() : []))
+  // Cross-device: trae los descartes guardados en la tabla y los une con los
+  // locales (best-effort; si falla, sigue con localStorage).
+  useEffect(() => {
+    let cancel = false
+    fetch('/api/gaps/dismissed')
+      .then((r) => (r.ok ? r.json() : { keys: [] }))
+      .then((j: { keys?: string[] }) => {
+        if (cancel || !Array.isArray(j.keys) || j.keys.length === 0) return
+        setDismissed((prev) => {
+          const merged = Array.from(new Set([...prev, ...j.keys!]))
+          writeDismissed(merged)
+          return merged
+        })
+      })
+      .catch(() => {})
+    return () => { cancel = true }
+  }, [])
   const [drafts, setDrafts] = useState<Record<string, string>>({})
 
   const gaps = useMemo(
@@ -52,6 +69,7 @@ export function KnowledgeGapPanel() {
   function dismiss(g: KnowledgeGap) {
     const next = [...dismissed, g.key]
     setDismissed(next); writeDismissed(next)
+    fetch('/api/gaps/dismissed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: g.key }) }).catch(() => {})
   }
 
   return (
