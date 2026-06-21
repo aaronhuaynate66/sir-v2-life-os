@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1399aa3`
+**Hash del último commit humano:** `2cb8f93`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2cb8f93` | aaronhuaynate66 | fix(gaps): preguntar el ticket del deal solo en propuesta/negociación (#317) | 2026-06-21 |
 | `1399aa3` | aaronhuaynate66 | feat(dia): clima visible via proxy estacional para fechas simuladas (#3) (#316) | 2026-06-21 |
 | `fd85b68` | aaronhuaynate66 | feat(gaps): regla 'ticket del deal sin cargar' (#1) (#315) | 2026-06-21 |
 | `ed3bf7e` | aaronhuaynate66 | feat(dia): señal externa de clima por fecha (Open-Meteo, Lima) (#4) (#314) | 2026-06-21 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e2d87dd` | aaronhuaynate66 | feat(sir): modo perspectiva/espejo con guardrails de bienestar (#310) | 2026-06-21 |
 | `8e78fba` | aaronhuaynate66 | feat(ui): P4 F2 (ficha lidera con info) + #92 stopwords genéricas (#309) | 2026-06-20 |
 | `05650ab` | aaronhuaynate66 | feat(sir): dictado por voz en el chat (#86) (#308) | 2026-06-20 |
-| `6426e9e` | aaronhuaynate66 | fix(gap): no matchear el gap de objetivo por palabras comunes del título (#307) | 2026-06-20 |
 
 ---
 
