@@ -144,7 +144,7 @@ describe('detectContextualGap — conocimiento viejo (stale)', () => {
 describe('detectDealGap — deal estancado', () => {
   const NOW = new Date('2026-06-20T12:00:00Z')
   const deal = (over: Partial<{ id: string; title: string; contactFirst: string | null; status: string; nextAction: string | null; nextActionDate: string | null; updatedAt: string | null }> = {}) => ({
-    id: 'd1', title: 'Sienna Minerals seguridad', contactFirst: 'Ivis', status: 'open', nextAction: null, nextActionDate: null, updatedAt: '2026-06-18', amount: 50000, ...over,
+    id: 'd1', title: 'Sienna Minerals seguridad', contactFirst: 'Ivis', status: 'open', nextAction: null, nextActionDate: null, updatedAt: '2026-06-18', amount: 50000, stage: 'reunion', ...over,
   })
   it('pregunta si menciona el deal por título y no hay próximo paso', () => {
     const g = detectDealGap('¿cómo voy con Sienna?', [deal()], new Set(), NOW)
@@ -190,7 +190,7 @@ describe('gap de objetivo — no falso positivo por palabras comunes', () => {
 describe('detectDealGap — ticket sin cargar', () => {
   const NOW = new Date('2026-06-20T12:00:00Z')
   const deal = (over: Partial<{ id: string; title: string; contactFirst: string | null; status: string; nextAction: string | null; nextActionDate: string | null; updatedAt: string | null; amount: number | null }> = {}) => ({
-    id: 'd9', title: 'Silver X seguridad', contactFirst: 'Ricardo', status: 'open', nextAction: 'Reunión', nextActionDate: '2026-06-22', updatedAt: '2026-06-19', amount: null, ...over,
+    id: 'd9', title: 'Silver X seguridad', contactFirst: 'Ricardo', status: 'open', nextAction: 'Reunión', nextActionDate: '2026-06-22', updatedAt: '2026-06-19', amount: null, stage: 'propuesta', ...over,
   })
   it('pregunta el ticket si el deal está al día pero sin monto', () => {
     const g = detectDealGap('¿cómo voy con Silver X?', [deal()], new Set(), NOW)
