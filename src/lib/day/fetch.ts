@@ -19,7 +19,7 @@ export async function fetchDayContext(
 ): Promise<DaySlices> {
   const { startUtc, endUtc } = limaDayUtcWindow(date)
   const slices: DaySlices = {
-    date, moonLabel: null, interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [],
+    date, moonLabel: null, interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [],
   }
   try { slices.moonLabel = moonPhase(new Date(`${date}T12:00:00.000Z`)).label } catch { /* */ }
 
@@ -129,6 +129,27 @@ export async function fetchDayContext(
     // Priorizar los que se movieron; cap 12.
     slices.scoreMoves.sort((a, b) => Math.abs(b.delta ?? 0) - Math.abs(a.delta ?? 0))
     slices.scoreMoves = slices.scoreMoves.slice(0, 12)
+  } catch { /* */ }
+
+  // 7. Finanzas (finance_movements) de ese día.
+  try {
+    const { data } = await supabase.from('finance_movements')
+      .select('type, amount, currency, description, date')
+      .eq('user_id', userId).eq('date', date).limit(40)
+    for (const r of (data ?? []) as Array<{ type: string; amount: number; currency: string; description: string }>) {
+      slices.finances.push({ type: r.type, amount: Number(r.amount) || 0, currency: r.currency || 'PEN', description: (r.description || '').slice(0, 120) })
+    }
+  } catch { /* */ }
+
+  // 8. Señales detectadas ese día (signals).
+  try {
+    const { data } = await supabase.from('signals')
+      .select('content, urgency, detected_at, resolved')
+      .eq('user_id', userId)
+      .gte('detected_at', startUtc).lt('detected_at', endUtc).limit(30)
+    for (const r of (data ?? []) as Array<{ content: string; urgency: string }>) {
+      slices.signals.push({ content: (r.content || '').slice(0, 160), urgency: r.urgency || 'monitor' })
+    }
   } catch { /* */ }
 
   return slices

@@ -5,7 +5,7 @@
 // Cabecera de ÁNIMO del día (dayMood, determinístico) para darle peso emocional.
 
 import { useCallback, useEffect, useState } from 'react'
-import { CalendarDays, Loader2, ChevronLeft, ChevronRight, Moon, AlertTriangle, Heart, Minus } from 'lucide-react'
+import { CalendarDays, Loader2, ChevronLeft, ChevronRight, Moon, AlertTriangle, Heart, Minus, Sparkles } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { dayMood, type DaySlices, type DayTone } from '@/lib/day/dayContext'
@@ -33,6 +33,19 @@ export default function DiaPage() {
   const [date, setDate] = useState(() => todayLimaKey())
   const [slices, setSlices] = useState<DaySlices | null>(null)
   const [loading, setLoading] = useState(false)
+  const [narrative, setNarrative] = useState<string | null>(null)
+  const [narrLoading, setNarrLoading] = useState(false)
+  async function tellStory() {
+    setNarrLoading(true); setNarrative(null)
+    try {
+      const res = await fetch('/api/sir/ask', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: `¿Qué pasó el ${date}? Contámelo breve, como un resumen del día.`, history: [], skipInlineGaps: true }),
+      })
+      const j = await res.json()
+      setNarrative(typeof j.answer === 'string' ? j.answer : 'No pude generar el relato.')
+    } catch { setNarrative('Error al generar el relato.') } finally { setNarrLoading(false) }
+  }
 
   const load = useCallback(async (d: string) => {
     setLoading(true)
@@ -41,7 +54,7 @@ export default function DiaPage() {
       if (res.ok) { const j = (await res.json()) as { slices: DaySlices }; setSlices(j.slices) }
     } finally { setLoading(false) }
   }, [])
-  useEffect(() => { void load(date) }, [date, load])
+  useEffect(() => { void load(date); setNarrative(null) }, [date, load])
 
   const mood = slices ? dayMood(slices) : null
   const today = todayLimaKey()
@@ -89,6 +102,20 @@ export default function DiaPage() {
               )
             })()}
 
+            {mood.tone !== 'empty' && (
+              <div>
+                {narrative ? (
+                  <div className="rounded-lg border border-border bg-card p-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">{narrative}</div>
+                ) : (
+                  <button type="button" onClick={() => void tellStory()} disabled={narrLoading}
+                    className="inline-flex items-center gap-2 rounded-full border border-brand/40 bg-brand-soft/30 px-3 py-1.5 text-xs text-brand-soft-foreground hover:bg-brand/15 disabled:opacity-50">
+                    {narrLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                    {narrLoading ? 'SIR está recordando…' : 'Que SIR lo cuente'}
+                  </button>
+                )}
+              </div>
+            )}
+
             {mood.tone === 'empty' ? null : (
               <div className="space-y-4">
                 {slices.interactions.length > 0 && (
@@ -112,6 +139,8 @@ export default function DiaPage() {
                 <Block title="Oportunidades" rows={slices.deals.map((d) => ({ k: d.title, v: d.what }))} />
                 <Block title="Objetivos (pasos)" rows={slices.steps.map((s) => ({ k: s.goal, v: s.step }))} />
                 <Block title="Salud" rows={slices.health.map((h) => ({ k: h.label, v: h.value }))} />
+                <Block title="Finanzas" rows={slices.finances.map((fn) => ({ k: `${fn.type} ${fn.amount} ${fn.currency}`, v: fn.description }))} />
+                <Block title="Señales activas" rows={slices.signals.map((sg) => ({ k: sg.urgency, v: sg.content }))} />
                 <Block title="Vínculos (score ese día)" rows={slices.scoreMoves.map((m) => ({ k: m.person, v: `${m.global}/100${m.delta != null && m.delta !== 0 ? ` (${m.delta > 0 ? '+' : ''}${m.delta})` : ''}` }))} />
               </div>
             )}
