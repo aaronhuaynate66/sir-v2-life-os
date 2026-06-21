@@ -144,7 +144,7 @@ describe('detectContextualGap — conocimiento viejo (stale)', () => {
 describe('detectDealGap — deal estancado', () => {
   const NOW = new Date('2026-06-20T12:00:00Z')
   const deal = (over: Partial<{ id: string; title: string; contactFirst: string | null; status: string; nextAction: string | null; nextActionDate: string | null; updatedAt: string | null }> = {}) => ({
-    id: 'd1', title: 'Sienna Minerals seguridad', contactFirst: 'Ivis', status: 'open', nextAction: null, nextActionDate: null, updatedAt: '2026-06-18', ...over,
+    id: 'd1', title: 'Sienna Minerals seguridad', contactFirst: 'Ivis', status: 'open', nextAction: null, nextActionDate: null, updatedAt: '2026-06-18', amount: 50000, ...over,
   })
   it('pregunta si menciona el deal por título y no hay próximo paso', () => {
     const g = detectDealGap('¿cómo voy con Sienna?', [deal()], new Set(), NOW)
@@ -184,5 +184,19 @@ describe('gap de objetivo — no falso positivo por palabras comunes', () => {
   it('SÍ matchea por un token real del título', () => {
     const g = selectInlineGap('¿qué hago para avanzar con Boticas?', [], [goal()])
     expect(g?.kind).toBe('goal_next_action')
+  })
+})
+
+describe('detectDealGap — ticket sin cargar', () => {
+  const NOW = new Date('2026-06-20T12:00:00Z')
+  const deal = (over: Partial<{ id: string; title: string; contactFirst: string | null; status: string; nextAction: string | null; nextActionDate: string | null; updatedAt: string | null; amount: number | null }> = {}) => ({
+    id: 'd9', title: 'Silver X seguridad', contactFirst: 'Ricardo', status: 'open', nextAction: 'Reunión', nextActionDate: '2026-06-22', updatedAt: '2026-06-19', amount: null, ...over,
+  })
+  it('pregunta el ticket si el deal está al día pero sin monto', () => {
+    const g = detectDealGap('¿cómo voy con Silver X?', [deal()], new Set(), NOW)
+    expect(g?.kind).toBe('deal_no_ticket')
+  })
+  it('NO pregunta el ticket si ya tiene monto', () => {
+    expect(detectDealGap('¿cómo voy con Silver X?', [deal({ amount: 50000 })], new Set(), NOW)).toBeNull()
   })
 })

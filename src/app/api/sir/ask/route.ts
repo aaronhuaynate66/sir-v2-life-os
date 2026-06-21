@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
     try {
       const { data: dealRows } = await supabase
         .from('deals')
-        .select('id, title, contact_person_id, status, next_action, next_action_date, updated_at')
+        .select('id, title, contact_person_id, status, next_action, next_action_date, updated_at, amount')
         .eq('user_id', userId)
         .eq('status', 'open')
         .limit(50)
@@ -274,6 +274,7 @@ export async function POST(req: NextRequest) {
           nextAction: (d.next_action as string | null) ?? null,
           nextActionDate: (d.next_action_date as string | null) ?? null,
           updatedAt: (d.updated_at as string | null) ?? null,
+          amount: typeof d.amount === 'number' ? d.amount : (d.amount != null ? Number(d.amount) : null),
         }
       })
     } catch { dealSignals = [] }
