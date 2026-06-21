@@ -147,6 +147,16 @@ export async function POST(req: NextRequest) {
       ? ((body as { dismissedGaps?: unknown }).dismissedGaps as unknown[]).filter((x): x is string => typeof x === 'string')
       : [],
   )
+  // Descartes CROSS-DEVICE (tabla gap_dismissals): se mergean con los del body
+  // (localStorage) para que "no sé / saltar" valga en todos los dispositivos.
+  try {
+    const { data: dRows } = await supabase
+      .from('gap_dismissals')
+      .select('gap_key')
+      .eq('user_id', userId)
+      .limit(1000)
+    for (const r of ((dRows as Array<{ gap_key: string }>) ?? [])) dismissedGaps.add(r.gap_key)
+  } catch { /* best-effort */ }
   const skipInlineGaps = (body as { skipInlineGaps?: unknown }).skipInlineGaps === true
   if (!skipInlineGaps) {
     const targetPeople = [...targetIds]

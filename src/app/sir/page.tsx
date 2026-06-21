@@ -368,7 +368,10 @@ export default function SirChatPage() {
     if (!c) return
     // Hueco de CAMPO → descarte permanente (no repetir). Contextual → solo salta
     // este turno (mañana la situación puede cambiar; no lo silencio para siempre).
-    if (!c.ephemeral) writeDismissedGaps([...readDismissedGaps(), c.key])
+    if (!c.ephemeral) {
+      writeDismissedGaps([...readDismissedGaps(), c.key])
+      fetch('/api/gaps/dismissed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: c.key }) }).catch(() => {})
+    }
     setTurnClarifyState(idx, 'dismissed')
     if (turn.originalQuestion) void ask(turn.originalQuestion, { skipInlineGaps: true, suppressUserTurn: true })
   }
