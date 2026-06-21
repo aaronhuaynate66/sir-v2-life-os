@@ -57,6 +57,8 @@ export interface AskContextInput {
   todayISO: string
   people: AskPersonCtx[]
   memories: AskMemoryHit[]
+  /** Tus propias palabras/momentos de fuerza (modo perspectiva). */
+  strengths?: string[]
   goals: AskGoalCtx[]
 }
 
@@ -116,6 +118,12 @@ export function buildAskContext(input: AskContextInput): string {
     lines.push('(No se encontró data relacionada con la pregunta.)')
   }
 
+  if (input.strengths && input.strengths.length > 0) {
+    lines.push('== TUS PROPIAS PALABRAS DE FUERZA (para el espejo; citá estas cuando lo banques) ==')
+    for (const sgth of input.strengths.slice(0, 6)) lines.push(`- "${sgth}"`)
+    lines.push('')
+  }
+
   lines.push('== PREGUNTA ==')
   lines.push(input.question)
   return lines.join('\n')
@@ -151,4 +159,52 @@ export function extractCandidateNames(question: string, knownNames: readonly str
     .map((h) => h.name)
     .filter((n) => (seen.has(n) ? false : (seen.add(n), true)))
     .slice(0, max)
+}
+
+
+// ─── ESPEJO DE FUERZA (modo perspectiva) ────────────────────────────────────
+const PERSPECTIVE_KW = [
+  'como estoy', 'como me siento', 'me siento', 'no doy mas', 'no puedo mas',
+  'no aguanto', 'estoy mal', 'estoy hecho', 'bajon', 'bajoneado', 'triste',
+  'perdido', 'hundido', 'hundiendo', 'naufrag', 'me ahogo', 'ahogad',
+  'perspectiva', 'animo', 'agotado', 'cansado', 'abrumado', 'colaps',
+  'no se que hacer con mi vida', 'estoy quemado', 'quemandome', 'sin fuerzas',
+  'me supera', 'todo junto', 'no puedo con',
+]
+
+/** ¿La consulta es sobre cómo está / pide perspectiva o ánimo? */
+export function isPerspectiveQuery(question: string): boolean {
+  const q = (question || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return PERSPECTIVE_KW.some((k) => q.includes(k))
+}
+
+const STRENGTH_KW = [
+  'puedo con todo', 'siempre puedo', 'sali adelante', 'salir adelante',
+  'lo volvere a hacer', 'lo volvi a hacer', 'campeon', 'gane', 'ganare',
+  'logre', 'logr', 'consegui', 'orgullo', 'fuerte', 'fuerza', 'no me rindo',
+  'no me rendi', 'resilien', 'voluntad', 'soy capaz', 'capaz de', 'determinaci',
+  'esfuerzo', 'levantarme', 'me levante', 'supere', 'superar', 'puse de pie',
+]
+
+/** Selecciona memorias que reflejan FORTALEZA del usuario (sus propias palabras
+ *  de cuando estuvo entero). Filtra por léxico de fuerza; más recientes primero.
+ *  PURO. */
+export function selectStrengthMemories(
+  memories: { content: string; occurredAt?: string | null }[],
+  limit = 5,
+): string[] {
+  const seen = new Set<string>()
+  const out: { content: string; at: string }[] = []
+  for (const m of memories) {
+    const c = (m.content || '').trim()
+    if (!c) continue
+    const norm = c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    if (!STRENGTH_KW.some((k) => norm.includes(k))) continue
+    const key = norm.slice(0, 60)
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ content: c.slice(0, 240), at: m.occurredAt ?? '' })
+  }
+  out.sort((a, b) => (b.at || '').localeCompare(a.at || ''))
+  return out.slice(0, limit).map((x) => x.content)
 }
