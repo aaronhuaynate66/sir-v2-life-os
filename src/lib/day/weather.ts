@@ -27,12 +27,29 @@ function codeLabel(code: number | null, precip: number | null): string {
   return (precip ?? 0) > 1 ? 'Lluvioso' : 'Nublado'
 }
 
+/** Open-Meteo solo tiene datos hasta el presente REAL. SIR corre con fechas
+ *  simuladas (2026). Si la fecha pedida es futura respecto del presente real,
+ *  usamos el MISMO día-mes del último año real disponible como proxy ESTACIONAL
+ *  (Lima es muy estable año a año). Devuelve la fecha a consultar + si es proxy. */
+function resolveQueryDate(date: string): { q: string; seasonal: boolean } {
+  const realCutoff = Date.now() - 3 * 86_400_000 // Open-Meteo tiene ~2-3 días de lag
+  const reqT = new Date(`${date}T12:00:00Z`).getTime()
+  if (Number.isFinite(reqT) && reqT <= realCutoff) return { q: date, seasonal: false }
+  const [, m, d] = date.split('-')
+  let yr = new Date().getUTCFullYear()
+  let q = `${yr}-${m}-${d}`
+  if (new Date(`${q}T12:00:00Z`).getTime() > realCutoff) { yr -= 1; q = `${yr}-${m}-${d}` }
+  return { q, seasonal: true }
+}
+
 /** Trae el clima de un día (YYYY-MM-DD) para Lima. null si no hay dato. */
 export async function fetchWeather(date: string): Promise<DayWeather | null> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${LIMA.lat}&longitude=${LIMA.lon}` +
+  const { q, seasonal } = resolveQueryDate(date)
+  const base = seasonal ? 'https://archive-api.open-meteo.com/v1/archive' : 'https://api.open-meteo.com/v1/forecast'
+  const url = `${base}?latitude=${LIMA.lat}&longitude=${LIMA.lon}` +
     `&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum` +
-    `&timezone=America%2FLima&start_date=${date}&end_date=${date}`
+    `&timezone=America%2FLima&start_date=${q}&end_date=${q}`
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(4000) })
     if (!res.ok) return null
@@ -45,7 +62,7 @@ export async function fetchWeather(date: string): Promise<DayWeather | null> {
     const precip = d.precipitation_sum?.[0] ?? null
     const temp = tMax != null ? ` · ${Math.round(tMax)}°` : ''
     const rain = precip != null && precip > 0.2 ? ` · ${precip}mm` : ''
-    return { label: `${codeLabel(code, precip)}${temp}${rain}`, tempMax: tMax, tempMin: tMin, precipMm: precip }
+    return { label: `${codeLabel(code, precip)}${temp}${rain}${seasonal ? ' (estacional)' : ''}`, tempMax: tMax, tempMin: tMin, precipMm: precip }
   } catch {
     return null
   }
