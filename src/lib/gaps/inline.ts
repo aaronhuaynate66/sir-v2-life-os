@@ -95,7 +95,7 @@ export function selectInlineGap(
 
 export interface ContextualGap {
   key: string
-  kind: 'post_conflict_contact' | 'stale_knowledge' | 'deal_stalled'
+  kind: 'post_conflict_contact' | 'stale_knowledge' | 'deal_stalled' | 'deal_no_ticket'
   entity: 'person' | 'deal'
   entityId: string
   entityName: string
@@ -202,6 +202,7 @@ export interface DealSignal {
   nextAction: string | null
   nextActionDate: string | null  // YYYY-MM-DD
   updatedAt: string | null        // ISO
+  amount: number | null           // ticket; null/0 = sin cargar
 }
 
 const DEAL_WORDS = ['oportunidad', 'deal', 'lead', 'cliente', 'negocio', 'propuesta', 'cuenta', 'venta', 'licitacion', 'licitación']
@@ -233,16 +234,29 @@ export function detectDealGap(
     const noNext = !(d.nextAction ?? '').trim()
     const overdue = !!d.nextActionDate && d.nextActionDate < todayISO
     const staleUpdate = !!d.updatedAt && Number.isFinite(daysBetween(d.updatedAt.slice(0, 10), now)) && daysBetween(d.updatedAt.slice(0, 10), now) >= DEAL_STALE_DAYS
-    if (!(noNext || overdue || staleUpdate)) continue
-
-    const key = `ctx_dealstalled:${d.id}`
-    if (dismissed.has(key)) continue
-    const why = noNext ? 'no le tengo próximo paso' : overdue ? 'el próximo paso quedó vencido' : 'no registro novedad hace rato'
-    return {
-      key, kind: 'deal_stalled', entity: 'deal', entityId: d.id,
-      entityName: d.title,
-      question: `Con "${d.title}" ${why}. ¿Avanzó algo o sigue igual?`,
-      inputType: 'text', ephemeral: true,
+    if (noNext || overdue || staleUpdate) {
+      const key = `ctx_dealstalled:${d.id}`
+      if (!dismissed.has(key)) {
+        const why = noNext ? 'no le tengo próximo paso' : overdue ? 'el próximo paso quedó vencido' : 'no registro novedad hace rato'
+        return {
+          key, kind: 'deal_stalled', entity: 'deal', entityId: d.id,
+          entityName: d.title,
+          question: `Con "${d.title}" ${why}. ¿Avanzó algo o sigue igual?`,
+          inputType: 'text', ephemeral: true,
+        }
+      }
+    }
+    // Ticket sin cargar: deal abierto y mencionado pero sin monto.
+    if (!(d.amount != null && d.amount > 0)) {
+      const key = `ctx_dealticket:${d.id}`
+      if (!dismissed.has(key)) {
+        return {
+          key, kind: 'deal_no_ticket', entity: 'deal', entityId: d.id,
+          entityName: d.title,
+          question: `No tengo cargado el ticket de "${d.title}". ¿De cuánto sería, aprox?`,
+          inputType: 'text', ephemeral: true,
+        }
+      }
     }
   }
   return null
