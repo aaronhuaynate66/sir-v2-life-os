@@ -36,7 +36,7 @@ describe('limaDayUtcWindow', () => {
 })
 
 describe('renderDayContext', () => {
-  const base: DaySlices = { date: '2026-06-18', moonLabel: 'Luna llena', interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [] }
+  const base: DaySlices = { date: '2026-06-18', moonLabel: 'Luna llena', interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null }
   it('vacío → dice sin registros', () => {
     expect(renderDayContext(base)).toContain('Sin registros')
   })
@@ -57,7 +57,7 @@ import { dayMood } from './dayContext'
 
 const base = (over: Partial<DaySlices> = {}): DaySlices => ({
   date: '2026-06-18', moonLabel: null, interactions: [], observations: [],
-  deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], ...over,
+  deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null, ...over,
 })
 
 describe('dayMood', () => {

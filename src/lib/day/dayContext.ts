@@ -77,6 +77,7 @@ export interface DayMetric { label: string; value: string }    // salud/score
 export interface DayScoreMove { person: string; global: number; delta: number | null }
 export interface DayFinance { type: string; amount: number; currency: string; description: string }
 export interface DaySignal { content: string; urgency: string }
+export interface DayWeatherSlice { label: string }
 
 export interface DaySlices {
   date: string
@@ -89,6 +90,7 @@ export interface DaySlices {
   scoreMoves: DayScoreMove[]
   finances: DayFinance[]
   signals: DaySignal[]
+  weather: string | null
 }
 
 const QUAL = ['', 'muy tensa', 'tensa', 'neutral', 'cálida', 'plena']
@@ -96,7 +98,7 @@ const QUAL = ['', 'muy tensa', 'tensa', 'neutral', 'cálida', 'plena']
 /** Texto legible del día para inyectar como grounding. Vacío estructurado si
  *  no hubo nada (para que el modelo diga "no hay registro de ese día"). PURO. */
 export function renderDayContext(s: DaySlices): string {
-  const L: string[] = [`CONTEXTO DEL DÍA ${s.date}${s.moonLabel ? ` · luna: ${s.moonLabel}` : ''}:`]
+  const L: string[] = [`CONTEXTO DEL DÍA ${s.date}${s.moonLabel ? ` · luna: ${s.moonLabel}` : ''}${s.weather ? ` · clima: ${s.weather}` : ''}:`]
   let any = false
   if (s.interactions.length) {
     any = true
