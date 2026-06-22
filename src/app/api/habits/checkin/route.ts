@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   if (!auth?.user) return err(401, 'No autenticado')
   const userId = auth.user.id
 
-  let body: { habit_id?: unknown }
+  let body: { habit_id?: unknown; date?: unknown }
   try {
     body = (await req.json()) as typeof body
   } catch {
@@ -28,6 +28,17 @@ export async function POST(req: NextRequest) {
   }
   const habitId = typeof body.habit_id === 'string' ? body.habit_id : ''
   if (!habitId) return err(400, 'habit_id requerido')
+
+  // Fecha opcional (backfill de días pasados). Default hoy. No se permite futuro
+  // ni más de 60 días atrás (evita marcar cualquier cosa).
+  const todayISO = new Date().toISOString().slice(0, 10)
+  let target = todayISO
+  if (typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+    if (body.date > todayISO) return err(400, 'No se puede marcar un día futuro')
+    const ageDays = Math.floor((Date.parse(todayISO) - Date.parse(body.date)) / 86_400_000)
+    if (ageDays > 60) return err(400, 'Solo se puede marcar hasta 60 días atrás')
+    target = body.date
+  }
 
   // Ownership del hábito.
   const { data: habit, error: hErr } = await supabase
@@ -39,14 +50,12 @@ export async function POST(req: NextRequest) {
   if (hErr) return err(500, 'No se pudo verificar el hábito', hErr.message)
   if (!habit) return err(404, 'Hábito no encontrado')
 
-  const today = new Date().toISOString().slice(0, 10)
-
   const { data: existing } = await supabase
     .from('habit_checkins')
     .select('id')
     .eq('user_id', userId)
     .eq('habit_id', habitId)
-    .eq('date', today)
+    .eq('date', target)
     .maybeSingle()
 
   if (existing) {
@@ -61,7 +70,7 @@ export async function POST(req: NextRequest) {
 
   const { error: insErr } = await supabase
     .from('habit_checkins')
-    .insert({ user_id: userId, habit_id: habitId, date: today })
+    .insert({ user_id: userId, habit_id: habitId, date: target })
   if (insErr) return err(500, 'No se pudo marcar', insErr.message)
   return NextResponse.json({ done: true }, { status: 200 })
 }
