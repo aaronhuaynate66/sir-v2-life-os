@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `492a5de`
+**Hash del último commit humano:** `86a456e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `86a456e` | aaronhuaynate66 | feat(momentos): SIR recuerda los momentos abiertos (día-X + briefing) (#325) | 2026-06-22 |
 | `492a5de` | aaronhuaynate66 | feat(relaciones): Momentos/Decisiones — open loops por persona (#324) | 2026-06-22 |
 | `d611be3` | aaronhuaynate66 | feat(whatsapp): leer notas de voz del export (transcribir e inyectar) (#323) | 2026-06-22 |
 | `14765f6` | aaronhuaynate66 | feat(llamada): subir audio → transcribir (Whisper) → interacción (#322) | 2026-06-22 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1804170` | aaronhuaynate66 | feat(habitos): marcar días pasados (backfill) + ver fechas (#318) | 2026-06-22 |
 | `2cb8f93` | aaronhuaynate66 | fix(gaps): preguntar el ticket del deal solo en propuesta/negociación (#317) | 2026-06-21 |
 | `1399aa3` | aaronhuaynate66 | feat(dia): clima visible via proxy estacional para fechas simuladas (#3) (#316) | 2026-06-21 |
-| `fd85b68` | aaronhuaynate66 | feat(gaps): regla 'ticket del deal sin cargar' (#1) (#315) | 2026-06-21 |
 
 ---
 
