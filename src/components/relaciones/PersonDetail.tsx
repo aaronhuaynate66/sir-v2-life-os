@@ -83,6 +83,7 @@ import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
+import { MomentosPanel } from './MomentosPanel'
 import { FamiliaPanel } from './FamiliaPanel'
 import { InformacionSensible } from './InformacionSensible'
 import type { Observation } from '@/lib/capture/observations/types'
@@ -687,6 +688,8 @@ export function PersonDetail({
           biológicas de self, viven en /yo — no tienen sentido "respecto a esta
           persona".) Storage Supabase-native en person_logs. */}
       <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs} />
+
+      <MomentosPanel personId={live.id} />
 
       {/* Nota de voz (#12): graba audio -> bucket person-voice-notes +
           observation voice_note (aparece tambien en la Bitacora). */}
