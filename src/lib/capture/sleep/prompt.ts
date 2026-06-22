@@ -78,10 +78,15 @@ Reglas estrictas:
    sub-puntajes) y NO se ve el número global con estrellas, devolvé score: null
    — NO tomes un sub-puntaje como si fuera el score de la noche.
 
-7. "confidence":
-   - high   : imagen nítida + duración/horario/fases legibles + sin ambigüedad
-   - medium : algunos datos legibles, otros ambiguos u omitidos
-   - low    : imagen borrosa o sólo 1-2 datos legibles
+7. "confidence" — refleja la LEGIBILIDAD de lo que el panel SÍ muestra, NO si
+   faltan campos que ese panel no tiene:
+   - high   : imagen nítida y las métricas visibles se leen sin ambigüedad.
+     IMPORTANTE: algunos paneles (ej. el DETALLE de Huawei Salud) muestran solo
+     %/sub-puntajes de fase + FC/SpO₂/respiración/despertares, SIN duración total
+     ni horarios ni minutos de fase. Eso es NORMAL y completo para ese formato →
+     confidence = high igual. NO bajes a medium por no ver duración/horarios.
+   - medium : la imagen tiene partes borrosas o valores genuinamente ambiguos.
+   - low    : imagen borrosa o sólo 1-2 datos legibles.
 
 8. raw_observations: máximo 200 chars en español. Mencioná qué app es, qué
    datos no se leyeron y observaciones de calidad de la imagen.

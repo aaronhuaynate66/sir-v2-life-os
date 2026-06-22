@@ -110,12 +110,13 @@ function sanitizePct(v: unknown): number | null {
  * Sanitiza el objeto: normaliza horas, minutos, día y score; trim de notas.
  */
 export function sanitizeSleepPanelExtracted(raw: SleepPanelExtracted): SleepPanelExtracted {
-  return {
+  const stages = sanitizeStages(raw.stages)
+  const out: SleepPanelExtracted = {
     date: sanitizeDay(raw.date),
     total_minutes: sanitizeMinutes(raw.total_minutes),
     bedtime: sanitizeHm(raw.bedtime),
     wake_time: sanitizeHm(raw.wake_time),
-    stages: sanitizeStages(raw.stages),
+    stages,
     score: sanitizeScore(raw.score),
     awakenings: sanitizeCount(raw.awakenings),
     respiratory_rate: sanitizePos(raw.respiratory_rate),
@@ -127,4 +128,20 @@ export function sanitizeSleepPanelExtracted(raw: SleepPanelExtracted): SleepPane
         ? raw.raw_observations.slice(0, 200).trim() || undefined
         : undefined,
   }
+  // PISO DETERMINÍSTICO de confianza: algunos paneles (el DETALLE de Huawei
+  // Salud) no traen duración total ni horarios — solo %/sub-puntajes + FC/SpO₂/
+  // resp. El modelo los marca "medium" por "datos omitidos", pero si se leyó un
+  // set sólido de métricas, la lectura es confiable. medium→high cuando hay ≥3
+  // señales fuertes presentes. NUNCA tocamos 'low' (imagen borrosa de verdad).
+  const stagePresent = [stages.deep_minutes, stages.light_minutes, stages.rem_minutes].some((v) => v != null)
+  const signals = [
+    out.total_minutes != null,
+    out.score != null,
+    out.awakenings != null,
+    out.respiratory_rate != null,
+    out.spo2_avg != null,
+    stagePresent,
+  ].filter(Boolean).length
+  if (out.confidence === 'medium' && signals >= 3) out.confidence = 'high'
+  return out
 }
