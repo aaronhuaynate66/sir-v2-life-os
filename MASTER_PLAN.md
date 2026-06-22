@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1804170`
+**Hash del último commit humano:** `4e11ab6`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `4e11ab6` | aaronhuaynate66 | feat(medicacion): registro de tomas (migraña) que alimenta el día-X (#319) | 2026-06-22 |
 | `1804170` | aaronhuaynate66 | feat(habitos): marcar días pasados (backfill) + ver fechas (#318) | 2026-06-22 |
 | `2cb8f93` | aaronhuaynate66 | fix(gaps): preguntar el ticket del deal solo en propuesta/negociación (#317) | 2026-06-21 |
 | `1399aa3` | aaronhuaynate66 | feat(dia): clima visible via proxy estacional para fechas simuladas (#3) (#316) | 2026-06-21 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `df6ec04` | aaronhuaynate66 | feat(gaps): descarte del gap-engine cross-device (tabla gap_dismissals) (#312) | 2026-06-21 |
 | `8394b64` | aaronhuaynate66 | feat(sir): espejo de fuerza — el modo perspectiva trae tus propias palabras de fortaleza (#311) | 2026-06-21 |
 | `e2d87dd` | aaronhuaynate66 | feat(sir): modo perspectiva/espejo con guardrails de bienestar (#310) | 2026-06-21 |
-| `8e78fba` | aaronhuaynate66 | feat(ui): P4 F2 (ficha lidera con info) + #92 stopwords genéricas (#309) | 2026-06-20 |
 
 ---
 
