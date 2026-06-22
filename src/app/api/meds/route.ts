@@ -24,12 +24,17 @@ export async function GET() {
       .order('taken_at', { ascending: false })
       .limit(200)
     const intakes = (data as IntakeRow[]) ?? []
+    let registry: Array<{ name: string; dose: string | null }> = []
+    try {
+      const { data: reg } = await supabase.from('med_registry').select('name, dose').eq('user_id', auth.user.id).order('created_at', { ascending: true }).limit(50)
+      registry = (reg as Array<{ name: string; dose: string | null }>) ?? []
+    } catch { /* */ }
     // Nombres frecuentes (para botones de un toque), por recencia + frecuencia.
     const seen = new Set<string>(); const names: string[] = []
     for (const r of intakes) { if (!seen.has(r.name)) { seen.add(r.name); names.push(r.name) } }
-    return NextResponse.json({ intakes, names: names.slice(0, 8) })
+    return NextResponse.json({ intakes, names: names.slice(0, 8), registry })
   } catch {
-    return NextResponse.json({ intakes: [], names: [] })
+    return NextResponse.json({ intakes: [], names: [], registry: [] })
   }
 }
 

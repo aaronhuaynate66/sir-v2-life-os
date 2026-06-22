@@ -13,6 +13,7 @@ import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
 
 interface Intake { id: string; name: string; quantity: number; note: string | null; taken_at: string }
+interface RegMed { name: string; dose: string | null }
 
 function fmt(ts: string): string {
   const d = new Date(ts)
@@ -22,6 +23,8 @@ function fmt(ts: string): string {
 export default function MedicacionPage() {
   const [intakes, setIntakes] = useState<Intake[] | null>(null)
   const [names, setNames] = useState<string[]>([])
+  const [registry, setRegistry] = useState<RegMed[]>([])
+  const [saveMine, setSaveMine] = useState(true)
   const [error, setError] = useState<ApiError | null>(null)
   const [name, setName] = useState('')
   const [qty, setQty] = useState('1')
@@ -31,13 +34,13 @@ export default function MedicacionPage() {
     try {
       const res = await fetch('/api/meds')
       if (!res.ok) throw new Error('load')
-      const j = (await res.json()) as { intakes: Intake[]; names: string[] }
-      setIntakes(j.intakes); setNames(j.names)
+      const j = (await res.json()) as { intakes: Intake[]; names: string[]; registry?: RegMed[] }
+      setIntakes(j.intakes); setNames(j.names); setRegistry(j.registry ?? [])
     } catch { setIntakes([]) }
   }, [])
   useEffect(() => { void load() }, [load])
 
-  const log = useCallback(async (medName: string, quantity: number) => {
+  const log = useCallback(async (medName: string, quantity: number, register = false) => {
     const n = medName.trim()
     if (!n || saving) return
     setSaving(true); setError(null)
@@ -45,9 +48,13 @@ export default function MedicacionPage() {
       const { intake } = await postJson<{ intake: Intake }>('/api/meds', { name: n, quantity })
       setIntakes((prev) => [intake, ...(prev ?? [])])
       setNames((prev) => (prev.includes(n) ? prev : [n, ...prev].slice(0, 8)))
+      if (register && !registry.some((r) => r.name.toLowerCase() === n.toLowerCase())) {
+        setRegistry((prev) => [...prev, { name: n, dose: null }])
+        try { await postJson('/api/meds/registry', { name: n }) } catch { /* */ }
+      }
       setName(''); setQty('1')
     } catch (e) { setError(toApiError(e)) } finally { setSaving(false) }
-  }, [saving])
+  }, [saving, registry])
 
   async function removeIntake(id: string) {
     setIntakes((prev) => (prev ?? []).filter((i) => i.id !== id))
@@ -70,12 +77,26 @@ export default function MedicacionPage() {
 
       {error && <div className="mb-4"><ApiErrorNotice error={error} /></div>}
 
-      {/* Botones de un toque para lo que ya registraste antes */}
-      {names.length > 0 && (
+      {/* Mis medicamentos (registro) — un toque para marcar la toma */}
+      {registry.length > 0 && (
+        <div className="mb-2 text-[11px] uppercase tracking-[0.06em] text-text-tertiary">Mis medicamentos</div>
+      )}
+      {registry.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
-          {names.map((n) => (
+          {registry.map((r) => (
+            <button key={r.name} type="button" onClick={() => void log(r.name, 1)} disabled={saving}
+              className="inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand-soft/30 px-3 py-2 text-sm text-brand-soft-foreground hover:bg-brand/15 disabled:opacity-50">
+              <Pill size={14} /> Tomé {r.name}{r.dose ? <span className="text-[11px] opacity-70">· {r.dose}</span> : null}
+            </button>
+          ))}
+        </div>
+      )}
+      {/* Otros que registraste antes pero no están en "mis medicamentos" */}
+      {names.filter((n) => !registry.some((r) => r.name.toLowerCase() === n.toLowerCase())).length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {names.filter((n) => !registry.some((r) => r.name.toLowerCase() === n.toLowerCase())).map((n) => (
             <button key={n} type="button" onClick={() => void log(n, 1)} disabled={saving}
-              className="inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand-soft/30 px-3 py-1.5 text-sm text-brand-soft-foreground hover:bg-brand/15 disabled:opacity-50">
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50">
               <Pill size={14} /> Tomé {n}
             </button>
           ))}
@@ -86,11 +107,17 @@ export default function MedicacionPage() {
       <Card className="mb-6">
         <CardContent className="p-4 flex flex-col sm:flex-row gap-2">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Medicamento (ej: ibuprofeno, sumatriptán)"
-            className="flex-1" onKeyDown={(e) => { if (e.key === 'Enter') void log(name, Number(qty) || 1) }} />
+            className="flex-1" onKeyDown={(e) => { if (e.key === 'Enter') void log(name, Number(qty) || 1, saveMine) }} />
           <Input type="number" min={1} max={99} value={qty} onChange={(e) => setQty(e.target.value)} className="w-full sm:w-20" aria-label="Cantidad" />
-          <Button onClick={() => void log(name, Number(qty) || 1)} disabled={saving || !name.trim()}>
+          <Button onClick={() => void log(name, Number(qty) || 1, saveMine)} disabled={saving || !name.trim()}>
             {saving ? <Loader2 size={15} className="mr-2 animate-spin" /> : <Plus size={15} className="mr-2" />} Registrar
           </Button>
+        </CardContent>
+        <CardContent className="px-4 pb-3 pt-0">
+          <label className="inline-flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+            <input type="checkbox" checked={saveMine} onChange={(e) => setSaveMine(e.target.checked)} className="h-3.5 w-3.5 accent-brand" />
+            Guardar en &ldquo;mis medicamentos&rdquo; (para marcarlo con un toque después)
+          </label>
         </CardContent>
       </Card>
 
