@@ -26,7 +26,7 @@ const BIDI_MARKS = /[‎‏‪-‮⁦-⁩]/g
 const NBSP = /[  ]/g
 
 /** Normaliza una línea: saca marcas bidi y unifica espacios raros. */
-function clean(line: string): string {
+export function clean(line: string): string {
   return line.replace(BIDI_MARKS, '').replace(NBSP, ' ')
 }
 
@@ -46,7 +46,7 @@ interface PrefixMatch {
 }
 
 /** Intenta reconocer el prefijo de timestamp de una línea ya limpia. */
-function matchPrefix(line: string): PrefixMatch | null {
+export function matchPrefix(line: string): PrefixMatch | null {
   const ios = IOS_PREFIX.exec(line)
   if (ios) {
     return { date: ios[1], time: ios[2], ampm: ios[3] ?? null, rest: ios[4] ?? '', format: 'ios' }

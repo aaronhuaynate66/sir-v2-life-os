@@ -17,6 +17,15 @@ describe('audioInject', () => {
     const picked = pickRecentAudioRefs(text, ['a1.opus', 'a2.opus', 'a3.opus'], 2)
     expect(picked).toEqual(['a3.opus', 'a2.opus'])
   })
+  it('con sinceISO, solo elige audios de mensajes POSTERIORES', () => {
+    const text = [
+      '[01/01/24, 10:00:00] Ana: <adjunto: a1.opus>',
+      '[15/06/24, 10:00:00] Ana: <adjunto: a2.opus>',
+      '[20/06/24, 10:00:00] Ana: <adjunto: a3.opus>',
+    ].join('\n')
+    const picked = pickRecentAudioRefs(text, ['a1.opus', 'a2.opus', 'a3.opus'], 25, '2024-06-16T00:00:00.000Z')
+    expect(picked).toEqual(['a3.opus']) // a1 (enero) y a2 (15-jun) quedan fuera
+  })
   it('inyecta la transcripción reemplazando el adjunto (iOS y Android)', () => {
     const text = [
       '[01/01/24, 10:00:00] Ana: ‎<adjunto: a1.opus>',
