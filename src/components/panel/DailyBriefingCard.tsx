@@ -6,7 +6,7 @@
 // Autocontenido: no toca los stores del /panel.
 
 import { useEffect, useState } from 'react'
-import { Sparkles, Loader2, RefreshCw } from 'lucide-react'
+import { Sparkles, Loader2, RefreshCw, History, ChevronDown, ChevronUp } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,7 @@ export function DailyBriefingCard() {
   const [loading, setLoading] = useState(false)
   const [briefing, setBriefing] = useState<string | null>(null)
   const [error, setError] = useState<ApiError | null>(null)
+  const [histOpen, setHistOpen] = useState(false)
 
   // Carga el briefing cacheado de HOY (si lo hay) al montar — client-only,
   // en efecto (no en render) para no romper hidratación.
@@ -114,6 +115,14 @@ export function DailyBriefingCard() {
         {loading && <BriefingSkeleton />}
 
         {briefing && !loading && <BriefingBody text={briefing} />}
+
+        <div className="mt-4 border-t border-border/50 pt-3">
+          <button type="button" onClick={() => setHistOpen((o) => !o)}
+            className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.07em] text-text-tertiary hover:text-foreground">
+            <History size={12} /> Historial {histOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+          {histOpen && <BriefHistory />}
+        </div>
       </CardContent>
     </Card>
   )
@@ -173,6 +182,45 @@ function BriefingBody({ text }: { text: string }) {
         }
         return <p key={i} className="text-sm text-foreground leading-relaxed">{block}</p>
       })}
+    </div>
+  )
+}
+
+
+interface BriefItem { id: string; content: string; createdAt: string }
+
+function fmtWhen(iso: string): string {
+  try { return new Date(iso).toLocaleString('es', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) } catch { return iso }
+}
+
+function BriefHistory() {
+  const [items, setItems] = useState<BriefItem[] | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await fetch('/api/briefing/history')
+        const j = (await res.json()) as { briefs?: BriefItem[] }
+        if (alive) setItems(j.briefs ?? [])
+      } catch { if (alive) setItems([]) }
+    })()
+    return () => { alive = false }
+  }, [])
+  if (items === null) return <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={12} className="animate-spin" /> Cargando…</div>
+  if (items.length === 0) return <p className="mt-2 text-xs text-muted-foreground">Todavía no hay briefs guardados. Cada uno que generes queda acá.</p>
+  return (
+    <div className="mt-2 space-y-1.5">
+      {items.map((b) => (
+        <div key={b.id} className="rounded-md border border-border/60">
+          <button type="button" onClick={() => setOpenId((id) => (id === b.id ? null : b.id))}
+            className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted/30">
+            <span className="capitalize">{fmtWhen(b.createdAt)}</span>
+            {openId === b.id ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </button>
+          {openId === b.id && <div className="px-2.5 pb-2.5 pt-0.5"><BriefingBody text={b.content} /></div>}
+        </div>
+      ))}
     </div>
   )
 }
