@@ -661,12 +661,16 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
     try {
       // 1. Texto del chat (.txt directo / .zip extraído sin subir la media).
       let text = await readExportText(waFile)
-      // 1a. Notas de voz: si está activado y es un .zip, transcribimos las más
-      //     recientes y las inyectamos como texto antes de parsear (usa Whisper).
+      // 1a. Marcador incremental ANTES de transcribir: solo transcribimos las
+      //     notas de voz POSTERIORES a lo ya importado → resubir el mismo zip
+      //     no re-transcribe lo viejo (cero gasto repetido de Whisper).
+      const lastImportedISO = await getLastImportedISO(personId)
+      // 1b. Notas de voz: si está activado y es un .zip, transcribimos las
+      //     recientes-y-nuevas y las inyectamos como texto antes de parsear.
       if (transcribeAudios && /\.zip$/i.test(waFile.name)) {
         setAudioProgress({ done: 0, total: 0 })
         try {
-          const r = await transcribeExportAudios(waFile, text, { cap: 25, onProgress: (done, total) => setAudioProgress({ done, total }) })
+          const r = await transcribeExportAudios(waFile, text, { cap: 25, sinceISO: lastImportedISO, onProgress: (done, total) => setAudioProgress({ done, total }) })
           text = r.text
         } catch { /* best-effort: seguimos con el texto sin audios */ }
         setAudioProgress(null)
@@ -691,7 +695,6 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
       // 1b. INCREMENTAL: ¿hasta qué fecha ya importé a esta persona? Me quedo
       //     solo con los mensajes nuevos (re-subir el mismo chat es seguro;
       //     un chat que creció procesa solo la cola nueva). Cero renombrar.
-      const lastImportedISO = await getLastImportedISO(personId)
       const incr = incrementalSummary(parsed, lastImportedISO)
       if (incr.isDuplicate) {
         setSavedType('whatsapp_chat')

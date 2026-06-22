@@ -15,13 +15,13 @@ export interface TranscribeExportAudiosResult {
 export async function transcribeExportAudios(
   file: Blob,
   text: string,
-  opts: { cap?: number; onProgress?: (done: number, total: number) => void } = {},
+  opts: { cap?: number; sinceISO?: string | null; onProgress?: (done: number, total: number) => void } = {},
 ): Promise<TranscribeExportAudiosResult> {
   const cap = opts.cap ?? 25
   let blobs: Map<string, Blob>
   try { blobs = await extractAudioBlobs(file) } catch { return { text, transcribed: 0, found: 0 } }
   if (blobs.size === 0) return { text, transcribed: 0, found: 0 }
-  const names = pickRecentAudioRefs(text, blobs.keys(), cap)
+  const names = pickRecentAudioRefs(text, blobs.keys(), cap, opts.sinceISO ?? null)
   if (names.length === 0) return { text, transcribed: 0, found: blobs.size }
 
   const map = new Map<string, string>()
