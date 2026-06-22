@@ -5,7 +5,7 @@
 // cuadro (no deja bordes vacíos).
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, Check, X, ZoomIn } from 'lucide-react'
+import { Loader2, Check, X, ZoomIn, Wand2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { uploadAvatar } from '@/lib/avatars/client'
 
@@ -23,6 +23,7 @@ export function AvatarCropper({ personId, file, onDone, onCancel }: {
   const [zoom, setZoom] = useState(1)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
   const [busy, setBusy] = useState(false)
+  const [detecting, setDetecting] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const imgRef = useRef<HTMLImageElement | null>(null)
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
@@ -55,6 +56,36 @@ export function AvatarCropper({ personId, file, onDone, onCancel }: {
   }
 
   useEffect(() => { if (nat) setOffset((o) => clamp(o)) }, [zoom, nat, clamp])
+
+  // Detección automática (visión): al cargar la imagen, pedimos la caja de la
+  // cara y pre-encuadramos. Best-effort; el usuario ajusta y confirma.
+  useEffect(() => {
+    if (!nat) return
+    let alive = true
+    setDetecting(true)
+    ;(async () => {
+      try {
+        const fd = new FormData(); fd.append('file', file)
+        const res = await fetch('/api/avatars/detect', { method: 'POST', body: fd })
+        const j = (await res.json()) as { found?: boolean; x?: number; y?: number; w?: number; h?: number }
+        if (!alive || !j.found || !nat) return
+        const bw = (j.w ?? 0) * nat.w, bh = (j.h ?? 0) * nat.h
+        const cx = ((j.x ?? 0) + (j.w ?? 0) / 2) * nat.w
+        const cy = ((j.y ?? 0) + (j.h ?? 0) / 2) * nat.h
+        const want = Math.max(bw, bh) * 1.5
+        const srcSide = Math.max(40, Math.min(Math.min(nat.w, nat.h), want))
+        const z = Math.max(1, Math.min(4, Math.min(nat.w, nat.h) / srcSide))
+        const ds = (BOX / Math.min(nat.w, nat.h)) * z
+        const minX = BOX - nat.w * ds, minY = BOX - nat.h * ds
+        const ox = Math.min(0, Math.max(minX, BOX / 2 - cx * ds))
+        const oy = Math.min(0, Math.max(minY, BOX / 2 - cy * ds))
+        setZoom(z); setOffset({ x: ox, y: oy })
+      } catch { /* sin detección: queda el encuadre centrado */ }
+      finally { if (alive) setDetecting(false) }
+    })()
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nat])
 
   function onPointerDown(e: React.PointerEvent) {
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -107,6 +138,7 @@ export function AvatarCropper({ personId, file, onDone, onCancel }: {
           <ZoomIn size={15} className="text-muted-foreground shrink-0" />
           <input type="range" min={1} max={4} step={0.01} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-full accent-brand" />
         </div>
+        {detecting && <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground"><Wand2 size={12} className="animate-pulse" /> Buscando la cara para encuadrar…</div>}
         {err && <div className="text-xs text-bad mt-2">{err}</div>}
         <div className="flex items-center justify-end gap-2 mt-4">
           <Button size="sm" variant="ghost" onClick={onCancel} disabled={busy}>Cancelar</Button>
