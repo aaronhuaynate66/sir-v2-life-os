@@ -63,6 +63,7 @@ import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/ex
 import { transcribeExportAudios } from '@/lib/capture/whatsapp/export/audioClient'
 import { sliceParsedSince, incrementalSummary } from '@/lib/capture/whatsapp/export/incremental'
 import { extractCalls, callLabel, type ParsedCall } from '@/lib/capture/whatsapp/export/calls'
+import { chatFingerprint } from '@/lib/capture/whatsapp/export/fingerprint'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import {
   consolidateInterpretations,
@@ -125,6 +126,8 @@ interface PreviewState {
   blocksUsed?: number
   /** Solo whatsapp: llamadas NUEVAS extraídas del export (para loguearlas al confirmar). */
   calls?: ParsedCall[]
+  /** Solo whatsapp: huella del chat (participantes) → recordar de quién es. */
+  fingerprint?: string
 }
 
 const TEXT_TYPE_LABEL: Record<TextProfileType, string> = {
@@ -205,9 +208,12 @@ export interface AgregarCapturaPanelProps {
   /** Modo inicial del selector (text/image/whatsapp). Default 'text'. Lo usa el
    *  flujo "importar chat desde /captura" para aterrizar directo en WhatsApp. */
   defaultMode?: 'text' | 'image' | 'whatsapp'
+  /** Archivo de export ya elegido (lo pasa ImportarChat tras reconocer el chat),
+   *  para no re-pedirlo. */
+  initialWaFile?: File | null
 }
 
-export function AgregarCapturaPanel({ personId, personName, defaultMode }: AgregarCapturaPanelProps) {
+export function AgregarCapturaPanel({ personId, personName, defaultMode, initialWaFile }: AgregarCapturaPanelProps) {
   const router = useRouter()
   // Para auto-vincular el Instagram extraído al perfil (paridad V1): el handle
   // y su enlace se cargan SOLOS tras escanear, sin re-tipear.
@@ -222,7 +228,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
   const [files, setFiles] = useState<File[]>([])
   const [pastedText, setPastedText] = useState('')
   // Export de WhatsApp: el archivo .txt/.zip de la conversación.
-  const [waFile, setWaFile] = useState<File | null>(null)
+  const [waFile, setWaFile] = useState<File | null>(initialWaFile ?? null)
   const [transcribeAudios, setTranscribeAudios] = useState(false)
   const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null)
   // Fechas extraídas que el usuario eligió agregar a "Fechas importantes".
@@ -365,6 +371,12 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
                 ...(c.iso ? { loggedAt: c.iso } : {}),
               })
             } catch { /* best-effort */ }
+          }
+
+          // 2c. Recordar la HUELLA del chat → esta persona, para auto-rutear
+          //     el re-import aunque el export no traiga el nombre del contacto.
+          if (p.fingerprint) {
+            try { await fetch('/api/chat-identities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fingerprint: p.fingerprint, person_id: personId }) }) } catch { /* */ }
           }
 
           // 3. Fechas elegidas → Fechas importantes (people.special_dates).
@@ -769,6 +781,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
       // Llamadas NUEVAS (voz/video/perdidas) del tramo no importado, con su
       // fecha/hora — se registran como interacción al confirmar.
       const calls = extractCalls(text, lastImportedISO)
+      const fingerprint = chatFingerprint(parsed.participants)
       setPreview({
         source: 'whatsapp',
         captureType: 'whatsapp_chat',
@@ -786,6 +799,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
         messageCount: fresh.messages.length,
         blocksUsed: valid.length,
         calls,
+        fingerprint,
       })
       setPhase('review')
     } catch (e) {

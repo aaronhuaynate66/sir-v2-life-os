@@ -10,13 +10,16 @@
 // AgregarCapturaPanel en modo 'whatsapp' (pipeline completo + revisión + persist).
 
 import { useEffect, useState } from 'react'
-import { Loader2, MessagesSquare, UserPlus, X } from 'lucide-react'
+import { Loader2, MessagesSquare, UserPlus, X, FileUp, CheckCircle2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { createPerson, searchPeople, type PersonCandidate } from '@/lib/capture/observations/client'
+import { readExportText } from '@/lib/capture/whatsapp/export/client'
+import { parseWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
+import { chatFingerprint } from '@/lib/capture/whatsapp/export/fingerprint'
 import { AgregarCapturaPanel } from '@/components/relaciones/AgregarCapturaPanel'
 
 export function ImportarChat() {
@@ -25,6 +28,9 @@ export function ImportarChat() {
   const [searching, setSearching] = useState(false)
   const [resolved, setResolved] = useState<{ id: string; name: string; created: boolean } | null>(null)
   const [busy, setBusy] = useState(false)
+  const [waFile, setWaFile] = useState<File | null>(null)
+  const [recognizing, setRecognizing] = useState(false)
+  const [recognized, setRecognized] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   // Sugerencias en vivo (debounce). Solo mientras no haya persona resuelta.
@@ -56,6 +62,34 @@ export function ImportarChat() {
   function vincularExistente(c: PersonCandidate) {
     setErr(null)
     setResolved({ id: c.id, name: c.name, created: false })
+  }
+
+  async function reconocer(file: File) {
+    setWaFile(file)
+    setErr(null)
+    setRecognizing(true)
+    setRecognized(false)
+    try {
+      const text = await readExportText(file)
+      const parsed = parseWhatsAppExport(text)
+      const fp = chatFingerprint(parsed.participants)
+      if (fp) {
+        const res = await fetch(`/api/chat-identities?fingerprint=${encodeURIComponent(fp)}`)
+        if (res.ok) {
+          const j = (await res.json()) as { personId?: string | null; personName?: string }
+          if (j.personId && j.personName) {
+            setResolved({ id: j.personId, name: j.personName, created: false })
+            setRecognized(true)
+            return
+          }
+        }
+      }
+      // Sin match: dejamos el archivo cargado y caemos al matcher por nombre.
+    } catch {
+      setErr('No pude leer el archivo. Probá elegir a la persona manualmente.')
+    } finally {
+      setRecognizing(false)
+    }
   }
 
   async function crearNueva() {
@@ -94,7 +128,8 @@ export function ImportarChat() {
           <span className="text-foreground font-medium">Imagen</span> y subí su captura de
           LinkedIn/Instagram para enriquecer a <span className="text-foreground">{resolved.name}</span>.
         </p>
-        <AgregarCapturaPanel personId={resolved.id} personName={resolved.name} defaultMode="whatsapp" />
+        {recognized && <p className="text-[11px] text-ok mb-2 inline-flex items-center gap-1"><CheckCircle2 size={12} /> Reconocí este chat por sus participantes — lo ruteé solo.</p>}
+        <AgregarCapturaPanel personId={resolved.id} personName={resolved.name} defaultMode="whatsapp" initialWaFile={waFile} />
       </div>
     )
   }
@@ -111,6 +146,16 @@ export function ImportarChat() {
         <p className="text-sm text-muted-foreground mb-3">
           Subí el export de una conversación y creá o vinculá su contacto en un paso. ¿De quién es el chat?
         </p>
+
+        <label className="mb-3 flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/40">
+          {recognizing ? <Loader2 size={15} className="animate-spin" /> : <FileUp size={15} />}
+          <span>{recognizing ? 'Reconociendo el chat…' : 'Subí el .zip y lo reconozco solo (si ya lo importaste antes)'}</span>
+          <input type="file" accept=".txt,.zip,text/plain,application/zip" className="hidden" disabled={recognizing}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void reconocer(f); e.currentTarget.value = '' }} />
+        </label>
+        {waFile && !recognizing && (
+          <p className="text-[11px] text-muted-foreground mb-2">No reconocí este chat (primera vez). Elegí la persona abajo — la próxima lo ruteo solo.</p>
+        )}
 
         <Input
           value={name}
