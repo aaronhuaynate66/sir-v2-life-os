@@ -93,7 +93,7 @@ function buildEntries(personLogs: PersonLog[], observations: Observation[]): Ent
       id: `obs:${obs.id}`,
       at: obs.observedAt,
       source: 'observation',
-      label: CAPTURE_LABEL[obs.captureType] ?? obs.captureType,
+      label: (obs.data as Record<string, unknown> | undefined)?.source === 'call_transcript' ? 'Llamada' : (CAPTURE_LABEL[obs.captureType] ?? obs.captureType),
       detail: observationDetail(obs),
       value: null,
       obsId: obs.id,
