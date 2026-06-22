@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e88541b`
+**Hash del último commit humano:** `47234be`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `47234be` | aaronhuaynate66 | feat(whatsapp): auto-rutear re-import por identidad del chat (#332) | 2026-06-22 |
 | `e88541b` | aaronhuaynate66 | feat(people): endpoint para setear ciclo (cycle_start_date/length) fuera del form (#331) | 2026-06-22 |
 | `fa146b5` | aaronhuaynate66 | feat(relaciones): foto/avatar por persona (fase 1 manual) (#330) | 2026-06-22 |
 | `a2d8268` | aaronhuaynate66 | feat(whatsapp): extraer llamadas del export → interacción con fecha/hora (#329) | 2026-06-22 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `86a456e` | aaronhuaynate66 | feat(momentos): SIR recuerda los momentos abiertos (día-X + briefing) (#325) | 2026-06-22 |
 | `492a5de` | aaronhuaynate66 | feat(relaciones): Momentos/Decisiones — open loops por persona (#324) | 2026-06-22 |
 | `d611be3` | aaronhuaynate66 | feat(whatsapp): leer notas de voz del export (transcribir e inyectar) (#323) | 2026-06-22 |
-| `14765f6` | aaronhuaynate66 | feat(llamada): subir audio → transcribir (Whisper) → interacción (#322) | 2026-06-22 |
 
 ---
 
