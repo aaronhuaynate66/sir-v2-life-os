@@ -78,6 +78,7 @@ export interface DayScoreMove { person: string; global: number; delta: number | 
 export interface DayFinance { type: string; amount: number; currency: string; description: string }
 export interface DaySignal { content: string; urgency: string }
 export interface DayWeatherSlice { label: string }
+export interface DayMed { name: string; quantity: number; time: string }
 
 export interface DaySlices {
   date: string
@@ -91,6 +92,7 @@ export interface DaySlices {
   finances: DayFinance[]
   signals: DaySignal[]
   weather: string | null
+  meds: DayMed[]
 }
 
 const QUAL = ['', 'muy tensa', 'tensa', 'neutral', 'cálida', 'plena']
@@ -138,6 +140,11 @@ export function renderDayContext(s: DaySlices): string {
     L.push('Señales activas:')
     for (const sg of s.signals) L.push(`  - [${sg.urgency}] ${sg.content}`)
   }
+  if (s.meds.length) {
+    any = true
+    L.push('Medicación:')
+    for (const md of s.meds) L.push(`  - ${md.time} ${md.name}${md.quantity > 1 ? ` x${md.quantity}` : ''}`)
+  }
   if (s.scoreMoves.length) {
     any = true
     L.push('Vínculos (score ese día):')
@@ -172,7 +179,7 @@ const firstNameMood = (n: string) => (n || '').trim().split(/\s+/)[0] || n
  *  roce; tranquilo si hubo registro pero nada marcado; vacío si no hubo nada. */
 export function dayMood(s: DaySlices): DayMood {
   const hasAny = !!(s.interactions.length || s.observations.length || s.deals.length ||
-    s.steps.length || s.health.length || s.scoreMoves.length || s.finances.length || s.signals.length)
+    s.steps.length || s.health.length || s.scoreMoves.length || s.finances.length || s.signals.length || s.meds.length)
   if (!hasAny) return { tone: 'empty', headline: 'Sin registros ese día.' }
 
   const tense = s.interactions.filter((i) => i.quality != null && i.quality <= 2)
