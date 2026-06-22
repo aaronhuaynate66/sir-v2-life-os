@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a2d8268`
+**Hash del último commit humano:** `fa146b5`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `fa146b5` | aaronhuaynate66 | feat(relaciones): foto/avatar por persona (fase 1 manual) (#330) | 2026-06-22 |
 | `a2d8268` | aaronhuaynate66 | feat(whatsapp): extraer llamadas del export → interacción con fecha/hora (#329) | 2026-06-22 |
 | `655b3e2` | aaronhuaynate66 | feat(brief): historial de briefs de IA (#328) | 2026-06-22 |
 | `dc50a59` | aaronhuaynate66 | feat(brief): anticipar el ciclo de la pareja en el briefing diario (#327) | 2026-06-22 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d611be3` | aaronhuaynate66 | feat(whatsapp): leer notas de voz del export (transcribir e inyectar) (#323) | 2026-06-22 |
 | `14765f6` | aaronhuaynate66 | feat(llamada): subir audio → transcribir (Whisper) → interacción (#322) | 2026-06-22 |
 | `51acaae` | aaronhuaynate66 | feat(captura): transcripción de llamada → interacción rica (#321) | 2026-06-22 |
-| `321ba2e` | aaronhuaynate66 | feat(medicacion): mis medicamentos (registro) para botones de un toque (#320) | 2026-06-22 |
 
 ---
 
