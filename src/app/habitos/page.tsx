@@ -66,20 +66,20 @@ export default function HabitosPage() {
     }
   }, [newTitle, creating])
 
-  const toggleToday = useCallback(
-    async (id: string) => {
+  const toggleDay = useCallback(
+    async (id: string, iso?: string) => {
       if (toggling) return
       setToggling(id)
       setError(null)
+      const target = iso ?? TODAY()
       try {
-        const { done } = await postJson<{ done: boolean }>('/api/habits/checkin', { habit_id: id })
-        const today = TODAY()
+        const { done } = await postJson<{ done: boolean }>('/api/habits/checkin', { habit_id: id, date: target })
         setHabits((prev) =>
           (prev ?? []).map((h) => {
             if (h.id !== id) return h
             const dates = done
-              ? [...h.checkinDates.filter((d) => d !== today), today]
-              : h.checkinDates.filter((d) => d !== today)
+              ? [...h.checkinDates.filter((d) => d !== target), target]
+              : h.checkinDates.filter((d) => d !== target)
             return { ...h, checkinDates: dates }
           }),
         )
@@ -141,7 +141,7 @@ export default function HabitosPage() {
                 <CardContent className="p-4 flex items-center gap-4">
                   <button
                     type="button"
-                    onClick={() => toggleToday(h.id)}
+                    onClick={() => void toggleDay(h.id)}
                     disabled={toggling === h.id}
                     aria-label={s.doneToday ? 'Desmarcar hoy' : 'Marcar hoy'}
                     className="shrink-0"
@@ -162,19 +162,28 @@ export default function HabitosPage() {
                     <div className="text-[11px] text-muted-foreground mt-0.5">
                       consistencia {s.consistency}% · 30 días
                     </div>
-                    <div className="mt-1.5 flex items-center gap-1" aria-label="Últimos 7 días">
+                    <div className="mt-1.5 flex items-end gap-1.5" aria-label="Últimos 7 días (tocá para marcar)">
                       {marks.map((m) => (
-                        <span
+                        <button
                           key={m.iso}
-                          title={`${m.iso}${m.isToday ? ' · hoy' : ''}${m.done ? ' · hecho' : ''}`}
-                          className={
-                            'h-2.5 w-2.5 rounded-full ' +
-                            (m.done ? 'bg-ok' : 'bg-muted-foreground/20') +
-                            (m.isToday ? ' ring-2 ring-offset-1 ring-offset-card ring-ok/60' : '')
-                          }
-                        />
+                          type="button"
+                          onClick={() => void toggleDay(h.id, m.iso)}
+                          disabled={toggling === h.id}
+                          title={`${m.iso}${m.isToday ? ' · hoy' : ''}${m.done ? ' · hecho' : ' · pendiente'} — tocá para marcar`}
+                          aria-label={`${m.iso}${m.done ? ' hecho' : ' pendiente'}`}
+                          className="flex flex-col items-center gap-0.5 disabled:opacity-50"
+                        >
+                          <span
+                            className={
+                              'h-4 w-4 rounded-full transition-colors ' +
+                              (m.done ? 'bg-ok' : 'bg-muted-foreground/20 hover:bg-muted-foreground/40') +
+                              (m.isToday ? ' ring-2 ring-offset-1 ring-offset-card ring-ok/60' : '')
+                            }
+                          />
+                          <span className="text-[9px] text-muted-foreground tabular-nums">{m.iso.slice(8, 10)}</span>
+                        </button>
                       ))}
-                      <span className="ml-1.5 text-[10px] text-muted-foreground">
+                      <span className="ml-1 mb-3 text-[10px] text-muted-foreground">
                         {marks[6].done ? 'hoy ✓' : 'hoy pendiente'}
                       </span>
                     </div>
