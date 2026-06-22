@@ -140,6 +140,7 @@ export default function DiaPage() {
                 <Block title="Oportunidades" rows={slices.deals.map((d) => ({ k: d.title, v: d.what }))} />
                 <Block title="Objetivos (pasos)" rows={slices.steps.map((s) => ({ k: s.goal, v: s.step }))} />
                 <Block title="Salud" rows={slices.health.map((h) => ({ k: h.label, v: h.value }))} />
+                <Block title="Medicación" rows={slices.meds.map((m) => ({ k: `${m.time} · ${m.name}${m.quantity > 1 ? ` x${m.quantity}` : ''}`, v: '' }))} />
                 <Block title="Finanzas" rows={slices.finances.map((fn) => ({ k: `${fn.type} ${fn.amount} ${fn.currency}`, v: fn.description }))} />
                 <Block title="Señales activas" rows={slices.signals.map((sg) => ({ k: sg.urgency, v: sg.content }))} />
                 <Block title="Vínculos (score ese día)" rows={slices.scoreMoves.map((m) => ({ k: m.person, v: `${m.global}/100${m.delta != null && m.delta !== 0 ? ` (${m.delta > 0 ? '+' : ''}${m.delta})` : ''}` }))} />

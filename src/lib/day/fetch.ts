@@ -20,7 +20,7 @@ export async function fetchDayContext(
 ): Promise<DaySlices> {
   const { startUtc, endUtc } = limaDayUtcWindow(date)
   const slices: DaySlices = {
-    date, moonLabel: null, interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null,
+    date, moonLabel: null, interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null, meds: [],
   }
   try { slices.moonLabel = moonPhase(new Date(`${date}T12:00:00.000Z`)).label } catch { /* */ }
 
@@ -150,6 +150,17 @@ export async function fetchDayContext(
       .gte('detected_at', startUtc).lt('detected_at', endUtc).limit(30)
     for (const r of (data ?? []) as Array<{ content: string; urgency: string }>) {
       slices.signals.push({ content: (r.content || '').slice(0, 160), urgency: r.urgency || 'monitor' })
+    }
+  } catch { /* */ }
+
+  // 8b. Medicación tomada ese día (med_intakes).
+  try {
+    const { data } = await supabase.from('med_intakes')
+      .select('name, quantity, taken_at')
+      .eq('user_id', userId).gte('taken_at', startUtc).lt('taken_at', endUtc).limit(30)
+    for (const r of (data ?? []) as Array<{ name: string; quantity: number; taken_at: string }>) {
+      const hh = new Date(r.taken_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Lima' })
+      slices.meds.push({ name: r.name, quantity: Number(r.quantity) || 1, time: hh })
     }
   } catch { /* */ }
 
