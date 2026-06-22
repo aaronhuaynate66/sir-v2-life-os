@@ -26,6 +26,7 @@ REGLAS ESTRICTAS:
 - Usá SOLO los datos provistos. No inventes objetivos, señales, personas ni eventos.
 - PROHIBIDO: diagnósticos clínicos, etiquetas de salud mental, consejo médico, alarmismo.
 - Si hay poco contexto, decilo con honestidad y mantené el briefing corto.
+- Si una pareja o vínculo MUY cercano está cerca de su período, podés anticiparlo con delicadeza (ej. cuidar el tono, dar espacio, estar más presente) — observacional y empático, NUNCA clínico, determinista ni como excusa para minimizar lo que sienta. No lo menciones para vínculos no cercanos.
 - Español neutro, cálido y directo. Sin markdown extra, sin emojis. Respetá las etiquetas "Hoy:", "En foco:", "Sugerencia:" tal cual.`
 
 export interface DailyGoalLite {
@@ -55,6 +56,12 @@ export interface DailyMomentLite {
   /** 'vencido' | 'hoy' | 'proximo' | 'abierto' (sin seguimiento) */
   due: string
 }
+export interface DailyCycleLite {
+  person: string
+  phase: string
+  /** Días hasta el próximo período (0 = hoy). */
+  daysUntilNextPeriod: number
+}
 
 export interface DailyBriefingInput {
   today: string
@@ -64,6 +71,7 @@ export interface DailyBriefingInput {
   logStats: DailyLogStat[]
   observations: DailyObservationLite[]
   moments: DailyMomentLite[]
+  cycles: DailyCycleLite[]
 }
 
 const KIND_ES: Record<string, string> = {
@@ -117,6 +125,16 @@ export function buildDailyInput(d: DailyBriefingInput): string {
       const tag = m.due === 'vencido' ? 'SEGUIMIENTO VENCIDO' : m.due === 'hoy' ? 'SEGUIMIENTO HOY' : m.due === 'proximo' ? 'a seguir pronto' : 'abierto'
       lines.push(`  - [${tag}] ${m.person}: ${m.title}`)
     }
+
+  if (d.cycles.length > 0) {
+    lines.push('', 'Ciclo de vínculos cercanos (solo anticipación, NO médico):')
+    for (const c of d.cycles.slice(0, 6)) {
+      const when = c.daysUntilNextPeriod <= 0 ? 'su período es hoy/ya empezó'
+        : c.daysUntilNextPeriod === 1 ? 'le vendría el período mañana'
+        : `le vendría el período en ~${c.daysUntilNextPeriod} días`
+      lines.push(`  - ${c.person}: fase ${c.phase}, ${when}`)
+    }
+  }
 
   lines.push('', 'Escribí el briefing de hoy con la estructura indicada.')
   return lines.join('\n')

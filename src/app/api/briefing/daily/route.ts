@@ -14,6 +14,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { moonPhase } from '@/lib/lunar/phase'
+import { cyclePhase } from '@/lib/ciclo/phase'
 import {
   DAILY_BRIEFING_SYSTEM_PROMPT,
   buildDailyInput,
@@ -22,6 +23,7 @@ import {
   type DailyLogStat,
   type DailyObservationLite,
   type DailyMomentLite,
+  type DailyCycleLite,
 } from '@/lib/daily-briefing/prompt'
 
 export const runtime = 'nodejs'
@@ -88,7 +90,7 @@ export async function POST(_req: NextRequest) {
       .limit(50),
     supabase
       .from('people')
-      .select('id, name')
+      .select('id, name, cycle_start_date, cycle_length_days, importance_score')
       .eq('user_id', userId)
       .limit(2000),
   ])
@@ -157,6 +159,21 @@ export async function POST(_req: NextRequest) {
     return { person: nameById.get(m.person_id) || 'alguien', title: (m.title || '').slice(0, 160), due }
   })
 
+  // Ciclo de vínculos CERCANOS (importance >= 6) con dato cargado. Solo
+  // surfaceamos cuando es accionable: cerca del próximo período (<=4 días) o en
+  // fase menstrual. Anticipación empática, no médico (el prompt lo encuadra).
+  const peopleRows = (peopleRes?.data ?? []) as Array<{ name: string; cycle_start_date: string | null; cycle_length_days: number | null; importance_score: number | null }>
+  const cycles: DailyCycleLite[] = []
+  for (const p of peopleRows) {
+    if (!p.cycle_start_date) continue
+    if ((Number(p.importance_score) || 0) < 6) continue
+    const ph = cyclePhase(p.cycle_start_date, Number(p.cycle_length_days) || 28)
+    if (!ph) continue
+    if (ph.daysUntilNextPeriod <= 4 || ph.phase === 'menstrual') {
+      cycles.push({ person: p.name, phase: ph.label, daysUntilNextPeriod: ph.daysUntilNextPeriod })
+    }
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
   }
@@ -172,7 +189,7 @@ export async function POST(_req: NextRequest) {
       max_tokens: 700,
       system: DAILY_BRIEFING_SYSTEM_PROMPT,
       messages: [
-        { role: 'user', content: buildDailyInput({ today, lunarPhase, goals, signals, logStats, observations, moments }) },
+        { role: 'user', content: buildDailyInput({ today, lunarPhase, goals, signals, logStats, observations, moments, cycles }) },
       ],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
