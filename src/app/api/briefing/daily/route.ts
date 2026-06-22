@@ -201,5 +201,8 @@ export async function POST(_req: NextRequest) {
   }
   if (!text) return errorJson(502, 'El modelo devolvió un briefing vacío')
 
+  // Persistir en el historial (best-effort; no en el tipo generado → .from()).
+  try { await supabase.from('briefing_history').insert({ user_id: userId, kind: 'daily', content: text }) } catch { /* */ }
+
   return NextResponse.json({ briefing: text }, { status: 200 })
 }
