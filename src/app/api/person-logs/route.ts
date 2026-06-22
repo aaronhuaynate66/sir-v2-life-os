@@ -42,6 +42,7 @@ interface PostBody {
   kind?: unknown
   value?: unknown
   note?: unknown
+  logged_at?: unknown
 }
 
 interface ErrorBody {
@@ -106,6 +107,14 @@ export async function POST(req: NextRequest) {
     if (trimmed.length > 0) note = trimmed.slice(0, 500)
   }
 
+  // logged_at opcional: permite fechar el log en el pasado (ej. una llamada de
+  // hace días extraída del export). Validamos ISO y que no sea futuro.
+  let loggedAt: string | null = null
+  if (typeof body.logged_at === 'string' && body.logged_at.length >= 10) {
+    const t = Date.parse(body.logged_at)
+    if (Number.isFinite(t) && t <= Date.now() + 60_000) loggedAt = new Date(t).toISOString()
+  }
+
   // 7. Person ownership — defensa explicita sobre RLS. 404 si ajena.
   const { data: personRow, error: personErr } = await supabase
     .from('people')
@@ -129,6 +138,7 @@ export async function POST(req: NextRequest) {
       kind,
       value,
       note,
+      ...(loggedAt ? { logged_at: loggedAt } : {}),
     })
     .select('id, user_id, person_id, kind, value, note, logged_at, created_at')
     .single()

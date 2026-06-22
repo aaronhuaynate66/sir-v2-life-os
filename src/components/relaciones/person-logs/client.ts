@@ -10,6 +10,7 @@ export interface CreatePersonLogInput {
   kind: PersonLogKind
   value: number
   note?: string
+  loggedAt?: string
 }
 
 /** Alias del tipo de error compartido (mantiene el nombre histórico). */
@@ -26,6 +27,7 @@ export async function createPersonLog(
       kind: input.kind,
       value: input.value,
       ...(input.note ? { note: input.note } : {}),
+      ...(input.loggedAt ? { logged_at: input.loggedAt } : {}),
     }),
   })
   if (!res.ok) throw await parseErrorResponse(res)

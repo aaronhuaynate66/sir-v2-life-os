@@ -62,6 +62,7 @@ import {
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { transcribeExportAudios } from '@/lib/capture/whatsapp/export/audioClient'
 import { sliceParsedSince, incrementalSummary } from '@/lib/capture/whatsapp/export/incremental'
+import { extractCalls, callLabel, type ParsedCall } from '@/lib/capture/whatsapp/export/calls'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import {
   consolidateInterpretations,
@@ -122,6 +123,8 @@ interface PreviewState {
   consolidated?: ConsolidatedExport
   messageCount?: number
   blocksUsed?: number
+  /** Solo whatsapp: llamadas NUEVAS extraídas del export (para loguearlas al confirmar). */
+  calls?: ParsedCall[]
 }
 
 const TEXT_TYPE_LABEL: Record<TextProfileType, string> = {
@@ -347,6 +350,21 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
             } catch {
               /* no fatal: la observación ya quedó guardada */
             }
+          }
+
+          // 2b. Llamadas (voz/video/perdidas) → interacción con su fecha/hora
+          //     real, para que aparezcan en el día-X y la bitácora. Tono neutral
+          //     (3): la llamada es CONTACTO; el dato fino va en la nota. Cap 30.
+          for (const c of (p.calls ?? []).slice(0, 30)) {
+            try {
+              await createPersonLog({
+                personId,
+                kind: 'interaction',
+                value: 3,
+                note: `${callLabel(c)}${c.time ? ` · ${c.time}` : ''}`,
+                ...(c.iso ? { loggedAt: c.iso } : {}),
+              })
+            } catch { /* best-effort */ }
           }
 
           // 3. Fechas elegidas → Fechas importantes (people.special_dates).
@@ -748,6 +766,9 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
       })
       setSelectedDateIdx(preselected)
 
+      // Llamadas NUEVAS (voz/video/perdidas) del tramo no importado, con su
+      // fecha/hora — se registran como interacción al confirmar.
+      const calls = extractCalls(text, lastImportedISO)
       setPreview({
         source: 'whatsapp',
         captureType: 'whatsapp_chat',
@@ -764,6 +785,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
         consolidated,
         messageCount: fresh.messages.length,
         blocksUsed: valid.length,
+        calls,
       })
       setPhase('review')
     } catch (e) {

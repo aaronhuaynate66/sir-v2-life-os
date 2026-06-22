@@ -136,7 +136,7 @@ export function toISO(date: string, time: string, ampm: string | null): string |
 }
 
 /** "HH:mm" 24h a partir de hora + AM/PM (para rawMessages.timestamp). */
-function toHHmm(time: string, ampm: string | null): string {
+export function toHHmm(time: string, ampm: string | null): string {
   const tParts = time.split(':').map((n) => parseInt(n, 10))
   let hour = tParts[0] ?? 0
   const min = tParts[1] ?? 0
@@ -152,7 +152,7 @@ function toHHmm(time: string, ampm: string | null): string {
 
 /** Separa "Autor: contenido". null si no hay ": " (⇒ línea de sistema). El
  *  autor no puede ser absurdamente largo (evita partir un texto con ":"). */
-function splitAuthor(rest: string): { author: string; content: string } | null {
+export function splitAuthor(rest: string): { author: string; content: string } | null {
   const idx = rest.indexOf(': ')
   if (idx < 0) {
     // Caso "Autor:" sin espacio (contenido vacío) al final de la línea.
