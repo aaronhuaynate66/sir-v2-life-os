@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e60696e`
+**Hash del último commit humano:** `7a0c0e8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `7a0c0e8` | aaronhuaynate66 | feat(avatar): detección automática de cara con visión (fase 2b) (#334) | 2026-06-22 |
 | `e60696e` | aaronhuaynate66 | feat(avatar): recorte asistido (fase 2a) — subir captura y recortar la cara (#333) | 2026-06-22 |
 | `47234be` | aaronhuaynate66 | feat(whatsapp): auto-rutear re-import por identidad del chat (#332) | 2026-06-22 |
 | `e88541b` | aaronhuaynate66 | feat(people): endpoint para setear ciclo (cycle_start_date/length) fuera del form (#331) | 2026-06-22 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `dc50a59` | aaronhuaynate66 | feat(brief): anticipar el ciclo de la pareja en el briefing diario (#327) | 2026-06-22 |
 | `d06af68` | aaronhuaynate66 | feat(whatsapp): marcador incremental para transcripción de notas de voz (#326) | 2026-06-22 |
 | `86a456e` | aaronhuaynate66 | feat(momentos): SIR recuerda los momentos abiertos (día-X + briefing) (#325) | 2026-06-22 |
-| `492a5de` | aaronhuaynate66 | feat(relaciones): Momentos/Decisiones — open loops por persona (#324) | 2026-06-22 |
 
 ---
 
