@@ -21,6 +21,7 @@ import {
   type DailySignalLite,
   type DailyLogStat,
   type DailyObservationLite,
+  type DailyMomentLite,
 } from '@/lib/daily-briefing/prompt'
 
 export const runtime = 'nodejs'
@@ -52,7 +53,7 @@ export async function POST(_req: NextRequest) {
 
   const recentIso = new Date(Date.now() - RECENT_DAYS * DAY_MS).toISOString()
 
-  const [goalsRes, signalsRes, logsRes, obsRes] = await Promise.all([
+  const [goalsRes, signalsRes, logsRes, obsRes, momentsRes, peopleRes] = await Promise.all([
     supabase
       .from('goals')
       .select('title, priority, progress, next_action, status')
@@ -79,6 +80,17 @@ export async function POST(_req: NextRequest) {
       .gte('observed_at', recentIso)
       .order('observed_at', { ascending: false })
       .limit(50),
+    supabase
+      .from('relationship_moments')
+      .select('person_id, title, occurred_on, follow_up_on, status')
+      .eq('user_id', userId)
+      .eq('status', 'abierto')
+      .limit(50),
+    supabase
+      .from('people')
+      .select('id, name')
+      .eq('user_id', userId)
+      .limit(2000),
   ])
 
   if (goalsRes.error || signalsRes.error || logsRes.error || obsRes.error) {
@@ -93,8 +105,9 @@ export async function POST(_req: NextRequest) {
   const signalRows = (signalsRes.data ?? []) as Array<{ content: string; urgency: string; suggested_action: string | null }>
   const logRows = (logsRes.data ?? []) as Array<{ kind: string; value: number; logged_at: string }>
   const obsRows = (obsRes.data ?? []) as Array<{ capture_type: string; data: Record<string, unknown> | null; observed_at: string }>
+  const momentRows = (momentsRes?.data ?? []) as Array<{ person_id: string; title: string; occurred_on: string | null; follow_up_on: string | null }>
 
-  if (goalRows.length === 0 && signalRows.length === 0 && logRows.length === 0 && obsRows.length === 0) {
+  if (goalRows.length === 0 && signalRows.length === 0 && logRows.length === 0 && obsRows.length === 0 && momentRows.length === 0) {
     return errorJson(
       422,
       'Sin contexto para un briefing',
@@ -133,6 +146,17 @@ export async function POST(_req: NextRequest) {
     summary: o.data && typeof o.data.summary === 'string' ? (o.data.summary as string) : null,
   }))
 
+  // Decisiones / momentos abiertos (open loops). Best-effort.
+  const nameById = new Map<string, string>()
+  for (const p of ((peopleRes?.data ?? []) as Array<{ id: string; name: string }>)) nameById.set(p.id, p.name)
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const moments: DailyMomentLite[] = momentRows.map((m) => {
+    const fol = (m.follow_up_on || '').slice(0, 10)
+    let due = 'abierto'
+    if (fol) due = fol < todayKey ? 'vencido' : fol === todayKey ? 'hoy' : 'proximo'
+    return { person: nameById.get(m.person_id) || 'alguien', title: (m.title || '').slice(0, 160), due }
+  })
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
   }
@@ -148,7 +172,7 @@ export async function POST(_req: NextRequest) {
       max_tokens: 700,
       system: DAILY_BRIEFING_SYSTEM_PROMPT,
       messages: [
-        { role: 'user', content: buildDailyInput({ today, lunarPhase, goals, signals, logStats, observations }) },
+        { role: 'user', content: buildDailyInput({ today, lunarPhase, goals, signals, logStats, observations, moments }) },
       ],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
