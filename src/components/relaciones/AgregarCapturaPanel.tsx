@@ -60,6 +60,7 @@ import {
   archiveConversation,
 } from '@/lib/capture/whatsapp/export/client'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
+import { transcribeExportAudios } from '@/lib/capture/whatsapp/export/audioClient'
 import { sliceParsedSince, incrementalSummary } from '@/lib/capture/whatsapp/export/incremental'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import {
@@ -219,6 +220,8 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
   const [pastedText, setPastedText] = useState('')
   // Export de WhatsApp: el archivo .txt/.zip de la conversación.
   const [waFile, setWaFile] = useState<File | null>(null)
+  const [transcribeAudios, setTranscribeAudios] = useState(false)
+  const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null)
   // Fechas extraídas que el usuario eligió agregar a "Fechas importantes".
   const [selectedDateIdx, setSelectedDateIdx] = useState<Set<number>>(new Set())
   // Tipo del perfil pegado: se autodetecta del texto, con override manual.
@@ -240,6 +243,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
     setFiles([])
     setPastedText('')
     setWaFile(null)
+    setAudioProgress(null)
     setSelectedDateIdx(new Set())
     setTextTypeTouched(false)
     setPhase('idle')
@@ -656,7 +660,17 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
     setProgress(null)
     try {
       // 1. Texto del chat (.txt directo / .zip extraído sin subir la media).
-      const text = await readExportText(waFile)
+      let text = await readExportText(waFile)
+      // 1a. Notas de voz: si está activado y es un .zip, transcribimos las más
+      //     recientes y las inyectamos como texto antes de parsear (usa Whisper).
+      if (transcribeAudios && /\.zip$/i.test(waFile.name)) {
+        setAudioProgress({ done: 0, total: 0 })
+        try {
+          const r = await transcribeExportAudios(waFile, text, { cap: 25, onProgress: (done, total) => setAudioProgress({ done, total }) })
+          text = r.text
+        } catch { /* best-effort: seguimos con el texto sin audios */ }
+        setAudioProgress(null)
+      }
       const parsed = parseWhatsAppExport(text)
       if (!isWhatsAppExport(text) || parsed.messages.length === 0) {
         setPreview({
@@ -753,7 +767,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
       setError(toError(e))
       setPhase('idle')
     }
-  }, [waFile, personName, personId])
+  }, [waFile, personName, personId, transcribeAudios])
 
   const working = phase === 'working'
   const confirming = phase === 'confirming'
@@ -1036,6 +1050,23 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode }: Agreg
                     <MessagesSquare size={12} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0" aria-hidden="true" />
                     <span className="text-foreground truncate min-w-0 flex-1 font-mono">{waFile.name}</span>
                     <span className="text-muted-foreground/70 flex-shrink-0">{(waFile.size / 1024).toFixed(0)} KB</span>
+                  </div>
+                )}
+
+                {/* Notas de voz: solo si el archivo es un .zip (los audios viven ahí). */}
+                {waFile && /\.zip$/i.test(waFile.name) && (
+                  <label className="flex items-start gap-2 text-[11px] text-muted-foreground cursor-pointer select-none">
+                    <input type="checkbox" checked={transcribeAudios} disabled={working}
+                      onChange={(e) => setTranscribeAudios(e.target.checked)} className="mt-0.5 h-3.5 w-3.5 accent-brand" />
+                    <span>Transcribir notas de voz (las 25 más recientes) y leerlas como texto. Usa créditos de IA.</span>
+                  </label>
+                )}
+
+                {/* Progreso de transcripción de audios. */}
+                {working && audioProgress && (
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                    <span>{audioProgress.total > 0 ? `Transcribiendo nota de voz ${Math.min(audioProgress.done + 1, audioProgress.total)} de ${audioProgress.total}…` : 'Buscando notas de voz…'}</span>
                   </div>
                 )}
 
