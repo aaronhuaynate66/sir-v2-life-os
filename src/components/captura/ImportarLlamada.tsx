@@ -10,13 +10,14 @@
 // transcripción es texto corrido.
 
 import { useEffect, useState } from 'react'
-import { Loader2, PhoneCall, UserPlus, X, Check } from 'lucide-react'
+import { Loader2, PhoneCall, UserPlus, X, Check, Upload, FileAudio, Type } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { createPerson, searchPeople, type PersonCandidate } from '@/lib/capture/observations/client'
+import { createClient } from '@/lib/supabase/client'
 import { interpretChunk, persistWhatsAppExport, archiveConversation } from '@/lib/capture/whatsapp/export/client'
 import { consolidateInterpretations } from '@/lib/capture/whatsapp/export/consolidate'
 import { chunkText } from '@/lib/capture/call/chunkText'
@@ -41,6 +42,8 @@ export function ImportarLlamada() {
   const [progress, setProgress] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState<{ summary: string; quality: number } | null>(null)
+  const [inputMode, setInputMode] = useState<'text' | 'audio'>('text')
+  const [transcribing, setTranscribing] = useState(false)
 
   // Sugerencias en vivo (debounce). Solo mientras no haya persona resuelta.
   useEffect(() => {
@@ -76,7 +79,47 @@ export function ImportarLlamada() {
 
   function reset() {
     setResolved(null); setName(''); setTranscript(''); setDate(todayLimaISO())
-    setDone(null); setErr(null); setProgress(null); setCandidates([])
+    setDone(null); setErr(null); setProgress(null); setCandidates([]); setInputMode('text')
+  }
+
+  function extForMime(mime: string): string {
+    if (mime.includes('webm')) return 'webm'
+    if (mime.includes('mp4') || mime.includes('m4a') || mime.includes('aac')) return 'm4a'
+    if (mime.includes('ogg')) return 'ogg'
+    if (mime.includes('wav')) return 'wav'
+    if (mime.includes('mpeg') || mime.includes('mp3')) return 'mp3'
+    return 'm4a'
+  }
+
+  async function subirYTranscribir(fileAudio: File) {
+    if (!resolved || transcribing) return
+    setErr(null); setTranscribing(true); setProgress('Subiendo audio…')
+    try {
+      const supabase = createClient()
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData?.user?.id
+      if (!userId) { setErr('Sesión expirada. Recargá la página.'); return }
+      const mime = fileAudio.type || 'audio/mp4'
+      const path = `${userId}/${resolved.id}/call-${crypto.randomUUID()}.${extForMime(mime)}`
+      const { error: upErr } = await supabase.storage.from('person-voice-notes').upload(path, fileAudio, { contentType: mime, upsert: false })
+      if (upErr) { setErr(`No se pudo subir el audio: ${upErr.message}`); return }
+      setProgress('Transcribiendo… (puede tardar según el largo)')
+      const res = await fetch('/api/capture/call/transcribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bucket: 'person-voice-notes', path }),
+      })
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}))
+        setErr(b.detail || b.error || 'No se pudo transcribir el audio.')
+        return
+      }
+      const { text } = (await res.json()) as { text: string }
+      setTranscript(text)
+      setInputMode('text') // pasa a revisión: ve el texto antes de procesar
+      setProgress(null)
+    } catch {
+      setErr('No se pudo procesar el audio. Reintentá.')
+    } finally { setTranscribing(false); setProgress(null) }
   }
 
   async function procesar() {
@@ -187,11 +230,43 @@ export function ImportarLlamada() {
               <label className="text-xs text-muted-foreground">Fecha de la llamada</label>
               <Input type="date" value={date} max={todayLimaISO()} onChange={(e) => setDate(e.target.value)} className="w-auto" />
             </div>
-            <textarea
-              value={transcript} onChange={(e) => setTranscript(e.target.value)} rows={8}
-              placeholder="Pegá acá la transcripción de la llamada…"
-              className="w-full rounded-lg border border-border bg-background p-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            />
+
+            {/* Toggle: pegar texto (iPhone nativo) vs subir audio (WhatsApp) */}
+            <div className="inline-flex rounded-lg border border-border p-0.5 text-xs">
+              <button type="button" onClick={() => setInputMode('text')}
+                className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 ${inputMode === 'text' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground'}`}>
+                <Type size={13} /> Pegar texto
+              </button>
+              <button type="button" onClick={() => setInputMode('audio')}
+                className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 ${inputMode === 'audio' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground'}`}>
+                <FileAudio size={13} /> Subir audio
+              </button>
+            </div>
+
+            {inputMode === 'audio' ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Para WhatsApp: poné la llamada en altavoz, grabá con Notas de Voz y subí el archivo acá. SIR lo transcribe (usa créditos de IA) y lo procesa igual.
+                </p>
+                <label className="flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground hover:bg-muted/40">
+                  <Upload size={15} />
+                  <span>Elegir archivo de audio (m4a, mp3, wav…)</span>
+                  <input type="file" accept="audio/*" className="hidden" disabled={transcribing}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void subirYTranscribir(f); e.currentTarget.value = '' }} />
+                </label>
+                {transcribing && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={12} className="animate-spin" /> {progress ?? 'Procesando…'}</div>}
+                {transcript.trim().length > 0 && !transcribing && (
+                  <div className="text-xs text-good">Transcripción lista — revisala en “Pegar texto” y procesá.</div>
+                )}
+              </div>
+            ) : (
+              <textarea
+                value={transcript} onChange={(e) => setTranscript(e.target.value)} rows={8}
+                placeholder="Pegá acá la transcripción de la llamada…"
+                className="w-full rounded-lg border border-border bg-background p-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            )}
+
             <div className="flex items-center gap-3">
               <Button onClick={procesar} disabled={busy || transcript.trim().length < 20}>
                 {busy ? <Loader2 size={15} className="mr-2 animate-spin" /> : <PhoneCall size={15} className="mr-2" />} Procesar llamada
