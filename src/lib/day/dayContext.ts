@@ -79,6 +79,7 @@ export interface DayFinance { type: string; amount: number; currency: string; de
 export interface DaySignal { content: string; urgency: string }
 export interface DayWeatherSlice { label: string }
 export interface DayMed { name: string; quantity: number; time: string }
+export interface DayMoment { person: string; title: string; kind: 'occurred' | 'follow' }
 
 export interface DaySlices {
   date: string
@@ -93,6 +94,7 @@ export interface DaySlices {
   signals: DaySignal[]
   weather: string | null
   meds: DayMed[]
+  moments: DayMoment[]
 }
 
 const QUAL = ['', 'muy tensa', 'tensa', 'neutral', 'cálida', 'plena']
@@ -144,6 +146,15 @@ export function renderDayContext(s: DaySlices): string {
     any = true
     L.push('Medicación:')
     for (const md of s.meds) L.push(`  - ${md.time} ${md.name}${md.quantity > 1 ? ` x${md.quantity}` : ''}`)
+  }
+  if (s.moments.length) {
+    any = true
+    L.push('Momentos / decisiones abiertas:')
+    for (const mo of s.moments) {
+      L.push(mo.kind === 'follow'
+        ? `  - SEGUIMIENTO hoy con ${mo.person}: ${mo.title}`
+        : `  - con ${mo.person}: ${mo.title} (sigue abierto)`)
+    }
   }
   if (s.scoreMoves.length) {
     any = true

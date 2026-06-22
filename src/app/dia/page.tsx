@@ -138,6 +138,7 @@ export default function DiaPage() {
                 )}
                 <Block title="Conversaciones / capturas" rows={slices.observations.map((o) => ({ k: o.person, v: o.summary }))} />
                 <Block title="Oportunidades" rows={slices.deals.map((d) => ({ k: d.title, v: d.what }))} />
+                <Block title="Momentos y decisiones" rows={slices.moments.map((mo) => ({ k: mo.kind === 'follow' ? `Seguimiento · ${mo.person}` : mo.person, v: mo.title }))} />
                 <Block title="Objetivos (pasos)" rows={slices.steps.map((s) => ({ k: s.goal, v: s.step }))} />
                 <Block title="Salud" rows={slices.health.map((h) => ({ k: h.label, v: h.value }))} />
                 <Block title="Medicación" rows={slices.meds.map((m) => ({ k: `${m.time} · ${m.name}${m.quantity > 1 ? ` x${m.quantity}` : ''}`, v: '' }))} />

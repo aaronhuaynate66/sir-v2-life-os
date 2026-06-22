@@ -49,6 +49,12 @@ export interface DailyObservationLite {
   type: string
   summary: string | null
 }
+export interface DailyMomentLite {
+  person: string
+  title: string
+  /** 'vencido' | 'hoy' | 'proximo' | 'abierto' (sin seguimiento) */
+  due: string
+}
 
 export interface DailyBriefingInput {
   today: string
@@ -57,6 +63,7 @@ export interface DailyBriefingInput {
   signals: DailySignalLite[]
   logStats: DailyLogStat[]
   observations: DailyObservationLite[]
+  moments: DailyMomentLite[]
 }
 
 const KIND_ES: Record<string, string> = {
@@ -101,6 +108,14 @@ export function buildDailyInput(d: DailyBriefingInput): string {
   else
     for (const o of d.observations.slice(0, 15)) {
       lines.push(`  - [${o.date} · ${o.type}] ${o.summary ?? '(sin resumen)'}`)
+    }
+
+  lines.push('', `Decisiones / momentos abiertos (${d.moments.length}):`)
+  if (d.moments.length === 0) lines.push('  (ninguno)')
+  else
+    for (const m of d.moments.slice(0, 12)) {
+      const tag = m.due === 'vencido' ? 'SEGUIMIENTO VENCIDO' : m.due === 'hoy' ? 'SEGUIMIENTO HOY' : m.due === 'proximo' ? 'a seguir pronto' : 'abierto'
+      lines.push(`  - [${tag}] ${m.person}: ${m.title}`)
     }
 
   lines.push('', 'Escribí el briefing de hoy con la estructura indicada.')

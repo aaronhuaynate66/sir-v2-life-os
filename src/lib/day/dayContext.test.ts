@@ -36,7 +36,7 @@ describe('limaDayUtcWindow', () => {
 })
 
 describe('renderDayContext', () => {
-  const base: DaySlices = { date: '2026-06-18', moonLabel: 'Luna llena', interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null, meds: [] }
+  const base: DaySlices = { date: '2026-06-18', moonLabel: 'Luna llena', interactions: [], observations: [], deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null, meds: [], moments: [] }
   it('vacío → dice sin registros', () => {
     expect(renderDayContext(base)).toContain('Sin registros')
   })
@@ -51,13 +51,23 @@ describe('renderDayContext', () => {
     expect(out).toContain('Energía: 8/10')
     expect(out).toContain('-6 vs día previo')
   })
+  it('muestra momentos abiertos y seguimiento', () => {
+    const out = renderDayContext({ ...base,
+      moments: [
+        { person: 'Diana', title: 'Le propuse que se mude conmigo', kind: 'follow' },
+        { person: 'Adrián', title: 'Quedó en pasarme el contacto', kind: 'occurred' },
+      ],
+    })
+    expect(out).toContain('SEGUIMIENTO hoy con Diana')
+    expect(out).toContain('con Adrián: Quedó en pasarme el contacto (sigue abierto)')
+  })
 })
 
 import { dayMood } from './dayContext'
 
 const base = (over: Partial<DaySlices> = {}): DaySlices => ({
   date: '2026-06-18', moonLabel: null, interactions: [], observations: [],
-  deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null, meds: [], ...over,
+  deals: [], steps: [], health: [], scoreMoves: [], finances: [], signals: [], weather: null, meds: [], moments: [], ...over,
 })
 
 describe('dayMood', () => {
