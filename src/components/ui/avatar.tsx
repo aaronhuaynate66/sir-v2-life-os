@@ -24,20 +24,26 @@ export interface AvatarProps {
   name: string
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  /** Si hay foto, se muestra la imagen (con las iniciales de fallback debajo). */
+  src?: string | null
 }
 
-export function Avatar({ name, size = 'md', className }: AvatarProps) {
+export function Avatar({ name, size = 'md', className, src }: AvatarProps) {
   return (
     <div
       className={cn(
-        'flex items-center justify-center rounded-full shrink-0 font-semibold tracking-tight select-none',
+        'relative flex items-center justify-center overflow-hidden rounded-full shrink-0 font-semibold tracking-tight select-none',
         'bg-brand-soft text-brand-soft-foreground',
         SIZE[size],
         className,
       )}
       aria-hidden="true"
     >
-      {getInitials(name)}
+      <span>{getInitials(name)}</span>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+      ) : null}
     </div>
   )
 }
