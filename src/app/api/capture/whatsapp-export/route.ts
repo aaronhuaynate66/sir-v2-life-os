@@ -109,7 +109,8 @@ function sanitizeData(raw: unknown): { data: Record<string, unknown>; confidence
       rawMessages,
       confidence,
       rawObservations: str(d.rawObservations, 240) ?? undefined,
-      source: 'whatsapp_export',
+      source: d.source === 'call_transcript' ? 'call_transcript' : 'whatsapp_export',
+      ...(d.source === 'call_transcript' ? { channel: 'llamada' } : {}),
       messageCount: typeof d.messageCount === 'number' ? d.messageCount : rawMessages.length,
       mediaCount: typeof d.mediaCount === 'number' ? d.mediaCount : 0,
       dateRange: {
