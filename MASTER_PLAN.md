@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `321ba2e`
+**Hash del último commit humano:** `51acaae`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `51acaae` | aaronhuaynate66 | feat(captura): transcripción de llamada → interacción rica (#321) | 2026-06-22 |
 | `321ba2e` | aaronhuaynate66 | feat(medicacion): mis medicamentos (registro) para botones de un toque (#320) | 2026-06-22 |
 | `4e11ab6` | aaronhuaynate66 | feat(medicacion): registro de tomas (migraña) que alimenta el día-X (#319) | 2026-06-22 |
 | `1804170` | aaronhuaynate66 | feat(habitos): marcar días pasados (backfill) + ver fechas (#318) | 2026-06-22 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ed3bf7e` | aaronhuaynate66 | feat(dia): señal externa de clima por fecha (Open-Meteo, Lima) (#4) (#314) | 2026-06-21 |
 | `5f33785` | aaronhuaynate66 | feat(dia): finanzas + señales activas en el cruce del día + narrativa IA opt-in (#3) (#313) | 2026-06-21 |
 | `df6ec04` | aaronhuaynate66 | feat(gaps): descarte del gap-engine cross-device (tabla gap_dismissals) (#312) | 2026-06-21 |
-| `8394b64` | aaronhuaynate66 | feat(sir): espejo de fuerza — el modo perspectiva trae tus propias palabras de fortaleza (#311) | 2026-06-21 |
 
 ---
 
