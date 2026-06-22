@@ -4,13 +4,13 @@
 // uploadAvatar. Fallback a iniciales (componente Avatar base).
 
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera } from 'lucide-react'
 import { Avatar } from '@/components/ui/avatar'
-import { uploadAvatar } from '@/lib/avatars/client'
+import { AvatarCropper } from './AvatarCropper'
 
 export function PersonAvatar({ personId, name, size = 'lg' }: { personId: string; name: string; size?: 'sm' | 'md' | 'lg' }) {
   const [url, setUrl] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [cropFile, setCropFile] = useState<File | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -25,13 +25,7 @@ export function PersonAvatar({ personId, name, size = 'lg' }: { personId: string
     return () => { alive = false }
   }, [personId])
 
-  async function onPick(file: File) {
-    if (busy) return
-    setBusy(true)
-    try { const u = await uploadAvatar(personId, file); if (u) setUrl(u) }
-    catch { /* silencioso: el avatar es opcional */ }
-    finally { setBusy(false) }
-  }
+  function onPick(file: File) { setCropFile(file) }
 
   return (
     <div className="relative group">
@@ -39,14 +33,18 @@ export function PersonAvatar({ personId, name, size = 'lg' }: { personId: string
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        disabled={busy}
         aria-label="Cambiar foto"
         className="absolute -bottom-1 -right-1 rounded-full bg-background border border-border p-1 text-muted-foreground hover:text-foreground shadow-sm"
       >
-        {busy ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+        <Camera size={12} />
       </button>
       <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) void onPick(f); e.currentTarget.value = '' }} />
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) onPick(f); e.currentTarget.value = '' }} />
+      {cropFile && (
+        <AvatarCropper personId={personId} file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onDone={(u) => { if (u) setUrl(u); setCropFile(null) }} />
+      )}
     </div>
   )
 }
