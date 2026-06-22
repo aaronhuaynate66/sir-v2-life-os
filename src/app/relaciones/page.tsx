@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Avatar } from '@/components/ui/avatar'
+import { fetchAvatars } from '@/lib/avatars/client'
 import {
   AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
@@ -98,6 +99,8 @@ function RelationshipsContent() {
   const [showForm, setShowForm] = useState(false)
   const [ambitoFilter, setAmbitoFilter] = useState<'todos' | PersonAmbito>('todos')
   const [query, setQuery] = useState('')
+  const [avatars, setAvatars] = useState<Record<string, string>>({})
+  useEffect(() => { let alive = true; void fetchAvatars().then((m) => { if (alive) setAvatars(m) }); return () => { alive = false } }, [])
   const normQ = query.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   const matchesQuery = (p: typeof people[number]) => {
     if (!normQ) return true
@@ -513,7 +516,7 @@ function RelationshipsContent() {
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <Avatar name={person.name} size="md" />
+                      <Avatar name={person.name} size="md" src={avatars[person.id]} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-foreground">{person.name}</span>

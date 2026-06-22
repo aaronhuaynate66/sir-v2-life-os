@@ -38,6 +38,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
+import { PersonAvatar } from './PersonAvatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -351,7 +352,7 @@ export function PersonDetail({
       <header className="mb-6">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-4 min-w-0">
-            <Avatar name={live.name} size="lg" />
+            <PersonAvatar personId={live.id} name={live.name} size="lg" />
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{live.name}</h1>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
