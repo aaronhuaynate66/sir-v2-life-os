@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d06af68`
+**Hash del último commit humano:** `dc50a59`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `dc50a59` | aaronhuaynate66 | feat(brief): anticipar el ciclo de la pareja en el briefing diario (#327) | 2026-06-22 |
 | `d06af68` | aaronhuaynate66 | feat(whatsapp): marcador incremental para transcripción de notas de voz (#326) | 2026-06-22 |
 | `86a456e` | aaronhuaynate66 | feat(momentos): SIR recuerda los momentos abiertos (día-X + briefing) (#325) | 2026-06-22 |
 | `492a5de` | aaronhuaynate66 | feat(relaciones): Momentos/Decisiones — open loops por persona (#324) | 2026-06-22 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `321ba2e` | aaronhuaynate66 | feat(medicacion): mis medicamentos (registro) para botones de un toque (#320) | 2026-06-22 |
 | `4e11ab6` | aaronhuaynate66 | feat(medicacion): registro de tomas (migraña) que alimenta el día-X (#319) | 2026-06-22 |
 | `1804170` | aaronhuaynate66 | feat(habitos): marcar días pasados (backfill) + ver fechas (#318) | 2026-06-22 |
-| `2cb8f93` | aaronhuaynate66 | fix(gaps): preguntar el ticket del deal solo en propuesta/negociación (#317) | 2026-06-21 |
 
 ---
 
