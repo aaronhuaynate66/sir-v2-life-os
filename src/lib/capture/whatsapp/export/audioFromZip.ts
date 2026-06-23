@@ -1,20 +1,7 @@
-// SIR V2 — Extracción de los archivos de AUDIO (notas de voz) de un .zip de
-// export de WhatsApp, en el cliente. Reusa el parser de zip (zipCore) +
-// DecompressionStream (igual que unzipClient para _chat.txt). Solo audios:
-// imágenes/stickers quedan para una fase posterior.
 'use client'
-
-import { readCentralDirectory, entryCompressedBytes } from './zipCore'
-import { supportsClientUnzip } from './unzipClient'
+// SIR V2 — Extrae audios (notas de voz) del .zip por STREAMING (sin OOM).
+import { extractMatchingBlobs } from './zipStream'
 import { isAudioFileName } from './audioInject'
-
-async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
-  const part = new Uint8Array(data)
-  const ds = new DecompressionStream('deflate-raw')
-  const stream = new Blob([part]).stream().pipeThrough(ds)
-  const ab = await new Response(stream).arrayBuffer()
-  return new Uint8Array(ab)
-}
 
 function mimeForName(name: string): string {
   const n = name.toLowerCase()
@@ -27,25 +14,6 @@ function mimeForName(name: string): string {
   return 'application/octet-stream'
 }
 
-/** Devuelve un Map nombreBase → Blob de cada audio del zip. Vacío si el zip no
- *  tiene media (export "sin archivos") o el browser no puede inflar. */
 export async function extractAudioBlobs(file: Blob): Promise<Map<string, Blob>> {
-  const out = new Map<string, Blob>()
-  let bytes: Uint8Array
-  try { bytes = new Uint8Array(await file.arrayBuffer()) } catch { return out }
-  let entries
-  try { entries = readCentralDirectory(bytes) } catch { return out }
-  for (const e of entries) {
-    if (!isAudioFileName(e.fileName)) continue
-    let data: Uint8Array
-    try {
-      const got = entryCompressedBytes(bytes, e)
-      if (got.method === 0) data = got.data
-      else if (got.method === 8) { if (!supportsClientUnzip()) continue; data = await inflateRaw(got.data) }
-      else continue
-    } catch { continue }
-    const base = e.fileName.split('/').pop() || e.fileName
-    out.set(base, new Blob([new Uint8Array(data)], { type: mimeForName(base) }))
-  }
-  return out
+  return extractMatchingBlobs(file, isAudioFileName, mimeForName)
 }

@@ -10,26 +10,12 @@
 
 'use client'
 
-import {
-  ZipExtractError,
-  readCentralDirectory,
-  locateChatEntry,
-  entryCompressedBytes,
-  stripBom,
-} from './zipCore'
+import { ZipExtractError } from './zipCore'
+import { readChatTextStream } from './zipStream'
 
 /** ¿El browser soporta inflar deflate-raw nativamente? */
 export function supportsClientUnzip(): boolean {
   return typeof DecompressionStream !== 'undefined'
-}
-
-async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
-  // Copia a un buffer propio (ArrayBuffer concreto) para el tipado de BlobPart.
-  const part = new Uint8Array(data)
-  const ds = new DecompressionStream('deflate-raw')
-  const stream = new Blob([part]).stream().pipeThrough(ds)
-  const ab = await new Response(stream).arrayBuffer()
-  return new Uint8Array(ab)
 }
 
 /**
@@ -37,25 +23,16 @@ async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
  * Lanza ZipExtractError si no hay texto o el método no se soporta.
  */
 export async function extractChatTxtFromZipClient(file: Blob): Promise<string> {
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  const entries = readCentralDirectory(bytes)
-  const target = locateChatEntry(entries)
-  if (!target) {
+  // STREAMING (Blob.slice): lee solo el directorio + el _chat.txt, sin cargar
+  // el zip entero a memoria → soporta exports con multimedia de varios GB.
+  if (!supportsClientUnzip()) {
+    throw new ZipExtractError('DecompressionStream no disponible en este browser.')
+  }
+  const text = await readChatTextStream(file)
+  if (text == null) {
     throw new ZipExtractError('El .zip no contiene _chat.txt (ni ningún .txt).')
   }
-  const { method, data } = entryCompressedBytes(bytes, target)
-  let out: Uint8Array
-  if (method === 0) {
-    out = data
-  } else if (method === 8) {
-    if (!supportsClientUnzip()) {
-      throw new ZipExtractError('DecompressionStream no disponible en este browser.')
-    }
-    out = await inflateRaw(data)
-  } else {
-    throw new ZipExtractError(`Método de compresión no soportado (${method}).`)
-  }
-  return stripBom(new TextDecoder('utf-8').decode(out))
+  return text
 }
 
 export { ZipExtractError }
