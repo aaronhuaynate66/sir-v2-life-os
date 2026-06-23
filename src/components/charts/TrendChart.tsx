@@ -10,7 +10,7 @@
 // MÍN y el MÁX (sin saturar), y un scrubber con tooltip (fecha+valor) al pasar
 // o tocar. El chip ↗/↘ compara contra el registro ANTERIOR (aclarado con 'vs ant.').
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -51,6 +51,9 @@ export interface TrendChartProps {
   windowable?: boolean
   /** Ventana inicial cuando windowable (default 'semana'). */
   defaultRange?: ChartRange
+  /** Notifica los puntos efectivamente MOSTRADOS (tras ventana/offset), para
+   *  que el contenedor calcule stats sobre la misma ventana. */
+  onShownChange?: (points: SeriesPoint[]) => void
 }
 
 const VIEW_W = 320
@@ -66,6 +69,7 @@ export function TrendChart({
   className,
   windowable = false,
   defaultRange = 'semana',
+  onShownChange,
 }: TrendChartProps) {
   const [range, setRange] = useState<ChartRange>(defaultRange)
   const [offset, setOffset] = useState(0) // 0 = período actual; +1 = anterior
@@ -73,6 +77,7 @@ export function TrendChart({
     () => (windowable ? filterPointsByRange(points, range, new Date(), offset) : points),
     [windowable, points, range, offset],
   )
+  useEffect(() => { onShownChange?.(shown) }, [shown, onShownChange])
   const canOlder = useMemo(
     () => (windowable ? hasOlderThanRange(points, range, offset) : false),
     [windowable, points, range, offset],
