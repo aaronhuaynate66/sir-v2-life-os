@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dailyAvg, compareContinuous, compareBinary, observePatterns, type DayPoint } from './observe'
+import { dailyAvg, compareContinuous, compareBinary, observePatterns, dataReadiness, FORECAST_MIN_DAYS, type DayPoint } from './observe'
 
 function days(vals: number[], start = '2026-06-01'): DayPoint[] {
   const [y, m, d] = start.split('-').map(Number)
@@ -23,6 +23,15 @@ describe('observe', () => {
     expect(r!.avgHigh).toBeGreaterThan(r!.avgLow)
     const obs = observePatterns({ sleepHours: sleep, mood, energy: [], stress: [], restingHr: [], migraineDays: new Set() })
     expect(obs.find((o) => o.id === 'sueno-animo')).toBeTruthy()
+  })
+  it('dataReadiness cuenta días alineados vs los que faltan', () => {
+    const sleep = days([5,6,5,6,5,6,8,9,8,9,8,9])
+    const mood = days([2,3,2,3,2,3,4,5,4,5,4,5])
+    const rows = dataReadiness({ sleepHours: sleep, mood, energy: [], stress: [], restingHr: [], migraineDays: new Set() })
+    const sa = rows.find((r) => r.id === 'sueno-animo')!
+    expect(sa.have).toBe(12)
+    expect(sa.need).toBe(FORECAST_MIN_DAYS)
+    expect(sa.pct).toBe(Math.round((12 / FORECAST_MIN_DAYS) * 100))
   })
   it('compareBinary separa días con flag', () => {
     const energy = days([4, 4, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2])

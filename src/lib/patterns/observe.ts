@@ -103,3 +103,27 @@ export function observePatterns(inp: ObserveInput): Observation[] {
     `Con FC en reposo más alta, tu energía promedió ${f1(r.avgHigh)}/5 vs ${f1(r.avgLow)}/5 con FC más baja.`)
   return out
 }
+
+
+// ─── Madurez de datos (para el futuro predictivo) ───
+// Forecasting confiable necesita VOLUMEN. Acá medimos cuántos días ÚTILES hay
+// por cruce vs los que hacen falta, para mostrar el progreso (sin predecir).
+export const FORECAST_MIN_DAYS = 30
+
+export interface ReadinessRow { id: string; label: string; have: number; need: number; pct: number }
+
+function alignedCount(a: DayPoint[], b: DayPoint[]): number {
+  const bd = new Set(b.map((p) => p.date))
+  return a.filter((p) => bd.has(p.date)).length
+}
+
+export function dataReadiness(inp: ObserveInput): ReadinessRow[] {
+  const need = FORECAST_MIN_DAYS
+  const mk = (id: string, label: string, have: number): ReadinessRow => ({ id, label, have, need, pct: Math.min(100, Math.round((have / need) * 100)) })
+  return [
+    mk('sueno-animo', 'Sueño + ánimo', alignedCount(inp.sleepHours, inp.mood)),
+    mk('sueno-energia', 'Sueño + energía', alignedCount(inp.sleepHours, inp.energy)),
+    mk('fc-energia', 'FC + energía', alignedCount(inp.restingHr, inp.energy)),
+    mk('migrana-energia', 'Migraña + energía', inp.energy.length),
+  ]
+}

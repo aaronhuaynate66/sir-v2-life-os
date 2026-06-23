@@ -8,7 +8,7 @@ import { Activity, Info } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useSelfStore } from '@/stores/useSelfStore'
-import { dailyAvg, observePatterns, type DayPoint } from '@/lib/patterns/observe'
+import { dailyAvg, observePatterns, dataReadiness, FORECAST_MIN_DAYS, type DayPoint } from '@/lib/patterns/observe'
 
 export function PatronesPanel() {
   const { selfMetrics, sleepRecords, healthMetrics } = useSelfStore()
@@ -28,12 +28,15 @@ export function PatronesPanel() {
     return () => { alive = false }
   }, [])
 
-  const observations = useMemo(() => {
+  const data = useMemo(() => {
     const cat = (c: string): DayPoint[] => dailyAvg(selfMetrics.filter((m) => m.category === c).map((m) => ({ timestamp: m.timestamp, value: m.value })))
     const sleepHours = dailyAvg(sleepRecords.map((s) => ({ date: s.date, value: s.duration })))
     const restingHr = dailyAvg(healthMetrics.filter((h) => h.type === 'heart_rate').map((h) => ({ timestamp: h.timestamp, value: h.value })))
-    return observePatterns({ sleepHours, mood: cat('mood'), energy: cat('energy'), stress: cat('stress'), restingHr, migraineDays })
+    const input = { sleepHours, mood: cat('mood'), energy: cat('energy'), stress: cat('stress'), restingHr, migraineDays }
+    return { obs: observePatterns(input), readiness: dataReadiness(input) }
   }, [selfMetrics, sleepRecords, healthMetrics, migraineDays])
+  const observations = data.obs
+  const readiness = data.readiness
 
   return (
     <Card className="shadow-none">
@@ -62,6 +65,24 @@ export function PatronesPanel() {
             ))}
           </ul>
         )}
+
+        <div className="mt-4 border-t border-border/50 pt-3">
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">Madurez para predecir</div>
+          <p className="text-[11px] text-muted-foreground mb-2 leading-snug">Cuánto falta para que SIR pueda <span className="font-medium text-foreground/80">anticipar</span> (no solo observar). Necesita ~{FORECAST_MIN_DAYS} días por cruce.</p>
+          <ul className="space-y-1.5">
+            {readiness.map((r) => (
+              <li key={r.id} className="text-[11px]">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span>{r.label}</span>
+                  <span className="font-mono tabular-nums">{r.have}/{r.need} días</span>
+                </div>
+                <div className="mt-0.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div className={r.pct >= 100 ? 'h-full bg-ok' : 'h-full bg-brand/60'} style={{ width: `${r.pct}%` }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </CardContent>
     </Card>
   )
