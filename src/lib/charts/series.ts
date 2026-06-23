@@ -184,24 +184,47 @@ export type ChartRange = 'semana' | 'mes'
 
 /** Filtra puntos a la VENTANA elegida: 'semana' = semana calendario lun→dom de
  *  `now`; 'mes' = mes calendario de `now`. Parse local (sin TZ). PURO. */
-export function filterPointsByRange(points: SeriesPoint[], range: ChartRange, now: Date = new Date()): SeriesPoint[] {
+const dayMsIso = (iso: string): number | null => {
+  const [a, b, c] = iso.slice(0, 10).split('-').map(Number)
+  if (!a || !b || !c) return null
+  return new Date(a, b - 1, c).getTime()
+}
+
+/** Límites [lo, hi] (ms, local) de la ventana `range` desplazada `offset`
+ *  períodos hacia atrás (0 = actual, 1 = anterior, …). */
+export function rangeBounds(range: ChartRange, offset = 0, now: Date = new Date()): { lo: number; hi: number } {
   const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate()
-  const dayMs = (iso: string): number | null => {
-    const [a, b, c] = iso.slice(0, 10).split('-').map(Number)
-    if (!a || !b || !c) return null
-    return new Date(a, b - 1, c).getTime()
-  }
   if (range === 'mes') {
-    return points.filter((p) => {
-      const [py, pm] = p.date.slice(0, 10).split('-').map(Number)
-      return py === y && pm === mo + 1
-    })
+    const lo = new Date(y, mo - offset, 1).getTime()
+    const hi = new Date(y, mo - offset + 1, 0, 23, 59, 59).getTime()
+    return { lo, hi }
   }
   const dow = (now.getDay() + 6) % 7 // lunes = 0
-  const lo = new Date(y, mo, d - dow).getTime()
-  const hi = new Date(y, mo, d - dow + 6, 23, 59, 59).getTime()
+  const lo = new Date(y, mo, d - dow - offset * 7).getTime()
+  const hi = new Date(y, mo, d - dow - offset * 7 + 6, 23, 59, 59).getTime()
+  return { lo, hi }
+}
+
+export function filterPointsByRange(points: SeriesPoint[], range: ChartRange, now: Date = new Date(), offset = 0): SeriesPoint[] {
+  const { lo, hi } = rangeBounds(range, offset, now)
   return points.filter((p) => {
-    const t = dayMs(p.date)
+    const t = dayMsIso(p.date)
     return t != null && t >= lo && t <= hi
   })
+}
+
+/** ¿Hay algún punto MÁS VIEJO que la ventana actual? (para habilitar "‹"). */
+export function hasOlderThanRange(points: SeriesPoint[], range: ChartRange, offset: number, now: Date = new Date()): boolean {
+  const { lo } = rangeBounds(range, offset, now)
+  return points.some((p) => { const t = dayMsIso(p.date); return t != null && t < lo })
+}
+
+const MON_LBL = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+/** Etiqueta legible de la ventana (ej. "16–22 jun" o "junio"). */
+export function rangeWindowLabel(range: ChartRange, offset = 0, now: Date = new Date()): string {
+  const { lo, hi } = rangeBounds(range, offset, now)
+  const a = new Date(lo), b = new Date(hi)
+  if (range === 'mes') return `${MON_LBL[a.getMonth()]} ${a.getFullYear() !== now.getFullYear() ? a.getFullYear() : ''}`.trim()
+  const sameMonth = a.getMonth() === b.getMonth()
+  return sameMonth ? `${a.getDate()}–${b.getDate()} ${MON_LBL[a.getMonth()]}` : `${a.getDate()} ${MON_LBL[a.getMonth()]}–${b.getDate()} ${MON_LBL[b.getMonth()]}`
 }

@@ -12,12 +12,12 @@
 
 import { useMemo, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
-import { buildLineSeries, filterPointsByRange, type ChartRange } from '@/lib/charts/series'
+import { buildLineSeries, filterPointsByRange, hasOlderThanRange, rangeWindowLabel, type ChartRange } from '@/lib/charts/series'
 import type { SeriesPoint } from '@/lib/charts/series'
 import { cn } from '@/lib/utils'
 
@@ -49,6 +49,8 @@ export interface TrendChartProps {
   className?: string
   /** Muestra un toggle Semana/Mes que filtra los puntos a esa ventana. */
   windowable?: boolean
+  /** Ventana inicial cuando windowable (default 'semana'). */
+  defaultRange?: ChartRange
 }
 
 const VIEW_W = 320
@@ -63,12 +65,20 @@ export function TrendChart({
   emptyHint,
   className,
   windowable = false,
+  defaultRange = 'semana',
 }: TrendChartProps) {
-  const [range, setRange] = useState<ChartRange>('semana')
+  const [range, setRange] = useState<ChartRange>(defaultRange)
+  const [offset, setOffset] = useState(0) // 0 = período actual; +1 = anterior
   const shown = useMemo(
-    () => (windowable ? filterPointsByRange(points, range) : points),
-    [windowable, points, range],
+    () => (windowable ? filterPointsByRange(points, range, new Date(), offset) : points),
+    [windowable, points, range, offset],
   )
+  const canOlder = useMemo(
+    () => (windowable ? hasOlderThanRange(points, range, offset) : false),
+    [windowable, points, range, offset],
+  )
+  const windowLabel = windowable ? rangeWindowLabel(range, offset) : ''
+  function changeRange(r: ChartRange) { setRange(r); setOffset(0) }
   const geo = useMemo(
     () => buildLineSeries(shown, { width: VIEW_W, height, padding: 6 }),
     [shown, height],
@@ -97,7 +107,7 @@ export function TrendChart({
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setRange(r)}
+                  onClick={() => changeRange(r)}
                   className={cn(
                     'px-2 py-0.5 rounded capitalize transition-colors',
                     range === r ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground',
@@ -110,9 +120,23 @@ export function TrendChart({
           )}
         </div>
 
+        {windowable && (
+          <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <button type="button" onClick={() => setOffset((o) => o + 1)} disabled={!canOlder}
+              className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 enabled:hover:bg-muted/50 disabled:opacity-30" aria-label="Período anterior">
+              <ChevronLeft size={14} />
+            </button>
+            <span className="font-mono tabular-nums">{offset === 0 ? (range === 'semana' ? 'Esta semana' : 'Este mes') : windowLabel}</span>
+            <button type="button" onClick={() => setOffset((o) => Math.max(0, o - 1))} disabled={offset === 0}
+              className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 enabled:hover:bg-muted/50 disabled:opacity-30" aria-label="Período siguiente">
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+
         {!hasData ? (
           <p className="text-sm text-muted-foreground py-2">
-            {windowable ? `Sin datos ${range === 'semana' ? 'esta semana' : 'este mes'}.` : (emptyHint ?? 'Sin datos todavía. Registrá algunos para ver la tendencia.')}
+            {windowable ? `Sin datos en ${offset === 0 ? (range === 'semana' ? 'esta semana' : 'este mes') : windowLabel}.` : (emptyHint ?? 'Sin datos todavía. Registrá algunos para ver la tendencia.')}
           </p>
         ) : (
           <div className="space-y-3">
