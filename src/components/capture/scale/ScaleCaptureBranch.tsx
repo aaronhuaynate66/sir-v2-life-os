@@ -127,6 +127,7 @@ export function ScaleCaptureBranch({ file, onReset }: ScaleCaptureBranchProps) {
   if (step.kind === 'preview' || step.kind === 'saving') {
     return (
       <ScaleCapturePreview
+        fallbackIso={file ? new Date(file.lastModified).toISOString() : null}
         previewUrl={step.previewUrl}
         extracted={step.extracted}
         saving={step.kind === 'saving'}
