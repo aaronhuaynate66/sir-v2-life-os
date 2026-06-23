@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e1c1711`
+**Hash del último commit humano:** `7e5d6f0`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `7e5d6f0` | aaronhuaynate66 | fix(salud): stats de peso siguen la ventana visible (no toda la serie) (#339) | 2026-06-23 |
 | `e1c1711` | aaronhuaynate66 | fix(charts): eje día+mes ('23 jun') en vez de día-de-semana ('mar 23') (#338) | 2026-06-23 |
 | `287202d` | aaronhuaynate66 | feat(salud): navegar semana/mes anterior + ventana en gráfica de peso (#337) | 2026-06-23 |
 | `9ed79ff` | aaronhuaynate66 | fix(báscula): si la captura no trae fecha, usar la fecha del archivo (no 'ahora') (#336) | 2026-06-23 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `47234be` | aaronhuaynate66 | feat(whatsapp): auto-rutear re-import por identidad del chat (#332) | 2026-06-22 |
 | `e88541b` | aaronhuaynate66 | feat(people): endpoint para setear ciclo (cycle_start_date/length) fuera del form (#331) | 2026-06-22 |
 | `fa146b5` | aaronhuaynate66 | feat(relaciones): foto/avatar por persona (fase 1 manual) (#330) | 2026-06-22 |
-| `a2d8268` | aaronhuaynate66 | feat(whatsapp): extraer llamadas del export → interacción con fecha/hora (#329) | 2026-06-22 |
 
 ---
 
