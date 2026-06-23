@@ -13,7 +13,7 @@ import { LineChart } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { TrendChart } from './TrendChart'
 import { healthMetricSeries } from '@/lib/charts/adapters'
-import { buildLineSeries } from '@/lib/charts/series'
+import { buildLineSeries, type SeriesPoint } from '@/lib/charts/series'
 import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 import { cn } from '@/lib/utils'
 import type { HealthMetric, HealthMetricType } from '@/types'
@@ -70,7 +70,11 @@ export function BodyMetricsTrend({ metrics }: BodyMetricsTrendProps) {
     () => (active ? healthMetricSeries(metrics, active) : []),
     [metrics, active],
   )
-  const geo = useMemo(() => buildLineSeries(series), [series])
+  // Puntos efectivamente mostrados por TrendChart (ventana/offset) → stats sobre
+  // la MISMA ventana, no sobre toda la serie.
+  const [shown, setShown] = useState<SeriesPoint[]>([])
+  const statsPts = shown.length > 0 ? shown : series
+  const geo = useMemo(() => buildLineSeries(statsPts), [statsPts])
 
   // Unidad del tipo activo (de la lectura más reciente de ese tipo).
   const unit = useMemo(() => {
@@ -100,7 +104,7 @@ export function BodyMetricsTrend({ metrics }: BodyMetricsTrendProps) {
   }
 
   const enoughData = series.length >= 2
-  const avg = enoughData ? series.reduce((s, p) => s + p.value, 0) / series.length : 0
+  const avg = statsPts.length ? statsPts.reduce((acc, p) => acc + p.value, 0) / statsPts.length : 0
 
   return (
     <div className="space-y-3">
@@ -152,13 +156,14 @@ export function BodyMetricsTrend({ metrics }: BodyMetricsTrendProps) {
             height={120}
             windowable
             defaultRange="mes"
+            onShownChange={setShown}
           />
 
           {/* Stats del período visible. */}
           <Card className="shadow-none">
             <CardContent className="p-4 sm:p-5">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Stat label="Registros" value={String(series.length)} />
+                <Stat label="Registros" value={String(statsPts.length)} />
                 <Stat label="Promedio" value={fmt(avg)} />
                 <Stat label="Máx" value={fmt(geo.max)} />
                 <Stat label="Mín" value={fmt(geo.min)} />
