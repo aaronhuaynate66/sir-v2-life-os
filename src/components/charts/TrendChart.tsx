@@ -23,12 +23,12 @@ import { cn } from '@/lib/utils'
 
 const DOW_ABBR = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
 const MON_ABBR = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-/** 'YYYY-MM-DD…' → 'vie 12' (día de la semana + número). Parse local (sin TZ). */
+/** 'YYYY-MM-DD…' → '12 jun' (día + mes). Día+mes evita la ambigüedad de "mar"
+ *  (martes vs marzo) en el eje. Parse local (sin TZ). */
 function fmtDayLabel(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
   if (!y || !m || !d) return iso.slice(0, 10)
-  const dt = new Date(y, m - 1, d)
-  return `${DOW_ABBR[dt.getDay()]} ${d}`
+  return `${d} ${MON_ABBR[m - 1]}`
 }
 /** 'YYYY-MM-DD…' → 'vie 12 jun' (para el tooltip). */
 function fmtDayLong(iso: string): string {
