@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `287202d`
+**Hash del último commit humano:** `e1c1711`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e1c1711` | aaronhuaynate66 | fix(charts): eje día+mes ('23 jun') en vez de día-de-semana ('mar 23') (#338) | 2026-06-23 |
 | `287202d` | aaronhuaynate66 | feat(salud): navegar semana/mes anterior + ventana en gráfica de peso (#337) | 2026-06-23 |
 | `9ed79ff` | aaronhuaynate66 | fix(báscula): si la captura no trae fecha, usar la fecha del archivo (no 'ahora') (#336) | 2026-06-23 |
 | `14b425b` | aaronhuaynate66 | fix(sueño): no marcar 'confianza media' en el panel detallado de Huawei (#335) | 2026-06-22 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e88541b` | aaronhuaynate66 | feat(people): endpoint para setear ciclo (cycle_start_date/length) fuera del form (#331) | 2026-06-22 |
 | `fa146b5` | aaronhuaynate66 | feat(relaciones): foto/avatar por persona (fase 1 manual) (#330) | 2026-06-22 |
 | `a2d8268` | aaronhuaynate66 | feat(whatsapp): extraer llamadas del export → interacción con fecha/hora (#329) | 2026-06-22 |
-| `655b3e2` | aaronhuaynate66 | feat(brief): historial de briefs de IA (#328) | 2026-06-22 |
 
 ---
 
