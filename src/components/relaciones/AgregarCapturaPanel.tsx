@@ -61,6 +61,7 @@ import {
 } from '@/lib/capture/whatsapp/export/client'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { transcribeExportAudios } from '@/lib/capture/whatsapp/export/audioClient'
+import { triageExportImages } from '@/lib/capture/whatsapp/export/imageClient'
 import { sliceParsedSince, incrementalSummary } from '@/lib/capture/whatsapp/export/incremental'
 import { extractCalls, callLabel, type ParsedCall } from '@/lib/capture/whatsapp/export/calls'
 import { chatFingerprint } from '@/lib/capture/whatsapp/export/fingerprint'
@@ -231,6 +232,8 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
   const [waFile, setWaFile] = useState<File | null>(initialWaFile ?? null)
   const [transcribeAudios, setTranscribeAudios] = useState(false)
   const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null)
+  const [readImages, setReadImages] = useState(false)
+  const [imgProgress, setImgProgress] = useState<{ done: number; total: number } | null>(null)
   // Fechas extraídas que el usuario eligió agregar a "Fechas importantes".
   const [selectedDateIdx, setSelectedDateIdx] = useState<Set<number>>(new Set())
   // Tipo del perfil pegado: se autodetecta del texto, con override manual.
@@ -253,6 +256,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
     setPastedText('')
     setWaFile(null)
     setAudioProgress(null)
+    setImgProgress(null)
     setSelectedDateIdx(new Set())
     setTextTypeTouched(false)
     setPhase('idle')
@@ -705,6 +709,16 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
         } catch { /* best-effort: seguimos con el texto sin audios */ }
         setAudioProgress(null)
       }
+      // 1c. Documentos/capturas: triage de imágenes nuevas (ignora fotos
+      //     personales; extrae data de documentos/screenshots). Usa visión.
+      if (readImages && /\.zip$/i.test(waFile.name)) {
+        setImgProgress({ done: 0, total: 0 })
+        try {
+          const r = await triageExportImages(waFile, text, { cap: 15, sinceISO: lastImportedISO, onProgress: (done, total) => setImgProgress({ done, total }) })
+          text = r.text
+        } catch { /* best-effort */ }
+        setImgProgress(null)
+      }
       const parsed = parseWhatsAppExport(text)
       if (!isWhatsAppExport(text) || parsed.messages.length === 0) {
         setPreview({
@@ -806,7 +820,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
       setError(toError(e))
       setPhase('idle')
     }
-  }, [waFile, personName, personId, transcribeAudios])
+  }, [waFile, personName, personId, transcribeAudios, readImages])
 
   const working = phase === 'working'
   const confirming = phase === 'confirming'
@@ -1106,6 +1120,21 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <Loader2 size={13} className="animate-spin" aria-hidden="true" />
                     <span>{audioProgress.total > 0 ? `Transcribiendo nota de voz ${Math.min(audioProgress.done + 1, audioProgress.total)} de ${audioProgress.total}…` : 'Buscando notas de voz…'}</span>
+                  </div>
+                )}
+
+                {/* Documentos / capturas: triage de imágenes (ignora fotos personales). */}
+                {waFile && /\.zip$/i.test(waFile.name) && (
+                  <label className="flex items-start gap-2 text-[11px] text-muted-foreground cursor-pointer select-none">
+                    <input type="checkbox" checked={readImages} disabled={working}
+                      onChange={(e) => setReadImages(e.target.checked)} className="mt-0.5 h-3.5 w-3.5 accent-brand" />
+                    <span>Leer documentos y capturas (las 15 más recientes); ignora fotos personales. Usa créditos de IA.</span>
+                  </label>
+                )}
+                {working && imgProgress && (
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                    <span>{imgProgress.total > 0 ? `Revisando imagen ${Math.min(imgProgress.done + 1, imgProgress.total)} de ${imgProgress.total}…` : 'Buscando imágenes…'}</span>
                   </div>
                 )}
 
