@@ -62,6 +62,7 @@ import {
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { transcribeExportAudios } from '@/lib/capture/whatsapp/export/audioClient'
 import { triageExportImages } from '@/lib/capture/whatsapp/export/imageClient'
+import { tagExportStickers } from '@/lib/capture/whatsapp/export/stickerClient'
 import { sliceParsedSince, incrementalSummary } from '@/lib/capture/whatsapp/export/incremental'
 import { extractCalls, callLabel, type ParsedCall } from '@/lib/capture/whatsapp/export/calls'
 import { chatFingerprint } from '@/lib/capture/whatsapp/export/fingerprint'
@@ -234,6 +235,8 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
   const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null)
   const [readImages, setReadImages] = useState(false)
   const [imgProgress, setImgProgress] = useState<{ done: number; total: number } | null>(null)
+  const [readStickers, setReadStickers] = useState(false)
+  const [stkProgress, setStkProgress] = useState<{ done: number; total: number } | null>(null)
   // Fechas extraídas que el usuario eligió agregar a "Fechas importantes".
   const [selectedDateIdx, setSelectedDateIdx] = useState<Set<number>>(new Set())
   // Tipo del perfil pegado: se autodetecta del texto, con override manual.
@@ -257,6 +260,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
     setWaFile(null)
     setAudioProgress(null)
     setImgProgress(null)
+    setStkProgress(null)
     setSelectedDateIdx(new Set())
     setTextTypeTouched(false)
     setPhase('idle')
@@ -719,6 +723,15 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
         } catch { /* best-effort */ }
         setImgProgress(null)
       }
+      // 1d. Stickers → señal de tono (no contenido): anota la carga emocional.
+      if (readStickers && /\.zip$/i.test(waFile.name)) {
+        setStkProgress({ done: 0, total: 0 })
+        try {
+          const r = await tagExportStickers(waFile, text, { cap: 20, sinceISO: lastImportedISO, onProgress: (done, total) => setStkProgress({ done, total }) })
+          text = r.text
+        } catch { /* best-effort */ }
+        setStkProgress(null)
+      }
       const parsed = parseWhatsAppExport(text)
       if (!isWhatsAppExport(text) || parsed.messages.length === 0) {
         setPreview({
@@ -820,7 +833,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
       setError(toError(e))
       setPhase('idle')
     }
-  }, [waFile, personName, personId, transcribeAudios, readImages])
+  }, [waFile, personName, personId, transcribeAudios, readImages, readStickers])
 
   const working = phase === 'working'
   const confirming = phase === 'confirming'
@@ -1135,6 +1148,21 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <Loader2 size={13} className="animate-spin" aria-hidden="true" />
                     <span>{imgProgress.total > 0 ? `Revisando imagen ${Math.min(imgProgress.done + 1, imgProgress.total)} de ${imgProgress.total}…` : 'Buscando imágenes…'}</span>
+                  </div>
+                )}
+
+                {/* Stickers → tono. */}
+                {waFile && /\.zip$/i.test(waFile.name) && (
+                  <label className="flex items-start gap-2 text-[11px] text-muted-foreground cursor-pointer select-none">
+                    <input type="checkbox" checked={readStickers} disabled={working}
+                      onChange={(e) => setReadStickers(e.target.checked)} className="mt-0.5 h-3.5 w-3.5 accent-brand" />
+                    <span>Leer stickers como señal de tono (los 20 recientes); no se guardan, solo pesan en el sentimiento. Usa créditos de IA.</span>
+                  </label>
+                )}
+                {working && stkProgress && (
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Loader2 size={13} className="animate-spin" aria-hidden="true" />
+                    <span>{stkProgress.total > 0 ? `Leyendo sticker ${Math.min(stkProgress.done + 1, stkProgress.total)} de ${stkProgress.total}…` : 'Buscando stickers…'}</span>
                   </div>
                 )}
 
