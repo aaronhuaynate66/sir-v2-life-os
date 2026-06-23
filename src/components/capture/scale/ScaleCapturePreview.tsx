@@ -25,6 +25,9 @@ interface ScaleCapturePreviewProps {
   saving: boolean
   onCancel: () => void
   onConfirm: (args: { finalMetrics: Partial<Record<ScaleMetric, number>>; measuredAt: string }) => void
+  /** Fecha del ARCHIVO (lastModified del screenshot) como fallback cuando la
+   *  visión no detecta fecha en la imagen. ISO o null. */
+  fallbackIso?: string | null
 }
 
 const CONFIDENCE_VISUAL: Record<
@@ -36,8 +39,9 @@ const CONFIDENCE_VISUAL: Record<
   low:    { Icon: AlertTriangle, class: 'text-bad border-bad/30 bg-bad-soft',             label: 'baja' },
 }
 
-function defaultMeasuredAtLocal(extractedIso: string | null): string {
-  const d = extractedIso ? new Date(extractedIso) : new Date()
+function defaultMeasuredAtLocal(extractedIso: string | null, fallbackIso?: string | null): string {
+  const iso = extractedIso ?? fallbackIso ?? null
+  const d = iso ? new Date(iso) : new Date()
   if (isNaN(d.getTime())) return new Date().toISOString().slice(0, 16)
   // datetime-local input necesita 'YYYY-MM-DDTHH:mm' sin segundos ni timezone
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -56,6 +60,7 @@ export function ScaleCapturePreview({
   saving,
   onCancel,
   onConfirm,
+  fallbackIso,
 }: ScaleCapturePreviewProps) {
   const initialFields = useMemo<Record<ScaleMetric, string>>(() => {
     const obj = {} as Record<ScaleMetric, string>
@@ -68,7 +73,7 @@ export function ScaleCapturePreview({
 
   const [fields, setFields] = useState<Record<ScaleMetric, string>>(initialFields)
   const [measuredAtLocal, setMeasuredAtLocal] = useState<string>(
-    defaultMeasuredAtLocal(extracted.measured_at),
+    defaultMeasuredAtLocal(extracted.measured_at, fallbackIso),
   )
 
   /** Vision detectó measured_at exitosamente; si no, mostramos warning amber. */
@@ -150,8 +155,8 @@ export function ScaleCapturePreview({
                       aria-hidden="true"
                     />
                     <span>
-                      No pude leer la fecha de la imagen. Si esta captura no es de hoy,
-                      cambiala antes de guardar.
+                      No leí la fecha en la imagen — usé la fecha del archivo (cuándo se
+                      tomó el screenshot). Si no coincide, corregila antes de guardar.
                     </span>
                   </p>
                 )}

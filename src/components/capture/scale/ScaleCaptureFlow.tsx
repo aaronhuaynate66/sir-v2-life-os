@@ -38,6 +38,7 @@ type Step =
 export function ScaleCaptureFlow() {
   const [step, setStep] = useState<Step>({ kind: 'upload' })
   const objectUrlsRef = useRef<Set<string>>(new Set())
+  const fileModifiedRef = useRef<string | null>(null)
 
   // Revocar URLs creadas al desmontar. Capturamos la referencia al Set
   // en mount; sigue siendo la misma instancia toda la vida del componente
@@ -61,6 +62,7 @@ export function ScaleCaptureFlow() {
   const handleFile = useCallback(
     async (file: File) => {
       try {
+        fileModifiedRef.current = Number.isFinite(file.lastModified) ? new Date(file.lastModified).toISOString() : null
         const compressed = await compressImage(file)
         const url = makeUrl(compressed.blob)
         setStep({ kind: 'processing', previewUrl: url, blob: compressed.blob })
@@ -126,6 +128,7 @@ export function ScaleCaptureFlow() {
   if (step.kind === 'preview' || step.kind === 'saving') {
     return (
       <ScaleCapturePreview
+        fallbackIso={fileModifiedRef.current}
         previewUrl={step.previewUrl}
         extracted={step.extracted}
         saving={step.kind === 'saving'}
