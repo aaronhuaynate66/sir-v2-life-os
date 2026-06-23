@@ -21,6 +21,7 @@ import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/ex
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import { consolidateInterpretations, buildExportObservationData } from '@/lib/capture/whatsapp/export/consolidate'
 import { sliceParsedSince } from '@/lib/capture/whatsapp/export/incremental'
+import { chatFingerprint } from '@/lib/capture/whatsapp/export/fingerprint'
 import type { ChunkInterpretation, ParsedExport } from '@/lib/capture/whatsapp/export/types'
 
 import {
@@ -38,7 +39,7 @@ import { detectorResultFromText } from '@/lib/capture/text/detectFromText'
 import type { CaptureType, DetectorResult } from '@/lib/capture/observations/types'
 import type { RelationshipType, PersonCategory } from '@/types'
 
-type Phase = 'idle' | 'analyzing' | 'review' | 'importing' | 'done'
+type Phase = 'idle' | 'analyzing' | 'review' | 'importing' | 'done' | 'semaforo' | 'clasificando'
 
 interface ErrorState {
   status: number
@@ -53,6 +54,17 @@ interface ImgItem {
   extracted: Record<string, unknown>
 }
 
+type SemTier = 'verde' | 'amarillo' | 'rojo'
+interface SemRow {
+  group: File[]
+  label: string
+  chats: { parsed: ParsedExport; name: string; raw: string }[]
+  candidates: PersonCandidate[]
+  match: { id: string; name: string; slug: string | null } | null
+  tier: SemTier
+  status: 'pendiente' | 'importando' | 'ok' | 'omitido' | 'error'
+  detail?: string
+}
 interface Suggestion {
   name: string
   organization: string
@@ -152,6 +164,8 @@ export function IntakeInteligente() {
   // Cola multi-persona: si subís archivos de varias personas, se procesan de a una.
   const [queue, setQueue] = useState<File[][]>([])
   const [queueIdx, setQueueIdx] = useState(0)
+  const [semRows, setSemRows] = useState<SemRow[]>([])
+  const [batch, setBatch] = useState<{ done: number; total: number; label: string } | null>(null)
 
   const [waChats, setWaChats] = useState<{ parsed: ParsedExport; name: string; raw: string }[]>([])
   const [imgs, setImgs] = useState<ImgItem[]>([])
@@ -423,6 +437,89 @@ export function IntakeInteligente() {
     }
   }
 
+  // ─── Intake masivo: clasificación barata (sin IA) + semáforo ───
+  async function classifyGroups(groups: File[][]) {
+    setPhase('clasificando'); setError(null)
+    const rows: SemRow[] = []
+    for (const group of groups) {
+      const exportFiles = group.filter((f) => isExportName(f.name))
+      const label = cleanExportFileName(group[0]?.name ?? 'archivo')
+      const chats: { parsed: ParsedExport; name: string; raw: string }[] = []
+      for (const f of exportFiles) {
+        try { const text = await readExportText(f); if (isWhatsAppExport(text)) chats.push({ parsed: parseWhatsAppExport(text), name: cleanExportFileName(f.name), raw: text }) } catch { /* ignore */ }
+      }
+      if (chats.length === 0) { rows.push({ group, label, chats: [], candidates: [], match: null, tier: 'amarillo', status: 'pendiente', detail: 'sin export de WhatsApp — revisá a mano' }); continue }
+      const participants = Array.from(new Set(chats.flatMap((c) => c.parsed.participants)))
+      const fp = chatFingerprint(participants)
+      let match: SemRow['match'] = null
+      let candidates: PersonCandidate[] = []
+      let tier: SemTier = 'rojo'
+      if (fp) {
+        try { const r = await fetch(`/api/chat-identities?fingerprint=${encodeURIComponent(fp)}`); if (r.ok) { const j = (await r.json()) as { personId?: string | null; personName?: string }; if (j.personId && j.personName) { match = { id: j.personId, name: j.personName, slug: null }; tier = 'verde' } } } catch { /* ignore */ }
+      }
+      if (!match) {
+        try {
+          const sr = await searchPeople(label, { captureType: 'whatsapp_chat' })
+          candidates = sr.candidates
+          const top = sr.candidates[0], second = sr.candidates[1]
+          if (top && top.matchScore >= 90 && (!second || top.matchScore - second.matchScore >= 15)) { match = { id: top.id, name: top.name, slug: top.slug }; tier = 'verde' }
+          else tier = sr.candidates.length > 0 ? 'amarillo' : 'rojo'
+        } catch { tier = 'rojo' }
+      }
+      rows.push({ group, label, chats, candidates, match, tier, status: 'pendiente' })
+    }
+    setSemRows(rows); setPhase('semaforo')
+  }
+
+  async function importChatsToPerson(chats: SemRow['chats'], personId: string, personName: string, onProgress: (d: number, t: number) => void): Promise<number> {
+    let watermark = await getLastImportedISO(personId)
+    const fresh = chats.map((c) => { const fp = sliceParsedSince(c.parsed, watermark); if (fp.messages.length > 0 && fp.lastISO) watermark = fp.lastISO; return fp })
+    const perChat = fresh.map((fp) => (fp.messages.length > 0 ? chunkConversation(fp.messages) : []))
+    const total = perChat.reduce((a, ch) => a + ch.length, 0)
+    let done = 0; onProgress(0, total); let messages = 0
+    for (let ci = 0; ci < fresh.length; ci++) {
+      const rawFull = (chats[ci] as { raw?: string }).raw
+      if (rawFull) void archiveConversation({ personId, rawText: rawFull, dateFirst: chats[ci].parsed.firstISO, dateLast: chats[ci].parsed.lastISO, messageCount: chats[ci].parsed.messages.length })
+      if (fresh[ci].messages.length === 0) continue
+      const chunks = perChat[ci]
+      const interps: (ChunkInterpretation | null)[] = new Array(chunks.length)
+      await runPool(chunks, 3, async (chunk, i) => { interps[i] = await interpretChunkResilient({ chunkText: chunk.text, personName, index: i, total: chunks.length }); done += 1; onProgress(done, total) })
+      const consolidated = consolidateInterpretations(interps.filter((x): x is ChunkInterpretation => !!x))
+      const data = buildExportObservationData(fresh[ci], consolidated, personName)
+      await persistWhatsAppExport({ personId, data, promoteDates: true })
+      messages += fresh[ci].messages.length
+    }
+    try { const fpAll = chatFingerprint(Array.from(new Set(chats.flatMap((c) => c.parsed.participants)))); if (fpAll) void fetch('/api/chat-identities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fingerprint: fpAll, person_id: personId }) }) } catch { /* ignore */ }
+    return messages
+  }
+
+  const greenCount = semRows.filter((r) => r.tier === 'verde' && r.match && r.status === 'pendiente').length
+  async function importGreens() {
+    if (batch) return
+    const greens = semRows.map((r, i) => ({ r, i })).filter(({ r }) => r.tier === 'verde' && r.match && r.status === 'pendiente')
+    if (greens.length === 0) return
+    for (const { r, i } of greens) {
+      setSemRows((prev) => prev.map((x, j) => (j === i ? { ...x, status: 'importando' } : x)))
+      setBatch({ done: 0, total: 0, label: r.match!.name })
+      try {
+        const msgs = await importChatsToPerson(r.chats, r.match!.id, r.match!.name, (d, t) => setBatch({ done: d, total: t, label: r.match!.name }))
+        setSemRows((prev) => prev.map((x, j) => (j === i ? { ...x, status: 'ok', detail: msgs > 0 ? `${msgs} mensajes` : 'sin novedades' } : x)))
+      } catch (e) {
+        setSemRows((prev) => prev.map((x, j) => (j === i ? { ...x, status: 'error', detail: errMsg(e) } : x)))
+      }
+    }
+    setBatch(null)
+  }
+
+  function reviewRow(i: number) {
+    const r = semRows[i]
+    setQueue([r.group]); setQueueIdx(0); setFiles(r.group)
+    setWaChats([]); setImgs([]); setImgDiag([]); setProfileText(''); setProfileCap(null)
+    setSuggestion(null); setName(''); setSelected(null); setCandidates([]); setProgress(null); setResult(null)
+    setPhase('idle'); setError(null)
+    void analyze()
+  }
+
   // ─────────────── UI ───────────────
   function nextInQueue() {
     const ni = queueIdx + 1
@@ -433,6 +530,65 @@ export function IntakeInteligente() {
     setSuggestion(null); setName(''); setRelationship('professional'); setCategory('network')
     setCandidates([]); setSelected(null); setProgress(null); setResult(null)
     setPhase('idle'); setError(null)
+  }
+
+  if (phase === 'clasificando') {
+    return (
+      <Card className="shadow-none"><CardContent className="p-4 sm:p-6 flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 size={15} className="animate-spin" /> Clasificando los chats por confianza…
+      </CardContent></Card>
+    )
+  }
+
+  if (phase === 'semaforo') {
+    const TIER: Record<SemTier, { dot: string; label: string }> = {
+      verde: { dot: 'bg-ok', label: 'Reconocido' },
+      amarillo: { dot: 'bg-warn', label: 'Ambiguo' },
+      rojo: { dot: 'bg-bad', label: 'Nuevo' },
+    }
+    const STATUS: Record<SemRow['status'], string> = { pendiente: '', importando: 'importando…', ok: '✓ importado', omitido: 'omitido', error: 'error' }
+    return (
+      <Card className="shadow-none"><CardContent className="p-4 sm:p-6 space-y-4">
+        <div className="flex items-center gap-2"><Users size={16} className="text-muted-foreground/70" /><h2 className="text-sm font-semibold tracking-tight">Intake masivo — semáforo</h2></div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {semRows.length} chats. <span className="text-ok">Verde</span> = SIR ya sabe de quién es (lo importa solo). <span className="text-warn">Amarillo</span> = dudoso, elegís vos. <span className="text-bad">Rojo</span> = persona nueva. Importar dispara la lectura con IA (usa créditos).
+        </p>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" onClick={() => void importGreens()} disabled={greenCount === 0 || !!batch}>
+            {batch ? <Loader2 size={14} className="mr-2 animate-spin" /> : <CheckCircle2 size={14} className="mr-2" />}
+            Importar los {greenCount} verdes
+          </Button>
+          <button type="button" onClick={reset} className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"><X size={13} /> empezar de nuevo</button>
+        </div>
+
+        {batch && (
+          <div className="rounded-md border border-border bg-muted/20 p-2.5 text-xs space-y-1">
+            <div className="flex items-center gap-2 text-muted-foreground"><Loader2 size={13} className="animate-spin" /> {batch.label}: {batch.total > 0 ? `bloque ${batch.done}/${batch.total}` : 'preparando…'}</div>
+            {batch.total > 0 && <div className="h-1 w-full rounded-full bg-border overflow-hidden"><div className="h-full bg-accent transition-all" style={{ width: `${Math.round((batch.done / batch.total) * 100)}%` }} /></div>}
+          </div>
+        )}
+
+        <ul className="space-y-1.5">
+          {semRows.map((r, i) => (
+            <li key={i} className="flex items-center justify-between gap-3 rounded border border-border px-3 py-2 text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`h-2 w-2 rounded-full shrink-0 ${TIER[r.tier].dot}`} aria-hidden="true" />
+                <div className="min-w-0">
+                  <div className="text-foreground truncate">{r.label}</div>
+                  <div className="text-muted-foreground/70 text-[10px] truncate">
+                    {r.match ? `→ ${r.match.name}` : TIER[r.tier].label}{r.detail ? ` · ${r.detail}` : ''}{r.status !== 'pendiente' ? ` · ${STATUS[r.status]}` : ''}
+                  </div>
+                </div>
+              </div>
+              {r.status === 'pendiente' && (
+                <button type="button" onClick={() => reviewRow(i)} className="shrink-0 text-[11px] text-brand-soft-foreground hover:underline">Revisar</button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </CardContent></Card>
+    )
   }
 
   if (phase === 'done' && result) {
@@ -496,7 +652,9 @@ export function IntakeInteligente() {
               const groups = groupFilesByPerson(all)
               setQueue(groups); setQueueIdx(0)
               setFiles(groups[0] ?? all)
-              setSuggestion(null); setPhase('idle'); setError(null); setSelected(null)
+              setSuggestion(null); setError(null); setSelected(null)
+              // Multi-persona → semáforo de confianza (clasifica barato, sin IA).
+              if (groups.length > 1) { void classifyGroups(groups) } else { setPhase('idle') }
             }}
             className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10"
           />
