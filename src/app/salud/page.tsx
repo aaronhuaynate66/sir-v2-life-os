@@ -20,6 +20,7 @@ import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
+import { PatronesPanel } from '@/components/salud/PatronesPanel'
 import { HeartRateAlertsPanel } from '@/components/salud/HeartRateAlertsPanel'
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { cn } from '@/lib/utils'
@@ -167,6 +168,10 @@ function SaludContent() {
           selector de métrica + stats del período. */}
       <div className="mb-6">
         <BodyMetricsTrend metrics={healthMetrics} />
+      </div>
+
+      <div className="mb-6">
+        <PatronesPanel />
       </div>
 
       {/* Días con alertas de FC elevada (señal episódica de activación). */}
