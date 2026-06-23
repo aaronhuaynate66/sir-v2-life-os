@@ -150,6 +150,8 @@ export function BodyMetricsTrend({ metrics }: BodyMetricsTrendProps) {
             colorClass="text-primary"
             formatValue={fmt}
             height={120}
+            windowable
+            defaultRange="mes"
           />
 
           {/* Stats del período visible. */}
