@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b6a4dd7`
+**Hash del último commit humano:** `08059a0`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `08059a0` | aaronhuaynate66 | feat(whatsapp): stickers como señal de tono (cierra media) (#343) | 2026-06-23 |
 | `b6a4dd7` | aaronhuaynate66 | feat(salud): Patrones observados (no predicción) con guarda de muestra (#342) | 2026-06-23 |
 | `48c2912` | aaronhuaynate66 | feat(whatsapp): triage de imágenes — leer documentos/capturas, ignorar fotos personales (#341) | 2026-06-23 |
 | `468d0f1` | aaronhuaynate66 | feat(intake): semáforo de confianza para import masivo (#340) | 2026-06-23 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `9ed79ff` | aaronhuaynate66 | fix(báscula): si la captura no trae fecha, usar la fecha del archivo (no 'ahora') (#336) | 2026-06-23 |
 | `14b425b` | aaronhuaynate66 | fix(sueño): no marcar 'confianza media' en el panel detallado de Huawei (#335) | 2026-06-22 |
 | `7a0c0e8` | aaronhuaynate66 | feat(avatar): detección automática de cara con visión (fase 2b) (#334) | 2026-06-22 |
-| `e60696e` | aaronhuaynate66 | feat(avatar): recorte asistido (fase 2a) — subir captura y recortar la cara (#333) | 2026-06-22 |
 
 ---
 
