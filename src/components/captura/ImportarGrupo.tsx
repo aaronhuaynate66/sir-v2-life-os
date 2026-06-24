@@ -76,7 +76,9 @@ export function ImportarGrupo() {
     setProg(null); setRunning(false)
   }
 
-  const includibles = rows.filter((r) => r.include && r.personId).length
+  const asignados = rows.filter((r) => r.include && r.personId)
+  const pendientes = asignados.filter((r) => r.status !== 'done').length
+  const hechos = rows.filter((r) => r.status === 'done')
 
   return (
     <Card className="mb-6 shadow-none">
@@ -142,14 +144,22 @@ export function ImportarGrupo() {
               ))}
             </ul>
 
+            {hechos.length > 0 && !running && (
+              <div className="mb-2 rounded-lg border border-good/40 bg-good/10 p-2.5 text-xs text-foreground">
+                ✓ Listo — importado a {hechos.map((r) => r.personName).join(' y ')}. Mirá sus fichas; cada uno recibió SU parte de la conversación.
+              </div>
+            )}
             {prog?.phase === 'member' && <div className="text-[11px] text-muted-foreground mb-2">Atribuyendo a {prog.member}… {prog.done ?? 0}/{prog.total ?? 0}</div>}
             {prog?.phase === 'media' && <div className="text-[11px] text-muted-foreground mb-2">Leyendo {prog.label}… {prog.done ?? 0}/{prog.total ?? 0}</div>}
             {err && <div className="text-xs text-bad mb-2">{err}</div>}
 
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[11px] text-muted-foreground">{includibles} miembro{includibles === 1 ? '' : 's'} a atribuir</div>
-              <Button size="sm" onClick={() => void procesar()} disabled={running || includibles === 0}>
-                {running ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Check size={14} className="mr-2" />} Procesar grupo
+              <div className="text-[11px] text-muted-foreground">
+                {pendientes > 0 ? `${pendientes} miembro${pendientes === 1 ? '' : 's'} a atribuir` : (hechos.length > 0 ? 'todo importado' : 'sin miembros asignados')}
+              </div>
+              <Button size="sm" onClick={() => void procesar()} disabled={running || pendientes === 0}>
+                {running ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Check size={14} className="mr-2" />}
+                {hechos.length > 0 && pendientes === 0 ? 'Listo' : 'Procesar grupo'}
               </Button>
             </div>
           </>
