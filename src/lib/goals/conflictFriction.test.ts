@@ -38,7 +38,7 @@ describe('matchConflictsToGoal', () => {
   })
 
   it('ordena por fecha desc', () => {
-    const m = matchConflictsToGoal({ title: 'Marlab y Mundial de bomberos', description: '', relatedPersons: [] }, conflicts)
+    const m = matchConflictsToGoal({ title: 'proyecto Marlab y Mundial de bomberos', description: '', relatedPersons: [] }, conflicts)
     expect(m.map((x) => x.personId)).toEqual(['mama', 'jefe'])
   })
 })

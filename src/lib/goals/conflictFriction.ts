@@ -87,7 +87,9 @@ export function matchConflictsToGoal(
   for (const c of conflicts) {
     const byLinkedPerson = linked.has(c.personId)
     const shared = extractKeywords(c.note).filter((k) => goalKeywords.has(k))
-    if (byLinkedPerson || shared.length > 0) {
+    // ≥2 keywords compartidas (o persona vinculada): 1 sola palabra genérica
+    // (ej. 'growth') matcheaba de más entre objetivos. #92 tuning.
+    if (byLinkedPerson || shared.length >= 2) {
       matches.push({
         personId: c.personId,
         personName: c.personName,
