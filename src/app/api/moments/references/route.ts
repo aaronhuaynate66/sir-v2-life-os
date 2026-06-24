@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const { data: mrow } = await supabase.from('relationship_moments').select('title, detail').eq('user_id', uid).eq('id', momentId).maybeSingle()
     const m = mrow as { title?: string; detail?: string } | null
     const qOverride = (req.nextUrl.searchParams.get('q') || '').trim()
-    const keywords = qOverride ? qOverride.split(/[,\s]+/).filter((w) => w.length >= 2) : episodeKeywords(m?.title ?? '', m?.detail ?? '')
+    const keywords = qOverride ? qOverride.split(/[,\s]+/).filter((w) => w.length >= 2) : episodeKeywords(m?.title ?? '')
     if (keywords.length === 0) return NextResponse.json({ candidates: [], keywords: [] })
 
     // Participantes actuales (primaria + extra) para marcarlos.
