@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `434acd0`
+**Hash del último commit humano:** `2bad420`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2bad420` | aaronhuaynate66 | feat(#130/#131/#132): filtro central de fechas importadas (#356) | 2026-06-24 |
 | `434acd0` | aaronhuaynate66 | fix(import): señal clara de 'terminó' en grupo y lote (#355) | 2026-06-24 |
 | `77a398b` | aaronhuaynate66 | feat(#125): consumo de IA — dashboard de tokens/costo estimado (#354) | 2026-06-24 |
 | `d923e27` | aaronhuaynate66 | feat: import de grupos por autor (atribucion por miembro) (#353) | 2026-06-24 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ecc7d05` | aaronhuaynate66 | feat(identidades): alias por red → homologar zips/capturas (#349) | 2026-06-24 |
 | `847979d` | aaronhuaynate66 | fix(captura): casillas de media premarcadas + copy correcto (#348) | 2026-06-24 |
 | `f344887` | aaronhuaynate66 | fix(momentos): person_id a text (people.id es text desde 0002) (#347) | 2026-06-24 |
-| `d18caa7` | aaronhuaynate66 | feat(momentos): episodios multi-persona (#346) | 2026-06-24 |
 
 ---
 
