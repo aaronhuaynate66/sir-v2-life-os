@@ -32,9 +32,9 @@ import { isGoalSmartComplete, missingSmartFields } from '@/lib/objectives/smart'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { RelationalGoalHealth } from '@/components/objetivos/RelationalGoalHealth'
 import { GoalConflictFriction } from '@/components/objetivos/GoalConflictFriction'
-import { GoalEpisodeFootprint } from '@/components/objetivos/GoalEpisodeFootprint'
+import { GoalCosts } from '@/components/objetivos/GoalCosts'
 import { GoalMeaning } from '@/components/objetivos/GoalMeaning'
-import type { EpisodeLite } from '@/lib/goals/episodeFriction'
+import { matchEpisodesToGoal, type EpisodeLite } from '@/lib/goals/episodeFriction'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -566,7 +566,15 @@ function GoalsContent() {
                       people={people}
                       isNorte={g.isAnchor === true}
                     />
-                    <GoalEpisodeFootprint goalTitle={g.title} goalDescription={g.description} episodes={openEpisodes} people={people} />
+                    <GoalCosts
+                      goalId={g.id}
+                      relationalNames={(() => {
+                        const ep = matchEpisodesToGoal(g.title, g.description, openEpisodes)[0]
+                        if (!ep) return []
+                        const nameById = new Map(people.map((p) => [p.id, p.name]))
+                        return ep.participantIds.map((id) => (nameById.get(id) ?? '').trim().split(/\s+/)[0]).filter(Boolean)
+                      })()}
+                    />
                     {g.relatedPersons.length > 0 && (
                       <RelationalGoalHealth personIds={g.relatedPersons} people={people} events={interactionEvents} />
                     )}
