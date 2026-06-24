@@ -11,6 +11,7 @@ export type GraphCategory =
   | 'estrategico'
   | 'desarrollo'
   | 'organizacion'
+  | 'episodio'
   | 'self'
 
 export interface GraphNode {

@@ -4,7 +4,7 @@
 // GraphCanvas se carga via dynamic import con ssr: false porque depende
 // de <canvas>. Mientras carga, mostramos un skeleton.
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { orgSlug } from '@/lib/people/companyHub'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
@@ -48,6 +48,19 @@ interface GraphViewProps {
 export function GraphView({ selfFullName, selfEmail, directContactIds = [], interactionById = {} }: GraphViewProps) {
   const router = useRouter()
   const { people, relationships, personLinks } = useRelationshipStore()
+  const [episodes, setEpisodes] = useState<{ participantIds: string[]; title?: string }[]>([])
+  useEffect(() => {
+    let alive = true
+    void (async () => {
+      try {
+        const r = await fetch('/api/moments?open=1')
+        if (!r.ok) return
+        const j = (await r.json()) as { moments?: { title?: string; participantIds?: string[] }[] }
+        if (alive) setEpisodes((j.moments ?? []).filter((m) => (m.participantIds?.length ?? 0) >= 2).map((m) => ({ participantIds: m.participantIds ?? [], title: m.title })))
+      } catch { /* */ }
+    })()
+    return () => { alive = false }
+  }, [])
   const recommendations = useRecommendationStore((s) => s.recommendations)
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS)
 
@@ -79,8 +92,8 @@ export function GraphView({ selfFullName, selfEmail, directContactIds = [], inte
 
   // Build raw data una vez (memoizado).
   const rawData: GraphData = useMemo(
-    () => buildGraphData({ people, relationships, personLinks: personLinks ?? [], directContactIds, hoverById, selfFullName, selfEmail }),
-    [people, relationships, personLinks, directContactIds, hoverById, selfFullName, selfEmail],
+    () => buildGraphData({ people, relationships, personLinks: personLinks ?? [], directContactIds, hoverById, selfFullName, selfEmail, episodes }),
+    [people, relationships, personLinks, directContactIds, hoverById, selfFullName, selfEmail, episodes],
   )
 
   // Clic en nodo → navegar a la ficha (self → /yo).
