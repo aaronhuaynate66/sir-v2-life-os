@@ -33,6 +33,7 @@ import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { RelationalGoalHealth } from '@/components/objetivos/RelationalGoalHealth'
 import { GoalConflictFriction } from '@/components/objetivos/GoalConflictFriction'
 import { GoalEpisodeFootprint } from '@/components/objetivos/GoalEpisodeFootprint'
+import { GoalMeaning } from '@/components/objetivos/GoalMeaning'
 import type { EpisodeLite } from '@/lib/goals/episodeFriction'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
@@ -95,6 +96,7 @@ function GoalsContent() {
   const [interactionEvents, setInteractionEvents] = useState<Record<string, import('@/lib/people/relationalScore').InteractionEvent[]>>({})
   const [recentConflicts, setRecentConflicts] = useState<{ personId: string; value: number; note: string; date: string }[]>([])
   const [openEpisodes, setOpenEpisodes] = useState<EpisodeLite[]>([])
+  const [anchorMilestones, setAnchorMilestones] = useState<string[]>([])
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -144,6 +146,21 @@ function GoalsContent() {
       }
     }
   }, [goals, stepsByGoal, updateGoalProgress])
+
+  useEffect(() => {
+    const anchor = goals.find((g) => g.isAnchor)
+    if (!anchor) { setAnchorMilestones([]); return }
+    let alive = true
+    void (async () => {
+      try {
+        const r = await fetch(`/api/objectives/meaning?q=${encodeURIComponent(`${anchor.title} ${anchor.description ?? ''}`)}`)
+        if (!r.ok) return
+        const j = (await r.json()) as { milestones?: string[] }
+        if (alive) setAnchorMilestones(j.milestones ?? [])
+      } catch { /* */ }
+    })()
+    return () => { alive = false }
+  }, [goals])
 
   const [adding, setAdding] = useState(false)
   // "Contale a SIR": relato libre → IA propone el objetivo → prefilla el form.
@@ -533,7 +550,7 @@ function GoalsContent() {
                             {g.baseline && <span className="text-muted-foreground break-words min-w-0">· hoy: {g.baseline}</span>}
                           </div>
                         )}
-                        {g.why && <div className="text-[11px] text-muted-foreground/80 italic">Por qué: {g.why}</div>}
+                        {g.why && !g.isAnchor && <div className="text-[11px] text-muted-foreground/80 italic">Por qué: {g.why}</div>}
                       </div>
                     )}
                     <div className="flex items-center gap-2 mb-1">
@@ -542,6 +559,7 @@ function GoalsContent() {
                       </div>
                       <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{displayPct}%</span>
                     </div>
+                    {g.isAnchor && <GoalMeaning why={g.why} milestones={anchorMilestones} />}
                     <GoalConflictFriction
                       goal={{ title: g.title, description: g.description, relatedPersons: g.relatedPersons }}
                       conflicts={recentConflicts}
