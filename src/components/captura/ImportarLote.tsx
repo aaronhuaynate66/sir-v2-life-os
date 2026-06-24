@@ -100,6 +100,7 @@ export function ImportarLote() {
   }
 
   const pendientes = rows.filter((r) => r.personId && r.status !== 'done' && r.status !== 'dup').length
+  const hechos = rows.filter((r) => r.status === 'done' || r.status === 'dup')
   const sinPersona = rows.filter((r) => !r.personId).length
 
   return (
@@ -132,6 +133,11 @@ export function ImportarLote() {
               {rows.map((r) => <RowItem key={r.key} row={r} running={running} onResolve={(id, nm, conf) => setRow(r.key, { personId: id, personName: nm, conf, reason: 'elegido a mano' })} onRemove={() => quitar(r.key)} />)}
             </ul>
 
+            {hechos.length > 0 && !running && (
+              <div className="mb-2 rounded-lg border border-good/40 bg-good/10 p-2.5 text-xs text-foreground">
+                ✓ Listo — {hechos.length} chat{hechos.length === 1 ? '' : 's'} importado{hechos.length === 1 ? '' : 's'}{pendientes > 0 ? `; quedan ${pendientes}` : ''}.
+              </div>
+            )}
             <div className="flex items-center justify-between gap-2">
               <div className="text-[11px] text-muted-foreground">
                 {sinPersona > 0 ? `${sinPersona} sin asignar` : 'todos asignados'} · {pendientes} por procesar
