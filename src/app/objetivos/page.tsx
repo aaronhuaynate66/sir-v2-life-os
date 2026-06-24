@@ -32,6 +32,8 @@ import { isGoalSmartComplete, missingSmartFields } from '@/lib/objectives/smart'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'
 import { RelationalGoalHealth } from '@/components/objetivos/RelationalGoalHealth'
 import { GoalConflictFriction } from '@/components/objetivos/GoalConflictFriction'
+import { GoalEpisodeFootprint } from '@/components/objetivos/GoalEpisodeFootprint'
+import type { EpisodeLite } from '@/lib/goals/episodeFriction'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -92,6 +94,7 @@ function GoalsContent() {
   // Calidades de interacción por persona (para la salud del vínculo en objetivos relacionales).
   const [interactionEvents, setInteractionEvents] = useState<Record<string, import('@/lib/people/relationalScore').InteractionEvent[]>>({})
   const [recentConflicts, setRecentConflicts] = useState<{ personId: string; value: number; note: string; date: string }[]>([])
+  const [openEpisodes, setOpenEpisodes] = useState<EpisodeLite[]>([])
   useEffect(() => {
     let cancelled = false
     void (async () => {
@@ -104,6 +107,11 @@ function GoalsContent() {
         if (cRes.ok) {
           const cData = (await cRes.json()) as { conflicts?: { personId: string; value: number; note: string; date: string }[] }
           if (!cancelled && Array.isArray(cData.conflicts)) setRecentConflicts(cData.conflicts)
+        }
+        const mRes = await fetch('/api/moments?open=1')
+        if (mRes.ok) {
+          const mData = (await mRes.json()) as { moments?: { id: string; title: string; detail?: string | null; status: string; participantIds?: string[] }[] }
+          if (!cancelled && Array.isArray(mData.moments)) setOpenEpisodes(mData.moments.map((m) => ({ id: m.id, title: m.title, detail: m.detail ?? null, status: m.status, participantIds: m.participantIds ?? [] })))
         }
       } catch { /* best-effort */ }
     })()
@@ -540,6 +548,7 @@ function GoalsContent() {
                       people={people}
                       isNorte={g.isAnchor === true}
                     />
+                    <GoalEpisodeFootprint goalTitle={g.title} goalDescription={g.description} episodes={openEpisodes} people={people} />
                     {g.relatedPersons.length > 0 && (
                       <RelationalGoalHealth personIds={g.relatedPersons} people={people} events={interactionEvents} />
                     )}
