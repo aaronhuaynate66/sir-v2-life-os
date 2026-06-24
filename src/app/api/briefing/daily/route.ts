@@ -10,6 +10,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
+import { recordAiUsage } from '@/lib/ai/usage'
 
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
@@ -192,6 +193,7 @@ export async function POST(_req: NextRequest) {
         { role: 'user', content: buildDailyInput({ today, lunarPhase, goals, signals, logStats, observations, moments, cycles }) },
       ],
     })
+    void recordAiUsage(supabase, userId, 'briefing', MODEL_ID, msg.usage)
     const textBlock = msg.content.find((b) => b.type === 'text')
     text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
   } catch (e) {

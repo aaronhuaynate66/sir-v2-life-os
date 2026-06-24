@@ -23,6 +23,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
+import { recordAiUsage } from '@/lib/ai/usage'
 
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
@@ -165,6 +166,7 @@ export async function POST(req: NextRequest) {
     text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
     inputTokens = msg.usage?.input_tokens ?? null
     outputTokens = msg.usage?.output_tokens ?? null
+    void recordAiUsage(supabase, userId, 'person_synthesis', MODEL_ID, msg.usage)
   } catch (e) {
     reportApiError(e)
     const m = e instanceof Error ? e.message : String(e)

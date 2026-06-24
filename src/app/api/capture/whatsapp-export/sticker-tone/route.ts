@@ -5,6 +5,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
+import { recordAiUsage } from '@/lib/ai/usage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
         { type: 'text', text: 'Este es un sticker de WhatsApp. ¿Qué carga emocional transmite? Respondé SOLO {"tone":"<1-3 palabras en español: ej. cariño, humor, fastidio, ternura, enojo, festejo, bajar tensión, neutral>"}.' },
       ] }],
     })
+    if (auth?.user) void recordAiUsage(supabase, auth.user.id, 'import_whatsapp', MODEL_ID, msg.usage)
     const block = msg.content.find((b) => b.type === 'text')
     const raw = block && block.type === 'text' ? block.text : ''
     const s = raw.indexOf('{'); const e = raw.lastIndexOf('}')
