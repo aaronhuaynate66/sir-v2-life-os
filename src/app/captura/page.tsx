@@ -39,6 +39,7 @@ import {
 import type { CaptureType, Observation } from '@/lib/capture/observations/types'
 import { BatchCapturePanel } from '@/components/capture/BatchCapturePanel'
 import { ImportarChat } from '@/components/captura/ImportarChat'
+import { ImportarLote } from '@/components/captura/ImportarLote'
 import { ImportarLlamada } from '@/components/captura/ImportarLlamada'
 
 const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
@@ -330,6 +331,8 @@ function CapturaIndexContent() {
       {/* TUS PROPIOS DATOS (salud, tu perfil, Apple Health) — caja multi-archivo.
           Vive acá para que /captura sea la ÚNICA puerta de captura. */}
       <ImportarChat />
+
+      <ImportarLote />
 
       <div className="mb-6">
         <ImportarLlamada />
