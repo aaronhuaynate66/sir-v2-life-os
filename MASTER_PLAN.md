@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c26911b`
+**Hash del último commit humano:** `d2ff4f0`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `d2ff4f0` | aaronhuaynate66 | feat(paso2): episodio en el grafo (conector entre participantes) (#362) | 2026-06-24 |
 | `c26911b` | aaronhuaynate66 | feat(#125): ampliar medidor de consumo de IA (#361) | 2026-06-24 |
 | `aea5fa3` | aaronhuaynate66 | feat: auto-extraer avatar de capturas de perfil (#360) | 2026-06-24 |
 | `47ca6c0` | aaronhuaynate66 | feat(paso3 PR-2): footprint del episodio en el objetivo (#359) | 2026-06-24 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `434acd0` | aaronhuaynate66 | fix(import): señal clara de 'terminó' en grupo y lote (#355) | 2026-06-24 |
 | `77a398b` | aaronhuaynate66 | feat(#125): consumo de IA — dashboard de tokens/costo estimado (#354) | 2026-06-24 |
 | `d923e27` | aaronhuaynate66 | feat: import de grupos por autor (atribucion por miembro) (#353) | 2026-06-24 |
-| `a91c7b8` | aaronhuaynate66 | fix(archivo): el archivado crudo nunca persistía (id null) + keywords del título (#352) | 2026-06-24 |
 
 ---
 
