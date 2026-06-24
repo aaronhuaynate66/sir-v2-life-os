@@ -231,11 +231,11 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
   const [pastedText, setPastedText] = useState('')
   // Export de WhatsApp: el archivo .txt/.zip de la conversación.
   const [waFile, setWaFile] = useState<File | null>(initialWaFile ?? null)
-  const [transcribeAudios, setTranscribeAudios] = useState(false)
+  const [transcribeAudios, setTranscribeAudios] = useState(true)
   const [audioProgress, setAudioProgress] = useState<{ done: number; total: number } | null>(null)
-  const [readImages, setReadImages] = useState(false)
+  const [readImages, setReadImages] = useState(true)
   const [imgProgress, setImgProgress] = useState<{ done: number; total: number } | null>(null)
-  const [readStickers, setReadStickers] = useState(false)
+  const [readStickers, setReadStickers] = useState(true)
   const [stkProgress, setStkProgress] = useState<{ done: number; total: number } | null>(null)
   // Fechas extraídas que el usuario eligió agregar a "Fechas importantes".
   const [selectedDateIdx, setSelectedDateIdx] = useState<Set<number>>(new Set())
@@ -1092,7 +1092,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
                 <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
                   Subí el <span className="font-medium text-foreground">export del chat de WhatsApp</span> con{' '}
                   {personName}: el <span className="font-mono">.txt</span> (exportá «Sin archivos») o el{' '}
-                  <span className="font-mono">.zip</span> (con media — la media se ignora). Es texto{' '}
+                  <span className="font-mono">.zip</span> (con media — los audios, fotos y stickers se procesan según las casillas de abajo). Es texto{' '}
                   <span className="font-medium text-foreground">fiel</span>: sin límite de largo, se procesa por
                   bloques y se consolida en una sola conversación (resumen, tono, fechas y temas).
                 </p>
