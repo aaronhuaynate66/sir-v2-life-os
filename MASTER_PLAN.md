@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `9d1e77b`
+**Hash del último commit humano:** `e75c673`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e75c673` | aaronhuaynate66 | feat: sección Costos en el objetivo (inversión/trofeo) (#366) | 2026-06-24 |
 | `9d1e77b` | aaronhuaynate66 | feat: reconectar el objetivo norte con su significado (#365) | 2026-06-24 |
 | `528d4ce` | aaronhuaynate66 | feat(migraña 2/3): cruce migraña ↔ FC en reposo (#364) | 2026-06-24 |
 | `8e3acfa` | aaronhuaynate66 | fix(#92): match conflicto→objetivo requiere ≥2 keywords (#363) | 2026-06-24 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `47ca6c0` | aaronhuaynate66 | feat(paso3 PR-2): footprint del episodio en el objetivo (#359) | 2026-06-24 |
 | `74ef6fb` | aaronhuaynate66 | feat(#129): guard de atribución en el import de a uno (#358) | 2026-06-24 |
 | `3ebf594` | aaronhuaynate66 | feat: reset de importaciones (borrado acotado + UI) (#357) | 2026-06-24 |
-| `2bad420` | aaronhuaynate66 | feat(#130/#131/#132): filtro central de fechas importadas (#356) | 2026-06-24 |
 
 ---
 
