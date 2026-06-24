@@ -18,6 +18,7 @@ import {
   AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
   AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog'
+import Link from 'next/link'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useMemoryStore } from '@/stores'
@@ -532,6 +533,7 @@ function GoalsContent() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-sm font-medium text-foreground">{g.title}</span>
+                      <Link href={`/objetivos/${g.id}`} className="text-[11px] text-primary hover:underline">Ver todo →</Link>
                       {g.isAnchor && (
                         <Badge variant="outline" className="text-[10px] font-normal border-brand/30 bg-brand-soft text-brand-soft-foreground gap-1">
                           <Anchor size={10} strokeWidth={2} /> Norte del año
