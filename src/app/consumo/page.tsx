@@ -16,6 +16,8 @@ interface Usage {
 }
 const FEATURE_LABEL: Record<string, string> = {
   import_whatsapp: 'Importar chats (WhatsApp)',
+  briefing: 'Briefing diario',
+  person_synthesis: 'Síntesis de persona',
 }
 const fmtUSD = (n: number) => `US$ ${n.toFixed(n < 1 ? 3 : 2)}`
 const fmtN = (n: number) => n.toLocaleString('es')
