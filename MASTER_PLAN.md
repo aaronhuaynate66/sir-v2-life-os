@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `847979d`
+**Hash del último commit humano:** `ecc7d05`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `ecc7d05` | aaronhuaynate66 | feat(identidades): alias por red → homologar zips/capturas (#349) | 2026-06-24 |
 | `847979d` | aaronhuaynate66 | fix(captura): casillas de media premarcadas + copy correcto (#348) | 2026-06-24 |
 | `f344887` | aaronhuaynate66 | fix(momentos): person_id a text (people.id es text desde 0002) (#347) | 2026-06-24 |
 | `d18caa7` | aaronhuaynate66 | feat(momentos): episodios multi-persona (#346) | 2026-06-24 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b6a4dd7` | aaronhuaynate66 | feat(salud): Patrones observados (no predicción) con guarda de muestra (#342) | 2026-06-23 |
 | `48c2912` | aaronhuaynate66 | feat(whatsapp): triage de imágenes — leer documentos/capturas, ignorar fotos personales (#341) | 2026-06-23 |
 | `468d0f1` | aaronhuaynate66 | feat(intake): semáforo de confianza para import masivo (#340) | 2026-06-23 |
-| `7e5d6f0` | aaronhuaynate66 | fix(salud): stats de peso siguen la ventana visible (no toda la serie) (#339) | 2026-06-23 |
 
 ---
 
