@@ -22,6 +22,17 @@ import { parseWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { chatFingerprint } from '@/lib/capture/whatsapp/export/fingerprint'
 import { AgregarCapturaPanel } from '@/components/relaciones/AgregarCapturaPanel'
 
+/** Nombre de contacto de WhatsApp a partir del filename del export.
+ *  "WhatsApp Chat - Papa.zip" -> "Papa". Es el nombre guardado del contacto
+ *  (no incluye al dueño), seguro para aprender como alias de WhatsApp. */
+function waNameFromFile(fileName: string): string {
+  let s = (fileName || '').replace(/\.(zip|txt)$/i, '')
+  s = s.replace(/^.*?whatsapp chat\s*-\s*/i, '')
+  s = s.replace(/^chat de whatsapp\s*(con|de)?\s*/i, '')
+  s = s.replace(/\s*\(\d+\)\s*$/, '')
+  return s.trim()
+}
+
 export function ImportarChat() {
   const [name, setName] = useState('')
   const [candidates, setCandidates] = useState<PersonCandidate[]>([])
@@ -59,8 +70,23 @@ export function ImportarChat() {
     }
   }, [name, resolved])
 
+  // Aprende el nombre de WhatsApp del contacto → esta persona, para auto-rutear
+  // la PRÓXIMA vez por nombre (la huella ya cubre el re-import del mismo chat).
+  async function aprenderAlias(personId: string) {
+    if (!waFile) return
+    const wa = waNameFromFile(waFile.name)
+    if (!wa) return
+    try {
+      await fetch('/api/person-identities', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person_id: personId, network: 'whatsapp', identifier: wa }),
+      })
+    } catch { /* */ }
+  }
+
   function vincularExistente(c: PersonCandidate) {
     setErr(null)
+    void aprenderAlias(c.id)
     setResolved({ id: c.id, name: c.name, created: false })
   }
 
@@ -84,6 +110,22 @@ export function ImportarChat() {
           }
         }
       }
+      // Sin huella: probamos por ALIAS de WhatsApp (nombre del contacto). Si
+      // resuelve a UNA sola persona (sin ambigüedad), la auto-ruteamos.
+      const wa = waNameFromFile(file.name)
+      if (wa) {
+        try {
+          const r2 = await fetch(`/api/person-identities?network=whatsapp&names=${encodeURIComponent(wa)}`)
+          if (r2.ok) {
+            const j2 = (await r2.json()) as { personId?: string | null; personName?: string }
+            if (j2.personId && j2.personName) {
+              setResolved({ id: j2.personId, name: j2.personName, created: false })
+              setRecognized(true)
+              return
+            }
+          }
+        } catch { /* */ }
+      }
       // Sin match: dejamos el archivo cargado y caemos al matcher por nombre.
     } catch {
       setErr('No pude leer el archivo. Probá elegir a la persona manualmente.')
@@ -101,6 +143,7 @@ export function ImportarChat() {
       // Crea el row en DB (server genera id + slug). El sync por realtime lo
       // baja al store; el export usa este id directo, sin esperar.
       const c = await createPerson({ name: n })
+      void aprenderAlias(c.person.id)
       setResolved({ id: c.person.id, name: c.person.name, created: true })
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
