@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a6e15f9`
+**Hash del último commit humano:** `aec465c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `aec465c` | aaronhuaynate66 | feat: vista dedicada del objetivo (/objetivos/[id]) (#369) | 2026-06-24 |
 | `a6e15f9` | aaronhuaynate66 | fix(foco del día): recencia + fecha del sueño + acción nocturna no se 'completa' (#368) | 2026-06-24 |
 | `64f3916` | aaronhuaynate66 | fix: costos del objetivo visibles (sin toggle) (#367) | 2026-06-24 |
 | `e75c673` | aaronhuaynate66 | feat: sección Costos en el objetivo (inversión/trofeo) (#366) | 2026-06-24 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d2ff4f0` | aaronhuaynate66 | feat(paso2): episodio en el grafo (conector entre participantes) (#362) | 2026-06-24 |
 | `c26911b` | aaronhuaynate66 | feat(#125): ampliar medidor de consumo de IA (#361) | 2026-06-24 |
 | `aea5fa3` | aaronhuaynate66 | feat: auto-extraer avatar de capturas de perfil (#360) | 2026-06-24 |
-| `47ca6c0` | aaronhuaynate66 | feat(paso3 PR-2): footprint del episodio en el objetivo (#359) | 2026-06-24 |
 
 ---
 
