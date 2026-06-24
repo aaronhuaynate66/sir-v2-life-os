@@ -41,6 +41,7 @@ import { BatchCapturePanel } from '@/components/capture/BatchCapturePanel'
 import { ImportarChat } from '@/components/captura/ImportarChat'
 import { ImportarLote } from '@/components/captura/ImportarLote'
 import { ImportarGrupo } from '@/components/captura/ImportarGrupo'
+import { ResetImportaciones } from '@/components/captura/ResetImportaciones'
 import { ImportarLlamada } from '@/components/captura/ImportarLlamada'
 
 const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
@@ -336,6 +337,8 @@ function CapturaIndexContent() {
       <ImportarLote />
 
       <ImportarGrupo />
+
+      <ResetImportaciones />
 
       <div className="mb-6">
         <ImportarLlamada />
