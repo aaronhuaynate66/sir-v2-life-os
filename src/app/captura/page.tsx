@@ -40,6 +40,7 @@ import type { CaptureType, Observation } from '@/lib/capture/observations/types'
 import { BatchCapturePanel } from '@/components/capture/BatchCapturePanel'
 import { ImportarChat } from '@/components/captura/ImportarChat'
 import { ImportarLote } from '@/components/captura/ImportarLote'
+import { ImportarGrupo } from '@/components/captura/ImportarGrupo'
 import { ImportarLlamada } from '@/components/captura/ImportarLlamada'
 
 const TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
@@ -333,6 +334,8 @@ function CapturaIndexContent() {
       <ImportarChat />
 
       <ImportarLote />
+
+      <ImportarGrupo />
 
       <div className="mb-6">
         <ImportarLlamada />
