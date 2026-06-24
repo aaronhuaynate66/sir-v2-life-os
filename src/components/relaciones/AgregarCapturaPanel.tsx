@@ -74,6 +74,7 @@ import {
 import type { ChunkInterpretation, ConsolidatedExport, ExtractedDate } from '@/lib/capture/whatsapp/export/types'
 import { createPersonLog } from './person-logs/client'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+import { autoExtractAvatar } from '@/lib/avatars/autoExtract'
 import type { CaptureType, Confidence, DetectorResult } from '@/lib/capture/observations/types'
 import type { Person, SpecialDate } from '@/types'
 import { cn } from '@/lib/utils'
@@ -442,6 +443,19 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
               updatedAt: new Date().toISOString(),
             })
           }
+        }
+
+        // Auto-foto: de una captura de perfil (IG/LinkedIn), si la persona aún
+        // no tiene avatar, detectamos la cara y la guardamos sola. Best-effort.
+        if ((p.captureType === 'instagram' || p.captureType === 'linkedin') && p.file) {
+          const imgFile = p.file
+          void (async () => {
+            try {
+              const r = await fetch(`/api/avatars?person_id=${encodeURIComponent(personId)}`)
+              const j = (await r.json()) as { avatars?: Record<string, string> }
+              if (!j.avatars?.[personId]) await autoExtractAvatar(personId, imgFile)
+            } catch { /* */ }
+          })()
         }
         trackCapture(EVENTS.captureSaved, { capture_type: p.captureType, surface: 'ficha', linked: true })
         setSavedType(p.captureType)
