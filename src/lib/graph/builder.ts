@@ -120,6 +120,8 @@ export interface BuildGraphArgs {
   hoverById?: Record<string, import('./hover').NodeHover>
   selfFullName: string | null
   selfEmail: string
+  /** Episodios compartidos abiertos: conectan a sus participantes (Paso 2). */
+  episodes?: { participantIds: string[]; title?: string }[]
 }
 
 /** Capitaliza el parentesco para el label del edge ("padre" → "Padre"). */
@@ -139,6 +141,7 @@ export function buildGraphData({
   hoverById = {},
   selfFullName,
   selfEmail,
+  episodes = [],
 }: BuildGraphArgs): GraphData {
   // 2º grado: persona que es TARGET de un vínculo de familia y NO tiene
   // interacción directa con self. Cuelga de su contacto (la arista person↔
@@ -324,6 +327,23 @@ export function buildGraphData({
         label: CATEGORY_LABEL.organizacion,
         color: CATEGORY_COLOR.organizacion,
       })
+    }
+  }
+
+  // Aristas de EPISODIO (Paso 2): conectan a los participantes de cada episodio
+  // abierto en estrella desde el primero. Color naranja, label = título. Dedup.
+  const epSeen = new Set<string>()
+  for (const ep of episodes) {
+    const ids = (ep.participantIds ?? []).map((pid) => nodeIdByPersonId.get(pid)).filter((x): x is string => !!x)
+    if (ids.length < 2) continue
+    const hub = ids[0]
+    for (let i = 1; i < ids.length; i++) {
+      const t = ids[i]
+      if (t === hub) continue
+      const key = [hub, t].sort().join('|') + '|ep'
+      if (epSeen.has(key)) continue
+      epSeen.add(key)
+      edges.push({ source: hub, target: t, category: 'episodio', label: (ep.title || 'Episodio').slice(0, 40), color: CATEGORY_COLOR.episodio })
     }
   }
 

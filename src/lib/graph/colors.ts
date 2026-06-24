@@ -10,6 +10,7 @@ export const CATEGORY_COLOR: Record<GraphCategory, string> = {
   estrategico: '#a855f7', // violeta
   desarrollo:  '#f59e0b', // amber
   organizacion:'#14b8a6', // teal — nodo-empresa (hub), distinto de las personas
+  episodio:    '#fb923c', // naranja — vínculo por un episodio compartido
   self:        '#f5f5f5', // foreground claro — el nodo "tu" se destaca por neutralidad
 }
 
@@ -21,6 +22,7 @@ export const CATEGORY_LABEL: Record<GraphCategory, string> = {
   estrategico: 'Estratégico',
   desarrollo:  'Desarrollo',
   organizacion:'Organización',
+  episodio:    'Episodio',
   self:        'Yo',
 }
 
