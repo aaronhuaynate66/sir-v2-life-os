@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `47ca6c0`
+**Hash del último commit humano:** `aea5fa3`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `aea5fa3` | aaronhuaynate66 | feat: auto-extraer avatar de capturas de perfil (#360) | 2026-06-24 |
 | `47ca6c0` | aaronhuaynate66 | feat(paso3 PR-2): footprint del episodio en el objetivo (#359) | 2026-06-24 |
 | `74ef6fb` | aaronhuaynate66 | feat(#129): guard de atribución en el import de a uno (#358) | 2026-06-24 |
 | `3ebf594` | aaronhuaynate66 | feat: reset de importaciones (borrado acotado + UI) (#357) | 2026-06-24 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d923e27` | aaronhuaynate66 | feat: import de grupos por autor (atribucion por miembro) (#353) | 2026-06-24 |
 | `a91c7b8` | aaronhuaynate66 | fix(archivo): el archivado crudo nunca persistía (id null) + keywords del título (#352) | 2026-06-24 |
 | `6c966ef` | aaronhuaynate66 | feat(paso3): rastreador de referencias del episodio (cross-conversacion) (#351) | 2026-06-24 |
-| `666c0e4` | aaronhuaynate66 | feat(#91): intake masivo de chats con semaforo (lote) (#350) | 2026-06-24 |
 
 ---
 
