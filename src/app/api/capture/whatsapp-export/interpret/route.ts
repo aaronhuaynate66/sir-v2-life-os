@@ -12,6 +12,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
+import { recordAiUsage, type TokenUsage } from '@/lib/ai/usage'
 
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
@@ -56,7 +57,7 @@ async function callInterpret(
   system: string,
   userMsg: string,
   extra = '',
-): Promise<string> {
+): Promise<{ text: string; usage: TokenUsage }> {
   const sys = extra ? `${system}\n\n${extra}` : system
   const msg = await client.messages.create({
     model: MODEL_ID,
@@ -65,7 +66,7 @@ async function callInterpret(
     messages: [{ role: 'user', content: userMsg }],
   })
   const block = msg.content.find((b) => b.type === 'text')
-  return block && block.type === 'text' ? block.text : ''
+  return { text: block && block.type === 'text' ? block.text : '', usage: msg.usage as TokenUsage }
 }
 
 export async function POST(req: NextRequest) {
@@ -102,8 +103,11 @@ export async function POST(req: NextRequest) {
   const userMsg = buildInterpretUserMessage(chunkText)
 
   let raw = ''
+  const usageAcc: TokenUsage = { input_tokens: 0, output_tokens: 0 }
+  const addUsage = (u: TokenUsage) => { usageAcc.input_tokens = (usageAcc.input_tokens ?? 0) + (u.input_tokens ?? 0); usageAcc.output_tokens = (usageAcc.output_tokens ?? 0) + (u.output_tokens ?? 0) }
   try {
-    raw = await callInterpret(client, system, userMsg)
+    const r = await callInterpret(client, system, userMsg)
+    raw = r.text; addUsage(r.usage)
   } catch (e) {
     reportApiError(e)
     const msg = e instanceof Error ? e.message : String(e)
@@ -115,12 +119,13 @@ export async function POST(req: NextRequest) {
     parsed = JSON.parse(stripJsonFences(raw))
   } catch {
     try {
-      raw = await callInterpret(
+      const r2 = await callInterpret(
         client,
         system,
         userMsg,
         'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON, sin texto ni markdown fences. Empezá con `{` y terminá con `}`.',
       )
+      raw = r2.text; addUsage(r2.usage)
       parsed = JSON.parse(stripJsonFences(raw))
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -132,5 +137,6 @@ export async function POST(req: NextRequest) {
   if (!interpretation) {
     return errorJson(422, 'La interpretación no cumple el formato esperado')
   }
+  void recordAiUsage(supabase, authData.user.id, 'import_whatsapp', MODEL_ID, usageAcc)
   return NextResponse.json({ interpretation }, { status: 200 })
 }
