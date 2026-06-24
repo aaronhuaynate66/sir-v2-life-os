@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useRelationshipStore } from '@/stores'
 import type { RelationshipMoment } from '@/lib/moments/types'
+import { ReferenciasEpisodio } from './ReferenciasEpisodio'
 
 function todayLimaISO(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
@@ -183,6 +184,7 @@ export function MomentosPanel({ personId }: { personId: string }) {
                       <button type="button" onClick={() => void borrar(m.id)} aria-label="Borrar" className="text-muted-foreground hover:text-bad"><X size={14} /></button>
                     </div>
                   </div>
+                  <ReferenciasEpisodio momentId={m.id} />
                 </div>
               )
             })}
