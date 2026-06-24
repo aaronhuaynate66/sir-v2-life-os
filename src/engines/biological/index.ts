@@ -7,6 +7,8 @@ export interface BiologicalState {
   sleepDebt: number
   lastSleepQuality: number
   lastSleepDuration: number
+  /** Fecha (YYYY-MM-DD) del último registro de sueño, para juzgar recencia. */
+  lastSleepDate?: string | null
   recoveryScore: number
   timestamp: string
 }
@@ -35,6 +37,7 @@ export function analyzeBiologicalState(sleepRecords: SleepRecord[], metrics: Sel
     sleepDebt: Math.round(sleepDebt * 10) / 10,
     lastSleepQuality: last?.quality || 6,
     lastSleepDuration: last?.duration || 7,
+    lastSleepDate: last?.date ?? null,
     recoveryScore: Math.round(recovery * 10) / 10,
     timestamp: new Date().toISOString(),
   }

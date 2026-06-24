@@ -425,10 +425,13 @@ function DashboardContent() {
                     </div>
                   </div>
 
+                  {topRec.type === 'rest' && (
+                    <div className="text-[11px] text-muted-foreground/70 mb-2">Es un aviso para esta noche — no hace falta marcarlo; mañana se actualiza solo con tu sueño.</div>
+                  )}
                   <div className="flex gap-2 mt-auto">
                     <Button size="sm" variant="outline" onClick={() => completeRecommendation(topRec.id)} className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">
                       <CheckCircle2 size={14} strokeWidth={1.75} />
-                      Completar
+                      {topRec.type === 'rest' ? 'Lo tengo' : 'Completar'}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => dismissRecommendation(topRec.id)}>
                       Descartar
