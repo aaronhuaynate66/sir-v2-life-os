@@ -387,27 +387,19 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
             try { await fetch('/api/chat-identities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fingerprint: p.fingerprint, person_id: personId }) }) } catch { /* */ }
           }
 
-          // 3. Fechas elegidas → Fechas importantes (people.special_dates).
+          // 3. Fechas elegidas → Fechas importantes, vía el filtro central
+          //    (dedup contra existentes + relevancia + no cumple-duplicado).
           let datesAdded = 0
           const dates = p.consolidated?.dates ?? []
-          const toAdd: SpecialDate[] = []
-          dates.forEach((d, i) => {
-            if (!selectedDateIdx.has(i) || !d.dateISO) return
-            const dateStr = d.dateISO.slice(0, 10)
-            if (!parseLocalDate(dateStr)) return
-            toAdd.push({
-              id: crypto.randomUUID(),
-              label: d.label,
-              date: dateStr,
-              recurring: d.recurring,
-            })
-          })
-          if (toAdd.length > 0 && person) {
-            updatePerson(personId, {
-              specialDates: [...(person.specialDates ?? []), ...toAdd],
-              updatedAt: new Date().toISOString(),
-            })
-            datesAdded = toAdd.length
+          const incoming = dates
+            .map((d, i) => ({ d, i }))
+            .filter(({ d, i }) => selectedDateIdx.has(i) && d.dateISO && parseLocalDate((d.dateISO as string).slice(0, 10)))
+            .map(({ d }) => ({ label: d.label, date: (d.dateISO as string).slice(0, 10), recurring: d.recurring }))
+          if (incoming.length > 0) {
+            try {
+              const res = await fetch('/api/people/special-dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ person_id: personId, dates: incoming }) })
+              if (res.ok) { const j = (await res.json()) as { added?: number }; datesAdded = j.added ?? 0 }
+            } catch { /* no fatal */ }
           }
 
           setSavedType('whatsapp_chat')
