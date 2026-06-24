@@ -164,16 +164,38 @@ export async function fetchDayContext(
     }
   } catch { /* */ }
 
-  // 8c. Momentos/decisiones ABIERTOS que ocurrieron ese día o tienen seguimiento ese día.
+  // 8c. Momentos/decisiones ABIERTOS que ocurrieron ese día o tienen seguimiento
+  //     ese día. Si es un EPISODIO multi-persona (mig 0095), la etiqueta lista a
+  //     todos los involucrados (ej. "Mamá, Nicolle") para verlo en contexto.
   try {
     const { data } = await supabase.from('relationship_moments')
-      .select('person_id, title, occurred_on, follow_up_on, status')
+      .select('id, person_id, title, occurred_on, follow_up_on, status')
       .eq('user_id', userId).eq('status', 'abierto').limit(100)
-    for (const r of (data ?? []) as Array<{ person_id: string; title: string; occurred_on: string; follow_up_on: string | null }>) {
-      const occ = (r.occurred_on || '').slice(0, 10)
-      const fol = (r.follow_up_on || '').slice(0, 10)
-      if (fol === date) slices.moments.push({ person: pn(r.person_id), title: (r.title || '').slice(0, 160), kind: 'follow' })
-      else if (occ === date) slices.moments.push({ person: pn(r.person_id), title: (r.title || '').slice(0, 160), kind: 'occurred' })
+    const rows = (data ?? []) as Array<{ id: string; person_id: string; title: string; occurred_on: string; follow_up_on: string | null }>
+    const matched = rows
+      .map((r) => {
+        const occ = (r.occurred_on || '').slice(0, 10)
+        const fol = (r.follow_up_on || '').slice(0, 10)
+        if (fol === date) return { r, kind: 'follow' as const }
+        if (occ === date) return { r, kind: 'occurred' as const }
+        return null
+      })
+      .filter((x): x is { r: typeof rows[number]; kind: 'follow' | 'occurred' } => x !== null)
+    // Participantes extra de los episodios que matchean.
+    const extraByMoment = new Map<string, string[]>()
+    if (matched.length) {
+      try {
+        const { data: pp } = await supabase.from('moment_participants')
+          .select('moment_id, person_id').eq('user_id', userId).in('moment_id', matched.map((m) => m.r.id))
+        for (const p of (pp ?? []) as Array<{ moment_id: string; person_id: string }>) {
+          const a = extraByMoment.get(p.moment_id) ?? []; a.push(p.person_id); extraByMoment.set(p.moment_id, a)
+        }
+      } catch { /* */ }
+    }
+    for (const m of matched) {
+      const allIds = [m.r.person_id, ...(extraByMoment.get(m.r.id) ?? [])]
+      const label = allIds.map((id) => pn(id)).filter((n) => n && n !== 'alguien').join(', ') || pn(m.r.person_id)
+      slices.moments.push({ person: label, title: (m.r.title || '').slice(0, 160), kind: m.kind })
     }
   } catch { /* */ }
 

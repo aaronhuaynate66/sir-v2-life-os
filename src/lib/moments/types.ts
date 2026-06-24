@@ -12,6 +12,9 @@ export interface RelationshipMoment {
   resolution: string | null
   createdAt: string
   updatedAt: string
+  /** IDs de TODAS las personas involucradas (primaria + participantes).
+   *  Lo llena la API (no la fila cruda). Undefined = legacy/no resuelto. */
+  participantIds?: string[]
 }
 
 interface RawMomentRow {
