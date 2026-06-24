@@ -89,6 +89,12 @@ export async function runWhatsappImport(
     onProgress?.({ phase: 'persisting' })
     await persistWhatsAppExport({ personId, data: exportData })
 
+    // Fechas importantes LIMPIAS (dedup + relevancia + no cumple-duplicado).
+    try {
+      const dates = (consolidated.dates ?? []).filter((d) => d.dateISO).map((d) => ({ label: d.label, date: (d.dateISO as string).slice(0, 10), recurring: d.recurring }))
+      if (dates.length) await fetch('/api/people/special-dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ person_id: personId, dates }) })
+    } catch { /* */ }
+
     const quality = consolidated.interactionQuality
     if (typeof quality === 'number' && quality >= 1 && quality <= 5) {
       try { await createPersonLog({ personId, kind: 'interaction', value: quality, note: `Importado del export de WhatsApp · ${fresh.messages.length} mensajes` }) } catch { /* */ }

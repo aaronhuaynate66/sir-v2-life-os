@@ -80,6 +80,10 @@ export async function runGroupImport(
       const exportData = buildExportObservationData(parsed, consolidated, m.name)
       try {
         await persistWhatsAppExport({ personId: m.id, data: exportData })
+        try {
+          const dates = (consolidated.dates ?? []).filter((d) => d.dateISO).map((d) => ({ label: d.label, date: (d.dateISO as string).slice(0, 10), recurring: d.recurring }))
+          if (dates.length) await fetch('/api/people/special-dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ person_id: m.id, dates }) })
+        } catch { /* */ }
         const q = consolidated.interactionQuality
         if (typeof q === 'number' && q >= 1 && q <= 5) {
           try { await createPersonLog({ personId: m.id, kind: 'interaction', value: q, note: `Importado de un chat GRUPAL · ${parsed.messages.length} mensajes` }) } catch { /* */ }
