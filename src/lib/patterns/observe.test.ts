@@ -41,3 +41,15 @@ describe('observe', () => {
     expect(r!.avgHigh).toBeLessThan(r!.avgLow) // días flag = energía más baja
   })
 })
+
+import { observePatterns as _op } from './observe'
+describe('migrana-fc', () => {
+  it('detecta FC más alta en días de migraña', () => {
+    const days = (n: number, v: (i: number) => number) => Array.from({ length: n }, (_, i) => ({ date: `2026-05-${String(i + 1).padStart(2, '0')}`, value: v(i) }))
+    const restingHr = days(20, (i) => (i < 8 ? 75 : 60)) // primeros 8 altos
+    const migraineDays = new Set(restingHr.slice(0, 8).map((d) => d.date))
+    const out = _op({ sleepHours: [], mood: [], energy: [], stress: [], restingHr, migraineDays })
+    const fc = out.find((o) => o.id === 'migrana-fc')
+    expect(fc).toBeTruthy()
+  })
+})

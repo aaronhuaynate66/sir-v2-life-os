@@ -101,6 +101,9 @@ export function observePatterns(inp: ObserveInput): Observation[] {
   // FC reposo → energía
   push('fc-energia', compareContinuous(inp.restingHr, inp.energy), 0.4, 0.8, (r) =>
     `Con FC en reposo más alta, tu energía promedió ${f1(r.avgHigh)}/5 vs ${f1(r.avgLow)}/5 con FC más baja.`)
+  // Migraña (binario) → FC en reposo (bpm: leve 2, clara 4)
+  push('migrana-fc', compareBinary(inp.restingHr, inp.migraineDays), 2, 4, (r) =>
+    `En días de migraña tu FC en reposo promedió ${f1(r.avgHigh)} lpm vs ${f1(r.avgLow)} los demás días.`)
   return out
 }
 
@@ -125,5 +128,6 @@ export function dataReadiness(inp: ObserveInput): ReadinessRow[] {
     mk('sueno-energia', 'Sueño + energía', alignedCount(inp.sleepHours, inp.energy)),
     mk('fc-energia', 'FC + energía', alignedCount(inp.restingHr, inp.energy)),
     mk('migrana-energia', 'Migraña + energía', inp.energy.length),
+    mk('migrana-fc', 'Migraña + FC', inp.restingHr.length),
   ]
 }
