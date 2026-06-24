@@ -45,7 +45,10 @@ export async function POST(req: NextRequest) {
   }
 
   const row = {
-    id: (existing?.id as string) ?? undefined,
+    // id: lo genera la DB en insert (default gen_random_uuid). En update, el
+    // onConflict matchea por (user_id, person_id, source), no por id. Enviar
+    // id:undefined hacía que PostgREST mandara null → violaba el not-null.
+    ...(existing?.id ? { id: existing.id as string } : {}),
     user_id: auth.user.id, person_id: personId, source,
     date_first: str(b.dateFirst, 20), date_last: str(b.dateLast, 20),
     message_count: typeof b.messageCount === 'number' ? b.messageCount : null,
