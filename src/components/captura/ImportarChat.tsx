@@ -21,6 +21,7 @@ import { readExportText } from '@/lib/capture/whatsapp/export/client'
 import { parseWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { chatFingerprint } from '@/lib/capture/whatsapp/export/fingerprint'
 import { AgregarCapturaPanel } from '@/components/relaciones/AgregarCapturaPanel'
+import { chatPersonMismatch } from '@/lib/people/nameMatch'
 
 /** Nombre de contacto de WhatsApp a partir del filename del export.
  *  "WhatsApp Chat - Papa.zip" -> "Papa". Es el nombre guardado del contacto
@@ -43,6 +44,8 @@ export function ImportarChat() {
   const [recognizing, setRecognizing] = useState(false)
   const [recognized, setRecognized] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [mismatch, setMismatch] = useState(false)
+  const [overrode, setOverrode] = useState(false)
 
   // Sugerencias en vivo (debounce). Solo mientras no haya persona resuelta.
   useEffect(() => {
@@ -83,6 +86,22 @@ export function ImportarChat() {
       })
     } catch { /* */ }
   }
+
+  // Guard de atribución: si el chat no coincide con la persona elegida, avisamos.
+  useEffect(() => {
+    if (!resolved || !waFile) { setMismatch(false); return }
+    const chatName = waNameFromFile(waFile.name)
+    let cancelled = false
+    void (async () => {
+      let aliases: string[] = []
+      try {
+        const r = await fetch(`/api/person-identities?person_id=${encodeURIComponent(resolved.id)}`)
+        if (r.ok) { const j = (await r.json()) as { identities?: { identifier: string }[] }; aliases = (j.identities ?? []).map((i) => i.identifier) }
+      } catch { /* */ }
+      if (!cancelled) setMismatch(chatPersonMismatch(chatName, resolved.name, aliases))
+    })()
+    return () => { cancelled = true }
+  }, [resolved, waFile])
 
   function vincularExistente(c: PersonCandidate) {
     setErr(null)
@@ -161,7 +180,7 @@ export function ImportarChat() {
             <span className="font-medium text-foreground">{resolved.name}</span>
             {resolved.created && <span className="text-xs text-ok"> · contacto creado</span>}
           </div>
-          <Button size="sm" variant="ghost" onClick={() => { setResolved(null); setName(''); setCandidates([]) }}>
+          <Button size="sm" variant="ghost" onClick={() => { setResolved(null); setName(''); setCandidates([]); setMismatch(false); setOverrode(false) }}>
             <X size={13} strokeWidth={2} className="mr-1" aria-hidden="true" />
             cambiar
           </Button>
@@ -172,7 +191,20 @@ export function ImportarChat() {
           LinkedIn/Instagram para enriquecer a <span className="text-foreground">{resolved.name}</span>.
         </p>
         {recognized && <p className="text-[11px] text-ok mb-2 inline-flex items-center gap-1"><CheckCircle2 size={12} /> Reconocí este chat por sus participantes — lo ruteé solo.</p>}
-        <AgregarCapturaPanel personId={resolved.id} personName={resolved.name} defaultMode="whatsapp" initialWaFile={waFile} />
+        {mismatch && !overrode ? (
+          <div className="rounded-lg border border-bad/40 bg-bad/10 p-3">
+            <div className="text-sm font-medium text-bad mb-1">⚠️ ¿Seguro que es de {resolved.name}?</div>
+            <p className="text-xs text-muted-foreground mb-2">
+              El chat parece de «{waFile ? waNameFromFile(waFile.name) : ''}», que no coincide con {resolved.name}. Asignarlo igual puede contaminar su ficha con datos de otra persona.
+            </p>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setOverrode(true)}>Asignar igual</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setResolved(null); setName(''); setCandidates([]); setMismatch(false); setOverrode(false) }}>Elegir otra persona</Button>
+            </div>
+          </div>
+        ) : (
+          <AgregarCapturaPanel personId={resolved.id} personName={resolved.name} defaultMode="whatsapp" initialWaFile={waFile} />
+        )}
       </div>
     )
   }
