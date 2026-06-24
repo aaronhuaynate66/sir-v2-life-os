@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `666c0e4`
+**Hash del último commit humano:** `6c966ef`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6c966ef` | aaronhuaynate66 | feat(paso3): rastreador de referencias del episodio (cross-conversacion) (#351) | 2026-06-24 |
 | `666c0e4` | aaronhuaynate66 | feat(#91): intake masivo de chats con semaforo (lote) (#350) | 2026-06-24 |
 | `ecc7d05` | aaronhuaynate66 | feat(identidades): alias por red → homologar zips/capturas (#349) | 2026-06-24 |
 | `847979d` | aaronhuaynate66 | fix(captura): casillas de media premarcadas + copy correcto (#348) | 2026-06-24 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ef28ad7` | aaronhuaynate66 | feat(salud): medidor de madurez de datos para el futuro predictivo (#344) | 2026-06-23 |
 | `08059a0` | aaronhuaynate66 | feat(whatsapp): stickers como señal de tono (cierra media) (#343) | 2026-06-23 |
 | `b6a4dd7` | aaronhuaynate66 | feat(salud): Patrones observados (no predicción) con guarda de muestra (#342) | 2026-06-23 |
-| `48c2912` | aaronhuaynate66 | feat(whatsapp): triage de imágenes — leer documentos/capturas, ignorar fotos personales (#341) | 2026-06-23 |
 
 ---
 
