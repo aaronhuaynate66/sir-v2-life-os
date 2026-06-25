@@ -156,7 +156,7 @@ export function ImportarLote() {
 
 function RowItem({ row, running, onResolve, onRemove }: { row: Row; running: boolean; onResolve: (id: string, name: string, conf: Conf) => void; onRemove: () => void }) {
   const [editing, setEditing] = useState(false)
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(row.waName || '')
   const [cands, setCands] = useState<PersonCandidate[]>([])
   const [busy, setBusy] = useState(false)
 
@@ -192,7 +192,7 @@ function RowItem({ row, running, onResolve, onRemove }: { row: Row; running: boo
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {statusBadge}
-          {!running && row.status === 'idle' && <button type="button" onClick={() => setEditing((s) => !s)} className="text-[11px] text-primary hover:underline">cambiar</button>}
+          {!running && row.status === 'idle' && <button type="button" onClick={() => { const nx = !editing; setEditing(nx); if (nx && q.trim().length >= 2) void buscar(q) }} className="text-[11px] text-primary hover:underline">cambiar</button>}
           {!running && row.status === 'idle' && <button type="button" onClick={onRemove} aria-label="Quitar" className="text-muted-foreground hover:text-bad"><X size={13} /></button>}
         </div>
       </div>
