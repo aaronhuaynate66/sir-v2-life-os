@@ -596,6 +596,9 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
   const now = new Date(mount.current + (Date.now() - mount.current))
 
   const [view, setView] = useState<View>('week')
+  // Mobile: la grilla semanal de 7 columnas no se lee en un cel → arrancamos en
+  // Día (legible). Se setea tras montar para no romper la hidratación.
+  useEffect(() => { if (typeof window !== 'undefined' && window.innerWidth < 640) setView('spine') }, [])
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()))
   const [dayDate, setDayDate] = useState<Date>(() => startOfDay(new Date()))
   const origins = useMemo(() => presentOrigins(events), [events])
@@ -664,7 +667,8 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
           <WeekBoard weekStart={weekStart} now={now} visible={visible} showGaps={showGaps}
             onPickDay={(d) => { setDayDate(d); setView('spine') }} onSelect={setSel} />
         ) : view === 'week' ? (
-          <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', border: '.5px solid var(--border)', borderRadius: 'var(--r-card)', overflow: 'hidden', background: 'var(--s1)' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', margin: '0 -1px' }}>
+          <div style={{ minWidth: 720, flex: '0 0 auto', display: 'flex', flexDirection: 'column', border: '.5px solid var(--border)', borderRadius: 'var(--r-card)', overflow: 'hidden', background: 'var(--s1)' }}>
             {/* day header */}
             <div style={{ height: L.calHead, display: 'flex', borderBottom: '.5px solid var(--border)', flex: '0 0 auto' }}>
               <div style={{ width: L.gutter, flex: '0 0 auto', borderRight: '.5px solid var(--border)' }} />
@@ -764,6 +768,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
                 })}
               </div>
             </div>
+          </div>
           </div>
         ) : (
           <>
