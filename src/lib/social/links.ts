@@ -19,6 +19,23 @@ export function whatsappLink(phone: string | null | undefined): string | null {
   return digits ? `https://wa.me/${digits}` : null
 }
 
+/** Mapa de homóglifos (cirílico/griego que se ven como latinos) → ASCII.
+ *  El OCR de capturas mete estos caracteres "fantasma" en los handles
+ *  (ej. "@nicollemariahе" con una 'е' cirílica) y rompe el link. */
+const CONFUSABLES: Record<string, string> = {
+  'а': 'a', 'е': 'e', 'о': 'o', 'р': 'p', 'с': 'c', 'х': 'x', 'у': 'y', 'к': 'k',
+  'м': 'm', 'н': 'h', 'т': 't', 'в': 'b', 'і': 'i', 'ј': 'j', 'ѕ': 's', 'ԁ': 'd',
+  'ո': 'n', 'г': 'r', 'А': 'A', 'Е': 'E', 'О': 'O', 'Р': 'P', 'С': 'C', 'Х': 'X',
+  'У': 'Y', 'К': 'K', 'М': 'M', 'Н': 'H', 'Т': 'T', 'В': 'B',
+  'ο': 'o', 'α': 'a', 'ε': 'e', 'ρ': 'p', 'ν': 'v', 'ι': 'i', 'κ': 'k', 'μ': 'm',
+  'τ': 't', 'γ': 'y', 'υ': 'u',
+}
+function deconfuse(s: string): string {
+  let out = ''
+  for (const ch of s) out += CONFUSABLES[ch] ?? ch
+  return out
+}
+
 /** Normaliza un handle quitando @, espacios y una posible URL pegada. */
 export function normalizeHandle(raw: string | null | undefined): string | null {
   if (!raw) return null
@@ -28,6 +45,8 @@ export function normalizeHandle(raw: string | null | undefined): string | null {
   const urlMatch = h.match(/(?:instagram\.com|twitter\.com|x\.com)\/(@?[\w.]+)/i)
   if (urlMatch) h = urlMatch[1]
   h = h.replace(/^@/, '').replace(/\/$/, '').trim()
+  // Saneo: homóglifos → ASCII + solo chars válidos de handle (letras/dígitos/._).
+  h = deconfuse(h).replace(/[^a-zA-Z0-9._]/g, '')
   return h.length > 0 ? h : null
 }
 

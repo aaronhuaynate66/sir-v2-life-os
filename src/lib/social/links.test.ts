@@ -88,3 +88,13 @@ describe('resolveInstagramAutoLink', () => {
     expect(resolveInstagramAutoLink(null, { handle: '' })).toBeNull()
   })
 })
+
+import { normalizeHandle as _nh } from './links'
+describe('normalizeHandle homóglifos', () => {
+  it('reemplaza la e cirílica y limpia', () => {
+    expect(_nh('@nicollemariahе')).toBe('nicollemariahe')
+  })
+  it('quita caracteres no válidos', () => {
+    expect(_nh('@diana.d 🤍')).toBe('diana.d')
+  })
+})
