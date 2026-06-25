@@ -256,6 +256,23 @@ function isActivityOrientedGoal(category: GoalCategory): boolean {
 /** Marcas de recencia que la derivación pone a lo viejo/no vigente. */
 const STALE_TAGS = new Set(['historico', 'obsoleto'])
 
+/** Tags genéricos/meta que NO deben disparar un cruce objetivo↔persona: vienen
+ *  de la creación del contacto o de su categoría, no de actividad real. Sin
+ *  esto, "persona/network/professional" matcheaba CUALQUIER objetivo personal
+ *  con CUALQUIER contacto (ruido tipo "Mudarme con mi perro" → 5 personas). */
+const GENERIC_TAGS = new Set([
+  'persona', 'personas', 'personal', 'gente', 'contacto', 'contactos',
+  'network', 'networking', 'close', 'professional', 'profesional', 'family',
+  'familia', 'acquaintance', 'mentor', 'mentee', 'lead', 'neutral', 'romantic',
+])
+
+/** Memoria-meta de creación del contacto ("Se agregó a X como ... en la
+ *  categoría ..."): no es actividad del objetivo, no debe citarse como evidencia. */
+function isPersonCreationMemory(m: { content?: string; title?: string }): boolean {
+  const t = `${m.content ?? ''} ${m.title ?? ''}`.toLowerCase()
+  return /se agreg[oó] a .* como /.test(t)
+}
+
 /** Stopwords del texto de objetivos (verbos de acción + conectores) que no
  *  aportan como palabra clave de cruce. Normalizadas (sin acentos). */
 const GOAL_STOPWORDS = new Set([
@@ -264,6 +281,7 @@ const GOAL_STOPWORDS = new Set([
   'ser', 'estar', 'tener', 'hacer', 'cerrar', 'lograr', 'conseguir', 'alcanzar',
   'mejorar', 'aumentar', 'reducir', 'mantener', 'crear', 'construir', 'terminar',
   'completar', 'seguir', 'empezar', 'mejor', 'nuevo', 'nueva', 'gran', 'mucho',
+  'persona', 'personas', 'personal', 'gente', 'contacto', 'contactos',
 ])
 
 /** Normaliza un token: minúsculas, sin acentos, sólo alfanumérico. */
@@ -301,7 +319,7 @@ export function matchMemoryTags(
   const out: string[] = []
   for (const tag of tags) {
     const norm = normalizeToken(tag)
-    if (!norm || STALE_TAGS.has(norm)) continue
+    if (!norm || STALE_TAGS.has(norm) || GENERIC_TAGS.has(norm)) continue
     if (categoryTags.has(norm) || keywords.has(norm)) {
       if (!seen.has(norm)) {
         seen.add(norm)
@@ -343,7 +361,7 @@ function personGoalActivity(
   if (keywords.size === 0 && categoryTags.size === 0) return { signal: null, hadStale: false }
 
   const mine = memories.filter(
-    (m) => m.personId === person.id || (m.entities ?? []).includes(person.id),
+    (m) => (m.personId === person.id || (m.entities ?? []).includes(person.id)) && !isPersonCreationMemory(m),
   )
 
   const fresh: Array<{ days: number; tags: string[]; content: string }> = []
