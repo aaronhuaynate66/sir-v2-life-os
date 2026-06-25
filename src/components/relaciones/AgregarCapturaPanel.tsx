@@ -445,9 +445,10 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
           }
         }
 
-        // Auto-foto: de una captura de perfil (IG/LinkedIn), si la persona aún
-        // no tiene avatar, detectamos la cara y la guardamos sola. Best-effort.
-        if ((p.captureType === 'instagram' || p.captureType === 'linkedin') && p.file) {
+        // Auto-foto: de CUALQUIER imagen que subas, si la persona aún no tiene
+        // avatar, detectamos la cara y la guardamos sola. autoExtractAvatar solo
+        // setea si ENCUENTRA una cara → screenshots sin cara no se tocan.
+        if (p.source === 'image' && p.file) {
           const imgFile = p.file
           void (async () => {
             try {
