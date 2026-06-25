@@ -671,6 +671,33 @@ export function MisCapturas() {
               )}
             </div>
 
+            {/* Resumen arriba: ver de un vistazo si salió bien, sin scrollear. */}
+            {(() => {
+              const bioConf = (b: BioItem) => b.scale?.confidence ?? b.sleep?.confidence ?? b.hr?.confidence ?? b.hrv?.confidence
+              const total = bioItems.length + healthItems.length + (identity ? 1 : 0)
+              if (total === 0 && rejectItems.length === 0) return null
+              const revisar =
+                bioItems.filter((b) => b.status === 'error' || bioConf(b) === 'low').length +
+                healthItems.filter((h) => h.status === 'error').length +
+                (identity && identity.status === 'illegible' ? 1 : 0)
+              const ok = total - revisar
+              const rechazadas = rejectItems.length
+              const allGood = revisar === 0 && rechazadas === 0
+              return (
+                <div className={`rounded-md border p-2.5 text-xs flex flex-wrap items-center gap-x-3 gap-y-1 ${allGood ? 'border-ok/40 bg-ok/10' : 'border-warn/40 bg-warn/10'}`}>
+                  {allGood ? (
+                    <span className="text-good font-medium">✓ Todo OK — {ok} captura{ok === 1 ? '' : 's'} con alta confianza</span>
+                  ) : (
+                    <>
+                      {ok > 0 && <span className="text-good">✓ {ok} OK</span>}
+                      {revisar > 0 && <span className="text-warn-foreground">⚠ {revisar} a revisar</span>}
+                      {rechazadas > 0 && <span className="text-bad">✗ {rechazadas} rechazada{rechazadas === 1 ? '' : 's'}</span>}
+                    </>
+                  )}
+                </div>
+              )
+            })()}
+
             {/* Identidad (perfil propio) */}
             {identity && (
               <IdentityResult
