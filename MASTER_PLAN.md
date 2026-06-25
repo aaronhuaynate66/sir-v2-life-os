@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `62d6396`
+**Hash del último commit humano:** `58e37fd`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `58e37fd` | aaronhuaynate66 | feat(captura): resumen de confianza arriba del lote (#375) | 2026-06-25 |
 | `62d6396` | aaronhuaynate66 | feat(medicación): confirmar borrado + gráfico 14 días + hora elegible (#374) | 2026-06-25 |
 | `de252bf` | aaronhuaynate66 | fix: sanear handles de redes (homóglifos de OCR) (#373) | 2026-06-25 |
 | `cccdbe6` | aaronhuaynate66 | fix(#44 mobile): horario legible en el cel (#372) | 2026-06-25 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `a6e15f9` | aaronhuaynate66 | fix(foco del día): recencia + fecha del sueño + acción nocturna no se 'completa' (#368) | 2026-06-24 |
 | `64f3916` | aaronhuaynate66 | fix: costos del objetivo visibles (sin toggle) (#367) | 2026-06-24 |
 | `e75c673` | aaronhuaynate66 | feat: sección Costos en el objetivo (inversión/trofeo) (#366) | 2026-06-24 |
-| `9d1e77b` | aaronhuaynate66 | feat: reconectar el objetivo norte con su significado (#365) | 2026-06-24 |
 
 ---
 
