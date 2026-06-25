@@ -28,6 +28,8 @@ export default function MedicacionPage() {
   const [error, setError] = useState<ApiError | null>(null)
   const [name, setName] = useState('')
   const [qty, setQty] = useState('1')
+  const [when, setWhen] = useState('')        // datetime-local opcional (default: ahora)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
@@ -40,23 +42,24 @@ export default function MedicacionPage() {
   }, [])
   useEffect(() => { void load() }, [load])
 
-  const log = useCallback(async (medName: string, quantity: number, register = false) => {
+  const log = useCallback(async (medName: string, quantity: number, register = false, takenAt?: string) => {
     const n = medName.trim()
     if (!n || saving) return
     setSaving(true); setError(null)
     try {
-      const { intake } = await postJson<{ intake: Intake }>('/api/meds', { name: n, quantity })
+      const { intake } = await postJson<{ intake: Intake }>('/api/meds', { name: n, quantity, ...(takenAt ? { taken_at: takenAt } : {}) })
       setIntakes((prev) => [intake, ...(prev ?? [])])
       setNames((prev) => (prev.includes(n) ? prev : [n, ...prev].slice(0, 8)))
       if (register && !registry.some((r) => r.name.toLowerCase() === n.toLowerCase())) {
         setRegistry((prev) => [...prev, { name: n, dose: null }])
         try { await postJson('/api/meds/registry', { name: n }) } catch { /* */ }
       }
-      setName(''); setQty('1')
+      setName(''); setQty('1'); setWhen('')
     } catch (e) { setError(toApiError(e)) } finally { setSaving(false) }
   }, [saving, registry])
 
   async function removeIntake(id: string) {
+    setConfirmId(null)
     setIntakes((prev) => (prev ?? []).filter((i) => i.id !== id))
     try { await fetch(`/api/meds?id=${encodeURIComponent(id)}`, { method: 'DELETE' }) } catch { /* */ }
   }
@@ -107,9 +110,10 @@ export default function MedicacionPage() {
       <Card className="mb-6">
         <CardContent className="p-4 flex flex-col sm:flex-row gap-2">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Medicamento (ej: ibuprofeno, sumatriptán)"
-            className="flex-1" onKeyDown={(e) => { if (e.key === 'Enter') void log(name, Number(qty) || 1, saveMine) }} />
+            className="flex-1" onKeyDown={(e) => { if (e.key === 'Enter') void log(name, Number(qty) || 1, saveMine, when ? new Date(when).toISOString() : undefined) }} />
           <Input type="number" min={1} max={99} value={qty} onChange={(e) => setQty(e.target.value)} className="w-full sm:w-20" aria-label="Cantidad" />
-          <Button onClick={() => void log(name, Number(qty) || 1, saveMine)} disabled={saving || !name.trim()}>
+          <Input type="datetime-local" value={when} max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} onChange={(e) => setWhen(e.target.value)} className="w-full sm:w-44" aria-label="Cuándo (opcional)" title="Cuándo la tomaste (opcional; por defecto, ahora)" />
+          <Button onClick={() => void log(name, Number(qty) || 1, saveMine, when ? new Date(when).toISOString() : undefined)} disabled={saving || !name.trim()}>
             {saving ? <Loader2 size={15} className="mr-2 animate-spin" /> : <Plus size={15} className="mr-2" />} Registrar
           </Button>
         </CardContent>
@@ -125,6 +129,34 @@ export default function MedicacionPage() {
         <div className="mb-3 text-xs text-muted-foreground">Hoy registraste <span className="font-medium text-foreground">{todayCount}</span> toma(s).</div>
       )}
 
+      {/* Gráfico: tomas por día (últimos 14) */}
+      {intakes && intakes.length > 0 && (() => {
+        const DAYS = 14
+        const byDay = new Map<string, number>()
+        for (const it of intakes) { const d = it.taken_at.slice(0, 10); byDay.set(d, (byDay.get(d) ?? 0) + (it.quantity || 1)) }
+        const base = new Date()
+        const cols = Array.from({ length: DAYS }, (_, k) => { const dd = new Date(base); dd.setDate(base.getDate() - (DAYS - 1 - k)); return dd.toISOString().slice(0, 10) })
+        const counts = cols.map((d) => byDay.get(d) ?? 0)
+        const max = Math.max(1, ...counts)
+        const total = counts.reduce((a, b) => a + b, 0)
+        return (
+          <Card className="mb-4 shadow-none">
+            <CardContent className="p-4">
+              <div className="text-[11px] uppercase tracking-[0.06em] text-text-tertiary mb-3">Tomas · últimos 14 días</div>
+              <div className="flex items-end gap-1 h-24">
+                {cols.map((d, k) => (
+                  <div key={d} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${d}: ${counts[k]} toma(s)`}>
+                    <div className="w-full rounded-t bg-brand/70" style={{ height: `${(counts[k] / max) * 100}%`, minHeight: counts[k] > 0 ? 4 : 0 }} />
+                    <span className="text-[8px] text-muted-foreground tabular-nums">{d.slice(8, 10)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-2">Total {total} en 14 días · pico {max}/día</div>
+            </CardContent>
+          </Card>
+        )
+      })()}
+
       {/* Historial */}
       {intakes === null ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando…</div>
@@ -139,8 +171,15 @@ export default function MedicacionPage() {
                   <div className="text-sm font-medium text-foreground truncate">{i.name}{i.quantity > 1 ? ` · ${i.quantity}` : ''}</div>
                   <div className="text-[11px] text-muted-foreground capitalize">{fmt(i.taken_at)}{i.note ? ` · ${i.note}` : ''}</div>
                 </div>
-                <button type="button" onClick={() => void removeIntake(i.id)} aria-label="Borrar toma"
-                  className="shrink-0 text-muted-foreground hover:text-bad"><X size={15} /></button>
+                {confirmId === i.id ? (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button type="button" onClick={() => void removeIntake(i.id)} className="text-[11px] text-bad hover:underline">Borrar</button>
+                    <button type="button" onClick={() => setConfirmId(null)} className="text-[11px] text-muted-foreground hover:underline">Cancelar</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setConfirmId(i.id)} aria-label="Borrar toma"
+                    className="shrink-0 text-muted-foreground hover:text-bad"><X size={15} /></button>
+                )}
               </CardContent>
             </Card>
           ))}

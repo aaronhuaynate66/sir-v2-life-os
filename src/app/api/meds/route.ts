@@ -42,16 +42,18 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
   if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  let b: { name?: unknown; quantity?: unknown; note?: unknown }
+  let b: { name?: unknown; quantity?: unknown; note?: unknown; taken_at?: unknown }
   try { b = (await req.json()) as typeof b } catch { return NextResponse.json({ error: 'Body inválido' }, { status: 400 }) }
   const name = typeof b.name === 'string' ? b.name.trim().slice(0, 120) : ''
   if (!name) return NextResponse.json({ error: 'name requerido' }, { status: 400 })
   const quantity = typeof b.quantity === 'number' && b.quantity > 0 ? Math.min(b.quantity, 99) : 1
   const note = typeof b.note === 'string' ? b.note.trim().slice(0, 240) : null
+  // Hora elegida (ISO). Si no viene o es inválida → la DB usa el default (ahora).
+  const takenAt = typeof b.taken_at === 'string' && !Number.isNaN(Date.parse(b.taken_at)) ? new Date(b.taken_at).toISOString() : null
   try {
     const { data, error } = await supabase
       .from('med_intakes')
-      .insert({ user_id: auth.user.id, name, quantity, note })
+      .insert({ user_id: auth.user.id, name, quantity, note, ...(takenAt ? { taken_at: takenAt } : {}) })
       .select('id, name, quantity, note, taken_at')
       .single()
     if (error) return NextResponse.json({ error: 'No se pudo registrar', detail: error.message }, { status: 500 })
