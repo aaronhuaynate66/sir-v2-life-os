@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `32ac97b`
+**Hash del último commit humano:** `dd8453b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `dd8453b` | aaronhuaynate66 | fix(alignment): no inferir personas por tags genéricos ni memorias de creación (#371) | 2026-06-25 |
 | `32ac97b` | aaronhuaynate66 | docs: guía de continuidad (handoff para retomar en otra terminal) (#370) | 2026-06-24 |
 | `aec465c` | aaronhuaynate66 | feat: vista dedicada del objetivo (/objetivos/[id]) (#369) | 2026-06-24 |
 | `a6e15f9` | aaronhuaynate66 | fix(foco del día): recencia + fecha del sueño + acción nocturna no se 'completa' (#368) | 2026-06-24 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `528d4ce` | aaronhuaynate66 | feat(migraña 2/3): cruce migraña ↔ FC en reposo (#364) | 2026-06-24 |
 | `8e3acfa` | aaronhuaynate66 | fix(#92): match conflicto→objetivo requiere ≥2 keywords (#363) | 2026-06-24 |
 | `d2ff4f0` | aaronhuaynate66 | feat(paso2): episodio en el grafo (conector entre participantes) (#362) | 2026-06-24 |
-| `c26911b` | aaronhuaynate66 | feat(#125): ampliar medidor de consumo de IA (#361) | 2026-06-24 |
 
 ---
 
