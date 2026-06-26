@@ -85,6 +85,7 @@ import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
 import { MomentosPanel } from './MomentosPanel'
+import { ContactWindowBadge } from './ContactWindowBadge'
 import { IdentidadesPanel } from './IdentidadesPanel'
 import { FamiliaPanel } from './FamiliaPanel'
 import { InformacionSensible } from './InformacionSensible'
@@ -390,6 +391,7 @@ export function PersonDetail({
           justo — actividad reciente (tags de memorias) + notas privadas verbatim
           (discretas, nunca a IA). Determinístico; se oculta si no aporta nada. */}
       <AntesDeContactar personId={live.id} memories={memories} />
+      <ContactWindowBadge person={live} />
 
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
