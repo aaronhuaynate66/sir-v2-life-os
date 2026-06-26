@@ -70,6 +70,19 @@ export function VidaProfesional({ person, observations, axes = null }: VidaProfe
           <p className="text-sm text-foreground leading-relaxed mb-4">{narrative}</p>
         )}
 
+        {/* Cargo + empresa desde los campos estructurados (people.title /
+            organization) — visibles aunque no haya captura de LinkedIn (ej.
+            persona creada desde el Router de relato o a mano). */}
+        {(person.title || person.organization) && (
+          <div className="flex items-start gap-2 mb-3 pb-3 border-b border-border/40">
+            <Briefcase size={14} strokeWidth={1.75} className="text-muted-foreground/70 mt-0.5 shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70">Cargo</div>
+              <div className="text-sm text-foreground">{[person.title, person.organization].filter(Boolean).join(' · ')}</div>
+            </div>
+          </div>
+        )}
+
         {/* Educación reconciliada (LinkedIn > RENIEC). El registro, si difiere,
             baja a una sub-línea etiquetada para no perder la procedencia legal. */}
         {edu.primary && (
@@ -95,7 +108,7 @@ export function VidaProfesional({ person, observations, axes = null }: VidaProfe
           </div>
         )}
 
-        {obs ? <Body obs={obs} hideSummary={!!narrative} /> : edu.primary ? null : <EmptyState />}
+        {obs ? <Body obs={obs} hideSummary={!!narrative} /> : (edu.primary || person.title || person.organization) ? null : <EmptyState />}
       </CardContent>
     </Card>
   )
