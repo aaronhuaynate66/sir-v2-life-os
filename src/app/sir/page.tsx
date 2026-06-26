@@ -130,6 +130,7 @@ export default function SirChatPage() {
   const updateRelationship = useRelationshipStore((st) => st.updateRelationship)
   const addRelationship = useRelationshipStore((st) => st.addRelationship)
   const [model, setModel] = useState<SirModelTier>('sonnet')
+  const [socratic, setSocratic] = useState(false)
 
   const [goalSel, setGoalSel] = useState<Record<string, boolean>>({})
   const [clarifyDraft, setClarifyDraft] = useState<Record<number, string>>({})
@@ -310,6 +311,7 @@ export default function SirChatPage() {
           skipInlineGaps: opts.skipInlineGaps ?? false,
           dismissedGaps: opts.dismissedGaps ?? readDismissedGaps(),
           userContext: opts.userContext,
+          mode: socratic ? 'socratic' : undefined,
         }),
       })
       const data = await res.json()
@@ -418,6 +420,15 @@ export default function SirChatPage() {
               ))}
             </select>
             <span className="text-[11px] text-muted-foreground">{SIR_MODELS[model].hint}</span>
+            <button
+              type="button"
+              onClick={() => setSocratic((v) => !v)}
+              aria-pressed={socratic}
+              className={`rounded-full border px-2.5 py-1 text-[12px] ${socratic ? 'border-brand bg-brand text-brand-foreground' : 'border-border text-muted-foreground hover:text-foreground'}`}
+              title="En vez de la respuesta cómoda, SIR te devuelve la pregunta dura."
+            >
+              Modo socrático
+            </button>
           </div>
         </header>
 

@@ -366,6 +366,7 @@ export async function POST(req: NextRequest) {
   } catch { /* best-effort: el día no debe romper la respuesta */ }
   // Contexto efímero que Aaron agregó al responder un hueco contextual (no se
   // guarda; solo informa ESTA respuesta).
+  const socratic = (body as { mode?: unknown }).mode === 'socratic'
   const userContext = typeof (body as { userContext?: unknown }).userContext === 'string'
     ? ((body as { userContext?: unknown }).userContext as string).trim().slice(0, 500)
     : ''
@@ -380,6 +381,8 @@ export async function POST(req: NextRequest) {
     return { id: (match?.id as string) ?? null, name: hits[0] }
   }
 
+  const SOCRATIC_RULE =
+    '\n\nMODO SOCRÁTICO: en vez de darle la respuesta cómoda, devolvé la PREGUNTA dura y precisa que lo obligue a pensar, aterrizada en SUS hechos (citá el dato, la persona o el patrón concreto del contexto). Máximo una o dos preguntas, directas, sin rodeos ni adulación. La pregunta debe abrir una grieta real en su razonamiento, no interrogar por interrogar. Si pide HACER algo concreto, igual proponé la acción con la tool.'
   const ACTION_RULE =
     '\n\nSi Aaron pide HACER algo (registrar/anotar una interacción, o crear/fijar un objetivo), NO lo hagas ni digas que está hecho: llamá a la tool correspondiente para PROPONERLO. Aaron lo confirma aparte. Si solo pregunta, respondé en texto sin tools.'
 
@@ -391,7 +394,7 @@ export async function POST(req: NextRequest) {
   try {
     const { answer, tool } = await runSirChat({
       model,
-      system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE,
+      system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE + (socratic ? SOCRATIC_RULE : ''),
       history: chatHistory,
       userContent: groundedContext,
       anthropicKey: model.provider === 'anthropic' ? providerKey : undefined,
