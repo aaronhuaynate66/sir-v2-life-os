@@ -20,6 +20,7 @@ interface HabitRow {
 interface CheckinRow {
   habit_id: string
   date: string
+  created_at: string
 }
 
 export interface HabitDTO {
@@ -28,6 +29,8 @@ export interface HabitDTO {
   cadence: 'daily' | 'weekly'
   targetPerPeriod: number
   checkinDates: string[]
+  /** date 'YYYY-MM-DD' → ISO created_at del check (para mostrar la hora). */
+  checkinTimes: Record<string, string>
 }
 
 function err(status: number, error: string, detail?: string) {
@@ -53,14 +56,18 @@ export async function GET() {
   const since = new Date(Date.now() - 40 * 86_400_000).toISOString().slice(0, 10)
   const { data: ckData } = await supabase
     .from('habit_checkins')
-    .select('habit_id, date')
+    .select('habit_id, date, created_at')
     .eq('user_id', userId)
     .gte('date', since)
   const byHabit = new Map<string, string[]>()
+  const timesByHabit = new Map<string, Record<string, string>>()
   for (const c of (ckData ?? []) as unknown as CheckinRow[]) {
     const arr = byHabit.get(c.habit_id) ?? []
     arr.push(c.date)
     byHabit.set(c.habit_id, arr)
+    const tm = timesByHabit.get(c.habit_id) ?? {}
+    if (c.created_at) tm[c.date.slice(0, 10)] = c.created_at
+    timesByHabit.set(c.habit_id, tm)
   }
 
   const dto: HabitDTO[] = habits.map((h) => ({
@@ -69,6 +76,7 @@ export async function GET() {
     cadence: h.cadence === 'weekly' ? 'weekly' : 'daily',
     targetPerPeriod: h.target_per_period,
     checkinDates: byHabit.get(h.id) ?? [],
+    checkinTimes: timesByHabit.get(h.id) ?? {},
   }))
   return NextResponse.json({ habits: dto }, { status: 200 })
 }
@@ -106,6 +114,7 @@ export async function POST(req: NextRequest) {
     cadence: h.cadence === 'weekly' ? 'weekly' : 'daily',
     targetPerPeriod: h.target_per_period,
     checkinDates: [],
+    checkinTimes: {},
   }
   return NextResponse.json({ habit: dto }, { status: 200 })
 }
