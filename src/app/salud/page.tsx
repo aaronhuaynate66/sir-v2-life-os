@@ -21,6 +21,7 @@ import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
 import { PatronesPanel } from '@/components/salud/PatronesPanel'
+import { SintesisCruzadaPanel } from '@/components/salud/SintesisCruzadaPanel'
 import { HeartRateAlertsPanel } from '@/components/salud/HeartRateAlertsPanel'
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { cn } from '@/lib/utils'
@@ -172,6 +173,7 @@ function SaludContent() {
 
       <div className="mb-6">
         <PatronesPanel />
+        <SintesisCruzadaPanel />
       </div>
 
       {/* Días con alertas de FC elevada (señal episódica de activación). */}
