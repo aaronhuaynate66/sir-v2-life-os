@@ -21,6 +21,10 @@ import {
   AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog'
 import { useRelationshipStore, useMemoryStore } from '@/stores'
+import { computeContactWindow } from '@/lib/relationships/contactWindow'
+import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
+import { cyclePhase } from '@/lib/ciclo/phase'
+import type { SpecialDate } from '@/types'
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { createPersonAddedMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -86,6 +90,18 @@ const URGENCY_CLASS: Record<'immediate' | 'soon' | 'monitor', string> = {
   monitor: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
 }
 
+
+function nearestUpcoming(p: { specialDates?: SpecialDate[]; birthDate?: string }): { days: number; label: string } | null {
+  const dates: SpecialDate[] = [...(p.specialDates ?? [])]
+  if (p.birthDate) dates.push({ id: 'bday', label: 'su cumple', date: p.birthDate, recurring: true })
+  let best: { days: number; label: string } | null = null
+  for (const sd of dates) {
+    const cd = computeSpecialDateCountdown(sd)
+    if (cd && cd.daysUntil >= 0 && (!best || cd.daysUntil < best.days)) best = { days: cd.daysUntil, label: sd.label }
+  }
+  return best
+}
+
 export default function RelationshipsPage() {
   const hydrated = useHasHydrated()
   if (!hydrated) return <RouteSkeleton cards={4} />
@@ -94,6 +110,23 @@ export default function RelationshipsPage() {
 
 function RelationshipsContent() {
   const { people, relationships, addPerson, updatePerson, removePerson } = useRelationshipStore()
+  const [openConflictIds, setOpenConflictIds] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    let alive = true
+    fetch('/api/moments?open=1')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!alive || !j?.moments) return
+        const ids = new Set<string>()
+        for (const m of j.moments as Array<{ personId?: string; participantIds?: string[] }>) {
+          if (m.personId) ids.add(m.personId)
+          for (const pid of m.participantIds ?? []) ids.add(pid)
+        }
+        setOpenConflictIds(ids)
+      })
+      .catch(() => { /* best-effort */ })
+    return () => { alive = false }
+  }, [])
   const { addMemory } = useMemoryStore()
 
   const [showForm, setShowForm] = useState(false)
@@ -537,6 +570,26 @@ function RelationshipsContent() {
                           <span className="text-xs text-muted-foreground">
                             Ultimo contacto: <span className="text-foreground font-medium font-mono tabular-nums">{lastContactDisplay}</span>
                           </span>
+                          {(() => {
+                            const up = nearestUpcoming(person)
+                            const win = computeContactWindow({
+                              daysSinceContact: person.lastContact ? daysSince(person.lastContact) : null,
+                              upcomingEventInDays: up?.days ?? null,
+                              upcomingEventLabel: up?.label ?? null,
+                              openConflict: openConflictIds.has(person.id),
+                              lastTone: null,
+                              cycleSensitive: !!person.cycleStartDate && cyclePhase(person.cycleStartDate, person.cycleLengthDays ?? 28)?.phase === 'menstrual',
+                              importance: person.importanceScore ?? 5,
+                            })
+                            if (win.state === 'neutral') return null
+                            const color = win.state === 'buen_momento' ? '#2dd4a7' : '#e0a93b'
+                            return (
+                              <span className="text-xs flex items-center gap-1" style={{ color }}>
+                                {win.state === 'buen_momento' ? 'Buen momento' : 'Con cuidado'}
+                                <span className="text-muted-foreground">· {win.reason}</span>
+                              </span>
+                            )
+                          })()}
                         </div>
 
                         {rel && rel.status === 'strained' && (
