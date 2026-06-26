@@ -180,6 +180,8 @@ function GoalsContent() {
   const [progressVal, setProgressVal] = useState('')
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const toggleExpand = (id: string) => setExpandedIds((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const [workOpen, setWorkOpen] = useState<Set<string>>(new Set())
+  const toggleWork = (id: string) => setWorkOpen((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
   const [cat, setCat] = useState<GoalCategory>('personal')
@@ -599,7 +601,7 @@ function GoalsContent() {
                       <Badge variant="outline" className={cn('text-[10px] font-normal', PRIO_CLASS[g.priority])}>{PRIO_LABEL[g.priority]}</Badge>
                       <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[g.category]}</Badge>
                     </div>
-                    {g.description && <p className="text-xs text-muted-foreground mb-2">{g.description}</p>}
+                    {g.description && <p className="text-xs text-muted-foreground mb-2 line-clamp-3">{g.description}</p>}
                     {(g.target || g.why) && (
                       <div className="mb-2 space-y-0.5">
                         {g.target && (
@@ -620,6 +622,16 @@ function GoalsContent() {
                     </div>
                     {showBody && (<>
                     {g.isAnchor && <GoalMeaning why={g.why} milestones={anchorMilestones} />}
+                    <button
+                      type="button"
+                      onClick={() => toggleWork(g.id)}
+                      aria-expanded={workOpen.has(g.id)}
+                      className="mb-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <ChevronRight size={12} className={cn('transition-transform', workOpen.has(g.id) && 'rotate-90')} />
+                      Plan, costos y señales
+                    </button>
+                    {workOpen.has(g.id) && (<>
                     <GoalConflictFriction
                       goal={{ title: g.title, description: g.description, relatedPersons: g.relatedPersons }}
                       conflicts={recentConflicts}
@@ -687,6 +699,7 @@ function GoalsContent() {
                         <Button variant="ghost" size="sm" onClick={cancelProgress}>Cancelar</Button>
                       </div>
                     )}
+                    </>)}
                     </>)}
                     <div className="flex gap-4 text-[10px] text-muted-foreground/70 flex-wrap">
                       {g.nextAction && <span>siguiente: <span className="text-muted-foreground">{g.nextAction}</span></span>}
@@ -763,7 +776,7 @@ function GoalsContent() {
                     </AlertDialog>
                   </div>
                 </div>
-                {showBody && (<>
+                {showBody && workOpen.has(g.id) && (<>
                 <TrackerStrip objectiveId={g.id} className="mt-3" />
                 <AnimatePresence initial={false}>
                   {stepsOpen && (

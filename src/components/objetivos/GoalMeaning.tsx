@@ -1,11 +1,18 @@
 'use client'
 // SIR V2 — Significado del objetivo. Reconecta con el POR QUÉ (no el costo):
 // muestra el "por qué es tuyo" + tus HITOS reales del tema (ej. bronce 2024).
-// Para el objetivo norte, que al abrirlo veas lo tuyo, no la pelea.
+// La "historia" se acota a 3 hitos por defecto (divulgación progresiva: era el
+// bloque que más crecía sin tope y volvía pesada la tarjeta).
+import { useState } from 'react'
 import { Flame, Trophy } from 'lucide-react'
 
+const MAX_VISIBLE = 3
+
 export function GoalMeaning({ why, milestones }: { why?: string; milestones: string[] }) {
+  const [showAll, setShowAll] = useState(false)
   if (!why && milestones.length === 0) return null
+  const extra = milestones.length - MAX_VISIBLE
+  const visible = showAll ? milestones : milestones.slice(0, MAX_VISIBLE)
   return (
     <div className="mb-3 rounded-lg border border-brand/30 bg-brand-soft/30 p-3">
       {why && (
@@ -22,10 +29,19 @@ export function GoalMeaning({ why, milestones }: { why?: string; milestones: str
             <Trophy size={11} /> Tu historia con esto
           </div>
           <ul className="space-y-1">
-            {milestones.map((m, i) => (
+            {visible.map((m, i) => (
               <li key={i} className="text-[12px] text-foreground/85 leading-snug">• {m}</li>
             ))}
           </ul>
+          {extra > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-1.5 text-[11px] text-brand-soft-foreground hover:underline"
+            >
+              {showAll ? 'ver menos' : `ver ${extra} más`}
+            </button>
+          )}
         </div>
       )}
     </div>
