@@ -178,6 +178,8 @@ function GoalsContent() {
   const [editId, setEditId] = useState<string | null>(null)
   const [progressId, setProgressId] = useState<string | null>(null)
   const [progressVal, setProgressVal] = useState('')
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const toggleExpand = (id: string) => setExpandedIds((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
   const [cat, setCat] = useState<GoalCategory>('personal')
@@ -560,6 +562,7 @@ function GoalsContent() {
             const stepsOpen = stepsOpenId === g.id
             const smartOk = isGoalSmartComplete(g)
             const smartMissing = missingSmartFields(g).length
+            const showBody = g.isAnchor || expandedIds.has(g.id)
             return (
             <Card
               key={g.id}
@@ -577,6 +580,17 @@ function GoalsContent() {
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="text-sm font-medium text-foreground">{g.title}</span>
                       <Link href={`/objetivos/${g.id}`} className="text-[11px] text-primary hover:underline">Ver todo →</Link>
+                      {!g.isAnchor && (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(g.id)}
+                          aria-expanded={expandedIds.has(g.id)}
+                          className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <ChevronRight size={12} className={cn('transition-transform', expandedIds.has(g.id) && 'rotate-90')} />
+                          {expandedIds.has(g.id) ? 'menos' : 'detalle'}
+                        </button>
+                      )}
                       {g.isAnchor && (
                         <Badge variant="outline" className="text-[10px] font-normal border-brand/30 bg-brand-soft text-brand-soft-foreground gap-1">
                           <Anchor size={10} strokeWidth={2} /> Norte del año
@@ -604,6 +618,7 @@ function GoalsContent() {
                       </div>
                       <span className="text-xs font-mono tabular-nums text-muted-foreground w-8">{displayPct}%</span>
                     </div>
+                    {showBody && (<>
                     {g.isAnchor && <GoalMeaning why={g.why} milestones={anchorMilestones} />}
                     <GoalConflictFriction
                       goal={{ title: g.title, description: g.description, relatedPersons: g.relatedPersons }}
@@ -672,6 +687,7 @@ function GoalsContent() {
                         <Button variant="ghost" size="sm" onClick={cancelProgress}>Cancelar</Button>
                       </div>
                     )}
+                    </>)}
                     <div className="flex gap-4 text-[10px] text-muted-foreground/70 flex-wrap">
                       {g.nextAction && <span>siguiente: <span className="text-muted-foreground">{g.nextAction}</span></span>}
                       {g.targetDate && <span>fecha: <span className="text-muted-foreground font-mono">{g.targetDate}</span></span>}
@@ -747,6 +763,7 @@ function GoalsContent() {
                     </AlertDialog>
                   </div>
                 </div>
+                {showBody && (<>
                 <TrackerStrip objectiveId={g.id} className="mt-3" />
                 <AnimatePresence initial={false}>
                   {stepsOpen && (
@@ -768,6 +785,7 @@ function GoalsContent() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+                </>)}
               </CardContent>
             </Card>
             )
