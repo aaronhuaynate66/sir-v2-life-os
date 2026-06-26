@@ -41,7 +41,7 @@ import { createGoalProgressMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { cn } from '@/lib/utils'
-import type { GoalCategory, GoalPriority, Goal } from '@/types'
+import type { GoalCategory, GoalPriority, Goal, ObjectiveStep } from '@/types'
 
 const CAT_LABEL: Record<GoalCategory, string> = {
   financial: 'Financiero', personal: 'Personal', relational: 'Relacional',
@@ -91,6 +91,7 @@ function GoalsContent() {
     return () => clearTimeout(t)
   }, [focusGoalId])
   const objectiveSteps = useObjectiveStepStore((s) => s.steps)
+  const addStep = useObjectiveStepStore((s) => s.addStep)
   const { addMemory, memories } = useMemoryStore()
   const { people, relationships } = useRelationshipStore()
   // Calidades de interacción por persona (para la salud del vínculo en objetivos relacionales).
@@ -194,6 +195,7 @@ function GoalsContent() {
   const [target, setTarget] = useState('')
   const [baseline, setBaseline] = useState('')
   const [why, setWhy] = useState('')
+  const [keyResults, setKeyResults] = useState<string[]>(['', '', ''])
   // Ancla del año (mig 0060): subtítulo corto opcional.
   const [anchorSubtitle, setAnchorSubtitle] = useState('')
 
@@ -217,7 +219,7 @@ function GoalsContent() {
       setTitle(sug.title); setDesc(sug.description); setCat(sug.category); setPrio(sug.priority)
       setPeaceImpact(String(sug.peaceImpact)); setNextAction(sug.nextAction)
       setTargetDate(sug.targetDate ?? '')
-      setTarget(''); setBaseline(''); setWhy(''); setAnchorSubtitle('')
+      setTarget(''); setBaseline(''); setWhy(''); setAnchorSubtitle(''); setKeyResults(['', '', ''])
       // Matchear personas mencionadas a contactos existentes.
       const matched: string[] = []; const unmatched: string[] = []
       for (const nm of sug.relatedPersonNames) {
@@ -238,7 +240,7 @@ function GoalsContent() {
   function resetForm() {
     setTitle(''); setDesc(''); setCat('personal'); setPrio('medium')
     setTargetDate(''); setNextAction(''); setPeaceImpact('5'); setRelatedPersons([])
-    setTarget(''); setBaseline(''); setWhy(''); setAnchorSubtitle('')
+    setTarget(''); setBaseline(''); setWhy(''); setAnchorSubtitle(''); setKeyResults(['', '', ''])
     setAiReason(null); setAiUnmatched([])
     setAdding(false); setEditId(null)
   }
@@ -264,6 +266,12 @@ function GoalsContent() {
         createdAt: now, updatedAt: now,
       }
       addGoal(g)
+      // Resultados clave al alta (metodología F3): KRs medibles = el corazón;
+      // el progreso del objetivo sale de acá (computeObjectiveProgress).
+      keyResults.map((t) => t.trim()).filter(Boolean).slice(0, 3).forEach((krTitle, i) => {
+        const kr: ObjectiveStep = { id: `kr_${Date.now()}_${i}`, objectiveId: g.id, kind: 'key_result', title: krTitle, status: 'pendiente', order: i, createdAt: now }
+        addStep(kr)
+      })
       trackCreated(EVENTS.objectiveCreated, { method: aiReason ? 'texto_ia' : 'form' })
       toast.success('Objetivo creado', { description: title })
     }
@@ -475,6 +483,18 @@ function GoalsContent() {
                       }}
                     />
                   </div>
+
+                  {!editId && (
+                    <div className="sm:col-span-2 rounded-md border border-brand/30 bg-brand-soft/10 p-3 space-y-2">
+                      <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
+                        Resultados clave <span className="text-muted-foreground/50 normal-case tracking-normal">· 1-3 medibles, el corazón del objetivo</span>
+                      </div>
+                      {keyResults.map((kr, i) => (
+                        <Input key={i} value={kr} placeholder={`Resultado clave ${i + 1} (ej. Pesar 75 kg · Cerrar 1 cliente)`} onChange={(e) => setKeyResults((a) => a.map((x, j) => (j === i ? e.target.value : x)))} />
+                      ))}
+                      <p className="text-[10px] text-muted-foreground/60">Medibles, con un &ldquo;hoy → meta&rdquo;. El progreso del objetivo sale de acá, no de un % a mano.</p>
+                    </div>
+                  )}
 
                   <div className="sm:col-span-2">
                     <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">
