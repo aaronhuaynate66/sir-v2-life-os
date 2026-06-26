@@ -95,7 +95,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
 
   // "Tu vínculo con esta persona" (self↔persona).
   const [editingSelf, setEditingSelf] = useState(false)
-  const [selfKind, setSelfKind] = useState<FamilyKind>('madre')
+  const [selfKind, setSelfKind] = useState<FamilyKind>(person.relationship === 'romantic' ? 'pareja' : 'madre')
 
   // Descartes recordados entre sesiones (no re-sugerir lo que Aaron rechazó).
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
@@ -129,6 +129,13 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
     () => links.find((l) => l.personAId === SELF_ID && l.personBId === person.id) ?? null,
     [links, person.id],
   )
+
+  // El selector "¿Quién es esta persona para vos?" refleja el vínculo YA guardado
+  // (si existe); si no, propone por defecto según la relación (pareja si es
+  // romántica) — nunca "madre" para una pareja/ex.
+  useEffect(() => {
+    setSelfKind(selfLink?.kind ?? (person.relationship === 'romantic' ? 'pareja' : 'madre'))
+  }, [selfLink, person.relationship])
 
   // Vista bidireccional de la familia de ESTA persona: salientes (B es <kind>
   // de la ficha) + entrantes (A es <inverso> de la ficha). Excluye las aristas
