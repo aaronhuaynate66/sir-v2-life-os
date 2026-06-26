@@ -82,4 +82,25 @@ describe('computeEspejoSemanal', () => {
     const r = computeEspejoSemanal([anchor], [step({ id: 's', objectiveId: 'n', completedAt: iso(1) })], [], [stress(1, 8.5)], NOW)
     expect(r.gaps.some((g) => g.key === 'estrés')).toBe(true)
   })
+
+  it('conflictos abiertos suman gap relacional', () => {
+    const anchor = goal({ id: 'n', title: 'Mundial', isAnchor: true, updatedAt: iso(1) })
+    const steps = [step({ id: 's', objectiveId: 'n', completedAt: iso(1) })]
+    const r = computeEspejoSemanal([anchor], steps, [], [], NOW, { interactions: 4, tense: 0, openConflicts: 2, topConflict: 'Conflicto del Mundial' })
+    expect(r.gaps.some((g) => g.key === 'conflicto_abierto' && g.severity === 'alta')).toBe(true)
+  })
+
+  it('semana de charlas tensas suma gap; charlas en buen tono suman win', () => {
+    const anchor = goal({ id: 'n', title: 'Mundial', isAnchor: true, updatedAt: iso(1) })
+    const steps = [step({ id: 's', objectiveId: 'n', completedAt: iso(1) })]
+    const tenso = computeEspejoSemanal([anchor], steps, [], [], NOW, { interactions: 5, tense: 3, openConflicts: 0 })
+    expect(tenso.gaps.some((g) => g.key === 'conflicto')).toBe(true)
+    const calmo = computeEspejoSemanal([anchor], steps, [], [], NOW, { interactions: 5, tense: 0, openConflicts: 0 })
+    expect(calmo.wins.some((w) => w.toLowerCase().includes('buen tono'))).toBe(true)
+  })
+
+  it('lo relacional cuenta como señal aunque no haya nada local', () => {
+    const r = computeEspejoSemanal([], [], [], [], NOW, { interactions: 3, tense: 1, openConflicts: 1, topConflict: 'X' })
+    expect(r.state).not.toBe('sin_datos')
+  })
 })
