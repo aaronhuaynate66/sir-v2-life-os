@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1892a06`
+**Hash del último commit humano:** `d51dcea`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `d51dcea` | aaronhuaynate66 | feat(motor #4): Espejo de Arquetipo (Jung hacia adentro) (#387) | 2026-06-26 |
 | `1892a06` | aaronhuaynate66 | feat(motor #3): Pre-Mortem de decisiones (#386) | 2026-06-26 |
 | `054644d` | aaronhuaynate66 | feat(motor #6): cerrar gaps — tono de la última charla + chip en toda la lista (#385) | 2026-06-26 |
 | `35a7941` | aaronhuaynate66 | feat(motor #6): Ventana de Contacto (#383) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `badb8cf` | Aaron via SIR | chore: redeploy para activar modelos OSS (OpenRouter) | 2026-06-26 |
 | `08a0f2c` | aaronhuaynate66 | feat(lote): pre-sugerir el nombre del chat al crear contacto (#377) | 2026-06-25 |
 | `1003164` | aaronhuaynate66 | feat(avatar): auto-extraer la cara de CUALQUIER foto subida (#376) | 2026-06-25 |
-| `58e37fd` | aaronhuaynate66 | feat(captura): resumen de confianza arriba del lote (#375) | 2026-06-25 |
 
 ---
 
