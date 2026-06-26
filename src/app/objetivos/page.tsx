@@ -322,6 +322,25 @@ function GoalsContent() {
   })
   const otherGoals = goals.filter(g => g.status !== 'active')
 
+  // ── Agrupación visual (Gestalt: región común + proximidad; jerarquía: el
+  //    norte primero como héroe; serial-position: lo más importante arriba). ──
+  const CAT_ORDER: GoalCategory[] = ['financial', 'career', 'relational', 'health', 'personal', 'spiritual', 'creative']
+  const anchorGoal = activeGoals.find((g) => g.isAnchor) ?? null
+  const nonAnchorActive = activeGoals.filter((g) => !g.isAnchor)
+  type RenderItem = { t: 'h'; key: string; label: string; count: number; norte?: boolean } | { t: 'g'; g: Goal }
+  const renderItems: RenderItem[] = []
+  if (anchorGoal) {
+    renderItems.push({ t: 'h', key: 'h-norte', label: 'Tu norte del año', count: 1, norte: true })
+    renderItems.push({ t: 'g', g: anchorGoal })
+  }
+  const catsPresent = Array.from(new Set(nonAnchorActive.map((g) => g.category)))
+    .sort((a, b) => CAT_ORDER.indexOf(a) - CAT_ORDER.indexOf(b))
+  for (const c of catsPresent) {
+    const gs = nonAnchorActive.filter((g) => g.category === c)
+    renderItems.push({ t: 'h', key: 'h-' + c, label: CAT_LABEL[c], count: gs.length })
+    for (const g of gs) renderItems.push({ t: 'g', g })
+  }
+
   const stats = [
     { label: 'Activos', value: String(dash.activeGoals.length) },
     { label: 'Criticos', value: String(dash.criticalGoals.length) },
@@ -384,7 +403,6 @@ function GoalsContent() {
         ))}
       </div>
 
-      <AlignmentPanel goals={goals} people={people} relationships={relationships} memories={memories} />
 
       {/* Render condicional simple (sin AnimatePresence): la animación de salida
           con height:auto dejaba el form como FANTASMA en el DOM tras guardar
@@ -509,7 +527,32 @@ function GoalsContent() {
         />
       ) : (
         <div className="space-y-2 mb-6">
-          {activeGoals.map((g) => {
+          {renderItems.map((item) => {
+            if (item.t === 'h') {
+              return (
+                <div
+                  key={item.key}
+                  className={cn(
+                    'flex items-center gap-2 pt-4 pb-1',
+                    item.norte ? 'mt-1' : 'mt-3 border-t border-border/40',
+                  )}
+                >
+                  {item.norte && <Anchor size={13} strokeWidth={2} className="text-brand-soft-foreground" />}
+                  <span
+                    className={cn(
+                      'uppercase tracking-[0.07em]',
+                      item.norte
+                        ? 'text-[12px] font-semibold text-brand-soft-foreground'
+                        : 'text-[11px] text-text-tertiary',
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                  <span className="text-[10px] font-mono tabular-nums text-muted-foreground/60 ml-auto">{item.count}</span>
+                </div>
+              )
+            }
+            const g = item.g
             const gSteps = stepsByGoal.get(g.id) ?? []
             const rollup = computeObjectiveProgress(gSteps, g.id)
             const hasSteps = rollup != null
@@ -732,8 +775,12 @@ function GoalsContent() {
         </div>
       )}
 
+      <div className="mt-8">
+        <AlignmentPanel goals={goals} people={people} relationships={relationships} memories={memories} />
+      </div>
+
       {otherGoals.length > 0 && (
-        <div>
+        <div className="mt-8">
           <div className="flex items-center gap-2 mb-3">
             <Archive size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
             <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Historial</span>
