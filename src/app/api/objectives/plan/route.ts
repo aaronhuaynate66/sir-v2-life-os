@@ -1,181 +1,102 @@
-// SIR V2 — POST /api/objectives/plan (Hito 3: "Generar plan con IA")
-//
-// Recibe UN objetivo (título + descripción? + categoría? + fecha objetivo?) y
-// pide a Anthropic un PLAN de pasos concretos, ordenados y con fechas sugeridas
-// hasta la fecha objetivo. NO persiste nada: devuelve el plan propuesto para
-// que el usuario lo revise/edite/acepte o descarte en la UI (review-before-save).
-//
-// Mismo patrón que /api/alignment/narrative: auth → rate limit ('generation')
-// → check ANTHROPIC_API_KEY → Anthropic → parser tolerante → JSON.
-//
-// Body JSON: { title, description?, category?, targetDate?, target?, baseline?,
-//             why?, context? }  (context = grounding ya resumido client-side)
-// Response 200: { keyResults: [{ title, description?, tasks: [...] }], feasibility: string[] }
-
-import Anthropic from '@anthropic-ai/sdk'
+// SIR V2 — /api/objectives/plan (Plan de acción del objetivo).
+// GET    ?goal_id=  → { plan, blockers }
+// PUT    { goal_id, event_date?, travel_start?, travel_end?, location?, notes? }  (upsert plan)
+// POST   { goal_id, title, due_on? }   (nuevo bloqueo)
+// PATCH  { id, done?, title?, due_on? } (editar bloqueo)
+// DELETE ?id=  (bloqueo)
 import { NextResponse, type NextRequest } from 'next/server'
-import { reportApiError } from '@/lib/observability/reportApiError'
-
 import { createClient } from '@/lib/supabase/server'
-import { enforceRateLimit } from '@/lib/ratelimit'
-import {
-  OBJECTIVE_PLAN_SYSTEM_PROMPT,
-  OBJECTIVE_PLAN_RETRY_NUDGE,
-  buildPlanInput,
-  parseObjectivePlan,
-  parseFeasibilityNotes,
-} from '@/lib/objectives/planPrompt'
-import type { ProposedKeyResult } from '@/lib/objectives/planPrompt'
+import { mapPlanRow, mapBlockerRow } from '@/lib/objectives/plan'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-// Plan OKR jerárquico + grounding + feasibility: la generación de ~1.6k tokens
-// con Sonnet supera el default (~10s) de funciones serverless → daba HTTP 504.
-// 60s es el máximo del plan Hobby de Vercel y deja margen sobrado (~30-40s).
-export const maxDuration = 60
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
+const ISO = /^\d{4}-\d{2}-\d{2}$/
+const PLAN_SEL = 'goal_id, event_date, travel_start, travel_end, location, notes'
+const BLK_SEL = 'id, goal_id, title, due_on, done, sort'
+function str(v: unknown, max: number): string | null { return typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null }
+function dateOrNull(v: unknown): string | null { return typeof v === 'string' && ISO.test(v.trim()) ? v.trim() : null }
+function has(b: Record<string, unknown>, k: string): boolean { return Object.prototype.hasOwnProperty.call(b, k) }
 
-// max_tokens es un TECHO, no un objetivo: el modelo para cuando termina, así que
-// subirlo NO agrega latencia para una respuesta normal — sólo evita que un plan
-// largo se TRUNQUE a la mitad (truncado → JSON inválido → "plan vacío"/502, que
-// es lo que pasaba con 1600 para objetivos verbosos como los financieros). La
-// latencia la acota maxDuration=60 + los topes de tamaño del prompt.
-//
-// 0050: cada tarea ahora trae acceptanceCriteria + effort + priority → el JSON
-// crece ~40-60%. Subimos los techos para no volver a truncar planes verbosos.
-const PLAN_MAX_TOKENS = 4500
-// Reintento conciso: pedimos un plan más chico para que entre completo y rápido.
-const RETRY_MAX_TOKENS = 3200
-
-interface ErrorBody {
-  error: string
-  detail?: string
+export async function GET(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const goalId = req.nextUrl.searchParams.get('goal_id')
+  if (!goalId) return NextResponse.json({ error: 'goal_id requerido' }, { status: 400 })
+  let plan = null, blockers: unknown[] = []
+  try {
+    const { data } = await supabase.from('objective_plan').select(PLAN_SEL).eq('user_id', auth.user.id).eq('goal_id', goalId).maybeSingle()
+    if (data) plan = mapPlanRow(data as Parameters<typeof mapPlanRow>[0])
+  } catch { /* */ }
+  try {
+    const { data } = await supabase.from('objective_blockers').select(BLK_SEL).eq('user_id', auth.user.id).eq('goal_id', goalId).order('sort', { ascending: true }).order('created_at', { ascending: true })
+    blockers = ((data ?? []) as Parameters<typeof mapBlockerRow>[0][]).map(mapBlockerRow)
+  } catch { /* */ }
+  return NextResponse.json({ plan, blockers })
 }
 
-function errorJson(status: number, error: string, detail?: string): NextResponse<ErrorBody> {
-  return NextResponse.json({ error, detail }, { status })
-}
-
-interface Attempt {
-  text: string
-  /** 'max_tokens' = la respuesta se truncó (causa típica de "plan vacío"). */
-  truncated: boolean
-}
-
-/** Una llamada al modelo: devuelve el texto y si se truncó por max_tokens. */
-async function runPlan(
-  client: Anthropic,
-  userMessage: string,
-  maxTokens: number,
-): Promise<Attempt> {
-  const msg = await client.messages.create({
-    model: MODEL_ID,
-    max_tokens: maxTokens,
-    system: OBJECTIVE_PLAN_SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userMessage }],
-  })
-  const textBlock = msg.content.find((b) => b.type === 'text')
-  const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-  return { text, truncated: msg.stop_reason === 'max_tokens' }
-}
-
-/** Hoy en date-only ISO (server-side; el plan no necesita TZ exacta del cliente). */
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
+export async function PUT(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  let b: Record<string, unknown>
+  try { b = (await req.json()) as Record<string, unknown> } catch { return NextResponse.json({ error: 'Body inválido' }, { status: 400 }) }
+  const goalId = str(b.goal_id, 80)
+  if (!goalId) return NextResponse.json({ error: 'goal_id requerido' }, { status: 400 })
+  const row: Record<string, unknown> = { user_id: auth.user.id, goal_id: goalId, updated_at: new Date().toISOString() }
+  if (has(b, 'event_date')) row.event_date = dateOrNull(b.event_date)
+  if (has(b, 'travel_start')) row.travel_start = dateOrNull(b.travel_start)
+  if (has(b, 'travel_end')) row.travel_end = dateOrNull(b.travel_end)
+  if (has(b, 'location')) row.location = str(b.location, 200)
+  if (has(b, 'notes')) row.notes = str(b.notes, 2000)
+  try {
+    const { data, error } = await supabase.from('objective_plan').upsert(row, { onConflict: 'user_id,goal_id' }).select(PLAN_SEL).single()
+    if (error) return NextResponse.json({ error: 'No se pudo guardar', detail: error.message }, { status: 500 })
+    return NextResponse.json({ plan: mapPlanRow(data as Parameters<typeof mapPlanRow>[0]) })
+  } catch (e) { return NextResponse.json({ error: 'No se pudo guardar', detail: String(e).slice(0, 120) }, { status: 500 }) }
 }
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
-  const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
-  }
-
-  const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
-  if (!rl.ok) return rl.response
-
-  let body: Record<string, unknown>
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  let b: Record<string, unknown>
+  try { b = (await req.json()) as Record<string, unknown> } catch { return NextResponse.json({ error: 'Body inválido' }, { status: 400 }) }
+  const goalId = str(b.goal_id, 80); const title = str(b.title, 200)
+  if (!goalId || !title) return NextResponse.json({ error: 'goal_id y title requeridos' }, { status: 400 })
   try {
-    body = (await req.json()) as Record<string, unknown>
-  } catch {
-    return errorJson(400, 'Body JSON inválido')
-  }
+    const { data, error } = await supabase.from('objective_blockers').insert({ user_id: auth.user.id, goal_id: goalId, title, due_on: dateOrNull(b.due_on) }).select(BLK_SEL).single()
+    if (error) return NextResponse.json({ error: 'No se pudo guardar', detail: error.message }, { status: 500 })
+    return NextResponse.json({ blocker: mapBlockerRow(data as Parameters<typeof mapBlockerRow>[0]) })
+  } catch (e) { return NextResponse.json({ error: 'No se pudo guardar', detail: String(e).slice(0, 120) }, { status: 500 }) }
+}
 
-  const title = typeof body.title === 'string' ? body.title.trim() : ''
-  if (!title) return errorJson(400, 'title requerido (string no vacío)')
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(
-      503,
-      'Generación no disponible',
-      'Falta ANTHROPIC_API_KEY. Podés agregar los pasos a mano igual.',
-    )
-  }
-
-  const str = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v : undefined)
-  // Grounding (context): cap defensivo de tamaño — ya viene resumido client-side.
-  const context = typeof body.context === 'string' ? body.context.slice(0, 4000) : undefined
-
-  const input = {
-    title,
-    description: str(body.description),
-    category: str(body.category),
-    targetDate: str(body.targetDate),
-    target: str(body.target),
-    baseline: str(body.baseline),
-    why: str(body.why),
-    context,
-    today: todayIso(),
-  }
-
-  const baseMessage = buildPlanInput(input)
-
+export async function PATCH(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  let b: Record<string, unknown>
+  try { b = (await req.json()) as Record<string, unknown> } catch { return NextResponse.json({ error: 'Body inválido' }, { status: 400 }) }
+  const id = str(b.id, 60)
+  if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
+  const patch: Record<string, unknown> = {}
+  if (has(b, 'done')) patch.done = !!b.done
+  if (has(b, 'title')) { const t = str(b.title, 200); if (t) patch.title = t }
+  if (has(b, 'due_on')) patch.due_on = dateOrNull(b.due_on)
   try {
-    // Intento 1: techo alto para no truncar; maxRetries 1 cubre un 5xx/red
-    // transitorio de Anthropic sin que lo vea el usuario.
-    const client = new Anthropic({ maxRetries: 1 })
-    let attempt = await runPlan(client, baseMessage, PLAN_MAX_TOKENS)
-    let keyResults = parseObjectivePlan(attempt.text)
+    const { data, error } = await supabase.from('objective_blockers').update(patch).eq('user_id', auth.user.id).eq('id', id).select(BLK_SEL).single()
+    if (error) return NextResponse.json({ error: 'No se pudo actualizar', detail: error.message }, { status: 500 })
+    return NextResponse.json({ blocker: mapBlockerRow(data as Parameters<typeof mapBlockerRow>[0]) })
+  } catch (e) { return NextResponse.json({ error: 'No se pudo actualizar', detail: String(e).slice(0, 120) }, { status: 500 }) }
+}
 
-    // Intento 2 (sólo si el 1 no produjo plan: truncado, vacío o no-parseable).
-    // Nudge: "JSON válido y COMPLETO, conciso, ≥3 KRs". Techo menor → más rápido
-    // y con menos riesgo de truncar de nuevo. maxRetries 0 para acotar el tiempo
-    // total bajo los 60s.
-    if (keyResults.length === 0) {
-      const retryClient = new Anthropic({ maxRetries: 0 })
-      const retryMessage = `${baseMessage}\n\n${OBJECTIVE_PLAN_RETRY_NUDGE}`
-      const retry = await runPlan(retryClient, retryMessage, RETRY_MAX_TOKENS)
-      const retryKrs = parseObjectivePlan(retry.text)
-      if (retryKrs.length > 0) {
-        keyResults = retryKrs
-        attempt = retry
-      }
-    }
-
-    if (keyResults.length === 0) {
-      // No tiramos una excepción: logueamos diagnóstico (sin el contenido, que
-      // puede llevar data del grounding) y devolvemos un 502 claro.
-      reportApiError(new Error('objectives/plan: plan vacío tras reintento'), {
-        objectiveTitle: title,
-        lastTruncated: attempt.truncated,
-        lastTextLength: attempt.text.length,
-      })
-      return errorJson(
-        502,
-        'No se pudo armar el plan',
-        'El modelo no devolvió un plan utilizable. Reintentá en unos segundos.',
-      )
-    }
-
-    const feasibility = parseFeasibilityNotes(attempt.text)
-    return NextResponse.json({ keyResults, feasibility } satisfies {
-      keyResults: ProposedKeyResult[]
-      feasibility: string[]
-    }, { status: 200 })
-  } catch (e) {
-    reportApiError(e)
-    const detail = e instanceof Error ? e.message : String(e)
-    return errorJson(502, 'No se pudo generar el plan', detail)
-  }
+export async function DELETE(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: auth } = await supabase.auth.getUser()
+  if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const id = req.nextUrl.searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'id requerido' }, { status: 400 })
+  try { await supabase.from('objective_blockers').delete().eq('user_id', auth.user.id).eq('id', id) } catch { /* */ }
+  return NextResponse.json({ ok: true })
 }

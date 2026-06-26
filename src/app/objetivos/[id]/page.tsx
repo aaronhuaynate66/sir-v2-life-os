@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { GoalMeaning } from '@/components/objetivos/GoalMeaning'
+import { ObjectivePlanPanel } from '@/components/objetivos/ObjectivePlanPanel'
 import { GoalCosts } from '@/components/objetivos/GoalCosts'
 import { GoalConflictFriction } from '@/components/objetivos/GoalConflictFriction'
 import { matchEpisodesToGoal, type EpisodeLite } from '@/lib/goals/episodeFriction'
@@ -81,6 +82,7 @@ export default function ObjetivoDetailPage() {
               </div>
             </header>
 
+            <ObjectivePlanPanel goalId={goal.id} />
             <GoalMeaning why={goal.why} milestones={milestones} />
             <GoalCosts goalId={goal.id} relationalNames={epNames} />
 
