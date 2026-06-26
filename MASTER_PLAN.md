@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5d2a09a`
+**Hash del último commit humano:** `59b4b22`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `59b4b22` | aaronhuaynate66 | feat(yo): Retrato sintetizado + sacar el formulario redundante (#390) | 2026-06-26 |
 | `5d2a09a` | aaronhuaynate66 | feat(motor #7): Síntesis cruzada — biología × vínculos (#389) | 2026-06-26 |
 | `c352bd8` | aaronhuaynate66 | feat(motor #5): Modo Socrático en el chat /sir (#388) | 2026-06-26 |
 | `d51dcea` | aaronhuaynate66 | feat(motor #4): Espejo de Arquetipo (Jung hacia adentro) (#387) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `3abea85` | aaronhuaynate66 | feat(motor #1+#2): el Espejo lee interacciones/conflictos de la semana (#382) | 2026-06-26 |
 | `860ced2` | aaronhuaynate66 | feat(motor #2): Loop de Experimentos — UN experimento conductual por semana (#380) | 2026-06-26 |
 | `9c106cf` | aaronhuaynate66 | feat(motor #1): Espejo Semanal — confronta norte/objetivos declarados vs lo hecho en 7 días (#378) | 2026-06-26 |
-| `badb8cf` | Aaron via SIR | chore: redeploy para activar modelos OSS (OpenRouter) | 2026-06-26 |
 
 ---
 
