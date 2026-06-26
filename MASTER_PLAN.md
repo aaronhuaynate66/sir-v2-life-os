@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5a54afb`
+**Hash del último commit humano:** `30307cb`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `30307cb` | aaronhuaynate66 | feat(objetivos): acciones en menu kebab (#410) | 2026-06-26 |
 | `5a54afb` | aaronhuaynate66 | feat(objetivos): aligerar el card (auditoria UX) — historia acotada + zona operativa plegada (#409) | 2026-06-26 |
 | `6cc4464` | aaronhuaynate66 | feat(objetivos): plegado de tarjetas (divulgacion progresiva) (#408) | 2026-06-26 |
 | `c828b41` | aaronhuaynate66 | feat(objetivos): jerarquia + secciones (norte heroe + grupos por categoria) (#407) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `05ae43a` | aaronhuaynate66 | feat(router): endpoint /api/sir/router (relato + contexto → plan IA) (#403) | 2026-06-26 |
 | `2187717` | aaronhuaynate66 | feat(router): fundación del Router de relato (planner puro + tests) (#402) | 2026-06-26 |
 | `71d1ca1` | aaronhuaynate66 | fix(habitos): agrupar checkins por día de Lima (UTC-5), no UTC (#401) | 2026-06-26 |
-| `21cb62d` | aaronhuaynate66 | feat(habitos): hora del check + cadencia semanal + sugerencias desde objetivos + recordatorio nocturno (#399) | 2026-06-26 |
 
 ---
 
