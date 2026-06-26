@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `bca7d98`
+**Hash del último commit humano:** `a1de0b0`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `a1de0b0` | aaronhuaynate66 | feat(relaciones): Registro de plata por persona (transferencias/préstamos/saldos) (#395) | 2026-06-26 |
 | `bca7d98` | aaronhuaynate66 | feat(objetivo): Plan de acción genérico — countdown + ventana de viaje + bloqueos (#394) | 2026-06-26 |
 | `d46581e` | aaronhuaynate66 | feat(motor #1): Espejo con lectura conectada + orden y wins (#393) | 2026-06-26 |
 | `2e25c87` | aaronhuaynate66 | fix(trackers): lectura fechada al capturar, no por el contenido (#392) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c352bd8` | aaronhuaynate66 | feat(motor #5): Modo Socrático en el chat /sir (#388) | 2026-06-26 |
 | `d51dcea` | aaronhuaynate66 | feat(motor #4): Espejo de Arquetipo (Jung hacia adentro) (#387) | 2026-06-26 |
 | `1892a06` | aaronhuaynate66 | feat(motor #3): Pre-Mortem de decisiones (#386) | 2026-06-26 |
-| `054644d` | aaronhuaynate66 | feat(motor #6): cerrar gaps — tono de la última charla + chip en toda la lista (#385) | 2026-06-26 |
 
 ---
 
