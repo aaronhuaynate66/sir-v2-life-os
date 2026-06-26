@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3abea85`
+**Hash del último commit humano:** `35a7941`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `35a7941` | aaronhuaynate66 | feat(motor #6): Ventana de Contacto (#383) | 2026-06-26 |
 | `3abea85` | aaronhuaynate66 | feat(motor #1+#2): el Espejo lee interacciones/conflictos de la semana (#382) | 2026-06-26 |
 | `860ced2` | aaronhuaynate66 | feat(motor #2): Loop de Experimentos — UN experimento conductual por semana (#380) | 2026-06-26 |
 | `9c106cf` | aaronhuaynate66 | feat(motor #1): Espejo Semanal — confronta norte/objetivos declarados vs lo hecho en 7 días (#378) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `58e37fd` | aaronhuaynate66 | feat(captura): resumen de confianza arriba del lote (#375) | 2026-06-25 |
 | `62d6396` | aaronhuaynate66 | feat(medicación): confirmar borrado + gráfico 14 días + hora elegible (#374) | 2026-06-25 |
 | `de252bf` | aaronhuaynate66 | fix: sanear handles de redes (homóglifos de OCR) (#373) | 2026-06-25 |
-| `cccdbe6` | aaronhuaynate66 | fix(#44 mobile): horario legible en el cel (#372) | 2026-06-25 |
 
 ---
 
