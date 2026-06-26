@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `08a0f2c`
+**Hash del último commit humano:** `9c106cf`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `9c106cf` | aaronhuaynate66 | feat(motor #1): Espejo Semanal — confronta norte/objetivos declarados vs lo hecho en 7 días (#378) | 2026-06-26 |
+| `badb8cf` | Aaron via SIR | chore: redeploy para activar modelos OSS (OpenRouter) | 2026-06-26 |
 | `08a0f2c` | aaronhuaynate66 | feat(lote): pre-sugerir el nombre del chat al crear contacto (#377) | 2026-06-25 |
 | `1003164` | aaronhuaynate66 | feat(avatar): auto-extraer la cara de CUALQUIER foto subida (#376) | 2026-06-25 |
 | `58e37fd` | aaronhuaynate66 | feat(captura): resumen de confianza arriba del lote (#375) | 2026-06-25 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `cccdbe6` | aaronhuaynate66 | fix(#44 mobile): horario legible en el cel (#372) | 2026-06-25 |
 | `dd8453b` | aaronhuaynate66 | fix(alignment): no inferir personas por tags genéricos ni memorias de creación (#371) | 2026-06-25 |
 | `32ac97b` | aaronhuaynate66 | docs: guía de continuidad (handoff para retomar en otra terminal) (#370) | 2026-06-24 |
-| `aec465c` | aaronhuaynate66 | feat: vista dedicada del objetivo (/objetivos/[id]) (#369) | 2026-06-24 |
-| `a6e15f9` | aaronhuaynate66 | fix(foco del día): recencia + fecha del sueño + acción nocturna no se 'completa' (#368) | 2026-06-24 |
 
 ---
 
