@@ -4,7 +4,7 @@ import { track, trackCreated, EVENTS } from '@/lib/analytics/track'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Target, Plus, Archive, ListChecks, ChevronRight, Sparkles, Anchor } from 'lucide-react'
+import { Target, Plus, Archive, ListChecks, ChevronRight, Sparkles, Anchor, MoreHorizontal } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -707,7 +707,12 @@ function GoalsContent() {
                       <span>paz: <span className="text-muted-foreground font-mono">+{g.peaceImpact}</span></span>
                     </div>
                   </div>
-                  <div className="flex gap-1 flex-wrap sm:flex-shrink-0 sm:justify-end">
+                  <div className="flex sm:flex-shrink-0 sm:justify-end">
+                    <details className="relative">
+                      <summary className="list-none cursor-pointer inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground [&::-webkit-details-marker]:hidden" aria-label="Acciones del objetivo" title="Acciones">
+                        <MoreHorizontal size={16} />
+                      </summary>
+                      <div className="absolute right-0 z-50 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-md border border-border bg-popover p-1 shadow-md [&_button]:w-full [&_button]:justify-start">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -774,6 +779,8 @@ function GoalsContent() {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                      </div>
+                    </details>
                   </div>
                 </div>
                 {showBody && workOpen.has(g.id) && (<>
