@@ -11,7 +11,7 @@ import { mapExperimentRow } from '@/lib/experiments/types'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const SELECT = 'id, title, detail, source, status, week_start, result, created_at, updated_at'
+const SELECT = 'id, title, detail, source, status, week_start, result, worked, created_at, updated_at'
 const ISO = /^\d{4}-\d{2}-\d{2}$/
 
 function str(v: unknown, max: number): string | null {
@@ -70,6 +70,7 @@ export async function PATCH(req: NextRequest) {
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (b.status === 'activo' || b.status === 'hecho' || b.status === 'descartado') patch.status = b.status
   if ('result' in b) patch.result = str(b.result, 2000)
+  if ('worked' in b) { const w = typeof b.worked === 'string' ? b.worked : null; patch.worked = (w === 'si' || w === 'no' || w === 'parcial') ? w : null }
   if ('title' in b) { const t = str(b.title, 200); if (t) patch.title = t }
   if ('detail' in b) patch.detail = str(b.detail, 2000)
   try {
