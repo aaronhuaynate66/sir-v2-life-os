@@ -1,7 +1,7 @@
 'use client'
 // SIR V2 — /yo: IDENTIDAD (quién sos, anclas, autodiagnóstico). La salud y las
 // métricas viven en /salud (su propia página). Acá solo lo personal/identidad.
-import { Brain, MessageSquare, ArrowRight, Heart } from 'lucide-react'
+import { Brain, ArrowRight, Heart } from 'lucide-react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,7 +16,7 @@ import { ExperimentosLoopPanel } from '@/components/yo/ExperimentosLoopPanel'
 import { PreMortemPanel } from '@/components/yo/PreMortemPanel'
 import { NotificationsCard } from '@/components/system/NotificationsCard'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
-import { ContaleASir } from '@/components/yo/ContaleASir'
+import { RetratoPanel } from '@/components/yo/RetratoPanel'
 
 const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
@@ -50,16 +50,7 @@ export default function SelfPage() {
       </Card>
 
       <div className="mt-6 space-y-4">
-        {/* Identidad: primero contás quién sos (relato), luego el perfil que alimenta. */}
-        <Card className={cardClass}>
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <MessageSquare size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-              <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Contale a SIR quién sos</div>
-            </div>
-            <ContaleASir />
-          </CardContent>
-        </Card>
+        <RetratoPanel />
         <IdentityProfilePanel />
         <EspejoSemanalPanel />
         <ExperimentosLoopPanel />
