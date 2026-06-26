@@ -11,6 +11,7 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { computeEspejoSemanal, type EspejoState, type EspejoSeverity } from '@/lib/self/espejoSemanal'
+import { useEspejoRelacional } from '@/hooks/useEspejoRelacional'
 
 const STATE_META: Record<EspejoState, { label: string; color: string }> = {
   alineado: { label: 'Alineado', color: '#2dd4a7' },
@@ -31,10 +32,11 @@ export function EspejoSemanalPanel() {
   const steps = useObjectiveStepStore((s) => s.steps)
   const selfMetrics = useSelfStore((s) => s.selfMetrics)
   const sleepRecords = useSelfStore((s) => s.sleepRecords)
+  const rel = useEspejoRelacional()
 
   const espejo = useMemo(
-    () => computeEspejoSemanal(goals, steps, sleepRecords, selfMetrics),
-    [goals, steps, sleepRecords, selfMetrics],
+    () => computeEspejoSemanal(goals, steps, sleepRecords, selfMetrics, new Date(), rel),
+    [goals, steps, sleepRecords, selfMetrics, rel],
   )
   const meta = STATE_META[espejo.state]
 

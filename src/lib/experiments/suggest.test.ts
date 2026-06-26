@@ -33,4 +33,9 @@ describe('suggestExperiment', () => {
     const s = suggestExperiment(esp({ state: 'alineado', gaps: [] }))
     expect(s?.title.toLowerCase()).toContain('sostené')
   })
+
+  it('gap de conflicto → experimento relacional (escuchar sin defender)', () => {
+    const s = suggestExperiment(esp({ gaps: [{ key: 'conflicto_abierto', label: '', observed: '', severity: 'alta' }] }))
+    expect(s?.detail.toLowerCase()).toContain('escuchar')
+  })
 })
