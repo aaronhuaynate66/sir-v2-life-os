@@ -224,6 +224,14 @@ export function PersonDetail({
     [correlationLogs],
   )
 
+  // Ventana de contacto (#6): tono de la última interacción registrada.
+  const lastInteractionTone = useMemo(() => {
+    const ints = personLogs.filter((l) => l.kind === 'interaction')
+    if (ints.length === 0) return null
+    const latest = [...ints].sort((a, b) => (a.loggedAt < b.loggedAt ? 1 : -1))[0]
+    return typeof latest.value === 'number' ? latest.value : null
+  }, [personLogs])
+
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<EditForm>(() => formFromPerson(live))
@@ -391,7 +399,7 @@ export function PersonDetail({
           justo — actividad reciente (tags de memorias) + notas privadas verbatim
           (discretas, nunca a IA). Determinístico; se oculta si no aporta nada. */}
       <AntesDeContactar personId={live.id} memories={memories} />
-      <ContactWindowBadge person={live} />
+      <ContactWindowBadge person={live} lastTone={lastInteractionTone} />
 
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
