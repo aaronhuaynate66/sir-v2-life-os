@@ -1,7 +1,7 @@
 // SIR V2 — Tests del parser puro de valor/fecha (trackers).
 
 import { describe, it, expect } from 'vitest'
-import { parseNumber, detectUnit, extractDate, extractValueDateFromText } from './parse'
+import { parseNumber, detectUnit, extractDate, extractValueDateFromText, readingDate } from './parse'
 
 describe('parseNumber', () => {
   it('miles con coma → entero', () => {
@@ -110,5 +110,11 @@ describe('extractValueDateFromText (Google Flights)', () => {
   it('sin número → value null', () => {
     const r = extractValueDateFromText('no hay precio acá', 2026)
     expect(r.value).toBeNull()
+  })
+})
+
+describe('readingDate', () => {
+  it('siempre usa la fecha de captura (ignora fechas del contenido, ej. la del vuelo)', () => {
+    expect(readingDate('2026-06-26')).toBe('2026-06-26')
   })
 })

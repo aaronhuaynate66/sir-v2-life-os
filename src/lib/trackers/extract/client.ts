@@ -12,7 +12,7 @@
 'use client'
 
 import { blobToBase64, compressForExtraction } from '@/lib/capture/scale/compress'
-import { extractValueDateFromText } from '@/lib/trackers/parse'
+import { extractValueDateFromText, readingDate } from '@/lib/trackers/parse'
 import type { NewPointInput } from '@/lib/trackers/points'
 import type { ExtractHint, TrackerExtracted } from './types'
 
@@ -88,7 +88,7 @@ export async function ingestImages(
     if (ex && ex.value != null) {
       readings.push({
         value: ex.value,
-        date: ex.date ?? fallbackDate,
+        date: readingDate(fallbackDate),
         source: 'manual_screenshot',
         note: ex.raw_observations || undefined,
       })
@@ -106,7 +106,7 @@ export function ingestText(text: string, fallbackDate: string): NewPointInput | 
   if (parsed.value == null) return null
   return {
     value: parsed.value,
-    date: parsed.date ?? fallbackDate,
+    date: readingDate(fallbackDate),
     source: 'manual_text',
     note: text.slice(0, 160),
   }
