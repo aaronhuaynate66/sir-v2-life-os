@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `21c6722`
+**Hash del último commit humano:** `8dbdb24`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8dbdb24` | aaronhuaynate66 | feat(/yo): desarrollar las 3 cajas — historial prueba-y-error, accionables 1-clic, pre-mortem guardado, tendencia semanal (#398) | 2026-06-26 |
 | `21c6722` | aaronhuaynate66 | feat(motor #8 fase 2): eventos externos por lugar (GDELT) en el objetivo-viaje (#397) | 2026-06-26 |
 | `0d1822d` | aaronhuaynate66 | feat(motor #8 fase 1): capa de contexto externo — señal de tipo de cambio (#396) | 2026-06-26 |
 | `a1de0b0` | aaronhuaynate66 | feat(relaciones): Registro de plata por persona (transferencias/préstamos/saldos) (#395) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `fedac99` | aaronhuaynate66 | fix(chart): etiquetas de eje con año cuando la serie cruza años (#391) | 2026-06-26 |
 | `59b4b22` | aaronhuaynate66 | feat(yo): Retrato sintetizado + sacar el formulario redundante (#390) | 2026-06-26 |
 | `5d2a09a` | aaronhuaynate66 | feat(motor #7): Síntesis cruzada — biología × vínculos (#389) | 2026-06-26 |
-| `c352bd8` | aaronhuaynate66 | feat(motor #5): Modo Socrático en el chat /sir (#388) | 2026-06-26 |
 
 ---
 
