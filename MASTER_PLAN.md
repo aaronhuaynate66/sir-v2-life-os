@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `71d1ca1`
+**Hash del último commit humano:** `2187717`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2187717` | aaronhuaynate66 | feat(router): fundación del Router de relato (planner puro + tests) (#402) | 2026-06-26 |
 | `71d1ca1` | aaronhuaynate66 | fix(habitos): agrupar checkins por día de Lima (UTC-5), no UTC (#401) | 2026-06-26 |
 | `21cb62d` | aaronhuaynate66 | feat(habitos): hora del check + cadencia semanal + sugerencias desde objetivos + recordatorio nocturno (#399) | 2026-06-26 |
 | `8dbdb24` | aaronhuaynate66 | feat(/yo): desarrollar las 3 cajas — historial prueba-y-error, accionables 1-clic, pre-mortem guardado, tendencia semanal (#398) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `bca7d98` | aaronhuaynate66 | feat(objetivo): Plan de acción genérico — countdown + ventana de viaje + bloqueos (#394) | 2026-06-26 |
 | `d46581e` | aaronhuaynate66 | feat(motor #1): Espejo con lectura conectada + orden y wins (#393) | 2026-06-26 |
 | `2e25c87` | aaronhuaynate66 | fix(trackers): lectura fechada al capturar, no por el contenido (#392) | 2026-06-26 |
-| `fedac99` | aaronhuaynate66 | fix(chart): etiquetas de eje con año cuando la serie cruza años (#391) | 2026-06-26 |
 
 ---
 
