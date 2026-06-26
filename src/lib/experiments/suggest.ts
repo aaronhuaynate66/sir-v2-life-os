@@ -25,6 +25,12 @@ export function suggestExperiment(espejo: EspejoSemanal): ExperimentSuggestion |
 
   if (top) {
     switch (top.key) {
+      case 'conflicto':
+      case 'conflicto_abierto':
+        return {
+          title: 'Una conversación esta semana para descomprimir, sin defender',
+          detail: 'Entrá a escuchar de verdad, sin justificar tu posición. Al final anotá cómo terminó.',
+        }
       case 'norte':
         return {
           title: espejo.norteTitle

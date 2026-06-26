@@ -15,17 +15,19 @@ import { useSelfStore } from '@/stores/useSelfStore'
 import { computeEspejoSemanal } from '@/lib/self/espejoSemanal'
 import { suggestExperiment } from '@/lib/experiments/suggest'
 import { mondayLima, type Experiment } from '@/lib/experiments/types'
+import { useEspejoRelacional } from '@/hooks/useEspejoRelacional'
 
 export function ExperimentosLoopPanel() {
   const goals = useGoalStore((s) => s.goals)
   const steps = useObjectiveStepStore((s) => s.steps)
   const selfMetrics = useSelfStore((s) => s.selfMetrics)
   const sleepRecords = useSelfStore((s) => s.sleepRecords)
+  const rel = useEspejoRelacional()
 
   const suggestion = useMemo(() => {
-    const espejo = computeEspejoSemanal(goals, steps, sleepRecords, selfMetrics)
+    const espejo = computeEspejoSemanal(goals, steps, sleepRecords, selfMetrics, new Date(), rel)
     return suggestExperiment(espejo)
-  }, [goals, steps, sleepRecords, selfMetrics])
+  }, [goals, steps, sleepRecords, selfMetrics, rel])
 
   const [items, setItems] = useState<Experiment[] | null>(null)
   const [busy, setBusy] = useState(false)
