@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `80a40a6`
+**Hash del último commit humano:** `456f11c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `456f11c` | aaronhuaynate66 | feat(objetivos): metodologia F3 — KRs medibles en el alta (corazon del objetivo) (#413) | 2026-06-26 |
 | `80a40a6` | aaronhuaynate66 | feat(objetivos): metodologia F2 — Obstaculo -> plan si-entonces (WOOP) (#412) | 2026-06-26 |
 | `e1c3099` | aaronhuaynate66 | feat(objetivos): metodologia F1 — sacar la 'historia' cruda del objetivo (#411) | 2026-06-26 |
 | `30307cb` | aaronhuaynate66 | feat(objetivos): acciones en menu kebab (#410) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c017e9a` | aaronhuaynate66 | fix(ficha): mostrar cargo+empresa (people.title/organization) sin captura LinkedIn (#406) | 2026-06-26 |
 | `5ba7fc8` | aaronhuaynate66 | fix(familia): el selector 'quien es para vos' no arranca en 'madre' para parejas (#405) | 2026-06-26 |
 | `60a885e` | aaronhuaynate66 | feat(router): UI /relato + ejecutor multi-entidad (FASE 3 — router completo) (#404) | 2026-06-26 |
-| `05ae43a` | aaronhuaynate66 | feat(router): endpoint /api/sir/router (relato + contexto → plan IA) (#403) | 2026-06-26 |
 
 ---
 
