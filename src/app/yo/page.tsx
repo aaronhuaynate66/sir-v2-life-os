@@ -9,6 +9,7 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { SelfDiagnosisPanel } from '@/components/yo/SelfDiagnosisPanel'
 import { LifeThreadPanel } from '@/components/yo/LifeThreadPanel'
+import { ArquetipoPanel } from '@/components/yo/ArquetipoPanel'
 import { NorteDriftPanel } from '@/components/yo/NorteDriftPanel'
 import { EspejoSemanalPanel } from '@/components/yo/EspejoSemanalPanel'
 import { ExperimentosLoopPanel } from '@/components/yo/ExperimentosLoopPanel'
@@ -65,6 +66,7 @@ export default function SelfPage() {
         <PreMortemPanel />
         <NorteDriftPanel />
         <LifeThreadPanel />
+        <ArquetipoPanel />
         <NotificationsCard />
         <SelfDiagnosisPanel />
       </div>
