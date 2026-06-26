@@ -13,7 +13,7 @@ import { Activity, Flame, Check, Circle, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { postJson } from '@/lib/api/errors'
-import { computeHabitStreak } from '@/lib/habits/streak'
+import { computeHabitStreak, limaDayString } from '@/lib/habits/streak'
 import { habitNudge } from '@/lib/habits/nudge'
 
 interface HabitDTO {
@@ -24,7 +24,7 @@ interface HabitDTO {
   checkinDates: string[]
 }
 
-const TODAY = () => new Date().toISOString().slice(0, 10)
+const TODAY = () => limaDayString(new Date())
 
 export function HabitsStrip() {
   const [habits, setHabits] = useState<HabitDTO[] | null>(null)
