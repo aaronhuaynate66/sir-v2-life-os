@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2e25c87`
+**Hash del último commit humano:** `d46581e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `d46581e` | aaronhuaynate66 | feat(motor #1): Espejo con lectura conectada + orden y wins (#393) | 2026-06-26 |
 | `2e25c87` | aaronhuaynate66 | fix(trackers): lectura fechada al capturar, no por el contenido (#392) | 2026-06-26 |
 | `fedac99` | aaronhuaynate66 | fix(chart): etiquetas de eje con año cuando la serie cruza años (#391) | 2026-06-26 |
 | `59b4b22` | aaronhuaynate66 | feat(yo): Retrato sintetizado + sacar el formulario redundante (#390) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1892a06` | aaronhuaynate66 | feat(motor #3): Pre-Mortem de decisiones (#386) | 2026-06-26 |
 | `054644d` | aaronhuaynate66 | feat(motor #6): cerrar gaps — tono de la última charla + chip en toda la lista (#385) | 2026-06-26 |
 | `35a7941` | aaronhuaynate66 | feat(motor #6): Ventana de Contacto (#383) | 2026-06-26 |
-| `3abea85` | aaronhuaynate66 | feat(motor #1+#2): el Espejo lee interacciones/conflictos de la semana (#382) | 2026-06-26 |
 
 ---
 
