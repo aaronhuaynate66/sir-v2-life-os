@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `05ae43a`
+**Hash del último commit humano:** `60a885e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `60a885e` | aaronhuaynate66 | feat(router): UI /relato + ejecutor multi-entidad (FASE 3 — router completo) (#404) | 2026-06-26 |
 | `05ae43a` | aaronhuaynate66 | feat(router): endpoint /api/sir/router (relato + contexto → plan IA) (#403) | 2026-06-26 |
 | `2187717` | aaronhuaynate66 | feat(router): fundación del Router de relato (planner puro + tests) (#402) | 2026-06-26 |
 | `71d1ca1` | aaronhuaynate66 | fix(habitos): agrupar checkins por día de Lima (UTC-5), no UTC (#401) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `0d1822d` | aaronhuaynate66 | feat(motor #8 fase 1): capa de contexto externo — señal de tipo de cambio (#396) | 2026-06-26 |
 | `a1de0b0` | aaronhuaynate66 | feat(relaciones): Registro de plata por persona (transferencias/préstamos/saldos) (#395) | 2026-06-26 |
 | `bca7d98` | aaronhuaynate66 | feat(objetivo): Plan de acción genérico — countdown + ventana de viaje + bloqueos (#394) | 2026-06-26 |
-| `d46581e` | aaronhuaynate66 | feat(motor #1): Espejo con lectura conectada + orden y wins (#393) | 2026-06-26 |
 
 ---
 
