@@ -10,6 +10,7 @@ import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { SelfDiagnosisPanel } from '@/components/yo/SelfDiagnosisPanel'
 import { LifeThreadPanel } from '@/components/yo/LifeThreadPanel'
 import { NorteDriftPanel } from '@/components/yo/NorteDriftPanel'
+import { EspejoSemanalPanel } from '@/components/yo/EspejoSemanalPanel'
 import { NotificationsCard } from '@/components/system/NotificationsCard'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { ContaleASir } from '@/components/yo/ContaleASir'
@@ -57,6 +58,7 @@ export default function SelfPage() {
           </CardContent>
         </Card>
         <IdentityProfilePanel />
+        <EspejoSemanalPanel />
         <NorteDriftPanel />
         <LifeThreadPanel />
         <NotificationsCard />
