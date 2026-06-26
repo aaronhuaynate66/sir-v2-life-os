@@ -85,6 +85,7 @@ import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
 import { MomentosPanel } from './MomentosPanel'
+import { PersonMoneyPanel } from './PersonMoneyPanel'
 import { ContactWindowBadge } from './ContactWindowBadge'
 import { IdentidadesPanel } from './IdentidadesPanel'
 import { FamiliaPanel } from './FamiliaPanel'
@@ -702,6 +703,7 @@ export function PersonDetail({
       <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs} />
 
       <MomentosPanel personId={live.id} />
+      <PersonMoneyPanel personId={live.id} />
       <IdentidadesPanel personId={live.id} />
 
       {/* Nota de voz (#12): graba audio -> bucket person-voice-notes +
