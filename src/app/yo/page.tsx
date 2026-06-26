@@ -12,6 +12,7 @@ import { LifeThreadPanel } from '@/components/yo/LifeThreadPanel'
 import { NorteDriftPanel } from '@/components/yo/NorteDriftPanel'
 import { EspejoSemanalPanel } from '@/components/yo/EspejoSemanalPanel'
 import { ExperimentosLoopPanel } from '@/components/yo/ExperimentosLoopPanel'
+import { PreMortemPanel } from '@/components/yo/PreMortemPanel'
 import { NotificationsCard } from '@/components/system/NotificationsCard'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { ContaleASir } from '@/components/yo/ContaleASir'
@@ -61,6 +62,7 @@ export default function SelfPage() {
         <IdentityProfilePanel />
         <EspejoSemanalPanel />
         <ExperimentosLoopPanel />
+        <PreMortemPanel />
         <NorteDriftPanel />
         <LifeThreadPanel />
         <NotificationsCard />
