@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c828b41`
+**Hash del último commit humano:** `6cc4464`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6cc4464` | aaronhuaynate66 | feat(objetivos): plegado de tarjetas (divulgacion progresiva) (#408) | 2026-06-26 |
 | `c828b41` | aaronhuaynate66 | feat(objetivos): jerarquia + secciones (norte heroe + grupos por categoria) (#407) | 2026-06-26 |
 | `c017e9a` | aaronhuaynate66 | fix(ficha): mostrar cargo+empresa (people.title/organization) sin captura LinkedIn (#406) | 2026-06-26 |
 | `5ba7fc8` | aaronhuaynate66 | fix(familia): el selector 'quien es para vos' no arranca en 'madre' para parejas (#405) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `71d1ca1` | aaronhuaynate66 | fix(habitos): agrupar checkins por día de Lima (UTC-5), no UTC (#401) | 2026-06-26 |
 | `21cb62d` | aaronhuaynate66 | feat(habitos): hora del check + cadencia semanal + sugerencias desde objetivos + recordatorio nocturno (#399) | 2026-06-26 |
 | `8dbdb24` | aaronhuaynate66 | feat(/yo): desarrollar las 3 cajas — historial prueba-y-error, accionables 1-clic, pre-mortem guardado, tendencia semanal (#398) | 2026-06-26 |
-| `21c6722` | aaronhuaynate66 | feat(motor #8 fase 2): eventos externos por lugar (GDELT) en el objetivo-viaje (#397) | 2026-06-26 |
 
 ---
 
