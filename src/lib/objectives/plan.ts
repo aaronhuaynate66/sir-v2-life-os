@@ -6,6 +6,10 @@ export interface ObjectivePlan {
   travelEnd: string | null
   location: string | null
   notes: string | null
+  // WOOP / MCII: obstáculo principal + plan si-entonces.
+  obstacle: string | null
+  planIf: string | null
+  planThen: string | null
 }
 export interface ObjectiveBlocker {
   id: string
@@ -16,7 +20,7 @@ export interface ObjectiveBlocker {
   sort: number
 }
 
-interface RawPlan { goal_id: string; event_date: string | null; travel_start: string | null; travel_end: string | null; location: string | null; notes: string | null }
+interface RawPlan { goal_id: string; event_date: string | null; travel_start: string | null; travel_end: string | null; location: string | null; notes: string | null; obstacle: string | null; plan_if: string | null; plan_then: string | null }
 export function mapPlanRow(r: RawPlan): ObjectivePlan {
   return {
     goalId: r.goal_id,
@@ -24,6 +28,7 @@ export function mapPlanRow(r: RawPlan): ObjectivePlan {
     travelStart: r.travel_start ? r.travel_start.slice(0, 10) : null,
     travelEnd: r.travel_end ? r.travel_end.slice(0, 10) : null,
     location: r.location, notes: r.notes,
+    obstacle: r.obstacle ?? null, planIf: r.plan_if ?? null, planThen: r.plan_then ?? null,
   }
 }
 interface RawBlocker { id: string; goal_id: string; title: string; due_on: string | null; done: boolean; sort: number }

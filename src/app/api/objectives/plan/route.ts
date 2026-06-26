@@ -12,7 +12,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/
-const PLAN_SEL = 'goal_id, event_date, travel_start, travel_end, location, notes'
+const PLAN_SEL = 'goal_id, event_date, travel_start, travel_end, location, notes, obstacle, plan_if, plan_then'
 const BLK_SEL = 'id, goal_id, title, due_on, done, sort'
 function str(v: unknown, max: number): string | null { return typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null }
 function dateOrNull(v: unknown): string | null { return typeof v === 'string' && ISO.test(v.trim()) ? v.trim() : null }
@@ -50,6 +50,9 @@ export async function PUT(req: NextRequest) {
   if (has(b, 'travel_end')) row.travel_end = dateOrNull(b.travel_end)
   if (has(b, 'location')) row.location = str(b.location, 200)
   if (has(b, 'notes')) row.notes = str(b.notes, 2000)
+  if (has(b, 'obstacle')) row.obstacle = str(b.obstacle, 600)
+  if (has(b, 'plan_if')) row.plan_if = str(b.plan_if, 400)
+  if (has(b, 'plan_then')) row.plan_then = str(b.plan_then, 400)
   try {
     const { data, error } = await supabase.from('objective_plan').upsert(row, { onConflict: 'user_id,goal_id' }).select(PLAN_SEL).single()
     if (error) return NextResponse.json({ error: 'No se pudo guardar', detail: error.message }, { status: 500 })

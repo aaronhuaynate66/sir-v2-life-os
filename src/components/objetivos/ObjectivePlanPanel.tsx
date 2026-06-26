@@ -23,7 +23,7 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
   const [loaded, setLoaded] = useState(false)
   const [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState({ event_date: '', travel_start: '', travel_end: '', location: '' })
+  const [form, setForm] = useState({ event_date: '', travel_start: '', travel_end: '', location: '', obstacle: '', plan_if: '', plan_then: '' })
   const [newBlk, setNewBlk] = useState('')
   const [newDue, setNewDue] = useState('')
 
@@ -33,7 +33,7 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
       if (r.ok) {
         const j = (await r.json()) as { plan: ObjectivePlan | null; blockers: ObjectiveBlocker[] }
         setPlan(j.plan); setBlockers(j.blockers ?? [])
-        if (j.plan) setForm({ event_date: j.plan.eventDate ?? '', travel_start: j.plan.travelStart ?? '', travel_end: j.plan.travelEnd ?? '', location: j.plan.location ?? '' })
+        if (j.plan) setForm({ event_date: j.plan.eventDate ?? '', travel_start: j.plan.travelStart ?? '', travel_end: j.plan.travelEnd ?? '', location: j.plan.location ?? '', obstacle: j.plan.obstacle ?? '', plan_if: j.plan.planIf ?? '', plan_then: j.plan.planThen ?? '' })
       }
     } catch { /* */ } finally { setLoaded(true) }
   }, [goalId])
@@ -43,7 +43,7 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
     if (busy) return; setBusy(true)
     try {
       await fetch('/api/objectives/plan', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal_id: goalId, event_date: form.event_date || null, travel_start: form.travel_start || null, travel_end: form.travel_end || null, location: form.location || null }) })
+        body: JSON.stringify({ goal_id: goalId, event_date: form.event_date || null, travel_start: form.travel_start || null, travel_end: form.travel_end || null, location: form.location || null, obstacle: form.obstacle || null, plan_if: form.plan_if || null, plan_then: form.plan_then || null }) })
       setEditing(false); await load()
     } finally { setBusy(false) }
   }, [busy, form, goalId, load])
@@ -95,6 +95,16 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
           </div>
         )}
 
+        {!editing && (plan?.obstacle || plan?.planIf || plan?.planThen) && (
+          <div className="mt-3 rounded-lg border p-3" style={{ borderColor: '#e0a93b55', background: '#e0a93b14' }}>
+            <p className="text-[11px] uppercase tracking-wide" style={{ color: '#e0a93b' }}>Obstáculo → plan</p>
+            {plan?.obstacle && <p className="mt-1 text-[13px] text-foreground/90"><span className="text-muted-foreground">Obstáculo:</span> {plan.obstacle}</p>}
+            {(plan?.planIf || plan?.planThen) && (
+              <p className="mt-1 text-[13px] text-foreground/90"><span className="text-muted-foreground">Si</span> {plan?.planIf || '…'} <span className="text-muted-foreground">→ entonces</span> {plan?.planThen || '…'}</p>
+            )}
+          </div>
+        )}
+
         {/* Editor de fechas */}
         {editing && (
           <div className="mt-3 space-y-2 rounded-lg border border-border bg-muted/30 p-3">
@@ -108,7 +118,21 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
             </div>
             <label className="block text-[12px] text-muted-foreground">Lugar
               <Input value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Al Khobar, Arabia Saudí" className="mt-1" /></label>
-            <Button size="sm" disabled={busy} onClick={savePlan}>{busy ? <Loader2 size={14} className="mr-1 animate-spin" /> : null} Guardar fechas</Button>
+            <div className="pt-2 border-t border-border/50">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Obstáculo → plan (si-entonces)</p>
+              <textarea
+                value={form.obstacle}
+                onChange={(e) => setForm((f) => ({ ...f, obstacle: e.target.value }))}
+                rows={2}
+                placeholder="¿Qué se interpone? (el obstáculo principal)"
+                className="w-full resize-none rounded-md border border-border bg-background p-2 text-[13px] outline-none focus:border-foreground/30"
+              />
+              <div className="mt-1 flex flex-col gap-1.5 sm:flex-row">
+                <Input value={form.plan_if} onChange={(e) => setForm((f) => ({ ...f, plan_if: e.target.value }))} placeholder="Si pasa… (disparador)" className="text-[13px]" />
+                <Input value={form.plan_then} onChange={(e) => setForm((f) => ({ ...f, plan_then: e.target.value }))} placeholder="entonces hago…" className="text-[13px]" />
+              </div>
+            </div>
+            <Button size="sm" disabled={busy} onClick={savePlan}>{busy ? <Loader2 size={14} className="mr-1 animate-spin" /> : null} Guardar</Button>
           </div>
         )}
 
