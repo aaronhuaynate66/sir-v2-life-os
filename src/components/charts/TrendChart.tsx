@@ -30,6 +30,14 @@ function fmtDayLabel(iso: string): string {
   if (!y || !m || !d) return iso.slice(0, 10)
   return `${d} ${MON_ABBR[m - 1]}`
 }
+/** Etiqueta de eje; agrega el año (''AA) cuando la serie cruza años, para que
+ *  no parezca invertida (ej. '26 jun '25' vs '8 jun '26'). */
+function fmtAxisLabel(iso: string, withYear: boolean): string {
+  const base = fmtDayLabel(iso)
+  if (!withYear) return base
+  const y = iso.slice(2, 4)
+  return `${base} '${y}`
+}
 /** 'YYYY-MM-DD…' → 'vie 12 jun' (para el tooltip). */
 function fmtDayLong(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
@@ -171,8 +179,13 @@ export function TrendChart({
             <ChartViz geo={geo} colorClass={colorClass} label={label} formatValue={formatValue} />
 
             <div className="flex justify-between text-[10px] font-mono text-muted-foreground/50">
-              <span>{fmtDayLabel(geo.first!.date)}</span>
-              <span>{fmtDayLabel(geo.last!.date)}</span>
+              {(() => {
+                const spanYears = geo.first!.date.slice(0, 4) !== geo.last!.date.slice(0, 4)
+                return (<>
+                  <span>{fmtAxisLabel(geo.first!.date, spanYears)}</span>
+                  <span>{fmtAxisLabel(geo.last!.date, spanYears)}</span>
+                </>)
+              })()}
             </div>
           </div>
         )}
