@@ -5,6 +5,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { limaDayString } from '@/lib/habits/streak'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   // Fecha opcional (backfill de días pasados). Default hoy. No se permite futuro
   // ni más de 60 días atrás (evita marcar cualquier cosa).
-  const todayISO = new Date().toISOString().slice(0, 10)
+  const todayISO = limaDayString(new Date())
   let target = todayISO
   if (typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
     if (body.date > todayISO) return err(400, 'No se puede marcar un día futuro')

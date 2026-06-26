@@ -20,6 +20,15 @@ export interface HabitStreak {
 }
 
 const DAY_MS = 86_400_000
+// Perú (Lima) = UTC-5 todo el año (sin horario de verano). Los hábitos se
+// agrupan por DÍA DE LIMA, no UTC: si no, lo que marcás de noche (19:00-23:59
+// Lima) cae al día siguiente en UTC y corrompe racha / "hoy" / la hora.
+const LIMA_OFFSET_MS = 5 * 3_600_000
+
+/** Día de Lima de un instante, como 'YYYY-MM-DD'. */
+export function limaDayString(d: Date = new Date()): string {
+  return new Date(d.getTime() - LIMA_OFFSET_MS).toISOString().slice(0, 10)
+}
 
 /** 'YYYY-MM-DD' → índice de día entero (UTC), o null si inválida. */
 function dayIndex(isoDate: string): number | null {
@@ -29,7 +38,7 @@ function dayIndex(isoDate: string): number | null {
 }
 
 function todayIndex(today: Date): number {
-  return Math.floor(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) / DAY_MS)
+  return Math.floor((today.getTime() - LIMA_OFFSET_MS) / DAY_MS)
 }
 
 /** Racha + consistencia diaria. `windowDays` por defecto 30. */
@@ -106,10 +115,9 @@ export function recentDayMarks(
 ): DayMark[] {
   const set = new Set(checkinDates.map((d) => d.slice(0, 10)))
   const out: DayMark[] = []
-  const base = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  const todayIdx = Math.floor((today.getTime() - LIMA_OFFSET_MS) / DAY_MS)
   for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(base - i * 86_400_000)
-    const iso = d.toISOString().slice(0, 10)
+    const iso = new Date((todayIdx - i) * DAY_MS).toISOString().slice(0, 10)
     out.push({ iso, done: set.has(iso), isToday: i === 0 })
   }
   return out

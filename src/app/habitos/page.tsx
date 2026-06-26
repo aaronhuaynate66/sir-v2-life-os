@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
-import { computeHabitStreak, recentDayMarks } from '@/lib/habits/streak'
+import { computeHabitStreak, recentDayMarks, limaDayString } from '@/lib/habits/streak'
 import { computeWeeklyStreak } from '@/lib/habits/weekly'
 import { limaTimeHHMM } from '@/lib/habits/format'
 import type { HabitSuggestion } from '@/lib/habits/suggestParse'
@@ -29,7 +29,7 @@ interface HabitDTO {
   checkinTimes: Record<string, string>
 }
 
-const TODAY = () => new Date().toISOString().slice(0, 10)
+const TODAY = () => limaDayString(new Date())
 
 export default function HabitosPage() {
   const [habits, setHabits] = useState<HabitDTO[] | null>(null)

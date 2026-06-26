@@ -10,8 +10,10 @@ function dayIndex(isoDate: string): number | null {
   if (Number.isNaN(ms)) return null
   return Math.floor(ms / DAY_MS)
 }
+// Lima = UTC-5 (sin DST). Día de Lima, no UTC (ver streak.ts).
+const LIMA_OFFSET_MS = 5 * 3_600_000
 function todayIndex(today: Date): number {
-  return Math.floor(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()) / DAY_MS)
+  return Math.floor((today.getTime() - LIMA_OFFSET_MS) / DAY_MS)
 }
 /** Índice del lunes de la semana de `di` (Mon=0). epoch day 0 = jueves. */
 function mondayOf(di: number): number {
