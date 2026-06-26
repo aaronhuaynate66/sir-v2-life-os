@@ -26,7 +26,7 @@ function daysSince(iso: string | undefined): number | null {
   return Math.floor((Date.now() - t) / 86_400_000)
 }
 
-export function ContactWindowBadge({ person }: { person: Person }) {
+export function ContactWindowBadge({ person, lastTone = null }: { person: Person; lastTone?: number | null }) {
   const [openConflict, setOpenConflict] = useState(false)
   const [conflictTitle, setConflictTitle] = useState<string | null>(null)
 
@@ -66,11 +66,11 @@ export function ContactWindowBadge({ person }: { person: Person }) {
       upcomingEventLabel: upcomingLabel,
       openConflict,
       conflictTitle,
-      lastTone: null,
+      lastTone,
       cycleSensitive,
       importance: person.importanceScore ?? 5,
     })
-  }, [person, openConflict, conflictTitle])
+  }, [person, openConflict, conflictTitle, lastTone])
 
   const meta = META[win.state]
 
