@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import type { Observation, CaptureType } from '@/lib/capture/observations/types'
 import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
+import type { RelationshipMoment } from '@/lib/moments/types'
 
 export interface BitacoraProps {
   personLogs: PersonLog[]
@@ -31,16 +32,19 @@ export interface BitacoraProps {
    *  si no llega, la Bitácora sigue funcionando como antes. Los renderiza como
    *  entries "Nota editada · <snippet>". */
   notesHistory?: PersonNoteHistoryEntry[]
+  /** Momentos / decisiones relacionales de la persona (relationship_moments).
+   *  Opcional: si no llega, no aparecen. */
+  moments?: RelationshipMoment[]
 }
 
 interface Entry {
   id: string
   /** ISO de cuándo ocurrió. */
   at: string
-  source: 'log' | 'observation' | 'notes_history'
+  source: 'log' | 'observation' | 'notes_history' | 'moment'
   label: string
   detail: string | null
-  /** Para logs: "3/5". */
+  /** Para logs: "3/5". Para moments: "Abierto"/"Resuelto". */
   value: string | null
   /** id crudo de la observation (solo source='observation') → permite descartar. */
   obsId?: string
@@ -92,6 +96,7 @@ function buildEntries(
   personLogs: PersonLog[],
   observations: Observation[],
   notesHistory: PersonNoteHistoryEntry[] = [],
+  moments: RelationshipMoment[] = [],
 ): Entry[] {
   const entries: Entry[] = []
   for (const log of personLogs) {
@@ -143,6 +148,24 @@ function buildEntries(
       value: null,
     })
   }
+  for (const m of moments) {
+    // Moment.occurredOn es YYYY-MM-DD → normalizamos a T00:00 para el sort.
+    const at = m.occurredOn && /^\d{4}-\d{2}-\d{2}$/.test(m.occurredOn)
+      ? `${m.occurredOn}T00:00:00`
+      : m.createdAt
+    const detailParts: string[] = []
+    if (m.detail) detailParts.push(m.detail)
+    if (m.status === 'resuelto' && m.resolution) detailParts.push(`resolución: ${m.resolution}`)
+    if (m.status === 'abierto' && m.followUpOn) detailParts.push(`follow-up: ${m.followUpOn}`)
+    entries.push({
+      id: `moment:${m.id}`,
+      at,
+      source: 'moment',
+      label: m.title,
+      detail: snippet(detailParts.join(' · '), 240),
+      value: m.status === 'abierto' ? 'abierto' : 'resuelto',
+    })
+  }
   entries.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
   return entries
 }
@@ -167,11 +190,11 @@ function formatRelative(iso: string): string {
   return ABS.format(new Date(t))
 }
 
-export function Bitacora({ personLogs, observations, notesHistory }: BitacoraProps) {
+export function Bitacora({ personLogs, observations, notesHistory, moments }: BitacoraProps) {
   const [open, setOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
-  const entries = buildEntries(personLogs, observations, notesHistory ?? [])
+  const entries = buildEntries(personLogs, observations, notesHistory ?? [], moments ?? [])
   const visible = showAll ? entries : entries.slice(0, INITIAL_VISIBLE)
 
   return (
@@ -217,7 +240,9 @@ export function Bitacora({ personLogs, observations, notesHistory }: BitacoraPro
                             ? 'bg-brand/70'
                             : e.source === 'notes_history'
                               ? 'bg-warn/70'
-                              : 'bg-muted-foreground/50',
+                              : e.source === 'moment'
+                                ? 'bg-bad/70'
+                                : 'bg-muted-foreground/50',
                         )}
                         aria-hidden="true"
                       />
