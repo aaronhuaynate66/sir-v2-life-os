@@ -1,20 +1,23 @@
 'use client'
 
-// SIR V2 — Cerebro F4 · <BrainGlow />
+// SIR V2 — Cerebro F4 · <BrainGlow /> + F3 · Hebbian.
 //
-// Panel discreto en /horario (vista Día) que muestra "lo que esta encendido"
-// alrededor de una semilla contextual (por default: el proximo hito del año).
-// Consume /api/brain/glow — sin IA, sin cache: la data sale del grafo tipado.
+// Panel discreto en /horario (vista Día): "que esta encendido alrededor del
+// proximo hito". Cada fila con arista directa al seed (reason != null) trae
+// dos botones para APRENDIZAJE:
+//   ↑ ThumbsUp  → confirma "me sirve" → refuerza el peso aprendido (F3).
+//   ✕ X         → descarta "no me sirve" → debilita el peso aprendido.
+// La fila desaparece localmente al aprender (optimistic UI). El delta se
+// escribe en edge_weights (mig 0106).
 //
-// Diseno intencionado:
-//  - NO empuja acciones. Propone lo activado con una razon corta ("por
-//    familia" / "por deal · empresa cliente"). El usuario decide si le sirve.
-//  - Cerrable: dismissed en localStorage por hoy (por dia, no permanente).
-//  - Fail-silent: si el endpoint devuelve rows vacias, no aparece nada.
-//  - No es un feed. Se recarga cuando el usuario recarga la pagina.
+// Diseño intencionado:
+//  - NO empuja acciones. Propone lo activado con "por [tipo de conexion]".
+//  - Cerrable por HOY (localStorage por dia, no permanente).
+//  - Fail-silent: sin filas o sin sesion → no aparece.
+//  - Sin doble-write: al aprender se remueve del state en el momento.
 
-import { useEffect, useState } from 'react'
-import { Brain, X } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Brain, ThumbsUp, X } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -25,6 +28,7 @@ interface GlowRow {
   label: string
   activation: number
   reason: string | null
+  edgeKey: string | null
 }
 
 interface GlowResponse {
@@ -60,14 +64,13 @@ const TYPE_LABEL: Record<string, string> = {
 }
 
 function todayLimaIso(): string {
-  // Aproximacion — el detalle de TZ vive en lib/horario/limaClock; aca
-  // solo lo usamos como llave del "dismissed hoy".
   return new Date().toISOString().slice(0, 10)
 }
 
 export function BrainGlow() {
   const [data, setData] = useState<GlowResponse | null>(null)
   const [dismissedToday, setDismissedToday] = useState(false)
+  const [learning, setLearning] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const today = todayLimaIso()
@@ -99,6 +102,38 @@ export function BrainGlow() {
     setDismissedToday(true)
   }
 
+  const submitFeedback = useCallback(
+    async (edgeKey: string, action: 'reinforce' | 'discard') => {
+      // Optimistic: sacamos la fila y bloqueamos el boton.
+      setLearning((prev) => {
+        const next = new Set(prev)
+        next.add(edgeKey)
+        return next
+      })
+      setData((prev) =>
+        prev ? { ...prev, rows: prev.rows.filter((r) => r.edgeKey !== edgeKey) } : prev,
+      )
+      try {
+        const res = await fetch('/api/brain/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ edgeKey, action }),
+          cache: 'no-store',
+        })
+        if (!res.ok) {
+          // Fail-silent en UI (ya se fue la fila); logueamos a consola por si
+          // alguien mira. El proximo reload muestra la fila devuelta.
+          // eslint-disable-next-line no-console
+          console.warn('brain/feedback fallo', res.status)
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('brain/feedback error', err)
+      }
+    },
+    [],
+  )
+
   if (dismissedToday || !data || !data.rows || data.rows.length === 0) {
     return null
   }
@@ -126,23 +161,51 @@ export function BrainGlow() {
           </button>
         </div>
         <ul className="space-y-1.5 text-sm">
-          {data.rows.map((r) => (
-            <li key={r.nodeKey} className="flex items-baseline justify-between gap-3">
-              <div className="min-w-0 flex-1 truncate">
-                <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                  {TYPE_LABEL[r.type] ?? r.type}
-                </span>{' '}
-                <span className="text-foreground">{r.label}</span>
-              </div>
-              <div className="whitespace-nowrap text-xs text-muted-foreground">
-                {r.reason ? `por ${REASON_LABEL[r.reason] ?? r.reason}` : 'indirecto'}
-              </div>
-            </li>
-          ))}
+          {data.rows.map((r) => {
+            const canLearn = r.reason !== null && r.edgeKey !== null
+            const isLearning = r.edgeKey ? learning.has(r.edgeKey) : false
+            return (
+              <li key={r.nodeKey} className="flex items-baseline justify-between gap-3">
+                <div className="min-w-0 flex-1 truncate">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                    {TYPE_LABEL[r.type] ?? r.type}
+                  </span>{' '}
+                  <span className="text-foreground">{r.label}</span>
+                </div>
+                <div className="flex items-center gap-2 whitespace-nowrap text-xs text-muted-foreground">
+                  <span>
+                    {r.reason ? `por ${REASON_LABEL[r.reason] ?? r.reason}` : 'indirecto'}
+                  </span>
+                  {canLearn && (
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        disabled={isLearning}
+                        onClick={() => submitFeedback(r.edgeKey as string, 'reinforce')}
+                        aria-label="Me sirve — reforzar"
+                        className="rounded p-1 text-muted-foreground hover:bg-foreground/5 hover:text-foreground disabled:opacity-40"
+                      >
+                        <ThumbsUp size={12} strokeWidth={1.75} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isLearning}
+                        onClick={() => submitFeedback(r.edgeKey as string, 'discard')}
+                        aria-label="No me sirve — debilitar"
+                        className="rounded p-1 text-muted-foreground hover:bg-foreground/5 hover:text-foreground disabled:opacity-40"
+                      >
+                        <X size={12} strokeWidth={1.75} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </li>
+            )
+          })}
         </ul>
         <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
-          Propuesta pasiva del cerebro — no afirma estados ni empuja acciones.
-          Se oculta por hoy con la X.
+          Propuesta pasiva del cerebro. ↑ para reforzar el vínculo, ✕ para
+          debilitarlo — el aprendizaje se refleja la próxima vez que carga.
         </p>
       </CardContent>
     </Card>

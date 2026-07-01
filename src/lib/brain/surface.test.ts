@@ -125,6 +125,23 @@ describe('brain/surface · describeGlow', () => {
     const cRow = glow!.rows.find((r) => r.nodeKey === 'person:c')
     expect(cRow).toBeDefined()
     expect(cRow!.reason).toBeNull()
+    expect(cRow!.edgeKey).toBeNull()
+  })
+
+  it('edgeKey en filas directas apunta a la arista mas pesada seed↔nodo', () => {
+    const g = mkGraph(
+      [
+        { type: 'person', id: 'a' },
+        { type: 'person', id: 'b' },
+      ],
+      [
+        { srcType: 'person', srcId: 'a', dstType: 'person', dstId: 'b', kind: 'family', weight: 8 },
+        { srcType: 'person', srcId: 'a', dstType: 'person', dstId: 'b', kind: 'moment_participant', weight: 6 },
+      ],
+    )
+    const glow = describeGlow(g, 'person:a', 5)
+    const bRow = glow!.rows.find((r) => r.nodeKey === 'person:b')
+    expect(bRow?.edgeKey).toBe('person:a:person:b:family')
   })
 
   it('respeta el limit', () => {
