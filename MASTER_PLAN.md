@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `eca5140`
+**Hash del último commit humano:** `188ef6c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `188ef6c` | aaronhuaynate66 | feat(horario): hitos de objetivos aparecen bloqueando el dia del target (#444) | 2026-07-01 |
 | `eca5140` | aaronhuaynate66 | feat(push): morning push incluye Semana en foco + alerta de peso Mundial (#443) | 2026-07-01 |
 | `6c1f7f9` | aaronhuaynate66 | feat(panel): weekly score con tendencia semana-a-semana (P2 Aaron OS) (#442) | 2026-07-01 |
 | `ada83ac` | aaronhuaynate66 | feat(panel): targets at a glance — ingresos vs S/15k + peso vs categoria Mundial (#441) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `0940ee6` | aaronhuaynate66 | fix(charts): vista semana muestra el eje calendario completo (lun→dom), no solo los puntos existentes (#437) | 2026-07-01 |
 | `c37eedb` | aaronhuaynate66 | feat(perf+analytics): P2e — /red GraphView lazy (-29 KB) + /objetivos/[id] paneles + deal_saved event (#436) | 2026-07-01 |
 | `8e7556e` | aaronhuaynate66 | feat(perf): P2d — dynamic /seguimiento (-25 KB) + /memoria search panel (#435) | 2026-07-01 |
-| `71f014c` | aaronhuaynate66 | feat(perf): P2c — dynamic /yo panels + /finanzas below-fold charts (#434) | 2026-07-01 |
 
 ---
 
