@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1381f9b`
+**Hash del último commit humano:** `b1b4c62`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b1b4c62` | aaronhuaynate66 | feat(cerebro): F1.5 — aristas puras goal↔goal + goal↔person (#422) | 2026-07-01 |
 | `1381f9b` | aaronhuaynate66 | feat(cerebro): consolidacion nocturna — cron que decae edge_weights (olvido saludable) (#421) | 2026-07-01 |
 | `fcddd87` | aaronhuaynate66 | feat(cerebro): BrainGlow en Semana + Mes con ventana de scope (#420) | 2026-07-01 |
 | `c36663b` | aaronhuaynate66 | feat(router): 2b completo — crear_objetivo suma esAncla + target + baseline SMART (#419) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `908e40b` | aaronhuaynate66 | feat(cerebro): F2 difusion — spreading activation puro + ?seed en debug (#415) | 2026-07-01 |
 | `b6ef063` | aaronhuaynate66 | feat(cerebro): F1 grafo tipado — sustrato + edge_weights + /red/brain-debug (#414) | 2026-07-01 |
 | `456f11c` | aaronhuaynate66 | feat(objetivos): metodologia F3 — KRs medibles en el alta (corazon del objetivo) (#413) | 2026-06-26 |
-| `80a40a6` | aaronhuaynate66 | feat(objetivos): metodologia F2 — Obstaculo -> plan si-entonces (WOOP) (#412) | 2026-06-26 |
 
 ---
 
