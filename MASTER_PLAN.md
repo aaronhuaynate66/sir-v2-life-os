@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ada83ac`
+**Hash del último commit humano:** `6c1f7f9`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6c1f7f9` | aaronhuaynate66 | feat(panel): weekly score con tendencia semana-a-semana (P2 Aaron OS) (#442) | 2026-07-01 |
 | `ada83ac` | aaronhuaynate66 | feat(panel): targets at a glance — ingresos vs S/15k + peso vs categoria Mundial (#441) | 2026-07-01 |
 | `c4a2edc` | aaronhuaynate66 | feat(panel): observacion conductual (E3 hueco #4 del roadmap) (#440) | 2026-07-01 |
 | `347c17f` | aaronhuaynate66 | feat(relaciones): chip de tendencia del bond al lado de cada nombre (#439) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8e7556e` | aaronhuaynate66 | feat(perf): P2d — dynamic /seguimiento (-25 KB) + /memoria search panel (#435) | 2026-07-01 |
 | `71f014c` | aaronhuaynate66 | feat(perf): P2c — dynamic /yo panels + /finanzas below-fold charts (#434) | 2026-07-01 |
 | `d767975` | aaronhuaynate66 | feat(perf+analytics): P2b — dynamic below-fold panels + person_opened event (#433) | 2026-07-01 |
-| `cc42e89` | aaronhuaynate66 | feat(perf+analytics): P2 — 2 eventos GA4 + dynamic imports en /captura y /objetivos (#432) | 2026-07-01 |
 
 ---
 
