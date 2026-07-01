@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { buildLineSeries, aggregateByDay } from './series'
+import { buildLineSeries, aggregateByDay, rangeAxisEdges, rangeBounds } from './series'
 
 const OPTS = { width: 100, height: 50, padding: 0 }
 
@@ -138,5 +138,78 @@ describe('aggregateByDay', () => {
       'avg',
     )
     expect(out[0].value).toBe(4)
+  })
+})
+
+describe('buildLineSeries — xDomain (ventana calendario)', () => {
+  // Ventana lun-mié: 3 días de largo (0h a 48h del inicio). Con 2 puntos
+  // en mar y mié, deben caer al 50% y ~100% del canvas — NO extremos.
+  const lo = new Date(2026, 5, 29).getTime() // lun 29 jun
+  const hi = new Date(2026, 6, 5, 23, 59, 59).getTime() // dom 5 jul (fin del día)
+  const OPTS_XD = { width: 100, height: 50, padding: 0, xDomain: { lo, hi } }
+
+  it('x se calcula por TIEMPO real dentro del xDomain, no por índice', () => {
+    // Solo 2 puntos (mar 30 jun, mié 1 jul) en una semana lun 29 - dom 5.
+    // Sin xDomain iban a x=0 y x=100 (extremos). Con xDomain caen al ~14% y ~29%.
+    const g = buildLineSeries(
+      [
+        { date: '2026-06-30', value: 8.1 },
+        { date: '2026-07-01', value: 6.2 },
+      ],
+      OPTS_XD,
+    )
+    expect(g.points).toHaveLength(2)
+    // Semana de 6 días completos + 23:59:59 → cada día ≈ 100/6.999 ≈ 14.29%.
+    // 30 jun = día 1 → x ≈ 14; 1 jul = día 2 → x ≈ 29.
+    expect(g.points[0].x).toBeGreaterThan(10)
+    expect(g.points[0].x).toBeLessThan(20)
+    expect(g.points[1].x).toBeGreaterThan(25)
+    expect(g.points[1].x).toBeLessThan(35)
+    // NO llegan a los extremos: el resto de la semana queda visualmente vacío.
+    expect(g.points[1].x).toBeLessThan(50)
+  })
+
+  it('sin xDomain sigue distribuyendo por índice (retrocompat)', () => {
+    const g = buildLineSeries(
+      [
+        { date: '2026-06-30', value: 8.1 },
+        { date: '2026-07-01', value: 6.2 },
+      ],
+      { width: 100, height: 50, padding: 0 },
+    )
+    // Comportamiento previo: 2 puntos → x=0 y x=100.
+    expect(g.points[0].x).toBe(0)
+    expect(g.points[1].x).toBe(100)
+  })
+
+  it('clampa fuera del dominio a [0, 100%]', () => {
+    // Punto fuera del xDomain no debería explotar el rango.
+    const g = buildLineSeries(
+      [
+        { date: '2026-06-15', value: 5 }, // MUY anterior a la semana
+        { date: '2026-07-02', value: 6 },
+      ],
+      OPTS_XD,
+    )
+    // El primer punto se clampea a x=0; el segundo cae dentro.
+    expect(g.points[0].x).toBe(0)
+    expect(g.points[1].x).toBeGreaterThan(35)
+  })
+})
+
+describe('rangeAxisEdges — bordes de la ventana calendario', () => {
+  it('semana da lunes → domingo', () => {
+    // Mié 1 jul 2026 → semana lun 29 jun - dom 5 jul
+    const now = new Date(2026, 6, 1)
+    const edges = rangeAxisEdges('semana', 0, now)
+    expect(edges.leftDate).toBe('2026-06-29')
+    expect(edges.rightDate).toBe('2026-07-05')
+  })
+
+  it('mes da día 1 → último día del mes', () => {
+    const now = new Date(2026, 6, 1) // jul 2026
+    const edges = rangeAxisEdges('mes', 0, now)
+    expect(edges.leftDate).toBe('2026-07-01')
+    expect(edges.rightDate).toBe('2026-07-31')
   })
 })

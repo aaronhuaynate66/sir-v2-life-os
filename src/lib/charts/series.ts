@@ -50,6 +50,15 @@ export interface BuildSeriesOptions {
   height?: number
   /** Margen interior en px (deja aire para el stroke). Default 4. */
   padding?: number
+  /**
+   * Cuando está seteado, x se mapea por TIEMPO real dentro de este dominio
+   * (timestamps ms locales), en vez de por índice ordinal. Necesario para las
+   * vistas ventana (semana/mes): si en una semana de 7 días solo hay 2 puntos,
+   * deben caer en el día que les corresponde — no distribuidos uniformemente
+   * como si fueran los únicos días. Sin esto, la línea "se estira" y da la
+   * ilusión visual de que la semana solo tuvo esos dos días.
+   */
+  xDomain?: { lo: number; hi: number }
 }
 
 const DEFAULTS = { width: 240, height: 48, padding: 4 }
@@ -104,9 +113,19 @@ export function buildLineSeries(
   const floorY = height - padding // y del piso (valor mínimo).
 
   const n = sorted.length
+  const xDom = opts.xDomain
+  const xDomRange = xDom ? xDom.hi - xDom.lo : 0
   const plotted: PlottedPoint[] = sorted.map((p, i) => {
-    // x: distribuye uniforme por índice. 1 punto → a la derecha.
-    const x = n === 1 ? padding + innerW : padding + (innerW * i) / (n - 1)
+    // x: si hay xDomain, mapear por tiempo real (día de la ventana); si no,
+    // distribuir uniforme por índice. 1 punto sin xDomain → a la derecha.
+    let x: number
+    if (xDom) {
+      const t = parseLocalDate(p.date)?.getTime() ?? xDom.lo
+      const norm = xDomRange === 0 ? 0.5 : Math.max(0, Math.min(1, (t - xDom.lo) / xDomRange))
+      x = padding + innerW * norm
+    } else {
+      x = n === 1 ? padding + innerW : padding + (innerW * i) / (n - 1)
+    }
     // y: valor alto → arriba. Sin rango → centro vertical.
     const norm = range === 0 ? 0.5 : (p.value - min) / range
     const y = floorY - norm * innerH
@@ -227,4 +246,13 @@ export function rangeWindowLabel(range: ChartRange, offset = 0, now: Date = new 
   if (range === 'mes') return `${MON_LBL[a.getMonth()]} ${a.getFullYear() !== now.getFullYear() ? a.getFullYear() : ''}`.trim()
   const sameMonth = a.getMonth() === b.getMonth()
   return sameMonth ? `${a.getDate()}–${b.getDate()} ${MON_LBL[a.getMonth()]}` : `${a.getDate()} ${MON_LBL[a.getMonth()]}–${b.getDate()} ${MON_LBL[b.getMonth()]}`
+}
+
+/** Etiquetas cortas del inicio y fin de la ventana (para los bordes del eje X
+ *  del chart cuando está en modo windowable). "1 jun" — "7 jun". */
+export function rangeAxisEdges(range: ChartRange, offset = 0, now: Date = new Date()): { leftDate: string; rightDate: string } {
+  const { lo, hi } = rangeBounds(range, offset, now)
+  const a = new Date(lo), b = new Date(hi)
+  const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return { leftDate: iso(a), rightDate: iso(b) }
 }
