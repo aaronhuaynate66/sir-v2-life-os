@@ -41,6 +41,8 @@ describe('brain/types · BASE_WEIGHT', () => {
       'moment_participant',
       'moment_reference',
       'goal_step',
+      'goal_related_goal',
+      'goal_related_person',
       'deal_contact',
       'deal_client_org',
       'deal_related',

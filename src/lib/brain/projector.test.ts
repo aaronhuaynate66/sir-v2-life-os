@@ -121,6 +121,38 @@ describe('brain/projector · aristas', () => {
     expect(refs).toHaveLength(1)
   })
 
+  it('goal_related_goal emite arista entre goals ligados declarativos', () => {
+    const g = projectGraph({
+      goals: [
+        { id: 'mundial', title: 'Mundial', related_goals: ['mudanza'] },
+        { id: 'mudanza', title: 'Mudanza' },
+      ],
+    })
+    const rel = g.edges.filter((e) => e.kind === 'goal_related_goal')
+    expect(rel).toHaveLength(1)
+    expect(rel[0].srcId).toBe('mundial')
+    expect(rel[0].dstId).toBe('mudanza')
+  })
+
+  it('goal_related_goal omite self-referencia y ids fantasma', () => {
+    const g = projectGraph({
+      goals: [
+        { id: 'g1', title: 'G1', related_goals: ['g1', 'fantasma'] },
+      ],
+    })
+    expect(g.edges.filter((e) => e.kind === 'goal_related_goal')).toHaveLength(0)
+  })
+
+  it('goal_related_person emite arista goal→persona desde related_persons', () => {
+    const g = projectGraph({
+      people: [{ id: 'diana', name: 'Diana' }],
+      goals: [{ id: 'plata', title: 'Recuperar plata', related_persons: ['diana', 'fantasma'] }],
+    })
+    const rel = g.edges.filter((e) => e.kind === 'goal_related_person')
+    expect(rel).toHaveLength(1)
+    expect(rel[0].dstId).toBe('diana')
+  })
+
   it('tracker emite tracker_goal y tracker_step', () => {
     const g = projectGraph({
       goals: [{ id: 'g1' }],

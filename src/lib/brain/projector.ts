@@ -29,6 +29,10 @@ export interface GoalRow {
   id: string
   title?: string | null
   name?: string | null
+  /** goals.related_goals — ids de otros goals ligados declarativamente. */
+  related_goals?: string[] | null
+  /** goals.related_persons — ids de personas ligadas declarativamente. */
+  related_persons?: string[] | null
 }
 export interface OrgRow {
   slug: string
@@ -181,6 +185,28 @@ export function projectGraph(input: ProjectorInput): Graph {
     // Solo emite arista si el goal existe (evita nodos fantasma).
     if (goalLabelById.has(s.objective_id)) {
       pushEdge(edges, learned, 'goal', s.objective_id, 'step', s.id, 'goal_step')
+    }
+  }
+
+  // F1.5: aristas puras goal↔goal y goal↔person desde los arrays declarativos
+  // en la fila del goal (Goal.relatedGoals[], Goal.relatedPersons[]).
+  //
+  // NOTA: emitimos la arista con un solo sentido (goal→goal / goal→person).
+  // buildAdjacency en diffuse trata TypedEdge como simetrica y AGREGA pesos
+  // si el mismo par sale por ambos lados — asi que dos goals que se
+  // referencian entre si terminan con peso 2x en la difusion, lo cual es
+  // deseado (reciprocidad declarada = senal mas fuerte).
+  for (const g of input.goals ?? []) {
+    for (const otherId of g.related_goals ?? []) {
+      if (otherId === g.id) continue
+      if (goalLabelById.has(otherId)) {
+        pushEdge(edges, learned, 'goal', g.id, 'goal', otherId, 'goal_related_goal')
+      }
+    }
+    for (const personId of g.related_persons ?? []) {
+      if (personLabelById.has(personId)) {
+        pushEdge(edges, learned, 'goal', g.id, 'person', personId, 'goal_related_person')
+      }
     }
   }
 

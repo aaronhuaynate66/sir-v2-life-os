@@ -51,7 +51,7 @@ export async function loadBrainInput(
     learnedWeights,
   ] = await Promise.all([
     safe(supabase.from('people').select('id, name, full_name')),
-    safe(supabase.from('goals').select('id, title, name')),
+    safe(supabase.from('goals').select('id, title, name, related_goals, related_persons')),
     safe(supabase.from('org_profiles').select('slug, name')),
     safe(supabase.from('objective_steps').select('id, objective_id, title')),
     safe(supabase.from('relationship_moments').select('id, person_id, title')),
