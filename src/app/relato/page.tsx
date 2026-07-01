@@ -135,15 +135,22 @@ export default function RelatoPage() {
     setRunning(true)
     const order = [...rows.entries()].filter(([, r]) => r.included).sort((a, b) => ORDER[a[1].action.type] - ORDER[b[1].action.type])
     const createdIds: Record<string, string> = {} // nombre lower → personId recién creado
+    // Slugs de orgs YA creadas en esta tanda — evita re-POSTear el mismo perfil
+    // cuando `crear_persona.organizacion` se autocrea implicito. El endpoint
+    // /api/empresas/profile es upsert por slug, asi que doble-POST no rompe;
+    // este Set solo ahorra la ida al server.
+    const createdOrgSlugs = new Set<string>()
     const next = [...rows]
     for (const [i, r] of order) {
       const a = r.action
       try {
         if (a.type === 'crear_organizacion') {
+          const orgSlug = generateSlug(a.nombre)
           const res = await fetch('/api/empresas/profile', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slug: generateSlug(a.nombre), name: a.nombre, source: 'router' }),
+            body: JSON.stringify({ slug: orgSlug, name: a.nombre, source: 'router' }),
           })
+          if (res.ok) createdOrgSlugs.add(orgSlug)
           next[i] = { ...r, result: res.ok ? 'ok' : 'fail', msg: res.ok ? 'Empresa creada' : 'No se pudo crear' }
         } else if (a.type === 'crear_persona') {
           const now = new Date().toISOString()
@@ -151,6 +158,28 @@ export default function RelatoPage() {
           let slug = generateSlug(a.nombre)
           while (taken.has(slug)) slug = `${slug}-${rand(3)}`
           const id = `per_${Date.now()}_${rand(6)}`
+          // Autocreacion IMPLICITA de org: si el modelo emitio organizacion
+          // pero no emitio crear_organizacion en el mismo plan (olvido comun),
+          // POSTeamos el perfil vacio para que persona↔org quede como arista
+          // real en /red (y como candidato de deal_client_org en el cerebro).
+          // Idempotente: el endpoint es upsert por slug, y createdOrgSlugs
+          // evita el round-trip si ya la creamos arriba en esta tanda.
+          let orgAutocreated = false
+          if (a.organizacion) {
+            const orgSlug = generateSlug(a.organizacion)
+            if (!createdOrgSlugs.has(orgSlug)) {
+              try {
+                const orgRes = await fetch('/api/empresas/profile', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ slug: orgSlug, name: a.organizacion, source: 'router-implicit' }),
+                })
+                if (orgRes.ok) {
+                  createdOrgSlugs.add(orgSlug)
+                  orgAutocreated = true
+                }
+              } catch { /* fail-silent: la persona igual se crea con el text organization */ }
+            }
+          }
           const person: Person = {
             id, slug, name: a.nombre,
             relationship: (a.relacion as Person['relationship']) ?? 'acquaintance',
@@ -161,7 +190,10 @@ export default function RelatoPage() {
           }
           addPerson(person)
           createdIds[a.nombre.trim().toLowerCase()] = id
-          next[i] = { ...r, result: 'ok', msg: 'Persona creada' }
+          const msg = orgAutocreated
+            ? `Persona creada · empresa ${a.organizacion} autocreada`
+            : 'Persona creada'
+          next[i] = { ...r, result: 'ok', msg }
         } else if (a.type === 'registrar_interaccion') {
           const pid = createdIds[a.persona.trim().toLowerCase()] ?? findPerson(a.persona)?.id
           if (!pid) { next[i] = { ...r, result: 'fail', msg: `No encontré a ${a.persona}` } ; continue }
