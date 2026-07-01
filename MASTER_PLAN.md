@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `201de73`
+**Hash del último commit humano:** `347c17f`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `347c17f` | aaronhuaynate66 | feat(relaciones): chip de tendencia del bond al lado de cada nombre (#439) | 2026-07-01 |
 | `201de73` | aaronhuaynate66 | feat(panel): Semana en foco — cockpit del objetivo urgente en Mission Control (#438) | 2026-07-01 |
 | `0940ee6` | aaronhuaynate66 | fix(charts): vista semana muestra el eje calendario completo (lun→dom), no solo los puntos existentes (#437) | 2026-07-01 |
 | `c37eedb` | aaronhuaynate66 | feat(perf+analytics): P2e — /red GraphView lazy (-29 KB) + /objetivos/[id] paneles + deal_saved event (#436) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `cc42e89` | aaronhuaynate66 | feat(perf+analytics): P2 — 2 eventos GA4 + dynamic imports en /captura y /objetivos (#432) | 2026-07-01 |
 | `6e19849` | aaronhuaynate66 | feat(perf): sync engine — TTL de 60s en pulls opportunistas (evita re-barrer 13 tablas por nav) (#431) | 2026-07-01 |
 | `0b6c36a` | aaronhuaynate66 | feat(perf+a11y): PersonDetail dynamic (-162 KB /relaciones/[slug]) + text-tertiary bump (#430) | 2026-07-01 |
-| `d1e6d47` | aaronhuaynate66 | feat(a11y): P1 — subir --muted-foreground + reemplazar /40 por /60 + target-size BrainGlow (#429) | 2026-07-01 |
 
 ---
 
