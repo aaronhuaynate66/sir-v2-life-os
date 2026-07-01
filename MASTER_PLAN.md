@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `7f2d148`
+**Hash del último commit humano:** `73fe3d0`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `73fe3d0` | aaronhuaynate66 | feat(relaciones): dropdown "N anteriores" en el edit de notas + botón restaurar (#449) | 2026-07-01 |
 | `7f2d148` | aaronhuaynate66 | feat(relaciones): "Anotar algo ahora" + historial de notas + Bitácora extendida (#448) | 2026-07-01 |
 | `94f18da` | aaronhuaynate66 | fix(seed): normaliza gender ES→EN (people_gender_check violation) (#447) | 2026-07-01 |
 | `707fa5b` | aaronhuaynate66 | feat(seed): UI /captura/batch para cargar JSONs sin CLI ni service key (#446) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6c1f7f9` | aaronhuaynate66 | feat(panel): weekly score con tendencia semana-a-semana (P2 Aaron OS) (#442) | 2026-07-01 |
 | `ada83ac` | aaronhuaynate66 | feat(panel): targets at a glance — ingresos vs S/15k + peso vs categoria Mundial (#441) | 2026-07-01 |
 | `c4a2edc` | aaronhuaynate66 | feat(panel): observacion conductual (E3 hueco #4 del roadmap) (#440) | 2026-07-01 |
-| `347c17f` | aaronhuaynate66 | feat(relaciones): chip de tendencia del bond al lado de cada nombre (#439) | 2026-07-01 |
 
 ---
 
