@@ -57,11 +57,20 @@ export interface TrendChartProps {
   className?: string
   /** Muestra un toggle Semana/Mes que filtra los puntos a esa ventana. */
   windowable?: boolean
-  /** Ventana inicial cuando windowable (default 'semana'). */
+  /** Ventana inicial cuando windowable (default 'semana'). Ignorado si
+   *  el padre pasa `range` (modo controlled). */
   defaultRange?: ChartRange
   /** Notifica los puntos efectivamente MOSTRADOS (tras ventana/offset), para
    *  que el contenedor calcule stats sobre la misma ventana. */
   onShownChange?: (points: SeriesPoint[]) => void
+  /** CONTROLLED: si viene, sobreescribe el state interno y OCULTA el toggle
+   *  Semana/Mes del propio chart (asume que el padre pinta uno global). */
+  range?: ChartRange
+  /** CONTROLLED: si viene, sobreescribe el offset interno y OCULTA los chevrons
+   *  «/» del propio chart. Combinar con range para modo totalmente controlado. */
+  offset?: number
+  onRangeChange?: (r: ChartRange) => void
+  onOffsetChange?: (o: number) => void
 }
 
 const VIEW_W = 320
@@ -78,9 +87,19 @@ export function TrendChart({
   windowable = false,
   defaultRange = 'semana',
   onShownChange,
+  range: controlledRange,
+  offset: controlledOffset,
+  onRangeChange,
+  onOffsetChange,
 }: TrendChartProps) {
-  const [range, setRange] = useState<ChartRange>(defaultRange)
-  const [offset, setOffset] = useState(0) // 0 = período actual; +1 = anterior
+  const [innerRange, setInnerRange] = useState<ChartRange>(defaultRange)
+  const [innerOffset, setInnerOffset] = useState(0)
+  // Detecta modo controlled: si el padre pasa `range` (o `offset`), usamos ese
+  // valor y ocultamos el control interno (asume toggle global arriba).
+  const isRangeControlled = controlledRange !== undefined
+  const isOffsetControlled = controlledOffset !== undefined
+  const range = isRangeControlled ? controlledRange : innerRange
+  const offset = isOffsetControlled ? controlledOffset : innerOffset
   const shown = useMemo(
     () => (windowable ? filterPointsByRange(points, range, new Date(), offset) : points),
     [windowable, points, range, offset],
@@ -91,7 +110,18 @@ export function TrendChart({
     [windowable, points, range, offset],
   )
   const windowLabel = windowable ? rangeWindowLabel(range, offset) : ''
-  function changeRange(r: ChartRange) { setRange(r); setOffset(0) }
+  function changeRange(r: ChartRange) {
+    if (isRangeControlled) onRangeChange?.(r)
+    else { setInnerRange(r); setInnerOffset(0) }
+    // Cambiar range resetea offset a 0 también en modo controlled.
+    if (isOffsetControlled) onOffsetChange?.(0)
+    else if (isRangeControlled) setInnerOffset(0)
+  }
+  function changeOffset(delta: -1 | 1) {
+    const next = delta === 1 ? offset + 1 : Math.max(0, offset - 1)
+    if (isOffsetControlled) onOffsetChange?.(next)
+    else setInnerOffset(next)
+  }
   // Cuando windowable, el eje X del chart debe cubrir la VENTANA CALENDARIO
   // (lun→dom o el mes completo), no solo el span de los puntos existentes.
   // Sin esto, con 2 puntos en la semana el chart los distribuye a los extremos
@@ -128,7 +158,7 @@ export function TrendChart({
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <SectionTitle icon={icon} label={label} count={hasData ? geo.points.length : undefined} />
-          {windowable && (
+          {windowable && !isRangeControlled && (
             <div className="flex items-center gap-0.5 rounded-md bg-muted/40 p-0.5 text-[11px] flex-shrink-0">
               {(['semana', 'mes'] as ChartRange[]).map((r) => (
                 <button
@@ -147,14 +177,14 @@ export function TrendChart({
           )}
         </div>
 
-        {windowable && (
+        {windowable && !isOffsetControlled && (
           <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-            <button type="button" onClick={() => setOffset((o) => o + 1)} disabled={!canOlder}
+            <button type="button" onClick={() => changeOffset(1)} disabled={!canOlder}
               className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 enabled:hover:bg-muted/50 disabled:opacity-30" aria-label="Período anterior">
               <ChevronLeft size={14} />
             </button>
             <span className="font-mono tabular-nums">{offset === 0 ? (range === 'semana' ? 'Esta semana' : 'Este mes') : windowLabel}</span>
-            <button type="button" onClick={() => setOffset((o) => Math.max(0, o - 1))} disabled={offset === 0}
+            <button type="button" onClick={() => changeOffset(-1)} disabled={offset === 0}
               className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 enabled:hover:bg-muted/50 disabled:opacity-30" aria-label="Período siguiente">
               <ChevronRight size={14} />
             </button>

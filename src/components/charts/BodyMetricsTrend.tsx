@@ -13,7 +13,7 @@ import { LineChart } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { TrendChart } from './TrendChart'
 import { healthMetricSeries } from '@/lib/charts/adapters'
-import { buildLineSeries, type SeriesPoint } from '@/lib/charts/series'
+import { buildLineSeries, type ChartRange, type SeriesPoint } from '@/lib/charts/series'
 import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 import { cn } from '@/lib/utils'
 import type { HealthMetric, HealthMetricType } from '@/types'
@@ -50,9 +50,12 @@ function round1(n: number): number {
 
 interface BodyMetricsTrendProps {
   metrics: HealthMetric[]
+  /** Modo controlled desde el padre (toggle global de /salud). */
+  range?: ChartRange
+  offset?: number
 }
 
-export function BodyMetricsTrend({ metrics }: BodyMetricsTrendProps) {
+export function BodyMetricsTrend({ metrics, range, offset }: BodyMetricsTrendProps) {
   // Tipos presentes en la data, ordenados por prioridad.
   const availableTypes = useMemo(() => {
     const present = new Set<HealthMetricType>()
@@ -156,6 +159,8 @@ export function BodyMetricsTrend({ metrics }: BodyMetricsTrendProps) {
             height={120}
             windowable
             defaultRange="mes"
+            range={range}
+            offset={offset}
             onShownChange={setShown}
           />
 
