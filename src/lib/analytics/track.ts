@@ -75,6 +75,8 @@ export const EVENTS = {
   // Mission Control /panel — adopción del briefing IA + YearCompass.
   briefingGenerated: 'briefing_generated',
   yearCompassClick: 'year_compass_click',
+  // /relaciones — bounce a la ficha detallada.
+  personOpened: 'person_opened',
 } as const
 
 // ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────
