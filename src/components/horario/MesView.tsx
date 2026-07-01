@@ -22,6 +22,7 @@ import {
   type MonthBriefAnchor,
 } from '@/lib/horario/briefPeriod'
 import { BriefPanel } from './BriefPanel'
+import { BrainGlow } from './BrainGlow'
 import { MilestoneRow, EmptyNote } from './parts'
 
 interface Group {
@@ -85,13 +86,17 @@ export function MesView({
   const briefSummary = useMemo(() => monthSummaryLine(briefSignals), [briefSignals])
 
   const brief = (
-    <BriefPanel
-      scope="month"
-      bucket={briefSignals.monthStart}
-      summary={briefSummary}
-      empty={!hasMonthContent(briefSignals)}
-      signals={briefSignals as unknown as Record<string, unknown>}
-    />
+    <>
+      <BriefPanel
+        scope="month"
+        bucket={briefSignals.monthStart}
+        summary={briefSummary}
+        empty={!hasMonthContent(briefSignals)}
+        signals={briefSignals as unknown as Record<string, unknown>}
+      />
+      {/* Cerebro · surfacing (F4) — semilla filtrada por proximos 30 dias */}
+      <BrainGlow scope="month" />
+    </>
   )
 
   if (milestones.length === 0) {
