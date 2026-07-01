@@ -106,6 +106,32 @@ describe('parseRouterPlan', () => {
       }))
       expect(p.actions).toHaveLength(0)
     })
+
+    it('captura target + baseline SMART + esAncla', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{
+          type: 'crear_objetivo',
+          titulo: 'S/15k mensuales sostenidos',
+          categoria: 'financial',
+          target: 'S/15k/mes ingresos',
+          baseline: 'S/8k/mes',
+          esAncla: true,
+        }],
+      }))
+      const a = p.actions[0] as { target: string | null; baseline: string | null; esAncla: boolean | null }
+      expect(a.target).toBe('S/15k/mes ingresos')
+      expect(a.baseline).toBe('S/8k/mes')
+      expect(a.esAncla).toBe(true)
+    })
+
+    it('esAncla no-boolean → null (no rompe la accion)', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{ type: 'crear_objetivo', titulo: 'X', esAncla: 'si claro' }],
+      }))
+      const a = p.actions[0] as { esAncla: boolean | null; titulo: string }
+      expect(a.titulo).toBe('X')
+      expect(a.esAncla).toBeNull()
+    })
   })
 
   describe('fase 2b — editar_objetivo', () => {

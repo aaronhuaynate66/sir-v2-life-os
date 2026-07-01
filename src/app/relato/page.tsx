@@ -197,10 +197,13 @@ export default function RelatoPage() {
             obstacles: [],
             nextAction: '',
             why: a.porQue ?? undefined,
+            target: a.target ?? undefined,
+            baseline: a.baseline ?? undefined,
             createdAt: now,
             updatedAt: now,
           }
           addGoal(goal)
+          if (a.esAncla === true) setAnchor(goalId, true)
           createdIds[a.titulo.trim().toLowerCase()] = goalId  // por si viene edit despues
           // KRs → objective_steps con kind='kr'
           if (a.krs && a.krs.length > 0) {
@@ -221,7 +224,9 @@ export default function RelatoPage() {
           // WOOP → objective_plan
           const woopOk = await upsertWoop(goalId, a.obstaculo ?? null, a.siEntonces ?? null)
           const parts = [`Objetivo «${a.titulo}» creado`]
+          if (a.target || a.baseline) parts.push('SMART')
           if (a.krs?.length) parts.push(`${a.krs.length} KRs`)
+          if (a.esAncla === true) parts.push('ancla')
           if ((a.obstaculo || a.siEntonces) && !woopOk) parts.push('WOOP no persistio')
           else if (a.obstaculo || a.siEntonces) parts.push('WOOP guardado')
           next[i] = { ...r, result: 'ok', msg: parts.join(' · ') }
@@ -403,11 +408,17 @@ function ActionFields({ action, onChange, disabled }: { action: RouterAction; on
         <div className="space-y-1.5">
           <Input value={action.titulo} disabled={disabled} className={cls} onChange={(e) => onChange({ titulo: e.target.value })} placeholder="Título del objetivo" />
           {action.porQue && <p className="text-[12px] text-muted-foreground">Por qué: {action.porQue}</p>}
-          {(action.prioridad || action.categoria || action.targetDate) && (
+          {(action.prioridad || action.categoria || action.targetDate || action.esAncla === true) && (
             <p className="text-[12px] text-muted-foreground">
               {action.prioridad ? `prioridad ${action.prioridad}` : ''}
               {action.categoria ? ` · ${action.categoria}` : ''}
               {action.targetDate ? ` · ${action.targetDate}` : ''}
+              {action.esAncla === true ? ' · ancla del año' : ''}
+            </p>
+          )}
+          {(action.target || action.baseline) && (
+            <p className="text-[12px] text-muted-foreground">
+              SMART: {action.baseline ?? '—'} → {action.target ?? '—'}
             </p>
           )}
           {action.krs && action.krs.length > 0 && (

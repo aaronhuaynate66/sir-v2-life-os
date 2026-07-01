@@ -60,6 +60,9 @@ export interface RACrearObjetivo {
   prioridad?: GoalPriorityRA | null
   categoria?: GoalCategoryRA | null
   targetDate?: string | null       // YYYY-MM-DD
+  target?: string | null           // SMART Measurable — metrica objetivo (ej. "S/15k/mes")
+  baseline?: string | null         // SMART Measurable — donde estas hoy (ej. "S/8k/mes")
+  esAncla?: boolean | null         // Si es el norte del año (setAnchor tras crear)
   krs?: string[] | null            // resultados clave (titulos)
   obstaculo?: string | null        // WOOP obstacle
   siEntonces?: string | null       // WOOP plan_if + plan_then juntos, formato libre
@@ -147,7 +150,7 @@ Acciones posibles (usá solo las que el relato justifique):
 - registrar_interaccion { persona, calidad (1-5), nota }: cuando habló/se vio con alguien. La nota resume qué pasó.
 - crear_persona { nombre, relacion?, cargo?, organizacion? }: SOLO si la persona NO está en el contexto. relacion ∈ family|friend|romantic|professional|mentor|mentee|acquaintance.
 - crear_organizacion { nombre, rubro? }: SOLO si la empresa/entidad NO está en el contexto.
-- crear_objetivo { titulo, porQue?, prioridad?, categoria?, targetDate?, krs?, obstaculo?, siEntonces? }: un objetivo NUEVO con la metodología SIR completa. prioridad ∈ critical|high|medium|low. categoria ∈ financial|personal|relational|health|career|spiritual|creative. targetDate en YYYY-MM-DD. krs es un array de 1-4 resultados clave concretos y medibles (SMART). obstaculo + siEntonces = WOOP: el obstáculo real que puede impedirlo + un plan "si pasa X, entonces hago Y". SOLO si el objetivo NO está en el contexto.
+- crear_objetivo { titulo, porQue?, prioridad?, categoria?, targetDate?, target?, baseline?, esAncla?, krs?, obstaculo?, siEntonces? }: un objetivo NUEVO con la metodología SIR completa. prioridad ∈ critical|high|medium|low. categoria ∈ financial|personal|relational|health|career|spiritual|creative. targetDate en YYYY-MM-DD. target = la métrica objetivo SMART (ej. "S/15k/mes ingresos", "pesar 75kg", "correr 42km"). baseline = dónde estás HOY respecto de esa métrica (ej. "S/8k/mes", "82kg", "12km"). esAncla=true SOLO si el relato lo prioriza explícitamente como el norte del año (un solo objetivo puede ser ancla — marcar uno desmarca el resto). krs es un array de 1-4 resultados clave concretos y medibles. obstaculo + siEntonces = WOOP: el obstáculo real que puede impedirlo + un plan "si pasa X, entonces hago Y". SOLO si el objetivo NO está en el contexto.
 - editar_objetivo { objetivo, prioridad?, esAncla?, obstaculo?, siEntonces?, krs? }: cambiar campos de un objetivo YA EXISTENTE (usá el título tal cual del contexto). esAncla=true solo si el relato lo prioriza como el norte del año (un solo objetivo puede ser ancla). krs se agregan a los existentes.
 - registrar_episodio { persona, titulo, detalle?, followUp? }: un episodio abierto que rebota (decisión pendiente, conflicto, hito) — distinto de una interacción puntual. followUp en YYYY-MM-DD si el relato menciona cuándo revisarlo.
 - agregar_paso_objetivo { objetivo, paso }: un avance concreto (tarea/acción) hacia un objetivo EXISTENTE. Usalo cuando el relato menciona algo por hacer, no un resultado medible (para KRs medibles usá crear_objetivo/editar_objetivo con krs).
@@ -221,6 +224,9 @@ function normalizeAction(raw: unknown): RouterAction | null {
         prioridad: prio && PRIORITY_SET.has(prio) ? prio : null,
         categoria: cat && CATEGORY_SET.has(cat) ? cat : null,
         targetDate: td && ISO.test(td) ? td : null,
+        target: strOrNull(o.target, 200),
+        baseline: strOrNull(o.baseline, 200),
+        esAncla: typeof o.esAncla === 'boolean' ? o.esAncla : null,
         krs: krs.length > 0 ? krs : null,
         obstaculo: strOrNull(o.obstaculo, 800),
         siEntonces: strOrNull(o.siEntonces, 800),
