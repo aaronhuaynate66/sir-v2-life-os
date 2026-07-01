@@ -20,9 +20,21 @@ import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { BodyMetricsTrend } from '@/components/charts/BodyMetricsTrend'
-import { PatronesPanel } from '@/components/salud/PatronesPanel'
-import { SintesisCruzadaPanel } from '@/components/salud/SintesisCruzadaPanel'
-import { HeartRateAlertsPanel } from '@/components/salud/HeartRateAlertsPanel'
+import dynamic from 'next/dynamic'
+// Los 3 paneles pesados de /salud viven bajo el fold; dynamic + ssr:false
+// los saca del First Load JS del route inicial.
+const PatronesPanel = dynamic(
+  () => import('@/components/salud/PatronesPanel').then((m) => ({ default: m.PatronesPanel })),
+  { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
+)
+const SintesisCruzadaPanel = dynamic(
+  () => import('@/components/salud/SintesisCruzadaPanel').then((m) => ({ default: m.SintesisCruzadaPanel })),
+  { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
+)
+const HeartRateAlertsPanel = dynamic(
+  () => import('@/components/salud/HeartRateAlertsPanel').then((m) => ({ default: m.HeartRateAlertsPanel })),
+  { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
+)
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'

@@ -29,8 +29,17 @@ import { detectRelationshipAlerts } from '@/engines/relationship'
 import { createPersonAddedMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
-import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
-import { PosiblesDuplicados } from '@/components/relaciones/PosiblesDuplicados'
+import dynamic from 'next/dynamic'
+// DailyActionsPanel y PosiblesDuplicados son below-the-fold — se cargan
+// on-demand para bajar el First Load JS de /relaciones.
+const DailyActionsPanel = dynamic(
+  () => import('@/components/horario/DailyActionsPanel').then((m) => ({ default: m.DailyActionsPanel })),
+  { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
+)
+const PosiblesDuplicados = dynamic(
+  () => import('@/components/relaciones/PosiblesDuplicados').then((m) => ({ default: m.PosiblesDuplicados })),
+  { ssr: false, loading: () => null },
+)
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
 import {
@@ -607,7 +616,10 @@ function RelationshipsContent() {
                     <div className="flex gap-1 shrink-0">
                       {person.slug && (
                         <Button variant="ghost" size="sm" asChild aria-label="Ver detalle">
-                          <Link href={`/relaciones/${person.slug}`}>
+                          <Link
+                            href={`/relaciones/${person.slug}`}
+                            onClick={() => track(EVENTS.personOpened, { source: 'lista' })}
+                          >
                             <ArrowRight size={14} strokeWidth={1.75} />
                           </Link>
                         </Button>
