@@ -42,28 +42,14 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { cn } from '@/lib/utils'
 import type { GoalCategory, GoalPriority, Goal, ObjectiveStep } from '@/types'
-
-const CAT_LABEL: Record<GoalCategory, string> = {
-  financial: 'Financiero', personal: 'Personal', relational: 'Relacional',
-  health: 'Salud', career: 'Carrera', spiritual: 'Espiritual', creative: 'Creativo',
-}
-const PRIO_LABEL: Record<GoalPriority, string> = { critical: 'Crítico', high: 'Alto', medium: 'Medio', low: 'Bajo' }
-const PRIO_CLASS: Record<GoalPriority, string> = {
-  critical: 'border-bad/30 bg-bad-soft text-bad-foreground',
-  high: 'border-warn/30 bg-warn-soft text-warn-foreground',
-  medium: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
-  low: 'border-border bg-muted text-muted-foreground',
-}
-const STATUS_COLORS: Record<Goal['status'], string> = {
-  active: 'text-ok', paused: 'text-warn',
-  completed: 'text-brand-soft-foreground', abandoned: 'text-muted-foreground/50',
-}
-const STATUS_LABEL: Record<Goal['status'], string> = {
-  active: 'activo', paused: 'pausado',
-  completed: 'completado', abandoned: 'abandonado',
-}
-
-const cardClass = 'transition-colors duration-200 hover:border-border-strong'
+import {
+  CAT_LABEL,
+  PRIO_LABEL,
+  PRIO_CLASS,
+  STATUS_COLORS,
+  STATUS_LABEL,
+  GOAL_CARD_CLASS as cardClass,
+} from '@/components/objetivos/goalMeta'
 
 export default function GoalsPage() {
   const hydrated = useHasHydrated()
