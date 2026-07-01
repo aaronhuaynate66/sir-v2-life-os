@@ -126,12 +126,12 @@ export default function CapturaBatchPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <a
+              <Link
                 href="/relaciones"
                 className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:opacity-90"
               >
                 Ver en /relaciones →
-              </a>
+              </Link>
               <button
                 type="button"
                 onClick={() => window.location.reload()}
