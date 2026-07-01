@@ -67,22 +67,37 @@ function todayLimaIso(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function BrainGlow() {
+export type BrainGlowScope = 'day' | 'week' | 'month'
+
+const SCOPE_LABEL: Record<BrainGlowScope, string> = {
+  day: 'encendido alrededor de',
+  week: 'encendido esta semana alrededor de',
+  month: 'encendido este mes alrededor de',
+}
+
+interface BrainGlowProps {
+  /** Horizonte del cerebro. Cambia la seleccion de semilla en el endpoint y
+   *  el dismiss por hoy es independiente por scope. Default 'day'. */
+  scope?: BrainGlowScope
+}
+
+export function BrainGlow({ scope = 'day' }: BrainGlowProps = {}) {
   const [data, setData] = useState<GlowResponse | null>(null)
   const [dismissedToday, setDismissedToday] = useState(false)
   const [learning, setLearning] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const today = todayLimaIso()
+    const dismissKey = `brain-glow-dismissed-${scope}`
     if (typeof window !== 'undefined') {
-      const stored = window.localStorage.getItem('brain-glow-dismissed')
+      const stored = window.localStorage.getItem(dismissKey)
       if (stored === today) {
         setDismissedToday(true)
         return
       }
     }
     let alive = true
-    fetch('/api/brain/glow?limit=6', { cache: 'no-store' })
+    fetch(`/api/brain/glow?limit=6&scope=${scope}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j: GlowResponse | null) => {
         if (alive && j) setData(j)
@@ -93,11 +108,11 @@ export function BrainGlow() {
     return () => {
       alive = false
     }
-  }, [])
+  }, [scope])
 
   const dismiss = () => {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('brain-glow-dismissed', todayLimaIso())
+      window.localStorage.setItem(`brain-glow-dismissed-${scope}`, todayLimaIso())
     }
     setDismissedToday(true)
   }
@@ -145,7 +160,7 @@ export function BrainGlow() {
           <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
             <Brain size={12} strokeWidth={1.75} aria-hidden="true" />
             <span>
-              Cerebro · encendido alrededor de{' '}
+              Cerebro · {SCOPE_LABEL[scope]}{' '}
               <strong className="normal-case text-foreground">
                 {data.seedLabel ?? 'tu norte'}
               </strong>

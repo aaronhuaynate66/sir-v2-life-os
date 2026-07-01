@@ -21,6 +21,7 @@ import {
   periodEndKey,
 } from '@/lib/horario/briefPeriod'
 import { BriefPanel } from './BriefPanel'
+import { BrainGlow } from './BrainGlow'
 import { DateRow, FocusRow, TaskRow, CalendarHint, limaTime, dayLabel } from './parts'
 
 export function SemanaView({
@@ -65,6 +66,9 @@ export function SemanaView({
         empty={!hasWeekContent(briefSignals)}
         signals={briefSignals as unknown as Record<string, unknown>}
       />
+
+      {/* Cerebro · surfacing (F4) — semilla filtrada por proximos 7 dias */}
+      <BrainGlow scope="week" />
 
       {/* Foco de la semana */}
       {focus.length > 0 && (

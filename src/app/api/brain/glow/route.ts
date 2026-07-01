@@ -37,6 +37,14 @@ export async function GET(req: NextRequest) {
     ? Math.max(1, Math.min(MAX_LIMIT, Math.floor(limitRaw)))
     : DEFAULT_LIMIT
 
+  // Scope: 'day' (default) usa el proximo hito futuro; 'week' filtra por
+  // hitos dentro de 7 dias; 'month' por 30 dias. Sin match, cae al anchor y
+  // despues al primer goal activo.
+  const rawScope = (url.searchParams.get('scope') ?? 'day').toLowerCase()
+  const scope: 'day' | 'week' | 'month' =
+    rawScope === 'week' || rawScope === 'month' ? rawScope : 'day'
+  const windowDays = scope === 'week' ? 7 : scope === 'month' ? 30 : 365 * 5
+
   // Contexto para elegir semilla (solo goals activos con target_date futuro).
   // Fail-soft: si la lectura falla, `goalsRes` cae a []. `nextGoal` puede quedar
   // vacio y pickSeedForContext usa el fallback.
@@ -48,9 +56,13 @@ export async function GET(req: NextRequest) {
   const goalsRows: Array<{ id: string; target_date: string | null; is_anchor: boolean | null }> =
     goalsRes.error ? [] : ((goalsRes.data ?? []) as Array<{ id: string; target_date: string | null; is_anchor: boolean | null }>)
 
-  // nextGoalId = target_date >= hoy mas cercano.
+  // Ventana futura segun scope.
+  const windowEndDate = new Date(Date.now() + windowDays * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10)
+
   const upcoming = goalsRows
-    .filter((g) => typeof g.target_date === 'string' && g.target_date >= todayIso)
+    .filter((g) => typeof g.target_date === 'string' && g.target_date >= todayIso && g.target_date <= windowEndDate)
     .sort((a, b) => (a.target_date as string).localeCompare(b.target_date as string))
   const nextGoalId = upcoming[0]?.id ?? null
 
