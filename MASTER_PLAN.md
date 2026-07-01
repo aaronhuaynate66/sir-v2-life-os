@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f83c29a`
+**Hash del último commit humano:** `0c71e89`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `0c71e89` | aaronhuaynate66 | feat(cerebro): F3 Hebbian — bucle de aprendizaje sobre BrainGlow (#417) | 2026-07-01 |
 | `f83c29a` | aaronhuaynate66 | feat(cerebro): F4 surfacing — /api/brain/glow + BrainGlow en /horario dia (#416) | 2026-07-01 |
 | `908e40b` | aaronhuaynate66 | feat(cerebro): F2 difusion — spreading activation puro + ?seed en debug (#415) | 2026-07-01 |
 | `b6ef063` | aaronhuaynate66 | feat(cerebro): F1 grafo tipado — sustrato + edge_weights + /red/brain-debug (#414) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `30307cb` | aaronhuaynate66 | feat(objetivos): acciones en menu kebab (#410) | 2026-06-26 |
 | `5a54afb` | aaronhuaynate66 | feat(objetivos): aligerar el card (auditoria UX) — historia acotada + zona operativa plegada (#409) | 2026-06-26 |
 | `6cc4464` | aaronhuaynate66 | feat(objetivos): plegado de tarjetas (divulgacion progresiva) (#408) | 2026-06-26 |
-| `c828b41` | aaronhuaynate66 | feat(objetivos): jerarquia + secciones (norte heroe + grupos por categoria) (#407) | 2026-06-26 |
 
 ---
 
