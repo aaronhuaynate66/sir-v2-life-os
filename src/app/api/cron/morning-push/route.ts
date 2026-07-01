@@ -17,6 +17,7 @@ import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
 import { bodySignal } from '@/lib/health/bodySignal'
+import { parseWeightCategory } from '@/engines/targets'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -96,14 +97,65 @@ export async function GET(req: NextRequest) {
       // Foco: ancla del año, o el próximo paso de un objetivo activo.
       const { data: goalRows } = await admin
         .from('goals')
-        .select('title, next_action, is_anchor, status')
+        .select('title, next_action, is_anchor, status, target_date, target, anchor_subtitle, description')
         .eq('user_id', uid)
         .eq('status', 'active')
         .limit(50)
-      const goals = (goalRows ?? []) as Array<{ title: string; next_action: string; is_anchor: boolean | null }>
+      const goals = (goalRows ?? []) as Array<{
+        title: string; next_action: string; is_anchor: boolean | null;
+        target_date: string | null; target: string | null;
+        anchor_subtitle: string | null; description: string | null;
+      }>
       const anchor = goals.find((g) => g.is_anchor)
       const withNext = goals.find((g) => g.next_action && g.next_action.trim().length > 0)
       const focus = anchor?.title || (withNext ? withNext.next_action : undefined)
+
+      // SEMANA EN FOCO: goal con target_date ≤7d → texto listo para el push.
+      let weekFocusText: string | undefined
+      const todayMs = new Date(today + 'T00:00:00Z').getTime()
+      for (const g of goals) {
+        if (!g.target_date) continue
+        const targetMs = new Date(g.target_date + 'T00:00:00Z').getTime()
+        const days = Math.round((targetMs - todayMs) / 86_400_000)
+        if (days < 0 || days > 7) continue
+        const when = days === 0 ? 'HOY' : days === 1 ? 'MAÑANA' : `EN ${days} DÍAS`
+        weekFocusText = `${g.title} · ${when}`
+        break
+      }
+
+      // ALERTA DE PESO MUNDIAL: si hay goal con "mundial/taekwondo/wfg" +
+      // categoría en el target, y la última lectura de peso está fuera.
+      let metricAlertText: string | undefined
+      try {
+        const mundialGoal = goals.find((g) =>
+          /mundial|taekwondo|wfg/i.test(g.title + ' ' + (g.description ?? ''))
+        )
+        if (mundialGoal) {
+          const range = parseWeightCategory(mundialGoal.target ?? undefined)
+            ?? parseWeightCategory(mundialGoal.anchor_subtitle ?? undefined)
+            ?? parseWeightCategory(mundialGoal.description ?? undefined)
+          if (range) {
+            const { data: weightRows } = await admin
+              .from('health_metrics')
+              .select('value, timestamp')
+              .eq('user_id', uid)
+              .eq('type', 'weight')
+              .order('timestamp', { ascending: false })
+              .limit(1)
+            const w = (weightRows ?? [])[0] as { value: number } | undefined
+            if (w && Number.isFinite(w.value)) {
+              const kg = w.value
+              const CLOSE = 1
+              if (kg < range.min) metricAlertText = `Peso ${kg} kg — fuera de categoría`
+              else if (kg > range.max) metricAlertText = `Peso ${kg} kg — sobre la categoría`
+              else if (kg - range.min < CLOSE) metricAlertText = `Peso ${kg} kg — cerca del piso ${range.min} kg`
+              else if (range.max - kg < CLOSE) metricAlertText = `Peso ${kg} kg — cerca del techo ${range.max} kg`
+            }
+          }
+        }
+      } catch {
+        /* fail-soft */
+      }
 
       // Una señal sin resolver (la primera de mayor urgencia).
       const { data: sigRows } = await admin
@@ -172,7 +224,7 @@ export async function GET(req: NextRequest) {
         /* fail-soft */
       }
 
-      const push = buildMorningPush({ birthdays, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText })
+      const push = buildMorningPush({ birthdays, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent

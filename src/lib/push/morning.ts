@@ -24,6 +24,10 @@ export interface MorningInput {
   habitNudge?: string
   /** Señal del cuerpo (ej. deuda de sueño). Texto ya formado. */
   bodySignal?: string
+  /** Objetivo con targetDate cercano (≤7d). Texto ya formado ("Mudanza EN 3 DIAS"). */
+  weekFocus?: string
+  /** Alerta de metrica dura (peso Mundial fuera de categoria, etc.). Texto ya formado. */
+  metricAlert?: string
 }
 
 export interface MorningPush {
@@ -43,6 +47,18 @@ function birthdayPhrase(b: MorningBirthday): string {
  *  nada urgente) — el usuario eligió recibirlo a diario. */
 export function buildMorningPush(input: MorningInput): MorningPush {
   const parts: string[] = []
+
+  // 0. SEMANA EN FOCO (mudanza / hitos ≤7d): al frente, es lo que importa esta
+  //    semana. Prioridad sobre cumpleaños porque el countdown se vive en tiempo real.
+  if (input.weekFocus) {
+    parts.push(input.weekFocus)
+  }
+
+  // 0.5. ALERTA DE METRICA DURA (peso Mundial, etc.): si esta fuera de rango
+  //    hoy, importa para el dia. Antes que cumpleanos porque es accionable.
+  if (input.metricAlert && parts.length < MAX_PARTS) {
+    parts.push(input.metricAlert)
+  }
 
   // 1. Gente y fechas (lo más humano primero).
   for (const b of (input.birthdays ?? []).slice(0, 2)) {
