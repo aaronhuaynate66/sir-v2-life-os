@@ -16,9 +16,10 @@
 // El layout es 1:1 con el prototipo; lo único que cambia es el origen de datos
 // y el anclaje rodante. CI no valida render → requiere una mirada en prod.
 
-import { useState, useEffect, useRef, useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties, type ReactNode } from 'react'
 import type { BoardEvent, BoardOrigin } from '@/lib/horario/calendarBoard'
 import { ORIGIN_LABEL, presentOrigins } from '@/lib/horario/calendarBoard'
+import { track, EVENTS } from '@/lib/analytics/track'
 
 /* ── date utils (local, sin sorpresas de TZ) ── */
 const DOW = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom']
@@ -604,6 +605,13 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
   const origins = useMemo(() => presentOrigins(events), [events])
   const [filters, setFilters] = useState<Record<Origin, boolean>>({ cal: true, date: true, task: true, health: true })
   const [sel, setSel] = useState<Ev | null>(null)
+  // Analytics: cuando el usuario abre un evento del cockpit trackeamos qué
+  // tipo (cal/task/date/health) — sin esto no se puede medir uso real del
+  // /horario en GA4 (el archivo no emitía ningún evento custom).
+  const selectAndTrack = useCallback((e: Ev | null) => {
+    setSel(e)
+    if (e) track(EVENTS.horarioTaskClick, { origin: e.origin, view })
+  }, [view])
 
   const cols = view === 'week' ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) : [dayDate]
   const visible = events.filter((e) => filters[e.origin])
@@ -665,7 +673,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
         {/* calendar */}
         {view === 'board' ? (
           <WeekBoard weekStart={weekStart} now={now} visible={visible} showGaps={showGaps}
-            onPickDay={(d) => { setDayDate(d); setView('spine') }} onSelect={setSel} />
+            onPickDay={(d) => { setDayDate(d); setView('spine') }} onSelect={selectAndTrack} />
         ) : view === 'week' ? (
           <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', margin: '0 -1px' }}>
           <div style={{ minWidth: 720, flex: '0 0 auto', display: 'flex', flexDirection: 'column', border: '.5px solid var(--border)', borderRadius: 'var(--r-card)', overflow: 'hidden', background: 'var(--s1)' }}>
@@ -694,7 +702,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
                 return (
                   <div key={i} style={{ flex: 1, borderLeft: i ? '.5px solid var(--border)' : 'none', padding: 5, display: 'flex', flexDirection: 'column', gap: 4, overflow: 'hidden' }}>
                     {shown.map((e) => (
-                      <button key={e.id} onClick={() => setSel(e)} title={e.title}
+                      <button key={e.id} onClick={() => selectAndTrack(e)} title={e.title}
                         style={{ textAlign: 'left', border: 'none', cursor: 'pointer', borderRadius: 6, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 6, background: `var(${ORIGIN_SOFT[e.origin]})`, color: `var(${ORIGIN_TXT[e.origin]})`, boxShadow: `inset 2px 0 0 var(${ORIGIN_VAR[e.origin]})` }}>
                         <Icon n={ORIGIN_ICON[e.origin]} s={12.5} sw={1.7} style={{ flex: '0 0 auto' }} />
                         <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{e.title}</span>
@@ -750,12 +758,12 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
                       {blocks.map((e) => {
                         const top = tl.scale(e.s)
                         const h = Math.max(tl.scale(e.e) - top, 18)
-                        return <EventBlock key={e.id} ev={e} top={top} height={h} onClick={() => setSel(e)} />
+                        return <EventBlock key={e.id} ev={e} top={top} height={h} onClick={() => selectAndTrack(e)} />
                       })}
                       {moments.map((e) => {
                         const top = Math.max(tl.scale(e.s), lastBottom + 3)
                         lastBottom = top + MOMENT_H
-                        return <MomentPill key={e.id} ev={e} top={top} onClick={() => setSel(e)} />
+                        return <MomentPill key={e.id} ev={e} top={top} onClick={() => selectAndTrack(e)} />
                       })}
                       {showNow && (
                         <div style={{ position: 'absolute', left: -1, right: 0, top: nowTop, zIndex: 5, pointerEvents: 'none' }}>
@@ -774,7 +782,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
           <>
             <WeekStrip selDate={dayDate} now={now} visible={visible} onPick={(d) => setDayDate(d)} />
             <div style={{ flex: '0 0 auto', border: '.5px solid var(--border)', borderRadius: 'var(--r-card)', overflow: 'hidden', background: 'var(--s1)' }}>
-              <SpineDay date={dayDate} dayEvents={visible.filter((e) => e.date === ymd(dayDate))} now={now} onSelect={setSel} />
+              <SpineDay date={dayDate} dayEvents={visible.filter((e) => e.date === ymd(dayDate))} now={now} onSelect={selectAndTrack} />
             </div>
           </>
         )}

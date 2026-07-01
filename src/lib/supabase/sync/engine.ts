@@ -47,6 +47,7 @@ import type { StoreApi } from 'zustand'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { getCurrentUser } from '@/lib/supabase/currentUser'
 import type { SliceBinding } from './types'
 import { diffSlice, reconcilePull, parsePendingIds } from './reconcile'
 
@@ -416,8 +417,12 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
 
   function init(): void {
     void (async () => {
-      const { data } = await supabase.auth.getUser()
-      if (data.user) await start(data.user.id)
+      // Antes: cada sync engine hacía su propio supabase.auth.getUser() al
+      // init → con ~13 stores registrados se disparaban 13 GET /auth/v1/user
+      // en cada navegación (N+1 real, medido). getCurrentUser memoiza la
+      // promesa a nivel módulo → una sola llamada real, 13 consumidores.
+      const user = await getCurrentUser()
+      if (user) await start(user.id)
     })()
 
     const sub = supabase.auth.onAuthStateChange((event, session) => {

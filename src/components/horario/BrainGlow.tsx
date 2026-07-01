@@ -20,6 +20,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Brain, ThumbsUp, X } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { track, EVENTS } from '@/lib/analytics/track'
 
 interface GlowRow {
   nodeKey: string
@@ -130,6 +131,9 @@ export function BrainGlow({ scope = 'day' }: BrainGlowProps = {}) {
       setData((prev) =>
         prev ? { ...prev, rows: prev.rows.filter((r) => r.edgeKey !== edgeKey) } : prev,
       )
+      // Analytics: adopción del feedback Hebbian (F3). Sin esto no se puede
+      // medir cuánto se usa el mecanismo de aprendizaje del cerebro.
+      track(EVENTS.brainFeedbackGiven, { action, scope })
       try {
         const res = await fetch('/api/brain/feedback', {
           method: 'POST',
@@ -148,7 +152,7 @@ export function BrainGlow({ scope = 'day' }: BrainGlowProps = {}) {
         console.warn('brain/feedback error', err)
       }
     },
-    [],
+    [scope],
   )
 
   if (dismissedToday || !data || !data.rows || data.rows.length === 0) {

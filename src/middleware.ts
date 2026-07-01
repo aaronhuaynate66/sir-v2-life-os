@@ -13,7 +13,7 @@ export const config = {
     /*
      * Excluye:
      * - _next/static, _next/image: assets de Next
-     * - favicon, robots, sitemap
+     * - favicon, robots, sitemap, manifest.webmanifest (PWA — devolver JSON no HTML del redirect)
      * - api: los route handlers /api/* autentican por su cuenta (createClient()
      *   + getUser()) y refrescan la sesión (las cookies SÍ se pueden mutar en
      *   Route Handlers, ver lib/supabase/server.ts). Correr el middleware acá
@@ -25,6 +25,6 @@ export const config = {
      *   cookies del request causa interferencia con exchangeCodeForSession).
      * - archivos con extension de imagen (svg, png, jpg, jpeg, gif, webp)
      */
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|api|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

@@ -16,6 +16,7 @@
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { getCurrentUser } from '@/lib/supabase/currentUser'
 import {
   isMigrated, markMigrated, migrateAllStores, logMigrationResult,
 } from '@/lib/supabase/sync/migration'
@@ -34,11 +35,12 @@ export function useDataMigration(): void {
     const supabase = createClient()
 
     void (async () => {
-      const { data, error } = await supabase.auth.getUser()
+      // Reusa el getUser memoizado (compartido con sync engines).
+      const user = await getCurrentUser()
       if (cancelled) return
-      if (error || !data.user) return // No user → skip silently.
+      if (!user) return // No user → skip silently.
 
-      const userId = data.user.id
+      const userId = user.id
       if (isMigrated(userId)) return // Already done on this device.
 
       const result = await migrateAllStores(userId, supabase)

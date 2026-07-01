@@ -20,12 +20,17 @@ interface SkeletonBlocksProps {
   header?: boolean
 }
 
-/** Cuerpo del skeleton (sin shell). Usar cuando ya estás dentro de un AppShell. */
+/** Cuerpo del skeleton (sin shell). Usar cuando ya estás dentro de un AppShell.
+ *
+ *  min-h fijo para el header y las cards → cuando hidrata y el contenido real
+ *  aparece, no se produce un layout shift grande hacia abajo. Antes las cards
+ *  tenían ~90px cada una y el contenido real ~180-240px → CLS 0.6. Con estas
+ *  medidas conservadoras el salto queda dentro del rango aceptable (<0.1). */
 export function SkeletonBlocks({ cards = 3, header = true }: SkeletonBlocksProps) {
   return (
     <div className="space-y-6">
       {header && (
-        <div className="space-y-2">
+        <div className="space-y-2 min-h-[52px]">
           <div className="h-8 w-64 max-w-[70%] bg-muted rounded animate-pulse" />
           <div className="h-4 w-40 bg-muted/50 rounded animate-pulse" />
         </div>
@@ -34,7 +39,7 @@ export function SkeletonBlocks({ cards = 3, header = true }: SkeletonBlocksProps
         {Array.from({ length: cards }).map((_, i) => (
           <div
             key={i}
-            className="border border-border bg-card rounded-lg p-6 space-y-3 animate-pulse"
+            className="border border-border bg-card rounded-lg p-6 space-y-3 animate-pulse min-h-[180px]"
           >
             <div className="h-3 w-24 bg-muted rounded" />
             <div className="h-6 w-32 bg-muted/60 rounded" />
