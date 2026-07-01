@@ -39,10 +39,12 @@ const fmtDur = (min: number) => { const h = Math.floor(min / 60), m = min % 60; 
 
 type Origin = BoardOrigin
 type Ev = BoardEvent
-const ORIGIN_VAR: Record<Origin, string> = { cal: '--o-cal', date: '--o-date', task: '--o-task', health: '--o-health' }
-const ORIGIN_SOFT: Record<Origin, string> = { cal: '--o-cal-soft', date: '--o-date-soft', task: '--o-task-soft', health: '--o-health-soft' }
-const ORIGIN_TXT: Record<Origin, string> = { cal: '--o-cal-text', date: '--o-date-text', task: '--o-task-text', health: '--o-health-text' }
-const ORIGIN_ICON: Record<Origin, string> = { cal: 'cal', date: 'gift', task: 'task', health: 'pulse' }
+// Milestone reusa los tokens de "task" (violeta/brand) porque semanticamente
+// es un hito de un objetivo. Icono anchor para distinguirlo visualmente.
+const ORIGIN_VAR: Record<Origin, string> = { cal: '--o-cal', date: '--o-date', task: '--o-task', health: '--o-health', milestone: '--o-task' }
+const ORIGIN_SOFT: Record<Origin, string> = { cal: '--o-cal-soft', date: '--o-date-soft', task: '--o-task-soft', health: '--o-health-soft', milestone: '--o-task-soft' }
+const ORIGIN_TXT: Record<Origin, string> = { cal: '--o-cal-text', date: '--o-date-text', task: '--o-task-text', health: '--o-health-text', milestone: '--o-task-text' }
+const ORIGIN_ICON: Record<Origin, string> = { cal: 'cal', date: 'gift', task: 'task', health: 'pulse', milestone: 'anchor' }
 
 /* ── layout constants ── */
 const L = { header: 40, gHeader: 18, nnB: 184, gNN: 18, filters: 30, gFilters: 16, calHead: 50, allDay: 60, gutter: 56 }
@@ -66,6 +68,7 @@ function Icon({ n, s = 16, sw = 1.6, style }: { n: string; s?: number; sw?: numb
   if (n === 'pulse') return (<svg {...common}><path d={p.pulse} /></svg>)
   if (n === 'clock') return (<svg {...common}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>)
   if (n === 'pin') return (<svg {...common}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" /><circle cx="12" cy="10" r="2.6" /></svg>)
+  if (n === 'anchor') return (<svg {...common}><circle cx="12" cy="5" r="3" /><path d="M12 22V8M5 12H2a10 10 0 0 0 20 0h-3" /></svg>)
   return (<svg {...common}><path d={p[n] || ''} /></svg>)
 }
 
@@ -231,7 +234,7 @@ function Detail({ ev, onClose, onAssignTime }: { ev: Ev | null; onClose: () => v
   const canAssign = ev.origin === 'task' && !!ev.stepId && ev.allDay && !!onAssignTime
   const d = parseYmd(ev.date)
   const dateLong = `${DOW_FULL[dowMon(d)]} ${d.getDate()} ${MON_FULL[d.getMonth()]}`
-  const cta = { cal: ev.loc ? 'Unirse' : 'Ver evento', date: 'Escribíle para saludar', task: 'Abrir tarea', health: 'Ver en Salud' }[ev.origin]
+  const cta = { cal: ev.loc ? 'Unirse' : 'Ver evento', date: 'Escribíle para saludar', task: 'Abrir tarea', health: 'Ver en Salud', milestone: 'Abrir objetivo' }[ev.origin]
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 380, maxWidth: '100%', background: 'var(--s1)', border: '.5px solid var(--border-strong)', borderRadius: 'var(--r-card)', padding: 22 }}>
@@ -603,7 +606,7 @@ export function HorarioCalendar({ events, variant = 'B', rangeStart = 0, rangeEn
   const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()))
   const [dayDate, setDayDate] = useState<Date>(() => startOfDay(new Date()))
   const origins = useMemo(() => presentOrigins(events), [events])
-  const [filters, setFilters] = useState<Record<Origin, boolean>>({ cal: true, date: true, task: true, health: true })
+  const [filters, setFilters] = useState<Record<Origin, boolean>>({ cal: true, date: true, task: true, health: true, milestone: true })
   const [sel, setSel] = useState<Ev | null>(null)
   // Analytics: cuando el usuario abre un evento del cockpit trackeamos qué
   // tipo (cal/task/date/health) — sin esto no se puede medir uso real del

@@ -16,9 +16,9 @@ import { LIMA_UTC_OFFSET_HOURS } from '@/lib/calendar/tz'
 import { toLimaDateOnly } from '@/lib/calendar/ics'
 import type { CalendarEvent } from '@/lib/calendar/types'
 import type { CockpitDate, CockpitDayBucket, CockpitTask } from '@/lib/horario/cockpit'
-import type { ObjectiveStep } from '@/types'
+import type { Goal, ObjectiveStep } from '@/types'
 
-export type BoardOrigin = 'cal' | 'date' | 'task' | 'health'
+export type BoardOrigin = 'cal' | 'date' | 'task' | 'health' | 'milestone'
 
 /** Un evento plano para el board. `s`/`e` = minutos desde la medianoche Lima
  *  (ignorados si allDay). */
@@ -46,6 +46,7 @@ export const ORIGIN_LABEL: Record<BoardOrigin, string> = {
   date: 'Cumpleaños y fechas',
   task: 'Tareas',
   health: 'Salud',
+  milestone: 'Hitos de objetivos',
 }
 
 const DAY_MS = 86_400_000
@@ -121,6 +122,11 @@ export interface BoardInput {
   /** Tareas OKR completadas (status 'hecho') con targetDate — "qué se hizo".
    *  Idealmente ya acotadas a la ventana visible por el llamador. */
   completedSteps?: ObjectiveStep[]
+  /** Goals ACTIVOS con targetDate — para pintar el DIA del hito en el board
+   *  como all-day (origin 'milestone'), distinto del calendario o de tareas.
+   *  Ej. "Mudarme con mi perro" (sáb 4 jul) aparece bloqueado ese día para
+   *  que el usuario NO agende otra cosa encima. */
+  goalMilestones?: Goal[]
 }
 
 /** Arma los eventos del board desde las fuentes del cockpit. Determinístico:
@@ -153,6 +159,23 @@ export function buildBoardEvents(input: BoardInput, now: Date): BoardEvent[] {
       }
     }
     if (st.targetDate) out.push(completedStepToBoard(st.id, st.title, st.targetDate, st.dueTime))
+  }
+  // Hitos de objetivos: el día del target de un goal activo aparece como
+  // bloque all-day de origin 'milestone' para que el usuario NO planifique
+  // encima. El label es el título del goal + "▲ hito" para diferenciarlo.
+  for (const g of input.goalMilestones ?? []) {
+    if (g.status !== 'active' || !g.targetDate) continue
+    const date = g.targetDate.slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue
+    out.push({
+      id: `milestone_${g.id}`,
+      date,
+      s: 0,
+      e: 0,
+      origin: 'milestone',
+      title: g.title,
+      allDay: true,
+    })
   }
   return out
 }
