@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `8e7556e`
+**Hash del último commit humano:** `c37eedb`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c37eedb` | aaronhuaynate66 | feat(perf+analytics): P2e — /red GraphView lazy (-29 KB) + /objetivos/[id] paneles + deal_saved event (#436) | 2026-07-01 |
 | `8e7556e` | aaronhuaynate66 | feat(perf): P2d — dynamic /seguimiento (-25 KB) + /memoria search panel (#435) | 2026-07-01 |
 | `71f014c` | aaronhuaynate66 | feat(perf): P2c — dynamic /yo panels + /finanzas below-fold charts (#434) | 2026-07-01 |
 | `d767975` | aaronhuaynate66 | feat(perf+analytics): P2b — dynamic below-fold panels + person_opened event (#433) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d1e6d47` | aaronhuaynate66 | feat(a11y): P1 — subir --muted-foreground + reemplazar /40 por /60 + target-size BrainGlow (#429) | 2026-07-01 |
 | `d4fe2b4` | aaronhuaynate66 | feat(perf+ux): P1 — dynamic imports, middleware cookie-first, CTAs empty states (#428) | 2026-07-01 |
 | `5cba09a` | aaronhuaynate66 | feat(perf+analytics): P0 quick wins — auth N+1, PWA manifest, 4 eventos GA4, CLS (#427) | 2026-07-01 |
-| `5045c6c` | aaronhuaynate66 | test(cerebro): tests unit para /api/brain/feedback y /api/brain/glow (#426) | 2026-07-01 |
 
 ---
 
