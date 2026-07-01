@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e075673`
+**Hash del último commit humano:** `9512bbf`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `9512bbf` | aaronhuaynate66 | fix(kinship): person_links con kind no-familia dejan de aparecer como "tu familiar" (#453) | 2026-07-01 |
 | `e075673` | aaronhuaynate66 | fix(sync): eventos Realtime forzan pull (bypass TTL 60s) + botón "Refrescar" en /captura/batch (#452) | 2026-07-01 |
 | `9672daf` | aaronhuaynate66 | feat(panel): "Anduve hoy" — timeline compacto de lo registrado hoy (#451) | 2026-07-01 |
 | `c3fcfd1` | aaronhuaynate66 | feat(relaciones): moments/episodios entran a la Bitácora (#450) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `707fa5b` | aaronhuaynate66 | feat(seed): UI /captura/batch para cargar JSONs sin CLI ni service key (#446) | 2026-07-01 |
 | `09dd753` | aaronhuaynate66 | feat(seed): script para cargar batches JSON + mig 0107 person_links metadata (#445) | 2026-07-01 |
 | `188ef6c` | aaronhuaynate66 | feat(horario): hitos de objetivos aparecen bloqueando el dia del target (#444) | 2026-07-01 |
-| `eca5140` | aaronhuaynate66 | feat(push): morning push incluye Semana en foco + alerta de peso Mundial (#443) | 2026-07-01 |
 
 ---
 
