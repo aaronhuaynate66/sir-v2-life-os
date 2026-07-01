@@ -306,11 +306,19 @@ function CapturaIndexContent() {
         <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">
           SIR V2 &middot; Captura
         </div>
-        <div className="flex items-center gap-3">
-          <Camera size={20} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
-            Capturar un pantallazo
-          </h1>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Camera size={20} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+              Capturar un pantallazo
+            </h1>
+          </div>
+          <Link
+            href="/captura/batch"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/10 transition-colors"
+          >
+            Cargar batch JSON →
+          </Link>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
           Subí un pantallazo de un chat de <span className="text-foreground">WhatsApp</span>, de un
