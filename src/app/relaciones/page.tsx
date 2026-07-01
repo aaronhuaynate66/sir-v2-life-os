@@ -49,6 +49,8 @@ import {
   alertUrgencyLabel,
 } from '@/lib/people/labels'
 import { CommercialPipelinePanel } from '@/components/relaciones/CommercialPipelinePanel'
+import { ScoreTrendChip } from '@/components/relaciones/ScoreTrendChip'
+import { useScoreTrendsByPerson } from '@/lib/relaciones/useScoreTrends'
 import { cn } from '@/lib/utils'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact, PersonGender } from '@/types'
 import { effectiveAmbito, inferAmbito, AMBITO_LABEL } from '@/lib/people/ambito'
@@ -120,6 +122,9 @@ export default function RelationshipsPage() {
 function RelationshipsContent() {
   const { people, relationships, addPerson, updatePerson, removePerson } = useRelationshipStore()
   const [openConflictIds, setOpenConflictIds] = useState<Set<string>>(new Set())
+  // Tendencia del bond por persona: lee los snapshots diarios (cron
+  // score-snapshots + mig 0066) y muestra ↑/↓ al lado del nombre.
+  const scoreTrends = useScoreTrendsByPerson()
   useEffect(() => {
     let alive = true
     fetch('/api/moments?open=1')
@@ -566,6 +571,7 @@ function RelationshipsContent() {
                           <Badge variant="outline" className="text-[10px] font-normal">{relationshipTypeLabel(person.relationship)}</Badge>
                           <Badge variant="outline" className="text-[10px] font-normal">{personCategoryLabel(person.category)}</Badge>
                           <Badge variant="outline" className="text-[10px] font-normal border-brand/40 text-brand-soft-foreground">{AMBITO_LABEL[effectiveAmbito(person)]}</Badge>
+                          <ScoreTrendChip trend={scoreTrends[person.id]} />
                         </div>
 
                         <div className="flex items-center gap-4 mt-2 flex-wrap">
