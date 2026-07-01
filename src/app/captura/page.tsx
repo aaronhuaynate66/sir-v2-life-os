@@ -24,9 +24,22 @@ import { Button } from '@/components/ui/button'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
 import type { DetectResult } from '@/lib/capture/detector/client'
-import { ScaleCaptureBranch } from '@/components/capture/scale/ScaleCaptureBranch'
-import { SleepCaptureBranch } from '@/components/capture/sleep/SleepCaptureBranch'
-import { HeartRateCaptureBranch } from '@/components/capture/hr/HeartRateCaptureBranch'
+import dynamic from 'next/dynamic'
+// Las 3 CaptureBranches (Scale/Sleep/HR) aparecen solo cuando el detector
+// clasifica la imagen como ese tipo. En el flow default (WhatsApp/IG/LinkedIn)
+// nunca se ven, asi que salen del First Load JS de /captura via dynamic.
+const ScaleCaptureBranch = dynamic(
+  () => import('@/components/capture/scale/ScaleCaptureBranch').then((m) => ({ default: m.ScaleCaptureBranch })),
+  { ssr: false, loading: () => <div className="h-40 rounded-lg border border-border animate-pulse" /> },
+)
+const SleepCaptureBranch = dynamic(
+  () => import('@/components/capture/sleep/SleepCaptureBranch').then((m) => ({ default: m.SleepCaptureBranch })),
+  { ssr: false, loading: () => <div className="h-40 rounded-lg border border-border animate-pulse" /> },
+)
+const HeartRateCaptureBranch = dynamic(
+  () => import('@/components/capture/hr/HeartRateCaptureBranch').then((m) => ({ default: m.HeartRateCaptureBranch })),
+  { ssr: false, loading: () => <div className="h-40 rounded-lg border border-border animate-pulse" /> },
+)
 import {
   HttpError,
   createPerson,

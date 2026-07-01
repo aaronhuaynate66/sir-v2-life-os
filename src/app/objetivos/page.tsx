@@ -26,8 +26,18 @@ import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
 import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
 import { TrackerStrip } from '@/components/trackers/TrackerStrip'
-import { SmartAssist } from '@/components/objetivos/SmartAssist'
-import { SmartWizard } from '@/components/objetivos/SmartWizard'
+import dynamic from 'next/dynamic'
+// SmartAssist y SmartWizard son modales que aparecen solo cuando el usuario
+// abre un objetivo o crea uno nuevo con IA. Se cargan on-demand para no
+// meterlos en el First Load JS de /objetivos.
+const SmartAssist = dynamic(
+  () => import('@/components/objetivos/SmartAssist').then((m) => ({ default: m.SmartAssist })),
+  { ssr: false, loading: () => null },
+)
+const SmartWizard = dynamic(
+  () => import('@/components/objetivos/SmartWizard').then((m) => ({ default: m.SmartWizard })),
+  { ssr: false, loading: () => null },
+)
 import { computeObjectiveProgress } from '@/lib/objectives/steps'
 import { isGoalSmartComplete, missingSmartFields } from '@/lib/objectives/smart'
 import { togglePersonId, sanitizePersonIds } from '@/lib/goals/relatedPersons'

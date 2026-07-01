@@ -25,6 +25,7 @@ import { useEffect, useState } from 'react'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { buildYearCompass, type YearCompass } from '@/lib/year-compass/build'
 import { computeNorteDrift, type NorteDrift } from '@/lib/self/norteDrift'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 
 // Grises exactos del mockup (monocromático).
@@ -141,6 +142,7 @@ function UpcomingList({ compass }: { compass: YearCompass }) {
           <Link
             key={m.id}
             href={`/objetivos?goal=${m.id}`}
+            onClick={() => track(EVENTS.yearCompassClick, { role: 'upcoming', position: i })}
             className="block font-mono text-[11px] sm:text-xs tracking-wide transition-opacity hover:opacity-100"
             style={{ color }}
           >
@@ -167,6 +169,7 @@ function Anchor({ compass, drift }: { compass: YearCompass; drift: NorteDrift | 
   return (
     <Link
       href={`/objetivos?goal=${a.id}`}
+      onClick={() => track(EVENTS.yearCompassClick, { role: 'anchor' })}
       className="mt-10 block group"
     >
       <div className="font-mono text-[9px] tracking-[0.25em] mb-2" style={{ color: C_DOT }}>
