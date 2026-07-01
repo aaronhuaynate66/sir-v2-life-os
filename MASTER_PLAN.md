@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `707fa5b`
+**Hash del último commit humano:** `94f18da`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `94f18da` | aaronhuaynate66 | fix(seed): normaliza gender ES→EN (people_gender_check violation) (#447) | 2026-07-01 |
 | `707fa5b` | aaronhuaynate66 | feat(seed): UI /captura/batch para cargar JSONs sin CLI ni service key (#446) | 2026-07-01 |
 | `09dd753` | aaronhuaynate66 | feat(seed): script para cargar batches JSON + mig 0107 person_links metadata (#445) | 2026-07-01 |
 | `188ef6c` | aaronhuaynate66 | feat(horario): hitos de objetivos aparecen bloqueando el dia del target (#444) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c4a2edc` | aaronhuaynate66 | feat(panel): observacion conductual (E3 hueco #4 del roadmap) (#440) | 2026-07-01 |
 | `347c17f` | aaronhuaynate66 | feat(relaciones): chip de tendencia del bond al lado de cada nombre (#439) | 2026-07-01 |
 | `201de73` | aaronhuaynate66 | feat(panel): Semana en foco — cockpit del objetivo urgente en Mission Control (#438) | 2026-07-01 |
-| `0940ee6` | aaronhuaynate66 | fix(charts): vista semana muestra el eje calendario completo (lun→dom), no solo los puntos existentes (#437) | 2026-07-01 |
 
 ---
 
