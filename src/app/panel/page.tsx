@@ -34,6 +34,7 @@ import { HabitsStrip } from '@/components/panel/HabitsStrip'
 import { QuickStateLog } from '@/components/panel/QuickStateLog'
 import { WeekInFocusCard } from '@/components/panel/WeekInFocusCard'
 import { BehavioralSuggestionCard } from '@/components/panel/BehavioralSuggestionCard'
+import { TargetsAtGlanceCard } from '@/components/panel/TargetsAtGlanceCard'
 import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
@@ -329,6 +330,11 @@ function DashboardContent() {
           countdown, KRs tildables, deep-link a /objetivos. Fail-safe: si no
           hay uno en la ventana, no renderiza nada. Ver src/lib/panel/weekInFocus.ts. */}
       <WeekInFocusCard now={now} />
+
+      {/* Targets at a Glance: cross-check ingresos vs S/15k y peso vs categoría
+          Mundial. Sin gráficos — un chip y un número por row. Fail-safe si no
+          hay goals declarados con métrica dura. Ver src/engines/targets. */}
+      <TargetsAtGlanceCard now={now} />
 
       {/* Observación conductual (E3 hueco #4): cuando estrés + sueño + gasto
           no-esencial se alinean, sale una sugerencia concreta y no-clínica.
