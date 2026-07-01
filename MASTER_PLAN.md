@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1571385`
+**Hash del último commit humano:** `3e45d04`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `3e45d04` | aaronhuaynate66 | feat(relaciones): botón "Fusionar aquí" en Posibles duplicados (#457) | 2026-07-01 |
 | `1571385` | aaronhuaynate66 | fix(duplicates): detectar match por prefijo de tokens (Fabiola × Fabiola Masías Ponce) (#456) | 2026-07-01 |
 | `87973fa` | aaronhuaynate66 | fix(build): usar <Link> en vez de <a> para /relaciones (ESLint no-html-link-for-pages) (#455) | 2026-07-01 |
 | `852b385` | aaronhuaynate66 | feat(relaciones): fusionar duplicados de 1 click (endpoint + UI) + detección parcial "Cristina" ⊂ "Cristina Fuentes" (#454) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c3fcfd1` | aaronhuaynate66 | feat(relaciones): moments/episodios entran a la Bitácora (#450) | 2026-07-01 |
 | `73fe3d0` | aaronhuaynate66 | feat(relaciones): dropdown "N anteriores" en el edit de notas + botón restaurar (#449) | 2026-07-01 |
 | `7f2d148` | aaronhuaynate66 | feat(relaciones): "Anotar algo ahora" + historial de notas + Bitácora extendida (#448) | 2026-07-01 |
-| `94f18da` | aaronhuaynate66 | fix(seed): normaliza gender ES→EN (people_gender_check violation) (#447) | 2026-07-01 |
 
 ---
 
