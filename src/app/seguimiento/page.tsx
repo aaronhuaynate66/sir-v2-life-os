@@ -23,9 +23,13 @@ import { useTrackerStore } from '@/stores/useTrackerStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { TrackerSummary } from '@/components/trackers/TrackerSummary'
-import { TrackerDetail } from '@/components/trackers/TrackerDetail'
 import { TrackerAlerts } from '@/components/trackers/TrackerAlerts'
-import { CreateTrackerForm } from '@/components/trackers/CreateTrackerForm'
+import dynamic from 'next/dynamic'
+// TrackerDetail solo se muestra con ?t=<id> (deep link). CreateTrackerForm
+// solo cuando showCreate=true. Ambos son on-demand → dynamic + ssr:false.
+const trackerLoad = () => <div className="h-32 rounded-lg border border-border animate-pulse" />
+const TrackerDetail = dynamic(() => import('@/components/trackers/TrackerDetail').then((m) => ({ default: m.TrackerDetail })), { ssr: false, loading: trackerLoad })
+const CreateTrackerForm = dynamic(() => import('@/components/trackers/CreateTrackerForm').then((m) => ({ default: m.CreateTrackerForm })), { ssr: false, loading: trackerLoad })
 
 export default function SeguimientoPage() {
   const hydrated = useHasHydrated()
