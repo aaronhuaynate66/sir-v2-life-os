@@ -14,6 +14,8 @@ import { Brain } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { createClient } from '@/lib/supabase/server'
 import { loadBrainGraph } from '@/lib/brain/loader'
+import { diffuse, topActivated } from '@/lib/brain/diffuse'
+import { nodeKey } from '@/lib/brain/types'
 import type { EdgeKind, NodeType } from '@/lib/brain/types'
 
 export const dynamic = 'force-dynamic'
@@ -44,11 +46,21 @@ const TYPE_LABEL: Record<NodeType, string> = {
   tracker: 'tracker',
 }
 
-export default async function BrainDebugPage() {
+interface BrainDebugSearchParams {
+  seed?: string
+}
+
+export default async function BrainDebugPage({
+  searchParams,
+}: {
+  searchParams: Promise<BrainDebugSearchParams>
+}) {
   const supabase = await createClient()
   const { data: authData } = await supabase.auth.getUser()
   const user = authData?.user
   if (!user) redirect('/auth/login')
+
+  const { seed } = await searchParams
 
   const graph = await loadBrainGraph(supabase, user.id)
 
@@ -67,6 +79,22 @@ export default async function BrainDebugPage() {
   for (const n of graph.nodes) labelByKey.set(`${n.type}:${n.id}`, n.label)
   const nodeText = (type: NodeType, id: string): string =>
     labelByKey.get(`${type}:${id}`) ?? id
+  const nodeTextByKey = (key: string): string => labelByKey.get(key) ?? key
+
+  // Difusion F2 (opcional, si vino ?seed=<nodeKey>).
+  const seedKey = seed?.trim() ?? ''
+  const seedValid =
+    seedKey.length > 0 && graph.nodes.some((n) => nodeKey(n.type, n.id) === seedKey)
+  const diffusionTop = seedValid
+    ? topActivated(diffuse(graph, seedKey), seedKey, 30)
+    : []
+
+  // Semillas sugeridas: hasta 5 goals + 5 personas para tener enlaces
+  // clickables sin ID a mano.
+  const suggestedSeeds = [
+    ...graph.nodes.filter((n) => n.type === 'goal').slice(0, 5),
+    ...graph.nodes.filter((n) => n.type === 'person').slice(0, 5),
+  ]
 
   // Ordena aristas por peso descendente (las mas fuertes primero).
   const edgesSorted = [...graph.edges].sort((a, b) => b.weight - a.weight)
@@ -78,14 +106,15 @@ export default async function BrainDebugPage() {
           <div className="flex items-center gap-2 text-fg-muted">
             <Brain className="h-4 w-4" />
             <span className="text-xs uppercase tracking-wider">
-              cerebro · F1 · debug
+              cerebro · F1+F2 · debug
             </span>
           </div>
-          <h1 className="text-2xl font-semibold">Grafo tipado — sustrato</h1>
+          <h1 className="text-2xl font-semibold">Grafo tipado — sustrato + difusion</h1>
           <p className="text-sm text-fg-muted">
-            Proyeccion pura de las tablas actuales a aristas tipadas con peso.
-            El peso base es constante por tipo; el delta aprendido (F3, Hebbian)
-            se suma. Hoy F1 solo lee — nada aca cambia UI de usuario.
+            Proyeccion pura de las tablas actuales a aristas tipadas con peso
+            (F1). Con ?seed=&lt;tipo:id&gt; en la URL, corre difusion (F2) y
+            muestra los nodos mas activados desde ese semilla. Hoy no cambia UI
+            de usuario.
           </p>
         </header>
 
@@ -141,6 +170,79 @@ export default async function BrainDebugPage() {
                 </li>
               ))}
           </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold text-fg-muted">
+            Difusion desde una semilla (F2)
+          </h2>
+          <p className="text-xs text-fg-muted">
+            Agrega <code>?seed=tipo:id</code> a la URL para encender ese nodo y
+            ver que se prende. Ej: <code>?seed=goal:{'{goalId}'}</code>. Semillas
+            sugeridas:
+          </p>
+          <ul className="flex flex-wrap gap-1 text-xs">
+            {suggestedSeeds.map((n) => {
+              const k = nodeKey(n.type, n.id)
+              const active = k === seedKey
+              return (
+                <li key={k}>
+                  <a
+                    href={`/red/brain-debug?seed=${encodeURIComponent(k)}`}
+                    className={
+                      active
+                        ? 'rounded border border-brand bg-brand/10 px-2 py-1 text-brand'
+                        : 'rounded border border-border-subtle bg-bg-elev px-2 py-1 text-fg-muted hover:text-fg'
+                    }
+                  >
+                    {TYPE_LABEL[n.type]}: {n.label}
+                  </a>
+                </li>
+              )
+            })}
+          </ul>
+          {seedKey.length > 0 && !seedValid && (
+            <p className="text-xs text-warn">
+              Semilla <code>{seedKey}</code> no encontrada en el grafo.
+            </p>
+          )}
+          {seedValid && diffusionTop.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-border-subtle text-sm">
+                <thead className="bg-bg-elev">
+                  <tr>
+                    <th className="px-2 py-1 text-left font-medium">Nodo</th>
+                    <th className="px-2 py-1 text-right font-medium">
+                      Activacion
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {diffusionTop.map((row) => (
+                    <tr
+                      key={row.nodeKey}
+                      className="border-t border-border-subtle"
+                    >
+                      <td className="px-2 py-1">
+                        {nodeTextByKey(row.nodeKey)}{' '}
+                        <span className="text-xs text-fg-muted">
+                          ({row.nodeKey})
+                        </span>
+                      </td>
+                      <td className="px-2 py-1 text-right font-mono">
+                        {row.activation.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {seedValid && diffusionTop.length === 0 && (
+            <p className="text-xs text-fg-muted">
+              La semilla no tiene vecinos (nodo aislado en el grafo).
+            </p>
+          )}
         </section>
 
         <section className="space-y-2">
