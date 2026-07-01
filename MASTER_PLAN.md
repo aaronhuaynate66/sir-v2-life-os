@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5045c6c`
+**Hash del último commit humano:** `5cba09a`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `5cba09a` | aaronhuaynate66 | feat(perf+analytics): P0 quick wins — auth N+1, PWA manifest, 4 eventos GA4, CLS (#427) | 2026-07-01 |
 | `5045c6c` | aaronhuaynate66 | test(cerebro): tests unit para /api/brain/feedback y /api/brain/glow (#426) | 2026-07-01 |
 | `ccb4c6c` | aaronhuaynate66 | feat(router): crear_persona autocrea org si el modelo la olvidó (#425) | 2026-07-01 |
 | `5d23850` | aaronhuaynate66 | refactor(objetivos): extraer metadata visual a components/objetivos/goalMeta (#424) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `fcddd87` | aaronhuaynate66 | feat(cerebro): BrainGlow en Semana + Mes con ventana de scope (#420) | 2026-07-01 |
 | `c36663b` | aaronhuaynate66 | feat(router): 2b completo — crear_objetivo suma esAncla + target + baseline SMART (#419) | 2026-07-01 |
 | `1b4fe04` | aaronhuaynate66 | feat(router): fase 2b — crear/editar objetivos + episodios en /relato (#418) | 2026-07-01 |
-| `0c71e89` | aaronhuaynate66 | feat(cerebro): F3 Hebbian — bucle de aprendizaje sobre BrainGlow (#417) | 2026-07-01 |
 
 ---
 
