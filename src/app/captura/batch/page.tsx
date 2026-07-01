@@ -110,7 +110,7 @@ export default function CapturaBatchPage() {
 
       {applied && (
         <Card className="shadow-none mb-4 border-ok/30">
-          <CardContent className="p-4 sm:p-5">
+          <CardContent className="p-4 sm:p-5 space-y-3">
             <div className="flex items-start gap-2">
               <CheckCircle2 size={16} strokeWidth={1.75} className="text-ok mt-0.5 flex-shrink-0" />
               <div>
@@ -120,7 +120,25 @@ export default function CapturaBatchPage() {
                   {applied.skippedLinks && applied.skippedLinks > 0
                     ? ` (${applied.skippedLinks} sin metadata — 0107 aún no aplicada)` : ''}
                 </p>
+                <p className="mt-2 text-[11px] text-muted-foreground/70 leading-relaxed">
+                  Realtime sincroniza el store local en 1-2s. Si no aparece, tocá &quot;Refrescar&quot;.
+                </p>
               </div>
+            </div>
+            <div className="flex gap-2">
+              <a
+                href="/relaciones"
+                className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:opacity-90"
+              >
+                Ver en /relaciones →
+              </a>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/10"
+              >
+                Refrescar
+              </button>
             </div>
           </CardContent>
         </Card>
