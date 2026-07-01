@@ -190,11 +190,32 @@ function formatRelative(iso: string): string {
   return ABS.format(new Date(t))
 }
 
+/** Timestamp absoluto compacto: "vie 27 jun · 14:30". Sin año si es del año en
+ *  curso. Sirve para responder "cuándo exactamente" al lado del "hace 2h",
+ *  que Aaron pidió textualmente ("día y hora de cada cosa registrada"). */
+const DOW_ABBR = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
+const MON_ABBR = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+function formatAbsolute(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const now = new Date()
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  const day = `${DOW_ABBR[d.getDay()]} ${d.getDate()} ${MON_ABBR[d.getMonth()]}`
+  const year = d.getFullYear() !== now.getFullYear() ? ` ${d.getFullYear()}` : ''
+  // Los moments guardan T00:00 (date-only) → no mostrar hora fake.
+  const hourPart = hh === '00' && mm === '00' ? '' : ` · ${hh}:${mm}`
+  return `${day}${year}${hourPart}`
+}
+
 export function Bitacora({ personLogs, observations, notesHistory, moments }: BitacoraProps) {
-  const [open, setOpen] = useState(false)
+  const entries = buildEntries(personLogs, observations, notesHistory ?? [], moments ?? [])
+  // Abierta por defecto cuando hay contenido — Aaron pidió VISIBILIDAD de lo
+  // que registró en cada ficha. Vacía queda plegada para no gritar "hueco".
+  const [open, setOpen] = useState(entries.length > 0)
   const [showAll, setShowAll] = useState(false)
 
-  const entries = buildEntries(personLogs, observations, notesHistory ?? [], moments ?? [])
   const visible = showAll ? entries : entries.slice(0, INITIAL_VISIBLE)
 
   return (
@@ -255,9 +276,17 @@ export function Bitacora({ personLogs, observations, notesHistory, moments }: Bi
                             <span className="text-xs font-mono tabular-nums text-foreground shrink-0">{e.value}</span>
                           )}
                         </div>
-                        <span className="text-[10px] font-mono text-muted-foreground/70 shrink-0">
-                          {formatRelative(e.at)}
-                        </span>
+                        <div className="flex flex-col items-end shrink-0 leading-tight">
+                          <span
+                            className="text-[10px] font-mono text-muted-foreground/70"
+                            title={e.at}
+                          >
+                            {formatRelative(e.at)}
+                          </span>
+                          <span className="text-[9px] font-mono text-muted-foreground/50 tabular-nums">
+                            {formatAbsolute(e.at)}
+                          </span>
+                        </div>
                       </div>
                       {e.detail && (
                         <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{e.detail}</p>
