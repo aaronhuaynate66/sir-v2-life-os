@@ -77,6 +77,8 @@ export const EVENTS = {
   yearCompassClick: 'year_compass_click',
   // /relaciones — bounce a la ficha detallada.
   personOpened: 'person_opened',
+  // /oportunidades — creación/edición de deals.
+  dealSaved: 'deal_saved',
 } as const
 
 // ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────

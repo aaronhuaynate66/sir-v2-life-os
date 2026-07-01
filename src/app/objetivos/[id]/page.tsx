@@ -12,11 +12,15 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
-import { GoalMeaning } from '@/components/objetivos/GoalMeaning'
-import { ObjectivePlanPanel } from '@/components/objetivos/ObjectivePlanPanel'
-import { ExternalSignalsPanel } from '@/components/objetivos/ExternalSignalsPanel'
-import { GoalCosts } from '@/components/objetivos/GoalCosts'
-import { GoalConflictFriction } from '@/components/objetivos/GoalConflictFriction'
+import dynamic from 'next/dynamic'
+// Los 5 paneles de detalle de objetivo se apilan below-the-fold. Dynamic
+// ssr:false los saca del First Load JS (era 236 KB).
+const panelLoad = () => <div className="h-32 rounded-lg border border-border animate-pulse" />
+const GoalMeaning = dynamic(() => import('@/components/objetivos/GoalMeaning').then((m) => ({ default: m.GoalMeaning })), { ssr: false, loading: panelLoad })
+const ObjectivePlanPanel = dynamic(() => import('@/components/objetivos/ObjectivePlanPanel').then((m) => ({ default: m.ObjectivePlanPanel })), { ssr: false, loading: panelLoad })
+const ExternalSignalsPanel = dynamic(() => import('@/components/objetivos/ExternalSignalsPanel').then((m) => ({ default: m.ExternalSignalsPanel })), { ssr: false, loading: panelLoad })
+const GoalCosts = dynamic(() => import('@/components/objetivos/GoalCosts').then((m) => ({ default: m.GoalCosts })), { ssr: false, loading: panelLoad })
+const GoalConflictFriction = dynamic(() => import('@/components/objetivos/GoalConflictFriction').then((m) => ({ default: m.GoalConflictFriction })), { ssr: false, loading: panelLoad })
 import { matchEpisodesToGoal, type EpisodeLite } from '@/lib/goals/episodeFriction'
 
 function firstName(n: string): string { return (n || '').trim().split(/\s+/)[0] || n }

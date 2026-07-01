@@ -14,7 +14,7 @@ import { redirect } from 'next/navigation'
 import { Network } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
-import { GraphView } from '@/components/red/GraphView'
+import { GraphViewLazy as GraphView } from '@/components/red/GraphViewLazy'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function RedPage() {

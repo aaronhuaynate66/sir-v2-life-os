@@ -9,6 +9,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import type { Deal, DealStage, DealStatus, DealTier, DealImpactType } from '@/types'
 import { groupByStage, STAGE_LABEL, STAGE_ORDER, daysSinceUpdate } from '@/lib/deals/pipeline'
 import { useRelationshipStore } from '@/stores'
+import { track, EVENTS } from '@/lib/analytics/track'
 
 const TIERS: DealTier[] = ['chico', 'mediano', 'grande']
 const STATUSES: DealStatus[] = ['open', 'won', 'lost', 'paused']
@@ -53,6 +54,9 @@ export default function OportunidadesPage() {
         body: JSON.stringify(draft),
       })
       if (res.ok) {
+        // Analytics: creación/edición de deals — cierra hueco de instrumentacion
+        // del funnel comercial (antes /oportunidades no emitia eventos custom).
+        track(EVENTS.dealSaved, { stage: draft.stage ?? 'lead', status: draft.status ?? 'open', is_new: !draft.id })
         setDraft(null)
         await load()
       }
