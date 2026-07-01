@@ -72,9 +72,28 @@ export interface SelfKinship {
   label: string
 }
 
+/** Set de FamilyKind conocidos (derivado de POSSESSIVE_LABEL). Se usa para
+ *  descartar person_links SELF con kinds NO-familia (ej. 'colega_hng',
+ *  'contacto_en_comun', 'gerente_de_area_de') que introdujo el seed batch
+ *  (mig 0107 + PR #446). Sin este guard, cualquier link SELF caía en el
+ *  fallback 'tu familiar' — Fabiola aparecía como "tu familiar" con un
+ *  link kind='colega_hng'. */
+const FAMILY_KIND_SET = new Set<string>(Object.keys(POSSESSIVE_LABEL))
+
+/** ¿Es un kind de parentesco/afectivo reconocido? Los kinds del seed batch
+ *  ('colega_hng', 'colega_area', 'contacto_en_comun', 'gerente_de_area_de',
+ *  etc.) NO son familia: se ignoran acá. */
+function isFamilyKind(kind: string): kind is FamilyKind {
+  return FAMILY_KIND_SET.has(kind)
+}
+
 /**
  * Mapa personId → vínculo de parentesco con el "yo", derivado de las aristas
  * SELF↔persona (person_links con personAId === SELF_ID, leídas "B es mi <kind>").
+ *
+ * IMPORTANTE: SOLO consideramos aristas cuyo `kind` está en el enum
+ * `FamilyKind` (parentescos + amiga/amigo + otro/familiar). Un link con
+ * kind='colega_hng' (batch de LinkedIn) NO es familia — se ignora.
  *
  * Si una persona tuviera más de una arista con el self (no debería, pero el
  * grafo no lo impide), gana la de MAYOR peso — no subestimamos el vínculo.
@@ -85,6 +104,7 @@ export function buildSelfKinshipMap(links: PersonLink[]): Map<string, SelfKinshi
   const map = new Map<string, SelfKinship>()
   for (const link of links) {
     if (link.personAId !== SELF_ID) continue
+    if (!isFamilyKind(link.kind)) continue // kind non-familia → skip (bug fix)
     const personId = link.personBId
     if (!personId || personId === SELF_ID) continue
     const weight = WEIGHT_BY_CATEGORY[categoryOf(link.kind)] ?? 1.0

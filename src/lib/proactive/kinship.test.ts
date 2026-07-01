@@ -54,4 +54,34 @@ describe('buildSelfKinshipMap', () => {
   it('lista vacía → mapa vacío', () => {
     expect(buildSelfKinshipMap([]).size).toBe(0)
   })
+
+  it('IGNORA kinds no-familia (seed batch: colega_hng, contacto_en_comun, etc.)', () => {
+    // Fabiola vino de un batch de LinkedIn con este link:
+    //   { person_a: 'SELF', person_b: 'Fabiola', kind: 'colega_hng' }
+    // El bug antes: se metía al mapa con label='tu familiar' (fallback).
+    const map = buildSelfKinshipMap([
+      // @ts-expect-error — el tipo restringe a FamilyKind, pero en runtime
+      // person_links acepta cualquier string. Simulamos el batch real.
+      link({ personBId: 'fabiola', kind: 'colega_hng' }),
+      // @ts-expect-error — otro kind del batch
+      link({ id: 'l2', personBId: 'cristina', kind: 'contacto_en_comun' }),
+      // @ts-expect-error — otro kind del batch
+      link({ id: 'l3', personBId: 'x', kind: 'gerente_de_area_de' }),
+    ])
+    expect(map.size).toBe(0)
+    expect(map.get('fabiola')).toBeUndefined()
+  })
+
+  it('mezcla: sólo entran los kinds de familia, los otros se ignoran', () => {
+    const map = buildSelfKinshipMap([
+      link({ personBId: 'mama', kind: 'madre' }), // family ✓
+      // @ts-expect-error — no family
+      link({ id: 'l2', personBId: 'fabiola', kind: 'colega_hng' }),
+      link({ id: 'l3', personBId: 'nn', kind: 'amiga' }), // family ✓
+    ])
+    expect(map.size).toBe(2)
+    expect(map.get('mama')?.label).toBe('tu mamá')
+    expect(map.get('nn')?.label).toBe('tu amiga')
+    expect(map.get('fabiola')).toBeUndefined()
+  })
 })
