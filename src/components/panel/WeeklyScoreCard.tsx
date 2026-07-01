@@ -7,10 +7,11 @@
 //   - status 'scored'      → tier + score + desglose.
 'use client'
 
-import { Gauge } from 'lucide-react'
+import { Gauge, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
 import type { WeeklyScore, WeeklyTier, WeeklyComponent } from '@/engines/weekly'
+import type { WeeklyDelta } from '@/engines/weekly/delta'
 import { cn } from '@/lib/utils'
 
 // S es el tier elite → acento de marca (no semántico). A/B buenos → ok;
@@ -43,17 +44,37 @@ function barColor(score: number): string {
   return 'bg-bad'
 }
 
-export function WeeklyScoreCard({ data }: { data: WeeklyScore }) {
+export function WeeklyScoreCard({ data, delta }: { data: WeeklyScore; delta?: WeeklyDelta | null }) {
   const { status, score, tier, components, daysWithData, windowDays, confident } = data
   const anyData = components.some((c) => c.available)
 
   return (
     <Card className="shadow-none mb-6">
       <CardContent className="p-4 sm:p-6">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <SectionTitle icon={Gauge} label="Score semanal" />
-          <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">últimos {windowDays} días</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {delta && delta.direction !== 'no_comparison' && (
+              <div className={cn(
+                'flex items-center gap-1 text-[10px] font-mono tracking-widest px-2 py-0.5 rounded border',
+                delta.direction === 'up' ? 'border-ok/40 bg-ok-soft text-ok'
+                : delta.direction === 'down' ? 'border-bad/40 bg-bad-soft text-bad'
+                : 'border-border bg-muted text-muted-foreground',
+              )}
+                title={delta.label}
+              >
+                {delta.direction === 'up' && <TrendingUp size={11} strokeWidth={1.75} />}
+                {delta.direction === 'down' && <TrendingDown size={11} strokeWidth={1.75} />}
+                {delta.direction === 'flat' && <Minus size={11} strokeWidth={1.75} />}
+                <span>vs semana ant.</span>
+              </div>
+            )}
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">últimos {windowDays} días</span>
+          </div>
         </div>
+        {delta && delta.direction !== 'no_comparison' && (
+          <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed">{delta.label}</p>
+        )}
 
         {!anyData ? (
           <div className="text-center py-6">

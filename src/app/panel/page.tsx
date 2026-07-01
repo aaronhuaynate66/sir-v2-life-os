@@ -19,6 +19,7 @@ import { generateRecommendations } from '@/engines/recommendation'
 import { buildGoalDashboard } from '@/engines/goal'
 import { getCurrentTimingWindow } from '@/engines/timing'
 import { computeWeeklyScore, windowAverages } from '@/engines/weekly'
+import { computeWeeklyDelta } from '@/engines/weekly/delta'
 import { assessRecovery } from '@/engines/recovery'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
@@ -137,6 +138,15 @@ function DashboardContent() {
     () => computeWeeklyScore({ selfMetrics, sleepRecords, financialMovements, goals }, { now: now ?? undefined, liquidityMonths: 2.5 }),
     [selfMetrics, sleepRecords, financialMovements, goals, now],
   )
+  // Semana anterior (now - 7d) para dar la lectura de tendencia semana-a-semana.
+  // Reusa el mismo engine — puro, `now` inyectable. Es el ultimo hueco del P2
+  // del inventario Aaron OS: "Weekly score con TENDENCIA".
+  const weeklyPrev = useMemo(() => {
+    if (!now) return null
+    const prevNow = new Date(now.getTime() - 7 * 86_400_000)
+    return computeWeeklyScore({ selfMetrics, sleepRecords, financialMovements, goals }, { now: prevNow, liquidityMonths: 2.5 })
+  }, [selfMetrics, sleepRecords, financialMovements, goals, now])
+  const weeklyDelta = useMemo(() => (weeklyPrev ? computeWeeklyDelta(weekly, weeklyPrev) : null), [weekly, weeklyPrev])
   // P4: evaluación dinámica de recuperación sobre señales de sobrecarga.
   const spendIntent = useMemo(() => analyzeSpendingByIntent(financialMovements), [financialMovements])
   const winAvg = useMemo(() => windowAverages(selfMetrics, sleepRecords, { now: now ?? undefined }), [selfMetrics, sleepRecords, now])
@@ -372,7 +382,7 @@ function DashboardContent() {
       </Card>
 
       {/* Weekly score (P2): score semanal compuesto con tier S/A/B/C/D. */}
-      <WeeklyScoreCard data={weekly} />
+      <WeeklyScoreCard data={weekly} delta={weeklyDelta} />
 
       {/* Recovery Mode dinámico (P4): prioridades de recuperación cuando hay sobrecarga. */}
       <RecoveryPanel data={recoveryAssessment} />
