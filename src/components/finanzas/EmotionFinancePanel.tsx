@@ -1,4 +1,4 @@
-// SIR V2 — Correlación emocional ↔ financiera (P3).
+﻿// SIR V2 — Correlación emocional ↔ financiera (P3).
 // Muestra si el gasto no-esencial sube con el estrés ("gasto hormiga").
 // Determinístico (engine puro). Honesto: si no hay data o no hay patrón, lo
 // dice; nunca afirma causa.
@@ -34,7 +34,7 @@ export function EmotionFinancePanel({ data }: { data: EmotionFinanceCorrelation 
 
         {status === 'insufficient_data' ? (
           <div className="text-center py-6">
-            <Activity size={22} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" aria-hidden="true" />
+            <Activity size={22} strokeWidth={1.5} className="text-muted-foreground/60 mx-auto mb-2" aria-hidden="true" />
             <p className="text-sm text-muted-foreground">Aún no hay suficientes días para ver una relación.</p>
             <p className="text-xs text-muted-foreground/60 mt-1 max-w-md mx-auto leading-snug">
               Registrá tu estrés en <span className="font-mono text-foreground/80">/yo</span> y clasificá tus
@@ -86,7 +86,7 @@ function BucketBars({ data }: { data: EmotionFinanceCorrelation }) {
                   {b.dayCount} día{b.dayCount === 1 ? '' : 's'}
                 </span>
               </div>
-              <span className={cn('text-sm font-mono tabular-nums flex-shrink-0', avg != null ? LEVEL_TEXT[b.level] : 'text-muted-foreground/40')}>
+              <span className={cn('text-sm font-mono tabular-nums flex-shrink-0', avg != null ? LEVEL_TEXT[b.level] : 'text-muted-foreground/60')}>
                 {avg != null ? `${formatPEN(avg)}/día` : 'pocos datos'}
               </span>
             </div>

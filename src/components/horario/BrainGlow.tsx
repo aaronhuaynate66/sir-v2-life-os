@@ -199,12 +199,16 @@ export function BrainGlow({ scope = 'day' }: BrainGlowProps = {}) {
                   </span>
                   {canLearn && (
                     <div className="flex items-center gap-0.5">
+                      {/* min-h/min-w garantizan >= 24px de tap-area en mobile
+                         (Lighthouse target-size fallaba con p-1 + icon 12px).
+                         Los iconos siguen chicos por estetica; el padding hace
+                         el hit-box grande. */}
                       <button
                         type="button"
                         disabled={isLearning}
                         onClick={() => submitFeedback(r.edgeKey as string, 'reinforce')}
                         aria-label="Me sirve — reforzar"
-                        className="rounded p-1 text-muted-foreground hover:bg-foreground/5 hover:text-foreground disabled:opacity-40"
+                        className="rounded inline-flex items-center justify-center min-h-6 min-w-6 p-1.5 text-muted-foreground hover:bg-foreground/5 hover:text-foreground disabled:opacity-40"
                       >
                         <ThumbsUp size={12} strokeWidth={1.75} />
                       </button>
@@ -213,7 +217,7 @@ export function BrainGlow({ scope = 'day' }: BrainGlowProps = {}) {
                         disabled={isLearning}
                         onClick={() => submitFeedback(r.edgeKey as string, 'discard')}
                         aria-label="No me sirve — debilitar"
-                        className="rounded p-1 text-muted-foreground hover:bg-foreground/5 hover:text-foreground disabled:opacity-40"
+                        className="rounded inline-flex items-center justify-center min-h-6 min-w-6 p-1.5 text-muted-foreground hover:bg-foreground/5 hover:text-foreground disabled:opacity-40"
                       >
                         <X size={12} strokeWidth={1.75} />
                       </button>

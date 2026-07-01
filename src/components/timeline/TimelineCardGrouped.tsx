@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 // SIR V2 — TimelineCardGrouped (Captura consolidada)
 //
 // Render compacto y consolidado de un GroupedTimelineEvent. Una captura
@@ -89,7 +89,7 @@ export function TimelineCardGrouped({ event, nowMs }: TimelineCardGroupedProps) 
               <span className="text-[11px] font-mono text-muted-foreground/80">
                 {formatRelative(event.occurredAt, nowMs)}
               </span>
-              <span className="text-[11px] font-mono text-muted-foreground/40" aria-hidden="true">
+              <span className="text-[11px] font-mono text-muted-foreground/60" aria-hidden="true">
                 ·
               </span>
               <time

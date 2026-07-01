@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 // SIR V2 - /memory
 // Vista de memorias del sistema. Solo lectura.
 import { useState, useMemo } from 'react'
@@ -191,7 +191,7 @@ function MemoryContent() {
 
       {memories.length === 0 ? (
         <div className="text-center py-12">
-          <BookOpen size={24} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" />
+          <BookOpen size={24} strokeWidth={1.5} className="text-muted-foreground/60 mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">
             {search ? `Sin resultados para "${search}"` : 'Todavía no hay memorias.'}
           </p>

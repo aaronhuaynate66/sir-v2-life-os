@@ -1,4 +1,4 @@
-// SIR V2 — EmptyState (ronda 3)
+﻿// SIR V2 — EmptyState (ronda 3)
 // Primitivo compartido para estados vacíos: icono + título + hint opcional +
 // acción opcional, centrado. Reemplaza las copias hand-rolled repartidas por
 // las pantallas (icon + título + hint) para un patrón visual consistente.
@@ -28,7 +28,7 @@ export function EmptyState({ icon: Icon, title, hint, action, size = 'md', class
   const sm = size === 'sm'
   return (
     <div className={cn('flex flex-col items-center justify-center text-center', sm ? 'py-6 gap-2' : 'py-12 gap-3', className)}>
-      <Icon size={sm ? 20 : 28} strokeWidth={1.5} className="text-muted-foreground/40" aria-hidden="true" />
+      <Icon size={sm ? 20 : 28} strokeWidth={1.5} className="text-muted-foreground/60" aria-hidden="true" />
       <p className="text-sm text-muted-foreground">{title}</p>
       {hint && <p className="text-xs text-muted-foreground/60 max-w-md">{hint}</p>}
       {action}

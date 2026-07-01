@@ -66,7 +66,12 @@
     --secondary: 240 5% 10%;             /* #18181b */
     --secondary-foreground: 0 0% 93%;
     --muted: 240 5% 10%;                 /* #18181b */
-    --muted-foreground: 240 5% 65%;      /* #a1a1aa — texto secundario */
+    /* Subido de 65% (#a1a1aa) a 72% (#b6b6bd) → contrast ratio de ~5.5:1 sobre
+       el bg #0a0a0a (WCAG AA ≥ 4.5:1). Los usos con opacidad /40 caían a ~2.3
+       (fail), /60 caía a ~3.4 (fail). Con el token más claro, /60 llega a ~4.6
+       y /40 sube pero sigue fallando — por eso ademas se reemplazaron los
+       text-muted-foreground/40 a /60 en toda la app en un fix aparte. */
+    --muted-foreground: 240 5% 72%;      /* #b6b6bd — texto secundario */
     --accent: 240 5% 10%;                /* #18181b — hover de ghost/outline */
     --accent-foreground: 0 0% 93%;       /* texto sobre superficies hover */
 

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -285,7 +285,7 @@ function DashboardContent() {
                     </div>
                     <button
                       onClick={() => resolveSignal(sig.id)}
-                      className="text-muted-foreground/40 hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-muted-foreground/60 hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label="Resolver"
                     >
                       <X size={14} strokeWidth={1.75} />
@@ -367,7 +367,7 @@ function DashboardContent() {
             {peaceCalibrating ? (
               <>
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-5xl sm:text-6xl lg:text-7xl font-mono font-semibold tabular-nums text-muted-foreground/40">—</span>
+                  <span className="text-5xl sm:text-6xl lg:text-7xl font-mono font-semibold tabular-nums text-muted-foreground/60">—</span>
                   <span className="text-xl sm:text-2xl text-muted-foreground/50 font-mono">/10</span>
                 </div>
                 <p className="text-xs text-muted-foreground/70 leading-relaxed">
@@ -582,7 +582,7 @@ function DashboardContent() {
           <span className="flex items-center gap-2 min-w-0">
             <PlusCircle size={14} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0" />
             <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Registro rápido</span>
-            <span className="text-[11px] text-muted-foreground/40 truncate hidden sm:inline">sueño · energía · finanzas · señal</span>
+            <span className="text-[11px] text-muted-foreground/60 truncate hidden sm:inline">sueño · energía · finanzas · señal</span>
           </span>
           <ChevronDown size={16} strokeWidth={1.75} className={cn('text-muted-foreground/50 flex-shrink-0 transition-transform duration-200', showCapture && 'rotate-180')} />
         </button>

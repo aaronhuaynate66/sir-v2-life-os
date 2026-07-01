@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 // SIR V2 — /horario · vista DÍA.
 //
@@ -306,7 +306,7 @@ function TaskBlockRow({ row, nowMs }: { row: TaskRowItem; nowMs: number }) {
 function GapRow({ row }: { row: GapRowItem }) {
   return (
     <li className={cn('flex items-center gap-3 py-1.5 text-muted-foreground/60', row.status === 'past' && 'opacity-40')}>
-      <div className="w-14 flex-shrink-0 text-xs font-mono tabular-nums text-muted-foreground/40">{limaTimeMs(row.startMs)}</div>
+      <div className="w-14 flex-shrink-0 text-xs font-mono tabular-nums text-muted-foreground/60">{limaTimeMs(row.startMs)}</div>
       <div className="h-px flex-1 border-t border-dashed border-border/60" aria-hidden="true" />
       <span className="text-[11px] whitespace-nowrap">
         libre hasta {limaTimeMs(row.endMs)} · {formatGapDuration(row.minutes)}

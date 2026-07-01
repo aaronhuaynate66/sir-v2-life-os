@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 // SIR V2 — /habitos (Etapa 3 — comportamiento)
 //
 // Hábitos como primitiva: crear (diario o Nx/semana), marcar el check-in (con
@@ -299,7 +299,7 @@ export default function HabitosPage() {
                       <Flame
                         size={16}
                         strokeWidth={1.75}
-                        className={streakNum > 0 ? 'text-warn' : 'text-muted-foreground/40'}
+                        className={streakNum > 0 ? 'text-warn' : 'text-muted-foreground/60'}
                         aria-hidden="true"
                       />
                       <span className={streakNum > 0 ? 'text-foreground font-medium' : 'text-muted-foreground'}>{streakNum}</span>

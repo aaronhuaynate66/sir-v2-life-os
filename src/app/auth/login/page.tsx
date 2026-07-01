@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 // SIR V2 — Login page (Sesión 20b)
 // Google OAuth primary + Magic Link fallback.
 
@@ -146,7 +146,7 @@ function LoginForm() {
           </CardContent>
         </Card>
 
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/40 font-mono text-center mt-8">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-mono text-center mt-8">
           datos &rarr; paz
         </p>
       </div>
