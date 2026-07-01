@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b6ef063`
+**Hash del último commit humano:** `908e40b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `908e40b` | aaronhuaynate66 | feat(cerebro): F2 difusion — spreading activation puro + ?seed en debug (#415) | 2026-07-01 |
 | `b6ef063` | aaronhuaynate66 | feat(cerebro): F1 grafo tipado — sustrato + edge_weights + /red/brain-debug (#414) | 2026-07-01 |
 | `456f11c` | aaronhuaynate66 | feat(objetivos): metodologia F3 — KRs medibles en el alta (corazon del objetivo) (#413) | 2026-06-26 |
 | `80a40a6` | aaronhuaynate66 | feat(objetivos): metodologia F2 — Obstaculo -> plan si-entonces (WOOP) (#412) | 2026-06-26 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6cc4464` | aaronhuaynate66 | feat(objetivos): plegado de tarjetas (divulgacion progresiva) (#408) | 2026-06-26 |
 | `c828b41` | aaronhuaynate66 | feat(objetivos): jerarquia + secciones (norte heroe + grupos por categoria) (#407) | 2026-06-26 |
 | `c017e9a` | aaronhuaynate66 | fix(ficha): mostrar cargo+empresa (people.title/organization) sin captura LinkedIn (#406) | 2026-06-26 |
-| `5ba7fc8` | aaronhuaynate66 | fix(familia): el selector 'quien es para vos' no arranca en 'madre' para parejas (#405) | 2026-06-26 |
 
 ---
 
