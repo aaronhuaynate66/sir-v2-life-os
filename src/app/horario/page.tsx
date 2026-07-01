@@ -118,9 +118,15 @@ function HorarioContent() {
       return !!eff && eff >= cutoffStr
     })
   }, [now, objectiveSteps])
+  // Hitos de objetivos: goals ACTIVOS con targetDate se pintan como all-day
+  // "milestone" el dia del hito para bloquear el dia (mudanza, examenes, etc.).
+  const goalMilestones = useMemo(
+    () => goals.filter((g) => g.status === 'active' && !!g.targetDate),
+    [goals],
+  )
   const boardEvents = useMemo(
-    () => (now && cockpit ? buildBoardEvents({ events, weekDays: cockpit.weekDays, contactDates: cockpit.contactDates, completedSteps }, now) : []),
-    [now, cockpit, events, completedSteps],
+    () => (now && cockpit ? buildBoardEvents({ events, weekDays: cockpit.weekDays, contactDates: cockpit.contactDates, completedSteps, goalMilestones }, now) : []),
+    [now, cockpit, events, completedSteps, goalMilestones],
   )
 
   const calendarLoading = calendar.kind === 'loading'
