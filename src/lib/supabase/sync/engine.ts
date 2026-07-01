@@ -56,6 +56,13 @@ const RETRY_DELAYS_MS = [1000, 4000, 16000] as const
 // (ej. offline), mostramos UN aviso, no N.
 const SYNC_FAILURE_TOAST_THROTTLE_MS = 12000
 let lastSyncFailureToastAt = 0
+// Staleness del pull automático. runPull opportunista (foco, visibilidad,
+// realtime) se salta si hace <60s del último pull exitoso. Antes: cada
+// visibilitychange re-pulleaba las 13 tablas → medido en prod, cada nav entre
+// rutas gatillaba el foco event y bajaba 13 selects (~800ms sumados). Con
+// 60s de TTL el usuario que navega rápido no vuelve a barrer la DB. SIGNED_IN
+// y 'online' pasan { force: true } para saltarse el TTL cuando hace falta.
+const POLL_STALENESS_MS = 60_000
 
 /**
  * Avisa al usuario que un push a Supabase falló tras agotar los reintentos.
@@ -224,9 +231,15 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
    * Pull de todas las slices, guarded. isApplyingPull evita que el subscriber
    * pushee; pullInFlight evita pulls solapados (foco + realtime concurrentes).
    * Idempotente y DB-autoritativo: seguro de llamar repetidamente.
+   *
+   * TTL de 60s: los triggers opportunistas (visibilitychange, focus, realtime)
+   * se saltan si hace <60s del último pull exitoso — evita barrer las 13 tablas
+   * cada vez que el usuario cambia de tab o vuelve al browser. force:true
+   * saltea el TTL; lo usan SIGNED_IN y 'online' (donde el pull ES el objetivo).
    */
-  async function runPull(userId: string): Promise<void> {
+  async function runPull(userId: string, opts?: { force?: boolean }): Promise<void> {
     if (pullInFlight) return
+    if (!opts?.force && lastPullAt > 0 && Date.now() - lastPullAt < POLL_STALENESS_MS) return
     pullInFlight = true
     isApplyingPull = true
     lastPullAt = Date.now()
@@ -347,7 +360,9 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
   function onOnline(): void {
     const uid = currentUserId
     if (!uid) return
-    void repushPending(uid).then(() => runPull(uid))
+    // Recuperar de offline: force el pull aunque haya sido reciente (podría
+    // haber cambios en DB que se perdieron mientras estabas sin conexión).
+    void repushPending(uid).then(() => runPull(uid, { force: true }))
   }
 
   function scheduleRealtimePull(): void {
@@ -399,6 +414,8 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
     currentUserId = userId
     sliceUnsubs.forEach((u) => u())
     sliceUnsubs = []
+    // El pull inicial siempre corre (lastPullAt=0 → no toca el TTL).
+    // Después de este, los foco/visibility events respetan el TTL de 60s.
     await runPull(userId)
     attachSubscribers()
     subscribeRealtime(userId)
