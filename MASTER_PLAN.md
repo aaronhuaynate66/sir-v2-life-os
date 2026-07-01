@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c3fcfd1`
+**Hash del último commit humano:** `9672daf`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `9672daf` | aaronhuaynate66 | feat(panel): "Anduve hoy" — timeline compacto de lo registrado hoy (#451) | 2026-07-01 |
 | `c3fcfd1` | aaronhuaynate66 | feat(relaciones): moments/episodios entran a la Bitácora (#450) | 2026-07-01 |
 | `73fe3d0` | aaronhuaynate66 | feat(relaciones): dropdown "N anteriores" en el edit de notas + botón restaurar (#449) | 2026-07-01 |
 | `7f2d148` | aaronhuaynate66 | feat(relaciones): "Anotar algo ahora" + historial de notas + Bitácora extendida (#448) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `188ef6c` | aaronhuaynate66 | feat(horario): hitos de objetivos aparecen bloqueando el dia del target (#444) | 2026-07-01 |
 | `eca5140` | aaronhuaynate66 | feat(push): morning push incluye Semana en foco + alerta de peso Mundial (#443) | 2026-07-01 |
 | `6c1f7f9` | aaronhuaynate66 | feat(panel): weekly score con tendencia semana-a-semana (P2 Aaron OS) (#442) | 2026-07-01 |
-| `ada83ac` | aaronhuaynate66 | feat(panel): targets at a glance — ingresos vs S/15k + peso vs categoria Mundial (#441) | 2026-07-01 |
 
 ---
 
