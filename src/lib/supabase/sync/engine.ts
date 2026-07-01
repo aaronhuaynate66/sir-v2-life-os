@@ -371,7 +371,12 @@ export function attachSupabaseSync<S>({ store, bindings }: AttachedStore<S>): ()
     if (realtimeTimer) clearTimeout(realtimeTimer)
     realtimeTimer = setTimeout(() => {
       realtimeTimer = null
-      void runPull(uid)
+      // FORCE porque el evento Realtime CONFIRMA que hay cambios en DB — no
+      // pueden ser stale. El TTL de runPull es para triggers oportunistas
+      // (foco/visibility) donde no sabemos si hay cambios; acá sabemos. Sin
+      // force, un INSERT vía API (ej. /captura/batch cargando personas) no
+      // aparece en el store porque un pull anterior < 60s bloquea el refresh.
+      void runPull(uid, { force: true })
     }, REALTIME_PULL_DEBOUNCE_MS)
   }
 
