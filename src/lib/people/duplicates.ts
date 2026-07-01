@@ -34,8 +34,30 @@ function keysOf(p: DupPerson): string[] {
   return [...ks]
 }
 
+/** Palabras genéricas que NO cuentan como "prefijo/first-name" para el match
+ *  parcial (evita agrupar "Juan Pablo Ii" con "Juan"). */
+const GENERIC_TOKENS = new Set(['de', 'la', 'del', 'san', 'mc', 'von', 'y', 'e', 'ii', 'iii', 'jr'])
+
+/** Extrae el "first-name" utilizable: primer token no-genérico ≥3 letras del
+ *  nombre normalizado. null si no lo tiene (nombre demasiado corto o genérico). */
+function firstNameKey(name: string): string | null {
+  const tokens = norm(name).split(' ').filter(Boolean)
+  for (const t of tokens) {
+    if (t.length < 3) continue
+    if (GENERIC_TOKENS.has(t)) continue
+    return t
+  }
+  return null
+}
+
 /**
- * Agrupa personas que comparten al menos una clave (nombre o alias normalizado).
+ * Agrupa personas que comparten al menos una clave (nombre o alias normalizado)
+ * O que tienen match parcial "nombre corto ⊂ nombre largo" con el MISMO primer
+ * token no-genérico (ej. "Cristina" vs "Cristina Fuentes Chacaltana"). El match
+ * parcial es CONSERVADOR: sólo cuando uno de los 2 nombres tiene UN SOLO token
+ * (ej. "Cristina", "Diana") y el otro empieza por él. Sin esto, cualquier "Juan"
+ * agruparía a media libreta.
+ *
  * Devuelve solo los grupos con 2+ integrantes, ordenados por tamaño desc. Union-
  * find sobre las claves compartidas. PURO.
  */
@@ -70,6 +92,38 @@ export function findDuplicatePeople(people: DupPerson[]): DupPerson[][] {
       else union(i, owner)
     }
   })
+
+  // Match parcial CONSERVADOR: una persona con nombre de UN SOLO token
+  // (ej. "Cristina") se agrupa con otras cuyo primer token no-genérico
+  // COINCIDA (ej. "Cristina Fuentes Chacaltana"). Evita el false positive
+  // de agrupar "Juan A" con "Juan B" cuando ambos tienen apellidos distintos.
+  const singleTokenPeople: Array<{ key: string; i: number }> = []
+  people.forEach((p, i) => {
+    const tokens = norm(p.name || '').split(' ').filter(Boolean)
+    if (tokens.length !== 1) return
+    const key = tokens[0]
+    if (key.length < 3 || GENERIC_TOKENS.has(key)) return
+    singleTokenPeople.push({ key, i })
+  })
+  if (singleTokenPeople.length > 0) {
+    // Indexamos por firstNameKey a todos los con >1 token; los single-token
+    // se unen contra ese índice.
+    const firstNameOwners = new Map<string, number[]>()
+    people.forEach((p, i) => {
+      const tokens = norm(p.name || '').split(' ').filter(Boolean)
+      if (tokens.length < 2) return
+      const fk = firstNameKey(p.name || '')
+      if (!fk) return
+      const arr = firstNameOwners.get(fk) ?? []
+      arr.push(i)
+      firstNameOwners.set(fk, arr)
+    })
+    for (const { key, i } of singleTokenPeople) {
+      const matches = firstNameOwners.get(key)
+      if (!matches) continue
+      for (const j of matches) union(i, j)
+    }
+  }
 
   const groups = new Map<number, DupPerson[]>()
   people.forEach((p, i) => {
