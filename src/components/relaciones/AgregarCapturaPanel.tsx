@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 // SIR V2 — AgregarCapturaPanel: captura EN CONTEXTO de una persona.
 //
 // Aaron quería subir una captura desde el detalle de la persona y que se
@@ -1427,7 +1427,7 @@ function WhatsAppExportReview({
           <ul className="space-y-0.5">
             {consolidated.facts.slice(0, 6).map((f, i) => (
               <li key={i} className="text-xs text-muted-foreground leading-relaxed flex gap-1.5">
-                <span className="text-muted-foreground/40">·</span>
+                <span className="text-muted-foreground/60">·</span>
                 <span>{f}</span>
               </li>
             ))}

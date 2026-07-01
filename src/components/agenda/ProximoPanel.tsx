@@ -1,4 +1,4 @@
-// SIR V2 — ProximoPanel (Feature 1: Agenda "Próximo").
+﻿// SIR V2 — ProximoPanel (Feature 1: Agenda "Próximo").
 //
 // Vista accionable que AGREGA data que ya existe en los stores y hoy queda
 // enterrada: señales críticas sin resolver, "no contactás a X hace N días"
@@ -178,7 +178,7 @@ function AgendaRow({ item }: { item: AgendaItem }) {
         <ChevronRight
           size={14}
           strokeWidth={2}
-          className="shrink-0 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors"
+          className="shrink-0 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors"
           aria-hidden="true"
         />
       </Link>

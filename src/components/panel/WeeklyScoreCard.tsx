@@ -1,4 +1,4 @@
-// SIR V2 — WeeklyScoreCard (P2): score semanal compuesto con tier S/A/B/C/D.
+﻿// SIR V2 — WeeklyScoreCard (P2): score semanal compuesto con tier S/A/B/C/D.
 //
 // Tres estados:
 //   - sin ningún dato      → empty state pedagógico.
@@ -57,7 +57,7 @@ export function WeeklyScoreCard({ data }: { data: WeeklyScore }) {
 
         {!anyData ? (
           <div className="text-center py-6">
-            <Gauge size={22} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" aria-hidden="true" />
+            <Gauge size={22} strokeWidth={1.5} className="text-muted-foreground/60 mx-auto mb-2" aria-hidden="true" />
             <p className="text-sm text-muted-foreground">Todavía no hay nada que medir esta semana.</p>
             <p className="text-xs text-muted-foreground/60 mt-1">Registrá sueño y energía/estrés para empezar a ver tu score.</p>
           </div>
@@ -115,7 +115,7 @@ function ComponentRow({ c }: { c: WeeklyComponent }) {
       <div className="flex-1 min-w-0 h-1.5 rounded-full bg-muted overflow-hidden">
         {c.available && <div className={cn('h-full rounded-full', barColor(c.score))} style={{ width: `${c.score}%` }} />}
       </div>
-      <span className={cn('text-[10px] font-mono tabular-nums w-16 sm:w-24 text-right flex-shrink-0 truncate', c.available ? 'text-muted-foreground' : 'text-muted-foreground/40')}>
+      <span className={cn('text-[10px] font-mono tabular-nums w-16 sm:w-24 text-right flex-shrink-0 truncate', c.available ? 'text-muted-foreground' : 'text-muted-foreground/60')}>
         {c.available ? c.detail : 'sin datos'}
       </span>
     </div>

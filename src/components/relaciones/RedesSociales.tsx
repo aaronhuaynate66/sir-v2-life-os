@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 // SIR V2 — Redes & social (perfil social unificado, modelo personal-CRM).
 //
 // Fusión de las antiguas cards "Redes sociales" (#11, handles manuales) +
@@ -274,7 +274,7 @@ function SocialRow({
         <div className="text-[10px] uppercase tracking-wide text-muted-foreground/70">{label}</div>
         <div className="text-sm truncate">{value}</div>
       </div>
-      <ExternalLink size={13} strokeWidth={1.75} className="text-muted-foreground/40 group-hover:text-foreground shrink-0" aria-hidden="true" />
+      <ExternalLink size={13} strokeWidth={1.75} className="text-muted-foreground/60 group-hover:text-foreground shrink-0" aria-hidden="true" />
     </a>
   )
 }

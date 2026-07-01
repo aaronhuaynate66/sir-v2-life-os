@@ -1,4 +1,4 @@
-// SIR V2 — CalendarPanel: eventos próximos del feed Outlook (.ics).
+﻿// SIR V2 — CalendarPanel: eventos próximos del feed Outlook (.ics).
 //
 // Consume /api/calendar (server lee OUTLOOK_ICS_URL; el token nunca llega acá).
 // Degrada limpio: si no está configurado, muestra cómo activarlo; si falla,
@@ -211,7 +211,7 @@ function RecurringSummary({
         <ChevronRight
           size={14}
           strokeWidth={2}
-          className="shrink-0 text-muted-foreground/40 transition-transform group-open:rotate-90"
+          className="shrink-0 text-muted-foreground/60 transition-transform group-open:rotate-90"
           aria-hidden="true"
         />
       </summary>
@@ -305,7 +305,7 @@ function NotConfigured() {
 }
 
 function Note({ icon: Icon, tone, children }: { icon: typeof CalendarDays; tone: 'warn' | 'muted'; children: React.ReactNode }) {
-  const color = tone === 'warn' ? 'text-warn' : 'text-muted-foreground/40'
+  const color = tone === 'warn' ? 'text-warn' : 'text-muted-foreground/60'
   return (
     <div className="text-center py-6">
       <Icon size={20} strokeWidth={1.5} className={`${color} mx-auto mb-2`} aria-hidden="true" />

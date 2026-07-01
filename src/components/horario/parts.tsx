@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 // SIR V2 — /horario: piezas compartidas entre las vistas Día/Semana/Mes.
 //
@@ -309,7 +309,7 @@ export function DayContextStrip({ state }: { state: PhysicalState }) {
         <ChevronRight
           size={14}
           strokeWidth={2}
-          className="shrink-0 text-muted-foreground/40 transition-transform group-open:rotate-90"
+          className="shrink-0 text-muted-foreground/60 transition-transform group-open:rotate-90"
           aria-hidden="true"
         />
       </summary>
@@ -364,7 +364,7 @@ export function CalendarHint({ compact = false }: { compact?: boolean }) {
 
 export function EmptyNote({ tone = 'muted', children }: { tone?: 'warn' | 'muted'; children: React.ReactNode }) {
   const Icon = tone === 'warn' ? AlertCircle : Clock
-  const color = tone === 'warn' ? 'text-warn' : 'text-muted-foreground/40'
+  const color = tone === 'warn' ? 'text-warn' : 'text-muted-foreground/60'
   return (
     <Card className="shadow-none">
       <CardContent className="p-8 text-center">

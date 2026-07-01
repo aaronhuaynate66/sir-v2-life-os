@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 // SIR V2 — /finance
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -401,7 +401,7 @@ function FinanceContent() {
                   </div>
                   <button
                     onClick={() => handleRemoveMovement(m.id, m.description)}
-                    className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded text-base leading-none text-muted-foreground/40 hover:text-bad opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                    className="flex-shrink-0 h-8 w-8 flex items-center justify-center rounded text-base leading-none text-muted-foreground/60 hover:text-bad opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                     aria-label="Eliminar"
                   >
                     ×

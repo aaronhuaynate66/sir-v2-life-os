@@ -1,4 +1,4 @@
-// SIR V2 — Desglose del gasto por intención (P1).
+﻿// SIR V2 — Desglose del gasto por intención (P1).
 // Overview que muestra cuánto se fue en obligatorio / necesario / no-esencial,
 // con barra proporcional + montos + %. Empuja a clasificar lo no-clasificado.
 'use client'
@@ -24,7 +24,7 @@ export function SpendIntentBreakdown({ data }: { data: SpendingByIntent }) {
 
         {!hasData ? (
           <div className="text-center py-6">
-            <PieChart size={22} strokeWidth={1.5} className="text-muted-foreground/40 mx-auto mb-2" aria-hidden="true" />
+            <PieChart size={22} strokeWidth={1.5} className="text-muted-foreground/60 mx-auto mb-2" aria-hidden="true" />
             <p className="text-sm text-muted-foreground">Sin gastos clasificados todavía.</p>
             <p className="text-xs text-muted-foreground/60 mt-1">
               Al registrar un gasto, elegí su intención (obligatorio / necesario / no esencial)
