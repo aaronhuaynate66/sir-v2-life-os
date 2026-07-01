@@ -167,6 +167,18 @@ function newId(prefix: string, rand: () => number = Math.random): string {
   return `${prefix}_${Date.now()}_${rand().toString(36).slice(2, 8)}`
 }
 
+/** Normaliza gender al enum válido del schema (0069: female | male | other).
+ *  Acepta variantes en ES/EN y devuelve null si no matchea (evita el
+ *  people_gender_check violation cuando el JSON usa "femenino"/"masculino"). */
+export function normalizeGender(raw: string | null | undefined): 'female' | 'male' | 'other' | null {
+  if (!raw) return null
+  const s = String(raw).toLowerCase().trim()
+  if (['female', 'femenino', 'femenina', 'mujer', 'f'].includes(s)) return 'female'
+  if (['male', 'masculino', 'hombre', 'varón', 'varon', 'm'].includes(s)) return 'male'
+  if (['other', 'otro', 'no-binario', 'no binario', 'nb', 'no-binary'].includes(s)) return 'other'
+  return null
+}
+
 /** Normaliza un peso ("alto"/"medio"/"bajo" o número) a 0-10. null si vacío. */
 export function parseWeight(raw: string | number | undefined): number | null {
   if (raw == null || raw === '') return null
@@ -251,7 +263,10 @@ export function buildSeedPlan(args: BuildPlanArgs): SeedPlan {
       title: p.person.title ?? null,
       organization: p.person.organization ?? null,
       education: p.person.education ?? null,
-      gender: p.person.gender ?? null,
+      // gender: normalizamos ES → EN del enum del schema (0069). El JSON de
+      // Claude.ai suele venir con "femenino"/"masculino"; el schema solo
+      // acepta 'female'/'male'/'other'. Si no matchea, null (mejor que romper).
+      gender: normalizeGender(p.person.gender),
       created_at: nowIso,
       updated_at: nowIso,
     }

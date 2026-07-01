@@ -1,7 +1,7 @@
 // SIR V2 — Tests de buildSeedPlan.
 
 import { describe, it, expect } from 'vitest'
-import { buildSeedPlan, generateSlug, parseWeight, type SeedBatchInput } from './plan'
+import { buildSeedPlan, generateSlug, normalizeGender, parseWeight, type SeedBatchInput } from './plan'
 
 const USER = 'u_test'
 const NOW = new Date('2026-07-01T15:00:00Z')
@@ -21,6 +21,25 @@ describe('generateSlug', () => {
   })
   it('null-safe', () => {
     expect(generateSlug('')).toBe('persona')
+  })
+})
+
+describe('normalizeGender', () => {
+  it('mapea ES → EN', () => {
+    expect(normalizeGender('femenino')).toBe('female')
+    expect(normalizeGender('Masculino')).toBe('male')
+    expect(normalizeGender('otro')).toBe('other')
+  })
+  it('acepta variantes cortas', () => {
+    expect(normalizeGender('f')).toBe('female')
+    expect(normalizeGender('m')).toBe('male')
+    expect(normalizeGender('nb')).toBe('other')
+  })
+  it('devuelve null si no matchea (evita people_gender_check violation)', () => {
+    expect(normalizeGender('xyz')).toBeNull()
+    expect(normalizeGender(null)).toBeNull()
+    expect(normalizeGender(undefined)).toBeNull()
+    expect(normalizeGender('')).toBeNull()
   })
 })
 
