@@ -8,7 +8,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { SemanticSearchPanel } from '@/components/memoria/SemanticSearchPanel'
+import dynamic from 'next/dynamic'
+// SemanticSearchPanel es una card colapsable — solo se abre bajo demanda,
+// asi que sale del First Load JS via dynamic + ssr:false.
+const SemanticSearchPanel = dynamic(
+  () => import('@/components/memoria/SemanticSearchPanel').then((m) => ({ default: m.SemanticSearchPanel })),
+  { ssr: false, loading: () => <div className="h-24 rounded-lg border border-border animate-pulse" /> },
+)
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
 import { useMemoryStore } from '@/stores'
