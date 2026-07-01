@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5d23850`
+**Hash del último commit humano:** `ccb4c6c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `ccb4c6c` | aaronhuaynate66 | feat(router): crear_persona autocrea org si el modelo la olvidó (#425) | 2026-07-01 |
 | `5d23850` | aaronhuaynate66 | refactor(objetivos): extraer metadata visual a components/objetivos/goalMeta (#424) | 2026-07-01 |
 | `4c4359d` | aaronhuaynate66 | feat(router): split WOOP en planSi + planEntonces (retrocompat) (#423) | 2026-07-01 |
 | `b1b4c62` | aaronhuaynate66 | feat(cerebro): F1.5 — aristas puras goal↔goal + goal↔person (#422) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1b4fe04` | aaronhuaynate66 | feat(router): fase 2b — crear/editar objetivos + episodios en /relato (#418) | 2026-07-01 |
 | `0c71e89` | aaronhuaynate66 | feat(cerebro): F3 Hebbian — bucle de aprendizaje sobre BrainGlow (#417) | 2026-07-01 |
 | `f83c29a` | aaronhuaynate66 | feat(cerebro): F4 surfacing — /api/brain/glow + BrainGlow en /horario dia (#416) | 2026-07-01 |
-| `908e40b` | aaronhuaynate66 | feat(cerebro): F2 difusion — spreading activation puro + ?seed en debug (#415) | 2026-07-01 |
 
 ---
 
