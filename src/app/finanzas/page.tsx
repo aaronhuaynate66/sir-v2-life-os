@@ -19,12 +19,17 @@ import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByInte
 import { createFinancialMovementMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
-import { TrendChart } from '@/components/charts/TrendChart'
 import { financeBalanceSeries } from '@/lib/charts/adapters'
 import { ExportCsvButton } from '@/components/export/ExportCsvButton'
 import { financeMovementsCsv } from '@/lib/export/adapters'
-import { SpendIntentBreakdown } from '@/components/finanzas/SpendIntentBreakdown'
-import { EmotionFinancePanel } from '@/components/finanzas/EmotionFinancePanel'
+import dynamic from 'next/dynamic'
+// TrendChart usa SVG custom + dates. SpendIntentBreakdown + EmotionFinancePanel
+// son below fold. Dynamic ssr:false los saca del First Load de /finanzas
+// (era 263 KB) sin cambiar el look.
+const chartLoad = () => <div className="h-32 rounded-lg border border-border animate-pulse" />
+const TrendChart = dynamic(() => import('@/components/charts/TrendChart').then((m) => ({ default: m.TrendChart })), { ssr: false, loading: chartLoad })
+const SpendIntentBreakdown = dynamic(() => import('@/components/finanzas/SpendIntentBreakdown').then((m) => ({ default: m.SpendIntentBreakdown })), { ssr: false, loading: chartLoad })
+const EmotionFinancePanel = dynamic(() => import('@/components/finanzas/EmotionFinancePanel').then((m) => ({ default: m.EmotionFinancePanel })), { ssr: false, loading: chartLoad })
 import { INTENT_LABEL, INTENT_HINT, INTENT_BADGE } from '@/lib/finanzas/intent-meta'
 import { correlateStressVsNonEssentialSpend } from '@/lib/longitudinal/emotionFinance'
 import { useSelfStore } from '@/stores/useSelfStore'
