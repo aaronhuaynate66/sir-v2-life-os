@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Diana Carolina",
+    "alias": "Dianita",
+    "phone_number": "+51 987 654 321",
+    "instagram_handle": "diana.carolina",
+    "notes": "Amiga del gym, la conozco desde 2023.",
+    "tags": ["gym", "lima"],
+    "special_dates": [
+      { "label": "cumpleaños", "date": "1994-03-12" }
+    ],
+    "person_money": [
+      {
+        "direction": "out",
+        "amount": 120.5,
+        "currency": "PEN",
+        "concept": "Almuerzo cumpleaños",
+        "kind": "transfer",
+        "occurred_on": "2026-03-12"
+      }
+    ]
+  }
+]
