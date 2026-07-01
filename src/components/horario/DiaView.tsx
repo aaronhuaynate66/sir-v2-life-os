@@ -20,6 +20,7 @@ import { buildDayPlan, type GapRowItem, type TaskRowItem } from '@/lib/horario/d
 import { buildBriefSignals, briefSummaryLine, hasBriefContent } from '@/lib/horario/brief'
 import type { PhysicalState } from '@/lib/horario/physical'
 import { BriefPanel } from './BriefPanel'
+import { BrainGlow } from './BrainGlow'
 import { PlanDelDiaPanel } from './PlanDelDiaPanel'
 import {
   DayContextStrip,
@@ -88,6 +89,9 @@ export function DiaView({
         signals={briefSignals as unknown as Record<string, unknown>}
         enrichRelations
       />
+
+      {/* Cerebro · surfacing (F4). Panel discreto; se autoculta si no hay nada. */}
+      <BrainGlow />
 
       {/* All-day: marco del día */}
       {timeline.allDay.length > 0 && (
