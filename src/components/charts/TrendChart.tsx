@@ -17,7 +17,7 @@ import type { LucideIcon } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
-import { buildLineSeries, filterPointsByRange, hasOlderThanRange, rangeWindowLabel, type ChartRange } from '@/lib/charts/series'
+import { buildLineSeries, filterPointsByRange, hasOlderThanRange, rangeAxisEdges, rangeBounds, rangeWindowLabel, type ChartRange } from '@/lib/charts/series'
 import type { SeriesPoint } from '@/lib/charts/series'
 import { cn } from '@/lib/utils'
 
@@ -92,9 +92,23 @@ export function TrendChart({
   )
   const windowLabel = windowable ? rangeWindowLabel(range, offset) : ''
   function changeRange(r: ChartRange) { setRange(r); setOffset(0) }
+  // Cuando windowable, el eje X del chart debe cubrir la VENTANA CALENDARIO
+  // (lun→dom o el mes completo), no solo el span de los puntos existentes.
+  // Sin esto, con 2 puntos en la semana el chart los distribuye a los extremos
+  // izquierdo/derecho y parece que "esa semana solo tuvo 2 días".
+  const xDomain = useMemo(
+    () => (windowable ? rangeBounds(range, offset) : undefined),
+    [windowable, range, offset],
+  )
   const geo = useMemo(
-    () => buildLineSeries(shown, { width: VIEW_W, height, padding: 6 }),
-    [shown, height],
+    () => buildLineSeries(shown, { width: VIEW_W, height, padding: 6, xDomain }),
+    [shown, height, xDomain],
+  )
+  // Labels del eje X: cuando windowable, mostrar bordes de la ventana (para que
+  // se lea "lun 29 jun" – "dom 5 jul" incluso si los puntos están en el medio).
+  const axisEdges = useMemo(
+    () => (windowable ? rangeAxisEdges(range, offset) : null),
+    [windowable, range, offset],
   )
 
   const hasData = geo.points.length > 0
@@ -180,10 +194,14 @@ export function TrendChart({
 
             <div className="flex justify-between text-[10px] font-mono text-muted-foreground/50">
               {(() => {
-                const spanYears = geo.first!.date.slice(0, 4) !== geo.last!.date.slice(0, 4)
+                // Cuando windowable, los bordes son los de la ventana calendario
+                // (lun→dom o mes), no los primeros/últimos puntos existentes.
+                const leftIso = axisEdges?.leftDate ?? geo.first!.date
+                const rightIso = axisEdges?.rightDate ?? geo.last!.date
+                const spanYears = leftIso.slice(0, 4) !== rightIso.slice(0, 4)
                 return (<>
-                  <span>{fmtAxisLabel(geo.first!.date, spanYears)}</span>
-                  <span>{fmtAxisLabel(geo.last!.date, spanYears)}</span>
+                  <span>{fmtAxisLabel(leftIso, spanYears)}</span>
+                  <span>{fmtAxisLabel(rightIso, spanYears)}</span>
                 </>)
               })()}
             </div>
