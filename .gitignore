@@ -13,6 +13,12 @@ next-env.d.ts
 /src/data/private/
 /src/data/real/
 
+# Seed batches con data personal de terceros (LinkedIn exports, etc.).
+# El README de la carpeta si se commitea; los .json no.
+/data/seed-batches/*.json
+
 # Python bytecode (scripts/generate_roadmap.py + futuros scripts)
 __pycache__/
 *.pyc
+
+.vercel
