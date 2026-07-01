@@ -69,7 +69,9 @@ import { VidaSocial } from './VidaSocial'
 import { PerfilProfesional } from './PerfilProfesional'
 import { RedesSociales } from './RedesSociales'
 import { Bitacora } from './Bitacora'
+import { AnotarAhora } from './AnotarAhora'
 import { HistorialSearch } from './HistorialSearch'
+import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
 import { CicloPanel } from './CicloPanel'
@@ -124,6 +126,9 @@ interface PersonDetailProps {
   /** Ejes narrativos persistidos profesional/social (person_profile_axes, 0047).
    *  null si no hay fila → los ejes caen al cómputo en vivo. */
   profileAxes?: PersonProfileAxes | null
+  /** Historial de snapshots del campo `notes` (mig 0108). Opcional. Renderiza
+   *  como entries "Nota editada" en la Bitácora. */
+  notesHistory?: PersonNoteHistoryEntry[]
 }
 
 // Etiquetas en español centralizadas en @/lib/people/labels. Se alían a los
@@ -211,6 +216,7 @@ export function PersonDetail({
   correlationLogs = [],
   synthesis = null,
   profileAxes = null,
+  notesHistory = [],
 }: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
@@ -343,7 +349,8 @@ export function PersonDetail({
         personName={live.name}
       />
       <HistorialSearch personId={live.id} />
-      <Bitacora personLogs={personLogs} observations={curatedObservations} />
+      <AnotarAhora personId={live.id} />
+      <Bitacora personLogs={personLogs} observations={curatedObservations} notesHistory={notesHistory} />
     </div>
   )
 
