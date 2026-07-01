@@ -15,8 +15,21 @@ export type RouterActionType =
   | 'registrar_interaccion'
   | 'crear_persona'
   | 'crear_organizacion'
+  | 'crear_objetivo'
+  | 'editar_objetivo'
+  | 'registrar_episodio'
   | 'agregar_paso_objetivo'
   | 'agregar_bloqueo_objetivo'
+
+export type GoalPriorityRA = 'critical' | 'high' | 'medium' | 'low'
+export type GoalCategoryRA =
+  | 'financial'
+  | 'personal'
+  | 'relational'
+  | 'health'
+  | 'career'
+  | 'spiritual'
+  | 'creative'
 
 export interface RAInteraccion {
   type: 'registrar_interaccion'
@@ -36,6 +49,42 @@ export interface RAOrganizacion {
   nombre: string
   rubro?: string | null
 }
+/** Crea un objetivo NUEVO con la metodologia SIR completa: por que + KRs (SMART)
+ *  + WOOP (obstaculo + plan si-entonces). Todo opcional excepto el titulo — el
+ *  ejecutor arma el goal, agrega KRs como objective_steps kind='kr' y persiste
+ *  el WOOP en objective_plan. */
+export interface RACrearObjetivo {
+  type: 'crear_objetivo'
+  titulo: string
+  porQue?: string | null           // Goal.why (por que importa)
+  prioridad?: GoalPriorityRA | null
+  categoria?: GoalCategoryRA | null
+  targetDate?: string | null       // YYYY-MM-DD
+  krs?: string[] | null            // resultados clave (titulos)
+  obstaculo?: string | null        // WOOP obstacle
+  siEntonces?: string | null       // WOOP plan_if + plan_then juntos, formato libre
+}
+/** Edita un objetivo existente. TODAS las propiedades son parciales; krs se
+ *  AGREGAN (append, no reemplazan) para no borrar data por error. */
+export interface RAEditarObjetivo {
+  type: 'editar_objetivo'
+  objetivo: string                 // titulo para dedup con contexto
+  prioridad?: GoalPriorityRA | null
+  esAncla?: boolean | null
+  obstaculo?: string | null
+  siEntonces?: string | null
+  krs?: string[] | null            // se AGREGAN a los existentes
+}
+/** Crea un episodio (relationship_moment con status='abierto'). A diferencia de
+ *  `registrar_interaccion` (evento puntual), un episodio queda abierto hasta
+ *  resolverse — decisiones/hitos que rebotan durante dias o semanas. */
+export interface RARegistrarEpisodio {
+  type: 'registrar_episodio'
+  persona: string                  // primaria
+  titulo: string
+  detalle?: string | null
+  followUp?: string | null         // YYYY-MM-DD opcional
+}
 export interface RAPaso {
   type: 'agregar_paso_objetivo'
   objetivo: string // título del objetivo (se resuelve por nombre con dedup)
@@ -47,7 +96,15 @@ export interface RABloqueo {
   bloqueo: string
   due?: string | null // YYYY-MM-DD opcional
 }
-export type RouterAction = RAInteraccion | RAPersona | RAOrganizacion | RAPaso | RABloqueo
+export type RouterAction =
+  | RAInteraccion
+  | RAPersona
+  | RAOrganizacion
+  | RACrearObjetivo
+  | RAEditarObjetivo
+  | RARegistrarEpisodio
+  | RAPaso
+  | RABloqueo
 
 export interface RouterPlan {
   actions: RouterAction[]
@@ -57,7 +114,18 @@ export interface RouterPlan {
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/
 const REL = new Set(['family', 'friend', 'romantic', 'professional', 'mentor', 'mentee', 'acquaintance'])
-const MAX_ACTIONS = 12
+const PRIORITY_SET = new Set<GoalPriorityRA>(['critical', 'high', 'medium', 'low'])
+const CATEGORY_SET = new Set<GoalCategoryRA>([
+  'financial',
+  'personal',
+  'relational',
+  'health',
+  'career',
+  'spiritual',
+  'creative',
+])
+const MAX_ACTIONS = 15
+const MAX_KRS = 6
 
 function str(v: unknown, max: number): string {
   return typeof v === 'string' ? v.trim().slice(0, max) : ''
@@ -79,14 +147,19 @@ Acciones posibles (usá solo las que el relato justifique):
 - registrar_interaccion { persona, calidad (1-5), nota }: cuando habló/se vio con alguien. La nota resume qué pasó.
 - crear_persona { nombre, relacion?, cargo?, organizacion? }: SOLO si la persona NO está en el contexto. relacion ∈ family|friend|romantic|professional|mentor|mentee|acquaintance.
 - crear_organizacion { nombre, rubro? }: SOLO si la empresa/entidad NO está en el contexto.
-- agregar_paso_objetivo { objetivo, paso }: un avance concreto hacia un objetivo EXISTENTE (usá el título tal cual del contexto).
+- crear_objetivo { titulo, porQue?, prioridad?, categoria?, targetDate?, krs?, obstaculo?, siEntonces? }: un objetivo NUEVO con la metodología SIR completa. prioridad ∈ critical|high|medium|low. categoria ∈ financial|personal|relational|health|career|spiritual|creative. targetDate en YYYY-MM-DD. krs es un array de 1-4 resultados clave concretos y medibles (SMART). obstaculo + siEntonces = WOOP: el obstáculo real que puede impedirlo + un plan "si pasa X, entonces hago Y". SOLO si el objetivo NO está en el contexto.
+- editar_objetivo { objetivo, prioridad?, esAncla?, obstaculo?, siEntonces?, krs? }: cambiar campos de un objetivo YA EXISTENTE (usá el título tal cual del contexto). esAncla=true solo si el relato lo prioriza como el norte del año (un solo objetivo puede ser ancla). krs se agregan a los existentes.
+- registrar_episodio { persona, titulo, detalle?, followUp? }: un episodio abierto que rebota (decisión pendiente, conflicto, hito) — distinto de una interacción puntual. followUp en YYYY-MM-DD si el relato menciona cuándo revisarlo.
+- agregar_paso_objetivo { objetivo, paso }: un avance concreto (tarea/acción) hacia un objetivo EXISTENTE. Usalo cuando el relato menciona algo por hacer, no un resultado medible (para KRs medibles usá crear_objetivo/editar_objetivo con krs).
 - agregar_bloqueo_objetivo { objetivo, bloqueo, due? }: algo que falta/depende para lograr un objetivo existente. due en YYYY-MM-DD solo si el relato da fecha clara.
 
 Reglas duras:
 - NO dupliques: si la persona/empresa/objetivo ya está en el contexto, referencialo por su nombre, no lo crees de nuevo.
-- NO inventes datos que el relato no diga (fechas, cargos, montos). Si dudás, dejalo en "unmapped".
+- NO inventes datos que el relato no diga (fechas, cargos, montos, KRs). Si dudás, dejalo en "unmapped".
 - Preferí pocas acciones correctas a muchas inventadas.
 - Cada acción debe poder rastrearse a una frase del relato.
+- editar_objetivo NO reescribe todo — solo los campos que el relato menciona explícitamente.
+- Un objetivo puede tener a lo sumo 4 KRs por acción (los medibles importan más que la cantidad).
 
 Respondé SOLO un objeto JSON, sin texto alrededor:
 {"actions":[{"type":"...", ...}], "unmapped":["lo que no pudiste mapear con confianza"]}`
@@ -129,6 +202,61 @@ function normalizeAction(raw: unknown): RouterAction | null {
       if (!objetivo || !bloqueo) return null
       const due = strOrNull(o.due, 10)
       return { type: 'agregar_bloqueo_objetivo', objetivo, bloqueo, due: due && ISO.test(due) ? due : null }
+    }
+    case 'crear_objetivo': {
+      const titulo = str(o.titulo, 200)
+      if (!titulo) return null
+      const prio = strOrNull(o.prioridad, 20) as GoalPriorityRA | null
+      const cat = strOrNull(o.categoria, 20) as GoalCategoryRA | null
+      const td = strOrNull(o.targetDate, 10)
+      const krsRaw = Array.isArray(o.krs) ? o.krs : []
+      const krs = krsRaw
+        .map((k) => str(k, 300))
+        .filter((s) => s.length > 0)
+        .slice(0, MAX_KRS)
+      return {
+        type: 'crear_objetivo',
+        titulo,
+        porQue: strOrNull(o.porQue, 800),
+        prioridad: prio && PRIORITY_SET.has(prio) ? prio : null,
+        categoria: cat && CATEGORY_SET.has(cat) ? cat : null,
+        targetDate: td && ISO.test(td) ? td : null,
+        krs: krs.length > 0 ? krs : null,
+        obstaculo: strOrNull(o.obstaculo, 800),
+        siEntonces: strOrNull(o.siEntonces, 800),
+      }
+    }
+    case 'editar_objetivo': {
+      const objetivo = str(o.objetivo, 200)
+      if (!objetivo) return null
+      const prio = strOrNull(o.prioridad, 20) as GoalPriorityRA | null
+      const krsRaw = Array.isArray(o.krs) ? o.krs : []
+      const krs = krsRaw
+        .map((k) => str(k, 300))
+        .filter((s) => s.length > 0)
+        .slice(0, MAX_KRS)
+      return {
+        type: 'editar_objetivo',
+        objetivo,
+        prioridad: prio && PRIORITY_SET.has(prio) ? prio : null,
+        esAncla: typeof o.esAncla === 'boolean' ? o.esAncla : null,
+        obstaculo: strOrNull(o.obstaculo, 800),
+        siEntonces: strOrNull(o.siEntonces, 800),
+        krs: krs.length > 0 ? krs : null,
+      }
+    }
+    case 'registrar_episodio': {
+      const persona = str(o.persona, 120)
+      const titulo = str(o.titulo, 200)
+      if (!persona || !titulo) return null
+      const followUp = strOrNull(o.followUp, 10)
+      return {
+        type: 'registrar_episodio',
+        persona,
+        titulo,
+        detalle: strOrNull(o.detalle, 2000),
+        followUp: followUp && ISO.test(followUp) ? followUp : null,
+      }
     }
     default:
       return null
