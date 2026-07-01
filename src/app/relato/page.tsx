@@ -16,6 +16,7 @@ import { useRelationshipStore } from '@/stores'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { generateSlug } from '@/lib/people/slug'
+import { track, EVENTS } from '@/lib/analytics/track'
 import type { RouterAction, RouterPlan } from '@/lib/sir/router/plan'
 import type { Person, ObjectiveStep, Goal, GoalCategory, GoalPriority } from '@/types'
 
@@ -112,6 +113,13 @@ export default function RelatoPage() {
       if (!res.ok || !j.plan) { setErr(j.error ?? 'No se pudo armar el plan'); return }
       setRows(j.plan.actions.map((a) => ({ action: a, included: true })))
       setUnmapped(j.plan.unmapped ?? [])
+      // Analytics: visibilidad del funnel del router (ADR 0008).
+      // Trackeamos EL plan (no cada acción) para no spamear GA4 con relatos largos.
+      track(EVENTS.relatoPlanSubmitted, {
+        actions: j.plan.actions.length,
+        unmapped: (j.plan.unmapped ?? []).length,
+        narrative_len: narrative.trim().length,
+      })
     } catch { setErr('No se pudo armar el plan') } finally { setBusy(false) }
   }, [busy, narrative])
 
@@ -334,6 +342,12 @@ export default function RelatoPage() {
     }
     setRunning(false)
     setDone(true)
+    // Analytics: reportamos el resultado agregado del batch (no per-action)
+    // para diagnosticar dónde falla el executor sin ahogar GA4 con eventos.
+    const included = next.filter((r) => r.included).length
+    const succeeded = next.filter((r) => r.included && r.result === 'ok').length
+    const failed = next.filter((r) => r.included && r.result === 'fail').length
+    track(EVENTS.relatoActionConfirmed, { included, succeeded, failed })
   }, [rows, running, people, steps, addPerson, addStep, addGoal, updateGoal, setAnchor, findPerson, findGoal])
 
   const pending = useMemo(() => (rows ?? []).filter((r) => r.included && !r.result).length, [rows])

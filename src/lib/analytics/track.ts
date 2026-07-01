@@ -65,6 +65,13 @@ export const EVENTS = {
   sirGapAsked: 'sir_gap_asked',
   sirGapAnswered: 'sir_gap_answered',
   sirVoiceUsed: 'sir_voice_used',
+  // Cockpit /horario — ver dónde clickea el usuario.
+  horarioTaskClick: 'horario_task_click',
+  // /relato Router 2b — visibilidad del funnel de captura por relato.
+  relatoPlanSubmitted: 'relato_plan_submitted',
+  relatoActionConfirmed: 'relato_action_confirmed',
+  // BrainGlow F3 — adopción del feedback Hebbian.
+  brainFeedbackGiven: 'brain_feedback_given',
 } as const
 
 // ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import { getCurrentUser } from '@/lib/supabase/currentUser'
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
@@ -17,8 +18,10 @@ export function useAuth() {
   useEffect(() => {
     const supabase = createClient()
 
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user)
+    // Reusa el getUser memoizado (compartido con sync engines) — evita
+    // disparar un GET /auth/v1/user extra al montar la UI.
+    void getCurrentUser().then((u) => {
+      setUser(u)
       setLoading(false)
     })
 
