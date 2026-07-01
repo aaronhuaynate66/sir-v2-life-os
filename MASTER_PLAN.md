@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `0b6c36a`
+**Hash del último commit humano:** `6e19849`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6e19849` | aaronhuaynate66 | feat(perf): sync engine — TTL de 60s en pulls opportunistas (evita re-barrer 13 tablas por nav) (#431) | 2026-07-01 |
 | `0b6c36a` | aaronhuaynate66 | feat(perf+a11y): PersonDetail dynamic (-162 KB /relaciones/[slug]) + text-tertiary bump (#430) | 2026-07-01 |
 | `d1e6d47` | aaronhuaynate66 | feat(a11y): P1 — subir --muted-foreground + reemplazar /40 por /60 + target-size BrainGlow (#429) | 2026-07-01 |
 | `d4fe2b4` | aaronhuaynate66 | feat(perf+ux): P1 — dynamic imports, middleware cookie-first, CTAs empty states (#428) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5d23850` | aaronhuaynate66 | refactor(objetivos): extraer metadata visual a components/objetivos/goalMeta (#424) | 2026-07-01 |
 | `4c4359d` | aaronhuaynate66 | feat(router): split WOOP en planSi + planEntonces (retrocompat) (#423) | 2026-07-01 |
 | `b1b4c62` | aaronhuaynate66 | feat(cerebro): F1.5 — aristas puras goal↔goal + goal↔person (#422) | 2026-07-01 |
-| `1381f9b` | aaronhuaynate66 | feat(cerebro): consolidacion nocturna — cron que decae edge_weights (olvido saludable) (#421) | 2026-07-01 |
 
 ---
 
