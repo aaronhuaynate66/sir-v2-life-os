@@ -2,7 +2,7 @@
 // SIR V2 — /salud: estado biológico, métricas, tendencias y captura de datos de salud.
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Activity, Plus, Moon, Heart, Clock } from 'lucide-react'
+import { Activity, Plus, Moon, Heart, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -36,6 +36,7 @@ const HeartRateAlertsPanel = dynamic(
   { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
 )
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
+import { rangeWindowLabel, type ChartRange } from '@/lib/charts/series'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
@@ -91,6 +92,13 @@ function SaludContent() {
   // Feature 3: series de evolución (energía + duración de sueño).
   const energySeries = useMemo(() => selfMetricSeries(selfMetrics, 'energy'), [selfMetrics])
   const sleepSeries = useMemo(() => sleepDurationSeries(sleepRecords), [sleepRecords])
+
+  // Toggle GLOBAL de ventana temporal para TODOS los charts de la página
+  // (Energía + Sueño + Tendencia corporal). Aaron: "en una card por semana y
+  // en otra por mes, ¿por qué no se ve ordenado todo?" — 1 control, todo alineado.
+  const [chartRange, setChartRange] = useState<ChartRange>('semana')
+  const [chartOffset, setChartOffset] = useState(0)
+  function setRangeGlobal(r: ChartRange) { setChartRange(r); setChartOffset(0) }
 
   function addMetric() {
     const v = parseFloat(mVal)
@@ -155,6 +163,46 @@ function SaludContent() {
         ))}
       </div>
 
+      {/* Control GLOBAL de ventana temporal — aplica a Energía + Sueño +
+          Tendencia corporal. Un solo toggle Semana/Mes + un solo par de chevrons. */}
+      <Card className="shadow-none mb-3">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tendencias</div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-0.5 rounded-md bg-muted/40 p-0.5 text-[11px]">
+                {(['semana', 'mes'] as ChartRange[]).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRangeGlobal(r)}
+                    className={cn(
+                      'px-2.5 py-0.5 rounded capitalize transition-colors',
+                      chartRange === r ? 'bg-background text-foreground' : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <button type="button" onClick={() => setChartOffset((o) => o + 1)}
+                  className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 hover:bg-muted/50" aria-label="Período anterior">
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="font-mono tabular-nums min-w-[8ch] text-center">
+                  {chartOffset === 0 ? (chartRange === 'semana' ? 'Esta semana' : 'Este mes') : rangeWindowLabel(chartRange, chartOffset)}
+                </span>
+                <button type="button" onClick={() => setChartOffset((o) => Math.max(0, o - 1))} disabled={chartOffset === 0}
+                  className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 enabled:hover:bg-muted/50 disabled:opacity-30" aria-label="Período siguiente">
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Feature 3: tendencias de energía y sueño en el tiempo. */}
       <div className="grid gap-3 sm:grid-cols-2 mb-6">
         <TrendChart
@@ -162,6 +210,8 @@ function SaludContent() {
           icon={Activity}
           points={energySeries}
           windowable
+          range={chartRange}
+          offset={chartOffset}
           colorClass="text-brand"
           formatValue={(n) => n.toFixed(1)}
           emptyHint="Registrá tu energía para ver la evolución."
@@ -171,6 +221,8 @@ function SaludContent() {
           icon={Moon}
           points={sleepSeries}
           windowable
+          range={chartRange}
+          offset={chartOffset}
           colorClass="text-brand"
           formatValue={(n) => `${n.toFixed(1)}h`}
           emptyHint="Registrá tus noches para ver la tendencia."
@@ -180,7 +232,7 @@ function SaludContent() {
       {/* Tendencia corporal: serie temporal de health_metrics (báscula) con
           selector de métrica + stats del período. */}
       <div className="mb-6">
-        <BodyMetricsTrend metrics={healthMetrics} />
+        <BodyMetricsTrend metrics={healthMetrics} range={chartRange} offset={chartOffset} />
       </div>
 
       <div className="mb-6">
