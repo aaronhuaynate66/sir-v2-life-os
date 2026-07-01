@@ -26,6 +26,7 @@ import { getMemoriesForPerson, getPrivateMemoriesForPerson } from '@/lib/memorie
 import { getLogsForPerson } from '@/lib/person-logs/fetch'
 import { getCurrentSynthesis } from '@/lib/person-synthesis/fetch'
 import { getProfileAxes } from '@/lib/person-axes/fetch'
+import { getNotesHistoryForPerson } from '@/lib/person-notes-history/fetch'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -96,6 +97,7 @@ export default async function RelacionPage({ params }: PageProps) {
     correlationLogs,
     synthesis,
     profileAxes,
+    notesHistory,
   ] =
     await Promise.all([
       getLatestObservation(supabase, userId, personId, CONVERSATION_CAPTURE_TYPES),
@@ -112,6 +114,9 @@ export default async function RelacionPage({ params }: PageProps) {
       // Ejes narrativos persistidos profesional/social (0047). null si la fila
       // no existe o la migración no corrió → los ejes caen al cómputo en vivo.
       getProfileAxes(supabase, userId, personId),
+      // Historial de snapshots del campo `notes` (mig 0108). Fail-open si la
+      // tabla no existe todavía → la Bitácora se ve como antes.
+      getNotesHistoryForPerson(supabase, userId, personId, { limit: 50 }),
     ])
 
   return (
@@ -130,6 +135,7 @@ export default async function RelacionPage({ params }: PageProps) {
       correlationLogs={correlationLogs}
       synthesis={synthesis}
       profileAxes={profileAxes}
+      notesHistory={notesHistory}
     />
   )
 }

@@ -22,17 +22,22 @@ import { DiscardCaptureButton } from './DiscardCaptureButton'
 import { cn } from '@/lib/utils'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import type { Observation, CaptureType } from '@/lib/capture/observations/types'
+import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 
 export interface BitacoraProps {
   personLogs: PersonLog[]
   observations: Observation[]
+  /** Snapshots del campo `notes` cuando se sobreescribió (mig 0108). Opcional:
+   *  si no llega, la Bitácora sigue funcionando como antes. Los renderiza como
+   *  entries "Nota editada · <snippet>". */
+  notesHistory?: PersonNoteHistoryEntry[]
 }
 
 interface Entry {
   id: string
   /** ISO de cuándo ocurrió. */
   at: string
-  source: 'log' | 'observation'
+  source: 'log' | 'observation' | 'notes_history'
   label: string
   detail: string | null
   /** Para logs: "3/5". */
@@ -76,7 +81,18 @@ function observationDetail(obs: Observation): string | null {
   return null
 }
 
-function buildEntries(personLogs: PersonLog[], observations: Observation[]): Entry[] {
+function snippet(text: string | null | undefined, max = 140): string | null {
+  if (!text) return null
+  const t = text.replace(/\s+/g, ' ').trim()
+  if (!t) return null
+  return t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`
+}
+
+function buildEntries(
+  personLogs: PersonLog[],
+  observations: Observation[],
+  notesHistory: PersonNoteHistoryEntry[] = [],
+): Entry[] {
   const entries: Entry[] = []
   for (const log of personLogs) {
     entries.push({
@@ -89,14 +105,42 @@ function buildEntries(personLogs: PersonLog[], observations: Observation[]): Ent
     })
   }
   for (const obs of observations) {
+    // manual_note con data.text = nota inline creada desde AnotarAhora →
+    // label especial + text del data.
+    const dataObj = obs.data as Record<string, unknown> | undefined
+    if (obs.captureType === 'manual_note' && dataObj?.source === 'anotar_ahora' && typeof dataObj.text === 'string') {
+      entries.push({
+        id: `obs:${obs.id}`,
+        at: obs.observedAt,
+        source: 'observation',
+        label: 'Nota',
+        detail: snippet(dataObj.text as string, 400),
+        value: null,
+        obsId: obs.id,
+      })
+      continue
+    }
     entries.push({
       id: `obs:${obs.id}`,
       at: obs.observedAt,
       source: 'observation',
-      label: (obs.data as Record<string, unknown> | undefined)?.source === 'call_transcript' ? 'Llamada' : (CAPTURE_LABEL[obs.captureType] ?? obs.captureType),
+      label: dataObj?.source === 'call_transcript' ? 'Llamada' : (CAPTURE_LABEL[obs.captureType] ?? obs.captureType),
       detail: observationDetail(obs),
       value: null,
       obsId: obs.id,
+    })
+  }
+  for (const nh of notesHistory) {
+    // Solo mostramos snapshots con contenido — un edit que fue de "" a "algo"
+    // guarda snapshot=null (nada antes) y no aporta lectura.
+    if (!nh.snapshot || nh.snapshot.trim().length === 0) continue
+    entries.push({
+      id: `nh:${nh.id}`,
+      at: nh.changedAt,
+      source: 'notes_history',
+      label: 'Nota editada',
+      detail: snippet(nh.snapshot, 200),
+      value: null,
     })
   }
   entries.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
@@ -123,11 +167,11 @@ function formatRelative(iso: string): string {
   return ABS.format(new Date(t))
 }
 
-export function Bitacora({ personLogs, observations }: BitacoraProps) {
+export function Bitacora({ personLogs, observations, notesHistory }: BitacoraProps) {
   const [open, setOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
-  const entries = buildEntries(personLogs, observations)
+  const entries = buildEntries(personLogs, observations, notesHistory ?? [])
   const visible = showAll ? entries : entries.slice(0, INITIAL_VISIBLE)
 
   return (
@@ -169,7 +213,11 @@ export function Bitacora({ personLogs, observations }: BitacoraProps) {
                       <span
                         className={cn(
                           'absolute -left-[1.30rem] top-1.5 w-1.5 h-1.5 rounded-full',
-                          e.source === 'log' ? 'bg-brand/70' : 'bg-muted-foreground/50',
+                          e.source === 'log'
+                            ? 'bg-brand/70'
+                            : e.source === 'notes_history'
+                              ? 'bg-warn/70'
+                              : 'bg-muted-foreground/50',
                         )}
                         aria-hidden="true"
                       />
