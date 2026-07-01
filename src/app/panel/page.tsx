@@ -36,6 +36,7 @@ import { QuickStateLog } from '@/components/panel/QuickStateLog'
 import { WeekInFocusCard } from '@/components/panel/WeekInFocusCard'
 import { BehavioralSuggestionCard } from '@/components/panel/BehavioralSuggestionCard'
 import { TargetsAtGlanceCard } from '@/components/panel/TargetsAtGlanceCard'
+import { AnduveHoyCard } from '@/components/panel/AnduveHoyCard'
 import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
@@ -350,6 +351,11 @@ function DashboardContent() {
           no-esencial se alinean, sale una sugerencia concreta y no-clínica.
           Fail-safe: si no hay patrón claro, no renderiza. Ver src/engines/behavioral. */}
       <BehavioralSuggestionCard now={now} />
+
+      {/* Anduve hoy: timeline compacto de eventos registrados hoy — hábitos,
+          self-metrics, sueño, gastos, KRs/tareas cerradas, memorias. Refleja,
+          no evalúa. Ver src/lib/panel/anduveHoy.ts. */}
+      <AnduveHoyCard now={now} />
 
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
       <DailyBriefingCard />
