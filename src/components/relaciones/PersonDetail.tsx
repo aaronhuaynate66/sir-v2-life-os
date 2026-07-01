@@ -71,6 +71,7 @@ import { RedesSociales } from './RedesSociales'
 import { Bitacora } from './Bitacora'
 import { AnotarAhora } from './AnotarAhora'
 import { HistorialSearch } from './HistorialSearch'
+import { NotesHistoryDropdown } from './NotesHistoryDropdown'
 import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
@@ -591,7 +592,14 @@ export function PersonDetail({
                   <Input id="person-tags" value={form.tags} onChange={(e) => patch('tags', e.target.value)} disabled={saving} className="mt-1" placeholder="separados por coma: familia, trabajo, …" />
                 </div>
                 <div className="sm:col-span-2">
-                  <Label htmlFor="person-notes" className="text-xs">Notas</Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="person-notes" className="text-xs">Notas</Label>
+                    <NotesHistoryDropdown
+                      history={notesHistory}
+                      onRestore={(snapshot) => patch('notes', snapshot)}
+                      disabled={saving}
+                    />
+                  </div>
                   <textarea
                     id="person-notes"
                     value={form.notes}
