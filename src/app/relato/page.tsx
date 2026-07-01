@@ -6,7 +6,7 @@
 // reusando los stores y endpoints existentes. PROPONE → CONFIRMA → escribe.
 
 import { useCallback, useMemo, useState } from 'react'
-import { Wand2, Loader2, Check, X, Building2, UserPlus, MessageSquare, Flag, ListChecks } from 'lucide-react'
+import { Wand2, Loader2, Check, X, Building2, UserPlus, MessageSquare, Flag, ListChecks, Target, Pencil, BookOpen } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,26 +17,62 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { generateSlug } from '@/lib/people/slug'
 import type { RouterAction, RouterPlan } from '@/lib/sir/router/plan'
-import type { Person, ObjectiveStep } from '@/types'
+import type { Person, ObjectiveStep, Goal, GoalCategory, GoalPriority } from '@/types'
 
 type Row = { action: RouterAction; included: boolean; result?: 'ok' | 'fail'; msg?: string }
 
 const META: Record<RouterAction['type'], { label: string; Icon: typeof Building2 }> = {
   crear_organizacion: { label: 'Crear empresa', Icon: Building2 },
   crear_persona: { label: 'Crear persona', Icon: UserPlus },
+  crear_objetivo: { label: 'Crear objetivo', Icon: Target },
   registrar_interaccion: { label: 'Registrar interacción', Icon: MessageSquare },
+  registrar_episodio: { label: 'Registrar episodio', Icon: BookOpen },
+  editar_objetivo: { label: 'Editar objetivo', Icon: Pencil },
   agregar_paso_objetivo: { label: 'Paso al objetivo', Icon: Flag },
   agregar_bloqueo_objetivo: { label: 'Bloqueo / checklist', Icon: ListChecks },
 }
+// Orden de ejecucion: primero crear entidades (org → persona → objetivo),
+// despues eventos (interaccion → episodio), despues modificar/complementar.
 const ORDER: Record<RouterAction['type'], number> = {
-  crear_organizacion: 0, crear_persona: 1, registrar_interaccion: 2, agregar_paso_objetivo: 3, agregar_bloqueo_objetivo: 4,
+  crear_organizacion: 0,
+  crear_persona: 1,
+  crear_objetivo: 2,
+  registrar_interaccion: 3,
+  registrar_episodio: 4,
+  editar_objetivo: 5,
+  agregar_paso_objetivo: 6,
+  agregar_bloqueo_objetivo: 7,
 }
 const rand = (n: number) => Math.random().toString(36).slice(2, 2 + n)
+
+/** Un solo campo de WOOP (obstacle + plan si-entonces) o solo el prompt de
+ *  edicion completa a `/api/objectives/plan`. Ambos son opcionales. */
+async function upsertWoop(goalId: string, obstaculo: string | null, siEntonces: string | null): Promise<boolean> {
+  if (!obstaculo && !siEntonces) return true
+  // siEntonces se persiste como plan_if + plan_then juntos en un solo bloque
+  // (formato libre; la UI de /objetivos lo renderiza tal cual). Guardamos como
+  // plan_if para que aparezca en la ficha y dejamos plan_then vacio — puede
+  // separarse mas fino cuando el modelo lo emita en dos campos.
+  const body: Record<string, string> = { goal_id: goalId }
+  if (obstaculo) body.obstacle = obstaculo
+  if (siEntonces) body.plan_if = siEntonces
+  try {
+    const res = await fetch('/api/objectives/plan', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return res.ok
+  } catch { return false }
+}
 
 export default function RelatoPage() {
   const people = useRelationshipStore((s) => s.people)
   const addPerson = useRelationshipStore((s) => s.addPerson)
   const goals = useGoalStore((s) => s.goals)
+  const addGoal = useGoalStore((s) => s.addGoal)
+  const updateGoal = useGoalStore((s) => s.updateGoal)
+  const setAnchor = useGoalStore((s) => s.setAnchor)
   const steps = useObjectiveStepStore((s) => s.steps)
   const addStep = useObjectiveStepStore((s) => s.addStep)
 
@@ -136,6 +172,107 @@ export default function RelatoPage() {
             body: JSON.stringify({ goal_id: g.id, title: a.bloqueo, due_on: a.due || undefined }),
           })
           next[i] = { ...r, result: res.ok ? 'ok' : 'fail', msg: res.ok ? `Bloqueo agregado a «${g.title}»` : 'No se pudo agregar' }
+        } else if (a.type === 'crear_objetivo') {
+          // Ya existe? — el planner ya deberia haberlo puesto como editar, pero
+          // si igual llego, no duplicamos: se marca fail para que Aaron vea.
+          if (findGoal(a.titulo)) {
+            next[i] = { ...r, result: 'fail', msg: `Ya existe el objetivo «${a.titulo}» — descartada` }
+            setRows([...next]); continue
+          }
+          const now = new Date().toISOString()
+          const goalId = `goal_${Date.now()}_${rand(6)}`
+          const goal: Goal = {
+            id: goalId,
+            title: a.titulo,
+            description: a.porQue ?? '',
+            category: (a.categoria as GoalCategory | null) ?? 'personal',
+            priority: (a.prioridad as GoalPriority | null) ?? 'medium',
+            status: 'active',
+            targetDate: a.targetDate ?? undefined,
+            progress: 0,
+            milestones: [],
+            relatedGoals: [],
+            relatedPersons: [],
+            peaceImpact: 5,
+            obstacles: [],
+            nextAction: '',
+            why: a.porQue ?? undefined,
+            createdAt: now,
+            updatedAt: now,
+          }
+          addGoal(goal)
+          createdIds[a.titulo.trim().toLowerCase()] = goalId  // por si viene edit despues
+          // KRs → objective_steps con kind='kr'
+          if (a.krs && a.krs.length > 0) {
+            let order2 = 0
+            for (const title of a.krs) {
+              const kr: ObjectiveStep = {
+                id: `step_${Date.now()}_${rand(6)}`,
+                objectiveId: goalId,
+                kind: 'key_result',
+                title,
+                status: 'pendiente',
+                order: order2++,
+                createdAt: new Date().toISOString(),
+              }
+              addStep(kr)
+            }
+          }
+          // WOOP → objective_plan
+          const woopOk = await upsertWoop(goalId, a.obstaculo ?? null, a.siEntonces ?? null)
+          const parts = [`Objetivo «${a.titulo}» creado`]
+          if (a.krs?.length) parts.push(`${a.krs.length} KRs`)
+          if ((a.obstaculo || a.siEntonces) && !woopOk) parts.push('WOOP no persistio')
+          else if (a.obstaculo || a.siEntonces) parts.push('WOOP guardado')
+          next[i] = { ...r, result: 'ok', msg: parts.join(' · ') }
+        } else if (a.type === 'editar_objetivo') {
+          const g = findGoal(a.objetivo)
+          if (!g) { next[i] = { ...r, result: 'fail', msg: `No encontré el objetivo «${a.objetivo}»` }; continue }
+          const patch: Partial<Goal> = {}
+          if (a.prioridad) patch.priority = a.prioridad as GoalPriority
+          if (Object.keys(patch).length > 0) updateGoal(g.id, patch)
+          if (a.esAncla === true) setAnchor(g.id, true)
+          if (a.esAncla === false && g.isAnchor) setAnchor(g.id, false)
+          // KRs → append (no reemplaza)
+          if (a.krs && a.krs.length > 0) {
+            const existing = steps.filter((s) => s.objectiveId === g.id).length
+            let order2 = existing
+            for (const title of a.krs) {
+              const kr: ObjectiveStep = {
+                id: `step_${Date.now()}_${rand(6)}`,
+                objectiveId: g.id,
+                kind: 'key_result',
+                title,
+                status: 'pendiente',
+                order: order2++,
+                createdAt: new Date().toISOString(),
+              }
+              addStep(kr)
+            }
+          }
+          const woopOk = await upsertWoop(g.id, a.obstaculo ?? null, a.siEntonces ?? null)
+          const parts = [`«${g.title}» actualizado`]
+          if (a.prioridad) parts.push(`prioridad ${a.prioridad}`)
+          if (a.esAncla === true) parts.push('ancla ON')
+          if (a.esAncla === false) parts.push('ancla OFF')
+          if (a.krs?.length) parts.push(`+${a.krs.length} KRs`)
+          if ((a.obstaculo || a.siEntonces) && !woopOk) parts.push('WOOP no persistio')
+          else if (a.obstaculo || a.siEntonces) parts.push('WOOP')
+          next[i] = { ...r, result: 'ok', msg: parts.join(' · ') }
+        } else if (a.type === 'registrar_episodio') {
+          const pid = createdIds[a.persona.trim().toLowerCase()] ?? findPerson(a.persona)?.id
+          if (!pid) { next[i] = { ...r, result: 'fail', msg: `No encontré a ${a.persona}` }; continue }
+          const res = await fetch('/api/moments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              person_id: pid,
+              title: a.titulo,
+              detail: a.detalle ?? undefined,
+              follow_up_on: a.followUp ?? undefined,
+            }),
+          })
+          next[i] = { ...r, result: res.ok ? 'ok' : 'fail', msg: res.ok ? `Episodio abierto con ${a.persona}` : 'No se pudo abrir episodio' }
         }
       } catch {
         next[i] = { ...r, result: 'fail', msg: 'Error al ejecutar' }
@@ -144,7 +281,7 @@ export default function RelatoPage() {
     }
     setRunning(false)
     setDone(true)
-  }, [rows, running, people, steps, addPerson, addStep, findPerson, findGoal])
+  }, [rows, running, people, steps, addPerson, addStep, addGoal, updateGoal, setAnchor, findPerson, findGoal])
 
   const pending = useMemo(() => (rows ?? []).filter((r) => r.included && !r.result).length, [rows])
 
@@ -259,6 +396,65 @@ function ActionFields({ action, onChange, disabled }: { action: RouterAction; on
         <div className="space-y-1.5">
           <p className="text-[12px] text-muted-foreground">en «{action.objetivo}»{action.due ? ` · ${action.due}` : ''}</p>
           <Input value={action.bloqueo} disabled={disabled} className="text-[13px]" onChange={(e) => onChange({ bloqueo: e.target.value })} />
+        </div>
+      )
+    case 'crear_objetivo':
+      return (
+        <div className="space-y-1.5">
+          <Input value={action.titulo} disabled={disabled} className={cls} onChange={(e) => onChange({ titulo: e.target.value })} placeholder="Título del objetivo" />
+          {action.porQue && <p className="text-[12px] text-muted-foreground">Por qué: {action.porQue}</p>}
+          {(action.prioridad || action.categoria || action.targetDate) && (
+            <p className="text-[12px] text-muted-foreground">
+              {action.prioridad ? `prioridad ${action.prioridad}` : ''}
+              {action.categoria ? ` · ${action.categoria}` : ''}
+              {action.targetDate ? ` · ${action.targetDate}` : ''}
+            </p>
+          )}
+          {action.krs && action.krs.length > 0 && (
+            <ul className="mt-1 space-y-0.5 pl-4 text-[12.5px] text-foreground/85 list-disc">
+              {action.krs.map((k, idx) => <li key={idx}>{k}</li>)}
+            </ul>
+          )}
+          {(action.obstaculo || action.siEntonces) && (
+            <div className="mt-1 rounded border border-border/60 bg-muted/30 p-2 text-[12px] leading-snug">
+              {action.obstaculo && <p><strong className="text-foreground">Obstáculo:</strong> {action.obstaculo}</p>}
+              {action.siEntonces && <p className="mt-0.5"><strong className="text-foreground">Si-entonces:</strong> {action.siEntonces}</p>}
+            </div>
+          )}
+        </div>
+      )
+    case 'editar_objetivo':
+      return (
+        <div className="space-y-1.5">
+          <p className="text-[12px] text-muted-foreground">en «{action.objetivo}»</p>
+          {(action.prioridad !== null || action.esAncla !== null) && (
+            <p className="text-[12px] text-muted-foreground">
+              {action.prioridad ? `prioridad → ${action.prioridad}` : ''}
+              {action.esAncla === true ? ' · ancla ON' : action.esAncla === false ? ' · ancla OFF' : ''}
+            </p>
+          )}
+          {action.krs && action.krs.length > 0 && (
+            <div>
+              <p className="text-[12px] text-muted-foreground">+{action.krs.length} KRs (append):</p>
+              <ul className="mt-0.5 space-y-0.5 pl-4 text-[12.5px] text-foreground/85 list-disc">
+                {action.krs.map((k, idx) => <li key={idx}>{k}</li>)}
+              </ul>
+            </div>
+          )}
+          {(action.obstaculo || action.siEntonces) && (
+            <div className="mt-1 rounded border border-border/60 bg-muted/30 p-2 text-[12px] leading-snug">
+              {action.obstaculo && <p><strong className="text-foreground">Obstáculo:</strong> {action.obstaculo}</p>}
+              {action.siEntonces && <p className="mt-0.5"><strong className="text-foreground">Si-entonces:</strong> {action.siEntonces}</p>}
+            </div>
+          )}
+        </div>
+      )
+    case 'registrar_episodio':
+      return (
+        <div className="space-y-1.5">
+          <p className="text-[13px] text-foreground/90">con <strong>{action.persona}</strong>{action.followUp ? ` · seguimiento ${action.followUp}` : ''}</p>
+          <Input value={action.titulo} disabled={disabled} className={cls} onChange={(e) => onChange({ titulo: e.target.value })} placeholder="Título del episodio" />
+          {action.detalle && <p className="text-[12.5px] text-muted-foreground leading-snug">{action.detalle}</p>}
         </div>
       )
   }

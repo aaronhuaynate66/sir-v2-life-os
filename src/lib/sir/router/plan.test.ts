@@ -49,4 +49,139 @@ describe('parseRouterPlan', () => {
   it('texto no-JSON → plan vacío', () => {
     expect(parseRouterPlan('no hay json')).toEqual({ actions: [], unmapped: [] })
   })
+
+  // ─── Fase 2b ────────────────────────────────────────────────────────
+  describe('fase 2b — crear_objetivo', () => {
+    it('parsea objetivo nuevo con KRs y WOOP', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{
+          type: 'crear_objetivo',
+          titulo: 'Ganar el Mundial de Bomberos',
+          porQue: 'Marcar mi camino profesional',
+          prioridad: 'critical',
+          categoria: 'career',
+          targetDate: '2026-11-13',
+          krs: ['Clasificar por FEDEPOL', 'Peso competitivo 80kg', 'Aprobar examen medico'],
+          obstaculo: 'Que la mama insista en que no vaya',
+          siEntonces: 'Si insiste, cambio de tema y sigo con el plan',
+        }],
+      }))
+      const a = byType(p.actions, 'crear_objetivo')[0] as {
+        titulo: string; prioridad: string | null; categoria: string | null;
+        targetDate: string | null; krs: string[] | null; obstaculo: string | null; siEntonces: string | null;
+      }
+      expect(a.titulo).toBe('Ganar el Mundial de Bomberos')
+      expect(a.prioridad).toBe('critical')
+      expect(a.categoria).toBe('career')
+      expect(a.targetDate).toBe('2026-11-13')
+      expect(a.krs).toHaveLength(3)
+      expect(a.obstaculo).toContain('mama')
+      expect(a.siEntonces).toContain('cambio de tema')
+    })
+
+    it('prioridad inválida → null; categoria inválida → null', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{ type: 'crear_objetivo', titulo: 'X', prioridad: 'urgente', categoria: 'random' }],
+      }))
+      const a = p.actions[0] as { prioridad: string | null; categoria: string | null }
+      expect(a.prioridad).toBeNull()
+      expect(a.categoria).toBeNull()
+    })
+
+    it('trunca KRs al máximo (6)', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{
+          type: 'crear_objetivo',
+          titulo: 'X',
+          krs: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
+        }],
+      }))
+      const a = p.actions[0] as { krs: string[] | null }
+      expect(a.krs).toHaveLength(6)
+    })
+
+    it('falta titulo → descartada', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{ type: 'crear_objetivo', prioridad: 'high' }],
+      }))
+      expect(p.actions).toHaveLength(0)
+    })
+  })
+
+  describe('fase 2b — editar_objetivo', () => {
+    it('parsea edición parcial con WOOP + esAncla + krs', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{
+          type: 'editar_objetivo',
+          objetivo: 'Mudarme con mi perro',
+          prioridad: 'low',
+          esAncla: false,
+          obstaculo: 'Que "veamos como va" se estire seis meses',
+          siEntonces: 'Si el 4-ago no hubo check-in, esa noche fijo hora',
+          krs: ['Mudanza 04-jul con Logan', 'Acuerdo escrito con Marita', 'Primer pago S/1000', 'Check-in mes 1'],
+        }],
+      }))
+      const a = byType(p.actions, 'editar_objetivo')[0] as {
+        objetivo: string; prioridad: string | null; esAncla: boolean | null;
+        obstaculo: string | null; siEntonces: string | null; krs: string[] | null;
+      }
+      expect(a.objetivo).toBe('Mudarme con mi perro')
+      expect(a.prioridad).toBe('low')
+      expect(a.esAncla).toBe(false)
+      expect(a.krs).toHaveLength(4)
+    })
+
+    it('esAncla no-boolean → null', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{ type: 'editar_objetivo', objetivo: 'X', esAncla: 'si' }],
+      }))
+      const a = p.actions[0] as { esAncla: boolean | null }
+      expect(a.esAncla).toBeNull()
+    })
+
+    it('falta objetivo → descartada', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{ type: 'editar_objetivo', prioridad: 'high' }],
+      }))
+      expect(p.actions).toHaveLength(0)
+    })
+  })
+
+  describe('fase 2b — registrar_episodio', () => {
+    it('parsea episodio con followUp valido', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{
+          type: 'registrar_episodio',
+          persona: 'Marita',
+          titulo: 'Acuerdo de convivencia',
+          detalle: 'Le mando por WhatsApp los terminos: S/1000, reglas, revision mensual',
+          followUp: '2026-08-04',
+        }],
+      }))
+      const a = byType(p.actions, 'registrar_episodio')[0] as {
+        persona: string; titulo: string; detalle: string | null; followUp: string | null;
+      }
+      expect(a.persona).toBe('Marita')
+      expect(a.titulo).toBe('Acuerdo de convivencia')
+      expect(a.followUp).toBe('2026-08-04')
+    })
+
+    it('followUp invalido → null', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{ type: 'registrar_episodio', persona: 'X', titulo: 'Y', followUp: 'la semana que viene' }],
+      }))
+      const a = p.actions[0] as { followUp: string | null }
+      expect(a.followUp).toBeNull()
+    })
+
+    it('faltan persona o titulo → descartada', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [
+          { type: 'registrar_episodio', persona: 'X' },
+          { type: 'registrar_episodio', titulo: 'Y' },
+        ],
+      }))
+      expect(p.actions).toHaveLength(0)
+    })
+  })
 })
