@@ -33,6 +33,7 @@ import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { HabitsStrip } from '@/components/panel/HabitsStrip'
 import { QuickStateLog } from '@/components/panel/QuickStateLog'
 import { WeekInFocusCard } from '@/components/panel/WeekInFocusCard'
+import { BehavioralSuggestionCard } from '@/components/panel/BehavioralSuggestionCard'
 import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
@@ -328,6 +329,11 @@ function DashboardContent() {
           countdown, KRs tildables, deep-link a /objetivos. Fail-safe: si no
           hay uno en la ventana, no renderiza nada. Ver src/lib/panel/weekInFocus.ts. */}
       <WeekInFocusCard now={now} />
+
+      {/* Observación conductual (E3 hueco #4): cuando estrés + sueño + gasto
+          no-esencial se alinean, sale una sugerencia concreta y no-clínica.
+          Fail-safe: si no hay patrón claro, no renderiza. Ver src/engines/behavioral. */}
+      <BehavioralSuggestionCard now={now} />
 
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
       <DailyBriefingCard />
