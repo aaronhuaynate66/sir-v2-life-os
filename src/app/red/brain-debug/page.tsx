@@ -25,6 +25,8 @@ const KIND_LABEL: Record<EdgeKind, string> = {
   moment_participant: 'episodio · participante',
   moment_reference: 'episodio · mencionado',
   goal_step: 'objetivo · tarea',
+  goal_related_goal: 'objetivo ligado',
+  goal_related_person: 'persona del objetivo',
   deal_contact: 'deal · contacto',
   deal_client_org: 'deal · empresa cliente',
   deal_related: 'deal · relacionado',

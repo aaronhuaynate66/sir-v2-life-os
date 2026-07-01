@@ -32,6 +32,8 @@ export type EdgeKind =
   | 'moment_participant'  // moment → person (participante confirmado)
   | 'moment_reference'    // moment → person (mencionado en otro chat)
   | 'goal_step'           // goal → step (KR/tarea)
+  | 'goal_related_goal'   // goal → goal (goals.related_goals) — el cruce del slide 14
+  | 'goal_related_person' // goal → person (goals.related_persons)
   | 'deal_contact'        // deal → person (contacto decisor)
   | 'deal_client_org'     // deal → org (empresa cliente)
   | 'deal_related'        // deal → person (equipo/relacionados)
@@ -71,6 +73,8 @@ export const BASE_WEIGHT: Record<EdgeKind, number> = {
   moment_participant: 6,
   moment_reference: 4,
   goal_step: 5,
+  goal_related_goal: 4,      // link declarado goal↔goal — moderado, refleja intencion no ejecucion
+  goal_related_person: 5,    // persona explicitamente atada al goal — moderado-alto
   deal_contact: 7,
   deal_client_org: 6,
   deal_related: 3,

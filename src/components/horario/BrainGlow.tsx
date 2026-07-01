@@ -42,6 +42,8 @@ const REASON_LABEL: Record<string, string> = {
   moment_participant: 'episodio',
   moment_reference: 'mencionado',
   goal_step: 'tarea del objetivo',
+  goal_related_goal: 'objetivo ligado',
+  goal_related_person: 'persona del objetivo',
   deal_contact: 'deal · contacto',
   deal_client_org: 'deal · empresa',
   deal_related: 'deal · relacionado',
