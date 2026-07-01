@@ -125,6 +125,34 @@ export function findDuplicatePeople(people: DupPerson[]): DupPerson[][] {
     }
   }
 
+  // Match parcial "PREFIJO POR TOKENS": ej. "Fabiola Masías" (2 tokens) es
+  // prefijo estricto por tokens de "Fabiola Masías Ponce" (3 tokens) → misma
+  // persona. Requiere que TODOS los tokens del más corto coincidan (norm) con
+  // los primeros N tokens del más largo, y que ambos tengan >=2 tokens (para
+  // no colidir con la regla single-token de arriba). Si el más corto tuviera
+  // solo 1 token, ya lo cubre la regla anterior. Sigue CONSERVADOR: no matchea
+  // "Juan Pérez" con "Juan Ramírez" (2do token distinto).
+  const multiTokenPeople: Array<{ tokens: string[]; i: number }> = []
+  people.forEach((p, i) => {
+    const tokens = norm(p.name || '').split(' ').filter(Boolean)
+    if (tokens.length < 2) return
+    multiTokenPeople.push({ tokens, i })
+  })
+  for (let a = 0; a < multiTokenPeople.length; a++) {
+    for (let b = a + 1; b < multiTokenPeople.length; b++) {
+      const A = multiTokenPeople[a]
+      const B = multiTokenPeople[b]
+      if (A.tokens.length === B.tokens.length) continue
+      const shortSide = A.tokens.length < B.tokens.length ? A : B
+      const longSide = A.tokens.length < B.tokens.length ? B : A
+      let allMatch = true
+      for (let t = 0; t < shortSide.tokens.length; t++) {
+        if (shortSide.tokens[t] !== longSide.tokens[t]) { allMatch = false; break }
+      }
+      if (allMatch) union(A.i, B.i)
+    }
+  }
+
   const groups = new Map<number, DupPerson[]>()
   people.forEach((p, i) => {
     const root = find(i)

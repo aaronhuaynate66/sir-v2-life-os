@@ -78,4 +78,35 @@ describe('findDuplicatePeople', () => {
     ])
     expect(g).toHaveLength(0)
   })
+
+  it('prefijo por tokens: "Fabiola Masías" agrupa con "Fabiola Masías Ponce"', () => {
+    // Caso real del 01-jul: pre-existía "Fabiola Masías" y el batch de LinkedIn
+    // subió "Fabiola Masías Ponce". Ambas son la misma persona.
+    const g = findDuplicatePeople([
+      { id: '1', name: 'Fabiola Masías' },
+      { id: '2', name: 'Fabiola Masías Ponce' },
+      { id: '3', name: 'Roberto Sánchez' },
+    ])
+    expect(g).toHaveLength(1)
+    expect(g[0].map((p) => p.id).sort()).toEqual(['1', '2'])
+  })
+
+  it('prefijo por tokens NO agrupa si el 2do token difiere', () => {
+    // "Fabiola Ruiz" NO es prefijo de "Fabiola Masías Ponce" (2do token distinto).
+    const g = findDuplicatePeople([
+      { id: '1', name: 'Fabiola Ruiz' },
+      { id: '2', name: 'Fabiola Masías Ponce' },
+    ])
+    expect(g).toHaveLength(0)
+  })
+
+  it('prefijo por tokens agrupa en cadena "A B" ⊂ "A B C" ⊂ "A B C D"', () => {
+    const g = findDuplicatePeople([
+      { id: '1', name: 'Fabiola Masías' },
+      { id: '2', name: 'Fabiola Masías Ponce' },
+      { id: '3', name: 'Fabiola Masías Ponce Rey' },
+    ])
+    expect(g).toHaveLength(1)
+    expect(g[0]).toHaveLength(3)
+  })
 })
