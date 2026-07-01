@@ -45,17 +45,27 @@ const ORDER: Record<RouterAction['type'], number> = {
 }
 const rand = (n: number) => Math.random().toString(36).slice(2, 2 + n)
 
-/** Un solo campo de WOOP (obstacle + plan si-entonces) o solo el prompt de
- *  edicion completa a `/api/objectives/plan`. Ambos son opcionales. */
-async function upsertWoop(goalId: string, obstaculo: string | null, siEntonces: string | null): Promise<boolean> {
-  if (!obstaculo && !siEntonces) return true
-  // siEntonces se persiste como plan_if + plan_then juntos en un solo bloque
-  // (formato libre; la UI de /objetivos lo renderiza tal cual). Guardamos como
-  // plan_if para que aparezca en la ficha y dejamos plan_then vacio — puede
-  // separarse mas fino cuando el modelo lo emita en dos campos.
+/** Persiste el WOOP en objective_plan. Acepta el split fino (planSi + planEntonces
+ *  como plan_if / plan_then) y el legacy (siEntonces completo a plan_if). Si
+ *  llegan ambas formas, gana el split. Cualquier campo vacio se omite. */
+async function upsertWoop(
+  goalId: string,
+  obstaculo: string | null,
+  planSi: string | null,
+  planEntonces: string | null,
+  siEntoncesLegacy: string | null,
+): Promise<boolean> {
+  const useSplit = !!(planSi || planEntonces)
+  const legacyOnly = !useSplit && !!siEntoncesLegacy
+  if (!obstaculo && !useSplit && !legacyOnly) return true
   const body: Record<string, string> = { goal_id: goalId }
   if (obstaculo) body.obstacle = obstaculo
-  if (siEntonces) body.plan_if = siEntonces
+  if (useSplit) {
+    if (planSi) body.plan_if = planSi
+    if (planEntonces) body.plan_then = planEntonces
+  } else if (legacyOnly && siEntoncesLegacy) {
+    body.plan_if = siEntoncesLegacy
+  }
   try {
     const res = await fetch('/api/objectives/plan', {
       method: 'PUT',
@@ -64,6 +74,12 @@ async function upsertWoop(goalId: string, obstaculo: string | null, siEntonces: 
     })
     return res.ok
   } catch { return false }
+}
+
+/** Convenience: chequea si la accion trae ALGUN WOOP (split o legacy) para
+ *  decidir si vale la pena llamar upsertWoop y para armar msg de resultado. */
+function hasWoop(a: { obstaculo?: string | null; planSi?: string | null; planEntonces?: string | null; siEntonces?: string | null }): boolean {
+  return !!(a.obstaculo || a.planSi || a.planEntonces || a.siEntonces)
 }
 
 export default function RelatoPage() {
@@ -222,13 +238,13 @@ export default function RelatoPage() {
             }
           }
           // WOOP → objective_plan
-          const woopOk = await upsertWoop(goalId, a.obstaculo ?? null, a.siEntonces ?? null)
+          const woopOk = await upsertWoop(goalId, a.obstaculo ?? null, a.planSi ?? null, a.planEntonces ?? null, a.siEntonces ?? null)
           const parts = [`Objetivo «${a.titulo}» creado`]
           if (a.target || a.baseline) parts.push('SMART')
           if (a.krs?.length) parts.push(`${a.krs.length} KRs`)
           if (a.esAncla === true) parts.push('ancla')
-          if ((a.obstaculo || a.siEntonces) && !woopOk) parts.push('WOOP no persistio')
-          else if (a.obstaculo || a.siEntonces) parts.push('WOOP guardado')
+          if (hasWoop(a) && !woopOk) parts.push('WOOP no persistio')
+          else if (hasWoop(a)) parts.push('WOOP guardado')
           next[i] = { ...r, result: 'ok', msg: parts.join(' · ') }
         } else if (a.type === 'editar_objetivo') {
           const g = findGoal(a.objetivo)
@@ -255,14 +271,14 @@ export default function RelatoPage() {
               addStep(kr)
             }
           }
-          const woopOk = await upsertWoop(g.id, a.obstaculo ?? null, a.siEntonces ?? null)
+          const woopOk = await upsertWoop(g.id, a.obstaculo ?? null, a.planSi ?? null, a.planEntonces ?? null, a.siEntonces ?? null)
           const parts = [`«${g.title}» actualizado`]
           if (a.prioridad) parts.push(`prioridad ${a.prioridad}`)
           if (a.esAncla === true) parts.push('ancla ON')
           if (a.esAncla === false) parts.push('ancla OFF')
           if (a.krs?.length) parts.push(`+${a.krs.length} KRs`)
-          if ((a.obstaculo || a.siEntonces) && !woopOk) parts.push('WOOP no persistio')
-          else if (a.obstaculo || a.siEntonces) parts.push('WOOP')
+          if (hasWoop(a) && !woopOk) parts.push('WOOP no persistio')
+          else if (hasWoop(a)) parts.push('WOOP')
           next[i] = { ...r, result: 'ok', msg: parts.join(' · ') }
         } else if (a.type === 'registrar_episodio') {
           const pid = createdIds[a.persona.trim().toLowerCase()] ?? findPerson(a.persona)?.id
@@ -426,10 +442,14 @@ function ActionFields({ action, onChange, disabled }: { action: RouterAction; on
               {action.krs.map((k, idx) => <li key={idx}>{k}</li>)}
             </ul>
           )}
-          {(action.obstaculo || action.siEntonces) && (
+          {(action.obstaculo || action.planSi || action.planEntonces || action.siEntonces) && (
             <div className="mt-1 rounded border border-border/60 bg-muted/30 p-2 text-[12px] leading-snug">
               {action.obstaculo && <p><strong className="text-foreground">Obstáculo:</strong> {action.obstaculo}</p>}
-              {action.siEntonces && <p className="mt-0.5"><strong className="text-foreground">Si-entonces:</strong> {action.siEntonces}</p>}
+              {(action.planSi || action.planEntonces) ? (
+                <p className="mt-0.5"><strong className="text-foreground">Si-entonces:</strong> Si {action.planSi ?? '…'}, entonces {action.planEntonces ?? '…'}.</p>
+              ) : action.siEntonces && (
+                <p className="mt-0.5"><strong className="text-foreground">Si-entonces:</strong> {action.siEntonces}</p>
+              )}
             </div>
           )}
         </div>
@@ -452,10 +472,14 @@ function ActionFields({ action, onChange, disabled }: { action: RouterAction; on
               </ul>
             </div>
           )}
-          {(action.obstaculo || action.siEntonces) && (
+          {(action.obstaculo || action.planSi || action.planEntonces || action.siEntonces) && (
             <div className="mt-1 rounded border border-border/60 bg-muted/30 p-2 text-[12px] leading-snug">
               {action.obstaculo && <p><strong className="text-foreground">Obstáculo:</strong> {action.obstaculo}</p>}
-              {action.siEntonces && <p className="mt-0.5"><strong className="text-foreground">Si-entonces:</strong> {action.siEntonces}</p>}
+              {(action.planSi || action.planEntonces) ? (
+                <p className="mt-0.5"><strong className="text-foreground">Si-entonces:</strong> Si {action.planSi ?? '…'}, entonces {action.planEntonces ?? '…'}.</p>
+              ) : action.siEntonces && (
+                <p className="mt-0.5"><strong className="text-foreground">Si-entonces:</strong> {action.siEntonces}</p>
+              )}
             </div>
           )}
         </div>

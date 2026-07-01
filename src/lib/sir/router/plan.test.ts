@@ -132,6 +132,64 @@ describe('parseRouterPlan', () => {
       expect(a.titulo).toBe('X')
       expect(a.esAncla).toBeNull()
     })
+
+    it('captura WOOP split: planSi + planEntonces separados', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{
+          type: 'crear_objetivo',
+          titulo: 'X',
+          obstaculo: 'Rodillas duelen',
+          planSi: 'me duelen 3 dias seguidos',
+          planEntonces: 'cambio a bici y no paro',
+        }],
+      }))
+      const a = p.actions[0] as { planSi: string | null; planEntonces: string | null; siEntonces: string | null }
+      expect(a.planSi).toBe('me duelen 3 dias seguidos')
+      expect(a.planEntonces).toBe('cambio a bici y no paro')
+      expect(a.siEntonces).toBeNull()  // no vino, no se inventa
+    })
+
+    it('mantiene retrocompat: siEntonces solo se preserva sin split', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{ type: 'crear_objetivo', titulo: 'X', siEntonces: 'Si pasa X, hago Y' }],
+      }))
+      const a = p.actions[0] as { planSi: string | null; planEntonces: string | null; siEntonces: string | null }
+      expect(a.planSi).toBeNull()
+      expect(a.planEntonces).toBeNull()
+      expect(a.siEntonces).toBe('Si pasa X, hago Y')
+    })
+
+    it('si vienen ambos formatos, ambos se conservan (el ejecutor prefiere el split)', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{
+          type: 'crear_objetivo',
+          titulo: 'X',
+          planSi: 'A',
+          planEntonces: 'B',
+          siEntonces: 'legacy completo',
+        }],
+      }))
+      const a = p.actions[0] as { planSi: string | null; planEntonces: string | null; siEntonces: string | null }
+      expect(a.planSi).toBe('A')
+      expect(a.planEntonces).toBe('B')
+      expect(a.siEntonces).toBe('legacy completo')
+    })
+  })
+
+  describe('fase 2b — editar_objetivo · WOOP split', () => {
+    it('acepta planSi + planEntonces separados en editar', () => {
+      const p = parseRouterPlan(JSON.stringify({
+        actions: [{
+          type: 'editar_objetivo',
+          objetivo: 'Mudarme con mi perro',
+          planSi: 'llega 4-ago sin check-in cara a cara',
+          planEntonces: 'fijo hora en el calendario dentro de 48 h',
+        }],
+      }))
+      const a = p.actions[0] as { planSi: string | null; planEntonces: string | null }
+      expect(a.planSi).toBe('llega 4-ago sin check-in cara a cara')
+      expect(a.planEntonces).toBe('fijo hora en el calendario dentro de 48 h')
+    })
   })
 
   describe('fase 2b — editar_objetivo', () => {
