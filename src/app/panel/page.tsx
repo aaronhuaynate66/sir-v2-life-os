@@ -32,6 +32,7 @@ import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { HabitsStrip } from '@/components/panel/HabitsStrip'
 import { QuickStateLog } from '@/components/panel/QuickStateLog'
+import { WeekInFocusCard } from '@/components/panel/WeekInFocusCard'
 import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
@@ -322,6 +323,11 @@ function DashboardContent() {
           <Badge variant="outline" className={cn('font-mono text-[10px] tracking-widest', MODE_CLASSES[mode])}>{MODE_LABEL[mode]}</Badge>
         </div>
       </motion.div>
+
+      {/* Semana en foco: goal activo con targetDate en próximos ~14 días —
+          countdown, KRs tildables, deep-link a /objetivos. Fail-safe: si no
+          hay uno en la ventana, no renderiza nada. Ver src/lib/panel/weekInFocus.ts. */}
+      <WeekInFocusCard now={now} />
 
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
       <DailyBriefingCard />
