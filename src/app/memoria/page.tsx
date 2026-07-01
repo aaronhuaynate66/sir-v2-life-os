@@ -196,12 +196,20 @@ function MemoryContent() {
             {search ? `Sin resultados para "${search}"` : 'Todavía no hay memorias.'}
           </p>
           {!search && (
-            <p className="text-xs text-muted-foreground/60 mt-1 max-w-md mx-auto leading-relaxed">
-              Las memorias se arman solas a partir de tus capturas de WhatsApp: subí una conversación
-              en <span className="text-foreground/80">Captura</span> y luego tocá{' '}
-              <span className="text-foreground/80">Generar desde el historial</span> en el perfil de
-              la persona (Relaciones → detalle).
-            </p>
+            <>
+              <p className="text-xs text-muted-foreground/60 mt-1 max-w-md mx-auto leading-relaxed">
+                Las memorias se arman solas a partir de tus capturas de WhatsApp: subí una conversación
+                en <span className="text-foreground/80">Captura</span> y luego tocá{' '}
+                <span className="text-foreground/80">Generar desde el historial</span> en el perfil de
+                la persona (Relaciones → detalle).
+              </p>
+              <a
+                href="/captura"
+                className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/10 transition-colors mt-4"
+              >
+                Ir a captura
+              </a>
+            </>
           )}
         </div>
       ) : (

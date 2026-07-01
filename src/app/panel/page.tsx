@@ -36,7 +36,15 @@ import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
-import { YearCompass } from '@/components/panel/YearCompass'
+import dynamic from 'next/dynamic'
+// YearCompass es la brújula anual — pesa por los grises exactos + el compute
+// de buildYearCompass + norteDrift. En /panel aparece MÁS ABAJO del above-the-fold
+// (usuarios scrollean para verlo), así que dynamic con ssr:false lo saca del
+// First Load JS del cockpit.
+const YearCompass = dynamic(
+  () => import('@/components/panel/YearCompass').then((m) => ({ default: m.YearCompass })),
+  { ssr: false, loading: () => <div className="h-40 rounded-lg border border-border animate-pulse" /> },
+)
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { AppShell } from '@/components/layout/AppShell'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'

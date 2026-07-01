@@ -30,7 +30,14 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
 import { CalendarConnections } from '@/components/agenda/CalendarConnections'
-import { HorarioCalendar } from '@/components/horario/HorarioCalendar'
+import dynamic from 'next/dynamic'
+// HorarioCalendar es el cockpit visual, ~15KB propios + grid grande. Se
+// difiere hasta que el calendar fetch responde (loading:false ya lo cubre
+// arriba). Al usarlo con dynamic ssr:false, sale del First Load JS de /horario.
+const HorarioCalendar = dynamic(
+  () => import('@/components/horario/HorarioCalendar').then((m) => ({ default: m.HorarioCalendar })),
+  { ssr: false, loading: () => <div className="h-[500px] rounded-lg border border-border animate-pulse" /> },
+)
 
 type CalendarState =
   | { kind: 'loading' }

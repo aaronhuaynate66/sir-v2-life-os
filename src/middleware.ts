@@ -1,11 +1,47 @@
-// SIR V2 — Next.js middleware (Sesión 20b)
+// SIR V2 — Next.js middleware
 // Corre en cada request (excepto static assets). Refresca sesion + protege rutas.
 
-import type { NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { NextResponse, type NextRequest } from 'next/server'
+
+// Nombre del cookie de Supabase auth. @supabase/ssr genera cookies con prefijo
+// `sb-<project-ref>-auth-token` (chunked). Un chequeo por prefijo evita cargar
+// la libreria completa cuando ni siquiera hay sesion.
+const SUPABASE_AUTH_COOKIE_PREFIX = 'sb-'
+const SUPABASE_AUTH_COOKIE_SUFFIX = 'auth-token'
+
+function hasSupabaseAuthCookie(request: NextRequest): boolean {
+  for (const c of request.cookies.getAll()) {
+    if (c.name.startsWith(SUPABASE_AUTH_COOKIE_PREFIX) && c.name.includes(SUPABASE_AUTH_COOKIE_SUFFIX)) {
+      return true
+    }
+  }
+  return false
+}
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  const pathname = request.nextUrl.pathname
+  const isAuthRoute = pathname.startsWith('/auth')
+  const hasCookie = hasSupabaseAuthCookie(request)
+
+  // Sin cookie y ruta protegida → redirect directo sin importar Supabase.
+  // Antes: el middleware SIEMPRE cargaba @supabase/ssr (147 KB de bundle) para
+  // llamar a getUser() en cada request. Ahora, los visitantes anonimos pagan
+  // ZERO del SDK — solo el cookie check.
+  if (!hasCookie && !isAuthRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/login'
+    url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
+  }
+
+  // Sin cookie en ruta de auth → dejar seguir (login page).
+  if (!hasCookie) return NextResponse.next({ request })
+
+  // Con cookie: cargamos lazy el helper de Supabase y refrescamos el token.
+  // Dynamic import: los usuarios logueados pagan la libreria (cacheada tras el
+  // primer request), los anonimos no la ven nunca.
+  const { updateSession } = await import('@/lib/supabase/middleware')
+  return updateSession(request)
 }
 
 export const config = {
