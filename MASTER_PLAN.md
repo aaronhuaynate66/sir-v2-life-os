@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d767975`
+**Hash del último commit humano:** `71f014c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `71f014c` | aaronhuaynate66 | feat(perf): P2c — dynamic /yo panels + /finanzas below-fold charts (#434) | 2026-07-01 |
 | `d767975` | aaronhuaynate66 | feat(perf+analytics): P2b — dynamic below-fold panels + person_opened event (#433) | 2026-07-01 |
 | `cc42e89` | aaronhuaynate66 | feat(perf+analytics): P2 — 2 eventos GA4 + dynamic imports en /captura y /objetivos (#432) | 2026-07-01 |
 | `6e19849` | aaronhuaynate66 | feat(perf): sync engine — TTL de 60s en pulls opportunistas (evita re-barrer 13 tablas por nav) (#431) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5cba09a` | aaronhuaynate66 | feat(perf+analytics): P0 quick wins — auth N+1, PWA manifest, 4 eventos GA4, CLS (#427) | 2026-07-01 |
 | `5045c6c` | aaronhuaynate66 | test(cerebro): tests unit para /api/brain/feedback y /api/brain/glow (#426) | 2026-07-01 |
 | `ccb4c6c` | aaronhuaynate66 | feat(router): crear_persona autocrea org si el modelo la olvidó (#425) | 2026-07-01 |
-| `5d23850` | aaronhuaynate66 | refactor(objetivos): extraer metadata visual a components/objetivos/goalMeta (#424) | 2026-07-01 |
 
 ---
 
