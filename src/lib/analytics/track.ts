@@ -72,6 +72,9 @@ export const EVENTS = {
   relatoActionConfirmed: 'relato_action_confirmed',
   // BrainGlow F3 — adopción del feedback Hebbian.
   brainFeedbackGiven: 'brain_feedback_given',
+  // Mission Control /panel — adopción del briefing IA + YearCompass.
+  briefingGenerated: 'briefing_generated',
+  yearCompassClick: 'year_compass_click',
 } as const
 
 // ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────

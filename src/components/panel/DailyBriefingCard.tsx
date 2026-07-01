@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { parseErrorResponse, toApiError, type ApiError } from '@/lib/api/errors'
+import { track, EVENTS } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 
 const SECTION_LABELS = ['Hoy', 'En foco', 'Sugerencia']
@@ -68,6 +69,9 @@ export function DailyBriefingCard() {
       const json = (await res.json()) as { briefing: string }
       setBriefing(json.briefing)
       saveCached(json.briefing)
+      // Analytics: adopción del briefing IA (cierra hueco de instrumentación
+      // del /panel — antes se emitía ningún evento custom por interacción).
+      track(EVENTS.briefingGenerated, { chars: json.briefing.length })
     } catch (e) {
       setError(toApiError(e))
     } finally {
