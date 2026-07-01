@@ -33,6 +33,9 @@ export interface GlowRow {
   /** Kind de la arista MAS PESADA directamente conectada al seed que llega a
    *  este nodo. Si no hay arista directa, `null` (venia de un hop >= 2). */
   reason: EdgeKind | null
+  /** Llave de esa arista directa (la misma que va a `edge_weights` en F3
+   *  Hebbian). Null si `reason` es null. */
+  edgeKey: string | null
 }
 
 export interface GlowResult {
@@ -78,8 +81,9 @@ export function describeGlow(
   for (const n of graph.nodes) labelByKey.set(nodeKey(n.type, n.id), n.label)
 
   // Para el `reason`: la arista con peso MAXIMO que conecta directo seed↔node.
-  // Recorremos aristas una sola vez indexando por vecino-del-seed.
-  const directEdgeByNeighbor = new Map<string, { kind: EdgeKind; weight: number }>()
+  // Guardamos tambien la KEY de esa arista para que F3 (Hebbian) pueda escribir
+  // exactamente sobre esa fila de edge_weights.
+  const directEdgeByNeighbor = new Map<string, { kind: EdgeKind; weight: number; key: string }>()
   for (const e of graph.edges) {
     const src = nodeKey(e.srcType, e.srcId)
     const dst = nodeKey(e.dstType, e.dstId)
@@ -90,7 +94,7 @@ export function describeGlow(
     if (!neighbor) continue
     const prev = directEdgeByNeighbor.get(neighbor)
     if (!prev || e.weight > prev.weight) {
-      directEdgeByNeighbor.set(neighbor, { kind: e.kind, weight: e.weight })
+      directEdgeByNeighbor.set(neighbor, { kind: e.kind, weight: e.weight, key: e.key })
     }
   }
 
@@ -105,6 +109,7 @@ export function describeGlow(
       label: labelByKey.get(r.nodeKey) ?? id,
       activation: r.activation,
       reason: direct?.kind ?? null,
+      edgeKey: direct?.key ?? null,
     }
   })
 
