@@ -130,6 +130,9 @@ interface PersonDetailProps {
   /** Historial de snapshots del campo `notes` (mig 0108). Opcional. Renderiza
    *  como entries "Nota editada" en la Bitácora. */
   notesHistory?: PersonNoteHistoryEntry[]
+  /** Momentos / decisiones relacionales de la persona. Opcional: se renderizan
+   *  como entries en la Bitácora (label = título, chip abierto/resuelto). */
+  moments?: import('@/lib/moments/types').RelationshipMoment[]
 }
 
 // Etiquetas en español centralizadas en @/lib/people/labels. Se alían a los
@@ -218,6 +221,7 @@ export function PersonDetail({
   synthesis = null,
   profileAxes = null,
   notesHistory = [],
+  moments = [],
 }: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
@@ -351,7 +355,7 @@ export function PersonDetail({
       />
       <HistorialSearch personId={live.id} />
       <AnotarAhora personId={live.id} />
-      <Bitacora personLogs={personLogs} observations={curatedObservations} notesHistory={notesHistory} />
+      <Bitacora personLogs={personLogs} observations={curatedObservations} notesHistory={notesHistory} moments={moments} />
     </div>
   )
 

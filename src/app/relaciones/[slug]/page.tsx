@@ -27,6 +27,7 @@ import { getLogsForPerson } from '@/lib/person-logs/fetch'
 import { getCurrentSynthesis } from '@/lib/person-synthesis/fetch'
 import { getProfileAxes } from '@/lib/person-axes/fetch'
 import { getNotesHistoryForPerson } from '@/lib/person-notes-history/fetch'
+import { getMomentsForPerson } from '@/lib/moments/fetch'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -98,6 +99,7 @@ export default async function RelacionPage({ params }: PageProps) {
     synthesis,
     profileAxes,
     notesHistory,
+    moments,
   ] =
     await Promise.all([
       getLatestObservation(supabase, userId, personId, CONVERSATION_CAPTURE_TYPES),
@@ -117,6 +119,10 @@ export default async function RelacionPage({ params }: PageProps) {
       // Historial de snapshots del campo `notes` (mig 0108). Fail-open si la
       // tabla no existe todavía → la Bitácora se ve como antes.
       getNotesHistoryForPerson(supabase, userId, personId, { limit: 50 }),
+      // Momentos / decisiones relacionales — para el timeline unificado de la
+      // Bitácora. Include primaria + participante. Fail-open si mig 0091
+      // no existe (raro, ya en prod).
+      getMomentsForPerson(supabase, userId, personId, { limit: 50 }),
     ])
 
   return (
@@ -136,6 +142,7 @@ export default async function RelacionPage({ params }: PageProps) {
       synthesis={synthesis}
       profileAxes={profileAxes}
       notesHistory={notesHistory}
+      moments={moments}
     />
   )
 }
