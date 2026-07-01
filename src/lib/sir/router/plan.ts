@@ -65,7 +65,15 @@ export interface RACrearObjetivo {
   esAncla?: boolean | null         // Si es el norte del año (setAnchor tras crear)
   krs?: string[] | null            // resultados clave (titulos)
   obstaculo?: string | null        // WOOP obstacle
-  siEntonces?: string | null       // WOOP plan_if + plan_then juntos, formato libre
+  /** WOOP if-clause separado ("si pasa X"). Si viene junto con planEntonces,
+   *  se persiste dividido en objective_plan.plan_if / plan_then. */
+  planSi?: string | null
+  /** WOOP then-clause separado ("entonces hago Y"). */
+  planEntonces?: string | null
+  /** Legacy: WOOP if+then juntos, formato libre. Se usa si planSi/planEntonces
+   *  no vienen — cae a plan_if entero. Preferir el split cuando el relato
+   *  lo permite. */
+  siEntonces?: string | null
 }
 /** Edita un objetivo existente. TODAS las propiedades son parciales; krs se
  *  AGREGAN (append, no reemplazan) para no borrar data por error. */
@@ -75,7 +83,10 @@ export interface RAEditarObjetivo {
   prioridad?: GoalPriorityRA | null
   esAncla?: boolean | null
   obstaculo?: string | null
-  siEntonces?: string | null
+  /** Ver RACrearObjetivo.planSi / planEntonces / siEntonces (misma semantica). */
+  planSi?: string | null
+  planEntonces?: string | null
+  siEntonces?: string | null       // legacy
   krs?: string[] | null            // se AGREGAN a los existentes
 }
 /** Crea un episodio (relationship_moment con status='abierto'). A diferencia de
@@ -150,8 +161,8 @@ Acciones posibles (usá solo las que el relato justifique):
 - registrar_interaccion { persona, calidad (1-5), nota }: cuando habló/se vio con alguien. La nota resume qué pasó.
 - crear_persona { nombre, relacion?, cargo?, organizacion? }: SOLO si la persona NO está en el contexto. relacion ∈ family|friend|romantic|professional|mentor|mentee|acquaintance.
 - crear_organizacion { nombre, rubro? }: SOLO si la empresa/entidad NO está en el contexto.
-- crear_objetivo { titulo, porQue?, prioridad?, categoria?, targetDate?, target?, baseline?, esAncla?, krs?, obstaculo?, siEntonces? }: un objetivo NUEVO con la metodología SIR completa. prioridad ∈ critical|high|medium|low. categoria ∈ financial|personal|relational|health|career|spiritual|creative. targetDate en YYYY-MM-DD. target = la métrica objetivo SMART (ej. "S/15k/mes ingresos", "pesar 75kg", "correr 42km"). baseline = dónde estás HOY respecto de esa métrica (ej. "S/8k/mes", "82kg", "12km"). esAncla=true SOLO si el relato lo prioriza explícitamente como el norte del año (un solo objetivo puede ser ancla — marcar uno desmarca el resto). krs es un array de 1-4 resultados clave concretos y medibles. obstaculo + siEntonces = WOOP: el obstáculo real que puede impedirlo + un plan "si pasa X, entonces hago Y". SOLO si el objetivo NO está en el contexto.
-- editar_objetivo { objetivo, prioridad?, esAncla?, obstaculo?, siEntonces?, krs? }: cambiar campos de un objetivo YA EXISTENTE (usá el título tal cual del contexto). esAncla=true solo si el relato lo prioriza como el norte del año (un solo objetivo puede ser ancla). krs se agregan a los existentes.
+- crear_objetivo { titulo, porQue?, prioridad?, categoria?, targetDate?, target?, baseline?, esAncla?, krs?, obstaculo?, planSi?, planEntonces? }: un objetivo NUEVO con la metodología SIR completa. prioridad ∈ critical|high|medium|low. categoria ∈ financial|personal|relational|health|career|spiritual|creative. targetDate en YYYY-MM-DD. target = la métrica objetivo SMART. baseline = dónde estás HOY. esAncla=true SOLO si el relato lo prioriza explícitamente como el norte del año. krs es un array de 1-4 resultados clave medibles. WOOP: obstaculo = obstáculo real; planSi = disparador ("si pasa X"); planEntonces = respuesta concreta ("entonces hago Y"). PREFERI SIEMPRE separar planSi y planEntonces en dos campos limpios. SOLO si el objetivo NO está en el contexto.
+- editar_objetivo { objetivo, prioridad?, esAncla?, obstaculo?, planSi?, planEntonces?, krs? }: cambiar campos de un objetivo YA EXISTENTE (usá el título tal cual del contexto). esAncla=true solo si el relato lo prioriza como el norte del año. krs se agregan a los existentes.
 - registrar_episodio { persona, titulo, detalle?, followUp? }: un episodio abierto que rebota (decisión pendiente, conflicto, hito) — distinto de una interacción puntual. followUp en YYYY-MM-DD si el relato menciona cuándo revisarlo.
 - agregar_paso_objetivo { objetivo, paso }: un avance concreto (tarea/acción) hacia un objetivo EXISTENTE. Usalo cuando el relato menciona algo por hacer, no un resultado medible (para KRs medibles usá crear_objetivo/editar_objetivo con krs).
 - agregar_bloqueo_objetivo { objetivo, bloqueo, due? }: algo que falta/depende para lograr un objetivo existente. due en YYYY-MM-DD solo si el relato da fecha clara.
@@ -229,6 +240,8 @@ function normalizeAction(raw: unknown): RouterAction | null {
         esAncla: typeof o.esAncla === 'boolean' ? o.esAncla : null,
         krs: krs.length > 0 ? krs : null,
         obstaculo: strOrNull(o.obstaculo, 800),
+        planSi: strOrNull(o.planSi, 400),
+        planEntonces: strOrNull(o.planEntonces, 400),
         siEntonces: strOrNull(o.siEntonces, 800),
       }
     }
@@ -247,6 +260,8 @@ function normalizeAction(raw: unknown): RouterAction | null {
         prioridad: prio && PRIORITY_SET.has(prio) ? prio : null,
         esAncla: typeof o.esAncla === 'boolean' ? o.esAncla : null,
         obstaculo: strOrNull(o.obstaculo, 800),
+        planSi: strOrNull(o.planSi, 400),
+        planEntonces: strOrNull(o.planEntonces, 400),
         siEntonces: strOrNull(o.siEntonces, 800),
         krs: krs.length > 0 ? krs : null,
       }
