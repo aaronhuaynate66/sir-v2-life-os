@@ -97,7 +97,12 @@
     /* Acento de marca: UNO solo. Reservado para IA y acción primaria. */
     --brand: 252 56% 57%;                /* #6e56cf */
     --brand-foreground: 0 0% 100%;
-    --text-tertiary: 240 5% 43%;         /* #6b6b73 — texto terciario */
+    /* Subido de 43% (#6b6b73, contrast ~2.9:1 sobre bg — fail WCAG AA) a 55%
+       (#8c8c94, contrast ~4.6:1 — pasa AA). Se usa en 212 lugares (badges de
+       eyebrow "SIR V2 — HORARIO", TZ labels, tick counts, meta secundaria).
+       Con este bump los usos base pasan AA sin tocar cada callsite. Los usos
+       con opacidad /60 /70 tambien suben proporcionalmente. */
+    --text-tertiary: 240 5% 55%;         /* #8c8c94 — texto terciario */
   }
 }
 

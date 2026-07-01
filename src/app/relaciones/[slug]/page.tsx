@@ -16,7 +16,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { personAdapter } from '@/lib/supabase/sync'
 import { ensureUniqueSlug, generateSlug } from '@/lib/people/slug'
-import { PersonDetail } from '@/components/relaciones/PersonDetail'
+import { PersonDetailLazy as PersonDetail } from '@/components/relaciones/PersonDetailLazy'
 import {
   getLatestObservation,
   getObservationsForPerson,
