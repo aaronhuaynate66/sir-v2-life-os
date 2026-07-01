@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `852b385`
+**Hash del último commit humano:** `87973fa`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `87973fa` | aaronhuaynate66 | fix(build): usar <Link> en vez de <a> para /relaciones (ESLint no-html-link-for-pages) (#455) | 2026-07-01 |
 | `852b385` | aaronhuaynate66 | feat(relaciones): fusionar duplicados de 1 click (endpoint + UI) + detección parcial "Cristina" ⊂ "Cristina Fuentes" (#454) | 2026-07-01 |
 | `9512bbf` | aaronhuaynate66 | fix(kinship): person_links con kind no-familia dejan de aparecer como "tu familiar" (#453) | 2026-07-01 |
 | `e075673` | aaronhuaynate66 | fix(sync): eventos Realtime forzan pull (bypass TTL 60s) + botón "Refrescar" en /captura/batch (#452) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `7f2d148` | aaronhuaynate66 | feat(relaciones): "Anotar algo ahora" + historial de notas + Bitácora extendida (#448) | 2026-07-01 |
 | `94f18da` | aaronhuaynate66 | fix(seed): normaliza gender ES→EN (people_gender_check violation) (#447) | 2026-07-01 |
 | `707fa5b` | aaronhuaynate66 | feat(seed): UI /captura/batch para cargar JSONs sin CLI ni service key (#446) | 2026-07-01 |
-| `09dd753` | aaronhuaynate66 | feat(seed): script para cargar batches JSON + mig 0107 person_links metadata (#445) | 2026-07-01 |
 
 ---
 
