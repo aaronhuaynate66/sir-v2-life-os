@@ -181,39 +181,94 @@ export default function RelatoIngestPage() {
     setMsgs((m) => [...m, userMsg])
     setDraft('')
     setBusy(true)
+
+    // Modo "aplicar directo": path viejo con JSON (necesita ejecutar server-side).
+    if (aplicarDirecto) {
+      try {
+        const res = await fetch('/api/relato/ingest', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, apply: true }),
+        })
+        const j = (await res.json()) as ApiResponse
+        if (!res.ok) {
+          setMsgs((m) => [...m, { role: 'sir', id: nextId(), requestId: nextId(), plan: [], ambiguous: [], modelText: [], error: j.error ?? `HTTP ${res.status}`, selected: new Set(), applying: false }])
+          return
+        }
+        const plan = j.plan ?? []
+        const selected = new Set<string>()
+        plan.forEach((it, i) => selected.add(itemKey(it, i)))
+        setMsgs((m) => [...m, { role: 'sir', id: nextId(), requestId: nextId(), plan, ambiguous: j.ambiguous ?? [], modelText: j.modelText ?? [], executed: j.executed, selected, applying: false }])
+      } catch (e) {
+        setMsgs((m) => [...m, { role: 'sir', id: nextId(), requestId: nextId(), plan: [], ambiguous: [], modelText: [], error: e instanceof Error ? e.message : String(e), selected: new Set(), applying: false }])
+      } finally { setBusy(false) }
+      return
+    }
+
+    // Modo revisar (default): streaming SSE.
+    const sirMsgId = nextId()
+    const requestId = nextId()
+    setMsgs((m) => [...m, {
+      role: 'sir', id: sirMsgId, requestId,
+      plan: [], ambiguous: [], modelText: [],
+      selected: new Set(), applying: false,
+    }])
     try {
-      const res = await fetch('/api/relato/ingest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, apply: aplicarDirecto }),
+      const res = await fetch('/api/relato/ingest/stream', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
       })
-      const j = (await res.json()) as ApiResponse
-      const requestId = nextId()
-      if (!res.ok) {
-        setMsgs((m) => [...m, {
-          role: 'sir', id: nextId(), requestId,
-          plan: [], ambiguous: [], modelText: [],
-          error: j.error ?? `HTTP ${res.status}`,
-          selected: new Set(), applying: false,
-        }])
+      if (!res.ok || !res.body) {
+        const err = await res.text().catch(() => '')
+        setMsgs((all) => all.map((m) => m.id === sirMsgId && m.role === 'sir' ? { ...m, error: err.slice(0, 200) || `HTTP ${res.status}` } : m))
         return
       }
-      const plan = j.plan ?? []
-      const selected = new Set<string>()
-      plan.forEach((it, i) => selected.add(itemKey(it, i)))
-      setMsgs((m) => [...m, {
-        role: 'sir', id: nextId(), requestId,
-        plan, ambiguous: j.ambiguous ?? [], modelText: j.modelText ?? [],
-        executed: j.executed,
-        selected, applying: false,
-      }])
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buf = ''
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+        const parts = buf.split('\n\n')
+        buf = parts.pop() ?? ''
+        for (const part of parts) {
+          const lines = part.split('\n')
+          let event = ''
+          let dataLine = ''
+          for (const l of lines) {
+            if (l.startsWith('event:')) event = l.slice(6).trim()
+            if (l.startsWith('data:')) dataLine = l.slice(5).trim()
+          }
+          if (!event || !dataLine) continue
+          let payload: unknown
+          try { payload = JSON.parse(dataLine) } catch { continue }
+          if (event === 'tool') {
+            const action = (payload as { action: PlanItem }).action
+            setMsgs((all) => all.map((m) => {
+              if (m.id !== sirMsgId || m.role !== 'sir') return m
+              const nextPlan = [...m.plan, action]
+              const s = new Set(m.selected)
+              s.add(itemKey(action, nextPlan.length - 1))
+              return { ...m, plan: nextPlan, selected: s }
+            }))
+          } else if (event === 'ambiguous') {
+            const action = (payload as { action: FlagAmbiguo }).action
+            setMsgs((all) => all.map((m) => m.id === sirMsgId && m.role === 'sir' ? { ...m, ambiguous: [...m.ambiguous, action] } : m))
+          } else if (event === 'text') {
+            const chunk = (payload as { chunk: string }).chunk
+            setMsgs((all) => all.map((m) => {
+              if (m.id !== sirMsgId || m.role !== 'sir') return m
+              const nextText = m.modelText.length > 0 ? [...m.modelText.slice(0, -1), m.modelText[m.modelText.length - 1] + chunk] : [chunk]
+              return { ...m, modelText: nextText }
+            }))
+          } else if (event === 'error') {
+            const err = (payload as { error: string }).error
+            setMsgs((all) => all.map((m) => m.id === sirMsgId && m.role === 'sir' ? { ...m, error: err } : m))
+          }
+        }
+      }
     } catch (e) {
-      setMsgs((m) => [...m, {
-        role: 'sir', id: nextId(), requestId: nextId(),
-        plan: [], ambiguous: [], modelText: [],
-        error: e instanceof Error ? e.message : String(e),
-        selected: new Set(), applying: false,
-      }])
+      setMsgs((all) => all.map((m) => m.id === sirMsgId && m.role === 'sir' ? { ...m, error: e instanceof Error ? e.message : String(e) } : m))
     } finally { setBusy(false) }
   }
 
