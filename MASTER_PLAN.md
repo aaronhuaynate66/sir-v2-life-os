@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3af263d`
+**Hash del último commit humano:** `06862da`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `06862da` | aaronhuaynate66 | feat(observations): botón "Regenerar resumen" para whatsapp huérfanos (#471) | 2026-07-02 |
 | `3af263d` | aaronhuaynate66 | feat(relato-ingest): UI conversacional (chat) + aplicar directo + nav (#470) | 2026-07-02 |
 | `ff4059c` | aaronhuaynate66 | feat(person-cycles): ciclo menstrual de terceros como data estructurada (#469) | 2026-07-02 |
 | `cfa100e` | aaronhuaynate66 | fix(duplicates): detectar primer+último nombre con nombre medio (#468) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5096d96` | aaronhuaynate66 | feat(ficha): panel "Pendientes con esta persona" arriba de la ficha (#464) | 2026-07-02 |
 | `9702b19` | aaronhuaynate66 | feat(captura): aceptar PDFs — se convierten a PNG por página client-side (#463) | 2026-07-02 |
 | `e02f7e8` | aaronhuaynate66 | feat(calendar): OAuth Google Calendar (Fase 2) desde la UI (#462) | 2026-07-02 |
-| `58c173b` | aaronhuaynate66 | feat(aaron/backfill): one-shot idempotente para el relato jun-jul 2026 (#461) | 2026-07-02 |
 
 ---
 
