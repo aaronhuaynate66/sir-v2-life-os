@@ -25,6 +25,7 @@ import { moonPhaseId, type LunarPhaseId } from '@/lib/lunar/phase'
 import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
+import type { PersonCycleEntry, CyclePhase } from '@/lib/person-cycles/types'
 
 // ─── Tipos de salida ───────────────────────────────────────────────
 
@@ -82,6 +83,15 @@ const CYCLE_ORDER: Array<{ id: CyclePhaseId; label: string }> = [
   { id: 'follicular', label: 'Folicular' },
   { id: 'ovulation', label: 'Ovulación' },
   { id: 'luteal', label: 'Lútea' },
+]
+
+const EXPLICIT_CYCLE_ORDER: Array<{ id: CyclePhase; label: string }> = [
+  { id: 'bleeding', label: 'Sangrado' },
+  { id: 'pms', label: 'PMS' },
+  { id: 'mid_cycle', label: 'Medio del ciclo' },
+  { id: 'ovulation', label: 'Ovulación' },
+  { id: 'luteal', label: 'Lútea' },
+  { id: 'unknown', label: 'Indefinida' },
 ]
 
 // ─── Núcleo de agregación ───────────────────────────────────────────
@@ -201,5 +211,31 @@ export function correlateByCyclePhase(
     if (!d) return null
     const phase = cyclePhase(cycleStartDate, length, d)
     return phase ? phase.phase : null
+  }, config)
+}
+
+/**
+ * Correlación contra el ciclo EXPLÍCITO (person_cycles, mig 0110). Usa el
+ * fase registrado día por día por Aaron (o self_report) — más preciso que
+ * el cálculo por fórmula cycleStartDate+length. Sirve para cruzar cómo
+ * Aaron se siente en cada interacción con la fase REAL de la persona ese
+ * día ("¿discutimos más cuando está sangrando?").
+ *
+ * Índice por YYYY-MM-DD del día del cycle entry. Si un log cae en un día
+ * SIN entry, no se cuenta.
+ */
+export function correlateByExplicitCyclePhase(
+  logs: PersonLog[],
+  cycles: PersonCycleEntry[],
+  config: CorrelationConfig = {},
+): MetricByPhase[] {
+  if (!cycles || cycles.length === 0) return []
+  const byDay = new Map<string, CyclePhase>()
+  for (const c of cycles) byDay.set(c.date, c.phase)
+  return aggregate(logs, EXPLICIT_CYCLE_ORDER as Array<{ id: string; label: string }>, (log) => {
+    const d = parseLocalDate(log.loggedAt)
+    if (!d) return null
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    return byDay.get(ymd) ?? null
   }, config)
 }
