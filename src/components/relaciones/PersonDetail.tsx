@@ -58,6 +58,7 @@ import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
 import { PendientesConPersona } from './PendientesConPersona'
+import { EstadoConPersona } from './EstadoConPersona'
 import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
@@ -409,6 +410,17 @@ export function PersonDetail({
         lastManualInteractionAt={
           personLogs.find((l) => l.kind === 'interaction')?.loggedAt ?? null
         }
+      />
+
+      {/* Estado global del vínculo con esta persona (determinístico): cruza
+          logs + moments + ciclo + memorias en una etiqueta + insights concretos.
+          Se muestra siempre; label "sin_data" cuando aún no hay registros. */}
+      <EstadoConPersona
+        personName={live.name}
+        personLogs={personLogs}
+        moments={moments}
+        personCycles={personCycles}
+        memories={memories}
       />
 
       {/* Pendientes: moments abiertos con este follow-up. Se oculta si no hay
