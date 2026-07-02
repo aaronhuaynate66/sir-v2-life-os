@@ -7,7 +7,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Link2, Plus, Trash2, Pencil, Check, X, AlertCircle, Loader2 } from 'lucide-react'
+import { Link2, Plus, Trash2, Pencil, Check, X, AlertCircle, Loader2, Globe } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
@@ -48,6 +48,17 @@ export function CalendarConnections({ onChange }: { onChange?: () => void }) {
   const [status, setStatus] = useState<Status>({ kind: 'loading' })
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [googleOAuthEnabled, setGoogleOAuthEnabled] = useState(false)
+
+  useEffect(() => {
+    let cancel = false
+    void fetch('/api/calendar/oauth/google/status').then(async (r) => {
+      if (cancel || !r.ok) return
+      const j = (await r.json()) as { configured?: boolean }
+      setGoogleOAuthEnabled(!!j.configured)
+    }).catch(() => {})
+    return () => { cancel = true }
+  }, [])
 
   const load = useCallback(async () => {
     setStatus({ kind: 'loading' })
@@ -85,10 +96,25 @@ export function CalendarConnections({ onChange }: { onChange?: () => void }) {
         </div>
 
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-          Pegá la URL <span className="font-mono text-foreground/80">.ics</span> de tu calendario
-          (Outlook, Google, iCloud…). Podés conectar varios — se muestran unificados y con su color.
-          Tu token queda solo en el servidor.
+          Conectá con Google (OAuth) o pegá la URL <span className="font-mono text-foreground/80">.ics</span>{' '}
+          de otro calendario (Outlook, iCloud…). Podés tener varios — se muestran unificados y con su color.
+          Tus tokens quedan cifrados en el servidor.
         </p>
+
+        {googleOAuthEnabled && !adding && (
+          <div className="mt-3">
+            <a
+              href="/api/calendar/oauth/google/start"
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/10 transition-colors"
+            >
+              <Globe size={13} strokeWidth={1.75} aria-hidden="true" />
+              Conectar con Google
+            </a>
+            <span className="ml-2 text-[10px] text-muted-foreground/60">
+              (login OAuth, sin URLs .ics)
+            </span>
+          </div>
+        )}
 
         {/* Form de alta */}
         {adding && (
@@ -214,8 +240,17 @@ function ConnectionRow({
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1">
-        <div className="text-sm text-foreground truncate">{conn.label}</div>
-        <div className="text-[11px] text-muted-foreground truncate font-mono">{hostOf(conn.icsUrl)}</div>
+        <div className="text-sm text-foreground truncate flex items-center gap-1.5">
+          {conn.label}
+          {conn.provider !== 'ics' && (
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground/70 rounded border border-border/60 bg-muted/40 px-1 py-0.5">
+              {conn.provider}
+            </span>
+          )}
+        </div>
+        <div className="text-[11px] text-muted-foreground truncate font-mono">
+          {conn.provider === 'ics' ? hostOf(conn.icsUrl) : 'OAuth · sin URL'}
+        </div>
       </div>
 
       {/* Toggle enabled */}
@@ -235,9 +270,11 @@ function ConnectionRow({
         <span className={cn('absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all', conn.enabled ? 'left-[18px]' : 'left-0.5')} />
       </button>
 
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit} aria-label="Editar calendario" disabled={busy}>
-        <Pencil size={14} strokeWidth={1.75} aria-hidden="true" />
-      </Button>
+      {conn.provider === 'ics' && (
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit} aria-label="Editar calendario" disabled={busy}>
+          <Pencil size={14} strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      )}
 
       {confirming ? (
         <div className="flex items-center gap-1">
