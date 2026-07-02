@@ -416,6 +416,7 @@ export function PersonDetail({
           logs + moments + ciclo + memorias en una etiqueta + insights concretos.
           Se muestra siempre; label "sin_data" cuando aún no hay registros. */}
       <EstadoConPersona
+        personId={live.id}
         personName={live.name}
         personLogs={personLogs}
         moments={moments}
