@@ -153,6 +153,37 @@ export function findDuplicatePeople(people: DupPerson[]): DupPerson[][] {
     }
   }
 
+  // Match parcial "PRIMER + ÚLTIMO NOMBRE": para el caso donde uno de los dos
+  // trae NOMBRE MEDIO y el otro no. Ej: "Diana Díaz" ↔ "Diana Carolina Díaz
+  // Sánchez". El prefix-match de arriba no los agrupa (2do token difiere:
+  // "díaz" vs "carolina"), pero comparten primer nombre + un apellido
+  // "conocido" del corto. Regla CONSERVADORA:
+  //   - El más corto tiene EXACTAMENTE 2 tokens (nombre + apellido).
+  //   - Su primer token = primer token del más largo.
+  //   - Su segundo token (apellido) aparece como TOKEN del más largo (en
+  //     cualquier posición, típicamente índice 2 = apellido paterno).
+  //   - El más largo tiene >=3 tokens (por definición del caso).
+  // Esto agrupa "Diana Díaz" + "Diana Carolina Díaz Sánchez" pero NO
+  // "Diana Ramírez" + "Diana Carolina Díaz Sánchez" (apellidos distintos).
+  for (let a = 0; a < multiTokenPeople.length; a++) {
+    for (let b = a + 1; b < multiTokenPeople.length; b++) {
+      const A = multiTokenPeople[a]
+      const B = multiTokenPeople[b]
+      // Uno tiene 2 tokens y el otro 3+.
+      const shortSide = A.tokens.length === 2 && B.tokens.length >= 3 ? A
+        : B.tokens.length === 2 && A.tokens.length >= 3 ? B : null
+      if (!shortSide) continue
+      const longSide = shortSide === A ? B : A
+      const first = shortSide.tokens[0]
+      const last = shortSide.tokens[1]
+      if (first.length < 3 || GENERIC_TOKENS.has(first)) continue
+      if (last.length < 3 || GENERIC_TOKENS.has(last)) continue
+      if (longSide.tokens[0] !== first) continue
+      if (!longSide.tokens.slice(1).includes(last)) continue
+      union(A.i, B.i)
+    }
+  }
+
   const groups = new Map<number, DupPerson[]>()
   people.forEach((p, i) => {
     const root = find(i)

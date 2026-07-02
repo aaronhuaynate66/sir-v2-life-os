@@ -109,4 +109,37 @@ describe('findDuplicatePeople', () => {
     expect(g).toHaveLength(1)
     expect(g[0]).toHaveLength(3)
   })
+
+  it('primer+último con nombre medio: "Diana Díaz" ↔ "Diana Carolina Díaz Sánchez"', () => {
+    // Caso 02-jul: el endpoint fix-jul-02 creó "Diana Díaz" porque el lookup
+    // exacto no encontró la real "Diana Carolina Díaz Sánchez". Ahora el
+    // detector las agrupa para que Aaron pueda fusionar desde /relaciones.
+    const g = findDuplicatePeople([
+      { id: '1', name: 'Diana Díaz' },
+      { id: '2', name: 'Diana Carolina Díaz Sánchez' },
+      { id: '3', name: 'Marcos López' },
+    ])
+    expect(g).toHaveLength(1)
+    expect(g[0].map((p) => p.id).sort()).toEqual(['1', '2'])
+  })
+
+  it('primer+último NO agrupa si el apellido no coincide', () => {
+    // "Diana Ramírez" NO es la misma que "Diana Carolina Díaz Sánchez"
+    // (mismo primer nombre pero apellido distinto).
+    const g = findDuplicatePeople([
+      { id: '1', name: 'Diana Ramírez' },
+      { id: '2', name: 'Diana Carolina Díaz Sánchez' },
+    ])
+    expect(g).toHaveLength(0)
+  })
+
+  it('primer+último NO agrupa 2-token con 2-token distintos', () => {
+    // Fallback: si ambos son "Nombre Apellido" y difieren, dejarlos sueltos
+    // (no aplicar la regla nombre-medio).
+    const g = findDuplicatePeople([
+      { id: '1', name: 'Diana Díaz' },
+      { id: '2', name: 'Diana Ramírez' },
+    ])
+    expect(g).toHaveLength(0)
+  })
 })
