@@ -38,6 +38,7 @@ import { BehavioralSuggestionCard } from '@/components/panel/BehavioralSuggestio
 import { TargetsAtGlanceCard } from '@/components/panel/TargetsAtGlanceCard'
 import { AnduveHoyCard } from '@/components/panel/AnduveHoyCard'
 import { PersonasEnRiesgoCard } from '@/components/panel/PersonasEnRiesgoCard'
+import { StatusAlertsCard } from '@/components/panel/StatusAlertsCard'
 import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
@@ -356,6 +357,7 @@ function DashboardContent() {
       {/* Anduve hoy: timeline compacto de eventos registrados hoy — hábitos,
           self-metrics, sueño, gastos, KRs/tareas cerradas, memorias. Refleja,
           no evalúa. Ver src/lib/panel/anduveHoy.ts. */}
+      <StatusAlertsCard />
       <PersonasEnRiesgoCard />
       <AnduveHoyCard now={now} />
 
