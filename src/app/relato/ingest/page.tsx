@@ -16,7 +16,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Wand2, Loader2, CheckCircle2, AlertCircle, Circle, CircleCheck, Send, User, Sparkles, RotateCcw } from 'lucide-react'
+import { Wand2, Loader2, CheckCircle2, AlertCircle, Circle, CircleCheck, Send, User, Sparkles, RotateCcw, Paperclip } from 'lucide-react'
+import { pdfFileToText } from '@/lib/capture/pdf/pdfToText'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -137,6 +138,9 @@ export default function RelatoIngestPage() {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
+  const [attachingPdf, setAttachingPdf] = useState(false)
+  const [pdfNotice, setPdfNotice] = useState<string | null>(null)
+  const pdfInputRef = useRef<HTMLInputElement>(null)
   const [aplicarDirecto, setAplicarDirecto] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hydrated, setHydrated] = useState(false)
@@ -259,6 +263,23 @@ export default function RelatoIngestPage() {
     try { localStorage.removeItem(LS_KEY) } catch { /* */ }
   }
 
+  async function attachPdf(file: File) {
+    if (!file || !/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') return
+    setAttachingPdf(true); setPdfNotice(null)
+    try {
+      const r = await pdfFileToText(file, { maxPages: 10 })
+      if (r.error) { setPdfNotice(`Error: ${r.error}`); return }
+      if (r.looksLikeScan || r.text.trim().length < 50) {
+        setPdfNotice(`El PDF parece ser un scan sin texto (${r.pagesRead} páginas). Subilo desde /captura con Vision para mejores resultados.`)
+        return
+      }
+      // Metemos el texto al final del draft con marker + resumen.
+      const marker = `\n\n--- Contenido del PDF: ${file.name} (${r.pagesRead}/${r.totalPages} páginas) ---\n${r.text}\n--- FIN PDF ---\n`
+      setDraft((d) => (d + marker).slice(0, 8000))
+      setPdfNotice(`OK: pegué el texto de ${r.pagesRead} páginas. Editá el mensaje y enviá cuando estés listo.`)
+    } finally { setAttachingPdf(false) }
+  }
+
   return (
     <AppShell>
       <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
@@ -348,7 +369,32 @@ export default function RelatoIngestPage() {
             )}
           </div>
           <div className="border-t border-border p-3">
-            <div className="flex gap-2 items-end">
+            <div
+              className="flex gap-2 items-end"
+              onDragOver={(e) => { e.preventDefault() }}
+              onDrop={(e) => {
+                e.preventDefault()
+                const f = e.dataTransfer.files?.[0]
+                if (f) void attachPdf(f)
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => pdfInputRef.current?.click()}
+                disabled={attachingPdf || busy}
+                title="Adjuntar PDF — se extrae el texto y se pega al mensaje"
+                className="flex-shrink-0 rounded-md border border-border bg-background p-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 disabled:opacity-50"
+                aria-label="Adjuntar PDF"
+              >
+                {attachingPdf ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
+              </button>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) void attachPdf(f); e.target.value = '' }}
+              />
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -356,7 +402,7 @@ export default function RelatoIngestPage() {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void enviar() }
                 }}
                 rows={2}
-                placeholder="Contame qué pasó… (Ctrl/⌘ + Enter para enviar)"
+                placeholder="Contame qué pasó… (Ctrl/⌘ + Enter para enviar · arrastrá un PDF acá)"
                 className="flex-1 min-w-0 resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30 min-h-[44px] max-h-[240px]"
                 disabled={busy}
               />
@@ -364,11 +410,14 @@ export default function RelatoIngestPage() {
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1.5">
-              {aplicarDirecto
-                ? 'Modo aplicar directo — se guarda al toque, sin revisión.'
-                : 'Modo revisar — verás el plan y aprobás antes de guardar.'}
-            </p>
+            <div className="text-[10px] text-muted-foreground mt-1.5 space-y-0.5">
+              <p>
+                {aplicarDirecto
+                  ? 'Modo aplicar directo — se guarda al toque, sin revisión.'
+                  : 'Modo revisar — verás el plan y aprobás antes de guardar.'}
+              </p>
+              {pdfNotice && <p className={pdfNotice.startsWith('OK') ? 'text-ok' : 'text-warn'}>{pdfNotice}</p>}
+            </div>
           </div>
         </CardContent>
       </Card>
