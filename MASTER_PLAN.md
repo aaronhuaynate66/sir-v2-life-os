@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `cfa100e`
+**Hash del último commit humano:** `ff4059c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `ff4059c` | aaronhuaynate66 | feat(person-cycles): ciclo menstrual de terceros como data estructurada (#469) | 2026-07-02 |
 | `cfa100e` | aaronhuaynate66 | fix(duplicates): detectar primer+último nombre con nombre medio (#468) | 2026-07-02 |
 | `3791c2b` | aaronhuaynate66 | feat(relato): /relato/ingest — Aaron cuenta en prosa, SIR estructura (#467) | 2026-07-02 |
 | `b3748e5` | aaronhuaynate66 | feat(auth): Personal Access Tokens (Fase 1 del módulo Claude → SIR) (#466) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e02f7e8` | aaronhuaynate66 | feat(calendar): OAuth Google Calendar (Fase 2) desde la UI (#462) | 2026-07-02 |
 | `58c173b` | aaronhuaynate66 | feat(aaron/backfill): one-shot idempotente para el relato jun-jul 2026 (#461) | 2026-07-02 |
 | `9f029cd` | aaronhuaynate66 | feat(captura/batch): drag-drop + paste + upload + pre-validación (#460) | 2026-07-02 |
-| `7fe0a62` | aaronhuaynate66 | feat(salud): toggle Semana/Mes GLOBAL para todos los charts (#459) | 2026-07-01 |
 
 ---
 
