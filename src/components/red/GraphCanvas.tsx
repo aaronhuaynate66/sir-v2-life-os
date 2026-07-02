@@ -18,10 +18,22 @@ import type { GraphData } from '@/lib/graph/types'
 import { CATEGORY_COLOR } from '@/lib/graph/colors'
 import { hoverToHtml, type NodeHover } from '@/lib/graph/hover'
 
+export type RiskLevel = 'overdue' | 'multiple' | 'due_soon' | 'low_tone'
+
 interface GraphCanvasProps {
   data: GraphData
   /** Clic en un nodo → navegar. isSelf=true para el nodo central. */
   onNavigate?: (nodeId: string, isSelf: boolean) => void
+  /** Nivel de riesgo por personId (viene de /api/panel/personas-en-riesgo).
+   *  Cuando existe, se pinta un ring de color alrededor del nodo. */
+  riskById?: Record<string, RiskLevel>
+}
+
+const RISK_RING_COLOR: Record<RiskLevel, string> = {
+  overdue: 'rgba(239, 68, 68, 0.85)',   // bad (rojo)
+  multiple: 'rgba(239, 68, 68, 0.85)',  // bad
+  due_soon: 'rgba(245, 158, 11, 0.85)', // warn (ámbar)
+  low_tone: 'rgba(245, 158, 11, 0.85)', // warn
 }
 
 function toForceGraphData(data: GraphData) {
@@ -103,7 +115,7 @@ type LinkLike = {
   color?: string
 }
 
-export function GraphCanvas({ data, onNavigate }: GraphCanvasProps) {
+export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProps) {
   const fgRef = useRef<unknown>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const fgData = useMemo(() => toForceGraphData(data), [data])
@@ -215,6 +227,17 @@ export function GraphCanvas({ data, onNavigate }: GraphCanvasProps) {
         ctx.beginPath()
         ctx.arc(x, y, radius + 3, 0, 2 * Math.PI)
         ctx.fillStyle = 'rgba(245, 245, 245, 0.18)'
+        ctx.fill()
+      }
+
+      // Ring de RIESGO: si la persona está en /api/panel/personas-en-riesgo,
+      // pintamos un aro rojo (overdue/multiple) o ámbar (due_soon/low_tone)
+      // afuera. Va ANTES del círculo para que el fill lo cubra en el borde.
+      const risk = !node.isSelf ? riskById[String(node.id)] : undefined
+      if (risk) {
+        ctx.beginPath()
+        ctx.arc(x, y, radius + 3.5, 0, 2 * Math.PI)
+        ctx.fillStyle = RISK_RING_COLOR[risk]
         ctx.fill()
       }
 

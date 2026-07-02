@@ -64,6 +64,25 @@ export function GraphView({ selfFullName, selfEmail, directContactIds = [], inte
   const recommendations = useRecommendationStore((s) => s.recommendations)
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS)
 
+  // Personas en riesgo (server, /api/panel/personas-en-riesgo) — para pintar
+  // el ring en el canvas del grafo. Fail-open: si falla queda en {}.
+  const [riskById, setRiskById] = useState<Record<string, 'overdue' | 'multiple' | 'due_soon' | 'low_tone'>>({})
+  useEffect(() => {
+    let alive = true
+    void (async () => {
+      try {
+        const r = await fetch('/api/panel/personas-en-riesgo')
+        if (!r.ok) return
+        const j = (await r.json()) as { personas?: Array<{ personId: string; reason: 'overdue' | 'multiple' | 'due_soon' | 'low_tone' }> }
+        if (!alive) return
+        const map: Record<string, 'overdue' | 'multiple' | 'due_soon' | 'low_tone'> = {}
+        for (const p of j.personas ?? []) map[p.personId] = p.reason
+        setRiskById(map)
+      } catch { /* */ }
+    })()
+    return () => { alive = false }
+  }, [])
+
   // Última recomendación activa por persona (del store client, vía relatedPersons).
   const recById = useMemo(() => {
     const map: Record<string, string> = {}
@@ -160,7 +179,7 @@ export function GraphView({ selfFullName, selfEmail, directContactIds = [], inte
           </CardContent>
         </Card>
       ) : (
-        <GraphCanvas data={filteredData} onNavigate={onNavigate} />
+        <GraphCanvas data={filteredData} onNavigate={onNavigate} riskById={riskById} />
       )}
 
       <GraphLegend />
