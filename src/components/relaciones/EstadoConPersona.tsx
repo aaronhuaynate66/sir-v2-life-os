@@ -7,12 +7,13 @@
 // El botón "Análisis con IA" queda para la siguiente iteración (se hará
 // contra Claude Sonnet con cache 24h para no gastar tokens al pedo).
 
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { HeartHandshake, TrendingUp, TrendingDown, Minus, AlertCircle, MessageCircle, Sparkles } from 'lucide-react'
+import { HeartHandshake, TrendingUp, TrendingDown, Minus, AlertCircle, MessageCircle, Sparkles, Loader2, RefreshCcw } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { buildEstadoInsights, LABEL_HUMAN, type EstadoInsights } from '@/lib/estado-con-persona/insights'
 import type { PersonLog } from '@/lib/person-logs/types'
@@ -21,11 +22,19 @@ import type { PersonCycleEntry } from '@/lib/person-cycles/types'
 import type { Memory } from '@/types'
 
 interface Props {
+  personId: string
   personName: string
   personLogs: PersonLog[]
   moments: RelationshipMoment[]
   personCycles: PersonCycleEntry[]
   memories: Memory[]
+}
+
+interface BriefingCache {
+  synthesis: string
+  generatedAt: string
+  isFresh: boolean
+  ageHours: number
 }
 
 const CYCLE_LABEL: Record<string, string> = {
@@ -60,11 +69,48 @@ function overdueUrgencyText(insights: EstadoInsights): string | null {
   return title
 }
 
-export function EstadoConPersona({ personName, personLogs, moments, personCycles, memories }: Props) {
+export function EstadoConPersona({ personId, personName, personLogs, moments, personCycles, memories }: Props) {
   const insights = useMemo(
     () => buildEstadoInsights({ personLogs, moments, personCycles, memories, now: new Date() }),
     [personLogs, moments, personCycles, memories],
   )
+
+  const [briefing, setBriefing] = useState<BriefingCache | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Al montar: chequear si hay cache reciente (GET, sin gastar tokens).
+  useEffect(() => {
+    let cancel = false
+    void fetch(`/api/estado-persona/briefing?person_id=${encodeURIComponent(personId)}`)
+      .then(async (r) => {
+        if (cancel || !r.ok) return
+        const j = (await r.json()) as { cached?: boolean; synthesis?: string; generatedAt?: string; isFresh?: boolean; ageHours?: number }
+        if (j.cached && j.synthesis && j.generatedAt) {
+          setBriefing({ synthesis: j.synthesis, generatedAt: j.generatedAt, isFresh: !!j.isFresh, ageHours: j.ageHours ?? 0 })
+        }
+      })
+      .catch(() => {})
+    return () => { cancel = true }
+  }, [personId])
+
+  const generate = useCallback(async (force = false) => {
+    setBusy(true); setError(null)
+    try {
+      const res = await fetch('/api/estado-persona/briefing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person_id: personId, force }),
+      })
+      const j = (await res.json()) as { synthesis?: string; generatedAt?: string; error?: string }
+      if (!res.ok) { setError(j.error ?? `HTTP ${res.status}`); return }
+      if (j.synthesis && j.generatedAt) {
+        setBriefing({ synthesis: j.synthesis, generatedAt: j.generatedAt, isFresh: true, ageHours: 0 })
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally { setBusy(false) }
+  }, [personId])
 
   const labelMeta = LABEL_HUMAN[insights.overallLabel]
 
@@ -150,6 +196,53 @@ export function EstadoConPersona({ personName, personLogs, moments, personCycles
               )}
             </p>
           )}
+
+          {/* Síntesis IA — botón para pedir prosa a Claude Sonnet.
+              Cache 24h en person_briefings; auto-lee al montar sin gastar tokens. */}
+          <div className="pt-3 border-t border-current/20 space-y-2">
+            {briefing ? (
+              <div className="space-y-1.5">
+                <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-line">
+                  {briefing.synthesis}
+                </p>
+                <div className="flex items-center gap-2 flex-wrap text-[10px] opacity-70">
+                  <span>
+                    Análisis IA · {briefing.isFresh ? `hace ${briefing.ageHours}h` : `hace ${briefing.ageHours}h (vencido)`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void generate(true)}
+                    disabled={busy}
+                    className="inline-flex items-center gap-1 hover:text-foreground underline underline-offset-2 disabled:opacity-50"
+                    aria-label="Regenerar análisis"
+                  >
+                    {busy ? <Loader2 size={9} className="animate-spin" /> : <RefreshCcw size={9} />}
+                    {busy ? 'Regenerando…' : 'Regenerar'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              insights.overallLabel !== 'sin_data' && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void generate(false)}
+                    disabled={busy}
+                    className="h-7 text-xs"
+                  >
+                    {busy ? <><Loader2 size={11} className="mr-1.5 animate-spin" /> Analizando…</> : <><Sparkles size={11} className="mr-1.5" /> Análisis con IA</>}
+                  </Button>
+                  <span className="text-[10px] opacity-60">Claude Sonnet lee todo lo cargado y escribe 3-4 líneas.</span>
+                </div>
+              )
+            )}
+            {error && (
+              <div className="flex items-start gap-1.5 text-[10px] text-bad">
+                <AlertCircle size={10} className="mt-0.5" /> {error}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>
