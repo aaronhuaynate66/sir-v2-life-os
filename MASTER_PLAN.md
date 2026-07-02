@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `4b69782`
+**Hash del último commit humano:** `de04dfd`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `de04dfd` | aaronhuaynate66 | feat(relato-ingest): streaming SSE de Claude (A2) (#486) | 2026-07-02 |
 | `4b69782` | aaronhuaynate66 | feat(panel): alertas cuando el estado con una persona empeora (G3) (#485) | 2026-07-02 |
 | `53b4a35` | aaronhuaynate66 | feat(relato-ingest): editar cada item del plan antes de aplicar (A4) (#484) | 2026-07-02 |
 | `73ee109` | aaronhuaynate66 | fix(relato-ingest): botón Deshacer con timer 30s (D2) (#483) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c954277` | aaronhuaynate66 | feat(ficha): panel Patrones — moments por fase del ciclo + lunar (#479) | 2026-07-02 |
 | `9ba61ac` | aaronhuaynate66 | feat(red): nodos coloreados por riesgo (rojo/ámbar) (#478) | 2026-07-02 |
 | `7129246` | aaronhuaynate66 | feat(estado): recomendaciones IA semanales por persona (#477) | 2026-07-02 |
-| `325921e` | aaronhuaynate66 | feat(panel): TOP personas en riesgo en Mission Control (#476) | 2026-07-02 |
 
 ---
 
