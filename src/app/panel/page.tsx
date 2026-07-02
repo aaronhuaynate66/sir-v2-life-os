@@ -39,6 +39,7 @@ import { TargetsAtGlanceCard } from '@/components/panel/TargetsAtGlanceCard'
 import { AnduveHoyCard } from '@/components/panel/AnduveHoyCard'
 import { PersonasEnRiesgoCard } from '@/components/panel/PersonasEnRiesgoCard'
 import { StatusAlertsCard } from '@/components/panel/StatusAlertsCard'
+import { SIRPulseWidget } from '@/components/panel/SIRPulseWidget'
 import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
@@ -357,6 +358,10 @@ function DashboardContent() {
       {/* Anduve hoy: timeline compacto de eventos registrados hoy — hábitos,
           self-metrics, sueño, gastos, KRs/tareas cerradas, memorias. Refleja,
           no evalúa. Ver src/lib/panel/anduveHoy.ts. */}
+      <SIRPulseWidget
+        peaceScore={peaceCalibrating ? null : peace.total}
+        peaceLevel={peaceCalibrating ? null : (peace.total >= 7 ? 'ok' : peace.total >= 4 ? 'warn' : 'bad')}
+      />
       <StatusAlertsCard />
       <PersonasEnRiesgoCard />
       <AnduveHoyCard now={now} />
