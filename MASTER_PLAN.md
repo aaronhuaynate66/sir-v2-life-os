@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `9f029cd`
+**Hash del último commit humano:** `58c173b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `58c173b` | aaronhuaynate66 | feat(aaron/backfill): one-shot idempotente para el relato jun-jul 2026 (#461) | 2026-07-02 |
 | `9f029cd` | aaronhuaynate66 | feat(captura/batch): drag-drop + paste + upload + pre-validación (#460) | 2026-07-02 |
 | `7fe0a62` | aaronhuaynate66 | feat(salud): toggle Semana/Mes GLOBAL para todos los charts (#459) | 2026-07-01 |
 | `0dcf2d5` | aaronhuaynate66 | feat(bitacora): abrir por default + timestamp absoluto (día · hora) (#458) | 2026-07-01 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `852b385` | aaronhuaynate66 | feat(relaciones): fusionar duplicados de 1 click (endpoint + UI) + detección parcial "Cristina" ⊂ "Cristina Fuentes" (#454) | 2026-07-01 |
 | `9512bbf` | aaronhuaynate66 | fix(kinship): person_links con kind no-familia dejan de aparecer como "tu familiar" (#453) | 2026-07-01 |
 | `e075673` | aaronhuaynate66 | fix(sync): eventos Realtime forzan pull (bypass TTL 60s) + botón "Refrescar" en /captura/batch (#452) | 2026-07-01 |
-| `9672daf` | aaronhuaynate66 | feat(panel): "Anduve hoy" — timeline compacto de lo registrado hoy (#451) | 2026-07-01 |
 
 ---
 
