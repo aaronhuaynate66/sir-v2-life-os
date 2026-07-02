@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
+import { pdfFileToImages } from '@/lib/capture/pdf/pdfToImages'
 import type { DetectResult } from '@/lib/capture/detector/client'
 import dynamic from 'next/dynamic'
 // Las 3 CaptureBranches (Scale/Sleep/HR) aparecen solo cuando el detector
@@ -119,10 +120,28 @@ function CapturaIndexContent() {
   }, [])
 
   const onFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const f = e.target.files?.[0] ?? null
-      setFile(f)
       resetForNewFile()
+      if (!f) { setFile(null); return }
+      const isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name)
+      if (!isPdf) { setFile(f); return }
+      // PDF → renderizamos la 1ra página como PNG. Si tiene más páginas,
+      // avisamos: el flujo de /captura es de 1 archivo. Para multi-página
+      // recomendamos AgregarCapturaPanel desde la ficha (modo imágenes).
+      const r = await pdfFileToImages(f, { maxPages: 1 })
+      if (r.error || r.files.length === 0) {
+        setDetectError({ status: 0, message: r.error ?? 'No pude renderizar el PDF' })
+        return
+      }
+      setFile(r.files[0])
+      if (r.totalPages > 1) {
+        // Aviso soft: seguimos, pero el usuario sabe que solo va la p1.
+        setDetectError({
+          status: 0,
+          message: `El PDF tiene ${r.totalPages} páginas — se usó solo la primera. Para las N páginas juntas, subilo desde la ficha de la persona.`,
+        })
+      }
     },
     [resetForNewFile],
   )
@@ -376,7 +395,7 @@ function CapturaIndexContent() {
             </label>
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf"
               onChange={onFile}
               disabled={detectLoading || processLoading}
               className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10"
