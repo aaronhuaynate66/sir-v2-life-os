@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ad48e2a`
+**Hash del último commit humano:** `b3748e5`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b3748e5` | aaronhuaynate66 | feat(auth): Personal Access Tokens (Fase 1 del módulo Claude → SIR) (#466) | 2026-07-02 |
 | `ad48e2a` | aaronhuaynate66 | fix(aaron): reroute Diana Cencaro → Diana Díaz + cumple Fabiola 9-jun (#465) | 2026-07-02 |
 | `5096d96` | aaronhuaynate66 | feat(ficha): panel "Pendientes con esta persona" arriba de la ficha (#464) | 2026-07-02 |
 | `9702b19` | aaronhuaynate66 | feat(captura): aceptar PDFs — se convierten a PNG por página client-side (#463) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `7fe0a62` | aaronhuaynate66 | feat(salud): toggle Semana/Mes GLOBAL para todos los charts (#459) | 2026-07-01 |
 | `0dcf2d5` | aaronhuaynate66 | feat(bitacora): abrir por default + timestamp absoluto (día · hora) (#458) | 2026-07-01 |
 | `3e45d04` | aaronhuaynate66 | feat(relaciones): botón "Fusionar aquí" en Posibles duplicados (#457) | 2026-07-01 |
-| `1571385` | aaronhuaynate66 | fix(duplicates): detectar match por prefijo de tokens (Fabiola × Fabiola Masías Ponce) (#456) | 2026-07-01 |
 
 ---
 
