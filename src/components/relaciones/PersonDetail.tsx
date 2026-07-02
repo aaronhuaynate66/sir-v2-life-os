@@ -57,6 +57,7 @@ import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
+import { PendientesConPersona } from './PendientesConPersona'
 import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
@@ -406,6 +407,14 @@ export function PersonDetail({
         lastManualInteractionAt={
           personLogs.find((l) => l.kind === 'interaction')?.loggedAt ?? null
         }
+      />
+
+      {/* Pendientes: moments abiertos con este follow-up. Se oculta si no hay
+          nada. Al resolver, el componente refetchea (soft-reload de la ficha). */}
+      <PendientesConPersona
+        personId={live.id}
+        moments={moments}
+        onChange={() => { if (typeof window !== 'undefined') window.location.reload() }}
       />
 
       {/* "Antes de contactar": lo accionable que te deja listo para el momento
