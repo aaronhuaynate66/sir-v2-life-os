@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `713970f`
+**Hash del último commit humano:** `325921e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `325921e` | aaronhuaynate66 | feat(panel): TOP personas en riesgo en Mission Control (#476) | 2026-07-02 |
 | `713970f` | aaronhuaynate66 | feat(relato-ingest): tools crear_objetivo + crear_persona (#475) | 2026-07-02 |
 | `c1618ca` | aaronhuaynate66 | feat(estado): síntesis IA on-demand con cache 24h (#474) | 2026-07-02 |
 | `214b081` | aaronhuaynate66 | feat(ficha): panel "Cómo estás con [persona]" — síntesis del vínculo (#473) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ff4059c` | aaronhuaynate66 | feat(person-cycles): ciclo menstrual de terceros como data estructurada (#469) | 2026-07-02 |
 | `cfa100e` | aaronhuaynate66 | fix(duplicates): detectar primer+último nombre con nombre medio (#468) | 2026-07-02 |
 | `3791c2b` | aaronhuaynate66 | feat(relato): /relato/ingest — Aaron cuenta en prosa, SIR estructura (#467) | 2026-07-02 |
-| `b3748e5` | aaronhuaynate66 | feat(auth): Personal Access Tokens (Fase 1 del módulo Claude → SIR) (#466) | 2026-07-02 |
 
 ---
 
