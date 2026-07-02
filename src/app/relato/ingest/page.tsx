@@ -16,8 +16,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Wand2, Loader2, CheckCircle2, AlertCircle, Circle, CircleCheck, Send, User, Sparkles, RotateCcw, Paperclip } from 'lucide-react'
+import { Wand2, Loader2, CheckCircle2, AlertCircle, Circle, CircleCheck, Send, User, Sparkles, RotateCcw, Paperclip, Pencil } from 'lucide-react'
 import { pdfFileToText } from '@/lib/capture/pdf/pdfToText'
+import { PlanItemEditor } from '@/components/relato-ingest/PlanItemEditor'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -256,6 +257,19 @@ export default function RelatoIngestPage() {
     }))
   }
 
+  function updateItem(msgId: string, index: number, updated: PlanItem) {
+    setMsgs((all) => all.map((m) => {
+      if (m.id !== msgId || m.role !== 'sir') return m
+      const nextPlan = m.plan.map((p, i) => i === index ? updated : p)
+      // Reajustar `selected`: la key del item viejo puede haber cambiado.
+      const oldKey = itemKey(m.plan[index], index)
+      const newKey = itemKey(updated, index)
+      const s = new Set(m.selected)
+      if (s.has(oldKey) && oldKey !== newKey) { s.delete(oldKey); s.add(newKey) }
+      return { ...m, plan: nextPlan, selected: s }
+    }))
+  }
+
   function reset() {
     if (msgs.length === 0) return
     if (!confirm('¿Limpiar el chat? Los items ya aplicados quedan en tu red.')) return
@@ -357,6 +371,7 @@ export default function RelatoIngestPage() {
                   msg={m}
                   aplicarDirecto={aplicarDirecto}
                   onToggleItem={(key) => toggleItem(m.id, key)}
+                  onEditItem={(index, updated) => updateItem(m.id, index, updated)}
                   onApply={() => void aplicarSeleccion(m.id)}
                 />
               )
@@ -443,13 +458,15 @@ function UserBubble({ text }: { text: string }) {
 }
 
 function SirBubble({
-  msg, aplicarDirecto, onToggleItem, onApply,
+  msg, aplicarDirecto, onToggleItem, onEditItem, onApply,
 }: {
   msg: Extract<Msg, { role: 'sir' }>
   aplicarDirecto: boolean
   onToggleItem: (key: string) => void
+  onEditItem: (index: number, updated: PlanItem) => void
   onApply: () => void
 }) {
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const okCount = (msg.executed ?? []).filter((r) => r.ok).length
   const failCount = (msg.executed ?? []).filter((r) => !r.ok).length
 
@@ -527,8 +544,19 @@ function SirBubble({
               {msg.plan.map((it, i) => {
                 const key = itemKey(it, i)
                 const checked = msg.selected.has(key)
+                if (editingIndex === i) {
+                  return (
+                    <li key={key}>
+                      <PlanItemEditor
+                        item={it}
+                        onSave={(updated) => { onEditItem(i, updated); setEditingIndex(null) }}
+                        onCancel={() => setEditingIndex(null)}
+                      />
+                    </li>
+                  )
+                }
                 return (
-                  <li key={key}>
+                  <li key={key} className="group relative">
                     <button
                       type="button"
                       disabled={aplicarDirecto || msg.applying}
@@ -558,6 +586,17 @@ function SirBubble({
                         )}
                       </div>
                     </button>
+                    {!aplicarDirecto && !msg.applying && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setEditingIndex(i) }}
+                        className="absolute right-1 top-1 p-1 rounded text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Editar item"
+                        title="Editar"
+                      >
+                        <Pencil size={11} strokeWidth={1.75} />
+                      </button>
+                    )}
                   </li>
                 )
               })}
