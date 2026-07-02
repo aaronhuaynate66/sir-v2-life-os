@@ -20,6 +20,8 @@ import { parseIcs } from './ics'
 import { DEFAULT_CALENDAR_COLOR } from './types'
 import type { CalendarEvent, CalendarFeedResult, CalendarSummary } from './types'
 import type { createClient } from '@/lib/supabase/server'
+import { fetchGoogleCalendarEvents, refreshAccessToken } from './oauth/google'
+import { decryptToken, encryptToken } from './oauth/crypto'
 
 type ServerSupabase = Awaited<ReturnType<typeof createClient>>
 
@@ -73,6 +75,17 @@ interface EnabledConnection {
   label: string
   color?: string
   icsUrl: string
+}
+
+/** Conexión OAuth (Google) habilitada. */
+interface EnabledOAuthConnection {
+  id: string
+  label: string
+  color?: string
+  provider: 'google'
+  accessToken: string | null
+  refreshToken: string | null
+  tokenExpiresAt: string | null
 }
 
 // ─── Fetch + parse + cache de UN feed .ics ──────────────────────────
@@ -140,6 +153,93 @@ async function loadConnections(supabase: ServerSupabase): Promise<EnabledConnect
   }
 }
 
+async function loadOAuthConnections(supabase: ServerSupabase): Promise<EnabledOAuthConnection[]> {
+  try {
+    const { data, error } = await supabase
+      .from('calendar_connections')
+      .select('id, label, color, provider, enabled, access_token, refresh_token, token_expires_at')
+      .eq('enabled', true)
+      .eq('provider', 'google')
+      .order('created_at', { ascending: true })
+    if (error || !data) return []
+    const out: EnabledOAuthConnection[] = []
+    for (const row of data as Array<{ id: string; label: string | null; color: string | null; provider: string; access_token: string | null; refresh_token: string | null; token_expires_at: string | null }>) {
+      out.push({
+        id: row.id,
+        label: (row.label ?? '').trim() || 'Google',
+        color: row.color ?? undefined,
+        provider: 'google',
+        accessToken: row.access_token,
+        refreshToken: row.refresh_token,
+        tokenExpiresAt: row.token_expires_at,
+      })
+    }
+    return out
+  } catch { return [] }
+}
+
+/** Devuelve un access_token vigente para la conexión, refrescándolo si expiró.
+ *  Persiste el nuevo token cifrado en la DB. Devuelve null si no se puede
+ *  obtener uno (ej. refresh_token revocado). */
+async function ensureFreshAccessToken(
+  supabase: ServerSupabase,
+  conn: EnabledOAuthConnection,
+  nowMs: number,
+): Promise<string | null> {
+  const expiresAt = conn.tokenExpiresAt ? new Date(conn.tokenExpiresAt).getTime() : 0
+  const stillValid = expiresAt > nowMs + 30_000
+  const currentPlain = decryptToken(conn.accessToken)
+  if (stillValid && currentPlain) return currentPlain
+  const refreshPlain = decryptToken(conn.refreshToken)
+  if (!refreshPlain) return currentPlain // sin refresh: usá lo que hay y que Google diga si murió
+  try {
+    const tok = await refreshAccessToken(refreshPlain)
+    const newExpiresAt = new Date(nowMs + Math.max(0, (tok.expires_in ?? 3600) - 30) * 1000).toISOString()
+    await supabase.from('calendar_connections').update({
+      access_token: encryptToken(tok.access_token),
+      token_expires_at: newExpiresAt,
+      updated_at: new Date().toISOString(),
+    }).eq('id', conn.id)
+    return tok.access_token
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[calendar-oauth] refresh falló, uso token viejo:', e instanceof Error ? e.message : e)
+    return currentPlain
+  }
+}
+
+async function fetchGoogleFeed(
+  supabase: ServerSupabase,
+  conn: EnabledOAuthConnection,
+  w: FeedWindow,
+): Promise<IcsFetchResult> {
+  const dayBucket = Math.floor(w.nowMs / 86_400_000)
+  const cacheKey = `google:${conn.id}|${dayBucket}|${w.fromMs}|${w.toMs}|${w.limit}`
+  if (!w.noCache) {
+    const hit = cache.get(cacheKey)
+    if (hit && w.nowMs - hit.fetchedAtMs < CACHE_TTL_MS) return { events: hit.events, fetchedAtMs: hit.fetchedAtMs }
+  }
+  try {
+    const token = await ensureFreshAccessToken(supabase, conn, w.nowMs)
+    if (!token) return { events: [], error: 'sin token válido — reconectá el calendario' }
+    const events = await fetchGoogleCalendarEvents(
+      token,
+      new Date(w.fromMs).toISOString(),
+      new Date(w.toMs).toISOString(),
+      w.limit,
+    )
+    cache.set(cacheKey, { fetchedAtMs: w.nowMs, events })
+    return { events, fetchedAtMs: w.nowMs }
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : 'error desconocido'
+    // eslint-disable-next-line no-console
+    console.warn('[calendar] Google Calendar feed falló:', detail)
+    const stale = cache.get(cacheKey)
+    if (stale) return { events: stale.events, error: detail, fetchedAtMs: stale.fetchedAtMs }
+    return { events: [], error: detail }
+  }
+}
+
 // ─── Etiquetado de eventos por calendario ───────────────────────────
 
 function tagEvent(ev: CalendarEvent, conn: { id: string; label: string; color?: string }): CalendarEvent {
@@ -169,17 +269,26 @@ export async function fetchCalendarEvents(opts: FetchCalendarOptions = {}): Prom
   }
 
   const connections = opts.supabase ? await loadConnections(opts.supabase) : []
+  const oauthConns = opts.supabase ? await loadOAuthConnections(opts.supabase) : []
 
   // ── Camino multi-calendario ──
-  if (connections.length > 0) {
-    const results = await Promise.all(
+  if (connections.length > 0 || oauthConns.length > 0) {
+    const icsResults = await Promise.all(
       connections.map((c) => fetchIcsFeed(c.icsUrl, w).then((r) => ({ conn: c, r }))),
     )
+    const googleResults = opts.supabase
+      ? await Promise.all(oauthConns.map((c) => fetchGoogleFeed(opts.supabase!, c, w).then((r) => ({ conn: c, r }))))
+      : []
 
     const events: CalendarEvent[] = []
     const calendars: CalendarSummary[] = []
     let latestFetchedMs: number | undefined
-    for (const { conn, r } of results) {
+    for (const { conn, r } of icsResults) {
+      calendars.push({ id: conn.id, label: conn.label, color: conn.color, error: r.error })
+      for (const ev of r.events) events.push(tagEvent(ev, conn))
+      if (r.fetchedAtMs != null) latestFetchedMs = Math.max(latestFetchedMs ?? 0, r.fetchedAtMs)
+    }
+    for (const { conn, r } of googleResults) {
       calendars.push({ id: conn.id, label: conn.label, color: conn.color, error: r.error })
       for (const ev of r.events) events.push(tagEvent(ev, conn))
       if (r.fetchedAtMs != null) latestFetchedMs = Math.max(latestFetchedMs ?? 0, r.fetchedAtMs)

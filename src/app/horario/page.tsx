@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { toast } from 'sonner'
 import { Clock, ChevronRight } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -72,6 +73,28 @@ function HorarioContent() {
 
   useEffect(() => {
     setNow(new Date())
+  }, [])
+
+  // Flags de status del OAuth de Google (redirect del callback). Los mostramos
+  // como toast + limpiamos la URL para no dispararlos en cada navegación.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const ok = params.get('calendar')
+    const err = params.get('calendar_error')
+    if (!ok && !err) return
+    if (ok === 'connected') toast.success('Google Calendar conectado', { description: 'Los eventos se van a mezclar con tus otros calendarios.' })
+    else if (ok === 'reconnected') toast.success('Google Calendar reautorizado')
+    else if (err === 'denied' || err === 'access_denied') toast.error('Autorización denegada', { description: 'Podés reintentar cuando quieras.' })
+    else if (err === 'state_mismatch') toast.error('Sesión OAuth inválida', { description: 'Intentalo de nuevo desde el botón "Conectar con Google".' })
+    else if (err === 'session_expired') toast.error('Sesión SIR expiró durante el flow', { description: 'Iniciá sesión y reintentá.' })
+    else if (err) toast.error(`No se pudo completar la conexión (${err})`)
+    // Limpiar los params sin recargar.
+    params.delete('calendar'); params.delete('calendar_error')
+    const qs = params.toString()
+    const newUrl = window.location.pathname + (qs ? `?${qs}` : '')
+    window.history.replaceState({}, '', newUrl)
+    setCalReload((k) => k + 1)
   }, [])
 
   // Feed del calendario (una vez al montar / al reconectar).
