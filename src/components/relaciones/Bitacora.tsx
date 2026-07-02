@@ -19,6 +19,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DiscardCaptureButton } from './DiscardCaptureButton'
+import { RebuildSummaryButton } from './RebuildSummaryButton'
+import { needsResummary } from '@/lib/capture/observations/summaryHealth'
 import { cn } from '@/lib/utils'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import type { Observation, CaptureType } from '@/lib/capture/observations/types'
@@ -48,6 +50,8 @@ interface Entry {
   value: string | null
   /** id crudo de la observation (solo source='observation') → permite descartar. */
   obsId?: string
+  /** true si esta obs es whatsapp_chat con summary pobre y podemos regenerarlo. */
+  needsResummary?: boolean
 }
 
 const LOG_LABEL: Record<PersonLogKind, string> = {
@@ -133,6 +137,7 @@ function buildEntries(
       detail: observationDetail(obs),
       value: null,
       obsId: obs.id,
+      needsResummary: needsResummary(obs),
     })
   }
   for (const nh of notesHistory) {
@@ -292,13 +297,16 @@ export function Bitacora({ personLogs, observations, notesHistory, moments }: Bi
                         <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{e.detail}</p>
                       )}
                       {e.obsId && (
-                        <div className="mt-0.5">
+                        <div className="mt-0.5 flex items-center gap-2 flex-wrap">
                           <DiscardCaptureButton
                             observationId={e.obsId}
                             label="Descartar"
                             what={`Captura de ${e.label}`}
                             className="h-6 px-1.5 text-[10px]"
                           />
+                          {e.needsResummary && (
+                            <RebuildSummaryButton observationId={e.obsId} />
+                          )}
                         </div>
                       )}
                     </li>
