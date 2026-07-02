@@ -13,6 +13,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { recordAiUsage } from '@/lib/ai/usage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,9 +50,10 @@ function isPoorSummary(summary: string | undefined | null): boolean {
 
 interface AnthropicResp {
   content?: Array<{ type: string; text?: string }>
+  usage?: { input_tokens?: number; output_tokens?: number }
 }
 
-async function reGenSummary(apiKey: string, personName: string, rawMessages: RawMsg[]): Promise<{ summary: string; topics: string[]; emotionalUser: string | null; emotionalOther: string | null }> {
+async function reGenSummary(apiKey: string, personName: string, rawMessages: RawMsg[]): Promise<{ summary: string; topics: string[]; emotionalUser: string | null; emotionalOther: string | null; usage?: AnthropicResp['usage'] }> {
   const lines = rawMessages
     .filter((m) => (m.content ?? '').trim().length > 0)
     .slice(0, 200)
@@ -91,6 +93,7 @@ Devolvé SOLO un JSON con este shape:
     topics: Array.isArray(parsed.topics) ? parsed.topics.map((t) => String(t).slice(0, 60)).filter(Boolean).slice(0, 8) : [],
     emotionalUser: typeof parsed.emotionalUser === 'string' ? parsed.emotionalUser.slice(0, 40) : null,
     emotionalOther: typeof parsed.emotionalOther === 'string' ? parsed.emotionalOther.slice(0, 40) : null,
+    usage: body.usage,
   }
 }
 
@@ -134,6 +137,7 @@ export async function POST(req: NextRequest) {
   let regen: Awaited<ReturnType<typeof reGenSummary>>
   try {
     regen = await reGenSummary(apiKey, personName, rawMessages)
+    void recordAiUsage(supabase, auth.user.id, 'observations_rebuild_summary', MODEL, regen.usage)
   } catch (e) {
     return err(502, 'Falló la re-síntesis con Claude', e instanceof Error ? e.message : String(e))
   }
