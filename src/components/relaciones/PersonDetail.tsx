@@ -134,6 +134,7 @@ interface PersonDetailProps {
   /** Momentos / decisiones relacionales de la persona. Opcional: se renderizan
    *  como entries en la Bitácora (label = título, chip abierto/resuelto). */
   moments?: import('@/lib/moments/types').RelationshipMoment[]
+  personCycles?: import('@/lib/person-cycles/types').PersonCycleEntry[]
 }
 
 // Etiquetas en español centralizadas en @/lib/people/labels. Se alían a los
@@ -223,6 +224,7 @@ export function PersonDetail({
   profileAxes = null,
   notesHistory = [],
   moments = [],
+  personCycles = [],
 }: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
@@ -704,6 +706,7 @@ export function PersonDetail({
           personLogs={correlationLogs}
           cycleStartDate={live.cycleStartDate ?? null}
           cycleLengthDays={live.cycleLengthDays ?? null}
+          personCycles={personCycles}
         />
       </div>
 

@@ -13,7 +13,8 @@ import { describe, it, expect } from 'vitest'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import { moonPhaseId } from '@/lib/lunar/phase'
-import { correlateByLunarPhase, correlateByCyclePhase } from './correlation'
+import { correlateByLunarPhase, correlateByCyclePhase, correlateByExplicitCyclePhase } from './correlation'
+import type { PersonCycleEntry } from '@/lib/person-cycles/types'
 
 let seq = 0
 function log(kind: PersonLogKind, value: number, loggedAt: string): PersonLog {
@@ -183,5 +184,61 @@ describe('correlateByCyclePhase', () => {
     ]
     const [energy] = correlateByCyclePhase(logs, '2026-01-01', 28, { minSamplesPerBucket: 2 })
     expect(energy.delta).toBeNull()
+  })
+})
+
+describe('correlateByExplicitCyclePhase', () => {
+  function cycleEntry(date: string, phase: PersonCycleEntry['phase']): PersonCycleEntry {
+    return {
+      id: `c_${date}`, personId: 'p1', date, phase,
+      confidence: 'medium', source: 'aaron', note: null,
+      createdAt: `${date}T00:00:00Z`,
+    }
+  }
+
+  it('sin cycles → []', () => {
+    const logs = [log('mood', 4, '2026-06-29T12:00:00Z')]
+    expect(correlateByExplicitCyclePhase(logs, [])).toEqual([])
+  })
+
+  it('agrupa cada log por la fase EXPLÍCITA del día', () => {
+    const cycles = [
+      cycleEntry('2026-06-27', 'bleeding'),
+      cycleEntry('2026-06-28', 'bleeding'),
+      cycleEntry('2026-06-29', 'bleeding'),
+      cycleEntry('2026-07-10', 'mid_cycle'),
+      cycleEntry('2026-07-11', 'mid_cycle'),
+    ]
+    const logs = [
+      log('interaction', 2, '2026-06-27T20:00:00-05:00'),
+      log('interaction', 3, '2026-06-28T20:00:00-05:00'),
+      log('interaction', 2, '2026-06-29T20:00:00-05:00'),
+      log('interaction', 5, '2026-07-10T20:00:00-05:00'),
+      log('interaction', 5, '2026-07-11T20:00:00-05:00'),
+    ]
+    const [interaction] = correlateByExplicitCyclePhase(logs, cycles, {
+      kinds: ['interaction'], minSamplesPerBucket: 2, minTotalSamples: 3,
+    })
+    expect(interaction).toBeDefined()
+    expect(interaction.totalSamples).toBe(5)
+    const bleeding = interaction.buckets.find((b) => b.phaseId === 'bleeding')!
+    const mid = interaction.buckets.find((b) => b.phaseId === 'mid_cycle')!
+    expect(bleeding.count).toBe(3)
+    expect(bleeding.average).toBeCloseTo(2.3, 1)
+    expect(mid.count).toBe(2)
+    expect(mid.average).toBe(5)
+    expect(interaction.delta).not.toBeNull()
+    expect(interaction.delta!.high.phaseId).toBe('mid_cycle')
+    expect(interaction.delta!.low.phaseId).toBe('bleeding')
+  })
+
+  it('logs en días SIN entry se descartan', () => {
+    const cycles = [cycleEntry('2026-06-29', 'bleeding')]
+    const logs = [
+      log('mood', 4, '2026-06-29T12:00:00Z'),
+      log('mood', 5, '2026-06-01T12:00:00Z'),
+    ]
+    const [mood] = correlateByExplicitCyclePhase(logs, cycles, { minSamplesPerBucket: 1, minTotalSamples: 1 })
+    expect(mood?.totalSamples).toBe(1)
   })
 })

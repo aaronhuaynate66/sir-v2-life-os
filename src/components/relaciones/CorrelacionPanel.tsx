@@ -24,9 +24,11 @@ import { toApiError, parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import {
   correlateByLunarPhase,
   correlateByCyclePhase,
+  correlateByExplicitCyclePhase,
   type MetricByPhase,
 } from '@/lib/longitudinal/correlation'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
+import type { PersonCycleEntry } from '@/lib/person-cycles/types'
 import { cn } from '@/lib/utils'
 
 export interface CorrelacionPanelProps {
@@ -34,6 +36,10 @@ export interface CorrelacionPanelProps {
   personLogs: PersonLog[]
   cycleStartDate?: string | null
   cycleLengthDays?: number | null
+  /** Registros explícitos día-por-día (person_cycles). Cuando hay al menos 1
+   *  con log en la misma fecha, se muestra esta correlación (más precisa que
+   *  la calculada por fórmula). */
+  personCycles?: PersonCycleEntry[]
 }
 
 const KIND_LABEL: Record<PersonLogKind, string> = {
@@ -57,11 +63,13 @@ export function CorrelacionPanel({
   personLogs,
   cycleStartDate,
   cycleLengthDays,
+  personCycles,
 }: CorrelacionPanelProps) {
   const lunar = correlateByLunarPhase(personLogs)
   const cycle = correlateByCyclePhase(personLogs, cycleStartDate, cycleLengthDays)
+  const explicitCycle = correlateByExplicitCyclePhase(personLogs, personCycles ?? [])
 
-  const hasData = lunar.length > 0 || cycle.length > 0
+  const hasData = lunar.length > 0 || cycle.length > 0 || explicitCycle.length > 0
 
   const [narrative, setNarrative] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -108,8 +116,15 @@ export function CorrelacionPanel({
             {cycle.length > 0 && (
               <PhaseGroup
                 icon={<Activity size={13} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />}
-                title="Por fase del ciclo"
+                title="Por fase del ciclo (estimada)"
                 metrics={cycle}
+              />
+            )}
+            {explicitCycle.length > 0 && (
+              <PhaseGroup
+                icon={<Activity size={13} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />}
+                title="Por fase del ciclo (registro real)"
+                metrics={explicitCycle}
               />
             )}
 
