@@ -23,6 +23,7 @@ type PlanItem =
   | { kind: 'crear_person_log'; personFullName: string; logKind: 'interaction' | 'mood' | 'energy'; value: number; note: string; loggedAt: string }
   | { kind: 'crear_nota_manual'; personFullName: string; text: string; observedAt: string }
   | { kind: 'upsert_cumpleanos'; personFullName: string; date: string }
+  | { kind: 'registrar_ciclo'; personFullName: string; date: string; phase: 'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown'; confidence: 'high' | 'medium' | 'low'; note?: string }
 
 interface ExecResult {
   action: PlanItem
@@ -46,6 +47,16 @@ const KIND_LABEL: Record<PlanItem['kind'], string> = {
   crear_person_log: 'Interacción',
   crear_nota_manual: 'Nota',
   upsert_cumpleanos: 'Cumpleaños',
+  registrar_ciclo: 'Ciclo',
+}
+
+const PHASE_LABEL: Record<'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown', string> = {
+  bleeding: 'sangrando',
+  pms: 'PMS',
+  mid_cycle: 'medio del ciclo',
+  ovulation: 'ovulación',
+  luteal: 'fase lútea',
+  unknown: 'fase indefinida',
 }
 
 function itemKey(item: PlanItem, i: number): string {
@@ -62,6 +73,8 @@ function summarize(item: PlanItem): string {
       return `nota · ${item.observedAt.slice(0, 10)}`
     case 'upsert_cumpleanos':
       return `cumple · ${item.date}`
+    case 'registrar_ciclo':
+      return `${PHASE_LABEL[item.phase]} · ${item.date}${item.confidence !== 'medium' ? ` · conf ${item.confidence}` : ''}`
   }
 }
 

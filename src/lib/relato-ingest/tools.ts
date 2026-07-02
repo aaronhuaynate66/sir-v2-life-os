@@ -81,6 +81,34 @@ export const INGEST_TOOLS = [
     },
   },
   {
+    name: 'registrar_ciclo',
+    description:
+      'Registrar UN DÍA del ciclo menstrual de una persona (típicamente la pareja) cuando Aaron ' +
+      'lo menciona en el relato. Usá phase="bleeding" cuando dice "estaba con la regla", "tenía ' +
+      'un resto de regla", "sangrando". "pms" cuando menciona síntomas premenstruales. "unknown" ' +
+      'si Aaron dice que ella está en ciertos días sin saber la fase exacta. Un evento = un día; ' +
+      'si dice "el lunes todavía tenía regla" y también "el domingo", creá 2 acciones separadas.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        person_full_name: { type: 'string', description: 'NOMBRE COMPLETO de la persona.' },
+        date: { type: 'string', description: 'YYYY-MM-DD del día registrado.' },
+        phase: {
+          type: 'string',
+          enum: ['bleeding', 'pms', 'mid_cycle', 'ovulation', 'luteal', 'unknown'],
+          description: 'Fase estimada. Default "bleeding" si Aaron habla de sangrado/regla.',
+        },
+        confidence: {
+          type: 'string',
+          enum: ['high', 'medium', 'low'],
+          description: 'high si Aaron confirma; medium si infiere; low si estimación gruesa. Default medium.',
+        },
+        note: { type: 'string', description: 'Nota corta opcional (ej. "resto de regla", "primer día").' },
+      },
+      required: ['person_full_name', 'date', 'phase'],
+    },
+  },
+  {
     name: 'flag_ambiguo',
     description:
       'Cuando Aaron menciona SOLO el primer nombre y hay ambigüedad (o no sabés el apellido), ' +
@@ -100,11 +128,15 @@ export const INGEST_TOOLS = [
 
 // ─── Tipos de las acciones ya validadas (post-parse) ────────────────
 
+export type CyclePhase = 'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown'
+export type CycleConfidence = 'high' | 'medium' | 'low'
+
 export type IngestAction =
   | { kind: 'crear_moment'; personFullName: string; title: string; detail: string; occurredOn: string; status: 'abierto' | 'resuelto'; followUpOn?: string; resolution?: string }
   | { kind: 'crear_person_log'; personFullName: string; logKind: 'interaction' | 'mood' | 'energy'; value: number; note: string; loggedAt: string }
   | { kind: 'crear_nota_manual'; personFullName: string; text: string; observedAt: string }
   | { kind: 'upsert_cumpleanos'; personFullName: string; date: string }
+  | { kind: 'registrar_ciclo'; personFullName: string; date: string; phase: CyclePhase; confidence: CycleConfidence; note?: string }
   | { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
 
 interface RawToolUse { name: string; input: Record<string, unknown> }
@@ -171,6 +203,16 @@ export function parseToolUse(raw: RawToolUse): IngestAction | null {
       const date = ymd(i.date)
       if (!name || !date) return null
       return { kind: 'upsert_cumpleanos', personFullName: name, date }
+    }
+    case 'registrar_ciclo': {
+      const name = requireFullName(i.person_full_name)
+      const date = ymd(i.date)
+      const validPhases: CyclePhase[] = ['bleeding', 'pms', 'mid_cycle', 'ovulation', 'luteal', 'unknown']
+      const phase = validPhases.includes(i.phase as CyclePhase) ? (i.phase as CyclePhase) : null
+      const validConf: CycleConfidence[] = ['high', 'medium', 'low']
+      const confidence = validConf.includes(i.confidence as CycleConfidence) ? (i.confidence as CycleConfidence) : 'medium'
+      if (!name || !date || !phase) return null
+      return { kind: 'registrar_ciclo', personFullName: name, date, phase, confidence, note: str(i.note, 500) ?? undefined }
     }
     case 'flag_ambiguo': {
       const short = str(i.short_name, 100)

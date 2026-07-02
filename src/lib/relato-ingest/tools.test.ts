@@ -103,6 +103,42 @@ describe('parseToolUse flag_ambiguo', () => {
   })
 })
 
+describe('parseToolUse registrar_ciclo', () => {
+  it('parsea "bleeding" con confidence high', () => {
+    const r = parseToolUse({
+      name: 'registrar_ciclo',
+      input: { person_full_name: 'Diana Díaz', date: '2026-06-29', phase: 'bleeding', confidence: 'high', note: 'resto de regla' },
+    })
+    expect(r?.kind).toBe('registrar_ciclo')
+    if (r?.kind === 'registrar_ciclo') {
+      expect(r.phase).toBe('bleeding')
+      expect(r.confidence).toBe('high')
+      expect(r.note).toBe('resto de regla')
+    }
+  })
+  it('default confidence=medium si no viene', () => {
+    const r = parseToolUse({
+      name: 'registrar_ciclo',
+      input: { person_full_name: 'Diana Díaz', date: '2026-06-29', phase: 'bleeding' },
+    })
+    if (r?.kind === 'registrar_ciclo') expect(r.confidence).toBe('medium')
+  })
+  it('rechaza phase inválida', () => {
+    const r = parseToolUse({
+      name: 'registrar_ciclo',
+      input: { person_full_name: 'Diana Díaz', date: '2026-06-29', phase: 'menstruando' },
+    })
+    expect(r).toBe(null)
+  })
+  it('rechaza sin apellido', () => {
+    const r = parseToolUse({
+      name: 'registrar_ciclo',
+      input: { person_full_name: 'Diana', date: '2026-06-29', phase: 'bleeding' },
+    })
+    expect(r).toBe(null)
+  })
+})
+
 describe('parseToolUse tool desconocida', () => {
   it('devuelve null', () => {
     expect(parseToolUse({ name: 'no_existe', input: {} })).toBe(null)

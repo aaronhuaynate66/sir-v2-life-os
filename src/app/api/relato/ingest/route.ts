@@ -55,6 +55,7 @@ Reglas obligatorias:
    - Un "crear_moment" por CADA episodio con fecha concreta y valor emocional. Status "abierto" si algo queda pendiente + follow_up_on si hay fecha explícita. Status "resuelto" si cerró bien en el mismo día.
    - Un "crear_person_log" (kind="interaction") por cada día que hubo contacto, con value 1..5 según cómo se sintió Aaron.
    - Un solo "crear_nota_manual" opcional al final con resumen general de la semana. NO dupliques info de los moments.
+   - Un "registrar_ciclo" por CADA día que Aaron mencione la fase menstrual de una persona ("estaba con la regla", "tenía un resto de regla", "sangrando", "PMS"). Un día = una acción. Phase "bleeding" para sangrado, "pms" para síntomas premenstruales. Confidence "medium" por default; "high" si Aaron confirma que ella lo dijo.
 4. Fechas: siempre YYYY-MM-DD. Timestamps siempre con TZ (-05:00 para Lima). Si Aaron dice "viernes 26", usá el año actual.
 5. Efectuá ediciones pequeñas y precisas. NO inventes detalles que Aaron no dio.
 
