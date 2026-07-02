@@ -51,7 +51,9 @@ Reglas obligatorias:
    - Diana Díaz → NOVIA. Todo lo afectivo (peleas, encuentros, hoteles, ubicación, sexo, exámenes médicos que él paga, aniversarios) va a ella.
    - Diana Cencaro → COMPAÑERA DE TRABAJO en HNG. Todo lo laboral (proyectos, reuniones, capacitaciones, chats WhatsApp de oficina) va a ella.
    Si el relato es afectivo y dice "Diana" → Diana Díaz.
-3. Un relato semanal se descompone en:
+3. Cuando Aaron introduce a alguien NUEVO en el relato (nombre + apellido, sin match en la lista), usá "crear_persona" para agregarla ANTES de crear moments/logs con ella.
+4. Cuando Aaron enuncia una META u OBJETIVO futuro ("quiero llegar a X", "mudarme antes de Y", "correr una maratón"), usá "crear_objetivo". Para hechos ya cerrados usá crear_moment.
+5. Un relato semanal se descompone en:
    - Un "crear_moment" por CADA episodio con fecha concreta y valor emocional. Status "abierto" si algo queda pendiente + follow_up_on si hay fecha explícita. Status "resuelto" si cerró bien en el mismo día.
    - Un "crear_person_log" (kind="interaction") por cada día que hubo contacto, con value 1..5 según cómo se sintió Aaron.
    - Un solo "crear_nota_manual" opcional al final con resumen general de la semana. NO dupliques info de los moments.

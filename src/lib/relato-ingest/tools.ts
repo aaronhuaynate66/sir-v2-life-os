@@ -81,6 +81,40 @@ export const INGEST_TOOLS = [
     },
   },
   {
+    name: 'crear_objetivo',
+    description:
+      'Crear un objetivo NUEVO cuando Aaron enuncia algo que quiere lograr en el futuro ' +
+      '("quiero mudarme antes de agosto", "el mundial en noviembre"). NO uses esto para ' +
+      'reportar hechos ya cerrados (eso es crear_moment). Categoría según el dominio ' +
+      '(personal/relational/financial/health/career/spiritual/creative).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        title: { type: 'string', description: 'Título del objetivo en 2-6 palabras.' },
+        category: { type: 'string', enum: ['financial', 'personal', 'relational', 'health', 'career', 'spiritual', 'creative'] },
+        priority: { type: 'string', enum: ['critical', 'high', 'medium', 'low'], description: 'critical si Aaron dice "urgente/prioritario"; high si "importante"; medium default.' },
+        target_date: { type: 'string', description: 'YYYY-MM-DD si Aaron mencionó fecha.' },
+        next_step: { type: 'string', description: 'Próximo paso concreto en una frase corta.' },
+      },
+      required: ['title', 'category'],
+    },
+  },
+  {
+    name: 'crear_persona',
+    description:
+      'Crear una persona nueva en la red cuando Aaron menciona a alguien que NO está en la lista de personas ya conocidas. Usá esto cuando el relato introduce a alguien con nombre completo por primera vez. NO uses esto si la persona ya existe.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        full_name: { type: 'string', description: 'Nombre completo (mínimo 2 tokens).' },
+        relationship: { type: 'string', enum: ['family', 'friend', 'romantic', 'professional', 'mentor', 'mentee', 'acquaintance'], description: 'Tipo de vínculo según el contexto.' },
+        category: { type: 'string', enum: ['inner_circle', 'close', 'network', 'peripheral'], description: 'Cercanía. Default "network".' },
+        notes: { type: 'string', description: 'Notas iniciales (1-2 líneas de contexto).' },
+      },
+      required: ['full_name', 'relationship'],
+    },
+  },
+  {
     name: 'registrar_ciclo',
     description:
       'Registrar UN DÍA del ciclo menstrual de una persona (típicamente la pareja) cuando Aaron ' +
@@ -131,12 +165,19 @@ export const INGEST_TOOLS = [
 export type CyclePhase = 'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown'
 export type CycleConfidence = 'high' | 'medium' | 'low'
 
+export type GoalCategoryEnum = 'financial' | 'personal' | 'relational' | 'health' | 'career' | 'spiritual' | 'creative'
+export type GoalPriorityEnum = 'critical' | 'high' | 'medium' | 'low'
+export type PersonRelationshipEnum = 'family' | 'friend' | 'romantic' | 'professional' | 'mentor' | 'mentee' | 'acquaintance'
+export type PersonCategoryEnum = 'inner_circle' | 'close' | 'network' | 'peripheral'
+
 export type IngestAction =
   | { kind: 'crear_moment'; personFullName: string; title: string; detail: string; occurredOn: string; status: 'abierto' | 'resuelto'; followUpOn?: string; resolution?: string }
   | { kind: 'crear_person_log'; personFullName: string; logKind: 'interaction' | 'mood' | 'energy'; value: number; note: string; loggedAt: string }
   | { kind: 'crear_nota_manual'; personFullName: string; text: string; observedAt: string }
   | { kind: 'upsert_cumpleanos'; personFullName: string; date: string }
   | { kind: 'registrar_ciclo'; personFullName: string; date: string; phase: CyclePhase; confidence: CycleConfidence; note?: string }
+  | { kind: 'crear_objetivo'; title: string; category: GoalCategoryEnum; priority: GoalPriorityEnum; targetDate?: string; nextStep?: string }
+  | { kind: 'crear_persona'; fullName: string; relationship: PersonRelationshipEnum; category: PersonCategoryEnum; notes?: string }
   | { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
 
 interface RawToolUse { name: string; input: Record<string, unknown> }
@@ -213,6 +254,31 @@ export function parseToolUse(raw: RawToolUse): IngestAction | null {
       const confidence = validConf.includes(i.confidence as CycleConfidence) ? (i.confidence as CycleConfidence) : 'medium'
       if (!name || !date || !phase) return null
       return { kind: 'registrar_ciclo', personFullName: name, date, phase, confidence, note: str(i.note, 500) ?? undefined }
+    }
+    case 'crear_objetivo': {
+      const title = str(i.title, 200)
+      const validCats: GoalCategoryEnum[] = ['financial', 'personal', 'relational', 'health', 'career', 'spiritual', 'creative']
+      const category = validCats.includes(i.category as GoalCategoryEnum) ? (i.category as GoalCategoryEnum) : null
+      const validPrios: GoalPriorityEnum[] = ['critical', 'high', 'medium', 'low']
+      const priority = validPrios.includes(i.priority as GoalPriorityEnum) ? (i.priority as GoalPriorityEnum) : 'medium'
+      if (!title || !category) return null
+      return {
+        kind: 'crear_objetivo', title, category, priority,
+        targetDate: ymd(i.target_date) ?? undefined,
+        nextStep: str(i.next_step, 400) ?? undefined,
+      }
+    }
+    case 'crear_persona': {
+      const fullName = requireFullName(i.full_name)
+      const validRels: PersonRelationshipEnum[] = ['family', 'friend', 'romantic', 'professional', 'mentor', 'mentee', 'acquaintance']
+      const relationship = validRels.includes(i.relationship as PersonRelationshipEnum) ? (i.relationship as PersonRelationshipEnum) : null
+      const validCats: PersonCategoryEnum[] = ['inner_circle', 'close', 'network', 'peripheral']
+      const category = validCats.includes(i.category as PersonCategoryEnum) ? (i.category as PersonCategoryEnum) : 'network'
+      if (!fullName || !relationship) return null
+      return {
+        kind: 'crear_persona', fullName, relationship, category,
+        notes: str(i.notes, 500) ?? undefined,
+      }
     }
     case 'flag_ambiguo': {
       const short = str(i.short_name, 100)

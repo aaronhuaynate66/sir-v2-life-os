@@ -30,6 +30,8 @@ type PlanItem =
   | { kind: 'crear_nota_manual'; personFullName: string; text: string; observedAt: string }
   | { kind: 'upsert_cumpleanos'; personFullName: string; date: string }
   | { kind: 'registrar_ciclo'; personFullName: string; date: string; phase: 'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown'; confidence: 'high' | 'medium' | 'low'; note?: string }
+  | { kind: 'crear_objetivo'; title: string; category: string; priority: string; targetDate?: string; nextStep?: string }
+  | { kind: 'crear_persona'; fullName: string; relationship: string; category: string; notes?: string }
 
 interface FlagAmbiguo { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
 interface ExecResult { action: PlanItem; ok: boolean; error?: string; createdId?: string }
@@ -58,6 +60,8 @@ const KIND_LABEL: Record<PlanItem['kind'], string> = {
   crear_nota_manual: 'Nota',
   upsert_cumpleanos: 'Cumpleaños',
   registrar_ciclo: 'Ciclo',
+  crear_objetivo: 'Objetivo',
+  crear_persona: 'Persona nueva',
 }
 const PHASE_LABEL: Record<'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown', string> = {
   bleeding: 'sangrando', pms: 'PMS', mid_cycle: 'medio del ciclo',
@@ -65,7 +69,11 @@ const PHASE_LABEL: Record<'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'lute
 }
 
 function itemKey(item: PlanItem, i: number): string {
-  return `${item.kind}:${item.personFullName}:${i}`
+  const ref = 'personFullName' in item ? item.personFullName
+    : 'fullName' in item ? item.fullName
+    : 'title' in item ? item.title
+    : String(i)
+  return `${item.kind}:${ref}:${i}`
 }
 
 function summarize(item: PlanItem): string {
@@ -83,6 +91,10 @@ function summarize(item: PlanItem): string {
       return `cumple · ${item.date}`
     case 'registrar_ciclo':
       return `${PHASE_LABEL[item.phase]} · ${item.date}${item.confidence !== 'medium' ? ` · conf ${item.confidence}` : ''}`
+    case 'crear_objetivo':
+      return `${item.category} · ${item.priority}${item.targetDate ? ` · deadline ${item.targetDate}` : ''}${item.nextStep ? ` · próximo: ${item.nextStep}` : ''}`
+    case 'crear_persona':
+      return `${item.relationship} · ${item.category}${item.notes ? ` · ${item.notes.slice(0, 80)}` : ''}`
   }
 }
 
@@ -404,7 +416,9 @@ function SirBubble({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge variant="outline" className="text-[9px] uppercase tracking-wider">{KIND_LABEL[it.kind]}</Badge>
-                          <span className="text-foreground font-medium">{it.personFullName}</span>
+                          <span className="text-foreground font-medium">
+                            {'personFullName' in it ? it.personFullName : 'fullName' in it ? it.fullName : 'title' in it ? it.title : ''}
+                          </span>
                           {it.kind === 'crear_moment' && (
                             <span className="text-[10px] font-medium">
                               {' — '}{it.title}
@@ -445,7 +459,7 @@ function SirBubble({
                 <li key={i} className="text-[11px] flex items-start gap-2">
                   {r.ok ? <CheckCircle2 size={11} className="text-ok mt-0.5 flex-shrink-0" /> : <AlertCircle size={11} className="text-bad mt-0.5 flex-shrink-0" />}
                   <span className={cn('leading-relaxed', r.ok ? 'text-muted-foreground' : 'text-bad')}>
-                    <span className="font-medium text-foreground">{KIND_LABEL[r.action.kind]}</span> · {r.action.personFullName} — {summarize(r.action)}
+                    <span className="font-medium text-foreground">{KIND_LABEL[r.action.kind]}</span> · {'personFullName' in r.action ? r.action.personFullName : 'fullName' in r.action ? r.action.fullName : 'title' in r.action ? r.action.title : '?'} — {summarize(r.action)}
                     {r.error && <span className="block italic opacity-80">{r.error}</span>}
                   </span>
                 </li>

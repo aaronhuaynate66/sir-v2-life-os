@@ -36,13 +36,20 @@ async function findPersonByFullName(supabase: Supabase, userId: string, fullName
   return rows.find((r) => norm(r.name) === needle) ?? null
 }
 
-async function execOne(supabase: Supabase, userId: string, action: IngestAction): Promise<ExecResult> {
-  const person = action.kind === 'flag_ambiguo'
-    ? null
-    : await findPersonByFullName(supabase, userId, action.personFullName)
+/** Devuelve el nombre de persona referenciada por la acción, o null si no aplica. */
+function personRefOf(action: IngestAction): string | null {
+  if (action.kind === 'flag_ambiguo') return null
+  if (action.kind === 'crear_objetivo') return null // no persona
+  if (action.kind === 'crear_persona') return null // crea, no busca
+  return action.personFullName
+}
 
-  if (action.kind !== 'flag_ambiguo' && !person) {
-    return { action, ok: false, error: `Persona "${action.personFullName}" no está en tu red.` }
+async function execOne(supabase: Supabase, userId: string, action: IngestAction): Promise<ExecResult> {
+  const personRef = personRefOf(action)
+  const person = personRef ? await findPersonByFullName(supabase, userId, personRef) : null
+
+  if (personRef && !person) {
+    return { action, ok: false, error: `Persona "${personRef}" no está en tu red.` }
   }
 
   try {
@@ -122,6 +129,45 @@ async function execOne(supabase: Supabase, userId: string, action: IngestAction)
         .eq('user_id', userId).eq('id', person.id)
       if (error) return { action, ok: false, error: error.message }
       return { action, ok: true, createdId: id }
+    }
+
+    if (action.kind === 'crear_objetivo') {
+      // Idempotencia por (user, title) — evita duplicar si Aaron reprocesa.
+      const { data: existing } = await supabase.from('goals').select('id')
+        .eq('user_id', userId).ilike('title', action.title).limit(1)
+      if ((existing ?? []).length > 0) {
+        return { action, ok: true, error: 'ya existía (idempotente)', createdId: ((existing ?? [])[0] as { id: string }).id }
+      }
+      const { data, error } = await supabase.from('goals').insert({
+        user_id: userId, title: action.title,
+        category: action.category, priority: action.priority,
+        status: 'active',
+        target_date: action.targetDate ?? null,
+        next_action: action.nextStep ?? '',
+        description: action.nextStep ?? '',
+      }).select('id').single()
+      if (error) return { action, ok: false, error: error.message }
+      return { action, ok: true, createdId: (data as { id: string }).id }
+    }
+
+    if (action.kind === 'crear_persona') {
+      // Idempotencia por (user, name).
+      const { data: existing } = await supabase.from('people').select('id')
+        .eq('user_id', userId).ilike('name', action.fullName).limit(1)
+      if ((existing ?? []).length > 0) {
+        return { action, ok: true, error: 'ya existía (idempotente)', createdId: ((existing ?? [])[0] as { id: string }).id }
+      }
+      const slug = action.fullName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 60)
+      const { data, error } = await supabase.from('people').insert({
+        user_id: userId, name: action.fullName, slug,
+        relationship: action.relationship,
+        category: action.category,
+        importance_score: action.category === 'inner_circle' ? 9 : action.category === 'close' ? 7 : action.category === 'network' ? 5 : 3,
+        confidence_score: 5,
+        notes: action.notes ?? null,
+      }).select('id').single()
+      if (error) return { action, ok: false, error: error.message }
+      return { action, ok: true, createdId: (data as { id: string }).id }
     }
 
     if (action.kind === 'flag_ambiguo') {
