@@ -453,6 +453,34 @@ function SirBubble({
   const okCount = (msg.executed ?? []).filter((r) => r.ok).length
   const failCount = (msg.executed ?? []).filter((r) => !r.ok).length
 
+  // Undo timer: 30s desde el executed para deshacer las creaciones.
+  const [undoRemaining, setUndoRemaining] = useState<number>(0)
+  const [undoing, setUndoing] = useState(false)
+  const [undone, setUndone] = useState(false)
+  useEffect(() => {
+    if (!msg.executed || undone) return
+    const okItems = msg.executed.filter((r) => r.ok && r.createdId)
+    if (okItems.length === 0) return
+    setUndoRemaining(30)
+    const timer = setInterval(() => setUndoRemaining((r) => Math.max(0, r - 1)), 1000)
+    return () => clearInterval(timer)
+  }, [msg.executed, undone])
+
+  async function undo() {
+    if (!msg.executed) return
+    setUndoing(true)
+    try {
+      const items = msg.executed
+        .filter((r) => r.ok && r.createdId)
+        .map((r) => ({ kind: r.action.kind, id: r.createdId as string }))
+      await fetch('/api/relato/undo', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      })
+      setUndone(true)
+    } finally { setUndoing(false) }
+  }
+
   return (
     <div className="flex items-start gap-2">
       <div className="w-6 h-6 rounded-full bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -557,13 +585,33 @@ function SirBubble({
               {msg.executed.map((r, i) => (
                 <li key={i} className="text-[11px] flex items-start gap-2">
                   {r.ok ? <CheckCircle2 size={11} className="text-ok mt-0.5 flex-shrink-0" /> : <AlertCircle size={11} className="text-bad mt-0.5 flex-shrink-0" />}
-                  <span className={cn('leading-relaxed', r.ok ? 'text-muted-foreground' : 'text-bad')}>
+                  <span className={cn('leading-relaxed', r.ok ? 'text-muted-foreground' : 'text-bad', undone && r.ok && 'line-through')}>
                     <span className="font-medium text-foreground">{KIND_LABEL[r.action.kind]}</span> · {'personFullName' in r.action ? r.action.personFullName : 'fullName' in r.action ? r.action.fullName : 'title' in r.action ? r.action.title : '?'} — {summarize(r.action)}
                     {r.error && <span className="block italic opacity-80">{r.error}</span>}
                   </span>
                 </li>
               ))}
             </ul>
+            {/* Undo pill: aparece cuando hay al menos 1 ok con createdId y el timer sigue. */}
+            {undoRemaining > 0 && !undone && (
+              <div className="flex items-center gap-2 pt-1 border-t border-current/20">
+                <span className="text-[11px] text-muted-foreground">¿Fue un error?</span>
+                <button
+                  type="button"
+                  onClick={() => void undo()}
+                  disabled={undoing}
+                  className="inline-flex items-center gap-1 rounded border border-border bg-background px-2 py-0.5 text-[10px] hover:bg-accent/10 disabled:opacity-50"
+                >
+                  {undoing ? <Loader2 size={9} className="animate-spin" /> : <RotateCcw size={9} />}
+                  Deshacer ({undoRemaining}s)
+                </button>
+              </div>
+            )}
+            {undone && (
+              <div className="text-[10px] text-muted-foreground pt-1 border-t border-current/20 italic">
+                Deshecho ✓
+              </div>
+            )}
           </div>
         )}
 
