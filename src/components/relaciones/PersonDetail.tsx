@@ -61,6 +61,7 @@ import { PendientesConPersona } from './PendientesConPersona'
 import { EstadoConPersona } from './EstadoConPersona'
 import { RecomendacionesSemanales } from './RecomendacionesSemanales'
 import { PatronesCiclo } from './PatronesCiclo'
+import { SemanaConPersona } from './SemanaConPersona'
 import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
@@ -425,6 +426,9 @@ export function PersonDetail({
         personCycles={personCycles}
         memories={memories}
       />
+
+      {/* Timeline de 7 días con esta persona (visual rápido). */}
+      <SemanaConPersona personName={live.name} personLogs={personLogs} moments={moments} personCycles={personCycles} />
 
       {/* Recomendaciones semanales por Claude — cache por (user, persona, semana). */}
       <RecomendacionesSemanales personId={live.id} personName={live.name} />
