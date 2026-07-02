@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c954277`
+**Hash del último commit humano:** `0af5c18`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `0af5c18` | aaronhuaynate66 | feat(ficha): timeline "7 días con [persona]" (#480) | 2026-07-02 |
 | `c954277` | aaronhuaynate66 | feat(ficha): panel Patrones — moments por fase del ciclo + lunar (#479) | 2026-07-02 |
 | `9ba61ac` | aaronhuaynate66 | feat(red): nodos coloreados por riesgo (rojo/ámbar) (#478) | 2026-07-02 |
 | `7129246` | aaronhuaynate66 | feat(estado): recomendaciones IA semanales por persona (#477) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `214b081` | aaronhuaynate66 | feat(ficha): panel "Cómo estás con [persona]" — síntesis del vínculo (#473) | 2026-07-02 |
 | `aa9a839` | aaronhuaynate66 | feat(correlation): cruzar person_cycles con person_logs (Fase 3c ampliada) (#472) | 2026-07-02 |
 | `06862da` | aaronhuaynate66 | feat(observations): botón "Regenerar resumen" para whatsapp huérfanos (#471) | 2026-07-02 |
-| `3af263d` | aaronhuaynate66 | feat(relato-ingest): UI conversacional (chat) + aplicar directo + nav (#470) | 2026-07-02 |
 
 ---
 
