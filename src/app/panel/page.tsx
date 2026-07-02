@@ -37,6 +37,7 @@ import { WeekInFocusCard } from '@/components/panel/WeekInFocusCard'
 import { BehavioralSuggestionCard } from '@/components/panel/BehavioralSuggestionCard'
 import { TargetsAtGlanceCard } from '@/components/panel/TargetsAtGlanceCard'
 import { AnduveHoyCard } from '@/components/panel/AnduveHoyCard'
+import { PersonasEnRiesgoCard } from '@/components/panel/PersonasEnRiesgoCard'
 import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
@@ -355,6 +356,7 @@ function DashboardContent() {
       {/* Anduve hoy: timeline compacto de eventos registrados hoy — hábitos,
           self-metrics, sueño, gastos, KRs/tareas cerradas, memorias. Refleja,
           no evalúa. Ver src/lib/panel/anduveHoy.ts. */}
+      <PersonasEnRiesgoCard />
       <AnduveHoyCard now={now} />
 
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
