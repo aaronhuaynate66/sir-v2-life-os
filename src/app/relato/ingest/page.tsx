@@ -102,12 +102,66 @@ function nextId(): string {
   return `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
+const LS_KEY = 'sir_relato_ingest_history_v1'
+
+// Serialización: los Set no roundtrip en JSON — los guardamos como arrays.
+interface MsgSerialized {
+  role: 'user' | 'sir'; id: string; text?: string; requestId?: string;
+  plan?: PlanItem[]; ambiguous?: FlagAmbiguo[]; modelText?: string[];
+  executed?: ExecResult[]; error?: string; selected?: string[];
+}
+function serializeMsg(m: Msg): MsgSerialized {
+  if (m.role === 'user') return { role: 'user', id: m.id, text: m.text }
+  return {
+    role: 'sir', id: m.id, requestId: m.requestId,
+    plan: m.plan, ambiguous: m.ambiguous, modelText: m.modelText,
+    executed: m.executed, error: m.error,
+    selected: [...m.selected],
+  }
+}
+function deserializeMsg(s: MsgSerialized): Msg | null {
+  if (s.role === 'user' && typeof s.text === 'string') return { role: 'user', id: s.id, text: s.text }
+  if (s.role === 'sir') {
+    return {
+      role: 'sir', id: s.id, requestId: s.requestId ?? s.id,
+      plan: s.plan ?? [], ambiguous: s.ambiguous ?? [], modelText: s.modelText ?? [],
+      executed: s.executed, error: s.error,
+      selected: new Set(s.selected ?? []),
+      applying: false,
+    }
+  }
+  return null
+}
+
 export default function RelatoIngestPage() {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [aplicarDirecto, setAplicarDirecto] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const [hydrated, setHydrated] = useState(false)
+
+  // Cargar historial al montar.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw) as MsgSerialized[]
+        const restored = parsed.map(deserializeMsg).filter((m): m is Msg => m !== null)
+        if (restored.length > 0) setMsgs(restored.slice(-60)) // capa: últimos 60
+      }
+    } catch { /* silent */ }
+    setHydrated(true)
+  }, [])
+
+  // Persistir historial (throttle simple con el effect).
+  useEffect(() => {
+    if (!hydrated) return
+    try {
+      const serial = msgs.slice(-60).map(serializeMsg)
+      localStorage.setItem(LS_KEY, JSON.stringify(serial))
+    } catch { /* silent (LS full o denied) */ }
+  }, [msgs, hydrated])
 
   // Auto-scroll al final cuando cambia el historial.
   useEffect(() => {
@@ -162,24 +216,19 @@ export default function RelatoIngestPage() {
     const msg = msgs.find((m) => m.role === 'sir' && m.id === msgId)
     if (!msg || msg.role !== 'sir') return
     if (msg.plan.length === 0 || msg.selected.size === 0) return
-    // Buscamos el mensaje del usuario JUSTO ANTERIOR a este (el que originó el plan).
-    const idx = msgs.findIndex((m) => m.id === msgId)
-    const userPrev = [...msgs.slice(0, idx)].reverse().find((m) => m.role === 'user') as { text: string } | undefined
-    if (!userPrev) return
     setMsgs((all) => all.map((m) => m.id === msgId && m.role === 'sir' ? { ...m, applying: true } : m))
     try {
-      const res = await fetch('/api/relato/ingest', {
+      // Ejecutamos SOLO las acciones seleccionadas — endpoint strict que no
+      // re-llama a Claude. Cierra el bug de "el server aplica algo distinto
+      // si destildaste items específicos".
+      const chosen = msg.plan.filter((it, i) => msg.selected.has(itemKey(it, i)))
+      const res = await fetch('/api/relato/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Nota: el server reprocesa el texto con Claude para ejecutar. La lista
-        // devuelta antes es orientativa. Si Aaron destildó algo, la selección
-        // se aplica visualmente en la UI pero el server aplica lo que devuelva
-        // ahora (idempotencia hace que duplicados se salten). Trade-off
-        // pragmático — la garantía fuerte de "aplicar sólo estos exactos" es
-        // un endpoint separado que puede venir después.
-        body: JSON.stringify({ text: userPrev.text, apply: true }),
+        body: JSON.stringify({ actions: chosen }),
       })
-      const j = (await res.json()) as ApiResponse
+      const j = (await res.json()) as { executed?: ExecResult[]; error?: string }
+      if (!res.ok) throw new Error(j.error ?? `HTTP ${res.status}`)
       setMsgs((all) => all.map((m) =>
         m.id === msgId && m.role === 'sir'
           ? { ...m, executed: j.executed ?? [], applying: false }
@@ -207,6 +256,7 @@ export default function RelatoIngestPage() {
     if (msgs.length === 0) return
     if (!confirm('¿Limpiar el chat? Los items ya aplicados quedan en tu red.')) return
     setMsgs([])
+    try { localStorage.removeItem(LS_KEY) } catch { /* */ }
   }
 
   return (
