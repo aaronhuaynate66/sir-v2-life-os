@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `214b081`
+**Hash del último commit humano:** `c1618ca`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c1618ca` | aaronhuaynate66 | feat(estado): síntesis IA on-demand con cache 24h (#474) | 2026-07-02 |
 | `214b081` | aaronhuaynate66 | feat(ficha): panel "Cómo estás con [persona]" — síntesis del vínculo (#473) | 2026-07-02 |
 | `aa9a839` | aaronhuaynate66 | feat(correlation): cruzar person_cycles con person_logs (Fase 3c ampliada) (#472) | 2026-07-02 |
 | `06862da` | aaronhuaynate66 | feat(observations): botón "Regenerar resumen" para whatsapp huérfanos (#471) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `3791c2b` | aaronhuaynate66 | feat(relato): /relato/ingest — Aaron cuenta en prosa, SIR estructura (#467) | 2026-07-02 |
 | `b3748e5` | aaronhuaynate66 | feat(auth): Personal Access Tokens (Fase 1 del módulo Claude → SIR) (#466) | 2026-07-02 |
 | `ad48e2a` | aaronhuaynate66 | fix(aaron): reroute Diana Cencaro → Diana Díaz + cumple Fabiola 9-jun (#465) | 2026-07-02 |
-| `5096d96` | aaronhuaynate66 | feat(ficha): panel "Pendientes con esta persona" arriba de la ficha (#464) | 2026-07-02 |
 
 ---
 
