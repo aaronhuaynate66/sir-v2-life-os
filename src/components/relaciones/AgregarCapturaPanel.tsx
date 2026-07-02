@@ -75,6 +75,7 @@ import type { ChunkInterpretation, ConsolidatedExport, ExtractedDate } from '@/l
 import { createPersonLog } from './person-logs/client'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import { autoExtractAvatar } from '@/lib/avatars/autoExtract'
+import { expandPdfsInFiles } from '@/lib/capture/pdf/pdfToImages'
 import type { CaptureType, Confidence, DetectorResult } from '@/lib/capture/observations/types'
 import type { Person, SpecialDate } from '@/types'
 import { cn } from '@/lib/utils'
@@ -279,13 +280,32 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
 
   // Selección MÚLTIPLE: agrega las nuevas a las ya elegidas (dedup por
   // nombre+tamaño+fecha), permitiendo sumar de a tandas antes de procesar.
-  const onFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // Si alguno es PDF, se expande a N PNGs (una por página) antes de entrar
+  // a la lista — el pipeline ya sabe consolidar N imágenes en 1 observación.
+  const onFiles = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? [])
-    if (picked.length > 0) {
+    // Resetear el input ya, para poder re-elegir el mismo archivo si hace falta.
+    if (inputRef.current) inputRef.current.value = ''
+    if (picked.length === 0) {
+      setPhase('idle'); setError(null); setSavedType(null); setPreview(null)
+      return
+    }
+    // Expandir cualquier PDF → PNGs (dinámico; pdfjs solo carga si hay PDF).
+    let expanded = picked
+    const hasPdf = picked.some((f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name))
+    if (hasPdf) {
+      const r = await expandPdfsInFiles(picked)
+      expanded = r.files
+      if (r.warnings.length > 0) {
+        // No bloqueamos: solo advertimos sin frenar la carga.
+        setError({ status: 0, message: r.warnings.join(' · ') })
+      }
+    }
+    if (expanded.length > 0) {
       setFiles((prev) => {
         const seen = new Set(prev.map(fileKey))
         const merged = [...prev]
-        for (const f of picked) {
+        for (const f of expanded) {
           const k = fileKey(f)
           if (!seen.has(k)) {
             seen.add(k)
@@ -296,11 +316,9 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
       })
     }
     setPhase('idle')
-    setError(null)
+    if (!hasPdf) setError(null)
     setSavedType(null)
     setPreview(null)
-    // Resetear el input para poder re-seleccionar el mismo archivo si hace falta.
-    if (inputRef.current) inputRef.current.value = ''
   }, [])
 
   const removeFile = useCallback((idx: number) => {
@@ -1274,13 +1292,14 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
               <>
                 <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
                   Podés subir <span className="font-medium text-foreground">varias capturas del mismo perfil</span>{' '}
-                  a la vez (distintas secciones de un LinkedIn/Instagram): se combinan en un solo perfil.
+                  a la vez (distintas secciones de un LinkedIn/Instagram) — o un <span className="font-medium text-foreground">PDF</span> del
+                  perfil impreso: cada página cuenta como una imagen. Se combinan en un solo perfil.
                 </p>
                 <input
                   ref={inputRef}
                   type="file"
                   multiple
-                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf"
                   onChange={onFiles}
                   disabled={working}
                   className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10 disabled:opacity-50"

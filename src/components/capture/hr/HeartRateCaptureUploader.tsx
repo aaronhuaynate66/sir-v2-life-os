@@ -6,6 +6,7 @@ import { Upload, ImageIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { pdfFileToImages } from '@/lib/capture/pdf/pdfToImages'
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10 MB pre-compresión
 
@@ -19,10 +20,19 @@ export function HeartRateCaptureUploader({ onFile, disabled }: HeartRateCaptureU
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function handleFile(file: File) {
+  async function handleFile(file: File) {
     setError(null)
+    if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+      const r = await pdfFileToImages(file, { maxPages: 1 })
+      if (r.error || r.files.length === 0) { setError(r.error ?? 'No pude leer el PDF'); return }
+      const png = r.files[0]
+      if (png.size > MAX_FILE_BYTES) { setError('La página renderizada supera los 10 MB.'); return }
+      onFile(png)
+      if (r.totalPages > 1) setError(`El PDF tiene ${r.totalPages} páginas — usé solo la primera.`)
+      return
+    }
     if (!file.type.startsWith('image/')) {
-      setError('El archivo no es una imagen.')
+      setError('El archivo no es una imagen ni un PDF.')
       return
     }
     if (file.size > MAX_FILE_BYTES) {
@@ -82,7 +92,7 @@ export function HeartRateCaptureUploader({ onFile, disabled }: HeartRateCaptureU
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,application/pdf,.pdf"
             onChange={handleInputChange}
             disabled={disabled}
             className="hidden"

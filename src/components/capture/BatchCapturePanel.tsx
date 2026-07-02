@@ -18,6 +18,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { detectCaptureType, DetectorError } from '@/lib/capture/detector/client'
+import { expandPdfsInFiles } from '@/lib/capture/pdf/pdfToImages'
 import {
   HttpError,
   processCapture,
@@ -66,17 +67,23 @@ export function BatchCapturePanel() {
   const [items, setItems] = useState<BatchItem[]>([])
   const [running, setRunning] = useState(false)
 
-  const onFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const onFiles = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files ?? [])
+    // Permite volver a elegir el MISMO archivo luego (reset del input) YA.
+    e.target.value = ''
+    // Expandir cualquier PDF → PNGs por página (dinámico, sin cargar pdfjs si no hay PDFs).
+    let expanded = picked
+    if (picked.some((f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name))) {
+      const r = await expandPdfsInFiles(picked)
+      expanded = r.files
+    }
     setItems((prev) => {
       const seen = new Set(prev.map((it) => `${it.file.name}:${it.file.size}`))
-      const added = picked
+      const added = expanded
         .filter((f) => !seen.has(`${f.name}:${f.size}`))
         .map((f) => ({ id: nextId(), file: f, status: 'pending' as ItemStatus }))
       return [...prev, ...added]
     })
-    // Permite volver a elegir el MISMO archivo luego (reset del input).
-    e.target.value = ''
   }, [])
 
   const removeItem = useCallback((id: string) => {
@@ -162,7 +169,7 @@ export function BatchCapturePanel() {
             <input
               type="file"
               multiple
-              accept="image/jpeg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf"
               onChange={onFiles}
               disabled={running}
               className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10"
