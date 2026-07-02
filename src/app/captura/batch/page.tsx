@@ -7,15 +7,20 @@
 // Visión de Aaron (2026-07-01): "pasar PDFs a Claude.ai, extraer info según lo
 // que conversé, obtener un JSON, pegarlo aquí — y que fluya". Sin CLI, sin
 // service key, sin fricción.
+//
+// UX rediseñada (2026-07-02): drag-drop de .json, botón "Pegar del portapapeles"
+// y "Subir .json" para no depender del copy-paste manual del archivo. Aaron:
+// "necesitamos meterle más UX y UI, se hizo muy tedioso".
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { UploadCloud, ArrowLeft, CheckCircle2, AlertCircle, Info } from 'lucide-react'
+import { UploadCloud, ArrowLeft, CheckCircle2, AlertCircle, Info, ClipboardPaste, FileJson } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import type { SeedPlan } from '@/lib/seed/plan'
 
 interface ApiResponse {
@@ -26,20 +31,82 @@ interface ApiResponse {
   detail?: string
 }
 
+/** Validación mínima de shape client-side. Evita ir al server con basura y
+ *  falla más rápido con mensaje humano. La validación pesada (enums, org
+ *  slugs, tipos) sigue viviendo en /api/seed/batch. */
+function preflightShape(parsed: unknown): string | null {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return 'El JSON debe ser un objeto con `_meta` y `people`.'
+  const p = parsed as Record<string, unknown>
+  if (!('people' in p) || !Array.isArray(p.people)) return 'Falta la lista `people` (array).'
+  if ((p.people as unknown[]).length === 0) return '`people` no puede estar vacío.'
+  for (let i = 0; i < (p.people as unknown[]).length; i++) {
+    const item = (p.people as unknown[])[i] as Record<string, unknown> | undefined
+    if (!item || typeof item !== 'object') return `people[${i}] no es un objeto.`
+    const person = (item.person ?? item) as Record<string, unknown> | undefined
+    if (!person || typeof person !== 'object') return `people[${i}] no tiene .person`
+    const name = person.name
+    if (typeof name !== 'string' || !name.trim()) return `people[${i}].person.name está vacío.`
+  }
+  return null
+}
+
 export default function CapturaBatchPage() {
   const [json, setJson] = useState('')
   const [plan, setPlan] = useState<SeedPlan | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [applied, setApplied] = useState<ApiResponse['stats'] | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const parsedOk = useMemo(() => {
     if (!json.trim()) return false
     try { JSON.parse(json); return true } catch { return false }
   }, [json])
 
+  const shapeError = useMemo(() => {
+    if (!parsedOk) return null
+    try { return preflightShape(JSON.parse(json)) } catch { return null }
+  }, [json, parsedOk])
+
+  function setJsonFromSource(text: string) {
+    setJson(text)
+    setPlan(null); setApplied(null); setError(null)
+  }
+
+  async function pasteFromClipboard() {
+    try {
+      const t = await navigator.clipboard.readText()
+      if (!t.trim()) { setError('El portapapeles está vacío.'); return }
+      setJsonFromSource(t)
+    } catch (e) {
+      setError(`No pude leer el portapapeles: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
+  function onFile(file: File) {
+    if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+      setError('Solo archivos .json.'); return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const t = typeof reader.result === 'string' ? reader.result : ''
+      if (!t.trim()) { setError('El archivo está vacío.'); return }
+      setJsonFromSource(t)
+    }
+    reader.onerror = () => setError('No pude leer el archivo.')
+    reader.readAsText(file)
+  }
+
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault(); setDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) onFile(file)
+  }
+
   async function submit(dry: boolean) {
     if (!parsedOk) { setError('El JSON no parsea. Revisá comillas o llaves.'); return }
+    if (shapeError) { setError(shapeError); return }
     setBusy(true); setError(null); if (dry) setApplied(null)
     try {
       const parsed = JSON.parse(json)
@@ -74,35 +141,83 @@ export default function CapturaBatchPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Cargar batch (JSON)</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Pegá un JSON generado por Claude.ai (u otra fuente) con el formato de{' '}
+          Arrastrá un <code className="text-xs">.json</code> aquí, pegalo del portapapeles, o subilo con el botón. Formato: ver{' '}
           <code className="text-xs">data/seed-batches/README.md</code>. Ver el plan primero, después aplicar.
         </p>
       </div>
 
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-5">
-          <textarea
-            value={json}
-            onChange={(e) => { setJson(e.target.value); setPlan(null); setApplied(null); setError(null) }}
-            rows={14}
-            placeholder='{"_meta": {…}, "people": [{"person": {"name": "…"}, …}], "person_links": [{"person_a": "…", "person_b": "SELF", …}]}'
-            className="w-full resize-y rounded-lg border border-border bg-background p-3 font-mono text-[12px] leading-relaxed outline-none focus:border-foreground/30 min-h-[280px]"
-          />
+          <div className="mb-3 flex items-center gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => void pasteFromClipboard()} disabled={busy}>
+              <ClipboardPaste size={13} strokeWidth={1.75} className="mr-1.5" />
+              Pegar del portapapeles
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+              <FileJson size={13} strokeWidth={1.75} className="mr-1.5" />
+              Subir .json
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }}
+            />
+            {json && (
+              <button
+                type="button"
+                onClick={() => setJsonFromSource('')}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 ml-auto"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            className={cn(
+              'rounded-lg border transition-colors relative',
+              dragging ? 'border-brand/60 bg-brand/5' : 'border-border',
+            )}
+          >
+            <textarea
+              value={json}
+              onChange={(e) => setJsonFromSource(e.target.value)}
+              rows={14}
+              placeholder='{"_meta": {…}, "people": [{"person": {"name": "…"}, …}], "person_links": [{"person_a": "…", "person_b": "SELF", …}]}'
+              className="w-full resize-y rounded-lg bg-background p-3 font-mono text-[12px] leading-relaxed outline-none focus:border-foreground/30 min-h-[280px]"
+            />
+            {dragging && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-brand/5 border-2 border-dashed border-brand/60">
+                <span className="text-xs text-brand font-medium">Soltá el archivo aquí</span>
+              </div>
+            )}
+          </div>
+
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={() => void submit(true)} disabled={!parsedOk || busy}>
+            <Button size="sm" variant="outline" onClick={() => void submit(true)} disabled={!parsedOk || !!shapeError || busy}>
               {busy ? 'Cargando…' : 'Ver plan (dry-run)'}
             </Button>
             <Button size="sm" onClick={() => void submit(false)} disabled={!plan || busy}>
               {busy ? 'Aplicando…' : 'Aplicar'}
             </Button>
-            <span className="text-[11px] text-muted-foreground/70 ml-auto">
-              {parsedOk ? 'JSON OK' : json.trim() ? 'JSON inválido' : 'Vacío'}
+            <span className={cn(
+              'text-[11px] ml-auto',
+              parsedOk && !shapeError ? 'text-ok' : json.trim() ? 'text-warn' : 'text-muted-foreground/70',
+            )}>
+              {parsedOk
+                ? shapeError ? 'Shape inválido' : 'JSON OK'
+                : json.trim() ? 'JSON inválido' : 'Vacío'}
             </span>
           </div>
-          {error && (
+          {(error || shapeError) && (
             <div className="mt-3 flex items-start gap-2 rounded-md border border-bad/30 bg-bad-soft p-3">
               <AlertCircle size={14} strokeWidth={1.75} className="text-bad mt-0.5 flex-shrink-0" />
-              <span className="text-xs text-bad leading-relaxed">{error}</span>
+              <span className="text-xs text-bad leading-relaxed">{error ?? shapeError}</span>
             </div>
           )}
         </CardContent>

@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { track, EVENTS } from '@/lib/analytics/track'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, Heart, UserPlus, Users, X } from 'lucide-react'
+import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, Heart, UserPlus, Users, X, UploadCloud } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -315,9 +315,11 @@ function CapturaIndexContent() {
           </div>
           <Link
             href="/captura/batch"
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/10 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-md border border-brand/40 bg-brand/5 px-3 py-1.5 text-xs font-medium text-brand hover:bg-brand/10 transition-colors"
+            title="Cargar varias personas de una vez desde un JSON (Claude.ai / batch)"
           >
-            Cargar batch JSON →
+            <UploadCloud size={13} strokeWidth={1.75} aria-hidden="true" />
+            Cargar batch (JSON)
           </Link>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
