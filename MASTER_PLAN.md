@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `51d2359`
+**Hash del último commit humano:** `384e431`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `384e431` | aaronhuaynate66 | chore(ai-usage): registrar consumo de los 5 endpoints IA de la sesión (#488) | 2026-07-02 |
 | `51d2359` | aaronhuaynate66 | chore: eliminar endpoints one-shot y redirect /relato viejo (D4 + D5) (#487) | 2026-07-02 |
 | `de04dfd` | aaronhuaynate66 | feat(relato-ingest): streaming SSE de Claude (A2) (#486) | 2026-07-02 |
 | `4b69782` | aaronhuaynate66 | feat(panel): alertas cuando el estado con una persona empeora (G3) (#485) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `db7fa15` | aaronhuaynate66 | fix(relato-ingest): apply strict + historial persistente (D1 + D3) (#481) | 2026-07-02 |
 | `0af5c18` | aaronhuaynate66 | feat(ficha): timeline "7 días con [persona]" (#480) | 2026-07-02 |
 | `c954277` | aaronhuaynate66 | feat(ficha): panel Patrones — moments por fase del ciclo + lunar (#479) | 2026-07-02 |
-| `9ba61ac` | aaronhuaynate66 | feat(red): nodos coloreados por riesgo (rojo/ámbar) (#478) | 2026-07-02 |
 
 ---
 
