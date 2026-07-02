@@ -60,6 +60,7 @@ import { AntesDeContactar } from './AntesDeContactar'
 import { PendientesConPersona } from './PendientesConPersona'
 import { EstadoConPersona } from './EstadoConPersona'
 import { RecomendacionesSemanales } from './RecomendacionesSemanales'
+import { PatronesCiclo } from './PatronesCiclo'
 import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
@@ -427,6 +428,10 @@ export function PersonDetail({
 
       {/* Recomendaciones semanales por Claude — cache por (user, persona, semana). */}
       <RecomendacionesSemanales personId={live.id} personName={live.name} />
+
+      {/* Patrones observados: moments por fase del ciclo + por fase lunar. Se
+          oculta si no hay suficientes moments para leer patrón. */}
+      <PatronesCiclo personName={live.name} moments={moments} personCycles={personCycles} />
 
       {/* Pendientes: moments abiertos con este follow-up. Se oculta si no hay
           nada. Al resolver, el componente refetchea (soft-reload de la ficha). */}
