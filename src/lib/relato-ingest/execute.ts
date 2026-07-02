@@ -94,6 +94,21 @@ async function execOne(supabase: Supabase, userId: string, action: IngestAction)
       return { action, ok: true, createdId: (data as { id: string }).id }
     }
 
+    if (action.kind === 'registrar_ciclo' && person) {
+      // Upsert por (user_id, person_id, date) — mig 0110 unique index.
+      const { data, error } = await supabase.from('person_cycles').upsert({
+        user_id: userId,
+        person_id: person.id,
+        date: action.date,
+        phase: action.phase,
+        confidence: action.confidence,
+        source: 'aaron',
+        note: action.note ?? null,
+      }, { onConflict: 'user_id,person_id,date' }).select('id').single()
+      if (error) return { action, ok: false, error: error.message }
+      return { action, ok: true, createdId: (data as { id: string }).id }
+    }
+
     if (action.kind === 'upsert_cumpleanos' && person) {
       const { data: row } = await supabase
         .from('people').select('id, special_dates')
