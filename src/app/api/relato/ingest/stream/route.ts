@@ -15,6 +15,7 @@
 
 import { type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { recordAiUsage } from '@/lib/ai/usage'
 import { INGEST_TOOLS, parseToolUse, type IngestAction } from '@/lib/relato-ingest/tools'
 
 export const runtime = 'nodejs'
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  const userId = auth.user.id
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder()
@@ -122,6 +124,10 @@ export async function POST(req: NextRequest) {
       // Buffer por bloque (index → { name, jsonAcc, text }).
       const blocks = new Map<number, { name?: string; jsonAcc: string; text: string; type: 'tool_use' | 'text' | null }>()
       let toolIndex = 0
+      // Acumulador de usage; en streaming Anthropic manda input_tokens en
+      // message_start y output_tokens en message_delta.
+      let inputTokens = 0
+      let outputTokens = 0
       const reader = upstream.body!.getReader()
       let buf = ''
 
@@ -173,6 +179,15 @@ export async function POST(req: NextRequest) {
                 }
               }
               blocks.delete(e.index)
+            } else if (parsed.type === 'message_start') {
+              // Anthropic manda { message: { usage: { input_tokens, output_tokens } } }
+              const p = parsed as { message?: { usage?: { input_tokens?: number; output_tokens?: number } } }
+              inputTokens = p.message?.usage?.input_tokens ?? 0
+              outputTokens = p.message?.usage?.output_tokens ?? 0
+            } else if (parsed.type === 'message_delta') {
+              // { usage: { output_tokens } } al final.
+              const p = parsed as { usage?: { output_tokens?: number } }
+              if (p.usage?.output_tokens != null) outputTokens = p.usage.output_tokens
             } else if (parsed.type === 'message_stop') {
               push('done', {})
             }
@@ -182,6 +197,12 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         push('error', { error: e instanceof Error ? e.message : String(e) })
       } finally {
+        // Registrar consumo best-effort.
+        if (inputTokens > 0 || outputTokens > 0) {
+          void recordAiUsage(supabase, userId, 'relato_ingest_stream', MODEL, {
+            input_tokens: inputTokens, output_tokens: outputTokens,
+          })
+        }
         controller.close()
       }
     },

@@ -11,6 +11,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createHash } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
+import { recordAiUsage } from '@/lib/ai/usage'
 import { buildEstadoInsights, LABEL_HUMAN, type EstadoInsights } from '@/lib/estado-con-persona/insights'
 import type { PersonLog } from '@/lib/person-logs/types'
 import type { RelationshipMoment } from '@/lib/moments/types'
@@ -152,9 +153,10 @@ Devolvé SOLO la prosa, sin encabezado, sin "Estado:", nada extra.`
 
 interface AnthropicResp {
   content?: Array<{ type: string; text?: string }>
+  usage?: { input_tokens?: number; output_tokens?: number }
 }
 
-async function callClaude(apiKey: string, userMessage: string): Promise<string> {
+async function callClaude(apiKey: string, userMessage: string): Promise<{ text: string; usage?: AnthropicResp['usage'] }> {
   const res = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: {
@@ -173,7 +175,7 @@ async function callClaude(apiKey: string, userMessage: string): Promise<string> 
   const body = (await res.json()) as AnthropicResp
   const text = (body.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('\n').trim()
   if (!text) throw new Error('Claude devolvió respuesta vacía')
-  return text
+  return { text, usage: body.usage }
 }
 
 // ─── GET (lee cache) ─────────────────────────────────────────────────
@@ -248,7 +250,9 @@ export async function POST(req: NextRequest) {
   const prompt = buildPrompt(bundle, insights)
   let synthesis: string
   try {
-    synthesis = await callClaude(apiKey, prompt)
+    const r = await callClaude(apiKey, prompt)
+    synthesis = r.text
+    void recordAiUsage(supabase, auth.user.id, 'estado_briefing', MODEL, r.usage)
   } catch (e) {
     return err(502, 'Falló la síntesis con Claude', e instanceof Error ? e.message : String(e))
   }

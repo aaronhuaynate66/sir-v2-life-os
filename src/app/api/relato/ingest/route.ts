@@ -20,6 +20,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { INGEST_TOOLS, parseToolUse, type IngestAction } from '@/lib/relato-ingest/tools'
 import { executeActions, type ExecResult } from '@/lib/relato-ingest/execute'
+import { recordAiUsage } from '@/lib/ai/usage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -72,6 +73,7 @@ interface AnthropicResponse {
     | { type: 'tool_use'; name: string; input: Record<string, unknown>; id: string }
   >
   stop_reason?: string
+  usage?: { input_tokens?: number; output_tokens?: number }
 }
 
 export async function POST(req: NextRequest) {
@@ -118,6 +120,7 @@ export async function POST(req: NextRequest) {
       return err(502, 'Falló Anthropic API', errText.slice(0, 300))
     }
     anthro = (await res.json()) as AnthropicResponse
+    void recordAiUsage(supabase, userId, 'relato_ingest', MODEL, anthro.usage)
   } catch (e) {
     return err(502, 'Falló Anthropic API', e instanceof Error ? e.message : String(e))
   }

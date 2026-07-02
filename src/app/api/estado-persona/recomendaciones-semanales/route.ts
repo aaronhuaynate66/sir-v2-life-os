@@ -7,6 +7,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createHash, randomUUID } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
+import { recordAiUsage } from '@/lib/ai/usage'
 import { mapMomentRow } from '@/lib/moments/types'
 import { mapPersonCycleRow } from '@/lib/person-cycles/types'
 
@@ -114,9 +115,10 @@ Nada de encabezado, markdown ni prosa fuera del JSON.`
 
 interface AnthropicResp {
   content?: Array<{ type: string; text?: string }>
+  usage?: { input_tokens?: number; output_tokens?: number }
 }
 
-async function callClaude(apiKey: string, userMessage: string): Promise<Array<{ text: string; deadline: string | null }>> {
+async function callClaude(apiKey: string, userMessage: string): Promise<{ recs: Array<{ text: string; deadline: string | null }>; usage?: AnthropicResp['usage'] }> {
   const res = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -128,10 +130,11 @@ async function callClaude(apiKey: string, userMessage: string): Promise<Array<{ 
   const jsonMatch = text.match(/\[[\s\S]*\]/)
   if (!jsonMatch) throw new Error('Claude no devolvió JSON')
   const parsed = JSON.parse(jsonMatch[0]) as Array<{ text?: string; deadline?: string | null }>
-  return parsed
+  const recs = parsed
     .map((r) => ({ text: (r.text ?? '').slice(0, 400).trim(), deadline: r.deadline && /^\d{4}-\d{2}-\d{2}$/.test(r.deadline) ? r.deadline : null }))
     .filter((r) => r.text.length > 0)
     .slice(0, 5)
+  return { recs, usage: body.usage }
 }
 
 // ─── GET ─────────────────────────────────────────────────────────────
@@ -200,7 +203,11 @@ export async function POST(req: NextRequest) {
 
   const prompt = buildPrompt(ctx)
   let raw: Array<{ text: string; deadline: string | null }>
-  try { raw = await callClaude(apiKey, prompt) }
+  try {
+    const r = await callClaude(apiKey, prompt)
+    raw = r.recs
+    void recordAiUsage(supabase, auth.user.id, 'estado_recomendaciones_semanales', MODEL, r.usage)
+  }
   catch (e) { return err(502, 'Falló la síntesis con Claude', e instanceof Error ? e.message : String(e)) }
   if (raw.length === 0) return err(422, 'Claude no generó recomendaciones — probá con force:true si insistís')
 
