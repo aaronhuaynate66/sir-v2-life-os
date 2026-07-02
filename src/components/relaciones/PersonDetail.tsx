@@ -59,6 +59,7 @@ import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
 import { PendientesConPersona } from './PendientesConPersona'
 import { EstadoConPersona } from './EstadoConPersona'
+import { RecomendacionesSemanales } from './RecomendacionesSemanales'
 import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
@@ -423,6 +424,9 @@ export function PersonDetail({
         personCycles={personCycles}
         memories={memories}
       />
+
+      {/* Recomendaciones semanales por Claude — cache por (user, persona, semana). */}
+      <RecomendacionesSemanales personId={live.id} personName={live.name} />
 
       {/* Pendientes: moments abiertos con este follow-up. Se oculta si no hay
           nada. Al resolver, el componente refetchea (soft-reload de la ficha). */}
