@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `73ee109`
+**Hash del último commit humano:** `53b4a35`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `53b4a35` | aaronhuaynate66 | feat(relato-ingest): editar cada item del plan antes de aplicar (A4) (#484) | 2026-07-02 |
 | `73ee109` | aaronhuaynate66 | fix(relato-ingest): botón Deshacer con timer 30s (D2) (#483) | 2026-07-02 |
 | `9692cf0` | aaronhuaynate66 | feat(relato-ingest): adjuntar PDF (extrae texto y pega al mensaje) (#482) | 2026-07-02 |
 | `db7fa15` | aaronhuaynate66 | fix(relato-ingest): apply strict + historial persistente (D1 + D3) (#481) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `7129246` | aaronhuaynate66 | feat(estado): recomendaciones IA semanales por persona (#477) | 2026-07-02 |
 | `325921e` | aaronhuaynate66 | feat(panel): TOP personas en riesgo en Mission Control (#476) | 2026-07-02 |
 | `713970f` | aaronhuaynate66 | feat(relato-ingest): tools crear_objetivo + crear_persona (#475) | 2026-07-02 |
-| `c1618ca` | aaronhuaynate66 | feat(estado): síntesis IA on-demand con cache 24h (#474) | 2026-07-02 |
 
 ---
 
