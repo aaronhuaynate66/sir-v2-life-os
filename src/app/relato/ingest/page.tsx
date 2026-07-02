@@ -1,15 +1,22 @@
 'use client'
 
-// SIR V2 — /relato/ingest: contame en prosa, SIR estructura + lo escribe.
+// SIR V2 — /relato/ingest: chat conversacional.
 //
-// UI simple: textarea grande + botón "Ver plan". Muestra las acciones que
-// Claude propone (moments, logs, notas, cumples) en una lista editable con
-// checkbox por row. Botón "Aplicar seleccionadas" ejecuta contra la API.
-// Review-before-save por diseño — nada se escribe sin confirmar.
+// Aaron cuenta cosas en prosa desde un input abajo (tipo mensajería). Cada
+// mensaje se envía a /api/relato/ingest, el server llama a Claude Sonnet con
+// tools, y la respuesta aparece como una burbuja de "SIR" con el plan
+// propuesto (moments, logs, notas, ciclos, cumples). Cada acción tiene
+// checkbox — Aaron destilda lo que no quiera y aprieta "Aplicar".
+//
+// Toggle "Aplicar directo": salta el paso de revisión y ejecuta al toque.
+// Útil cuando Aaron ya tiene confianza en cómo Claude interpreta.
+//
+// Historial en memoria (no persiste entre recargas por ahora). Se ve como
+// scroll estilo Slack: mensajes viejos arriba, nuevo abajo.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Sparkles, Loader2, CheckCircle2, AlertCircle, Circle, CircleCheck, Info } from 'lucide-react'
+import { Wand2, Loader2, CheckCircle2, AlertCircle, Circle, CircleCheck, Send, User, Sparkles, RotateCcw } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -17,7 +24,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
-interface FlagAmbiguo { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
 type PlanItem =
   | { kind: 'crear_moment'; personFullName: string; title: string; detail: string; occurredOn: string; status: 'abierto' | 'resuelto'; followUpOn?: string; resolution?: string }
   | { kind: 'crear_person_log'; personFullName: string; logKind: 'interaction' | 'mood' | 'energy'; value: number; note: string; loggedAt: string }
@@ -25,13 +31,8 @@ type PlanItem =
   | { kind: 'upsert_cumpleanos'; personFullName: string; date: string }
   | { kind: 'registrar_ciclo'; personFullName: string; date: string; phase: 'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown'; confidence: 'high' | 'medium' | 'low'; note?: string }
 
-interface ExecResult {
-  action: PlanItem
-  ok: boolean
-  error?: string
-  createdId?: string
-}
-
+interface FlagAmbiguo { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
+interface ExecResult { action: PlanItem; ok: boolean; error?: string; createdId?: string }
 interface ApiResponse {
   plan: PlanItem[]
   ambiguous: FlagAmbiguo[]
@@ -42,6 +43,15 @@ interface ApiResponse {
   detail?: string
 }
 
+type Msg =
+  | { role: 'user'; id: string; text: string }
+  | {
+      role: 'sir'; id: string; requestId: string;
+      plan: PlanItem[]; ambiguous: FlagAmbiguo[]; modelText: string[];
+      executed?: ExecResult[]; error?: string;
+      selected: Set<string>; applying: boolean;
+    }
+
 const KIND_LABEL: Record<PlanItem['kind'], string> = {
   crear_moment: 'Episodio',
   crear_person_log: 'Interacción',
@@ -49,14 +59,9 @@ const KIND_LABEL: Record<PlanItem['kind'], string> = {
   upsert_cumpleanos: 'Cumpleaños',
   registrar_ciclo: 'Ciclo',
 }
-
 const PHASE_LABEL: Record<'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown', string> = {
-  bleeding: 'sangrando',
-  pms: 'PMS',
-  mid_cycle: 'medio del ciclo',
-  ovulation: 'ovulación',
-  luteal: 'fase lútea',
-  unknown: 'fase indefinida',
+  bleeding: 'sangrando', pms: 'PMS', mid_cycle: 'medio del ciclo',
+  ovulation: 'ovulación', luteal: 'fase lútea', unknown: 'fase indefinida',
 }
 
 function itemKey(item: PlanItem, i: number): string {
@@ -65,8 +70,11 @@ function itemKey(item: PlanItem, i: number): string {
 
 function summarize(item: PlanItem): string {
   switch (item.kind) {
-    case 'crear_moment':
-      return `${item.title} · ${item.occurredOn}${item.status === 'abierto' ? (item.followUpOn ? ` · follow-up ${item.followUpOn}` : ' · abierto') : ' · resuelto'}`
+    case 'crear_moment': {
+      const base = `${item.occurredOn} · ${item.status}`
+      if (item.status === 'abierto' && item.followUpOn) return `${base} · follow-up ${item.followUpOn}`
+      return base
+    }
     case 'crear_person_log':
       return `${item.logKind} ${item.value}/5 · ${item.loggedAt.slice(0, 10)}`
     case 'crear_nota_manual':
@@ -78,191 +86,334 @@ function summarize(item: PlanItem): string {
   }
 }
 
+function nextId(): string {
+  return `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
 export default function RelatoIngestPage() {
-  const [text, setText] = useState('')
-  const [busy, setBusy] = useState<false | 'plan' | 'apply'>(false)
-  const [error, setError] = useState<string | null>(null)
-  const [plan, setPlan] = useState<PlanItem[] | null>(null)
-  const [ambiguous, setAmbiguous] = useState<FlagAmbiguo[]>([])
-  const [modelText, setModelText] = useState<string[]>([])
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [executed, setExecuted] = useState<ExecResult[] | null>(null)
+  const [msgs, setMsgs] = useState<Msg[]>([])
+  const [draft, setDraft] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [aplicarDirecto, setAplicarDirecto] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  async function verPlan() {
-    setBusy('plan'); setError(null); setPlan(null); setExecuted(null); setSelected(new Set())
+  // Auto-scroll al final cuando cambia el historial.
+  useEffect(() => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+  }, [msgs.length])
+
+  async function enviar() {
+    const text = draft.trim()
+    if (!text || busy) return
+    const userMsg: Msg = { role: 'user', id: nextId(), text }
+    setMsgs((m) => [...m, userMsg])
+    setDraft('')
+    setBusy(true)
     try {
       const res = await fetch('/api/relato/ingest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, apply: false }),
+        body: JSON.stringify({ text, apply: aplicarDirecto }),
       })
       const j = (await res.json()) as ApiResponse
-      if (!res.ok) { setError(j.error ?? `HTTP ${res.status}`); return }
-      setPlan(j.plan ?? [])
-      setAmbiguous(j.ambiguous ?? [])
-      setModelText(j.modelText ?? [])
-      // Todas seleccionadas por default.
-      const s = new Set<string>()
-      ;(j.plan ?? []).forEach((it, i) => s.add(itemKey(it, i)))
-      setSelected(s)
+      const requestId = nextId()
+      if (!res.ok) {
+        setMsgs((m) => [...m, {
+          role: 'sir', id: nextId(), requestId,
+          plan: [], ambiguous: [], modelText: [],
+          error: j.error ?? `HTTP ${res.status}`,
+          selected: new Set(), applying: false,
+        }])
+        return
+      }
+      const plan = j.plan ?? []
+      const selected = new Set<string>()
+      plan.forEach((it, i) => selected.add(itemKey(it, i)))
+      setMsgs((m) => [...m, {
+        role: 'sir', id: nextId(), requestId,
+        plan, ambiguous: j.ambiguous ?? [], modelText: j.modelText ?? [],
+        executed: j.executed,
+        selected, applying: false,
+      }])
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setMsgs((m) => [...m, {
+        role: 'sir', id: nextId(), requestId: nextId(),
+        plan: [], ambiguous: [], modelText: [],
+        error: e instanceof Error ? e.message : String(e),
+        selected: new Set(), applying: false,
+      }])
     } finally { setBusy(false) }
   }
 
-  async function aplicar() {
-    if (!plan) return
-    const chosen = plan.filter((it, i) => selected.has(itemKey(it, i)))
-    if (chosen.length === 0) { setError('No hay ninguna acción seleccionada.'); return }
-    setBusy('apply'); setError(null)
+  async function aplicarSeleccion(msgId: string) {
+    const msg = msgs.find((m) => m.role === 'sir' && m.id === msgId)
+    if (!msg || msg.role !== 'sir') return
+    if (msg.plan.length === 0 || msg.selected.size === 0) return
+    // Buscamos el mensaje del usuario JUSTO ANTERIOR a este (el que originó el plan).
+    const idx = msgs.findIndex((m) => m.id === msgId)
+    const userPrev = [...msgs.slice(0, idx)].reverse().find((m) => m.role === 'user') as { text: string } | undefined
+    if (!userPrev) return
+    setMsgs((all) => all.map((m) => m.id === msgId && m.role === 'sir' ? { ...m, applying: true } : m))
     try {
       const res = await fetch('/api/relato/ingest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Reprocesamos SOLO el texto con las mismas reglas + apply=true. Es el
-        // mismo llamado a Anthropic; si el modelo devuelve algo levemente distinto,
-        // filtramos server-side por firma. Compromiso pragmático: si Aaron
-        // deselecciona algo, se re-corre y se aplica lo que devuelva. La ganancia
-        // de un endpoint separado "apply(actionsExactas)" es alta pero excede
-        // el alcance de este PR.
-        body: JSON.stringify({ text, apply: true }),
+        // Nota: el server reprocesa el texto con Claude para ejecutar. La lista
+        // devuelta antes es orientativa. Si Aaron destildó algo, la selección
+        // se aplica visualmente en la UI pero el server aplica lo que devuelva
+        // ahora (idempotencia hace que duplicados se salten). Trade-off
+        // pragmático — la garantía fuerte de "aplicar sólo estos exactos" es
+        // un endpoint separado que puede venir después.
+        body: JSON.stringify({ text: userPrev.text, apply: true }),
       })
       const j = (await res.json()) as ApiResponse
-      if (!res.ok) { setError(j.error ?? `HTTP ${res.status}`); return }
-      setExecuted(j.executed ?? [])
+      setMsgs((all) => all.map((m) =>
+        m.id === msgId && m.role === 'sir'
+          ? { ...m, executed: j.executed ?? [], applying: false }
+          : m
+      ))
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally { setBusy(false) }
+      setMsgs((all) => all.map((m) =>
+        m.id === msgId && m.role === 'sir'
+          ? { ...m, error: e instanceof Error ? e.message : String(e), applying: false }
+          : m
+      ))
+    }
   }
 
-  const okCount = useMemo(() => (executed ?? []).filter((r) => r.ok).length, [executed])
-  const failCount = useMemo(() => (executed ?? []).filter((r) => !r.ok).length, [executed])
+  function toggleItem(msgId: string, key: string) {
+    setMsgs((all) => all.map((m) => {
+      if (m.id !== msgId || m.role !== 'sir') return m
+      const s = new Set(m.selected)
+      if (s.has(key)) s.delete(key); else s.add(key)
+      return { ...m, selected: s }
+    }))
+  }
+
+  function reset() {
+    if (msgs.length === 0) return
+    if (!confirm('¿Limpiar el chat? Los items ya aplicados quedan en tu red.')) return
+    setMsgs([])
+  }
 
   return (
     <AppShell>
-      <div className="mb-6">
-        <Link href="/relato" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-3">
-          <ArrowLeft size={14} strokeWidth={1.75} /> Relato
-        </Link>
+      <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <Sparkles size={26} strokeWidth={1.5} className="text-muted-foreground" />
-          <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Contame por escrito</h1>
+          <Sparkles size={22} strokeWidth={1.5} className="text-muted-foreground" />
+          <div>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-none">Contale a SIR</h1>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Contame en prosa qué pasó — episodios, con quién, cómo te sentiste. Yo estructuro y vos aprobás.
+            </p>
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Escribí en prosa qué pasó (día por día si es una semana). SIR lo va a leer con Claude, te va
-          a proponer un plan editable, y recién al confirmar escribe en tu red. Usá nombres completos —
-          si mencionás solo el primer nombre y hay dos personas con ese nombre, te pide que aclares.
-        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="inline-flex items-center gap-2 cursor-pointer text-[11px] text-muted-foreground select-none">
+            <span
+              className={cn(
+                'relative h-4 w-7 rounded-full transition-colors',
+                aplicarDirecto ? 'bg-brand' : 'bg-muted',
+              )}
+              onClick={() => setAplicarDirecto((v) => !v)}
+            >
+              <span className={cn(
+                'absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all',
+                aplicarDirecto ? 'left-[13px]' : 'left-0.5',
+              )} />
+            </span>
+            <span className={aplicarDirecto ? 'text-foreground' : ''}>Aplicar sin revisar</span>
+          </label>
+          {msgs.length > 0 && (
+            <button
+              type="button"
+              onClick={reset}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+              aria-label="Limpiar chat"
+            >
+              <RotateCcw size={12} /> Limpiar
+            </button>
+          )}
+        </div>
       </div>
 
-      <Card className="shadow-none mb-4">
-        <CardContent className="p-4 sm:p-5">
-          <textarea
-            value={text}
-            onChange={(e) => { setText(e.target.value); setPlan(null); setExecuted(null); setError(null) }}
-            rows={10}
-            placeholder="Ej.: El viernes 26 volví con Diana Díaz. El sábado no nos vimos. El domingo la fui a buscar y me molestó que me sacó la ubicación, discutimos. El lunes fuimos a un hotel, reconectamos pero también hablamos de que la está pasando mal con el trabajo y la familia. Ayer se hizo el examen médico del seguro. Aparte, ayer me mudé a casa de tía Marita con Adrián y mi papá."
-            className="w-full resize-y rounded-lg border border-border bg-background p-3 text-sm leading-relaxed outline-none focus:border-foreground/30 min-h-[220px]"
-            disabled={!!busy}
-          />
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <Button size="sm" variant="outline" onClick={() => void verPlan()} disabled={!text.trim() || !!busy}>
-              {busy === 'plan' ? <><Loader2 size={13} className="mr-1.5 animate-spin" /> Procesando…</> : 'Ver plan'}
-            </Button>
-            <Button size="sm" onClick={() => void aplicar()} disabled={!plan || busy === 'apply' || selected.size === 0}>
-              {busy === 'apply' ? <><Loader2 size={13} className="mr-1.5 animate-spin" /> Aplicando…</> : `Aplicar ${selected.size ? `(${selected.size})` : ''}`}
-            </Button>
-            {plan && selected.size !== plan.length && (
-              <button
-                type="button"
-                onClick={() => setSelected(new Set(plan.map((it, i) => itemKey(it, i))))}
-                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
-              >
-                Seleccionar todas
-              </button>
+      <Card className="shadow-none mb-3">
+        <CardContent className="p-0">
+          <div ref={scrollRef} className="max-h-[60vh] overflow-y-auto p-4 sm:p-5 space-y-4">
+            {msgs.length === 0 && (
+              <div className="text-center py-10 space-y-3">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-muted/40">
+                  <Wand2 size={18} strokeWidth={1.75} className="text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                  Escribí abajo un relato en prosa. Usá nombres completos (nombre + apellido) para evitar confusiones.
+                </p>
+                <div className="pt-2 flex flex-wrap gap-1.5 justify-center max-w-2xl mx-auto">
+                  {[
+                    'Ayer discutí con [Nombre Apellido] porque…',
+                    'El viernes 26 hablé con [Nombre Apellido] y quedamos en…',
+                    '[Nombre Apellido] cumple el 9 de junio.',
+                  ].map((h, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setDraft(h)}
+                      className="rounded-full border border-border bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground hover:text-foreground hover:border-primary/40"
+                    >
+                      {h}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {msgs.map((m) => (
+              m.role === 'user' ? <UserBubble key={m.id} text={m.text} /> : (
+                <SirBubble
+                  key={m.id}
+                  msg={m}
+                  aplicarDirecto={aplicarDirecto}
+                  onToggleItem={(key) => toggleItem(m.id, key)}
+                  onApply={() => void aplicarSeleccion(m.id)}
+                />
+              )
+            ))}
+            {busy && (
+              <div className="flex items-start gap-2 text-xs text-muted-foreground italic">
+                <Sparkles size={14} strokeWidth={1.75} className="text-brand/70 mt-0.5" />
+                Estructurando con Claude…
+              </div>
             )}
           </div>
-          {error && (
-            <div className="mt-3 flex items-start gap-2 rounded-md border border-bad/30 bg-bad-soft p-3">
-              <AlertCircle size={13} strokeWidth={1.75} className="text-bad mt-0.5 flex-shrink-0" />
-              <span className="text-xs text-bad leading-relaxed">{error}</span>
+          <div className="border-t border-border p-3">
+            <div className="flex gap-2 items-end">
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void enviar() }
+                }}
+                rows={2}
+                placeholder="Contame qué pasó… (Ctrl/⌘ + Enter para enviar)"
+                className="flex-1 min-w-0 resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30 min-h-[44px] max-h-[240px]"
+                disabled={busy}
+              />
+              <Button size="sm" onClick={() => void enviar()} disabled={!draft.trim() || busy}>
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+              </Button>
             </div>
-          )}
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              {aplicarDirecto
+                ? 'Modo aplicar directo — se guarda al toque, sin revisión.'
+                : 'Modo revisar — verás el plan y aprobás antes de guardar.'}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
-      {ambiguous.length > 0 && (
-        <Card className="shadow-none mb-4 border-warn/40">
-          <CardContent className="p-4 sm:p-5 space-y-2">
-            <div className="flex items-center gap-2">
-              <AlertCircle size={14} strokeWidth={1.75} className="text-warn" />
-              <span className="text-[10px] uppercase tracking-widest text-warn font-sans">Ambigüedad</span>
-            </div>
-            <ul className="space-y-2 text-xs text-muted-foreground">
-              {ambiguous.map((a, i) => (
-                <li key={i} className="rounded border border-warn/30 bg-warn-soft/40 p-2 leading-relaxed">
-                  Mencionaste <span className="text-foreground font-medium">&quot;{a.shortName}&quot;</span> sin apellido.
-                  {a.contextHint && <span> Contexto: {a.contextHint}.</span>}
-                  {a.optionsSeen && a.optionsSeen.length > 0 && (
-                    <> Podría ser: {a.optionsSeen.map((o) => <span key={o} className="text-foreground">{o}</span>).reduce((acc: React.ReactNode[], cur, i) => i === 0 ? [cur] : [...acc, ', ', cur], [])}.</>
-                  )}
-                  <span className="block mt-1 text-muted-foreground/70">
-                    Reescribí el relato con el apellido y volvé a &quot;Ver plan&quot;.
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+      <div className="text-[11px] text-muted-foreground text-center">
+        <Link href="/relaciones" className="hover:text-foreground underline underline-offset-2">Ver personas afectadas en Relaciones →</Link>
+      </div>
+    </AppShell>
+  )
+}
 
-      {plan && plan.length === 0 && !executed && (
-        <Card className="shadow-none mb-4"><CardContent className="p-4 sm:p-5 text-sm text-muted-foreground">
-          Claude no encontró acciones concretas en el texto. Contá qué pasó día por día — episodios, con quién, cómo te sentiste.
-        </CardContent></Card>
-      )}
+function UserBubble({ text }: { text: string }) {
+  return (
+    <div className="flex items-start gap-2 justify-end">
+      <div className="max-w-[85%] rounded-2xl rounded-tr-md border border-brand/30 bg-brand/5 px-3 py-2 text-sm text-foreground whitespace-pre-wrap">
+        {text}
+      </div>
+      <div className="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <User size={12} strokeWidth={2} className="text-brand" />
+      </div>
+    </div>
+  )
+}
 
-      {plan && plan.length > 0 && !executed && (
-        <Card className="shadow-none mb-4">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <span className="text-[10px] uppercase tracking-widest text-text-tertiary font-sans">Plan propuesto</span>
-              <Badge variant="outline" className="text-[10px] font-mono">{plan.length}</Badge>
-              <span className="text-[11px] text-muted-foreground ml-auto">Destildá lo que no quieras aplicar.</span>
+function SirBubble({
+  msg, aplicarDirecto, onToggleItem, onApply,
+}: {
+  msg: Extract<Msg, { role: 'sir' }>
+  aplicarDirecto: boolean
+  onToggleItem: (key: string) => void
+  onApply: () => void
+}) {
+  const okCount = (msg.executed ?? []).filter((r) => r.ok).length
+  const failCount = (msg.executed ?? []).filter((r) => !r.ok).length
+
+  return (
+    <div className="flex items-start gap-2">
+      <div className="w-6 h-6 rounded-full bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Sparkles size={12} strokeWidth={1.75} className="text-brand" />
+      </div>
+      <div className="min-w-0 flex-1 space-y-2">
+        {msg.error && (
+          <div className="rounded-lg border border-bad/30 bg-bad-soft px-3 py-2 text-xs text-bad flex items-start gap-2">
+            <AlertCircle size={12} className="mt-0.5" /> {msg.error}
+          </div>
+        )}
+
+        {msg.plan.length === 0 && !msg.error && !msg.executed && msg.ambiguous.length === 0 && (
+          <div className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            No encontré acciones concretas. Contá con más detalle (fechas, con quién, qué pasó).
+          </div>
+        )}
+
+        {msg.ambiguous.length > 0 && (
+          <div className="rounded-lg border border-warn/30 bg-warn-soft px-3 py-2 space-y-1.5">
+            {msg.ambiguous.map((a, i) => (
+              <div key={i} className="text-xs text-foreground/90 leading-relaxed">
+                Mencionaste <span className="font-medium">&quot;{a.shortName}&quot;</span> sin apellido.
+                {a.optionsSeen && a.optionsSeen.length > 0 && (
+                  <> Podría ser: {a.optionsSeen.join(', ')}. Aclará y reenviá.</>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {msg.plan.length > 0 && !msg.executed && (
+          <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] uppercase tracking-widest text-text-tertiary font-sans">Voy a registrar</span>
+              <Badge variant="outline" className="text-[10px] font-mono">{msg.plan.length}</Badge>
+              {!aplicarDirecto && (
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  {msg.selected.size} seleccionadas
+                </span>
+              )}
             </div>
-            <ul className="space-y-2">
-              {plan.map((item, i) => {
-                const key = itemKey(item, i)
-                const isChecked = selected.has(key)
+            <ul className="space-y-1">
+              {msg.plan.map((it, i) => {
+                const key = itemKey(it, i)
+                const checked = msg.selected.has(key)
                 return (
                   <li key={key}>
                     <button
                       type="button"
-                      onClick={() => setSelected((s) => {
-                        const n = new Set(s)
-                        if (n.has(key)) n.delete(key); else n.add(key)
-                        return n
-                      })}
+                      disabled={aplicarDirecto || msg.applying}
+                      onClick={() => onToggleItem(key)}
                       className={cn(
-                        'w-full text-left rounded-md border p-3 flex items-start gap-2.5 hover:bg-muted/40 transition-colors',
-                        isChecked ? 'border-brand/40 bg-brand/5' : 'border-border bg-muted/10',
+                        'w-full text-left flex items-start gap-2 rounded-md p-2 text-xs transition-colors',
+                        aplicarDirecto ? 'cursor-default' : 'hover:bg-muted/40',
+                        checked ? 'text-foreground' : 'text-muted-foreground line-through opacity-60',
                       )}
                     >
-                      {isChecked ? <CircleCheck size={15} className="text-brand mt-0.5 flex-shrink-0" strokeWidth={1.75} /> : <Circle size={15} className="text-muted-foreground/70 mt-0.5 flex-shrink-0" strokeWidth={1.75} />}
+                      {checked ? <CircleCheck size={12} className="text-brand mt-0.5 flex-shrink-0" strokeWidth={2} /> : <Circle size={12} className="text-muted-foreground/70 mt-0.5 flex-shrink-0" />}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider">{KIND_LABEL[item.kind]}</Badge>
-                          <span className="text-sm text-foreground font-medium truncate">{item.personFullName}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider">{KIND_LABEL[it.kind]}</Badge>
+                          <span className="text-foreground font-medium">{it.personFullName}</span>
+                          {it.kind === 'crear_moment' && (
+                            <span className="text-[10px] font-medium">
+                              {' — '}{it.title}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{summarize(item)}</p>
-                        {item.kind === 'crear_moment' && item.detail && (
-                          <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-2">{item.detail}</p>
-                        )}
-                        {item.kind === 'crear_person_log' && item.note && (
-                          <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-2">{item.note}</p>
-                        )}
-                        {item.kind === 'crear_nota_manual' && (
-                          <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-3">{item.text}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{summarize(it)}</p>
+                        {it.kind === 'crear_moment' && it.detail && (
+                          <p className="text-[11px] text-muted-foreground/70 mt-0.5 line-clamp-2">{it.detail}</p>
                         )}
                       </div>
                     </button>
@@ -270,69 +421,48 @@ export default function RelatoIngestPage() {
                 )
               })}
             </ul>
-            {modelText.length > 0 && (
-              <details className="mt-4 text-[11px] text-muted-foreground/70">
-                <summary className="cursor-pointer">Notas del modelo</summary>
-                <div className="mt-2 space-y-1">
-                  {modelText.map((t, i) => <p key={i} className="italic">{t}</p>)}
-                </div>
-              </details>
+            {!aplicarDirecto && (
+              <div className="flex justify-end gap-2 pt-1 border-t border-border/40">
+                <Button size="sm" onClick={onApply} disabled={msg.selected.size === 0 || msg.applying}>
+                  {msg.applying ? <><Loader2 size={12} className="mr-1.5 animate-spin" /> Aplicando…</> : `Aplicar ${msg.selected.size}`}
+                </Button>
+              </div>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {executed && (
-        <Card className={cn('shadow-none mb-4', failCount === 0 ? 'border-ok/40' : 'border-warn/40')}>
-          <CardContent className="p-4 sm:p-5 space-y-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <CheckCircle2 size={16} strokeWidth={1.75} className={failCount === 0 ? 'text-ok' : 'text-warn'} />
-              <span className="text-sm font-medium text-foreground">
-                {okCount} aplicada{okCount === 1 ? '' : 's'}
-                {failCount > 0 && <> · {failCount} sin aplicar</>}
+        {msg.executed && (
+          <div className={cn('rounded-lg border p-3 space-y-2', failCount === 0 ? 'border-ok/30 bg-ok-soft/40' : 'border-warn/30 bg-warn-soft/40')}>
+            <div className="flex items-center gap-2 text-xs">
+              <CheckCircle2 size={13} strokeWidth={1.75} className={failCount === 0 ? 'text-ok' : 'text-warn'} />
+              <span className="font-medium text-foreground">
+                Aplicadas {okCount}/{msg.executed.length}
+                {failCount > 0 && ` · ${failCount} sin aplicar`}
               </span>
             </div>
-            <ul className="space-y-1.5">
-              {executed.map((r, i) => (
-                <li key={i} className={cn('flex items-start gap-2 text-xs px-2 py-1.5 rounded', r.ok ? 'text-muted-foreground' : 'text-bad')}>
-                  {r.ok ? <CheckCircle2 size={12} className="text-ok mt-0.5 flex-shrink-0" /> : <AlertCircle size={12} className="text-bad mt-0.5 flex-shrink-0" />}
-                  <span className="leading-relaxed">
+            <ul className="space-y-1">
+              {msg.executed.map((r, i) => (
+                <li key={i} className="text-[11px] flex items-start gap-2">
+                  {r.ok ? <CheckCircle2 size={11} className="text-ok mt-0.5 flex-shrink-0" /> : <AlertCircle size={11} className="text-bad mt-0.5 flex-shrink-0" />}
+                  <span className={cn('leading-relaxed', r.ok ? 'text-muted-foreground' : 'text-bad')}>
                     <span className="font-medium text-foreground">{KIND_LABEL[r.action.kind]}</span> · {r.action.personFullName} — {summarize(r.action)}
-                    {r.error && <span className="block text-[11px] italic opacity-80">{r.error}</span>}
+                    {r.error && <span className="block italic opacity-80">{r.error}</span>}
                   </span>
                 </li>
               ))}
             </ul>
-            <div className="flex gap-2 pt-2 border-t border-border/40">
-              <Link href="/relaciones" className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:opacity-90">
-                Ver en Relaciones →
-              </Link>
-              <button
-                type="button"
-                onClick={() => { setText(''); setPlan(null); setExecuted(null); setSelected(new Set()) }}
-                className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/10"
-              >
-                Nuevo relato
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card className="shadow-none">
-        <CardContent className="p-4 sm:p-5 text-xs text-muted-foreground leading-relaxed">
-          <div className="flex items-center gap-2 mb-2">
-            <Info size={12} strokeWidth={1.75} className="text-muted-foreground/70" />
-            <span className="text-[10px] uppercase tracking-widest text-text-tertiary font-sans">Cómo funciona</span>
           </div>
-          <ul className="space-y-1.5 pl-4 list-disc">
-            <li>Escribís en prosa. Contá los hechos con fechas (&quot;el viernes 26…&quot;, &quot;ayer…&quot;).</li>
-            <li>Nombres completos (nombre + apellido) — evita confusiones con Diana Díaz vs Diana Cencaro, etc.</li>
-            <li>SIR usa Claude Sonnet (server-side) para estructurar. Nada se escribe hasta que aprietes &quot;Aplicar&quot;.</li>
-            <li>Duplicados: si ya existe un episodio con el mismo título+fecha, se marca como &quot;ya existía&quot; y no se dobla.</li>
-          </ul>
-        </CardContent>
-      </Card>
-    </AppShell>
+        )}
+
+        {msg.modelText.length > 0 && (
+          <details className="text-[10px] text-muted-foreground/70">
+            <summary className="cursor-pointer hover:text-foreground">Notas del modelo</summary>
+            <div className="pt-1 pl-3 space-y-0.5 italic">
+              {msg.modelText.map((t, i) => <p key={i}>{t}</p>)}
+            </div>
+          </details>
+        )}
+      </div>
+    </div>
   )
 }

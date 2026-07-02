@@ -46,7 +46,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
     title: 'Gente',
     items: [
       { href: '/relaciones', label: 'Relaciones', Icon: Users },
-      { href: '/relato', label: 'Contale a SIR', Icon: Wand2 },
+      { href: '/relato/ingest', label: 'Contale a SIR', Icon: Wand2 },
       { href: '/empresas', label: 'Empresas', Icon: Building2 },
       { href: '/red', label: 'Red', Icon: Network },
     ],
