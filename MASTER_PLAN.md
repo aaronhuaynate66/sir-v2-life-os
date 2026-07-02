@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `9702b19`
+**Hash del último commit humano:** `5096d96`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `5096d96` | aaronhuaynate66 | feat(ficha): panel "Pendientes con esta persona" arriba de la ficha (#464) | 2026-07-02 |
 | `9702b19` | aaronhuaynate66 | feat(captura): aceptar PDFs — se convierten a PNG por página client-side (#463) | 2026-07-02 |
 | `e02f7e8` | aaronhuaynate66 | feat(calendar): OAuth Google Calendar (Fase 2) desde la UI (#462) | 2026-07-02 |
 | `58c173b` | aaronhuaynate66 | feat(aaron/backfill): one-shot idempotente para el relato jun-jul 2026 (#461) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `3e45d04` | aaronhuaynate66 | feat(relaciones): botón "Fusionar aquí" en Posibles duplicados (#457) | 2026-07-01 |
 | `1571385` | aaronhuaynate66 | fix(duplicates): detectar match por prefijo de tokens (Fabiola × Fabiola Masías Ponce) (#456) | 2026-07-01 |
 | `87973fa` | aaronhuaynate66 | fix(build): usar <Link> en vez de <a> para /relaciones (ESLint no-html-link-for-pages) (#455) | 2026-07-01 |
-| `852b385` | aaronhuaynate66 | feat(relaciones): fusionar duplicados de 1 click (endpoint + UI) + detección parcial "Cristina" ⊂ "Cristina Fuentes" (#454) | 2026-07-01 |
 
 ---
 
