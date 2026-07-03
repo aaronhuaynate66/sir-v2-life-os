@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f4de5b5`
+**Hash del último commit humano:** `8562a1c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8562a1c` | aaronhuaynate66 | feat(A8b): cablear adjustByLearning al ranking — el loop reordena las recs (#509) | 2026-07-03 |
 | `f4de5b5` | aaronhuaynate66 | feat(C2): el ingest de relato acepta token personal (contale desde afuera) (#508) | 2026-07-03 |
 | `e840a0e` | aaronhuaynate66 | docs(plan): todo mergeado; lista de lo que queda con orden de ataque (#507) | 2026-07-03 |
 | `1cd6d29` | aaronhuaynate66 | feat: capa cognitiva E6 completa (A1-A7) — lista viva + reasoner + decidir + predictivo (#506) | 2026-07-03 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8c3a319` | aaronhuaynate66 | feat(captura): reconocer Teams/Slack como dm_conversation (#504) | 2026-07-03 |
 | `9acf7b5` | aaronhuaynate66 | feat(finanzas): proyección de gasto de fin de mes (forecast) (#498) | 2026-07-03 |
 | `094c81d` | aaronhuaynate66 | feat(seed-batch): validar/normalizar enums antes del apply (#497) | 2026-07-03 |
-| `b44875c` | aaronhuaynate66 | fix(migrations): 0114 drift-safe (push_subscriptions preexistía sin disabled_at) (#503) | 2026-07-03 |
 
 ---
 
