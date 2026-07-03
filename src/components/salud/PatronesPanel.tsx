@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { dailyAvg, observePatterns, dataReadiness, FORECAST_MIN_DAYS, type DayPoint } from '@/lib/patterns/observe'
+import { deriveMigraineDays, registryMap, type RegistryEntry } from '@/lib/meds/classify'
 
 export function PatronesPanel() {
   const { selfMetrics, sleepRecords, healthMetrics } = useSelfStore()
@@ -20,8 +21,19 @@ export function PatronesPanel() {
       try {
         const res = await fetch('/api/meds')
         if (!res.ok) return
-        const j = (await res.json()) as { intakes?: { taken_at: string }[] }
-        const set = new Set<string>((j.intakes ?? []).map((i) => (i.taken_at || '').slice(0, 10)).filter(Boolean))
+        // "Día de migraña" = día con una toma de un medicamento ESPECÍFICO de
+        // migraña (según el desglose del registry, o el fallback por nombre). NO
+        // toda toma — un analgésico general no marca migraña (antes contaminaba).
+        const j = (await res.json()) as {
+          intakes?: { name: string; taken_at: string }[]
+          registry?: Array<{ name: string; dose?: string | null; component?: string | null; drug_class?: string | null; treats?: string | null }>
+        }
+        const reg = registryMap(
+          (j.registry ?? []).map((r): RegistryEntry => ({
+            name: r.name, dose: r.dose, component: r.component, drugClass: r.drug_class, treats: r.treats,
+          })),
+        )
+        const set = deriveMigraineDays(j.intakes ?? [], reg)
         if (alive) setMigraineDays(set)
       } catch { /* sin meds: el par migraña simplemente no aparece */ }
     })()

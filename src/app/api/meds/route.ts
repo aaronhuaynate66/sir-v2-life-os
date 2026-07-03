@@ -24,11 +24,17 @@ export async function GET() {
       .order('taken_at', { ascending: false })
       .limit(200)
     const intakes = (data as IntakeRow[]) ?? []
-    let registry: Array<{ name: string; dose: string | null }> = []
+    let registry: Array<{ name: string; dose: string | null; component?: string | null; drug_class?: string | null; treats?: string | null }> = []
     try {
-      const { data: reg } = await supabase.from('med_registry').select('name, dose').eq('user_id', auth.user.id).order('created_at', { ascending: true }).limit(50)
-      registry = (reg as Array<{ name: string; dose: string | null }>) ?? []
-    } catch { /* */ }
+      const { data: reg } = await supabase.from('med_registry').select('name, dose, component, drug_class, treats').eq('user_id', auth.user.id).order('created_at', { ascending: true }).limit(50)
+      registry = reg ?? []
+    } catch {
+      // Fallback si 0118 no está: sin desglose.
+      try {
+        const { data: reg } = await supabase.from('med_registry').select('name, dose').eq('user_id', auth.user.id).limit(50)
+        registry = reg ?? []
+      } catch { /* */ }
+    }
     // Nombres frecuentes (para botones de un toque), por recencia + frecuencia.
     const seen = new Set<string>(); const names: string[] = []
     for (const r of intakes) { if (!seen.has(r.name)) { seen.add(r.name); names.push(r.name) } }
