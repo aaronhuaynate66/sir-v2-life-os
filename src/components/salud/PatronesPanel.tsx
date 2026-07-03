@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { dailyAvg, observePatterns, dataReadiness, FORECAST_MIN_DAYS, type DayPoint } from '@/lib/patterns/observe'
 import { projectSeries } from '@/engines/predictive'
+import { deriveDynamicSelf } from '@/engines/self-model'
+import { cn } from '@/lib/utils'
 import { deriveMigraineDays, registryMap, type RegistryEntry } from '@/lib/meds/classify'
 
 export function PatronesPanel() {
@@ -53,11 +55,16 @@ export function PatronesPanel() {
       { key: 'sleep', label: 'Sueño', unit: 'h', p: projectSeries(sleepHours, { flatThreshold: 0.3 }) },
       { key: 'hr', label: 'FC reposo', unit: ' lpm', p: projectSeries(restingHr, { flatThreshold: 2 }) },
     ].filter((x) => x.p.direction !== 'insufficient')
-    return { obs: observePatterns(input), readiness: dataReadiness(input), projections }
+    // A7 — modelo del self dinámico: "cómo venís" desde hacia dónde van tus series.
+    const selfState = deriveDynamicSelf(
+      projections.map((x) => ({ label: x.label, direction: x.p.direction as 'rising' | 'falling' | 'flat', goodWhenRising: x.key !== 'hr' })),
+    )
+    return { obs: observePatterns(input), readiness: dataReadiness(input), projections, selfState }
   }, [selfMetrics, sleepRecords, healthMetrics, migraineDays])
   const observations = data.obs
   const readiness = data.readiness
   const projections = data.projections
+  const selfState = data.selfState
 
   return (
     <Card className="shadow-none">
@@ -69,6 +76,19 @@ export function PatronesPanel() {
         <p className="text-[11px] text-muted-foreground mb-3 inline-flex items-start gap-1 leading-snug">
           <Info size={12} className="mt-0.5 shrink-0" /> Observación de tu data, <span className="font-medium text-foreground/80">no predicción</span>. Solo aparecen cruces con suficientes días.
         </p>
+
+        {/* A7 — modelo del self dinámico: "cómo venís" inferido de la serie. */}
+        {selfState.momentum !== 'insufficient' && (
+          <div className={cn(
+            'mb-3 rounded-lg border px-3 py-2 text-sm',
+            selfState.momentum === 'rising' ? 'border-ok/30 bg-ok-soft text-ok-foreground'
+              : selfState.momentum === 'declining' ? 'border-bad/30 bg-bad-soft text-bad-foreground'
+                : 'border-border bg-muted/20 text-foreground/90',
+          )}>
+            <span className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary mr-2">Tu momento</span>
+            {selfState.summary}
+          </div>
+        )}
         {observations.length === 0 ? (
           <p className="text-sm text-muted-foreground py-1">
             Todavía no hay suficientes registros para sacar patrones confiables. Seguí registrando sueño, ánimo y energía — con unas semanas más, SIR empieza a cruzarlos.

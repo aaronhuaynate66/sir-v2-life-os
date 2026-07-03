@@ -2,7 +2,7 @@
 
 > **Qué es:** la lista maestra de lo que falta construir, priorizada. Se actualiza
 > con CADA entregable (Claude la mantiene). Fuente de "qué sigue".
-> **Última actualización:** 2026-07-03 (A6·A3·A2·A1·A4·A5 ✅ · sprint cognitivo).
+> **Última actualización:** 2026-07-03 (CAPA COGNITIVA A1–A7 ✅ COMPLETA · sigue B1 Teams).
 >
 > **Encuadre:** el *cuerpo* de SIR está en prod (percepción, memoria, cerebro-grafo
 > F1-F4, contexto, señales, salud, finanzas, relaciones, objetivos). Lo que falta es
@@ -26,7 +26,7 @@
 | A4 | **Evaluador de decisión (7 dimensiones)** | ✅ | M | P1 | HECHO (07-03): `engines/decision` puro (7 dims ponderadas por la jerarquía A3 + **gate de reversibilidad**, veredicto go/caution/hold, 7 tests). `POST /api/decision` (Sonnet puntúa) + página **`/decidir`** (en el Nav). |
 | A5 | **Motor predictivo general** | ✅ | L | P2 | HECHO (07-03): `engines/predictive` `projectSeries` (OLS + confianza + gate 'insufficient', 7 tests). Cableado: sección **"Proyección · próximos 7 días"** en /salud (energía/ánimo/sueño/FC). Generaliza el forecast de fin de mes (#498). |
 | A6 | **Peace trend real** | ✅ | S | P0 | HECHO (07-03): `computePeaceTrend` puro (deadband, ventana 6) + param `history` en `calculatePeaceScore`, cableado en `/panel` desde el histórico de snapshots. El ícono ↗/→/↘ ya refleja la tendencia real. |
-| A7 | **Modelo del self dinámico** | ⬜ | M | P2 | Hoy el modelo del usuario es determinístico/estático. Que evolucione por inferencia sobre la serie longitudinal. |
+| A7 | **Modelo del self dinámico** | ✅ | M | P2 | HECHO (07-03): `engines/self-model` `deriveDynamicSelf` compone las proyecciones (A5) + trend de paz (A6) en 'cómo venís' (momentum + mejora/atención). Cableado: bloque **"Tu momento"** en /salud. 5 tests. |
 
 ## B. SIR Reader (leer el navegador logueado → SIR)
 
@@ -62,7 +62,10 @@ luego lo estructural:
 3. ~~**A2 — Orquestador del pipeline** (M)~~ ✅ **hecho (07-03)** — "Foco ahora" en /panel
 4. ~~**A1 — Multi-Persona Reasoner** (L)~~ ✅ **hecho (07-03)** — "Pensar con SIR"
 5. ~~**A4 — Evaluador de decisión 7-dim** (M)~~ ✅ **hecho (07-03)** — /decidir
-6. **B1 — Extensión Teams** (M) ← *siguiente* — 📌 el cliente MV3 (se carga en Chrome; distinto de lo testeable-en-repo)
-7. **A5 — Motor predictivo** (L) · **A7 — Self dinámico** (M) · resto de C.
+6. ~~**A5 — Motor predictivo** (L)~~ ✅ **hecho** — "Proyección 7 días" en /salud
+7. ~~**A7 — Self dinámico** (M)~~ ✅ **hecho** — "Tu momento" en /salud
+8. **B1 — Extensión Teams** (M) ← *siguiente* — 📌 cliente MV3 (se carga en Chrome; no testeable-en-repo)
+
+> **Capa cognitiva (A1–A7): COMPLETA.** Quedan B (Reader/Teams) y C (pendientes P2).
 
 > Se puede reordenar. Si querés ver el reasoner (A1) antes que los quick wins, se hace.
