@@ -30,6 +30,7 @@ import {
 import { parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
 import { resolveModel } from '@/lib/sir/model'
 import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
+import { renderRecallBlock, shouldPersistExchange, type RecallHit } from '@/lib/sir/recall'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
@@ -103,11 +104,14 @@ export async function POST(req: NextRequest) {
 
   // 3. Memorias por búsqueda semántica (best-effort: si no hay OPENAI_API_KEY
   //    o embeddings, seguimos sin esta señal). Sus personas se suman al set.
+  //    El embedding de la pregunta se computa UNA vez y se reusa para el recall
+  //    cross-session (C3) y para persistir el intercambio al final.
   const memoryHits: AskMemoryHit[] = []
+  let questionEmbedding: number[] | null = null
   try {
-    const emb = await embedText(retrievalText)
+    questionEmbedding = await embedText(retrievalText)
     const { data: matches } = await supabase.rpc('match_memories', {
-      query_embedding: toPgVector(emb),
+      query_embedding: toPgVector(questionEmbedding),
       match_count: 10,
       similarity_threshold: 0.15,
     })
@@ -122,6 +126,27 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     reportApiError(e)
+  }
+
+  // 3b. C3 — RAG cross-session: traer intercambios PASADOS con SIR parecidos a
+  //     esta pregunta, para dar continuidad ("la semana pasada me dijiste…").
+  //     Todo fail-open: sin embedding o sin la tabla 0121, no aporta nada.
+  let recallBlock = ''
+  if (questionEmbedding) {
+    try {
+      const { data: convs } = await supabase.rpc('match_sir_conversations', {
+        query_embedding: toPgVector(questionEmbedding),
+        match_count: 5,
+        similarity_threshold: 0.2,
+      })
+      const hits: RecallHit[] = ((convs as Record<string, unknown>[]) ?? []).map((c) => ({
+        question: (c.question as string) ?? '',
+        answer: (c.answer as string) ?? '',
+        createdAt: (c.created_at as string | null) ?? null,
+        similarity: (c.similarity as number) ?? 0,
+      }))
+      recallBlock = renderRecallBlock(hits, new Date().toISOString())
+    } catch { /* tabla 0121 no aplicada / sin RPC → sin recall */ }
   }
 
   // 4. Objetivos activos → mapa personId → título.
@@ -370,7 +395,11 @@ export async function POST(req: NextRequest) {
   const userContext = typeof (body as { userContext?: unknown }).userContext === 'string'
     ? ((body as { userContext?: unknown }).userContext as string).trim().slice(0, 500)
     : ''
-  const groundedContext = context + dayBlock + (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
+  const groundedContext =
+    context +
+    dayBlock +
+    (recallBlock ? `\n\n${recallBlock}` : '') +
+    (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 
   // Resolver el nombre que proponga una acción → personId (con la gente cargada).
   function resolvePersonId(name: string): { id: string | null; name: string } {
@@ -424,6 +453,21 @@ export async function POST(req: NextRequest) {
           : []
         proposedAction = { ...parsed, persona: r.name, personId: r.id, linkedGoals }
       }
+    }
+
+    // C3 — persistir el intercambio como memoria recuperable (fail-open). Solo si
+    // vale la pena (no saludos/errores) y si tenemos el embedding de la pregunta.
+    // La próxima pregunta parecida, aunque sea en otra sesión, lo va a recuperar.
+    if (questionEmbedding && shouldPersistExchange(question, answer)) {
+      try {
+        await supabase.from('sir_conversations').insert({
+          user_id: userId,
+          question: question.slice(0, 2000),
+          answer: answer.slice(0, 4000),
+          embedding: toPgVector(questionEmbedding),
+          embedding_model: 'text-embedding-3-small',
+        })
+      } catch { /* tabla 0121 no aplicada → seguimos sin persistir */ }
     }
 
     return NextResponse.json(

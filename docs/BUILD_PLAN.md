@@ -46,7 +46,7 @@
 |---|---|---|---|---|---|
 | C1 | Extracción integrada de seed batch (Anthropic) | ✅ | M | P2 | HECHO (07-03): en /captura/batch, card "Desde texto (extraer con SIR)" → pegás relato/PDF/perfil, `POST /api/seed/extract` (Sonnet) arma el JSON con el schema + enums vivos de plan.ts, cae en el textarea para revisar + dry-run + aplicar (flujo de confirmación intacto). Capa pura `lib/seed/extractPrompt` (10 tests). Ya no hace falta ir a Claude.ai. |
 | C2 | Claude → SIR ingest (tokens personales + relato smart) | ✅ | M | P1 | HECHO (07-03): ambas fases ya existían (tokens en /yo + ingest smart con tools). Faltaba cablearlas: /api/relato/ingest ahora acepta Bearer con token personal (service-role scoped) → contás un relato desde afuera (Claude/atajo/script) con apply:true y SIR se llena solo. Ejemplo curl en el panel de tokens de /yo. |
-| C3 | Fase 3d — Memoria que aprende (RAG cross-session) | ⬜ | L | P2 | Contexto profundo automático por interacción. |
+| C3 | Fase 3d — Memoria que aprende (RAG cross-session) | ✅ | L | P2 | HECHO (07-03): `/api/sir/ask` ahora PERSISTE cada intercambio (pregunta+respuesta+embedding) en `sir_conversations` (mig 0121: pgvector + HNSW + RPC `match_sir_conversations`, espejo de match_memories) y RECUPERA los pasados por similitud → continuidad cross-session ("la semana pasada me dijiste…"). Reusa el embedding de la pregunta (0 llamadas extra). Capa pura `lib/sir/recall` (persist gate + antigüedad legible + bloque de contexto, 12 tests). Todo fail-open. |
 | C4 | Pulido mobile pantalla-por-pantalla (#44) | ⬜ | M | P2 | Necesita capturas reales del cel. |
 
 ## U. Pulido UI (auditoría con agentes, 03-07 — ver docs/UI_AUDIT.md)
@@ -86,7 +86,7 @@ pendientes, priorizado:
 6. ~~**V2 — cache del reasoner/decidir**~~ ✅ **HECHO (07-03)** — ai_daily_cache (0120) + helper puro; reason por día, decision por día+hash.
 
 **🧊 Tanda 3 — grande / bloqueado / necesita input tuyo**
-7. **C3 — Fase 3d RAG cross-session** (L) — contexto profundo automático por interacción.
+7. ~~**C3 — Fase 3d RAG cross-session**~~ ✅ **HECHO (07-03)** — sir_conversations (0121) + recall en /api/sir/ask.
 8. **C4 — pulido mobile #44** (M) — bloqueado: necesita capturas reales de tu cel.
 9. **B1/B2/B3 — Reader avanzado** — extensión MV3 / redes sociales (riesgo ToS) / Teams por Graph OAuth (necesita consentimiento M365).
 10. **V1 — verificación en vivo** — necesita tu sesión + data.
