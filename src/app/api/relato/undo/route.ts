@@ -36,6 +36,7 @@ const TABLE_BY_KIND: Record<string, string | null> = {
   upsert_cumpleanos: null, // no revertible fácil (jsonb array)
   crear_objetivo: 'goals',
   crear_persona: 'people',
+  crear_recordatorio: 'reminders',
 }
 
 export async function POST(req: NextRequest) {

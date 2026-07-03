@@ -25,6 +25,7 @@ type PlanItem =
   | { kind: 'registrar_ciclo'; personFullName: string; date: string; phase: 'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown'; confidence: 'high' | 'medium' | 'low'; note?: string }
   | { kind: 'crear_objetivo'; title: string; category: string; priority: string; targetDate?: string; nextStep?: string }
   | { kind: 'crear_persona'; fullName: string; relationship: string; category: string; notes?: string }
+  | { kind: 'crear_recordatorio'; text: string; dueAt: string; personFullName?: string }
 
 interface Props {
   item: PlanItem
@@ -166,6 +167,16 @@ export function PlanItemEditor({ item, onSave, onCancel }: Props) {
               </select>
             </FieldPair>
             <Field label="Notas (opcional)"><textarea rows={2} className={inputClass()} value={draft.notes ?? ''} onChange={(e) => update('notes', e.target.value || undefined)} /></Field>
+          </>
+        )}
+
+        {draft.kind === 'crear_recordatorio' && (
+          <>
+            <Field label="Qué recordar"><textarea rows={2} className={inputClass()} value={draft.text} onChange={(e) => update('text', e.target.value)} /></Field>
+            <FieldPair labelA="Cuándo (ISO con TZ)" labelB="Persona (opcional)">
+              <input className={inputClass()} value={draft.dueAt} onChange={(e) => update('dueAt', e.target.value)} placeholder="2026-07-05T09:00:00-05:00" />
+              <input className={inputClass()} value={draft.personFullName ?? ''} onChange={(e) => update('personFullName', e.target.value || undefined)} placeholder="Nombre Apellido" />
+            </FieldPair>
           </>
         )}
       </div>

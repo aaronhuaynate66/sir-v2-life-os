@@ -115,6 +115,22 @@ export const INGEST_TOOLS = [
     },
   },
   {
+    name: 'crear_recordatorio',
+    description:
+      'Crear un recordatorio agendado cuando Aaron dice "recordame X en Y días" / "en Z horas" / ' +
+      '"el viernes a las 15" / "mañana" / "la semana que viene". SIR agenda + dispara push cuando ' +
+      'llega el momento. Si menciona una persona, incluí person_full_name para deep-link.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        text: { type: 'string', description: 'Qué hay que recordar, en 1-2 líneas.' },
+        due_at: { type: 'string', description: 'Timestamp ISO 8601 con TZ (ej. 2026-07-05T15:00:00-05:00). Si Aaron dice "mañana a las 15" y hoy es 2026-07-03, poné 2026-07-04T15:00:00-05:00. Si dice solo "mañana" sin hora, usá 09:00 de Lima.' },
+        person_full_name: { type: 'string', description: 'Opcional. Nombre completo si el recordatorio es sobre alguien.' },
+      },
+      required: ['text', 'due_at'],
+    },
+  },
+  {
     name: 'registrar_ciclo',
     description:
       'Registrar UN DÍA del ciclo menstrual de una persona (típicamente la pareja) cuando Aaron ' +
@@ -178,6 +194,7 @@ export type IngestAction =
   | { kind: 'registrar_ciclo'; personFullName: string; date: string; phase: CyclePhase; confidence: CycleConfidence; note?: string }
   | { kind: 'crear_objetivo'; title: string; category: GoalCategoryEnum; priority: GoalPriorityEnum; targetDate?: string; nextStep?: string }
   | { kind: 'crear_persona'; fullName: string; relationship: PersonRelationshipEnum; category: PersonCategoryEnum; notes?: string }
+  | { kind: 'crear_recordatorio'; text: string; dueAt: string; personFullName?: string }
   | { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
 
 interface RawToolUse { name: string; input: Record<string, unknown> }
@@ -279,6 +296,13 @@ export function parseToolUse(raw: RawToolUse): IngestAction | null {
         kind: 'crear_persona', fullName, relationship, category,
         notes: str(i.notes, 500) ?? undefined,
       }
+    }
+    case 'crear_recordatorio': {
+      const text = str(i.text, 500)
+      const dueAt = iso(i.due_at)
+      if (!text || !dueAt) return null
+      const personFullName = requireFullName(i.person_full_name) ?? undefined
+      return { kind: 'crear_recordatorio', text, dueAt, personFullName }
     }
     case 'flag_ambiguo': {
       const short = str(i.short_name, 100)
