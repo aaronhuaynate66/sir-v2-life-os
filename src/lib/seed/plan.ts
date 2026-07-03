@@ -29,7 +29,9 @@ export interface BatchPersonInput {
     gender?: string | null
     importance_score?: number
     trust_level?: number
-    energy_impact?: 'neutral' | 'energizing' | 'draining'
+    // string (no unión) a propósito: viene de JSON.parse de Claude.ai, no es
+    // confiable. buildSeedPlan lo normaliza al enum válido del schema.
+    energy_impact?: string
     contact_frequency?: string
     last_contact?: string | null
     notes?: string
@@ -45,7 +47,7 @@ export interface BatchPersonInput {
   }
   observations?: Array<{
     capture_type: string
-    confidence?: 'high' | 'medium' | 'low'
+    confidence?: string
     observed_at?: string
     source_url?: string
     data?: Record<string, unknown>
@@ -191,6 +193,90 @@ export function parseWeight(raw: string | number | undefined): number | null {
   return Number.isFinite(n) ? Math.max(0, Math.min(10, n)) : null
 }
 
+// ─── Normalización de enums del schema ──────────────────────────────
+//
+// El JSON de Claude.ai suele venir con valores en ES o variantes que NO están
+// en los CHECK constraints del schema (ej. category "acquaintance", relationship
+// "colega", capture_type "linkedin_profile"). Antes esos valores pasaban CRUDOS
+// al INSERT y reventaban el apply con un 500 a mitad de camino, DESPUÉS de que
+// el dry-run se veía OK ("error de schema al primer intento"). Estos
+// normalizadores mapean a valores válidos y el planner warnea lo que coercionó,
+// para que el error se vea en el plan y el apply nunca rompa por un enum.
+
+/** Valores válidos de cada enum, tal cual el schema. Exportados para tests. */
+export const VALID_RELATIONSHIPS = new Set(['family', 'friend', 'romantic', 'professional', 'mentor', 'mentee', 'acquaintance'])
+export const VALID_CATEGORIES = new Set(['inner_circle', 'close', 'network', 'peripheral'])
+export const VALID_ENERGY_IMPACTS = new Set(['energizing', 'draining', 'neutral'])
+export const VALID_CAPTURE_TYPES = new Set([
+  'whatsapp_chat', 'whatsapp_web', 'whatsapp_info', 'instagram',
+  'dm_conversation', 'linkedin', 'manual_note', 'voice_note', 'unknown',
+])
+export const VALID_CONFIDENCE = new Set(['high', 'medium', 'low'])
+
+const REL_ALIASES: Record<string, string> = {
+  familia: 'family', familiar: 'family',
+  amigo: 'friend', amiga: 'friend', amistad: 'friend',
+  pareja: 'romantic', novia: 'romantic', novio: 'romantic', romantico: 'romantic', romantica: 'romantic', esposa: 'romantic', esposo: 'romantic',
+  profesional: 'professional', colega: 'professional', coworker: 'professional', trabajo: 'professional', laboral: 'professional', work: 'professional',
+  maestro: 'mentor', guia: 'mentor', guía: 'mentor',
+  aprendiz: 'mentee', discipulo: 'mentee', discípulo: 'mentee', pupilo: 'mentee',
+  conocido: 'acquaintance', conocida: 'acquaintance',
+}
+const CAT_ALIASES: Record<string, string> = {
+  intimo: 'inner_circle', 'íntimo': 'inner_circle', core: 'inner_circle', 'circulo-intimo': 'inner_circle',
+  cercano: 'close', cercana: 'close', cerca: 'close',
+  red: 'network', contacto: 'network', profesional: 'network', professional: 'network',
+  perisferico: 'peripheral', periferico: 'peripheral', 'periférico': 'peripheral', lejano: 'peripheral', acquaintance: 'peripheral', conocido: 'peripheral',
+}
+const ENERGY_ALIASES: Record<string, string> = {
+  energizante: 'energizing', positivo: 'energizing', positiva: 'energizing', energia: 'energizing', 'energía': 'energizing',
+  agotador: 'draining', agotadora: 'draining', negativo: 'draining', negativa: 'draining', drenante: 'draining',
+  neutro: 'neutral', neutra: 'neutral',
+}
+const CAPTURE_ALIASES: Record<string, string> = {
+  linkedin_profile: 'linkedin', linkedin_post: 'linkedin', li: 'linkedin',
+  ig: 'instagram', instagram_profile: 'instagram', instagram_post: 'instagram', insta: 'instagram',
+  whatsapp: 'whatsapp_chat', wa: 'whatsapp_chat', wsp: 'whatsapp_chat', chat: 'whatsapp_chat',
+  contact_info: 'whatsapp_info',
+  dm: 'dm_conversation', direct_message: 'dm_conversation', messenger: 'dm_conversation', telegram: 'dm_conversation',
+  note: 'manual_note', nota: 'manual_note', manual: 'manual_note', manual_nota: 'manual_note',
+  audio: 'voice_note', voz: 'voice_note', nota_de_voz: 'voice_note',
+  desconocido: 'unknown', otro: 'unknown', other: 'unknown',
+}
+const CONFIDENCE_ALIASES: Record<string, string> = {
+  alta: 'high', alto: 'high', media: 'medium', medio: 'medium', baja: 'low', bajo: 'low',
+}
+
+function mapEnum(raw: string | null | undefined, valid: Set<string>, aliases: Record<string, string>, fallback: string): string {
+  if (raw == null) return fallback
+  const s = String(raw).toLowerCase().trim()
+  if (!s) return fallback
+  if (valid.has(s)) return s
+  return aliases[s] ?? fallback
+}
+
+export function normalizeRelationship(raw: string | null | undefined): string {
+  return mapEnum(raw, VALID_RELATIONSHIPS, REL_ALIASES, 'professional')
+}
+export function normalizeCategory(raw: string | null | undefined): string {
+  return mapEnum(raw, VALID_CATEGORIES, CAT_ALIASES, 'network')
+}
+export function normalizeEnergyImpact(raw: string | null | undefined): string {
+  return mapEnum(raw, VALID_ENERGY_IMPACTS, ENERGY_ALIASES, 'neutral')
+}
+export function normalizeCaptureType(raw: string | null | undefined): string {
+  return mapEnum(raw, VALID_CAPTURE_TYPES, CAPTURE_ALIASES, 'unknown')
+}
+export function normalizeConfidence(raw: string | null | undefined): string {
+  return mapEnum(raw, VALID_CONFIDENCE, CONFIDENCE_ALIASES, 'medium')
+}
+
+/** Clampea un score al rango 1-10 del schema. `fallback` si no es número. */
+export function clampScore(raw: number | undefined | null, fallback: number): number {
+  if (typeof raw !== 'number' || !Number.isFinite(raw)) return fallback
+  return Math.max(1, Math.min(10, Math.round(raw)))
+}
+
 interface BuildPlanArgs {
   input: SeedBatchInput
   userId: string
@@ -217,6 +303,30 @@ export function buildSeedPlan(args: BuildPlanArgs): SeedPlan {
   const orgs: PlannedOrgProfileRow[] = []
   const links: PlannedPersonLinkRow[] = []
   const warnings: string[] = []
+
+  // Coerciona un enum a un valor válido del schema y warnea si el valor
+  // provisto (no vacío) no estaba en el set — así el error se ve en el plan y
+  // el apply nunca revienta con un CHECK violation.
+  function coerceEnum(
+    raw: string | null | undefined,
+    normalize: (r: string | null | undefined) => string,
+    valid: Set<string>,
+    label: string,
+  ): string {
+    const value = normalize(raw)
+    if (raw != null && String(raw).trim() !== '' && !valid.has(String(raw).toLowerCase().trim())) {
+      warnings.push(`${label}: "${raw}" no es válido → usé "${value}".`)
+    }
+    return value
+  }
+  // Igual que coerceEnum pero para los scores int 1-10.
+  function coerceScore(raw: number | undefined | null, fallback: number, label: string): number {
+    const value = clampScore(raw, fallback)
+    if (typeof raw === 'number' && Number.isFinite(raw) && (raw < 1 || raw > 10)) {
+      warnings.push(`${label}: ${raw} fuera de rango 1-10 → usé ${value}.`)
+    }
+    return value
+  }
 
   // Slug uniqueness: acumula slugs asignados en este plan + los de la DB.
   const usedSlugs = new Set<string>()
@@ -247,11 +357,11 @@ export function buildSeedPlan(args: BuildPlanArgs): SeedPlan {
       slug,
       name: p.person.name,
       alias: p.person.alias ?? null,
-      relationship: p.person.relationship ?? 'professional',
-      category: p.person.category ?? 'network',
-      importance_score: p.person.importance_score ?? 5,
-      trust_level: p.person.trust_level ?? 5,
-      energy_impact: p.person.energy_impact ?? 'neutral',
+      relationship: coerceEnum(p.person.relationship, normalizeRelationship, VALID_RELATIONSHIPS, `${p.person.name}: relationship`),
+      category: coerceEnum(p.person.category, normalizeCategory, VALID_CATEGORIES, `${p.person.name}: category`),
+      importance_score: coerceScore(p.person.importance_score, 5, `${p.person.name}: importance_score`),
+      trust_level: coerceScore(p.person.trust_level, 5, `${p.person.name}: trust_level`),
+      energy_impact: coerceEnum(p.person.energy_impact, normalizeEnergyImpact, VALID_ENERGY_IMPACTS, `${p.person.name}: energy_impact`),
       contact_frequency: p.person.contact_frequency ?? '',
       last_contact: p.person.last_contact ?? null,
       location: p.person.location ?? null,
@@ -279,9 +389,9 @@ export function buildSeedPlan(args: BuildPlanArgs): SeedPlan {
         id: newId('obs', rand),
         user_id: userId,
         person_id: id,
-        capture_type: o.capture_type,
+        capture_type: coerceEnum(o.capture_type, normalizeCaptureType, VALID_CAPTURE_TYPES, `${p.person.name}: capture_type`),
         data: o.data ?? {},
-        confidence: o.confidence ?? 'medium',
+        confidence: coerceEnum(o.confidence, normalizeConfidence, VALID_CONFIDENCE, `${p.person.name}: confidence`),
         observed_at: o.observed_at ? new Date(o.observed_at).toISOString() : nowIso,
         is_obsolete: false,
         created_at: nowIso,
