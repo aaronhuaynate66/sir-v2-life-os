@@ -44,7 +44,7 @@
 
 | # | Ítem | Estado | Esf | Pri | Nota |
 |---|---|---|---|---|---|
-| C1 | Extracción integrada de seed batch (Anthropic) | ⬜ | M | P2 | Pegar PDF/screenshot → SIR arma el JSON. Solapa con Claude→SIR ingest. |
+| C1 | Extracción integrada de seed batch (Anthropic) | ✅ | M | P2 | HECHO (07-03): en /captura/batch, card "Desde texto (extraer con SIR)" → pegás relato/PDF/perfil, `POST /api/seed/extract` (Sonnet) arma el JSON con el schema + enums vivos de plan.ts, cae en el textarea para revisar + dry-run + aplicar (flujo de confirmación intacto). Capa pura `lib/seed/extractPrompt` (10 tests). Ya no hace falta ir a Claude.ai. |
 | C2 | Claude → SIR ingest (tokens personales + relato smart) | ✅ | M | P1 | HECHO (07-03): ambas fases ya existían (tokens en /yo + ingest smart con tools). Faltaba cablearlas: /api/relato/ingest ahora acepta Bearer con token personal (service-role scoped) → contás un relato desde afuera (Claude/atajo/script) con apply:true y SIR se llena solo. Ejemplo curl en el panel de tokens de /yo. |
 | C3 | Fase 3d — Memoria que aprende (RAG cross-session) | ⬜ | L | P2 | Contexto profundo automático por interacción. |
 | C4 | Pulido mobile pantalla-por-pantalla (#44) | ⬜ | M | P2 | Necesita capturas reales del cel. |
@@ -82,7 +82,7 @@ pendientes, priorizado:
 
 **⚙️ Tanda 2 — mejora**
 4. ~~**U1-fin — /salud**~~ ✅ **HECHO (07-03)** — split Observar/Anticipar + rename "Objetivo inminente".
-5. **C1 — seed batch: extracción integrada** (M) — pegar PDF/screenshot → SIR arma el JSON (solapa con C2).
+5. ~~**C1 — seed batch: extracción integrada**~~ ✅ **HECHO (07-03)** — /api/seed/extract + card "Desde texto" en /captura/batch.
 6. ~~**V2 — cache del reasoner/decidir**~~ ✅ **HECHO (07-03)** — ai_daily_cache (0120) + helper puro; reason por día, decision por día+hash.
 
 **🧊 Tanda 3 — grande / bloqueado / necesita input tuyo**
