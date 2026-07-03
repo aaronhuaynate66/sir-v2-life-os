@@ -53,7 +53,7 @@
 
 | # | Ítem | Estado | Esf | Pri | Nota |
 |---|---|---|---|---|---|
-| U2 | **A11y: labels + skip link + contraste + headings** | 🔨 | M | P1 | HECHO (07-03): skip link + `id=main` (AppShell), labels en /decidir + KnowledgeGap + medicación, focus-visible del botón "Resolver", contraste del texto chico, headings `<h2>` en cards nuevas, alt del gráfico de medicación + 8px→10px, ScoreBar aria-hidden. PENDIENTE: barrido completo de contraste `/70`/`/50` en /panel + componente `SectionHeading` sistémico. |
+| U2 | **A11y: labels + skip link + contraste + headings** | ✅ | M | P1 | HECHO (07-03): skip link + `id=main`, labels en flujos núcleo, focus-visible del botón "Resolver", alt del gráfico de medicación. **U2-fin:** `SectionTitle` ahora renderiza `<h2>` (fix SISTÉMICO — todas las secciones navegables por lector de pantalla) + contraste de los títulos del Nav (`/50`→sólido). Pendiente menor: barrido fino de `/60`/`/70` en info-text del /panel. |
 | U1 | **UX: podar el /panel + familia "Pensar"** | ✅ | M | P1 | HECHO (07-03): botón "Verlo por las 12 lentes"; de-dup del panel (quitada la lista "Atención" duplicada, ya vive en "Foco ahora") + "Foco del día"→**"Acción del día"** (rompe la colisión). Pendiente menor: split observar/anticipar en /salud. |
 
 ## V. Verificación / operativo (no es build)

@@ -102,7 +102,7 @@ export function Nav({ onItemClick }: NavProps = {}) {
       <div className="flex-1 py-3 px-2 flex flex-col gap-0.5 overflow-y-auto">
         {NAV_GROUPS.map((group) => (
           <div key={group.title} className="mb-1">
-            <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-[0.1em] text-muted-foreground/50 font-sans select-none">
+            <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-[0.1em] text-text-tertiary font-sans select-none">
               {group.title}
             </div>
             {group.items.map(({ href, label, Icon }) => {
