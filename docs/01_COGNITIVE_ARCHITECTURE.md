@@ -5,23 +5,37 @@
 
 ## Cómo Piensa SIR V2
 
-SIR V2 no es un sistema reactivo. Es un sistema anticipatorio.
+SIR V2 no es un sistema reactivo. Es un sistema anticipatorio **que aprende de
+sus propios resultados** — el pipeline no es una pasada hacia adelante, es un
+bucle cerrado.
 
 Procesa información en capas:
 1. **Percepción** — recibe datos (señales, registros, eventos)
 2. **Contextualización** — construye contexto situacional
-3. **Memoria** — conecta con memoria episódica y emocional
+3. **Memoria** — conecta con memoria episódica y emocional (incl. memoria
+   **cross-session**: recuerda lo conversado en sesiones anteriores)
 4. **Modelado** — actualiza el modelo dinámico del usuario
 5. **Razonamiento** — aplica cognitive personas al problema
 6. **Timing** — evalúa el momento correcto para actuar
 7. **Recomendación** — genera recomendación accionable
 8. **Paz** — evalúa impacto en el Peace Score
+9. **Aprendizaje** — observa el RESULTADO de lo actuado (¿subió la paz/energía?)
+   y **ajusta la confianza** de ese tipo de recomendación/lente. Acá el bucle se
+   cierra: la salida vuelve a entrar como aprendizaje.
+
+```
+Percepción → … → Recomendación → (Aaron actúa) → Resultado observado
+     ↑                                                      │
+     └──────────────  Aprendizaje ajusta pesos  ◄───────────┘
+```
 
 ---
 
 ## Cognitive Personas
 
-SIR V2 razona a través de múltiples lentes simultáneas:
+SIR V2 razona a través de múltiples lentes simultáneas (hasta 5, elegidas según
+el dominio del foco). Resumen abajo; **cada lente en profundidad — su marco,
+cuándo se activa y su modo de falla — en `docs/10_COGNITIVE_PERSONAS.md`.**
 
 ### Psicólogo
 - Lee emociones, patrones de comportamiento, motivaciones profundas
@@ -111,15 +125,23 @@ SITUACIÓN
 
 ## Toma de Decisiones
 
-SIR V2 evalúa cada decisión importante en función de:
+SIR V2 evalúa cada decisión importante en **8 dimensiones ponderadas** por la
+jerarquía de prioridades (abajo). La IA puntúa cada dimensión (-2..+2), el motor
+puro (`engines/decision`) computa el ponderado y el veredicto (go/caution/hold):
 
-1. **Alineación con objetivos** — ¿esto me acerca a mis metas?
-2. **Impacto en relaciones** — ¿cómo afecta a mis relaciones clave?
+1. **Paz mental** — ¿aumenta o reduce mi nivel de paz? (meta-objetivo)
+2. **Alineación con valores/identidad** — ¿es coherente con quién quiero ser?
+   (ancla en `identity_profile` — el Arquitecto de Identidad como juez)
 3. **Costo biológico** — ¿cuánta energía consume?
 4. **Impacto financiero** — ¿cómo afecta mi estabilidad económica?
-5. **Paz mental** — ¿aumenta o reduce mi nivel de paz?
-6. **Timing** — ¿es el momento correcto?
-7. **Reversibilidad** — ¿es reversible si me equivoco?
+5. **Alineación con objetivos** — ¿esto me acerca a mis metas?
+6. **Impacto en relaciones** — ¿cómo afecta a mis relaciones clave?
+7. **Timing** — ¿es el momento correcto?
+8. **Reversibilidad** — ¿es reversible si me equivoco?
+
+**Gate de reversibilidad:** una decisión irreversible con señales mixtas NO pasa
+a "go" aunque el ponderado dé positivo — lo irreversible pide más cuidado
+(*one-way doors*). Ver `docs/14_DECISION_SCIENCE.md`.
 
 ---
 
@@ -171,32 +193,71 @@ que unifica todo se construyó en el sprint del 03-07 (ver `docs/BUILD_PLAN.md`)
 | **Evaluador de decisión (7 dim + reversibilidad)** | `engines/decision` + `/decidir` | ✅ A4 |
 | **Motor predictivo** | `engines/predictive` (proyección de series) | ✅ A5 |
 | **Modelo del self dinámico** | `engines/self-model` ("Tu momento") | ✅ A7 |
+| **Aprendizaje / loop cerrado (Capa 9)** | `engines/learning` (`computeEffectiveness` + `adjustByLearning`) + `useFeedbackStore` | ✅ A8 |
+| **Alineación con valores (8ª dim de decisión)** | `engines/decision` (dimensión `values`, ancla `identity_profile`) | ✅ A4b |
+| **Memoria cross-session** | `sir_conversations` + recall en `/api/sir/ask` | ✅ C3 |
 
-## Lo que le falta a la base científica (identificado 03-07)
+El pipeline **ya es un bucle cerrado**: los tres faltantes que este doc marcaba en
+el sprint del 03-07 (Capa 9 de aprendizaje, valores como dimensión, memoria que
+recuerda entre sesiones) **están construidos**. Lo que sigue es *profundizar*, no
+*completar el esqueleto*.
 
-El pipeline es hoy una **pasada hacia adelante**. Faltan tres cosas para que sea
-un sistema cognitivo cerrado, no solo un asesor:
+---
 
-### 1. Capa 9 — Aprendizaje / Retroalimentación (el mayor faltante)
-El bucle no se cierra: SIR recomienda o evaluás una decisión, pero **no observa
-el RESULTADO** (¿subió tu paz/energía después de actuar?) para **ajustar** sus
-pesos y su confianza. Es "la parte analítica que cierra el loop":
+## Principios transversales
 
-```
-… → Recomendación → (actuás) → Resultado observado → ¿mejoró la paz? →
-      → ajusta la confianza de ese tipo de recomendación / de esa lente
-```
+Valen para TODOS los motores. No son features, son cómo SIR se comporta:
 
-El cerebro-grafo ya aprende de tus confirmaciones (Hebbian, F3); falta
-**generalizarlo a recomendaciones y decisiones**: registrar outcome + aprender
-qué consejos, en qué contexto, efectivamente te suben la paz. → **A8 en el plan.**
+1. **Confianza / incertidumbre honesta.** Cada salida reporta cuán seguro está.
+   Cuando no hay muestra suficiente, SIR dice `insufficient` en vez de inventar
+   (existe en predictivo, self-model, alignment, patrones). *Preferimos callar a
+   afirmar de más.*
+2. **Aditivo, nunca pisa lo manual.** Lo que SIR extrae/propone llega como
+   propuesta editable que SUMA; jamás sobrescribe lo que Aaron escribió a mano
+   (ver `docs/08_UX_SYSTEM.md`).
+3. **Aprende de lo que funciona.** El resultado observado ajusta la confianza
+   (Capa 9 + Hebbian del cerebro-grafo). Lo que te sube la paz pesa más la
+   próxima vez.
+4. **Aislamiento de lo sensible.** Lo íntimo (`self_diagnosis`, notas privadas)
+   NO va a IA/embeddings/dossier. La privacidad es de diseño, no opcional.
+5. **Observar antes de anticipar.** Primero se muestra el patrón con el `n` a la
+   vista; recién con datos suficientes se proyecta.
 
-### 2. Confianza / incertidumbre como principio transversal
-Los motores nuevos (reasoner, predictivo, decisión) ya reportan confianza, pero
-no está como PRINCIPIO: SIR debe decir cuán seguro está y degradar con honestidad
-(el patrón `insufficient` ya existe en varios). Documentado acá como norma.
+---
 
-### 3. Alineación con VALORES/identidad (no solo objetivos)
-El evaluador de decisión mide "alineación con objetivos"; falta una dimensión de
-**alineación con tus valores/identidad** (el Arquitecto de Identidad como ancla,
-usando `identity_profile`). Extensión natural del evaluador (A4).
+## Fundamento teórico de cada motor
+
+Cada motor se apoya en teoría con nombre (no en intuición suelta). Los dominios
+profundos viven en sus propios docs (11–15):
+
+| Motor / componente | Fundamento | Doc |
+|---|---|---|
+| `engines/biological`, sueño/energía | Cronobiología (modelo de dos procesos, cronotipos) | `11_CHRONOBIOLOGY` |
+| `engines/alignment`, goals, hábitos | Cambio de comportamiento (Fogg B=MAP, WOOP, SDT) | `12_BEHAVIOR_CHANGE` |
+| `engines/peace`, mood/stress, recovery | Regulación emocional (Gross, ventana de tolerancia, HRV) | `13_EMOTION_REGULATION` |
+| `engines/decision` (8 dim + gate) | Ciencia de la decisión (Kahneman, one-way doors, premortem) | `14_DECISION_SCIENCE` |
+| `engines/relationship`, reciprocidad, kinship, grafo | Inteligencia relacional (apego, Dunbar, Granovetter, Gottman) | `15_RELATIONAL_INTELLIGENCE` |
+| Las 12 lentes | Panel cognitivo (cada persona con su marco) | ver *Cognitive Personas* |
+
+---
+
+## Hoja de ruta científica (lo que sigue)
+
+El esqueleto está cerrado; ahora se agranda **por capas/módulos**, cada uno
+documentado en su doc con "qué construir por partes" y su señal de confianza:
+
+- **Profundizar las 12 lentes** — de etiquetas a marcos rigurosos (qué mide cada
+  una, sus pensadores, cuándo se activa, sus modos de falla).
+- **11 Cronobiología** — cronotipo real desde tu sueño, curva de energía por hora,
+  jet-lag social, ventana de foco.
+- **12 Cambio de comportamiento** — la señal→prompt del hábito en el momento
+  correcto, fricción del próximo paso, drift temprano.
+- **13 Regulación emocional** — detectar salida de la ventana de tolerancia y
+  ofrecer la estrategia correcta (no consejo genérico).
+- **14 Ciencia de la decisión** — detectar sesgos activos, forzar premortem,
+  traer decisiones pasadas parecidas.
+- **15 Inteligencia relacional** *(el norte)* — capas de Dunbar, balance de
+  reciprocidad, salud del vínculo, lógica distinta para afectivo vs profesional.
+
+Cada ítem entra a SIR como un módulo puro + su consumidor, con la misma disciplina
+del resto: testeado, honesto con la incertidumbre, aditivo.

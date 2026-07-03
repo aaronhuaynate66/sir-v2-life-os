@@ -92,3 +92,24 @@ pendientes, priorizado:
 8. **C4 — pulido mobile #44** (M) — bloqueado: necesita capturas reales de tu cel.
 9. **B1/B2/B3 — Reader avanzado** — extensión MV3 / redes sociales (riesgo ToS) / Teams por Graph OAuth (necesita consentimiento M365).
 10. **V1 — verificación en vivo** — necesita tu sesión + data.
+
+---
+
+## Base científica ampliada (2026-07-03)
+
+La base científica dejó de "describir el sistema de ayer": `01` ahora refleja el
+bucle CERRADO (Capa 9 aprendizaje, valores, memoria cross-session) + principios
+transversales + fundamento teórico por motor. Y se agrandó en 6 docs nuevos, cada
+uno con una sección **"Qué construir (por partes)"** que es la cola de módulos
+futuros (motor puro + consumidor, honesto con la confianza):
+
+- `10_COGNITIVE_PERSONAS` — las 12 lentes en profundidad.
+- `11_CHRONOBIOLOGY` — cronotipo, curva intradía, jet-lag social, deuda de sueño real.
+- `12_BEHAVIOR_CHANGE` — señal→prompt del hábito, fricción, drift temprano.
+- `13_EMOTION_REGULATION` — ventana de tolerancia, estrategia correcta, granularidad.
+- `14_DECISION_SCIENCE` — detector de sesgos, premortem, calibrador de reversibilidad.
+- `15_RELATIONAL_INTELLIGENCE` *(el norte)* — capas de Dunbar, reciprocidad, salud del vínculo.
+
+Próximos módulos construibles salen de esos "Qué construir": arrancar por los de
+confianza alta / sin deuda de datos (ej. detector de sesgos en /decidir, cronotipo
+desde horarios ya capturados, capas de Dunbar + alertas de sobre/sub-inversión).

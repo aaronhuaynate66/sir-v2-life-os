@@ -61,3 +61,33 @@ Datos → Señales → Contexto → Memoria → Timing → Recomendación → Ac
 8. Biología como base
 9. Finanzas como libertad
 10. Identidad como ancla
+
+---
+
+## Mapa de la carpeta (base científica)
+
+La base científica de SIR vive ordenada en estos docs. **00–09** son el núcleo
+del sistema; **10–15** profundizan la mente cognitiva (cada uno con "qué construir
+por partes" + su señal de confianza, listos para implementar por módulos).
+
+| Doc | Qué es |
+|---|---|
+| `00_MASTER_SYSTEM` | Este mapa: visión, sistemas, principios. |
+| `01_COGNITIVE_ARCHITECTURE` | Cómo piensa SIR: pipeline de 9 capas (bucle cerrado), decisión, prioridades, principios transversales. |
+| `02_MEMORY_SYSTEM` | Memoria episódica/semántica + cross-session. |
+| `03_SELF_MODEL` | Modelo dinámico del self ("cómo venís"). |
+| `04_AI_BRAIN` | Cerebro-grafo tipado (F1 proyección, F2 difusión, F3 Hebbian, F4 surfacing). |
+| `05_TECHNICAL_ARCHITECTURE` | Stack, motores puros, patrón de implementación. |
+| `06_DATA_MODEL` | Tablas y relaciones. |
+| `07_SIGNAL_ENGINE` | Percepción: señales y capturas. |
+| `08_UX_SYSTEM` | Reglas de UX (aditivo, nunca formularios vacíos). |
+| `09_ROADMAP` | Rumbo de producto. |
+| **`10_COGNITIVE_PERSONAS`** | Las 12 lentes en profundidad: marco, cuándo se activa, modo de falla. |
+| **`11_CHRONOBIOLOGY`** | Sueño/energía: cronotipo, curva intradía, jet-lag social. |
+| **`12_BEHAVIOR_CHANGE`** | Hábitos: señal→prompt, fricción, drift (Fogg, WOOP, SDT). |
+| **`13_EMOTION_REGULATION`** | Ventana de tolerancia, reevaluación, HRV (Gross, Barrett). |
+| **`14_DECISION_SCIENCE`** | Sesgos, premortem, reversibilidad (Kahneman, Bezos, Klein). |
+| **`15_RELATIONAL_INTELLIGENCE`** | El norte: Dunbar, reciprocidad, salud del vínculo (apego, Gottman). |
+
+Operativos (no base científica): `BUILD_PLAN`, `AARON_OS_INVENTORY`,
+`STRATEGIC_ROADMAP`, `MIGRATIONS`, auditorías.
