@@ -74,6 +74,11 @@ function toRawToolUse(action: unknown): { name: string; input: Record<string, un
       input.category = a.category
       if (a.notes) input.notes = a.notes
       return { name: kind, input }
+    case 'crear_recordatorio':
+      input.text = a.text
+      input.due_at = a.dueAt
+      if (a.personFullName) input.person_full_name = a.personFullName
+      return { name: kind, input }
     default:
       return null
   }

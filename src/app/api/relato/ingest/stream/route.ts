@@ -46,6 +46,7 @@ Reglas obligatorias:
    Si el relato es afectivo y dice "Diana" → Diana Díaz.
 3. Cuando Aaron introduce a alguien NUEVO en el relato (nombre + apellido, sin match en la lista), usá "crear_persona" para agregarla ANTES de crear moments/logs con ella.
 4. Cuando Aaron enuncia una META u OBJETIVO futuro, usá "crear_objetivo".
+4b. Cuando Aaron dice "recordame en X días" / "avisame el viernes" / "mañana a las 15" → "crear_recordatorio". Calcula due_at ISO con TZ Lima (-05:00). Sin hora específica: 09:00.
 5. Un relato semanal se descompone en:
    - Un "crear_moment" por CADA episodio con fecha concreta y valor emocional.
    - Un "crear_person_log" (kind="interaction") por cada día que hubo contacto.

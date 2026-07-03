@@ -34,6 +34,7 @@ type PlanItem =
   | { kind: 'registrar_ciclo'; personFullName: string; date: string; phase: 'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown'; confidence: 'high' | 'medium' | 'low'; note?: string }
   | { kind: 'crear_objetivo'; title: string; category: string; priority: string; targetDate?: string; nextStep?: string }
   | { kind: 'crear_persona'; fullName: string; relationship: string; category: string; notes?: string }
+  | { kind: 'crear_recordatorio'; text: string; dueAt: string; personFullName?: string }
 
 interface FlagAmbiguo { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
 interface ExecResult { action: PlanItem; ok: boolean; error?: string; createdId?: string }
@@ -64,6 +65,7 @@ const KIND_LABEL: Record<PlanItem['kind'], string> = {
   registrar_ciclo: 'Ciclo',
   crear_objetivo: 'Objetivo',
   crear_persona: 'Persona nueva',
+  crear_recordatorio: 'Recordatorio',
 }
 const PHASE_LABEL: Record<'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown', string> = {
   bleeding: 'sangrando', pms: 'PMS', mid_cycle: 'medio del ciclo',
@@ -97,6 +99,8 @@ function summarize(item: PlanItem): string {
       return `${item.category} · ${item.priority}${item.targetDate ? ` · deadline ${item.targetDate}` : ''}${item.nextStep ? ` · próximo: ${item.nextStep}` : ''}`
     case 'crear_persona':
       return `${item.relationship} · ${item.category}${item.notes ? ` · ${item.notes.slice(0, 80)}` : ''}`
+    case 'crear_recordatorio':
+      return `${item.dueAt.slice(0, 16).replace('T', ' ')}${item.personFullName ? ` · con ${item.personFullName}` : ''}`
   }
 }
 
@@ -627,7 +631,7 @@ function SirBubble({
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge variant="outline" className="text-[9px] uppercase tracking-wider">{KIND_LABEL[it.kind]}</Badge>
                           <span className="text-foreground font-medium">
-                            {'personFullName' in it ? it.personFullName : 'fullName' in it ? it.fullName : 'title' in it ? it.title : ''}
+                            {'personFullName' in it ? it.personFullName : 'fullName' in it ? it.fullName : 'title' in it ? it.title : 'text' in it ? (it as { text: string }).text.slice(0, 60) : ''}
                           </span>
                           {it.kind === 'crear_moment' && (
                             <span className="text-[10px] font-medium">

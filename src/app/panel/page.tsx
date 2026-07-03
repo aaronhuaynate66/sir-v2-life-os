@@ -40,6 +40,7 @@ import { AnduveHoyCard } from '@/components/panel/AnduveHoyCard'
 import { PersonasEnRiesgoCard } from '@/components/panel/PersonasEnRiesgoCard'
 import { StatusAlertsCard } from '@/components/panel/StatusAlertsCard'
 import { SIRPulseWidget } from '@/components/panel/SIRPulseWidget'
+import { RemindersCard } from '@/components/panel/RemindersCard'
 import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
@@ -363,6 +364,7 @@ function DashboardContent() {
         peaceLevel={peaceCalibrating ? null : (peace.total >= 7 ? 'ok' : peace.total >= 4 ? 'warn' : 'bad')}
       />
       <StatusAlertsCard />
+      <RemindersCard />
       <PersonasEnRiesgoCard />
       <AnduveHoyCard now={now} />
 

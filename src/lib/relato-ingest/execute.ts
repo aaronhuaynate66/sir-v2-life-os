@@ -41,6 +41,7 @@ function personRefOf(action: IngestAction): string | null {
   if (action.kind === 'flag_ambiguo') return null
   if (action.kind === 'crear_objetivo') return null // no persona
   if (action.kind === 'crear_persona') return null // crea, no busca
+  if (action.kind === 'crear_recordatorio') return action.personFullName ?? null // opcional
   return action.personFullName
 }
 
@@ -48,7 +49,8 @@ async function execOne(supabase: Supabase, userId: string, action: IngestAction)
   const personRef = personRefOf(action)
   const person = personRef ? await findPersonByFullName(supabase, userId, personRef) : null
 
-  if (personRef && !person) {
+  // Persona opcional (recordatorios): si no existe, seguimos sin ella.
+  if (personRef && !person && action.kind !== 'crear_recordatorio') {
     return { action, ok: false, error: `Persona "${personRef}" no está en tu red.` }
   }
 
@@ -165,6 +167,17 @@ async function execOne(supabase: Supabase, userId: string, action: IngestAction)
         importance_score: action.category === 'inner_circle' ? 9 : action.category === 'close' ? 7 : action.category === 'network' ? 5 : 3,
         confidence_score: 5,
         notes: action.notes ?? null,
+      }).select('id').single()
+      if (error) return { action, ok: false, error: error.message }
+      return { action, ok: true, createdId: (data as { id: string }).id }
+    }
+
+    if (action.kind === 'crear_recordatorio') {
+      const { data, error } = await supabase.from('reminders').insert({
+        user_id: userId,
+        text: action.text,
+        due_at: action.dueAt,
+        related_person_id: person?.id ?? null,
       }).select('id').single()
       if (error) return { action, ok: false, error: error.message }
       return { action, ok: true, createdId: (data as { id: string }).id }
