@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d95fbd4`
+**Hash del último commit humano:** `b44875c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b44875c` | aaronhuaynate66 | fix(migrations): 0114 drift-safe (push_subscriptions preexistía sin disabled_at) (#503) | 2026-07-03 |
 | `d95fbd4` | aaronhuaynate66 | fix(ci): calcular 'hoy' en TZ de Lima en buildEstadoInsights (test flaky bloqueaba migraciones) (#502) | 2026-07-03 |
 | `cb51010` | aaronhuaynate66 | feat(medicacion): desglose de medicamentos + cruce inteligente (migraña) (#500) | 2026-07-03 |
 | `d1b3e39` | aaronhuaynate66 | feat(review): spaced repetition de detalles (D8) (#496) | 2026-07-03 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `29a3817` | aaronhuaynate66 | feat(panel): SIR Pulse expandible (D5) (#492) | 2026-07-03 |
 | `0af44c1` | aaronhuaynate66 | feat(push): notificaciones push del browser para alertas de estado (#491) | 2026-07-03 |
 | `8fc4463` | aaronhuaynate66 | feat(export): descargar TODO como .zip con CSVs (data ownership) (#490) | 2026-07-03 |
-| `cd707f1` | aaronhuaynate66 | feat(panel): SIR Pulse widget — 3 celdas resumen arriba del todo (#489) | 2026-07-02 |
 
 ---
 
