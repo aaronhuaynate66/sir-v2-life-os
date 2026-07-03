@@ -14,7 +14,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { UploadCloud, ArrowLeft, CheckCircle2, AlertCircle, Info, ClipboardPaste, FileJson } from 'lucide-react'
+import { UploadCloud, ArrowLeft, CheckCircle2, AlertCircle, Info, ClipboardPaste, FileJson, Sparkles, Wand2 } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -27,6 +27,12 @@ interface ApiResponse {
   plan?: SeedPlan
   applied?: boolean
   stats?: { people: number; observations: number; orgs: number; links: number; skippedLinks?: number }
+  error?: string
+  detail?: string
+}
+
+interface ExtractResponse {
+  batch?: unknown
   error?: string
   detail?: string
 }
@@ -58,6 +64,12 @@ export default function CapturaBatchPage() {
   const [applied, setApplied] = useState<ApiResponse['stats'] | null>(null)
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // C1 — extracción integrada: pegar texto crudo (relato/PDF/perfil) y que SIR
+  // arme el JSON, sin ir a Claude.ai. El resultado cae en el textarea de abajo
+  // para revisar + dry-run + aplicar con el flujo de siempre.
+  const [rawText, setRawText] = useState('')
+  const [extracting, setExtracting] = useState(false)
 
   const parsedOk = useMemo(() => {
     if (!json.trim()) return false
@@ -104,6 +116,29 @@ export default function CapturaBatchPage() {
     if (file) onFile(file)
   }
 
+  async function extractFromText() {
+    if (!rawText.trim()) { setError('Pegá el texto a extraer.'); return }
+    setExtracting(true); setError(null)
+    try {
+      const res = await fetch('/api/seed/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: rawText }),
+      })
+      const j = (await res.json()) as ExtractResponse
+      if (!res.ok || !j.batch) {
+        setError(j.error ? `${j.error}${j.detail ? ` — ${j.detail}` : ''}` : 'No pude extraer el JSON.')
+        return
+      }
+      // Cargar el JSON extraído en el textarea (indentado, legible) para revisar.
+      setJsonFromSource(JSON.stringify(j.batch, null, 2))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setExtracting(false)
+    }
+  }
+
   async function submit(dry: boolean) {
     if (!parsedOk) { setError('El JSON no parsea. Revisá comillas o llaves.'); return }
     if (shapeError) { setError(shapeError); return }
@@ -141,10 +176,49 @@ export default function CapturaBatchPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Cargar batch (JSON)</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Arrastrá un <code className="text-xs">.json</code> aquí, pegalo del portapapeles, o subilo con el botón. Formato: ver{' '}
-          <code className="text-xs">data/seed-batches/README.md</code>. Ver el plan primero, después aplicar.
+          Pegá texto crudo y <span className="text-foreground/80">SIR arma el JSON</span>, o cargá un{' '}
+          <code className="text-xs">.json</code> ya hecho. Siempre ves el plan antes de aplicar.
         </p>
       </div>
+
+      {/* C1 — extracción integrada: relato/PDF/perfil → JSON, sin ir a Claude.ai. */}
+      <Card className="shadow-none mb-4 border-brand/30">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles size={14} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
+            <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Desde texto (extraer con SIR)</h2>
+          </div>
+          <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+            Pegá un relato, el texto de un PDF/CV o un perfil de LinkedIn. SIR extrae las personas
+            y arma el JSON abajo para que lo revises y apliques.
+          </p>
+          <label htmlFor="raw-text" className="sr-only">Texto a extraer</label>
+          <textarea
+            id="raw-text"
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            rows={6}
+            placeholder="Ej: 'Conocí a Ana Torres en el evento de HNG, es Data Lead en Falabella, muy energizante, me la presentó Cristina…'"
+            className="w-full resize-y rounded-lg border border-border bg-background p-3 text-[13px] leading-relaxed outline-none focus:border-foreground/30 min-h-[120px]"
+          />
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <Button size="sm" onClick={() => void extractFromText()} disabled={!rawText.trim() || extracting}>
+              <Wand2 size={13} strokeWidth={1.75} className="mr-1.5" />
+              {extracting ? 'Extrayendo…' : 'Extraer con SIR'}
+            </Button>
+            {rawText && (
+              <button
+                type="button"
+                onClick={() => setRawText('')}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                Limpiar texto
+              </button>
+            )}
+            <span className="text-[11px] text-muted-foreground/70 ml-auto">Revisás el JSON antes de aplicar</span>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-5">
