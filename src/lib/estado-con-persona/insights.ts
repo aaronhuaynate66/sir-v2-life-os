@@ -13,7 +13,8 @@ import type { PersonLog } from '@/lib/person-logs/types'
 import type { RelationshipMoment } from '@/lib/moments/types'
 import type { PersonCycleEntry, CyclePhase } from '@/lib/person-cycles/types'
 import type { Memory } from '@/types'
-import { urgencyOf, ymdLocal, type Urgency } from '@/lib/moments/urgency'
+import { urgencyOf, type Urgency } from '@/lib/moments/urgency'
+import { limaDayKey } from '@/lib/dates/limaDay'
 
 export interface EstadoInsights {
   /** Fecha de la última interacción (ISO), o null si nunca hubo. */
@@ -106,7 +107,11 @@ export interface BuildInsightsInput {
 export function buildEstadoInsights(input: BuildInsightsInput): EstadoInsights {
   const { personLogs, moments, personCycles, memories, now } = input
   const nowMs = now.getTime()
-  const todayYmd = ymdLocal(now)
+  // Día de HOY en Lima (offset fijo), NO en la TZ del proceso. Con ymdLocal, un
+  // `now` de las 20:00 de Lima (01:00 UTC) caía "mañana" en un runner UTC (CI) →
+  // el cruce con la fecha del cycle entry fallaba y el test flakeaba, bloqueando
+  // el runner de migraciones. limaDayKey es determinístico en cualquier TZ.
+  const todayYmd = limaDayKey(now.toISOString()) ?? now.toISOString().slice(0, 10)
 
   // ─── Última interacción y tono reciente ─────────────────────────────
   const interactions = personLogs
