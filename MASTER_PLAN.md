@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `fcb3022`
+**Hash del último commit humano:** `d1b3e39`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `d1b3e39` | aaronhuaynate66 | feat(review): spaced repetition de detalles (D8) (#496) | 2026-07-03 |
 | `fcb3022` | aaronhuaynate66 | feat(diario): journal íntimo (Opción A — tipo Day One) (#495) | 2026-07-03 |
 | `82a22ed` | aaronhuaynate66 | feat(relaciones): comparativa entre personas (D3) (#494) | 2026-07-03 |
 | `de6974b` | aaronhuaynate66 | feat(reminders): recordatorios agendados desde /relato/ingest (D2) (#493) | 2026-07-03 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `cd707f1` | aaronhuaynate66 | feat(panel): SIR Pulse widget — 3 celdas resumen arriba del todo (#489) | 2026-07-02 |
 | `384e431` | aaronhuaynate66 | chore(ai-usage): registrar consumo de los 5 endpoints IA de la sesión (#488) | 2026-07-02 |
 | `51d2359` | aaronhuaynate66 | chore: eliminar endpoints one-shot y redirect /relato viejo (D4 + D5) (#487) | 2026-07-02 |
-| `de04dfd` | aaronhuaynate66 | feat(relato-ingest): streaming SSE de Claude (A2) (#486) | 2026-07-02 |
 
 ---
 
