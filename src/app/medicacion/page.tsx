@@ -3,8 +3,8 @@
 // Un toque para registrar (qué + cuántas), con día+hora; historial que se cruza
 // en el día-X y alimenta a SIR. Fetch directo a /api/meds (patrón /habitos).
 
-import { useCallback, useEffect, useState } from 'react'
-import { Pill, Plus, Loader2, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Pill, Plus, Loader2, X, Camera, Sparkles } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -239,6 +239,38 @@ function MedBreakdownForm({ reg, onSaved }: { reg: RegMed; onSaved: () => void }
   const [drugClass, setDrugClass] = useState(reg.drug_class ?? '')
   const [treats, setTreats] = useState(reg.treats ?? '')
   const [saving, setSaving] = useState(false)
+  const [extracting, setExtracting] = useState(false)
+  const [extractText, setExtractText] = useState('')
+  const [extractNote, setExtractNote] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  // Prellena los campos con lo extraído (propuesta editable, no auto-guarda).
+  function applyExtract(x: { component: string | null; drugClass: string | null; treats: string | null; confidence: string }) {
+    if (x.component) setComponent(x.component)
+    if (x.drugClass) setDrugClass(x.drugClass)
+    if (x.treats) setTreats(x.treats)
+    setExtractNote(`Extraído (confianza ${x.confidence}). Revisá y guardá.`)
+  }
+
+  async function extract(payload: object) {
+    if (extracting) return
+    setExtracting(true); setExtractNote(null)
+    try {
+      const res = await fetch('/api/meds/extract', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      const j = await res.json()
+      if (!res.ok) { setExtractNote(j.error ?? 'No pude extraer'); return }
+      applyExtract(j)
+    } catch { setExtractNote('No pude extraer') } finally { setExtracting(false) }
+  }
+
+  async function onPhoto(file: File) {
+    if (file.size > 6 * 1024 * 1024) { setExtractNote('Foto demasiado grande (máx ~6 MB)'); return }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const r = new FileReader(); r.onload = () => resolve(String(r.result)); r.onerror = reject; r.readAsDataURL(file)
+    })
+    const base64 = dataUrl.split(',')[1] ?? ''
+    await extract({ imageBase64: base64, mimeType: file.type })
+  }
 
   async function save() {
     if (saving) return
@@ -256,6 +288,22 @@ function MedBreakdownForm({ reg, onSaved }: { reg: RegMed; onSaved: () => void }
 
   return (
     <div className="px-3 pb-3 pt-0 space-y-2">
+      {/* Autocompletar: foto de la caja (Visión) o link/nombre (SIR lo extrae). */}
+      <div className="flex items-center gap-2 flex-wrap rounded-md border border-dashed border-border/70 p-2">
+        <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1"><Sparkles size={12} /> Autocompletar:</span>
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) void onPhoto(f); e.target.value = '' }} />
+        <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={extracting}>
+          <Camera size={13} className="mr-1.5" /> Foto de la caja
+        </Button>
+        <Input value={extractText} onChange={(e) => setExtractText(e.target.value)} placeholder="…o pegá el link / nombre" className="text-sm flex-1 min-w-[8rem]"
+          onKeyDown={(e) => { if (e.key === 'Enter' && extractText.trim()) void extract({ text: extractText.trim() }) }} />
+        <Button size="sm" variant="outline" onClick={() => void extract({ text: extractText.trim() })} disabled={extracting || !extractText.trim()}>
+          {extracting ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : null} Extraer
+        </Button>
+      </div>
+      {extractNote && <p className="text-[11px] text-muted-foreground">{extractNote}</p>}
+
       <div className="grid gap-2 sm:grid-cols-3">
         <Input value={component} onChange={(e) => setComponent(e.target.value)} placeholder="Composición (ej: ergotamina + cafeína)" className="text-sm" />
         <Input value={drugClass} onChange={(e) => setDrugClass(e.target.value)} placeholder="Clase (ej: antimigrañoso)" className="text-sm" />
