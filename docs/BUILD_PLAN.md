@@ -56,26 +56,37 @@
 | U2 | **A11y: labels + skip link + contraste + headings** | 🔨 | M | P1 | HECHO (07-03): skip link + `id=main` (AppShell), labels en /decidir + KnowledgeGap + medicación, focus-visible del botón "Resolver", contraste del texto chico, headings `<h2>` en cards nuevas, alt del gráfico de medicación + 8px→10px, ScoreBar aria-hidden. PENDIENTE: barrido completo de contraste `/70`/`/50` en /panel + componente `SectionHeading` sistémico. |
 | U1 | **UX: podar el /panel + familia "Pensar"** | ✅ | M | P1 | HECHO (07-03): botón "Verlo por las 12 lentes"; de-dup del panel (quitada la lista "Atención" duplicada, ya vive en "Foco ahora") + "Foco del día"→**"Acción del día"** (rompe la colisión). Pendiente menor: split observar/anticipar en /salud. |
 
-## D. PRs abiertos por mergear (no es build, es liberar valor)
+## V. Verificación / operativo (no es build)
 
-- #497 (seed enums) · #498 (forecast fin de mes) · #499 (cumple sin año) · #501 (extractor de meds foto/link) · #504 (Teams/Slack detector) · #505 (SIR Reader Fase 1).
+| # | Ítem | Estado | Nota |
+|---|---|---|---|
+| V1 | Verificar en vivo la capa cognitiva | ⬜ | Manejar /panel "Foco ahora" + "Pensar con SIR", /decidir, /salud (Proyección/Tu momento/Qué te funciona), /captura/pegar — con sesión + data real. La lógica está testeada; falta el ojo en vivo. |
+| V2 | Cache diaria del reasoner/decidir | ⬜ S | Hoy cada click = llamada LLM. Cachear por día (patrón daily_briefs) baja costo. |
+| V3 | Housekeeping | ⬜ | `scripts/seed-people.mjs` + `.gitignore` quedaron modificados local (tooling, sin PR). |
+
+## D. PRs — TODOS MERGEADOS ✅ (03-07)
+
+#497 #498 #499 #501 #504 #505 #506 → todo en `main` y en prod. Nada abierto.
 
 ---
 
-## Orden propuesto (sprint)
+## Lo que queda — ORDEN DE ATAQUE (03-07)
 
-**Arrancamos por los P0 rápidos** (quick wins que además son cimiento de lo grande),
-luego lo estructural:
+Capa cognitiva (A1–A8) + Reader-pegar + toda la sesión: **en prod**. Queda pulido y
+pendientes, priorizado:
 
-1. ~~**A6 — Peace trend real** (S)~~ ✅ **hecho (07-03)**
-2. ~~**A3 — Jerarquía de prioridades** (S)~~ ✅ **hecho (07-03)**
-3. ~~**A2 — Orquestador del pipeline** (M)~~ ✅ **hecho (07-03)** — "Foco ahora" en /panel
-4. ~~**A1 — Multi-Persona Reasoner** (L)~~ ✅ **hecho (07-03)** — "Pensar con SIR"
-5. ~~**A4 — Evaluador de decisión 7-dim** (M)~~ ✅ **hecho (07-03)** — /decidir
-6. ~~**A5 — Motor predictivo** (L)~~ ✅ **hecho** — "Proyección 7 días" en /salud
-7. ~~**A7 — Self dinámico** (M)~~ ✅ **hecho** — "Tu momento" en /salud
-8. **B1 — Extensión Teams** (M) ← *siguiente* — 📌 cliente MV3 (se carga en Chrome; no testeable-en-repo)
+**🔥 Tanda 1 — alto valor, buildable ya**
+1. **C2 — Claude → SIR ingest** (M) — contarle por chat y que SIR se llene solo. Tu want de siempre; hay base en `/relato/ingest`, falta tokens personales + modo smart.
+2. **A8b — cablear `adjustByLearning`** (S) — que las recomendaciones se re-ordenen según lo que YA te funciona (el loop ya registra; falta que ajuste el ranking cuando haya datos).
+3. **U2-fin — a11y fino** (M) — barrido de contraste `/70`/`/50` en /panel + componente `SectionHeading` semántico (rótulos `<div>`→`<h2>`).
 
-> **Capa cognitiva (A1–A7): COMPLETA.** Quedan B (Reader/Teams) y C (pendientes P2).
+**⚙️ Tanda 2 — mejora**
+4. **U1-fin — /salud** (S) — split "lo que se observa" vs "hacia dónde va" (PatronesPanel sobrecargado); renombrar "Semana en foco".
+5. **C1 — seed batch: extracción integrada** (M) — pegar PDF/screenshot → SIR arma el JSON (solapa con C2).
+6. **V2 — cache del reasoner/decidir** (S).
 
-> Se puede reordenar. Si querés ver el reasoner (A1) antes que los quick wins, se hace.
+**🧊 Tanda 3 — grande / bloqueado / necesita input tuyo**
+7. **C3 — Fase 3d RAG cross-session** (L) — contexto profundo automático por interacción.
+8. **C4 — pulido mobile #44** (M) — bloqueado: necesita capturas reales de tu cel.
+9. **B1/B2/B3 — Reader avanzado** — extensión MV3 / redes sociales (riesgo ToS) / Teams por Graph OAuth (necesita consentimiento M365).
+10. **V1 — verificación en vivo** — necesita tu sesión + data.
