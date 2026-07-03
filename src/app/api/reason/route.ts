@@ -19,6 +19,8 @@ import type { CognitiveAssessment } from '@/engines/orchestrator'
 import type { PriorityDomain } from '@/engines/priority'
 import { selectPersonas, PERSONAS, type CognitivePersona } from '@/lib/reasoner/personas'
 import { buildReasonerPrompt, type ReasonerResult, type LensTake } from '@/lib/reasoner/prompt'
+import { readDailyCache, writeDailyCache } from '@/lib/ai-cache/dailyCache'
+import { todayLimaKey } from '@/lib/dates/limaDay'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -93,13 +95,25 @@ export async function POST(req: NextRequest) {
   const { data: auth, error: authErr } = await supabase.auth.getUser()
   if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
 
-  const rl = await enforceRateLimit(supabase, auth.user.id, 'generation')
-  if (!rl.ok) return rl.response
-
   let body: unknown
   try { body = await req.json() } catch { return errorJson(400, 'JSON inválido') }
   const assessment = parseAssessment((body as Record<string, unknown>)?.assessment)
   if (!assessment) return errorJson(400, 'Body inválido', 'Se esperaba { assessment: CognitiveAssessment }')
+  const force = (body as Record<string, unknown>)?.force === true
+
+  // V2 — cache diaria (fail-open): la lectura de 12 lentes del día es estable;
+  // re-clickear "Pensar con SIR" devuelve la cacheada salvo `force`. Chequeamos
+  // ANTES del rate-limit para no gastar cuota en un cache hit.
+  const dayKey = todayLimaKey()
+  if (!force) {
+    const cached = await readDailyCache<{ result: ReasonerResult; personas: CognitivePersona[] }>(
+      supabase, auth.user.id, 'reason', dayKey,
+    )
+    if (cached) return NextResponse.json({ ...cached, cached: true })
+  }
+
+  const rl = await enforceRateLimit(supabase, auth.user.id, 'generation')
+  if (!rl.ok) return rl.response
 
   const personas = selectPersonas(focusDomains(assessment))
   const { system, user } = buildReasonerPrompt(assessment, personas)
@@ -135,5 +149,8 @@ export async function POST(req: NextRequest) {
 
   const result = sanitizeResult(parsed, personas)
   if (!result.synthesis && result.perLens.length === 0) return errorJson(502, 'No obtuve una lectura del modelo')
-  return NextResponse.json({ result, personas })
+
+  // Cachear la lectura del día (idempotente por user+día). Fail-open.
+  await writeDailyCache(supabase, auth.user.id, 'reason', dayKey, { result, personas })
+  return NextResponse.json({ result, personas, cached: false })
 }

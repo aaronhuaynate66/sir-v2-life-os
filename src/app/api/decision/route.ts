@@ -11,6 +11,8 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { evaluateDecision, DECISION_DIMENSIONS, type DecisionDimension, type DecisionInput } from '@/engines/decision'
+import { readDailyCache, writeDailyCache, decisionCacheKey } from '@/lib/ai-cache/dailyCache'
+import { todayLimaKey } from '@/lib/dates/limaDay'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -60,14 +62,26 @@ export async function POST(req: NextRequest) {
   const { data: auth, error: authErr } = await supabase.auth.getUser()
   if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
 
-  const rl = await enforceRateLimit(supabase, auth.user.id, 'generation')
-  if (!rl.ok) return rl.response
-
-  let body: { title?: unknown; description?: unknown }
+  let body: { title?: unknown; description?: unknown; force?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : ''
   const description = typeof body.description === 'string' ? body.description.trim().slice(0, 1500) : ''
   if (!title && !description) return errorJson(400, 'Contame qué estás por decidir')
+  const force = body.force === true
+
+  // V2 — cache por (día + hash del texto): evaluar la MISMA decisión el mismo día
+  // devuelve lo cacheado (fail-open). Chequeo antes del rate-limit para no gastar
+  // cuota en un hit. Decisiones distintas → cache_key distinta, no colisionan.
+  const cacheKey = decisionCacheKey(todayLimaKey(), title, description)
+  if (!force) {
+    const cached = await readDailyCache<{ assessment: ReturnType<typeof evaluateDecision> }>(
+      supabase, auth.user.id, 'decision', cacheKey,
+    )
+    if (cached) return NextResponse.json({ ...cached, cached: true })
+  }
+
+  const rl = await enforceRateLimit(supabase, auth.user.id, 'generation')
+  if (!rl.ok) return rl.response
 
   if (!process.env.ANTHROPIC_API_KEY) return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
   const client = new Anthropic({ maxRetries: 2 })
@@ -101,5 +115,8 @@ export async function POST(req: NextRequest) {
   if (Object.keys(scores).length === 0) return errorJson(502, 'No pude puntuar la decisión')
 
   const assessment = evaluateDecision({ title: title || description.slice(0, 80), scores })
-  return NextResponse.json({ assessment })
+
+  // Cachear (idempotente por user+día+hash). Fail-open.
+  await writeDailyCache(supabase, auth.user.id, 'decision', cacheKey, { assessment })
+  return NextResponse.json({ assessment, cached: false })
 }
