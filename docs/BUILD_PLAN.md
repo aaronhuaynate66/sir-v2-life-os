@@ -28,7 +28,7 @@
 | A6 | **Peace trend real** | ✅ | S | P0 | HECHO (07-03): `computePeaceTrend` puro (deadband, ventana 6) + param `history` en `calculatePeaceScore`, cableado en `/panel` desde el histórico de snapshots. El ícono ↗/→/↘ ya refleja la tendencia real. |
 | A7 | **Modelo del self dinámico** | ✅ | M | P2 | HECHO (07-03): `engines/self-model` `deriveDynamicSelf` compone las proyecciones (A5) + trend de paz (A6) en 'cómo venís' (momentum + mejora/atención). Cableado: bloque **"Tu momento"** en /salud. 5 tests. |
 | A8 | **Capa 9 — Aprendizaje / feedback loop** ⭐ | ✅ | L | P1 | HECHO (07-03): `engines/learning` puro (computeEffectiveness + outcomePeace + adjustByLearning, 7 tests). `useFeedbackStore` registra al completar una rec + la paz de ese momento; card **"Qué te funciona"** en /salud cruza con la paz N días después → qué tipo de acción te sube la paz. Honesto (insufficient hasta tener outcome). adjustByLearning listo (aún no alimenta el ranking, a propósito, hasta tener datos). CIERRA la base científica. |
-| A4b | **Dimensión "alineación con valores"** | ⬜ | S | P2 | Extender el evaluador (A4) con una 8ª dimensión: alineación con tus valores/identidad (`identity_profile`), no solo con objetivos. |
+| A4b | **Dimensión "alineación con valores"** | ✅ | S | P2 | HECHO (07-03): 8ª dimensión en el evaluador (peso alto, ancla de identidad). LLM la puntúa; se ve en /decidir. |
 
 ## B. SIR Reader (leer el navegador logueado → SIR)
 
@@ -54,7 +54,7 @@
 | # | Ítem | Estado | Esf | Pri | Nota |
 |---|---|---|---|---|---|
 | U2 | **A11y: labels + skip link + contraste + headings** | 🔨 | M | P1 | HECHO (07-03): skip link + `id=main` (AppShell), labels en /decidir + KnowledgeGap + medicación, focus-visible del botón "Resolver", contraste del texto chico, headings `<h2>` en cards nuevas, alt del gráfico de medicación + 8px→10px, ScoreBar aria-hidden. PENDIENTE: barrido completo de contraste `/70`/`/50` en /panel + componente `SectionHeading` sistémico. |
-| U1 | **UX: podar el /panel + familia "Pensar"** | 🔨 | M | P1 | HECHO (07-03): microcopy de "Foco ahora", botón renombrado **"Verlo por las 12 lentes"** (+ microcopy) para no colisionar con "Preguntá a SIR". PENDIENTE (decisión de producto): elegir UN foco primario (3 compiten: Semana/Ahora/Día) + quitar datos duplicados; split observar-vs-anticipar en /salud. |
+| U1 | **UX: podar el /panel + familia "Pensar"** | ✅ | M | P1 | HECHO (07-03): botón "Verlo por las 12 lentes"; de-dup del panel (quitada la lista "Atención" duplicada, ya vive en "Foco ahora") + "Foco del día"→**"Acción del día"** (rompe la colisión). Pendiente menor: split observar/anticipar en /salud. |
 
 ## D. PRs abiertos por mergear (no es build, es liberar valor)
 

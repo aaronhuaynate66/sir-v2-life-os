@@ -10,15 +10,16 @@
 import { PRIORITY_LEVEL, type PriorityDomain } from '../priority'
 
 export type DecisionDimension =
-  | 'peace' | 'biological' | 'financial' | 'alignment' | 'relational' | 'timing' | 'reversibility'
+  | 'peace' | 'values' | 'biological' | 'financial' | 'alignment' | 'relational' | 'timing' | 'reversibility'
 
 /** Orden canónico (paz primero, reversibilidad al final como gate). */
 export const DECISION_DIMENSIONS: DecisionDimension[] = [
-  'peace', 'biological', 'financial', 'alignment', 'relational', 'timing', 'reversibility',
+  'peace', 'values', 'biological', 'financial', 'alignment', 'relational', 'timing', 'reversibility',
 ]
 
 export const DIMENSION_LABEL: Record<DecisionDimension, string> = {
   peace: 'Paz mental',
+  values: 'Alineación con tus valores',
   biological: 'Costo biológico',
   financial: 'Impacto financiero',
   alignment: 'Alineación con objetivos',
@@ -36,10 +37,12 @@ const DIMENSION_DOMAIN: Partial<Record<DecisionDimension, PriorityDomain>> = {
   relational: 'relational',
 }
 
-/** Peso de cada dimensión. timing = medio; reversibility = 0 (es gate). */
+/** Peso de cada dimensión. values = alto (identidad como ancla, docs/01);
+ *  timing = medio; reversibility = 0 (es gate). */
 function weightOf(d: DecisionDimension): number {
   if (d === 'reversibility') return 0
   if (d === 'timing') return 2
+  if (d === 'values') return 5 // pesa como salud: quién querés ser es ancla
   const dom = DIMENSION_DOMAIN[d]
   return dom ? 6 - PRIORITY_LEVEL[dom] : 1 // peace=6 … relational=2
 }

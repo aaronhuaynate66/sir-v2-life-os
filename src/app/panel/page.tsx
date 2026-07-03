@@ -445,20 +445,8 @@ function DashboardContent() {
               <span className={cn('ml-2 w-1.5 h-1.5 rounded-full animate-pulse', peaceDotColor)} />
             </div>
             )}
-            {!peaceCalibrating && threats.length > 0 && (
-              <>
-                <Separator className="my-4" />
-                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">Atención</div>
-                <div className="space-y-1.5">
-                  {threats.map((t, i) => (
-                    <div key={i} className="flex gap-2 items-start">
-                      <AlertCircle size={12} strokeWidth={2} className="text-bad mt-0.5 flex-shrink-0" />
-                      <span className="text-xs text-muted-foreground leading-relaxed">{t.description}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+            {/* Las amenazas (threats) ya se muestran unificadas en "Foco ahora"
+                (CognitiveFocusCard) — no se duplican acá. Ver docs/UI_AUDIT.md U1. */}
           </CardContent>
         </Card>
 
@@ -468,7 +456,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Target size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Foco del dia</span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Acción del día</span>
                 </div>
                 <Badge variant="outline" className={cn('text-[10px] font-mono tracking-wider', recTimingClass)}>{recTimingLabel}</Badge>
               </div>

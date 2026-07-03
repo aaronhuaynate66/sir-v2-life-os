@@ -4,9 +4,9 @@ import { describe, it, expect } from 'vitest'
 import { evaluateDecision, DECISION_DIMENSIONS } from './index'
 
 describe('evaluateDecision', () => {
-  it('devuelve las 7 dimensiones; las no provistas quedan no-evaluadas', () => {
+  it('devuelve las 8 dimensiones; las no provistas quedan no-evaluadas', () => {
     const a = evaluateDecision({ title: 'X', scores: { peace: { score: 1 } } })
-    expect(a.dimensions).toHaveLength(7)
+    expect(a.dimensions).toHaveLength(8)
     expect(a.dimensions.map((d) => d.dimension)).toEqual(DECISION_DIMENSIONS)
     expect(a.dimensions.find((d) => d.dimension === 'peace')?.evaluated).toBe(true)
     expect(a.dimensions.find((d) => d.dimension === 'timing')?.evaluated).toBe(false)
@@ -39,6 +39,13 @@ describe('evaluateDecision', () => {
       peace: { score: 2 }, biological: { score: 2 }, financial: { score: 2 }, alignment: { score: 2 }, reversibility: { score: -2 },
     } })
     expect(a.verdict).toBe('go')
+  })
+
+  it('los valores pesan fuerte: traicionarlos arrastra el ponderado', () => {
+    // values -2 (peso 5) vs relacional +2 (peso 2) → ponderado negativo
+    const a = evaluateDecision({ title: 'X', scores: { values: { score: -2 }, relational: { score: 2 } } })
+    expect(a.weighted).toBeLessThan(0)
+    expect(a.topRisk?.dimension).toBe('values')
   })
 
   it('la paz pesa más que lo relacional (jerarquía A3)', () => {

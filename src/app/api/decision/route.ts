@@ -23,6 +23,7 @@ Para cada dimensión asigná un "score" de -2 (muy en contra) a +2 (muy a favor)
 
 Dimensiones:
 - peace: ¿aumenta o reduce su paz mental? (meta-objetivo)
+- values: ¿es coherente con sus VALORES y con quién quiere ser? (+2 muy alineado, -2 lo traiciona)
 - biological: costo biológico / de energía (+2 la cuida, -2 la drena)
 - financial: impacto en su estabilidad económica
 - alignment: ¿lo acerca a sus objetivos? (+2 sí, -2 lo aleja)
@@ -31,7 +32,7 @@ Dimensiones:
 - reversibility: ¿es reversible si se equivoca? (+2 totalmente reversible, -2 irreversible)
 
 Devolvé EXCLUSIVAMENTE un JSON (sin prosa, sin fences), con las 7 claves:
-{ "peace": {"score": n, "note": "…"}, "biological": {...}, "financial": {...}, "alignment": {...}, "relational": {...}, "timing": {...}, "reversibility": {...} }
+{ "peace": {"score": n, "note": "…"}, "values": {...}, "biological": {...}, "financial": {...}, "alignment": {...}, "relational": {...}, "timing": {...}, "reversibility": {...} }
 Empezá con { y terminá con }. Si una dimensión no aplica, poné score 0.`
 
 function errorJson(status: number, error: string, detail?: string) {
