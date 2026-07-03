@@ -1,7 +1,12 @@
 // SIR V2 — Tests de buildSeedPlan.
 
 import { describe, it, expect } from 'vitest'
-import { buildSeedPlan, generateSlug, normalizeGender, parseWeight, type SeedBatchInput } from './plan'
+import {
+  buildSeedPlan, generateSlug, normalizeGender, parseWeight,
+  normalizeRelationship, normalizeCategory, normalizeEnergyImpact,
+  normalizeCaptureType, normalizeConfidence, clampScore,
+  type SeedBatchInput,
+} from './plan'
 
 const USER = 'u_test'
 const NOW = new Date('2026-07-01T15:00:00Z')
@@ -58,6 +63,88 @@ describe('parseWeight', () => {
     expect(parseWeight(undefined)).toBeNull()
     expect(parseWeight('')).toBeNull()
     expect(parseWeight('xyz')).toBeNull()
+  })
+})
+
+describe('normalizadores de enums', () => {
+  it('relationship: mapea ES/variantes y default professional', () => {
+    expect(normalizeRelationship('amigo')).toBe('friend')
+    expect(normalizeRelationship('colega')).toBe('professional')
+    expect(normalizeRelationship('pareja')).toBe('romantic')
+    expect(normalizeRelationship('familia')).toBe('family')
+    expect(normalizeRelationship('professional')).toBe('professional') // ya válido
+    expect(normalizeRelationship('xyz')).toBe('professional') // fallback
+    expect(normalizeRelationship(undefined)).toBe('professional')
+  })
+  it('category: acquaintance → peripheral (el bug del README)', () => {
+    expect(normalizeCategory('acquaintance')).toBe('peripheral')
+    expect(normalizeCategory('cercano')).toBe('close')
+    expect(normalizeCategory('network')).toBe('network')
+    expect(normalizeCategory('profesional')).toBe('network')
+    expect(normalizeCategory('zzz')).toBe('network') // fallback
+  })
+  it('energy_impact: ES → EN y default neutral', () => {
+    expect(normalizeEnergyImpact('positivo')).toBe('energizing')
+    expect(normalizeEnergyImpact('agotador')).toBe('draining')
+    expect(normalizeEnergyImpact('neutro')).toBe('neutral')
+    expect(normalizeEnergyImpact('???')).toBe('neutral')
+  })
+  it('capture_type: variantes comunes de Claude → válidos, default unknown', () => {
+    expect(normalizeCaptureType('linkedin_profile')).toBe('linkedin')
+    expect(normalizeCaptureType('IG')).toBe('instagram')
+    expect(normalizeCaptureType('whatsapp')).toBe('whatsapp_chat')
+    expect(normalizeCaptureType('nota')).toBe('manual_note')
+    expect(normalizeCaptureType('telegram')).toBe('dm_conversation')
+    expect(normalizeCaptureType('foobar')).toBe('unknown')
+  })
+  it('confidence: ES → EN y default medium', () => {
+    expect(normalizeConfidence('alta')).toBe('high')
+    expect(normalizeConfidence('baja')).toBe('low')
+    expect(normalizeConfidence('media')).toBe('medium')
+    expect(normalizeConfidence(undefined)).toBe('medium')
+  })
+  it('clampScore: rango 1-10 con fallback', () => {
+    expect(clampScore(6, 5)).toBe(6)
+    expect(clampScore(0, 5)).toBe(1)
+    expect(clampScore(15, 5)).toBe(10)
+    expect(clampScore(undefined, 5)).toBe(5)
+    expect(clampScore(7.6, 5)).toBe(8) // redondea
+  })
+})
+
+describe('buildSeedPlan — coerción de enums inválidos (no revienta el apply)', () => {
+  const input: SeedBatchInput = {
+    people: [
+      {
+        person: {
+          name: 'Test Persona',
+          relationship: 'colega',      // → professional
+          category: 'acquaintance',    // → peripheral
+          energy_impact: 'positivo',   // → energizing
+          importance_score: 42,        // → 10 (clamp)
+        },
+        observations: [
+          { capture_type: 'linkedin_profile', confidence: 'alta', data: {} }, // → linkedin / high
+        ],
+      },
+    ],
+  }
+  const plan = buildSeedPlan({ input, userId: USER, slugTaken: noopSlugTaken, orgExists: noopOrgExists, now: NOW, rand })
+
+  it('las rows quedan con valores válidos del schema', () => {
+    expect(plan.people[0].relationship).toBe('professional')
+    expect(plan.people[0].category).toBe('peripheral')
+    expect(plan.people[0].energy_impact).toBe('energizing')
+    expect(plan.people[0].importance_score).toBe(10)
+    expect(plan.observations[0].capture_type).toBe('linkedin')
+    expect(plan.observations[0].confidence).toBe('high')
+  })
+
+  it('warnea cada coerción para que se vea en el plan', () => {
+    expect(plan.warnings.some((w) => w.includes('relationship') && w.includes('colega'))).toBe(true)
+    expect(plan.warnings.some((w) => w.includes('category') && w.includes('acquaintance'))).toBe(true)
+    expect(plan.warnings.some((w) => w.includes('capture_type') && w.includes('linkedin_profile'))).toBe(true)
+    expect(plan.warnings.some((w) => w.includes('importance_score') && w.includes('42'))).toBe(true)
   })
 })
 

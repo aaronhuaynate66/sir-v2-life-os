@@ -31,9 +31,9 @@ node scripts/seed-people.mjs data/seed-batches/2026-07-01-linkedin-hng.json --co
       "person": {
         "name": "…", "alias": "…",
         "relationship": "professional",
-        "category": "network|close|acquaintance|…",
+        "category": "network",
         "importance_score": 6, "trust_level": 5,
-        "energy_impact": "neutral|energizing|draining",
+        "energy_impact": "neutral",
         "title": "…", "organization": "…",
         "linkedin_url": "…", "location": "…",
         "notes": "…"
@@ -48,6 +48,24 @@ node scripts/seed-people.mjs data/seed-batches/2026-07-01-linkedin-hng.json --co
   ]
 }
 ```
+
+## Enums válidos (los CHECK del schema)
+
+Si un valor cae fuera de estos sets, **el planner lo coerciona** al más cercano
+(ES→EN, variantes comunes) y lo avisa en los warnings del dry-run — el apply ya
+no revienta con un CHECK violation. Aun así, mandalos correctos de entrada:
+
+| Campo | Valores válidos |
+|---|---|
+| `person.relationship` | `family` · `friend` · `romantic` · `professional` · `mentor` · `mentee` · `acquaintance` |
+| `person.category` | `inner_circle` · `close` · `network` · `peripheral` *(⚠ `acquaintance` NO va acá — es `relationship`; se mapea a `peripheral`)* |
+| `person.energy_impact` | `energizing` · `draining` · `neutral` |
+| `person.importance_score`, `trust_level` | entero `1`–`10` |
+| `person.gender` | `female` · `male` · `other` (acepta ES: `femenino`/`masculino`) |
+| `observations[].capture_type` | `whatsapp_chat` · `whatsapp_web` · `whatsapp_info` · `instagram` · `dm_conversation` · `linkedin` · `manual_note` · `voice_note` · `unknown` |
+| `observations[].confidence` | `high` · `medium` · `low` |
+
+> `person_links[].kind` es texto libre (sin CHECK): cualquier string vale.
 
 ## Notas
 
