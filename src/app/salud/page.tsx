@@ -27,6 +27,10 @@ const PatronesPanel = dynamic(
   () => import('@/components/salud/PatronesPanel').then((m) => ({ default: m.PatronesPanel })),
   { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
 )
+const LearningCard = dynamic(
+  () => import('@/components/salud/LearningCard').then((m) => ({ default: m.LearningCard })),
+  { ssr: false },
+)
 const SintesisCruzadaPanel = dynamic(
   () => import('@/components/salud/SintesisCruzadaPanel').then((m) => ({ default: m.SintesisCruzadaPanel })),
   { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
@@ -237,6 +241,7 @@ function SaludContent() {
 
       <div className="mb-6">
         <PatronesPanel />
+        <LearningCard />
         <SintesisCruzadaPanel />
       </div>
 

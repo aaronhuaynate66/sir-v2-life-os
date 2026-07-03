@@ -38,6 +38,10 @@ export function AppShell({ children, wide = false, rightRail }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Skip link (a11y): teclado salta la nav de ~30 links directo al contenido. */}
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-brand focus:px-3 focus:py-2 focus:text-sm focus:text-brand-foreground">
+        Saltar al contenido
+      </a>
       {/* Mobile top bar (oculto en lg+ y al imprimir) */}
       <header className="lg:hidden print:hidden sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background px-3 sm:px-4 h-14">
         <Sheet open={open} onOpenChange={setOpen}>
@@ -70,7 +74,7 @@ export function AppShell({ children, wide = false, rightRail }: AppShellProps) {
       </aside>
 
       {/* Main content. Al imprimir: sin margen de sidebar ni padding/ancho. */}
-      <main className="lg:ml-60 print:ml-0">
+      <main id="main" className="lg:ml-60 print:ml-0">
         <AiCreditBanner />
         <div
           className={cn(

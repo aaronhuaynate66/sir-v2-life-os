@@ -13,9 +13,14 @@ next-env.d.ts
 /src/data/private/
 /src/data/real/
 
-# Seed batches con data personal de terceros (LinkedIn exports, etc.).
-# El README de la carpeta si se commitea; los .json no.
-/data/seed-batches/*.json
+# Repo PÚBLICO: data/ trae datos reales de personas (batches, exports).
+# NUNCA subir nada de data/ salvo la documentación versionada (README).
+# Patrón "ignorá el contenido del dir excepto un archivo": el dir se re-incluye
+# para poder re-incluir el README adentro.
+/data/*
+!/data/seed-batches
+/data/seed-batches/*
+!/data/seed-batches/README.md
 
 # Python bytecode (scripts/generate_roadmap.py + futuros scripts)
 __pycache__/

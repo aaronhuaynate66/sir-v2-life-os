@@ -13,7 +13,30 @@ export interface PeaceThreat { source: string; severity: 'low'|'medium'|'high'|'
 export interface BiologicalInput { energyLevel: number; stressLevel: number; lastSleepDuration: number; recoveryScore: number }
 export interface FinancialInput { stabilityScore: number; monthlyBalance: number; liquidityMonths: number; activeAlerts: string[]; timestamp: string }
 
-export function calculatePeaceScore(params: { biologicalState: BiologicalInput; financialState: FinancialInput; goals: Goal[]; moodScore: number; relationshipAlertCount: number }): PeaceScore {
+/** Deadband del trend de paz (escala 0-10): cambios menores se leen 'stable'. */
+export const PEACE_TREND_THRESHOLD = 0.3
+
+/**
+ * Tendencia de la paz desde la serie reciente de totales (oldest→newest, ej. los
+ * `peaceScore` del histórico de snapshots + el actual). Compara la media de la
+ * mitad reciente vs la mitad anterior (ventana de hasta 6 puntos) con deadband.
+ * 'stable' si hay <2 puntos o el cambio cae dentro del umbral. PURA.
+ */
+export function computePeaceTrend(totals: number[], threshold = PEACE_TREND_THRESHOLD): PeaceScore['trend'] {
+  const xs = totals.filter((n) => Number.isFinite(n))
+  if (xs.length < 2) return 'stable'
+  const win = xs.slice(-6)
+  const mid = Math.floor(win.length / 2)
+  const older = win.slice(0, mid || 1)
+  const newer = win.slice(mid)
+  const avg = (a: number[]) => a.reduce((s, v) => s + v, 0) / a.length
+  const delta = avg(newer) - avg(older)
+  if (delta > threshold) return 'improving'
+  if (delta < -threshold) return 'declining'
+  return 'stable'
+}
+
+export function calculatePeaceScore(params: { biologicalState: BiologicalInput; financialState: FinancialInput; goals: Goal[]; moodScore: number; relationshipAlertCount: number; /** Serie reciente de peaceScore (oldest→newest) para el trend real. */ history?: number[] }): PeaceScore {
   const { biologicalState: b, financialState: f, goals, moodScore, relationshipAlertCount } = params
   let bio = 7
   if (b.lastSleepDuration < 6) bio -= 2
@@ -25,8 +48,13 @@ export function calculatePeaceScore(params: { biologicalState: BiologicalInput; 
   const goal = active.length > 0 ? Math.round(active.reduce((s, g) => s + g.progress, 0) / active.length / 10) : 5
   const emo = Math.min(10, moodScore)
   const rel = Math.max(0, 10 - relationshipAlertCount * 2)
-  const total = bio * 0.25 + fin * 0.20 + goal * 0.20 + emo * 0.20 + rel * 0.15
-  return { total: Math.round(total * 10) / 10, components: { biological: bio, financial: fin, goalProgress: goal, emotional: emo, relational: rel }, trend: 'stable', recoveryMode: total < 4, lastUpdated: new Date().toISOString() }
+  const total = Math.round((bio * 0.25 + fin * 0.20 + goal * 0.20 + emo * 0.20 + rel * 0.15) * 10) / 10
+  // Trend REAL desde la historia (si hay): compara el actual contra la serie
+  // reciente. Sin historia → 'stable' (compatible hacia atrás).
+  const trend = params.history && params.history.length >= 1
+    ? computePeaceTrend([...params.history, total])
+    : 'stable'
+  return { total, components: { biological: bio, financial: fin, goalProgress: goal, emotional: emo, relational: rel }, trend, recoveryMode: total < 4, lastUpdated: new Date().toISOString() }
 }
 
 export function evaluateRecoveryMode(ps: PeaceScore): RecoveryMode {

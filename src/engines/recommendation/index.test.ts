@@ -101,6 +101,13 @@ describe('rankRecommendations', () => {
     expect(out.map((r) => r.id)).toEqual(['c', 'm', 'l'])
   })
 
+  it('empate de prioridad → gana el dominio más alto (salud > relacional)', () => {
+    const salud: Recommendation = { ...rec('high', 1, 'salud'), type: 'rest' }        // health (nivel 1)
+    const relacional: Recommendation = { ...rec('high', 1, 'rel'), type: 'connect' }   // relational (nivel 4)
+    const out = rankRecommendations([relacional, salud])
+    expect(out.map((r) => r.id)).toEqual(['salud', 'rel'])
+  })
+
   it('desempata por expectedPeaceImpact (mayor primero)', () => {
     const out = rankRecommendations([rec('high', 1, 'lo'), rec('high', 5, 'hi')])
     expect(out.map((r) => r.id)).toEqual(['hi', 'lo'])

@@ -15,7 +15,10 @@ import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByInte
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { LunarChip } from '@/components/lunar/LunarChip'
 import { buildSignalContext } from '@/engines/signal'
-import { generateRecommendations } from '@/engines/recommendation'
+import { generateRecommendations, domainForRecommendation } from '@/engines/recommendation'
+import { useFeedbackStore } from '@/stores/useFeedbackStore'
+import { runCognitivePipeline } from '@/engines/orchestrator'
+import { CognitiveFocusCard } from '@/components/panel/CognitiveFocusCard'
 import { buildGoalDashboard } from '@/engines/goal'
 import { getCurrentTimingWindow } from '@/engines/timing'
 import { computeWeeklyScore, windowAverages } from '@/engines/weekly'
@@ -28,7 +31,7 @@ import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { isSignalStale } from '@/lib/signals/relevance'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
-import { useMemoryStore } from '@/stores'
+import { useMemoryStore, useSnapshotStore } from '@/stores'
 import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { HabitsStrip } from '@/components/panel/HabitsStrip'
@@ -122,6 +125,8 @@ function DashboardContent() {
   const { signals, addSignal, resolveSignal, resetToFixtures: resetSignal, clearAll: clearSignal } = useSignalStore()
   const { recommendations, completeRecommendation, dismissRecommendation, resetToFixtures: resetRec, clearAll: clearRec } = useRecommendationStore()
   const { addMemory } = useMemoryStore()
+  const snapshots = useSnapshotStore((s) => s.snapshots)
+  const logFeedback = useFeedbackStore((s) => s.logFeedback)
   const [sleepHours, setSleepHours] = useState('')
   const [energyVal, setEnergyVal] = useState('')
   const [stressVal, setStressVal] = useState('')
@@ -138,7 +143,10 @@ function DashboardContent() {
   const signalCtx = useMemo(() => buildSignalContext(signals), [signals])
   const goalsDash = useMemo(() => buildGoalDashboard(goals), [goals])
   const timing = getCurrentTimingWindow(bio, now?.getHours() ?? 0)
-  const peace = useMemo(() => calculatePeaceScore({ biologicalState: bio, financialState: { stabilityScore: fin.stability, monthlyBalance: fin.monthlyBalance, liquidityMonths: 2.5, activeAlerts: finAlerts.map(a => a.message), timestamp: new Date().toISOString() }, goals, moodScore: 6.5, relationshipAlertCount: relAlerts.length }), [bio, fin, finAlerts, relAlerts, goals])
+  // Historia de paz (peaceScore de los snapshots capturados, oldest→newest) para
+  // el trend REAL en vez del 'stable' hardcodeado.
+  const peaceHistory = useMemo(() => snapshots.map((s) => s.peaceScore).filter((n): n is number => Number.isFinite(n)), [snapshots])
+  const peace = useMemo(() => calculatePeaceScore({ biologicalState: bio, financialState: { stabilityScore: fin.stability, monthlyBalance: fin.monthlyBalance, liquidityMonths: 2.5, activeAlerts: finAlerts.map(a => a.message), timestamp: new Date().toISOString() }, goals, moodScore: 6.5, relationshipAlertCount: relAlerts.length, history: peaceHistory }), [bio, fin, finAlerts, relAlerts, goals, peaceHistory])
   const weekly = useMemo(
     () => computeWeeklyScore({ selfMetrics, sleepRecords, financialMovements, goals }, { now: now ?? undefined, liquidityMonths: 2.5 }),
     [selfMetrics, sleepRecords, financialMovements, goals, now],
@@ -192,6 +200,9 @@ function DashboardContent() {
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
   const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
   const topRec = recommendations.find(r => r.status === 'pending') ?? recs[0] ?? null
+  // A2 — orquestador cognitivo: unifica paz + amenazas + recomendaciones en un
+  // solo foco priorizado por la jerarquía de dominio (en vez de mostrarlos sueltos).
+  const assessment = useMemo(() => runCognitivePipeline({ peace, threats, recommendations: recs }), [peace, threats, recs])
   const activeSignals = signalCtx.activeSignals.filter(s => !s.resolved && !isSignalStale(s, now ?? new Date()))
   // Reconciliación de "sin datos" vs default fabricado: el engine biológico
   // devuelve 6.0 de energía / 7h de sueño por defecto cuando no hay registros.
@@ -303,7 +314,7 @@ function DashboardContent() {
                     </div>
                     <button
                       onClick={() => resolveSignal(sig.id)}
-                      className="text-muted-foreground/60 hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-muted-foreground hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                       aria-label="Resolver"
                     >
                       <X size={14} strokeWidth={1.75} />
@@ -363,6 +374,8 @@ function DashboardContent() {
         peaceScore={peaceCalibrating ? null : peace.total}
         peaceLevel={peaceCalibrating ? null : (peace.total >= 7 ? 'ok' : peace.total >= 4 ? 'warn' : 'bad')}
       />
+      {/* A2 — Foco cognitivo unificado (paz+amenazas+recs, priorizado por dominio). */}
+      <CognitiveFocusCard assessment={assessment} />
       <StatusAlertsCard />
       <RemindersCard />
       <PersonasEnRiesgoCard />
@@ -432,20 +445,8 @@ function DashboardContent() {
               <span className={cn('ml-2 w-1.5 h-1.5 rounded-full animate-pulse', peaceDotColor)} />
             </div>
             )}
-            {!peaceCalibrating && threats.length > 0 && (
-              <>
-                <Separator className="my-4" />
-                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">Atención</div>
-                <div className="space-y-1.5">
-                  {threats.map((t, i) => (
-                    <div key={i} className="flex gap-2 items-start">
-                      <AlertCircle size={12} strokeWidth={2} className="text-bad mt-0.5 flex-shrink-0" />
-                      <span className="text-xs text-muted-foreground leading-relaxed">{t.description}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+            {/* Las amenazas (threats) ya se muestran unificadas en "Foco ahora"
+                (CognitiveFocusCard) — no se duplican acá. Ver docs/UI_AUDIT.md U1. */}
           </CardContent>
         </Card>
 
@@ -455,7 +456,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Target size={14} strokeWidth={1.75} className="text-muted-foreground/70" />
-                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Foco del dia</span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-sans">Acción del día</span>
                 </div>
                 <Badge variant="outline" className={cn('text-[10px] font-mono tracking-wider', recTimingClass)}>{recTimingLabel}</Badge>
               </div>
@@ -482,7 +483,12 @@ function DashboardContent() {
                     <div className="text-[11px] text-muted-foreground/70 mb-2">Es un aviso para esta noche — no hace falta marcarlo; mañana se actualiza solo con tu sueño.</div>
                   )}
                   <div className="flex gap-2 mt-auto">
-                    <Button size="sm" variant="outline" onClick={() => completeRecommendation(topRec.id)} className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">
+                    <Button size="sm" variant="outline" onClick={() => {
+                      // A8 — feedback loop: registrar la acción + la paz de ahora,
+                      // para aprender después si este tipo te sube la paz.
+                      logFeedback({ type: topRec.type, domain: domainForRecommendation(topRec.type), peaceBefore: peace.total, at: new Date().toISOString() })
+                      completeRecommendation(topRec.id)
+                    }} className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">
                       <CheckCircle2 size={14} strokeWidth={1.75} />
                       {topRec.type === 'rest' ? 'Lo tengo' : 'Completar'}
                     </Button>

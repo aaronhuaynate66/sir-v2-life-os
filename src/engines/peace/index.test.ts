@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest'
 
 import type { Goal } from '@/types'
 import type { PeaceScore } from './index'
-import { calculatePeaceScore, evaluateRecoveryMode, detectPeaceThreats } from './index'
+import { calculatePeaceScore, evaluateRecoveryMode, detectPeaceThreats, computePeaceTrend } from './index'
 
 function goal(progress: number, status: Goal['status'] = 'active'): Goal {
   return {
@@ -122,6 +122,41 @@ describe('evaluateRecoveryMode', () => {
   it('razón financiera cuando finanzas es el mínimo', () => {
     const r = evaluateRecoveryMode(ps({ biological: 8, financial: 1, goalProgress: 8, emotional: 8, relational: 8 }, true))
     expect(r.reason).toBe('Tension financiera')
+  })
+})
+
+describe('computePeaceTrend', () => {
+  it('sube → improving; baja → declining; plano → stable', () => {
+    expect(computePeaceTrend([5, 5, 5, 7, 7, 8])).toBe('improving')
+    expect(computePeaceTrend([8, 8, 7, 5, 5, 4])).toBe('declining')
+    expect(computePeaceTrend([6, 6, 6, 6])).toBe('stable')
+  })
+  it('cambios chicos caen en el deadband (stable)', () => {
+    expect(computePeaceTrend([6.0, 6.1, 6.2])).toBe('stable')
+  })
+  it('con <2 puntos → stable', () => {
+    expect(computePeaceTrend([])).toBe('stable')
+    expect(computePeaceTrend([7])).toBe('stable')
+  })
+  it('ignora valores no finitos', () => {
+    expect(computePeaceTrend([NaN, 5, 5, 8, 8])).toBe('improving')
+  })
+})
+
+describe('calculatePeaceScore — trend real desde history', () => {
+  const base = {
+    biologicalState: { energyLevel: 6, stressLevel: 4, lastSleepDuration: 7, recoveryScore: 6 },
+    financialState: { stabilityScore: 7, monthlyBalance: 100, liquidityMonths: 3, activeAlerts: [], timestamp: '' },
+    goals: [], moodScore: 7, relationshipAlertCount: 0,
+  }
+  it('sin history → stable (compatible hacia atrás)', () => {
+    expect(calculatePeaceScore(base).trend).toBe('stable')
+  })
+  it('con history baja + actual alto → improving', () => {
+    expect(calculatePeaceScore({ ...base, history: [3, 3, 4] }).trend).toBe('improving')
+  })
+  it('con history alta + actual más bajo → declining', () => {
+    expect(calculatePeaceScore({ ...base, history: [9.5, 9.5, 9.5] }).trend).toBe('declining')
   })
 })
 

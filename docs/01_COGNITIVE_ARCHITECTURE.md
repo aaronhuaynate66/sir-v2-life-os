@@ -149,3 +149,54 @@ Memory ←→ Signals ←→ Recommendations
 Todo está conectado. Una señal biológica puede afectar una decisión financiera.
 Un evento relacional puede impactar el estado de paz.
 El sistema ve estas conexiones y las usa.
+
+---
+
+## Estado de implementación (2026-07-03)
+
+La infraestructura ("el cuerpo") está en prod. La **capa cognitiva ("la mente")**
+que unifica todo se construyó en el sprint del 03-07 (ver `docs/BUILD_PLAN.md`):
+
+| Capa / componente | Motor | Estado |
+|---|---|---|
+| Percepción (señales/capturas) | `engines/signal`, `lib/capture/*` | ✅ |
+| Contextualización (snapshot) | `engines/context/builder` | ✅ |
+| Memoria (+ cerebro-grafo F1-F4) | `engines/memory`, `lib/brain/*` | ✅ |
+| **Razonamiento (12 lentes)** | `lib/reasoner` + `POST /api/reason` ("Pensar con SIR") | ✅ A1 |
+| Timing | `engines/timing` | ✅ |
+| Recomendación | `engines/recommendation` (ordena por jerarquía A3) | ✅ |
+| Paz (+ trend real) | `engines/peace` (`computePeaceTrend`) | ✅ A6 |
+| **Orquestador del pipeline** | `engines/orchestrator` ("Foco ahora" en /panel) | ✅ A2 |
+| **Jerarquía de prioridades** | `engines/priority` (Paz>Salud>…>Optimización) | ✅ A3 |
+| **Evaluador de decisión (7 dim + reversibilidad)** | `engines/decision` + `/decidir` | ✅ A4 |
+| **Motor predictivo** | `engines/predictive` (proyección de series) | ✅ A5 |
+| **Modelo del self dinámico** | `engines/self-model` ("Tu momento") | ✅ A7 |
+
+## Lo que le falta a la base científica (identificado 03-07)
+
+El pipeline es hoy una **pasada hacia adelante**. Faltan tres cosas para que sea
+un sistema cognitivo cerrado, no solo un asesor:
+
+### 1. Capa 9 — Aprendizaje / Retroalimentación (el mayor faltante)
+El bucle no se cierra: SIR recomienda o evaluás una decisión, pero **no observa
+el RESULTADO** (¿subió tu paz/energía después de actuar?) para **ajustar** sus
+pesos y su confianza. Es "la parte analítica que cierra el loop":
+
+```
+… → Recomendación → (actuás) → Resultado observado → ¿mejoró la paz? →
+      → ajusta la confianza de ese tipo de recomendación / de esa lente
+```
+
+El cerebro-grafo ya aprende de tus confirmaciones (Hebbian, F3); falta
+**generalizarlo a recomendaciones y decisiones**: registrar outcome + aprender
+qué consejos, en qué contexto, efectivamente te suben la paz. → **A8 en el plan.**
+
+### 2. Confianza / incertidumbre como principio transversal
+Los motores nuevos (reasoner, predictivo, decisión) ya reportan confianza, pero
+no está como PRINCIPIO: SIR debe decir cuán seguro está y degradar con honestidad
+(el patrón `insufficient` ya existe en varios). Documentado acá como norma.
+
+### 3. Alineación con VALORES/identidad (no solo objetivos)
+El evaluador de decisión mide "alineación con objetivos"; falta una dimensión de
+**alineación con tus valores/identidad** (el Arquitecto de Identidad como ancla,
+usando `identity_profile`). Extensión natural del evaluador (A4).

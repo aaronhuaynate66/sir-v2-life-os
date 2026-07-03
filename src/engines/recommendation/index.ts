@@ -1,5 +1,6 @@
 // SIR V2 — Recommendation Engine
-import type { Recommendation, RecommendationPriority, Goal, Signal } from '@/types'
+import type { Recommendation, RecommendationPriority, RecommendationType, Goal, Signal } from '@/types'
+import { PRIORITY_LEVEL, type PriorityDomain } from '../priority'
 import type { PeaceScore } from '../peace'
 import type { BiologicalState } from '../biological'
 import type { RelationshipAlert } from '../relationship'
@@ -50,10 +51,28 @@ export function generateRecommendations(input: { peaceScore: PeaceScore; biologi
   return rankRecommendations(recs)
 }
 
+/** Dominio de cada tipo de recomendación, para la jerarquía de trade-offs (A3). */
+export function domainForRecommendation(type: RecommendationType): PriorityDomain {
+  switch (type) {
+    case 'rest': return 'health'
+    case 'connect': return 'relational'
+    case 'reflect': return 'peace'
+    case 'wait': return 'optimization'
+    case 'action':
+    case 'decision':
+    default: return 'personal'
+  }
+}
+
 export function rankRecommendations(recs: Recommendation[]): Recommendation[] {
   const order: Record<RecommendationPriority, number> = { critical: 0, high: 1, medium: 2, low: 3 }
   return [...recs].sort((a, b) => {
     const diff = order[a.priority] - order[b.priority]
-    return diff !== 0 ? diff : b.expectedPeaceImpact - a.expectedPeaceImpact
+    if (diff !== 0) return diff
+    // Empate de prioridad → lo rompe la JERARQUÍA DE DOMINIOS (Paz>Salud>
+    // Finanzas>Personal>Relacional>Optimización): salud gana a relacional, etc.
+    const dd = PRIORITY_LEVEL[domainForRecommendation(a.type)] - PRIORITY_LEVEL[domainForRecommendation(b.type)]
+    if (dd !== 0) return dd
+    return b.expectedPeaceImpact - a.expectedPeaceImpact
   })
 }

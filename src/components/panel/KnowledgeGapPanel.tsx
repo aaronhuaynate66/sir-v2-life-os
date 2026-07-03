@@ -99,6 +99,7 @@ export function KnowledgeGapPanel() {
                   <input
                     type={g.inputType}
                     value={drafts[g.key] ?? ''}
+                    aria-label={g.question}
                     onChange={(e) => setDrafts((d) => ({ ...d, [g.key]: e.target.value }))}
                     placeholder={g.inputType === 'text' ? 'Tu respuesta…' : ''}
                     className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground"
