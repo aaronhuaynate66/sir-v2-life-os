@@ -16,6 +16,8 @@ import { detectRelationshipAlerts } from '@/engines/relationship'
 import { LunarChip } from '@/components/lunar/LunarChip'
 import { buildSignalContext } from '@/engines/signal'
 import { generateRecommendations } from '@/engines/recommendation'
+import { runCognitivePipeline } from '@/engines/orchestrator'
+import { CognitiveFocusCard } from '@/components/panel/CognitiveFocusCard'
 import { buildGoalDashboard } from '@/engines/goal'
 import { getCurrentTimingWindow } from '@/engines/timing'
 import { computeWeeklyScore, windowAverages } from '@/engines/weekly'
@@ -196,6 +198,9 @@ function DashboardContent() {
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
   const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
   const topRec = recommendations.find(r => r.status === 'pending') ?? recs[0] ?? null
+  // A2 — orquestador cognitivo: unifica paz + amenazas + recomendaciones en un
+  // solo foco priorizado por la jerarquía de dominio (en vez de mostrarlos sueltos).
+  const assessment = useMemo(() => runCognitivePipeline({ peace, threats, recommendations: recs }), [peace, threats, recs])
   const activeSignals = signalCtx.activeSignals.filter(s => !s.resolved && !isSignalStale(s, now ?? new Date()))
   // Reconciliación de "sin datos" vs default fabricado: el engine biológico
   // devuelve 6.0 de energía / 7h de sueño por defecto cuando no hay registros.
@@ -367,6 +372,8 @@ function DashboardContent() {
         peaceScore={peaceCalibrating ? null : peace.total}
         peaceLevel={peaceCalibrating ? null : (peace.total >= 7 ? 'ok' : peace.total >= 4 ? 'warn' : 'bad')}
       />
+      {/* A2 — Foco cognitivo unificado (paz+amenazas+recs, priorizado por dominio). */}
+      <CognitiveFocusCard assessment={assessment} />
       <StatusAlertsCard />
       <RemindersCard />
       <PersonasEnRiesgoCard />
