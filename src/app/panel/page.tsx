@@ -28,7 +28,7 @@ import { useFinanceStore } from '@/stores/useFinanceStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { isSignalStale } from '@/lib/signals/relevance'
 import { useRecommendationStore } from '@/stores/useRecommendationStore'
-import { useMemoryStore } from '@/stores'
+import { useMemoryStore, useSnapshotStore } from '@/stores'
 import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { HabitsStrip } from '@/components/panel/HabitsStrip'
@@ -122,6 +122,7 @@ function DashboardContent() {
   const { signals, addSignal, resolveSignal, resetToFixtures: resetSignal, clearAll: clearSignal } = useSignalStore()
   const { recommendations, completeRecommendation, dismissRecommendation, resetToFixtures: resetRec, clearAll: clearRec } = useRecommendationStore()
   const { addMemory } = useMemoryStore()
+  const snapshots = useSnapshotStore((s) => s.snapshots)
   const [sleepHours, setSleepHours] = useState('')
   const [energyVal, setEnergyVal] = useState('')
   const [stressVal, setStressVal] = useState('')
@@ -138,7 +139,10 @@ function DashboardContent() {
   const signalCtx = useMemo(() => buildSignalContext(signals), [signals])
   const goalsDash = useMemo(() => buildGoalDashboard(goals), [goals])
   const timing = getCurrentTimingWindow(bio, now?.getHours() ?? 0)
-  const peace = useMemo(() => calculatePeaceScore({ biologicalState: bio, financialState: { stabilityScore: fin.stability, monthlyBalance: fin.monthlyBalance, liquidityMonths: 2.5, activeAlerts: finAlerts.map(a => a.message), timestamp: new Date().toISOString() }, goals, moodScore: 6.5, relationshipAlertCount: relAlerts.length }), [bio, fin, finAlerts, relAlerts, goals])
+  // Historia de paz (peaceScore de los snapshots capturados, oldest→newest) para
+  // el trend REAL en vez del 'stable' hardcodeado.
+  const peaceHistory = useMemo(() => snapshots.map((s) => s.peaceScore).filter((n): n is number => Number.isFinite(n)), [snapshots])
+  const peace = useMemo(() => calculatePeaceScore({ biologicalState: bio, financialState: { stabilityScore: fin.stability, monthlyBalance: fin.monthlyBalance, liquidityMonths: 2.5, activeAlerts: finAlerts.map(a => a.message), timestamp: new Date().toISOString() }, goals, moodScore: 6.5, relationshipAlertCount: relAlerts.length, history: peaceHistory }), [bio, fin, finAlerts, relAlerts, goals, peaceHistory])
   const weekly = useMemo(
     () => computeWeeklyScore({ selfMetrics, sleepRecords, financialMovements, goals }, { now: now ?? undefined, liquidityMonths: 2.5 }),
     [selfMetrics, sleepRecords, financialMovements, goals, now],
