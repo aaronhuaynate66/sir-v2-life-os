@@ -71,7 +71,7 @@ export function PatronesPanel() {
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-1">
           <Activity size={15} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Patrones observados</div>
+          <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Patrones observados</h2>
         </div>
         <p className="text-[11px] text-muted-foreground mb-3 inline-flex items-start gap-1 leading-snug">
           <Info size={12} className="mt-0.5 shrink-0" /> Observación de tu data, <span className="font-medium text-foreground/80">no predicción</span>. Solo aparecen cruces con suficientes días.
@@ -101,7 +101,7 @@ export function PatronesPanel() {
                   <p className="text-sm text-foreground leading-relaxed">{o.text}</p>
                   <Badge variant={o.strength === 'clara' ? 'brand' : 'secondary'} className="text-[10px] shrink-0 capitalize">{o.strength}</Badge>
                 </div>
-                <div className="text-[10px] text-muted-foreground/60 mt-1">basado en {o.n} días</div>
+                <div className="text-[10px] text-muted-foreground mt-1">basado en {o.n} días</div>
               </li>
             ))}
           </ul>
@@ -121,7 +121,7 @@ export function PatronesPanel() {
                     <span className="text-muted-foreground">{pr.label}</span>
                     <span className="flex items-center gap-2">
                       <span className={`font-mono tabular-nums ${tone}`}>{arrow} ~{pr.p.projected}{pr.unit}</span>
-                      <span className="text-[10px] text-muted-foreground/60">conf. {pr.p.confidence}</span>
+                      <span className="text-[10px] text-muted-foreground">conf. {pr.p.confidence}</span>
                     </span>
                   </li>
                 )

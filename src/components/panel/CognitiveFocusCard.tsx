@@ -42,8 +42,8 @@ export function CognitiveFocusCard({ assessment }: { assessment: CognitiveAssess
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center gap-2 mb-3">
           <Compass size={14} strokeWidth={1.75} className="text-brand-soft-foreground" aria-hidden="true" />
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Foco ahora</div>
-          <span className="text-[10px] text-muted-foreground ml-auto">unificado · por prioridad</span>
+          <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Foco ahora</h2>
+          <span className="text-[10px] text-muted-foreground ml-auto">lo que más pesa hoy</span>
         </div>
 
         <ul className="space-y-2">
@@ -60,10 +60,13 @@ export function CognitiveFocusCard({ assessment }: { assessment: CognitiveAssess
 
         {/* A1 — reasoner multi-lente on-demand */}
         {!reading && (
-          <Button size="sm" variant="outline" onClick={() => void think()} disabled={thinking} className="mt-3">
-            {thinking ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Sparkles size={13} className="mr-1.5" />}
-            {thinking ? 'Pensando…' : 'Pensar con SIR'}
-          </Button>
+          <div className="mt-3">
+            <Button size="sm" variant="outline" onClick={() => void think()} disabled={thinking}>
+              {thinking ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : <Sparkles size={13} className="mr-1.5" />}
+              {thinking ? 'Pensando…' : 'Verlo por las 12 lentes'}
+            </Button>
+            {!thinking && <p className="text-[10px] text-muted-foreground mt-1">SIR lee este momento con sus 12 lentes (psicólogo, estratega, coach…) y sintetiza.</p>}
+          </div>
         )}
         {err && <p className="text-[11px] text-bad mt-2">{err}</p>}
 

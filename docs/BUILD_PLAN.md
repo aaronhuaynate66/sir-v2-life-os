@@ -52,8 +52,8 @@
 
 | # | Ítem | Estado | Esf | Pri | Nota |
 |---|---|---|---|---|---|
-| U1 | **UX: podar el /panel + familia "Pensar"** | ⬜ | M | P1 | 3 "focos" compiten (Semana/Ahora/Día) + datos duplicados; renombrar Preguntá/Pensar/Decidir; split observar-vs-anticipar en /salud. |
-| U2 | **A11y: labels + skip link + contraste + headings** | ⬜ | M | P1 | Inputs sin label (crítico), skip link, focus-visible del botón resolver, texto muted /60 bajo contraste, rótulos `<div>`→`<h2>`. |
+| U2 | **A11y: labels + skip link + contraste + headings** | 🔨 | M | P1 | HECHO (07-03): skip link + `id=main` (AppShell), labels en /decidir + KnowledgeGap + medicación, focus-visible del botón "Resolver", contraste del texto chico, headings `<h2>` en cards nuevas, alt del gráfico de medicación + 8px→10px, ScoreBar aria-hidden. PENDIENTE: barrido completo de contraste `/70`/`/50` en /panel + componente `SectionHeading` sistémico. |
+| U1 | **UX: podar el /panel + familia "Pensar"** | 🔨 | M | P1 | HECHO (07-03): microcopy de "Foco ahora", botón renombrado **"Verlo por las 12 lentes"** (+ microcopy) para no colisionar con "Preguntá a SIR". PENDIENTE (decisión de producto): elegir UN foco primario (3 compiten: Semana/Ahora/Día) + quitar datos duplicados; split observar-vs-anticipar en /salud. |
 
 ## D. PRs abiertos por mergear (no es build, es liberar valor)
 

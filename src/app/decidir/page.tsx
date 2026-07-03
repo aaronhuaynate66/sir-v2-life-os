@@ -25,7 +25,7 @@ function ScoreBar({ score }: { score: number }) {
   const pct = ((score + 2) / 4) * 100
   const tone = score > 0 ? 'bg-ok' : score < 0 ? 'bg-bad' : 'bg-muted-foreground/40'
   return (
-    <div className="relative h-1.5 w-full rounded-full bg-muted overflow-hidden">
+    <div aria-hidden="true" className="relative h-1.5 w-full rounded-full bg-muted overflow-hidden">
       <div className="absolute left-1/2 top-0 h-full w-px bg-border" />
       <div className={cn('absolute top-0 h-full rounded-full', tone)}
         style={score >= 0 ? { left: '50%', width: `${pct - 50}%` } : { right: '50%', width: `${50 - pct}%` }} />
@@ -66,9 +66,10 @@ export default function DecidirPage() {
 
       <Card className="mb-4">
         <CardContent className="p-4 space-y-2">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="La decisión en una línea (ej: aceptar el proyecto X)" />
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} aria-label="La decisión, en una línea" placeholder="La decisión en una línea (ej: aceptar el proyecto X)" />
           <textarea
             value={description} onChange={(e) => setDescription(e.target.value)}
+            aria-label="Contexto de la decisión"
             placeholder="Contexto: qué está en juego, qué te tira para cada lado…"
             rows={4}
             className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm"

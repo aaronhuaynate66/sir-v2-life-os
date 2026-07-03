@@ -115,7 +115,7 @@ export default function MedicacionPage() {
       {/* Alta manual: nombre + cantidad */}
       <Card className="mb-6">
         <CardContent className="p-4 flex flex-col sm:flex-row gap-2">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Medicamento (ej: ibuprofeno, sumatriptán)"
+          <Input value={name} onChange={(e) => setName(e.target.value)} aria-label="Medicamento" placeholder="Medicamento (ej: ibuprofeno, sumatriptán)"
             className="flex-1" onKeyDown={(e) => { if (e.key === 'Enter') void log(name, Number(qty) || 1, saveMine, when ? new Date(when).toISOString() : undefined) }} />
           <Input type="number" min={1} max={99} value={qty} onChange={(e) => setQty(e.target.value)} className="w-full sm:w-20" aria-label="Cantidad" />
           <Input type="datetime-local" value={when} max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)} onChange={(e) => setWhen(e.target.value)} className="w-full sm:w-44" aria-label="Cuándo (opcional)" title="Cuándo la tomaste (opcional; por defecto, ahora)" />
@@ -149,11 +149,11 @@ export default function MedicacionPage() {
           <Card className="mb-4 shadow-none">
             <CardContent className="p-4">
               <div className="text-[11px] uppercase tracking-[0.06em] text-text-tertiary mb-3">Tomas · últimos 14 días</div>
-              <div className="flex items-end gap-1 h-24">
+              <div className="flex items-end gap-1 h-24" role="img" aria-label={`Tomas por día, últimos 14 días: total ${total}, pico ${max} por día.`}>
                 {cols.map((d, k) => (
                   <div key={d} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${d}: ${counts[k]} toma(s)`}>
                     <div className="w-full rounded-t bg-brand/70" style={{ height: `${(counts[k] / max) * 100}%`, minHeight: counts[k] > 0 ? 4 : 0 }} />
-                    <span className="text-[8px] text-muted-foreground tabular-nums">{d.slice(8, 10)}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums" aria-hidden="true">{d.slice(8, 10)}</span>
                   </div>
                 ))}
               </div>

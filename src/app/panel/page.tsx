@@ -312,7 +312,7 @@ function DashboardContent() {
                     </div>
                     <button
                       onClick={() => resolveSignal(sig.id)}
-                      className="text-muted-foreground/60 hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-muted-foreground hover:text-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                       aria-label="Resolver"
                     >
                       <X size={14} strokeWidth={1.75} />
