@@ -109,6 +109,7 @@ futuros (motor puro + consumidor, honesto con la confianza):
 - `13_EMOTION_REGULATION` — ventana de tolerancia, estrategia correcta, granularidad.
 - `14_DECISION_SCIENCE` — detector de sesgos, premortem, calibrador de reversibilidad.
 - `15_RELATIONAL_INTELLIGENCE` *(el norte)* — capas de Dunbar, reciprocidad, salud del vínculo.
+- `16_INFLUENCE_SOCIAL_INTELLIGENCE` — posicionarte con ética (Milgram/Zimbardo/Cialdini, agenda-setting), inteligencia social + **defensa** contra ingeniería social. Línea dura: influencia genuina y defensa, NO manipulación.
 
 Próximos módulos construibles salen de esos "Qué construir": arrancar por los de
 confianza alta / sin deuda de datos (ej. detector de sesgos en /decidir, cronotipo

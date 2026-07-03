@@ -88,6 +88,7 @@ por partes" + su señal de confianza, listos para implementar por módulos).
 | **`13_EMOTION_REGULATION`** | Ventana de tolerancia, reevaluación, HRV (Gross, Barrett). |
 | **`14_DECISION_SCIENCE`** | Sesgos, premortem, reversibilidad (Kahneman, Bezos, Klein). |
 | **`15_RELATIONAL_INTELLIGENCE`** | El norte: Dunbar, reciprocidad, salud del vínculo (apego, Gottman). |
+| **`16_INFLUENCE_SOCIAL_INTELLIGENCE`** | Posicionarte con ética: influencia (Milgram, Zimbardo, Cialdini), agenda-setting, inteligencia social + defensa contra manipulación. |
 
 Operativos (no base científica): `BUILD_PLAN`, `AARON_OS_INVENTORY`,
 `STRATEGIC_ROADMAP`, `MIGRATIONS`, auditorías.

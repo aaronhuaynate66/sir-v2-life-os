@@ -237,7 +237,8 @@ profundos viven en sus propios docs (11–15):
 | `engines/peace`, mood/stress, recovery | Regulación emocional (Gross, ventana de tolerancia, HRV) | `13_EMOTION_REGULATION` |
 | `engines/decision` (8 dim + gate) | Ciencia de la decisión (Kahneman, one-way doors, premortem) | `14_DECISION_SCIENCE` |
 | `engines/relationship`, reciprocidad, kinship, grafo | Inteligencia relacional (apego, Dunbar, Granovetter, Gottman) | `15_RELATIONAL_INTELLIGENCE` |
-| Las 12 lentes | Panel cognitivo (cada persona con su marco) | ver *Cognitive Personas* |
+| Comunicación/posicionamiento + defensa (reasoner, grafo) | Influencia e inteligencia social (Milgram, Zimbardo, Cialdini, agenda-setting) | `16_INFLUENCE_SOCIAL_INTELLIGENCE` |
+| Las 12 lentes | Panel cognitivo (cada persona con su marco) | `10_COGNITIVE_PERSONAS` |
 
 ---
 
