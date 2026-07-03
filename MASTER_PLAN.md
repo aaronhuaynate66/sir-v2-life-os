@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `784e2bf`
+**Hash del último commit humano:** `7e57d18`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `7e57d18` | aaronhuaynate66 | feat(C5): foto → relato — cámara en 'Contale a SIR' (#515) | 2026-07-03 |
+| `14d6e24` | Aaron Huaynate | chore(plan): encabezado — cierra el backlog autónomo (C1/C2/C3/V2/U1/U2) | 2026-07-03 |
 | `784e2bf` | aaronhuaynate66 | feat(C3): memoria cross-session — SIR recuerda lo conversado (RAG) (#514) | 2026-07-03 |
 | `42c21c3` | aaronhuaynate66 | feat(C1): extracción integrada de seed batch desde texto crudo (#513) | 2026-07-03 |
 | `f02d953` | aaronhuaynate66 | feat(V2): cache diaria de IA para reasoner y decidir (#512) | 2026-07-03 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8562a1c` | aaronhuaynate66 | feat(A8b): cablear adjustByLearning al ranking — el loop reordena las recs (#509) | 2026-07-03 |
 | `f4de5b5` | aaronhuaynate66 | feat(C2): el ingest de relato acepta token personal (contale desde afuera) (#508) | 2026-07-03 |
 | `e840a0e` | aaronhuaynate66 | docs(plan): todo mergeado; lista de lo que queda con orden de ataque (#507) | 2026-07-03 |
-| `1cd6d29` | aaronhuaynate66 | feat: capa cognitiva E6 completa (A1-A7) — lista viva + reasoner + decidir + predictivo (#506) | 2026-07-03 |
-| `27dac86` | aaronhuaynate66 | feat(medicacion): extraer el desglose desde foto de la caja o link/nombre (#501) | 2026-07-03 |
 
 ---
 
