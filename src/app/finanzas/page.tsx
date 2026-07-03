@@ -20,6 +20,8 @@ import { createFinancialMovementMemory } from '@/engines/memory'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { financeBalanceSeries } from '@/lib/charts/adapters'
+import { projectMonthEndSpend } from '@/lib/forecast/monthEnd'
+import { MonthEndForecastCard } from '@/components/finanzas/MonthEndForecastCard'
 import { ExportCsvButton } from '@/components/export/ExportCsvButton'
 import { financeMovementsCsv } from '@/lib/export/adapters'
 import dynamic from 'next/dynamic'
@@ -164,6 +166,8 @@ function FinanceContent() {
   const filtered = filterType === 'all' ? sorted : sorted.filter(m => m.type === filterType)
   // Feature 3: balance acumulado (PEN) en el tiempo.
   const balanceSeries = useMemo(() => financeBalanceSeries(financialMovements), [financialMovements])
+  // Proyección de gasto de fin de mes (run-rate variable + fijo booked).
+  const monthEndForecast = useMemo(() => projectMonthEndSpend(financialMovements), [financialMovements])
 
   // Sin movimientos no calculamos estabilidad/riesgo (el engine fabrica un
   // ~4.4 de "riesgo alto" con cero datos). Mostramos estado neutral hasta que
@@ -236,6 +240,9 @@ function FinanceContent() {
           emptyHint="Registrá movimientos para ver cómo evoluciona tu balance."
         />
       </div>
+
+      {/* Forecast: proyección de gasto de fin de mes. */}
+      {hasFinanceData && <MonthEndForecastCard forecast={monthEndForecast} />}
 
       {alerts.length > 0 && (
         <Card className={cn('mb-4', cardClass)}>
