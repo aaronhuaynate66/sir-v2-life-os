@@ -36,6 +36,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { href: '/yo', label: 'Yo', Icon: Brain },
       { href: '/diario', label: 'Diario', Icon: BookHeart },
+      { href: '/review', label: 'Repaso', Icon: Sparkles },
       { href: '/salud', label: 'Salud', Icon: Heart },
       { href: '/habitos', label: 'Hábitos', Icon: Activity },
       { href: '/medicacion', label: 'Medicación', Icon: Pill },
