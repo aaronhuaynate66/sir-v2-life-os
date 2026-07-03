@@ -33,6 +33,17 @@ describe('detectGaps', () => {
     expect(gaps.find((g) => g.entityId === 'y')).toBeFalsy()
     expect(gaps[0].entityId).toBe('x') // ancla primero
   })
+  it('NO pide cumple si ya hay birth_date (con año)', () => {
+    const gaps = detectGaps([person({ id: 'a', importanceScore: 8, birthDate: '1990-06-09' })], [])
+    expect(gaps.find((g) => g.entityId === 'a' && g.kind === 'birthday')).toBeFalsy()
+  })
+  it('NO pide cumple si hay una fecha especial de cumpleaños (año-menos)', () => {
+    const gaps = detectGaps([person({
+      id: 'a', name: 'Fabiola Masías', importanceScore: 8,
+      specialDates: [{ id: 's1', label: 'Cumpleaños de Fabiola', date: '2000-06-09', recurring: true }],
+    })], [])
+    expect(gaps.find((g) => g.entityId === 'a' && g.kind === 'birthday')).toBeFalsy()
+  })
   it('descarta lo dismissed', () => {
     const gaps = detectGaps([person({ id: 'a', importanceScore: 8 })], [], new Set(['birthday:a']))
     expect(gaps).toHaveLength(0)
