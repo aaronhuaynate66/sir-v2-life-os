@@ -73,6 +73,10 @@ export function rankRecommendations(recs: Recommendation[]): Recommendation[] {
     // Finanzas>Personal>Relacional>Optimización): salud gana a relacional, etc.
     const dd = PRIORITY_LEVEL[domainForRecommendation(a.type)] - PRIORITY_LEVEL[domainForRecommendation(b.type)]
     if (dd !== 0) return dd
-    return b.expectedPeaceImpact - a.expectedPeaceImpact
+    const pi = b.expectedPeaceImpact - a.expectedPeaceImpact
+    if (pi !== 0) return pi
+    // Último desempate: confianza. Así el aprendizaje (A8b: adjustByLearning
+    // sube/baja la confianza según lo que te funciona) reordena a igualdad.
+    return b.confidence - a.confidence
   })
 }

@@ -113,6 +113,12 @@ describe('rankRecommendations', () => {
     expect(out.map((r) => r.id)).toEqual(['hi', 'lo'])
   })
 
+  it('a igual prioridad/dominio/impacto, gana la mayor confianza (A8b)', () => {
+    const lo: Recommendation = { ...rec('high', 2, 'lo'), confidence: 0.3 }
+    const hi: Recommendation = { ...rec('high', 2, 'hi'), confidence: 0.9 }
+    expect(rankRecommendations([lo, hi]).map((r) => r.id)).toEqual(['hi', 'lo'])
+  })
+
   it('NO muta el array de entrada', () => {
     const input = [rec('low', 1, 'l'), rec('critical', 1, 'c')]
     const snapshot = input.map((r) => r.id)
