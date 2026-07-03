@@ -40,6 +40,10 @@ const PosiblesDuplicados = dynamic(
   () => import('@/components/relaciones/PosiblesDuplicados').then((m) => ({ default: m.PosiblesDuplicados })),
   { ssr: false, loading: () => null },
 )
+const ComparativaPersonasCard = dynamic(
+  () => import('@/components/relaciones/ComparativaPersonasCard').then((m) => ({ default: m.ComparativaPersonasCard })),
+  { ssr: false, loading: () => null },
+)
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
 import {
@@ -361,6 +365,7 @@ function RelationshipsContent() {
       )}
 
       {people.length > 0 && <PosiblesDuplicados />}
+      {people.length >= 3 && <ComparativaPersonasCard />}
 
       <Sheet open={showForm} onOpenChange={(o) => { if (!o) handleCancel() }}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
