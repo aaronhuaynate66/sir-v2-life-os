@@ -15,7 +15,8 @@ import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByInte
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { LunarChip } from '@/components/lunar/LunarChip'
 import { buildSignalContext } from '@/engines/signal'
-import { generateRecommendations, domainForRecommendation } from '@/engines/recommendation'
+import { generateRecommendations, domainForRecommendation, rankRecommendations } from '@/engines/recommendation'
+import { computeEffectiveness, adjustByLearning } from '@/engines/learning'
 import { useFeedbackStore } from '@/stores/useFeedbackStore'
 import { runCognitivePipeline } from '@/engines/orchestrator'
 import { CognitiveFocusCard } from '@/components/panel/CognitiveFocusCard'
@@ -127,6 +128,7 @@ function DashboardContent() {
   const { addMemory } = useMemoryStore()
   const snapshots = useSnapshotStore((s) => s.snapshots)
   const logFeedback = useFeedbackStore((s) => s.logFeedback)
+  const feedbackEvents = useFeedbackStore((s) => s.events)
   const [sleepHours, setSleepHours] = useState('')
   const [energyVal, setEnergyVal] = useState('')
   const [stressVal, setStressVal] = useState('')
@@ -198,7 +200,14 @@ function DashboardContent() {
   // principal vive en /captura; estos formularios quedan a un tap.
   const [showCapture, setShowCapture] = useState(false)
   const threats = useMemo(() => detectPeaceThreats(peace), [peace])
-  const recs = useMemo(() => generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts }), [peace, bio, goals, signals, relAlerts])
+  const recs = useMemo(() => {
+    const base = generateRecommendations({ peaceScore: peace, biologicalState: bio, activeGoals: goals, activeSignals: signals, relationshipAlerts: relAlerts })
+    // A8b — el feedback loop reordena: si SIR aprendió que un tipo te sube la paz,
+    // sus recs suben (adjustByLearning ajusta la confianza → tiebreak del ranking).
+    if (feedbackEvents.length === 0) return base
+    const eff = computeEffectiveness(feedbackEvents, snapshots.map((s) => ({ date: s.date, value: s.peaceScore })))
+    return rankRecommendations(adjustByLearning(base, eff))
+  }, [peace, bio, goals, signals, relAlerts, feedbackEvents, snapshots])
   const topRec = recommendations.find(r => r.status === 'pending') ?? recs[0] ?? null
   // A2 — orquestador cognitivo: unifica paz + amenazas + recomendaciones en un
   // solo foco priorizado por la jerarquía de dominio (en vez de mostrarlos sueltos).
