@@ -11,6 +11,7 @@ import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { RetratoPanel } from '@/components/yo/RetratoPanel'
 import { PersonalTokensPanel } from '@/components/yo/PersonalTokensPanel'
 import { ExportAllPanel } from '@/components/yo/ExportAllPanel'
+import { PushNotificationsPanel } from '@/components/yo/PushNotificationsPanel'
 import dynamic from 'next/dynamic'
 // /yo tiene 10 paneles apilados; solo Retrato + IdentityProfile viven above the
 // fold. Los otros 7 son below fold, mayormente engines pesados (LifeThread hace
@@ -69,6 +70,7 @@ export default function SelfPage() {
         <NotificationsCard />
         <SelfDiagnosisPanel />
         <PersonalTokensPanel />
+        <PushNotificationsPanel />
         <ExportAllPanel />
       </div>
     </AppShell>
