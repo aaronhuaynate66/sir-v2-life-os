@@ -6,8 +6,9 @@
 // Supabase con la sesión de Aaron.
 //
 // Reglas duras:
-//   - Auth por sesión (cookie). Sin bearer — este endpoint no acepta tokens.
-//     El módulo de tokens (Fase 1) queda disponible para OTROS casos.
+//   - Auth COMBINADA (C2): sesión (cookie, la UI de Aaron) O bearer con un token
+//     personal (Fase 1) — para "contarle por chat" desde AFUERA (Claude.ai, un
+//     script, un atajo del cel). Con token usamos service-role scoped por userId.
 //   - Nombre completo obligatorio en cada tool. Si Claude no puede
 //     desambiguar, debe llamar `flag_ambiguo` (que no crea nada, solo pide
 //     aclaración).
@@ -17,7 +18,9 @@
 //     revisa en el UI antes de confirmar.
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { createClient as createServiceClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { authenticateRequest } from '@/lib/auth/tokens'
 import { INGEST_TOOLS, parseToolUse, type IngestAction } from '@/lib/relato-ingest/tools'
 import { executeActions, type ExecResult } from '@/lib/relato-ingest/execute'
 import { recordAiUsage } from '@/lib/ai/usage'
@@ -35,7 +38,7 @@ function err(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
 }
 
-async function loadPeopleNames(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<string[]> {
+async function loadPeopleNames(supabase: SupabaseClient, userId: string): Promise<string[]> {
   const { data } = await supabase.from('people').select('name').eq('user_id', userId).limit(500)
   return ((data ?? []) as Array<{ name: string }>).map((r) => r.name).filter(Boolean)
 }
@@ -78,10 +81,21 @@ interface AnthropicResponse {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: auth } = await supabase.auth.getUser()
-  if (!auth?.user) return err(401, 'No autenticado')
-  const userId = auth.user.id
+  // Auth combinada: sesión (cookie) o bearer con token personal (Fase 1).
+  const user = await authenticateRequest(req)
+  if (!user) return err(401, 'No autenticado', 'Iniciá sesión o mandá un token personal (Bearer).')
+  const userId = user.userId
+  // Cliente: sesión con RLS si vino por cookie; service-role (scoped por userId)
+  // si vino por token — el caller externo no tiene sesión.
+  let supabase: SupabaseClient
+  if (user.tokenId) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) return err(500, 'Supabase service-role no configurado en el servidor')
+    supabase = createServiceClient(url, key, { auth: { persistSession: false } })
+  } else {
+    supabase = (await createClient()) as unknown as SupabaseClient
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim()
   if (!apiKey) return err(501, 'ANTHROPIC_API_KEY no configurado en el servidor')

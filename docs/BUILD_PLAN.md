@@ -45,7 +45,7 @@
 | # | Ítem | Estado | Esf | Pri | Nota |
 |---|---|---|---|---|---|
 | C1 | Extracción integrada de seed batch (Anthropic) | ⬜ | M | P2 | Pegar PDF/screenshot → SIR arma el JSON. Solapa con Claude→SIR ingest. |
-| C2 | Claude → SIR ingest (tokens personales + relato smart) | ⬜ | M | P2 | Contarle por chat y que SIR se llene solo. |
+| C2 | Claude → SIR ingest (tokens personales + relato smart) | ✅ | M | P1 | HECHO (07-03): ambas fases ya existían (tokens en /yo + ingest smart con tools). Faltaba cablearlas: /api/relato/ingest ahora acepta Bearer con token personal (service-role scoped) → contás un relato desde afuera (Claude/atajo/script) con apply:true y SIR se llena solo. Ejemplo curl en el panel de tokens de /yo. |
 | C3 | Fase 3d — Memoria que aprende (RAG cross-session) | ⬜ | L | P2 | Contexto profundo automático por interacción. |
 | C4 | Pulido mobile pantalla-por-pantalla (#44) | ⬜ | M | P2 | Necesita capturas reales del cel. |
 
@@ -76,7 +76,7 @@ Capa cognitiva (A1–A8) + Reader-pegar + toda la sesión: **en prod**. Queda pu
 pendientes, priorizado:
 
 **🔥 Tanda 1 — alto valor, buildable ya**
-1. **C2 — Claude → SIR ingest** (M) — contarle por chat y que SIR se llene solo. Tu want de siempre; hay base en `/relato/ingest`, falta tokens personales + modo smart.
+1. ~~**C2 — Claude → SIR ingest**~~ ✅ **HECHO (07-03)** — el ingest acepta token personal; contale desde afuera y se llena solo.
 2. **A8b — cablear `adjustByLearning`** (S) — que las recomendaciones se re-ordenen según lo que YA te funciona (el loop ya registra; falta que ajuste el ranking cuando haya datos).
 3. **U2-fin — a11y fino** (M) — barrido de contraste `/70`/`/50` en /panel + componente `SectionHeading` semántico (rótulos `<div>`→`<h2>`).
 

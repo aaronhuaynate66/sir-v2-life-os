@@ -158,6 +158,15 @@ export function PersonalTokensPanel() {
                   </button>
                 </div>
                 {copied && <p className="text-[10px] text-ok">Copiado ✓</p>}
+                <div className="rounded-md border border-border bg-background/60 p-2 mt-1">
+                  <p className="text-[10px] text-muted-foreground mb-1">Con esto, contale a SIR desde afuera (Claude, un atajo del cel, un script) y se llena solo:</p>
+                  <code className="block text-[10px] font-mono text-foreground/80 whitespace-pre-wrap break-all leading-relaxed">
+{`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/relato/ingest \\
+  -H "Authorization: Bearer <token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"text":"Hoy almorcé con Alex y hablamos del aumento","apply":true}'`}
+                  </code>
+                </div>
                 <div className="flex justify-end">
                   <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => { setJustCreated(null); setReveal(false) }}>
                     Listo, lo copié
