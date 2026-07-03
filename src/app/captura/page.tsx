@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { track, EVENTS } from '@/lib/analytics/track'
 import Link from 'next/link'
-import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, Heart, UserPlus, Users, X, UploadCloud } from 'lucide-react'
+import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, Heart, UserPlus, Users, X, UploadCloud, ClipboardPaste } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -375,6 +375,13 @@ function CapturaIndexContent() {
       {/* TUS PROPIOS DATOS (salud, tu perfil, Apple Health) — caja multi-archivo.
           Vive acá para que /captura sea la ÚNICA puerta de captura. */}
       <ImportarChat />
+
+      {/* Camino simple del Reader: pegar un hilo (Teams/Slack) sin extensión. */}
+      <Link href="/captura/pegar" className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm hover:border-border-strong transition-colors">
+        <ClipboardPaste size={16} strokeWidth={1.75} className="text-muted-foreground" aria-hidden="true" />
+        <span className="font-medium text-foreground">Pegar conversación</span>
+        <span className="text-muted-foreground">— Teams, Slack o cualquier chat (copiar → pegar)</span>
+      </Link>
 
       <ImportarLote />
 

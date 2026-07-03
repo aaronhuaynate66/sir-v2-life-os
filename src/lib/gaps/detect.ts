@@ -5,6 +5,7 @@
 
 import type { Person, Goal } from '@/types'
 import { effectiveAmbito } from '@/lib/people/ambito'
+import { findBirthdaySpecialDate } from '@/lib/dates/birthdayDetect'
 
 export type GapKind = 'birthday' | 'cycle' | 'goal_next_action'
 
@@ -46,7 +47,11 @@ export function detectGaps(
     // ámbitos — pero el PARA QUÉ cambia: en personal es afecto; en colega/lead
     // es estratégico (un saludo posiciona, entra en su mente). Distinto dato no,
     // distinto encuadre sí. Personal pesa un poco más (afecto > táctica).
-    if (imp >= 6 && !p.birthDate) {
+    // El cumple se da por conocido si hay birth_date (con año) O una fecha
+    // especial de cumpleaños (año-menos, camino honesto sin inventar edad). Así
+    // el gap se apaga guardes el año o no.
+    const hasBirthday = !!p.birthDate || !!findBirthdaySpecialDate(p.specialDates, p.name)
+    if (imp >= 6 && !hasBirthday) {
       const comercial = ambito === 'lead' || ambito === 'colega'
       push({
         key: `birthday:${p.id}`, kind: 'birthday', entity: 'person', entityId: p.id,
