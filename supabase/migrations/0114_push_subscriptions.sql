@@ -32,6 +32,16 @@ create table if not exists public.push_subscriptions (
   disabled_at   timestamptz
 );
 
+-- Drift-safe: si la tabla YA existía (creada por una versión anterior sin estas
+-- columnas), el `create table if not exists` de arriba es no-op y el índice
+-- parcial `where disabled_at is null` reventaría con "column does not exist".
+-- Aseguramos cada columna opcional antes de indexar. Idempotente.
+alter table public.push_subscriptions add column if not exists ua              text;
+alter table public.push_subscriptions add column if not exists label           text;
+alter table public.push_subscriptions add column if not exists last_success_at timestamptz;
+alter table public.push_subscriptions add column if not exists last_failure_at timestamptz;
+alter table public.push_subscriptions add column if not exists disabled_at     timestamptz;
+
 -- Un endpoint = una subscripción (mismo device puede re-suscribirse).
 create unique index if not exists push_subscriptions_endpoint_uniq
   on public.push_subscriptions (endpoint);
