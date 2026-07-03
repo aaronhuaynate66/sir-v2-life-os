@@ -2,7 +2,7 @@
 
 > **Qué es:** la lista maestra de lo que falta construir, priorizada. Se actualiza
 > con CADA entregable (Claude la mantiene). Fuente de "qué sigue".
-> **Última actualización:** 2026-07-03 (A6 ✅ Peace trend real).
+> **Última actualización:** 2026-07-03 (A6 ✅, A3 ✅ · sprint cognitivo en curso).
 >
 > **Encuadre:** el *cuerpo* de SIR está en prod (percepción, memoria, cerebro-grafo
 > F1-F4, contexto, señales, salud, finanzas, relaciones, objetivos). Lo que falta es
@@ -22,7 +22,7 @@
 |---|---|---|---|---|---|
 | A1 | **Multi-Persona Reasoner** (las 12 lentes) | ⬜ | L | P1 | `src/engines/ai-brain/index.ts` es código HUÉRFANO (type + `selectPersonasForContext`, sin uso, sin test). Construir: prompt-lente por persona → fragmento por lente vía LLM → síntesis. Cablearlo a un endpoint. |
 | A2 | **Orquestador del pipeline de 8 capas** | ⬜ | M | P1 | Los 8 engines existen aislados; el `RichContextSnapshot` (`context/builder.ts`) muere en un debug panel. Función que encadene Signal→Context→Memory→Self→Timing→Reasoner→Recommendation→Peace. |
-| A3 | **Jerarquía de prioridades (6 niveles)** | ⬜ | S | P0 | Codificar Paz>Salud>Finanzas>Personal>Relacional>Optimización como estructura que gobierne trade-offs. Hoy solo hay pesos sueltos en `peace` y prioridades planas en `recommendation`. |
+| A3 | **Jerarquía de prioridades (6 niveles)** | ✅ | S | P0 | HECHO (07-03): `engines/priority` puro (PRIORITY_LEVEL, compareDomains, resolveTradeoff, outranks, rankByPriority) + cableado como tiebreak en `rankRecommendations` (empate de prioridad → gana el dominio más alto). 10 tests. Cimiento de A2 y A4. |
 | A4 | **Evaluador de decisión (7 dimensiones)** | ⬜ | M | P1 | Scorer único: alineación, relaciones, costo bio, financiero, paz, timing, **reversibilidad** (esta última no existe en el código). Hay piezas: `alignment`, `stakeholderImpact`, `conflictFriction`. |
 | A5 | **Motor predictivo general** | ⬜ | L | P2 | "Sistema anticipatorio": proyectar estados futuros (deriva de paz/energía a N días). Hoy solo anticipación puntual (ciclos, cumpleaños). El forecast de fin de mes (#498) es el primer ladrillo. |
 | A6 | **Peace trend real** | ✅ | S | P0 | HECHO (07-03): `computePeaceTrend` puro (deadband, ventana 6) + param `history` en `calculatePeaceScore`, cableado en `/panel` desde el histórico de snapshots. El ícono ↗/→/↘ ya refleja la tendencia real. |
@@ -58,8 +58,8 @@
 luego lo estructural:
 
 1. ~~**A6 — Peace trend real** (S)~~ ✅ **hecho (07-03)**
-2. **A3 — Jerarquía de prioridades** (S) ← *siguiente*
-3. **A2 — Orquestador del pipeline** (M) — hace que el snapshot por fin alimente algo
+2. ~~**A3 — Jerarquía de prioridades** (S)~~ ✅ **hecho (07-03)**
+3. **A2 — Orquestador del pipeline** (M) ← *siguiente* — hace que el snapshot por fin alimente algo
 4. **A1 — Multi-Persona Reasoner** (L) — el corazón de la presentación
 5. **A4 — Evaluador de decisión 7-dim** (M)
 6. **B1 — Extensión Teams** (M)
