@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `cd707f1`
+**Hash del último commit humano:** `8fc4463`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8fc4463` | aaronhuaynate66 | feat(export): descargar TODO como .zip con CSVs (data ownership) (#490) | 2026-07-03 |
 | `cd707f1` | aaronhuaynate66 | feat(panel): SIR Pulse widget — 3 celdas resumen arriba del todo (#489) | 2026-07-02 |
 | `384e431` | aaronhuaynate66 | chore(ai-usage): registrar consumo de los 5 endpoints IA de la sesión (#488) | 2026-07-02 |
 | `51d2359` | aaronhuaynate66 | chore: eliminar endpoints one-shot y redirect /relato viejo (D4 + D5) (#487) | 2026-07-02 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `73ee109` | aaronhuaynate66 | fix(relato-ingest): botón Deshacer con timer 30s (D2) (#483) | 2026-07-02 |
 | `9692cf0` | aaronhuaynate66 | feat(relato-ingest): adjuntar PDF (extrae texto y pega al mensaje) (#482) | 2026-07-02 |
 | `db7fa15` | aaronhuaynate66 | fix(relato-ingest): apply strict + historial persistente (D1 + D3) (#481) | 2026-07-02 |
-| `0af5c18` | aaronhuaynate66 | feat(ficha): timeline "7 días con [persona]" (#480) | 2026-07-02 |
 
 ---
 
