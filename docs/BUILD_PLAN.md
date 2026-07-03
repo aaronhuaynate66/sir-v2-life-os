@@ -27,6 +27,8 @@
 | A5 | **Motor predictivo general** | ✅ | L | P2 | HECHO (07-03): `engines/predictive` `projectSeries` (OLS + confianza + gate 'insufficient', 7 tests). Cableado: sección **"Proyección · próximos 7 días"** en /salud (energía/ánimo/sueño/FC). Generaliza el forecast de fin de mes (#498). |
 | A6 | **Peace trend real** | ✅ | S | P0 | HECHO (07-03): `computePeaceTrend` puro (deadband, ventana 6) + param `history` en `calculatePeaceScore`, cableado en `/panel` desde el histórico de snapshots. El ícono ↗/→/↘ ya refleja la tendencia real. |
 | A7 | **Modelo del self dinámico** | ✅ | M | P2 | HECHO (07-03): `engines/self-model` `deriveDynamicSelf` compone las proyecciones (A5) + trend de paz (A6) en 'cómo venís' (momentum + mejora/atención). Cableado: bloque **"Tu momento"** en /salud. 5 tests. |
+| A8 | **Capa 9 — Aprendizaje / feedback loop** ⭐ | ⬜ | L | P1 | NUEVO (mayor faltante de la base científica): cerrar el bucle. Tras una rec/decisión, registrar el OUTCOME (¿subió la paz/energía?) y ajustar confianza por tipo de consejo/lente. Generaliza el Hebbian del cerebro a recs/decisiones. Es "la parte analítica que cierra el loop". |
+| A4b | **Dimensión "alineación con valores"** | ⬜ | S | P2 | Extender el evaluador (A4) con una 8ª dimensión: alineación con tus valores/identidad (`identity_profile`), no solo con objetivos. |
 
 ## B. SIR Reader (leer el navegador logueado → SIR)
 
