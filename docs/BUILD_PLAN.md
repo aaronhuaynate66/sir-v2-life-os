@@ -2,7 +2,7 @@
 
 > **Qué es:** la lista maestra de lo que falta construir, priorizada. Se actualiza
 > con CADA entregable (Claude la mantiene). Fuente de "qué sigue".
-> **Última actualización:** 2026-07-03 (A6 ✅, A3 ✅, A2 ✅, A1 ✅ · sprint cognitivo en curso).
+> **Última actualización:** 2026-07-03 (A6 ✅, A3 ✅, A2 ✅, A1 ✅, A4 ✅ · sprint cognitivo).
 >
 > **Encuadre:** el *cuerpo* de SIR está en prod (percepción, memoria, cerebro-grafo
 > F1-F4, contexto, señales, salud, finanzas, relaciones, objetivos). Lo que falta es
@@ -23,7 +23,7 @@
 | A1 | **Multi-Persona Reasoner** (las 12 lentes) | ✅ | L | P1 | HECHO (07-03): `lib/reasoner` (catálogo de 12 lentes + `selectPersonas` por dominio + `buildReasonerPrompt`, 7 tests). `POST /api/reason` (Sonnet, 1 llamada estructurada, on-demand) razona el foco por lente + síntesis. Cableado: botón **"Pensar con SIR"** en la card Foco ahora. Reemplaza el `ai-brain` huérfano. |
 | A2 | **Orquestador del pipeline** | ✅ | M | P1 | HECHO (07-03): `engines/orchestrator` puro `runCognitivePipeline` compone paz+amenazas+recomendaciones en UN foco ordenado por severidad + jerarquía de dominio (A3). Cableado (NO huérfano): card **"Foco ahora"** en `/panel`. 5 tests. Deja la costura para el reasoner (A1). |
 | A3 | **Jerarquía de prioridades (6 niveles)** | ✅ | S | P0 | HECHO (07-03): `engines/priority` puro (PRIORITY_LEVEL, compareDomains, resolveTradeoff, outranks, rankByPriority) + cableado como tiebreak en `rankRecommendations` (empate de prioridad → gana el dominio más alto). 10 tests. Cimiento de A2 y A4. |
-| A4 | **Evaluador de decisión (7 dimensiones)** | ⬜ | M | P1 | Scorer único: alineación, relaciones, costo bio, financiero, paz, timing, **reversibilidad** (esta última no existe en el código). Hay piezas: `alignment`, `stakeholderImpact`, `conflictFriction`. |
+| A4 | **Evaluador de decisión (7 dimensiones)** | ✅ | M | P1 | HECHO (07-03): `engines/decision` puro (7 dims ponderadas por la jerarquía A3 + **gate de reversibilidad**, veredicto go/caution/hold, 7 tests). `POST /api/decision` (Sonnet puntúa) + página **`/decidir`** (en el Nav). |
 | A5 | **Motor predictivo general** | ⬜ | L | P2 | "Sistema anticipatorio": proyectar estados futuros (deriva de paz/energía a N días). Hoy solo anticipación puntual (ciclos, cumpleaños). El forecast de fin de mes (#498) es el primer ladrillo. |
 | A6 | **Peace trend real** | ✅ | S | P0 | HECHO (07-03): `computePeaceTrend` puro (deadband, ventana 6) + param `history` en `calculatePeaceScore`, cableado en `/panel` desde el histórico de snapshots. El ícono ↗/→/↘ ya refleja la tendencia real. |
 | A7 | **Modelo del self dinámico** | ⬜ | M | P2 | Hoy el modelo del usuario es determinístico/estático. Que evolucione por inferencia sobre la serie longitudinal. |
@@ -61,8 +61,8 @@ luego lo estructural:
 2. ~~**A3 — Jerarquía de prioridades** (S)~~ ✅ **hecho (07-03)**
 3. ~~**A2 — Orquestador del pipeline** (M)~~ ✅ **hecho (07-03)** — "Foco ahora" en /panel
 4. ~~**A1 — Multi-Persona Reasoner** (L)~~ ✅ **hecho (07-03)** — "Pensar con SIR"
-5. **A4 — Evaluador de decisión 7-dim** (M) ← *siguiente*
-6. **B1 — Extensión Teams** (M) — *mapeado, mantener en radar*
+5. ~~**A4 — Evaluador de decisión 7-dim** (M)~~ ✅ **hecho (07-03)** — /decidir
+6. **B1 — Extensión Teams** (M) ← *siguiente* — 📌 el cliente MV3 (se carga en Chrome; distinto de lo testeable-en-repo)
 7. **A5 — Motor predictivo** (L) · **A7 — Self dinámico** (M) · resto de C.
 
 > Se puede reordenar. Si querés ver el reasoner (A1) antes que los quick wins, se hace.
