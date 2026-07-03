@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `8c3a319`
+**Hash del último commit humano:** `27dac86`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,9 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `27dac86` | aaronhuaynate66 | feat(medicacion): extraer el desglose desde foto de la caja o link/nombre (#501) | 2026-07-03 |
+| `39f9178` | aaronhuaynate66 | feat(gaps): guardar cumpleaños sin saber el año (#499) | 2026-07-03 |
+| `5990f3f` | aaronhuaynate66 | feat: SIR Reader — spec + núcleo + endpoint + 'pegar conversación' (Teams sin extensión) (#505) | 2026-07-03 |
 | `8c3a319` | aaronhuaynate66 | feat(captura): reconocer Teams/Slack como dm_conversation (#504) | 2026-07-03 |
 | `9acf7b5` | aaronhuaynate66 | feat(finanzas): proyección de gasto de fin de mes (forecast) (#498) | 2026-07-03 |
 | `094c81d` | aaronhuaynate66 | feat(seed-batch): validar/normalizar enums antes del apply (#497) | 2026-07-03 |
@@ -348,9 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d95fbd4` | aaronhuaynate66 | fix(ci): calcular 'hoy' en TZ de Lima en buildEstadoInsights (test flaky bloqueaba migraciones) (#502) | 2026-07-03 |
 | `cb51010` | aaronhuaynate66 | feat(medicacion): desglose de medicamentos + cruce inteligente (migraña) (#500) | 2026-07-03 |
 | `d1b3e39` | aaronhuaynate66 | feat(review): spaced repetition de detalles (D8) (#496) | 2026-07-03 |
-| `fcb3022` | aaronhuaynate66 | feat(diario): journal íntimo (Opción A — tipo Day One) (#495) | 2026-07-03 |
-| `82a22ed` | aaronhuaynate66 | feat(relaciones): comparativa entre personas (D3) (#494) | 2026-07-03 |
-| `de6974b` | aaronhuaynate66 | feat(reminders): recordatorios agendados desde /relato/ingest (D2) (#493) | 2026-07-03 |
 
 ---
 
