@@ -61,7 +61,7 @@
 | # | Ítem | Estado | Nota |
 |---|---|---|---|
 | V1 | Verificar en vivo la capa cognitiva | ⬜ | Manejar /panel "Foco ahora" + "Pensar con SIR", /decidir, /salud (Proyección/Tu momento/Qué te funciona), /captura/pegar — con sesión + data real. La lógica está testeada; falta el ojo en vivo. |
-| V2 | Cache diaria del reasoner/decidir | ⬜ S | Hoy cada click = llamada LLM. Cachear por día (patrón daily_briefs) baja costo. |
+| V2 | Cache diaria del reasoner/decidir | ✅ S | HECHO (07-03): tabla genérica `ai_daily_cache` (mig 0120, fail-open) + helper puro `lib/ai-cache/dailyCache` (hash FNV determinístico, 10 tests). `/api/reason` cachea la lectura de 12 lentes por día (chequea ANTES del rate-limit); `/api/decision` por (día + hash del texto). `force:true` regenera. Sin ANTHROPIC/tabla → on-demand igual. |
 | V3 | Housekeeping | ⬜ | `scripts/seed-people.mjs` + `.gitignore` quedaron modificados local (tooling, sin PR). |
 
 ## D. PRs — TODOS MERGEADOS ✅ (03-07)
@@ -83,7 +83,7 @@ pendientes, priorizado:
 **⚙️ Tanda 2 — mejora**
 4. ~~**U1-fin — /salud**~~ ✅ **HECHO (07-03)** — split Observar/Anticipar + rename "Objetivo inminente".
 5. **C1 — seed batch: extracción integrada** (M) — pegar PDF/screenshot → SIR arma el JSON (solapa con C2).
-6. **V2 — cache del reasoner/decidir** (S).
+6. ~~**V2 — cache del reasoner/decidir**~~ ✅ **HECHO (07-03)** — ai_daily_cache (0120) + helper puro; reason por día, decision por día+hash.
 
 **🧊 Tanda 3 — grande / bloqueado / necesita input tuyo**
 7. **C3 — Fase 3d RAG cross-session** (L) — contexto profundo automático por interacción.
