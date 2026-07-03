@@ -15,7 +15,8 @@ import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByInte
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { LunarChip } from '@/components/lunar/LunarChip'
 import { buildSignalContext } from '@/engines/signal'
-import { generateRecommendations } from '@/engines/recommendation'
+import { generateRecommendations, domainForRecommendation } from '@/engines/recommendation'
+import { useFeedbackStore } from '@/stores/useFeedbackStore'
 import { runCognitivePipeline } from '@/engines/orchestrator'
 import { CognitiveFocusCard } from '@/components/panel/CognitiveFocusCard'
 import { buildGoalDashboard } from '@/engines/goal'
@@ -125,6 +126,7 @@ function DashboardContent() {
   const { recommendations, completeRecommendation, dismissRecommendation, resetToFixtures: resetRec, clearAll: clearRec } = useRecommendationStore()
   const { addMemory } = useMemoryStore()
   const snapshots = useSnapshotStore((s) => s.snapshots)
+  const logFeedback = useFeedbackStore((s) => s.logFeedback)
   const [sleepHours, setSleepHours] = useState('')
   const [energyVal, setEnergyVal] = useState('')
   const [stressVal, setStressVal] = useState('')
@@ -493,7 +495,12 @@ function DashboardContent() {
                     <div className="text-[11px] text-muted-foreground/70 mb-2">Es un aviso para esta noche — no hace falta marcarlo; mañana se actualiza solo con tu sueño.</div>
                   )}
                   <div className="flex gap-2 mt-auto">
-                    <Button size="sm" variant="outline" onClick={() => completeRecommendation(topRec.id)} className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">
+                    <Button size="sm" variant="outline" onClick={() => {
+                      // A8 — feedback loop: registrar la acción + la paz de ahora,
+                      // para aprender después si este tipo te sube la paz.
+                      logFeedback({ type: topRec.type, domain: domainForRecommendation(topRec.type), peaceBefore: peace.total, at: new Date().toISOString() })
+                      completeRecommendation(topRec.id)
+                    }} className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">
                       <CheckCircle2 size={14} strokeWidth={1.75} />
                       {topRec.type === 'rest' ? 'Lo tengo' : 'Completar'}
                     </Button>
