@@ -66,7 +66,7 @@ REGLAS DE CLASIFICACION:
    - Bio multi-linea debajo del nombre.
    - Tab bar inferior con iconos: home, search, reels, shop, perfil.
 
-3b. dm_conversation (DM / CHAT de Instagram, Telegram, Messenger — NO perfil)
+3b. dm_conversation (DM / CHAT de Instagram, Telegram, Messenger, Microsoft Teams, Slack — NO perfil)
    Es una CONVERSACIÓN con una persona, NO un perfil. Señales visuales:
    - Burbujas de mensaje en columnas izquierda (la otra persona) / derecha (vos).
    - Header arriba: flecha "atrás" + nombre o @handle de la persona + íconos de
@@ -79,8 +79,10 @@ REGLAS DE CLASIFICACION:
    REGLA CLAVE: burbujas de chat + header con nombre/@handle + barra de escribir
    = dm_conversation. Si en cambio ves contadores de seguidores + grid de posts,
    es instagram (perfil). Si es claramente WhatsApp (burbujas verdes, UI de
-   WhatsApp), usá whatsapp_chat, no dm_conversation. Telegram/Messenger/IG DM y
-   otras apps de mensajería = dm_conversation.
+   WhatsApp), usá whatsapp_chat, no dm_conversation. Telegram/Messenger/IG DM,
+   Microsoft Teams, Slack y otras apps de mensajería (laborales incluidas) =
+   dm_conversation. Un chat de Teams suele tener burbujas + header con el nombre
+   del contacto/canal + barra "Escribe un mensaje nuevo".
    suggestedPersonName: el nombre o @handle del header.
 
 4. linkedin
