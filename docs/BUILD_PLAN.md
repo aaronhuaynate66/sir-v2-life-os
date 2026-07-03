@@ -48,6 +48,13 @@
 | C3 | Fase 3d — Memoria que aprende (RAG cross-session) | ⬜ | L | P2 | Contexto profundo automático por interacción. |
 | C4 | Pulido mobile pantalla-por-pantalla (#44) | ⬜ | M | P2 | Necesita capturas reales del cel. |
 
+## U. Pulido UI (auditoría con agentes, 03-07 — ver docs/UI_AUDIT.md)
+
+| # | Ítem | Estado | Esf | Pri | Nota |
+|---|---|---|---|---|---|
+| U1 | **UX: podar el /panel + familia "Pensar"** | ⬜ | M | P1 | 3 "focos" compiten (Semana/Ahora/Día) + datos duplicados; renombrar Preguntá/Pensar/Decidir; split observar-vs-anticipar en /salud. |
+| U2 | **A11y: labels + skip link + contraste + headings** | ⬜ | M | P1 | Inputs sin label (crítico), skip link, focus-visible del botón resolver, texto muted /60 bajo contraste, rótulos `<div>`→`<h2>`. |
+
 ## D. PRs abiertos por mergear (no es build, es liberar valor)
 
 - #497 (seed enums) · #498 (forecast fin de mes) · #499 (cumple sin año) · #501 (extractor de meds foto/link) · #504 (Teams/Slack detector) · #505 (SIR Reader Fase 1).
