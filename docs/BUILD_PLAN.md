@@ -2,7 +2,7 @@
 
 > **Qué es:** la lista maestra de lo que falta construir, priorizada. Se actualiza
 > con CADA entregable (Claude la mantiene). Fuente de "qué sigue".
-> **Última actualización:** 2026-07-03 (A1–A8 ✅ · U1/U2 · B1-simple ✅ · base científica cerrada).
+> **Última actualización:** 2026-07-03 (A1–A8 ✅ · U1/U2 ✅ · C1/C2/C3 ✅ · V2 ✅ · B1-simple ✅ · base científica cerrada). **Todo lo autónomamente construible está en prod; lo que queda necesita tu input.**
 >
 > **Encuadre:** el *cuerpo* de SIR está en prod (percepción, memoria, cerebro-grafo
 > F1-F4, contexto, señales, salud, finanzas, relaciones, objetivos). Lo que falta es
