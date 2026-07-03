@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `1cd6d29`
+**Hash del último commit humano:** `e840a0e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e840a0e` | aaronhuaynate66 | docs(plan): todo mergeado; lista de lo que queda con orden de ataque (#507) | 2026-07-03 |
 | `1cd6d29` | aaronhuaynate66 | feat: capa cognitiva E6 completa (A1-A7) — lista viva + reasoner + decidir + predictivo (#506) | 2026-07-03 |
 | `27dac86` | aaronhuaynate66 | feat(medicacion): extraer el desglose desde foto de la caja o link/nombre (#501) | 2026-07-03 |
 | `39f9178` | aaronhuaynate66 | feat(gaps): guardar cumpleaños sin saber el año (#499) | 2026-07-03 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `094c81d` | aaronhuaynate66 | feat(seed-batch): validar/normalizar enums antes del apply (#497) | 2026-07-03 |
 | `b44875c` | aaronhuaynate66 | fix(migrations): 0114 drift-safe (push_subscriptions preexistía sin disabled_at) (#503) | 2026-07-03 |
 | `d95fbd4` | aaronhuaynate66 | fix(ci): calcular 'hoy' en TZ de Lima en buildEstadoInsights (test flaky bloqueaba migraciones) (#502) | 2026-07-03 |
-| `cb51010` | aaronhuaynate66 | feat(medicacion): desglose de medicamentos + cruce inteligente (migraña) (#500) | 2026-07-03 |
 
 ---
 
