@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b0a2615`
+**Hash del último commit humano:** `f02d953`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f02d953` | aaronhuaynate66 | feat(V2): cache diaria de IA para reasoner y decidir (#512) | 2026-07-03 |
 | `b0a2615` | aaronhuaynate66 | feat(U1-fin): partir /salud en Observar vs Anticipar + renombrar card de objetivo (#511) | 2026-07-03 |
 | `549d702` | aaronhuaynate66 | feat(U2-fin): headings semánticos sistémicos + contraste del Nav (#510) | 2026-07-03 |
 | `8562a1c` | aaronhuaynate66 | feat(A8b): cablear adjustByLearning al ranking — el loop reordena las recs (#509) | 2026-07-03 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `27dac86` | aaronhuaynate66 | feat(medicacion): extraer el desglose desde foto de la caja o link/nombre (#501) | 2026-07-03 |
 | `39f9178` | aaronhuaynate66 | feat(gaps): guardar cumpleaños sin saber el año (#499) | 2026-07-03 |
 | `5990f3f` | aaronhuaynate66 | feat: SIR Reader — spec + núcleo + endpoint + 'pegar conversación' (Teams sin extensión) (#505) | 2026-07-03 |
-| `8c3a319` | aaronhuaynate66 | feat(captura): reconocer Teams/Slack como dm_conversation (#504) | 2026-07-03 |
 
 ---
 
