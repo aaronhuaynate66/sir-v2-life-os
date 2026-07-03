@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Nav } from './Nav'
 import { AiCreditBanner } from '@/components/system/AiCreditBanner'
+import { DueRemindersWatcher } from '@/components/reminders/DueRemindersWatcher'
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { trackPageView } from '@/lib/analytics/track'
@@ -74,6 +75,9 @@ export function AppShell({ children, wide = false, rightRail }: AppShellProps) {
       </aside>
 
       {/* Main content. Al imprimir: sin margen de sidebar ni padding/ancho. */}
+      {/* Dispara recordatorios vencidos con la app abierta (respaldo del cron
+          diario en Hobby). Invisible — solo toast/notificación cuando hay algo. */}
+      <DueRemindersWatcher />
       <main id="main" className="lg:ml-60 print:ml-0">
         <AiCreditBanner />
         <div
