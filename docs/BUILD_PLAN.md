@@ -54,7 +54,7 @@
 | # | Ítem | Estado | Esf | Pri | Nota |
 |---|---|---|---|---|---|
 | U2 | **A11y: labels + skip link + contraste + headings** | ✅ | M | P1 | HECHO (07-03): skip link + `id=main`, labels en flujos núcleo, focus-visible del botón "Resolver", alt del gráfico de medicación. **U2-fin:** `SectionTitle` ahora renderiza `<h2>` (fix SISTÉMICO — todas las secciones navegables por lector de pantalla) + contraste de los títulos del Nav (`/50`→sólido). Pendiente menor: barrido fino de `/60`/`/70` en info-text del /panel. |
-| U1 | **UX: podar el /panel + familia "Pensar"** | ✅ | M | P1 | HECHO (07-03): botón "Verlo por las 12 lentes"; de-dup del panel (quitada la lista "Atención" duplicada, ya vive en "Foco ahora") + "Foco del día"→**"Acción del día"** (rompe la colisión). Pendiente menor: split observar/anticipar en /salud. |
+| U1 | **UX: podar el /panel + familia "Pensar"** | ✅ | M | P1 | HECHO (07-03): botón "Verlo por las 12 lentes"; de-dup del panel + "Foco del día"→"Acción del día". **U1-fin (07-03):** PatronesPanel partido en dos cards — **"Lo que se observa"** (cruces con n) vs **"Hacia dónde vas"** (momento + proyección + madurez); "Semana en foco"→**"Objetivo inminente"** (rompe la colisión con los otros 3 "foco"). |
 
 ## V. Verificación / operativo (no es build)
 
@@ -81,7 +81,7 @@ pendientes, priorizado:
 3. **U2-fin — a11y fino** (M) — barrido de contraste `/70`/`/50` en /panel + componente `SectionHeading` semántico (rótulos `<div>`→`<h2>`).
 
 **⚙️ Tanda 2 — mejora**
-4. **U1-fin — /salud** (S) — split "lo que se observa" vs "hacia dónde va" (PatronesPanel sobrecargado); renombrar "Semana en foco".
+4. ~~**U1-fin — /salud**~~ ✅ **HECHO (07-03)** — split Observar/Anticipar + rename "Objetivo inminente".
 5. **C1 — seed batch: extracción integrada** (M) — pegar PDF/screenshot → SIR arma el JSON (solapa con C2).
 6. **V2 — cache del reasoner/decidir** (S).
 
