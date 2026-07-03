@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { dailyAvg, observePatterns, dataReadiness, FORECAST_MIN_DAYS, type DayPoint } from '@/lib/patterns/observe'
+import { projectSeries } from '@/engines/predictive'
 import { deriveMigraineDays, registryMap, type RegistryEntry } from '@/lib/meds/classify'
 
 export function PatronesPanel() {
@@ -45,10 +46,18 @@ export function PatronesPanel() {
     const sleepHours = dailyAvg(sleepRecords.map((s) => ({ date: s.date, value: s.duration })))
     const restingHr = dailyAvg(healthMetrics.filter((h) => h.type === 'heart_rate').map((h) => ({ timestamp: h.timestamp, value: h.value })))
     const input = { sleepHours, mood: cat('mood'), energy: cat('energy'), stress: cat('stress'), restingHr, migraineDays }
-    return { obs: observePatterns(input), readiness: dataReadiness(input) }
+    // A5 — proyección a 7 días de cada serie (solo las que tienen datos suficientes).
+    const projections = [
+      { key: 'energy', label: 'Energía', unit: '/10', p: projectSeries(cat('energy')) },
+      { key: 'mood', label: 'Ánimo', unit: '/10', p: projectSeries(cat('mood')) },
+      { key: 'sleep', label: 'Sueño', unit: 'h', p: projectSeries(sleepHours, { flatThreshold: 0.3 }) },
+      { key: 'hr', label: 'FC reposo', unit: ' lpm', p: projectSeries(restingHr, { flatThreshold: 2 }) },
+    ].filter((x) => x.p.direction !== 'insufficient')
+    return { obs: observePatterns(input), readiness: dataReadiness(input), projections }
   }, [selfMetrics, sleepRecords, healthMetrics, migraineDays])
   const observations = data.obs
   const readiness = data.readiness
+  const projections = data.projections
 
   return (
     <Card className="shadow-none">
@@ -76,6 +85,29 @@ export function PatronesPanel() {
               </li>
             ))}
           </ul>
+        )}
+
+        {projections.length > 0 && (
+          <div className="mt-4 border-t border-border/50 pt-3">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">Proyección · próximos 7 días</div>
+            <p className="text-[11px] text-muted-foreground mb-2 leading-snug">A este ritmo (tendencia lineal). <span className="font-medium text-foreground/80">Anticipación, no certeza</span> — la confianza sube con los días.</p>
+            <ul className="space-y-1.5">
+              {projections.map((pr) => {
+                const dir = pr.p.direction
+                const arrow = dir === 'rising' ? '↗' : dir === 'falling' ? '↘' : '→'
+                const tone = dir === 'flat' ? 'text-muted-foreground' : (pr.key === 'hr' ? (dir === 'rising' ? 'text-bad' : 'text-ok') : (dir === 'rising' ? 'text-ok' : 'text-bad'))
+                return (
+                  <li key={pr.key} className="text-[11px] flex items-center justify-between">
+                    <span className="text-muted-foreground">{pr.label}</span>
+                    <span className="flex items-center gap-2">
+                      <span className={`font-mono tabular-nums ${tone}`}>{arrow} ~{pr.p.projected}{pr.unit}</span>
+                      <span className="text-[10px] text-muted-foreground/60">conf. {pr.p.confidence}</span>
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         )}
 
         <div className="mt-4 border-t border-border/50 pt-3">
