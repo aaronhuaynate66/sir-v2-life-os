@@ -11,6 +11,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { buildEstadoInsights, type EstadoLabel } from '@/lib/estado-con-persona/insights'
+import { pushToUser } from '@/lib/push/notify'
 import { mapMomentRow } from '@/lib/moments/types'
 import { mapPersonCycleRow } from '@/lib/person-cycles/types'
 import type { PersonLog } from '@/lib/person-logs/types'
@@ -110,12 +111,20 @@ export async function GET(req: NextRequest) {
         .eq('user_id', person.user_id).eq('person_id', person.id)
         .is('dismissed_at', null).limit(1)
       if ((existing ?? []).length === 0) {
+        const message = buildAlertMessage(person.name, prev.label, insights.overallLabel, insights.overdueCount, insights.recentAvg)
         await supabase.from('person_status_alerts').insert({
           user_id: person.user_id, person_id: person.id,
           from_label: prev.label, to_label: insights.overallLabel,
-          message: buildAlertMessage(person.name, prev.label, insights.overallLabel, insights.overdueCount, insights.recentAvg),
+          message,
         })
         alertsCreated++
+        // Push notification best-effort (no bloquea el cron).
+        void pushToUser(person.user_id, {
+          title: `SIR · ${person.name.split(' ')[0]}`,
+          body: message,
+          url: '/panel',
+          tag: `status-${person.id}`,
+        })
       }
     }
 
