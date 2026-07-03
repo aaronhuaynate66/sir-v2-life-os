@@ -67,7 +67,10 @@ export function WeekInFocusCard({ now }: WeekInFocusCardProps = {}) {
   const doneEffective = krProgress.done + Object.values(pendingDone).filter(Boolean).length
   const progressPct = krProgress.total === 0 ? 0 : Math.round((doneEffective / krProgress.total) * 100)
   const Icon = isAnchor ? Anchor : Target
-  const label = isAnchor ? 'Tu norte' : 'Semana en foco'
+  // "Semana en foco" colisionaba con "Foco ahora" (panel), "Acción del día" y
+  // "Foco de la semana" (/horario). Esta card es un objetivo con FECHA inminente
+  // → "Objetivo inminente" lo dice sin sumar otro "foco" al vocabulario.
+  const label = isAnchor ? 'Tu norte' : 'Objetivo inminente'
   const countdownColor = urgent ? 'text-warn' : overdue ? 'text-bad' : 'text-foreground'
 
   return (
