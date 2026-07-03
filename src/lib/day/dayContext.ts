@@ -78,7 +78,15 @@ export interface DayScoreMove { person: string; global: number; delta: number | 
 export interface DayFinance { type: string; amount: number; currency: string; description: string }
 export interface DaySignal { content: string; urgency: string }
 export interface DayWeatherSlice { label: string }
-export interface DayMed { name: string; quantity: number; time: string }
+export interface DayMed {
+  name: string
+  quantity: number
+  time: string
+  /** Significado clínico legible (ej. "antimigrañoso — señal de migraña"). */
+  meaning?: string
+  /** true si es un medicamento específico de migraña (para el cruce). */
+  isMigraineMed?: boolean
+}
 export interface DayMoment { person: string; title: string; kind: 'occurred' | 'follow' }
 
 export interface DaySlices {
@@ -145,7 +153,12 @@ export function renderDayContext(s: DaySlices): string {
   if (s.meds.length) {
     any = true
     L.push('Medicación:')
-    for (const md of s.meds) L.push(`  - ${md.time} ${md.name}${md.quantity > 1 ? ` x${md.quantity}` : ''}`)
+    for (const md of s.meds) {
+      // El significado (antimigrañoso → migraña) le da a SIR el cruce: si tomó
+      // ergotamina hubo migraña, y la hora marca cuándo empezó.
+      const mean = md.meaning ? ` — ${md.meaning}` : ''
+      L.push(`  - ${md.time} ${md.name}${md.quantity > 1 ? ` x${md.quantity}` : ''}${mean}`)
+    }
   }
   if (s.moments.length) {
     any = true

@@ -8,6 +8,7 @@ import { HEALTH_METRIC_LABELS } from '@/lib/health-metrics/labels'
 import type { HealthMetricType } from '@/types'
 import { limaDayUtcWindow, type DaySlices } from './dayContext'
 import { fetchWeather } from './weather'
+import { classifyMed, medMeaning, registryMap, type RegistryEntry } from '@/lib/meds/classify'
 
 const SELF_LABEL: Record<string, string> = {
   energy: 'Energía', mood: 'Ánimo', sleep: 'Sueño', pain: 'Dolor', stress: 'Estrés',
@@ -153,14 +154,29 @@ export async function fetchDayContext(
     }
   } catch { /* */ }
 
-  // 8b. Medicación tomada ese día (med_intakes).
+  // 8b. Medicación tomada ese día (med_intakes) + su desglose (med_registry),
+  //     para que la sección diga QUÉ es cada toma y el cruce sepa qué es migraña.
   try {
+    let reg = new Map<string, RegistryEntry>()
+    try {
+      const { data: rows } = await supabase.from('med_registry')
+        .select('name, dose, component, drug_class, treats').eq('user_id', userId).limit(50)
+      reg = registryMap((rows ?? []).map((r: Record<string, unknown>): RegistryEntry => ({
+        name: String(r.name ?? ''), dose: (r.dose as string) ?? null,
+        component: (r.component as string) ?? null, drugClass: (r.drug_class as string) ?? null, treats: (r.treats as string) ?? null,
+      })))
+    } catch { /* 0118 no aplicada aún → clasifica por nombre */ }
     const { data } = await supabase.from('med_intakes')
       .select('name, quantity, taken_at')
       .eq('user_id', userId).gte('taken_at', startUtc).lt('taken_at', endUtc).limit(30)
     for (const r of (data ?? []) as Array<{ name: string; quantity: number; taken_at: string }>) {
       const hh = new Date(r.taken_at).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Lima' })
-      slices.meds.push({ name: r.name, quantity: Number(r.quantity) || 1, time: hh })
+      const entry = reg.get(r.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim())
+      const info = classifyMed(r.name, entry)
+      slices.meds.push({
+        name: r.name, quantity: Number(r.quantity) || 1, time: hh,
+        meaning: medMeaning(r.name, entry), isMigraineMed: info.isMigraineMed,
+      })
     }
   } catch { /* */ }
 

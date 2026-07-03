@@ -11,9 +11,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
+import { classifyMed, type RegistryEntry } from '@/lib/meds/classify'
 
 interface Intake { id: string; name: string; quantity: number; note: string | null; taken_at: string }
-interface RegMed { name: string; dose: string | null }
+interface RegMed { name: string; dose: string | null; component?: string | null; drug_class?: string | null; treats?: string | null }
 
 function fmt(ts: string): string {
   const d = new Date(ts)
@@ -106,6 +107,11 @@ export default function MedicacionPage() {
         </div>
       )}
 
+      {/* Desglose: qué es cada medicamento (composición + para qué) → mejor cruce */}
+      {registry.length > 0 && (
+        <MedBreakdownEditor registry={registry} onSaved={load} />
+      )}
+
       {/* Alta manual: nombre + cantidad */}
       <Card className="mb-6">
         <CardContent className="p-4 flex flex-col sm:flex-row gap-2">
@@ -186,5 +192,80 @@ export default function MedicacionPage() {
         </div>
       )}
     </AppShell>
+  )
+}
+
+/**
+ * Desglose de "mis medicamentos": composición + clase + para qué. Es lo que le
+ * da a SIR la inteligencia para cruzar (una toma de un antimigrañoso = migraña
+ * ese día). Guarda cada uno vía POST /api/meds/registry (upsert parcial).
+ */
+function MedBreakdownEditor({ registry, onSaved }: { registry: RegMed[]; onSaved: () => void }) {
+  const [openName, setOpenName] = useState<string | null>(null)
+
+  return (
+    <Card className="mb-6 shadow-none">
+      <CardContent className="p-4">
+        <div className="text-[11px] uppercase tracking-[0.06em] text-text-tertiary mb-1">Desglose · qué es cada uno</div>
+        <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
+          Contale a SIR la composición y para qué es cada medicamento. Con eso, una toma de un antimigrañoso cuenta como <span className="text-foreground/80">día de migraña</span> y se cruza con tu FC, sueño y ánimo — un analgésico común, no.
+        </p>
+        <div className="space-y-2">
+          {registry.map((r) => {
+            const entry: RegistryEntry = { name: r.name, component: r.component, drugClass: r.drug_class, treats: r.treats }
+            const info = classifyMed(r.name, entry)
+            const open = openName === r.name
+            return (
+              <div key={r.name} className="rounded-lg border border-border bg-muted/10">
+                <button type="button" onClick={() => setOpenName(open ? null : r.name)}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left">
+                  <span className="text-sm font-medium text-foreground truncate">{r.name}</span>
+                  <span className={`text-[10px] rounded-full px-2 py-0.5 shrink-0 ${info.isMigraineMed ? 'bg-brand/20 text-brand-soft-foreground' : 'bg-muted text-muted-foreground'}`}>
+                    {info.isMigraineMed ? 'antimigrañoso' : info.classLabel}
+                  </span>
+                </button>
+                {open && <MedBreakdownForm reg={r} onSaved={() => { setOpenName(null); onSaved() }} />}
+              </div>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function MedBreakdownForm({ reg, onSaved }: { reg: RegMed; onSaved: () => void }) {
+  const [component, setComponent] = useState(reg.component ?? '')
+  const [drugClass, setDrugClass] = useState(reg.drug_class ?? '')
+  const [treats, setTreats] = useState(reg.treats ?? '')
+  const [saving, setSaving] = useState(false)
+
+  async function save() {
+    if (saving) return
+    setSaving(true)
+    try {
+      await postJson('/api/meds/registry', {
+        name: reg.name,
+        component: component.trim() || null,
+        drug_class: drugClass.trim() || null,
+        treats: treats.trim() || null,
+      })
+      onSaved()
+    } catch { /* best-effort */ } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="px-3 pb-3 pt-0 space-y-2">
+      <div className="grid gap-2 sm:grid-cols-3">
+        <Input value={component} onChange={(e) => setComponent(e.target.value)} placeholder="Composición (ej: ergotamina + cafeína)" className="text-sm" />
+        <Input value={drugClass} onChange={(e) => setDrugClass(e.target.value)} placeholder="Clase (ej: antimigrañoso)" className="text-sm" />
+        <Input value={treats} onChange={(e) => setTreats(e.target.value)} placeholder="Para qué (ej: migraña)" className="text-sm" />
+      </div>
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => void save()} disabled={saving}>
+          {saving ? <Loader2 size={14} className="mr-2 animate-spin" /> : null} Guardar desglose
+        </Button>
+      </div>
+    </div>
   )
 }
