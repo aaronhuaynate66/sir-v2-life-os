@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `29a3817`
+**Hash del último commit humano:** `de6974b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `de6974b` | aaronhuaynate66 | feat(reminders): recordatorios agendados desde /relato/ingest (D2) (#493) | 2026-07-03 |
 | `29a3817` | aaronhuaynate66 | feat(panel): SIR Pulse expandible (D5) (#492) | 2026-07-03 |
 | `0af44c1` | aaronhuaynate66 | feat(push): notificaciones push del browser para alertas de estado (#491) | 2026-07-03 |
 | `8fc4463` | aaronhuaynate66 | feat(export): descargar TODO como .zip con CSVs (data ownership) (#490) | 2026-07-03 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `de04dfd` | aaronhuaynate66 | feat(relato-ingest): streaming SSE de Claude (A2) (#486) | 2026-07-02 |
 | `4b69782` | aaronhuaynate66 | feat(panel): alertas cuando el estado con una persona empeora (G3) (#485) | 2026-07-02 |
 | `53b4a35` | aaronhuaynate66 | feat(relato-ingest): editar cada item del plan antes de aplicar (A4) (#484) | 2026-07-02 |
-| `73ee109` | aaronhuaynate66 | fix(relato-ingest): botón Deshacer con timer 30s (D2) (#483) | 2026-07-02 |
 
 ---
 
