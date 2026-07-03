@@ -18,14 +18,12 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { planIngest, type ReaderBatch, type ReaderPlatform } from '@/lib/reader/ingest'
-import { namesLooselyMatch } from '@/lib/people/nameMatch'
+import { type ReaderBatch, type ReaderPlatform } from '@/lib/reader/ingest'
+import { ingestReaderBatch } from '@/lib/reader/persist'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const HASH_WINDOW = 400 // mensajes sin ts recordados por hilo para dedup
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -73,18 +71,6 @@ function parseBatch(x: unknown): ReaderBatch | null {
   return { platform, threadId, threadName, messages }
 }
 
-/** Atribuye la persona por el nombre del hilo (match laxo). Solo si hay UNA. */
-async function matchPersonId(admin: SupabaseClient, userId: string, threadName: string): Promise<string | null> {
-  if (!threadName) return null
-  try {
-    const { data } = await admin.from('people').select('id, name, alias').eq('user_id', userId).limit(2000)
-    const hits = ((data ?? []) as Array<{ id: string; name: string; alias: string | null }>).filter(
-      (p) => namesLooselyMatch(threadName, p.name) || (p.alias ? namesLooselyMatch(threadName, p.alias) : false),
-    )
-    return hits.length === 1 ? hits[0].id : null
-  } catch { return null }
-}
-
 export async function POST(req: NextRequest) {
   const expected = process.env.READER_INGEST_TOKEN?.trim()
   if (!expected) return errorJson(500, 'READER_INGEST_TOKEN no configurado en el server')
@@ -106,47 +92,8 @@ export async function POST(req: NextRequest) {
   if (!batch) return errorJson(400, 'Body inválido', 'Se esperaba { platform, threadId, threadName, messages[] }')
 
   try {
-    // 1. Cursor del hilo (seen + lastTs).
-    const { data: cur } = await admin
-      .from('reader_threads')
-      .select('last_ts, recent_hashes')
-      .eq('user_id', userId).eq('platform', batch.platform).eq('thread_id', batch.threadId)
-      .maybeSingle()
-    const seen = new Set<string>((cur?.recent_hashes as string[] | null) ?? [])
-    const lastTs = (cur?.last_ts as string | null) ?? null
-
-    // 2. Núcleo puro.
-    const plan = planIngest(batch, seen, lastTs)
-    if (plan.fresh.length === 0) {
-      return NextResponse.json({ ingested: 0, reason: 'nada nuevo' })
-    }
-
-    // 3. Observación dm_conversation con lo nuevo, atribuida a la persona.
-    const personId = await matchPersonId(admin, userId, batch.threadName)
-    const observedAt = plan.latestTs ?? new Date().toISOString()
-    const obsId = `obs_reader_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-    const summary = `Conversación de ${batch.platform} con ${batch.threadName || 'alguien'} · ${plan.fresh.length} mensaje(s) nuevos`
-    const { error: obsErr } = await admin.from('observations').insert({
-      id: obsId,
-      user_id: userId,
-      person_id: personId,
-      capture_type: 'dm_conversation',
-      data: { platform: batch.platform, source: 'reader', thread_name: batch.threadName, summary, text: plan.conversationText, message_count: plan.fresh.length },
-      confidence: 'high',
-      observed_at: observedAt,
-      is_obsolete: false,
-    })
-    if (obsErr) return errorJson(500, 'No pude guardar la observación', obsErr.message)
-
-    // 4. Avanzar el cursor (cap de hashes recordados).
-    const merged = [...seen, ...plan.newHashes].slice(-HASH_WINDOW)
-    const nextTs = plan.latestTs ?? lastTs
-    await admin.from('reader_threads').upsert({
-      user_id: userId, platform: batch.platform, thread_id: batch.threadId, thread_name: batch.threadName,
-      last_ts: nextTs, recent_hashes: merged, last_ingested_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,platform,thread_id' })
-
-    return NextResponse.json({ ingested: plan.fresh.length, observationId: obsId, personId, personMatched: !!personId })
+    const result = await ingestReaderBatch(admin, userId, batch)
+    return NextResponse.json(result)
   } catch (e) {
     reportApiError(e)
     return errorJson(500, 'Falló la ingesta', (e instanceof Error ? e.message : String(e)).slice(0, 200))
