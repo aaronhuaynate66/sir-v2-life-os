@@ -2,7 +2,7 @@
 
 > **Qué es:** la lista maestra de lo que falta construir, priorizada. Se actualiza
 > con CADA entregable (Claude la mantiene). Fuente de "qué sigue".
-> **Última actualización:** 2026-07-03 (CAPA COGNITIVA A1–A7 ✅ COMPLETA · sigue B1 Teams).
+> **Última actualización:** 2026-07-03 (A1–A7 ✅ · U1/U2 UI · B1-simple Teams ✅ · sigue A8).
 >
 > **Encuadre:** el *cuerpo* de SIR está en prod (percepción, memoria, cerebro-grafo
 > F1-F4, contexto, señales, salud, finanzas, relaciones, objetivos). Lo que falta es
@@ -35,7 +35,8 @@
 | # | Ítem | Estado | Esf | Pri | Nota |
 |---|---|---|---|---|---|
 | B0 | Spec + núcleo + endpoint `/api/reader/ingest` | ✅ | — | — | PR #505 (mig 0119). Falta setear `READER_INGEST_TOKEN` + mergear. |
-| B1 | **Extensión Chrome MV3 (Teams)** | ⬜ | M | P1 | Cliente pasivo: content script sobre teams.microsoft.com + cola IndexedDB + envío por deltas. Selectores del DOM = la parte frágil (dev mode + inspección en vivo). |
+| B1-simple | **Pegar conversación (Teams sin extensión)** ✅ | ✅ | S | P1 | HECHO (07-03, en #505): `lib/reader/parsePaste` (best-effort autor+hora, fallback, 6 tests) + `POST /api/reader/paste` (session, reusa `ingestReaderBatch`) + página **`/captura/pegar`**. Copiás el hilo → SIR lo lee, idempotente. Cero extensión/ToS. |
+| B1 | Extensión Chrome MV3 (Teams) | ⬜ | M | P2 | DESPRIORIZADO — el paste (B1-simple) cubre el caso. La extensión daría captura continua; queda para si hace falta. |
 | B2 | Reader → redes sociales (opt-in) | ⬜ | M | P2 | LinkedIn/IG/FB: riesgo de cuenta (ToS + detección). Pasivo, opt-in con aviso. |
 | B3 | Teams por Microsoft Graph OAuth | ⬜ | L | P2 | Camino oficial sin scraping; depende de consentimiento M365. |
 
