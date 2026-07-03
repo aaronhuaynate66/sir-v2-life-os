@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b44875c`
+**Hash del último commit humano:** `8c3a319`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,9 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8c3a319` | aaronhuaynate66 | feat(captura): reconocer Teams/Slack como dm_conversation (#504) | 2026-07-03 |
+| `9acf7b5` | aaronhuaynate66 | feat(finanzas): proyección de gasto de fin de mes (forecast) (#498) | 2026-07-03 |
+| `094c81d` | aaronhuaynate66 | feat(seed-batch): validar/normalizar enums antes del apply (#497) | 2026-07-03 |
 | `b44875c` | aaronhuaynate66 | fix(migrations): 0114 drift-safe (push_subscriptions preexistía sin disabled_at) (#503) | 2026-07-03 |
 | `d95fbd4` | aaronhuaynate66 | fix(ci): calcular 'hoy' en TZ de Lima en buildEstadoInsights (test flaky bloqueaba migraciones) (#502) | 2026-07-03 |
 | `cb51010` | aaronhuaynate66 | feat(medicacion): desglose de medicamentos + cruce inteligente (migraña) (#500) | 2026-07-03 |
@@ -348,9 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `fcb3022` | aaronhuaynate66 | feat(diario): journal íntimo (Opción A — tipo Day One) (#495) | 2026-07-03 |
 | `82a22ed` | aaronhuaynate66 | feat(relaciones): comparativa entre personas (D3) (#494) | 2026-07-03 |
 | `de6974b` | aaronhuaynate66 | feat(reminders): recordatorios agendados desde /relato/ingest (D2) (#493) | 2026-07-03 |
-| `29a3817` | aaronhuaynate66 | feat(panel): SIR Pulse expandible (D5) (#492) | 2026-07-03 |
-| `0af44c1` | aaronhuaynate66 | feat(push): notificaciones push del browser para alertas de estado (#491) | 2026-07-03 |
-| `8fc4463` | aaronhuaynate66 | feat(export): descargar TODO como .zip con CSVs (data ownership) (#490) | 2026-07-03 |
 
 ---
 
