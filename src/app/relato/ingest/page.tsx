@@ -16,8 +16,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Wand2, Loader2, CheckCircle2, AlertCircle, Circle, CircleCheck, Send, User, Sparkles, RotateCcw, Paperclip, Pencil } from 'lucide-react'
+import { Wand2, Loader2, CheckCircle2, AlertCircle, Circle, CircleCheck, Send, User, Sparkles, RotateCcw, Paperclip, Pencil, Camera } from 'lucide-react'
 import { pdfFileToText } from '@/lib/capture/pdf/pdfToText'
+import { compressImage, blobToBase64 } from '@/lib/capture/scale/compress'
 import { PlanItemEditor } from '@/components/relato-ingest/PlanItemEditor'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -146,6 +147,9 @@ export default function RelatoIngestPage() {
   const [attachingPdf, setAttachingPdf] = useState(false)
   const [pdfNotice, setPdfNotice] = useState<string | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
+  // Foto: en el cel abre la cámara (capture="environment"); en desktop, el picker.
+  const [transcribing, setTranscribing] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
   const [aplicarDirecto, setAplicarDirecto] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [hydrated, setHydrated] = useState(false)
@@ -353,6 +357,29 @@ export default function RelatoIngestPage() {
     } finally { setAttachingPdf(false) }
   }
 
+  // Foto → Visión → prosa en el draft. Aaron le toma foto a un dato en pantalla
+  // (un cumple, una tarjeta, un cartel) y SIR lo transcribe para que él lo envíe.
+  async function attachPhoto(file: File) {
+    if (!file || !file.type.startsWith('image/')) { setPdfNotice('Eso no parece una imagen.'); return }
+    setTranscribing(true); setPdfNotice(null)
+    try {
+      // 1600px / q=0.92: nombres y fechas finas → conservador (igual que documentos).
+      const { blob } = await compressImage(file, { maxSize: 1600, quality: 0.92 })
+      const imageBase64 = await blobToBase64(blob)
+      const res = await fetch('/api/relato/transcribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64, mimeType: blob.type || 'image/webp' }),
+      })
+      const j = (await res.json()) as { text?: string | null; error?: string; detail?: string }
+      if (!res.ok) { setPdfNotice(`Error: ${j.error ?? `HTTP ${res.status}`}`); return }
+      if (!j.text) { setPdfNotice('No vi datos claros en la foto. Probá con más luz o más cerca.'); return }
+      setDraft((d) => (d ? `${d}\n${j.text}` : (j.text as string)).slice(0, 8000))
+      setPdfNotice('OK: transcribí la foto. Revisá el texto y enviá cuando estés listo.')
+    } catch (e) {
+      setPdfNotice(`Error: ${e instanceof Error ? e.message : String(e)}`)
+    } finally { setTranscribing(false) }
+  }
+
   return (
     <AppShell>
       <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
@@ -449,9 +476,30 @@ export default function RelatoIngestPage() {
               onDrop={(e) => {
                 e.preventDefault()
                 const f = e.dataTransfer.files?.[0]
-                if (f) void attachPdf(f)
+                if (!f) return
+                if (f.type.startsWith('image/')) void attachPhoto(f)
+                else void attachPdf(f)
               }}
             >
+              {/* Foto: en el cel abre la cámara directo (capture="environment"). */}
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={transcribing || busy}
+                title="Tomar/subir una foto — SIR la transcribe y la pega al mensaje"
+                className="flex-shrink-0 rounded-md border border-border bg-background p-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 disabled:opacity-50"
+                aria-label="Tomar foto"
+              >
+                {transcribing ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+              </button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) void attachPhoto(f); e.target.value = '' }}
+              />
               <button
                 type="button"
                 onClick={() => pdfInputRef.current?.click()}
@@ -476,7 +524,7 @@ export default function RelatoIngestPage() {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void enviar() }
                 }}
                 rows={2}
-                placeholder="Contame qué pasó… (Ctrl/⌘ + Enter para enviar · arrastrá un PDF acá)"
+                placeholder="Contame qué pasó… (Ctrl/⌘ + Enter · 📷 foto o PDF con los botones)"
                 className="flex-1 min-w-0 resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30 min-h-[44px] max-h-[240px]"
                 disabled={busy}
               />
