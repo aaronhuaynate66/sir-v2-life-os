@@ -11,19 +11,26 @@ import { Moon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { accumulatedSleepDebt } from '@/lib/sleep/debt'
+import { qualityAdjustedDebt } from '@/lib/sleep/effective'
 import { cn } from '@/lib/utils'
 
 export function SleepDebtCard() {
   const { sleepRecords } = useSelfStore()
-  const debt = useMemo(
-    () => accumulatedSleepDebt(sleepRecords.map((s) => ({ date: s.date, duration: s.duration })), Date.now()),
-    [sleepRecords],
-  )
+  const { debt, adjusted } = useMemo(() => {
+    const now = Date.now()
+    return {
+      debt: accumulatedSleepDebt(sleepRecords.map((s) => ({ date: s.date, duration: s.duration })), now),
+      // SF·F3: deuda contando la CALIDAD (8h picadas ≠ 8h limpias).
+      adjusted: qualityAdjustedDebt(sleepRecords, now),
+    }
+  }, [sleepRecords])
 
   if (sleepRecords.length === 0) return null
 
   const hasDebt = debt.debtHours > 0
   const tone = !debt.sufficient ? 'text-muted-foreground' : hasDebt ? (debt.debtHours >= 5 ? 'text-bad' : 'text-warn') : 'text-ok'
+  // Solo mostramos la deuda ajustada si la calidad la EMPEORA de forma notable.
+  const showAdjusted = debt.sufficient && adjusted.debtHours > debt.debtHours + 0.4
 
   return (
     <Card className="shadow-none mb-4">
@@ -44,6 +51,13 @@ export function SleepDebtCard() {
               ? `Se acumuló noche a noche. A este ritmo, ~${debt.nightsToBase} noche${debt.nightsToBase === 1 ? '' : 's'} durmiendo bien para volver a base. Una noche larga suelta paga solo una parte.`
               : 'Al día — sin deuda acumulada. Buen ritmo.'}
         </p>
+
+        {showAdjusted && (
+          <p className="text-[12px] leading-relaxed mt-2 pt-2 border-t border-border/40">
+            <span className="text-warn font-medium">Ajustada por calidad: {adjusted.debtHours}h.</span>
+            <span className="text-muted-foreground"> Tus noches rindieron menos de lo que dicen las horas (fragmentadas o poco profundas), así que la deuda real es mayor.</span>
+          </p>
+        )}
       </CardContent>
     </Card>
   )
