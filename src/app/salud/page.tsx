@@ -44,6 +44,7 @@ import { rangeWindowLabel, type ChartRange } from '@/lib/charts/series'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
+import { SleepDebtCard } from '@/components/salud/SleepDebtCard'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
 
@@ -238,6 +239,9 @@ function SaludContent() {
       <div className="mb-6">
         <BodyMetricsTrend metrics={healthMetrics} range={chartRange} offset={chartOffset} />
       </div>
+
+      {/* 11·M1 — deuda de sueño acumulada real (no promedio). */}
+      <SleepDebtCard />
 
       <div className="mb-6">
         <PatronesPanel />
