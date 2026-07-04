@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `7e57d18`
+**Hash del último commit humano:** `8587b29`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8587b29` | aaronhuaynate66 | feat(16·M3): detector de manipulación entrante (defensa) (#516) | 2026-07-04 |
+| `ce476d4` | Aaron Huaynate | docs(ciencia): 16 — Influencia, percepción e inteligencia social (con línea ética) | 2026-07-03 |
+| `565359b` | Aaron Huaynate | docs(ciencia): cerrar el loop en 01 + 6 docs nuevos (lentes + 5 dominios) | 2026-07-03 |
+| `28160e9` | Aaron Huaynate | feat(C6): recordatorios en tiempo real sin costo (watcher client-side + cron de respaldo) | 2026-07-03 |
+| `53f7156` | Aaron Huaynate | fix(vercel): quitar .vercelignore — excluía data/fixtures (import del código) y rompía el build | 2026-07-03 |
+| `505fd9c` | Aaron Huaynate | fix(vercel): cron reminders-due a diario (Hobby no permite */15) — destraba deploys | 2026-07-03 |
 | `7e57d18` | aaronhuaynate66 | feat(C5): foto → relato — cámara en 'Contale a SIR' (#515) | 2026-07-03 |
 | `14d6e24` | Aaron Huaynate | chore(plan): encabezado — cierra el backlog autónomo (C1/C2/C3/V2/U1/U2) | 2026-07-03 |
 | `784e2bf` | aaronhuaynate66 | feat(C3): memoria cross-session — SIR recuerda lo conversado (RAG) (#514) | 2026-07-03 |
 | `42c21c3` | aaronhuaynate66 | feat(C1): extracción integrada de seed batch desde texto crudo (#513) | 2026-07-03 |
-| `f02d953` | aaronhuaynate66 | feat(V2): cache diaria de IA para reasoner y decidir (#512) | 2026-07-03 |
-| `b0a2615` | aaronhuaynate66 | feat(U1-fin): partir /salud en Observar vs Anticipar + renombrar card de objetivo (#511) | 2026-07-03 |
-| `549d702` | aaronhuaynate66 | feat(U2-fin): headings semánticos sistémicos + contraste del Nav (#510) | 2026-07-03 |
-| `8562a1c` | aaronhuaynate66 | feat(A8b): cablear adjustByLearning al ranking — el loop reordena las recs (#509) | 2026-07-03 |
-| `f4de5b5` | aaronhuaynate66 | feat(C2): el ingest de relato acepta token personal (contale desde afuera) (#508) | 2026-07-03 |
-| `e840a0e` | aaronhuaynate66 | docs(plan): todo mergeado; lista de lo que queda con orden de ataque (#507) | 2026-07-03 |
 
 ---
 
