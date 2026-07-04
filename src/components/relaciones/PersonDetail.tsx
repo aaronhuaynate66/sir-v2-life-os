@@ -720,6 +720,7 @@ export function PersonDetail({
           <CicloPanel
             cycleStartDate={live.cycleStartDate ?? null}
             cycleLengthDays={live.cycleLengthDays ?? null}
+            personCycles={personCycles}
           />
         </div>
       )}

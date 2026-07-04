@@ -25,12 +25,23 @@ import { Activity } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
+import { computeCycleRegularity, type PredictionConfidence } from '@/lib/ciclo/regularity'
+import type { PersonCycleEntry } from '@/lib/person-cycles/types'
 import { useMounted } from '@/hooks/useMounted'
 import { cn } from '@/lib/utils'
 
 export interface CicloPanelProps {
   cycleStartDate?: string | null
   cycleLengthDays?: number | null
+  /** 17·M4 — registros de person_cycles para medir la regularidad → confianza. */
+  personCycles?: PersonCycleEntry[]
+}
+
+const CONFIDENCE_LABEL: Record<PredictionConfidence, { text: string; cls: string }> = {
+  high: { text: 'predicción confiable', cls: 'text-ok' },
+  medium: { text: 'predicción orientativa', cls: 'text-warn' },
+  low: { text: 'ciclo irregular — estimación amplia', cls: 'text-bad' },
+  insufficient: { text: 'pocos ciclos aún — estimación amplia', cls: 'text-muted-foreground' },
 }
 
 // Colores de fase alineados a la paleta del sistema (bad/warn/ok/brand).
@@ -48,7 +59,7 @@ const PHASE_ACCENT_CLASS: Record<CyclePhaseId, string> = {
   luteal: 'text-brand-soft-foreground',
 }
 
-export function CicloPanel({ cycleStartDate, cycleLengthDays }: CicloPanelProps) {
+export function CicloPanel({ cycleStartDate, cycleLengthDays, personCycles = [] }: CicloPanelProps) {
   // La fase/día/countdown del ciclo dependen de "hoy" → mount-safe.
   const mounted = useMounted()
   return (
@@ -68,7 +79,7 @@ export function CicloPanel({ cycleStartDate, cycleLengthDays }: CicloPanelProps)
 
         {cycleStartDate ? (
           mounted ? (
-            <Body cycleStartDate={cycleStartDate} cycleLengthDays={cycleLengthDays ?? 28} />
+            <Body cycleStartDate={cycleStartDate} cycleLengthDays={cycleLengthDays ?? 28} personCycles={personCycles} />
           ) : (
             <CicloPlaceholder />
           )
@@ -96,11 +107,15 @@ function CicloPlaceholder() {
 function Body({
   cycleStartDate,
   cycleLengthDays,
+  personCycles,
 }: {
   cycleStartDate: string
   cycleLengthDays: number
+  personCycles: PersonCycleEntry[]
 }) {
   const phase = cyclePhase(cycleStartDate, cycleLengthDays)
+  // 17·M4 — regularidad observada → confianza de la predicción.
+  const reg = computeCycleRegularity(personCycles.map((e) => ({ date: e.date, phase: e.phase })))
   if (!phase) {
     return (
       <p className="text-sm text-muted-foreground italic">
@@ -154,6 +169,14 @@ function Body({
         ·{' '}
         <span className="text-foreground font-medium">
           en {phase.daysUntilNextPeriod === 0 ? 'hoy' : `${phase.daysUntilNextPeriod} día${phase.daysUntilNextPeriod === 1 ? '' : 's'}`}
+        </span>
+        {reg.regularity !== 'insufficient' && reg.bandDays > 0 && (
+          <span className="text-muted-foreground/70"> (±{reg.bandDays}d)</span>
+        )}
+        {/* 17·M4 — confianza de la predicción según la regularidad observada. */}
+        <span className={cn('block mt-1', CONFIDENCE_LABEL[reg.confidence].cls)}>
+          {CONFIDENCE_LABEL[reg.confidence].text}
+          {reg.observedCycles >= 2 && ` · ${reg.observedCycles} ciclos observados`}
         </span>
       </div>
     </div>
