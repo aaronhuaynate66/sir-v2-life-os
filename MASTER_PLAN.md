@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3505e33`
+**Hash del último commit humano:** `92c13dd`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `92c13dd` | aaronhuaynate66 | feat(18·M1): señales externas — dólar generalizado a finanzas (#524) | 2026-07-04 |
 | `3505e33` | aaronhuaynate66 | feat(17·M4): regularidad del ciclo → confianza de la predicción (#523) | 2026-07-04 |
 | `1057ef8` | aaronhuaynate66 | feat(17·M1): base científica del ciclo menstrual + perfil de fase enriquecido (#522) | 2026-07-04 |
 | `62fe605` | aaronhuaynate66 | feat(15·8): 'qué le importa a esta persona' — temas recurrentes (#521) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `fec9f01` | Aaron Huaynate | docs(16): reformular M4 a capstone 'Sala de ensayo' + veredicto MiroFish | 2026-07-04 |
 | `355b921` | aaronhuaynate66 | feat(15·1 + 16·M1): capas de Dunbar + cómo plantear algo (dupla del aumento) (#517) | 2026-07-04 |
 | `8587b29` | aaronhuaynate66 | feat(16·M3): detector de manipulación entrante (defensa) (#516) | 2026-07-04 |
-| `ce476d4` | Aaron Huaynate | docs(ciencia): 16 — Influencia, percepción e inteligencia social (con línea ética) | 2026-07-03 |
 
 ---
 
