@@ -20,6 +20,7 @@ import { useRelationshipStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { detectBiases } from '@/engines/bias'
+import { InfluenceMapCard } from '@/components/influence/InfluenceMapCard'
 import { cn } from '@/lib/utils'
 import type { RehearseResult, Likelihood } from '@/lib/influence/rehearsePrompt'
 
@@ -124,6 +125,9 @@ function EnsayoContent() {
           {error && <div className="rounded-md border border-bad/30 bg-bad-soft p-2.5 text-[12px] text-bad leading-relaxed">{error}</div>}
         </CardContent>
       </Card>
+
+      {/* 16·M2 — quién más pesa alrededor de esta persona (grafo, client-side). */}
+      {personId && <InfluenceMapCard targetId={personId} />}
 
       {result && <RehearseView result={result} forName={forName} hadContext={hadContext} />}
     </AppShell>
