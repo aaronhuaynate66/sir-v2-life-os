@@ -35,6 +35,7 @@ const EmotionFinancePanel = dynamic(() => import('@/components/finanzas/EmotionF
 import { INTENT_LABEL, INTENT_HINT, INTENT_BADGE } from '@/lib/finanzas/intent-meta'
 import { correlateStressVsNonEssentialSpend } from '@/lib/longitudinal/emotionFinance'
 import { useSelfStore } from '@/stores/useSelfStore'
+import { DolarSignalCard } from '@/components/finanzas/DolarSignalCard'
 import { cn } from '@/lib/utils'
 import type { MovementType, FinancialCategory, FinancialMovement, Currency, SpendIntent } from '@/types'
 
@@ -210,6 +211,9 @@ function FinanceContent() {
           label="Exportar movimientos"
         />
       </div>
+
+      {/* 18·M1 — señal externa: el dólar, si se movió vs tu última referencia. */}
+      <DolarSignalCard />
 
       <div className={cn('grid grid-cols-2 lg:grid-cols-4 gap-3', hasFinanceData ? 'mb-6' : 'mb-2')}>
         {stats.map((s) => (
