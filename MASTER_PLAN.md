@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `794fbf4`
+**Hash del último commit humano:** `cfacdfd`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `cfacdfd` | aaronhuaynate66 | feat(19·M1): perfil relacional por persona (hipótesis, no diagnóstico) (#527) | 2026-07-04 |
 | `794fbf4` | aaronhuaynate66 | docs(19): perfilado relacional (leer a la persona) + cluster auto-forense (#526) | 2026-07-04 |
 | `83aa945` | Aaron Huaynate | fix(0121): castear auth.uid()::text en la RPC — destraba la cadena de migraciones | 2026-07-04 |
 | `524eb89` | aaronhuaynate66 | feat(18·M3): 'Eventos que sigo' — señales externas por el camino manual (#525) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `62fe605` | aaronhuaynate66 | feat(15·8): 'qué le importa a esta persona' — temas recurrentes (#521) | 2026-07-04 |
 | `cb2acec` | aaronhuaynate66 | feat(16·M2): mapa de influencia informal (cierra el trío del aumento) (#520) | 2026-07-04 |
 | `2706d90` | aaronhuaynate66 | feat(14·M1): detector de sesgos en el lenguaje (robustece la Sala de ensayo) (#519) | 2026-07-04 |
-| `a0281bc` | aaronhuaynate66 | feat(16·M4): Sala de ensayo — caminos al objetivo (capstone v1) (#518) | 2026-07-04 |
 
 ---
 
