@@ -16,7 +16,9 @@ import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, ty
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 45
+// El ensayo puede hacer hasta 2 llamadas a Claude (retry por JSON); 45s se
+// quedaba corto y el timeout devolvía un 504 no-JSON. 60s da margen.
+export const maxDuration = 60
 
 const MODEL_ID = 'claude-sonnet-4-5'
 

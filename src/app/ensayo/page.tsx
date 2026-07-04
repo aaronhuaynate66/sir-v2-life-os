@@ -63,8 +63,22 @@ function EnsayoContent() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personId, objective }),
       })
-      const j = (await res.json()) as { result?: RehearseResult; person?: { name: string; hadContext: boolean }; error?: string; detail?: string }
-      if (!res.ok || !j.result) { setError(j.error ? `${j.error}${j.detail ? ` — ${j.detail}` : ''}` : 'No pude armar el ensayo.'); return }
+      // El body puede NO ser JSON si hubo timeout del modelo (504) o error de
+      // gateway (5xx): parseamos con red de seguridad para no reventar con el
+      // críptico "The string did not match the expected pattern" de Safari.
+      const text = await res.text()
+      let j: { result?: RehearseResult; person?: { name: string; hadContext: boolean }; error?: string; detail?: string } = {}
+      try { j = text ? JSON.parse(text) : {} } catch { /* respuesta no-JSON (timeout/gateway) */ }
+      if (!res.ok || !j.result) {
+        setError(
+          j.error
+            ? `${j.error}${j.detail ? ` — ${j.detail}` : ''}`
+            : res.status === 504 || res.status === 502
+              ? 'El ensayo tardó demasiado y el servidor cortó (suele ser el modelo). Probá de nuevo, o con un objetivo más corto.'
+              : `No pude armar el ensayo (código ${res.status || '—'}). Reintentá en un momento.`,
+        )
+        return
+      }
       setResult(j.result); setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
