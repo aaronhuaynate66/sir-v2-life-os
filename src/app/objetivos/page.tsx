@@ -24,6 +24,7 @@ import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useMemoryStore } from '@/stores'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
+import { NextStepCard } from '@/components/objetivos/NextStepCard'
 import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
 import { TrackerStrip } from '@/components/trackers/TrackerStrip'
 import dynamic from 'next/dynamic'
@@ -374,6 +375,9 @@ function GoalsContent() {
           <Button variant="outline" size="sm" onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Nuevo objetivo'}</Button>
         </div>
       </div>
+
+      {/* 12·M2+M3 — tu próximo paso, dimensionado por energía/esfuerzo. */}
+      <NextStepCard />
 
       {aiOpen && (
         <Card className={cn('mb-4', cardClass)}>
