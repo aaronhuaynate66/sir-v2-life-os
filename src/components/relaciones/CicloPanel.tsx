@@ -26,9 +26,20 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
 import { computeCycleRegularity, type PredictionConfidence } from '@/lib/ciclo/regularity'
-import type { PersonCycleEntry } from '@/lib/person-cycles/types'
+import type { PersonCycleEntry, CyclePhase } from '@/lib/person-cycles/types'
+import { cycleEntriesWithNotes } from '@/lib/person-cycles/notes'
 import { useMounted } from '@/hooks/useMounted'
 import { cn } from '@/lib/utils'
+
+// Etiquetas legibles de las fases registradas día a día (person_cycles).
+const ENTRY_PHASE_LABEL: Record<CyclePhase, string> = {
+  bleeding: 'Menstruación',
+  pms: 'Premenstrual',
+  mid_cycle: 'Mitad de ciclo',
+  ovulation: 'Ovulación',
+  luteal: 'Lútea',
+  unknown: 'Sin fase',
+}
 
 export interface CicloPanelProps {
   cycleStartDate?: string | null
@@ -179,6 +190,43 @@ function Body({
           {reg.observedCycles >= 2 && ` · ${reg.observedCycles} ciclos observados`}
         </span>
       </div>
+
+      {/* Rescate DD — notas del ciclo (person_cycles.note): lo que registraste
+          día a día ya no se pierde. Encuadre de cuidado, sin interpretación. */}
+      <CycleNotes entries={personCycles} />
+    </div>
+  )
+}
+
+/** Lista los registros de ciclo que tienen nota, más recientes primero. Data
+ *  sensible y privada: se muestra tal cual la cargaste, sin juicio. */
+function CycleNotes({ entries }: { entries: PersonCycleEntry[] }) {
+  const withNote = cycleEntriesWithNotes(entries)
+  if (withNote.length === 0) return null
+  const shown = withNote.slice(0, 4)
+
+  return (
+    <div className="border-t border-border/40 pt-3 space-y-2">
+      <div className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary">Notas del ciclo</div>
+      <ul className="space-y-2">
+        {shown.map((e) => (
+          <li key={e.id} className="text-[12px] leading-relaxed">
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70 font-mono">
+              <span>{e.date}</span>
+              <span className="text-muted-foreground/50">·</span>
+              <span>{ENTRY_PHASE_LABEL[e.phase]}</span>
+              {e.source === 'self_report' && (
+                <span className="not-italic rounded bg-ok-soft/50 px-1 py-px text-ok text-[9px] tracking-normal">ella lo registró</span>
+              )}
+              {e.confidence === 'low' && <span className="text-muted-foreground/50">· dato incierto</span>}
+            </div>
+            <p className="text-foreground/85 mt-0.5">{e.note}</p>
+          </li>
+        ))}
+      </ul>
+      {withNote.length > shown.length && (
+        <div className="text-[10px] text-muted-foreground/60">+{withNote.length - shown.length} nota{withNote.length - shown.length === 1 ? '' : 's'} más</div>
+      )}
     </div>
   )
 }
