@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { DIMENSION_LABEL, type DecisionAssessment } from '@/engines/decision'
+import { calibrateDecision } from '@/engines/decision/calibrate'
 import { detectBiases } from '@/engines/bias'
 import { cn } from '@/lib/utils'
 
@@ -146,9 +147,36 @@ export default function DecidirPage() {
                 {result.topRisk.note ? ` — ${result.topRisk.note}` : ''}
               </p>
             )}
+
+            {/* 14·M3 + 14·M4 — calibrador de esfuerzo + modo maximizar/satisficer. */}
+            <DecisionCalibrationBlock result={result} />
           </CardContent>
         </Card>
       )}
     </AppShell>
+  )
+}
+
+const DOOR_LABEL = { two_way: 'Puerta de dos vías', one_way: 'Puerta de una vía', unclear: 'Reversibilidad poco clara' } as const
+
+function DecisionCalibrationBlock({ result }: { result: DecisionAssessment }) {
+  const cal = useMemo(() => calibrateDecision(result), [result])
+  const oneWay = cal.doorType === 'one_way'
+  return (
+    <div className="border-t border-border/50 pt-3 space-y-3">
+      <div>
+        <div className="flex items-center gap-2">
+          <Scale size={12} className={oneWay ? 'text-warn' : 'text-ok'} aria-hidden="true" />
+          <span className={cn('text-xs font-medium', oneWay ? 'text-warn' : 'text-ok')}>{DOOR_LABEL[cal.doorType]}</span>
+        </div>
+        <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{cal.effortGuidance}</p>
+      </div>
+      <div>
+        <span className="text-[10px] uppercase tracking-[0.06em] text-text-tertiary">
+          Modo sugerido: {cal.mode === 'maximize' ? 'maximizar' : 'satisficer'}
+        </span>
+        <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{cal.modeGuidance}</p>
+      </div>
+    </div>
   )
 }
