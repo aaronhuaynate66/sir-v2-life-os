@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
 import { SleepDebtCard } from '@/components/salud/SleepDebtCard'
+import { SleepQualityCard } from '@/components/salud/SleepQualityCard'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
 
@@ -242,6 +243,9 @@ function SaludContent() {
 
       {/* 11·M1 — deuda de sueño acumulada real (no promedio). */}
       <SleepDebtCard />
+
+      {/* SF·F2 — calidad/continuidad del sueño (no solo horas). */}
+      <SleepQualityCard />
 
       <div className="mb-6">
         <PatronesPanel />
