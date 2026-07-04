@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a0281bc`
+**Hash del último commit humano:** `2706d90`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2706d90` | aaronhuaynate66 | feat(14·M1): detector de sesgos en el lenguaje (robustece la Sala de ensayo) (#519) | 2026-07-04 |
 | `a0281bc` | aaronhuaynate66 | feat(16·M4): Sala de ensayo — caminos al objetivo (capstone v1) (#518) | 2026-07-04 |
 | `fec9f01` | Aaron Huaynate | docs(16): reformular M4 a capstone 'Sala de ensayo' + veredicto MiroFish | 2026-07-04 |
 | `355b921` | aaronhuaynate66 | feat(15·1 + 16·M1): capas de Dunbar + cómo plantear algo (dupla del aumento) (#517) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `28160e9` | Aaron Huaynate | feat(C6): recordatorios en tiempo real sin costo (watcher client-side + cron de respaldo) | 2026-07-03 |
 | `53f7156` | Aaron Huaynate | fix(vercel): quitar .vercelignore — excluía data/fixtures (import del código) y rompía el build | 2026-07-03 |
 | `505fd9c` | Aaron Huaynate | fix(vercel): cron reminders-due a diario (Hobby no permite */15) — destraba deploys | 2026-07-03 |
-| `7e57d18` | aaronhuaynate66 | feat(C5): foto → relato — cámara en 'Contale a SIR' (#515) | 2026-07-03 |
 
 ---
 
