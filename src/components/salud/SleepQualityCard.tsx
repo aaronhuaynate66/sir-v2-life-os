@@ -12,6 +12,7 @@ import { Moon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { readSleepQuality, recentQualitySummary, type SleepQualityLabel } from '@/lib/sleep/quality'
+import { effectiveSleepHours } from '@/lib/sleep/effective'
 import { cn } from '@/lib/utils'
 
 const LABEL_TEXT: Record<SleepQualityLabel, string> = {
@@ -40,11 +41,12 @@ function Metric({ label, value }: { label: string; value: string }) {
 export function SleepQualityCard() {
   const { sleepRecords } = useSelfStore()
 
-  const { reading, summary, dateLabel } = useMemo(() => {
+  const { reading, effective, summary, dateLabel } = useMemo(() => {
     const sorted = [...sleepRecords].sort((a, b) => b.date.localeCompare(a.date))
     const last = sorted[0]
     return {
       reading: last ? readSleepQuality(last) : null,
+      effective: last ? effectiveSleepHours(last) : null,
       summary: recentQualitySummary(sleepRecords, Date.now()),
       dateLabel: last?.date ?? null,
     }
@@ -87,6 +89,14 @@ export function SleepQualityCard() {
                 Profundo {Math.round(reading.deepPct * 100)}% · REM {Math.round(reading.remPct * 100)}% del sueño.
                 {reading.restorativePct < 0.3 && ' Poca fase profunda/REM: dormiste, pero descansaste menos de lo que dicen las horas.'}
                 {reading.restorativePct >= 0.4 && ' Buena proporción de sueño reparador.'}
+              </p>
+            )}
+
+            {/* SF·F3: horas efectivas — cuánto rindió de verdad la noche. */}
+            {effective && effective.adjusted && (
+              <p className="text-[12px] leading-relaxed mt-2">
+                <span className="text-warn font-medium">~{effective.effectiveHours}h efectivas</span>
+                <span className="text-muted-foreground"> de {effective.rawHours}h dormidas ({effective.reasons.join(' · ')}). Eso es lo que cuenta para tu recuperación, no las horas en bruto.</span>
               </p>
             )}
 

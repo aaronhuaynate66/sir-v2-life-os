@@ -46,6 +46,7 @@ import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
 import { SleepDebtCard } from '@/components/salud/SleepDebtCard'
 import { SleepQualityCard } from '@/components/salud/SleepQualityCard'
+import { SleepAftermathCard } from '@/components/salud/SleepAftermathCard'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
 
@@ -246,6 +247,9 @@ function SaludContent() {
 
       {/* SF·F2 — calidad/continuidad del sueño (no solo horas). */}
       <SleepQualityCard />
+
+      {/* SF·F3 — cruce sueño → día siguiente (estrés/energía/ánimo/FC). */}
+      <SleepAftermathCard />
 
       <div className="mb-6">
         <PatronesPanel />
