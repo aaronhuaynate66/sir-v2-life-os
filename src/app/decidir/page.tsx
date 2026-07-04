@@ -13,6 +13,9 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { DIMENSION_LABEL, type DecisionAssessment } from '@/engines/decision'
 import { calibrateDecision } from '@/engines/decision/calibrate'
+import { anchorsToCheck } from '@/lib/decision/valuesCheck'
+import { useSelfStore } from '@/stores/useSelfStore'
+import { useGoalStore } from '@/stores/useGoalStore'
 import { detectBiases } from '@/engines/bias'
 import { cn } from '@/lib/utils'
 
@@ -150,6 +153,8 @@ export default function DecidirPage() {
 
             {/* 14·M3 + 14·M4 — calibrador de esfuerzo + modo maximizar/satisficer. */}
             <DecisionCalibrationBlock result={result} />
+            {/* 14·M6 — coherencia con valores/identidad (si la decisión los tensiona). */}
+            <ValuesCoherenceBlock result={result} />
           </CardContent>
         </Card>
       )}
@@ -177,6 +182,36 @@ function DecisionCalibrationBlock({ result }: { result: DecisionAssessment }) {
         </span>
         <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{cal.modeGuidance}</p>
       </div>
+    </div>
+  )
+}
+
+function ValuesCoherenceBlock({ result }: { result: DecisionAssessment }) {
+  const { identityProfile } = useSelfStore()
+  const { goals } = useGoalStore()
+  const cal = useMemo(() => calibrateDecision(result), [result])
+  const anchors = useMemo(
+    () => anchorsToCheck({
+      yearAnchor: goals.find((g) => g.isAnchor)?.title ?? null,
+      identityBio: identityProfile?.bio,
+    }),
+    [goals, identityProfile],
+  )
+  if (!cal.valuesTension || anchors.length === 0) return null
+  return (
+    <div className="border-t border-border/50 pt-3">
+      <p className="text-[11px] text-warn font-medium">Esto tensiona tus valores.</p>
+      <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+        No hay respuesta limpia (los valores compiten), pero antes de cerrar, mirala contra tus anclas:
+      </p>
+      <ul className="mt-2 space-y-1">
+        {anchors.map((a) => (
+          <li key={a.label} className="text-[11px] leading-relaxed">
+            <span className="text-text-tertiary uppercase tracking-[0.05em] text-[9px]">{a.label}: </span>
+            <span className="text-foreground/85">{a.text}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
