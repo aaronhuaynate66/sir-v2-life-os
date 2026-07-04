@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3a1f4a7`
+**Hash del último commit humano:** `fcc18ee`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `fcc18ee` | aaronhuaynate66 | feat(15·5): micro-bid de mantenimiento atado a señal real (#546) | 2026-07-04 |
 | `3a1f4a7` | aaronhuaynate66 | feat(15·4): vínculos que drenan vs energizan (#545) | 2026-07-04 |
 | `9eaf058` | aaronhuaynate66 | feat(15·3+15·6): salud del vínculo (tono+cadencia) afectivo vs profesional (#544) | 2026-07-04 |
 | `641488e` | aaronhuaynate66 | feat(DD): rescatar sleep.awake_min (último rescate con data real) (#543) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `7ccd6b0` | aaronhuaynate66 | feat(DD): rescatar person_cycles.note (data muerta) (#539) | 2026-07-04 |
 | `9d79e40` | aaronhuaynate66 | feat(DD): rescatar deals.why_matters/scope/notes (data muerta) (#538) | 2026-07-04 |
 | `2784ef8` | aaronhuaynate66 | feat(SF·F1.5): back-fill de la data rica atrapada en notes (#537) | 2026-07-04 |
-| `c598b09` | aaronhuaynate66 | feat(SF·F3): cruce y predicción con la señal rica del sueño (#536) | 2026-07-04 |
 
 ---
 
