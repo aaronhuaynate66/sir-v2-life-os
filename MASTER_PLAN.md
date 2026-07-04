@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `dbc65e7`
+**Hash del último commit humano:** `9008556`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `9008556` | aaronhuaynate66 | feat(AF·F2): explorador de grafo (auto-forense) (#531) | 2026-07-04 |
 | `dbc65e7` | aaronhuaynate66 | feat(17·M3): trazabilidad tono × fase del ciclo (cierra el dominio ciclo) (#530) | 2026-07-04 |
 | `7b68a41` | aaronhuaynate66 | feat(AF·F1): timeline unificado cross-fuente (auto-forense) (#529) | 2026-07-04 |
 | `4af7d2a` | aaronhuaynate66 | feat(19·M2): modo 'Explorar hipótesis' (con guardrails duros) (#528) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `524eb89` | aaronhuaynate66 | feat(18·M3): 'Eventos que sigo' — señales externas por el camino manual (#525) | 2026-07-04 |
 | `92c13dd` | aaronhuaynate66 | feat(18·M1): señales externas — dólar generalizado a finanzas (#524) | 2026-07-04 |
 | `3505e33` | aaronhuaynate66 | feat(17·M4): regularidad del ciclo → confianza de la predicción (#523) | 2026-07-04 |
-| `1057ef8` | aaronhuaynate66 | feat(17·M1): base científica del ciclo menstrual + perfil de fase enriquecido (#522) | 2026-07-04 |
 
 ---
 
