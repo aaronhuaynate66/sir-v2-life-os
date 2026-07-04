@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRelationshipStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { detectBiases } from '@/engines/bias'
 import { cn } from '@/lib/utils'
 import type { RehearseResult, Likelihood } from '@/lib/influence/rehearsePrompt'
 
@@ -48,6 +49,10 @@ function EnsayoContent() {
   const [result, setResult] = useState<RehearseResult | null>(null)
   const [forName, setForName] = useState('')
   const [hadContext, setHadContext] = useState(true)
+
+  // 14·M1 — sesgos en cómo describís el objetivo (client-side, puro). El más
+  // típico acá: ilusionarte con la reacción del otro (wishful thinking).
+  const biasHits = useMemo(() => detectBiases(objective).hits, [objective])
 
   async function run() {
     if (!personId || !objective.trim()) return
@@ -107,6 +112,15 @@ function EnsayoContent() {
               {busy ? <><Loader2 size={14} className="mr-1.5 animate-spin" />Ensayando…</> : <><Sparkles size={14} strokeWidth={1.75} className="mr-1.5" />Ensayar</>}
             </Button>
           </div>
+          {biasHits.length > 0 && (
+            <div className="rounded-md border border-warn/30 bg-warn-soft/40 p-2.5 space-y-1">
+              {biasHits.map((h) => (
+                <p key={h.bias} className="text-[11px] text-muted-foreground leading-snug">
+                  <span className="text-warn font-medium">{h.label}:</span> {h.question}
+                </p>
+              ))}
+            </div>
+          )}
           {error && <div className="rounded-md border border-bad/30 bg-bad-soft p-2.5 text-[12px] text-bad leading-relaxed">{error}</div>}
         </CardContent>
       </Card>
