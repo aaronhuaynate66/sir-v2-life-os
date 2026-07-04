@@ -339,6 +339,7 @@ function mapSleep(
       wakeTime: agg.end?.hm ?? '00:00',
       duration,
       quality,
+      score: score !== undefined ? Math.round(score) : undefined, // SF·F1: score crudo estructurado
       externalId: `ah:sleep:${date}`,
       notes:
         score !== undefined

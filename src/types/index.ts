@@ -577,6 +577,22 @@ export interface SleepRecord {
   quality: number
   dreams?: string
   notes?: string
+  // Data de alta fidelidad (SF·F1, migración 0123). Todo opcional: solo la
+  // llenan los caminos que la tienen (captura Vision, import Apple con score).
+  // Antes vivía atrapada como prosa en `notes` y ningún motor la leía.
+  /** Puntuación de calidad 0-100 tal como la reporta la app (fuente real;
+   *  `quality` 1-10 es una derivación con pérdida de ésta). */
+  score?: number
+  /** Cantidad de despertares durante la noche. */
+  awakenings?: number
+  /** Minutos de sueño profundo. */
+  deepMin?: number
+  /** Minutos de sueño liviano/core. */
+  lightMin?: number
+  /** Minutos de sueño REM. */
+  remMin?: number
+  /** Minutos de vigilia durante la noche. */
+  awakeMin?: number
 }
 
 /**
