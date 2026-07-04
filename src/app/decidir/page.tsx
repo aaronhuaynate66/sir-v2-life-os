@@ -3,7 +3,7 @@
 // SIR la puntúa en las 7 dimensiones (docs/01) con el evaluador puro
 // (engines/decision) + LLM. Consume POST /api/decision.
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Scale, Loader2, TrendingUp, TrendingDown, Minus, Brain } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { DIMENSION_LABEL, type DecisionAssessment } from '@/engines/decision'
 import { calibrateDecision } from '@/engines/decision/calibrate'
 import { anchorsToCheck } from '@/lib/decision/valuesCheck'
+import { findSimilarDecisions, type PastDecision } from '@/lib/decision/similar'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { detectBiases } from '@/engines/bias'
@@ -44,10 +45,20 @@ export default function DecidirPage() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [result, setResult] = useState<DecisionAssessment | null>(null)
+  // 14·M5 — decisiones pasadas (para el outside view).
+  const [past, setPast] = useState<PastDecision[]>([])
 
   // 14·M1 — detector de sesgos en vivo (client-side, puro, no-bloqueante).
   // Marca cómo describís la decisión: no cambia el veredicto, solo enciende una luz.
   const biasHits = useMemo(() => detectBiases(`${title} ${description}`).hits, [title, description])
+
+  const loadPast = useCallback(async () => {
+    try {
+      const r = await fetch('/api/decisions')
+      if (r.ok) { const j = (await r.json()) as { decisions: PastDecision[] }; setPast(j.decisions ?? []) }
+    } catch { /* best-effort */ }
+  }, [])
+  useEffect(() => { void loadPast() }, [loadPast])
 
   async function evaluate() {
     if (busy || (!title.trim() && !description.trim())) return
@@ -59,7 +70,17 @@ export default function DecidirPage() {
       })
       const j = await res.json()
       if (!res.ok) { setErr(j.error ?? 'No pude evaluar'); return }
-      setResult(j.assessment as DecisionAssessment)
+      const assessment = j.assessment as DecisionAssessment
+      setResult(assessment)
+      // 14·M5 — persistir la decisión (dedupe por título) para el outside view futuro.
+      void fetch('/api/decisions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: assessment.title, description,
+          verdict: assessment.verdict, weighted: assessment.weighted,
+          topRisk: assessment.topRisk ? DIMENSION_LABEL[assessment.topRisk.dimension] : null,
+        }),
+      }).then(() => loadPast()).catch(() => {})
     } catch { setErr('No pude evaluar') } finally { setBusy(false) }
   }
 
@@ -154,6 +175,8 @@ export default function DecidirPage() {
             {/* 14·M2 — premortem forzado en decisiones riesgosas, antes de la
                 recomendación. Envuelve la calibración (M3/M4) + coherencia (M6). */}
             <PremortemSection result={result} />
+            {/* 14·M5 — decisiones pasadas parecidas + su resultado (outside view). */}
+            <SimilarDecisionsBlock result={result} past={past} description={description} onOutcome={loadPast} />
           </CardContent>
         </Card>
       )}
@@ -201,6 +224,78 @@ function PremortemSection({ result }: { result: DecisionAssessment }) {
         Ver recomendación
       </Button>
     </div>
+  )
+}
+
+const VERDICT_WORD = { go: 'avanzar', caution: 'con cuidado', hold: 'frenar' } as const
+
+// 14·M5 — trae decisiones pasadas parecidas y, si guardaste cómo salieron, lo
+// muestra (el outside view contra la planning fallacy). Permite backfillear el
+// resultado inline (¿cómo salió?).
+function SimilarDecisionsBlock({
+  result, past, description, onOutcome,
+}: { result: DecisionAssessment; past: PastDecision[]; description: string; onOutcome: () => void }) {
+  const similar = useMemo(
+    () => findSimilarDecisions(
+      { title: result.title, description, topRisk: result.topRisk ? DIMENSION_LABEL[result.topRisk.dimension] : null },
+      past,
+    ),
+    [result, past, description],
+  )
+  if (similar.length === 0) return null
+
+  return (
+    <div className="border-t border-border/50 pt-3 space-y-2">
+      <span className="text-[10px] uppercase tracking-[0.06em] text-text-tertiary">Algo parecido decidiste antes</span>
+      <ul className="space-y-2.5">
+        {similar.map((m) => (
+          <SimilarRow key={m.decision.id} d={m.decision} onOutcome={onOutcome} />
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function SimilarRow({ d, onOutcome }: { d: PastDecision; onOutcome: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [outcome, setOutcome] = useState('')
+  const [saving, setSaving] = useState(false)
+  const when = d.createdAt.slice(0, 10)
+
+  async function save() {
+    if (saving || outcome.trim().length < 3) return
+    setSaving(true)
+    try {
+      await fetch('/api/decisions', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: d.id, outcome }),
+      })
+      setEditing(false); onOutcome()
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <li className="text-[11px] leading-relaxed">
+      <div>
+        <span className="text-foreground/85">{d.title}</span>
+        <span className="text-muted-foreground/60"> · {when} · elegiste {VERDICT_WORD[d.verdict]}</span>
+      </div>
+      {d.outcome ? (
+        <p className="text-muted-foreground mt-0.5">Cómo salió: <span className="text-foreground/80">{d.outcome}</span></p>
+      ) : editing ? (
+        <div className="mt-1 flex gap-1.5">
+          <input
+            value={outcome} onChange={(e) => setOutcome(e.target.value)} placeholder="¿Cómo salió?"
+            className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] text-foreground"
+          />
+          <Button size="sm" variant="outline" disabled={saving || outcome.trim().length < 3} onClick={save}>Guardar</Button>
+        </div>
+      ) : (
+        <button type="button" onClick={() => setEditing(true)} className="mt-0.5 text-[10px] text-brand hover:underline">
+          + anotar cómo salió
+        </button>
+      )}
+    </li>
   )
 }
 
