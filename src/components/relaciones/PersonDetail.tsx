@@ -89,6 +89,7 @@ import { ExportCsvButton } from '@/components/export/ExportCsvButton'
 import { personLogsCsv, observationsCsv } from '@/lib/export/adapters'
 import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
+import { WhatMattersChips } from './WhatMattersChips'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
@@ -808,6 +809,9 @@ export function PersonDetail({
           de la capa de fetch. Las filas LinkedIn alucinadas que dejamos
           obsoletas en PR #87 NO deberian aparecer aca. */}
       <CuratedObservationsPanel observations={curatedObservations} />
+
+      {/* 15·8 — qué le importa: temas recurrentes de sus memorias (client-side). */}
+      <WhatMattersChips memories={memories} tags={live.tags ?? []} name={live.name} />
 
       {/* Memorias asociadas — server-fetched (PR-B Sesion 4) + boton de
           backfill idempotente desde relationships.history. */}
