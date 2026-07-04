@@ -12,6 +12,8 @@ import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
+import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
+import { getSelfBioState } from '@/lib/people/selfState'
 import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext } from '@/lib/influence/rehearsePrompt'
 
 export const runtime = 'nodejs'
@@ -50,19 +52,38 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
   if (!person) return errorJson(404, 'No encontré esa persona')
 
+  const personName = (person.name as string) ?? 'esa persona'
   let memories: string[] = []
   try {
     const rows = await getMemoriesForPerson(supabase, userId, personId, { limit: 24 })
     memories = rows.map((m) => (m.content ?? '').trim()).filter(Boolean)
   } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
 
+  // Jalar la conversación importada (WhatsApp) para simular sobre lo real, no en abstracto.
+  let conversation: string | undefined
+  try {
+    const conv = await getPersonConversation(supabase, userId, personId)
+    if (conv) conversation = renderConversationForPrompt(conv, personName)
+  } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
+
+  // Estado bio de Aaron (ventana de tolerancia): calibra si el consejo es "hablá"
+  // o "regulá primero" — doc 13. Afectivo sobre todo (una pelea de pareja en
+  // caliente sale mal), pero sirve en cualquier vínculo.
+  let selfState: string | undefined
+  try {
+    const bio = await getSelfBioState(supabase, userId, Date.now())
+    if (bio.block) selfState = bio.block
+  } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
+
   const ctx: RehearseContext = {
-    personName: (person.name as string) ?? 'esa persona',
+    personName,
     role: (person.title as string) ?? undefined,
     organization: (person.organization as string) ?? undefined,
     relationship: (person.relationship as string) ?? undefined,
     ambito: (person.ambito as string) ?? undefined,
     memories,
+    conversation,
+    selfState,
   }
   const user = buildRehearseUserContent(ctx, objective)
 

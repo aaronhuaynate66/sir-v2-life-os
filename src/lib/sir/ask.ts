@@ -38,6 +38,8 @@ export interface AskPersonCtx {
   recentMemories: string[]
   activeGoal?: string | null
   organization?: string | null
+  /** Bloque de conversación reciente importada (WhatsApp), ya renderizado. */
+  conversation?: string | null
 }
 
 export interface AskMemoryHit {
@@ -90,6 +92,9 @@ export function buildAskContext(input: AskContextInput): string {
         for (const m of p.recentMemories.slice(0, 12)) lines.push(`   - ${m}`)
       } else {
         lines.push('  (sin notas registradas)')
+      }
+      if (p.conversation && p.conversation.trim()) {
+        lines.push('  ' + p.conversation.trim().slice(0, 3000).replace(/\n/g, '\n  '))
       }
       lines.push('')
     }
