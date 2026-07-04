@@ -76,6 +76,7 @@ import { RedesSociales } from './RedesSociales'
 import { Bitacora } from './Bitacora'
 import { RelationalFlagsCard } from './RelationalFlagsCard'
 import { RelationalHealthCard } from './RelationalHealthCard'
+import { RelationalEnergyCard } from './RelationalEnergyCard'
 import { AnotarAhora } from './AnotarAhora'
 import { HistorialSearch } from './HistorialSearch'
 import { NotesHistoryDropdown } from './NotesHistoryDropdown'
@@ -459,6 +460,8 @@ export function PersonDetail({
       {/* 15·3+15·6 — salud del vínculo: tendencia de tono + cadencia por capa,
           ramificada afectivo/profesional. Solo aparece si hay algo que sugerir. */}
       <RelationalHealthCard person={live} personLogs={personLogs} />
+      {/* 15·4 — vínculos que drenan vs energizan (energy_impact × self_metrics). */}
+      <RelationalEnergyCard person={live} personLogs={personLogs} />
       <ContactWindowBadge person={live} lastTone={lastInteractionTone} />
 
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
