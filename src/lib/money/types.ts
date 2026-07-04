@@ -35,12 +35,26 @@ export interface MoneySummary {
   in: number    // total que te devolvió/pagó
   net: number   // out - in (positivo = te debe)
   count: number
+  /** Neto contando SOLO los movimientos sin saldar (rescate DD de `settled`):
+   *  lo que realmente sigue pendiente. Positivo = te debe. */
+  pending: number
+  /** true si hay al menos un movimiento marcado como saldado. */
+  hasSettled: boolean
 }
+const r2 = (n: number) => Math.round(n * 100) / 100
 /** Resumen sobre una moneda (default PEN). Los 'balance' no se suman al neto
  *  de transferencias salvo que lo pidas; acá los contamos como saldo informativo. */
 export function summarizeMoney(entries: MoneyEntry[], currency = 'PEN'): MoneySummary {
   const e = entries.filter((x) => x.currency === currency)
   const out = e.filter((x) => x.direction === 'out').reduce((a, b) => a + b.amount, 0)
   const inc = e.filter((x) => x.direction === 'in').reduce((a, b) => a + b.amount, 0)
-  return { out: Math.round(out * 100) / 100, in: Math.round(inc * 100) / 100, net: Math.round((out - inc) * 100) / 100, count: e.length }
+  // Pendiente: mismo neto pero ignorando lo ya saldado.
+  const p = e.filter((x) => !x.settled)
+  const pOut = p.filter((x) => x.direction === 'out').reduce((a, b) => a + b.amount, 0)
+  const pIn = p.filter((x) => x.direction === 'in').reduce((a, b) => a + b.amount, 0)
+  return {
+    out: r2(out), in: r2(inc), net: r2(out - inc), count: e.length,
+    pending: r2(pOut - pIn),
+    hasSettled: e.some((x) => x.settled),
+  }
 }
