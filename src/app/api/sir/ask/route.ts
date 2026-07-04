@@ -15,6 +15,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
+import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
 import { embedText, toPgVector } from '@/lib/embeddings/client'
 import {
@@ -260,6 +261,14 @@ export async function POST(req: NextRequest) {
       recent = mems.map((m) => m.content).filter(Boolean)
     } catch { recent = [] }
 
+    // Conversación importada (WhatsApp) → para poder responder SOBRE el chat, no
+    // solo sobre memorias derivadas (antes SIR "solo veía metadata").
+    let conversation: string | null = null
+    try {
+      const conv = await getPersonConversation(supabase, userId, pid)
+      if (conv) conversation = renderConversationForPrompt(conv, (row.name as string) ?? 'esa persona')
+    } catch { conversation = null }
+
     peopleCtx.push({
       name: (row.name as string) ?? 'alguien',
       relationship: (row.relationship as string | null) ?? null,
@@ -271,6 +280,7 @@ export async function POST(req: NextRequest) {
       confianza: score.confianza,
       recentMemories: recent,
       activeGoal: goalByPerson[pid] ?? null,
+      conversation,
     })
   }
 

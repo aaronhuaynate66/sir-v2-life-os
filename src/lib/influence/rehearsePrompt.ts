@@ -26,6 +26,10 @@ export interface RehearseContext {
   ambito?: string
   /** Memorias VISIBLES (getMemoriesForPerson ya excluye lo privado). */
   memories: string[]
+  /** Bloque de conversación reciente importada (WhatsApp), ya renderizado. */
+  conversation?: string
+  /** Estado bio de Aaron (ventana de tolerancia), ya renderizado. */
+  selfState?: string
 }
 
 export type Likelihood = 'plausible' | 'optimista' | 'dificil'
@@ -79,6 +83,11 @@ REGLAS DURAS (no negociables):
      cuida y se es claro. Los escenarios son sobre entenderse, no sobre conseguir algo.
    - profesional / colega / lead: preparación estratégica está OK cuando el objetivo de Aaron
      se alinea con el interés del otro (ej. su aumento ↔ el valor que aporta al negocio).
+5. ESTADO DE AARON (ventana de tolerancia — doc 13): si el contexto trae su estado bio y está
+   FUERA de su ventana (estrés alto / sueño bajo / HRV en caída) o con deuda de sueño alta, la
+   PRIMERA recomendación no es una estrategia de conversación: es REGULAR PRIMERO (bajar la
+   activación — respirar, moverse, dormir) y recién después hablar. Nombralo en "read" y ponelo
+   como primera "action". Una conversación difícil en caliente predeciblemente sale mal.
 
 Devolvé EXCLUSIVAMENTE un JSON (sin prosa, sin fences):
 {
@@ -116,6 +125,12 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
     for (const m of mems) lines.push(`- ${m.slice(0, 240)}`)
   } else {
     lines.push('', '(SIR tiene poco contexto de esta persona — decilo en "read", bajá la especificidad y no inventes.)')
+  }
+  if (ctx.conversation && ctx.conversation.trim()) {
+    lines.push('', ctx.conversation.trim().slice(0, 3500))
+  }
+  if (ctx.selfState && ctx.selfState.trim()) {
+    lines.push('', ctx.selfState.trim().slice(0, 800))
   }
   lines.push('', `El objetivo de Aaron: ${objective.trim().slice(0, 600)}`)
   return lines.join('\n')
