@@ -90,6 +90,7 @@ por partes" + su señal de confianza, listos para implementar por módulos).
 | **`15_RELATIONAL_INTELLIGENCE`** | El norte: Dunbar, reciprocidad, salud del vínculo (apego, Gottman). |
 | **`16_INFLUENCE_SOCIAL_INTELLIGENCE`** | Posicionarte con ética: influencia (Milgram, Zimbardo, Cialdini), agenda-setting, inteligencia social + defensa contra manipulación. |
 | **`17_MENSTRUAL_CYCLE`** | Ciclo menstrual: fases, ventana PMS/fértil, trazabilidad por fecha y predicción — para cuidar mejor, nunca para descalificar. |
+| **`18_EXTERNAL_SIGNALS`** | Señales externas: el afuera (dólar, clima, eventos) cruzado con tu contexto. Externo × interno = señal; externo solo = ruido. |
 
 Operativos (no base científica): `BUILD_PLAN`, `AARON_OS_INVENTORY`,
 `STRATEGIC_ROADMAP`, `MIGRATIONS`, auditorías.
