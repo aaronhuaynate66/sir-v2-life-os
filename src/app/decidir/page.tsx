@@ -151,14 +151,56 @@ export default function DecidirPage() {
               </p>
             )}
 
-            {/* 14·M3 + 14·M4 — calibrador de esfuerzo + modo maximizar/satisficer. */}
-            <DecisionCalibrationBlock result={result} />
-            {/* 14·M6 — coherencia con valores/identidad (si la decisión los tensiona). */}
-            <ValuesCoherenceBlock result={result} />
+            {/* 14·M2 — premortem forzado en decisiones riesgosas, antes de la
+                recomendación. Envuelve la calibración (M3/M4) + coherencia (M6). */}
+            <PremortemSection result={result} />
           </CardContent>
         </Card>
       )}
     </AppShell>
+  )
+}
+
+// 14·M2 — premortem forzado. En decisiones que lo ameritan (irreversibles o
+// veredicto no-go), pide imaginar el fracaso ANTES de mostrar la recomendación
+// completa. Activa Sistema 2. Client-side (la persistencia llega con M5).
+function PremortemSection({ result }: { result: DecisionAssessment }) {
+  const cal = useMemo(() => calibrateDecision(result), [result])
+  const [text, setText] = useState('')
+  const [done, setDone] = useState(false)
+
+  const guidance = (
+    <>
+      <DecisionCalibrationBlock result={result} />
+      <ValuesCoherenceBlock result={result} />
+      {done && text.trim() && (
+        <div className="border-t border-border/50 pt-3">
+          <span className="text-[10px] uppercase tracking-[0.06em] text-text-tertiary">Tu premortem</span>
+          <p className="text-[11px] text-foreground/85 leading-relaxed mt-1 whitespace-pre-wrap">{text.trim()}</p>
+        </div>
+      )}
+    </>
+  )
+
+  if (!cal.premortemRecommended || done) return guidance
+
+  return (
+    <div className="border-t border-border/50 pt-3 space-y-2">
+      <p className="text-xs font-medium text-warn">Antes de la recomendación: hacé el premortem.</p>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        Imaginá que en 6 meses esto salió mal. ¿Qué pasó? (Es una decisión cara de revertir o dudosa — pensar el peor caso ahora vale más que después.)
+      </p>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={3}
+        placeholder="Lo que salió mal fue…"
+        className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-foreground"
+      />
+      <Button size="sm" variant="outline" disabled={text.trim().length < 3} onClick={() => setDone(true)}>
+        Ver recomendación
+      </Button>
+    </div>
   )
 }
 
