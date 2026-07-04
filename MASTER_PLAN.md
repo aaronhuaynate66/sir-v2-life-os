@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `524eb89`
+**Hash del último commit humano:** `794fbf4`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `794fbf4` | aaronhuaynate66 | docs(19): perfilado relacional (leer a la persona) + cluster auto-forense (#526) | 2026-07-04 |
+| `83aa945` | Aaron Huaynate | fix(0121): castear auth.uid()::text en la RPC — destraba la cadena de migraciones | 2026-07-04 |
 | `524eb89` | aaronhuaynate66 | feat(18·M3): 'Eventos que sigo' — señales externas por el camino manual (#525) | 2026-07-04 |
 | `92c13dd` | aaronhuaynate66 | feat(18·M1): señales externas — dólar generalizado a finanzas (#524) | 2026-07-04 |
 | `3505e33` | aaronhuaynate66 | feat(17·M4): regularidad del ciclo → confianza de la predicción (#523) | 2026-07-04 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `cb2acec` | aaronhuaynate66 | feat(16·M2): mapa de influencia informal (cierra el trío del aumento) (#520) | 2026-07-04 |
 | `2706d90` | aaronhuaynate66 | feat(14·M1): detector de sesgos en el lenguaje (robustece la Sala de ensayo) (#519) | 2026-07-04 |
 | `a0281bc` | aaronhuaynate66 | feat(16·M4): Sala de ensayo — caminos al objetivo (capstone v1) (#518) | 2026-07-04 |
-| `fec9f01` | Aaron Huaynate | docs(16): reformular M4 a capstone 'Sala de ensayo' + veredicto MiroFish | 2026-07-04 |
-| `355b921` | aaronhuaynate66 | feat(15·1 + 16·M1): capas de Dunbar + cómo plantear algo (dupla del aumento) (#517) | 2026-07-04 |
 
 ---
 
