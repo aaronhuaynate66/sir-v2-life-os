@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f1b8732`
+**Hash del último commit humano:** `8ebb9d3`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8ebb9d3` | aaronhuaynate66 | feat(14·M6): chequeo de coherencia con valores/identidad (#548) | 2026-07-04 |
 | `f1b8732` | aaronhuaynate66 | feat(14·M3+M4): calibrador de esfuerzo por reversibilidad + modo maximizar/satisficer (#547) | 2026-07-04 |
 | `fcc18ee` | aaronhuaynate66 | feat(15·5): micro-bid de mantenimiento atado a señal real (#546) | 2026-07-04 |
 | `3a1f4a7` | aaronhuaynate66 | feat(15·4): vínculos que drenan vs energizan (#545) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `788ad14` | aaronhuaynate66 | chore(DD): descartar 3 columnas muertas provablemente vacías (#541) | 2026-07-04 |
 | `1c514ed` | aaronhuaynate66 | feat(DD): rescatar person_money.settled (data muerta) (#540) | 2026-07-04 |
 | `7ccd6b0` | aaronhuaynate66 | feat(DD): rescatar person_cycles.note (data muerta) (#539) | 2026-07-04 |
-| `9d79e40` | aaronhuaynate66 | feat(DD): rescatar deals.why_matters/scope/notes (data muerta) (#538) | 2026-07-04 |
 
 ---
 
