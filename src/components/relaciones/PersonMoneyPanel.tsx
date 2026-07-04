@@ -4,7 +4,7 @@
 // le pasaste menos lo que te devolvió.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Wallet, Plus, X, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { Wallet, Plus, X, ArrowUpRight, ArrowDownLeft, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,6 +47,14 @@ export function PersonMoneyPanel({ personId }: { personId: string }) {
     try { await fetch(`/api/people/money?id=${encodeURIComponent(id)}`, { method: 'DELETE' }) } catch { void load() }
   }, [load])
 
+  // Rescate DD (settled): marcar un movimiento como saldado ("¿ya me devolvió?").
+  const toggleSettled = useCallback(async (id: string, next: boolean) => {
+    setEntries((p) => p.map((x) => (x.id === id ? { ...x, settled: next } : x)))
+    try {
+      await fetch('/api/people/money', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, settled: next }) })
+    } catch { void load() }
+  }, [load])
+
   if (!loaded) return null
 
   return (
@@ -62,6 +70,9 @@ export function PersonMoneyPanel({ personId }: { personId: string }) {
             <span className="text-muted-foreground">Le pasaste <span className="font-semibold text-foreground">S/ {sum.out.toFixed(2)}</span></span>
             <span className="text-muted-foreground">Te devolvió <span className="font-semibold text-foreground">S/ {sum.in.toFixed(2)}</span></span>
             <span className="text-muted-foreground">Neto <span className="font-semibold" style={{ color: sum.net > 0 ? '#e0a93b' : '#2dd4a7' }}>S/ {sum.net.toFixed(2)}</span>{sum.net > 0 ? ' (te debe)' : ''}</span>
+            {sum.hasSettled && (
+              <span className="text-muted-foreground">Pendiente <span className="font-semibold" style={{ color: sum.pending > 0 ? '#e0a93b' : '#2dd4a7' }}>S/ {sum.pending.toFixed(2)}</span>{sum.pending <= 0 ? ' (al día)' : ''}</span>
+            )}
           </div>
         )}
 
@@ -84,13 +95,22 @@ export function PersonMoneyPanel({ personId }: { personId: string }) {
         {entries.length > 0 && (
           <ul className="mt-3 divide-y divide-border">
             {entries.map((e) => (
-              <li key={e.id} className="flex items-center gap-2 py-1.5 text-[13px]">
+              <li key={e.id} className={`flex items-center gap-2 py-1.5 text-[13px] ${e.settled ? 'opacity-60' : ''}`}>
                 {e.direction === 'out' ? <ArrowUpRight size={14} style={{ color: '#e0a93b' }} /> : <ArrowDownLeft size={14} style={{ color: '#2dd4a7' }} />}
-                <span className="font-mono tabular-nums w-20">{e.currency} {e.amount.toFixed(2)}</span>
+                <span className={`font-mono tabular-nums w-20 ${e.settled ? 'line-through' : ''}`}>{e.currency} {e.amount.toFixed(2)}</span>
                 <span className="text-muted-foreground">{fmtD(e.occurredOn)}{e.occurredTime ? ` ${e.occurredTime}` : ''}</span>
                 {e.concept && <span className="text-foreground/80">· {e.concept}</span>}
                 {e.kind === 'loan' && <span className="text-[10px] rounded bg-amber-500/15 px-1.5 text-amber-500">préstamo</span>}
-                <button type="button" onClick={() => del(e.id)} className="ml-auto text-muted-foreground hover:text-foreground"><X size={13} /></button>
+                <button
+                  type="button"
+                  onClick={() => toggleSettled(e.id, !e.settled)}
+                  aria-pressed={e.settled}
+                  title={e.settled ? 'Saldado — clic para reabrir' : 'Marcar como saldado'}
+                  className={`ml-auto inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] ${e.settled ? 'bg-ok-soft/60 text-ok' : 'border border-border text-muted-foreground hover:text-foreground'}`}
+                >
+                  <Check size={11} />{e.settled ? 'saldado' : 'saldar'}
+                </button>
+                <button type="button" onClick={() => del(e.id)} className="text-muted-foreground hover:text-foreground"><X size={13} /></button>
               </li>
             ))}
           </ul>
