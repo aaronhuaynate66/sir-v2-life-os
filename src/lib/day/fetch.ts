@@ -64,13 +64,16 @@ export async function fetchDayContext(
   // 3. Oportunidades (deals): actualizadas ese día o con próximo paso ese día.
   try {
     const { data } = await supabase.from('deals')
-      .select('title, stage, next_action, next_action_date, updated_at')
+      .select('title, stage, next_action, next_action_date, updated_at, why_matters, scope')
       .eq('user_id', userId)
       .or(`and(updated_at.gte.${startUtc},updated_at.lt.${endUtc}),next_action_date.eq.${date}`)
       .limit(30)
-    for (const r of (data ?? []) as Array<{ title: string; stage: string; next_action: string | null; next_action_date: string | null }>) {
-      const what = r.next_action_date === date && r.next_action ? `próximo paso: ${r.next_action}` : `etapa ${r.stage} (actividad)`
-      slices.deals.push({ title: r.title, what })
+    for (const r of (data ?? []) as Array<{ title: string; stage: string; next_action: string | null; next_action_date: string | null; why_matters: string | null; scope: string | null }>) {
+      const base = r.next_action_date === date && r.next_action ? `próximo paso: ${r.next_action}` : `etapa ${r.stage} (actividad)`
+      // Rescate DD: el brief razona con el POR QUÉ importa + alcance, no solo el título.
+      const why = r.why_matters ? ` — importa: ${r.why_matters}` : ''
+      const scope = r.scope ? ` (${r.scope})` : ''
+      slices.deals.push({ title: r.title, what: `${base}${scope}${why}` })
     }
   } catch { /* */ }
 

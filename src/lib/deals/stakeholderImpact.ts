@@ -19,6 +19,8 @@ export interface StakeholderDealImpact {
   progressIdx: number
   /** true si hubo actividad en los últimos 14 días (momentum). */
   recentlyActive: boolean
+  /** Por qué te importa el deal — para que el cruce con la persona diga el motivo. */
+  whyMatters?: string
 }
 
 /** Deals ABIERTOS donde `personId` es stakeholder interno (tu lado), ordenados
@@ -44,6 +46,7 @@ export function dealsForStakeholder(
       stageLabel: STAGE_LABEL[d.stage],
       progressIdx: idx,
       recentlyActive,
+      whyMatters: d.whyMatters,
     })
   }
   return out.sort((a, b) => b.progressIdx - a.progressIdx)
