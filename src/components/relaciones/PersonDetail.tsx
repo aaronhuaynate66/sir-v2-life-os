@@ -91,6 +91,7 @@ import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { WhatMattersChips } from './WhatMattersChips'
 import { RelationalProfileCard } from './RelationalProfileCard'
+import { HypothesesExplorer } from './HypothesesExplorer'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
@@ -817,6 +818,9 @@ export function PersonDetail({
 
       {/* 19·M1 — perfil relacional (cómo vincularte), on-demand + cache diaria. */}
       <RelationalProfileCard personId={live.id} personName={live.name} />
+
+      {/* 19·M2 — explorar hipótesis (colapsado, sensible): hipótesis que compiten. */}
+      <HypothesesExplorer personId={live.id} personName={live.name} />
 
       {/* Memorias asociadas — server-fetched (PR-B Sesion 4) + boton de
           backfill idempotente desde relationships.history. */}
