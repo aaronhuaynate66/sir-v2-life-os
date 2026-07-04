@@ -103,7 +103,7 @@ contradiría, confianza baja, y la **acción de cuidado/protección** que sugier
 Frame fijo: *no sos clínico, esto no es diagnóstico*. Peligro real → recurso
 profesional. Toca: reasoner + guardrail (como `16·M5`).
 
-**M3 — Red flags de auto-protección (confianza media).** Detectar patrones de cómo
+**M3 — Red flags de auto-protección (confianza media). ✅ HECHO.** `engines/relational-flags` puro (control/aislamiento/gaslighting/devaluación/blame-shift/intermitente, ES+EN, exige recurrencia ≥2) + RelationalFlagsCard en la ficha (solo aparece con recurrencia; encuadre de cuidado, no rotula; concern → sugiere hablar con alguien/profesional). Detectar patrones de cómo
 alguien te trata que ameritan cuidado (control, manipulación, devaluación) → cómo
 protegerte. Enfocado en TU seguridad, no en rotular al otro. Toca: `person_logs` +
 `engines/manipulation` (16·M3, ya existe).

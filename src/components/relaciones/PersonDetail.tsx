@@ -74,6 +74,7 @@ import { VidaSocial } from './VidaSocial'
 import { PerfilProfesional } from './PerfilProfesional'
 import { RedesSociales } from './RedesSociales'
 import { Bitacora } from './Bitacora'
+import { RelationalFlagsCard } from './RelationalFlagsCard'
 import { AnotarAhora } from './AnotarAhora'
 import { HistorialSearch } from './HistorialSearch'
 import { NotesHistoryDropdown } from './NotesHistoryDropdown'
@@ -366,6 +367,8 @@ export function PersonDetail({
       <HistorialSearch personId={live.id} />
       <AnotarAhora personId={live.id} />
       <Bitacora personLogs={personLogs} observations={curatedObservations} notesHistory={notesHistory} moments={moments} />
+      {/* 19·M3 — red flags de auto-protección sobre tus notas (foco en tu cuidado). */}
+      <RelationalFlagsCard personName={live.name} personLogs={personLogs} />
     </div>
   )
 
