@@ -24,8 +24,10 @@ import type {
   Observation,
 } from '@/lib/capture/observations/types'
 
+// user_edits descartada (columna huérfana, cero escritores — mig 0124). El campo
+// `userEdits` del tipo queda como always-null inofensivo (nadie lo lee).
 const OBSERVATION_COLUMNS =
-  'id, user_id, person_id, capture_type, source_image_path, storage_bucket, data, detector_data, user_edits, confidence, needs_review, observed_at, captured_at, is_obsolete, obsoleted_at, obsoleted_reason, created_at'
+  'id, user_id, person_id, capture_type, source_image_path, storage_bucket, data, detector_data, confidence, needs_review, observed_at, captured_at, is_obsolete, obsoleted_at, obsoleted_reason, created_at'
 
 /** Conversion snake_case (DB) -> camelCase (TS). Idem al adapter de
  *  /api/observations/[id] — mantenemos una sola forma de leer rows. */

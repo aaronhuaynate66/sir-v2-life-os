@@ -13,7 +13,8 @@ function err(status: number, error: string) {
   return NextResponse.json({ error }, { status })
 }
 
-const SELECT = 'id, content, mood, tags, mentioned_person_ids, mentioned_goal_ids, entry_date, created_at, updated_at'
+// mentioned_goal_ids descartada (columna muerta, nunca escrita — mig 0124).
+const SELECT = 'id, content, mood, tags, mentioned_person_ids, entry_date, created_at, updated_at'
 
 interface EntryRow {
   id: string
@@ -21,7 +22,6 @@ interface EntryRow {
   mood: number | null
   tags: string[]
   mentioned_person_ids: string[]
-  mentioned_goal_ids: string[]
   entry_date: string
   created_at: string
   updated_at: string
