@@ -34,4 +34,14 @@ describe('dealsForStakeholder', () => {
     ], 'fran', NOW)
     expect(r.map((x) => x.dealId)).toEqual(['prop', 'lead'])
   })
+  it('rescate DD: propaga whyMatters para que el cruce diga el motivo', () => {
+    const r = dealsForStakeholder([
+      deal({ internalStakeholders: ['fran'], whyMatters: 'me acerca a Alex (GG de K2)' }),
+    ], 'fran', NOW)
+    expect(r[0].whyMatters).toBe('me acerca a Alex (GG de K2)')
+  })
+  it('whyMatters queda undefined si el deal no lo tiene', () => {
+    const r = dealsForStakeholder([deal({ internalStakeholders: ['fran'] })], 'fran', NOW)
+    expect(r[0].whyMatters).toBeUndefined()
+  })
 })

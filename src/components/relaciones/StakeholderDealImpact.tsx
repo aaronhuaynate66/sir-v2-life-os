@@ -42,6 +42,7 @@ export function StakeholderDealImpact({ person }: { person: Person }) {
         <Link key={im.dealId} href="/oportunidades" className="block text-foreground/90 hover:underline">
           Avanzar <span className="font-medium">{im.title}</span> (etapa {im.stageLabel}) refuerza tu trabajo con {first} y tu standing.
           {im.recentlyActive ? ' Hay movimiento reciente — buen momento para apoyarte en ese vínculo.' : ''}
+          {im.whyMatters ? <span className="mt-0.5 block not-italic text-muted-foreground">Por qué importa: {im.whyMatters}</span> : null}
         </Link>
       ))}
     </div>

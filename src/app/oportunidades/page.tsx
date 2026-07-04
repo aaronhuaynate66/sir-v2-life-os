@@ -149,6 +149,17 @@ function DealCard({ deal, onEdit, nameById }: { deal: Deal; onEdit: () => void; 
           )}
         </div>
       )}
+      {deal.scope && (
+        <div className="mt-1 text-[11px] text-muted-foreground">alcance: <span className="text-foreground/80">{deal.scope}</span></div>
+      )}
+      {deal.whyMatters && (
+        <div className="mt-1.5 border-l-2 border-brand/40 pl-2 text-[12px] italic text-foreground/85">{deal.whyMatters}</div>
+      )}
+      {deal.notes && (
+        <div className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+          {deal.notes.length > 160 ? `${deal.notes.slice(0, 160).trimEnd()}…` : deal.notes}
+        </div>
+      )}
     </button>
   )
 }
