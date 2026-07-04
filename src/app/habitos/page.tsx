@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
 import { computeHabitStreak, recentDayMarks, limaDayString } from '@/lib/habits/streak'
+import { habitReinforcement } from '@/lib/habits/reinforce'
 import { computeWeeklyStreak } from '@/lib/habits/weekly'
 import { limaTimeHHMM } from '@/lib/habits/format'
 import type { HabitSuggestion } from '@/lib/habits/suggestParse'
@@ -233,6 +234,8 @@ export default function HabitosPage() {
             const doneToday = weekly ? (week?.doneToday ?? false) : daily.doneToday
             const streakNum = weekly ? (week?.weeksStreak ?? 0) : daily.current
             const marks = recentDayMarks(h.checkinDates)
+            // 12·M7 — refuerzo por competencia (progreso acumulado, en positivo).
+            const reinf = habitReinforcement(h.checkinDates, daily.current, daily.longest, Date.now())
             const todayIso = TODAY()
             const todayTime = doneToday ? limaTimeHHMM(h.checkinTimes[todayIso]) : null
             return (
@@ -264,6 +267,7 @@ export default function HabitosPage() {
                         ? `esta semana ${week?.thisWeek ?? 0}/${h.targetPerPeriod} · constancia ${week?.consistency ?? 0}% · 8 sem`
                         : `consistencia ${daily.consistency}% · 30 días`}
                     </div>
+                    {reinf.message && <div className="text-[11px] text-ok/90 mt-0.5 leading-snug">{reinf.message}</div>}
                     <div className="mt-1.5 flex items-end gap-1.5" aria-label="Últimos 7 días (tocá para marcar)">
                       {marks.map((m) => {
                         const t = limaTimeHHMM(h.checkinTimes[m.iso])
