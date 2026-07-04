@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b2e8650`
+**Hash del último commit humano:** `72b130f`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `72b130f` | aaronhuaynate66 | feat(11·M1): deuda de sueño acumulada real (no promedio) (#533) | 2026-07-04 |
 | `b2e8650` | aaronhuaynate66 | feat(AF·F3): 'cosas que no te cuadran' — anomalías en tu propia data (#532) | 2026-07-04 |
 | `9008556` | aaronhuaynate66 | feat(AF·F2): explorador de grafo (auto-forense) (#531) | 2026-07-04 |
 | `dbc65e7` | aaronhuaynate66 | feat(17·M3): trazabilidad tono × fase del ciclo (cierra el dominio ciclo) (#530) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `794fbf4` | aaronhuaynate66 | docs(19): perfilado relacional (leer a la persona) + cluster auto-forense (#526) | 2026-07-04 |
 | `83aa945` | Aaron Huaynate | fix(0121): castear auth.uid()::text en la RPC — destraba la cadena de migraciones | 2026-07-04 |
 | `524eb89` | aaronhuaynate66 | feat(18·M3): 'Eventos que sigo' — señales externas por el camino manual (#525) | 2026-07-04 |
-| `92c13dd` | aaronhuaynate66 | feat(18·M1): señales externas — dólar generalizado a finanzas (#524) | 2026-07-04 |
 
 ---
 
