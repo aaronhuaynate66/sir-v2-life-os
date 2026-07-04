@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c16d108`
+**Hash del último commit humano:** `24bbf0e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `24bbf0e` | aaronhuaynate66 | feat(13·M1+M2+M5): ventana de tolerancia + estrategia de regulación (#551) | 2026-07-04 |
 | `c16d108` | aaronhuaynate66 | feat(14·M5): decisiones pasadas parecidas + su resultado (outside view) (#550) | 2026-07-04 |
 | `a3a9e68` | aaronhuaynate66 | feat(14·M2): premortem forzado en decisiones riesgosas (#549) | 2026-07-04 |
 | `8ebb9d3` | aaronhuaynate66 | feat(14·M6): chequeo de coherencia con valores/identidad (#548) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `9eaf058` | aaronhuaynate66 | feat(15·3+15·6): salud del vínculo (tono+cadencia) afectivo vs profesional (#544) | 2026-07-04 |
 | `641488e` | aaronhuaynate66 | feat(DD): rescatar sleep.awake_min (último rescate con data real) (#543) | 2026-07-04 |
 | `3bab109` | aaronhuaynate66 | feat(19·M3): red flags de auto-protección (#542) | 2026-07-04 |
-| `788ad14` | aaronhuaynate66 | chore(DD): descartar 3 columnas muertas provablemente vacías (#541) | 2026-07-04 |
 
 ---
 
