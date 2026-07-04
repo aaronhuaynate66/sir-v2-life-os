@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `4af7d2a`
+**Hash del último commit humano:** `7b68a41`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `7b68a41` | aaronhuaynate66 | feat(AF·F1): timeline unificado cross-fuente (auto-forense) (#529) | 2026-07-04 |
 | `4af7d2a` | aaronhuaynate66 | feat(19·M2): modo 'Explorar hipótesis' (con guardrails duros) (#528) | 2026-07-04 |
 | `cfacdfd` | aaronhuaynate66 | feat(19·M1): perfil relacional por persona (hipótesis, no diagnóstico) (#527) | 2026-07-04 |
 | `794fbf4` | aaronhuaynate66 | docs(19): perfilado relacional (leer a la persona) + cluster auto-forense (#526) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `3505e33` | aaronhuaynate66 | feat(17·M4): regularidad del ciclo → confianza de la predicción (#523) | 2026-07-04 |
 | `1057ef8` | aaronhuaynate66 | feat(17·M1): base científica del ciclo menstrual + perfil de fase enriquecido (#522) | 2026-07-04 |
 | `62fe605` | aaronhuaynate66 | feat(15·8): 'qué le importa a esta persona' — temas recurrentes (#521) | 2026-07-04 |
-| `cb2acec` | aaronhuaynate66 | feat(16·M2): mapa de influencia informal (cierra el trío del aumento) (#520) | 2026-07-04 |
 
 ---
 
