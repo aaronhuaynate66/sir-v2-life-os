@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `79756eb`
+**Hash del último commit humano:** `a789f0a`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `a789f0a` | aaronhuaynate66 | feat(SF·F2): lectura de calidad y continuidad del sueño (no solo horas) (#535) | 2026-07-04 |
 | `79756eb` | aaronhuaynate66 | feat(SF·F1): rescatar la data rica del sueño como campos estructurados (#534) | 2026-07-04 |
 | `72b130f` | aaronhuaynate66 | feat(11·M1): deuda de sueño acumulada real (no promedio) (#533) | 2026-07-04 |
 | `b2e8650` | aaronhuaynate66 | feat(AF·F3): 'cosas que no te cuadran' — anomalías en tu propia data (#532) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `4af7d2a` | aaronhuaynate66 | feat(19·M2): modo 'Explorar hipótesis' (con guardrails duros) (#528) | 2026-07-04 |
 | `cfacdfd` | aaronhuaynate66 | feat(19·M1): perfil relacional por persona (hipótesis, no diagnóstico) (#527) | 2026-07-04 |
 | `794fbf4` | aaronhuaynate66 | docs(19): perfilado relacional (leer a la persona) + cluster auto-forense (#526) | 2026-07-04 |
-| `83aa945` | Aaron Huaynate | fix(0121): castear auth.uid()::text en la RPC — destraba la cadena de migraciones | 2026-07-04 |
 
 ---
 
