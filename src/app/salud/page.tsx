@@ -50,6 +50,7 @@ import { SleepAftermathCard } from '@/components/salud/SleepAftermathCard'
 import { EmotionWindowCard } from '@/components/salud/EmotionWindowCard'
 import { ChronotypeCard } from '@/components/salud/ChronotypeCard'
 import { EnergyCurveCard } from '@/components/salud/EnergyCurveCard'
+import { FocusWindowCard } from '@/components/salud/FocusWindowCard'
 import { proposeEmotionLabels } from '@/lib/emotion/granularity'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
@@ -263,6 +264,9 @@ function SaludContent() {
 
       {/* 11·M3 — curva de energía por hora del día. */}
       <EnergyCurveCard />
+
+      {/* 11·M5 — ventana óptima de foco (cruza cronotipo + curva de energía). */}
+      <FocusWindowCard />
 
       <div className="mb-6">
         <PatronesPanel />
