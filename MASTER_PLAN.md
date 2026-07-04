@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d9b4264`
+**Hash del último commit humano:** `43ee8bb`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `43ee8bb` | aaronhuaynate66 | feat(13·M4): aprender qué regulación te funciona (cierra dominio 13) (#553) | 2026-07-04 |
 | `d9b4264` | aaronhuaynate66 | feat(13·M3): granularidad emocional (#552) | 2026-07-04 |
 | `24bbf0e` | aaronhuaynate66 | feat(13·M1+M2+M5): ventana de tolerancia + estrategia de regulación (#551) | 2026-07-04 |
 | `c16d108` | aaronhuaynate66 | feat(14·M5): decisiones pasadas parecidas + su resultado (outside view) (#550) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `fcc18ee` | aaronhuaynate66 | feat(15·5): micro-bid de mantenimiento atado a señal real (#546) | 2026-07-04 |
 | `3a1f4a7` | aaronhuaynate66 | feat(15·4): vínculos que drenan vs energizan (#545) | 2026-07-04 |
 | `9eaf058` | aaronhuaynate66 | feat(15·3+15·6): salud del vínculo (tono+cadencia) afectivo vs profesional (#544) | 2026-07-04 |
-| `641488e` | aaronhuaynate66 | feat(DD): rescatar sleep.awake_min (último rescate con data real) (#543) | 2026-07-04 |
 
 ---
 
