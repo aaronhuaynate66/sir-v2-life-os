@@ -238,6 +238,7 @@ profundos viven en sus propios docs (11–15):
 | `engines/decision` (8 dim + gate) | Ciencia de la decisión (Kahneman, one-way doors, premortem) | `14_DECISION_SCIENCE` |
 | `engines/relationship`, reciprocidad, kinship, grafo | Inteligencia relacional (apego, Dunbar, Granovetter, Gottman) | `15_RELATIONAL_INTELLIGENCE` |
 | Comunicación/posicionamiento + defensa (reasoner, grafo) | Influencia e inteligencia social (Milgram, Zimbardo, Cialdini, agenda-setting) | `16_INFLUENCE_SOCIAL_INTELLIGENCE` |
+| `lib/ciclo`, `person_cycles`, PatronesCiclo | Ciclo menstrual (modelo hormonal, fases, ventana PMS/fértil, variabilidad) | `17_MENSTRUAL_CYCLE` |
 | Las 12 lentes | Panel cognitivo (cada persona con su marco) | `10_COGNITIVE_PERSONAS` |
 
 ---

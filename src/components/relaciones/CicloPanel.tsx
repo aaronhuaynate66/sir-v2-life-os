@@ -134,6 +134,20 @@ function Body({
         {phase.contextNote}
       </p>
 
+      {/* 17·M1 — ventana PMS / fértil. Encuadre de CUIDADO, nunca de juicio. */}
+      {phase.isPmsWindow && (
+        <div className="rounded-md border border-warn/30 bg-warn-soft/40 px-3 py-2 text-[11px] text-foreground/90 leading-relaxed">
+          <span className="font-medium text-warn">Ventana premenstrual.</span>{' '}
+          Puede venir más sensibilidad o menos energía — un gesto de presencia suma.
+          No es una explicación de lo que siente, es un recordatorio para cuidar.
+        </div>
+      )}
+      {phase.isFertileWindow && !phase.isPmsWindow && (
+        <div className="text-[11px] text-muted-foreground border-l-2 border-border/40 pl-3">
+          Ventana fértil aproximada (orientativa — no es método anticonceptivo).
+        </div>
+      )}
+
       <div className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
         Próximo período:{' '}
         <span className="text-foreground font-medium font-mono">{phase.nextPeriodIso}</span>{' '}

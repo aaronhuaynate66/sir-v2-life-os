@@ -29,6 +29,13 @@ import { parseLocalDate, toIsoLocal } from '@/lib/dates/parseLocalDate'
 
 export type CyclePhaseId = 'menstrual' | 'follicular' | 'ovulation' | 'luteal'
 
+/** Perfil TÍPICO de la fase (tendencia poblacional, NO ley individual). 17·M1. */
+export interface PhaseProfile {
+  energy: 'bajo' | 'subiendo' | 'alto' | 'bajando'
+  social: 'bajo' | 'subiendo' | 'alto' | 'bajando'
+  sensitivity: 'baja' | 'media' | 'alta'
+}
+
 export interface CyclePhase {
   phase: CyclePhaseId
   label: string
@@ -42,10 +49,20 @@ export interface CyclePhase {
   daysUntilNextPeriod: number
   /** Texto contextual estatico para la fase (observacional, no prescriptivo). */
   contextNote: string
+  /** 17·M1 — ventana premenstrual (lútea tardía, ~5 días antes del período).
+   *  Donde se concentra el SPM → más cuidado, nunca juicio. */
+  isPmsWindow: boolean
+  /** 17·M1 — ventana fértil (~5 días antes de ovular + ovulación). Orientativa,
+   *  NO anticonceptivo. */
+  isFertileWindow: boolean
+  /** 17·M1 — perfil típico de la fase (tendencia, no certeza). */
+  profile: PhaseProfile
 }
 
 const DAY_MS = 86_400_000
 const MENSTRUAL_DAYS = 5
+/** Días de la ventana premenstrual (lútea tardía). */
+const PMS_DAYS = 5
 
 const CONTEXT_NOTE: Record<CyclePhaseId, string> = {
   menstrual:
@@ -80,6 +97,14 @@ const PHASE_LABEL: Record<CyclePhaseId, string> = {
   luteal: 'Lútea',
 }
 
+// Perfil típico por fase (17·M1). Tendencia poblacional, NUNCA determinista.
+const PHASE_PROFILE: Record<CyclePhaseId, PhaseProfile> = {
+  menstrual: { energy: 'bajo', social: 'bajo', sensitivity: 'alta' },
+  follicular: { energy: 'subiendo', social: 'subiendo', sensitivity: 'baja' },
+  ovulation: { energy: 'alto', social: 'alto', sensitivity: 'baja' },
+  luteal: { energy: 'bajando', social: 'bajando', sensitivity: 'media' },
+}
+
 /**
  * Computa la fase del ciclo de una persona.
  *
@@ -111,6 +136,16 @@ export function cyclePhase(
   const nextPeriod = new Date(todayStart.getTime() + daysUntilNextPeriod * DAY_MS)
   const nextPeriodIso = toIsoLocal(nextPeriod)
 
+  // 17·M1 — ventana PMS: lútea tardía, dentro de los ~5 días previos al período.
+  const isPmsWindow = phase === 'luteal' && daysUntilNextPeriod <= PMS_DAYS
+  // Ventana fértil: ~5 días antes de ovular + el día de ovulación (orientativa).
+  const ovuMid = length - 14
+  const isFertileWindow = cycleDay >= ovuMid - 5 && cycleDay <= ovuMid + 1
+  // En PMS, la sensibilidad típica sube respecto de la lútea media.
+  const profile: PhaseProfile = isPmsWindow
+    ? { ...PHASE_PROFILE[phase], sensitivity: 'alta' }
+    : PHASE_PROFILE[phase]
+
   return {
     phase,
     label: PHASE_LABEL[phase],
@@ -119,5 +154,8 @@ export function cyclePhase(
     nextPeriodIso,
     daysUntilNextPeriod,
     contextNote: CONTEXT_NOTE[phase],
+    isPmsWindow,
+    isFertileWindow,
+    profile,
   }
 }

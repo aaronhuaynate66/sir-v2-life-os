@@ -92,3 +92,36 @@ describe('cyclePhase — clamp del largo [15, 60]', () => {
     expect(cyclePhase('2026-01-01', NaN, localDay(2026, 1, 1))!.cycleLength).toBe(28)
   })
 })
+
+describe('cyclePhase — perfil, ventana PMS y fértil (17·M1)', () => {
+  const START = '2026-01-01' // ciclo de 28 días
+
+  it('marca la ventana PMS en la lútea tardía (últimos ~5 días)', () => {
+    // Día 27 (28-1): a 2 días del próximo período → lútea + PMS.
+    const r = cyclePhase(START, 28, localDay(2026, 1, 27))!
+    expect(r.phase).toBe('luteal')
+    expect(r.isPmsWindow).toBe(true)
+    expect(r.profile.sensitivity).toBe('alta')
+  })
+
+  it('lútea temprana NO es ventana PMS', () => {
+    // Día 18: lútea pero lejos del período → no PMS.
+    const r = cyclePhase(START, 28, localDay(2026, 1, 18))!
+    expect(r.phase).toBe('luteal')
+    expect(r.isPmsWindow).toBe(false)
+  })
+
+  it('marca la ventana fértil alrededor de la ovulación', () => {
+    // Ovu media = 28-14 = día 14. Día 13 (dentro de la ventana fértil).
+    const r = cyclePhase(START, 28, localDay(2026, 1, 13))!
+    expect(r.isFertileWindow).toBe(true)
+  })
+
+  it('la fase menstrual no es fértil', () => {
+    expect(cyclePhase(START, 28, localDay(2026, 1, 2))!.isFertileWindow).toBe(false)
+  })
+
+  it('el perfil folicular tiene energía subiendo', () => {
+    expect(cyclePhase(START, 28, localDay(2026, 1, 8))!.profile.energy).toBe('subiendo')
+  })
+})
