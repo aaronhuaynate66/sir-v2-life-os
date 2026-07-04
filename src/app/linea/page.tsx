@@ -20,6 +20,7 @@ import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { buildUnifiedTimeline, type TimelineItem, type TimelineSource, type TimelineTone } from '@/lib/timeline/unified'
 import { getHealthMetricLabel } from '@/lib/health-metrics/labels'
+import { AnomaliesCard } from '@/components/timeline/AnomaliesCard'
 import { cn } from '@/lib/utils'
 
 const MAX_DAYS = 45
@@ -106,6 +107,9 @@ function LineaContent() {
           Para <span className="text-foreground/80">verte</span> — cruzá lo que pasó junto.
         </p>
       </div>
+
+      {/* AF·F3 — cosas que no te cuadran (anomalías en tu propia data). */}
+      <AnomaliesCard />
 
       {/* Filtro por fuente */}
       {timeline.sources.length > 0 && (
