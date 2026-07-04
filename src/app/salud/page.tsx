@@ -51,6 +51,7 @@ import { EmotionWindowCard } from '@/components/salud/EmotionWindowCard'
 import { ChronotypeCard } from '@/components/salud/ChronotypeCard'
 import { EnergyCurveCard } from '@/components/salud/EnergyCurveCard'
 import { FocusWindowCard } from '@/components/salud/FocusWindowCard'
+import { TwoProcessCard } from '@/components/salud/TwoProcessCard'
 import { proposeEmotionLabels } from '@/lib/emotion/granularity'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
@@ -267,6 +268,9 @@ function SaludContent() {
 
       {/* 11·M5 — ventana óptima de foco (cruza cronotipo + curva de energía). */}
       <FocusWindowCard />
+
+      {/* 11·M6 — modelo de fase acoplado S×C (experimental; solo si el backtest valida). */}
+      <TwoProcessCard />
 
       <div className="mb-6">
         <PatronesPanel />
