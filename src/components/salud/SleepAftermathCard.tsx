@@ -12,12 +12,14 @@ import { Sunrise } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { analyzeSleepAftermath } from '@/lib/sleep/aftermath'
+import { enrichSleepRecords } from '@/lib/sleep/parseNotes'
 
 export function SleepAftermathCard() {
   const { sleepRecords, selfMetrics, healthMetrics } = useSelfStore()
 
   const result = useMemo(
-    () => analyzeSleepAftermath(sleepRecords, selfMetrics, healthMetrics),
+    // SF·F1.5: rescata la data rica de las noches viejas antes de cruzar.
+    () => analyzeSleepAftermath(enrichSleepRecords(sleepRecords), selfMetrics, healthMetrics),
     [sleepRecords, selfMetrics, healthMetrics],
   )
 

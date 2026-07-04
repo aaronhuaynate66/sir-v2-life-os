@@ -13,6 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { readSleepQuality, recentQualitySummary, type SleepQualityLabel } from '@/lib/sleep/quality'
 import { effectiveSleepHours } from '@/lib/sleep/effective'
+import { enrichSleepRecords } from '@/lib/sleep/parseNotes'
 import { cn } from '@/lib/utils'
 
 const LABEL_TEXT: Record<SleepQualityLabel, string> = {
@@ -42,12 +43,14 @@ export function SleepQualityCard() {
   const { sleepRecords } = useSelfStore()
 
   const { reading, effective, summary, dateLabel } = useMemo(() => {
-    const sorted = [...sleepRecords].sort((a, b) => b.date.localeCompare(a.date))
+    // SF·F1.5: rescata la data rica de las noches viejas (atrapada en notes).
+    const records = enrichSleepRecords(sleepRecords)
+    const sorted = [...records].sort((a, b) => b.date.localeCompare(a.date))
     const last = sorted[0]
     return {
       reading: last ? readSleepQuality(last) : null,
       effective: last ? effectiveSleepHours(last) : null,
-      summary: recentQualitySummary(sleepRecords, Date.now()),
+      summary: recentQualitySummary(records, Date.now()),
       dateLabel: last?.date ?? null,
     }
   }, [sleepRecords])

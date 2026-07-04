@@ -12,16 +12,19 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { accumulatedSleepDebt } from '@/lib/sleep/debt'
 import { qualityAdjustedDebt } from '@/lib/sleep/effective'
+import { enrichSleepRecords } from '@/lib/sleep/parseNotes'
 import { cn } from '@/lib/utils'
 
 export function SleepDebtCard() {
   const { sleepRecords } = useSelfStore()
   const { debt, adjusted } = useMemo(() => {
     const now = Date.now()
+    // SF·F1.5: rescata la data rica de las noches viejas (atrapada en notes).
+    const records = enrichSleepRecords(sleepRecords)
     return {
-      debt: accumulatedSleepDebt(sleepRecords.map((s) => ({ date: s.date, duration: s.duration })), now),
+      debt: accumulatedSleepDebt(records.map((s) => ({ date: s.date, duration: s.duration })), now),
       // SF·F3: deuda contando la CALIDAD (8h picadas ≠ 8h limpias).
-      adjusted: qualityAdjustedDebt(sleepRecords, now),
+      adjusted: qualityAdjustedDebt(records, now),
     }
   }, [sleepRecords])
 
