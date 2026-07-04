@@ -113,6 +113,8 @@ futuros (motor puro + consumidor, honesto con la confianza):
 
 **Módulos construidos (07-03):** 16·M3 (detector de manipulación, `/verificar`), **15·1** (mapa de capas de Dunbar + alertas de sobre/sub-inversión — `engines/dunbar` + card en `/relaciones`), **16·M1** ("cómo plantearle X" — `lib/influence/framePrompt` con guardrail ético + `/api/influence/frame` Sonnet + página `/plantear`; dupla para el aumento HNG). 
 
+**16·M4 reformulado a CAPSTONE (07-03): "Sala de ensayo — caminos al objetivo".** Fija una meta (el aumento) → SIR juega caminos/objeciones como HIPÓTESIS (ensayás, no predecís). FUSIONA 15·8 + las 12 lentes + 16·M1 + 14·M1 + 16·M2; absorbe la vieja "prep de conversación". Surgió de evaluar MiroFish (`666ghj/MiroFish`, motor de enjambre): NO se integra (predice colectivos no individuos, carísimo, AGPL viral) — pero la CAPACIDAD (ensayar escenarios con objetivos alineados) es legítima y se hace nativa con un agente aterrizado, no mil genéricos. Ética: objetivos alineados = preparación, no manipulación; caveat = ensayo prepara, no predice.
+
 Próximos módulos construibles salen de esos "Qué construir": arrancar por los de
 confianza alta / sin deuda de datos (ej. detector de sesgos en /decidir, cronotipo
 desde horarios ya capturados, capas de Dunbar + alertas de sobre/sub-inversión).

@@ -166,10 +166,31 @@ autoridad/urgencia/escasez/miedo en un mensaje que te llega (mail, chat, pedido)
 te sugiere pausar/verificar. Puro clasificador + heurística. Toca: reader/relato.
 Es el módulo más claramente bueno: te protege, no toca a nadie.
 
-**M4 — Preparación de conversación difícil (confianza media).** Premortem social
-(¿cómo puede salir mal?) + qué **agenda/preguntas** poner sobre la mesa
-(agenda-setting *ético*) para una negociación o pedido. Toca: `engines/decision` +
-reasoner. Se apoya en `14_DECISION_SCIENCE`.
+**M4 — Sala de ensayo: caminos al objetivo (confianza media, CAPSTONE).** No es un
+módulo suelto: es la pieza que **fusiona** a los demás y los vuelve más robustos.
+Aaron fija un objetivo (ej. "que Alex me dé un aumento"); SIR, aterrizado en el
+contexto real de la(s) persona(s) + el negocio, juega **caminos plausibles, las
+objeciones que va a encontrar y qué acciones mueven la aguja** — como HIPÓTESIS
+para prepararse, nunca como predicción ("ensayás, no adivinás; la gente real
+sorprende"). Reemplaza a la vieja "preparación de conversación difícil" (que pasa
+a ser un modo de esto). Discusión de por qué NO usar un motor de enjambre tipo
+MiroFish (escala de multitudes, costo, AGPL, oráculo): sí ensayar UN agente
+aterrizado, no mil genéricos.
+
+Compone:
+- **15·8 + memorias** → qué le importa a la persona (grounding real, no inventado).
+- **Las 12 lentes** (Estratega/Táctico/Psicólogo — `10`) → generan los caminos,
+  las objeciones y las contra-jugadas.
+- **16·M1** → el encuadre ético de cada movida candidata (verdad en su lenguaje).
+- **14·M1** → marca TUS sesgos mientras ensayás (wishful thinking, costo hundido).
+- **14·M5** → outside view (cómo salió algo parecido antes).
+- **16·M2** → por quién pasa la decisión de verdad (quizás Cristina/Walter, no solo Alex).
+
+Toca: `reasoner` + `engines/decision` + memorias. **v1 se puede construir YA**
+sobre 16·M1 + memorias + lentes (una pasada orquestada); se robustece a medida que
+14·M1 / 16·M2 / 14·M5 aterrizan. Guardrail `M5` envolviendo. Línea ética: objetivos
+ALINEADOS (tu meta ↔ el negocio de Alex) = preparación legítima; la línea es
+engañar/explotar, no ensayar.
 
 **M5 — Chequeo ético (guardrail transversal, no opcional).** Antes de sugerir
 cualquier movimiento relacional, SIR verifica que no cruce a manipulación/
