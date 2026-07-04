@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c598b09`
+**Hash del último commit humano:** `2784ef8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2784ef8` | aaronhuaynate66 | feat(SF·F1.5): back-fill de la data rica atrapada en notes (#537) | 2026-07-04 |
 | `c598b09` | aaronhuaynate66 | feat(SF·F3): cruce y predicción con la señal rica del sueño (#536) | 2026-07-04 |
 | `a789f0a` | aaronhuaynate66 | feat(SF·F2): lectura de calidad y continuidad del sueño (no solo horas) (#535) | 2026-07-04 |
 | `79756eb` | aaronhuaynate66 | feat(SF·F1): rescatar la data rica del sueño como campos estructurados (#534) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `dbc65e7` | aaronhuaynate66 | feat(17·M3): trazabilidad tono × fase del ciclo (cierra el dominio ciclo) (#530) | 2026-07-04 |
 | `7b68a41` | aaronhuaynate66 | feat(AF·F1): timeline unificado cross-fuente (auto-forense) (#529) | 2026-07-04 |
 | `4af7d2a` | aaronhuaynate66 | feat(19·M2): modo 'Explorar hipótesis' (con guardrails duros) (#528) | 2026-07-04 |
-| `cfacdfd` | aaronhuaynate66 | feat(19·M1): perfil relacional por persona (hipótesis, no diagnóstico) (#527) | 2026-07-04 |
 
 ---
 
