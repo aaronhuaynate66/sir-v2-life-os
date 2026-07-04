@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2deddbb`
+**Hash del último commit humano:** `6e52bab`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6e52bab` | aaronhuaynate66 | feat(11·M2+M4): cronotipo + jet-lag social (#557) | 2026-07-04 |
 | `2deddbb` | aaronhuaynate66 | feat(12·M6): drift temprano por racha en riesgo (#556) | 2026-07-04 |
 | `5a8289c` | aaronhuaynate66 | feat(12·M7): reforzar por competencia, no por culpa (#555) | 2026-07-04 |
 | `11d60bd` | aaronhuaynate66 | feat(12·M2+M3): próximo paso mínimo + tamaño por energía (#554) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c16d108` | aaronhuaynate66 | feat(14·M5): decisiones pasadas parecidas + su resultado (outside view) (#550) | 2026-07-04 |
 | `a3a9e68` | aaronhuaynate66 | feat(14·M2): premortem forzado en decisiones riesgosas (#549) | 2026-07-04 |
 | `8ebb9d3` | aaronhuaynate66 | feat(14·M6): chequeo de coherencia con valores/identidad (#548) | 2026-07-04 |
-| `f1b8732` | aaronhuaynate66 | feat(14·M3+M4): calibrador de esfuerzo por reversibilidad + modo maximizar/satisficer (#547) | 2026-07-04 |
 
 ---
 
