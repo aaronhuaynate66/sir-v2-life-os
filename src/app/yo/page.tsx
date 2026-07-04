@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
+import { BigFiveCard } from '@/components/profiling/BigFiveCard'
 import { RetratoPanel } from '@/components/yo/RetratoPanel'
 import { PersonalTokensPanel } from '@/components/yo/PersonalTokensPanel'
 import { ExportAllPanel } from '@/components/yo/ExportAllPanel'
@@ -61,6 +62,8 @@ export default function SelfPage() {
       <div className="mt-6 space-y-4">
         <RetratoPanel />
         <IdentityProfilePanel />
+        {/* 19·M5 — autoperfil de Aaron (Big Five, consentido por definición). */}
+        <BigFiveCard subject="self" title="Tu perfil Big Five" whoAnswers="Respondé vos" />
         <EspejoSemanalPanel />
         <ExperimentosLoopPanel />
         <PreMortemPanel />
