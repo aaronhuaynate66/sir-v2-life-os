@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b4a44c7`
+**Hash del último commit humano:** `080dc2f`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `080dc2f` | aaronhuaynate66 | feat(19·M5): autoperfil Big Five de Aaron + instrumento consentido (#562) | 2026-07-04 |
 | `b4a44c7` | aaronhuaynate66 | feat(17·M2+M5): anticipación de cuidado + predicción como ventana (cierra dominio 17) (#561) | 2026-07-04 |
 | `26ede10` | aaronhuaynate66 | feat(11·M6): modelo de fase acoplado S×C (experimental) — cierra dominio 11 (#560) | 2026-07-04 |
 | `fc85940` | aaronhuaynate66 | feat(11·M5): ventana óptima para tareas de foco (#559) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5a8289c` | aaronhuaynate66 | feat(12·M7): reforzar por competencia, no por culpa (#555) | 2026-07-04 |
 | `11d60bd` | aaronhuaynate66 | feat(12·M2+M3): próximo paso mínimo + tamaño por energía (#554) | 2026-07-04 |
 | `43ee8bb` | aaronhuaynate66 | feat(13·M4): aprender qué regulación te funciona (cierra dominio 13) (#553) | 2026-07-04 |
-| `d9b4264` | aaronhuaynate66 | feat(13·M3): granularidad emocional (#552) | 2026-07-04 |
 
 ---
 
