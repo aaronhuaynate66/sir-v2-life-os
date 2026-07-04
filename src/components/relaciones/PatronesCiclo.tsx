@@ -14,26 +14,42 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { groupMomentsByExplicitCycle, groupMomentsByLunar, topBucket } from '@/lib/longitudinal/patrones'
+import { groupLogToneByPhase } from '@/lib/longitudinal/cycleTone'
 import type { RelationshipMoment } from '@/lib/moments/types'
 import type { PersonCycleEntry } from '@/lib/person-cycles/types'
+import type { PersonLog } from '@/lib/person-logs/types'
 
 interface Props {
   personName: string
   moments: RelationshipMoment[]
   personCycles: PersonCycleEntry[]
+  /** 17·M3 — interacciones (tono) para cruzar por fase. */
+  personLogs?: PersonLog[]
+  cycleStartDate?: string | null
+  cycleLengthDays?: number | null
 }
 
 const MIN_CYCLE_MOMENTS = 3
 const MIN_LUNAR_MOMENTS = 5
+const MIN_TONE_LOGS = 5
 
-export function PatronesCiclo({ personName, moments, personCycles }: Props) {
+export function PatronesCiclo({ personName, moments, personCycles, personLogs = [], cycleStartDate, cycleLengthDays }: Props) {
   const byCycle = useMemo(() => groupMomentsByExplicitCycle(moments, personCycles), [moments, personCycles])
   const byLunar = useMemo(() => groupMomentsByLunar(moments), [moments])
+  // 17·M3 — tono de las interacciones por fase del ciclo.
+  const byTone = useMemo(
+    () => groupLogToneByPhase(
+      personLogs.filter((l) => l.kind === 'interaction' && Number.isFinite(l.value) && l.value > 0).map((l) => ({ date: l.loggedAt, tone: l.value })),
+      cycleStartDate, cycleLengthDays,
+    ),
+    [personLogs, cycleStartDate, cycleLengthDays],
+  )
 
   const showCycle = byCycle.total >= MIN_CYCLE_MOMENTS
   const showLunar = byLunar.total >= MIN_LUNAR_MOMENTS
+  const showTone = byTone.total >= MIN_TONE_LOGS
 
-  if (!showCycle && !showLunar) return null
+  if (!showCycle && !showLunar && !showTone) return null
 
   const topC = topBucket(byCycle)
   const topL = topBucket(byLunar)
@@ -72,9 +88,47 @@ export function PatronesCiclo({ personName, moments, personCycles }: Props) {
               topBucket={topL}
             />
           )}
+
+          {/* 17·M3 — tono de las conversaciones por fase. Para entender con
+              empatía (contexto), NUNCA para descalificar. */}
+          {showTone && <ToneBlock buckets={byTone.buckets.filter((b) => b.count > 0)} total={byTone.total} lowestId={byTone.lowest?.phaseId ?? null} lowestLabel={byTone.lowest?.label ?? null} />}
         </CardContent>
       </Card>
     </motion.div>
+  )
+}
+
+function ToneBlock({ buckets, total, lowestId, lowestLabel }: {
+  buckets: Array<{ phaseId: string; label: string; avgTone: number | null; count: number }>
+  total: number
+  lowestId: string | null
+  lowestLabel: string | null
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Sparkles size={11} strokeWidth={1.75} className="text-muted-foreground/70" />
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">Tono de las conversaciones por fase</span>
+        <Badge variant="outline" className="text-[10px] font-mono">{total}</Badge>
+      </div>
+      <ul className="space-y-1">
+        {buckets.map((b) => (
+          <li key={b.phaseId} className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground w-24 shrink-0 truncate">{b.label}</span>
+            <div className="flex-1 h-2 rounded-full bg-muted/30 overflow-hidden">
+              <div className={cn('h-full rounded-full', b.phaseId === lowestId ? 'bg-warn' : 'bg-brand/60')} style={{ width: `${((b.avgTone ?? 0) / 5) * 100}%` }} />
+            </div>
+            <span className="text-[10px] font-mono tabular-nums text-muted-foreground w-16 text-right">{b.avgTone}/5 · {b.count}</span>
+          </li>
+        ))}
+      </ul>
+      {lowestLabel && (
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          El tono tiende a ser más bajo en <span className="text-warn font-medium">{lowestLabel.toLowerCase()}</span>. Es contexto para
+          acompañar con más suavidad — coincidencia, no causa; nunca una explicación de lo que siente.
+        </p>
+      )}
+    </div>
   )
 }
 
