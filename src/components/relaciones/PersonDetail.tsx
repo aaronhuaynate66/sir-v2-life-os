@@ -438,7 +438,7 @@ export function PersonDetail({
 
       {/* Patrones observados: moments por fase del ciclo + por fase lunar. Se
           oculta si no hay suficientes moments para leer patrón. */}
-      <PatronesCiclo personName={live.name} moments={moments} personCycles={personCycles} />
+      <PatronesCiclo personName={live.name} moments={moments} personCycles={personCycles} personLogs={personLogs} cycleStartDate={live.cycleStartDate ?? null} cycleLengthDays={live.cycleLengthDays ?? null} />
 
       {/* Pendientes: moments abiertos con este follow-up. Se oculta si no hay
           nada. Al resolver, el componente refetchea (soft-reload de la ficha). */}
