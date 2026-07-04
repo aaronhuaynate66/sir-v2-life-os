@@ -47,6 +47,7 @@ import { MetricScale } from '@/components/yo/MetricScale'
 import { SleepDebtCard } from '@/components/salud/SleepDebtCard'
 import { SleepQualityCard } from '@/components/salud/SleepQualityCard'
 import { SleepAftermathCard } from '@/components/salud/SleepAftermathCard'
+import { EmotionWindowCard } from '@/components/salud/EmotionWindowCard'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
 
@@ -250,6 +251,9 @@ function SaludContent() {
 
       {/* SF·F3 — cruce sueño → día siguiente (estrés/energía/ánimo/FC). */}
       <SleepAftermathCard />
+
+      {/* 13·M1+M2 — ventana de tolerancia + estrategia de regulación (Gross). */}
+      <EmotionWindowCard />
 
       <div className="mb-6">
         <PatronesPanel />
