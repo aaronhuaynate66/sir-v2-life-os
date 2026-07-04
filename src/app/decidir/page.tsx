@@ -3,8 +3,8 @@
 // SIR la puntúa en las 7 dimensiones (docs/01) con el evaluador puro
 // (engines/decision) + LLM. Consume POST /api/decision.
 
-import { useState } from 'react'
-import { Scale, Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Scale, Loader2, TrendingUp, TrendingDown, Minus, Brain } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { DIMENSION_LABEL, type DecisionAssessment } from '@/engines/decision'
+import { detectBiases } from '@/engines/bias'
 import { cn } from '@/lib/utils'
 
 const VERDICT: Record<DecisionAssessment['verdict'], { label: string; cls: string }> = {
@@ -39,6 +40,10 @@ export default function DecidirPage() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [result, setResult] = useState<DecisionAssessment | null>(null)
+
+  // 14·M1 — detector de sesgos en vivo (client-side, puro, no-bloqueante).
+  // Marca cómo describís la decisión: no cambia el veredicto, solo enciende una luz.
+  const biasHits = useMemo(() => detectBiases(`${title} ${description}`).hits, [title, description])
 
   async function evaluate() {
     if (busy || (!title.trim() && !description.trim())) return
@@ -83,6 +88,33 @@ export default function DecidirPage() {
           {err && <p className="text-[11px] text-bad">{err}</p>}
         </CardContent>
       </Card>
+
+      {/* 14·M1 — sesgos detectados en cómo lo describís. No bloquea nada; es para
+          activar tu sistema 2 antes de evaluar. */}
+      {biasHits.length > 0 && (
+        <Card className="mb-4 border-warn/30">
+          <CardContent className="p-4 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Brain size={14} strokeWidth={1.75} className="text-warn" aria-hidden="true" />
+              <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Ojo con cómo lo estás pensando</span>
+            </div>
+            <ul className="space-y-2">
+              {biasHits.map((h) => (
+                <li key={h.bias} className="text-[13px]">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-foreground font-medium">{h.label}</span>
+                    {h.evidence.map((e, i) => (
+                      <span key={i} className="text-[10px] font-mono rounded bg-muted/50 border border-border px-1.5 py-0.5 text-muted-foreground">&ldquo;{e}&rdquo;</span>
+                    ))}
+                  </div>
+                  <p className="text-muted-foreground leading-snug mt-0.5">{h.question}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[10px] text-muted-foreground/70 leading-relaxed">Es una luz, no un veredicto — a veces la urgencia es real. Solo te lo dejo a la vista antes de decidir.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {result && (
         <Card>
