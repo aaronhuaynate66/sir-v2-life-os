@@ -75,6 +75,7 @@ import { PerfilProfesional } from './PerfilProfesional'
 import { RedesSociales } from './RedesSociales'
 import { Bitacora } from './Bitacora'
 import { RelationalFlagsCard } from './RelationalFlagsCard'
+import { RelationalHealthCard } from './RelationalHealthCard'
 import { AnotarAhora } from './AnotarAhora'
 import { HistorialSearch } from './HistorialSearch'
 import { NotesHistoryDropdown } from './NotesHistoryDropdown'
@@ -455,6 +456,9 @@ export function PersonDetail({
           justo — actividad reciente (tags de memorias) + notas privadas verbatim
           (discretas, nunca a IA). Determinístico; se oculta si no aporta nada. */}
       <AntesDeContactar personId={live.id} memories={memories} />
+      {/* 15·3+15·6 — salud del vínculo: tendencia de tono + cadencia por capa,
+          ramificada afectivo/profesional. Solo aparece si hay algo que sugerir. */}
+      <RelationalHealthCard person={live} personLogs={personLogs} />
       <ContactWindowBadge person={live} lastTone={lastInteractionTone} />
 
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
