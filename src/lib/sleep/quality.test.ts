@@ -31,9 +31,16 @@ describe('readSleepQuality — eficiencia', () => {
   })
 
   it('sin horario real (00:00→00:00) no calcula eficiencia', () => {
-    const r = readSleepQuality(rec({ bedtime: '00:00', wakeTime: '00:00' }))
+    const r = readSleepQuality(rec({ bedtime: '00:00', wakeTime: '00:00', deepMin: undefined, lightMin: undefined, remMin: undefined, awakeMin: undefined }))
     expect(r.efficiency).toBeNull()
     expect(r.timeInBedHours).toBeNull()
+  })
+
+  it('rescate DD: sin horario pero con fases+vigilia, calcula eficiencia POR FASES', () => {
+    // 420 min dormido (deep 90 + light 240 + rem 90) + 30 min vigilia → 420/450 = 0.933
+    const r = readSleepQuality(rec({ bedtime: '00:00', wakeTime: '00:00', deepMin: 90, lightMin: 240, remMin: 90, awakeMin: 30 }))
+    expect(r.awakeMin).toBe(30)
+    expect(r.efficiency).toBeCloseTo(420 / 450, 3)
   })
 
   it('nulifica eficiencia si dormido supera al tiempo en cama (data inconsistente)', () => {
