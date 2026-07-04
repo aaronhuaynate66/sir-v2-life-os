@@ -77,6 +77,7 @@ import { Bitacora } from './Bitacora'
 import { RelationalFlagsCard } from './RelationalFlagsCard'
 import { RelationalHealthCard } from './RelationalHealthCard'
 import { RelationalEnergyCard } from './RelationalEnergyCard'
+import { RelationalBidCard } from './RelationalBidCard'
 import { AnotarAhora } from './AnotarAhora'
 import { HistorialSearch } from './HistorialSearch'
 import { NotesHistoryDropdown } from './NotesHistoryDropdown'
@@ -462,6 +463,8 @@ export function PersonDetail({
       <RelationalHealthCard person={live} personLogs={personLogs} />
       {/* 15·4 — vínculos que drenan vs energizan (energy_impact × self_metrics). */}
       <RelationalEnergyCard person={live} personLogs={personLogs} />
+      {/* 15·5 — micro-bid concreto atado a señal real (fecha próxima o tema). */}
+      <RelationalBidCard person={live} memories={memories} />
       <ContactWindowBadge person={live} lastTone={lastInteractionTone} />
 
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
