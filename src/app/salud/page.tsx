@@ -48,6 +48,7 @@ import { SleepDebtCard } from '@/components/salud/SleepDebtCard'
 import { SleepQualityCard } from '@/components/salud/SleepQualityCard'
 import { SleepAftermathCard } from '@/components/salud/SleepAftermathCard'
 import { EmotionWindowCard } from '@/components/salud/EmotionWindowCard'
+import { ChronotypeCard } from '@/components/salud/ChronotypeCard'
 import { proposeEmotionLabels } from '@/lib/emotion/granularity'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
@@ -255,6 +256,9 @@ function SaludContent() {
 
       {/* 13·M1+M2 — ventana de tolerancia + estrategia de regulación (Gross). */}
       <EmotionWindowCard />
+
+      {/* 11·M2+M4 — cronotipo + jet-lag social. */}
+      <ChronotypeCard />
 
       <div className="mb-6">
         <PatronesPanel />
