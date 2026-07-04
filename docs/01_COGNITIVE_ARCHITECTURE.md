@@ -240,6 +240,7 @@ profundos viven en sus propios docs (11–15):
 | Comunicación/posicionamiento + defensa (reasoner, grafo) | Influencia e inteligencia social (Milgram, Zimbardo, Cialdini, agenda-setting) | `16_INFLUENCE_SOCIAL_INTELLIGENCE` |
 | `lib/ciclo`, `person_cycles`, PatronesCiclo | Ciclo menstrual (modelo hormonal, fases, ventana PMS/fértil, variabilidad) | `17_MENSTRUAL_CYCLE` |
 | `lib/external`, `engines/signal`, calendar | Señales externas (externo × interno = señal; FX, eventos, clima, calendario macro) | `18_EXTERNAL_SIGNALS` |
+| reasoner, `memories`, `person_logs`, `15·8` | Perfilado relacional (Big Five, apego, Gottman; hipótesis no diagnóstico) | `19_RELATIONAL_PROFILING` |
 | Las 12 lentes | Panel cognitivo (cada persona con su marco) | `10_COGNITIVE_PERSONAS` |
 
 ---
