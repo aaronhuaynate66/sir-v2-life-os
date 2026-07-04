@@ -17,6 +17,7 @@ import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
 import { computeHabitStreak, recentDayMarks, limaDayString } from '@/lib/habits/streak'
 import { habitReinforcement } from '@/lib/habits/reinforce'
+import { streakAtRisk } from '@/lib/habits/drift'
 import { computeWeeklyStreak } from '@/lib/habits/weekly'
 import { limaTimeHHMM } from '@/lib/habits/format'
 import type { HabitSuggestion } from '@/lib/habits/suggestParse'
@@ -236,6 +237,8 @@ export default function HabitosPage() {
             const marks = recentDayMarks(h.checkinDates)
             // 12·M7 — refuerzo por competencia (progreso acumulado, en positivo).
             const reinf = habitReinforcement(h.checkinDates, daily.current, daily.longest, Date.now())
+            // 12·M6 — drift temprano: racha con valor en riesgo hoy (antes de romperse).
+            const risk = streakAtRisk(daily.current, doneToday)
             const todayIso = TODAY()
             const todayTime = doneToday ? limaTimeHHMM(h.checkinTimes[todayIso]) : null
             return (
@@ -267,7 +270,9 @@ export default function HabitosPage() {
                         ? `esta semana ${week?.thisWeek ?? 0}/${h.targetPerPeriod} · constancia ${week?.consistency ?? 0}% · 8 sem`
                         : `consistencia ${daily.consistency}% · 30 días`}
                     </div>
-                    {reinf.message && <div className="text-[11px] text-ok/90 mt-0.5 leading-snug">{reinf.message}</div>}
+                    {risk.atRisk
+                      ? <div className="text-[11px] text-warn mt-0.5 leading-snug">{risk.message}</div>
+                      : reinf.message && <div className="text-[11px] text-ok/90 mt-0.5 leading-snug">{reinf.message}</div>}
                     <div className="mt-1.5 flex items-end gap-1.5" aria-label="Últimos 7 días (tocá para marcar)">
                       {marks.map((m) => {
                         const t = limaTimeHHMM(h.checkinTimes[m.iso])
