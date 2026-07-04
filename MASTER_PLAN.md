@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3bab109`
+**Hash del último commit humano:** `641488e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `641488e` | aaronhuaynate66 | feat(DD): rescatar sleep.awake_min (último rescate con data real) (#543) | 2026-07-04 |
 | `3bab109` | aaronhuaynate66 | feat(19·M3): red flags de auto-protección (#542) | 2026-07-04 |
 | `788ad14` | aaronhuaynate66 | chore(DD): descartar 3 columnas muertas provablemente vacías (#541) | 2026-07-04 |
 | `1c514ed` | aaronhuaynate66 | feat(DD): rescatar person_money.settled (data muerta) (#540) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c598b09` | aaronhuaynate66 | feat(SF·F3): cruce y predicción con la señal rica del sueño (#536) | 2026-07-04 |
 | `a789f0a` | aaronhuaynate66 | feat(SF·F2): lectura de calidad y continuidad del sueño (no solo horas) (#535) | 2026-07-04 |
 | `79756eb` | aaronhuaynate66 | feat(SF·F1): rescatar la data rica del sueño como campos estructurados (#534) | 2026-07-04 |
-| `72b130f` | aaronhuaynate66 | feat(11·M1): deuda de sueño acumulada real (no promedio) (#533) | 2026-07-04 |
 
 ---
 
