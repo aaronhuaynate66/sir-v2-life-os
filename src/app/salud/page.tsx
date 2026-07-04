@@ -48,6 +48,7 @@ import { SleepDebtCard } from '@/components/salud/SleepDebtCard'
 import { SleepQualityCard } from '@/components/salud/SleepQualityCard'
 import { SleepAftermathCard } from '@/components/salud/SleepAftermathCard'
 import { EmotionWindowCard } from '@/components/salud/EmotionWindowCard'
+import { proposeEmotionLabels } from '@/lib/emotion/granularity'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
 
@@ -279,6 +280,23 @@ function SaludContent() {
                 </SelectContent>
               </Select>
               <MetricScale category={mCat} value={mVal} onChange={setMVal} />
+              {/* 13·M3 — granularidad emocional: al registrar ánimo, proponer
+                  etiquetas finas (editable, nunca impuesta). Suma a la nota. */}
+              {mCat === 'mood' && mVal !== '' && !isNaN(parseFloat(mVal)) && (
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-[10px] text-text-tertiary self-center mr-0.5">nombralo mejor:</span>
+                  {proposeEmotionLabels(parseFloat(mVal)).map((label) => (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setMNote((n) => (n.toLowerCase().includes(label) ? n : `${n ? n.trim() + ' · ' : ''}${label}`))}
+                      className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:border-brand hover:text-foreground"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <Input type="text" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
               <Button onClick={addMetric} variant="outline" className="w-full">+ Registrar</Button>
             </div>
