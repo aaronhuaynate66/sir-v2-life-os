@@ -3,7 +3,7 @@
 // Sidebar moderno con iconos lucide y active state en acento coral.
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Brain, Users, Target, DollarSign, Bell, Archive, History, Network, Camera, CalendarRange, Clock, LineChart, LogOut, Activity, Heart, Building2, Sparkles, Calculator, Handshake, CalendarDays, Pill, Gauge, Wand2, BookHeart, Scale } from 'lucide-react'
+import { LayoutDashboard, Brain, Users, Target, DollarSign, Bell, Archive, History, Network, Camera, CalendarRange, Clock, LineChart, LogOut, Activity, Heart, Building2, Sparkles, Calculator, Handshake, CalendarDays, Pill, Gauge, Wand2, BookHeart, Scale, ShieldAlert } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -50,6 +50,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
     items: [
       { href: '/relaciones', label: 'Relaciones', Icon: Users },
       { href: '/relato/ingest', label: 'Contale a SIR', Icon: Wand2 },
+      { href: '/verificar', label: 'Verificar mensaje', Icon: ShieldAlert },
       { href: '/empresas', label: 'Empresas', Icon: Building2 },
       { href: '/red', label: 'Red', Icon: Network },
     ],

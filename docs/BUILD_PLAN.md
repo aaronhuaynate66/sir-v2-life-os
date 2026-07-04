@@ -111,6 +111,8 @@ futuros (motor puro + consumidor, honesto con la confianza):
 - `15_RELATIONAL_INTELLIGENCE` *(el norte)* — capas de Dunbar, reciprocidad, salud del vínculo.
 - `16_INFLUENCE_SOCIAL_INTELLIGENCE` — posicionarte con ética (Milgram/Zimbardo/Cialdini, agenda-setting), inteligencia social + **defensa** contra ingeniería social. Línea dura: influencia genuina y defensa, NO manipulación.
 
+**PRIMER MÓDULO CONSTRUIDO (07-03): 16·M3 — Detector de manipulación entrante.** Motor puro `engines/manipulation` (heurística ES+EN de 7 tácticas Cialdini, riesgo none/low/medium/high, detecta la "firma" autoridad+urgencia+miedo, 18 tests) + página `/verificar` (corre client-side, texto no se guarda) + link en Nav (Gente). Defensa, cero costo/API.
+
 Próximos módulos construibles salen de esos "Qué construir": arrancar por los de
 confianza alta / sin deuda de datos (ej. detector de sesgos en /decidir, cronotipo
 desde horarios ya capturados, capas de Dunbar + alertas de sobre/sub-inversión).
