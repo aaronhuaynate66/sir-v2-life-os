@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `7ccd6b0`
+**Hash del último commit humano:** `1c514ed`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `1c514ed` | aaronhuaynate66 | feat(DD): rescatar person_money.settled (data muerta) (#540) | 2026-07-04 |
 | `7ccd6b0` | aaronhuaynate66 | feat(DD): rescatar person_cycles.note (data muerta) (#539) | 2026-07-04 |
 | `9d79e40` | aaronhuaynate66 | feat(DD): rescatar deals.why_matters/scope/notes (data muerta) (#538) | 2026-07-04 |
 | `2784ef8` | aaronhuaynate66 | feat(SF·F1.5): back-fill de la data rica atrapada en notes (#537) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `72b130f` | aaronhuaynate66 | feat(11·M1): deuda de sueño acumulada real (no promedio) (#533) | 2026-07-04 |
 | `b2e8650` | aaronhuaynate66 | feat(AF·F3): 'cosas que no te cuadran' — anomalías en tu propia data (#532) | 2026-07-04 |
 | `9008556` | aaronhuaynate66 | feat(AF·F2): explorador de grafo (auto-forense) (#531) | 2026-07-04 |
-| `dbc65e7` | aaronhuaynate66 | feat(17·M3): trazabilidad tono × fase del ciclo (cierra el dominio ciclo) (#530) | 2026-07-04 |
 
 ---
 
