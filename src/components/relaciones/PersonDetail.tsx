@@ -90,6 +90,7 @@ import { personLogsCsv, observationsCsv } from '@/lib/export/adapters'
 import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { WhatMattersChips } from './WhatMattersChips'
+import { RelationalProfileCard } from './RelationalProfileCard'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
@@ -813,6 +814,9 @@ export function PersonDetail({
 
       {/* 15·8 — qué le importa: temas recurrentes de sus memorias (client-side). */}
       <WhatMattersChips memories={memories} tags={live.tags ?? []} name={live.name} />
+
+      {/* 19·M1 — perfil relacional (cómo vincularte), on-demand + cache diaria. */}
+      <RelationalProfileCard personId={live.id} personName={live.name} />
 
       {/* Memorias asociadas — server-fetched (PR-B Sesion 4) + boton de
           backfill idempotente desde relationships.history. */}
