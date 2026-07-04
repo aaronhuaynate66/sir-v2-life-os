@@ -95,6 +95,7 @@ export function buildSleepRecordFromPanel(final: SleepCaptureFinal): SleepRecord
   const quality =
     final.score !== null ? qualityFromScore(final.score) : qualityFromDuration(duration)
 
+  const st = final.stages
   return {
     id: sleepDedupeId(final.day),
     date: final.day,
@@ -102,6 +103,14 @@ export function buildSleepRecordFromPanel(final: SleepCaptureFinal): SleepRecord
     wakeTime: final.wakeTime ?? '00:00',
     duration,
     quality,
+    // SF·F1: la data rica va ESTRUCTURADA (antes solo caía en `notes` como
+    // prosa y ningún motor la leía). `notes` se mantiene solo para display.
+    score: final.score ?? undefined,
+    awakenings: final.awakenings ?? undefined,
+    deepMin: st.deep_minutes ?? undefined,
+    lightMin: st.light_minutes ?? undefined,
+    remMin: st.rem_minutes ?? undefined,
+    awakeMin: st.awake_minutes ?? undefined,
     notes: buildSleepNotes(final.stages, final.score, final.confidence, {
       awakenings: final.awakenings,
       napMinutes: final.napMinutes,

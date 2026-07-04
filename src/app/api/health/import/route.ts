@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
         wake_time: s.wakeTime,
         duration: s.duration,
         quality: s.quality,
+        score: s.score ?? null, // SF·F1: score crudo estructurado
         notes: s.notes ?? null,
         source: SOURCE,
         external_id: s.externalId,

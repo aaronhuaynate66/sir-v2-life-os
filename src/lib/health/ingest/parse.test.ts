@@ -366,6 +366,21 @@ describe('mapHealthAutoExport — sueño', () => {
     })
     expect(r.sleepRecords[0].quality).toBe(9) // 92/10 → 9, no la heurística de 6h
     expect(r.sleepRecords[0].notes).toContain('92/100')
+    expect(r.sleepRecords[0].score).toBe(92) // SF·F1: score crudo estructurado, no solo en notes
+  })
+
+  it('SF·F1: score queda undefined cuando el payload no trae puntuación', () => {
+    const r = mapHealthAutoExport({
+      data: {
+        metrics: [
+          {
+            name: 'sleep_analysis',
+            data: [{ sleepStart: '2026-06-01 23:00:00 -0500', sleepEnd: '2026-06-02 05:00:00 -0500', asleep: 6 }],
+          },
+        ],
+      },
+    })
+    expect(r.sleepRecords[0].score).toBeUndefined()
   })
 
   it('suma fragmentos de la misma noche y toma min(inicio)/max(fin)', () => {

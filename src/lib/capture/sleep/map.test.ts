@@ -83,6 +83,29 @@ describe('buildSleepRecordFromPanel', () => {
     expect(r.notes).toContain('Vigilia 6m')
   })
 
+  it('SF·F1: rescata la data rica como campos ESTRUCTURADOS (no solo en notes)', () => {
+    const r = buildSleepRecordFromPanel({ ...BASE, awakenings: 3 })
+    expect(r.score).toBe(75)
+    expect(r.awakenings).toBe(3)
+    expect(r.deepMin).toBe(81)
+    expect(r.lightMin).toBe(246)
+    expect(r.remMin).toBe(28)
+    expect(r.awakeMin).toBe(6)
+  })
+
+  it('SF·F1: los campos ricos quedan undefined cuando el panel no los trae', () => {
+    const r = buildSleepRecordFromPanel({
+      ...BASE,
+      score: null,
+      awakenings: null,
+      stages: { deep_minutes: null, light_minutes: null, rem_minutes: null, awake_minutes: null },
+    })
+    expect(r.score).toBeUndefined()
+    expect(r.awakenings).toBeUndefined()
+    expect(r.deepMin).toBeUndefined()
+    expect(r.remMin).toBeUndefined()
+  })
+
   it('clampa duraciones absurdas a 0-24h', () => {
     const tooLong = buildSleepRecordFromPanel({ ...BASE, totalMinutes: 6000 })
     expect(tooLong.duration).toBe(24)

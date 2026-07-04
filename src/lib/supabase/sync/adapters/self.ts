@@ -155,6 +155,13 @@ export const sleepRecordAdapter: TableAdapter<SleepRecord> = {
     quality: s.quality,
     dreams: s.dreams ?? null,
     notes: s.notes ?? null,
+    // Alta fidelidad (SF·F1, 0123). undefined → null, no pisa filas viejas.
+    score: s.score ?? null,
+    awakenings: s.awakenings ?? null,
+    deep_min: s.deepMin ?? null,
+    light_min: s.lightMin ?? null,
+    rem_min: s.remMin ?? null,
+    awake_min: s.awakeMin ?? null,
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -165,5 +172,11 @@ export const sleepRecordAdapter: TableAdapter<SleepRecord> = {
     quality: Number(row.quality),
     dreams: (row.dreams as string) ?? undefined,
     notes: (row.notes as string) ?? undefined,
+    score: row.score == null ? undefined : Number(row.score),
+    awakenings: row.awakenings == null ? undefined : Number(row.awakenings),
+    deepMin: row.deep_min == null ? undefined : Number(row.deep_min),
+    lightMin: row.light_min == null ? undefined : Number(row.light_min),
+    remMin: row.rem_min == null ? undefined : Number(row.rem_min),
+    awakeMin: row.awake_min == null ? undefined : Number(row.awake_min),
   }),
 }

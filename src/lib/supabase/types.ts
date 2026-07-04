@@ -90,6 +90,12 @@ export type Database = {
           dreams: string | null
           notes: string | null
           created_at: string
+          score: number | null
+          awakenings: number | null
+          deep_min: number | null
+          light_min: number | null
+          rem_min: number | null
+          awake_min: number | null
         }
         Insert: {
           id: string
@@ -102,6 +108,12 @@ export type Database = {
           dreams?: string | null
           notes?: string | null
           created_at?: string
+          score?: number | null
+          awakenings?: number | null
+          deep_min?: number | null
+          light_min?: number | null
+          rem_min?: number | null
+          awake_min?: number | null
         }
         Update: Partial<Database['public']['Tables']['sleep_records']['Insert']>
       }

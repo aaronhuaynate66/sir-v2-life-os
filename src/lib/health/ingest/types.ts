@@ -92,6 +92,8 @@ export interface NormalizedSleepRecord {
   duration: number
   /** Calidad 1-10 (de la puntuación de sueño 0-100 si existe, si no derivada). */
   quality: number
+  /** Puntuación 0-100 cruda de Apple, si el payload la trae (SF·F1). */
+  score?: number
   /** Clave de dedupe: "ah:sleep:<date>". */
   externalId: string
   notes?: string
