@@ -96,6 +96,7 @@ import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { WhatMattersChips } from './WhatMattersChips'
 import { RelationalProfileCard } from './RelationalProfileCard'
 import { HypothesesExplorer } from './HypothesesExplorer'
+import { BigFiveCard } from '@/components/profiling/BigFiveCard'
 import { RegistrarInteraccionPanel } from './RegistrarInteraccionPanel'
 import { NotaDeVozPanel } from './NotaDeVozPanel'
 import { AgregarCapturaPanel } from './AgregarCapturaPanel'
@@ -831,6 +832,9 @@ export function PersonDetail({
 
       {/* 19·M1 — perfil relacional (cómo vincularte), on-demand + cache diaria. */}
       <RelationalProfileCard personId={live.id} personName={live.name} />
+
+      {/* 19·M4 — test consentido Big Five: lo responde ESA persona (instrumento válido). */}
+      <BigFiveCard subject={live.id} title={`Big Five de ${live.name.split(' ')[0]}`} whoAnswers={`Que responda ${live.name.split(' ')[0]}`} />
 
       {/* 19·M2 — explorar hipótesis (colapsado, sensible): hipótesis que compiten. */}
       <HypothesesExplorer personId={live.id} personName={live.name} />
