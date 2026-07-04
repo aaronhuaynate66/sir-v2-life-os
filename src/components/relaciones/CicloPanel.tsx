@@ -26,6 +26,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
 import { computeCycleRegularity, type PredictionConfidence } from '@/lib/ciclo/regularity'
+import { careAnticipation, predictionWindow } from '@/lib/ciclo/forecast'
 import type { PersonCycleEntry, CyclePhase } from '@/lib/person-cycles/types'
 import { cycleEntriesWithNotes } from '@/lib/person-cycles/notes'
 import { useMounted } from '@/hooks/useMounted'
@@ -173,6 +174,15 @@ function Body({
           Ventana fértil aproximada (orientativa — no es método anticonceptivo).
         </div>
       )}
+      {/* 17·M2 — anticipación de cuidado (aviso PRIVADO, antes de la ventana). */}
+      {(() => {
+        const care = careAnticipation({ daysUntilNextPeriod: phase.daysUntilNextPeriod, isPmsWindow: phase.isPmsWindow, confidence: reg.confidence })
+        return care.show ? (
+          <div className="rounded-md border border-brand/25 bg-brand-soft/25 px-3 py-2 text-[11px] text-foreground/90 leading-relaxed">
+            <span className="font-medium text-brand-soft-foreground">Anticipá con cuidado.</span> {care.message}
+          </div>
+        ) : null
+      })()}
 
       <div className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
         Próximo período:{' '}
@@ -184,6 +194,13 @@ function Body({
         {reg.regularity !== 'insufficient' && reg.bandDays > 0 && (
           <span className="text-muted-foreground/70"> (±{reg.bandDays}d)</span>
         )}
+        {/* 17·M5 — la predicción como VENTANA, no una fecha exacta. */}
+        {(() => {
+          const w = reg.confidence !== 'insufficient' ? predictionWindow(phase.nextPeriodIso, reg.bandDays) : null
+          return w ? (
+            <span className="block text-muted-foreground/70 font-mono">ventana probable: {w.from} → {w.to}</span>
+          ) : null
+        })()}
         {/* 17·M4 — confianza de la predicción según la regularidad observada. */}
         <span className={cn('block mt-1', CONFIDENCE_LABEL[reg.confidence].cls)}>
           {CONFIDENCE_LABEL[reg.confidence].text}
