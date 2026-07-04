@@ -25,6 +25,8 @@ export interface SleepQualityReading {
   fragmentation: number | null
   /** Cantidad de despertares (crudo), o null. */
   awakenings: number | null
+  /** Minutos de vigilia durante la noche (crudo), o null. */
+  awakeMin: number | null
   /** Fracción reparadora = (profundo+REM) ÷ (profundo+liviano+REM), o null. */
   restorativePct: number | null
   /** % profundo sobre el sueño con fases, o null. */
@@ -103,6 +105,7 @@ export function readSleepQuality(record: SleepRecord): SleepQualityReading {
   const deep = record.deepMin ?? null
   const light = record.lightMin ?? null
   const rem = record.remMin ?? null
+  const awakeMin = record.awakeMin ?? null
   let restorativePct: number | null = null
   let deepPct: number | null = null
   let remPct: number | null = null
@@ -113,6 +116,14 @@ export function readSleepQuality(record: SleepRecord): SleepQualityReading {
       deepPct = deep / asleep
       remPct = rem / asleep
       notes.push(`${pct(restorativePct)}% reparador (profundo ${pct(deepPct)}% · REM ${pct(remPct)}%)`)
+
+      // Rescate DD: si no hubo eficiencia por horario, la calculamos por FASES
+      // (dormido ÷ tiempo en cama = dormido + vigilia). Más fiable que el span
+      // bedtime→waketime, que arrastra la latencia previa al sueño.
+      if (efficiency === null && awakeMin !== null && asleep + awakeMin > 0) {
+        efficiency = clamp(asleep / (asleep + awakeMin), 0, 1)
+        notes.push(`Eficiencia ${pct(efficiency)}% (por fases: ${awakeMin} min de vigilia)`)
+      }
     }
   }
 
@@ -128,6 +139,7 @@ export function readSleepQuality(record: SleepRecord): SleepQualityReading {
     timeInBedHours: tib,
     fragmentation,
     awakenings,
+    awakeMin,
     restorativePct,
     deepPct,
     remPct,
