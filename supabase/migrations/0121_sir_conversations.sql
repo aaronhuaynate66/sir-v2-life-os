@@ -87,7 +87,7 @@ as $$
     c.created_at,
     1 - (c.embedding <=> query_embedding) as similarity
   from public.sir_conversations c
-  where c.user_id = auth.uid()
+  where c.user_id = auth.uid()::text  -- user_id es TEXT (no uuid): castear evita 42883
     and c.embedding is not null
     and c.created_at < exclude_after
     and 1 - (c.embedding <=> query_embedding) >= similarity_threshold
