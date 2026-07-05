@@ -139,13 +139,23 @@
     if (container) {
       try { sample = (adapter.extractMessages(container) || []).slice(-3); } catch (e) { err = (err || '') + ' extract: ' + e; }
     }
-    // Pista del DOM cuando no hay contenedor: los data-tid / clases más frecuentes.
+    // Pista del DOM: los data-tid / clases más frecuentes (para reconstruir selectores).
     let hint = '';
-    if (!container) {
-      const tids = {};
-      document.querySelectorAll('[data-tid]').forEach((n) => { const t = n.getAttribute('data-tid'); tids[t] = (tids[t] || 0) + 1; });
-      const top = Object.entries(tids).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => `${k}(${v})`);
-      hint = 'data-tid presentes: ' + (top.join(', ') || 'ninguno');
+    const scope = container || document.body;
+    const tids = {};
+    scope.querySelectorAll('[data-tid]').forEach((n) => { const t = n.getAttribute('data-tid'); tids[t] = (tids[t] || 0) + 1; });
+    const top = Object.entries(tids).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([k, v]) => `${k}(${v})`);
+    hint = 'data-tid: ' + (top.join(', ') || 'ninguno');
+
+    // Si hay contenedor pero extraemos poco/nada, dumpear el HTML CRUDO de las
+    // primeras "filas" candidatas — con eso se escribe el selector exacto de una.
+    let rowsHtml = null;
+    if (container && sample.length === 0) {
+      const guessRows = container.querySelectorAll(
+        '[data-tid*="message"], .fui-ChatMessage, [role="listitem"], [data-tid="chat-pane-message"]'
+      );
+      const pick = guessRows.length ? guessRows : container.children;
+      rowsHtml = Array.from(pick).slice(0, 2).map((el) => shortHtml(el, 600));
     }
     return {
       ok: !!(thread && container && sample.length),
@@ -155,6 +165,7 @@
       containerHtml: shortHtml(container, 220),
       sampleCount: sample.length,
       sample: sample.map((m) => ({ author: m.author, ts: m.ts, text: (m.text || '').slice(0, 80) })),
+      rowsHtml,
       error: err,
       hint,
     };

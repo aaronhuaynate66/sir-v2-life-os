@@ -42,9 +42,12 @@
       const authorEl =
         row.querySelector('[data-tid="message-author-name"]') ||
         row.querySelector('[data-tid="messageAuthorName"]') ||
+        row.querySelector('[data-tid="messageSenderDisplayName"]') ||
+        row.querySelector('[data-tid="author-name"]') ||
         row.querySelector('.fui-ChatMessage__author');
       const bodyEl =
         row.querySelector('[data-tid="messageBodyContent"]') ||
+        row.querySelector('[data-tid="message-body"]') ||
         row.querySelector('.fui-ChatMessage__body') ||
         row.querySelector('[id^="content-"]') ||
         row.querySelector('div[dir="auto"]');
