@@ -31,6 +31,7 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
 import { MacroCalendarStrip } from '@/components/horario/MacroCalendarStrip'
+import { ActiveSlotBanner } from '@/components/horario/ActiveSlotBanner'
 import { CalendarConnections } from '@/components/agenda/CalendarConnections'
 import dynamic from 'next/dynamic'
 // HorarioCalendar es el cockpit visual, ~15KB propios + grid grande. Se
@@ -173,6 +174,10 @@ function HorarioContent() {
         </div>
         <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mt-2">{LIMA_TZ_LABEL}</span>
       </motion.div>
+
+      {/* 12·M1 — recordatorio activo en la franja (Fogg). Arriba de todo por ser
+          time-sensitive; invisible si no hay franja activa ahora. */}
+      <ActiveSlotBanner steps={objectiveSteps} onComplete={(id) => updateStep(id, { status: 'hecho', taskStatus: 'done' })} />
 
       {/* El calendario primero: es lo que el usuario vino a ver. */}
       {now == null || calendarLoading ? (
