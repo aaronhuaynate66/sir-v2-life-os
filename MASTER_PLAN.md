@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e025b33`
+**Hash del último commit humano:** `c03946c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c03946c` | aaronhuaynate66 | fix(reader): soportar teams.cloud.microsoft + selector chat-title (2026) (#590) | 2026-07-05 |
 | `e025b33` | aaronhuaynate66 | feat(reader): modo diagnóstico en la extensión (depurar selectores) (#589) | 2026-07-05 |
 | `e7063da` | aaronhuaynate66 | feat(reader): config por archivo + guía de instalación para un agente (#588) | 2026-07-05 |
 | `e56efa5` | aaronhuaynate66 | feat(correo): conector Microsoft Graph — correo M365 → SIR (Fase 2) (#587) | 2026-07-05 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `f923fa7` | aaronhuaynate66 | fix(linea): mostrar el sueño (dreams) en la línea de tiempo (#583) | 2026-07-05 |
 | `d371dc9` | aaronhuaynate66 | feat(salud): capturador de sueños (rescata sleep_records.dreams) (#582) | 2026-07-05 |
 | `96410b5` | Aaron Huaynate | docs(plan): rescate finance→objetivo + relato-ingest ya construido | 2026-07-05 |
-| `f0ff205` | aaronhuaynate66 | feat(finanzas): vincular movimiento a objetivo + dinero por objetivo (#581) | 2026-07-05 |
 
 ---
 
