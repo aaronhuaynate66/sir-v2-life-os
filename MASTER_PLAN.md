@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `003e3ff`
+**Hash del último commit humano:** `6447b36`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6447b36` | aaronhuaynate66 | feat(red): capturador de vínculos profesionales/sociales (desbloquea 15·7) (#572) | 2026-07-05 |
+| `a3f6ed9` | Aaron Huaynate | docs(plan): dominio 16 (influencia) completo — M5 guardrail ético | 2026-07-05 |
 | `003e3ff` | aaronhuaynate66 | feat(influencia): chequeo ético — guardrail transversal (16·M5) (#571) | 2026-07-05 |
 | `181788b` | Aaron Huaynate | docs(plan): dominio 12 (comportamiento) completo — M1/M4/M5 | 2026-07-05 |
 | `8cad109` | aaronhuaynate66 | feat(habitos): lazo WOOP — detectar contexto + disparar el then (12·M4+M5) (#570) | 2026-07-05 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `486fa5d` | aaronhuaynate66 | feat(externas): eventos por ubicación de persona (18·M4) (#568) | 2026-07-05 |
 | `a30cfbe` | aaronhuaynate66 | feat(externas): calendario macro — findes largos + quincena (18·M5) (#567) | 2026-07-05 |
 | `e55e610` | aaronhuaynate66 | feat(externas): clima → energía/ánimo (18·M2) (#566) | 2026-07-05 |
-| `3119604` | aaronhuaynate66 | feat(sir/ensayo): leer la conversación importada + cruzar con el estado bio (#565) | 2026-07-04 |
-| `28c614d` | aaronhuaynate66 | fix(ensayo): parseo seguro de respuestas no-JSON + más margen de tiempo (#564) | 2026-07-04 |
 
 ---
 
