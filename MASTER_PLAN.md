@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `808aca4`
+**Hash del último commit humano:** `5fd7e42`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `5fd7e42` | aaronhuaynate66 | feat(influencia): repertorio ético de movidas en el ensayo (16·M4+M1) (#576) | 2026-07-05 |
+| `6cc3b68` | Aaron Huaynate | docs(plan): 16·M3 subido a 23 técnicas de propaganda en /verificar | 2026-07-05 |
 | `808aca4` | aaronhuaynate66 | feat(verificar): 23 técnicas de propaganda en el detector (16·M3) (#575) | 2026-07-05 |
 | `ef831f9` | aaronhuaynate66 | fix(sir): desambiguar DOS DIANAS + test de integración del caso Diana (#574) | 2026-07-05 |
 | `ccfc4da` | Aaron Huaynate | docs(plan): dominio 15 completo — 15·7 desbloqueado + motor de red | 2026-07-05 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `a3f6ed9` | Aaron Huaynate | docs(plan): dominio 16 (influencia) completo — M5 guardrail ético | 2026-07-05 |
 | `003e3ff` | aaronhuaynate66 | feat(influencia): chequeo ético — guardrail transversal (16·M5) (#571) | 2026-07-05 |
 | `181788b` | Aaron Huaynate | docs(plan): dominio 12 (comportamiento) completo — M1/M4/M5 | 2026-07-05 |
-| `8cad109` | aaronhuaynate66 | feat(habitos): lazo WOOP — detectar contexto + disparar el then (12·M4+M5) (#570) | 2026-07-05 |
-| `e4c05c8` | aaronhuaynate66 | feat(habitos): prompt atado a la franja (12·M1) (#569) | 2026-07-05 |
 
 ---
 
