@@ -19,9 +19,11 @@ import { checkEthics } from '@/engines/ethics'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-// El ensayo puede hacer hasta 2 llamadas a Claude (retry por JSON); 45s se
-// quedaba corto y el timeout devolvía un 504 no-JSON. 60s da margen.
-export const maxDuration = 60
+// El ensayo puede hacer hasta 2 llamadas a Claude (retry por JSON). Con contexto
+// rico (conversación importada + estado bio + repertorio de movidas) el prompt
+// crece y una persona como Diana llegaba a cortar a los 60s. La plataforma soporta
+// hasta 300s; 120s cubre el peor caso de doble llamada con holgura.
+export const maxDuration = 120
 
 const MODEL_ID = 'claude-sonnet-4-5'
 
