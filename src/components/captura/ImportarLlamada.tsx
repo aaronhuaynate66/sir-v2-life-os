@@ -9,8 +9,8 @@
 // día-X) y archiva el texto crudo en la bitácora. Sin formato WhatsApp: la
 // transcripción es texto corrido.
 
-import { useEffect, useState } from 'react'
-import { Loader2, PhoneCall, UserPlus, X, Check, Upload, FileAudio, Type } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Loader2, PhoneCall, UserPlus, X, Check, Upload, FileAudio, Type, Mic, Square } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -42,8 +42,20 @@ export function ImportarLlamada() {
   const [progress, setProgress] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState<{ summary: string; quality: number } | null>(null)
-  const [inputMode, setInputMode] = useState<'text' | 'audio'>('text')
+  const [inputMode, setInputMode] = useState<'text' | 'audio' | 'record'>('text')
   const [transcribing, setTranscribing] = useState(false)
+
+  // Grabador en vivo por sesión (Fase 3). Graba en cortes y transcribe sobre la
+  // marcha; el texto se acumula en `transcript` y al parar se procesa como siempre.
+  const [recording, setRecording] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const [chunkStatus, setChunkStatus] = useState<string | null>(null)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const chunkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const recordingRef = useRef(false)
+  const CHUNK_MS = 5 * 60 * 1000 // corta y procesa cada 5 min
 
   // Sugerencias en vivo (debounce). Solo mientras no haya persona resuelta.
   useEffect(() => {
@@ -78,8 +90,10 @@ export function ImportarLlamada() {
   }
 
   function reset() {
+    if (recording) stopRecording()
     setResolved(null); setName(''); setTranscript(''); setDate(todayLimaISO())
     setDone(null); setErr(null); setProgress(null); setCandidates([]); setInputMode('text')
+    setElapsed(0); setChunkStatus(null)
   }
 
   function extForMime(mime: string): string {
@@ -120,6 +134,92 @@ export function ImportarLlamada() {
     } catch {
       setErr('No se pudo procesar el audio. Reintentá.')
     } finally { setTranscribing(false); setProgress(null) }
+  }
+
+  function pickMime(): string {
+    const cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']
+    for (const m of cands) { try { if (MediaRecorder.isTypeSupported(m)) return m } catch { /* */ } }
+    return ''
+  }
+
+  // Sube un corte de audio a Storage, lo transcribe y APPENDea el texto.
+  async function transcribeChunkAppend(blob: Blob) {
+    if (!resolved || blob.size < 2000) return
+    setChunkStatus('Transcribiendo el último tramo…')
+    try {
+      const supabase = createClient()
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData?.user?.id
+      if (!userId) { setChunkStatus('Sesión expirada.'); return }
+      const mime = blob.type || 'audio/webm'
+      const path = `${userId}/${resolved.id}/live-${crypto.randomUUID()}.${extForMime(mime)}`
+      const file = new File([blob], path.split('/').pop() as string, { type: mime })
+      const { error: upErr } = await supabase.storage.from('person-voice-notes').upload(path, file, { contentType: mime, upsert: false })
+      if (upErr) { setChunkStatus(`No se pudo subir el tramo: ${upErr.message}`); return }
+      const res = await fetch('/api/capture/call/transcribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bucket: 'person-voice-notes', path }),
+      })
+      if (!res.ok) { setChunkStatus('No se pudo transcribir el tramo.'); return }
+      const { text } = (await res.json()) as { text: string }
+      if (text && text.trim()) setTranscript((prev) => (prev ? `${prev}\n${text.trim()}` : text.trim()))
+      setChunkStatus(null)
+    } catch { setChunkStatus('Error transcribiendo el tramo.') }
+  }
+
+  function startChunk() {
+    const stream = streamRef.current
+    if (!stream) return
+    const mimeType = pickMime()
+    const rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
+    const parts: Blob[] = []
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) parts.push(e.data) }
+    rec.onstop = () => {
+      const blob = new Blob(parts, { type: rec.mimeType || 'audio/webm' })
+      void transcribeChunkAppend(blob)
+      if (recordingRef.current && streamRef.current) startChunk() // siguiente tramo
+    }
+    recorderRef.current = rec
+    rec.start()
+    chunkTimerRef.current = setTimeout(() => { if (rec.state !== 'inactive') rec.stop() }, CHUNK_MS)
+  }
+
+  async function startRecording() {
+    if (!resolved || recording) return
+    setErr(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+      recordingRef.current = true
+      setRecording(true); setElapsed(0)
+      elapsedTimerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000)
+      startChunk()
+    } catch {
+      setErr('No pude acceder al micrófono. Dale permiso y reintentá.')
+    }
+  }
+
+  function stopRecording() {
+    recordingRef.current = false
+    setRecording(false)
+    if (chunkTimerRef.current) { clearTimeout(chunkTimerRef.current); chunkTimerRef.current = null }
+    if (elapsedTimerRef.current) { clearInterval(elapsedTimerRef.current); elapsedTimerRef.current = null }
+    const rec = recorderRef.current
+    if (rec && rec.state !== 'inactive') rec.stop() // dispara onstop → transcribe el último tramo
+    if (streamRef.current) { streamRef.current.getTracks().forEach((t) => t.stop()); streamRef.current = null }
+  }
+
+  // Cleanup: si se desmonta mientras graba, cortar el micro.
+  useEffect(() => () => {
+    recordingRef.current = false
+    if (chunkTimerRef.current) clearTimeout(chunkTimerRef.current)
+    if (elapsedTimerRef.current) clearInterval(elapsedTimerRef.current)
+    if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop())
+  }, [])
+
+  function fmtElapsed(s: number): string {
+    const m = Math.floor(s / 60); const ss = s % 60
+    return `${m}:${String(ss).padStart(2, '0')}`
   }
 
   async function procesar() {
@@ -188,7 +288,7 @@ export function ImportarLlamada() {
           <h3 className="text-base font-semibold">Transcripción de llamada</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Grabá la llamada en tu iPhone (queda transcrita en Notas), copiá el texto y pegalo acá. SIR la convierte en una interacción: resumen, tono, temas y fechas — y la cruza con todo.
+          Grabá una reunión o llamada <span className="text-foreground/80">en vivo</span> (SIR va transcribiendo por tramos), subí un audio, o pegá una transcripción. SIR la convierte en una interacción: resumen, tono, temas y fechas — y la cruza con todo.
         </p>
 
         {done ? (
@@ -241,6 +341,10 @@ export function ImportarLlamada() {
                 className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 ${inputMode === 'audio' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground'}`}>
                 <FileAudio size={13} /> Subir audio
               </button>
+              <button type="button" onClick={() => setInputMode('record')}
+                className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 ${inputMode === 'record' ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground'}`}>
+                <Mic size={13} /> Grabar en vivo
+              </button>
             </div>
 
             {inputMode === 'audio' ? (
@@ -259,6 +363,38 @@ export function ImportarLlamada() {
                   <div className="text-xs text-good">Transcripción lista — revisala en “Pegar texto” y procesá.</div>
                 )}
               </div>
+            ) : inputMode === 'record' ? (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-warn/30 bg-warn-soft/40 p-2.5 text-[11px] text-muted-foreground leading-relaxed">
+                  Grabás una reunión o llamada en la que <span className="text-foreground/80">vos participás</span>. Avisales a los demás si corresponde — SIR guarda el TEXTO, no el audio (cada tramo se borra al transcribirse).
+                </div>
+                <div className="flex items-center gap-3">
+                  {!recording ? (
+                    <Button onClick={startRecording} variant="outline" size="sm">
+                      <Mic size={15} className="mr-2" /> Empezar a grabar
+                    </Button>
+                  ) : (
+                    <Button onClick={stopRecording} size="sm" className="bg-bad hover:bg-bad/90 text-white">
+                      <Square size={13} className="mr-2 fill-current" /> Parar y procesar
+                    </Button>
+                  )}
+                  {recording && (
+                    <span className="inline-flex items-center gap-2 text-sm text-bad font-mono tabular-nums">
+                      <span className="h-2.5 w-2.5 rounded-full bg-bad animate-pulse" aria-hidden="true" />
+                      {fmtElapsed(elapsed)}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground/70">
+                  Procesa por tramos de ~5 min sobre la marcha. Mantené esta pestaña abierta y visible mientras grabás.
+                </p>
+                {chunkStatus && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={12} className="animate-spin" /> {chunkStatus}</div>}
+                {transcript.trim().length > 0 && (
+                  <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-xs text-foreground/80 max-h-40 overflow-y-auto whitespace-pre-wrap">
+                    {transcript}
+                  </div>
+                )}
+              </div>
             ) : (
               <textarea
                 value={transcript} onChange={(e) => setTranscript(e.target.value)} rows={8}
@@ -268,7 +404,7 @@ export function ImportarLlamada() {
             )}
 
             <div className="flex items-center gap-3">
-              <Button onClick={procesar} disabled={busy || transcript.trim().length < 20}>
+              <Button onClick={procesar} disabled={busy || recording || transcript.trim().length < 20}>
                 {busy ? <Loader2 size={15} className="mr-2 animate-spin" /> : <PhoneCall size={15} className="mr-2" />} Procesar llamada
               </Button>
               {progress && <span className="text-xs text-muted-foreground">{progress}</span>}
