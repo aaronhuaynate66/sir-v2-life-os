@@ -136,3 +136,87 @@ export function suggestIntroductions(
 function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`
 }
+
+// ─── LAZOS DÉBILES (Granovetter, extensión de 15·7) ──────────────────────────
+// "The strength of weak ties": los CONOCIDOS (no los íntimos) son los que abren
+// puertas NUEVAS, porque te conectan a otros círculos. Para un objetivo abierto,
+// resalta los lazos débiles (capas network/peripheral) cuyo DOMINIO (rol/org/tags)
+// matchea el objetivo — un contacto lejano que podría abrir una puerta. Honesto:
+// solo aparece con un match real de dominio; sin señal, no inventa.
+
+export interface WeakTiePerson {
+  id: string
+  name: string
+  /** PersonCategory: 'inner_circle' | 'close' | 'network' | 'peripheral'. */
+  category: string
+  title?: string | null
+  organization?: string | null
+  tags?: string[]
+  importance?: number
+}
+
+export interface WeakTie {
+  personId: string
+  name: string
+  category: string
+  /** Palabras del objetivo que matchean el dominio de la persona. */
+  overlap: string[]
+  reason: string
+}
+
+/** Capas "débiles" en el sentido de Granovetter (conocidos, no íntimos). */
+const WEAK_LAYERS = new Set(['network', 'peripheral'])
+
+// Stopwords ES para no matchear por palabras vacías.
+const STOP = new Set([
+  'para', 'con', 'como', 'una', 'uno', 'los', 'las', 'del', 'que', 'por', 'mas',
+  'este', 'esta', 'ser', 'estar', 'tener', 'hacer', 'mi', 'tu', 'su', 'el', 'la',
+  'de', 'en', 'un', 'and', 'the', 'for', 'sobre', 'entre', 'desde', 'hasta', 'año',
+])
+
+function fold(s: string): string {
+  const map: Record<string, string> = { á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u', ü: 'u', ñ: 'n' }
+  return s.replace(/[A-ZÁÉÍÓÚÜÑ]/g, (c) => c.toLowerCase()).replace(/[áéíóúüñ]/g, (c) => map[c] ?? c)
+}
+
+function tokens(s: string): string[] {
+  return fold(s)
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 4 && !STOP.has(t))
+}
+
+/**
+ * Lazos débiles relevantes a un objetivo: conocidos (network/peripheral) cuyo
+ * dominio (título/org/tags) comparte alguna palabra significativa con el objetivo.
+ * Rankeados por cantidad de match, luego importancia. PURO.
+ */
+export function weakTiesForGoal(
+  goalTitle: string,
+  people: WeakTiePerson[],
+  opts?: { limit?: number },
+): WeakTie[] {
+  const limit = opts?.limit ?? 5
+  const goalTokens = new Set(tokens(goalTitle))
+  if (goalTokens.size === 0) return []
+
+  const out: WeakTie[] = []
+  for (const p of people) {
+    if (!WEAK_LAYERS.has(p.category)) continue
+    const blob = [p.title ?? '', p.organization ?? '', ...(p.tags ?? [])].join(' ')
+    const personTokens = new Set(tokens(blob))
+    const overlap = [...goalTokens].filter((t) => personTokens.has(t))
+    if (overlap.length === 0) continue
+    const where = p.organization || p.title || 'tu red lejana'
+    out.push({
+      personId: p.id,
+      name: p.name,
+      category: p.category,
+      overlap,
+      reason: `Lo/la tenés como contacto lejano (${p.category === 'peripheral' ? 'periferia' : 'red'}), pero por ${where} toca el mundo de tu objetivo. Justo esos lazos débiles son los que abren puertas nuevas.`,
+    })
+  }
+
+  const imp = new Map(people.map((p) => [p.id, p.importance ?? 4]))
+  out.sort((a, b) => (b.overlap.length - a.overlap.length) || (imp.get(b.personId)! - imp.get(a.personId)!))
+  return out.slice(0, limit)
+}
