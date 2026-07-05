@@ -306,15 +306,42 @@ export type FamilyKind =
   // legacy (pre-0052): parentesco genérico sin especificar.
   | 'familiar'
 
-/** Arista de familia persona↔persona (tabla `person_links`, migration 0035).
- *  personAId = sujeto (la persona de la ficha), personBId = el familiar.
- *  Se renderiza como arista 'familia' en el grafo. */
+/** Rol de una arista NO-familiar (profesional/social) persona↔persona (0128).
+ *  Vive en la misma tabla `person_links`; `category` la distingue de familia. */
+export type ProfessionalKind =
+  | 'colega'
+  | 'exjefe'
+  | 'jefe'
+  | 'reporte'
+  | 'mentor'
+  | 'mentoreado'
+  | 'cliente'
+  | 'proveedor'
+  | 'socio'
+  | 'conocido'
+  | 'contacto'
+
+/** Cualquier rol de arista persona↔persona (familiar o no). */
+export type LinkKind = FamilyKind | ProfessionalKind
+
+/** Dominio de la arista (0128). undefined/'familia' = parentesco (back-compat). */
+export type LinkCategory = 'familia' | 'profesional' | 'social'
+
+/** Arista persona↔persona (tabla `person_links`, migration 0035 + 0107 + 0128).
+ *  personAId = sujeto (la persona de la ficha), personBId = el vínculo.
+ *  `category` distingue familia (parentesco, default) de profesional/social. */
 export interface PersonLink {
   id: string
   personAId: string
   personBId: string
-  kind: FamilyKind
+  kind: LinkKind
   createdAt: string
+  /** 0128: dominio de la arista. undefined/'familia' = parentesco. */
+  category?: LinkCategory | null
+  /** 0107: descripción libre del vínculo ("colega del área TAC en HNG"). */
+  context?: string | null
+  /** 0107: peso declarado 0-10. */
+  weight?: number | null
 }
 
 /** Mensaje individual de WhatsApp dentro de un capture history item. */
