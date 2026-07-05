@@ -18,10 +18,27 @@ export interface DeepFinding {
   why: string
 }
 
+/** Aceptación selectiva (16·M5, cara del persuadido): qué del mensaje ACEPTAR y
+ *  qué RESISTIR. Base: PersuasionSurvey "Safeguarding" — balance resisting/accepting
+ *  (Stengel-Eskin 2025) + anti-sycophancy (Sharma 2024) + resisting strategies
+ *  (ResPer, Dutt 2021). Ni ceder para complacer, ni rechazar todo: discriminar. */
+export interface DeepBalance {
+  /** 'weigh' = hay algo legítimo que pesar; 'resist' = sostené tu posición; 'mixed'. */
+  stance: 'weigh' | 'resist' | 'mixed'
+  /** El punto LEGÍTIMO que sí vale considerar (argumento válido, emoción sincera, pedido justo). '' si no hay. */
+  worthWeighing: string
+  /** En qué NO cedas (la manipulación a resistir). '' si no hay. */
+  holdGround: string
+  /** Cómo aceptar selectivamente: sin complacer por evitar conflicto ni rechazar en bloque. */
+  guidance: string
+}
+
 export interface DeepScanResult {
   findings: DeepFinding[]
   /** Lectura corta: qué está tratando de hacer el mensaje, sin alarmismo. */
   summary: string
+  /** Veredicto de aceptación selectiva (defensa del persuadido). */
+  balance?: DeepBalance
 }
 
 export const DEEP_SCAN_SYSTEM_PROMPT = `Sos el módulo de DEFENSA de SIR. Aaron pega un mensaje que le llegó (un chat, un mail, un
@@ -36,10 +53,22 @@ REGLAS DURAS:
 - No moralices ni alarmes. Tono de aliado que te enseña a leer. summary en 1-2 frases.
 - Una misma frase puede tener más de una técnica; no fuerces. Máximo ~8 findings.
 
+ACEPTACIÓN SELECTIVA (defensa del persuadido — lo más importante):
+Además de nombrar técnicas, ayudá a Aaron a decidir qué ACEPTAR y qué RESISTIR. La ciencia dice
+que ni ceder para complacer/evitar conflicto (sycophancy) ni rechazar todo en bloque: DISCRIMINAR.
+- worthWeighing: separá el punto LEGÍTIMO si lo hay — un argumento válido, una emoción sincera, un
+  pedido justo pueden convivir con técnicas manipuladoras. Reconocelo (que el otro use presión NO
+  vuelve falso todo lo que dice). Si no hay nada legítimo, ''.
+- holdGround: en qué NO ceder — la parte manipuladora que, aunque incomode, no obliga a nada.
+- guidance: cómo responder aceptando selectivamente, ANCLADO en lo que Aaron realmente quiere (no en
+  quedar bien ni en ganar la discusión). Una frase.
+- stance: 'weigh' si hay algo real que considerar; 'resist' si es puro empuje sin fondo; 'mixed'.
+
 Devolvé EXCLUSIVAMENTE un JSON (sin prosa, sin fences):
 {
   "summary": "qué intenta hacer el mensaje, en 1-2 frases, sin alarmismo",
-  "findings": [{"id":"<id del catálogo>","quote":"cita textual del mensaje","why":"por qué es esa técnica, 1 frase"}]
+  "findings": [{"id":"<id del catálogo>","quote":"cita textual del mensaje","why":"por qué es esa técnica, 1 frase"}],
+  "balance": {"stance":"weigh|resist|mixed","worthWeighing":"punto legítimo o ''","holdGround":"en qué no ceder o ''","guidance":"cómo aceptar selectivamente, 1 frase"}
 }
 Empezá con { y terminá con }.`
 
@@ -100,5 +129,18 @@ export function parseDeepScan(raw: string): DeepScanResult | null {
         .slice(0, 10)
     : []
 
-  return { findings, summary: str(o.summary, 500) }
+  return { findings, summary: str(o.summary, 500), balance: parseBalance(o.balance) }
+}
+
+function parseBalance(v: unknown): DeepBalance | undefined {
+  if (!v || typeof v !== 'object') return undefined
+  const b = v as Record<string, unknown>
+  const worthWeighing = str(b.worthWeighing, 400)
+  const holdGround = str(b.holdGround, 400)
+  const guidance = str(b.guidance, 400)
+  // Sin ningún contenido útil → no mostramos veredicto.
+  if (!worthWeighing && !holdGround && !guidance) return undefined
+  const s = str(b.stance, 10)
+  const stance: DeepBalance['stance'] = s === 'weigh' || s === 'resist' ? s : 'mixed'
+  return { stance, worthWeighing, holdGround, guidance }
 }

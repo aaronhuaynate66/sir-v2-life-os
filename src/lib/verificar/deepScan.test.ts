@@ -49,6 +49,31 @@ describe('parseDeepScan', () => {
     expect(r).not.toBeNull()
     expect(r!.findings).toHaveLength(0)
     expect(r!.summary).toBe('')
+    expect(r!.balance).toBeUndefined()
+  })
+
+  it('parsea el veredicto de aceptación selectiva (balance)', () => {
+    const raw = JSON.stringify({
+      summary: 'Presiona con culpa pero hay un pedido real.',
+      findings: [{ id: 'exaggeration_minimization', quote: 'nunca me ayudás', why: 'exagera' }],
+      balance: {
+        stance: 'mixed',
+        worthWeighing: 'Sí te pidió ayuda concreta y eso es legítimo.',
+        holdGround: 'El "nunca" es exageración para hacerte sentir culpable — no es cierto.',
+        guidance: 'Atendé el pedido real; no aceptes la culpa inflada.',
+      },
+    })
+    const r = parseDeepScan(raw)
+    expect(r!.balance).toBeDefined()
+    expect(r!.balance!.stance).toBe('mixed')
+    expect(r!.balance!.worthWeighing).toMatch(/ayuda concreta/)
+    expect(r!.balance!.holdGround).toMatch(/culpable/)
+  })
+
+  it('balance vacío (sin contenido) → undefined; stance inválido → mixed', () => {
+    expect(parseDeepScan(JSON.stringify({ findings: [], balance: {} }))!.balance).toBeUndefined()
+    const r = parseDeepScan(JSON.stringify({ findings: [], balance: { stance: 'raro', guidance: 'ojo' } }))
+    expect(r!.balance!.stance).toBe('mixed')
   })
 
   it('JSON inválido → null', () => {
