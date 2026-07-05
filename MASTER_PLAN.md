@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a201fdc`
+**Hash del último commit humano:** `3f7cea8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `3f7cea8` | aaronhuaynate66 | feat(red): lazos débiles de Granovetter para objetivos (15·7) (#578) | 2026-07-05 |
 | `a201fdc` | aaronhuaynate66 | fix(ensayo): subir maxDuration a 120s (el repertorio + contexto rico cortaba a 60s) (#577) | 2026-07-05 |
 | `3e30249` | Aaron Huaynate | docs(plan): repertorio ético del ensayo (16·M4+M1) | 2026-07-05 |
 | `5fd7e42` | aaronhuaynate66 | feat(influencia): repertorio ético de movidas en el ensayo (16·M4+M1) (#576) | 2026-07-05 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ccfc4da` | Aaron Huaynate | docs(plan): dominio 15 completo — 15·7 desbloqueado + motor de red | 2026-07-05 |
 | `518a2f2` | aaronhuaynate66 | feat(red): inteligencia de red — caminos + presentaciones (15·7) (#573) | 2026-07-05 |
 | `6447b36` | aaronhuaynate66 | feat(red): capturador de vínculos profesionales/sociales (desbloquea 15·7) (#572) | 2026-07-05 |
-| `a3f6ed9` | Aaron Huaynate | docs(plan): dominio 16 (influencia) completo — M5 guardrail ético | 2026-07-05 |
 
 ---
 
