@@ -10,7 +10,7 @@
 // PURO: sin red, sin reloj, sin crypto. El hash es determinístico (djb2) para
 // que el mismo mensaje siempre colapse, en el cliente y en el server.
 
-export type ReaderPlatform = 'teams' | 'slack' | 'whatsapp' | 'linkedin' | 'instagram' | 'facebook' | 'other'
+export type ReaderPlatform = 'teams' | 'slack' | 'whatsapp' | 'email' | 'linkedin' | 'instagram' | 'facebook' | 'other'
 
 export interface ReaderMessage {
   /** Autor visible del mensaje (nombre o handle). '' = desconocido. */
