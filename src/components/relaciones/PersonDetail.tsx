@@ -107,6 +107,7 @@ import { ContactWindowBadge } from './ContactWindowBadge'
 import { IdentidadesPanel } from './IdentidadesPanel'
 import { FamiliaPanel } from './FamiliaPanel'
 import { ProfessionalLinksPanel } from './ProfessionalLinksPanel'
+import { NetworkPathsCard } from './NetworkPathsCard'
 import { InformacionSensible } from './InformacionSensible'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
@@ -801,6 +802,9 @@ export function PersonDetail({
       {/* Vínculos profesionales/sociales (0128): quién conoce a quién por trabajo
           o socialmente. Abre el grafo person↔person para 15·7 (red). */}
       <ProfessionalLinksPanel person={live} />
+
+      {/* 15·7 — caminos: mutuos que conectan con esta persona (puente para intro). */}
+      <NetworkPathsCard person={live} />
 
       {/* ─── Los TRES ejes narrativos de la ficha (profesional/social/personal),
           consistentes entre sí. Profesional + social: síntesis determinística
