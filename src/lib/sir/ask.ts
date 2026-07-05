@@ -146,21 +146,32 @@ function norm(s: string): string {
  */
 export function extractCandidateNames(question: string, knownNames: readonly string[], max = 5): string[] {
   const q = norm(question)
-  const hits: Array<{ name: string; len: number }> = []
+  interface Hit { name: string; first: string; len: number; specific: boolean }
+  const hits: Hit[] = []
   for (const full of knownNames) {
     if (!full) continue
-    const first = norm(full).split(/\s+/)[0]
+    const tokens = norm(full).split(/\s+/).filter(Boolean)
+    if (tokens.length === 0) continue
+    const first = tokens[0]
     const nf = norm(full)
-    if (first.length >= 3 && new RegExp(`\\b${first}\\b`).test(q)) {
-      hits.push({ name: full, len: first.length })
-    } else if (nf.length >= 3 && q.includes(nf)) {
-      hits.push({ name: full, len: nf.length })
-    }
+    const fullHit = nf.length >= 3 && q.includes(nf)
+    const firstHit = first.length >= 3 && new RegExp(`\\b${first}\\b`).test(q)
+    if (!fullHit && !firstHit) continue
+    // "Específico": matcheó el nombre completo, o el primer nombre + al menos otro
+    // token del nombre (ej. "Diana Díaz"). Distingue del match por primer nombre solo.
+    const otherTokenHit = tokens.slice(1).some((t) => t.length >= 3 && new RegExp(`\\b${t}\\b`).test(q))
+    const specific = fullHit || (firstHit && otherTokenHit)
+    hits.push({ name: full, first, len: fullHit ? nf.length : first.length, specific })
   }
-  // Más largos primero (match más específico), dedupe por nombre.
+  // DOS DIANAS: si un primer nombre tiene un match ESPECÍFICO (nombre completo o
+  // con apellido), suprimí los matches por-primer-nombre-solo de OTRAS personas
+  // que comparten ese primer nombre — no las arrastres por la homonimia.
+  const specificFirsts = new Set(hits.filter((h) => h.specific).map((h) => h.first))
+  const filtered = hits.filter((h) => h.specific || !specificFirsts.has(h.first))
+  // Específicos primero, luego más largos; dedupe por nombre.
   const seen = new Set<string>()
-  return hits
-    .sort((a, b) => b.len - a.len)
+  return filtered
+    .sort((a, b) => (Number(b.specific) - Number(a.specific)) || (b.len - a.len))
     .map((h) => h.name)
     .filter((n) => (seen.has(n) ? false : (seen.add(n), true)))
     .slice(0, max)
