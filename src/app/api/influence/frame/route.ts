@@ -13,7 +13,8 @@ import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
-import { FRAME_SYSTEM_PROMPT, buildFrameUserContent, parseFrameJson, type FrameContext } from '@/lib/influence/framePrompt'
+import { FRAME_SYSTEM_PROMPT, buildFrameUserContent, parseFrameJson, type FrameContext, type FrameResult } from '@/lib/influence/framePrompt'
+import { checkEthics } from '@/engines/ethics'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -44,11 +45,29 @@ export async function POST(req: NextRequest) {
   // Cargar la persona (del user, RLS + eq user_id defensivo).
   const { data: person } = await supabase
     .from('people')
-    .select('id, name, title, organization, relationship')
+    .select('id, name, title, organization, relationship, ambito')
     .eq('user_id', userId)
     .eq('id', personId)
     .maybeSingle()
   if (!person) return errorJson(404, 'No encontré esa persona')
+
+  // 16·M5 — chequeo ético determinístico antes del LLM. Si cruza la línea, SIR
+  // rechaza acá mismo con la explicación honesta (no ayuda a manipular).
+  const ethics = checkEthics(objective, {
+    ambito: (person.ambito as string) ?? undefined,
+    relationship: (person.relationship as string) ?? undefined,
+  })
+  if (ethics.verdict === 'blocked') {
+    const blocked: FrameResult = {
+      values: [],
+      frame: '',
+      leadWith: '',
+      avoid: [],
+      opener: '',
+      ethicalNote: `${ethics.message}\n\n${ethics.litmus}`,
+    }
+    return NextResponse.json({ result: blocked, person: { name: (person.name as string) ?? 'esa persona', hadContext: false }, ethics: { verdict: ethics.verdict } })
+  }
 
   // Memorias VISIBLES (excluye privadas/descartadas por construcción).
   let memories: string[] = []
@@ -79,9 +98,13 @@ export async function POST(req: NextRequest) {
     return block && block.type === 'text' ? block.text : ''
   }
 
+  const ethicsExtra = ethics.verdict === 'caution'
+    ? `CHEQUEO ÉTICO (16·M5): ${ethics.message}\nMantené el registro de cuidado; no encuadres "cómo conseguir que…".`
+    : ''
+
   let raw = ''
   try {
-    raw = await call()
+    raw = await call(ethicsExtra)
   } catch (e) {
     reportApiError(e, { route: 'influence/frame' })
     return errorJson(502, 'Falló la llamada a Claude', (e instanceof Error ? e.message : String(e)).slice(0, 300))
