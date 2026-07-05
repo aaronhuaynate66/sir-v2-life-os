@@ -46,6 +46,7 @@ import { RelationalGoalHealth } from '@/components/objetivos/RelationalGoalHealt
 import { GoalConflictFriction } from '@/components/objetivos/GoalConflictFriction'
 import { GoalCosts } from '@/components/objetivos/GoalCosts'
 import { GoalMeaning } from '@/components/objetivos/GoalMeaning'
+import { WeakTiesPanel } from '@/components/objetivos/WeakTiesPanel'
 import { matchEpisodesToGoal, type EpisodeLite } from '@/lib/goals/episodeFriction'
 import { buildGoalDashboard } from '@/engines/goal'
 import { createGoalProgressMemory } from '@/engines/memory'
@@ -541,6 +542,10 @@ function GoalsContent() {
             </Card>
         </div>
       )}
+
+      {/* 15·7 — lazos débiles (Granovetter): conocidos que podrían abrir puertas
+          para un objetivo activo. Invisible si no hay ninguno relevante. */}
+      <WeakTiesPanel goals={goals} people={people} />
 
       {activeGoals.length === 0 && !adding ? (
         <EmptyState
