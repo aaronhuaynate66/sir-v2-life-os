@@ -14,7 +14,8 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
 import { getSelfBioState } from '@/lib/people/selfState'
-import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext } from '@/lib/influence/rehearsePrompt'
+import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext, type RehearseResult } from '@/lib/influence/rehearsePrompt'
+import { checkEthics } from '@/engines/ethics'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -53,6 +54,27 @@ export async function POST(req: NextRequest) {
   if (!person) return errorJson(404, 'No encontré esa persona')
 
   const personName = (person.name as string) ?? 'esa persona'
+
+  // 16·M5 — chequeo ético ANTES del LLM (guardrail determinístico, no opcional).
+  // Si el objetivo cruza la línea (engaño/presión/explotación), SIR rechaza acá
+  // mismo, sin gastar la llamada al modelo ni arriesgar que se auto-vigile.
+  const ethics = checkEthics(objective, {
+    ambito: (person.ambito as string) ?? undefined,
+    relationship: (person.relationship as string) ?? undefined,
+  })
+  if (ethics.verdict === 'blocked') {
+    const blocked: RehearseResult = {
+      read: 'Antes de ensayar nada, esto no pasa la prueba de fuego.',
+      scenarios: [],
+      objections: [],
+      actions: [],
+      opener: '',
+      watchout: ethics.litmus,
+      ethicalNote: ethics.message,
+    }
+    return NextResponse.json({ result: blocked, person: { name: personName, hadContext: false }, ethics: { verdict: ethics.verdict } })
+  }
+
   let memories: string[] = []
   try {
     const rows = await getMemoriesForPerson(supabase, userId, personId, { limit: 24 })
@@ -100,9 +122,15 @@ export async function POST(req: NextRequest) {
     return block && block.type === 'text' ? block.text : ''
   }
 
+  // 16·M5 (caution): objetivo en zona gris afectiva → recordarle al modelo que
+  // el registro es cuidado, no estrategia.
+  const ethicsExtra = ethics.verdict === 'caution'
+    ? `CHEQUEO ÉTICO (16·M5): ${ethics.message}\nMantené el registro de cuidado; no ensayes "cómo conseguir que…".`
+    : ''
+
   let raw = ''
   try {
-    raw = await call()
+    raw = await call(ethicsExtra)
   } catch (e) {
     reportApiError(e, { route: 'influence/rehearse' })
     return errorJson(502, 'Falló la llamada a Claude', (e instanceof Error ? e.message : String(e)).slice(0, 300))
