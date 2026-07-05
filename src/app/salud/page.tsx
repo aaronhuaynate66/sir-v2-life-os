@@ -52,6 +52,7 @@ import { ChronotypeCard } from '@/components/salud/ChronotypeCard'
 import { EnergyCurveCard } from '@/components/salud/EnergyCurveCard'
 import { FocusWindowCard } from '@/components/salud/FocusWindowCard'
 import { TwoProcessCard } from '@/components/salud/TwoProcessCard'
+import { WeatherMoodCard } from '@/components/system/WeatherMoodCard'
 import { proposeEmotionLabels } from '@/lib/emotion/granularity'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
@@ -265,6 +266,8 @@ function SaludContent() {
 
       {/* 11·M3 — curva de energía por hora del día. */}
       <EnergyCurveCard />
+      {/* 18·M2 — clima gris de Lima × tu energía; invisible salvo señal real */}
+      <WeatherMoodCard />
 
       {/* 11·M5 — ventana óptima de foco (cruza cronotipo + curva de energía). */}
       <FocusWindowCard />

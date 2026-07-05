@@ -9,6 +9,8 @@ export interface DayWeather {
   tempMax: number | null
   tempMin: number | null
   precipMm: number | null
+  /** WMO weathercode crudo (para cruzar clima con estado, 18·M2). */
+  code: number | null
 }
 
 const LIMA = { lat: -12.046, lon: -77.043 }
@@ -62,7 +64,7 @@ export async function fetchWeather(date: string): Promise<DayWeather | null> {
     const precip = d.precipitation_sum?.[0] ?? null
     const temp = tMax != null ? ` · ${Math.round(tMax)}°` : ''
     const rain = precip != null && precip > 0.2 ? ` · ${precip}mm` : ''
-    return { label: `${codeLabel(code, precip)}${temp}${rain}${seasonal ? ' (estacional)' : ''}`, tempMax: tMax, tempMin: tMin, precipMm: precip }
+    return { label: `${codeLabel(code, precip)}${temp}${rain}${seasonal ? ' (estacional)' : ''}`, tempMax: tMax, tempMin: tMin, precipMm: precip, code }
   } catch {
     return null
   }
