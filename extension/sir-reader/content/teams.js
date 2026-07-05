@@ -10,8 +10,10 @@
   function text(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }
 
   function getThread() {
-    // Título del chat/canal abierto.
+    // Título del chat/canal abierto. `chat-title` es el vigente en
+    // teams.cloud.microsoft (2026); el resto son fallbacks de versiones previas.
     const h =
+      document.querySelector('[data-tid="chat-title"]') ||
       document.querySelector('[data-tid="chat-header-title"]') ||
       document.querySelector('[data-tid="threadHeaderTitle"]') ||
       document.querySelector('[data-tid="chatListHeaderTitle"]') ||
