@@ -99,6 +99,7 @@ function SaludContent() {
   const [hType, setHType] = useState<HealthMetricType>('weight')
   const [hVal, setHVal] = useState('')
   const [hUnit, setHUnit] = useState('kg')
+  const [hNote, setHNote] = useState('')
 
   const bio = useMemo(() => analyzeBiologicalState(sleepRecords, selfMetrics), [sleepRecords, selfMetrics])
   const sleepTrend = useMemo(() => analyzeSleepTrend(sleepRecords.slice(-7)), [sleepRecords])
@@ -137,8 +138,8 @@ function SaludContent() {
   function addHealth() {
     const v = parseFloat(hVal)
     if (isNaN(v)) { toast.error('Valor inválido', { description: 'Ingresá un número válido.' }); return }
-    addHealthMetric({ id: 'h_' + Date.now(), type: hType, value: v, unit: hUnit, timestamp: new Date().toISOString() })
-    setHVal('')
+    addHealthMetric({ id: 'h_' + Date.now(), type: hType, value: v, unit: hUnit, timestamp: new Date().toISOString(), note: hNote.trim() || undefined })
+    setHVal(''); setHNote('')
     toast.success('Registro de salud agregado', { description: `${getHealthMetricLabel(hType)}: ${v} ${hUnit}` })
   }
 
@@ -401,6 +402,7 @@ function SaludContent() {
             </Select>
             <Input type="number" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24 font-mono tabular-nums" />
             <Input type="text" placeholder="Unidad" value={hUnit} onChange={e => setHUnit(e.target.value)} className="w-20" />
+            <Input type="text" placeholder="Nota (opcional): contexto, cómo te sentías…" value={hNote} onChange={e => setHNote(e.target.value)} className="flex-1 basis-full sm:basis-auto min-w-[160px]" />
             <Button onClick={addHealth} variant="outline" size="sm" className="w-full sm:w-auto">+ Agregar</Button>
           </div>
           {healthMetrics.length === 0 ? (
@@ -413,9 +415,12 @@ function SaludContent() {
           ) : (
             <div className="space-y-1">
               {[...healthMetrics].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 8).map((h) => (
-                <div key={h.id} className="flex justify-between py-1 border-b border-border/40 last:border-0">
-                  <span className="text-xs text-muted-foreground">{getHealthMetricLabel(h.type)}</span>
-                  <span className="text-xs font-mono tabular-nums">{h.value} {h.unit}</span>
+                <div key={h.id} className="py-1 border-b border-border/40 last:border-0">
+                  <div className="flex justify-between">
+                    <span className="text-xs text-muted-foreground">{getHealthMetricLabel(h.type)}</span>
+                    <span className="text-xs font-mono tabular-nums">{h.value} {h.unit}</span>
+                  </div>
+                  {h.note && <div className="text-[11px] text-foreground/70 italic mt-0.5">{h.note}</div>}
                 </div>
               ))}
             </div>

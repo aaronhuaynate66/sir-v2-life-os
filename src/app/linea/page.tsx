@@ -78,7 +78,7 @@ function LineaContent() {
       out.push({ id: `sl_${s.id}`, date: s.date, source: 'sueno', title: `Dormiste ${s.duration}h`, detail: `calidad ${s.quality}/10`, body: s.dreams || undefined, tone })
     }
     for (const h of healthMetrics) {
-      out.push({ id: `h_${h.id}`, date: h.timestamp, source: 'salud', title: `${getHealthMetricLabel(h.type)}: ${h.value} ${h.unit}`, tone: 'neutral' })
+      out.push({ id: `h_${h.id}`, date: h.timestamp, source: 'salud', title: `${getHealthMetricLabel(h.type)}: ${h.value} ${h.unit}`, body: h.note || undefined, tone: 'neutral' })
     }
     for (const e of events) {
       out.push({ id: `e_${e.id}`, date: e.eventDate, source: 'evento', title: e.title, detail: e.impact || undefined, tone: 'warn' })
