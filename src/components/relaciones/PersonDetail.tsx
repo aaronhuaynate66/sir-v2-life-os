@@ -106,6 +106,7 @@ import { PersonMoneyPanel } from './PersonMoneyPanel'
 import { ContactWindowBadge } from './ContactWindowBadge'
 import { IdentidadesPanel } from './IdentidadesPanel'
 import { FamiliaPanel } from './FamiliaPanel'
+import { ProfessionalLinksPanel } from './ProfessionalLinksPanel'
 import { InformacionSensible } from './InformacionSensible'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
@@ -796,6 +797,10 @@ export function PersonDetail({
       {/* Familia (A.4): vincular padre/madre/etc. como nodos de familia en el
           grafo (person_links, 0035). Crea el nodo-persona mínimo + la arista. */}
       <FamiliaPanel person={live} />
+
+      {/* Vínculos profesionales/sociales (0128): quién conoce a quién por trabajo
+          o socialmente. Abre el grafo person↔person para 15·7 (red). */}
+      <ProfessionalLinksPanel person={live} />
 
       {/* ─── Los TRES ejes narrativos de la ficha (profesional/social/personal),
           consistentes entre sí. Profesional + social: síntesis determinística

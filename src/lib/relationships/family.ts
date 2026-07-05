@@ -13,12 +13,25 @@
 // Nada acá toca el store ni la red: son funciones puras, testeables y
 // memoizables. La UI (FamiliaPanel) y el motor de sugerencias las consumen.
 
-import type { FamilyKind } from '@/types'
+import type { FamilyKind, PersonLink } from '@/types'
 
 /** Sentinel del nodo "yo" (Aaron) en person_links. NO es una fila de `people`:
  *  el grafo ya usa id='self' para el nodo central. Una arista con
  *  person_a_id===SELF_ID es un vínculo SELF↔persona ("X es mi <kind>"). */
 export const SELF_ID = 'self'
+
+/** ¿La arista es de FAMILIA? (0128: category null/'familia' = parentesco.)
+ *  Las aristas profesionales/sociales NO entran a la inferencia ni a los labels
+ *  de parentesco. Para esas aristas, `kind` es un ProfessionalKind. */
+export function isFamilyLink(l: Pick<PersonLink, 'category'>): boolean {
+  return !l.category || l.category === 'familia'
+}
+
+/** Narrowing: el `kind` de una arista de familia es un FamilyKind (garantizado
+ *  por isFamilyLink en runtime). Centraliza el cast para no repetirlo. */
+export function familyKindOf(l: PersonLink): FamilyKind {
+  return l.kind as FamilyKind
+}
 
 /** Etiqueta directa de un parentesco ("B es <label> de A"). */
 export const KIND_LABEL: Record<FamilyKind, string> = {

@@ -37,7 +37,7 @@ import { useRelationshipStore } from '@/stores'
 import { useMounted } from '@/hooks/useMounted'
 import { generateSlug } from '@/lib/people/slug'
 import { cn } from '@/lib/utils'
-import { KIND_OPTIONS, KIND_LABEL, inverseRoleLabel, SELF_ID } from '@/lib/relationships/family'
+import { KIND_OPTIONS, KIND_LABEL, inverseRoleLabel, SELF_ID, isFamilyLink, familyKindOf } from '@/lib/relationships/family'
 import { matchStrength } from '@/lib/relationships/nameMatch'
 import {
   inferFamilyLinks,
@@ -134,7 +134,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
   // (si existe); si no, propone por defecto según la relación (pareja si es
   // romántica) — nunca "madre" para una pareja/ex.
   useEffect(() => {
-    setSelfKind(selfLink?.kind ?? (person.relationship === 'romantic' ? 'pareja' : 'madre'))
+    setSelfKind(selfLink ? familyKindOf(selfLink) : (person.relationship === 'romantic' ? 'pareja' : 'madre'))
   }, [selfLink, person.relationship])
 
   // Vista bidireccional de la familia de ESTA persona: salientes (B es <kind>
@@ -144,10 +144,12 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
     const rows: FamilyRow[] = []
     for (const l of links) {
       if (l.personAId === SELF_ID) continue
+      if (!isFamilyLink(l)) continue // 0128: profesionales/sociales viven en su panel
+      const k = familyKindOf(l)
       if (l.personAId === person.id) {
-        rows.push({ link: l, otherId: l.personBId, roleLabel: KIND_LABEL[l.kind] ?? l.kind })
+        rows.push({ link: l, otherId: l.personBId, roleLabel: KIND_LABEL[k] ?? k })
       } else if (l.personBId === person.id) {
-        rows.push({ link: l, otherId: l.personAId, roleLabel: inverseRoleLabel(l.kind) })
+        rows.push({ link: l, otherId: l.personAId, roleLabel: inverseRoleLabel(k) })
       }
     }
     return rows
@@ -335,10 +337,10 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
           {selfLink && !editingSelf ? (
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm">
-                Es tu <span className="text-foreground font-medium">{(KIND_LABEL[selfLink.kind] ?? selfLink.kind).toLowerCase()}</span>.
+                Es tu <span className="text-foreground font-medium">{(KIND_LABEL[familyKindOf(selfLink)] ?? selfLink.kind).toLowerCase()}</span>.
               </p>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <button type="button" className="text-[11px] underline text-muted-foreground hover:text-foreground" onClick={() => { setSelfKind(selfLink.kind); setEditingSelf(true) }}>
+                <button type="button" className="text-[11px] underline text-muted-foreground hover:text-foreground" onClick={() => { setSelfKind(familyKindOf(selfLink)); setEditingSelf(true) }}>
                   cambiar
                 </button>
                 <button

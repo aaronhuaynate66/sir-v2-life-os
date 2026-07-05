@@ -3,7 +3,7 @@
 
 import type {
   Person, Relationship, RelationshipType, PersonCategory, EnergyImpact,
-  RelationshipStatus, RelationshipEvent, SpecialDate, PersonLink, FamilyKind,
+  RelationshipStatus, RelationshipEvent, SpecialDate, PersonLink, FamilyKind, LinkKind, LinkCategory,
 } from '@/types'
 import type { TableAdapter } from '../types'
 
@@ -155,12 +155,18 @@ export const personLinkAdapter: TableAdapter<PersonLink> = {
     person_b_id: l.personBId,
     kind: l.kind,
     created_at: l.createdAt,
+    category: l.category ?? null,
+    context: l.context ?? null,
+    weight: l.weight ?? null,
   }),
   fromRow: (row) => ({
     id: row.id as string,
     personAId: row.person_a_id as string,
     personBId: row.person_b_id as string,
-    kind: row.kind as FamilyKind,
+    kind: row.kind as LinkKind,
     createdAt: row.created_at as string,
+    category: (row.category as LinkCategory | null) ?? null,
+    context: (row.context as string | null) ?? null,
+    weight: (row.weight as number | null) ?? null,
   }),
 }

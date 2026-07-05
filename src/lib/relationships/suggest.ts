@@ -16,7 +16,7 @@
 // addPersonLink / addPerson.
 
 import type { FamilyKind, Person, PersonLink } from '@/types'
-import { composeKinds, inverseKindApprox, SELF_ID } from './family'
+import { composeKinds, inverseKindApprox, SELF_ID, isFamilyLink, familyKindOf } from './family'
 import { matchStrength } from './nameMatch'
 
 /** Sugerencia de vincular subject → un familiar por inferencia transitiva. */
@@ -72,18 +72,20 @@ export function inferFamilyLinks(
   subjectId: string,
   links: PersonLink[],
 ): InferenceSuggestion[] {
-  const existing = existingPairKeys(links)
-  const fromSubject = links.filter((l) => l.personAId === subjectId)
+  // Solo aristas de FAMILIA: las profesionales/sociales (0128) no infieren parentesco.
+  const famLinks = links.filter(isFamilyLink)
+  const existing = existingPairKeys(famLinks)
+  const fromSubject = famLinks.filter((l) => l.personAId === subjectId)
   const out: InferenceSuggestion[] = []
   const seen = new Set<string>()
 
   for (const step1 of fromSubject) {
     const bId = step1.personBId
-    const fromB = links.filter((l) => l.personAId === bId)
+    const fromB = famLinks.filter((l) => l.personAId === bId)
     for (const step2 of fromB) {
       const cId = step2.personBId
       if (cId === subjectId || cId === bId) continue
-      const kind = composeKinds(step1.kind, step2.kind)
+      const kind = composeKinds(familyKindOf(step1), familyKindOf(step2))
       if (!kind) continue
       if (existing.has(`${subjectId}|${cId}`)) continue
       const key = `inf:${subjectId}:${cId}:${kind}`
@@ -106,21 +108,22 @@ export function inferSelfPivotLinks(
   links: PersonLink[],
 ): InferenceSuggestion[] {
   if (subjectId === SELF_ID) return []
-  const selfToSubject = links.find(
+  const famLinks = links.filter(isFamilyLink)
+  const selfToSubject = famLinks.find(
     (l) => l.personAId === SELF_ID && l.personBId === subjectId,
   )
   if (!selfToSubject) return []
-  const k1 = inverseKindApprox(selfToSubject.kind) // subject → self (categoría)
+  const k1 = inverseKindApprox(familyKindOf(selfToSubject)) // subject → self (categoría)
   if (!k1) return []
 
-  const existing = existingPairKeys(links)
+  const existing = existingPairKeys(famLinks)
   const out: InferenceSuggestion[] = []
   const seen = new Set<string>()
-  for (const l of links) {
+  for (const l of famLinks) {
     if (l.personAId !== SELF_ID) continue
     const cId = l.personBId
     if (cId === subjectId) continue
-    const kind = composeKinds(k1, l.kind) // subject → C
+    const kind = composeKinds(k1, familyKindOf(l)) // subject → C
     if (!kind) continue
     if (existing.has(`${subjectId}|${cId}`)) continue
     const key = `selfpiv:${subjectId}:${cId}:${kind}`
