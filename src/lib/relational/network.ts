@@ -206,13 +206,16 @@ export function weakTiesForGoal(
     const personTokens = new Set(tokens(blob))
     const overlap = [...goalTokens].filter((t) => personTokens.has(t))
     if (overlap.length === 0) continue
-    const where = p.organization || p.title || 'tu red lejana'
+    const layer = p.category === 'peripheral' ? 'periferia' : 'red'
+    // Nombrá lo que REALMENTE matcheó (no la org): honesto sobre por qué aparece.
+    const shared = overlap.slice(0, 3).map((w) => `"${w}"`).join(', ')
+    const org = p.organization ? ` (${p.organization})` : ''
     out.push({
       personId: p.id,
       name: p.name,
       category: p.category,
       overlap,
-      reason: `Lo/la tenés como contacto lejano (${p.category === 'peripheral' ? 'periferia' : 'red'}), pero por ${where} toca el mundo de tu objetivo. Justo esos lazos débiles son los que abren puertas nuevas.`,
+      reason: `Contacto lejano (${layer})${org} que comparte ${shared} con tu objetivo. Justo esos lazos débiles son los que abren puertas nuevas.`,
     })
   }
 
