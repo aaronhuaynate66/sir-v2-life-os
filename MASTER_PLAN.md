@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3119604`
+**Hash del último commit humano:** `e55e610`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e55e610` | aaronhuaynate66 | feat(externas): clima → energía/ánimo (18·M2) (#566) | 2026-07-05 |
 | `3119604` | aaronhuaynate66 | feat(sir/ensayo): leer la conversación importada + cruzar con el estado bio (#565) | 2026-07-04 |
 | `28c614d` | aaronhuaynate66 | fix(ensayo): parseo seguro de respuestas no-JSON + más margen de tiempo (#564) | 2026-07-04 |
 | `76c9ce0` | aaronhuaynate66 | feat(19·M4): test Big Five consentido en la ficha de la persona (cierra dominio 19) (#563) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `fc85940` | aaronhuaynate66 | feat(11·M5): ventana óptima para tareas de foco (#559) | 2026-07-04 |
 | `c9acc68` | aaronhuaynate66 | feat(11·M3): curva de energía por hora del día (#558) | 2026-07-04 |
 | `6e52bab` | aaronhuaynate66 | feat(11·M2+M4): cronotipo + jet-lag social (#557) | 2026-07-04 |
-| `2deddbb` | aaronhuaynate66 | feat(12·M6): drift temprano por racha en riesgo (#556) | 2026-07-04 |
 
 ---
 
