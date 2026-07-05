@@ -10,6 +10,8 @@
 // ausencia de señales NO prueba que un mensaje sea legítimo, y una señal suelta
 // no prueba que lo sea. Es un recordatorio de frenar, no un veredicto.
 
+import { TECHNIQUE_BY_ID, type TechniqueCategory } from './techniques'
+
 export type ManipulationTactic =
   | 'authority' | 'urgency' | 'scarcity' | 'fear'
   | 'reciprocity' | 'social_proof' | 'commitment'
@@ -175,4 +177,114 @@ function adviceFor(risk: ManipulationRisk, combo: boolean): string {
     case 'none':
       return 'No detecté gatillos de manipulación. Ojo: la ausencia de señales NO garantiza que sea legítimo — verificá igual si te piden plata, datos o acceso.'
   }
+}
+
+// ─── CAPA RETÓRICA (16·M3, técnicas de propaganda con firma léxica) ──────────
+// Segunda familia: técnicas de propaganda/retórica del catálogo `techniques.ts`.
+// Separada de detectManipulation a propósito — no afecta el riesgo de phishing
+// (esa firma es de ingeniería social); acá el objetivo es NOMBRAR cómo te están
+// tratando de convencer. Las técnicas SEMÁNTICAS (hombre de paja, pista falsa,
+// sobresimplificación) no tienen firma léxica → las cubre el deep-scan con IA.
+
+export interface RhetoricHit {
+  id: string
+  label: string
+  category: TechniqueCategory
+  evidence: string[]
+}
+
+export interface RhetoricResult {
+  hits: RhetoricHit[]
+}
+
+// Patrones por técnica (folded, sin acentos, ES + algo de EN). Solo las técnicas
+// marcadas pure:true en el catálogo y con señal léxica clara (appeal_to_fear ya
+// vive en la capa de ingeniería social, no se repite acá).
+const RHETORIC_PATTERNS: Record<string, RegExp[]> = {
+  flag_waving: [
+    /\blos nuestros\b/g, /\bpor la patria\b/g, /\bdefender lo nuestro\b/g,
+    /\bgente como nosotros\b/g, /\bde los (buenos|nuestros)\b/g, /\bnosotros contra ellos\b/g,
+  ],
+  false_dilemma: [
+    /\bo estas con(migo|nosotros)? o (estas )?(en )?contra\b/g, /\bno hay otra (opcion|salida|alternativa)\b/g,
+    /\bo esto o (lo otro|nada|aquello)\b/g, /\bes esto o nada\b/g,
+    /\bsolo hay dos (opciones|caminos|salidas)\b/g, /\bo aceptas o\b/g,
+  ],
+  whataboutism: [
+    /\by vos que\b/g, /\bmira quien habla\b/g, /\by que hay de\b/g, /\by cuando vos\b/g,
+    /\bvos (tambien )?hiciste lo mismo\b/g, /\by vos tampoco\b/g,
+  ],
+  reductio_ad_hitlerum: [
+    /\b(eso )?es (algo )?de (dictadores|nazis|comunistas|fascistas|tiranos)\b/g,
+    /\bigual que (hitler|un dictador|los nazis)\b/g, /\bsos igual que\b/g,
+  ],
+  appeal_to_authority: [
+    /\blos expertos (dicen|afirman|coinciden|recomiendan)\b/g,
+    /\besta (cientificamente )?comprobado\b/g, /\bla ciencia (dice|demuestra)\b/g,
+    /\besta demostrado\b/g, /\bestudios (demuestran|confirman)\b/g,
+    /\btodos los (medicos|especialistas|expertos)\b/g,
+    /\bexperts (say|agree)\b/g, /\bscientifically proven\b/g,
+  ],
+  bandwagon: [
+    /\btodos lo (hacen|piensan|saben|usan)\b/g, /\btodo el mundo lo (hace|sabe|usa|piensa)\b/g,
+    /\bnadie (en su sano juicio )?(cree|piensa) lo contrario\b/g, /\bsumate a los que\b/g,
+    /\beveryone (does|thinks) (it|this)\b/g,
+  ],
+  doubt: [
+    /\bquien te dice que\b/g, /\bseguro que \w+ (miente|te miente|te oculta)\b/g,
+    /\bno podes confiar en\b/g, /\bno es tan \w+ como (parece|dice|crees)\b/g,
+    /\bque te hace pensar que\b/g,
+  ],
+  ad_hominem: [
+    /\bvos que sabes\b/g, /\bno tenes (la )?autoridad (moral )?para\b/g,
+    /\bmira como estas (vos )?para\b/g, /\bviniendo de vos\b/g, /\bquien sos vos para\b/g,
+  ],
+  thought_terminating: [
+    /\bes lo que hay\b/g, /\basi son las cosas\b/g, /\bno hay nada que hacer\b/g,
+    /\bfin de la (discusion|conversacion)\b/g, /\bes asi y punto\b/g,
+    /\bno hay mas que hablar\b/g, /\bpunto final\b/g, /\bit is what it is\b/g,
+  ],
+  exaggeration_minimization: [
+    /\b(el|la) peor \w+ (de la historia|de todos los tiempos|del mundo)\b/g,
+    /\b(el|la) mejor \w+ (de la historia|del mundo|de todos los tiempos)\b/g,
+    /\bnunca en (mi|la) vida\b/g, /\bjamas en la vida\b/g, /\bno es para tanto\b/g,
+  ],
+  appeal_to_popularity: [
+    /\bsiempre se (hizo|ha hecho) asi\b/g, /\bes lo normal\b/g, /\btoda la vida fue asi\b/g,
+    /\bes lo de siempre\b/g, /\bes la (tradicion|costumbre)\b/g,
+  ],
+}
+
+const RHETORIC_IDS = Object.keys(RHETORIC_PATTERNS)
+
+/**
+ * Detecta técnicas de propaganda/retórica con firma léxica en el texto. Puro,
+ * client-side, separado del riesgo de phishing. Devuelve los hits del catálogo.
+ */
+export function detectRhetoric(text: string): RhetoricResult {
+  const original = (text ?? '').slice(0, 20_000)
+  const norm = fold(original)
+  const hits: RhetoricHit[] = []
+
+  for (const id of RHETORIC_IDS) {
+    const def = TECHNIQUE_BY_ID[id]
+    if (!def) continue
+    const seen = new Set<string>()
+    const evidence: string[] = []
+    for (const re of RHETORIC_PATTERNS[id]) {
+      re.lastIndex = 0
+      let m: RegExpExecArray | null
+      while ((m = re.exec(norm)) !== null) {
+        const frag = original.slice(m.index, m.index + m[0].length).trim()
+        const key = frag.toLowerCase()
+        if (frag && !seen.has(key)) {
+          seen.add(key)
+          if (evidence.length < MAX_EVIDENCE_PER_TACTIC) evidence.push(frag)
+        }
+        if (m.index === re.lastIndex) re.lastIndex++
+      }
+    }
+    if (evidence.length > 0) hits.push({ id, label: def.label, category: def.category, evidence })
+  }
+  return { hits }
 }
