@@ -27,6 +27,7 @@ const LifeThreadPanel = dynamic(() => import('@/components/yo/LifeThreadPanel').
 const ArquetipoPanel = dynamic(() => import('@/components/yo/ArquetipoPanel').then((m) => ({ default: m.ArquetipoPanel })), { ssr: false, loading: dynSkeleton })
 const SelfDiagnosisPanel = dynamic(() => import('@/components/yo/SelfDiagnosisPanel').then((m) => ({ default: m.SelfDiagnosisPanel })), { ssr: false, loading: dynSkeleton })
 const NotificationsCard = dynamic(() => import('@/components/system/NotificationsCard').then((m) => ({ default: m.NotificationsCard })), { ssr: false, loading: dynSkeleton })
+const EmailConnectionPanel = dynamic(() => import('@/components/yo/EmailConnectionPanel').then((m) => ({ default: m.EmailConnectionPanel })), { ssr: false, loading: () => null })
 
 const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
@@ -71,6 +72,8 @@ export default function SelfPage() {
         <LifeThreadPanel />
         <ArquetipoPanel />
         <NotificationsCard />
+        {/* Fase 2 del roadmap de ingesta: conectar correo M365 (Microsoft Graph). */}
+        <EmailConnectionPanel />
         <SelfDiagnosisPanel />
         <PersonalTokensPanel />
         <PushNotificationsPanel />
