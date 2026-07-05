@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e4c05c8`
+**Hash del último commit humano:** `8cad109`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8cad109` | aaronhuaynate66 | feat(habitos): lazo WOOP — detectar contexto + disparar el then (12·M4+M5) (#570) | 2026-07-05 |
 | `e4c05c8` | aaronhuaynate66 | feat(habitos): prompt atado a la franja (12·M1) (#569) | 2026-07-05 |
 | `b0df083` | Aaron Huaynate | docs(plan): dominio 18 (señales externas) completo — M2/M4/M5 | 2026-07-05 |
 | `486fa5d` | aaronhuaynate66 | feat(externas): eventos por ubicación de persona (18·M4) (#568) | 2026-07-05 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `28c614d` | aaronhuaynate66 | fix(ensayo): parseo seguro de respuestas no-JSON + más margen de tiempo (#564) | 2026-07-04 |
 | `76c9ce0` | aaronhuaynate66 | feat(19·M4): test Big Five consentido en la ficha de la persona (cierra dominio 19) (#563) | 2026-07-04 |
 | `080dc2f` | aaronhuaynate66 | feat(19·M5): autoperfil Big Five de Aaron + instrumento consentido (#562) | 2026-07-04 |
-| `b4a44c7` | aaronhuaynate66 | feat(17·M2+M5): anticipación de cuidado + predicción como ventana (cierra dominio 17) (#561) | 2026-07-04 |
 
 ---
 
