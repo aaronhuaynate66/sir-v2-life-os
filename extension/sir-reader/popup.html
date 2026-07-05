@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: dark; }
+    body { width: 320px; margin: 0; font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; background: #131318; color: #ecebf3; font-size: 13px; }
+    .wrap { padding: 16px 16px 18px; }
+    h1 { font-size: 14px; margin: 0 0 2px; letter-spacing: -0.01em; }
+    .sub { color: #9a99ab; font-size: 11.5px; margin: 0 0 14px; }
+    label { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #676776; margin: 12px 0 4px; }
+    input[type="text"], input[type="password"] { width: 100%; box-sizing: border-box; background: #0b0b0e; border: 1px solid #282833; border-radius: 8px; color: #ecebf3; padding: 8px 10px; font-size: 12.5px; font-family: ui-monospace, Menlo, monospace; outline: none; }
+    input:focus { border-color: #a08cff; }
+    .row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #22222b; }
+    .row:last-child { border-bottom: 0; }
+    .plat { font-weight: 600; }
+    .toggle { position: relative; width: 38px; height: 22px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: #2a2a33; border-radius: 999px; cursor: pointer; transition: 0.15s; }
+    .slider::before { content: ""; position: absolute; height: 16px; width: 16px; left: 3px; top: 3px; background: #ecebf3; border-radius: 50%; transition: 0.15s; }
+    input:checked + .slider { background: #6d4fe0; }
+    input:checked + .slider::before { transform: translateX(16px); }
+    button { margin-top: 14px; width: 100%; background: #6d4fe0; color: #fff; border: 0; border-radius: 8px; padding: 9px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    button:hover { background: #7c5ff0; }
+    .status { margin-top: 14px; background: #0d0d11; border: 1px solid #22222b; border-radius: 8px; padding: 10px 11px; font-size: 11.5px; color: #9a99ab; line-height: 1.55; }
+    .status b { color: #34d6aa; }
+    .status .err { color: #ec5c50; }
+    .k { color: #676776; }
+    .foot { margin-top: 12px; font-size: 10.5px; color: #55555f; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>SIR Reader</h1>
+    <p class="sub">Lee, pasivo, tus chats abiertos y los manda a tu SIR.</p>
+
+    <label for="sirUrl">URL de tu SIR</label>
+    <input id="sirUrl" type="text" placeholder="https://sir-v2-life-os.vercel.app" spellcheck="false" />
+
+    <label for="token">Token (READER_INGEST_TOKEN)</label>
+    <input id="token" type="password" placeholder="pegá tu token" spellcheck="false" />
+
+    <label>Plataformas</label>
+    <div class="row"><span class="plat">Teams</span><span class="toggle"><input id="t-teams" type="checkbox" checked /><span class="slider"></span></span></div>
+    <div class="row"><span class="plat">WhatsApp Web</span><span class="toggle"><input id="t-whatsapp" type="checkbox" checked /><span class="slider"></span></span></div>
+
+    <button id="save">Guardar</button>
+
+    <div class="status" id="status">Sin actividad todavía.</div>
+    <p class="foot">Pasivo: solo lee lo que ya se ve en pantalla, sin auto-scroll ni requests. Abrí Teams/WhatsApp Web y mirá tus chats normal — SIR va guardando lo nuevo.</p>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

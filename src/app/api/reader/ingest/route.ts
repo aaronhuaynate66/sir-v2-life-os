@@ -52,7 +52,7 @@ async function resolveUserId(admin: SupabaseClient): Promise<{ userId: string } 
   return { error: 'Seteá READER_INGEST_USER_ID con el user id de Aaron.' }
 }
 
-const VALID_PLATFORMS: ReadonlySet<string> = new Set(['teams', 'slack', 'linkedin', 'instagram', 'facebook', 'other'])
+const VALID_PLATFORMS: ReadonlySet<string> = new Set(['teams', 'slack', 'whatsapp', 'linkedin', 'instagram', 'facebook', 'other'])
 
 function parseBatch(x: unknown): ReaderBatch | null {
   if (!x || typeof x !== 'object') return null

@@ -1,0 +1,3 @@
+# Extensión de navegador (SIR Reader): JS plano de MV3 con globals chrome.*/browser.
+# No es parte del app Next; se excluye del lint/typecheck del repo.
+extension/
