@@ -17,6 +17,8 @@
 // Capa PURA: arma el prompt y parsea. La llamada al modelo + carga del contexto
 // viven en /api/influence/rehearse.
 
+import { renderStrategiesForPrompt } from './strategies'
+
 export interface RehearseContext {
   personName: string
   role?: string
@@ -88,6 +90,10 @@ REGLAS DURAS (no negociables):
    PRIMERA recomendación no es una estrategia de conversación: es REGULAR PRIMERO (bajar la
    activación — respirar, moverse, dormir) y recién después hablar. Nombralo en "read" y ponelo
    como primera "action". Una conversación difícil en caliente predeciblemente sale mal.
+6. REPERTORIO: si el contexto trae un REPERTORIO de movidas, aterrizá las "actions" y el "opener"
+   en ESAS movidas nombradas (ej. "Validar lo que siente: …", "Preguntar qué necesita: …"). Es la
+   base científica de qué funciona sin manipular. En vínculos afectivos son formas de cuidado, no
+   tácticas: no las presentes como "para conseguir" algo. No inventes movidas fuera del repertorio.
 
 Devolvé EXCLUSIVAMENTE un JSON (sin prosa, sin fences):
 {
@@ -119,6 +125,8 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
   if (ctx.organization) lines.push(`Organización: ${ctx.organization}`)
   if (ctx.relationship) lines.push(`Relación con Aaron: ${ctx.relationship}`)
   lines.push(`Tipo de vínculo: ${ambitoHint(ctx.ambito, ctx.relationship)}`)
+  const repertoire = renderStrategiesForPrompt(ctx.ambito, ctx.relationship)
+  if (repertoire) lines.push('', repertoire)
   const mems = ctx.memories.map((m) => m.trim()).filter(Boolean).slice(0, 14)
   if (mems.length > 0) {
     lines.push('', 'Lo que SIR sabe de esta persona (para aterrizar el ensayo):')
