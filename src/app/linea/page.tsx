@@ -75,7 +75,7 @@ function LineaContent() {
     }
     for (const s of sleepRecords) {
       const tone: TimelineTone = s.duration >= 7 ? 'ok' : s.duration >= 5 ? 'warn' : 'bad'
-      out.push({ id: `sl_${s.id}`, date: s.date, source: 'sueno', title: `Dormiste ${s.duration}h`, detail: `calidad ${s.quality}/10`, tone })
+      out.push({ id: `sl_${s.id}`, date: s.date, source: 'sueno', title: `Dormiste ${s.duration}h`, detail: `calidad ${s.quality}/10`, body: s.dreams || undefined, tone })
     }
     for (const h of healthMetrics) {
       out.push({ id: `h_${h.id}`, date: h.timestamp, source: 'salud', title: `${getHealthMetricLabel(h.type)}: ${h.value} ${h.unit}`, tone: 'neutral' })
@@ -151,6 +151,7 @@ function LineaContent() {
                           <div className="min-w-0 flex-1">
                             <div className="text-[13px] text-foreground">{it.title}</div>
                             {it.detail && <div className="text-[11px] text-muted-foreground truncate">{it.detail}</div>}
+                            {it.body && <div className="mt-0.5 text-[12px] text-foreground/75 italic leading-snug">«{it.body}»</div>}
                           </div>
                         </li>
                       )

@@ -18,6 +18,8 @@ export interface TimelineItem {
   source: TimelineSource
   title: string
   detail?: string
+  /** Cuerpo largo opcional (ej. el sueño de una noche) — se muestra sin truncar. */
+  body?: string
   tone?: TimelineTone
 }
 
