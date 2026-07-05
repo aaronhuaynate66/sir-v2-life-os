@@ -48,6 +48,10 @@ const DunbarMap = dynamic(
   () => import('@/components/relaciones/DunbarMap').then((m) => ({ default: m.DunbarMap })),
   { ssr: false, loading: () => null },
 )
+const NetworkIntrosPanel = dynamic(
+  () => import('@/components/relaciones/NetworkIntrosPanel').then((m) => ({ default: m.NetworkIntrosPanel })),
+  { ssr: false, loading: () => null },
+)
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
 import {
@@ -369,6 +373,8 @@ function RelationshipsContent() {
       )}
 
       {people.length > 0 && <DunbarMap />}
+      {/* 15·7 — presentaciones de valor entre gente tuya del mismo org, no conectada. */}
+      {people.length > 0 && <NetworkIntrosPanel />}
       {people.length > 0 && <PosiblesDuplicados />}
       {people.length >= 3 && <ComparativaPersonasCard />}
 
