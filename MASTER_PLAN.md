@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a30cfbe`
+**Hash del último commit humano:** `486fa5d`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `486fa5d` | aaronhuaynate66 | feat(externas): eventos por ubicación de persona (18·M4) (#568) | 2026-07-05 |
 | `a30cfbe` | aaronhuaynate66 | feat(externas): calendario macro — findes largos + quincena (18·M5) (#567) | 2026-07-05 |
 | `e55e610` | aaronhuaynate66 | feat(externas): clima → energía/ánimo (18·M2) (#566) | 2026-07-05 |
 | `3119604` | aaronhuaynate66 | feat(sir/ensayo): leer la conversación importada + cruzar con el estado bio (#565) | 2026-07-04 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b4a44c7` | aaronhuaynate66 | feat(17·M2+M5): anticipación de cuidado + predicción como ventana (cierra dominio 17) (#561) | 2026-07-04 |
 | `26ede10` | aaronhuaynate66 | feat(11·M6): modelo de fase acoplado S×C (experimental) — cierra dominio 11 (#560) | 2026-07-04 |
 | `fc85940` | aaronhuaynate66 | feat(11·M5): ventana óptima para tareas de foco (#559) | 2026-07-04 |
-| `c9acc68` | aaronhuaynate66 | feat(11·M3): curva de energía por hora del día (#558) | 2026-07-04 |
 
 ---
 
