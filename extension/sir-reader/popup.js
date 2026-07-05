@@ -57,9 +57,13 @@ $('diag').addEventListener('click', async () => {
     ];
     if (rep.sample && rep.sample.length) lines.push('ej: ' + rep.sample.map((m) => `${m.author}: ${m.text}`).join(' | '));
     if (rep.error) lines.push('error: ' + rep.error);
-    if (rep.hint) lines.push('pista: ' + rep.hint);
+    if (rep.hint) lines.push(rep.hint);
     if (!rep.containerFound && rep.containerHtml) lines.push('dom: ' + rep.containerHtml);
-    lines.push(rep.ok ? '→ OK: detectando bien.' : '→ Si no detecta, copiá esto y pásalo para ajustar selectores.');
+    if (rep.rowsHtml && rep.rowsHtml.length) {
+      lines.push('--- HTML crudo de fila (copiar para ajustar selectores) ---');
+      rep.rowsHtml.forEach((h, i) => lines.push(`[fila ${i + 1}] ${h}`));
+    }
+    lines.push(rep.ok ? '→ OK: detectando bien.' : '→ Copiá TODO esto y pásalo para ajustar los selectores de autor/cuerpo.');
     out.textContent = lines.join('\n');
   } catch (e) {
     out.textContent = 'No se pudo diagnosticar (¿estás en una pestaña de Teams/WhatsApp Web?). ' + String(e).slice(0, 120);
