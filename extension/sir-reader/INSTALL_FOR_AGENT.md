@@ -61,7 +61,7 @@ Tiene que ser el **mismo Chrome/perfil donde Teams está logueado** (no un Chrom
 
 - Popup: **"Mensajes enviados" > 0** y **sin** línea de error roja.
 - Si dice **"Falta el token"** → revisá el Paso 2 (`config.js`) y recargá la extensión (botón ↻ en `chrome://extensions`).
-- Si el contador **no sube** aunque veas mensajes: abrí la consola en la pestaña de Teams (F12 → Console) y filtrá por `SIR Reader`. Si dice *"no encontré el contenedor de mensajes"*, los selectores de Teams cambiaron → hay que ajustar `content/teams.js` (reportá lo que veas en consola).
+- Si el contador **no sube** aunque veas mensajes: en el popup, click **"Probar detección (en la pestaña activa)"** (estando en la pestaña de Teams/WhatsApp con un chat abierto). Te dice si encontró el hilo, el contenedor y cuántos mensajes extrajo, con una muestra y una pista del DOM. **Copiá ESE reporte y pásalo** — con eso se ajustan los selectores exactos. (También podés mirar la consola: F12 → Console → filtro `SIR Reader`.)
 
 ## Reglas (no las cambies)
 

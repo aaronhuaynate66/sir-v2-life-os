@@ -39,6 +39,33 @@ async function save() {
 
 $('save').addEventListener('click', save);
 
+// Diagnóstico: pregunta al content script de la pestaña activa qué detecta.
+$('diag').addEventListener('click', async () => {
+  const out = $('diagOut');
+  out.style.display = 'block';
+  out.textContent = 'Probando…';
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.id) { out.textContent = 'No hay pestaña activa.'; return; }
+    const rep = await chrome.tabs.sendMessage(tab.id, { type: 'sir-diagnose' });
+    if (!rep) { out.textContent = 'La extensión no está corriendo en esta pestaña. Abrí un chat de Teams/WhatsApp Web y reintentá.'; return; }
+    const lines = [
+      `plataforma: ${rep.platform}`,
+      `hilo: ${rep.threadName || '(no detectado)'}`,
+      `contenedor: ${rep.containerFound ? 'sí' : 'NO'}`,
+      `mensajes extraídos (muestra): ${rep.sampleCount}`,
+    ];
+    if (rep.sample && rep.sample.length) lines.push('ej: ' + rep.sample.map((m) => `${m.author}: ${m.text}`).join(' | '));
+    if (rep.error) lines.push('error: ' + rep.error);
+    if (rep.hint) lines.push('pista: ' + rep.hint);
+    if (!rep.containerFound && rep.containerHtml) lines.push('dom: ' + rep.containerHtml);
+    lines.push(rep.ok ? '→ OK: detectando bien.' : '→ Si no detecta, copiá esto y pásalo para ajustar selectores.');
+    out.textContent = lines.join('\n');
+  } catch (e) {
+    out.textContent = 'No se pudo diagnosticar (¿estás en una pestaña de Teams/WhatsApp Web?). ' + String(e).slice(0, 120);
+  }
+});
+
 // Refrescar estado en vivo mientras el popup está abierto.
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.status) renderStatus(changes.status.newValue);
