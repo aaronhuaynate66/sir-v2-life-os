@@ -20,6 +20,7 @@ const GoalMeaning = dynamic(() => import('@/components/objetivos/GoalMeaning').t
 const ObjectivePlanPanel = dynamic(() => import('@/components/objetivos/ObjectivePlanPanel').then((m) => ({ default: m.ObjectivePlanPanel })), { ssr: false, loading: panelLoad })
 const ExternalSignalsPanel = dynamic(() => import('@/components/objetivos/ExternalSignalsPanel').then((m) => ({ default: m.ExternalSignalsPanel })), { ssr: false, loading: panelLoad })
 const GoalCosts = dynamic(() => import('@/components/objetivos/GoalCosts').then((m) => ({ default: m.GoalCosts })), { ssr: false, loading: panelLoad })
+const GoalMoneyLinked = dynamic(() => import('@/components/objetivos/GoalMoneyLinked').then((m) => ({ default: m.GoalMoneyLinked })), { ssr: false, loading: () => null })
 const GoalConflictFriction = dynamic(() => import('@/components/objetivos/GoalConflictFriction').then((m) => ({ default: m.GoalConflictFriction })), { ssr: false, loading: panelLoad })
 import { matchEpisodesToGoal, type EpisodeLite } from '@/lib/goals/episodeFriction'
 
@@ -91,6 +92,8 @@ export default function ObjetivoDetailPage() {
             <ExternalSignalsPanel goalId={goal.id} />
             <GoalMeaning why={goal.why} milestones={milestones} />
             <GoalCosts goalId={goal.id} relationalNames={epNames} />
+            {/* Dinero REAL vinculado a este objetivo (rescate de finance_movements.related_goal) */}
+            <GoalMoneyLinked goalId={goal.id} />
 
             {ep && (
               <Card>
