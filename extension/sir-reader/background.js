@@ -8,9 +8,18 @@
 
 const DEFAULT_SIR_URL = 'https://sir-v2-life-os.vercel.app';
 
+// Config por archivo (config.js) para instalación sin UI (ej. un agente edita el
+// archivo). El popup (chrome.storage) tiene prioridad si está seteado.
+try { importScripts('config.js'); } catch (_) { /* sin config.js: se usa el popup */ }
+function fileConfig() { return (self.__SIR_CONFIG || {}); }
+
 async function getConfig() {
   const { sirUrl, token } = await chrome.storage.local.get(['sirUrl', 'token']);
-  return { sirUrl: (sirUrl || DEFAULT_SIR_URL).replace(/\/+$/, ''), token: token || '' };
+  const fc = fileConfig();
+  return {
+    sirUrl: (sirUrl || fc.sirUrl || DEFAULT_SIR_URL).replace(/\/+$/, ''),
+    token: token || fc.token || '',
+  };
 }
 
 async function setStatus(patch) {
