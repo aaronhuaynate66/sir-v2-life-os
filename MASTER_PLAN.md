@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `992b694`
+**Hash del último commit humano:** `e56efa5`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e56efa5` | aaronhuaynate66 | feat(correo): conector Microsoft Graph — correo M365 → SIR (Fase 2) (#587) | 2026-07-05 |
 | `992b694` | aaronhuaynate66 | feat(llamadas): grabador en vivo por sesión (Fase 3) (#586) | 2026-07-05 |
 | `f21edfa` | aaronhuaynate66 | feat(reader): extensión MV3 SIR Reader (Fase 1 — Teams + WhatsApp Web) (#585) | 2026-07-05 |
 | `bb4013d` | aaronhuaynate66 | feat(salud): notas en métricas de salud (rescata health_metrics.note) (#584) | 2026-07-05 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `f0ff205` | aaronhuaynate66 | feat(finanzas): vincular movimiento a objetivo + dinero por objetivo (#581) | 2026-07-05 |
 | `a73a8e7` | Aaron Huaynate | docs(plan): aceptación selectiva sobre 16·M5 (PersuasionSurvey) | 2026-07-05 |
 | `a506c7d` | aaronhuaynate66 | feat(verificar): aceptación selectiva — el 16·M5 del persuadido (PersuasionSurvey) (#580) | 2026-07-05 |
-| `2a9191a` | aaronhuaynate66 | fix(red): la razón del lazo débil nombra lo que REALMENTE matcheó (#579) | 2026-07-05 |
 
 ---
 
