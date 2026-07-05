@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
     role: (person.title as string) ?? undefined,
     organization: (person.organization as string) ?? undefined,
     relationship: (person.relationship as string) ?? undefined,
+    ambito: (person.ambito as string) ?? undefined,
     memories,
   }
   const user = buildFrameUserContent(ctx, objective)

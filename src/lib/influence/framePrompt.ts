@@ -10,12 +10,16 @@
 // Capa PURA: arma el prompt (con guardrail) y parsea la respuesta. La llamada al
 // modelo + la carga del contexto de la persona viven en /api/influence/frame.
 
+import { renderStrategiesForPrompt } from './strategies'
+
 export interface FrameContext {
   personName: string
   /** Cargo/rol (ej. "Dirección Ejecutiva"), org, relación — lo que ubica el registro. */
   role?: string
   organization?: string
   relationship?: string
+  /** 'personal' (afectivo) | 'colega' | 'lead' | undefined. Filtra el repertorio. */
+  ambito?: string
   /** Qué sabe SIR que le importa a esta persona (de sus memorias VISIBLES; lo
    *  privado NUNCA llega acá — getMemoriesForPerson ya lo excluye). */
   memories: string[]
@@ -53,6 +57,9 @@ REGLAS DURAS (no negociables):
    mejor y con respeto, no para explotar.
 5. Si el vínculo es afectivo (pareja, familia, amigo íntimo), recordá que eso se cuida, no se
    "posiciona": bajá el tono estratégico y subí la honestidad emocional.
+6. Si el contexto trae un REPERTORIO de movidas, aterrizá "frame", "leadWith" y "opener" en esas
+   movidas nombradas (base científica de qué funciona sin manipular). En vínculos afectivos son
+   formas de cuidado, no tácticas. No inventes movidas fuera del repertorio.
 
 Devolvé EXCLUSIVAMENTE un JSON (sin prosa, sin fences):
 {
@@ -72,6 +79,8 @@ export function buildFrameUserContent(ctx: FrameContext, objective: string): str
   if (ctx.role) lines.push(`Rol/cargo: ${ctx.role}`)
   if (ctx.organization) lines.push(`Organización: ${ctx.organization}`)
   if (ctx.relationship) lines.push(`Relación con Aaron: ${ctx.relationship}`)
+  const repertoire = renderStrategiesForPrompt(ctx.ambito, ctx.relationship)
+  if (repertoire) lines.push('', repertoire)
   const mems = ctx.memories.map((m) => m.trim()).filter(Boolean).slice(0, 12)
   if (mems.length > 0) {
     lines.push('', 'Lo que SIR sabe de esta persona (para inferir qué le importa):')
