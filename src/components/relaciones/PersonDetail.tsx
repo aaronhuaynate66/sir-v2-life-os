@@ -1,5 +1,6 @@
 'use client'
 import { StakeholderDealImpact } from '@/components/relaciones/StakeholderDealImpact'
+import { PersonLocationEvents } from '@/components/relaciones/PersonLocationEvents'
 // SIR V2 — /relaciones/[slug] detail UI
 //
 // Render de la persona + EDICIÓN INLINE COMPLETA (#5): el formulario de
@@ -708,6 +709,8 @@ export function PersonDetail({
             {live.location && <Row label="Ubicación" value={live.location} />}
             {live.estadoCivil && <Row label="Estado civil" value={live.estadoCivil} />}
             {live.birthDate && <Row label="Fecha de nacimiento" value={live.birthDate.slice(0, 10)} />}
+            {/* 18·M4 — eventos por ubicación (opt-in, on-demand, confianza baja) */}
+            {live.location && <PersonLocationEvents location={live.location} personName={live.name} />}
           </CardContent>
         </Card>
       )}
