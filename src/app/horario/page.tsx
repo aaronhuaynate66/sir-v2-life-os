@@ -32,6 +32,7 @@ import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
 import { MacroCalendarStrip } from '@/components/horario/MacroCalendarStrip'
 import { ActiveSlotBanner } from '@/components/horario/ActiveSlotBanner'
+import { WoopPromptCard } from '@/components/horario/WoopPromptCard'
 import { CalendarConnections } from '@/components/agenda/CalendarConnections'
 import dynamic from 'next/dynamic'
 // HorarioCalendar es el cockpit visual, ~15KB propios + grid grande. Se
@@ -192,6 +193,10 @@ function HorarioContent() {
       <div className="mt-8">
         <DailyActionsPanel actionableOnly />
       </div>
+
+      {/* 12·M5 — WOOP vivo: si el "if" de un plan si-entonces se cumple ahora,
+          mostrar el "then". Invisible si ningún disparador está activo. */}
+      <WoopPromptCard />
 
       {/* 18·M5 — calendario macro: findes largos + quincena, cruzados con tus
           objetivos. Invisible si no hay nada por venir en el lead. */}

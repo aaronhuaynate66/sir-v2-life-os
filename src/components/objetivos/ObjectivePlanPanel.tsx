@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SectionTitle } from '@/components/ui/section-title'
 import { countdownLabel, blockersProgress, type ObjectivePlan, type ObjectiveBlocker } from '@/lib/objectives/plan'
+import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
+import { detectContext } from '@/lib/habits/contextDetect'
 
 function fmt(iso: string | null): string {
   if (!iso) return '—'
@@ -68,6 +70,15 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
 
   const cd = useMemo(() => countdownLabel(plan?.eventDate), [plan])
   const prog = useMemo(() => blockersProgress(blockers), [blockers])
+
+  // 12·M4 — contexto detectado desde las tareas completadas de ESTE objetivo.
+  const steps = useObjectiveStepStore((s) => s.steps)
+  const contextProposal = useMemo(() => {
+    const marks = steps
+      .filter((s) => s.objectiveId === goalId && s.kind === 'task' && s.status === 'hecho' && !!s.completedAt)
+      .map((s) => ({ completedAt: s.completedAt! }))
+    return detectContext(marks)
+  }, [steps, goalId])
 
   if (!loaded) return null
   const empty = !plan?.eventDate && blockers.length === 0 && !editing
@@ -131,6 +142,16 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
                 <Input value={form.plan_if} onChange={(e) => setForm((f) => ({ ...f, plan_if: e.target.value }))} placeholder="Si pasa… (disparador)" className="text-[13px]" />
                 <Input value={form.plan_then} onChange={(e) => setForm((f) => ({ ...f, plan_then: e.target.value }))} placeholder="entonces hago…" className="text-[13px]" />
               </div>
+              {/* 12·M4 — propuesta de disparador fundada en cuándo completás, editable */}
+              {contextProposal && !form.plan_if.trim() && (
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, plan_if: contextProposal.planIf }))}
+                  className="mt-1.5 text-left text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <span className="text-primary">SIR:</span> {contextProposal.confidence === 'sugerida' ? 'solés' : 'podrías estar'} avanzando esto {contextProposal.planIf.toLowerCase()} ({contextProposal.support} de {contextProposal.total} veces) — tocá para usarlo de disparador.
+                </button>
+              )}
             </div>
             <Button size="sm" disabled={busy} onClick={savePlan}>{busy ? <Loader2 size={14} className="mr-1 animate-spin" /> : null} Guardar</Button>
           </div>
