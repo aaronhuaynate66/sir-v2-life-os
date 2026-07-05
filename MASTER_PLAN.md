@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d371dc9`
+**Hash del último commit humano:** `f923fa7`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f923fa7` | aaronhuaynate66 | fix(linea): mostrar el sueño (dreams) en la línea de tiempo (#583) | 2026-07-05 |
 | `d371dc9` | aaronhuaynate66 | feat(salud): capturador de sueños (rescata sleep_records.dreams) (#582) | 2026-07-05 |
 | `96410b5` | Aaron Huaynate | docs(plan): rescate finance→objetivo + relato-ingest ya construido | 2026-07-05 |
 | `f0ff205` | aaronhuaynate66 | feat(finanzas): vincular movimiento a objetivo + dinero por objetivo (#581) | 2026-07-05 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `929d278` | Aaron Huaynate | docs(plan): 15·7 lazos débiles de Granovetter | 2026-07-05 |
 | `3f7cea8` | aaronhuaynate66 | feat(red): lazos débiles de Granovetter para objetivos (15·7) (#578) | 2026-07-05 |
 | `a201fdc` | aaronhuaynate66 | fix(ensayo): subir maxDuration a 120s (el repertorio + contexto rico cortaba a 60s) (#577) | 2026-07-05 |
-| `3e30249` | Aaron Huaynate | docs(plan): repertorio ético del ensayo (16·M4+M1) | 2026-07-05 |
 
 ---
 
