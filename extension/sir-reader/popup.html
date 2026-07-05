@@ -46,8 +46,10 @@
     <div class="row"><span class="plat">WhatsApp Web</span><span class="toggle"><input id="t-whatsapp" type="checkbox" checked /><span class="slider"></span></span></div>
 
     <button id="save">Guardar</button>
+    <button id="diag" style="margin-top:8px; background:#2a2a33; color:#ecebf3;">Probar detección (en la pestaña activa)</button>
 
     <div class="status" id="status">Sin actividad todavía.</div>
+    <div class="status" id="diagOut" style="display:none; white-space:pre-wrap; font-family:ui-monospace,Menlo,monospace; font-size:10.5px;"></div>
     <p class="foot">Pasivo: solo lee lo que ya se ve en pantalla, sin auto-scroll ni requests. Abrí Teams/WhatsApp Web y mirá tus chats normal — SIR va guardando lo nuevo.</p>
   </div>
   <script src="popup.js"></script>

@@ -121,6 +121,51 @@
     }, 1500);
   }
 
+  // ─── Diagnóstico: qué ve la extensión AHORA (para depurar selectores) ───────
+  // El popup dispara 'sir-diagnose' → devolvemos un reporte legible: si encontró
+  // el hilo, el contenedor, cuántos mensajes extrajo, una muestra, y una pista del
+  // DOM cuando falla. Un agente puede pegar esto para que ajustemos los selectores.
+  function shortHtml(el, max) {
+    if (!el) return '(no encontrado)';
+    const h = (el.outerHTML || '').replace(/\s+/g, ' ').trim();
+    return h.length > max ? h.slice(0, max) + '…' : h;
+  }
+  function diagnose() {
+    const adapter = window.__SIR_ADAPTER;
+    if (!adapter) return { ok: false, error: 'adapter no cargado' };
+    let thread = null, container = null, sample = [], err = null;
+    try { thread = adapter.getThread(); } catch (e) { err = 'getThread: ' + e; }
+    try { container = adapter.getContainer(); } catch (e) { err = (err || '') + ' getContainer: ' + e; }
+    if (container) {
+      try { sample = (adapter.extractMessages(container) || []).slice(-3); } catch (e) { err = (err || '') + ' extract: ' + e; }
+    }
+    // Pista del DOM cuando no hay contenedor: los data-tid / clases más frecuentes.
+    let hint = '';
+    if (!container) {
+      const tids = {};
+      document.querySelectorAll('[data-tid]').forEach((n) => { const t = n.getAttribute('data-tid'); tids[t] = (tids[t] || 0) + 1; });
+      const top = Object.entries(tids).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => `${k}(${v})`);
+      hint = 'data-tid presentes: ' + (top.join(', ') || 'ninguno');
+    }
+    return {
+      ok: !!(thread && container && sample.length),
+      platform: adapter.platform,
+      threadName: thread ? thread.threadName : null,
+      containerFound: !!container,
+      containerHtml: shortHtml(container, 220),
+      sampleCount: sample.length,
+      sample: sample.map((m) => ({ author: m.author, ts: m.ts, text: (m.text || '').slice(0, 80) })),
+      error: err,
+      hint,
+    };
+  }
+
+  try {
+    chrome.runtime.onMessage.addListener((msg, _s, sendResponse) => {
+      if (msg && msg.type === 'sir-diagnose') { sendResponse(diagnose()); return true; }
+    });
+  } catch (_) { /* */ }
+
   window.__SIR_CORE_BOOT = boot;
   // El adaptador llama a __SIR_CORE_BOOT() cuando ya seteó window.__SIR_ADAPTER.
 })();
