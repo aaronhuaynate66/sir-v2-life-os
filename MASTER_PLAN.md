@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `929d278`
+**Hash del último commit humano:** `2a9191a`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2a9191a` | aaronhuaynate66 | fix(red): la razón del lazo débil nombra lo que REALMENTE matcheó (#579) | 2026-07-05 |
 | `929d278` | Aaron Huaynate | docs(plan): 15·7 lazos débiles de Granovetter | 2026-07-05 |
 | `3f7cea8` | aaronhuaynate66 | feat(red): lazos débiles de Granovetter para objetivos (15·7) (#578) | 2026-07-05 |
 | `a201fdc` | aaronhuaynate66 | fix(ensayo): subir maxDuration a 120s (el repertorio + contexto rico cortaba a 60s) (#577) | 2026-07-05 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `808aca4` | aaronhuaynate66 | feat(verificar): 23 técnicas de propaganda en el detector (16·M3) (#575) | 2026-07-05 |
 | `ef831f9` | aaronhuaynate66 | fix(sir): desambiguar DOS DIANAS + test de integración del caso Diana (#574) | 2026-07-05 |
 | `ccfc4da` | Aaron Huaynate | docs(plan): dominio 15 completo — 15·7 desbloqueado + motor de red | 2026-07-05 |
-| `518a2f2` | aaronhuaynate66 | feat(red): inteligencia de red — caminos + presentaciones (15·7) (#573) | 2026-07-05 |
 
 ---
 
