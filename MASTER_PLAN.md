@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `518a2f2`
+**Hash del último commit humano:** `ef831f9`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `ef831f9` | aaronhuaynate66 | fix(sir): desambiguar DOS DIANAS + test de integración del caso Diana (#574) | 2026-07-05 |
+| `ccfc4da` | Aaron Huaynate | docs(plan): dominio 15 completo — 15·7 desbloqueado + motor de red | 2026-07-05 |
 | `518a2f2` | aaronhuaynate66 | feat(red): inteligencia de red — caminos + presentaciones (15·7) (#573) | 2026-07-05 |
 | `6447b36` | aaronhuaynate66 | feat(red): capturador de vínculos profesionales/sociales (desbloquea 15·7) (#572) | 2026-07-05 |
 | `a3f6ed9` | Aaron Huaynate | docs(plan): dominio 16 (influencia) completo — M5 guardrail ético | 2026-07-05 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8cad109` | aaronhuaynate66 | feat(habitos): lazo WOOP — detectar contexto + disparar el then (12·M4+M5) (#570) | 2026-07-05 |
 | `e4c05c8` | aaronhuaynate66 | feat(habitos): prompt atado a la franja (12·M1) (#569) | 2026-07-05 |
 | `b0df083` | Aaron Huaynate | docs(plan): dominio 18 (señales externas) completo — M2/M4/M5 | 2026-07-05 |
-| `486fa5d` | aaronhuaynate66 | feat(externas): eventos por ubicación de persona (18·M4) (#568) | 2026-07-05 |
-| `a30cfbe` | aaronhuaynate66 | feat(externas): calendario macro — findes largos + quincena (18·M5) (#567) | 2026-07-05 |
 
 ---
 
