@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SectionTitle } from '@/components/ui/section-title'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useFinanceStore } from '@/stores/useFinanceStore'
+import { useGoalStore } from '@/stores/useGoalStore'
 import { useMemoryStore } from '@/stores'
 import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByIntent, SPEND_INTENT_ORDER } from '@/engines/financial'
 import { createFinancialMovementMemory } from '@/engines/memory'
@@ -73,6 +74,9 @@ export default function FinancePage() {
 
 function FinanceContent() {
   const { financialMovements, addFinancialMovement, removeFinancialMovement } = useFinanceStore()
+  const goals = useGoalStore((s) => s.goals)
+  const activeGoals = useMemo(() => goals.filter((g) => g.status === 'active'), [goals])
+  const goalTitleById = useMemo(() => new Map(goals.map((g) => [g.id, g.title])), [goals])
   const { selfMetrics } = useSelfStore()
   const { addMemory } = useMemoryStore()
   const fin = useMemo(() => analyzeFinancialStability(financialMovements, LIQUIDITY_MONTHS), [financialMovements])
@@ -94,6 +98,7 @@ function FinanceContent() {
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [recurrent, setRecurrent] = useState(false)
+  const [relatedGoal, setRelatedGoal] = useState<string>('')
   const [filterType, setFilterType] = useState<MovementType | 'all'>('all')
 
   // Auto-fetch USD->PEN rate the first time the user picks USD per session.
@@ -137,10 +142,11 @@ function FinanceContent() {
       id: `f_${Date.now()}`, type, amount: amt, currency, exchangeRate: rate, amountPEN, category,
       intent: isOutflow ? intent : undefined,
       description: description || TYPE_LABEL[type], date, recurrent, tags: [],
+      relatedGoal: relatedGoal || undefined,
     }
     addFinancialMovement(m)
     addMemory(createFinancialMovementMemory(m))
-    setAmount(''); setDescription('')
+    setAmount(''); setDescription(''); setRelatedGoal('')
     if (currency === 'USD') {
       // Keep currency=USD + rate so the user can register multiple USD
       // movements without re-fetching. Reset on PEN.
@@ -350,11 +356,24 @@ function FinanceContent() {
               <p className="text-[10px] text-muted-foreground/60 mt-1.5">{INTENT_HINT[intent]}</p>
             </div>
           )}
-          <div className="flex items-center gap-4 mb-3">
+          <div className="flex items-center gap-4 mb-3 flex-wrap">
             <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
               <input type="checkbox" checked={recurrent} onChange={e => setRecurrent(e.target.checked)} className="accent-foreground" />
               Recurrente
             </label>
+            {activeGoals.length > 0 && (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                Objetivo
+                <select
+                  value={relatedGoal}
+                  onChange={(e) => setRelatedGoal(e.target.value)}
+                  className="rounded border border-border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-foreground/30 max-w-[220px]"
+                >
+                  <option value="">— ninguno —</option>
+                  {activeGoals.map((g) => <option key={g.id} value={g.id}>{g.title}</option>)}
+                </select>
+              </label>
+            )}
           </div>
           <Button onClick={addMovement} variant="outline" size="sm">+ Registrar</Button>
         </CardContent>
@@ -400,6 +419,11 @@ function FinanceContent() {
                       <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[m.category]}</Badge>
                       {m.intent && <Badge variant="outline" className={cn('text-[10px] font-normal', INTENT_BADGE[m.intent])}>{INTENT_LABEL[m.intent]}</Badge>}
                       {m.recurrent && <Badge variant="brand" className="text-[10px] font-normal">recurrente</Badge>}
+                      {m.relatedGoal && goalTitleById.has(m.relatedGoal) && (
+                        <Badge variant="outline" className="text-[10px] font-normal border-primary/30 text-primary max-w-[160px] truncate">
+                          → {goalTitleById.get(m.relatedGoal)}
+                        </Badge>
+                      )}
                       <span className="text-[10px] text-muted-foreground/60 font-mono tabular-nums">{m.date}</span>
                     </div>
                   </div>
