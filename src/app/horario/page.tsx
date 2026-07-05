@@ -30,6 +30,7 @@ import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
+import { MacroCalendarStrip } from '@/components/horario/MacroCalendarStrip'
 import { CalendarConnections } from '@/components/agenda/CalendarConnections'
 import dynamic from 'next/dynamic'
 // HorarioCalendar es el cockpit visual, ~15KB propios + grid grande. Se
@@ -186,6 +187,10 @@ function HorarioContent() {
       <div className="mt-8">
         <DailyActionsPanel actionableOnly />
       </div>
+
+      {/* 18·M5 — calendario macro: findes largos + quincena, cruzados con tus
+          objetivos. Invisible si no hay nada por venir en el lead. */}
+      <MacroCalendarStrip goals={goals} now={now} />
 
       {/* Gestión de calendarios conectados (setup, no contenido diario) →
           colapsable para no alargar la página. */}
