@@ -95,6 +95,7 @@ function SaludContent() {
   const [sQual, setSQual] = useState('7')
   const [sBed, setSBed] = useState('23:00')
   const [sWake, setSWake] = useState('07:00')
+  const [sDreams, setSDreams] = useState('')
   const [hType, setHType] = useState<HealthMetricType>('weight')
   const [hVal, setHVal] = useState('')
   const [hUnit, setHUnit] = useState('kg')
@@ -128,9 +129,9 @@ function SaludContent() {
     if (isNaN(h) || h < 0 || h > 24) { toast.error('Horas inválidas', { description: 'Debe estar entre 0 y 24.' }); return }
     const q = parseInt(sQual)
     if (isNaN(q) || q < 1 || q > 10) { toast.error('Calidad inválida', { description: 'Debe estar entre 1 y 10.' }); return }
-    const sleepRecord = { id: 'sl_' + Date.now(), date: new Date().toISOString().split('T')[0], bedtime: sBed, wakeTime: sWake, duration: h, quality: q }
+    const sleepRecord = { id: 'sl_' + Date.now(), date: new Date().toISOString().split('T')[0], bedtime: sBed, wakeTime: sWake, duration: h, quality: q, dreams: sDreams.trim() || undefined }
     addSleepRecord(sleepRecord); addMemory(createSleepMemory(sleepRecord))
-    setSHours('')
+    setSHours(''); setSDreams('')
     toast.success('Sueño registrado', { description: `${h}h · calidad ${q}/10` })
   }
   function addHealth() {
@@ -332,6 +333,13 @@ function SaludContent() {
                 <Input type="time" value={sWake} onChange={e => setSWake(e.target.value)} className="font-mono" />
               </div>
               <Input type="number" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono tabular-nums" />
+              <textarea
+                value={sDreams}
+                onChange={e => setSDreams(e.target.value)}
+                rows={2}
+                placeholder="¿Soñaste algo? (opcional) — lo que recuerdes, aparece en tu línea de tiempo y es buscable"
+                className="w-full resize-y rounded-md border border-border bg-background p-2.5 text-sm leading-relaxed outline-none focus:border-foreground/30"
+              />
               <Button onClick={addSleep} variant="outline" className="w-full">+ Registrar sueño</Button>
             </div>
           </CardContent>
