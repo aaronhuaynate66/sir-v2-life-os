@@ -9,7 +9,7 @@
 // texto al modelo, y se avisa antes.
 
 import { useState } from 'react'
-import { ShieldAlert, ShieldCheck, ShieldQuestion, AlertTriangle, Sparkles, Loader2, Megaphone } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, ShieldQuestion, AlertTriangle, Sparkles, Loader2, Megaphone, Scale } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -284,6 +284,31 @@ function DeepResult({ result }: { result: DeepScanResult }) {
           ))}
         </ul>
       )}
+      {result.balance && <BalanceView balance={result.balance} />}
+    </div>
+  )
+}
+
+function BalanceView({ balance }: { balance: NonNullable<DeepScanResult['balance']> }) {
+  return (
+    <div className="mt-2 rounded-lg border border-border bg-muted/20 p-3">
+      <div className="flex items-center gap-2 mb-2">
+        <Scale size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+        <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Qué aceptar y qué resistir</div>
+      </div>
+      <div className="space-y-1.5 text-[13px]">
+        {balance.worthWeighing && (
+          <p className="text-foreground/90">
+            <span className="text-ok font-medium">Vale pesar:</span> {balance.worthWeighing}
+          </p>
+        )}
+        {balance.holdGround && (
+          <p className="text-foreground/90">
+            <span className="text-warn font-medium">No cedas en:</span> {balance.holdGround}
+          </p>
+        )}
+        {balance.guidance && <p className="text-muted-foreground leading-relaxed pt-0.5">{balance.guidance}</p>}
+      </div>
     </div>
   )
 }
