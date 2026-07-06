@@ -33,47 +33,61 @@
     );
   }
 
+  // id estable del mensaje (data-mid, o el número dentro de id="message-body-<n>"
+  // / id="content-<n>"). Sirve para deduplicar el par padre/hijo del mismo mensaje.
+  function messageId(row) {
+    const el =
+      (row.matches && row.matches('[data-mid]') ? row : null) ||
+      row.querySelector('[data-mid]') ||
+      row.querySelector('[id^="message-body-"]') ||
+      row.querySelector('[id^="content-"]');
+    if (!el) return null;
+    const mid = el.getAttribute && el.getAttribute('data-mid');
+    if (mid) return mid;
+    const m = (el.id || '').match(/\d{5,}/);
+    return m ? m[0] : null;
+  }
+
   function extractMessages(container) {
-    const out = [];
-    // Selección por PRIORIDAD, no por unión. En el DOM 2026 de Teams cada mensaje
-    // es un `.fui-ChatMessage` (trae autor + hora + cuerpo) que CONTIENE un hijo
-    // `[data-tid="chat-pane-message"]` (solo cuerpo). Unir ambos selectores
-    // duplicaba cada mensaje: el hijo salía como author:'otro', ts:null. Usamos el
-    // PRIMER selector que devuelva filas → una fila por mensaje, con su autor/hora.
-    const ROW_SELECTORS = [
-      '.fui-ChatMessage',
-      '[data-tid="chat-pane-message"]',
-      '[data-tid="messageBodyContainer"]',
-      '[role="listitem"]',
-    ];
-    let rows = [];
-    for (const sel of ROW_SELECTORS) {
-      const found = container.querySelectorAll(sel);
-      if (found.length) { rows = found; break; }
-    }
+    // UNIÓN de selectores (mensajes propios y ajenos pueden usar distinta
+    // estructura: los ajenos vienen en `.fui-ChatMessage` con autor; los propios
+    // NO tienen ese wrapper y solo matchean por `[data-tid="chat-pane-message"]` /
+    // `[role="listitem"]`). Para no duplicar (el padre `.fui-ChatMessage` y su hijo
+    // `[data-tid="chat-pane-message"]` son el MISMO mensaje) deduplicamos por el id
+    // estable del mensaje, quedándonos con la variante más rica (con autor + hora).
+    const rows = container.querySelectorAll(
+      '[data-tid="chat-pane-message"], .fui-ChatMessage, [data-tid="messageBodyContainer"], [role="listitem"]'
+    );
+    const byId = new Map();
     rows.forEach((row) => {
-      const authorEl =
-        row.querySelector('[data-tid="message-author-name"]') ||
-        row.querySelector('[data-tid="messageAuthorName"]') ||
-        row.querySelector('[data-tid="messageSenderDisplayName"]') ||
-        row.querySelector('[data-tid="author-name"]') ||
-        row.querySelector('.fui-ChatMessage__author');
       const bodyEl =
         row.querySelector('[id^="content-"]') ||
         row.querySelector('[data-tid="messageBodyContent"]') ||
         row.querySelector('[data-tid="message-body"]') ||
         row.querySelector('.fui-ChatMessage__body') ||
         row.querySelector('div[dir="auto"]');
-      const timeEl = row.querySelector('time') || row.querySelector('[data-tid="messageTimeStamp"]');
       const t = text(bodyEl);
       if (!t) return;
-      // Sin autor visible = tu propio mensaje (Teams no rotula tus mensajes) o una
-      // continuación agrupada. Marca 'yo' para distinguir de 'otro' ambiguo.
-      const author = text(authorEl) || 'yo';
+      const authorEl =
+        row.querySelector('[data-tid="message-author-name"]') ||
+        row.querySelector('[data-tid="messageAuthorName"]') ||
+        row.querySelector('[data-tid="messageSenderDisplayName"]') ||
+        row.querySelector('[data-tid="author-name"]') ||
+        row.querySelector('.fui-ChatMessage__author');
+      const timeEl = row.querySelector('time') || row.querySelector('[data-tid="messageTimeStamp"]');
+      const author = text(authorEl);
       const ts = timeEl ? (timeEl.getAttribute('datetime') || text(timeEl) || null) : null;
-      out.push({ author, text: t, ts });
+      const key = messageId(row) || t; // sin id → clave por texto (peor caso)
+      const prev = byId.get(key);
+      // Conservar la variante con más info (el padre trae autor/hora; el hijo no).
+      byId.set(key, {
+        author: (prev && prev.author) || author,
+        text: (prev && prev.text) || t,
+        ts: (prev && prev.ts) || ts,
+      });
     });
-    return out;
+    // Sin autor visible = mensaje propio (Teams no rotula los tuyos) → 'yo'.
+    return [...byId.values()].map((m) => ({ author: m.author || 'yo', text: m.text, ts: m.ts }));
   }
 
   window.__SIR_ADAPTER = { platform: 'teams', getThread, getContainer, extractMessages };
