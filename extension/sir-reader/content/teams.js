@@ -35,9 +35,22 @@
 
   function extractMessages(container) {
     const out = [];
-    const rows = container.querySelectorAll(
-      '[data-tid="chat-pane-message"], .fui-ChatMessage, [data-tid="messageBodyContainer"], [role="listitem"]'
-    );
+    // Selección por PRIORIDAD, no por unión. En el DOM 2026 de Teams cada mensaje
+    // es un `.fui-ChatMessage` (trae autor + hora + cuerpo) que CONTIENE un hijo
+    // `[data-tid="chat-pane-message"]` (solo cuerpo). Unir ambos selectores
+    // duplicaba cada mensaje: el hijo salía como author:'otro', ts:null. Usamos el
+    // PRIMER selector que devuelva filas → una fila por mensaje, con su autor/hora.
+    const ROW_SELECTORS = [
+      '.fui-ChatMessage',
+      '[data-tid="chat-pane-message"]',
+      '[data-tid="messageBodyContainer"]',
+      '[role="listitem"]',
+    ];
+    let rows = [];
+    for (const sel of ROW_SELECTORS) {
+      const found = container.querySelectorAll(sel);
+      if (found.length) { rows = found; break; }
+    }
     rows.forEach((row) => {
       const authorEl =
         row.querySelector('[data-tid="message-author-name"]') ||
@@ -46,15 +59,17 @@
         row.querySelector('[data-tid="author-name"]') ||
         row.querySelector('.fui-ChatMessage__author');
       const bodyEl =
+        row.querySelector('[id^="content-"]') ||
         row.querySelector('[data-tid="messageBodyContent"]') ||
         row.querySelector('[data-tid="message-body"]') ||
         row.querySelector('.fui-ChatMessage__body') ||
-        row.querySelector('[id^="content-"]') ||
         row.querySelector('div[dir="auto"]');
       const timeEl = row.querySelector('time') || row.querySelector('[data-tid="messageTimeStamp"]');
       const t = text(bodyEl);
       if (!t) return;
-      const author = text(authorEl) || 'otro';
+      // Sin autor visible = tu propio mensaje (Teams no rotula tus mensajes) o una
+      // continuación agrupada. Marca 'yo' para distinguir de 'otro' ambiguo.
+      const author = text(authorEl) || 'yo';
       const ts = timeEl ? (timeEl.getAttribute('datetime') || text(timeEl) || null) : null;
       out.push({ author, text: t, ts });
     });
