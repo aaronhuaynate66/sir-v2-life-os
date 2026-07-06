@@ -35,6 +35,7 @@ import {
 export const QUALIFYING_CAPTURE_TYPES: readonly CaptureType[] = [
   'whatsapp_chat',
   'whatsapp_web',
+  'dm_conversation',
   'instagram',
   'linkedin',
   'manual_note',
@@ -45,6 +46,7 @@ export const QUALIFYING_CAPTURE_TYPES: readonly CaptureType[] = [
 const BASE_MEMORY_TYPE: Partial<Record<CaptureType, Memory['type']>> = {
   whatsapp_chat: 'episodic',
   whatsapp_web: 'episodic',
+  dm_conversation: 'episodic',
   instagram: 'social',
   linkedin: 'semantic',
   manual_note: 'semantic',
@@ -135,6 +137,13 @@ function str(v: unknown): string | null {
 /** Mejor texto humano disponible de una observation (para prompt + base). */
 export function extractObservationText(obs: Observation): string | null {
   const d = obs.data ?? {}
+  // Conversaciones del reader (Teams/DM): el `text` crudo ES el contenido real;
+  // el `summary` es meta ("Conversación de teams con X · N msgs"), inútil para la
+  // síntesis. Preferimos el texto de la conversación.
+  if (obs.captureType === 'dm_conversation') {
+    const convo = str(d.text)
+    if (convo) return convo
+  }
   // Orden de preferencia por riqueza semántica.
   return (
     str(d.summary) ??
@@ -222,6 +231,7 @@ function clampImportance(n: unknown): number {
 const CAPTURE_LABEL: Partial<Record<CaptureType, string>> = {
   whatsapp_chat: 'conversación de WhatsApp',
   whatsapp_web: 'conversación de WhatsApp',
+  dm_conversation: 'conversación de Teams/DM',
   instagram: 'perfil de Instagram',
   linkedin: 'perfil de LinkedIn',
   manual_note: 'nota',

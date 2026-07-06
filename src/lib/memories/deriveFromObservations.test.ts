@@ -126,6 +126,17 @@ describe('lectura defensiva de data', () => {
     expect(extractObservationText(obs({ id: '4', data: { summary: '   ' } }))).toBeNull()
   })
 
+  it('dm_conversation (reader Teams/DM) prefiere text sobre el summary meta', () => {
+    const o = obs({
+      id: 'r1',
+      captureType: 'dm_conversation',
+      data: { summary: 'Conversación de teams con Cristina · 45 msgs', text: 'yo: hola\nCristina: qué tal' },
+    })
+    expect(extractObservationText(o)).toBe('yo: hola\nCristina: qué tal')
+    // sin text cae al orden normal (no rompe otras capturas)
+    expect(extractObservationText(obs({ id: 'r2', captureType: 'dm_conversation', data: { summary: 'x' } }))).toBe('x')
+  })
+
   it('extractTopics lee topics o tags', () => {
     expect(extractTopics(obs({ id: '1', data: { topics: ['a', 'b', ''] } }))).toEqual(['a', 'b'])
     expect(extractTopics(obs({ id: '2', data: { tags: ['x'] } }))).toEqual(['x'])
@@ -152,6 +163,16 @@ describe('memoria base determinística', () => {
   it('instagram → social; linkedin → semantic', () => {
     expect(baseMemoryFromObservation('Ana', obs({ id: 'i', captureType: 'instagram', data: { bio: 'viajera' } })).type).toBe('social')
     expect(baseMemoryFromObservation('Ana', obs({ id: 'l', captureType: 'linkedin', data: { headline: 'CEO' } })).type).toBe('semantic')
+  })
+
+  it('dm_conversation → episodic, content = la conversación (text)', () => {
+    const m = baseMemoryFromObservation('Cristina', obs({
+      id: 'r0',
+      captureType: 'dm_conversation',
+      data: { summary: 'meta inútil', text: 'yo: pasame el correo\nCristina: ya va' },
+    }))
+    expect(m.type).toBe('episodic')
+    expect(m.content).toContain('correo')
   })
 
   it('sin texto ni topics → content genérico con label y nombre', () => {
