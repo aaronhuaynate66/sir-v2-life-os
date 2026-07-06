@@ -42,22 +42,12 @@ export function parseReaderText(text: string): ConvMsg[] {
   return out.filter((m): m is ConvMsg => m.at != null)
 }
 
-/** Trae y unifica los mensajes de una persona desde sus observaciones de conversación. */
-export async function getConversationMessages(
-  supabase: SupabaseClient,
-  userId: string,
-  personId: string,
-): Promise<ConvMsg[]> {
-  const { data } = await supabase
-    .from('observations')
-    .select('capture_type, data, observed_at')
-    .eq('user_id', userId)
-    .eq('person_id', personId)
-    .in('capture_type', ['dm_conversation', 'whatsapp_chat'])
-    .eq('is_obsolete', false)
+export interface ObsRow { capture_type: string; data: unknown }
 
+/** PURO: convierte filas de observación de conversación en mensajes unificados. */
+export function messagesFromRows(rows: ObsRow[]): ConvMsg[] {
   const msgs: ConvMsg[] = []
-  for (const o of data ?? []) {
+  for (const o of rows) {
     const d = (o.data ?? {}) as Record<string, unknown>
     if (o.capture_type === 'dm_conversation' && typeof d.text === 'string') {
       msgs.push(...parseReaderText(d.text))
@@ -71,9 +61,24 @@ export async function getConversationMessages(
       }
     }
   }
-  // Dedupe por (at, texto) y ordenar.
   const seen = new Set<string>()
   return msgs
     .filter((m) => { const k = `${m.at}|${m.text}`; if (seen.has(k)) return false; seen.add(k); return true })
     .sort((a, b) => a.at - b.at)
+}
+
+/** Trae y unifica los mensajes de una persona desde sus observaciones de conversación. */
+export async function getConversationMessages(
+  supabase: SupabaseClient,
+  userId: string,
+  personId: string,
+): Promise<ConvMsg[]> {
+  const { data } = await supabase
+    .from('observations')
+    .select('capture_type, data')
+    .eq('user_id', userId)
+    .eq('person_id', personId)
+    .in('capture_type', ['dm_conversation', 'whatsapp_chat'])
+    .eq('is_obsolete', false)
+  return messagesFromRows((data ?? []) as ObsRow[])
 }

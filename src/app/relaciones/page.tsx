@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { EmptyState } from '@/components/ui/empty-state'
+import { RelationshipThermometer } from '@/components/relaciones/RelationshipThermometer'
 import { Avatar } from '@/components/ui/avatar'
 import { fetchAvatars } from '@/lib/avatars/client'
 import {
@@ -363,6 +364,8 @@ function RelationshipsContent() {
           ))}
         </div>
       )}
+
+      {people.length > 0 && <RelationshipThermometer />}
 
       {people.length > 0 && <CommercialPipelinePanel people={people} />}
 
