@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2c937f6`
+**Hash del último commit humano:** `ee24774`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `ee24774` | Aaron Huaynate | fix(reader): capturar mensajes PROPIos en Teams (unión + dedup por id) | 2026-07-06 |
+| `327eab5` | Aaron Huaynate | fix(reader): dedup mensajes de Teams (selección por prioridad) + rotular 'yo' | 2026-07-06 |
+| `b383a51` | Aaron Huaynate | docs(base): reconciliar backlog — 11·M1, 12·#1/#4/#5, 14·M1, 15·#7, 16·M1-M4 ya shippeados | 2026-07-06 |
+| `206683c` | Aaron Huaynate | docs(base): marcar estado real de backlog en dominios 11-15 (hecho/bloqueado) | 2026-07-06 |
 | `2c937f6` | aaronhuaynate66 | feat(reader): diagnóstico dumpea HTML crudo de fila + más selectores Teams (#591) | 2026-07-05 |
 | `c03946c` | aaronhuaynate66 | fix(reader): soportar teams.cloud.microsoft + selector chat-title (2026) (#590) | 2026-07-05 |
 | `e025b33` | aaronhuaynate66 | feat(reader): modo diagnóstico en la extensión (depurar selectores) (#589) | 2026-07-05 |
 | `e7063da` | aaronhuaynate66 | feat(reader): config por archivo + guía de instalación para un agente (#588) | 2026-07-05 |
 | `e56efa5` | aaronhuaynate66 | feat(correo): conector Microsoft Graph — correo M365 → SIR (Fase 2) (#587) | 2026-07-05 |
 | `992b694` | aaronhuaynate66 | feat(llamadas): grabador en vivo por sesión (Fase 3) (#586) | 2026-07-05 |
-| `f21edfa` | aaronhuaynate66 | feat(reader): extensión MV3 SIR Reader (Fase 1 — Teams + WhatsApp Web) (#585) | 2026-07-05 |
-| `bb4013d` | aaronhuaynate66 | feat(salud): notas en métricas de salud (rescata health_metrics.note) (#584) | 2026-07-05 |
-| `f923fa7` | aaronhuaynate66 | fix(linea): mostrar el sueño (dreams) en la línea de tiempo (#583) | 2026-07-05 |
-| `d371dc9` | aaronhuaynate66 | feat(salud): capturador de sueños (rescata sleep_records.dreams) (#582) | 2026-07-05 |
 
 ---
 
