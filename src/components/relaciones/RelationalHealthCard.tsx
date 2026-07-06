@@ -14,10 +14,15 @@ import { assessLinkHealth } from '@/lib/relational/health'
 import type { Person } from '@/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 
+import { isNoiseLog } from '@/lib/relational/partnerEffect'
+
 export function RelationalHealthCard({ person, personLogs }: { person: Person; personLogs: PersonLog[] }) {
   const health = useMemo(() => {
     const interactions = personLogs
       .filter((l) => l.kind === 'interaction')
+      // Excluir ratings auto-inferidos value=3 (tono de chat/import/llamada): son
+      // ruido que aplana el toneTrend hacia 'steady'. Ver isNoiseLog (C2·R1 fix).
+      .filter((l) => !isNoiseLog(l.note, l.value))
       .map((l) => ({ quality: l.value, at: l.loggedAt }))
     return assessLinkHealth({
       relationship: person.relationship,
