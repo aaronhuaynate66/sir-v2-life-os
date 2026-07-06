@@ -138,8 +138,27 @@ fecha exacta para el próximo período/ovulación, una **ventana** (± días seg
 irregularidad de M4). Nunca presentar el calendario como anticonceptivo. Toca:
 `lib/ciclo` + M4.
 
-Orden sugerido: **M1 → M4 → M2/M3 → M5** (primero el perfil y la honestidad de la
-confianza; encima, anticipación y trazabilidad; al final, la banda predictiva).
+**M6 — Atunamiento de intimidad de pareja (confianza media, LÍNEA REFORZADA). ✅ HECHO (`lib/ciclo/intimacy`).**
+Cruza la fase con el contexto relacional para sugerir CÓMO conectar y estar mejor —
+**jamás** para cronometrar ni instrumentalizar. Base científica:
+- **Deseo × ciclo:** tendencia a subir en folicular/ovulación (estradiol + testosterona),
+  bajar en lútea/SPM (progesterona). Es tendencia, no ley; variación entre personas enorme.
+- **Nagoski — *Come As You Are*:** el deseo lo moldea el **CONTEXTO**, no las hormonas —
+  frenos (estrés, tensión, distracción) vs. aceleradores (conexión, seguridad). Y es
+  **responsivo**: emerge de la conexión, no aparece solo.
+- **Perel — *Mating in Captivity*:** el deseo pide **espacio, novedad y juego**, no solo cercanía.
+- **Gottman:** la conexión emocional como sustrato; sin eso, el timing no importa.
+
+La salida SIEMPRE pone el freno/acelerador de contexto **por encima** de la ventana
+hormonal (una tensión sin resolver manda sobre cualquier fase) y lleva el recordatorio
+innegociable: es cuidado, no manejo; su emoción es real tenga la fase que tenga. Toca:
+`lib/ciclo/intimacy` (puro) + M1; consume contexto de `person_logs` / salud del vínculo.
+Solo para vínculo afectivo **activo**, con la privacidad de la postura de arriba (idealmente,
+con que ella lo sepa). PENDIENTE de surface: cargar el ciclo de la persona (`person_cycles`
+hoy vacío) + cablear el contexto (tensión/enfriamiento) en `CicloPanel`.
+
+Orden sugerido: **M1 → M4 → M2/M3 → M5 → M6** (primero el perfil y la honestidad de la
+confianza; encima, anticipación y trazabilidad; la banda predictiva; y el atunamiento de pareja).
 
 ---
 
