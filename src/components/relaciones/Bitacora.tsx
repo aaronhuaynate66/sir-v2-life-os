@@ -23,6 +23,7 @@ import { RebuildSummaryButton } from './RebuildSummaryButton'
 import { needsResummary } from '@/lib/capture/observations/summaryHealth'
 import { cn } from '@/lib/utils'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
+import { isSystemNote } from '@/lib/memories/fromInteractionLog'
 import type { Observation, CaptureType } from '@/lib/capture/observations/types'
 import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 import type { RelationshipMoment } from '@/lib/moments/types'
@@ -104,6 +105,9 @@ function buildEntries(
 ): Entry[] {
   const entries: Entry[] = []
   for (const log of personLogs) {
+    // BUG-005: los logs de sistema (📞 llamadas, "Tono inferido", "Importado")
+    // son ruido de import, no eventos reales de la bitácora → se omiten.
+    if (log.kind === 'interaction' && isSystemNote(log.note ?? '')) continue
     entries.push({
       id: `log:${log.id}`,
       at: log.loggedAt,
