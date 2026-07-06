@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
-import { computePartnerEffects, type InteractionLog } from '@/lib/relational/partnerEffect'
+import { computePartnerEffects, isNoiseLog, type InteractionLog } from '@/lib/relational/partnerEffect'
 import { logEvent } from '@/lib/observability/logEvent'
 
 export const runtime = 'nodejs'
@@ -20,7 +20,7 @@ export async function GET() {
   const userId = auth.user.id
 
   const [{ data: pl }, { data: people }] = await Promise.all([
-    supabase.from('person_logs').select('person_id, value, logged_at').eq('user_id', userId).eq('kind', 'interaction'),
+    supabase.from('person_logs').select('person_id, value, logged_at, note').eq('user_id', userId).eq('kind', 'interaction'),
     supabase.from('people').select('id, name').eq('user_id', userId),
   ])
 
@@ -31,6 +31,7 @@ export async function GET() {
     const value = typeof l.value === 'number' ? l.value : NaN
     const at = l.logged_at ? Date.parse(l.logged_at as string) : NaN
     if (!pid || Number.isNaN(value) || Number.isNaN(at)) continue
+    if (isNoiseLog(l.note as string | null, value)) continue // excluir auto-tono/import/llamada value=3
     logs.push({ personId: pid, personName: nameOf.get(pid) ?? 'Alguien', value, at })
   }
 

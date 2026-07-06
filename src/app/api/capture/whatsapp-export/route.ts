@@ -336,7 +336,9 @@ export async function POST(req: NextRequest) {
           .gte('logged_at', `${day}T00:00:00.000Z`)
           .lte('logged_at', `${day}T23:59:59.999Z`)
           .limit(1)
-        if (!existing || existing.length === 0) {
+        // Solo registramos un RATING cuando el tono inferido dice algo (≠3). Un 3
+        // era "no pude inferir" → creaba ruido que lava el efecto-partner (C2·R1).
+        if ((!existing || existing.length === 0) && iq !== 3) {
           const summary = typeof (data as { summary?: unknown }).summary === 'string' ? (data as { summary: string }).summary : ''
           const tense = iq <= 2
           const prefix = tense ? 'Conversación reciente TENSA' : 'Tono inferido del chat importado'

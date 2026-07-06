@@ -561,7 +561,9 @@ export async function POST(req: NextRequest) {
             .gte('logged_at', dayStart)
             .lte('logged_at', dayEnd)
             .limit(1)
-          if (!existing || existing.length === 0) {
+          // Solo registramos un RATING cuando el tono inferido dice algo (≠3). Un 3
+          // era "no pude inferir" → ruido que lava el efecto-partner (C2·R1).
+          if ((!existing || existing.length === 0) && tone.quality !== 3) {
             await supabase.from('person_logs').insert({
               user_id: userId,
               person_id: finalPersonId,

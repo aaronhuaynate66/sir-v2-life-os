@@ -24,6 +24,16 @@ export interface InteractionLog {
   at: number
 }
 
+// Notas de logs AUTO-generados (tono inferido de un chat, import, llamada) — NO son
+// un rating emocional que Aaron sintió. Cuando encima valen 3 (default sin señal),
+// son ruido puro que lava la estimación → se excluyen.
+const AUTO_NOTE = /^(Tono inferido|Conversación reciente|Importado|📞)/i
+
+/** ¿Es un log de ruido? (auto-inferido/import/llamada con value neutro = 3). */
+export function isNoiseLog(note: string | null | undefined, value: number): boolean {
+  return value === 3 && AUTO_NOTE.test((note ?? '').trim())
+}
+
 export type EffectLabel = 'energiza' | 'drena' | 'neutral'
 export type Confidence = 'baja' | 'media' | 'alta'
 

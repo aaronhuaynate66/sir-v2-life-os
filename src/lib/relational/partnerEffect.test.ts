@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computePartnerEffects, type InteractionLog } from './partnerEffect'
+import { computePartnerEffects, isNoiseLog, type InteractionLog } from './partnerEffect'
 
 const NOW = 1_780_000_000_000
 const DAY = 86_400_000
@@ -7,6 +7,17 @@ const DAY = 86_400_000
 function logs(personId: string, name: string, values: number[]): InteractionLog[] {
   return values.map((v, i) => ({ personId, personName: name, value: v, at: NOW - (values.length - i) * DAY }))
 }
+
+describe('isNoiseLog', () => {
+  it('auto-inferido value=3 = ruido; rating manual o auto no-3 = señal', () => {
+    expect(isNoiseLog('Tono inferido del chat importado', 3)).toBe(true)
+    expect(isNoiseLog('📞 Llamada de voz · 12 min', 3)).toBe(true)
+    expect(isNoiseLog('Importado del export de WhatsApp', 3)).toBe(true)
+    expect(isNoiseLog('Tono inferido (tenso)', 2)).toBe(false) // auto pero con señal
+    expect(isNoiseLog('reconectamos, fue lindo', 3)).toBe(false) // manual value 3 = genuino
+    expect(isNoiseLog(null, 3)).toBe(false)
+  })
+})
 
 describe('computePartnerEffects', () => {
   it('insufficient con <3 personas elegibles', () => {
