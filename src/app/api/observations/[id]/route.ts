@@ -15,6 +15,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
+import { recomputeAxisFor, axisForCapture } from '@/lib/person-axes/recompute'
 import type {
   CaptureType,
   Confidence,
@@ -133,6 +134,19 @@ export async function PATCH(
 
   if (error || !data) {
     return errorJson(404, 'Observation no encontrada o sin permiso', error?.message)
+  }
+
+  // Al DESCARTAR una captura de perfil, el eje social/profesional (un snapshot)
+  // quedaría pegado con la data descartada. Lo regeneramos desde la última captura
+  // buena que quede, o lo limpiamos. Best-effort: nunca rompe el descarte.
+  if (hasObsolete && body.is_obsolete === true) {
+    const row = data as Record<string, unknown>
+    const captureType = typeof row.capture_type === 'string' ? row.capture_type : ''
+    const pid = typeof row.person_id === 'string' ? row.person_id : null
+    const axis = axisForCapture(captureType)
+    if (axis && pid) {
+      try { await recomputeAxisFor(supabase, authData.user.id, pid, axis) } catch { /* best-effort */ }
+    }
   }
 
   const observation = toObservation(data as Record<string, unknown>)
