@@ -52,7 +52,7 @@ Lo que **falta** y sí es propio de la ciencia de la decisión: detección expl�
 
 De simple a complejo. Cada módulo es independiente y suma sin romper el evaluador actual.
 
-**M1 — Detector de sesgos en el lenguaje (confianza alta).**
+**M1 — Detector de sesgos en el lenguaje (confianza alta). ✅ HECHO (engines/bias).**
 Al describir la decisión, la IA marca sesgos activos en el texto de Aaron: costo hundido ("ya invertí…", "después de todo este tiempo…"), presente/urgencia ("tiene que ser ahora"), aversión a la pérdida ("no quiero perder lo que…"), confirmación (solo argumentos de un lado). Salida: chips no-bloqueantes ("Detecté posible costo hundido — ¿el pasado debería pesar acá?"). Toca: `engines/decision` (paso de análisis pre-scoring), sin tabla nueva. Es puro prompt + heurística de keywords como red de seguridad. **Empezar por acá.**
 
 **M2 — Premortem forzado (confianza alta). ✅ HECHO.**

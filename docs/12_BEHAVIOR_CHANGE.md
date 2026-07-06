@@ -52,7 +52,7 @@ Lo importante: SIR ya cierra **un** loop (learning refuerza lo que sube la paz) 
 
 De simple a complejo. Cada módulo declara la tabla/motor que toca y su confianza (qué tan seguro es el resultado con los datos que hoy existen).
 
-**1. Prompt atado a la franja (Fogg: el Prompt).** — Confianza: alta.
+**1. Prompt atado a la franja (Fogg: el Prompt). ✅ HECHO (lib/habits/activeSlot → ActiveSlotBanner en /horario)** — Confianza: alta.
 Cuando un `objective_step` tiene `due_time`, SIR ya lo ubica en /horario; sumar un recordatorio activo *en* esa franja ("ahora: [paso], esfuerzo S"). Ata la acción a una señal temporal concreta. Toca: `objective_steps`, /horario. Sin motor nuevo.
 
 **2. Reducir fricción del próximo paso (Ability / arquitectura de elección). ✅ HECHO (lib/habits/nextStep)** — Confianza: alta.
@@ -61,10 +61,10 @@ Mostrar siempre EL siguiente paso más pequeño y pre-decidido, no la lista ente
 **3. Tamaño del hábito según energía disponible (Fogg + SDT competencia). ✅ HECHO (lib/habits/nextStep)** — Confianza: media.
 Cruzar `self_metrics.energy` con `esfuerzo`: energía baja → proponer la versión S ("hábito mínimo viable"), preservar la racha sin exigir el L. Nunca proponer L con energía baja. Toca: `self_metrics` + `engines/priority`/`recommendation`. Degradar a `insufficient` si no hay métrica del día.
 
-**4. Detección de la señal/contexto de un hábito (Wood & Neal + Duhigg).** — Confianza: media-baja.
+**4. Detección de la señal/contexto de un hábito (Wood & Neal + Duhigg). ✅ HECHO (lib/habits/contextDetect → ObjectivePlanPanel)** — Confianza: media-baja.
 Inferir qué contexto precede a una conducta registrada: hora típica, franja, acción previa, estado. Con eso, proponer un `plan_if` fundado ("solés hacer X después de Y / a las Z"). Toca: `moments`, `objective_steps` completados, `self_metrics` → propuesta editable para `objective_plan.plan_if`. Requiere volumen de historial; con n bajo, sugerir, no afirmar (principio: nunca formulario vacío, propuesta editable).
 
-**5. Disparar el WOOP cuando el "if" ocurre (Gollwitzer).** — Confianza: media.
+**5. Disparar el WOOP cuando el "if" ocurre (Gollwitzer). ✅ HECHO (lib/habits/woopTrigger → /api/habits/woop)** — Confianza: media.
 Si `plan_if` describe un contexto que SIR puede detectar (una franja, un estado de estrés, una fecha), activar `plan_then` como prompt en ese momento. Convierte el WOOP de texto guardado en un lazo vivo. Toca: `objective_plan` + detector de contexto + /horario. Empezar con "if" temporales (fáciles), luego estados.
 
 **6. Drift temprano por erosión de contexto (Wood & Neal). ✅ HECHO (lib/habits/drift)** — Confianza: media.

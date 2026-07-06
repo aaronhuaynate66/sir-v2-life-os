@@ -150,23 +150,23 @@ respondas en caliente. Aplica igual a un mail de phishing que a una presión lab
 
 De alto valor / bajo costo a complejo. Cada módulo respeta la línea ética de arriba.
 
-**M1 — "Cómo plantearle X a [persona]" (confianza media).** Dado un objetivo + una
+**M1 — "Cómo plantearle X a [persona]" (confianza media). ✅ HECHO (/plantear + /api/influence/frame).** Dado un objetivo + una
 persona, SIR sugiere el **encuadre** según lo que esa persona valora (de
 `memories`, `person_profile_axes`, `title`). Tu verdad, en su lenguaje. Toca:
 memorias + reasoner (lentes Táctico/Antropólogo). *Guardrail:* nunca sugiere decir
 algo falso; si el encuadre honesto no alcanza, lo dice.
 
-**M2 — Mapa de influencia informal (confianza media).** Sobre `person_links` + tono
+**M2 — Mapa de influencia informal (confianza media). ✅ HECHO (engines/influence-map → InfluenceMapCard en /ensayo).** Sobre `person_links` + tono
 + el cerebro-grafo, inferir líderes informales, nodos y puentes relevantes para un
 objetivo (ej. quién *realmente* pesa en la decisión del aumento). Toca: `lib/brain`
 (difusión) + `person_links`. Descriptivo, con el `n`/confianza a la vista.
 
-**M3 — Detector de manipulación entrante (confianza alta — defensa).** Marca
+**M3 — Detector de manipulación entrante (confianza alta — defensa). ✅ HECHO (engines/manipulation, 23 técnicas → /verificar).** Marca
 autoridad/urgencia/escasez/miedo en un mensaje que te llega (mail, chat, pedido) y
 te sugiere pausar/verificar. Puro clasificador + heurística. Toca: reader/relato.
 Es el módulo más claramente bueno: te protege, no toca a nadie.
 
-**M4 — Sala de ensayo: caminos al objetivo (confianza media, CAPSTONE).** No es un
+**M4 — Sala de ensayo: caminos al objetivo (confianza media, CAPSTONE). ✅ HECHO (/ensayo + /api/influence/rehearse).** No es un
 módulo suelto: es la pieza que **fusiona** a los demás y los vuelve más robustos.
 Aaron fija un objetivo (ej. "que Alex me dé un aumento"); SIR, aterrizado en el
 contexto real de la(s) persona(s) + el negocio, juega **caminos plausibles, las
