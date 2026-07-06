@@ -59,13 +59,13 @@ Traducción clave: **`recoveryMode` ≈ el sistema detecta que Aaron está (o es
 
 De simple a complejo. Cada módulo declara tabla/motor y **confianza** (qué tan sólido es el sustento de datos hoy).
 
-**M1 — Detector de salida de la ventana (confianza: media-alta).**
+**M1 — Detector de salida de la ventana (confianza: media-alta). ✅ HECHO (engines/emotion)**
 Regla compuesta sobre lo que ya existe: `stress` alto **y** `hrv_avg` en caída vs. baseline personal **y** `sleep` bajo → marca "activación alta / ventana angosta". Motor: extender `engines/peace` o un `engines/emotion` nuevo que consuma `self_metrics` + `health_metrics` + `sleep_records`.
 - Baseline **personal y móvil** (no umbrales absolutos): comparar contra los últimos 14-30 días de Aaron.
 - Requiere ≥ N observaciones; si no, `insufficient`. Nunca inventar el estado.
 - No es diagnóstico: es "tus señales de activación están altas", no "estás ansioso".
 
-**M2 — Estrategia correcta según el momento (confianza: media).**
+**M2 — Estrategia correcta según el momento (confianza: media). ✅ HECHO (engines/emotion)**
 En vez de consejo genérico, elegir la clase de estrategia por estado (mapeo a Gross):
 - **Fuera de la ventana / arousal alto** → *modulación de respuesta*: bajar activación primero (respiración, movimiento, cortar estímulo). No pedir reevaluación acá.
 - **Dentro de la ventana pero afecto negativo con trend plano** → *reevaluación cognitiva*: ofrecer reencuadre / preguntas, no soluciones.
@@ -73,13 +73,13 @@ En vez de consejo genérico, elegir la clase de estrategia por estado (mapeo a G
 - **Disparador contextual recurrente** (visible en `moments`/`person_logs`) → *selección/modificación de situación*.
 Entrega como sugerencia, no como orden. Motor: tabla de decisión pura (`lib/emotion/strategy.ts`), testeable, sin IA obligatoria. La IA solo redacta el mensaje, no decide el estado.
 
-**M3 — Granularidad emocional (confianza: media, alto valor).**
+**M3 — Granularidad emocional (confianza: media, alto valor). ✅ HECHO (lib/emotion/granularity)**
 Al registrar un `moment`, ofrecer subir el vocabulario: de "mal" → propuesta editable de etiquetas más finas (frustración, decepción, sobrecarga, soledad…). Nunca formulario vacío ni etiqueta impuesta: propuesta que el usuario acepta/corrige (principio "nunca formularios vacíos"). Con el tiempo, medir diversidad léxica emocional como señal de habilidad. Requiere pensar el almacenamiento (campo estructurado de emociones en `moments`).
 
-**M4 — Aprender qué regulación funciona (confianza: baja al inicio, sube con n).**
+**M4 — Aprender qué regulación funciona (confianza: baja al inicio, sube con n). ✅ HECHO (lib/emotion/learning + tabla 0126)**
 Registrar qué estrategia se aplicó y qué pasó después (mood/stress/HRV en las horas/días siguientes). Atar a `engines/learning`: con suficientes repeticiones, "cuando estás así, X te suele ayudar más que Y — para vos, no en general". Empieza `insufficient` y solo afirma cuando el n personal lo sostiene. Riesgo a vigilar: confundir correlación con causa; presentarlo como patrón observado, no como ley.
 
-**M5 — Separación tajante de lo clínico (confianza: alta, es una restricción, no un modelo).**
+**M5 — Separación tajante de lo clínico (confianza: alta, es una restricción, no un modelo). ✅ HECHO (test de fuente)**
 `self_diagnosis` queda AISLADO: no alimenta M1-M4, no va a IA ni a embeddings, no aparece en resúmenes. Si el usuario escribe algo sensible ahí, SIR lo guarda y calla. Ningún módulo emocional puede leer esa tabla. Esto se implementa como frontera de datos explícita y test que lo garantice.
 
 **Orden sugerido:** M1 → M2 → M3 → M4, con M5 como precondición transversal desde el día uno.

@@ -65,22 +65,22 @@ De alto valor/simple a complejo. Cada módulo declara la tabla/motor que toca y 
 **1. Mapa de capas de Dunbar + alertas de sobre/sub-inversión.** [P] — Confianza: alta.
 Contar personas por `category` y contrastar con el rango sano (5/15/50/150). Detectar dos patrones: (a) *sobre-inversión* —mucho contacto en peripheral mientras inner_circle queda desatendido; (b) *sub-inversión* —una capa cercana con contacto por debajo de lo esperado. Es aritmética + reglas, sin IA. Toca: `people` (category, last_contact). Señal: alta (dato duro). Entrega: panel "Tu red por capas" en /relaciones.
 
-**2. Balance de reciprocidad por persona (sin volverlo transaccional).** [P] — Confianza: media.
+**2. Balance de reciprocidad por persona. ✅ YA EXISTÍA** (`computeReciprocityWeighted`); "quién inició" real necesita campo initiated_by. [P] — Confianza: media.
 Sobre `QUALITY_DELTA`, mostrar *tendencia* de quién sostiene el vínculo (Aaron inicia siempre / recíproco / el otro carga). NUNCA un marcador tipo "le debés 3 mensajes". El objetivo es notar desequilibrios crónicos ("hace meses siempre arrancás vos con X"), no llevar la cuenta. Toca: `person_logs`, `engines/relationship`. Señal: media (tono autoreportado sesga; ver Modos de falla). Regla + umbral, no IA.
 
-**3. Salud del vínculo: tendencia de tono + cadencia vs. esperada.** [N] — Confianza: media.
+**3. Salud del vínculo: tendencia de tono + cadencia vs. esperada. ✅ HECHO** (`lib/relational/health`). [N] — Confianza: media.
 Por persona, combinar: (a) tendencia de tono (1–5) en el tiempo —¿mejora, se enfría?; (b) cadencia real vs. la esperada por su capa y parentesco (`kinship`). Un íntimo con tono bajando y contacto ralentizando = señal a atender; un peripheral con contacto raro es *normal*, no alerta. La clave es que el umbral dependa de la capa, no un absoluto. Toca: `person_logs` (tono), `people` (category), `kinship`. Señal: media. Aproxima la ratio de Gottman sin pretender medirla fina.
 
-**4. Vínculos que drenan vs. energizan → qué hacer.** [N] — Confianza: media-baja.
+**4. Vínculos que drenan vs. energizan → qué hacer. ✅ HECHO** (`lib/relational/energy`). [N] — Confianza: media-baja.
 Usar `energy_impact` (hoy inerte) cruzado con `self_metrics`: ¿el estrés/ánimo de Aaron se mueve alrededor de interacciones con cierta persona? No es para "cortar gente"; es para *nombrar* el patrón y sugerir manejo: espaciar, poner límite, o cuidar más el propio estado antes de ver a alguien draining pero importante (familia difícil no se descarta). Para energizing: recordar apoyarse en ellos cuando Aaron está bajo. Toca: `people.energy_impact`, `self_metrics`, `person_logs`. Señal: baja al principio (n chico); crece con datos. Honesto: correlación ≠ causa.
 
-**5. "Bids" y rituales de mantenimiento en el momento correcto.** [P] — Confianza: alta (para disparar), media (para el timing fino).
+**5. "Bids" y rituales de mantenimiento en el momento correcto. ✅ HECHO** (`lib/relational/bid`). [P] — Confianza: alta (para disparar), media (para el timing fino).
 Extender Daily Actions: además de urgencia por silencio, sugerir *micro-bids* de bajo costo atados a señal real —un cumpleaños próximo (`special_dates`), una fecha que le importa a la persona (de `memories`), o simplemente "hace X que no hablan y suele responderte". La acción sugerida debe ser específica y opcional, nunca una cuota. Toca: Daily Actions, `special_dates`, `memories`. Señal: alta para el gatillo; el *cuándo exacto* es más incierto.
 
-**6. Lógica distinta afectivo vs. profesional.** [N] — Confianza: alta (es diseño, no predicción).
+**6. Lógica distinta afectivo vs. profesional. ✅ HECHO** (`relationshipMode`). [N] — Confianza: alta (es diseño, no predicción).
 Ramificar todo lo anterior por `relationship`. Afectivo (romantic/family/friend): el foco es presencia y calidad, cero lenguaje de "gestión", jamás sugerir contacto "estratégico". Profesional/instrumental (professional/mentor): admite estrategia explícita —para el objetivo de aumento en HNG, tratar la red laboral como capital instrumental (a quién conviene mantener tibio, quién puede abrir una puerta), con `org_group` de HNG como subred. Dos vocabularios, dos motores de sugerencia. Toca: `people.relationship`, `org_group`, goals. Señal: alta (regla).
 
-**7. Inteligencia de red: caminos, presentaciones, lazos débiles útiles.** [N] — Confianza: media.
+**7. Inteligencia de red: caminos, presentaciones, lazos débiles útiles. ⛔ BLOQUEADO por data** (person_links es solo familia; el grafo person↔person no tiene vínculos profesionales que trazar). [N] — Confianza: media.
 Explotar `person_links` (ya es un grafo real) para: (a) hallar *caminos* ("querés llegar a X; conocés a Y que lo conoce"); (b) sugerir *presentaciones* de valor entre gente de Aaron; (c) resaltar *lazos débiles* (Granovetter) relevantes a un objetivo abierto —contactos de network/peripheral en el rubro correcto. Reusa la infra del cerebro (difusión F2 sobre aristas person↔person). Toca: `person_links`, cerebro F1/F2, goals. Señal: media (depende de qué tan poblado esté el grafo).
 
 **8. Memoria de lo que le importa a cada persona → contacto real, no genérico.** [P] — Confianza: alta (el dato existe), media (la síntesis).

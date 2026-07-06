@@ -55,10 +55,10 @@ De simple a complejo. Cada módulo declara la tabla/motor que toca y su confianz
 **1. Prompt atado a la franja (Fogg: el Prompt).** — Confianza: alta.
 Cuando un `objective_step` tiene `due_time`, SIR ya lo ubica en /horario; sumar un recordatorio activo *en* esa franja ("ahora: [paso], esfuerzo S"). Ata la acción a una señal temporal concreta. Toca: `objective_steps`, /horario. Sin motor nuevo.
 
-**2. Reducir fricción del próximo paso (Ability / arquitectura de elección).** — Confianza: alta.
+**2. Reducir fricción del próximo paso (Ability / arquitectura de elección). ✅ HECHO (lib/habits/nextStep)** — Confianza: alta.
 Mostrar siempre EL siguiente paso más pequeño y pre-decidido, no la lista entera. Si el paso es L, ofrecer partirlo en un S de arranque ("primer bloque de 10 min"). Toca: `objective_steps` (ya hay `esfuerzo`), `engines/recommendation`. Regla, no IA.
 
-**3. Tamaño del hábito según energía disponible (Fogg + SDT competencia).** — Confianza: media.
+**3. Tamaño del hábito según energía disponible (Fogg + SDT competencia). ✅ HECHO (lib/habits/nextStep)** — Confianza: media.
 Cruzar `self_metrics.energy` con `esfuerzo`: energía baja → proponer la versión S ("hábito mínimo viable"), preservar la racha sin exigir el L. Nunca proponer L con energía baja. Toca: `self_metrics` + `engines/priority`/`recommendation`. Degradar a `insufficient` si no hay métrica del día.
 
 **4. Detección de la señal/contexto de un hábito (Wood & Neal + Duhigg).** — Confianza: media-baja.
@@ -67,10 +67,10 @@ Inferir qué contexto precede a una conducta registrada: hora típica, franja, a
 **5. Disparar el WOOP cuando el "if" ocurre (Gollwitzer).** — Confianza: media.
 Si `plan_if` describe un contexto que SIR puede detectar (una franja, un estado de estrés, una fecha), activar `plan_then` como prompt en ese momento. Convierte el WOOP de texto guardado en un lazo vivo. Toca: `objective_plan` + detector de contexto + /horario. Empezar con "if" temporales (fáciles), luego estados.
 
-**6. Drift temprano por erosión de contexto (Wood & Neal).** — Confianza: media.
+**6. Drift temprano por erosión de contexto (Wood & Neal). ✅ HECHO (lib/habits/drift)** — Confianza: media.
 `alignment` ya marca drift; sumar señal *anticipatoria*: consistencia de contexto cayendo o racha en riesgo (1 día de gracia antes de romperse) → aviso suave *antes* de la ruptura. Especial atención a cambios de contexto conocidos (mudanza 04-jul: ventana para reinstalar, no para culpar). Toca: `engines/alignment`, `habits`.
 
-**7. Reforzar por competencia, no por culpa (SDT + learning).** — Confianza: media, crece con datos.
+**7. Reforzar por competencia, no por culpa (SDT + learning). ✅ HECHO (lib/habits/reinforce)** — Confianza: media, crece con datos.
 Extender `engines/learning`: mostrar progreso *acumulado* y el delta de estado (paz/energía) que sigue a un hábito, para que la recompensa percibida sea el avance, no la aprobación de SIR. El lenguaje del refuerzo es "vas 6/7", nunca "fallaste el domingo". Toca: `engines/learning`, `habits`, `self_metrics`.
 
 Orden sugerido de implementación: 1 → 2 → 3 → 6 → 7 → 4 → 5. Los primeros son reglas baratas de alta confianza; 4 y 5 dependen de acumular historial y de un detector de contexto que hoy no existe.

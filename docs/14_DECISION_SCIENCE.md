@@ -55,19 +55,19 @@ De simple a complejo. Cada módulo es independiente y suma sin romper el evaluad
 **M1 — Detector de sesgos en el lenguaje (confianza alta).**
 Al describir la decisión, la IA marca sesgos activos en el texto de Aaron: costo hundido ("ya invertí…", "después de todo este tiempo…"), presente/urgencia ("tiene que ser ahora"), aversión a la pérdida ("no quiero perder lo que…"), confirmación (solo argumentos de un lado). Salida: chips no-bloqueantes ("Detecté posible costo hundido — ¿el pasado debería pesar acá?"). Toca: `engines/decision` (paso de análisis pre-scoring), sin tabla nueva. Es puro prompt + heurística de keywords como red de seguridad. **Empezar por acá.**
 
-**M2 — Premortem forzado (confianza alta).**
+**M2 — Premortem forzado (confianza alta). ✅ HECHO.**
 Para decisiones que cruzan el gate de reversibilidad (irreversibles) o `caution`/`hold`, SIR pide una respuesta antes del veredicto: *"Imaginá que en 6 meses esto salió mal. ¿Qué pasó?"*. La respuesta alimenta la dimensión de riesgo/timing y queda registrada. Barato, alto rendimiento. Toca: UI `/decidir` + un campo en el registro de la decisión. Sin motor nuevo.
 
-**M3 — Calibrador de esfuerzo por reversibilidad (confianza alta).**
+**M3 — Calibrador de esfuerzo por reversibilidad (confianza alta). ✅ HECHO** (`calibrate.ts`).
 Ya existe el gate; falta que *module la interacción*. Reversible → SIR dice explícitamente "esto es una puerta de dos vías, no la sobre-pienses, decidí y ajustá" y acorta el flujo. Irreversible → activa M2 + más dimensiones + tono cauto. Toca: `engines/decision` (branch sobre el score de `reversibility`). Convierte el gate de filtro binario en regulador de UX.
 
-**M4 — Maximizar vs satisficer (confianza media).**
+**M4 — Maximizar vs satisficer (confianza media). ✅ HECHO** (`calibrate.ts`).
 Según lo que está en juego (irreversibilidad × alineación con valores/ancla), SIR sugiere el modo: alto → "vale maximizar, tomate el tiempo"; bajo/reversible → "buscá suficiente-bueno y seguí; maximizar acá te cuesta paz, no resultado". Ayuda directamente contra la parálisis. Toca: `engines/decision` + `engines/priority` (para leer si toca un dominio prioritario). Regla pura, sin IA obligatoria.
 
-**M5 — Decisiones pasadas parecidas + su resultado (confianza media).**
+**M5 — Decisiones pasadas parecidas + su resultado (confianza media). ✅ HECHO** (`similar.ts` + tabla decisions 0125).
 Al evaluar, la memoria cross-session recupera decisiones previas similares (por dominio, dimensiones dominantes, personas involucradas) y, si `engines/learning` registró cómo salieron, lo trae: *"Algo parecido en marzo: elegiste hold y funcionó / te arrepentiste"*. Es el outside view contra la planning fallacy. Toca: memoria + `engines/learning`; requiere que las decisiones guarden outcome (campo `resultado` + revisión posterior). Más complejo porque necesita el *loop de feedback* del resultado real, no solo la decisión.
 
-**M6 — Chequeo de coherencia con valores/identidad (confianza media).**
+**M6 — Chequeo de coherencia con valores/identidad (confianza media). ✅ HECHO** (`valuesCheck.ts`).
 Refuerzo de la dimensión `values`: cruzar la decisión contra `identity_profile` (anclas) y el ancla del año, y señalar disonancia explícita ("esto contradice tu ancla 'Mudarme con mi perro'"). No veta; nombra la tensión. Toca: `engines/decision` + `identity_profile` + goals con `esAncla`. Cuidado: los valores compiten entre sí; mostrar la tensión, no fingir que hay una respuesta limpia.
 
 Orden sugerido: **M1 → M2 → M3** (todo prompt/UX, cero deuda de datos), luego **M4/M6** (reglas puras), y **M5** al final (necesita capturar outcomes en el tiempo).
