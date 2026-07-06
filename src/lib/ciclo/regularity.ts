@@ -13,7 +13,10 @@ const DAY_MS = 86_400_000
  *  arranca un período NUEVO (no la continuación del mismo). */
 const NEW_PERIOD_GAP = 10
 const MIN_LEN = 15
-const MAX_LEN = 60
+// Un ciclo real rara vez pasa de ~40 días; por encima de 45, en data auto-reportada
+// (p.ej. menciones sueltas en un chat), casi siempre es un período NO registrado en
+// el medio, no un ciclo largo real. Contarlo inflaría la irregularidad falsamente.
+const MAX_LEN = 45
 const REGULAR_STDEV = 2.5
 const SOMEWHAT_STDEV = 5
 

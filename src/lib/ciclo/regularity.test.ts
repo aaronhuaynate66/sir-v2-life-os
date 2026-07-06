@@ -52,8 +52,8 @@ describe('computeCycleRegularity', () => {
     expect(r.note).toMatch(/irregular|pinzas/i)
   })
 
-  it('descarta gaps fuera de rango plausible (15-60)', () => {
-    // Un gap enorme (>60) no cuenta como largo de ciclo.
+  it('descarta gaps fuera de rango plausible (15-45)', () => {
+    // Un gap enorme (>45) no cuenta como largo de ciclo (es un período no registrado).
     const r = computeCycleRegularity([
       bleeding('2026-01-01'), bleeding('2026-01-29'), bleeding('2026-06-01'),
     ])
