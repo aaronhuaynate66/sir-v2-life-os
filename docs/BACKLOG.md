@@ -105,6 +105,12 @@
 - **Síntoma:** Ruta `/captura` solo accesible por URL manual.
 - **Fix entregado:** Ítem "Captura" agregado al sidebar (`src/components/layout/Nav.tsx`), entre Relaciones y Objetivos, con ícono `Camera`.
 
+### BUG-004 ⬜ PENDIENTE [P1]: extracción de Instagram ALUCINA la bio
+- **Severidad:** P1 (mala data en perfiles).
+- **Síntoma (caso Diana, 06-jul):** con un screenshot perfectamente legible que dice `Founder: @cautiva.detalles 🌸`, la extracción devolvió `Fandub @colana.doblajes 🎙️` — bio inventada, y encima perdió los seguidores en común. Pisó el eje social. (Familia de BUG-001, ahora en Instagram.)
+- **Mitigación ya hecha (07-06):** revert del caso + descartar recompone el eje (`recomputeAxisFor`) + detección de avatar apunta al perfil (no al feed).
+- **Fix pendiente (raíz):** endurecer el prompt de extracción de Instagram (`src/lib/capture/instagram/prompt.ts`) — **anti-alucinación**: copiar TEXTUAL la bio visible, nunca completar/inventar handles, bajar `confidence` a `low` si algún campo no está claro, y (idea) validar que los @handles de la bio aparezcan literalmente en la imagen. Revisar también por qué una captura legible bajó a esto (compresión/legibilidad).
+
 ---
 
 ## 🆕 BACKLOG NUEVO
