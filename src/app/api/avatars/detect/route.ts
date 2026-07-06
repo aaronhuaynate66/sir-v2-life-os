@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         role: 'user',
         content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType(file.type || 'image/jpeg'), data: b64 } },
-          { type: 'text', text: 'En esta imagen, ubicá la FOTO DE PERFIL o la cara de la persona principal (la más prominente). Devolvé SOLO este JSON con la caja normalizada 0..1 (origen arriba-izquierda): {"found": true|false, "x": <izq>, "y": <arriba>, "w": <ancho>, "h": <alto>}. Si no hay cara/foto de persona, found:false. Hacé la caja un poco amplia para incluir toda la cabeza.' },
+          { type: 'text', text: 'Esta es una captura de un perfil (Instagram/LinkedIn). Ubicá EXCLUSIVAMENTE la FOTO DE PERFIL: el avatar CIRCULAR (o cuadrado, en LinkedIn) que está ARRIBA, junto al nombre de usuario / @handle. NO elijas caras de las publicaciones del feed, de historias destacadas, de fotos sugeridas, ni de otras personas — SOLO el avatar del perfil de la persona dueña de la cuenta. Si el avatar es chico, igual devolvé su caja exacta. Devolvé SOLO este JSON con la caja normalizada 0..1 (origen arriba-izquierda), un poco amplia para incluir toda la cabeza: {"found": true|false, "x": <izq>, "y": <arriba>, "w": <ancho>, "h": <alto>}. Si no ves un avatar de perfil claro, found:false (mejor eso que agarrar la cara equivocada).' },
         ],
       }],
     })
