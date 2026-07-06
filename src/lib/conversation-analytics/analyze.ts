@@ -8,6 +8,7 @@
 // las capas superiores.
 
 import { linreg, median } from '@/lib/stats/regression'
+import { detectChangePoint } from '@/lib/stats/changepoint'
 
 export interface ConvMsg {
   /** true = lo mandó Aaron; false = la otra persona. */
@@ -36,6 +37,8 @@ export interface ConversationAnalytics {
     slopePerWeek: number
     r2: number
     direction: Direction
+    /** Quiebre puntual detectado en el volumen (cuándo cambió), o null. */
+    changePoint: { at: number; direction: 'se enfrió' | 'se calentó'; beforeAvg: number; afterAvg: number } | null
   } | null
   cadence: {
     sessions: number
@@ -132,11 +135,13 @@ export function analyzeConversation(messages: ConvMsg[], now: number): Conversat
     const reg = linreg(counts.map((_, i) => i), counts)
     if (reg) {
       const mean = total / weeks
+      const cp = detectChangePoint(counts)
       base.volume = {
         weeklyCounts: counts,
         slopePerWeek: Math.round(reg.slope * 100) / 100,
         r2: Math.round(reg.r2 * 100) / 100,
         direction: directionOf(reg.slope, Math.max(1, mean)),
+        changePoint: cp ? { at: firstAt + cp.index * WEEK, direction: cp.delta < 0 ? 'se enfrió' : 'se calentó', beforeAvg: cp.beforeAvg, afterAvg: cp.afterAvg } : null,
       }
     }
   } else insufficient.push('serie corta (<10 días) para tendencia de volumen')

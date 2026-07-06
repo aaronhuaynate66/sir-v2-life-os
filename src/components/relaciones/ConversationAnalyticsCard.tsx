@@ -39,6 +39,10 @@ function whenFromNow(at: number | null): string {
   return `en ~${Math.round(d)} d`
 }
 
+function fmtDate(at: number): string {
+  try { return new Date(at).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) } catch { return '' }
+}
+
 export function ConversationAnalyticsCard({ personId, personName }: ConversationAnalyticsCardProps) {
   const [a, setA] = useState<ConversationAnalytics | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -93,6 +97,12 @@ export function ConversationAnalyticsCard({ personId, personName }: Conversation
             <span className="font-mono tabular-nums text-muted-foreground text-xs">
               {a.volume.slopePerWeek > 0 ? '+' : ''}{a.volume.slopePerWeek} msgs/sem
             </span>
+          </div>
+        )}
+
+        {a.volume?.changePoint && (
+          <div className="text-[13px] text-muted-foreground -mt-1">
+            Quiebre: <span className="text-foreground">{a.volume.changePoint.direction}</span> alrededor del {fmtDate(a.volume.changePoint.at)}
           </div>
         )}
 
