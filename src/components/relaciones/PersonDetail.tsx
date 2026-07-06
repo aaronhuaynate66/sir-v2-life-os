@@ -68,6 +68,7 @@ import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
 import { AMBITO_LABEL, inferAmbito } from '@/lib/people/ambito'
 import { BondEvolutionPanel } from './BondEvolutionPanel'
+import { ConversationAnalyticsCard } from './ConversationAnalyticsCard'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
@@ -725,6 +726,9 @@ export function PersonDetail({
       </div>
       <div className="mb-4">
         <BondEvolutionPanel personId={live.id} />
+      </div>
+      <div className="mb-4">
+        <ConversationAnalyticsCard personId={live.id} personName={live.name} />
       </div>
 
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
