@@ -111,6 +111,16 @@
 - **Mitigación ya hecha (07-06):** revert del caso + descartar recompone el eje (`recomputeAxisFor`) + detección de avatar apunta al perfil (no al feed).
 - **Fix pendiente (raíz):** endurecer el prompt de extracción de Instagram (`src/lib/capture/instagram/prompt.ts`) — **anti-alucinación**: copiar TEXTUAL la bio visible, nunca completar/inventar handles, bajar `confidence` a `low` si algún campo no está claro, y (idea) validar que los @handles de la bio aparezcan literalmente en la imagen. Revisar también por qué una captura legible bajó a esto (compresión/legibilidad).
 
+### BUG-005 ⬜ PENDIENTE [P1]: el import de chat CONTAMINA la ficha con ruido (no la extracción, el ruido)
+- **Severidad:** P1 (la sustancia se pierde bajo artefactos).
+- **Diagnóstico (caso Diana, 07-06):** la EXTRACCIÓN de contenido es BUENA (síntesis del vínculo, facts reales — notaría, familia, perros —, fechas, tono×fase 17·M3 corriendo). El problema es el **ruido del import que la tapa**:
+  1. **"Última interacción" = el evento de import** ("Importado del export · 70811 mensajes") en vez del último mensaje real. → `LastInteractionPanel` / la lógica de última-interacción debe IGNORAR los logs marcados import y leer `data.dateRange.last` de la conversación.
+  2. **Imports duplicados:** re-importar crea un `whatsapp_chat` nuevo cada vez (había 3 para Diana; deduplicados a mano 07-06). → al re-importar, **obsoletar el `whatsapp_chat` previo de esa persona** (dedup por person_id/thread) antes de insertar el nuevo.
+  3. **Spam de logs de llamada:** 141 memorias, casi todas "📞 Llamada de voz · Xs" (de `extractCalls` en `runImport.ts`). → NO derivar memorias individuales de logs de llamada (agregarlas o excluirlas del derive; ya hay `isNoiseLog` para la familia 📞).
+  4. **"Tono inferido del chat importado"** repetido en bitácora/timeline (ruido value=3). → aplicar el filtro `isNoiseLog` también en la bitácora/última-interacción (ya se aplicó en efecto-partner y salud del vínculo; falta acá).
+- **NO tocar:** la síntesis narrativa, facts, extractedDates, tono×fase — eso anda bien.
+- **Escenario elegido (07-06):** marcado PENDIENTE; avanzamos con otras cosas y esto se ataca por estos 4 puntos.
+
 ---
 
 ## 🆕 BACKLOG NUEVO
