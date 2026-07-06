@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
 import { computeCycleRegularity, type PredictionConfidence } from '@/lib/ciclo/regularity'
 import { careAnticipation, predictionWindow } from '@/lib/ciclo/forecast'
+import { intimacyGuidance } from '@/lib/ciclo/intimacy'
 import type { PersonCycleEntry, CyclePhase } from '@/lib/person-cycles/types'
 import { cycleEntriesWithNotes } from '@/lib/person-cycles/notes'
 import { useMounted } from '@/hooks/useMounted'
@@ -47,6 +48,8 @@ export interface CicloPanelProps {
   cycleLengthDays?: number | null
   /** 17·M4 — registros de person_cycles para medir la regularidad → confianza. */
   personCycles?: PersonCycleEntry[]
+  /** 17·M6 — solo con pareja: muestra el atunamiento de intimidad (cuidado). */
+  isRomantic?: boolean
 }
 
 const CONFIDENCE_LABEL: Record<PredictionConfidence, { text: string; cls: string }> = {
@@ -71,7 +74,7 @@ const PHASE_ACCENT_CLASS: Record<CyclePhaseId, string> = {
   luteal: 'text-brand-soft-foreground',
 }
 
-export function CicloPanel({ cycleStartDate, cycleLengthDays, personCycles = [] }: CicloPanelProps) {
+export function CicloPanel({ cycleStartDate, cycleLengthDays, personCycles = [], isRomantic = false }: CicloPanelProps) {
   // La fase/día/countdown del ciclo dependen de "hoy" → mount-safe.
   const mounted = useMounted()
   return (
@@ -91,7 +94,7 @@ export function CicloPanel({ cycleStartDate, cycleLengthDays, personCycles = [] 
 
         {cycleStartDate ? (
           mounted ? (
-            <Body cycleStartDate={cycleStartDate} cycleLengthDays={cycleLengthDays ?? 28} personCycles={personCycles} />
+            <Body cycleStartDate={cycleStartDate} cycleLengthDays={cycleLengthDays ?? 28} personCycles={personCycles} isRomantic={isRomantic} />
           ) : (
             <CicloPlaceholder />
           )
@@ -120,10 +123,12 @@ function Body({
   cycleStartDate,
   cycleLengthDays,
   personCycles,
+  isRomantic,
 }: {
   cycleStartDate: string
   cycleLengthDays: number
   personCycles: PersonCycleEntry[]
+  isRomantic: boolean
 }) {
   const phase = cyclePhase(cycleStartDate, cycleLengthDays)
   // 17·M4 — regularidad observada → confianza de la predicción.
@@ -183,6 +188,9 @@ function Body({
           </div>
         ) : null
       })()}
+
+      {/* 17·M6 — atunamiento de intimidad (SOLO pareja). Cuidado, no táctica. */}
+      {isRomantic && <IntimacyBlock phase={phase} />}
 
       <div className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
         Próximo período:{' '}
@@ -366,5 +374,21 @@ function CicloDonut({
         /{cycleLength}
       </text>
     </svg>
+  )
+}
+
+// 17·M6 — atunamiento de intimidad de pareja. Cuidado y conexión, NO táctica.
+// Prioriza el contexto (Nagoski) sobre la ventana hormonal y lleva el recordatorio
+// innegociable. Solo se monta con vínculo romántico activo.
+function IntimacyBlock({ phase }: { phase: NonNullable<ReturnType<typeof cyclePhase>> }) {
+  const g = intimacyGuidance(phase)
+  return (
+    <div className="rounded-md border border-brand/25 bg-brand-soft/20 px-3 py-2.5 space-y-1.5 text-[11px] leading-relaxed">
+      <div className="font-medium text-brand-soft-foreground">Atunamiento — cuidado, no táctica</div>
+      <p className="text-foreground/90">{g.phaseNote}</p>
+      <p className="text-foreground/90"><span className="text-text-tertiary">Lo que más pesa: </span>{g.lever}</p>
+      <p className="text-foreground/90"><span className="text-text-tertiary">El movimiento: </span>{g.move}</p>
+      <p className="text-muted-foreground italic">{g.caution}</p>
+    </div>
   )
 }
