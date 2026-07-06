@@ -69,6 +69,7 @@ import { RelationalScore } from './RelationalScore'
 import { AMBITO_LABEL, inferAmbito } from '@/lib/people/ambito'
 import { BondEvolutionPanel } from './BondEvolutionPanel'
 import { ConversationAnalyticsCard } from './ConversationAnalyticsCard'
+import { isSystemNote } from '@/lib/memories/fromInteractionLog'
 import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
@@ -257,7 +258,7 @@ export function PersonDetail({
 
   // Ventana de contacto (#6): tono de la última interacción registrada.
   const lastInteractionTone = useMemo(() => {
-    const ints = personLogs.filter((l) => l.kind === 'interaction')
+    const ints = personLogs.filter((l) => l.kind === 'interaction' && !isSystemNote(l.note ?? ''))
     if (ints.length === 0) return null
     const latest = [...ints].sort((a, b) => (a.loggedAt < b.loggedAt ? 1 : -1))[0]
     return typeof latest.value === 'number' ? latest.value : null
@@ -369,7 +370,7 @@ export function PersonDetail({
       </div>
       <LastInteractionPanel
         lastChat={lastChat}
-        lastManualInteraction={personLogs.find((l) => l.kind === 'interaction') ?? null}
+        lastManualInteraction={personLogs.find((l) => l.kind === 'interaction' && !isSystemNote(l.note ?? '')) ?? null}
         personName={live.name}
       />
       <HistorialSearch personId={live.id} />
@@ -425,7 +426,7 @@ export function PersonDetail({
         person={live}
         lastChatObservedAt={lastChat?.observedAt ?? null}
         lastManualInteractionAt={
-          personLogs.find((l) => l.kind === 'interaction')?.loggedAt ?? null
+          personLogs.find((l) => l.kind === 'interaction' && !isSystemNote(l.note ?? ''))?.loggedAt ?? null
         }
       />
 
