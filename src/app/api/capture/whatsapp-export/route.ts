@@ -262,6 +262,16 @@ export async function POST(req: NextRequest) {
   const observedAt = deriveObservedAt('whatsapp_chat', data)
   data.importedAt = new Date().toISOString()
 
+  // Dedup (BUG-005): un re-import del MISMO chat reemplaza al anterior. Obsoletamos
+  // los whatsapp_chat previos de esta persona antes de insertar el nuevo, para no
+  // triplicar resúmenes/memorias en la ficha. Best-effort: nunca rompe el import.
+  try {
+    await supabase
+      .from('observations')
+      .update({ is_obsolete: true, obsoleted_at: new Date().toISOString(), obsoleted_reason: 'reemplazado por re-import del chat' })
+      .eq('user_id', userId).eq('person_id', personId).eq('capture_type', 'whatsapp_chat').eq('is_obsolete', false)
+  } catch { /* best-effort */ }
+
   try {
     const observation = await insertObservation(supabase, {
       userId,
