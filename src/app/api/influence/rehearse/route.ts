@@ -11,6 +11,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { reportApiError } from '@/lib/observability/reportApiError'
+import { logEvent } from '@/lib/observability/logEvent'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
 import { getSelfBioState } from '@/lib/people/selfState'
@@ -118,10 +119,17 @@ export async function POST(req: NextRequest) {
     const msg = await client.messages.create({
       model: MODEL_ID, max_tokens: 1400,
       system: extra ? `${REHEARSE_SYSTEM_PROMPT}\n\n${extra}` : REHEARSE_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: user }],
+      // Prefill '{' fuerza a Claude a arrancar el JSON directo → UNA sola llamada
+      // confiable, sin el doble-call de reintento que empujaba el request > 60s
+      // (Vercel Hobby corta a 60s e IGNORA el maxDuration=120 de arriba).
+      messages: [
+        { role: 'user', content: user },
+        { role: 'assistant', content: '{' },
+      ],
     })
     const block = msg.content.find((b) => b.type === 'text')
-    return block && block.type === 'text' ? block.text : ''
+    const text = block && block.type === 'text' ? block.text : ''
+    return text ? `{${text}` : ''
   }
 
   // 16·M5 (caution): objetivo en zona gris afectiva → recordarle al modelo que
@@ -130,19 +138,23 @@ export async function POST(req: NextRequest) {
     ? `CHEQUEO ÉTICO (16·M5): ${ethics.message}\nMantené el registro de cuidado; no ensayes "cómo conseguir que…".`
     : ''
 
+  const t0 = Date.now()
   let raw = ''
   try {
     raw = await call(ethicsExtra)
   } catch (e) {
+    const detail = (e instanceof Error ? e.message : String(e)).slice(0, 300)
     reportApiError(e, { route: 'influence/rehearse' })
-    return errorJson(502, 'Falló la llamada a Claude', (e instanceof Error ? e.message : String(e)).slice(0, 300))
+    await logEvent(supabase, userId, { type: 'rehearse', ok: false, route: 'influence/rehearse', durationMs: Date.now() - t0, meta: { stage: 'llm', personId, detail } })
+    return errorJson(502, 'Falló la llamada a Claude', detail)
   }
 
-  let result = parseRehearseJson(raw)
+  const result = parseRehearseJson(raw)
   if (!result) {
-    try { result = parseRehearseJson(await call('CRÍTICO: devolvé SOLO el JSON, empezando con { y terminando con }.')) } catch { result = null }
+    await logEvent(supabase, userId, { type: 'rehearse', ok: false, route: 'influence/rehearse', durationMs: Date.now() - t0, meta: { stage: 'parse', personId } })
+    return errorJson(502, 'Claude devolvió un formato inesperado', 'Reintentá en un momento.')
   }
-  if (!result) return errorJson(502, 'Claude devolvió formato inválido')
 
+  await logEvent(supabase, userId, { type: 'rehearse', ok: true, route: 'influence/rehearse', durationMs: Date.now() - t0, meta: { personId, scenarios: result.scenarios.length } })
   return NextResponse.json({ result, person: { name: ctx.personName, hadContext: memories.length > 0 } })
 }
