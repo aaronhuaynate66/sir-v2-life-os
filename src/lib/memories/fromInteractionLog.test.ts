@@ -21,6 +21,15 @@ describe('shouldMaterializeInteraction', () => {
     expect(shouldMaterializeInteraction('mood', 'me sentí mal')).toBe(false)
     expect(shouldMaterializeInteraction('sleep', 'dormí poco')).toBe(false)
   })
+  it('NO materializa ruido de import (llamadas 📞, tono inferido, importado)', () => {
+    expect(isSystemNote('📞 Llamada de voz · 8 s · 14:37')).toBe(true)
+    expect(isSystemNote('Tono inferido del chat importado')).toBe(true)
+    expect(isSystemNote('Conversación reciente TENSA — pelearon')).toBe(true)
+    expect(isSystemNote('Importado del export de WhatsApp · 70811 mensajes')).toBe(true)
+    expect(shouldMaterializeInteraction('interaction', '📞 Videollamada perdida')).toBe(false)
+    // una nota REAL sigue materializando
+    expect(isSystemNote('me contó que la ascendieron')).toBe(false)
+  })
 })
 
 describe('interactionLogMemoryId', () => {

@@ -32,6 +32,11 @@ export function interactionLogMemoryId(logId: string): string {
 export const SYSTEM_NOTE_PREFIXES: readonly string[] = [
   'Importado del export',
   'Importado de',
+  // Ruido de import que NO es contenido real (BUG-005): logs de llamada y de tono
+  // inferido de un chat. Marcan contacto/tono, no son una memoria del vínculo.
+  '📞', // "📞 Llamada de voz · Xs", "📞 Videollamada perdida", …
+  'Tono inferido',
+  'Conversación reciente', // "Conversación reciente TENSA — …"
 ]
 
 /** ¿La nota es generada por el sistema (metadata), no contenido real? */
