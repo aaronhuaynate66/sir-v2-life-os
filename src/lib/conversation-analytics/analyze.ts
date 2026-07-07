@@ -80,7 +80,12 @@ const NEG_EMOJI = /[😞😟😠😡😢😭😤😨😰😥🙁☹️👎❌⚠
 const STOP = new Set(['que', 'de', 'la', 'el', 'en', 'y', 'a', 'los', 'las', 'un', 'una', 'por', 'con', 'para',
   'es', 'se', 'no', 'lo', 'del', 'al', 'su', 'sus', 'me', 'te', 'le', 'les', 'mi', 'tu', 'más', 'mas', 'ya',
   'si', 'sí', 'pero', 'como', 'esto', 'eso', 'esa', 'ese', 'está', 'esta', 'estan', 'están', 'hay', 'muy',
-  'ok', 'okas', 'dale', 'hola', 'jaja', 'jajaja', 'gracias', 'porfa', 'oka', 'bien', 'creo', 'ver', 'hacer'])
+  'ok', 'okas', 'dale', 'hola', 'jaja', 'jajaja', 'gracias', 'porfa', 'oka', 'bien', 'creo', 'ver', 'hacer',
+  // filler común que ensuciaba los "temas que suben"
+  'cosa', 'cosas', 'todo', 'toda', 'todos', 'nada', 'algo', 'tarde', 'ando', 'aja', 'oki', 'okey', 'buenas',
+  'buenos', 'vamos', 'estoy', 'estas', 'estás', 'tengo', 'tenes', 'tienes', 'quiero', 'vas', 'voy', 'hace',
+  'dice', 'digo', 'igual', 'entonces', 'tambien', 'también', 'ahora', 'antes', 'despues', 'después', 'aca',
+  'acá', 'alla', 'allá', 'aqui', 'aquí', 'este', 'esos', 'esas', 'cuando', 'donde', 'dónde', 'porque', 'quien'])
 
 function deburr(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
