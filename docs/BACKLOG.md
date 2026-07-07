@@ -312,8 +312,7 @@ Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lóg
 **6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**.
 - **Esfuerzo: ALTO.** Integración externa (OAuth calendario, sync, matching a `people`). Backlog lejano.
 
-**7. Q&A por persona (estilo agente "Nexus")** — extender el resumen longitudinal (`person-synthesis` / Fase 3c) a un **preguntá-sobre-esta-persona** usando su contexto (observations + memories + logs).
-- **Esfuerzo: ALTO.** Depende de Fase 3b (búsqueda semántica) activa + RAG (3d). Construye sobre `person-synthesis` ya existente.
+**7. Q&A por persona** — ✅ **CERRADO** (`0a106c2`). Ask-box `PreguntarSobrePersona` en la ficha: reusa `/api/sir/ask` (grounding + RAG, ya hechos) con un `personId` nuevo que pre-scopea el contexto ANTES del cap, así responde aterrizado en esa persona aunque no la nombres. Sugerencias rápidas + `skipInlineGaps`. El backend (name-resolution + memorias semánticas + recall C3) ya existía; esto agregó el scope explícito + la UI. **Pendiente futuro:** verificar en vivo (LLM); multi-turno dentro de la ficha (hoy una pregunta por vez).
 
 **8. Cross-referencing por ubicación** — que la capa de memoria/engines interprete el campo `location` (ya existe en `people`; ahora editable a nivel distrito/ciudad) y lo cruce.
 - **Qué es:** sugerencias contextuales por cercanía — "Diana vive en Barranco → visitala", o "X y vos están cerca" cuando Aaron está en la zona. Aparece en la **Agenda / Próximo**.
