@@ -108,6 +108,7 @@ import { AgregarCapturaPanel } from './AgregarCapturaPanel'
 import { MomentosPanel } from './MomentosPanel'
 import { PersonMoneyPanel } from './PersonMoneyPanel'
 import { ContactWindowBadge } from './ContactWindowBadge'
+import { CADENCE_PRESETS, storedToPreset, presetToStored, parseCustomDays } from '@/lib/people/cadence'
 import { IdentidadesPanel } from './IdentidadesPanel'
 import { FamiliaPanel } from './FamiliaPanel'
 import { ProfessionalLinksPanel } from './ProfessionalLinksPanel'
@@ -573,8 +574,34 @@ export function PersonDetail({
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="person-freq" className="text-xs">Frecuencia de contacto</Label>
-                  <Input id="person-freq" value={form.contactFrequency} onChange={(e) => patch('contactFrequency', e.target.value)} disabled={saving} className="mt-1" placeholder="Ej: semanal, mensual" />
+                  <Label className="text-xs">Cadencia de contacto</Label>
+                  {(() => {
+                    const sel = storedToPreset(form.contactFrequency)
+                    const customN = sel === 'custom' ? (parseCustomDays(form.contactFrequency) ?? 21) : 21
+                    return (
+                      <div className="mt-1 flex gap-2">
+                        <Select
+                          value={sel}
+                          onValueChange={(v) => patch('contactFrequency', presetToStored(v as ReturnType<typeof storedToPreset>, customN))}
+                          disabled={saving}
+                        >
+                          <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {CADENCE_PRESETS.map((p) => (
+                              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {sel === 'custom' && (
+                          <Input
+                            type="number" min={1} max={365} value={customN}
+                            onChange={(e) => patch('contactFrequency', presetToStored('custom', Number(e.target.value) || 1))}
+                            disabled={saving} className="w-20 font-mono" aria-label="Cada cuántos días"
+                          />
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
                 <div>
                   <Label htmlFor="person-trust" className="text-xs">Confianza: <span className="font-mono text-foreground">{form.trustLevel}/10</span></Label>
