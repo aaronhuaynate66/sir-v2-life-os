@@ -26,6 +26,10 @@ import {
 import { useRelationshipStore, useMemoryStore } from '@/stores'
 import { computeContactWindow } from '@/lib/relationships/contactWindow'
 import { relationStrength, STRENGTH_LABEL, type RelationStrength } from '@/lib/relationships/strength'
+import {
+  CADENCE_PRESETS, storedToPreset, presetToStored, parseCustomDays,
+  describeCadence, cadenceStatus,
+} from '@/lib/people/cadence'
 import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import type { SpecialDate } from '@/types'
@@ -503,8 +507,38 @@ function RelationshipsContent() {
                 <Input type="range" min={1} max={10} value={form.importanceScore} onChange={(e) => setForm({ ...form, importanceScore: Number(e.target.value) })} />
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">Frecuencia de contacto</label>
-                <Input value={form.contactFrequency} onChange={(e) => setForm({ ...form, contactFrequency: e.target.value })} placeholder="Ej: semanal, mensual" />
+                <label className="block text-xs text-muted-foreground mb-1">Cadencia de contacto</label>
+                {(() => {
+                  const sel = storedToPreset(form.contactFrequency)
+                  const customN = sel === 'custom' ? (parseCustomDays(form.contactFrequency) ?? 21) : 21
+                  return (
+                    <div className="flex gap-2">
+                      <Select
+                        value={sel}
+                        onValueChange={(v) => setForm({
+                          ...form,
+                          contactFrequency: presetToStored(v as ReturnType<typeof storedToPreset>, customN),
+                        })}
+                      >
+                        <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {CADENCE_PRESETS.map((p) => (
+                            <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {sel === 'custom' && (
+                        <Input
+                          type="number" min={1} max={365} value={customN}
+                          onChange={(e) => setForm({ ...form, contactFrequency: presetToStored('custom', Number(e.target.value) || 1) })}
+                          className="w-20 font-mono"
+                          aria-label="Cada cuántos días"
+                        />
+                      )}
+                    </div>
+                  )
+                })()}
+                <p className="text-[10px] text-muted-foreground/70 mt-1">Cada cuánto querés mantener contacto. Automática = por categoría.</p>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Ubicacion</label>
@@ -678,6 +712,19 @@ function RelationshipsContent() {
                           <span className="text-xs text-muted-foreground">
                             Ultimo contacto: <span className="text-foreground font-medium font-mono tabular-nums">{lastContactDisplay}</span>
                           </span>
+                          {(() => {
+                            const desc = describeCadence(person.contactFrequency, person.category)
+                            const st = cadenceStatus(person.lastContact ? daysSince(person.lastContact) : null, desc.days)
+                            const stColor = st.state === 'atrasado'
+                              ? (st.overdueDays > desc.days * 0.5 ? 'text-bad' : 'text-warn')
+                              : st.state === 'al_dia' ? 'text-ok' : 'text-muted-foreground/60'
+                            return (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                Cadencia: <span className="text-foreground/80 font-mono tabular-nums">{desc.label}</span>
+                                <span className={cn('font-medium', stColor)}>· {st.label}</span>
+                              </span>
+                            )
+                          })()}
                           {(() => {
                             const up = nearestUpcoming(person)
                             const win = computeContactWindow({
