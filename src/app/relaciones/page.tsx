@@ -180,6 +180,7 @@ function RelationshipsContent() {
   const [ambitoFilter, setAmbitoFilter] = useState<'todos' | PersonAmbito>('todos')
   const [strengthFilter, setStrengthFilter] = useState<'todas' | RelationStrength>('todas')
   const [sortBy, setSortBy] = useState<SortKey>('default')
+  const [locationFilter, setLocationFilter] = useState<string>('todas')
   const [query, setQuery] = useState('')
   const [avatars, setAvatars] = useState<Record<string, string>>({})
   useEffect(() => { let alive = true; void fetchAvatars().then((m) => { if (alive) setAvatars(m) }); return () => { alive = false } }, [])
@@ -638,6 +639,25 @@ function RelationshipsContent() {
               <SelectItem value="nombre">Nombre (A-Z)</SelectItem>
             </SelectContent>
           </Select>
+
+          {locationSuggestions.length >= 2 && (
+            <>
+              <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70 ml-2">Zona</span>
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs" aria-label="Filtrar por zona">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {locationSuggestions.map((loc) => (
+                    <SelectItem key={loc} value={loc}>
+                      {loc} ({people.filter((p) => p.location === loc).length})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
         </div>
       )}
 
@@ -659,6 +679,7 @@ function RelationshipsContent() {
             const filtered = people.filter((p) =>
               (ambitoFilter === 'todos' || effectiveAmbito(p) === ambitoFilter) &&
               (strengthFilter === 'todas' || relationStrength(p.category) === strengthFilter) &&
+              (locationFilter === 'todas' || p.location === locationFilter) &&
               matchesQuery(p),
             )
             if (filtered.length === 0) {
