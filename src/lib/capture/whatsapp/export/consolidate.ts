@@ -16,6 +16,7 @@ import type {
   ExportMessage,
 } from './types'
 import { weeklyVolumeSeries } from '@/lib/conversation-analytics/analyze'
+import { reconcileFacts } from '@/lib/facts/reconcile'
 
 // ─── helpers de merge ───────────────────────────────────────────────
 
@@ -167,7 +168,10 @@ export function consolidateInterpretations(parts: ChunkInterpretation[]): Consol
 
   const dates = dedupDates(valid.map((p) => p.dates), 20)
   const events = unionStrings(valid.map((p) => p.events), 20)
-  const facts = unionStrings(valid.map((p) => p.facts), 30)
+  // Reconciliación temporal: dedup + resolver contradicciones de atributos de un
+  // solo valor (dónde vive, estado civil) → gana el más reciente (los facts van
+  // en orden cronológico). Evita el "caso Nicolle" (dos residencias coexistiendo).
+  const facts = reconcileFacts(unionStrings(valid.map((p) => p.facts), 60)).facts.slice(0, 30)
 
   return {
     summary,
