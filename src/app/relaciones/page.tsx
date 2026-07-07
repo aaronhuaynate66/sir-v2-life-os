@@ -26,6 +26,7 @@ import {
 import { useRelationshipStore, useMemoryStore } from '@/stores'
 import { computeContactWindow } from '@/lib/relationships/contactWindow'
 import { relationStrength, STRENGTH_LABEL, type RelationStrength } from '@/lib/relationships/strength'
+import { cadenceStatus } from '@/lib/relationships/cadence'
 import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import type { SpecialDate } from '@/types'
@@ -641,6 +642,16 @@ function RelationshipsContent() {
                           <span className="text-xs text-muted-foreground">
                             Ultimo contacto: <span className="text-foreground font-medium font-mono tabular-nums">{lastContactDisplay}</span>
                           </span>
+                          {(() => {
+                            const cs = cadenceStatus(person.importanceScore, person.lastContact, Date.now())
+                            if (cs.state === 'sin_registro') return null
+                            return (
+                              <Badge variant="outline" className={cn('text-[10px] font-normal', cs.state === 'atrasado' ? 'border-warn/40 text-warn' : 'border-ok/40 text-ok')} title={`Cadencia sugerida: cada ${cs.targetDays} días`}>
+                                {cs.state === 'atrasado' ? `atrasado ${cs.overdueDays}d` : 'al día'}
+                                <span className="text-muted-foreground/60 ml-1">· cada {cs.targetDays}d</span>
+                              </Badge>
+                            )
+                          })()}
                           {(() => {
                             const up = nearestUpcoming(person)
                             const win = computeContactWindow({
