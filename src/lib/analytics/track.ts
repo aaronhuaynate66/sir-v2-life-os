@@ -52,6 +52,10 @@ export const EVENTS = {
   personAdded: 'person_added',
   familyLinkAdded: 'family_link_added',
   messageGenerated: 'message_generated',
+  // Fallo de una llamada a IA (síntesis, captura, ensayo…). El param `reason`
+  // distingue el motivo — clave para reportería: 'insufficient_credits' avisa
+  // que se acabó el saldo de la API (no es un bug del código).
+  aiCallFailed: 'ai_call_failed',
   interactionLogged: 'interaction_logged',
   habitChecked: 'habit_checked',
   moodLogged: 'mood_logged',
@@ -123,4 +127,35 @@ export function trackCreated(
   params: { method: CreateMethod } & GtagParams,
 ): void {
   track(event, params)
+}
+
+/** Motivo de un fallo de IA, para agrupar en GA4. */
+export type AiErrorReason =
+  | 'insufficient_credits' // saldo de la API agotado (Plans & Billing)
+  | 'rate_limited'         // 429
+  | 'overloaded'           // 529 (modelo saturado)
+  | 'timeout'              // 504 / la función se pasó de tiempo
+  | 'network'              // la request ni llegó (status 0)
+  | 'other'
+
+/** Clasifica un fallo de IA a partir del status + mensaje/detalle del error.
+ *  PURO — testeable sin GA4. */
+export function classifyAiError(err: { status?: number; message?: string; detail?: string }): AiErrorReason {
+  const status = err.status ?? 0
+  const text = `${err.message ?? ''} ${err.detail ?? ''}`.toLowerCase()
+  if (/credit balance|too low|plans ?& ?billing|billing|insufficient.*credit|purchase credits/.test(text)) return 'insufficient_credits'
+  if (status === 429 || /rate.?limit|too many requests/.test(text)) return 'rate_limited'
+  if (status === 529 || /overloaded/.test(text)) return 'overloaded'
+  if (status === 504 || /timeout|timed out/.test(text)) return 'timeout'
+  if (err.status === 0 || /network|failed to fetch/.test(text)) return 'network'
+  return 'other'
+}
+
+/** Mide en GA4 un fallo de una llamada a IA, con el motivo clasificado.
+ *  `feature` = qué feature falló (ej. 'person_synthesis'). Silencioso sin gtag. */
+export function trackAiError(
+  feature: string,
+  err: { status?: number; message?: string; detail?: string },
+): void {
+  track(EVENTS.aiCallFailed, { feature, reason: classifyAiError(err), status: err.status ?? 0 })
 }

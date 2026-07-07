@@ -15,7 +15,7 @@
 // la DB, no estado local).
 
 import { useState } from 'react'
-import { track, EVENTS } from '@/lib/analytics/track'
+import { track, EVENTS, trackAiError } from '@/lib/analytics/track'
 import { useRouter } from 'next/navigation'
 import { Sparkles, Loader2, RefreshCw } from 'lucide-react'
 
@@ -58,7 +58,9 @@ export function LoPersonal({ personId, synthesis, conversationCount }: LoPersona
       track(EVENTS.messageGenerated, { source: 'ficha' })
       router.refresh()
     } catch (e) {
-      setError(toApiError(e))
+      const apiErr = toApiError(e)
+      setError(apiErr)
+      trackAiError('person_synthesis', apiErr) // GA4: mide el fallo (ej. sin créditos)
     } finally {
       setGenerating(false)
     }
