@@ -12,6 +12,7 @@ import { TrendingUp, TrendingDown, Minus, MessageSquare } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import type { ConversationAnalytics, Direction } from '@/lib/conversation-analytics/analyze'
+import { initiationInsight } from '@/lib/conversation-analytics/insight'
 
 export interface ConversationAnalyticsCardProps {
   personId: string
@@ -82,11 +83,18 @@ export function ConversationAnalyticsCard({ personId, personName }: Conversation
   }
 
   const mePct = a.myShare != null ? Math.round(a.myShare * 100) : null
+  const insight = initiationInsight(a, personName.split(' ')[0])
 
   return (
     <Card className="shadow-none">
       <CardContent className="p-4 sm:p-5 space-y-3">
         <Header />
+
+        {insight && (
+          <p className="rounded-md border border-brand/25 bg-brand-soft/60 px-3 py-2 text-[13px] leading-relaxed text-foreground">
+            {insight}
+          </p>
+        )}
 
         {a.volume && (
           <div className="flex items-center gap-2 text-sm">
