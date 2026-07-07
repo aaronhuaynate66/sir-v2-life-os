@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const { data: person } = await supabase
     .from('people')
-    .select('id, name, title, organization, relationship, ambito, cycle_start_date, cycle_length_days')
+    .select('id, name, title, organization, relationship, ambito, cycle_start_date, cycle_length_days, last_contact')
     .eq('user_id', userId)
     .eq('id', personId)
     .maybeSingle()
@@ -98,11 +98,13 @@ export async function POST(req: NextRequest) {
       relationship: (person.relationship as string) ?? null,
       cycleStartDate: (person.cycle_start_date as string) ?? null,
       cycleLengthDays: (person.cycle_length_days as number) ?? null,
+      lastContactMs: person.last_contact ? Date.parse(person.last_contact as string) : null,
     }, Date.now()).catch((e) => { rep(e); return {} as import('@/lib/influence/rehearseContext').RehearseExtras }),
   ])
   const cycleNote = extras.cycleNote
   const pulse = extras.pulse
   const openThreads = extras.openThreads
+  const bondState = extras.bondState
 
   const ctx: RehearseContext = {
     personName,
@@ -116,6 +118,7 @@ export async function POST(req: NextRequest) {
     cycleNote,
     pulse,
     openThreads,
+    bondState,
   }
   const user = buildRehearseUserContent(ctx, objective)
 
@@ -170,7 +173,7 @@ export async function POST(req: NextRequest) {
       user_id: userId, person_id: personId, person_name: personName, objective, result,
       context_used: {
         cycle: !!cycleNote, pulse: !!pulse, selfState: !!selfState,
-        openThreads: !!openThreads, memories: memories.length, conversation: !!conversation,
+        openThreads: !!openThreads, bondState: !!bondState, memories: memories.length, conversation: !!conversation,
       },
     })
   } catch (e) { reportApiError(e, { route: 'influence/rehearse', stage: 'persist' }) }

@@ -38,6 +38,8 @@ export interface RehearseContext {
   pulse?: string
   /** Temas abiertos (moments sin cerrar) que pueden aparecer. */
   openThreads?: string
+  /** Estado del vínculo: trayectoria C2 (¿se enfría?) + tono reciente. */
+  bondState?: string
 }
 
 export type Likelihood = 'plausible' | 'optimista' | 'dificil'
@@ -148,6 +150,9 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
   }
   if (ctx.pulse && ctx.pulse.trim()) {
     lines.push('', ctx.pulse.trim().slice(0, 500))
+  }
+  if (ctx.bondState && ctx.bondState.trim()) {
+    lines.push('', ctx.bondState.trim().slice(0, 400))
   }
   if (ctx.cycleNote && ctx.cycleNote.trim()) {
     lines.push('', ctx.cycleNote.trim().slice(0, 800))

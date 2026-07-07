@@ -15,18 +15,25 @@ import { cyclePhase } from '@/lib/ciclo/phase'
 import { intimacyGuidance } from '@/lib/ciclo/intimacy'
 import { getConversationMessages } from '@/lib/conversation-analytics/fromObservations'
 import { analyzeConversation } from '@/lib/conversation-analytics/analyze'
+import { forecastTrajectories } from '@/lib/prediction/c2/trajectory'
+
+// Notas fechadas al import (no reflejan un contacto real) — se excluyen de la
+// cadencia/tono, igual que en el motor de trayectoria C2.
+const IMPORT_DATED = /^(Importado|Tono inferido|Conversación reciente)/i
 
 export interface RehearsePerson {
   id: string
   relationship?: string | null
   cycleStartDate?: string | null
   cycleLengthDays?: number | null
+  lastContactMs?: number | null
 }
 
 export interface RehearseExtras {
   cycleNote?: string
   pulse?: string
   openThreads?: string
+  bondState?: string
 }
 
 async function gatherPulse(supabase: SupabaseClient, userId: string, personId: string, nowMs: number): Promise<string | undefined> {
@@ -63,6 +70,42 @@ async function gatherOpenThreads(supabase: SupabaseClient, userId: string, perso
   } catch { return undefined }
 }
 
+async function gatherBondState(supabase: SupabaseClient, userId: string, person: RehearsePerson, nowMs: number): Promise<string | undefined> {
+  try {
+    const { data } = await supabase
+      .from('person_logs')
+      .select('value, note, logged_at')
+      .eq('user_id', userId)
+      .eq('person_id', person.id)
+      .eq('kind', 'interaction')
+      .order('logged_at', { ascending: false })
+      .limit(200)
+    const logs = ((data as Array<{ value: number | null; note: string | null; logged_at: string }> | null) ?? [])
+      .filter((l) => !IMPORT_DATED.test((l.note ?? '').trim()))
+    if (logs.length < 3) return undefined
+    const ts = logs.map((l) => Date.parse(l.logged_at)).filter(Number.isFinite)
+    const parts: string[] = []
+    // Trayectoria C2: ¿el vínculo se está enfriando?
+    const [traj] = forecastTrajectories([{ id: person.id, name: 'x', interactionsMs: ts, lastContactMs: person.lastContactMs ?? null }], nowMs)
+    if (traj && traj.status !== 'insufficient') {
+      if (traj.status === 'cooling' || traj.status === 'going_dormant') {
+        parts.push(`viene ENFRIÁNDOSE (hace ${traj.silenceDays}d sin contacto vs su cadencia ~${traj.cadenceDays}d; a este ritmo, dormido en ~${traj.weeksToDormant} sem)`)
+      } else if (traj.status === 'dormant') {
+        parts.push('está DORMIDO (mucho silencio acumulado)')
+      } else {
+        parts.push('al día con su ritmo de contacto')
+      }
+    }
+    // Salud reciente: tono medio de las últimas interacciones.
+    const vals = logs.slice(0, 6).map((l) => l.value).filter((v): v is number => typeof v === 'number')
+    if (vals.length >= 3) {
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length
+      parts.push(`tono reciente ~${avg.toFixed(1)}/5`)
+    }
+    return parts.length ? `Estado del vínculo (predicción C2): ${parts.join('; ')}.` : undefined
+  } catch { return undefined }
+}
+
 export async function gatherRehearseExtras(
   supabase: SupabaseClient,
   userId: string,
@@ -87,13 +130,15 @@ export async function gatherRehearseExtras(
     } catch { /* best-effort */ }
   }
 
-  // 2) Pulso (C0) + temas abiertos — EN PARALELO (sin sumar latencia).
-  const [pulse, openThreads] = await Promise.all([
+  // 2) Pulso (C0) + temas abiertos + estado del vínculo (C2 + tono) — EN PARALELO.
+  const [pulse, openThreads, bondState] = await Promise.all([
     gatherPulse(supabase, userId, person.id, nowMs),
     gatherOpenThreads(supabase, userId, person.id),
+    gatherBondState(supabase, userId, person, nowMs),
   ])
   extras.pulse = pulse
   extras.openThreads = openThreads
+  extras.bondState = bondState
 
   return extras
 }
