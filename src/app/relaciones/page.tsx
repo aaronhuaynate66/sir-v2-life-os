@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight, Upload, Search, Heart } from 'lucide-react'
+import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight, Upload, Search } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -30,7 +30,6 @@ import {
   CADENCE_PRESETS, storedToPreset, presetToStored, parseCustomDays,
   describeCadence, cadenceStatus,
 } from '@/lib/people/cadence'
-import { relationshipMode, expectedContactDays } from '@/lib/relational/health'
 import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import type { SpecialDate } from '@/types'
@@ -717,22 +716,10 @@ function RelationshipsContent() {
                             Ultimo contacto: <span className="text-foreground font-medium font-mono tabular-nums">{lastContactDisplay}</span>
                           </span>
                           {(() => {
-                            // LÍNEA ÉTICA (doc 15/16): TODOS los vínculos reciben una
-                            // señal de contacto — pero el REGISTRO cambia por modo.
-                            // Afectivos (familia/amigos/pareja): PRESENCIA, no cuota —
-                            // sin "cada N días", sin "atrasado"; sólo un gesto suave
-                            // cuando hace rato que no hay contacto para su capa.
-                            // Profesionales: cadencia/atrasado (gestión admitida).
-                            const dsc = person.lastContact ? daysSince(person.lastContact) : null
-                            if (relationshipMode(person.relationship) === 'affective') {
-                              if (dsc == null || dsc <= expectedContactDays(person.category)) return null
-                              return (
-                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Heart size={12} strokeWidth={1.75} className="text-brand-soft-foreground/70" aria-hidden="true" />
-                                  Hace <span className="text-foreground/80 font-mono tabular-nums">{dsc}d</span> · un gesto sin apuro
-                                </span>
-                              )
-                            }
+                            // Cadencia EXPLÍCITA para todos los vínculos (afectivos
+                            // incluidos). Decisión informada de Aaron: vio la versión
+                            // de sólo-presencia y prefirió el número + estado también
+                            // en los cercanos. Ver [[feedback-hold-ethical-guardrails]].
                             const desc = describeCadence(person.contactFrequency, person.category, suggestedCadence[person.id])
                             const st = cadenceStatus(person.lastContact ? daysSince(person.lastContact) : null, desc.days)
                             const stColor = st.state === 'atrasado'
