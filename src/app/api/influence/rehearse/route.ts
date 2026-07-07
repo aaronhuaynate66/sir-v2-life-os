@@ -79,42 +79,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ result: blocked, person: { name: personName, hadContext: false }, ethics: { verdict: ethics.verdict } })
   }
 
-  let memories: string[] = []
-  try {
-    const rows = await getMemoriesForPerson(supabase, userId, personId, { limit: 24 })
-    memories = rows.map((m) => (m.content ?? '').trim()).filter(Boolean)
-  } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
-
-  // Jalar la conversación importada (WhatsApp) para simular sobre lo real, no en abstracto.
-  let conversation: string | undefined
-  try {
-    const conv = await getPersonConversation(supabase, userId, personId)
-    if (conv) conversation = renderConversationForPrompt(conv, personName)
-  } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
-
-  // Estado bio de Aaron (ventana de tolerancia): calibra si el consejo es "hablá"
-  // o "regulá primero" — doc 13. Afectivo sobre todo (una pelea de pareja en
-  // caliente sale mal), pero sirve en cualquier vínculo.
-  let selfState: string | undefined
-  try {
-    const bio = await getSelfBioState(supabase, userId, Date.now())
-    if (bio.block) selfState = bio.block
-  } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
-
-  // Contexto rico (motor de predicción + M6): ciclo/atunamiento (romántico, marco
-  // de cuidado) + Pulso de la conversación (C0). selfState ya lo tenemos arriba.
-  let cycleNote: string | undefined
-  let pulse: string | undefined
-  try {
-    const extras = await gatherRehearseExtras(supabase, userId, {
+  // Toda la carga de contexto EN PARALELO (antes era secuencial y sumaba latencia
+  // → cruzaba el cap de 60s de Vercel Hobby). memorias + conversación (WhatsApp) +
+  // estado bio de Aaron (doc 13) + contexto rico (ciclo M6 + Pulso C0).
+  const rep = (e: unknown) => { reportApiError(e, { route: 'influence/rehearse' }) }
+  const [memories, conversation, selfState, extras] = await Promise.all([
+    getMemoriesForPerson(supabase, userId, personId, { limit: 24 })
+      .then((rows) => rows.map((m) => (m.content ?? '').trim()).filter(Boolean))
+      .catch((e) => { rep(e); return [] as string[] }),
+    getPersonConversation(supabase, userId, personId)
+      .then((conv) => (conv ? renderConversationForPrompt(conv, personName) : undefined))
+      .catch((e) => { rep(e); return undefined }),
+    getSelfBioState(supabase, userId, Date.now())
+      .then((bio) => bio.block || undefined)
+      .catch((e) => { rep(e); return undefined }),
+    gatherRehearseExtras(supabase, userId, {
       id: personId,
       relationship: (person.relationship as string) ?? null,
       cycleStartDate: (person.cycle_start_date as string) ?? null,
       cycleLengthDays: (person.cycle_length_days as number) ?? null,
-    }, Date.now())
-    cycleNote = extras.cycleNote
-    pulse = extras.pulse
-  } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
+    }, Date.now()).catch((e) => { rep(e); return {} as import('@/lib/influence/rehearseContext').RehearseExtras }),
+  ])
+  const cycleNote = extras.cycleNote
+  const pulse = extras.pulse
 
   const ctx: RehearseContext = {
     personName,
@@ -135,7 +122,7 @@ export async function POST(req: NextRequest) {
 
   async function call(extra = ''): Promise<string> {
     const msg = await client.messages.create({
-      model: MODEL_ID, max_tokens: 1400,
+      model: MODEL_ID, max_tokens: 1200,
       system: extra ? `${REHEARSE_SYSTEM_PROMPT}\n\n${extra}` : REHEARSE_SYSTEM_PROMPT,
       // Prefill '{' fuerza a Claude a arrancar el JSON directo → UNA sola llamada
       // confiable, sin el doble-call de reintento que empujaba el request > 60s

@@ -139,7 +139,7 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
     lines.push('', '(SIR tiene poco contexto de esta persona — decilo en "read", bajá la especificidad y no inventes.)')
   }
   if (ctx.conversation && ctx.conversation.trim()) {
-    lines.push('', ctx.conversation.trim().slice(0, 3500))
+    lines.push('', ctx.conversation.trim().slice(0, 2600))
   }
   if (ctx.pulse && ctx.pulse.trim()) {
     lines.push('', ctx.pulse.trim().slice(0, 500))
