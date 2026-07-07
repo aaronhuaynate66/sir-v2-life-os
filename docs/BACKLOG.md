@@ -81,7 +81,7 @@
 - **Etapa 4 follow-ups:** Human OKRs estructurados, Narrative Intelligence, delta de relationship score (necesita snapshots históricos), tono de interacción desde `person_logs` en el engine, inferencia LLM de dominio para objetivos de texto libre.
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
 - **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
-- **Refactor split-brain → Supabase única fuente** (deuda arquitectónica, ver más abajo).
+- ~~**Refactor split-brain → Supabase única fuente**~~ ✅ RESUELTO (verificado 07-07; ver deuda arquitectónica más abajo). Único residual menor: last-write-wins por fila.
 
 ---
 
@@ -360,16 +360,18 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 **Mitigación hoy:** la identidad estable (dónde vive, parentesco, estado civil) va en el PERFIL de la persona (campos + vínculo familiar), no se deja depender de la derivación del chat.
 
 
-### Split-brain `localStorage` ↔ Supabase (detectado 29/05/2026)
+### Split-brain `localStorage` ↔ Supabase — ✅ RESUELTO (verificado 2026-07-07)
 
-**Síntoma:** la lista `/relaciones` lee del store Zustand (hidratado de `localStorage`); el detail page `/relaciones/[slug]` lee Supabase directo. El sync engine hace merge **aditivo** (nunca borra el lado local), entonces los `removePerson` solo se propagan por la UI del store — **no emiten DELETE a Supabase**. Mismo patrón en `observations`/`memories` afectó el cleanup-saga del 29/05 (filas alucinadas que parecían borradas en una vista y seguían en la otra).
+**Síntoma original (29/05):** la lista `/relaciones` leía del store Zustand; el detail page leía Supabase directo; el sync engine hacía merge aditivo → `removePerson` no emitía DELETE a Supabase; deletes por SQL directo quedaban huérfanos en localStorage.
 
-**Causa raíz:** dos fuentes de verdad sin reconciliación destructiva. El sync engine fue diseñado offline-first y prioriza no perder data local; ese mismo principio bloquea propagación de deletes.
+**Estado real (verificado en código + tests el 07-07):** el arco de refactor **ya se hizo** (junto con el "Sync en vivo ✅" de más arriba). Hoy el store **es** un cache hidratable con Supabase como única fuente de verdad:
+- **Deletes se propagan:** `flushOps` (engine.ts) emite `.delete().in('id', deletes).eq('user_id', …)` al detectar el borrado en el store; `removePerson` → diff → DELETE a DB.
+- **Reconciliación destructiva:** `reconcilePull` (reconcile.ts, PURO + testeado): DB autoritativo; fila local ausente de DB **sin** push pendiente → **se dropea** (delete remoto, SQL directo o fantasma); **con** pending → se preserva (offline-safe). `pendingIds` positivo, no el viejo `knownIds`.
+- **Escrituras unificadas:** lista y ficha escriben por el store (`updatePerson`/`removePerson`) → engine → DB. La ficha lee Supabase server-side pero muta por el store.
 
-**Arco futuro:** refactor a Supabase como única fuente de verdad. Store Zustand se reduce a cache hidratable, sin escritura local prioritaria. Deletes emiten `DELETE` directo, lecturas pasan por Supabase + revalidación. Esfuerzo estimado: 1-2 sesiones, riesgo medio (toca todos los flujos de relaciones y captura).
+**Regla operativa vieja (YA NO aplica):** ~~"nunca borres por SQL directo, queda huérfano"~~ — un delete directo en Supabase se dropea del store en el próximo re-pull (focus/Realtime), no está en DB ni es pending.
 
-**Regla operativa vigente:**
-> Gestionar personas **siempre por UI** (`/relaciones` modal Eliminar). **Nunca** por SQL directo en Supabase: queda fila huérfana en localStorage del usuario hasta el próximo manual cleanup.
+**Único residual (menor, no bloquea):** last-write-wins por fila — el `upsert onConflict:'id'` pisa la fila entera, así dos ediciones concurrentes de campos distintos se pisan. Impacto casi nulo en mono-usuario. Fix futuro opcional: merge por campo o `updated_at` por columna.
 
 ### Sincronización en vivo entre dispositivos (sync cross-device) ✅ RESUELTO (verificado en vivo)
 
