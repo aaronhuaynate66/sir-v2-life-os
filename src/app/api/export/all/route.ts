@@ -31,7 +31,7 @@ interface TableSpec {
 }
 
 const TABLES: TableSpec[] = [
-  { filename: 'people.csv', table: 'people', select: 'id, name, slug, alias, category, relationship, importance_score, confidence_score, tags, notes, special_dates, created_at, updated_at', description: 'Todas las personas en tu red.' },
+  { filename: 'people.csv', table: 'people', select: 'id, name, slug, alias, category, relationship, importance_score, tags, notes, special_dates, created_at, updated_at', description: 'Todas las personas en tu red.' },
   { filename: 'person_links.csv', table: 'person_links', select: 'id, person_a_id, person_b_id, kind, weight, context, confidence, source, created_at', description: 'Vínculos familiares/laborales entre personas.' },
   { filename: 'observations.csv', table: 'observations', select: 'id, person_id, capture_type, data, confidence, observed_at, captured_at, is_obsolete, created_at', description: 'Capturas (WhatsApp, LinkedIn, IG, notas manuales, ciclo, báscula, etc.).' },
   { filename: 'memories.csv', table: 'memories', select: 'id, person_id, title, content, type, timestamp, tags, is_private, is_reserved, created_at', description: 'Memorias derivadas + manuales. Excluye is_reserved (soft-deleted).' },

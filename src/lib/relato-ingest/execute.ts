@@ -165,7 +165,6 @@ async function execOne(supabase: Supabase, userId: string, action: IngestAction)
         relationship: action.relationship,
         category: action.category,
         importance_score: action.category === 'inner_circle' ? 9 : action.category === 'close' ? 7 : action.category === 'network' ? 5 : 3,
-        confidence_score: 5,
         notes: action.notes ?? null,
       }).select('id').single()
       if (error) return { action, ok: false, error: error.message }
