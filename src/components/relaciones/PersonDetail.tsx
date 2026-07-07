@@ -234,6 +234,16 @@ function formFromPerson(p: Person): EditForm {
   }
 }
 
+type PersonTab = 'vinculo' | 'cuidado' | 'historia' | 'red' | 'datos'
+
+const PERSON_TABS: { id: PersonTab; label: string }[] = [
+  { id: 'vinculo', label: 'Vínculo' },
+  { id: 'cuidado', label: 'Cuidado' },
+  { id: 'historia', label: 'Historia' },
+  { id: 'red', label: 'Red y contexto' },
+  { id: 'datos', label: 'Datos' },
+]
+
 export function PersonDetail({
   initialPerson,
   lastChat = null,
@@ -272,6 +282,12 @@ export function PersonDetail({
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<EditForm>(() => formFromPerson(live))
+
+  // Rediseño: tabs de la ficha. El vistazo (arriba) queda siempre visible; el
+  // resto de los paneles se agrupan por tab. El de Cuidado solo aplica a
+  // vínculos con ciclo (pareja/mujer).
+  const showCuidado = live.gender === 'female' || !!live.cycleStartDate
+  const [tab, setTab] = useState<PersonTab>('vinculo')
 
   function startEditing() {
     setForm(formFromPerson(live))
@@ -439,6 +455,25 @@ export function PersonDetail({
           contexto (reusa /api/sir/ask con personId). */}
       <PreguntarSobrePersona personId={live.id} personName={live.name} />
 
+      {/* ─── Tabs de la ficha (rediseño). El vistazo de arriba queda siempre;
+          el resto se agrupa por tab. ─────────────────────────────────────── */}
+      <div className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-1 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        {PERSON_TABS.filter((t) => t.id !== 'cuidado' || showCuidado).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+              tab === t.id ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'vinculo' && (<>
       {/* Estado global del vínculo con esta persona (determinístico): cruza
           logs + moments + ciclo + memorias en una etiqueta + insights concretos.
           Se muestra siempre; label "sin_data" cuando aún no hay registros. */}
@@ -482,6 +517,9 @@ export function PersonDetail({
       <RelationalBidCard person={live} memories={memories} />
       <ContactWindowBadge person={live} lastTone={lastInteractionTone} />
 
+      </>)}
+
+      {tab === 'datos' && (<>
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <Button
@@ -754,6 +792,9 @@ export function PersonDetail({
         </Card>
       )}
 
+      </>)}
+
+      {tab === 'vinculo' && (<>
       {/* ─── Sesion 3 PR-B: RelationalScore + BirthdayCountdown reales ── */}
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
         <RelationalScore person={live} lastChat={lastChat} />
@@ -767,6 +808,9 @@ export function PersonDetail({
         <ConversationAnalyticsCard personId={live.id} personName={live.name} />
       </div>
 
+      </>)}
+
+      {tab === 'red' && (<>
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
       <FechasImportantes person={live} />
 
@@ -774,6 +818,9 @@ export function PersonDetail({
           vive acá, junto a ellas, y colapsada por defecto (no domina la ficha). */}
       <MencionadasPanel personId={live.id} personName={live.name} specialDates={live.specialDates} />
 
+      </>)}
+
+      {tab === 'cuidado' && (<>
       {/* ─── Lunar + Ciclo: estado actual por persona. Solo si es mujer
           (o ya tiene datos de ciclo cargados, p. ej. registros legacy). ─── */}
       {(live.gender === 'female' || live.cycleStartDate) && (
@@ -822,6 +869,9 @@ export function PersonDetail({
         />
       </div>
 
+      </>)}
+
+      {tab === 'datos' && (<>
       {/* Captura en contexto: subir un pantallazo y asociarlo DIRECTO a esta
           persona, sin pasar por /captura ni re-seleccionar. Reusa el pipeline
           detect → process con person_id fijo. */}
@@ -846,6 +896,9 @@ export function PersonDetail({
           hace con el panel inline "Agregar captura" (arriba), no en /captura. */}
       <RedesSociales person={live} observations={curatedObservations} />
 
+      </>)}
+
+      {tab === 'red' && (<>
       {/* Familia (A.4): vincular padre/madre/etc. como nodos de familia en el
           grafo (person_links, 0035). Crea el nodo-persona mínimo + la arista. */}
       <FamiliaPanel person={live} />
@@ -873,6 +926,9 @@ export function PersonDetail({
           seguidores en común desde la captura de Instagram. */}
       <VidaSocial observations={curatedObservations} axes={profileAxes} />
 
+      </>)}
+
+      {tab === 'historia' && (<>
       {/* "Lo personal" (#8): síntesis narrativa LLM, lazy + cacheada en
           person_synthesis. conversationCount = whatsapp_chat curadas. */}
       <LoPersonal
@@ -958,6 +1014,7 @@ export function PersonDetail({
         </Link>{' '}
         y usá el formulario existente.
       </p>
+      </>)}
       </div>
 
       {/* Dossier imprimible (Parte A): oculto en pantalla, visible al imprimir.
