@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ee24774`
+**Hash del último commit humano:** `9f88c6e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `ee24774` | Aaron Huaynate | fix(reader): capturar mensajes PROPIos en Teams (unión + dedup por id) | 2026-07-06 |
-| `327eab5` | Aaron Huaynate | fix(reader): dedup mensajes de Teams (selección por prioridad) + rotular 'yo' | 2026-07-06 |
-| `b383a51` | Aaron Huaynate | docs(base): reconciliar backlog — 11·M1, 12·#1/#4/#5, 14·M1, 15·#7, 16·M1-M4 ya shippeados | 2026-07-06 |
-| `206683c` | Aaron Huaynate | docs(base): marcar estado real de backlog en dominios 11-15 (hecho/bloqueado) | 2026-07-06 |
-| `2c937f6` | aaronhuaynate66 | feat(reader): diagnóstico dumpea HTML crudo de fila + más selectores Teams (#591) | 2026-07-05 |
-| `c03946c` | aaronhuaynate66 | fix(reader): soportar teams.cloud.microsoft + selector chat-title (2026) (#590) | 2026-07-05 |
-| `e025b33` | aaronhuaynate66 | feat(reader): modo diagnóstico en la extensión (depurar selectores) (#589) | 2026-07-05 |
-| `e7063da` | aaronhuaynate66 | feat(reader): config por archivo + guía de instalación para un agente (#588) | 2026-07-05 |
-| `e56efa5` | aaronhuaynate66 | feat(correo): conector Microsoft Graph — correo M365 → SIR (Fase 2) (#587) | 2026-07-05 |
-| `992b694` | aaronhuaynate66 | feat(llamadas): grabador en vivo por sesión (Fase 3) (#586) | 2026-07-05 |
+| `9f88c6e` | aaronhuaynate66 | feat(relaciones): tensiones, fortalezas y metas en común por persona (#592) | 2026-07-07 |
+| `4f7cdbd` | Aaron Huaynate | feat(ensayo): + trayectoria C2 y salud del vínculo (tono reciente) | 2026-07-07 |
+| `3d057d3` | Aaron Huaynate | feat(ensayo): + temas abiertos como señal, sin sumar latencia | 2026-07-07 |
+| `1d0753a` | Aaron Huaynate | feat(ficha): ensayos anteriores con esta persona en su ficha | 2026-07-07 |
+| `07eb8a4` | Aaron Huaynate | fix(mig 0131): person_id text, no uuid (people.id es text) — la FK fallaba | 2026-07-07 |
+| `573bd5e` | Aaron Huaynate | fix(ensayo): max_tokens 1600 (no truncar) + input recortado (memorias 8, conv 1600) | 2026-07-07 |
+| `cda982e` | Aaron Huaynate | perf(ensayo): carga de contexto en paralelo + max_tokens 1200 (fit en 60s Hobby) | 2026-07-07 |
+| `73552ec` | Aaron Huaynate | feat(ensayo): contexto rico (ciclo M6 + Pulso + estado) + histórico de simulaciones | 2026-07-07 |
+| `c2ccabf` | Aaron Huaynate | fix(alineación): palabras-medio (whatsapp/chat) no son keyword de objetivo | 2026-07-07 |
+| `bcc0a0f` | Aaron Huaynate | refactor(relaciones): fuerza de relación desde la capa de Dunbar (categoría), no importancia | 2026-07-07 |
 
 ---
 
@@ -483,6 +483,38 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 - **Severidad:** P2 (UX friction)
 - **Síntoma:** Ruta `/captura` solo accesible por URL manual.
 - **Fix entregado:** Ítem "Captura" agregado al sidebar (`src/components/layout/Nav.tsx`), entre Relaciones y Objetivos, con ícono `Camera`.
+
+### BUG-004 🟢 MITIGADO (07-07) [P1]: extracción de Instagram ALUCINABA la bio
+- **Severidad:** P1 (mala data en perfiles).
+- **Síntoma (caso Diana, 06-jul):** con un screenshot legible que dice `Founder: @cautiva.detalles 🌸`, la extracción devolvió `Fandub @colana.doblajes 🎙️` (bio equivocada) y `1543` seguidores (real 1343).
+- **Causa real identificada:** NO era invento de la nada — la captura era de **página completa** (header + grid de posts). El modelo (a) tomó la "bio" de una **publicación del feed / cuenta sugerida** en vez del header, y (b) **malleyó un dígito** (5 por 3).
+- **Fix (07-07, prompt hardening en `src/lib/capture/instagram/prompt.ts`):** (1) **REGLA DE UBICACIÓN** — los datos SOLO viven en el bloque de cabecera; en capturas de página completa TODO lo de abajo (grid de publicaciones, sugeridas, reels) se ignora; nunca sacar bio/handle/link de un post. (2) **Precisión de dígitos** — leer los contadores dígito por dígito, si alguno es ambiguo no adivinar → `confidence='medium'` + nota. Más el revert + `recomputeAxisFor` al descartar + avatar apunta al perfil (mitigaciones previas).
+- **Pendiente de verificar:** una captura real cuando haya saldo de API (no se pudo probar en vivo por créditos). Idea futura: validar que los @handles de la bio aparezcan literalmente en la imagen.
+
+### BUG-005 ✅ RESUELTO (07-06) [P1]: el import de chat contaminaba la ficha con ruido
+> **Los 4 puntos, hechos:** #1 última-interacción ignora logs de sistema (`3aa2101`) · #2 dedup al re-importar (`94587bd`) · #3 logs 📞/tono-inferido/import no se vuelven memorias (`c95a56b`) + **700/865 memorias de ruido soft-deleted** (Diana 141→21 reales) · #4 bitácora omite logs de sistema (`f9a5743`). La EXTRACCIÓN (síntesis/facts/fechas/tono×fase) siempre estuvo bien; el problema era el ruido, ya limpio. Diagnóstico original abajo.
+- **Severidad:** P1 (la sustancia se pierde bajo artefactos).
+- **Diagnóstico (caso Diana, 07-06):** la EXTRACCIÓN de contenido es BUENA (síntesis del vínculo, facts reales — notaría, familia, perros —, fechas, tono×fase 17·M3 corriendo). El problema es el **ruido del import que la tapa**:
+  1. **"Última interacción" = el evento de import** ("Importado del export · 70811 mensajes") en vez del último mensaje real. → `LastInteractionPanel` / la lógica de última-interacción debe IGNORAR los logs marcados import y leer `data.dateRange.last` de la conversación.
+  2. **Imports duplicados:** re-importar crea un `whatsapp_chat` nuevo cada vez (había 3 para Diana; deduplicados a mano 07-06). → al re-importar, **obsoletar el `whatsapp_chat` previo de esa persona** (dedup por person_id/thread) antes de insertar el nuevo.
+  3. **Spam de logs de llamada:** 141 memorias, casi todas "📞 Llamada de voz · Xs" (de `extractCalls` en `runImport.ts`). → NO derivar memorias individuales de logs de llamada (agregarlas o excluirlas del derive; ya hay `isNoiseLog` para la familia 📞).
+  4. **"Tono inferido del chat importado"** repetido en bitácora/timeline (ruido value=3). → aplicar el filtro `isNoiseLog` también en la bitácora/última-interacción (ya se aplicó en efecto-partner y salud del vínculo; falta acá).
+- **NO tocar:** la síntesis narrativa, facts, extractedDates, tono×fase — eso anda bien.
+- **Escenario elegido (07-06):** marcado PENDIENTE; avanzamos con otras cosas y esto se ataca por estos 4 puntos.
+
+### BUG-006 ✅ RESUELTO (07-06) [P2]: el eje profesional no tomaba los facts del chat
+> **Hecho (`fdf681e`):** `professionalAxisFromFacts` deriva el eje profesional de los facts de trabajo del chat cuando no hay LinkedIn; cableado en el import (no pisa LinkedIn/manual) + aplicado retroactivo a Diana (notaría Rosalía Mejía, etc.). **Residual del hallazgo:** la última-interacción aún usa el último rating, no el último mensaje; y falta el override manual de campos de perfil.
+- **Hallado en la auditoría de Diana (`docs/audits/2026-07-06_diana.md`).**
+- **Síntoma:** el chat dice que Diana trabaja en la notaría Rosalía Mejía — SIR lo extrae como `fact` de la observación `whatsapp_chat`, pero el **eje profesional** (`person_profile_axes.professional_text`) queda VACÍO porque `computeProfessionalAxis` solo lee capturas de LinkedIn.
+- **Fix:** derivar (o completar) el eje profesional también desde los `facts`/summary del chat cuando no hay LinkedIn. + idea relacionada: la **última interacción** debería tomar el último MENSAJE (dateRange.last del whatsapp_chat), no el último rating manual.
+- **Feature ligada ("crear para poder cambiarlo"):** override manual de campos de perfil (contadores, bio, trabajo) sin re-capturar — hoy se corrige creando una observación a mano.
+
+### BUG-007 ✅ RESUELTO (07-06) [P2]: el import de WhatsApp no dejaba data usable para el Pulso (C0)
+> **Hecho (2 capas):** (1) cliente `dbd3388` — consolidate guarda cada rawMessage con `iso` + sample 25→1000; adapter C0 prefiere `iso`. (2) servidor `69e5833` — **el `sanitizeData` del route capaba a 40 y descartaba `iso`** (whitelist), deshaciendo el fix del cliente. Esto lo destapó el **re-import REAL por la UI** (el test end-to-end que pidió Aaron): el whatsapp_chat persistido salía con 40 msgs sin fecha → C0=0 → Pulso vacío igual. Ahora el route conserva `iso` y sube el cap a 1000. Lección: unit tests + fix de cliente en verde, pero el servidor tiraba la data en silencio — solo el end-to-end lo cazó. Diana re-backfilleada (1000 iso, C0=1000). tsc:0, 78 tests. **Validado E2E (07-07):** re-import REAL por la UI con el route arreglado → obs `e8a95f73` con rawMessages 1000/1000 CON iso, C0 lee 1000. Loop cerrado.
+- **Hallado en el pase visual de Diana:** "Pulso de la conversación" salía vacío pese al chat de 71138 mensajes.
+- **Causa:** el `whatsapp_chat` guarda solo **25 rawMessages de muestra** y con `timestamp` **solo hora** ("14:47", sin fecha). C0 (`messagesFromRows` → `Date.parse("14:47")`) = NaN → descarta todos. (Teams/`dm_conversation` sí funciona: guarda el stream con fecha completa.)
+- **Workaround aplicado a Diana (07-06):** backfill de rawMessages con timestamps ISO completos desde el `_chat.txt` (2500 msgs recientes) → el Pulso ya renderiza para ella.
+- **Fix de raíz:** en el import de WhatsApp, guardar los rawMessages con **timestamp ISO completo** (fecha+hora, no solo hora) y MÁS mensajes (o una serie de volumen semanal pre-computada). Toca `lib/capture/whatsapp/*` (parser/consolidate).
 
 ---
 
