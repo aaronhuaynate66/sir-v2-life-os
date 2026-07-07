@@ -35,6 +35,25 @@ export interface HorizonEvent extends HorizonEventInput {
   uncertainDays: number
   /** Lectura de cuidado (qué timing/gesto conviene). Registro de cuidado, no gestión. */
   reading: string
+  /** % [0..100] sobre el rango del horizonte (para posicionar el pin/línea). */
+  pct: number
+}
+
+export type BandPhase = CyclePhaseId | 'spm'
+
+export interface HorizonBandSegment {
+  phase: BandPhase
+  /** % [0..100] sobre el rango del horizonte. */
+  fromPct: number
+  toPct: number
+  /** ¿El segmento cae en el futuro (predicción, se dibuja tramado)? */
+  isFuture: boolean
+}
+
+export interface HorizonMarker {
+  pct: number
+  label: string
+  isFuture: boolean
 }
 
 export interface CycleHorizon {
@@ -42,6 +61,14 @@ export interface CycleHorizon {
   /** Inicios de período proyectados (ISO) dentro del horizonte, para las bandas. */
   projectedPeriods: string[]
   bandDays: number
+  /** Banda de fases del ciclo a lo ancho del rango (pasado real + futuro predicho). */
+  band: HorizonBandSegment[]
+  /** % de HOY sobre el rango. */
+  todayPct: number
+  /** Marcadores de inicio de período (d1) para la regla. */
+  periodMarkers: HorizonMarker[]
+  /** Marcadores de ovulación (~d14) para la regla. */
+  ovulationMarkers: HorizonMarker[]
 }
 
 /** Lectura de cuidado por fase. Presencia y timing, nunca presión. */
@@ -168,6 +195,10 @@ export function buildCycleHorizon(input: BuildCycleHorizonInput, now: Date = new
     if (k > 400) break // guardarraíl
   }
 
+  const span = Math.max(1, toT - fromT)
+  const pctOf = (t: number) => Math.max(0, Math.min(100, ((t - fromT) / span) * 100))
+  const todayPct = pctOf(nowT)
+
   // Enriquecer eventos que caen dentro del horizonte.
   const events: HorizonEvent[] = []
   for (const ev of input.events) {
@@ -188,9 +219,39 @@ export function buildCycleHorizon(input: BuildCycleHorizonInput, now: Date = new
       isFuture,
       uncertainDays: isFuture ? band * cyclesAhead : 0,
       reading: phaseCareReading(cp.phase, cp.isPmsWindow, cp.isFertileWindow),
+      pct: pctOf(evT),
     })
   }
   events.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
 
-  return { events, projectedPeriods, bandDays: band }
+  // Banda de fases: fase de CADA día del rango, agrupada en segmentos. Pasado
+  // real vs futuro predicho (para el tramado). SPM = lútea tardía (isPmsWindow).
+  const bandSegments: HorizonBandSegment[] = []
+  const days = Math.round(span / DAY_MS)
+  let cur: { phase: BandPhase; isFuture: boolean; start: number } | null = null
+  for (let i = 0; i <= days; i++) {
+    const dT = fromT + i * DAY_MS
+    const dDate = parseLocalDate(isoOf(dT))
+    if (!dDate) continue
+    const cp = cyclePhase(input.lastPeriodStart, length, dDate)
+    if (!cp) continue
+    const phase: BandPhase = cp.isPmsWindow ? 'spm' : cp.phase
+    const isFuture = dT > nowT
+    if (!cur || cur.phase !== phase || cur.isFuture !== isFuture) {
+      if (cur) bandSegments.push({ phase: cur.phase, isFuture: cur.isFuture, fromPct: pctOf(fromT + cur.start * DAY_MS), toPct: pctOf(dT) })
+      cur = { phase, isFuture, start: i }
+    }
+  }
+  if (cur) bandSegments.push({ phase: cur.phase, isFuture: cur.isFuture, fromPct: pctOf(fromT + cur.start * DAY_MS), toPct: 100 })
+
+  const periodMarkers: HorizonMarker[] = projectedPeriods.map((iso) => {
+    const t = Date.parse(`${iso}T00:00:00Z`)
+    return { pct: pctOf(t), label: iso.slice(5), isFuture: t > nowT }
+  })
+  const ovulationMarkers: HorizonMarker[] = projectedPeriods.map((iso) => {
+    const t = Date.parse(`${iso}T00:00:00Z`) + (length - 14) * DAY_MS
+    return { pct: pctOf(t), label: 'd14', isFuture: t > nowT }
+  }).filter((m) => m.pct > 0 && m.pct < 100)
+
+  return { events, projectedPeriods, bandDays: band, band: bandSegments, todayPct, periodMarkers, ovulationMarkers }
 }
