@@ -55,7 +55,10 @@ export function messagesFromRows(rows: ObsRow[]): ConvMsg[] {
       for (const raw of d.rawMessages) {
         const m = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
         const content = typeof m.content === 'string' ? m.content.trim() : ''
-        const t = typeof m.timestamp === 'string' ? Date.parse(m.timestamp) : NaN
+        // Preferir `iso` (fecha+hora completa); `timestamp` viejo era solo hora
+        // ("14:47") → Date.parse = NaN y el Pulso quedaba vacío (BUG-007).
+        const ts = typeof m.iso === 'string' ? m.iso : (typeof m.timestamp === 'string' ? m.timestamp : '')
+        const t = ts ? Date.parse(ts) : NaN
         if (!content || Number.isNaN(t)) continue
         msgs.push({ fromMe: m.author === 'user', at: t, text: content })
       }

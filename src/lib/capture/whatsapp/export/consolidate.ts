@@ -225,13 +225,19 @@ export function buildAuthorRoleMap(
   return map
 }
 
-const RAW_SAMPLE_SIZE = 25
+// Muestra de mensajes recientes que se guarda en la observación. Cumple doble
+// función: (1) evidencia para mostrar, (2) alimenta el Pulso de la conversación
+// (C0: volumen/cadencia/latencia/iniciativa/tono). Por eso NO puede ser 25 — C0
+// necesita varias semanas de mensajes CON FECHA para leer el ritmo. 1000 da un
+// span real sin caer en "miles" (la síntesis pesada sigue en summary/blockSummaries).
+const RAW_SAMPLE_SIZE = 1000
 
 /**
  * Arma el `data` de la observación whatsapp_chat a partir de la conversación
- * parseada + la lectura consolidada. Incluye una MUESTRA acotada de mensajes
- * recientes (evidencia) mapeados a user/other; el grueso de la señal vive en
- * summary/topics/emotionalStates/blockSummaries (no en miles de rawMessages).
+ * parseada + la lectura consolidada. Incluye una MUESTRA de mensajes recientes
+ * (evidencia + Pulso C0) mapeados a user/other, cada uno con su `iso` (fecha+hora
+ * completa) para que C0 pueda ubicarlos en el tiempo. `timestamp` (HH:mm) se
+ * conserva para mostrar. El grueso de la síntesis vive en summary/blockSummaries.
  */
 export function buildExportObservationData(
   parsed: ParsedExport,
@@ -242,8 +248,9 @@ export function buildExportObservationData(
   const sample: ExportMessage[] = parsed.messages.slice(-RAW_SAMPLE_SIZE)
   const rawMessages = sample.map((m) => ({
     timestamp: m.time,
+    iso: m.iso, // fecha+hora completa (ISO) — la usa C0 para el Pulso
     author: roleMap.get(m.author) ?? 'other',
-    content: m.content.slice(0, 500),
+    content: m.content.slice(0, 300),
     ...(m.isMedia ? { hasSticker: false } : {}),
   }))
 
