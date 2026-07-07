@@ -42,6 +42,10 @@ interface Opts {
   tags?: string[]
   /** Nombre de la persona → sus tokens se excluyen (no son un "tema"). */
   excludeName?: string
+  /** Nombre del PROPIO usuario → también se excluye. En un chat de pareja, el
+   *  nombre del usuario domina las memorias ("aaron ×10") y NO es un tema del que
+   *  hablarle a la persona — es autorreferencia. */
+  selfName?: string
   max?: number
   /** Frecuencia mínima para considerar un tema RECURRENTE. Default 2. */
   minCount?: number
@@ -54,7 +58,12 @@ interface Opts {
 export function extractWhatMatters(memories: string[], opts: Opts = {}): WhatMattersResult {
   const max = opts.max ?? 8
   const minCount = opts.minCount ?? 2
-  const exclude = new Set(deburr(opts.excludeName ?? '').split(/[^a-z0-9]+/).filter((w) => w.length >= 3))
+  const exclude = new Set(
+    `${opts.excludeName ?? ''} ${opts.selfName ?? ''}`
+      .split(/\s+/)
+      .flatMap((n) => deburr(n).split(/[^a-z0-9]+/))
+      .filter((w) => w.length >= 3),
+  )
 
   const count = new Map<string, number>()
   const firstIndex = new Map<string, number>()

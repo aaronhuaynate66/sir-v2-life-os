@@ -12,9 +12,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { suggestMicroBid } from '@/lib/relational/bid'
 import { extractWhatMatters } from '@/lib/people/whatMatters'
 import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
+import { useSelfStore } from '@/stores'
 import type { Person, Memory } from '@/types'
 
 export function RelationalBidCard({ person, memories }: { person: Person; memories: Memory[] }) {
+  const selfName = useSelfStore((s) => s.identityProfile?.fullName ?? '') // excluir autorreferencia
   const bid = useMemo(() => {
     // Fecha especial más cercana (daysUntil >= 0), la mínima.
     const upcoming = (person.specialDates ?? [])
@@ -25,6 +27,7 @@ export function RelationalBidCard({ person, memories }: { person: Person; memori
     const { themes, tags } = extractWhatMatters(memories.map((m) => m.content ?? ''), {
       tags: person.tags ?? [],
       excludeName: person.name,
+      selfName,
     })
     const topics = [...tags, ...themes.map((t) => t.term)]
 
@@ -33,7 +36,7 @@ export function RelationalBidCard({ person, memories }: { person: Person; memori
       upcoming: upcoming ? { label: upcoming.sd.label, daysUntil: upcoming.daysUntil } : null,
       topics,
     })
-  }, [person, memories])
+  }, [person, memories, selfName])
 
   if (!bid) return null
 

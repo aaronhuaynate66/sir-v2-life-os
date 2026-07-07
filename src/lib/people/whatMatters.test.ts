@@ -32,6 +32,14 @@ describe('extractWhatMatters', () => {
     expect(terms).not.toContain('alex')
     expect(terms).toContain('golf')
   })
+  it('excluye el nombre del PROPIO usuario (autorreferencia en chat de pareja)', () => {
+    const r = extractWhatMatters(
+      ['Aaron la llevó al médico', 'Hablaron de Aaron y del trabajo', 'Aaron y el viaje'],
+      { excludeName: 'Diana Díaz', selfName: 'Aaron Huaynate', minCount: 2 },
+    )
+    const terms = r.themes.map((t) => t.term)
+    expect(terms).not.toContain('aaron')
+  })
   it('una memoria repetitiva no infla el conteo (cuenta 1 por memoria)', () => {
     const r = extractWhatMatters(['golf golf golf golf'], { minCount: 1 })
     const golf = r.themes.find((t) => t.term === 'golf')

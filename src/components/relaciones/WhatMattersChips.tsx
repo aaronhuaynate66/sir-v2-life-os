@@ -12,12 +12,16 @@ import { Heart } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { extractWhatMatters } from '@/lib/people/whatMatters'
+import { useSelfStore } from '@/stores'
 import type { Memory } from '@/types'
 
 export function WhatMattersChips({ memories, tags, name }: { memories: Memory[]; tags: string[]; name: string }) {
+  // El nombre del propio usuario se excluye de los temas (en un chat de pareja
+  // domina como autorreferencia — "aaron ×10" — y no es un tema de la persona).
+  const selfName = useSelfStore((s) => s.identityProfile?.fullName ?? '')
   const { themes, tags: curated } = useMemo(
-    () => extractWhatMatters(memories.map((m) => m.content ?? ''), { tags, excludeName: name }),
-    [memories, tags, name],
+    () => extractWhatMatters(memories.map((m) => m.content ?? ''), { tags, excludeName: name, selfName }),
+    [memories, tags, name, selfName],
   )
 
   if (themes.length === 0 && curated.length === 0) return null
