@@ -18,7 +18,7 @@ La ficha deja de ser una pila vertical de paneles y pasa a tener cuatro niveles:
 
 3. **Lectura por tabs**
    - `Vínculo`: salud, pulso, pendientes, conversación, evolución.
-   - `Cuidado e intimidad`: ciclo, timing, apoyo, intimidad, qué evitar.
+   - `Cuidado e intimidad`: Horizonte del ciclo, timing, apoyo, intimidad, qué evitar.
    - `Historia`: síntesis, hitos, memorias, bitácora.
    - `Red y contexto`: Instagram, trabajo, familia, personas mencionadas, grafo.
    - `Datos`: observaciones, capturas, CSV, dossier, información sensible.
@@ -69,6 +69,42 @@ Visible arriba:
 - Estado del vínculo.
 - Datos de ciclo cuando aplica y hay señal relevante.
 
+## Ajuste incorporado desde la sugerencia recibida
+
+La sugerencia del handoff externo acierta en algo importante: el ciclo no debe ser un panel
+estático tipo "hoy estás en día X". Para que aporte de verdad, debe ser un **horizonte de
+timing**.
+
+Se incorpora como módulo protagonista:
+
+### Horizonte del ciclo
+
+Una card ancha dentro de `Cuidado e intimidad`, y candidata a subir al tab `Hoy` cuando
+haya próximos eventos relevantes.
+
+Cruza:
+
+- Ciclos confirmados hacia atrás.
+- Proyección hacia adelante con incertidumbre visible.
+- Eventos importantes de pareja y calendario.
+- Tono real/proyectado por día.
+- Ventanas sugeridas para proponer planes, conversaciones o gestos.
+
+Lectura esperada:
+
+- `Mesario 13 jul → día 21, lútea`: buen gesto simple, no conversación pesada.
+- `Matrimonio de Laura 18 jul → día 26, SPM`: cuidar energía, bajar exigencia.
+- `Cumple 23 jul → día 3, menstrual`: plan íntimo/suave; evitar sobrecargar.
+- `Cusco 15-18 ago → período probable`: revisar fecha o preparar logística de cuidado.
+
+Regla de diseño:
+
+- Pasado = sólido/real.
+- Futuro = tramado/predicción.
+- Cada evento tiene pin, línea y tarjeta de lectura.
+- La predicción muestra `± días` y se recalibra con cada período confirmado.
+- El módulo no diagnostica ni decide por Diana; ayuda a Aaron a elegir mejor timing y cuidado.
+
 ## Reglas visuales
 
 - No tratar vínculos íntimos como CRM.
@@ -89,9 +125,9 @@ Visible arriba:
 - Diana envía 57% de mensajes.
 - Ciclo promedio 27.6 días, ±4, moderadamente regular, 5 ciclos.
 - Día 14 al 2026-07-06, ovulación / ventana fértil.
+- Handoff sugerido usa hoy 2026-07-07, día 15, con horizonte 9 jun - 12 sep y período confirmado 23 jun.
 - Instagram: `@diana.carolina.d`, 1343 seguidores, 1384 seguidos, 23 publicaciones.
 - Bio: `Founder: @cautiva.detalles`.
 - Trabajo detectado por chat: notaría Rosalía Mejía.
 - Salud del vínculo: sólido, tono reciente 3.7/5.
 - Memorias reales: 21.
-

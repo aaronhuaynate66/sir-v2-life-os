@@ -510,7 +510,7 @@
     }
 
     .cycle-ring::after {
-      content: "Día 14";
+      content: "Día 15";
       position: absolute;
       inset: 16px;
       border-radius: 50%;
@@ -520,6 +520,165 @@
       font-weight: 700;
       font-variant-numeric: tabular-nums;
       box-shadow: 0 0 0 1px var(--line) inset;
+    }
+
+    .horizon {
+      display: grid;
+      gap: 14px;
+    }
+
+    .horizon-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .event-toggles {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .event-chip {
+      border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--line));
+      background: color-mix(in srgb, var(--brand) 10%, transparent);
+      color: color-mix(in srgb, var(--brand-2) 82%, var(--text));
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .horizon-board {
+      position: relative;
+      min-height: 250px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+      padding: 68px 12px 12px;
+      overflow: hidden;
+    }
+
+    .pin {
+      position: absolute;
+      top: 16px;
+      transform: translateX(-50%);
+      font-size: 10.5px;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+
+    .pin.partner { color: #b8a7f5; }
+    .pin.today {
+      top: 39px;
+      z-index: 2;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: var(--text);
+      color: var(--page);
+      font: 700 10px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .event-line {
+      position: absolute;
+      top: 60px;
+      bottom: 86px;
+      width: 1px;
+      background: rgba(237,237,240,.34);
+    }
+
+    .today-line {
+      position: absolute;
+      top: 54px;
+      bottom: 80px;
+      width: 2px;
+      background: var(--text);
+      box-shadow: 0 0 18px rgba(255,255,255,.24);
+      z-index: 1;
+    }
+
+    .phase-band {
+      height: 36px;
+      display: flex;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 0 0 1px var(--line) inset;
+    }
+
+    .phase {
+      display: grid;
+      place-items: center;
+      color: rgba(255,255,255,.78);
+      font-size: 9px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .phase.predicted {
+      background-image: repeating-linear-gradient(135deg, rgba(10,10,11,.28) 0 5px, transparent 5px 11px);
+    }
+
+    .phase.menstrual { background-color: rgba(194,91,100,.52); }
+    .phase.follicular { background-color: rgba(95,169,140,.52); }
+    .phase.ovulation { background-color: rgba(217,167,62,.62); }
+    .phase.luteal { background-color: rgba(124,111,212,.46); }
+    .phase.spm { background-color: rgba(224,168,46,.58); }
+
+    .cycle-ruler,
+    .month-ruler {
+      display: flex;
+      justify-content: space-between;
+      color: var(--faint);
+      font: 10px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-top: 9px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tone-chart {
+      height: 54px;
+      display: grid;
+      grid-template-columns: repeat(38, 1fr);
+      align-items: end;
+      gap: 2px;
+      margin-top: 16px;
+    }
+
+    .tone-bar {
+      border-radius: 2px 2px 0 0;
+      background: #4a4a55;
+      opacity: .86;
+    }
+
+    .tone-bar.high { background: #46c08a; }
+    .tone-bar.low { background: #e0a82e; }
+    .tone-bar.future { opacity: .36; }
+
+    .proposal-window {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 12px;
+      color: #7dd8ac;
+      font-size: 10.5px;
+      white-space: nowrap;
+    }
+
+    .proposal-window::before {
+      content: "";
+      width: 180px;
+      height: 4px;
+      border-radius: 3px;
+      background: rgba(70,192,138,.55);
+    }
+
+    .event-readings {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
     }
 
     details {
@@ -598,7 +757,7 @@
       .signal:nth-child(2) { border-right: 0; }
       .signal:nth-child(1), .signal:nth-child(2) { border-bottom: 1px solid var(--line); }
       .today { grid-template-columns: 1fr; }
-      .grid-2, .grid-3, .rail { grid-template-columns: 1fr; }
+      .grid-2, .grid-3, .rail, .event-readings { grid-template-columns: 1fr; }
       .tabs { position: relative; }
       .mobile-action { display: inline-flex; }
     }
@@ -779,6 +938,80 @@
             </div>
 
             <div class="tabpanel" id="tab-cuidado">
+              <article class="card">
+                <div class="card-head">
+                  <div class="card-title">Horizonte del ciclo <span class="source compute">computado</span></div>
+                  <div class="toolbar">
+                    <button class="btn">‹</button>
+                    <button class="btn primary">hoy</button>
+                    <button class="btn">›</button>
+                  </div>
+                </div>
+                <div class="card-body horizon">
+                  <div class="horizon-top">
+                    <div>
+                      <div class="label">Horizonte · 9 jun — 12 sep · período confirmado 23 jun · ciclo ~27.6 días</div>
+                      <p class="note">Pasado real a la izquierda, predicción tramada a la derecha. Se recalibra con cada período confirmado.</p>
+                    </div>
+                    <span class="chip warn">±1.8 días</span>
+                  </div>
+
+                  <div class="event-toggles" aria-label="Eventos visibles en el horizonte">
+                    <span class="event-chip">♥ Mesarios · 13 de c/mes</span>
+                    <span class="event-chip">♥ Aniversario 2 años · 13 ago</span>
+                    <span class="event-chip">★ Cumple de Diana · 23 jul</span>
+                    <span class="event-chip">◆ Matrimonio de Laura · 18 jul</span>
+                    <span class="event-chip">◆ Cusco · 15–18 ago</span>
+                  </div>
+
+                  <div class="horizon-board">
+                    <span class="pin" style="left:21%">● período real 23 jun</span>
+                    <span class="pin today" style="left:34%">HOY · d15 ovulación</span>
+                    <span class="pin partner" style="left:42%">♥ mesario 13 jul</span>
+                    <span class="pin" style="left:47%">◆ Laura 18 jul</span>
+                    <span class="pin partner" style="left:52%">★ cumple 23 jul</span>
+                    <span class="pin partner" style="left:70%">♥ aniversario 13 ago</span>
+                    <span class="pin" style="left:74%">◆ Cusco 15–18</span>
+                    <span class="event-line" style="left:42%"></span>
+                    <span class="event-line" style="left:47%"></span>
+                    <span class="event-line" style="left:52%"></span>
+                    <span class="event-line" style="left:70%"></span>
+                    <span class="event-line" style="left:74%"></span>
+                    <span class="today-line" style="left:34%"></span>
+
+                    <div class="phase-band">
+                      <div class="phase menstrual" style="flex:6">real</div>
+                      <div class="phase follicular" style="flex:8">folicular</div>
+                      <div class="phase ovulation" style="flex:4">ovulación</div>
+                      <div class="phase luteal" style="flex:8">lútea</div>
+                      <div class="phase spm predicted" style="flex:4">SPM</div>
+                      <div class="phase menstrual predicted" style="flex:5">período</div>
+                      <div class="phase follicular predicted" style="flex:9">folicular</div>
+                      <div class="phase ovulation predicted" style="flex:4">ovulación</div>
+                      <div class="phase luteal predicted" style="flex:10">lútea</div>
+                    </div>
+                    <div class="cycle-ruler"><span>d1</span><span>d14</span><span>d15 hoy</span><span>d24</span><span>d1</span><span>d14</span><span>d27</span></div>
+
+                    <div class="tone-chart" aria-label="Tono por día real y proyectado">
+                      <span class="tone-bar low" style="height:25%"></span><span class="tone-bar" style="height:44%"></span><span class="tone-bar" style="height:52%"></span><span class="tone-bar high" style="height:64%"></span><span class="tone-bar high" style="height:78%"></span><span class="tone-bar high" style="height:88%"></span><span class="tone-bar high" style="height:93%"></span><span class="tone-bar high" style="height:89%"></span><span class="tone-bar" style="height:62%"></span><span class="tone-bar" style="height:54%"></span><span class="tone-bar low" style="height:34%"></span><span class="tone-bar low" style="height:28%"></span>
+                      <span class="tone-bar future low" style="height:30%"></span><span class="tone-bar future low" style="height:38%"></span><span class="tone-bar future" style="height:50%"></span><span class="tone-bar future high" style="height:64%"></span><span class="tone-bar future high" style="height:80%"></span><span class="tone-bar future high" style="height:94%"></span><span class="tone-bar future high" style="height:90%"></span><span class="tone-bar future" style="height:70%"></span><span class="tone-bar future" style="height:57%"></span><span class="tone-bar future low" style="height:34%"></span><span class="tone-bar future low" style="height:24%"></span><span class="tone-bar future low" style="height:22%"></span>
+                      <span class="tone-bar future low" style="height:32%"></span><span class="tone-bar future" style="height:45%"></span><span class="tone-bar future high" style="height:60%"></span><span class="tone-bar future high" style="height:76%"></span><span class="tone-bar future high" style="height:92%"></span><span class="tone-bar future" style="height:72%"></span><span class="tone-bar future" style="height:55%"></span><span class="tone-bar future low" style="height:35%"></span><span class="tone-bar future low" style="height:25%"></span><span class="tone-bar future low" style="height:24%"></span><span class="tone-bar future" style="height:44%"></span><span class="tone-bar future high" style="height:68%"></span><span class="tone-bar future high" style="height:86%"></span><span class="tone-bar future" style="height:64%"></span>
+                    </div>
+                    <div class="proposal-window">▲ proponer aquí · 25 jul–4 ago</div>
+                    <div class="month-ruler"><span>JUN · confirmado 23</span><span>JUL · período ~21</span><span>AGO · período ~17</span><span>SEP · período ~13</span></div>
+                  </div>
+
+                  <div class="event-readings">
+                    <div class="insight"><h3>♥ Mesario · 13 jul → día 21, lútea</h3><p>Buen gesto simple; no convertirlo en conversación pesada. Presencia > explicación.</p></div>
+                    <div class="insight"><h3>⚠ Laura · 18 jul → día 26, SPM</h3><p>Puede ser día de baja tolerancia. Baja exigencia, prepara logística y evita reclamos.</p></div>
+                    <div class="insight"><h3>★ Cumple · 23 jul → día 3, menstrual</h3><p>Plan íntimo y liviano. Regalo cuidado, descanso y cero sobrecarga social.</p></div>
+                    <div class="insight"><h3>⚠ Cusco · 15–18 ago → período probable</h3><p>Si se puede mover, mejor 22–25 ago. Si no, planificar comodidad, descanso y flexibilidad.</p></div>
+                    <div class="insight"><h3>▲ Ventana fuerte · 25 jul–4 ago</h3><p>Mejor rango para proponer plan, viaje o conversación positiva: folicular + ovulación proyectada.</p></div>
+                    <div class="insight"><h3>Regla</h3><p>Esto es clima probable, no veredicto. Confirmar señales reales antes de actuar.</p></div>
+                  </div>
+                </div>
+              </article>
+
               <div class="grid-2">
                 <article class="card">
                   <div class="card-head">
