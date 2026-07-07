@@ -117,6 +117,10 @@ const STRENGTH_CLASS: Record<RelationStrength, string> = {
   baja: 'border-border/60 text-muted-foreground/70',
 }
 
+// Orden opcional de la lista. 'default' = orden del store (comportamiento previo).
+type SortKey = 'default' | 'fuerza' | 'contacto' | 'nombre'
+const STRENGTH_RANK: Record<RelationStrength, number> = { alta: 0, media: 1, baja: 2 }
+
 const URGENCY_CLASS: Record<'immediate' | 'soon' | 'monitor', string> = {
   immediate: 'border-bad/30 bg-bad-soft text-bad-foreground',
   soon: 'border-warn/30 bg-warn-soft text-warn-foreground',
@@ -168,6 +172,7 @@ function RelationshipsContent() {
   const [showForm, setShowForm] = useState(false)
   const [ambitoFilter, setAmbitoFilter] = useState<'todos' | PersonAmbito>('todos')
   const [strengthFilter, setStrengthFilter] = useState<'todas' | RelationStrength>('todas')
+  const [sortBy, setSortBy] = useState<SortKey>('default')
   const [query, setQuery] = useState('')
   const [avatars, setAvatars] = useState<Record<string, string>>({})
   useEffect(() => { let alive = true; void fetchAvatars().then((m) => { if (alive) setAvatars(m) }); return () => { alive = false } }, [])
@@ -582,6 +587,23 @@ function RelationshipsContent() {
         </div>
       )}
 
+      {people.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Orden</span>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+            <SelectTrigger className="h-8 w-auto min-w-[160px] text-xs" aria-label="Ordenar lista">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">Por defecto</SelectItem>
+              <SelectItem value="fuerza">Fuerza (fuerte primero)</SelectItem>
+              <SelectItem value="contacto">Último contacto (recientes)</SelectItem>
+              <SelectItem value="nombre">Nombre (A-Z)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {people.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -607,7 +629,22 @@ function RelationshipsContent() {
                 <p className="text-sm text-muted-foreground py-6 text-center">Sin resultados para &ldquo;{query}&rdquo;.</p>
               )
             }
-            return filtered.map((person) => {
+            // Orden opcional (no muta el store: copia local). 'default' = orden
+            // de inserción del store, como venía. Empates y faltantes ordenan
+            // por nombre / al final, para que sea determinístico.
+            const ordered = sortBy === 'default' ? filtered : [...filtered].sort((a, b) => {
+              if (sortBy === 'nombre') return a.name.localeCompare(b.name, 'es')
+              if (sortBy === 'fuerza') {
+                return (STRENGTH_RANK[relationStrength(a.category)] - STRENGTH_RANK[relationStrength(b.category)])
+                  || a.name.localeCompare(b.name, 'es')
+              }
+              // 'contacto': menos días desde el último contacto primero; sin
+              // registro va al final.
+              const da = a.lastContact ? daysSince(a.lastContact) : Number.POSITIVE_INFINITY
+              const db = b.lastContact ? daysSince(b.lastContact) : Number.POSITIVE_INFINITY
+              return da - db || a.name.localeCompare(b.name, 'es')
+            })
+            return ordered.map((person) => {
             const rel = relationships.find((r) => r.personId === person.id)
             const lastContactDisplay = person.lastContact
               ? `Hace ${daysSince(person.lastContact)} dias`
