@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { initiationInsight } from './insight'
+import { initiationInsight, latencyInsight } from './insight'
 import type { ConversationAnalytics } from './analyze'
 
 function base(over: Partial<ConversationAnalytics> = {}): ConversationAnalytics {
@@ -40,5 +40,28 @@ describe('initiationInsight', () => {
   it('pocos mensajes o sin datos → null', () => {
     expect(initiationInsight(base({ total: 4 }), 'Ana')).toBeNull()
     expect(initiationInsight(base({ myInitiationShare: null }), 'Ana')).toBeNull()
+  })
+})
+
+describe('latencyInsight', () => {
+  it('la otra persona responde mucho más rápido', () => {
+    const s = latencyInsight(base({ latency: { myMedianMinutes: 120, theirMedianMinutes: 2 } }), 'Diana')
+    expect(s).toBe('Diana responde mucho más rápido que vos (~2 min vs ~2 h).')
+  })
+  it('vos respondés mucho más rápido', () => {
+    const s = latencyInsight(base({ latency: { myMedianMinutes: 3, theirMedianMinutes: 45 } }), 'Fran')
+    expect(s).toBe('Respondés mucho más rápido que Fran (~3 min vs ~45 min).')
+  })
+  it('latencia 0 de un lado → "al toque"', () => {
+    const s = latencyInsight(base({ latency: { myMedianMinutes: 45, theirMedianMinutes: 0 } }), 'Ana')
+    expect(s).toBe('Ana responde mucho más rápido que vos (al toque vs ~45 min).')
+  })
+  it('ambos rápidos o parejo → null', () => {
+    expect(latencyInsight(base({ latency: { myMedianMinutes: 2, theirMedianMinutes: 5 } }), 'Ana')).toBeNull()
+    expect(latencyInsight(base({ latency: { myMedianMinutes: 40, theirMedianMinutes: 30 } }), 'Ana')).toBeNull()
+  })
+  it('sin datos de latencia → null', () => {
+    expect(latencyInsight(base({ latency: null }), 'Ana')).toBeNull()
+    expect(latencyInsight(base({ latency: { myMedianMinutes: null, theirMedianMinutes: 5 } }), 'Ana')).toBeNull()
   })
 })

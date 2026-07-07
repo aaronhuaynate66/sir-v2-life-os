@@ -12,7 +12,7 @@ import { TrendingUp, TrendingDown, Minus, MessageSquare } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import type { ConversationAnalytics, Direction } from '@/lib/conversation-analytics/analyze'
-import { initiationInsight } from '@/lib/conversation-analytics/insight'
+import { initiationInsight, latencyInsight } from '@/lib/conversation-analytics/insight'
 
 export interface ConversationAnalyticsCardProps {
   personId: string
@@ -91,17 +91,22 @@ export function ConversationAnalyticsCard({ personId, personName }: Conversation
   }
 
   const mePct = a.myShare != null ? Math.round(a.myShare * 100) : null
-  const insight = initiationInsight(a, personName.split(' ')[0])
+  const first = personName.split(' ')[0]
+  const insights = [initiationInsight(a, first), latencyInsight(a, first)].filter((s): s is string => !!s)
 
   return (
     <Card className="shadow-none">
       <CardContent className="p-4 sm:p-5 space-y-3">
         <Header />
 
-        {insight && (
-          <p className="rounded-md border border-brand/25 bg-brand-soft/60 px-3 py-2 text-[13px] leading-relaxed text-foreground">
-            {insight}
-          </p>
+        {insights.length > 0 && (
+          <div className="space-y-1.5">
+            {insights.map((s, i) => (
+              <p key={i} className="rounded-md border border-brand/25 bg-brand-soft/60 px-3 py-2 text-[13px] leading-relaxed text-foreground">
+                {s}
+              </p>
+            ))}
+          </div>
         )}
 
         {a.volume && (

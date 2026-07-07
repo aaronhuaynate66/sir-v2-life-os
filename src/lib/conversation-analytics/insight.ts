@@ -42,3 +42,27 @@ export function initiationInsight(a: ConversationAnalytics, firstName: string): 
 
   return null
 }
+
+function fmtMin(m: number): string {
+  if (m < 1) return 'al toque'
+  if (m < 60) return `~${m} min`
+  return `~${Math.round(m / 60)} h`
+}
+
+/**
+ * Asimetría de latencia de respuesta: cuando uno responde MUCHO más rápido que
+ * el otro (≥3× y con un lado lento ≥15 min), es señal de disponibilidad/enganche.
+ * null si ambos responden parejo o rápido.
+ */
+export function latencyInsight(a: ConversationAnalytics, firstName: string): string | null {
+  const mine = a.latency?.myMedianMinutes
+  const theirs = a.latency?.theirMedianMinutes
+  if (mine == null || theirs == null) return null
+  const name = firstName || 'la otra persona'
+  const hi = Math.max(mine, theirs), lo = Math.min(mine, theirs)
+  if (hi < 15) return null       // ambos rápidos → sin asimetría relevante
+  if (hi < lo * 3) return null    // no es notablemente asimétrico
+  return theirs < mine
+    ? `${name} responde mucho más rápido que vos (${fmtMin(theirs)} vs ${fmtMin(mine)}).`
+    : `Respondés mucho más rápido que ${name} (${fmtMin(mine)} vs ${fmtMin(theirs)}).`
+}
