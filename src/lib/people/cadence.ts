@@ -65,24 +65,103 @@ export function parseCustomDays(freqText: string | undefined | null): number | n
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
-export interface CadenceDescription {
-  /** Meta de contacto en días (resuelta, ya con fallback por categoría). */
+export interface CadenceSuggestion {
   days: number
-  /** ¿Es automática (texto vacío → default por categoría)? */
+  /** 'rhythm' = inferida del ritmo real; 'category' = default por capa (poca señal). */
+  source: 'rhythm' | 'category'
+}
+
+function median(nums: number[]): number {
+  const s = [...nums].sort((a, b) => a - b)
+  const mid = Math.floor(s.length / 2)
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
+}
+
+/**
+ * Cadencia "automática" inferida del RITMO real de contacto: la mediana de los
+ * gaps (en días) entre contactos, deduplicando mismo día. Sólo cuando hay señal
+ * ROBUSTA — al menos `minContacts` contactos que abarquen `minSpanDays` — para
+ * no inventar un ritmo con 2 capturas de la misma semana. Si no, cae al default
+ * por categoría. PURO (`now` inyectable).
+ */
+export function suggestCadenceDays(
+  contactDates: Array<string | number | Date | null | undefined>,
+  category: PersonCategory,
+  now: Date = new Date(),
+  opts: { minContacts?: number; minSpanDays?: number } = {},
+): CadenceSuggestion {
+  const minContacts = opts.minContacts ?? 5
+  const minSpanDays = opts.minSpanDays ?? 45
+  const fallback = contactFrequencyDays('', category)
+
+  const nowMs = now.getTime()
+  const dayKeys = new Set<number>()
+  for (const d of contactDates) {
+    if (d == null) continue
+    const ms = d instanceof Date ? d.getTime() : typeof d === 'number' ? d : Date.parse(String(d))
+    if (!Number.isFinite(ms) || ms > nowMs) continue
+    dayKeys.add(Math.floor(ms / 86_400_000))
+  }
+  const days = [...dayKeys].sort((a, b) => a - b)
+  if (days.length < minContacts) return { days: fallback, source: 'category' }
+  const span = days[days.length - 1] - days[0]
+  if (span < minSpanDays) return { days: fallback, source: 'category' }
+
+  const gaps: number[] = []
+  for (let i = 1; i < days.length; i++) gaps.push(days[i] - days[i - 1])
+  const clamped = Math.max(1, Math.min(365, Math.round(median(gaps))))
+  return { days: clamped, source: 'rhythm' }
+}
+
+export interface EffectiveCadence {
+  days: number
   isAuto: boolean
-  /** "cada 7 días" o "cada 30 días · auto". */
+  /** 'explicit' = el usuario la fijó; 'rhythm' = auto por ritmo; 'category' = auto por capa. */
+  source: 'explicit' | 'rhythm' | 'category'
+}
+
+/**
+ * Cadencia efectiva de una persona: el texto explícito MANDA; si está en
+ * automática (vacío), usa la sugerencia por ritmo cuando existe, si no el
+ * default por categoría.
+ */
+export function effectiveCadenceDays(
+  freqText: string | undefined | null,
+  category: PersonCategory,
+  suggestion?: CadenceSuggestion | null,
+): EffectiveCadence {
+  const raw = (freqText ?? '').trim()
+  if (raw !== '') return { days: contactFrequencyDays(raw, category), isAuto: false, source: 'explicit' }
+  if (suggestion) return { days: suggestion.days, isAuto: true, source: suggestion.source }
+  return { days: contactFrequencyDays('', category), isAuto: true, source: 'category' }
+}
+
+export interface CadenceDescription {
+  /** Meta de contacto en días (resuelta: explícita, por ritmo, o por categoría). */
+  days: number
+  /** ¿Es automática (texto vacío)? */
+  isAuto: boolean
+  /** 'explicit' | 'rhythm' | 'category'. */
+  source: EffectiveCadence['source']
+  /** "cada 7 días" · "cada 9 días · tu ritmo" · "cada 30 días · auto". */
   label: string
 }
 
-/** Describe la cadencia efectiva de una persona (para mostrarla). */
+/**
+ * Describe la cadencia efectiva de una persona (para mostrarla). Si se pasa una
+ * `suggestion` (ritmo real inferido server-side), la usa para el modo automático.
+ */
 export function describeCadence(
   freqText: string | undefined | null,
   category: PersonCategory,
+  suggestion?: CadenceSuggestion | null,
 ): CadenceDescription {
-  const raw = (freqText ?? '').trim()
-  const days = contactFrequencyDays(raw, category)
-  const isAuto = raw === ''
-  return { days, isAuto, label: isAuto ? `cada ${days} días · auto` : `cada ${days} días` }
+  const eff = effectiveCadenceDays(freqText, category, suggestion)
+  const label =
+    eff.source === 'rhythm' ? `cada ${eff.days} días · tu ritmo`
+      : eff.source === 'category' ? `cada ${eff.days} días · auto`
+        : `cada ${eff.days} días`
+  return { days: eff.days, isAuto: eff.isAuto, source: eff.source, label }
 }
 
 export type CadenceState = 'sin_registro' | 'al_dia' | 'atrasado'

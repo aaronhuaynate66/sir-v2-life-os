@@ -72,6 +72,7 @@ import {
 import { CommercialPipelinePanel } from '@/components/relaciones/CommercialPipelinePanel'
 import { ScoreTrendChip } from '@/components/relaciones/ScoreTrendChip'
 import { useScoreTrendsByPerson } from '@/lib/relaciones/useScoreTrends'
+import { useSuggestedCadence } from '@/lib/relaciones/useSuggestedCadence'
 import { cn } from '@/lib/utils'
 import type { Person, RelationshipType, PersonCategory, EnergyImpact, PersonGender } from '@/types'
 import { effectiveAmbito, inferAmbito, AMBITO_LABEL } from '@/lib/people/ambito'
@@ -156,6 +157,8 @@ function RelationshipsContent() {
   // Tendencia del bond por persona: lee los snapshots diarios (cron
   // score-snapshots + mig 0066) y muestra ↑/↓ al lado del nombre.
   const scoreTrends = useScoreTrendsByPerson()
+  // Cadencia "automática" por ritmo real (mismo cálculo que Reconectar).
+  const suggestedCadence = useSuggestedCadence()
   useEffect(() => {
     let alive = true
     fetch('/api/moments?open=1')
@@ -720,7 +723,7 @@ function RelationshipsContent() {
                             // que reciben presencia, no agenda. Su cuidado ya vive en la
                             // ventana de contacto + termómetro + salud del vínculo (ficha).
                             if (relationshipMode(person.relationship) === 'affective') return null
-                            const desc = describeCadence(person.contactFrequency, person.category)
+                            const desc = describeCadence(person.contactFrequency, person.category, suggestedCadence[person.id])
                             const st = cadenceStatus(person.lastContact ? daysSince(person.lastContact) : null, desc.days)
                             const stColor = st.state === 'atrasado'
                               ? (st.overdueDays > desc.days * 0.5 ? 'text-bad' : 'text-warn')

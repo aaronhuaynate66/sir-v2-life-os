@@ -14,7 +14,7 @@ import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { personAdapter, personLinkAdapter, relationshipAdapter } from '@/lib/supabase/sync/adapters/relationships'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
-import { contactFrequencyDays } from '@/lib/people/urgency'
+import { suggestCadenceDays, effectiveCadenceDays } from '@/lib/people/cadence'
 import { contactDatesInRange } from '@/lib/horario/cockpit'
 import {
   buildDailyActions,
@@ -110,12 +110,16 @@ export async function GET(request: Request): Promise<NextResponse> {
       statusByPerson.set(rel.personId, rel.status)
     }
 
-    // Último chat (whatsapp) por persona — el primero que aparece (orden desc).
+    // Último chat (whatsapp) por persona — el primero que aparece (orden desc) —
+    // y TODAS las fechas de chat por persona (para inferir el ritmo de contacto).
     const lastChatByPerson = new Map<string, string>()
+    const chatDatesByPerson = new Map<string, string[]>()
     for (const row of (chatsRes.data ?? []) as Array<{ person_id: string | null; observed_at: string }>) {
-      if (row.person_id && !lastChatByPerson.has(row.person_id)) {
-        lastChatByPerson.set(row.person_id, row.observed_at)
-      }
+      if (!row.person_id) continue
+      if (!lastChatByPerson.has(row.person_id)) lastChatByPerson.set(row.person_id, row.observed_at)
+      const arr = chatDatesByPerson.get(row.person_id) ?? []
+      arr.push(row.observed_at)
+      chatDatesByPerson.set(row.person_id, arr)
     }
 
     // Calidades de interacción por persona (orden cronológico) + último log.
@@ -181,6 +185,17 @@ export async function GET(request: Request): Promise<NextResponse> {
         now,
       )
 
+      // Cadencia efectiva: texto explícito manda; en automática, el ritmo REAL
+      // (chats + interacciones + último contacto) si hay señal robusta, si no la
+      // capa. Alimenta el "overdue" del scoring igual que lo ve la lista.
+      const contactDates = [
+        ...(chatDatesByPerson.get(person.id) ?? []),
+        ...interactionEvents.map((e) => e.at),
+        person.lastContact ?? null,
+      ]
+      const suggestion = suggestCadenceDays(contactDates, person.category, now)
+      const cadenceDays = effectiveCadenceDays(person.contactFrequency, person.category, suggestion).days
+
       return {
         person,
         fuerza: breakdown.fuerza,
@@ -188,7 +203,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         confianza: breakdown.confianza,
         status: statusByPerson.get(person.id),
         daysSinceContact,
-        contactFrequencyDays: contactFrequencyDays(person.contactFrequency, person.category),
+        contactFrequencyDays: cadenceDays,
         hasUpcomingDate: upcomingPersonIds.has(person.id),
         recentSignals: signalsByPerson.get(person.id) ?? [],
       }
