@@ -282,6 +282,11 @@ const GOAL_STOPWORDS = new Set([
   'mejorar', 'aumentar', 'reducir', 'mantener', 'crear', 'construir', 'terminar',
   'completar', 'seguir', 'empezar', 'mejor', 'nuevo', 'nueva', 'gran', 'mucho',
   'persona', 'personas', 'personal', 'gente', 'contacto', 'contactos',
+  // Palabras-MEDIO/canal: aparecen en descripciones ("acuerdo por WhatsApp") pero
+  // como keyword matchean CUALQUIER chat (toda memoria de chat trae el tag del
+  // medio) → falso "alineado con 31 personas". No son un TEMA del objetivo.
+  'whatsapp', 'whatsap', 'chat', 'mensaje', 'mensajes', 'conversacion',
+  'conversaciones', 'llamada', 'llamadas', 'correo', 'email', 'texto', 'audio',
 ])
 
 /** Normaliza un token: minúsculas, sin acentos, sólo alfanumérico. */

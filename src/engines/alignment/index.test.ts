@@ -238,6 +238,14 @@ describe('goalKeywords', () => {
     expect(kw.has('cerrar')).toBe(false) // stopword (verbo de acción)
     expect(kw.has('con')).toBe(false) // < 4 chars
   })
+  it('descarta palabras-MEDIO (whatsapp/chat) que matchearían cualquier conversación', () => {
+    // Caso real: "Mudarme con mi perro" cuyo acuerdo se pactó "por WhatsApp" →
+    // 'whatsapp' NO debe ser keyword (matcheaba a las 31 personas con chat).
+    const g = goal({ id: 'g', title: 'Mudarme con mi perro', description: 'Acuerdo con Marita por WhatsApp: S/1000/mes' })
+    const kw = goalKeywords(g)
+    expect(kw.has('whatsapp')).toBe(false)
+    expect(kw.has('marita')).toBe(true) // el tema real sí queda
+  })
 })
 
 describe('matchMemoryTags', () => {
