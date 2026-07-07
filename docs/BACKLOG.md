@@ -129,6 +129,12 @@
 - **Fix:** derivar (o completar) el eje profesional también desde los `facts`/summary del chat cuando no hay LinkedIn. + idea relacionada: la **última interacción** debería tomar el último MENSAJE (dateRange.last del whatsapp_chat), no el último rating manual.
 - **Feature ligada ("crear para poder cambiarlo"):** override manual de campos de perfil (contadores, bio, trabajo) sin re-capturar — hoy se corrige creando una observación a mano.
 
+### BUG-007 ⬜ PENDIENTE [P2]: el import de WhatsApp no deja data usable para el Pulso (C0)
+- **Hallado en el pase visual de Diana:** "Pulso de la conversación" salía vacío pese al chat de 71138 mensajes.
+- **Causa:** el `whatsapp_chat` guarda solo **25 rawMessages de muestra** y con `timestamp` **solo hora** ("14:47", sin fecha). C0 (`messagesFromRows` → `Date.parse("14:47")`) = NaN → descarta todos. (Teams/`dm_conversation` sí funciona: guarda el stream con fecha completa.)
+- **Workaround aplicado a Diana (07-06):** backfill de rawMessages con timestamps ISO completos desde el `_chat.txt` (2500 msgs recientes) → el Pulso ya renderiza para ella.
+- **Fix de raíz:** en el import de WhatsApp, guardar los rawMessages con **timestamp ISO completo** (fecha+hora, no solo hora) y MÁS mensajes (o una serie de volumen semanal pre-computada). Toca `lib/capture/whatsapp/*` (parser/consolidate).
+
 ---
 
 ## 🆕 BACKLOG NUEVO
