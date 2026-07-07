@@ -108,6 +108,7 @@ import { AgregarCapturaPanel } from './AgregarCapturaPanel'
 import { MomentosPanel } from './MomentosPanel'
 import { PersonMoneyPanel } from './PersonMoneyPanel'
 import { ContactWindowBadge } from './ContactWindowBadge'
+import { PreguntarSobrePersona } from './PreguntarSobrePersona'
 import { CADENCE_PRESETS, storedToPreset, presetToStored, parseCustomDays } from '@/lib/people/cadence'
 import { IdentidadesPanel } from './IdentidadesPanel'
 import { FamiliaPanel } from './FamiliaPanel'
@@ -432,6 +433,10 @@ export function PersonDetail({
           personLogs.find((l) => l.kind === 'interaction' && !isSystemNote(l.note ?? ''))?.loggedAt ?? null
         }
       />
+
+      {/* Q&A por persona: preguntá a SIR sobre esta persona, aterrizado en su
+          contexto (reusa /api/sir/ask con personId). */}
+      <PreguntarSobrePersona personId={live.id} personName={live.name} />
 
       {/* Estado global del vínculo con esta persona (determinístico): cruza
           logs + moments + ciclo + memorias en una etiqueta + insights concretos.

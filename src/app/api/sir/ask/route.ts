@@ -103,6 +103,14 @@ export async function POST(req: NextRequest) {
     if (mentioned.includes((p.name as string) ?? '')) targetIds.add(p.id as string)
   }
 
+  // Scope explícito por persona (ask-box de la ficha): garantiza que ESA persona
+  // entre al contexto aunque la pregunta no la nombre ("¿cómo viene la relación?").
+  // Se agrega ANTES del augmento por memorias, así sobrevive el cap MAX_PEOPLE.
+  const scopedPersonId = typeof (body as { personId?: unknown }).personId === 'string'
+    ? ((body as { personId?: unknown }).personId as string)
+    : null
+  if (scopedPersonId && byId.has(scopedPersonId)) targetIds.add(scopedPersonId)
+
   // 3. Memorias por búsqueda semántica (best-effort: si no hay OPENAI_API_KEY
   //    o embeddings, seguimos sin esta señal). Sus personas se suman al set.
   //    El embedding de la pregunta se computa UNA vez y se reusa para el recall
