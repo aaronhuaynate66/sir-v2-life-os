@@ -25,12 +25,13 @@ export function SelfLinkInsightCard() {
     const sleep: SleepPoint[] = sleepRecords
       .map((r) => ({ day: r.date, score: r.score ?? (typeof r.quality === 'number' ? r.quality * 10 : NaN) }))
       .filter((p) => Number.isFinite(p.score))
-    const energy: SelfPoint[] = selfMetrics
-      .filter((m) => m.category === 'energy')
-      .map((m) => ({ day: limaDayKey(m.timestamp ?? ''), value: m.value }))
-    const mood: SelfPoint[] = selfMetrics
-      .filter((m) => m.category === 'mood')
-      .map((m) => ({ day: limaDayKey(m.timestamp ?? ''), value: m.value }))
+    const toSelf = (cat: 'energy' | 'mood'): SelfPoint[] =>
+      selfMetrics
+        .filter((m) => m.category === cat)
+        .map((m) => ({ day: limaDayKey(m.timestamp ?? ''), value: m.value }))
+        .filter((p): p is SelfPoint => typeof p.day === 'string' && p.day.length > 0)
+    const energy = toSelf('energy')
+    const mood = toSelf('mood')
     const res = analyzeSleepSelfLink(sleep, energy, mood)
     return { links: res.links, hasData: sleep.length >= 3 && energy.length + mood.length >= 3 }
   }, [sleepRecords, selfMetrics])
