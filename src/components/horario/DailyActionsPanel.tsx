@@ -33,6 +33,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { parseErrorResponse, postJson, toApiError, type ApiError } from '@/lib/api/errors'
+import { trackAiError } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 import type { DailyAction, DailyActionKind } from '@/lib/daily-actions/build'
 import type { MessageSuggestion } from '@/lib/daily-actions/messagePrompt'
@@ -167,7 +168,9 @@ function ActionRow({ action, variant }: { action: DailyAction; variant: 'full' |
       })
       setMsg({ status: 'ready', suggestion })
     } catch (e) {
-      setMsg({ status: 'error', error: toApiError(e) })
+      const apiErr = toApiError(e)
+      trackAiError('daily_action_message', apiErr) // GA4
+      setMsg({ status: 'error', error: apiErr })
     }
   }, [action])
 

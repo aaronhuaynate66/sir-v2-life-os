@@ -23,6 +23,7 @@ import { detectBiases } from '@/engines/bias'
 import { InfluenceMapCard } from '@/components/influence/InfluenceMapCard'
 import { cn } from '@/lib/utils'
 import type { RehearseResult, Likelihood } from '@/lib/influence/rehearsePrompt'
+import { trackAiError } from '@/lib/analytics/track'
 
 const LIKELIHOOD: Record<Likelihood, { label: string; cls: string }> = {
   plausible: { label: 'plausible', cls: 'border-brand/40 text-brand' },
@@ -70,6 +71,7 @@ function EnsayoContent() {
       let j: { result?: RehearseResult; person?: { name: string; hadContext: boolean }; error?: string; detail?: string } = {}
       try { j = text ? JSON.parse(text) : {} } catch { /* respuesta no-JSON (timeout/gateway) */ }
       if (!res.ok || !j.result) {
+        trackAiError('rehearse', { status: res.status, message: j.error, detail: j.detail }) // GA4
         setError(
           j.error
             ? `${j.error}${j.detail ? ` — ${j.detail}` : ''}`
@@ -81,6 +83,7 @@ function EnsayoContent() {
       }
       setResult(j.result); setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
     } catch (e) {
+      trackAiError('rehearse', { status: 0, message: e instanceof Error ? e.message : String(e) }) // GA4
       setError(e instanceof Error ? e.message : String(e))
     } finally { setBusy(false) }
   }

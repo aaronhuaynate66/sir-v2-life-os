@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 
 import { readExportText, interpretChunk, persistWhatsAppExport, getLastImportedISO, archiveConversation } from '@/lib/capture/whatsapp/export/client'
-import { trackCreated, EVENTS } from '@/lib/analytics/track'
+import { trackCreated, trackAiError, EVENTS } from '@/lib/analytics/track'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import { consolidateInterpretations, buildExportObservationData } from '@/lib/capture/whatsapp/export/consolidate'
@@ -337,7 +337,9 @@ export function IntakeInteligente() {
       }
       setPhase('review')
     } catch (e) {
-      setError({ status: e instanceof HttpError ? e.status : 0, message: 'No se pudo analizar', detail: errMsg(e) })
+      const status = e instanceof HttpError ? e.status : 0
+      trackAiError('capture_analyze', { status, detail: errMsg(e) }) // GA4
+      setError({ status, message: 'No se pudo analizar', detail: errMsg(e) })
       setPhase('idle')
     }
   }
@@ -432,7 +434,9 @@ export function IntakeInteligente() {
       setResult({ name: personName, slug, messages, imgs: imgOk, profile: profileOk })
       setPhase('done')
     } catch (e) {
-      setError({ status: e instanceof HttpError ? e.status : 0, message: 'No se pudo crear/importar', detail: errMsg(e) })
+      const status = e instanceof HttpError ? e.status : 0
+      trackAiError('whatsapp_import', { status, detail: errMsg(e) }) // GA4
+      setError({ status, message: 'No se pudo crear/importar', detail: errMsg(e) })
       setPhase('review')
     }
   }
