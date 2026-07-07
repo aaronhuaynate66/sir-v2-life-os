@@ -88,6 +88,7 @@ import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
 import { CicloPanel } from './CicloPanel'
+import { CycleHorizonCard } from './CycleHorizonCard'
 import { CorrelacionPanel } from './CorrelacionPanel'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { personLogToneSeries } from '@/lib/charts/adapters'
@@ -777,6 +778,16 @@ export function PersonDetail({
           (o ya tiene datos de ciclo cargados, p. ej. registros legacy). ─── */}
       {(live.gender === 'female' || live.cycleStartDate) && (
         <div className="mb-4">
+          {/* Horizonte del ciclo (rediseño): eventos próximos × fase estimada +
+              lectura de cuidado. Se oculta si no hay ciclo o eventos próximos. */}
+          <CycleHorizonCard
+            cycleStartDate={live.cycleStartDate ?? null}
+            cycleLengthDays={live.cycleLengthDays ?? null}
+            personCycles={personCycles}
+            specialDates={live.specialDates ?? []}
+            birthDate={live.birthDate ?? null}
+            personName={live.name}
+          />
           <CicloPanel
             cycleStartDate={live.cycleStartDate ?? null}
             cycleLengthDays={live.cycleLengthDays ?? null}

@@ -11,6 +11,7 @@
 
 import { cyclePhase, type CyclePhaseId } from './phase'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+import type { SpecialDate } from '@/types'
 
 const DAY_MS = 86_400_000
 
@@ -55,6 +56,79 @@ export function phaseCareReading(phase: CyclePhaseId, isPms: boolean, isFertile:
 function isoOf(t: number): string {
   const d = new Date(t)
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+}
+
+function isoDate(y: number, m0: number, d: number): string {
+  const dt = new Date(Date.UTC(y, m0, d))
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`
+}
+
+/** Ocurrencia de una fecha recurrente (YYYY-MM-DD → MM-DD) dentro de [from,to], o null. */
+function recurringInWindow(dateIso: string, fromIso: string, toIso: string): string | null {
+  const mmdd = dateIso.slice(5)
+  for (const year of [Number(fromIso.slice(0, 4)), Number(toIso.slice(0, 4))]) {
+    const cand = `${year}-${mmdd}`
+    if (cand >= fromIso && cand <= toIso) return cand
+  }
+  return null
+}
+
+function classifyLabel(label: string): HorizonEventKind {
+  if (/anivers|mesario|feliz mes|meses de relaci/i.test(label)) return 'anniversary'
+  if (/cumple|nacim/i.test(label)) return 'birthday'
+  if (/viaje|cusco|trip|vuelo/i.test(label)) return 'trip'
+  return 'calendar'
+}
+
+/**
+ * Junta los eventos reales para el horizonte desde fechas importantes + cumple +
+ * "mesarios" (día del mes del aniversario de pareja). PURO. Recurrentes se
+ * proyectan a su ocurrencia en la ventana; los puntuales entran si caen dentro.
+ */
+export function gatherHorizonEvents(input: {
+  specialDates: SpecialDate[]
+  birthDate?: string | null
+  personName: string
+  fromIso: string
+  toIso: string
+  now: Date
+}): HorizonEventInput[] {
+  const { specialDates, birthDate, personName, fromIso, toIso, now } = input
+  const events: HorizonEventInput[] = []
+  const seen = new Set<string>()
+  const add = (date: string, label: string, kind: HorizonEventKind) => {
+    const key = `${date}|${label}`
+    if (seen.has(key)) return
+    seen.add(key)
+    events.push({ date, label, kind })
+  }
+
+  for (const sd of specialDates) {
+    if (!sd.date) continue
+    const occ = sd.recurring
+      ? recurringInWindow(sd.date, fromIso, toIso)
+      : (sd.date >= fromIso && sd.date <= toIso ? sd.date : null)
+    if (occ) add(occ, sd.label, classifyLabel(sd.label))
+  }
+
+  if (birthDate) {
+    const occ = recurringInWindow(birthDate, fromIso, toIso)
+    if (occ) add(occ, `Cumple de ${personName.split(' ')[0]}`, 'birthday')
+  }
+
+  // Mesarios: día del mes del aniversario de pareja (ej. el 13), por cada mes de
+  // la ventana. Se deriva de una fecha importante de aniversario.
+  const anni = specialDates.find((s) => /anivers|mesario|mes de relaci/i.test(s.label) && s.date)
+  const anniDay = anni ? Number(anni.date.slice(8, 10)) : NaN
+  if (Number.isFinite(anniDay) && anniDay >= 1 && anniDay <= 28) {
+    for (let m = -1; m <= 3; m++) {
+      const di = isoDate(now.getFullYear(), now.getMonth() + m, anniDay)
+      if (di >= fromIso && di <= toIso) add(di, 'Mesario', 'mesario')
+    }
+  }
+
+  events.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+  return events
 }
 
 export interface BuildCycleHorizonInput {

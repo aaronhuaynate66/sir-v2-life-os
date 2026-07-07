@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
-import { buildCycleHorizon, phaseCareReading } from './horizon'
+import { buildCycleHorizon, phaseCareReading, gatherHorizonEvents } from './horizon'
+import type { SpecialDate } from '@/types'
 
 // Último período 2026-06-23, ciclo 28 días. Día 1 = 23-jun.
 // menstrual 1-5 (23-27 jun) · folicular 6-12 (28jun-4jul) · ovulación 13-15 (5-7jul)
@@ -75,5 +76,37 @@ describe('buildCycleHorizon', () => {
 
   it('sin período válido → null', () => {
     expect(buildCycleHorizon({ ...BASE, lastPeriodStart: 'no-fecha', events: [] }, NOW)).toBeNull()
+  })
+})
+
+describe('gatherHorizonEvents', () => {
+  const sd = (over: Partial<SpecialDate>): SpecialDate => ({ id: 'x', label: 'X', date: '2026-07-13', recurring: false, ...over })
+  const FROM = '2026-06-16', TO = '2026-09-20'
+
+  it('proyecta recurrentes a su ocurrencia en la ventana; puntuales solo si caen dentro', () => {
+    const evs = gatherHorizonEvents({
+      specialDates: [
+        sd({ label: 'Cita médica', date: '2026-08-02', recurring: false }), // en ventana
+        sd({ label: 'Show de danza', date: '2026-02-22', recurring: false }), // fuera
+        sd({ label: 'Día del hermano', date: '2025-09-05', recurring: true }), // recurrente → 2026-09-05
+      ],
+      birthDate: '1998-06-14', // cumple 14-jun, fuera de la ventana
+      personName: 'Diana',
+      fromIso: FROM, toIso: TO, now: new Date('2026-07-07'),
+    })
+    const labels = evs.map((e) => e.label)
+    expect(labels).toContain('Cita médica')
+    expect(labels).toContain('Día del hermano')
+    expect(labels).not.toContain('Show de danza')
+    expect(labels).not.toContain('Cumple de Diana') // 14-jun < ventana
+  })
+
+  it('genera mesarios del día del aniversario, ordenados', () => {
+    const evs = gatherHorizonEvents({
+      specialDates: [sd({ label: 'Aniversario Aaron y Diana', date: '2024-12-13', recurring: true })],
+      birthDate: null, personName: 'Diana', fromIso: FROM, toIso: TO, now: new Date('2026-07-07'),
+    })
+    const mesarios = evs.filter((e) => e.kind === 'mesario').map((e) => e.date)
+    expect(mesarios).toEqual(['2026-07-13', '2026-08-13', '2026-09-13'])
   })
 })
