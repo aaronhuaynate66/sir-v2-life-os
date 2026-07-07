@@ -2,8 +2,8 @@
 
 // SIR V2 — HypothesesExplorer (19·M2): explorar hipótesis sobre algo que te
 // preocupa de una persona. Cerrado por default (sensible). Devuelve hipótesis
-// que COMPITEN — para entender y actuar con cuidado/protección, NUNCA para
-// diagnosticar o etiquetar. Guardrails cosidos al prompt del server.
+// que COMPITEN — para entender, protegerse y decidir mejor, NUNCA para diagnosticar
+// o etiquetar. Guardrails cosidos al prompt del server.
 
 import { useState } from 'react'
 import { Lightbulb, Loader2, ChevronDown, ShieldAlert, LifeBuoy } from 'lucide-react'
@@ -52,7 +52,7 @@ export function HypothesesExplorer({ personId, personName }: { personId: string;
           <div className="mt-3 space-y-3">
             <p className="text-[11px] text-muted-foreground leading-snug">
               Contame qué te preocupa de {personName}. SIR abre <span className="font-medium text-foreground/80">hipótesis que compiten</span> —para
-              entender y cuidar/protegerte, no para diagnosticar ni etiquetar.
+              entender, protegerte y decidir mejor, no para diagnosticar ni etiquetar.
             </p>
             <textarea
               value={concern}
@@ -79,7 +79,7 @@ export function HypothesesExplorer({ personId, personName }: { personId: string;
                       </div>
                       {h.supports && <p className="text-[12px] text-muted-foreground leading-snug"><span className="text-foreground/60">a favor:</span> {h.supports}</p>}
                       {h.against && <p className="text-[12px] text-muted-foreground leading-snug"><span className="text-foreground/60">en contra:</span> {h.against}</p>}
-                      {h.action && <p className="text-[12px] text-brand-soft-foreground leading-snug mt-1">→ {h.action}</p>}
+                      {h.action && <p className="text-[12px] text-brand-soft-foreground leading-snug mt-1">Movimiento para Aaron: {h.action}</p>}
                     </li>
                   ))}
                 </ul>

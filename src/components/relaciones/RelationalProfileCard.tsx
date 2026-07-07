@@ -1,12 +1,11 @@
 'use client'
 
-// SIR V2 — RelationalProfileCard (19·M1): perfil de cómo vincularte con la
-// persona (apego/personalidad/valores/comunicación) como HIPÓTESIS, no
-// diagnóstico. On-demand (llama a Sonnet, cache diaria server-side). Se genera
-// con un botón para no gastar en cada visita.
+// SIR V2 — RelationalProfileCard (19.M1 + 20): perfil de cómo vincularte y
+// decidir con esta persona como hipótesis operativa privada, no diagnóstico.
+// On-demand (llama a Sonnet, cache diaria server-side).
 
 import { useState } from 'react'
-import { UserSearch, Loader2, Sparkles, RefreshCw } from 'lucide-react'
+import { UserSearch, Loader2, Sparkles, RefreshCw, Target, ShieldAlert } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -54,7 +53,7 @@ export function RelationalProfileCard({ personId }: { personId: string; personNa
         {!loaded && !busy && (
           <>
             <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
-              Un perfil de apego, personalidad y estilo — como <span className="font-medium text-foreground/80">hipótesis para vincularte mejor</span>, no un diagnóstico.
+              Perfil privado de vínculo, valor, riesgo y próximo movimiento — como <span className="font-medium text-foreground/80">hipótesis operativa</span>, no diagnóstico.
             </p>
             <Button size="sm" variant="outline" onClick={() => void generate(false)}>
               <Sparkles size={13} strokeWidth={1.75} className="mr-1.5" /> Generar perfil
@@ -93,6 +92,49 @@ export function RelationalProfileCard({ personId }: { personId: string; personNa
               <div className="rounded-md border border-brand/30 bg-brand-soft p-3">
                 <div className="text-[10px] uppercase tracking-[0.07em] text-brand-soft-foreground mb-1">Cómo vincularte mejor</div>
                 <p className="text-sm text-foreground leading-relaxed">{profile.howToRelate}</p>
+              </div>
+            )}
+
+            {(profile.strategicValue || profile.risk || profile.reciprocity || (profile.legitimateLevers ?? []).length > 0 || profile.nextMove || (profile.horizon ?? []).length > 0 || (profile.doNotDo ?? []).length > 0) && (
+              <div className="rounded-md border border-warn/30 bg-warn-soft/50 p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Target size={13} strokeWidth={1.75} className="text-warn" aria-hidden="true" />
+                  <div className="text-[10px] uppercase tracking-[0.07em] text-warn font-medium">Lectura estratégica Aaron-first</div>
+                </div>
+                {profile.strategicValue && <Row label="Valor estratégico"><p className="text-[13px] text-foreground/90 leading-relaxed">{profile.strategicValue}</p></Row>}
+                {profile.risk && <Row label="Riesgo para Aaron"><p className="text-[13px] text-foreground/90 leading-relaxed">{profile.risk}</p></Row>}
+                {profile.reciprocity && <Row label="Reciprocidad"><p className="text-[13px] text-foreground/90 leading-relaxed">{profile.reciprocity}</p></Row>}
+                {(profile.legitimateLevers ?? []).length > 0 && (
+                  <Row label="Palancas legítimas">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(profile.legitimateLevers ?? []).map((v, i) => <Badge key={i} variant="outline" className="text-[11px] font-normal bg-background/60">{v}</Badge>)}
+                    </div>
+                  </Row>
+                )}
+                {profile.nextMove && (
+                  <div className="rounded-md border border-brand/30 bg-background/60 p-2.5">
+                    <div className="text-[10px] uppercase tracking-[0.07em] text-brand-soft-foreground mb-1">Mejor próximo movimiento</div>
+                    <p className="text-sm text-foreground leading-relaxed">{profile.nextMove}</p>
+                  </div>
+                )}
+                {(profile.horizon ?? []).length > 0 && (
+                  <Row label="Horizonte">
+                    <ul className="space-y-1">
+                      {(profile.horizon ?? []).map((h, i) => <li key={i} className="text-[12px] text-foreground/85 leading-snug">{h}</li>)}
+                    </ul>
+                  </Row>
+                )}
+                {(profile.doNotDo ?? []).length > 0 && (
+                  <div className="rounded-md border border-bad/30 bg-bad-soft p-2.5">
+                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.07em] text-bad font-medium mb-1">
+                      <ShieldAlert size={12} strokeWidth={1.75} aria-hidden="true" />
+                      Qué no hacer
+                    </div>
+                    <ul className="space-y-1">
+                      {(profile.doNotDo ?? []).map((x, i) => <li key={i} className="text-[12px] text-foreground/85 leading-snug">{x}</li>)}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
             <p className="text-[10px] text-muted-foreground/70 leading-relaxed">{profile.note}</p>

@@ -8,6 +8,8 @@ describe('RELATIONAL_PROFILE_SYSTEM_PROMPT — guardrail', () => {
     expect(RELATIONAL_PROFILE_SYSTEM_PROMPT).toMatch(/PROHIBIDO diagnóstico/i)
     expect(RELATIONAL_PROFILE_SYSTEM_PROMPT).toMatch(/TENDENCIAS, no cajas/i)
     expect(RELATIONAL_PROFILE_SYSTEM_PROMPT).toMatch(/no un veredicto ni un diagnóstico/i)
+    expect(RELATIONAL_PROFILE_SYSTEM_PROMPT).toMatch(/SIR está del lado de Aaron/i)
+    expect(RELATIONAL_PROFILE_SYSTEM_PROMPT).toMatch(/Palancas legítimas/i)
   })
 })
 
@@ -36,6 +38,13 @@ describe('parseRelationalProfileJson', () => {
     communication: 'directa pero se repliega en el conflicto',
     energy: 'la drena la crítica pública',
     howToRelate: 'Dale previsibilidad y reconocé su esfuerzo antes de pedirle algo.',
+    strategicValue: 'abre puertas profesionales y tambien consume energia emocional',
+    risk: 'si Aaron insiste en mal momento puede quemar confianza',
+    reciprocity: 'Aaron suele dar mas seguimiento del que recibe',
+    legitimateLevers: ['resultados reales', 'timing de cierre de mes'],
+    nextMove: 'pedir una reunion corta con un objetivo claro',
+    horizon: ['7 días: medir respuesta', '30 días: pedir definicion', '6 meses: decidir inversion'],
+    doNotDo: ['usar inseguridades como palanca'],
     confidence: 'media',
     note: 'Hipótesis para vincularte, no diagnóstico.',
   })
@@ -44,6 +53,10 @@ describe('parseRelationalProfileJson', () => {
     expect(p?.attachment.style).toBe('ansioso')
     expect(p?.values).toContain('la familia')
     expect(p?.howToRelate).toMatch(/previsibilidad/)
+    expect(p?.strategicValue).toMatch(/abre puertas/)
+    expect(p?.legitimateLevers).toContain('resultados reales')
+    expect(p?.nextMove).toMatch(/reunion corta/)
+    expect(p?.doNotDo).toContain('usar inseguridades como palanca')
   })
   it('apego inválido → incierto; confianza inválida → baja', () => {
     const p = parseRelationalProfileJson('{"attachment":{"style":"raro"},"howToRelate":"x","confidence":"altísima"}')
