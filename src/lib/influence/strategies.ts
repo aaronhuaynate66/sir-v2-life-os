@@ -88,8 +88,8 @@ export function renderStrategiesForPrompt(ambito?: string, relationship?: string
     ambito === 'personal' ||
     ['romantic', 'family', 'friend'].some((k) => (relationship ?? '').toLowerCase().includes(k))
   const header = affective
-    ? 'REPERTORIO DE CUIDADO ESTRATEGICO (base: persuasion pro-social + comunicacion cooperativa). ' +
-      'Aca sirven para timing, limites, reparacion y reciprocidad sin control afectivo. Elegi de esta lista y NOMBRALA en cada accion; jamas sugieras algo que Aaron no pueda sostener con la verdad:'
+    ? 'REPERTORIO DE CUIDADO Y CLARIDAD ESTRATEGICA (base: persuasion pro-social + comunicacion cooperativa). ' +
+      'NO son tácticas para controlar: sirven para timing, limites, reparacion y reciprocidad sin control afectivo. Elegi de esta lista y NOMBRALA en cada accion; jamas sugieras algo que Aaron no pueda sostener con la verdad:'
     : 'REPERTORIO DE MOVIDAS HONESTAS E INTEGRATIVAS (base: PersuasionForGood + negociación cooperativa CaSiNo). ' +
       'Preparacion legitima cuando el objetivo de Aaron se alinea con el interes del otro. Elegi de esta lista y NOMBRALA en cada accion; nada de engano, presion fabricada ni explotar debilidades:'
   const lines = [header]
