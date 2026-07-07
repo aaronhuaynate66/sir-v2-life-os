@@ -41,7 +41,15 @@ function whenFromNow(at: number | null): string {
 }
 
 function fmtDate(at: number): string {
-  try { return new Date(at).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) } catch { return '' }
+  try {
+    const d = new Date(at)
+    // Con series largas (backfill de años) el año importa para no dar una fecha
+    // ambigua ("21 feb"). Se omite sólo cuando es el año en curso.
+    const opts: Intl.DateTimeFormatOptions = d.getFullYear() === new Date().getFullYear()
+      ? { day: 'numeric', month: 'short' }
+      : { day: 'numeric', month: 'short', year: 'numeric' }
+    return d.toLocaleDateString('es-PE', opts)
+  } catch { return '' }
 }
 
 export function ConversationAnalyticsCard({ personId, personName }: ConversationAnalyticsCardProps) {

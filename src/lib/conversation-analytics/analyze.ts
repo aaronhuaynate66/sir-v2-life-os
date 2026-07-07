@@ -113,6 +113,31 @@ function directionOf(slope: number, scale: number): Direction {
   return 'estable'
 }
 
+/**
+ * Tendencia de volumen a partir de una serie SEMANAL pre-agregada (mensajes por
+ * semana desde `firstWeekStartMs`). Misma forma que el `volume` de
+ * analyzeConversation, pero alimentada de un histórico LARGO pre-computado
+ * (backfill del export completo) sin cargar cada mensaje en memoria/JSONB.
+ * Reusa la misma regresión + changepoint. null si hay <3 semanas.
+ */
+export function volumeFromWeekly(
+  weeklyCounts: number[],
+  firstWeekStartMs: number,
+): NonNullable<ConversationAnalytics['volume']> | null {
+  if (weeklyCounts.length < 3) return null
+  const reg = linreg(weeklyCounts.map((_, i) => i), weeklyCounts)
+  if (!reg) return null
+  const mean = weeklyCounts.reduce((a, b) => a + b, 0) / weeklyCounts.length
+  const cp = detectChangePoint(weeklyCounts)
+  return {
+    weeklyCounts,
+    slopePerWeek: Math.round(reg.slope * 100) / 100,
+    r2: Math.round(reg.r2 * 100) / 100,
+    direction: directionOf(reg.slope, Math.max(1, mean)),
+    changePoint: cp ? { at: firstWeekStartMs + cp.index * WEEK, direction: cp.delta < 0 ? 'se enfrió' : 'se calentó', beforeAvg: cp.beforeAvg, afterAvg: cp.afterAvg } : null,
+  }
+}
+
 export function analyzeConversation(messages: ConvMsg[], now: number): ConversationAnalytics {
   const insufficient: string[] = []
   const msgs = messages.filter((m) => Number.isFinite(m.at) && m.text.trim().length > 0).sort((a, b) => a.at - b.at)

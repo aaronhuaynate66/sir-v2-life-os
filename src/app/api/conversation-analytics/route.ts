@@ -8,8 +8,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
-import { getConversationMessages } from '@/lib/conversation-analytics/fromObservations'
-import { analyzeConversation } from '@/lib/conversation-analytics/analyze'
+import { getConversationMessages, getStoredVolumeSeries } from '@/lib/conversation-analytics/fromObservations'
+import { analyzeConversation, volumeFromWeekly } from '@/lib/conversation-analytics/analyze'
 import { logEvent } from '@/lib/observability/logEvent'
 
 export const runtime = 'nodejs'
@@ -27,6 +27,18 @@ export async function POST(req: NextRequest) {
 
   const messages = await getConversationMessages(supabase, auth.user.id, personId)
   const analytics = analyzeConversation(messages, Date.now())
+
+  // Tendencia de volumen de largo plazo: si hay serie semanal pre-agregada
+  // (backfill del export completo), la usamos — desbloquea trend + changepoint
+  // sobre años, que los rawMessages recientes (muestra corta) no alcanzan.
+  const series = await getStoredVolumeSeries(supabase, auth.user.id, personId)
+  if (series) {
+    const v = volumeFromWeekly(series.weekly, series.firstMs)
+    if (v) {
+      analytics.volume = v
+      analytics.insufficient = analytics.insufficient.filter((s) => !s.includes('serie corta'))
+    }
+  }
 
   await logEvent(supabase, auth.user.id, {
     type: 'conversation-analytics', ok: true, route: 'conversation-analytics',

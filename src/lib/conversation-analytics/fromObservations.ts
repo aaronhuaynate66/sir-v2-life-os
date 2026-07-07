@@ -70,6 +70,41 @@ export function messagesFromRows(rows: ObsRow[]): ConvMsg[] {
     .sort((a, b) => a.at - b.at)
 }
 
+export interface StoredVolumeSeries {
+  /** epoch ms del inicio de la primera semana. */
+  firstMs: number
+  /** conteo total de mensajes por semana consecutiva. */
+  weekly: number[]
+}
+
+/**
+ * Serie de volumen semanal pre-agregada guardada en el whatsapp_chat (backfill
+ * del export completo), para tendencia larga sin cargar 70k mensajes. null si no
+ * se hizo el backfill de esa persona.
+ */
+export async function getStoredVolumeSeries(
+  supabase: SupabaseClient,
+  userId: string,
+  personId: string,
+): Promise<StoredVolumeSeries | null> {
+  const { data } = await supabase
+    .from('observations')
+    .select('data')
+    .eq('user_id', userId)
+    .eq('person_id', personId)
+    .eq('capture_type', 'whatsapp_chat')
+    .eq('is_obsolete', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
+  const d = (data?.[0]?.data ?? {}) as Record<string, unknown>
+  const vs = d.volumeSeries as { firstMs?: unknown; weekly?: unknown } | undefined
+  if (vs && typeof vs.firstMs === 'number' && Array.isArray(vs.weekly)) {
+    const weekly = vs.weekly.filter((n): n is number => typeof n === 'number' && Number.isFinite(n))
+    if (weekly.length >= 3) return { firstMs: vs.firstMs, weekly }
+  }
+  return null
+}
+
 /** Trae y unifica los mensajes de una persona desde sus observaciones de conversación. */
 export async function getConversationMessages(
   supabase: SupabaseClient,
