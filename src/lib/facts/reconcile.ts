@@ -2,40 +2,43 @@
 //
 // Deuda del "caso Nicolle": la derivación UNE hechos de distintas épocas sin
 // saber que el más reciente reemplaza al viejo. En su ficha coexistían "vive con
-// Aaron (comparten vivienda)" (2024) y "Llegó a Alicante" (se mudó a España) —
-// contradictorios sobre el MISMO atributo (dónde vive), ambos vivos.
+// Aaron" (2024) y "se mudó a inicios de noviembre de 2024" — contradictorios
+// sobre dónde vive, ambos vivos.
 //
-// Acá reconciliamos SOLO atributos de UN SOLO VALOR (residencia, estado civil):
-// una persona vive en un lugar y tiene un estado civil a la vez, así que el hecho
-// MÁS RECIENTE pisa a los viejos del mismo atributo. Los facts llegan en orden
-// cronológico (chunks del export, ascendente) → el ÚLTIMO de cada atributo gana.
-// Conservador a propósito: la ocupación (multi-valor: rol + ascenso + proyecto)
-// NO se toca, para no borrar hechos complementarios. Todo lo demás pasa igual.
+// CONSERVADOR a propósito (aprendido a los golpes): SOLO reconciliamos residencia
+// cuando hay una MUDANZA EXPLÍCITA — un corte limpio que reemplaza dónde vive.
+// Un "vive con X" / "vive en Y" NO supersede a otros hechos de vivienda: suelen
+// ser COMPLEMENTARIOS ("vive en Lima" + "vive con su esposo" describen la misma
+// casa desde dos ángulos). Sin mudanza, todo convive. Nada más se toca.
 
-export type FactAttribute = 'residence' | 'civil_status'
+export type FactAttribute = 'residence'
 
-// Verbos de residencia (dónde vive). Límite accent-aware: `\b` de JS NO reconoce
-// vocales acentuadas (ó no es \w), así que usamos lookarounds sobre \p{L} (+/u).
-const RESIDENCE_VERB = /(?<!\p{L})(?:vive|viv[íi]a|vivir|reside|resid[íi]a|se mud[óo]|mud[áa]ndose|se instal[óo]|se radic[óo]|radica|de vuelta en)(?!\p{L})/iu
+// Verbos de residencia (dónde/con quién vive). NO disparan supersesión por sí
+// solos — solo marcan qué hechos una MUDANZA posterior deja obsoletos.
+const RESIDENCE_VERB = /(?<!\p{L})(?:vive|viv[íi]a|vivir|reside|resid[íi]a|radica|de vuelta en)(?!\p{L})/iu
 
-// Reubicación "llegó/se fue/se mudó/regresó/volvió a <Lugar>": solo cuenta si el
-// lugar arranca con MAYÚSCULA (nombre propio). Así "llegó a Alicante" cuenta,
-// pero "llegó a un acuerdo" / "llegó a las 5" NO (falsos positivos comunes).
-const RELOCATION = /(?<!\p{L})(?:lleg[óo]|se fue|se mud[óo]|regres[óo]|volvi[óo])\s+a\s+(?:vivir\s+a\s+)?(\S+)/iu
+// MUDANZA inequívoca: verbos que SIEMPRE significan un cambio de casa.
+const CLEAR_MOVE = /(?<!\p{L})(?:se mud[óo]|mud[áa]ndose|se instal[óo]|se radic[óo]|se fue a vivir)(?!\p{L})/iu
 
-const CIVIL_STATUS = /(?<!\p{L})(?:solter[oa]s?|casad[oa]s?|en pareja|de novi[oa]s?|separad[oa]s?|divorciad[oa]s?|comprometid[oa]s?|viud[oa]s?)(?!\p{L})/iu
+// MUDANZA ambigua: "llegó/se fue/regresó/volvió a <Lugar>" — solo cuenta si el
+// lugar es NOMBRE PROPIO (capitalizado). Evita "llegó a un acuerdo" / "a las 5".
+const AMBIG_MOVE = /(?<!\p{L})(?:lleg[óo]|se fue|regres[óo]|volvi[óo])\s+a\s+(?:vivir\s+a\s+)?(\S+)/iu
 
-function isRelocation(fact: string): boolean {
-  const m = fact.match(RELOCATION)
-  if (!m) return false
-  return /^[A-ZÁÉÍÓÚÑ]/.test(m[1]) // el lugar debe ser nombre propio (capitalizado)
+/** ¿El hecho afirma una MUDANZA (cambio de residencia)? */
+export function isRelocation(fact: string): boolean {
+  if (CLEAR_MOVE.test(fact)) return true
+  const m = fact.match(AMBIG_MOVE)
+  return !!m && /^[A-ZÁÉÍÓÚÑ]/.test(m[1]) // el destino debe ser nombre propio
 }
 
-/** Atributo de un solo valor que el hecho afirma, o null si no aplica. */
+/** ¿El hecho es sobre dónde/con quién vive (lo que una mudanza deja obsoleto)? */
+function isResidence(fact: string): boolean {
+  return isRelocation(fact) || RESIDENCE_VERB.test(fact)
+}
+
+/** Atributo de un solo valor que el hecho afirma, o null. (Hoy solo residencia.) */
 export function factAttribute(fact: string): FactAttribute | null {
-  if (RESIDENCE_VERB.test(fact) || isRelocation(fact)) return 'residence'
-  if (CIVIL_STATUS.test(fact)) return 'civil_status'
-  return null
+  return isResidence(fact) ? 'residence' : null
 }
 
 export interface SupersededFact {
@@ -45,29 +48,27 @@ export interface SupersededFact {
 }
 
 export interface FactReconciliation {
-  /** Hechos vigentes (el más reciente de cada atributo de un solo valor + todo lo demás). */
+  /** Hechos vigentes. */
   facts: string[]
-  /** Hechos obsoletados por uno más reciente del mismo atributo. */
+  /** Hechos de vivienda anteriores a una mudanza explícita → obsoletos. */
   superseded: SupersededFact[]
 }
 
 /**
- * Reconcilia una lista de hechos EN ORDEN CRONOLÓGICO (ascendente): dentro de un
- * atributo de un solo valor, el último (más reciente) gana y los anteriores se
- * marcan superseded. Los hechos sin atributo reconocido pasan sin tocar y en su
- * orden original.
+ * Reconcilia hechos EN ORDEN CRONOLÓGICO. Regla única y conservadora: si hay una
+ * MUDANZA explícita, TODOS los hechos de vivienda ANTERIORES a la última mudanza
+ * quedan obsoletos (la mudanza los reemplaza). Sin mudanza, nada se supersede.
  */
 export function reconcileFacts(orderedFacts: string[]): FactReconciliation {
-  const attrs = orderedFacts.map(factAttribute)
-  const lastIdxByAttr = new Map<FactAttribute, number>()
-  attrs.forEach((a, i) => { if (a) lastIdxByAttr.set(a, i) })
+  let lastMoveIdx = -1
+  const relocation = orderedFacts.map((f) => isRelocation(f))
+  for (let i = 0; i < orderedFacts.length; i++) if (relocation[i]) lastMoveIdx = i
 
   const facts: string[] = []
   const superseded: SupersededFact[] = []
   for (let i = 0; i < orderedFacts.length; i++) {
-    const a = attrs[i]
-    if (a && lastIdxByAttr.get(a) !== i) {
-      superseded.push({ text: orderedFacts[i], supersededBy: orderedFacts[lastIdxByAttr.get(a) as number], attribute: a })
+    if (lastMoveIdx >= 0 && i < lastMoveIdx && isResidence(orderedFacts[i])) {
+      superseded.push({ text: orderedFacts[i], supersededBy: orderedFacts[lastMoveIdx], attribute: 'residence' })
     } else {
       facts.push(orderedFacts[i])
     }
