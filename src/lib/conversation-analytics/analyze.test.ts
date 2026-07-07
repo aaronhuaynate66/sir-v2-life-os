@@ -76,4 +76,15 @@ describe('analyzeConversation', () => {
     expect(r.topics!.top).toContain('proyecto')
     expect(r.topics!.rising).toContain('mudanza')
   })
+
+  it('temas: fading (lo que se dejó de hablar)', () => {
+    const msgs: ConvMsg[] = []
+    const start = NOW - 40 * DAY
+    // "proyecto" muy hablado al principio, desaparece; "mudanza" aparece al final.
+    for (let i = 0; i < 8; i++) msgs.push({ fromMe: i % 2 === 0, at: start + i * DAY, text: 'proyecto avance proyecto' })
+    for (let i = 0; i < 8; i++) msgs.push({ fromMe: i % 2 === 0, at: NOW - 5 * DAY + i * 3600_000, text: 'mudanza casa mudanza' })
+    const r = analyzeConversation(msgs, NOW)
+    expect(r.topics!.fading).toContain('proyecto')
+    expect(r.topics!.fading).not.toContain('mudanza') // mudanza sube, no baja
+  })
 })

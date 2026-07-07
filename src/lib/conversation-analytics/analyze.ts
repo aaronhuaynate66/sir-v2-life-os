@@ -72,6 +72,8 @@ export interface ConversationAnalytics {
   topics: {
     top: string[]
     rising: string[]
+    /** Temas frecuentes ANTES que casi desaparecieron del último tercio. */
+    fading: string[]
   } | null
   /** Motivos por los que alguna sección quedó en null. */
   insufficient: string[]
@@ -307,7 +309,13 @@ export function analyzeConversation(messages: ConvMsg[], now: number): Conversat
       .filter(([t, n]) => n >= 2 && n > (freqOld.get(t) || 0))
       .sort((a, b) => (b[1] - (freqOld.get(b[0]) || 0)) - (a[1] - (freqOld.get(a[0]) || 0)))
       .slice(0, 5).map(([t]) => t)
-    base.topics = { top, rising }
+    // Temas que BAJARON: eran frecuentes antes (≥3 en los 2/3 viejos) y cayeron
+    // a la mitad o menos en el último tercio. Simétrico a `rising`.
+    const fading = [...freqOld.entries()]
+      .filter(([t, n]) => n >= 3 && (freqRecent.get(t) || 0) * 2 <= n)
+      .sort((a, b) => (b[1] - (freqRecent.get(b[0]) || 0)) - (a[1] - (freqRecent.get(a[0]) || 0)))
+      .slice(0, 5).map(([t]) => t)
+    base.topics = { top, rising, fading }
   }
 
   return base

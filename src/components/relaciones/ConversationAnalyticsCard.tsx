@@ -150,6 +150,17 @@ export function ConversationAnalyticsCard({ personId, personName }: Conversation
             </div>
           </div>
         )}
+
+        {a.topics && a.topics.fading.length > 0 && (
+          <div className="pt-1">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1.5">Temas que bajaron</div>
+            <div className="flex flex-wrap gap-1.5">
+              {a.topics.fading.map((t) => (
+                <span key={t} className="text-xs px-2 py-0.5 rounded-full border border-dashed border-border text-muted-foreground/70 line-through decoration-muted-foreground/30">{t}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
