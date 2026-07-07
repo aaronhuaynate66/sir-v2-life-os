@@ -18,7 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useRelationshipStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { StrategicRiskMeter } from '@/components/influence/StrategicRiskMeter'
 import type { FrameResult } from '@/lib/influence/framePrompt'
+import type { EthicsCheck } from '@/engines/ethics'
 
 export default function PlantearPage() {
   const hydrated = useHasHydrated()
@@ -38,20 +40,21 @@ function PlantearContent() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<FrameResult | null>(null)
+  const [ethics, setEthics] = useState<EthicsCheck | null>(null)
   const [forName, setForName] = useState('')
   const [hadContext, setHadContext] = useState(true)
 
   async function run() {
     if (!personId || !objective.trim()) return
-    setBusy(true); setError(null); setResult(null)
+    setBusy(true); setError(null); setResult(null); setEthics(null)
     try {
       const res = await fetch('/api/influence/frame', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personId, objective }),
       })
-      const j = (await res.json()) as { result?: FrameResult; person?: { name: string; hadContext: boolean }; error?: string; detail?: string }
+      const j = (await res.json()) as { result?: FrameResult; person?: { name: string; hadContext: boolean }; ethics?: EthicsCheck; error?: string; detail?: string }
       if (!res.ok || !j.result) { setError(j.error ? `${j.error}${j.detail ? ` — ${j.detail}` : ''}` : 'No pude preparar el planteo.'); return }
-      setResult(j.result); setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
+      setResult(j.result); setEthics(j.ethics ?? null); setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally { setBusy(false) }
@@ -108,14 +111,16 @@ function PlantearContent() {
         </CardContent>
       </Card>
 
-      {result && <FrameView result={result} forName={forName} hadContext={hadContext} />}
+      {result && <FrameView result={result} ethics={ethics} forName={forName} hadContext={hadContext} />}
     </AppShell>
   )
 }
 
-function FrameView({ result, forName, hadContext }: { result: FrameResult; forName: string; hadContext: boolean }) {
+function FrameView({ result, ethics, forName, hadContext }: { result: FrameResult; ethics?: EthicsCheck | null; forName: string; hadContext: boolean }) {
   return (
     <div className="space-y-4">
+      <StrategicRiskMeter ethics={ethics} />
+
       {result.ethicalNote && (
         <Card className="shadow-none border-warn/40">
           <CardContent className="p-4 sm:p-5 bg-warn-soft">

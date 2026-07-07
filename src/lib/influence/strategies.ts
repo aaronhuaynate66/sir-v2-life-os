@@ -7,11 +7,11 @@
 //   • CaSiNo (negociación integrativa campsite): movidas win-win (small-talk,
 //     empatía, elicit-preference, other-need, no-need/generosidad, coordinación).
 //
-// FILTRO POR ÁMBITO (clave, coherente con doc 15/16): en vínculos AFECTIVOS estas
-// son formas de CUIDADO y CLARIDAD, nunca "tácticas" — y las más transaccionales
-// (foot-in-the-door, vouch-fairness) NO aplican ahí. En lo profesional, preparación
-// integrativa cuando el objetivo de Aaron se alinea con el interés del otro. Lo
-// adversarial/manipulador queda afuera por diseño (y lo corta el guardrail 16·M5).
+// FILTRO POR AMBITO (clave, coherente con doc 15/16): en vinculos afectivos estas
+// son formas de cuidado estrategico (timing, limites, reparacion, reciprocidad),
+// nunca control afectivo. En lo profesional, preparacion integrativa cuando el
+// objetivo de Aaron se alinea con el interes del otro. Lo enganoso/coercitivo
+// queda afuera por diseno (y lo corta el guardrail 16.M5).
 
 export type StrategyScope = 'afectivo' | 'profesional' | 'ambos'
 export type StrategyGroup = 'conectar' | 'entender' | 'apelar' | 'dar' | 'encuadrar'
@@ -88,10 +88,10 @@ export function renderStrategiesForPrompt(ambito?: string, relationship?: string
     ambito === 'personal' ||
     ['romantic', 'family', 'friend'].some((k) => (relationship ?? '').toLowerCase().includes(k))
   const header = affective
-    ? 'REPERTORIO DE FORMAS DE CUIDADO Y CLARIDAD (base: persuasión pro-social + comunicación cooperativa). ' +
-      'Acá NO son tácticas para "conseguir" algo — son maneras honestas de entenderse. Elegí de esta lista y NOMBRALA en cada acción; jamás sugieras algo que Aaron no pueda sostener con la verdad:'
+    ? 'REPERTORIO DE CUIDADO ESTRATEGICO (base: persuasion pro-social + comunicacion cooperativa). ' +
+      'Aca sirven para timing, limites, reparacion y reciprocidad sin control afectivo. Elegi de esta lista y NOMBRALA en cada accion; jamas sugieras algo que Aaron no pueda sostener con la verdad:'
     : 'REPERTORIO DE MOVIDAS HONESTAS E INTEGRATIVAS (base: PersuasionForGood + negociación cooperativa CaSiNo). ' +
-      'Preparación legítima cuando el objetivo de Aaron se alinea con el interés del otro. Elegí de esta lista y NOMBRALA en cada acción; nada de engaño, presión fabricada ni explotar debilidades:'
+      'Preparacion legitima cuando el objetivo de Aaron se alinea con el interes del otro. Elegi de esta lista y NOMBRALA en cada accion; nada de engano, presion fabricada ni explotar debilidades:'
   const lines = [header]
   for (const s of list) lines.push(`- ${s.label} (${GROUP_LABEL[s.group]}): ${s.how}`)
   return lines.join('\n')

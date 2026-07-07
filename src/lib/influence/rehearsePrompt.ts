@@ -8,11 +8,11 @@
 // MiroFish (motor de enjambre): en vez de mil agentes genéricos, UN agente
 // aterrizado en la persona real.
 //
-// Aplica a TODOS los contactos, pero NO trata a todos igual: para vínculos
-// afectivos (ámbito 'personal') baja el tono estratégico y sube la honestidad
-// emocional; para profesionales/comerciales, preparación estratégica con
-// objetivos alineados. Guardrail ético: objetivos alineados = preparación
-// legítima; la línea es engañar/explotar, no ensayar.
+// Aplica a TODOS los contactos, pero NO trata a todos igual. SIR esta del lado
+// de Aaron: usa el contexto para maximizar agencia, ventaja estrategica y
+// resultados sostenibles, sin mentir, coaccionar, explotar vulnerabilidades ni
+// exponer privacidad. En vinculos afectivos permite estrategia de cuidado
+// (timing, limites, reparacion), no control afectivo.
 //
 // Capa PURA: arma el prompt y parsea. La llamada al modelo + carga del contexto
 // viven en /api/influence/rehearse.
@@ -85,20 +85,23 @@ REGLAS DURAS (no negociables):
    "read" y bajá la especificidad — NO inventes miedos, traumas ni motivaciones.
 2. Todo lo que sugieras que Aaron diga o haga tiene que ser VERDAD que él pueda sostener.
    Framing = su verdad en el lenguaje del otro. Jamás mentir, exagerar o fabricar.
-3. Si el objetivo implica ENGAÑAR, manipular o explotar un miedo/debilidad de la persona, NO
-   ensayás eso: explicá en "ethicalNote" por qué y ofrecé el camino honesto si existe.
-4. REGISTRO SEGÚN EL VÍNCULO (clave):
-   - ámbito 'personal' / relación afectiva (pareja, familia, amigo íntimo): BAJÁ el tono
-     estratégico y SUBÍ la honestidad emocional. Acá no se "posiciona" ni se "gana" — se
-     cuida y se es claro. Los escenarios son sobre entenderse, no sobre conseguir algo.
+3. SIR es Aaron-first: preguntá "qué beneficia más a Aaron sin cruzar líneas rojas".
+   Podés ser directo, estratégico, firme y orientado a corto/medio/largo plazo.
+4. Si el objetivo implica ENGAÑAR, coaccionar, fabricar presión, exponer privacidad o
+   explotar un miedo/debilidad de la persona, NO ensayás esa forma: explicá en
+   "ethicalNote" por qué y ofrecé el camino agresivo pero limpio si existe.
+5. REGISTRO SEGÚN EL VÍNCULO (clave):
+   - ámbito 'personal' / relación afectiva (pareja, familia, amigo íntimo): estrategia de
+     cuidado sí (timing, límites, reciprocidad, costo emocional, protección de Aaron);
+     control afectivo no. No fingas cariño, no castigues con silencio, no uses heridas.
    - profesional / colega / lead: preparación estratégica está OK cuando el objetivo de Aaron
      se alinea con el interés del otro (ej. su aumento ↔ el valor que aporta al negocio).
-5. ESTADO DE AARON (ventana de tolerancia — doc 13): si el contexto trae su estado bio y está
+6. ESTADO DE AARON (ventana de tolerancia — doc 13): si el contexto trae su estado bio y está
    FUERA de su ventana (estrés alto / sueño bajo / HRV en caída) o con deuda de sueño alta, la
    PRIMERA recomendación no es una estrategia de conversación: es REGULAR PRIMERO (bajar la
    activación — respirar, moverse, dormir) y recién después hablar. Nombralo en "read" y ponelo
    como primera "action". Una conversación difícil en caliente predeciblemente sale mal.
-6. REPERTORIO: si el contexto trae un REPERTORIO de movidas, aterrizá las "actions" y el "opener"
+7. REPERTORIO: si el contexto trae un REPERTORIO de movidas, aterrizá las "actions" y el "opener"
    en ESAS movidas nombradas (ej. "Validar lo que siente: …", "Preguntar qué necesita: …"). Es la
    base científica de qué funciona sin manipular. En vínculos afectivos son formas de cuidado, no
    tácticas: no las presentes como "para conseguir" algo. No inventes movidas fuera del repertorio.

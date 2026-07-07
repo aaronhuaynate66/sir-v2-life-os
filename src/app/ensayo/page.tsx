@@ -21,10 +21,12 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { detectBiases } from '@/engines/bias'
 import { InfluenceMapCard } from '@/components/influence/InfluenceMapCard'
+import { StrategicRiskMeter } from '@/components/influence/StrategicRiskMeter'
 import { cn } from '@/lib/utils'
 import type { RehearseResult, Likelihood } from '@/lib/influence/rehearsePrompt'
 import { trackAiError } from '@/lib/analytics/track'
 import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
+import type { EthicsCheck } from '@/engines/ethics'
 
 const LIKELIHOOD: Record<Likelihood, { label: string; cls: string }> = {
   plausible: { label: 'plausible', cls: 'border-brand/40 text-brand' },
@@ -51,6 +53,7 @@ function EnsayoContent() {
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const [result, setResult] = useState<RehearseResult | null>(null)
+  const [ethics, setEthics] = useState<EthicsCheck | null>(null)
   const [forName, setForName] = useState('')
   const [hadContext, setHadContext] = useState(true)
 
@@ -60,7 +63,7 @@ function EnsayoContent() {
 
   async function run() {
     if (!personId || !objective.trim()) return
-    setBusy(true); setError(null); setResult(null)
+    setBusy(true); setError(null); setResult(null); setEthics(null)
     try {
       const res = await fetch('/api/influence/rehearse', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -70,7 +73,7 @@ function EnsayoContent() {
       // gateway (5xx): parseamos con red de seguridad para no reventar con el
       // críptico "The string did not match the expected pattern" de Safari.
       const text = await res.text()
-      let j: { result?: RehearseResult; person?: { name: string; hadContext: boolean }; error?: string; detail?: string } = {}
+      let j: { result?: RehearseResult; person?: { name: string; hadContext: boolean }; ethics?: EthicsCheck; error?: string; detail?: string } = {}
       try { j = text ? JSON.parse(text) : {} } catch { /* respuesta no-JSON (timeout/gateway) */ }
       if (!res.ok || !j.result) {
         trackAiError('rehearse', { status: res.status, message: j.error, detail: j.detail }) // GA4
@@ -83,7 +86,7 @@ function EnsayoContent() {
         )
         return
       }
-      setResult(j.result); setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
+      setResult(j.result); setEthics(j.ethics ?? null); setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
       setReloadKey((k) => k + 1) // refrescar el histórico con el ensayo recién hecho
     } catch (e) {
       trackAiError('rehearse', { status: 0, message: e instanceof Error ? e.message : String(e) }) // GA4
@@ -149,16 +152,18 @@ function EnsayoContent() {
       {/* 16·M2 — quién más pesa alrededor de esta persona (grafo, client-side). */}
       {personId && <InfluenceMapCard targetId={personId} />}
 
-      {result && <RehearseView result={result} forName={forName} hadContext={hadContext} />}
+      {result && <RehearseView result={result} ethics={ethics} forName={forName} hadContext={hadContext} />}
 
       <RehearsalHistoryPanel personId={personId || undefined} reloadKey={reloadKey} />
     </AppShell>
   )
 }
 
-function RehearseView({ result, forName, hadContext }: { result: RehearseResult; forName: string; hadContext: boolean }) {
+function RehearseView({ result, ethics, forName, hadContext }: { result: RehearseResult; ethics?: EthicsCheck | null; forName: string; hadContext: boolean }) {
   return (
     <div className="space-y-4">
+      <StrategicRiskMeter ethics={ethics} />
+
       {result.ethicalNote && (
         <Card className="shadow-none border-warn/40">
           <CardContent className="p-4 sm:p-5 bg-warn-soft">

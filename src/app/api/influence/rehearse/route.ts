@@ -59,9 +59,8 @@ export async function POST(req: NextRequest) {
 
   const personName = (person.name as string) ?? 'esa persona'
 
-  // 16·M5 — chequeo ético ANTES del LLM (guardrail determinístico, no opcional).
-  // Si el objetivo cruza la línea (engaño/presión/explotación), SIR rechaza acá
-  // mismo, sin gastar la llamada al modelo ni arriesgar que se auto-vigile.
+  // 16.M5 - Termometro de Jugada ANTES del LLM. Solo bloquea lineas rojas reales;
+  // zonas grises se pasan al modelo como instruccion de reformulacion estrategica.
   const ethics = checkEthics(objective, {
     ambito: (person.ambito as string) ?? undefined,
     relationship: (person.relationship as string) ?? undefined,
@@ -76,7 +75,7 @@ export async function POST(req: NextRequest) {
       watchout: ethics.litmus,
       ethicalNote: ethics.message,
     }
-    return NextResponse.json({ result: blocked, person: { name: personName, hadContext: false }, ethics: { verdict: ethics.verdict } })
+    return NextResponse.json({ result: blocked, person: { name: personName, hadContext: false }, ethics })
   }
 
   // Toda la carga de contexto EN PARALELO (antes era secuencial y sumaba latencia
@@ -142,10 +141,14 @@ export async function POST(req: NextRequest) {
     return text ? `{${text}` : ''
   }
 
-  // 16·M5 (caution): objetivo en zona gris afectiva → recordarle al modelo que
-  // el registro es cuidado, no estrategia.
-  const ethicsExtra = ethics.verdict === 'caution'
-    ? `CHEQUEO ÉTICO (16·M5): ${ethics.message}\nMantené el registro de cuidado; no ensayes "cómo conseguir que…".`
+  // 16.M5: si la jugada cae en zona gris o riesgo alto, el modelo no bloquea por
+  // defecto; reformula hacia una version agresiva, verdadera y sostenible.
+  const ethicsExtra = ethics.verdict === 'caution' || ethics.verdict === 'high_risk'
+    ? `TERMOMETRO DE JUGADA (16.M5): ${ethics.message}
+Score: ${ethics.score}/100. Lineas: ${ethics.lines.join(', ') || 'ninguna'}.
+Sustento: ${ethics.whyItMatters}
+Reformulacion recomendada: ${ethics.safeAggressiveReframe}
+Ayuda a Aaron con la version mas conveniente sin mentir, coaccionar, explotar vulnerabilidades ni exponer privacidad.`
     : ''
 
   const t0 = Date.now()
@@ -178,5 +181,5 @@ export async function POST(req: NextRequest) {
     })
   } catch (e) { reportApiError(e, { route: 'influence/rehearse', stage: 'persist' }) }
 
-  return NextResponse.json({ result, person: { name: ctx.personName, hadContext: memories.length > 0 } })
+  return NextResponse.json({ result, person: { name: ctx.personName, hadContext: memories.length > 0 }, ethics })
 }

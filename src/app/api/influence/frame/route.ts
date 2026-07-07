@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
   if (!person) return errorJson(404, 'No encontré esa persona')
 
-  // 16·M5 — chequeo ético determinístico antes del LLM. Si cruza la línea, SIR
-  // rechaza acá mismo con la explicación honesta (no ayuda a manipular).
+  // 16.M5 - Termometro de Jugada deterministico antes del LLM. Bloquea lineas
+  // rojas reales y deja que zonas grises se reformulen en una jugada limpia.
   const ethics = checkEthics(objective, {
     ambito: (person.ambito as string) ?? undefined,
     relationship: (person.relationship as string) ?? undefined,
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       opener: '',
       ethicalNote: `${ethics.message}\n\n${ethics.litmus}`,
     }
-    return NextResponse.json({ result: blocked, person: { name: (person.name as string) ?? 'esa persona', hadContext: false }, ethics: { verdict: ethics.verdict } })
+    return NextResponse.json({ result: blocked, person: { name: (person.name as string) ?? 'esa persona', hadContext: false }, ethics })
   }
 
   // Memorias VISIBLES (excluye privadas/descartadas por construcción).
@@ -99,8 +99,12 @@ export async function POST(req: NextRequest) {
     return block && block.type === 'text' ? block.text : ''
   }
 
-  const ethicsExtra = ethics.verdict === 'caution'
-    ? `CHEQUEO ÉTICO (16·M5): ${ethics.message}\nMantené el registro de cuidado; no encuadres "cómo conseguir que…".`
+  const ethicsExtra = ethics.verdict === 'caution' || ethics.verdict === 'high_risk'
+    ? `TERMOMETRO DE JUGADA (16.M5): ${ethics.message}
+Score: ${ethics.score}/100. Lineas: ${ethics.lines.join(', ') || 'ninguna'}.
+Sustento: ${ethics.whyItMatters}
+Reformulacion recomendada: ${ethics.safeAggressiveReframe}
+Ayuda a Aaron con la version mas conveniente sin mentir, coaccionar, explotar vulnerabilidades ni exponer privacidad.`
     : ''
 
   let raw = ''
@@ -117,5 +121,5 @@ export async function POST(req: NextRequest) {
   }
   if (!result) return errorJson(502, 'Claude devolvió formato inválido')
 
-  return NextResponse.json({ result, person: { name: ctx.personName, hadContext: memories.length > 0 } })
+  return NextResponse.json({ result, person: { name: ctx.personName, hadContext: memories.length > 0 }, ethics })
 }
