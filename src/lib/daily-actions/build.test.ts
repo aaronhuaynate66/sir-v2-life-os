@@ -168,6 +168,35 @@ describe('buildDailyActions', () => {
 })
 
 
+describe('buildDailyActions · filtro kinds (superficie "Reconectá")', () => {
+  const RECONNECT = ['contact', 'cooling', 'acknowledge'] as const
+
+  it('con kinds proactivos, deja sólo contacto/cooling/acknowledge (sin fechas)', () => {
+    const p = person({ id: 'cumple', name: 'Bea', slug: 'bea', birthDate: '1990-06-02' }) // cumple hoy
+    const r = buildDailyActions([input({ person: p, daysSinceContact: 3 })], { kinds: RECONNECT }, NOW)
+    expect(r.length).toBe(0) // sólo tenía la fecha → filtrada
+  })
+
+  it('filtra ANTES del dedup: rescata el contacto de una persona cuya fecha ganaría por score', () => {
+    // Cumple hoy (gana el dedup) + contacto MUY vencido. Sin filtro sale birthday;
+    // con filtro proactivo, el candidato de contacto sobrevive en su lugar.
+    const p = person({ id: 'bea', name: 'Bea', slug: 'bea', birthDate: '1990-06-02' })
+    const sinFiltro = buildDailyActions([input({ person: p, daysSinceContact: 90 })], {}, NOW)
+    expect(sinFiltro[0].kind).toBe('birthday')
+
+    const conFiltro = buildDailyActions([input({ person: p, daysSinceContact: 90 })], { kinds: RECONNECT }, NOW)
+    expect(conFiltro.length).toBe(1)
+    expect(conFiltro[0].kind).toBe('contact')
+    expect(conFiltro[0].personId).toBe('bea')
+  })
+
+  it('sin kinds (undefined) el comportamiento es idéntico al previo', () => {
+    const p = person({ id: 'bea', name: 'Bea', slug: 'bea', birthDate: '1990-06-02' })
+    const r = buildDailyActions([input({ person: p, daysSinceContact: 90 })], {}, NOW)
+    expect(r[0].kind).toBe('birthday')
+  })
+})
+
 describe('buildDailyActions · ámbito lead (seguimiento comercial, no afectivo)', () => {
   it('un lead frío NO genera acción de contacto/cooling afectiva', () => {
     const acts = buildDailyActions(

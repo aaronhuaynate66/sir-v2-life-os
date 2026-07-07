@@ -43,6 +43,7 @@ import { BehavioralSuggestionCard } from '@/components/panel/BehavioralSuggestio
 import { TargetsAtGlanceCard } from '@/components/panel/TargetsAtGlanceCard'
 import { AnduveHoyCard } from '@/components/panel/AnduveHoyCard'
 import { PersonasEnRiesgoCard } from '@/components/panel/PersonasEnRiesgoCard'
+import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
 import { StatusAlertsCard } from '@/components/panel/StatusAlertsCard'
 import { SIRPulseWidget } from '@/components/panel/SIRPulseWidget'
 import { RemindersCard } from '@/components/panel/RemindersCard'
@@ -389,6 +390,25 @@ function DashboardContent() {
       <StatusAlertsCard />
       <RemindersCard />
       <PersonasEnRiesgoCard />
+
+      {/* "Reconectá con tu gente" (P0 backlog Clay — serendipia): 3-5 personas
+          que se están enfriando por silencio, sin fecha ni pendiente que ya las
+          marque (las fechas viven en Próximo; los problemas, en Personas en
+          riesgo). Reusa el motor de Daily Actions filtrado a proactivos. Se
+          esconde si no hay nadie enfriándose. En recuperación dura (simplified)
+          no empujamos contacto proactivo. */}
+      {!simplified && (
+        <div className="mb-4">
+          <DailyActionsPanel
+            focus="reconnect"
+            limit={5}
+            title="Reconectá con tu gente"
+            emptyLabel="Estás al día con tu gente. Nadie enfriándose por silencio. 🌿"
+            hideWhenEmpty
+          />
+        </div>
+      )}
+
       <AnduveHoyCard now={now} />
 
       {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}

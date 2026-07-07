@@ -135,6 +135,12 @@ export interface BuildDailyActionsOptions {
    *  de inclusión). MISMA lógica que /panel (agenda no_contact). Opcional →
    *  sin links, todos pesan 1 (comportamiento previo intacto). */
   personLinks?: PersonLink[]
+  /** Filtro por tipo de acción, aplicado ANTES del dedup por persona. Si se
+   *  pasa, sólo se consideran candidatos de estos kinds — así una persona cuya
+   *  acción de más score es un cumpleaños igual aporta su acción de contacto en
+   *  una superficie enfocada. Útil para "Reconectá" (proactivos: contact /
+   *  cooling / acknowledge, sin fechas). Default (undefined) → todos los kinds. */
+  kinds?: readonly DailyActionKind[]
 }
 
 /**
@@ -247,11 +253,16 @@ export function buildDailyActions(
     })
   }
 
-  // 3. Una tarjeta por persona: la de mayor score gana.
-  candidates.sort((a, b) => b.score - a.score)
+  // 3. Filtro opcional por kind (antes del dedup, para no perder la acción
+  //    enfocada de una persona que tiene además una fecha con más score).
+  const kindsFilter = opts.kinds ? new Set<DailyActionKind>(opts.kinds) : null
+  const pool = kindsFilter ? candidates.filter((c) => kindsFilter.has(c.kind)) : candidates
+
+  // 4. Una tarjeta por persona: la de mayor score gana.
+  pool.sort((a, b) => b.score - a.score)
   const seen = new Set<string>()
   const unique: DailyAction[] = []
-  for (const c of candidates) {
+  for (const c of pool) {
     if (seen.has(c.personId)) continue
     seen.add(c.personId)
     unique.push(c)

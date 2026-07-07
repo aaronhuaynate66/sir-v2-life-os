@@ -20,6 +20,7 @@ import {
   buildDailyActions,
   computeAvailability,
   type DailyAction,
+  type DailyActionKind,
   type DailyActionPersonInput,
 } from '@/lib/daily-actions/build'
 import type { RitualSignal } from '@/lib/people/rituals'
@@ -33,6 +34,11 @@ const DAY_MS = 86_400_000
 const SIGNAL_LOOKBACK_DAYS = 30
 const UPCOMING_LEAD_DAYS = 14
 
+// "Reconectá" (serendipia de /panel): sólo acciones PROACTIVAS que nacen de vos
+// saliendo a buscar a alguien — silencio/enfriamiento/reconocer una señal. Las
+// de FECHA (cumple/especial) viven en la Agenda "Próximo", no acá.
+const RECONNECT_KINDS: DailyActionKind[] = ['contact', 'cooling', 'acknowledge']
+
 interface DailyActionsResponse {
   actions: DailyAction[]
   /** Disponibilidad del usuario 0-100 | null (de self_metrics). */
@@ -40,7 +46,7 @@ interface DailyActionsResponse {
   generatedAt: string
 }
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: Request): Promise<NextResponse> {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
@@ -48,6 +54,11 @@ export async function GET(): Promise<NextResponse> {
   }
   const userId = authData.user.id
   const now = new Date()
+
+  // Modo enfocado opcional (retrocompatible: sin params = comportamiento previo).
+  const url = new URL(request.url)
+  const isReconnect = url.searchParams.get('focus') === 'reconnect'
+  const limit = parseLimit(url.searchParams.get('limit'), isReconnect ? 5 : 6)
   const sinceIso = new Date(now.getTime() - SIGNAL_LOOKBACK_DAYS * DAY_MS).toISOString()
 
   try {
@@ -183,7 +194,11 @@ export async function GET(): Promise<NextResponse> {
       }
     })
 
-    const actions = buildDailyActions(inputs, { availability, limit: 6, personLinks }, now)
+    const actions = buildDailyActions(
+      inputs,
+      { availability, limit, personLinks, kinds: isReconnect ? RECONNECT_KINDS : undefined },
+      now,
+    )
 
     const body: DailyActionsResponse = { actions, availability, generatedAt: now.toISOString() }
     return NextResponse.json(body, { status: 200 })
@@ -191,6 +206,14 @@ export async function GET(): Promise<NextResponse> {
     reportApiError(e, { route: 'daily-actions' })
     return NextResponse.json({ error: 'No se pudieron generar las acciones del día' }, { status: 500 })
   }
+}
+
+/** Límite de tarjetas desde el query param, acotado a [1..12]. Fallback al
+ *  default si viene ausente o no-numérico. */
+function parseLimit(raw: string | null, fallback: number): number {
+  const n = raw == null ? NaN : Number(raw)
+  if (!Number.isFinite(n)) return fallback
+  return Math.max(1, Math.min(12, Math.floor(n)))
 }
 
 /** Días desde el contacto más reciente entre chat real, registro manual y la

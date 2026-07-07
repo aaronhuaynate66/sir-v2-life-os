@@ -70,9 +70,30 @@ export interface DailyActionsPanelProps {
   /** Solo acciones que piden algo HOY: oculta la urgencia baja ("al día —
    *  mantené el ritmo"). Para /horario, que es agenda accionable. */
   actionableOnly?: boolean
+  /** 'reconnect' pide sólo las acciones proactivas (silencio/enfriamiento/
+   *  reconocer) — la serendipia de /panel, sin fechas (esas viven en Próximo).
+   *  Default 'all' = todo el feed "Hoy con tu gente". */
+  focus?: 'all' | 'reconnect'
+  /** Tope de tarjetas pedido a la API (el server acota a 12). */
+  limit?: number
+  /** Encabezado. Default "Hoy con tu gente". */
+  title?: string
+  /** Copy del estado vacío. Default para el feed completo. */
+  emptyLabel?: string
+  /** Oculta la card por completo cuando no hay nada que mostrar (en vez del
+   *  estado vacío). Para /panel, donde las cards se esconden si están tranquilas. */
+  hideWhenEmpty?: boolean
 }
 
-export function DailyActionsPanel({ variant = 'full', actionableOnly = false }: DailyActionsPanelProps) {
+export function DailyActionsPanel({
+  variant = 'full',
+  actionableOnly = false,
+  focus = 'all',
+  limit,
+  title = 'Hoy con tu gente',
+  emptyLabel = 'Tu red está al día. Nada urgente hoy. 🌿',
+  hideWhenEmpty = false,
+}: DailyActionsPanelProps) {
   const [state, setState] = useState<
     | { kind: 'loading' }
     | { kind: 'error'; error: ApiError }
@@ -83,7 +104,11 @@ export function DailyActionsPanel({ variant = 'full', actionableOnly = false }: 
     let cancelled = false
     void (async () => {
       try {
-        const res = await fetch('/api/daily-actions', { cache: 'no-store' })
+        const params = new URLSearchParams()
+        if (focus === 'reconnect') params.set('focus', 'reconnect')
+        if (limit != null) params.set('limit', String(limit))
+        const qs = params.toString()
+        const res = await fetch(`/api/daily-actions${qs ? `?${qs}` : ''}`, { cache: 'no-store' })
         if (!res.ok) throw await parseErrorResponse(res)
         const data = (await res.json()) as DailyActionsResponse
         if (!cancelled) setState({ kind: 'ready', data })
@@ -94,7 +119,7 @@ export function DailyActionsPanel({ variant = 'full', actionableOnly = false }: 
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [focus, limit])
 
   // En modo accionable, ocultamos la urgencia baja (los "al día — mantené el
   // ritmo"): no piden nada hoy y diluían a los que sí.
@@ -105,12 +130,17 @@ export function DailyActionsPanel({ variant = 'full', actionableOnly = false }: 
         : state.data.actions
       : []
 
+  // En /panel las cards se esconden cuando no hay nada — no dejamos un empty
+  // state ocupando espacio. Sólo tras un fetch exitoso y vacío (un error sí se
+  // muestra, para no ocultar un fallo en silencio).
+  if (hideWhenEmpty && state.kind === 'ready' && shown.length === 0) return null
+
   return (
     <Card className="shadow-none">
       <CardContent className={cn(variant === 'compact' ? 'p-4' : 'p-4 sm:p-5')}>
         <div className="flex items-center gap-2 mb-3">
           <MessageCircle size={13} strokeWidth={1.75} className="text-text-tertiary" aria-hidden="true" />
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Hoy con tu gente</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{title}</div>
           {state.kind === 'ready' && shown.length > 0 && (
             <span className="ml-auto text-[11px] font-mono tabular-nums text-text-tertiary">
               {shown.length}
@@ -132,7 +162,7 @@ export function DailyActionsPanel({ variant = 'full', actionableOnly = false }: 
             )}
 
             {shown.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-1">Tu red está al día. Nada urgente hoy. 🌿</p>
+              <p className="text-sm text-muted-foreground py-1">{emptyLabel}</p>
             ) : (
               <ul className="space-y-2">
                 {shown.map((a) => (
