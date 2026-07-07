@@ -79,4 +79,53 @@ describe('buildMessageContext', () => {
     expect(ctx).toContain('Ubicación: Lima')
     expect(ctx).toContain('café de especialidad')
   })
+
+  it('suma fortalezas y metas en común como terreno para conectar', () => {
+    const ctx = buildMessageContext({
+      personName: 'Dina',
+      relationship: 'Amigo/a',
+      categoryLabel: 'Cercano/a',
+      reason: 'x',
+      kindLabel: 'contacto',
+      daysSinceContact: 10,
+      strengths: ['siempre responde rápido', 'muy leal'],
+      sharedGoals: ['correr la maratón de Lima'],
+    })
+    expect(ctx).toContain('Fortalezas del vínculo')
+    expect(ctx).toContain('muy leal')
+    expect(ctx).toContain('Metas en común')
+    expect(ctx).toContain('maratón de Lima')
+  })
+
+  it('pasa las tensiones como temas a CUIDAR (no como palanca)', () => {
+    const ctx = buildMessageContext({
+      personName: 'Eze',
+      relationship: 'Amigo/a',
+      categoryLabel: 'Red',
+      reason: 'x',
+      kindLabel: 'contacto',
+      daysSinceContact: 3,
+      tensions: ['se tensa si hablo de trabajo los findes'],
+    })
+    expect(ctx).toContain('Temas sensibles a CUIDAR')
+    expect(ctx).toContain('no presionar')
+    expect(ctx).toContain('trabajo los findes')
+  })
+
+  it('omite las líneas de notas relacionales cuando están vacías', () => {
+    const ctx = buildMessageContext({
+      personName: 'Fer',
+      relationship: 'Amigo/a',
+      categoryLabel: 'Red',
+      reason: 'x',
+      kindLabel: 'contacto',
+      daysSinceContact: 1,
+      strengths: [],
+      sharedGoals: null,
+      tensions: ['   '],
+    })
+    expect(ctx).not.toContain('Fortalezas del vínculo')
+    expect(ctx).not.toContain('Metas en común')
+    expect(ctx).not.toContain('Temas sensibles')
+  })
 })

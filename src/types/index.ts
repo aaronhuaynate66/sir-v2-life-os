@@ -239,8 +239,26 @@ export interface Person {
    *  red profesional: dos personas con el mismo org_group quedan conectadas.
    *  Canonical en `people.org_group` (migration 0072). */
   orgGroup?: string
+  /** Notas relacionales estratégicas cargadas a mano: qué genera fricción, qué
+   *  es fortaleza del vínculo y qué metas comparten. Canonical en
+   *  `people.relational_notes` (jsonb, migration 0132; mismo patrón que
+   *  special_dates). Editable en la ficha (TensionesFortalezas), alimenta el
+   *  contexto de contacto. undefined = sin notas. */
+  relationalNotes?: RelationalNotes
   createdAt: string
   updatedAt: string
+}
+
+/** Las tres listas de notas relacionales de una persona. Serializadas en
+ *  `people.relational_notes` (jsonb). Los helpers puros (parse/add/remove) viven
+ *  en `lib/people/relationalNotes`. */
+export interface RelationalNotes {
+  /** Qué genera fricción / roce con esta persona. */
+  tensions: string[]
+  /** Qué es una fortaleza del vínculo (lo que lo sostiene). */
+  strengths: string[]
+  /** Metas / intereses que comparten (terreno común para el contacto). */
+  sharedGoals: string[]
 }
 
 /** Una fecha importante asociada a una persona (item #9/#13 del detail page).

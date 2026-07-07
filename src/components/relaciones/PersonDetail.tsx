@@ -98,6 +98,7 @@ import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
 import { WhatMattersChips } from './WhatMattersChips'
+import { TensionesFortalezas } from './TensionesFortalezas'
 import { RelationalProfileCard } from './RelationalProfileCard'
 import { HypothesesExplorer } from './HypothesesExplorer'
 import { BigFiveCard } from '@/components/profiling/BigFiveCard'
@@ -848,6 +849,10 @@ export function PersonDetail({
 
       {/* 15·8 — qué le importa: temas recurrentes de sus memorias (client-side). */}
       <WhatMattersChips memories={memories} tags={live.tags ?? []} name={live.name} />
+
+      {/* Tensiones y fortalezas: notas relacionales que Aaron carga a mano
+          (fricción / fortalezas / metas en común). people.relational_notes (0132). */}
+      <TensionesFortalezas person={live} />
 
       {/* 19·M1 — perfil relacional (cómo vincularte), on-demand + cache diaria. */}
       <RelationalProfileCard personId={live.id} personName={live.name} />

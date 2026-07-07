@@ -6,6 +6,7 @@ import type {
   RelationshipStatus, RelationshipEvent, SpecialDate, PersonLink, FamilyKind, LinkKind, LinkCategory,
 } from '@/types'
 import type { TableAdapter } from '../types'
+import { parseRelationalNotes } from '@/lib/people/relationalNotes'
 
 /** Normaliza el jsonb `people.special_dates` a SpecialDate[] tolerando
  *  filas viejas (null / shape parcial). Filtra entradas sin label/date. */
@@ -71,6 +72,11 @@ export const personAdapter: TableAdapter<Person> = {
     ...(p.birthDate !== undefined ? { birth_date: p.birthDate } : {}),
     ...(p.cycleStartDate !== undefined ? { cycle_start_date: p.cycleStartDate } : {}),
     ...(p.cycleLengthDays !== undefined ? { cycle_length_days: p.cycleLengthDays } : {}),
+    // 0132 — notas relacionales (jsonb). CONDICIONAL como los campos 0024: solo
+    // viaja la key cuando la persona la trae en memoria, así el upsert funciona
+    // aunque la columna aún no exista en prod (deploy antes de migrar) y un
+    // update parcial nunca la pisa a null.
+    ...(p.relationalNotes !== undefined ? { relational_notes: p.relationalNotes } : {}),
   }),
   fromRow: (row) => ({
     id: row.id as string,
@@ -107,6 +113,10 @@ export const personAdapter: TableAdapter<Person> = {
     orgGroup: (row.org_group as string) ?? undefined,
     gender: (row.gender as Person['gender']) ?? undefined,
     ambito: (row.ambito as Person['ambito']) ?? undefined,
+    // 0132 — tolerante: si la columna aún no existe, select('*') no la trae
+    // → undefined (no se re-escribe hasta que Aaron cargue notas post-migración).
+    relationalNotes:
+      row.relational_notes !== undefined ? parseRelationalNotes(row.relational_notes) : undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   }),

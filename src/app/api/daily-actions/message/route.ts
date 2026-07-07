@@ -122,6 +122,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     daysUntil,
     location: person.location ?? null,
     notes: person.notes || null,
+    strengths: person.relationalNotes?.strengths ?? null,
+    sharedGoals: person.relationalNotes?.sharedGoals ?? null,
+    tensions: person.relationalNotes?.tensions ?? null,
   })
 
   // ── 4. Generación (un solo Haiku) ──
