@@ -105,11 +105,12 @@
 - **Síntoma:** Ruta `/captura` solo accesible por URL manual.
 - **Fix entregado:** Ítem "Captura" agregado al sidebar (`src/components/layout/Nav.tsx`), entre Relaciones y Objetivos, con ícono `Camera`.
 
-### BUG-004 ⬜ PENDIENTE [P1]: extracción de Instagram ALUCINA la bio
+### BUG-004 🟢 MITIGADO (07-07) [P1]: extracción de Instagram ALUCINABA la bio
 - **Severidad:** P1 (mala data en perfiles).
-- **Síntoma (caso Diana, 06-jul):** con un screenshot perfectamente legible que dice `Founder: @cautiva.detalles 🌸`, la extracción devolvió `Fandub @colana.doblajes 🎙️` — bio inventada, y encima perdió los seguidores en común. Pisó el eje social. (Familia de BUG-001, ahora en Instagram.)
-- **Mitigación ya hecha (07-06):** revert del caso + descartar recompone el eje (`recomputeAxisFor`) + detección de avatar apunta al perfil (no al feed).
-- **Fix pendiente (raíz):** endurecer el prompt de extracción de Instagram (`src/lib/capture/instagram/prompt.ts`) — **anti-alucinación**: copiar TEXTUAL la bio visible, nunca completar/inventar handles, bajar `confidence` a `low` si algún campo no está claro, y (idea) validar que los @handles de la bio aparezcan literalmente en la imagen. Revisar también por qué una captura legible bajó a esto (compresión/legibilidad).
+- **Síntoma (caso Diana, 06-jul):** con un screenshot legible que dice `Founder: @cautiva.detalles 🌸`, la extracción devolvió `Fandub @colana.doblajes 🎙️` (bio equivocada) y `1543` seguidores (real 1343).
+- **Causa real identificada:** NO era invento de la nada — la captura era de **página completa** (header + grid de posts). El modelo (a) tomó la "bio" de una **publicación del feed / cuenta sugerida** en vez del header, y (b) **malleyó un dígito** (5 por 3).
+- **Fix (07-07, prompt hardening en `src/lib/capture/instagram/prompt.ts`):** (1) **REGLA DE UBICACIÓN** — los datos SOLO viven en el bloque de cabecera; en capturas de página completa TODO lo de abajo (grid de publicaciones, sugeridas, reels) se ignora; nunca sacar bio/handle/link de un post. (2) **Precisión de dígitos** — leer los contadores dígito por dígito, si alguno es ambiguo no adivinar → `confidence='medium'` + nota. Más el revert + `recomputeAxisFor` al descartar + avatar apunta al perfil (mitigaciones previas).
+- **Pendiente de verificar:** una captura real cuando haya saldo de API (no se pudo probar en vivo por créditos). Idea futura: validar que los @handles de la bio aparezcan literalmente en la imagen.
 
 ### BUG-005 ✅ RESUELTO (07-06) [P1]: el import de chat contaminaba la ficha con ruido
 > **Los 4 puntos, hechos:** #1 última-interacción ignora logs de sistema (`3aa2101`) · #2 dedup al re-importar (`94587bd`) · #3 logs 📞/tono-inferido/import no se vuelven memorias (`c95a56b`) + **700/865 memorias de ruido soft-deleted** (Diana 141→21 reales) · #4 bitácora omite logs de sistema (`f9a5743`). La EXTRACCIÓN (síntesis/facts/fechas/tono×fase) siempre estuvo bien; el problema era el ruido, ya limpio. Diagnóstico original abajo.

@@ -30,6 +30,25 @@ prosa, sin markdown fences):
   "rawObservations": "<max 200 chars en español o null>"
 }
 
+REGLA DE UBICACIÓN — CRÍTICA (así se evita el error más común):
+
+TODOS los datos del perfil viven en el BLOQUE DE CABECERA: la franja de arriba
+con la foto circular grande, el @handle, el displayName, la fila de contadores
+(posts/followers/following) y la bio justo debajo.
+
+En una captura de PÁGINA COMPLETA o larga, debajo de ese bloque aparece el GRID
+DE PUBLICACIONES (miniaturas), y a veces "cuentas sugeridas", "también te podría
+interesar", reels o barras de búsqueda. NADA de eso es parte del perfil.
+
+- NUNCA saques bio, handle, displayName, externalLink ni category de una
+  PUBLICACIÓN del feed, de un caption, de una cuenta sugerida, ni de otra parte
+  de la pantalla que no sea el bloque de cabecera.
+- Un texto tipo "Fandub @otra.cuenta" que está en una miniatura/post NO es la bio.
+  La bio es SOLO la que está pegada debajo del displayName, arriba de los botones
+  (Seguir/Mensaje) o de los contadores.
+- Si dudás si un texto es la bio o viene de un post -> es post -> IGNORALO ->
+  bio=null antes que agarrar el equivocado.
+
 QUE BUSCAR EN LA IMAGEN:
 
 1. handle
@@ -77,6 +96,11 @@ QUE BUSCAR EN LA IMAGEN:
      * "234M" -> 234000000
    - null si el numero no es legible.
    - NO usar coma como separador en el JSON final (debe ser entero JSON).
+   - PRECISION DE DIGITOS: leé el número DÍGITO POR DÍGITO, no "de un vistazo".
+     Un 3 y un 5, un 1 y un 7, un 0 y un 8 se confunden fácil en baja resolución.
+     Si CUALQUIER dígito es ambiguo, NO adivines: bajá confidence a 'medium' y
+     anotá en rawObservations cuál contador dudás ("followers 1?43 — 2do dígito
+     borroso"). NUNCA redondees ni "completes" un dígito que no ves nítido.
 
 8. isVerified
    - true si aparece el check azul de verificacion junto al handle o
