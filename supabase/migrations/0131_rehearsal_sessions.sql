@@ -9,7 +9,7 @@
 create table if not exists public.rehearsal_sessions (
   id           text primary key default gen_random_uuid()::text,
   user_id      uuid not null references auth.users(id) on delete cascade,
-  person_id    uuid references public.people(id) on delete set null,
+  person_id    text references public.people(id) on delete set null,
   person_name  text,                       -- snapshot del nombre (por si se borra la persona)
   objective    text not null,
   result       jsonb not null,             -- RehearseResult completo
