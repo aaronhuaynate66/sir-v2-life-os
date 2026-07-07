@@ -347,7 +347,10 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
 ## 🏗️ DEUDA ARQUITECTÓNICA
 
-### Consistencia temporal de hechos derivados (detectado 2026-06-08, arco futuro)
+### Consistencia temporal de hechos derivados (detectado 2026-06-08 · 🟡 PARCIAL 2026-07-07)
+
+**🟡 Primer slice HECHO (`874051e`):** `src/lib/facts/reconcile.ts` (PURO, +10 tests) reconcilia atributos de **un solo valor** (residencia, estado civil): el hecho más reciente pisa a los viejos del mismo atributo. Cableado en la consolidación del import de WhatsApp (`consolidate.ts`). Resuelve el caso Nicolle para imports NUEVOS. Conservador: la **ocupación** (multi-valor: rol + ascenso + proyecto) NO se toca; guardas anti-falso-positivo (reubicación solo si el lugar es nombre propio). **Falta:** (a) aplicar a `deriveFromObservations` (memories), no solo al export; (b) re-derivar observaciones YA guardadas (Nicolle vieja sigue con las dos residencias hasta re-importar); (c) ocupación con extracción de valor.
+
 
 **Síntoma:** la derivación de memorias/hechos (WhatsApp export, observations → memories) UNE hechos de distintas épocas sin saber que el más reciente reemplaza al viejo. Caso real: en la ficha de Nicolle coexisten "vive con Aaron (comparten vivienda)" (cierto en 2024) y "Llegó a Alicante" (se mudó a España para su maestría) — el sistema no marca el primero como obsoleto.
 
