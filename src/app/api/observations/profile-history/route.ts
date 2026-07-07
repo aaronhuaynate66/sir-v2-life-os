@@ -1,8 +1,9 @@
 // SIR V2 — GET /api/observations/profile-history?person_id=...&type=instagram
 // Historial de métricas de un perfil social (seguidores/seguidos/posts) a lo
-// largo de TODAS las capturas — INCLUYE las obsoletas (cada captura nueva marca
-// la anterior is_obsolete=true, pero la conservamos: ES el historial). Para ver
-// la variación de los números en el tiempo. Auth + RLS.
+// largo de las capturas. EXCLUYE las obsoletas: las capturas de Instagram/LinkedIn
+// NO se reemplazan entre sí (cada una es un punto del historial), así que una
+// obsoleta = una captura DESCARTADA (mala/alucinada, ej. la que leyó 1543 en vez
+// de 1343). Incluirla metía un pico falso en la variación. Auth + RLS.
 // Response: { points: { observedAt, followers, following, posts }[] }
 
 import { NextResponse, type NextRequest } from 'next/server'
@@ -35,7 +36,8 @@ export async function GET(req: NextRequest) {
     .eq('user_id', auth.user.id)
     .eq('person_id', personId)
     .eq('capture_type', type)
-    .order('observed_at', { ascending: true }) // incluye obsoletas a propósito
+    .eq('is_obsolete', false) // excluir capturas descartadas (ej. la que alucinó 1543)
+    .order('observed_at', { ascending: true })
     .limit(500)
   if (error) return NextResponse.json({ error: 'No se pudo leer el historial', detail: error.message }, { status: 500 })
 

@@ -786,7 +786,7 @@ export function PersonDetail({
           (Ánimo/Energía/Sueño/Dolor se sacaron de la ficha: son métricas
           biológicas de self, viven en /yo — no tienen sentido "respecto a esta
           persona".) Storage Supabase-native en person_logs. */}
-      <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs} />
+      <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs.filter((l) => !isSystemNote(l.note ?? ''))} />
 
       <MomentosPanel personId={live.id} />
       <PersonMoneyPanel personId={live.id} />
