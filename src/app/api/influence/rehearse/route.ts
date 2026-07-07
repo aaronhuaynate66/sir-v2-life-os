@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
 
   async function call(extra = ''): Promise<string> {
     const msg = await client.messages.create({
-      model: MODEL_ID, max_tokens: 1200,
+      model: MODEL_ID, max_tokens: 1600,
       system: extra ? `${REHEARSE_SYSTEM_PROMPT}\n\n${extra}` : REHEARSE_SYSTEM_PROMPT,
       // Prefill '{' fuerza a Claude a arrancar el JSON directo → UNA sola llamada
       // confiable, sin el doble-call de reintento que empujaba el request > 60s

@@ -131,7 +131,7 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
   lines.push(`Tipo de vínculo: ${ambitoHint(ctx.ambito, ctx.relationship)}`)
   const repertoire = renderStrategiesForPrompt(ctx.ambito, ctx.relationship)
   if (repertoire) lines.push('', repertoire)
-  const mems = ctx.memories.map((m) => m.trim()).filter(Boolean).slice(0, 14)
+  const mems = ctx.memories.map((m) => m.trim()).filter(Boolean).slice(0, 8)
   if (mems.length > 0) {
     lines.push('', 'Lo que SIR sabe de esta persona (para aterrizar el ensayo):')
     for (const m of mems) lines.push(`- ${m.slice(0, 240)}`)
@@ -139,7 +139,7 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
     lines.push('', '(SIR tiene poco contexto de esta persona — decilo en "read", bajá la especificidad y no inventes.)')
   }
   if (ctx.conversation && ctx.conversation.trim()) {
-    lines.push('', ctx.conversation.trim().slice(0, 2600))
+    lines.push('', ctx.conversation.trim().slice(0, 1600))
   }
   if (ctx.pulse && ctx.pulse.trim()) {
     lines.push('', ctx.pulse.trim().slice(0, 500))
