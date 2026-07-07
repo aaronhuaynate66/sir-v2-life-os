@@ -19,6 +19,9 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { insertObservation } from '@/lib/capture/observations/insert'
+import { getProfileAxes } from '@/lib/person-axes/fetch'
+import { upsertAxisAuto } from '@/lib/person-axes/upsert'
+import { professionalAxisFromFacts } from '@/lib/person-axes/fromChatFacts'
 import { deriveObservedAt } from '@/lib/capture/observations/observed-at'
 import { recentWindowContent, recentWindowMemoryRow } from '@/lib/memories/recentWindow'
 import type { Confidence } from '@/lib/capture/observations/types'
@@ -316,6 +319,17 @@ export async function POST(req: NextRequest) {
     } catch {
       /* no fatal: la observación ya quedó guardada */
     }
+
+    // BUG-006: si la persona NO tiene eje profesional (nunca hubo captura LinkedIn),
+    // derivarlo de los `facts` del chat para que el trabajo no quede huérfano.
+    // Best-effort, no pisa un eje 'manual' ni uno ya poblado.
+    try {
+      const existing = await getProfileAxes(supabase, userId, personId)
+      if (!existing?.professionalText) {
+        const proText = professionalAxisFromFacts((data as Record<string, unknown>).facts)
+        if (proText) await upsertAxisAuto(supabase, userId, personId, 'professional', proText, observation.id)
+      }
+    } catch { /* best-effort */ }
 
     // AUTO-TONO del import → Reciprocidad. El extractor ya calcula el tono de la
     // conversación (interactionQuality 1-5; una pelea = 1-2). Sin esto el import
