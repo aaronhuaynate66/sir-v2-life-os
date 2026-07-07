@@ -193,6 +193,36 @@ export function CycleHorizonCard({
           ))}
         </div>
 
+        {/* Tono por día (proyección por fase del ciclo) */}
+        <div className="space-y-1">
+          <div className="flex items-baseline justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-text-tertiary">Tono típico por fase · proyección</span>
+            <span className="text-[10px] text-muted-foreground/60">pico ~ovulación · valle SPM</span>
+          </div>
+          <div className="relative" style={{ height: 34 }}>
+            {horizon.toneSeries.map((t, i) => (
+              <div
+                key={i}
+                className="absolute bottom-0"
+                style={{ left: `${t.pct}%`, width: 3, transform: 'translateX(-50%)', height: `${Math.round(t.value * 100)}%`, background: `rgba(125,216,172,${t.isFuture ? 0.22 : 0.5})`, borderRadius: 1 }}
+              />
+            ))}
+            <div className="absolute" style={{ left: `${horizon.todayPct}%`, top: -3, bottom: -3, width: 2, background: 'rgba(237,237,240,.35)', borderRadius: 1 }} />
+          </div>
+        </div>
+
+        {/* Ventanas para proponer (folicular→ovulación) */}
+        {horizon.proposeWindows.length > 0 && (
+          <div className="relative" style={{ height: 22 }}>
+            {horizon.proposeWindows.map((w, i) => (
+              <div key={i} className="absolute top-1 flex flex-col gap-1" style={{ left: `${Math.max(0, w.fromPct)}%`, width: `${Math.min(100, w.toPct) - Math.max(0, w.fromPct)}%` }}>
+                <span className="block rounded-sm" style={{ height: 4, background: 'rgba(70,192,138,.55)' }} />
+                <span className="whitespace-nowrap text-[10px]" style={{ color: '#7DD8AC' }}>▲ buen momento para proponer</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Tarjetas de lectura por evento */}
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {shown.filter((e) => e.isFuture).slice(0, 6).map((ev) => (

@@ -69,6 +69,22 @@ export interface CycleHorizon {
   periodMarkers: HorizonMarker[]
   /** Marcadores de ovulación (~d14) para la regla. */
   ovulationMarkers: HorizonMarker[]
+  /** Tono proyectado por día (perfil por fase): pico ~ovulación, valle SPM. */
+  toneSeries: { pct: number; value: number; isFuture: boolean }[]
+  /** Ventanas sugeridas para proponer planes (folicular→ovulación, más energía). */
+  proposeWindows: { fromPct: number; toPct: number; isFuture: boolean }[]
+}
+
+/** Perfil de tono típico por día del ciclo (0..1). Tendencia poblacional, NO ley
+ *  individual: bajo en período, sube en folicular, pico en ovulación, baja a SPM. */
+function toneProfile(cycleDay: number, length: number): number {
+  const ovu = length - 14
+  if (cycleDay <= 5) return 0.35
+  if (cycleDay < ovu - 1) return 0.5 + 0.35 * ((cycleDay - 5) / Math.max(1, ovu - 1 - 5))
+  if (cycleDay <= ovu + 1) return 0.95
+  const afterOvu = cycleDay - (ovu + 1)
+  const lutealLen = Math.max(1, length - (ovu + 1))
+  return Math.max(0.35, 0.8 - 0.45 * (afterOvu / lutealLen))
 }
 
 /** Lectura de cuidado por fase. Presencia y timing, nunca presión. */
@@ -227,6 +243,7 @@ export function buildCycleHorizon(input: BuildCycleHorizonInput, now: Date = new
   // Banda de fases: fase de CADA día del rango, agrupada en segmentos. Pasado
   // real vs futuro predicho (para el tramado). SPM = lútea tardía (isPmsWindow).
   const bandSegments: HorizonBandSegment[] = []
+  const toneSeries: { pct: number; value: number; isFuture: boolean }[] = []
   const days = Math.round(span / DAY_MS)
   let cur: { phase: BandPhase; isFuture: boolean; start: number } | null = null
   for (let i = 0; i <= days; i++) {
@@ -237,12 +254,22 @@ export function buildCycleHorizon(input: BuildCycleHorizonInput, now: Date = new
     if (!cp) continue
     const phase: BandPhase = cp.isPmsWindow ? 'spm' : cp.phase
     const isFuture = dT > nowT
+    toneSeries.push({ pct: pctOf(dT), value: toneProfile(cp.cycleDay, length), isFuture })
     if (!cur || cur.phase !== phase || cur.isFuture !== isFuture) {
       if (cur) bandSegments.push({ phase: cur.phase, isFuture: cur.isFuture, fromPct: pctOf(fromT + cur.start * DAY_MS), toPct: pctOf(dT) })
       cur = { phase, isFuture, start: i }
     }
   }
   if (cur) bandSegments.push({ phase: cur.phase, isFuture: cur.isFuture, fromPct: pctOf(fromT + cur.start * DAY_MS), toPct: 100 })
+
+  // Ventanas para proponer: folicular→ovulación (energía en subida hasta el pico).
+  const ovuDay = length - 14
+  const proposeWindows = projectedPeriods.map((iso) => {
+    const pStart = Date.parse(`${iso}T00:00:00Z`)
+    const wFrom = pStart + 5 * DAY_MS            // fin del período
+    const wTo = pStart + (ovuDay + 1) * DAY_MS   // hasta pasar la ovulación
+    return { fromPct: pctOf(wFrom), toPct: pctOf(wTo), isFuture: wFrom > nowT }
+  }).filter((w) => w.toPct > 0 && w.fromPct < 100)
 
   const periodMarkers: HorizonMarker[] = projectedPeriods.map((iso) => {
     const t = Date.parse(`${iso}T00:00:00Z`)
@@ -253,5 +280,5 @@ export function buildCycleHorizon(input: BuildCycleHorizonInput, now: Date = new
     return { pct: pctOf(t), label: 'd14', isFuture: t > nowT }
   }).filter((m) => m.pct > 0 && m.pct < 100)
 
-  return { events, projectedPeriods, bandDays: band, band: bandSegments, todayPct, periodMarkers, ovulationMarkers }
+  return { events, projectedPeriods, bandDays: band, band: bandSegments, todayPct, periodMarkers, ovulationMarkers, toneSeries, proposeWindows }
 }

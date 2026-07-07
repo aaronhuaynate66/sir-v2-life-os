@@ -473,6 +473,19 @@ export function PersonDetail({
       </div>
 
       {tab === 'hoy' && (<>
+      {/* Horizonte del ciclo (rediseño, módulo protagonista): timeline de eventos
+          × fase del ciclo + tono + ventanas. Primero en "Hoy". Se oculta sin ciclo. */}
+      {(live.gender === 'female' || live.cycleStartDate) && (
+        <CycleHorizonCard
+          cycleStartDate={live.cycleStartDate ?? null}
+          cycleLengthDays={live.cycleLengthDays ?? null}
+          personCycles={personCycles}
+          specialDates={live.specialDates ?? []}
+          birthDate={live.birthDate ?? null}
+          personName={live.name}
+        />
+      )}
+
       {/* Estado global del vínculo con esta persona (determinístico): cruza
           logs + moments + ciclo + memorias en una etiqueta + insights concretos.
           Se muestra siempre; label "sin_data" cuando aún no hay registros. */}
@@ -824,16 +837,6 @@ export function PersonDetail({
           (o ya tiene datos de ciclo cargados, p. ej. registros legacy). ─── */}
       {(live.gender === 'female' || live.cycleStartDate) && (
         <div className="mb-4">
-          {/* Horizonte del ciclo (rediseño): eventos próximos × fase estimada +
-              lectura de cuidado. Se oculta si no hay ciclo o eventos próximos. */}
-          <CycleHorizonCard
-            cycleStartDate={live.cycleStartDate ?? null}
-            cycleLengthDays={live.cycleLengthDays ?? null}
-            personCycles={personCycles}
-            specialDates={live.specialDates ?? []}
-            birthDate={live.birthDate ?? null}
-            personName={live.name}
-          />
           <CicloPanel
             cycleStartDate={live.cycleStartDate ?? null}
             cycleLengthDays={live.cycleLengthDays ?? null}
