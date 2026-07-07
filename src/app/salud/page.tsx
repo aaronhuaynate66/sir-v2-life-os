@@ -46,6 +46,7 @@ import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
 import { SleepDebtCard } from '@/components/salud/SleepDebtCard'
 import { SleepQualityCard } from '@/components/salud/SleepQualityCard'
+import { SleepForecastCard } from '@/components/salud/SleepForecastCard'
 import { SleepAftermathCard } from '@/components/salud/SleepAftermathCard'
 import { EmotionWindowCard } from '@/components/salud/EmotionWindowCard'
 import { ChronotypeCard } from '@/components/salud/ChronotypeCard'
@@ -256,6 +257,9 @@ function SaludContent() {
 
       {/* SF·F2 — calidad/continuidad del sueño (no solo horas). */}
       <SleepQualityCard />
+
+      {/* C1 — capa PREDICTIVA: pronóstico de la próxima noche (idiográfico). */}
+      <SleepForecastCard />
 
       {/* SF·F3 — cruce sueño → día siguiente (estrés/energía/ánimo/FC). */}
       <SleepAftermathCard />
