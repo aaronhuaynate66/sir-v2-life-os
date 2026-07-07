@@ -96,6 +96,7 @@ import { ExportCsvButton } from '@/components/export/ExportCsvButton'
 import { personLogsCsv, observationsCsv } from '@/lib/export/adapters'
 import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
+import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
 import { WhatMattersChips } from './WhatMattersChips'
 import { RelationalProfileCard } from './RelationalProfileCard'
 import { HypothesesExplorer } from './HypothesesExplorer'
@@ -869,6 +870,9 @@ export function PersonDetail({
           ).length
         }
       />
+
+      {/* Ensayos anteriores CON esta persona (se auto-oculta si no hay). */}
+      <RehearsalHistoryPanel personId={live.id} />
 
       {live.notes && (
         <Card className="shadow-none mb-4">
