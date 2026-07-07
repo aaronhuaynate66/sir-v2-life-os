@@ -15,6 +15,7 @@ import type {
   ParsedExport,
   ExportMessage,
 } from './types'
+import { weeklyVolumeSeries } from '@/lib/conversation-analytics/analyze'
 
 // ─── helpers de merge ───────────────────────────────────────────────
 
@@ -245,6 +246,10 @@ export function buildExportObservationData(
   personName: string,
 ): Record<string, unknown> {
   const roleMap = buildAuthorRoleMap(parsed.participants, personName)
+  // Serie de volumen semanal desde TODOS los mensajes (no solo la muestra) →
+  // habilita la tendencia + changepoint de largo plazo en el Pulso sin guardar
+  // 70k mensajes. null si el histórico es corto (los rawMessages ya alcanzan).
+  const volumeSeries = weeklyVolumeSeries(parsed.messages.map((m) => m.iso))
   const sample: ExportMessage[] = parsed.messages.slice(-RAW_SAMPLE_SIZE)
   const rawMessages = sample.map((m) => ({
     timestamp: m.time,
@@ -281,6 +286,7 @@ export function buildExportObservationData(
     source: 'whatsapp_export',
     messageCount: parsed.messages.length,
     mediaCount: parsed.mediaCount,
+    ...(volumeSeries ? { volumeSeries: { ...volumeSeries, source: 'export_import' } } : {}),
     dateRange: { first: parsed.firstISO, last: parsed.lastISO },
     participants: parsed.participants,
     blockSummaries: consolidated.blockSummaries,

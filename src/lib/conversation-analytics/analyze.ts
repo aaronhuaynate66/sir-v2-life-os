@@ -138,6 +138,35 @@ export function volumeFromWeekly(
   }
 }
 
+export interface WeeklyVolumeSeries {
+  firstMs: number
+  weekly: number[]
+  weeks: number
+}
+
+/**
+ * Agrega timestamps (ISO o epoch ms) en conteos SEMANALES consecutivos desde el
+ * primero. Para pre-computar en el import y guardar compacto (~1 número/semana),
+ * habilitando `volumeFromWeekly` sobre años sin cargar cada mensaje. null si el
+ * histórico es corto (<4 semanas) — ahí los rawMessages recientes ya alcanzan.
+ */
+export function weeklyVolumeSeries(
+  stamps: Array<string | number | null | undefined>,
+): WeeklyVolumeSeries | null {
+  const times = stamps
+    .map((s) => (typeof s === 'number' ? s : s ? Date.parse(s) : NaN))
+    .filter((t) => Number.isFinite(t))
+    .sort((a, b) => a - b)
+  if (times.length < 12) return null
+  const firstMs = times[0]
+  const lastMs = times[times.length - 1]
+  const weeks = Math.max(1, Math.ceil((lastMs - firstMs) / WEEK))
+  if (weeks < 4) return null
+  const weekly = new Array(weeks).fill(0)
+  for (const t of times) weekly[Math.min(weeks - 1, Math.floor((t - firstMs) / WEEK))]++
+  return { firstMs, weekly, weeks }
+}
+
 export function analyzeConversation(messages: ConvMsg[], now: number): ConversationAnalytics {
   const insufficient: string[] = []
   const msgs = messages.filter((m) => Number.isFinite(m.at) && m.text.trim().length > 0).sort((a, b) => a.at - b.at)
