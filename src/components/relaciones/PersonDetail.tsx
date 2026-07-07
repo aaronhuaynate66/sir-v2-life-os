@@ -234,14 +234,14 @@ function formFromPerson(p: Person): EditForm {
   }
 }
 
-type PersonTab = 'vinculo' | 'cuidado' | 'historia' | 'red' | 'datos'
+type PersonTab = 'hoy' | 'conversacion' | 'perfil' | 'registro' | 'red'
 
 const PERSON_TABS: { id: PersonTab; label: string }[] = [
-  { id: 'vinculo', label: 'Vínculo' },
-  { id: 'cuidado', label: 'Cuidado' },
-  { id: 'historia', label: 'Historia' },
-  { id: 'red', label: 'Red y contexto' },
-  { id: 'datos', label: 'Datos' },
+  { id: 'hoy', label: 'Hoy' },
+  { id: 'conversacion', label: 'Conversación' },
+  { id: 'perfil', label: 'Perfil y memoria' },
+  { id: 'registro', label: 'Registro' },
+  { id: 'red', label: 'Red' },
 ]
 
 export function PersonDetail({
@@ -284,10 +284,9 @@ export function PersonDetail({
   const [form, setForm] = useState<EditForm>(() => formFromPerson(live))
 
   // Rediseño: tabs de la ficha. El vistazo (arriba) queda siempre visible; el
-  // resto de los paneles se agrupan por tab. El de Cuidado solo aplica a
-  // vínculos con ciclo (pareja/mujer).
-  const showCuidado = live.gender === 'female' || !!live.cycleStartDate
-  const [tab, setTab] = useState<PersonTab>('vinculo')
+  // resto de los paneles se agrupan por tab (Hoy · Conversación · Perfil y
+  // memoria · Registro · Red).
+  const [tab, setTab] = useState<PersonTab>('hoy')
 
   function startEditing() {
     setForm(formFromPerson(live))
@@ -458,7 +457,7 @@ export function PersonDetail({
       {/* ─── Tabs de la ficha (rediseño). El vistazo de arriba queda siempre;
           el resto se agrupa por tab. ─────────────────────────────────────── */}
       <div className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-1 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        {PERSON_TABS.filter((t) => t.id !== 'cuidado' || showCuidado).map((t) => (
+        {PERSON_TABS.map((t) => (
           <button
             key={t.id}
             type="button"
@@ -473,7 +472,7 @@ export function PersonDetail({
         ))}
       </div>
 
-      {tab === 'vinculo' && (<>
+      {tab === 'hoy' && (<>
       {/* Estado global del vínculo con esta persona (determinístico): cruza
           logs + moments + ciclo + memorias en una etiqueta + insights concretos.
           Se muestra siempre; label "sin_data" cuando aún no hay registros. */}
@@ -519,7 +518,7 @@ export function PersonDetail({
 
       </>)}
 
-      {tab === 'datos' && (<>
+      {tab === 'registro' && (<>
       {/* Export / Dossier (Parte A + B): imprimir dossier + descargar CSV. */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <Button
@@ -794,7 +793,7 @@ export function PersonDetail({
 
       </>)}
 
-      {tab === 'vinculo' && (<>
+      {tab === 'conversacion' && (<>
       {/* ─── Sesion 3 PR-B: RelationalScore + BirthdayCountdown reales ── */}
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
         <RelationalScore person={live} lastChat={lastChat} />
@@ -810,7 +809,7 @@ export function PersonDetail({
 
       </>)}
 
-      {tab === 'red' && (<>
+      {tab === 'perfil' && (<>
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
       <FechasImportantes person={live} />
 
@@ -820,7 +819,7 @@ export function PersonDetail({
 
       </>)}
 
-      {tab === 'cuidado' && (<>
+      {tab === 'hoy' && (<>
       {/* ─── Lunar + Ciclo: estado actual por persona. Solo si es mujer
           (o ya tiene datos de ciclo cargados, p. ej. registros legacy). ─── */}
       {(live.gender === 'female' || live.cycleStartDate) && (
@@ -844,6 +843,9 @@ export function PersonDetail({
         </div>
       )}
 
+      </>)}
+
+      {tab === 'conversacion' && (<>
       {/* Correlación longitudinal (Fase 3c): person_logs × fase lunar ×
           fase del ciclo. Determinístico; narrativa IA opcional detrás de
           botón. Empty state honesto si falta data. */}
@@ -871,7 +873,7 @@ export function PersonDetail({
 
       </>)}
 
-      {tab === 'datos' && (<>
+      {tab === 'registro' && (<>
       {/* Captura en contexto: subir un pantallazo y asociarlo DIRECTO a esta
           persona, sin pasar por /captura ni re-seleccionar. Reusa el pipeline
           detect → process con person_id fijo. */}
@@ -915,6 +917,9 @@ export function PersonDetail({
           PERSISTIDA (person_profile_axes, 0047) con fallback en vivo. Personal:
           síntesis IA cacheada (person_synthesis). ─────────────────────────── */}
 
+      </>)}
+
+      {tab === 'perfil' && (<>
       {/* Vida profesional (#6): educación (campo people, 0024) + resumen
           determinístico de la captura LinkedIn. */}
       <VidaProfesional person={live} observations={curatedObservations} axes={profileAxes} />
@@ -928,7 +933,7 @@ export function PersonDetail({
 
       </>)}
 
-      {tab === 'historia' && (<>
+      {tab === 'perfil' && (<>
       {/* "Lo personal" (#8): síntesis narrativa LLM, lazy + cacheada en
           person_synthesis. conversationCount = whatsapp_chat curadas. */}
       <LoPersonal
