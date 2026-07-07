@@ -1,0 +1,961 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SIR — Ficha de persona V2 · Diana Carolina</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050507;
+      --page: #09090b;
+      --surface: #101014;
+      --surface-2: #15151b;
+      --surface-3: #1b1b23;
+      --line: rgba(255,255,255,.09);
+      --line-strong: rgba(255,255,255,.15);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --faint: #71717a;
+      --brand: #8b5cf6;
+      --brand-2: #a78bfa;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --blue: #60a5fa;
+      --shadow: 0 24px 80px rgba(0,0,0,.36);
+      --radius: 8px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f4f4f6;
+      --page: #fafafa;
+      --surface: #ffffff;
+      --surface-2: #f4f4f5;
+      --surface-3: #ececf0;
+      --line: rgba(24,24,27,.10);
+      --line-strong: rgba(24,24,27,.18);
+      --text: #18181b;
+      --muted: #52525b;
+      --faint: #71717a;
+      --shadow: 0 24px 70px rgba(24,24,27,.10);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      letter-spacing: 0;
+    }
+
+    button, input { font: inherit; }
+    .app {
+      max-width: 1440px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+      background: var(--page);
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      padding: 18px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      background: color-mix(in srgb, var(--surface) 78%, transparent);
+    }
+
+    .brand {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 8px;
+      margin-bottom: 18px;
+      font-weight: 650;
+    }
+
+    .brand-mark {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--brand), #4338ca);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset;
+    }
+
+    .nav-label {
+      color: var(--faint);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 16px 8px 7px;
+    }
+
+    .nav-item {
+      min-height: 34px;
+      border-radius: 7px;
+      padding: 0 9px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .nav-item.active {
+      color: var(--text);
+      background: var(--surface-2);
+      box-shadow: 0 0 0 1px var(--line) inset;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .crumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+
+    .btn:hover { border-color: var(--line-strong); background: var(--surface-2); }
+    .btn.primary {
+      border-color: color-mix(in srgb, var(--brand) 46%, var(--line));
+      background: color-mix(in srgb, var(--brand) 18%, var(--surface));
+    }
+    .btn.ghost { background: transparent; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .content { min-width: 0; }
+    .rail {
+      position: sticky;
+      top: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .hero {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 11%, var(--surface)), var(--surface));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-main {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .person-head {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 45% 30%, rgba(255,255,255,.28), transparent 16px),
+        linear-gradient(140deg, #32224c, #8b5cf6 52%, #0f172a);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.16) inset;
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 3vw, 38px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-top: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 11px;
+    }
+
+    .chip, .source {
+      min-height: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+      border-radius: 999px;
+      padding: 0 8px;
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .chip.strong { color: var(--text); border-color: color-mix(in srgb, var(--brand) 38%, var(--line)); }
+    .chip.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, var(--line)); }
+    .chip.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, var(--line)); }
+    .source.ai { color: var(--brand-2); }
+    .source.compute { color: var(--blue); }
+    .source.manual { color: var(--warn); }
+    .source.extract { color: var(--ok); }
+
+    .hero-actions {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-bottom: 1px solid var(--line);
+    }
+
+    .signal {
+      padding: 14px 16px;
+      border-right: 1px solid var(--line);
+      min-height: 92px;
+    }
+
+    .signal:last-child { border-right: 0; }
+    .label {
+      color: var(--faint);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .metric {
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 670;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0;
+    }
+
+    .metric-sub {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .today {
+      padding: 18px 20px 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 220px;
+      gap: 16px;
+    }
+
+    .today h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .today p {
+      margin: 9px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .mini-stack {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mini {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+      border-radius: 7px;
+      padding: 9px;
+    }
+
+    .mini b {
+      display: block;
+      font-size: 13px;
+      font-weight: 640;
+      margin-bottom: 3px;
+    }
+
+    .mini span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .section {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-head {
+      min-height: 48px;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 650;
+      min-width: 0;
+    }
+
+    .card-body { padding: 15px; }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      overflow-x: auto;
+    }
+
+    .tab {
+      min-height: 32px;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 0 10px;
+      white-space: nowrap;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .tab.active {
+      background: var(--surface-2);
+      color: var(--text);
+      box-shadow: 0 0 0 1px var(--line) inset;
+    }
+
+    .tabpanel { display: none; }
+    .tabpanel.active {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .insight {
+      padding: 12px;
+      border-radius: 7px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+    }
+
+    .insight h3 {
+      margin: 0 0 7px;
+      font-size: 13px;
+    }
+
+    .insight p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--surface-3);
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+    }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr);
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .event:last-child { border-bottom: 0; }
+    .event time {
+      color: var(--faint);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .event strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 3px;
+    }
+
+    .event p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .cycle-ring {
+      width: 148px;
+      height: 148px;
+      border-radius: 50%;
+      margin: 4px auto 12px;
+      background:
+        conic-gradient(#a78bfa 0 26%, #22c55e 26% 52%, #f59e0b 52% 73%, #ef4444 73% 100%);
+      position: relative;
+    }
+
+    .cycle-ring::after {
+      content: "Día 14";
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      background: var(--surface);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      box-shadow: 0 0 0 1px var(--line) inset;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface-2);
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 12px;
+      font-size: 13px;
+      color: var(--text);
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    summary::after {
+      content: "+";
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    details[open] summary::after { content: "-"; }
+    .details-body {
+      padding: 0 12px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .empty {
+      border: 1px dashed var(--line-strong);
+      border-radius: 7px;
+      padding: 14px;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--surface-2) 52%, transparent);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .mobile-action {
+      display: none;
+    }
+
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .layout { grid-template-columns: 1fr; }
+      .rail { position: static; grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .main { padding: 12px; }
+      .topbar { align-items: stretch; flex-direction: column; }
+      .toolbar { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; }
+      .hero-main { grid-template-columns: 1fr; }
+      .hero-actions { justify-content: flex-start; }
+      .avatar { width: 58px; height: 58px; border-radius: 14px; }
+      .signal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .signal:nth-child(2) { border-right: 0; }
+      .signal:nth-child(1), .signal:nth-child(2) { border-bottom: 1px solid var(--line); }
+      .today { grid-template-columns: 1fr; }
+      .grid-2, .grid-3, .rail { grid-template-columns: 1fr; }
+      .tabs { position: relative; }
+      .mobile-action { display: inline-flex; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div class="brand"><span class="brand-mark"></span>SIR</div>
+      <div class="nav-label">Sistema</div>
+      <div class="nav-item">Panel</div>
+      <div class="nav-item active">Relaciones</div>
+      <div class="nav-item">Agenda</div>
+      <div class="nav-item">Objetivos</div>
+      <div class="nav-label">Persona</div>
+      <div class="nav-item active">Ficha</div>
+      <div class="nav-item">Timeline</div>
+      <div class="nav-item">Dossier</div>
+      <div class="nav-label">Mockup</div>
+      <div class="nav-item">Tema oscuro/claro</div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="crumb">← Relaciones <span class="kbd">/ diana-carolina-diaz-sanchez</span></div>
+        <div class="toolbar">
+          <button class="btn primary">✦ Briefing IA</button>
+          <button class="btn">WhatsApp</button>
+          <button class="btn">Editar identidad</button>
+          <button class="btn">Exportar dossier</button>
+          <button class="btn ghost" id="themeToggle">Cambiar tema</button>
+        </div>
+      </div>
+
+      <div class="layout">
+        <div class="content">
+          <section class="hero" aria-labelledby="person-title">
+            <div class="hero-main">
+              <div class="person-head">
+                <div class="avatar" aria-hidden="true"></div>
+                <div>
+                  <h1 id="person-title">Diana Carolina Díaz Sánchez</h1>
+                  <div class="subtitle">Pareja · círculo íntimo · historia activa desde jun-2023 · 71k mensajes importados</div>
+                  <div class="chips">
+                    <span class="chip strong">romantic</span>
+                    <span class="chip ok">relación activa</span>
+                    <span class="chip">Barranco / Lima</span>
+                    <span class="chip">@diana.carolina.d</span>
+                  </div>
+                </div>
+              </div>
+              <div class="hero-actions">
+                <button class="btn primary">Preparar conversación</button>
+                <button class="btn">Registrar interacción</button>
+                <button class="btn mobile-action">Anotar</button>
+              </div>
+            </div>
+
+            <div class="signal-grid" aria-label="Vistazo rápido">
+              <div class="signal">
+                <div class="label">Estado del vínculo <span class="source compute">computado</span></div>
+                <div class="metric">Sólido</div>
+                <div class="metric-sub">75/100 · tono reciente 3.7/5</div>
+              </div>
+              <div class="signal">
+                <div class="label">Pulso <span class="source extract">extraído</span></div>
+                <div class="metric">80% / 57%</div>
+                <div class="metric-sub">Vos iniciás más; ella manda más mensajes.</div>
+              </div>
+              <div class="signal">
+                <div class="label">Ciclo <span class="source compute">computado</span></div>
+                <div class="metric">Día 14</div>
+                <div class="metric-sub">Ovulación estimada · confianza media.</div>
+              </div>
+              <div class="signal">
+                <div class="label">Memoria útil <span class="source ai">IA cacheada</span></div>
+                <div class="metric">21</div>
+                <div class="metric-sub">Memorias reales después de limpiar ruido.</div>
+              </div>
+            </div>
+
+            <div class="today">
+              <div>
+                <div class="label">Acción del día</div>
+                <h2>Entrá con presencia, no con reclamo. Buen día para intimidad suave; no fuerces una conversación pesada.</h2>
+                <p>
+                  La ventana fértil puede ayudar a conexión y deseo, pero el patrón de Diana muestra tono más bajo alrededor de ovulación.
+                  Si querés hablar algo delicado, abrí con cuidado y dejá una salida digna.
+                </p>
+                <div class="chips">
+                  <span class="chip warn">Timing: amarillo</span>
+                  <span class="chip">Sustento: ciclo + tono × fase + últimas memorias</span>
+                  <span class="chip ok">Versión segura: gesto + escucha</span>
+                </div>
+              </div>
+              <div class="mini-stack">
+                <div class="mini"><b>Gesto sugerido</b><span>Preguntale cómo está del cuerpo y propone algo simple, sin convertirlo en interrogatorio.</span></div>
+                <div class="mini"><b>Qué evitar</b><span>No usar "es por tu ciclo" ni abrir reclamo largo por chat.</span></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="section">
+            <nav class="tabs" aria-label="Secciones de la ficha">
+              <button class="tab active" data-tab="vinculo">Vínculo</button>
+              <button class="tab" data-tab="cuidado">Cuidado e intimidad</button>
+              <button class="tab" data-tab="historia">Historia</button>
+              <button class="tab" data-tab="red">Red y contexto</button>
+              <button class="tab" data-tab="datos">Datos</button>
+            </nav>
+
+            <div class="tabpanel active" id="tab-vinculo">
+              <div class="grid-2">
+                <article class="card">
+                  <div class="card-head">
+                    <div class="card-title">Salud del vínculo <span class="source compute">computado</span></div>
+                    <span class="chip ok">estable</span>
+                  </div>
+                  <div class="card-body">
+                    <div class="grid-3">
+                      <div class="insight">
+                        <h3>Tono</h3>
+                        <p>3.7/5 reciente. Sin tensión crítica visible.</p>
+                        <div class="bar"><span style="width:74%"></span></div>
+                      </div>
+                      <div class="insight">
+                        <h3>Reciprocidad</h3>
+                        <p>Ella sostiene volumen aunque vos abras más charlas.</p>
+                        <div class="bar"><span style="width:68%"></span></div>
+                      </div>
+                      <div class="insight">
+                        <h3>Atención</h3>
+                        <p>Hay temas abiertos: examen médico del seguro.</p>
+                        <div class="bar"><span style="width:56%"></span></div>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="card">
+                  <div class="card-head">
+                    <div class="card-title">Pulso de conversación <span class="source extract">extraído</span></div>
+                    <span class="chip">WhatsApp</span>
+                  </div>
+                  <div class="card-body">
+                    <div class="insight">
+                      <h3>Lectura rápida</h3>
+                      <p>Vos iniciás 80% de las charlas, pero Diana manda 57% de los mensajes. No parece desinterés; parece que vos abrís la puerta y ella ocupa espacio cuando entra.</p>
+                    </div>
+                    <div class="grid-2" style="margin-top:12px">
+                      <div class="insight"><h3>Vos iniciás</h3><p class="metric">80%</p></div>
+                      <div class="insight"><h3>Ella escribe</h3><p class="metric">57%</p></div>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <article class="card">
+                <div class="card-head">
+                  <div class="card-title">Pendientes y próximos movimientos</div>
+                  <span class="source manual">manual + computado</span>
+                </div>
+                <div class="card-body grid-3">
+                  <div class="insight">
+                    <h3>Examen médico del seguro</h3>
+                    <p>Entrar a escuchar y ayudar a resolver logística, no reabrir la herida.</p>
+                  </div>
+                  <div class="insight">
+                    <h3>Micro-bid</h3>
+                    <p>Proponer llamada corta. Para ella importa sentirse tomada en cuenta.</p>
+                  </div>
+                  <div class="insight">
+                    <h3>Si hay tensión</h3>
+                    <p>Pasar de chat a voz o pausar. No resolver intimidad por texto largo.</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div class="tabpanel" id="tab-cuidado">
+              <div class="grid-2">
+                <article class="card">
+                  <div class="card-head">
+                    <div class="card-title">Ciclo y timing <span class="source compute">computado</span></div>
+                    <span class="chip warn">confianza media</span>
+                  </div>
+                  <div class="card-body">
+                    <div class="cycle-ring" aria-label="Día 14 del ciclo"></div>
+                    <div class="grid-2">
+                      <div class="insight"><h3>Promedio</h3><p>27.6 días · ±4 · moderadamente regular · 5 ciclos.</p></div>
+                      <div class="insight"><h3>Hoy</h3><p>Ovulación estimada / ventana fértil. No usar como anticoncepción ni diagnóstico.</p></div>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="card">
+                  <div class="card-head">
+                    <div class="card-title">Atunamiento de intimidad <span class="source ai">IA on-demand</span></div>
+                    <button class="btn">Regenerar</button>
+                  </div>
+                  <div class="card-body">
+                    <div class="insight">
+                      <h3>Lectura</h3>
+                      <p>Puede haber más apertura a cercanía, pero el dato individual pesa más que la fase. Mirá señales reales: energía, dolor, sueño, tono y disponibilidad.</p>
+                    </div>
+                    <div class="grid-2" style="margin-top:12px">
+                      <div class="insight"><h3>Acercamiento</h3><p>Proponer plan simple, contacto afectivo y privacidad. Sin presión sexual.</p></div>
+                      <div class="insight"><h3>Apoyo</h3><p>Si reporta dolor/cansancio, cambiar de seducción a cuidado práctico.</p></div>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <article class="card">
+                <div class="card-head">
+                  <div class="card-title">Tono por fase <span class="source compute">computado</span></div>
+                  <span class="chip">49 conversaciones</span>
+                </div>
+                <div class="card-body grid-3">
+                  <div class="insight"><h3>Menstrual</h3><p>Priorizar descanso, apoyo físico y cero discusiones largas.</p></div>
+                  <div class="insight"><h3>Folicular</h3><p>Buena ventana para planes, juego, salida y conversación liviana.</p></div>
+                  <div class="insight"><h3>Ovulación</h3><p>En Diana aparece tono más bajo: usar cuidado y confirmar señales, no asumir.</p></div>
+                </div>
+              </article>
+
+              <details>
+                <summary>Reglas de uso del dato hormonal</summary>
+                <div class="details-body">
+                  SIR usa el ciclo como clima probable, no como causa. Nunca debe decir "estás hormonal", invalidar una emoción, presionar sexo ni decidir por ella. Sirve para timing, cuidado, paciencia y lectura contextual.
+                </div>
+              </details>
+            </div>
+
+            <div class="tabpanel" id="tab-historia">
+              <article class="card">
+                <div class="card-head">
+                  <div class="card-title">Síntesis íntima <span class="source ai">IA cacheada</span></div>
+                  <button class="btn">Actualizar síntesis</button>
+                </div>
+                <div class="card-body grid-3">
+                  <div class="insight"><h3>Quién es en tu vida</h3><p>Pareja activa, vínculo de alta historia y alta carga emocional.</p></div>
+                  <div class="insight"><h3>Dinámica</h3><p>Vos abrís más el canal; ella participa fuerte cuando la conversación ya está andando.</p></div>
+                  <div class="insight"><h3>Cuidado</h3><p>La presencia práctica pesa más que grandes discursos.</p></div>
+                </div>
+              </article>
+
+              <article class="card">
+                <div class="card-head"><div class="card-title">Hitos y memorias</div><span class="chip">21 reales</span></div>
+                <div class="card-body timeline">
+                  <div class="event"><time>2026-07-06</time><div><strong>Relación activa</strong><p>Se escriben hoy. La ficha no debe tratar esto como vínculo pasado.</p></div></div>
+                  <div class="event"><time>2026-07-02</time><div><strong>Examen médico</strong><p>Tema abierto. Conviene cuidar y resolver, no usar como reclamo.</p></div></div>
+                  <div class="event"><time>2023-06 → hoy</time><div><strong>WhatsApp importado</strong><p>Historial largo disponible para lectura longitudinal.</p></div></div>
+                </div>
+              </article>
+            </div>
+
+            <div class="tabpanel" id="tab-red">
+              <div class="grid-2">
+                <article class="card">
+                  <div class="card-head"><div class="card-title">Vida social <span class="source extract">Instagram</span></div><span class="chip">@diana.carolina.d</span></div>
+                  <div class="card-body grid-3">
+                    <div class="insight"><h3>Seguidores</h3><p class="metric">1343</p></div>
+                    <div class="insight"><h3>Seguidos</h3><p class="metric">1384</p></div>
+                    <div class="insight"><h3>Posts</h3><p class="metric">23</p></div>
+                  </div>
+                </article>
+                <article class="card">
+                  <div class="card-head"><div class="card-title">Trabajo y contexto <span class="source extract">chat</span></div></div>
+                  <div class="card-body">
+                    <div class="insight"><h3>Dato detectado</h3><p>Trabaja en notaría Rosalía Mejía. Este dato vino del chat, no de LinkedIn.</p></div>
+                    <div class="insight" style="margin-top:12px"><h3>Bio pública</h3><p>Founder: @cautiva.detalles</p></div>
+                  </div>
+                </article>
+              </div>
+              <div class="empty">
+                Estado vacío diseñado: si no hay LinkedIn, familia o grafo, la ficha no muestra un panel gigante roto. Muestra qué falta y cómo capturarlo.
+              </div>
+            </div>
+
+            <div class="tabpanel" id="tab-datos">
+              <article class="card">
+                <div class="card-head"><div class="card-title">Captura y datos crudos</div><span class="source manual">manual</span></div>
+                <div class="card-body grid-3">
+                  <button class="btn">Agregar captura</button>
+                  <button class="btn">Nota de voz</button>
+                  <button class="btn">Registrar ciclo</button>
+                </div>
+              </article>
+
+              <details>
+                <summary>Observaciones curadas</summary>
+                <div class="details-body">WhatsApp, Instagram, notas manuales y ciclo. Las filas obsoletas quedan fuera de las lecturas principales.</div>
+              </details>
+              <details>
+                <summary>Información sensible</summary>
+                <div class="details-body">Se mantiene al fondo, colapsada, y no alimenta IA ni export público por defecto.</div>
+              </details>
+              <details>
+                <summary>Exportaciones y CSV</summary>
+                <div class="details-body">Dossier, registros CSV y observaciones CSV viven acá porque son herramientas, no lectura diaria.</div>
+              </details>
+            </div>
+          </section>
+        </div>
+
+        <aside class="rail" aria-label="Rail contextual">
+          <article class="card">
+            <div class="card-head"><div class="card-title">Línea de tiempo</div></div>
+            <div class="card-body timeline">
+              <div class="event"><time>Hoy</time><div><strong>Último contacto</strong><p>Mensaje reciente detectado. Vínculo activo.</p></div></div>
+              <div class="event"><time>Día 14</time><div><strong>Ovulación estimada</strong><p>Usar como contexto, no como explicación total.</p></div></div>
+              <div class="event"><time>02 jul</time><div><strong>Tono 3.7</strong><p>Sin tensión crítica en los registros recientes.</p></div></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head"><div class="card-title">IA on-demand</div></div>
+            <div class="card-body mini-stack">
+              <button class="btn primary">Briefing para hoy</button>
+              <button class="btn">Ensayar mensaje</button>
+              <button class="btn">Actualizar perfil estratégico</button>
+              <p class="note">La IA no debe dominar la ficha. Aparece como acción explícita y cacheada.</p>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-head"><div class="card-title">Origen del dato</div></div>
+            <div class="card-body">
+              <div class="chips">
+                <span class="source compute">Computado</span>
+                <span class="source ai">IA</span>
+                <span class="source manual">Manual</span>
+                <span class="source extract">Extraído</span>
+              </div>
+              <p class="note" style="margin-top:10px">Cada bloque muestra si es determinístico, IA, entrada manual o captura extraída.</p>
+            </div>
+          </article>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const root = document.documentElement;
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    });
+
+    document.querySelectorAll('.tab').forEach((button) => {
+      button.addEventListener('click', () => {
+        const tab = button.dataset.tab;
+        document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('active', b === button));
+        document.querySelectorAll('.tabpanel').forEach((panel) => {
+          panel.classList.toggle('active', panel.id === `tab-${tab}`);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
