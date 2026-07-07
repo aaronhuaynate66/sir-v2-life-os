@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { EmptyState } from '@/components/ui/empty-state'
 import { RelationshipThermometer } from '@/components/relaciones/RelationshipThermometer'
 import { PartnerEffectBoard } from '@/components/relaciones/PartnerEffectBoard'
+import { TrajectoryForecastCard } from '@/components/relaciones/TrajectoryForecastCard'
 import { Avatar } from '@/components/ui/avatar'
 import { fetchAvatars } from '@/lib/avatars/client'
 import {
@@ -369,6 +370,9 @@ function RelationshipsContent() {
       {people.length > 0 && <RelationshipThermometer />}
 
       {people.length > 0 && <PartnerEffectBoard />}
+
+      {/* C2 — capa forecast: vínculos que se van a quedar dormidos si sigue el silencio. */}
+      {people.length > 0 && <TrajectoryForecastCard />}
 
       {people.length > 0 && <CommercialPipelinePanel people={people} />}
 
