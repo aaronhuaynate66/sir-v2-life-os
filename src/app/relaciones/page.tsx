@@ -570,9 +570,9 @@ function RelationshipsContent() {
           <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70 mr-1">Fuerza</span>
           {([
             ['todas', 'Todas'],
-            ['alta', `Fuerte (${people.filter((p) => relationStrength(p.importanceScore) === 'alta').length})`],
-            ['media', `Media (${people.filter((p) => relationStrength(p.importanceScore) === 'media').length})`],
-            ['baja', `Débil (${people.filter((p) => relationStrength(p.importanceScore) === 'baja').length})`],
+            ['alta', `Fuerte (${people.filter((p) => relationStrength(p.category) === 'alta').length})`],
+            ['media', `Media (${people.filter((p) => relationStrength(p.category) === 'media').length})`],
+            ['baja', `Débil (${people.filter((p) => relationStrength(p.category) === 'baja').length})`],
           ] as const).map(([k, label]) => (
             <button key={k} type="button" onClick={() => setStrengthFilter(k as 'todas' | RelationStrength)}
               className={`rounded-full border px-3 py-1 text-xs ${strengthFilter === k ? 'border-brand bg-brand text-brand-foreground' : 'border-border text-muted-foreground hover:text-foreground'}`}>
@@ -599,7 +599,7 @@ function RelationshipsContent() {
           {(() => {
             const filtered = people.filter((p) =>
               (ambitoFilter === 'todos' || effectiveAmbito(p) === ambitoFilter) &&
-              (strengthFilter === 'todas' || relationStrength(p.importanceScore) === strengthFilter) &&
+              (strengthFilter === 'todas' || relationStrength(p.category) === strengthFilter) &&
               matchesQuery(p),
             )
             if (filtered.length === 0) {
@@ -626,7 +626,7 @@ function RelationshipsContent() {
                           <Badge variant="outline" className="text-[10px] font-normal">{relationshipTypeLabel(person.relationship)}</Badge>
                           <Badge variant="outline" className="text-[10px] font-normal">{personCategoryLabel(person.category)}</Badge>
                           <Badge variant="outline" className="text-[10px] font-normal border-brand/40 text-brand-soft-foreground">{AMBITO_LABEL[effectiveAmbito(person)]}</Badge>
-                          <Badge variant="outline" className={cn('text-[10px] font-normal', STRENGTH_CLASS[relationStrength(person.importanceScore)])}>{STRENGTH_LABEL[relationStrength(person.importanceScore)]}</Badge>
+                          <Badge variant="outline" className={cn('text-[10px] font-normal', STRENGTH_CLASS[relationStrength(person.category)])}>{STRENGTH_LABEL[relationStrength(person.category)]}</Badge>
                           <ScoreTrendChip trend={scoreTrends[person.id]} />
                         </div>
 

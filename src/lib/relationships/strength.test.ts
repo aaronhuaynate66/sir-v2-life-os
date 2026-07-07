@@ -1,17 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { relationStrength } from './strength'
 
-describe('relationStrength', () => {
-  it('bucketea por umbrales', () => {
-    expect(relationStrength(10)).toBe('alta')
-    expect(relationStrength(7)).toBe('alta')
-    expect(relationStrength(6)).toBe('media')
-    expect(relationStrength(4)).toBe('media')
-    expect(relationStrength(3)).toBe('baja')
-    expect(relationStrength(1)).toBe('baja')
+describe('relationStrength (por capa de Dunbar)', () => {
+  it('íntimo y cercano → fuerte', () => {
+    expect(relationStrength('inner_circle')).toBe('alta')
+    expect(relationStrength('close')).toBe('alta')
   })
-  it('robusto ante no-finitos', () => {
-    expect(relationStrength(NaN)).toBe('baja')
-    expect(relationStrength(undefined as unknown as number)).toBe('baja')
+  it('red → media', () => {
+    expect(relationStrength('network')).toBe('media')
+  })
+  it('periférico → débil', () => {
+    expect(relationStrength('peripheral')).toBe('baja')
   })
 })
