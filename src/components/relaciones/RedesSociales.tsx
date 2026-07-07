@@ -20,6 +20,7 @@
 // (AgregarCapturaPanel, arriba en el detalle) — NO se navega a /captura.
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import {
@@ -212,7 +213,7 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
             )}
 
             {/* Enriquecimiento de la captura de Instagram (datos extraídos). */}
-            {igObs && <InstagramEnrichment obs={igObs} />}
+            {igObs && <InstagramEnrichment obs={igObs} personId={person.id} />}
 
             {/* Variación de seguidores/seguidos/posts en el tiempo (historial de capturas). */}
             {igObs && <RedesVariacion personId={person.id} />}
@@ -282,8 +283,50 @@ function SocialRow({
 /** Enriquecimiento desde la captura de Instagram (handle, badges, métricas,
  *  bio, link). Render determinístico de lo que el extractor estructuró — sin
  *  LLM. Vive DENTRO de la card unificada (antes era la card "Vida social"). */
-function InstagramEnrichment({ obs }: { obs: Observation }) {
+function InstagramEnrichment({ obs, personId }: { obs: Observation; personId: string }) {
   const ig = readInstagram(obs.data)
+  const router = useRouter()
+  // "Crear para poder cambiarlo": corregir a mano los contadores/bio cuando la
+  // captura los leyó mal, sin re-capturar (crea una observación de corrección).
+  const [correcting, setCorrecting] = useState(false)
+  const [posts, setPosts] = useState(String(ig.postsCount ?? ''))
+  const [followers, setFollowers] = useState(String(ig.followersCount ?? ''))
+  const [following, setFollowing] = useState(String(ig.followingCount ?? ''))
+  const [bioVal, setBioVal] = useState(ig.bio ?? '')
+  const [saving, setSaving] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function saveCorrection() {
+    setSaving(true)
+    setErr(null)
+    const num = (s: string): number | undefined => {
+      const n = parseInt(s.replace(/[^\d]/g, ''), 10)
+      return Number.isFinite(n) ? n : undefined
+    }
+    try {
+      const res = await fetch('/api/observations/social-correction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personId, captureType: 'instagram',
+          postsCount: num(posts), followersCount: num(followers), followingCount: num(following),
+          bio: bioVal.trim() || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string }
+        setErr(j.error ?? 'No se pudo guardar la corrección')
+        return
+      }
+      setCorrecting(false)
+      router.refresh()
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Error de red')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="rounded-md border border-border/40 p-3 space-y-3">
       <div className="flex items-center gap-2 flex-wrap">
@@ -327,16 +370,56 @@ function InstagramEnrichment({ obs }: { obs: Observation }) {
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Posts" value={fmtCount(ig.postsCount)} />
-        <Stat label="Seguidores" value={fmtCount(ig.followersCount)} />
-        <Stat label="Siguiendo" value={fmtCount(ig.followingCount)} />
-      </div>
+      {correcting ? (
+        <div className="space-y-2 rounded-md border border-brand/30 bg-brand/5 p-2.5">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground/80">Corregir a mano · sin re-capturar</div>
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-[10px] text-muted-foreground">Posts
+              <Input value={posts} onChange={(e) => setPosts(e.target.value)} inputMode="numeric" disabled={saving} className="mt-0.5 h-8" />
+            </label>
+            <label className="text-[10px] text-muted-foreground">Seguidores
+              <Input value={followers} onChange={(e) => setFollowers(e.target.value)} inputMode="numeric" disabled={saving} className="mt-0.5 h-8" />
+            </label>
+            <label className="text-[10px] text-muted-foreground">Siguiendo
+              <Input value={following} onChange={(e) => setFollowing(e.target.value)} inputMode="numeric" disabled={saving} className="mt-0.5 h-8" />
+            </label>
+          </div>
+          <textarea
+            value={bioVal}
+            onChange={(e) => setBioVal(e.target.value)}
+            disabled={saving}
+            rows={2}
+            placeholder="Bio…"
+            className="w-full rounded-md border border-border/60 bg-transparent p-2 text-xs"
+          />
+          {err && <div className="text-[11px] text-red-400">{err}</div>}
+          <div className="flex gap-2 justify-end">
+            <Button size="sm" variant="ghost" onClick={() => setCorrecting(false)} disabled={saving}>Cancelar</Button>
+            <Button size="sm" onClick={saveCorrection} disabled={saving}>{saving ? 'Guardando…' : 'Guardar corrección'}</Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            <Stat label="Posts" value={fmtCount(ig.postsCount)} />
+            <Stat label="Seguidores" value={fmtCount(ig.followersCount)} />
+            <Stat label="Siguiendo" value={fmtCount(ig.followingCount)} />
+          </div>
 
-      {ig.bio && (
-        <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-border/40 pl-3 whitespace-pre-wrap line-clamp-4">
-          {ig.bio}
-        </p>
+          {ig.bio && (
+            <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-border/40 pl-3 whitespace-pre-wrap line-clamp-4">
+              {ig.bio}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setCorrecting(true)}
+            className="text-[11px] text-muted-foreground/70 hover:text-foreground underline underline-offset-2"
+          >
+            Corregir contadores/bio
+          </button>
+        </>
       )}
 
       {ig.externalLink && (
