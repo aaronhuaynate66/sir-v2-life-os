@@ -38,6 +38,12 @@ const EXPECTED_DAYS: Record<PersonCategory, number> = {
   peripheral: 180,
 }
 
+/** Días de contacto "sanos" esperados para la capa. Umbral relativo (no cuota):
+ *  pasado esto, un vínculo afectivo merece un gesto de presencia. */
+export function expectedContactDays(category: PersonCategory): number {
+  return EXPECTED_DAYS[category] ?? 90
+}
+
 export interface InteractionPoint {
   /** Calidad/tono 1-5 (person_logs.value). */
   quality: number
