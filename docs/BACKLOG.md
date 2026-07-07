@@ -289,16 +289,12 @@ Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_I
 
 Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lógica de engines** (timing / recommendation / signal / relationship — todos puros y testeados, ver `src/engines/*`); en varios casos lo que falta es **exponerla en UI**, no construir el cerebro. Ordenado por prioridad/criterio.
 
-### P0 — Próximo candidato fuerte
-**1. "Reconectar" / serendipia** — bloque en `/panel` que sugiere **3-5 personas por día** para reconectar.
-- **Qué es:** un feed diario "deberías hablarle a X" (por silencio prolongado, fecha relevante, score relacional, señal).
-- **Esfuerzo: BAJO.** La lógica YA EXISTE: `timing` (cadencia/“hace cuánto”), `recommendation` (genera+rankea), `signal` (urgencia), `relationship` (alertas del panel). Es mayormente **wiring + UI** sobre engines puros ya cubiertos por tests.
-- **Prioridad: ALTA.** Marcado como el **próximo candidato fuerte** del backlog.
+### P0 — ✅ CERRADO (2026-07-07)
+**1. "Reconectar" / serendipia** — bloque en `/panel` que sugiere **hasta 5 personas por día** para reconectar. **ENTREGADO** (`72c5eba`): card "Reconectá con tu gente" que reusa el motor de Daily Actions filtrado a proactivos (`contact`/`cooling`/`acknowledge`), sin pisar Próximo (fechas) ni Personas en riesgo (pendientes/tono). `buildDailyActions` ganó filtro puro `kinds`; `/api/daily-actions` acepta `?focus=reconnect&limit=N` (retrocompatible); `DailyActionsPanel` ganó props `focus/limit/title/emptyLabel/hideWhenEmpty`. Gateada por `!simplified` (en recuperación dura no empuja contacto proactivo) y se esconde si no hay nadie enfriándose. 3 tests nuevos del filtro.
+- **Qué era:** un feed diario "deberías hablarle a X" (por silencio prolongado, score relacional, señal).
 
 ### P1 — Alto valor, esfuerzo bajo/medio
-**4. Fuerza de relación visible + filtrable** — exponer `healthScore`/`importanceScore` de forma prominente en cada contacto (alta / media / baja) y **filtrar `/relaciones` por eso**.
-- **Qué es:** badge/indicador de fuerza por contacto + filtro en la lista.
-- **Esfuerzo: BAJO-MEDIO.** El score ya se computa (lo usa el grafo para tamaño de nodo y `RelationalScore`); falta el badge en la lista + un filtro. Reusa `relationship` engine.
+**4. Fuerza de relación visible + filtrable** — ✅ **CERRADO** (`bcc0a0f`, "15·8 Clay #4"). Badge `Fuerte`/`Media`/`Débil` por persona en la lista + filtro con contadores en `/relaciones`. **Decisión de diseño** (`src/lib/relationships/strength.ts`): la fuerza = **cercanía estructural (capa de Dunbar / categoría)**, NO importancia ni salud reciente — un vínculo fuerte con silencio SIGUE siendo fuerte (la salud/atención es otro eje, ya cubierto por termómetro + ventana de contacto). El backlog original pedía basarlo en `importanceScore`/`healthScore`, pero eso quedó descartado (importancia en default 5 para casi todos → no diferenciaba). NO reintroducir la base por importancia sin revisar esta decisión.
 
 **2. Cadence por persona** — frecuencia objetivo de contacto por persona (semanal / quincenal / bimestral / …) + opción **"automática"** donde la IA propone la cadencia; alimenta los recordatorios.
 - **Qué es:** campo de cadencia por persona; el `timing` engine ya sabe "hace cuánto no hablás" → con el target cierra el loop "atrasado vs al día".
