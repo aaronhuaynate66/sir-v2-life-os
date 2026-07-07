@@ -37,6 +37,7 @@ import { SEED_FIXTURES } from '@/data/fixtures/seed'
 import { DailyBriefingCard } from '@/components/panel/DailyBriefingCard'
 import { HabitsStrip } from '@/components/panel/HabitsStrip'
 import { QuickStateLog } from '@/components/panel/QuickStateLog'
+import { SelfLinkInsightCard } from '@/components/panel/SelfLinkInsightCard'
 import { WeekInFocusCard } from '@/components/panel/WeekInFocusCard'
 import { BehavioralSuggestionCard } from '@/components/panel/BehavioralSuggestionCard'
 import { TargetsAtGlanceCard } from '@/components/panel/TargetsAtGlanceCard'
@@ -400,6 +401,9 @@ function DashboardContent() {
       {/* Estado propio (Etapa 3): quick-log de ánimo/energía de un tap, para que
           el analytics tenga datos sin fricción. */}
       <QuickStateLog />
+
+      {/* C1 cruzado — el payoff del check-in: tu patrón sueño↔energía/ánimo. */}
+      <SelfLinkInsightCard />
 
       {/* Hábitos (Etapa 3): check-in del día + racha, donde aterriza el usuario. */}
       <HabitsStrip />
