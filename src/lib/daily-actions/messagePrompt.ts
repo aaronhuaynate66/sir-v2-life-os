@@ -26,6 +26,12 @@ export interface MessageContextInput {
   location?: string | null
   /** Notas libres de la persona (contexto que el usuario ya cargó). */
   notes?: string | null
+  /** Notas relacionales (people.relational_notes): fortalezas del vínculo y
+   *  metas en común son terreno para CONECTAR; las tensiones se pasan para
+   *  CUIDARLAS (no pisar temas sensibles), nunca para presionar. */
+  strengths?: string[] | null
+  sharedGoals?: string[] | null
+  tensions?: string[] | null
 }
 
 export interface MessageSuggestion {
@@ -51,6 +57,7 @@ Reglas estrictas:
 - Si es un cumpleaños/fecha, que el mensaje sea un saludo concreto para ESA fecha.
 - No inventes datos que no estén en el contexto (ni trabajos, ni eventos, ni nombres de terceros).
 - Tono que respeta el vínculo y el bienestar de ambos; sin presión, sin culpa, sin diagnósticos.
+- Si te dan "Fortalezas del vínculo" o "Metas en común", usalos para que el mensaje conecte de verdad. Si te dan "Temas sensibles a CUIDAR", tenélos presentes para NO pisarlos ni presionar — nunca los uses como palanca.
 - Idioma: español.`
 
 function daysPhrase(days: number | null): string {
@@ -78,6 +85,13 @@ export function buildMessageContext(input: MessageContextInput): string {
   }
   if (input.location) lines.push(`Ubicación: ${input.location}`)
   if (input.notes && input.notes.trim()) lines.push(`Notas del contacto: ${input.notes.trim().slice(0, 280)}`)
+  // Notas relacionales — fortalezas y metas para CONECTAR; tensiones para CUIDAR.
+  const strengths = (input.strengths ?? []).map((s) => s.trim()).filter(Boolean).slice(0, 6)
+  if (strengths.length > 0) lines.push(`Fortalezas del vínculo (apoyate en esto): ${strengths.join('; ')}`)
+  const shared = (input.sharedGoals ?? []).map((s) => s.trim()).filter(Boolean).slice(0, 6)
+  if (shared.length > 0) lines.push(`Metas en común (terreno compartido): ${shared.join('; ')}`)
+  const tensions = (input.tensions ?? []).map((s) => s.trim()).filter(Boolean).slice(0, 6)
+  if (tensions.length > 0) lines.push(`Temas sensibles a CUIDAR (no presionar ni traerlos a colación): ${tensions.join('; ')}`)
   return lines.join('\n')
 }
 

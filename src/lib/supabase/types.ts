@@ -434,6 +434,7 @@ export type Database = {
           location: string | null
           tags: string[]
           notes: string
+          relational_notes: Json
           created_at: string
           updated_at: string
         }
@@ -452,6 +453,7 @@ export type Database = {
           location?: string | null
           tags?: string[]
           notes?: string
+          relational_notes?: Json
           created_at?: string
           updated_at?: string
         }
