@@ -36,6 +36,8 @@ export interface RehearseContext {
   cycleNote?: string
   /** Pulso de la conversación (C0): ritmo/tono/iniciativa recientes. */
   pulse?: string
+  /** Temas abiertos (moments sin cerrar) que pueden aparecer. */
+  openThreads?: string
 }
 
 export type Likelihood = 'plausible' | 'optimista' | 'dificil'
@@ -139,7 +141,10 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
     lines.push('', '(SIR tiene poco contexto de esta persona — decilo en "read", bajá la especificidad y no inventes.)')
   }
   if (ctx.conversation && ctx.conversation.trim()) {
-    lines.push('', ctx.conversation.trim().slice(0, 1600))
+    lines.push('', ctx.conversation.trim().slice(0, 1300))
+  }
+  if (ctx.openThreads && ctx.openThreads.trim()) {
+    lines.push('', ctx.openThreads.trim().slice(0, 600))
   }
   if (ctx.pulse && ctx.pulse.trim()) {
     lines.push('', ctx.pulse.trim().slice(0, 500))

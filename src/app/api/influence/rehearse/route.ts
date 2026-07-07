@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
   ])
   const cycleNote = extras.cycleNote
   const pulse = extras.pulse
+  const openThreads = extras.openThreads
 
   const ctx: RehearseContext = {
     personName,
@@ -114,6 +115,7 @@ export async function POST(req: NextRequest) {
     selfState,
     cycleNote,
     pulse,
+    openThreads,
   }
   const user = buildRehearseUserContent(ctx, objective)
 
@@ -168,7 +170,7 @@ export async function POST(req: NextRequest) {
       user_id: userId, person_id: personId, person_name: personName, objective, result,
       context_used: {
         cycle: !!cycleNote, pulse: !!pulse, selfState: !!selfState,
-        memories: memories.length, conversation: !!conversation,
+        openThreads: !!openThreads, memories: memories.length, conversation: !!conversation,
       },
     })
   } catch (e) { reportApiError(e, { route: 'influence/rehearse', stage: 'persist' }) }

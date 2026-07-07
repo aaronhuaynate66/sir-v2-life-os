@@ -2,9 +2,12 @@
 // que los escenarios sean de CALIDAD y aterrizados, no genéricos:
 //   - ciclo + atunamiento (M6) — SOLO vínculo romántico, marco de CUIDADO,
 //     nunca de táctica (docs 16/17: el contexto para conectar mejor, no manejar).
-//   - tu propio estado (sueño/energía/ánimo) — auto-conciencia, para que TE cuides.
 //   - el Pulso de la conversación (C0) — cómo viene el ritmo/tono/iniciativa.
-// Best-effort: cada bloque falla en silencio si no hay data.
+//   - temas ABIERTOS con la persona — lo que puede aparecer en la conversación
+//     (moments sin cerrar). Es la señal de más valor para un ensayo.
+// (El estado bio de Aaron lo arma el route aparte, vía getSelfBioState.)
+// Best-effort: cada bloque falla en silencio si no hay data. Las consultas van en
+// PARALELO para no sumar latencia (el request vive dentro del cap de 60s de Hobby).
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -22,8 +25,42 @@ export interface RehearsePerson {
 
 export interface RehearseExtras {
   cycleNote?: string
-  selfState?: string
   pulse?: string
+  openThreads?: string
+}
+
+async function gatherPulse(supabase: SupabaseClient, userId: string, personId: string, nowMs: number): Promise<string | undefined> {
+  try {
+    const msgs = await getConversationMessages(supabase, userId, personId)
+    if (msgs.length < 6) return undefined
+    const a = analyzeConversation(msgs, nowMs)
+    const bits: string[] = []
+    if (a.tone) bits.push(`tono ${a.tone.direction}`)
+    if (a.volume) bits.push(`volumen ${a.volume.direction}${a.volume.changePoint ? ` (${a.volume.changePoint.direction} hace poco)` : ''}`)
+    if (a.myInitiationShare != null) bits.push(`vos iniciás el ${Math.round(a.myInitiationShare * 100)}% de las charlas`)
+    if (a.cadence) bits.push(`se hablan ~cada ${a.cadence.medianGapDays.toFixed(1)} días`)
+    return bits.length ? `Pulso de la conversación (dinámica reciente): ${bits.join(', ')}.` : undefined
+  } catch { return undefined }
+}
+
+async function gatherOpenThreads(supabase: SupabaseClient, userId: string, personId: string): Promise<string | undefined> {
+  try {
+    const { data } = await supabase
+      .from('relationship_moments')
+      .select('title, detail')
+      .eq('user_id', userId)
+      .eq('person_id', personId)
+      .eq('status', 'abierto')
+      .order('created_at', { ascending: false })
+      .limit(4)
+    const rows = (data as Array<{ title: string | null; detail: string | null }> | null) ?? []
+    if (rows.length === 0) return undefined
+    const items = rows
+      .map((m) => (m.title ?? '').trim() + (m.detail ? ` — ${m.detail.trim().slice(0, 100)}` : ''))
+      .filter((s) => s.length > 0)
+    if (items.length === 0) return undefined
+    return `Temas ABIERTOS con ella (pueden aparecer en la conversación — no los fuerces, pero estate preparado): ${items.join(' · ')}.`
+  } catch { return undefined }
 }
 
 export async function gatherRehearseExtras(
@@ -34,7 +71,7 @@ export async function gatherRehearseExtras(
 ): Promise<RehearseExtras> {
   const extras: RehearseExtras = {}
 
-  // 1) Ciclo + atunamiento (M6) — SOLO romántico, marco de CUIDADO.
+  // 1) Ciclo + atunamiento (M6) — SOLO romántico, marco de CUIDADO. Sin query.
   if (person.relationship === 'romantic' && person.cycleStartDate) {
     try {
       const cp = cyclePhase(person.cycleStartDate, person.cycleLengthDays ?? 28, new Date(nowMs))
@@ -50,41 +87,13 @@ export async function gatherRehearseExtras(
     } catch { /* best-effort */ }
   }
 
-  // 2) Tu estado (auto-conciencia).
-  try {
-    const [sleepRes, metricsRes] = await Promise.all([
-      supabase.from('sleep_records').select('duration, score').eq('user_id', userId).order('date', { ascending: false }).limit(1),
-      supabase.from('self_metrics').select('category, value').eq('user_id', userId).in('category', ['energy', 'mood']).order('measured_at', { ascending: false }).limit(4),
-    ])
-    const s = (sleepRes.data as Array<{ duration: number; score: number | null }> | null)?.[0]
-    const metrics = (metricsRes.data as Array<{ category: string; value: number }> | null) ?? []
-    const parts: string[] = []
-    if (s) parts.push(`dormiste ${Number(s.duration).toFixed(1)}h${s.score ? ` (score ${s.score})` : ''}`)
-    const energy = metrics.find((m) => m.category === 'energy')
-    const mood = metrics.find((m) => m.category === 'mood')
-    if (energy) parts.push(`energía ${energy.value}/10`)
-    if (mood) parts.push(`ánimo ${mood.value}/10`)
-    if (parts.length) {
-      const low = s && Number(s.duration) < 6
-      extras.selfState =
-        `Tu estado ahora (auto-conciencia, para que TE cuides en la conversa): ${parts.join(', ')}.` +
-        (low ? ' Dormiste poco → ojo con la paciencia y la reactividad; no es momento de discusiones que puedan esperar.' : '')
-    }
-  } catch { /* best-effort */ }
-
-  // 3) Pulso de la conversación (C0).
-  try {
-    const msgs = await getConversationMessages(supabase, userId, person.id)
-    if (msgs.length >= 6) {
-      const a = analyzeConversation(msgs, nowMs)
-      const bits: string[] = []
-      if (a.tone) bits.push(`tono ${a.tone.direction}`)
-      if (a.volume) bits.push(`volumen ${a.volume.direction}${a.volume.changePoint ? ` (${a.volume.changePoint.direction} hace poco)` : ''}`)
-      if (a.myInitiationShare != null) bits.push(`vos iniciás el ${Math.round(a.myInitiationShare * 100)}% de las charlas`)
-      if (a.cadence) bits.push(`se hablan ~cada ${a.cadence.medianGapDays.toFixed(1)} días`)
-      if (bits.length) extras.pulse = `Pulso de la conversación (dinámica reciente): ${bits.join(', ')}.`
-    }
-  } catch { /* best-effort */ }
+  // 2) Pulso (C0) + temas abiertos — EN PARALELO (sin sumar latencia).
+  const [pulse, openThreads] = await Promise.all([
+    gatherPulse(supabase, userId, person.id, nowMs),
+    gatherOpenThreads(supabase, userId, person.id),
+  ])
+  extras.pulse = pulse
+  extras.openThreads = openThreads
 
   return extras
 }
