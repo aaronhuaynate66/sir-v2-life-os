@@ -8,7 +8,7 @@
 // las capas superiores.
 
 import { linreg, median } from '@/lib/stats/regression'
-import { detectChangePoint } from '@/lib/stats/changepoint'
+import { detectChangePoints } from '@/lib/stats/changepoint'
 
 export interface ConvMsg {
   /** true = lo mandó Aaron; false = la otra persona. */
@@ -24,6 +24,14 @@ const SESSION_GAP = 6 * 3600_000 // 6 h sin mensajes = nueva "sesión" de conver
 
 export type Direction = 'creciendo' | 'estable' | 'enfriándose'
 
+export interface VolumeChangePoint {
+  /** epoch ms del inicio de la semana donde cambió el régimen. */
+  at: number
+  direction: 'se enfrió' | 'se calentó'
+  beforeAvg: number
+  afterAvg: number
+}
+
 export interface ConversationAnalytics {
   total: number
   byMe: number
@@ -37,8 +45,10 @@ export interface ConversationAnalytics {
     slopePerWeek: number
     r2: number
     direction: Direction
-    /** Quiebre puntual detectado en el volumen (cuándo cambió), o null. */
-    changePoint: { at: number; direction: 'se enfrió' | 'se calentó'; beforeAvg: number; afterAvg: number } | null
+    /** Quiebre MÁS fuerte del volumen (compat), o null. */
+    changePoint: VolumeChangePoint | null
+    /** TODOS los quiebres de régimen (cuándo cambió el ritmo), en orden temporal. */
+    changePoints: VolumeChangePoint[]
   } | null
   cadence: {
     sessions: number
@@ -128,14 +138,34 @@ export function volumeFromWeekly(
   const reg = linreg(weeklyCounts.map((_, i) => i), weeklyCounts)
   if (!reg) return null
   const mean = weeklyCounts.reduce((a, b) => a + b, 0) / weeklyCounts.length
-  const cp = detectChangePoint(weeklyCounts)
   return {
     weeklyCounts,
     slopePerWeek: Math.round(reg.slope * 100) / 100,
     r2: Math.round(reg.r2 * 100) / 100,
     direction: directionOf(reg.slope, Math.max(1, mean)),
-    changePoint: cp ? { at: firstWeekStartMs + cp.index * WEEK, direction: cp.delta < 0 ? 'se enfrió' : 'se calentó', beforeAvg: cp.beforeAvg, afterAvg: cp.afterAvg } : null,
+    ...buildVolumeChangePoints(weeklyCounts, firstWeekStartMs),
   }
+}
+
+/** Quiebres de régimen del volumen (multi-changepoint) + el dominante, desde la
+ *  serie semanal `counts` cuya primera semana arranca en `firstMs`. Compartido
+ *  por analyzeConversation (serie reciente) y volumeFromWeekly (histórico largo). */
+function buildVolumeChangePoints(
+  counts: number[],
+  firstMs: number,
+): { changePoints: VolumeChangePoint[]; changePoint: VolumeChangePoint | null } {
+  const cps = detectChangePoints(counts)
+  const toVCP = (cp: { index: number; delta: number; beforeAvg: number; afterAvg: number }): VolumeChangePoint => ({
+    at: firstMs + cp.index * WEEK,
+    direction: cp.delta < 0 ? 'se enfrió' : 'se calentó',
+    beforeAvg: cp.beforeAvg,
+    afterAvg: cp.afterAvg,
+  })
+  const changePoints = cps.map(toVCP)
+  const dominant = cps.length
+    ? cps.reduce((a, b) => (Math.abs(b.delta) > Math.abs(a.delta) ? b : a))
+    : null
+  return { changePoints, changePoint: dominant ? toVCP(dominant) : null }
 }
 
 export interface WeeklyVolumeSeries {
@@ -194,13 +224,12 @@ export function analyzeConversation(messages: ConvMsg[], now: number): Conversat
     const reg = linreg(counts.map((_, i) => i), counts)
     if (reg) {
       const mean = total / weeks
-      const cp = detectChangePoint(counts)
       base.volume = {
         weeklyCounts: counts,
         slopePerWeek: Math.round(reg.slope * 100) / 100,
         r2: Math.round(reg.r2 * 100) / 100,
         direction: directionOf(reg.slope, Math.max(1, mean)),
-        changePoint: cp ? { at: firstAt + cp.index * WEEK, direction: cp.delta < 0 ? 'se enfrió' : 'se calentó', beforeAvg: cp.beforeAvg, afterAvg: cp.afterAvg } : null,
+        ...buildVolumeChangePoints(counts, firstAt),
       }
     }
   } else insufficient.push('serie corta (<10 días) para tendencia de volumen')

@@ -116,9 +116,18 @@ export function ConversationAnalyticsCard({ personId, personName }: Conversation
           </div>
         )}
 
-        {a.volume?.changePoint && (
-          <div className="text-[13px] text-muted-foreground -mt-1">
-            Quiebre: <span className="text-foreground">{a.volume.changePoint.direction}</span> alrededor del {fmtDate(a.volume.changePoint.at)}
+        {a.volume && a.volume.changePoints.length > 0 && (
+          <div className="-mt-1 space-y-1">
+            {a.volume.changePoints.length > 1 && (
+              <div className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary">Quiebres de ritmo</div>
+            )}
+            {a.volume.changePoints.map((cp, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cp.direction === 'se calentó' ? 'bg-ok' : 'bg-warn'}`} aria-hidden="true" />
+                <span className="text-foreground">{cp.direction}</span>
+                <span>· alrededor del {fmtDate(cp.at)}</span>
+              </div>
+            ))}
           </div>
         )}
 

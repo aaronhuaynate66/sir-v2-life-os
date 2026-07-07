@@ -54,3 +54,72 @@ export function detectChangePoint(series: number[], opts: ChangePointOpts = {}):
   if (!best || Math.abs(best.delta) < kStd * s) return null // el salto no supera el ruido
   return best
 }
+
+function round2(n: number): number { return Math.round(n * 100) / 100 }
+
+export interface MultiChangePointOpts extends ChangePointOpts {
+  /** Máximo de puntos a devolver (los más fuertes si sobran). */
+  maxPoints?: number
+}
+
+/**
+ * Detecta VARIOS puntos de cambio por segmentación binaria: encuentra el mejor
+ * corte de la serie; si supera el ruido, parte y recurre sobre cada lado. El
+ * umbral de significancia se mide contra el desvío GLOBAL de la serie (no el
+ * del sub-segmento), así segmentos ya homogéneos no generan cortes espurios.
+ * Devuelve los cortes ordenados por posición, con before/after recalculados
+ * como el promedio de los segmentos ADYACENTES (entre cortes vecinos). []
+ * cuando no hay ningún cambio real. PURO.
+ */
+export function detectChangePoints(series: number[], opts: MultiChangePointOpts = {}): ChangePoint[] {
+  const minSeg = opts.minSeg ?? 3
+  const kStd = opts.kStd ?? 0.9
+  const maxPoints = opts.maxPoints ?? 6
+  const n = series.length
+  if (n < 2 * minSeg) return []
+  const s = std(series)
+  if (s === 0) return []
+  const threshold = kStd * s
+
+  // Segmentación binaria: pila de segmentos [lo,hi) a evaluar.
+  const indices: number[] = []
+  const stack: Array<[number, number]> = [[0, n]]
+  while (stack.length > 0 && indices.length < maxPoints * 3) {
+    const seg = stack.pop()
+    if (!seg) break
+    const [lo, hi] = seg
+    const len = hi - lo
+    if (len < 2 * minSeg) continue
+    let bestK = -1, bestScore = 0, bestDelta = 0
+    for (let k = minSeg; k <= len - minSeg; k++) {
+      const mb = mean(series.slice(lo, lo + k))
+      const ma = mean(series.slice(lo + k, hi))
+      const score = Math.abs(ma - mb) * Math.sqrt((k * (len - k)) / len)
+      if (score > bestScore) { bestScore = score; bestK = lo + k; bestDelta = ma - mb }
+    }
+    if (bestK < 0 || Math.abs(bestDelta) < threshold) continue
+    indices.push(bestK)
+    stack.push([lo, bestK])
+    stack.push([bestK, hi])
+  }
+  if (indices.length === 0) return []
+  indices.sort((a, b) => a - b)
+
+  // Recalcular before/after de cada corte con el promedio de sus segmentos
+  // adyacentes (entre cortes vecinos), y descartar los que ya no superan el ruido.
+  const bounds = [0, ...indices, n]
+  const segMeans = bounds.slice(0, -1).map((b, i) => mean(series.slice(b, bounds[i + 1])))
+  const out: ChangePoint[] = []
+  for (let i = 0; i < indices.length; i++) {
+    const mb = segMeans[i], ma = segMeans[i + 1]
+    if (Math.abs(ma - mb) < threshold) continue
+    out.push({ index: indices[i], beforeAvg: round2(mb), afterAvg: round2(ma), delta: round2(ma - mb) })
+  }
+  if (out.length > maxPoints) {
+    return [...out]
+      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+      .slice(0, maxPoints)
+      .sort((a, b) => a.index - b.index)
+  }
+  return out
+}
