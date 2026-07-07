@@ -24,6 +24,7 @@ import { InfluenceMapCard } from '@/components/influence/InfluenceMapCard'
 import { cn } from '@/lib/utils'
 import type { RehearseResult, Likelihood } from '@/lib/influence/rehearsePrompt'
 import { trackAiError } from '@/lib/analytics/track'
+import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
 
 const LIKELIHOOD: Record<Likelihood, { label: string; cls: string }> = {
   plausible: { label: 'plausible', cls: 'border-brand/40 text-brand' },
@@ -48,6 +49,7 @@ function EnsayoContent() {
   const [objective, setObjective] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [result, setResult] = useState<RehearseResult | null>(null)
   const [forName, setForName] = useState('')
   const [hadContext, setHadContext] = useState(true)
@@ -82,6 +84,7 @@ function EnsayoContent() {
         return
       }
       setResult(j.result); setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
+      setReloadKey((k) => k + 1) // refrescar el histórico con el ensayo recién hecho
     } catch (e) {
       trackAiError('rehearse', { status: 0, message: e instanceof Error ? e.message : String(e) }) // GA4
       setError(e instanceof Error ? e.message : String(e))
@@ -147,6 +150,8 @@ function EnsayoContent() {
       {personId && <InfluenceMapCard targetId={personId} />}
 
       {result && <RehearseView result={result} forName={forName} hadContext={hadContext} />}
+
+      <RehearsalHistoryPanel personId={personId || undefined} reloadKey={reloadKey} />
     </AppShell>
   )
 }

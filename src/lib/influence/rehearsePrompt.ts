@@ -32,6 +32,10 @@ export interface RehearseContext {
   conversation?: string
   /** Estado bio de Aaron (ventana de tolerancia), ya renderizado. */
   selfState?: string
+  /** Fase del ciclo + atunamiento M6 (solo romántico), marco de CUIDADO. */
+  cycleNote?: string
+  /** Pulso de la conversación (C0): ritmo/tono/iniciativa recientes. */
+  pulse?: string
 }
 
 export type Likelihood = 'plausible' | 'optimista' | 'dificil'
@@ -136,6 +140,12 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
   }
   if (ctx.conversation && ctx.conversation.trim()) {
     lines.push('', ctx.conversation.trim().slice(0, 3500))
+  }
+  if (ctx.pulse && ctx.pulse.trim()) {
+    lines.push('', ctx.pulse.trim().slice(0, 500))
+  }
+  if (ctx.cycleNote && ctx.cycleNote.trim()) {
+    lines.push('', ctx.cycleNote.trim().slice(0, 800))
   }
   if (ctx.selfState && ctx.selfState.trim()) {
     lines.push('', ctx.selfState.trim().slice(0, 800))

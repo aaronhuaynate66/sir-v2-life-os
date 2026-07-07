@@ -14,6 +14,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { logEvent } from '@/lib/observability/logEvent'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
+import { gatherRehearseExtras } from '@/lib/influence/rehearseContext'
 import { getSelfBioState } from '@/lib/people/selfState'
 import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext, type RehearseResult } from '@/lib/influence/rehearsePrompt'
 import { checkEthics } from '@/engines/ethics'
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const { data: person } = await supabase
     .from('people')
-    .select('id, name, title, organization, relationship, ambito')
+    .select('id, name, title, organization, relationship, ambito, cycle_start_date, cycle_length_days')
     .eq('user_id', userId)
     .eq('id', personId)
     .maybeSingle()
@@ -100,6 +101,21 @@ export async function POST(req: NextRequest) {
     if (bio.block) selfState = bio.block
   } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
 
+  // Contexto rico (motor de predicción + M6): ciclo/atunamiento (romántico, marco
+  // de cuidado) + Pulso de la conversación (C0). selfState ya lo tenemos arriba.
+  let cycleNote: string | undefined
+  let pulse: string | undefined
+  try {
+    const extras = await gatherRehearseExtras(supabase, userId, {
+      id: personId,
+      relationship: (person.relationship as string) ?? null,
+      cycleStartDate: (person.cycle_start_date as string) ?? null,
+      cycleLengthDays: (person.cycle_length_days as number) ?? null,
+    }, Date.now())
+    cycleNote = extras.cycleNote
+    pulse = extras.pulse
+  } catch (e) { reportApiError(e, { route: 'influence/rehearse' }) }
+
   const ctx: RehearseContext = {
     personName,
     role: (person.title as string) ?? undefined,
@@ -109,6 +125,8 @@ export async function POST(req: NextRequest) {
     memories,
     conversation,
     selfState,
+    cycleNote,
+    pulse,
   }
   const user = buildRehearseUserContent(ctx, objective)
 
@@ -156,5 +174,17 @@ export async function POST(req: NextRequest) {
   }
 
   await logEvent(supabase, userId, { type: 'rehearse', ok: true, route: 'influence/rehearse', durationMs: Date.now() - t0, meta: { personId, scenarios: result.scenarios.length } })
+
+  // Histórico de simulaciones (best-effort, no bloquea la respuesta).
+  try {
+    await supabase.from('rehearsal_sessions').insert({
+      user_id: userId, person_id: personId, person_name: personName, objective, result,
+      context_used: {
+        cycle: !!cycleNote, pulse: !!pulse, selfState: !!selfState,
+        memories: memories.length, conversation: !!conversation,
+      },
+    })
+  } catch (e) { reportApiError(e, { route: 'influence/rehearse', stage: 'persist' }) }
+
   return NextResponse.json({ result, person: { name: ctx.personName, hadContext: memories.length > 0 } })
 }
