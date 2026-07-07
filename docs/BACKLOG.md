@@ -122,6 +122,12 @@
 - **NO tocar:** la síntesis narrativa, facts, extractedDates, tono×fase — eso anda bien.
 - **Escenario elegido (07-06):** marcado PENDIENTE; avanzamos con otras cosas y esto se ataca por estos 4 puntos.
 
+### BUG-006 ⬜ PENDIENTE [P2]: el eje profesional no toma los facts del chat
+- **Hallado en la auditoría de Diana (`docs/audits/2026-07-06_diana.md`).**
+- **Síntoma:** el chat dice que Diana trabaja en la notaría Rosalía Mejía — SIR lo extrae como `fact` de la observación `whatsapp_chat`, pero el **eje profesional** (`person_profile_axes.professional_text`) queda VACÍO porque `computeProfessionalAxis` solo lee capturas de LinkedIn.
+- **Fix:** derivar (o completar) el eje profesional también desde los `facts`/summary del chat cuando no hay LinkedIn. + idea relacionada: la **última interacción** debería tomar el último MENSAJE (dateRange.last del whatsapp_chat), no el último rating manual.
+- **Feature ligada ("crear para poder cambiarlo"):** override manual de campos de perfil (contadores, bio, trabajo) sin re-capturar — hoy se corrige creando una observación a mano.
+
 ---
 
 ## 🆕 BACKLOG NUEVO
