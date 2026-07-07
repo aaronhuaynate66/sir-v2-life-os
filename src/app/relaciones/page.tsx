@@ -30,6 +30,7 @@ import {
   CADENCE_PRESETS, storedToPreset, presetToStored, parseCustomDays,
   describeCadence, cadenceStatus,
 } from '@/lib/people/cadence'
+import { relationshipMode } from '@/lib/relational/health'
 import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import type { SpecialDate } from '@/types'
@@ -713,6 +714,12 @@ function RelationshipsContent() {
                             Ultimo contacto: <span className="text-foreground font-medium font-mono tabular-nums">{lastContactDisplay}</span>
                           </span>
                           {(() => {
+                            // LÍNEA ÉTICA (doc 15/16): la cadencia como cuota/estado
+                            // "atrasado" es lenguaje de gestión — válido para vínculos
+                            // PROFESIONALES, jamás para afectivos (familia/amigos/pareja),
+                            // que reciben presencia, no agenda. Su cuidado ya vive en la
+                            // ventana de contacto + termómetro + salud del vínculo (ficha).
+                            if (relationshipMode(person.relationship) === 'affective') return null
                             const desc = describeCadence(person.contactFrequency, person.category)
                             const st = cadenceStatus(person.lastContact ? daysSince(person.lastContact) : null, desc.days)
                             const stColor = st.state === 'atrasado'
