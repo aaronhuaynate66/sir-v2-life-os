@@ -6,7 +6,7 @@
 // Incluye los controles de indexado (embeddings) que antes estaban en /buscar.
 
 import { useState } from 'react'
-import { track, EVENTS } from '@/lib/analytics/track'
+import { track, trackAiError, EVENTS } from '@/lib/analytics/track'
 import { Sparkles, Loader2, RefreshCw } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -45,7 +45,9 @@ export function SemanticSearchPanel() {
       setResults(results)
       track(EVENTS.searchPerformed, { results: results.length })
     } catch (e) {
-      setError(toApiError(e))
+      const apiErr = toApiError(e)
+      trackAiError('memory_search', apiErr) // GA4
+      setError(apiErr)
       setResults(null)
     } finally {
       setSearching(false)

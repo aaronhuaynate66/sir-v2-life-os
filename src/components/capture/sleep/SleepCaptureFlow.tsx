@@ -15,6 +15,7 @@ import { SleepCaptureProcessing } from './SleepCaptureProcessing'
 import { SleepCapturePreview } from './SleepCapturePreview'
 import { SleepCaptureSuccess } from './SleepCaptureSuccess'
 
+import { trackAiError } from '@/lib/analytics/track'
 import { compressImage } from '@/lib/capture/scale/compress'
 import {
   extractSleepPanel,
@@ -62,6 +63,7 @@ export function SleepCaptureFlow() {
         setStep({ kind: 'preview', previewUrl: url, extracted })
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Error inesperado al procesar la imagen.'
+        trackAiError('capture_sleep', { status: 0, message }) // GA4
         setStep({ kind: 'error', message })
       }
     },

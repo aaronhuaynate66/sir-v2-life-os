@@ -23,6 +23,7 @@ import { HeartRateCaptureProcessing } from './HeartRateCaptureProcessing'
 import { HeartRateCapturePreview } from './HeartRateCapturePreview'
 import { HeartRateCaptureSuccess } from './HeartRateCaptureSuccess'
 
+import { trackAiError } from '@/lib/analytics/track'
 import { compressImage } from '@/lib/capture/scale/compress'
 import {
   extractHeartRatePanel,
@@ -78,6 +79,7 @@ export function HeartRateCaptureBranch({ file, onReset }: HeartRateCaptureBranch
       } catch (e) {
         if (cancelled) return
         const message = e instanceof Error ? e.message : 'Error inesperado al procesar la imagen.'
+        trackAiError('capture_hr', { status: 0, message }) // GA4
         setStep({ kind: 'error', message })
       }
     })()

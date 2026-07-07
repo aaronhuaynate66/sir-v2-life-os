@@ -16,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { trackAiError } from '@/lib/analytics/track'
 import { createPerson, searchPeople, type PersonCandidate } from '@/lib/capture/observations/client'
 import { createClient } from '@/lib/supabase/client'
 import { interpretChunk, persistWhatsAppExport, archiveConversation } from '@/lib/capture/whatsapp/export/client'
@@ -132,6 +133,7 @@ export function ImportarLlamada() {
       setInputMode('text') // pasa a revisión: ve el texto antes de procesar
       setProgress(null)
     } catch {
+      trackAiError('call_import', { status: 0, message: 'No se pudo procesar el audio. Reintentá.' }) // GA4
       setErr('No se pudo procesar el audio. Reintentá.')
     } finally { setTranscribing(false); setProgress(null) }
   }
@@ -164,7 +166,10 @@ export function ImportarLlamada() {
       const { text } = (await res.json()) as { text: string }
       if (text && text.trim()) setTranscript((prev) => (prev ? `${prev}\n${text.trim()}` : text.trim()))
       setChunkStatus(null)
-    } catch { setChunkStatus('Error transcribiendo el tramo.') }
+    } catch {
+      trackAiError('call_import', { status: 0, message: 'Error transcribiendo el tramo.' }) // GA4
+      setChunkStatus('Error transcribiendo el tramo.')
+    }
   }
 
   function startChunk() {
@@ -275,6 +280,7 @@ export function ImportarLlamada() {
       setDone({ summary: data.summary as string, quality: consolidated.interactionQuality })
       setProgress(null)
     } catch {
+      trackAiError('call_import', { status: 0, message: 'No se pudo procesar la llamada. Reintentá en un momento.' }) // GA4
       setErr('No se pudo procesar la llamada. Reintentá en un momento.')
       setProgress(null)
     } finally { setBusy(false) }

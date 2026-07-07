@@ -9,6 +9,7 @@
 import { useMemo, useState } from 'react'
 import { BrainCircuit, Loader2, ShieldCheck, Compass } from 'lucide-react'
 
+import { trackAiError } from '@/lib/analytics/track'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -51,6 +52,7 @@ export default function AlterEgoPage() {
       if (!res.ok) { setErr(data.error ?? 'No se pudo consultar'); return }
       setResult(data.result ?? null); setVoice(data.voice)
     } catch {
+      trackAiError('alter_ego', { status: 0, message: 'No se pudo consultar. Reintentá.' }) // GA4
       setErr('No se pudo consultar. Reintentá.')
     } finally {
       setBusy(false)

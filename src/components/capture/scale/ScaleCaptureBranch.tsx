@@ -23,6 +23,7 @@ import { ScaleCaptureProcessing } from './ScaleCaptureProcessing'
 import { ScaleCapturePreview } from './ScaleCapturePreview'
 import { ScaleCaptureSuccess } from './ScaleCaptureSuccess'
 
+import { trackAiError } from '@/lib/analytics/track'
 import { compressImage } from '@/lib/capture/scale/compress'
 import { extractScaleCapture, persistScaleCapture } from '@/lib/capture/scale/client'
 import type { ScaleCaptureExtracted, ScaleMetric } from '@/lib/capture/scale/types'
@@ -75,6 +76,7 @@ export function ScaleCaptureBranch({ file, onReset }: ScaleCaptureBranchProps) {
       } catch (e) {
         if (cancelled) return
         const message = e instanceof Error ? e.message : 'Error inesperado al procesar la imagen.'
+        trackAiError('capture_scale', { status: 0, message }) // GA4
         setStep({ kind: 'error', message })
       }
     })()

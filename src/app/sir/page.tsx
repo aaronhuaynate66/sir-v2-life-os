@@ -10,7 +10,7 @@ import { Sparkles, Send, Loader2, ArrowLeft, User, Check, X, CalendarCheck, Mic,
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
-import { track, EVENTS } from '@/lib/analytics/track'
+import { track, trackAiError, EVENTS } from '@/lib/analytics/track'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useRelationshipStore } from '@/stores'
 import { generateSlug } from '@/lib/people/slug'
@@ -335,6 +335,7 @@ export default function SirChatPage() {
       setTurns((t) => [...t, { role: 'sir', text: data.answer ?? '', sources: data.sources, action: action ?? undefined, actionState: action ? 'pending' : undefined }])
       setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     } catch {
+      trackAiError('sir_ask', { status: 0, message: 'Error de red' }) // GA4
       setError('Error de red')
     } finally {
       setLoading(false)

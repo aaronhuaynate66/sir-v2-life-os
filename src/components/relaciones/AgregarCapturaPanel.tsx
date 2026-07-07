@@ -24,7 +24,7 @@
 // (con person_id fijo). La báscula es self (health_metrics, sin persona).
 
 import { useCallback, useRef, useState } from 'react'
-import { track, trackCapture, EVENTS } from '@/lib/analytics/track'
+import { track, trackCapture, trackAiError, EVENTS } from '@/lib/analytics/track'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Camera, Loader2, Check, ArrowRight, Scale, AlertCircle, Eye, FileText, ClipboardPaste, X, Images, MessagesSquare, Upload, CalendarHeart, Repeat } from 'lucide-react'
@@ -536,7 +536,9 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
       } else if (verdict === 'ok') await persistConfirmed(state)
       else setPhase('review')
     } catch (e) {
-      setError(toError(e))
+      const errState = toError(e)
+      trackAiError('capture', errState) // GA4
+      setError(errState)
       setPhase('idle')
     }
   }, [pastedText, textType, persistConfirmed])
@@ -855,7 +857,9 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
       })
       setPhase('review')
     } catch (e) {
-      setError(toError(e))
+      const errState = toError(e)
+      trackAiError('capture', errState) // GA4
+      setError(errState)
       setPhase('idle')
     }
   }, [waFile, personName, personId, transcribeAudios, readImages, readStickers])

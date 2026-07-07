@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
+import { trackAiError } from '@/lib/analytics/track'
 import type { BriefRelation, BriefResult } from '@/lib/horario/brief'
 import type { DailyAction } from '@/lib/daily-actions/build'
 
@@ -117,7 +118,9 @@ export function BriefPanel({
         )
         setGen({ status: 'ready', result: { brief, focus: focus ?? '' }, cached })
       } catch (e) {
-        setGen({ status: 'error', error: toApiError(e) })
+        const apiErr = toApiError(e)
+        trackAiError('horario_brief', apiErr) // GA4
+        setGen({ status: 'error', error: apiErr })
       }
     },
     [scope, signals, enrichRelations],

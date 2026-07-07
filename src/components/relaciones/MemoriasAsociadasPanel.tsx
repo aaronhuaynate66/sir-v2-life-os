@@ -28,6 +28,7 @@ import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { DiscardMemoryButton } from '@/components/relaciones/DiscardMemoryButton'
 import { TogglePrivateMemoryButton } from '@/components/relaciones/TogglePrivateMemoryButton'
 import { parseErrorResponse, type ApiError } from '@/lib/api/errors'
+import { trackAiError } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 import { useMounted } from '@/hooks/useMounted'
 import type { Memory, MemoryType } from '@/types'
@@ -148,6 +149,7 @@ export function MemoriasAsociadasPanel({
       router.refresh()
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
+      trackAiError('memories_derive', { status: 0, detail: msg }) // GA4
       setError({ status: 0, message: 'Red caída o request abortado', detail: msg })
     } finally {
       setLoading(false)
@@ -173,6 +175,7 @@ export function MemoriasAsociadasPanel({
       router.refresh()
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
+      trackAiError('memories_derive', { status: 0, detail: msg }) // GA4
       setDeriveError({ status: 0, message: 'Red caída o request abortado', detail: msg })
     } finally {
       setDeriving(false)
