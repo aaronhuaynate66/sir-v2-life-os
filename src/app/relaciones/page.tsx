@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useRelationshipStore, useMemoryStore } from '@/stores'
 import { computeContactWindow } from '@/lib/relationships/contactWindow'
+import { relationStrength, STRENGTH_LABEL, type RelationStrength } from '@/lib/relationships/strength'
 import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import type { SpecialDate } from '@/types'
@@ -110,6 +111,12 @@ const ENERGY_CLASS: Record<EnergyImpact, string> = {
   draining: 'border-bad/30 bg-bad-soft text-bad-foreground',
 }
 
+const STRENGTH_CLASS: Record<RelationStrength, string> = {
+  alta: 'border-ok/40 text-ok',
+  media: 'border-border text-muted-foreground',
+  baja: 'border-border/60 text-muted-foreground/70',
+}
+
 const URGENCY_CLASS: Record<'immediate' | 'soon' | 'monitor', string> = {
   immediate: 'border-bad/30 bg-bad-soft text-bad-foreground',
   soon: 'border-warn/30 bg-warn-soft text-warn-foreground',
@@ -160,6 +167,7 @@ function RelationshipsContent() {
 
   const [showForm, setShowForm] = useState(false)
   const [ambitoFilter, setAmbitoFilter] = useState<'todos' | PersonAmbito>('todos')
+  const [strengthFilter, setStrengthFilter] = useState<'todas' | RelationStrength>('todas')
   const [query, setQuery] = useState('')
   const [avatars, setAvatars] = useState<Record<string, string>>({})
   useEffect(() => { let alive = true; void fetchAvatars().then((m) => { if (alive) setAvatars(m) }); return () => { alive = false } }, [])
@@ -557,6 +565,23 @@ function RelationshipsContent() {
         </div>
       )}
 
+      {people.length > 0 && (
+        <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+          <span className="text-[11px] uppercase tracking-wide text-muted-foreground/70 mr-1">Fuerza</span>
+          {([
+            ['todas', 'Todas'],
+            ['alta', `Fuerte (${people.filter((p) => relationStrength(p.importanceScore) === 'alta').length})`],
+            ['media', `Media (${people.filter((p) => relationStrength(p.importanceScore) === 'media').length})`],
+            ['baja', `Débil (${people.filter((p) => relationStrength(p.importanceScore) === 'baja').length})`],
+          ] as const).map(([k, label]) => (
+            <button key={k} type="button" onClick={() => setStrengthFilter(k as 'todas' | RelationStrength)}
+              className={`rounded-full border px-3 py-1 text-xs ${strengthFilter === k ? 'border-brand bg-brand text-brand-foreground' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {people.length === 0 ? (
         <EmptyState
           icon={Users}
@@ -572,7 +597,11 @@ function RelationshipsContent() {
       ) : (
         <div className="space-y-3">
           {(() => {
-            const filtered = people.filter((p) => (ambitoFilter === 'todos' || effectiveAmbito(p) === ambitoFilter) && matchesQuery(p))
+            const filtered = people.filter((p) =>
+              (ambitoFilter === 'todos' || effectiveAmbito(p) === ambitoFilter) &&
+              (strengthFilter === 'todas' || relationStrength(p.importanceScore) === strengthFilter) &&
+              matchesQuery(p),
+            )
             if (filtered.length === 0) {
               return (
                 <p className="text-sm text-muted-foreground py-6 text-center">Sin resultados para &ldquo;{query}&rdquo;.</p>
@@ -597,6 +626,7 @@ function RelationshipsContent() {
                           <Badge variant="outline" className="text-[10px] font-normal">{relationshipTypeLabel(person.relationship)}</Badge>
                           <Badge variant="outline" className="text-[10px] font-normal">{personCategoryLabel(person.category)}</Badge>
                           <Badge variant="outline" className="text-[10px] font-normal border-brand/40 text-brand-soft-foreground">{AMBITO_LABEL[effectiveAmbito(person)]}</Badge>
+                          <Badge variant="outline" className={cn('text-[10px] font-normal', STRENGTH_CLASS[relationStrength(person.importanceScore)])}>{STRENGTH_LABEL[relationStrength(person.importanceScore)]}</Badge>
                           <ScoreTrendChip trend={scoreTrends[person.id]} />
                         </div>
 
