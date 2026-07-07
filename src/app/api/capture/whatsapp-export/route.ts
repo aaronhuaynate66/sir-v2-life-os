@@ -63,16 +63,20 @@ function sanitizeData(raw: unknown): { data: Record<string, unknown>; confidence
     ? d.emotionalStates
     : {}) as Record<string, unknown>
 
-  // rawMessages: muestra acotada (evidencia). Validamos shape mínima.
+  // rawMessages: muestra (evidencia + Pulso C0). Se conserva `iso` (fecha+hora
+  // completa) — SIN él C0 no puede ubicar los mensajes en el tiempo y el Pulso
+  // queda vacío (BUG-007). El cap sube a 1000 para dar span real; el grueso de la
+  // síntesis vive igual en summary/blockSummaries.
   const rawMessages = Array.isArray(d.rawMessages)
     ? d.rawMessages
-        .slice(0, 40)
+        .slice(0, 1000)
         .map((m) => {
           const o = (m && typeof m === 'object' ? m : {}) as Record<string, unknown>
           return {
             timestamp: typeof o.timestamp === 'string' ? o.timestamp.slice(0, 5) : '00:00',
+            iso: typeof o.iso === 'string' && o.iso.length >= 10 ? o.iso.slice(0, 40) : null,
             author: o.author === 'user' ? 'user' : 'other',
-            content: typeof o.content === 'string' ? o.content.slice(0, 500) : '',
+            content: typeof o.content === 'string' ? o.content.slice(0, 300) : '',
           }
         })
         .filter((m) => m.content.length > 0)
