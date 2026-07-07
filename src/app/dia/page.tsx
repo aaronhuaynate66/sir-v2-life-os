@@ -77,7 +77,7 @@ export default function DiaPage() {
           ))}
           <div className="ml-auto flex items-center gap-2">
             <button type="button" onClick={() => setDate((d) => shift(d, -1))} aria-label="Día anterior" className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground"><ChevronLeft size={16} /></button>
-            <input type="date" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)}
+            <input type="date" aria-label="Fecha a revisar" value={date} max={today} onChange={(e) => e.target.value && setDate(e.target.value)}
               className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground" />
             <button type="button" onClick={() => setDate((d) => (d < today ? shift(d, 1) : d))} aria-label="Día siguiente" className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground"><ChevronRight size={16} /></button>
           </div>

@@ -604,6 +604,7 @@ export function MisCapturas() {
           <input
             ref={inputRef}
             type="file"
+            aria-label="Elegir capturas de salud o perfil propio"
             multiple
             accept="image/jpeg,image/png,image/webp,image/gif,application/json,application/zip,.json,.zip"
             onChange={onFiles}

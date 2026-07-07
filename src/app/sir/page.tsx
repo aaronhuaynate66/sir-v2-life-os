@@ -412,6 +412,7 @@ export default function SirChatPage() {
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Modelo</span>
             <select
+              aria-label="Modelo de SIR"
               value={model}
               onChange={(e) => changeModel(e.target.value as SirModelTier)}
               className="rounded-lg border border-border bg-card px-2 py-1 text-[12px] text-foreground/90 outline-none"
@@ -482,6 +483,7 @@ export default function SirChatPage() {
                       <div className="flex items-center gap-2">
                         <input
                           type={t.clarifying.inputType}
+                          aria-label={t.clarifying.ephemeral ? 'Respuesta contextual para SIR' : 'Dato que SIR necesita'}
                           value={clarifyDraft[i] ?? ''}
                           onChange={(e) => setClarifyDraft((d) => ({ ...d, [i]: e.target.value }))}
                           placeholder={t.clarifying.inputType === 'text' ? 'Tu respuesta…' : ''}
@@ -542,6 +544,7 @@ export default function SirChatPage() {
                               return (
                                 <label key={g.id} className="flex items-center gap-2 py-0.5 text-[13px] text-foreground/90 cursor-pointer">
                                   <input
+                                    aria-label={`Cerrar objetivo ligado: ${g.title}`}
                                     type="checkbox"
                                     checked={checked}
                                     disabled={t.actionState === 'done' || t.actionState === 'discarded'}
@@ -590,6 +593,7 @@ export default function SirChatPage() {
           className="sticky bottom-4 flex items-end gap-2 rounded-2xl border border-border bg-card p-2 shadow-lg"
         >
           <textarea
+            aria-label="Mensaje para SIR"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {

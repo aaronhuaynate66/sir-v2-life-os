@@ -52,7 +52,14 @@ export function ResetImportaciones() {
         <div className="space-y-1.5 mb-3">
           {SCOPES.map((s) => (
             <label key={s.id} className="flex items-start gap-2 text-sm">
-              <input type="checkbox" checked={sel[s.id]} disabled={running} onChange={(e) => setSel((p) => ({ ...p, [s.id]: e.target.checked }))} className="mt-0.5" />
+              <input
+                type="checkbox"
+                aria-label={`Incluir ${s.label.toLowerCase()} en el reset`}
+                checked={sel[s.id]}
+                disabled={running}
+                onChange={(e) => setSel((p) => ({ ...p, [s.id]: e.target.checked }))}
+                className="mt-0.5"
+              />
               <span>
                 <span className={s.danger ? 'text-bad' : 'text-foreground'}>{s.label}</span>
                 <span className="block text-[11px] text-muted-foreground">{s.hint}</span>
@@ -68,7 +75,7 @@ export function ResetImportaciones() {
         ) : (
           <>
             <label className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-              <input type="checkbox" checked={confirm} disabled={running} onChange={(e) => setConfirm(e.target.checked)} />
+              <input type="checkbox" aria-label="Confirmar reset irreversible de importaciones" checked={confirm} disabled={running} onChange={(e) => setConfirm(e.target.checked)} />
               Entiendo que es irreversible y que tendré que re-importar.
             </label>
             {err && <div className="text-xs text-bad mb-2">{err}</div>}

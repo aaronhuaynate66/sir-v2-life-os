@@ -387,7 +387,14 @@ function CapturaIndexContent() {
 
       <ImportarGrupo />
 
-      <ResetImportaciones />
+      <details className="mb-6 group">
+        <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 py-1 text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans select-none hover:text-foreground transition-colors">
+          Zona avanzada de importaciones
+        </summary>
+        <div className="pt-3">
+          <ResetImportaciones />
+        </div>
+      </details>
 
       <div className="mb-6">
         <ImportarLlamada />
@@ -402,6 +409,7 @@ function CapturaIndexContent() {
             </label>
             <input
               type="file"
+              aria-label="Elegir imagen o PDF para capturar"
               accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf"
               onChange={onFile}
               disabled={detectLoading || processLoading}
@@ -503,6 +511,7 @@ function CapturaIndexContent() {
                   </label>
                   <input
                     type="text"
+                    aria-label="Buscar persona para vincular la captura"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Nombre, alias, @handle, teléfono…"
@@ -561,6 +570,7 @@ function CapturaIndexContent() {
                     <div className="space-y-2">
                       <input
                         type="text"
+                        aria-label="Nombre de la persona nueva"
                         value={createName}
                         onChange={(e) => setCreateName(e.target.value)}
                         placeholder="Nombre de la persona nueva"

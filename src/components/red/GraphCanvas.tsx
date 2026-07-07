@@ -278,7 +278,7 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
 
       ctx.restore()
     },
-    [hovered, nodeActive],
+    [hovered, nodeActive, riskById],
   )
 
   const paintNodePointerArea = useCallback(

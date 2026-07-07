@@ -696,6 +696,7 @@ function GoalsContent() {
                         <Button
                           variant="outline"
                           size="sm"
+                          aria-label={`Generar plan con IA para ${g.title}`}
                           className="border-brand/30 text-brand-soft-foreground hover:bg-brand-soft"
                           onClick={() => { setStepsOpenId(g.id); setAutoGenId(g.id) }}
                         >
@@ -706,6 +707,7 @@ function GoalsContent() {
                           <Button
                             variant="outline"
                             size="sm"
+                            aria-label={`Definir objetivo ${g.title}`}
                             className="border-brand/30 text-brand-soft-foreground hover:bg-brand-soft"
                             onClick={() => setWizardGoalId(g.id)}
                           >
@@ -720,8 +722,8 @@ function GoalsContent() {
                     {!hasSteps && progressId === g.id && (
                       <div className="flex gap-2 mb-2 flex-wrap">
                         <Input type="number" min="0" max="100" placeholder="% nuevo progreso" value={progressVal} onChange={e => setProgressVal(e.target.value)} className="flex-1 min-w-0 max-w-[10rem] font-mono" />
-                        <Button variant="outline" size="sm" onClick={saveProgress}>Guardar</Button>
-                        <Button variant="ghost" size="sm" onClick={cancelProgress}>Cancelar</Button>
+                        <Button variant="outline" size="sm" aria-label={`Guardar progreso de ${g.title}`} onClick={saveProgress}>Guardar</Button>
+                        <Button variant="ghost" size="sm" aria-label={`Cancelar edición de progreso de ${g.title}`} onClick={cancelProgress}>Cancelar</Button>
                       </div>
                     )}
                     </>)}
@@ -743,6 +745,7 @@ function GoalsContent() {
                       size="sm"
                       onClick={() => handleToggleAnchor(g)}
                       aria-pressed={!!g.isAnchor}
+                      aria-label={g.isAnchor ? `Quitar ${g.title} como norte del año` : `Marcar ${g.title} como norte del año`}
                       title={g.isAnchor ? 'Quitar como norte del año' : 'Marcar como norte del año'}
                       className={cn(g.isAnchor && 'text-brand-soft-foreground')}
                     >
@@ -750,12 +753,12 @@ function GoalsContent() {
                       Ancla
                     </Button>
                     {!hasSteps && (
-                      <Button variant="ghost" size="sm" onClick={() => { setProgressId(g.id === progressId ? null : g.id); setProgressVal(String(g.progress)) }}>%</Button>
+                      <Button variant="ghost" size="sm" aria-label={`Editar progreso de ${g.title}`} onClick={() => { setProgressId(g.id === progressId ? null : g.id); setProgressVal(String(g.progress)) }}>%</Button>
                     )}
-                    <Button variant="ghost" size="sm" onClick={() => startEdit(g)}>Editar</Button>
+                    <Button variant="ghost" size="sm" aria-label={`Editar ${g.title}`} onClick={() => startEdit(g)}>Editar</Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">Completar</Button>
+                        <Button variant="outline" size="sm" aria-label={`Completar ${g.title}`} className="border-ok/30 bg-ok-soft text-ok-foreground hover:bg-ok/20 hover:text-ok-foreground">Completar</Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
@@ -772,7 +775,7 @@ function GoalsContent() {
                     </AlertDialog>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">Pausar</Button>
+                        <Button variant="ghost" size="sm" aria-label={`Pausar ${g.title}`}>Pausar</Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
@@ -789,7 +792,7 @@ function GoalsContent() {
                     </AlertDialog>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-bad hover:text-bad hover:bg-bad/10">Eliminar</Button>
+                        <Button variant="ghost" size="sm" aria-label={`Eliminar ${g.title}`} className="text-bad hover:text-bad hover:bg-bad/10">Eliminar</Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>

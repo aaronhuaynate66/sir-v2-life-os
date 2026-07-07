@@ -648,6 +648,7 @@ export function IntakeInteligente() {
         <div className="space-y-2">
           <input
             type="file"
+            aria-label="Elegir archivos para intake inteligente"
             multiple
             accept=".zip,.txt,image/jpeg,image/png,image/webp"
             disabled={phase === 'analyzing' || phase === 'importing'}
@@ -681,6 +682,7 @@ export function IntakeInteligente() {
               …o pegá el texto de su perfil (LinkedIn / Instagram)
             </label>
             <textarea
+              aria-label="Texto del perfil para intake inteligente"
               value={profileText}
               onChange={(e) => { setProfileText(e.target.value); setSuggestion(null); setPhase('idle'); setError(null); setSelected(null) }}
               rows={3}
@@ -720,6 +722,7 @@ export function IntakeInteligente() {
               <div>
                 <label className="text-xs text-muted-foreground">Nombre</label>
                 <input value={name} onChange={(e) => setName(e.target.value)}
+                  aria-label="Nombre propuesto"
                   className="mt-1 w-full rounded border border-border bg-background px-3 py-1.5 text-sm" />
               </div>
               {suggestion.organization && (
@@ -732,6 +735,7 @@ export function IntakeInteligente() {
                 <div>
                   <label className="text-xs text-muted-foreground">Relación</label>
                   <select value={relationship} onChange={(e) => setRelationship(e.target.value as RelationshipType)}
+                    aria-label="Tipo de relación"
                     className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
                     {REL_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
                   </select>
@@ -739,6 +743,7 @@ export function IntakeInteligente() {
                 <div>
                   <label className="text-xs text-muted-foreground">Categoría</label>
                   <select value={category} onChange={(e) => setCategory(e.target.value as PersonCategory)}
+                    aria-label="Categoría de persona"
                     className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
                     {CAT_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
                   </select>

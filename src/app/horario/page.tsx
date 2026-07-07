@@ -21,7 +21,7 @@ import { Clock, ChevronRight } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
-import { RouteSkeleton, SkeletonBlocks } from '@/components/skeletons/RouteSkeleton'
+import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { LIMA_TZ_LABEL } from '@/lib/calendar/tz'
 import type { CalendarEvent, CalendarFeedResult } from '@/lib/calendar/types'
 import { buildCockpit } from '@/lib/horario/cockpit'
@@ -40,7 +40,7 @@ import dynamic from 'next/dynamic'
 // arriba). Al usarlo con dynamic ssr:false, sale del First Load JS de /horario.
 const HorarioCalendar = dynamic(
   () => import('@/components/horario/HorarioCalendar').then((m) => ({ default: m.HorarioCalendar })),
-  { ssr: false, loading: () => <div className="h-[500px] rounded-lg border border-border animate-pulse" /> },
+  { ssr: false, loading: () => <CalendarLoadingState /> },
 )
 
 type CalendarState =
@@ -52,6 +52,14 @@ export default function HorarioPage() {
   const hydrated = useHasHydrated()
   if (!hydrated) return <RouteSkeleton cards={3} />
   return <HorarioContent />
+}
+
+function CalendarLoadingState() {
+  return (
+    <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
+      Cargando calendario…
+    </div>
+  )
 }
 
 function HorarioContent() {
@@ -182,7 +190,7 @@ function HorarioContent() {
 
       {/* El calendario primero: es lo que el usuario vino a ver. */}
       {now == null || calendarLoading ? (
-        <SkeletonBlocks cards={3} header={false} />
+        <CalendarLoadingState />
       ) : (
         <HorarioCalendar events={boardEvents} onAssignTime={handleAssignTime} />
       )}

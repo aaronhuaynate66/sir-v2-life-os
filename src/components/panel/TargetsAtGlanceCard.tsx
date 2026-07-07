@@ -34,7 +34,7 @@ export function TargetsAtGlanceCard({ now, healthMetrics }: TargetsAtGlanceCardP
   const goals = useGoalStore((s) => s.goals)
   const financialMovements = useFinanceStore((s) => s.financialMovements)
   const storeHealth = useSelfStore((s) => s.healthMetrics)
-  const health = healthMetrics ?? storeHealth ?? []
+  const health = useMemo(() => healthMetrics ?? storeHealth ?? [], [healthMetrics, storeHealth])
 
   const income = useMemo(
     () => computeIncomeTargetProgress(goals, financialMovements, now ?? new Date()),

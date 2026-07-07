@@ -165,6 +165,7 @@ function MemoryContent() {
         <div className="relative flex-1 min-w-[200px]">
           <Search size={14} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" />
           <Input
+            aria-label="Buscar en memorias"
             placeholder="Buscar en memorias..."
             value={search}
             onChange={(e) => {

@@ -322,7 +322,7 @@ function SaludContent() {
                   ))}
                 </div>
               )}
-              <Input type="text" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
+              <Input type="text" aria-label="Nota de la métrica" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
               <Button onClick={addMetric} variant="outline" className="w-full">+ Registrar</Button>
             </div>
           </CardContent>
@@ -332,13 +332,14 @@ function SaludContent() {
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Moon} label="Registrar sueño" />
             <div className="space-y-2">
-              <Input type="number" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono tabular-nums" />
+              <Input type="number" aria-label="Horas dormidas" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono tabular-nums" />
               <div className="flex gap-2">
-                <Input type="time" value={sBed} onChange={e => setSBed(e.target.value)} className="font-mono" />
-                <Input type="time" value={sWake} onChange={e => setSWake(e.target.value)} className="font-mono" />
+                <Input type="time" aria-label="Hora de dormir" value={sBed} onChange={e => setSBed(e.target.value)} className="font-mono" />
+                <Input type="time" aria-label="Hora de despertar" value={sWake} onChange={e => setSWake(e.target.value)} className="font-mono" />
               </div>
-              <Input type="number" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono tabular-nums" />
+              <Input type="number" aria-label="Calidad del sueño de 1 a 10" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono tabular-nums" />
               <textarea
+                aria-label="Sueños recordados"
                 value={sDreams}
                 onChange={e => setSDreams(e.target.value)}
                 rows={2}
@@ -404,9 +405,9 @@ function SaludContent() {
                 {HEALTH_TYPES.map(t => <SelectItem key={t} value={t}>{getHealthMetricLabel(t)}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Input type="number" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24 font-mono tabular-nums" />
-            <Input type="text" placeholder="Unidad" value={hUnit} onChange={e => setHUnit(e.target.value)} className="w-20" />
-            <Input type="text" placeholder="Nota (opcional): contexto, cómo te sentías…" value={hNote} onChange={e => setHNote(e.target.value)} className="flex-1 basis-full sm:basis-auto min-w-[160px]" />
+            <Input type="number" aria-label="Valor de salud" placeholder="Valor" value={hVal} onChange={e => setHVal(e.target.value)} className="w-24 font-mono tabular-nums" />
+            <Input type="text" aria-label="Unidad de salud" placeholder="Unidad" value={hUnit} onChange={e => setHUnit(e.target.value)} className="w-20" />
+            <Input type="text" aria-label="Nota de salud" placeholder="Nota (opcional): contexto, cómo te sentías…" value={hNote} onChange={e => setHNote(e.target.value)} className="flex-1 basis-full sm:basis-auto min-w-[160px]" />
             <Button onClick={addHealth} variant="outline" size="sm" className="w-full sm:w-auto">+ Agregar</Button>
           </div>
           {healthMetrics.length === 0 ? (
