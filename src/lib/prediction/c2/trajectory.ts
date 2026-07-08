@@ -13,6 +13,7 @@
 // silencio, no lee la relación.
 
 import { median } from '@/lib/stats/regression'
+import { contactDays, gapsBetweenDays } from '@/lib/people/contactRhythm'
 
 const DAY = 86_400_000
 const MIN_CONTACTS = 3
@@ -55,32 +56,26 @@ export function forecastTrajectories(people: TrajectoryInput[], nowMs: number): 
   const out: PersonTrajectory[] = []
 
   for (const p of people) {
-    // Un "contacto" es un DÍA, no un log: varios logs el mismo día (típico del
-    // import, que crea muchos a la vez) colapsan a uno. Así la cadencia mide días
-    // de contacto reales, no eventos de log (evita cadencia=0 por clustering).
-    const seenDays = new Set<number>()
-    const ts: number[] = []
-    for (const t of p.interactionsMs.filter((t) => Number.isFinite(t) && t <= nowMs).sort((a, b) => a - b)) {
-      const dayKey = Math.floor(t / DAY)
-      if (seenDays.has(dayKey)) continue
-      seenDays.add(dayKey)
-      ts.push(t)
-    }
-    const lastMs = Math.max(ts[ts.length - 1] ?? -Infinity, p.lastContactMs ?? -Infinity)
+    // Un "contacto" es un DÍA, no un log: varios logs el mismo día colapsan a uno
+    // (primitivo compartido con la cadencia de /relaciones y el proactivo →
+    // mismo ritmo en toda la app). lastMs se toma de los ms CRUDOS (hora real).
+    const days = contactDays(p.interactionsMs, nowMs)
+    const lastMs = p.interactionsMs
+      .filter((t) => Number.isFinite(t) && t <= nowMs)
+      .reduce((mx, t) => Math.max(mx, t), p.lastContactMs ?? -Infinity)
 
-    if (ts.length < MIN_CONTACTS || !Number.isFinite(lastMs)) {
+    if (days.length < MIN_CONTACTS || !Number.isFinite(lastMs)) {
       out.push({
         id: p.id, name: p.name, status: 'insufficient',
         cadenceDays: null, silenceDays: null, dormantThresholdDays: null,
         weeksToDormant: null, confidence: 'baja',
-        basis: `pocos contactos registrados (${ts.length}) para leer una cadencia`,
+        basis: `pocos contactos registrados (${days.length}) para leer una cadencia`,
       })
       continue
     }
 
-    // Gaps entre contactos consecutivos, en días.
-    const gaps: number[] = []
-    for (let i = 1; i < ts.length; i++) gaps.push((ts[i] - ts[i - 1]) / DAY)
+    // Gaps (días enteros) entre días de contacto consecutivos.
+    const gaps = gapsBetweenDays(days)
     const cadence = median(gaps) ?? 0
     const silenceDays = (nowMs - lastMs) / DAY
     const dormantThreshold = Math.max(DORMANT_MIN_DAYS, cadence * 3)
@@ -89,7 +84,7 @@ export function forecastTrajectories(people: TrajectoryInput[], nowMs: number): 
     const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length
     const sd = Math.sqrt(gaps.reduce((a, b) => a + (b - mean) ** 2, 0) / gaps.length)
     const cv = mean > 0 ? sd / mean : 1
-    const confidence: 'baja' | 'media' = ts.length >= 6 && cv <= 0.8 ? 'media' : 'baja'
+    const confidence: 'baja' | 'media' = days.length >= 6 && cv <= 0.8 ? 'media' : 'baja'
 
     let status: TrajectoryStatus
     let weeksToDormant: number | null = null

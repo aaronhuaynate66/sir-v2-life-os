@@ -9,6 +9,7 @@
 
 import type { PersonCategory } from '@/types'
 import { contactFrequencyDays } from './urgency'
+import { contactDays, gapsBetweenDays } from './contactRhythm'
 
 export interface CadencePreset {
   /** Valor guardado en `contact_frequency` (parseable por el engine). Sentinel de UI. */
@@ -95,21 +96,15 @@ export function suggestCadenceDays(
   const fallback = contactFrequencyDays('', category)
 
   const nowMs = now.getTime()
-  const dayKeys = new Set<number>()
-  for (const d of contactDates) {
-    if (d == null) continue
-    const ms = d instanceof Date ? d.getTime() : typeof d === 'number' ? d : Date.parse(String(d))
-    if (!Number.isFinite(ms) || ms > nowMs) continue
-    dayKeys.add(Math.floor(ms / 86_400_000))
-  }
-  const days = [...dayKeys].sort((a, b) => a - b)
+  const ms = contactDates.map((d) =>
+    d == null ? NaN : d instanceof Date ? d.getTime() : typeof d === 'number' ? d : Date.parse(String(d)),
+  )
+  const days = contactDays(ms, nowMs)
   if (days.length < minContacts) return { days: fallback, source: 'category' }
   const span = days[days.length - 1] - days[0]
   if (span < minSpanDays) return { days: fallback, source: 'category' }
 
-  const gaps: number[] = []
-  for (let i = 1; i < days.length; i++) gaps.push(days[i] - days[i - 1])
-  const clamped = Math.max(1, Math.min(365, Math.round(median(gaps))))
+  const clamped = Math.max(1, Math.min(365, Math.round(median(gapsBetweenDays(days)))))
   return { days: clamped, source: 'rhythm' }
 }
 
