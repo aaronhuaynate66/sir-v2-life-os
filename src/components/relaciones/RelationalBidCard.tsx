@@ -29,7 +29,11 @@ export function RelationalBidCard({ person, memories }: { person: Person; memori
       excludeName: person.name,
       selfName,
     })
-    const topics = [...tags, ...themes.map((t) => t.term)]
+    // Para un GESTO concreto, los tags curados (humanos) van primero. De los temas
+    // por frecuencia solo entran los REALMENTE recurrentes (≥3 apariciones): un
+    // fragmento suelto dicho 2× ("mudo", "oki") no es "lo que le importa" y hace
+    // que el gesto suene raro. Mejor no sugerir tema que sugerir uno malo.
+    const topics = [...tags, ...themes.filter((t) => t.count >= 3).map((t) => t.term)]
 
     return suggestMicroBid({
       personName: person.name,
