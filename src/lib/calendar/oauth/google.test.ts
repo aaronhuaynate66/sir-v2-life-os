@@ -1,7 +1,7 @@
 // SIR V2 — Tests del payload de creación + borrado de eventos de Google.
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { buildGoogleEventPayload, deleteGoogleEvent } from './google'
+import { buildGoogleEventPayload, deleteGoogleEvent, updateGoogleEvent } from './google'
 
 describe('buildGoogleEventPayload', () => {
   it('día completo (fecha sin hora) → start.date + end.date EXCLUSIVO (+1 día)', () => {
@@ -68,5 +68,24 @@ describe('deleteGoogleEvent', () => {
     vi.stubGlobal('fetch', f)
     await deleteGoogleEvent('tok', '  ')
     expect(f).not.toHaveBeenCalled()
+  })
+})
+
+describe('updateGoogleEvent', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('PATCH ok → devuelve id; usa el método PATCH', async () => {
+    const f = vi.fn(async (_url: string, init?: RequestInit) => { void init; return new Response(JSON.stringify({ id: 'ev1', htmlLink: 'x' }), { status: 200 }) })
+    vi.stubGlobal('fetch', f)
+    const r = await updateGoogleEvent('tok', 'ev1', { title: 'Nuevo', start: '2026-07-20' })
+    expect(r.id).toBe('ev1')
+    expect(f.mock.calls[0]?.[1]).toMatchObject({ method: 'PATCH' })
+  })
+  it('error → lanza', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('boom', { status: 500 })))
+    await expect(updateGoogleEvent('tok', 'ev1', { title: 'X', start: '2026-07-20' })).rejects.toThrow()
+  })
+  it('sin id → lanza', async () => {
+    await expect(updateGoogleEvent('tok', '  ', { title: 'X', start: '2026-07-20' })).rejects.toThrow()
   })
 })
