@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `cac1c33`
+**Hash del último commit humano:** `be08a31`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `be08a31` | aaronhuaynate66 | fix(gaps): pedir la fecha del ciclo solo con pareja, no a mamá/colega (#629) | 2026-07-08 |
 | `cac1c33` | aaronhuaynate66 | fix(relaciones): el gesto solo sugiere temas realmente recurrentes (#628) | 2026-07-08 |
 | `b181692` | aaronhuaynate66 | fix(ciclo): cruce honesto de horizontes por solape de ventanas (#627) | 2026-07-08 |
 | `f82b2bf` | aaronhuaynate66 | feat(ciclo): calendario personal alimenta la línea del ciclo (Camino B) (#626) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `81a26e4` | aaronhuaynate66 | feat(ciclo): Estudio del ciclo para TODAS las mujeres, con registro por vínculo (#622) | 2026-07-08 |
 | `b737845` | aaronhuaynate66 | chore(forecast): override de match + filtro por argv en el importer (#621) | 2026-07-08 |
 | `918a07e` | aaronhuaynate66 | chore(forecast): batch importer de señales de WhatsApp por terminal (#620) | 2026-07-08 |
-| `9df60c4` | aaronhuaynate66 | feat(forecast-conductual): señales diarias del chat COMPLETO al importar (#619) | 2026-07-08 |
 
 ---
 
