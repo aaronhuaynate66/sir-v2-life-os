@@ -12,6 +12,7 @@ import { motion } from 'framer-motion'
 import { HeartHandshake, TrendingUp, TrendingDown, Minus, AlertCircle, MessageCircle, Sparkles, Loader2, RefreshCcw } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { OriginBadge } from './OriginBadge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -134,6 +135,7 @@ export function EstadoConPersona({ personId, personName, personLogs, moments, pe
             <Badge variant="outline" className={cn('text-[10px] font-medium border-current', 'bg-transparent')}>
               {labelMeta.label}
             </Badge>
+            <OriginBadge origin="computed" className="ml-auto" />
           </div>
 
           <p className="text-xs leading-relaxed opacity-90">{labelMeta.description}</p>

@@ -11,6 +11,7 @@ import { Lightbulb, Loader2, RefreshCcw, CheckCircle2, Circle, AlertCircle } fro
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { OriginBadge } from './OriginBadge'
 import { cn } from '@/lib/utils'
 
 interface Recommendation {
@@ -98,6 +99,7 @@ export function RecomendacionesSemanales({ personId, personName }: Props) {
                 {recs.filter((r) => !r.done).length} de {recs.length}
               </Badge>
             )}
+            <OriginBadge origin="ai" />
             {weekStart && (
               <span className="text-[10px] text-muted-foreground/60 ml-auto">Semana de {weekStart}</span>
             )}

@@ -303,7 +303,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Primario: leer documento (sube + extrae + autocompleta). */}
                     <label className={cn(
-                      'inline-flex items-center gap-1.5 text-xs rounded-md border border-accent/40 bg-accent/10 text-foreground px-2.5 py-1.5 cursor-pointer hover:bg-accent/20',
+                      'inline-flex items-center gap-1.5 text-xs rounded-md border border-brand/30 bg-brand/10 text-foreground px-2.5 py-1.5 cursor-pointer hover:bg-brand/20',
                       (scanning || uploading) && 'opacity-50 pointer-events-none',
                     )}>
                       {scanning ? <Loader2 size={13} className="animate-spin" /> : <ScanLine size={13} strokeWidth={1.75} aria-hidden="true" />}

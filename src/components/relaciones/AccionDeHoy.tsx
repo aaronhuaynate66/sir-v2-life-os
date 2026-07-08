@@ -24,6 +24,7 @@ import { MessageCircle, Sparkles, Loader2, Copy, Cake, CalendarHeart, Snowflake,
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { OriginBadge } from './OriginBadge'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { useMounted } from '@/hooks/useMounted'
 import { toApiError, parseErrorResponse, type ApiError } from '@/lib/api/errors'
@@ -163,6 +164,8 @@ function AccionBody({ person, phoneNumber, lastChatObservedAt, lastManualInterac
             <OriginIcon size={11} strokeWidth={2} aria-hidden="true" />
             {origin.label}
           </Badge>
+          {/* La acción sale de un cálculo determinístico (no IA); el mensaje sí. */}
+          <OriginBadge origin="computed" className="ml-auto" />
         </div>
 
         {/* Sustento: la próxima acción calculada (misma fuente que el vistazo). */}
@@ -197,7 +200,7 @@ function AccionBody({ person, phoneNumber, lastChatObservedAt, lastManualInterac
             variant="outline"
             onClick={prepareMessage}
             disabled={loading}
-            className="border-accent/30 bg-accent/10 hover:bg-accent/20"
+            className="border-brand/30 bg-brand/10 hover:bg-brand/20"
           >
             {loading ? <Loader2 size={14} className="mr-1.5 animate-spin" /> : <Sparkles size={14} strokeWidth={1.75} className="mr-1.5" />}
             {loading ? 'Redactando…' : draft ? 'Regenerar mensaje' : 'Preparar mensaje'}
@@ -209,6 +212,10 @@ function AccionBody({ person, phoneNumber, lastChatObservedAt, lastManualInterac
         {/* Borrador editable. */}
         {draft !== null && (
           <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-widest text-text-tertiary font-sans">Borrador de mensaje</span>
+              <OriginBadge origin="ai" />
+            </div>
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}

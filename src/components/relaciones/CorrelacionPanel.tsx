@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SectionTitle } from '@/components/ui/section-title'
+import { OriginBadge } from './OriginBadge'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { toApiError, parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import {
@@ -107,7 +108,10 @@ export function CorrelacionPanel({
   return (
     <Card className="shadow-none mb-4">
       <CardContent className="p-4 sm:p-6">
-        <SectionTitle icon={LineChart} label="Correlación longitudinal" />
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle icon={LineChart} label="Correlación longitudinal" />
+          <OriginBadge origin="computed" />
+        </div>
 
         {!hasData ? (
           <EmptyState />
