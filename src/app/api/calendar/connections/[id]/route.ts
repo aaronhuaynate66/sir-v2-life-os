@@ -14,6 +14,7 @@ import {
   rowToDto,
   normalizeColor,
   normalizeLabel,
+  normalizeKind,
   validateIcsUrl,
   type CalendarConnectionRow,
 } from '@/lib/calendar/connections'
@@ -21,7 +22,8 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const SELECT_COLS = 'id, label, provider, ics_url, color, enabled, created_at'
+const SELECT_COLS = 'id, label, provider, ics_url, color, enabled, created_at, kind'
+const SELECT_COLS_LEGACY = 'id, label, provider, ics_url, color, enabled, created_at'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -32,6 +34,7 @@ interface PatchBody {
   icsUrl?: unknown
   color?: unknown
   enabled?: unknown
+  kind?: unknown
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -59,6 +62,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     if (typeof body.enabled !== 'boolean') return errorJson(400, 'enabled debe ser boolean')
     update.enabled = body.enabled
   }
+  if (body.kind !== undefined) update.kind = normalizeKind(body.kind)
   if (body.icsUrl !== undefined) {
     const urlCheck = validateIcsUrl(body.icsUrl)
     if (!urlCheck.ok) return errorJson(400, urlCheck.reason ?? 'URL inválida')
@@ -69,16 +73,32 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (Object.keys(update).length === 1) return errorJson(400, 'Nada para actualizar')
 
   try {
-    const { data, error } = await supabase
+    const primary = await supabase
       .from('calendar_connections')
       .update(update)
       .eq('id', id)
       .eq('user_id', authData.user.id)
       .select(SELECT_COLS)
       .maybeSingle()
-    if (error) return errorJson(500, 'No se pudo actualizar', error.message.slice(0, 200))
-    if (!data) return errorJson(404, 'Calendario no encontrado')
-    return NextResponse.json({ connection: rowToDto(data as CalendarConnectionRow) })
+    let row = primary.data as unknown as CalendarConnectionRow | null
+    let writeError = primary.error
+    // `kind` ausente (migración 0137 sin correr) → reintenta sin esa columna.
+    if (writeError) {
+      const safeUpdate = { ...update }
+      delete safeUpdate.kind
+      const legacy = await supabase
+        .from('calendar_connections')
+        .update(safeUpdate)
+        .eq('id', id)
+        .eq('user_id', authData.user.id)
+        .select(SELECT_COLS_LEGACY)
+        .maybeSingle()
+      row = legacy.data as unknown as CalendarConnectionRow | null
+      writeError = legacy.error
+    }
+    if (writeError) return errorJson(500, 'No se pudo actualizar', writeError.message.slice(0, 200))
+    if (!row) return errorJson(404, 'Calendario no encontrado')
+    return NextResponse.json({ connection: rowToDto(row) })
   } catch (e) {
     reportApiError(e)
     return errorJson(500, 'No se pudo actualizar')

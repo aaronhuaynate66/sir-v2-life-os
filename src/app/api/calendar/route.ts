@@ -32,10 +32,14 @@ export async function GET(req: NextRequest) {
   const days = clampInt(sp.get('days'), 60, 1, 180)
   const past = clampInt(sp.get('past'), 0, 0, 31)
   const limit = clampInt(sp.get('limit'), 50, 1, 200)
+  // ?kind=personal | work → filtra las conexiones por tipo. La línea del ciclo
+  // pide 'personal' para no consumir el calendario laboral (Camino B).
+  const kindRaw = sp.get('kind')
+  const kinds = kindRaw === 'personal' ? ['personal' as const] : kindRaw === 'work' ? ['work' as const] : undefined
 
   // Pasa el cliente autenticado → el reader lee las conexiones del usuario
   // (multi-calendario) y, si no hay, cae al fallback OUTLOOK_ICS_URL.
-  const result = await fetchCalendarEvents({ supabase, horizonDays: days, pastDays: past, limit })
+  const result = await fetchCalendarEvents({ supabase, horizonDays: days, pastDays: past, limit, kinds })
   return NextResponse.json(result, { status: 200 })
 }
 

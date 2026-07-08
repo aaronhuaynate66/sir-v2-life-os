@@ -67,6 +67,11 @@ export interface CalendarConnectionDto {
   color: string | null
   enabled: boolean
   createdAt: string
+  /**
+   * 'work' (default) | 'personal'. Solo los personales alimentan la línea del
+   * ciclo de una persona (Camino B) — nunca el calendario laboral.
+   */
+  kind: 'work' | 'personal'
 }
 
 /** Paleta de colores para calendarios (legible sobre el tema oscuro). El

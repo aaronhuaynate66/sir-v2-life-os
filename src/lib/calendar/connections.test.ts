@@ -4,6 +4,7 @@ import {
   rowToDto,
   normalizeColor,
   normalizeLabel,
+  normalizeKind,
   validateIcsUrl,
   type CalendarConnectionRow,
 } from './connections'
@@ -79,6 +80,7 @@ describe('rowToDto', () => {
       color: '#22c55e',
       enabled: false,
       createdAt: '2026-06-02T00:00:00Z',
+      kind: 'work',
     })
   })
   it('tolera nulls', () => {
@@ -86,5 +88,20 @@ describe('rowToDto', () => {
     expect(dto.label).toBe('Calendario')
     expect(dto.provider).toBe('ics')
     expect(dto.enabled).toBe(true)
+    expect(dto.kind).toBe('work') // sin columna kind → default seguro
+  })
+  it('kind personal se preserva; cualquier otro valor → work', () => {
+    expect(rowToDto({ id: 'a', label: null, provider: null, ics_url: null, color: null, enabled: null, created_at: null, kind: 'personal' }).kind).toBe('personal')
+    expect(rowToDto({ id: 'a', label: null, provider: null, ics_url: null, color: null, enabled: null, created_at: null, kind: 'garbage' }).kind).toBe('work')
+  })
+})
+
+describe('normalizeKind', () => {
+  it('solo "personal" es personal; el resto → work', () => {
+    expect(normalizeKind('personal')).toBe('personal')
+    expect(normalizeKind('work')).toBe('work')
+    expect(normalizeKind(undefined)).toBe('work')
+    expect(normalizeKind('otro')).toBe('work')
+    expect(normalizeKind(42)).toBe('work')
   })
 })

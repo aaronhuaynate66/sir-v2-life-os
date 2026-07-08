@@ -24,6 +24,8 @@ export interface CalendarConnectionRow {
   color: string | null
   enabled: boolean | null
   created_at: string | null
+  /** Puede faltar si la migración 0137 aún no corrió → se asume 'work'. */
+  kind?: string | null
 }
 
 export function rowToDto(row: CalendarConnectionRow): CalendarConnectionDto {
@@ -35,7 +37,13 @@ export function rowToDto(row: CalendarConnectionRow): CalendarConnectionDto {
     color: row.color ?? null,
     enabled: row.enabled ?? true,
     createdAt: row.created_at ?? '',
+    kind: row.kind === 'personal' ? 'personal' : 'work',
   }
+}
+
+/** Normaliza el tipo de calendario. Cualquier valor inválido → 'work' (seguro). */
+export function normalizeKind(raw: unknown): 'work' | 'personal' {
+  return raw === 'personal' ? 'personal' : 'work'
 }
 
 /** Limpia un color: debe estar en la paleta; si no, cae al default. */

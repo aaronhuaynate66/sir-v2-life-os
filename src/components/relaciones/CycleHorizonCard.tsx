@@ -27,9 +27,10 @@ import { computeCycleRegularity } from '@/lib/ciclo/regularity'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import { synthesisCue } from '@/lib/ciclo/horizonCue'
 import { buildCycleHorizon, gatherHorizonEvents, type HorizonEvent, type BandPhase } from '@/lib/ciclo/horizon'
-import { mergeHorizonEvents } from '@/lib/ciclo/calendarHorizon'
+import { mergeHorizonEvents, calendarEventsToHorizon } from '@/lib/ciclo/calendarHorizon'
 import { personalEventsToHorizon, type PersonalEvent } from '@/lib/personal-events/types'
 import type { PersonCycleEntry } from '@/lib/person-cycles/types'
+import type { CalendarEvent } from '@/lib/calendar/types'
 import type { SpecialDate } from '@/types'
 
 const HORIZON_BACK_DAYS = 28
@@ -111,6 +112,10 @@ export function CycleHorizonCard({
   // Si el Estudio inyecta `events`, usamos eso (fetch único allá); si no, fetch propio.
   const controlled = eventsProp !== undefined
   const [personalEventsState, setPersonalEventsState] = useState<PersonalEvent[]>([])
+  // CAPA CALENDARIO PERSONAL (Camino B): eventos de calendarios marcados
+  // 'personal' (nunca el laboral). Se filtran a los que mencionan a la persona /
+  // de día completo (curated). Inerte si Aaron no conectó un calendario personal.
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
 
   useEffect(() => {
     if (controlled || !cycleStartDate || !personId) return
@@ -121,6 +126,17 @@ export function CycleHorizonCard({
       .catch(() => { /* sin agenda / tabla ausente → la línea sigue con las fechas especiales */ })
     return () => { alive = false }
   }, [controlled, cycleStartDate, personId, refreshKey])
+
+  useEffect(() => {
+    if (!cycleStartDate || !personName) return
+    let alive = true
+    // Solo calendarios PERSONALES, ventana igual al horizonte (28d atrás + 67 adelante).
+    fetch(`/api/calendar?kind=personal&past=${HORIZON_BACK_DAYS}&days=${HORIZON_FWD_DAYS}&limit=200`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (alive && data && Array.isArray(data.events)) setCalendarEvents(data.events as CalendarEvent[]) })
+      .catch(() => { /* sin calendario personal conectado → la línea queda igual */ })
+    return () => { alive = false }
+  }, [cycleStartDate, personName, refreshKey])
 
   const personalEvents = eventsProp ?? personalEventsState
 
@@ -135,7 +151,12 @@ export function CycleHorizonCard({
     const personal = personId
       ? personalEventsToHorizon(personalEvents, { personId, fromIso, toIso, limit: 12 })
       : []
-    const events = mergeHorizonEvents(special, personal)
+    // Calendario personal (curated: menciones de la persona + día completo).
+    const fromCalendar = calendarEvents.length
+      ? calendarEventsToHorizon(calendarEvents, { personName, fromIso, toIso, mode: 'curated', limit: 10 })
+      : []
+    // Prioridad en colisión: fechas especiales → planes propios → calendario.
+    const events = mergeHorizonEvents(mergeHorizonEvents(special, personal), fromCalendar)
     const reg = computeCycleRegularity(personCycles.map((e) => ({ date: e.date, phase: e.phase })))
     const horizon = buildCycleHorizon(
       { lastPeriodStart: cycleStartDate.slice(0, 10), cycleLengthDays: cycleLengthDays ?? 28, bandDays: reg.bandDays, events, horizonFrom: fromIso, horizonTo: toIso },
@@ -143,7 +164,7 @@ export function CycleHorizonCard({
     )
     const cp = cyclePhase(cycleStartDate.slice(0, 10), cycleLengthDays ?? 28, now)
     return { horizon, reg, fromIso, toIso, confirmedIso: cycleStartDate.slice(0, 10), cp }
-  }, [cycleStartDate, cycleLengthDays, personCycles, specialDates, birthDate, personName, personId, personalEvents, nowProp])
+  }, [cycleStartDate, cycleLengthDays, personCycles, specialDates, birthDate, personName, personId, personalEvents, calendarEvents, nowProp])
 
   if (!model?.horizon) return null
   const { horizon, reg, fromIso, toIso, confirmedIso, cp } = model

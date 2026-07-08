@@ -7,7 +7,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Link2, Plus, Trash2, Pencil, Check, X, AlertCircle, Loader2, Globe } from 'lucide-react'
+import { Link2, Plus, Trash2, Pencil, Check, X, AlertCircle, Loader2, Globe, Heart, Briefcase } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
@@ -194,6 +194,14 @@ export function CalendarConnections({ onChange }: { onChange?: () => void }) {
                     })
                     notifyChange()
                   }}
+                  onSetKind={async (kind) => {
+                    await fetch(`/api/calendar/connections/${c.id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ kind }),
+                    })
+                    notifyChange()
+                  }}
                   onDelete={async () => {
                     await fetch(`/api/calendar/connections/${c.id}`, { method: 'DELETE' })
                     notifyChange()
@@ -212,11 +220,13 @@ function ConnectionRow({
   conn,
   onEdit,
   onToggle,
+  onSetKind,
   onDelete,
 }: {
   conn: CalendarConnectionDto
   onEdit: () => void
   onToggle: () => void | Promise<void>
+  onSetKind: (kind: 'work' | 'personal') => void | Promise<void>
   onDelete: () => void | Promise<void>
 }) {
   const [confirming, setConfirming] = useState(false)
@@ -226,6 +236,8 @@ function ConnectionRow({
     setBusy(true)
     try { await fn() } finally { setBusy(false) }
   }
+
+  const isPersonal = conn.kind === 'personal'
 
   return (
     <li
@@ -252,6 +264,28 @@ function ConnectionRow({
           {conn.provider === 'ics' ? hostOf(conn.icsUrl) : 'OAuth · sin URL'}
         </div>
       </div>
+
+      {/* Laboral / Personal — solo los personales alimentan la línea del ciclo */}
+      <button
+        type="button"
+        onClick={() => run(() => onSetKind(isPersonal ? 'work' : 'personal'))}
+        disabled={busy}
+        className={cn(
+          'flex-shrink-0 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-50',
+          isPersonal
+            ? 'border-brand/50 bg-brand/15 text-brand'
+            : 'border-border/60 bg-muted/40 text-muted-foreground hover:text-foreground',
+        )}
+        aria-label={isPersonal ? 'Marcar como laboral' : 'Marcar como personal'}
+        title={
+          isPersonal
+            ? 'Personal · alimenta la línea del ciclo. Tocá para marcar laboral.'
+            : 'Laboral · no toca la línea del ciclo. Tocá para marcar personal.'
+        }
+      >
+        {isPersonal ? <Heart size={11} strokeWidth={2} aria-hidden="true" /> : <Briefcase size={11} strokeWidth={2} aria-hidden="true" />}
+        {isPersonal ? 'Personal' : 'Laboral'}
+      </button>
 
       {/* Toggle enabled */}
       <button
