@@ -31,8 +31,27 @@ import {
 const DAY_MS = 86_400_000
 
 /** Ventana (días) para considerar una fecha de la red "próxima" en la franja.
- *  ~2 meses: lo bastante ancho para anticipar, sin mostrar fechas lejanas. */
-const NEXT_DATE_LEAD_DAYS = 60
+ *  ~1 mes: lo justo para anticipar sin ensuciar el vistazo con fechas lejanas.
+ *  (Antes 60d; la auditoría pidió bajarla para que la franja sea accionable.) */
+const NEXT_DATE_LEAD_DAYS = 30
+
+/** Palabras que marcan una fecha de VÍNCULO (aniversario, día de la pareja…),
+ *  más relevante que una fecha "de rubro" (día del médico, del ingeniero…). */
+const BOND_DATE_RE = /anivers|pareja|juntos|nos conocimos|primera cita|boda|relaci[oó]n|san valent|d[ií]a de los enamorados/i
+
+/** Rank de relevancia de una fecha de la red (menor = más relevante). Un
+ *  cumpleaños o un aniversario de pareja pesan más que una fecha de rubro. */
+function dateRelevanceRank(kind: 'birthday' | 'special_date', label: string): number {
+  if (kind === 'birthday') return 0
+  if (BOND_DATE_RE.test(label)) return 0
+  return 1
+}
+
+/** Etiqueta corta de una fecha de la red. Los special_date vienen como
+ *  "`${label} · ${name}`"; el cumpleaños como "Cumpleaños de …". */
+function dateLabel(d: { kind: 'birthday' | 'special_date'; title: string }): string {
+  return d.kind === 'birthday' ? 'Cumpleaños' : d.title.split(' · ')[0]
+}
 
 export interface SummaryCycle {
   /** "Folicular", "Lútea", etc. */
@@ -136,14 +155,23 @@ export function buildPersonSummary(
   }
 
   // ─── Próxima fecha de la red (reusa contactDatesInRange para 1 persona) ─
+  // No basta con la más cercana: un aniversario de pareja debe ganarle a una
+  // fecha de rubro aunque esta caiga un par de días antes. Rankeamos por
+  // relevancia (parentesco/vínculo) y recién después por cercanía.
   const dates = contactDatesInRange([person], NEXT_DATE_LEAD_DAYS, now)
-  const nearest = dates[0]
-  const nextDate: SummaryNextDate | null = nearest
+  const best = dates
+    .slice()
+    .sort((a, b) => {
+      const ra = dateRelevanceRank(a.kind, dateLabel(a))
+      const rb = dateRelevanceRank(b.kind, dateLabel(b))
+      return ra - rb || a.daysUntil - b.daysUntil
+    })[0]
+  const nextDate: SummaryNextDate | null = best
     ? {
-        kind: nearest.kind,
-        label: nearest.kind === 'birthday' ? 'Cumpleaños' : nearest.title.split(' · ')[0],
-        daysUntil: nearest.daysUntil,
-        nudge: nearest.nudge,
+        kind: best.kind,
+        label: best.kind === 'birthday' ? 'Cumpleaños' : dateLabel(best),
+        daysUntil: best.daysUntil,
+        nudge: best.nudge,
       }
     : null
 
