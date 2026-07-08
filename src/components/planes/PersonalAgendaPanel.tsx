@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { CalendarDays, Plus, X, UserPlus } from 'lucide-react'
+import { CalendarDays, Plus, X, UserPlus, CalendarPlus, CalendarCheck, Loader2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -42,6 +42,8 @@ export function PersonalAgendaPanel() {
   const [date, setDate] = useState('')
   const [personId, setPersonId] = useState('')
   const [saving, setSaving] = useState(false)
+  const [hasGoogle, setHasGoogle] = useState(false)
+  const [pushingId, setPushingId] = useState<string | null>(null)
 
   function load() {
     setLoading(true)
@@ -52,6 +54,29 @@ export function PersonalAgendaPanel() {
       .finally(() => setLoading(false))
   }
   useEffect(load, [])
+
+  useEffect(() => {
+    let alive = true
+    fetch('/api/calendar/connections', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d?.connections) return
+        setHasGoogle((d.connections as { provider?: string; enabled?: boolean }[]).some((c) => c.provider === 'google' && c.enabled))
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+
+  async function push(id: string, label: string) {
+    setPushingId(id)
+    try {
+      const res = await fetch(`/api/personal-events/${id}/push-to-google`, { method: 'POST' })
+      const j = (await res.json().catch(() => ({}))) as { alreadySynced?: boolean; gcalEventId?: string; error?: string; detail?: string }
+      if (!res.ok) { toast.error(j.error ?? 'No se pudo agendar en Google', { description: j.detail }); return }
+      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, gcalEventId: j.gcalEventId ?? 'synced' } : e)))
+      toast.success(j.alreadySynced ? 'Ya estaba en Google Calendar' : 'Agendado en Google Calendar', { description: label })
+    } catch { toast.error('No se pudo agendar en Google', { description: 'Revisá tu conexión.' }) } finally { setPushingId(null) }
+  }
 
   const today = isoToday()
   const upcoming = events.filter((e) => e.date >= today).sort((a, b) => (a.date < b.date ? -1 : 1))
@@ -159,10 +184,10 @@ export function PersonalAgendaPanel() {
         ) : (
           <div className="space-y-4">
             {upcoming.length > 0 && (
-              <Section label="Próximos" events={upcoming} nameById={nameById} PersonSelect={PersonSelect} onRemove={remove} />
+              <Section label="Próximos" events={upcoming} nameById={nameById} PersonSelect={PersonSelect} onRemove={remove} hasGoogle={hasGoogle} pushingId={pushingId} onPush={push} />
             )}
             {past.length > 0 && (
-              <Section label="Pasados" events={past} nameById={nameById} PersonSelect={PersonSelect} onRemove={remove} muted />
+              <Section label="Pasados" events={past} nameById={nameById} PersonSelect={PersonSelect} onRemove={remove} hasGoogle={hasGoogle} pushingId={pushingId} onPush={push} muted />
             )}
           </div>
         )}
@@ -171,12 +196,15 @@ export function PersonalAgendaPanel() {
   )
 }
 
-function Section({ label, events, nameById, PersonSelect, onRemove, muted }: {
+function Section({ label, events, nameById, PersonSelect, onRemove, hasGoogle, pushingId, onPush, muted }: {
   label: string
   events: PersonalEvent[]
   nameById: Map<string, string>
   PersonSelect: (props: { e: PersonalEvent }) => React.ReactElement
   onRemove: (id: string, label: string) => void
+  hasGoogle: boolean
+  pushingId: string | null
+  onPush: (id: string, label: string) => void
   muted?: boolean
 }) {
   return (
@@ -192,6 +220,18 @@ function Section({ label, events, nameById, PersonSelect, onRemove, muted }: {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {e.gcalEventId ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-ok/40 bg-ok-soft px-2 py-0.5 text-[10px] font-medium text-ok" title="Este plan ya está en tu Google Calendar">
+                  <CalendarCheck size={11} strokeWidth={2} aria-hidden="true" /> En Google
+                </span>
+              ) : hasGoogle ? (
+                <button type="button" onClick={() => onPush(e.id, e.title)} disabled={pushingId === e.id}
+                  className="inline-flex items-center gap-1 rounded-full border border-brand/40 bg-brand/5 px-2 py-0.5 text-[10px] font-medium text-brand hover:bg-brand/10 transition-colors disabled:opacity-50"
+                  title="Agendar este plan en tu Google Calendar">
+                  {pushingId === e.id ? <Loader2 size={11} className="animate-spin" aria-hidden="true" /> : <CalendarPlus size={11} strokeWidth={2} aria-hidden="true" />}
+                  Google
+                </button>
+              ) : null}
               <PersonSelect e={e} />
               <button type="button" onClick={() => onRemove(e.id, e.title)}
                 className="flex items-center justify-center h-8 w-8 -m-1 rounded text-muted-foreground/50 hover:text-bad transition-colors" aria-label="Eliminar plan">
