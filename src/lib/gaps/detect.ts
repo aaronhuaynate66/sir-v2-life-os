@@ -5,6 +5,7 @@
 
 import type { Person, Goal } from '@/types'
 import { effectiveAmbito } from '@/lib/people/ambito'
+import { fichaArchetype } from '@/lib/people/fichaProfile'
 import { findBirthdaySpecialDate } from '@/lib/dates/birthdayDetect'
 
 export type GapKind = 'birthday' | 'cycle' | 'goal_next_action'
@@ -62,8 +63,12 @@ export function detectGaps(
         field: 'birthDate', inputType: 'date', priority: (comercial ? 25 : 40) + imp,
       })
     }
-    // Ciclo faltante (mujer) → habilita el panel de ciclo (caso Diana).
-    if (p.gender === 'female' && !p.cycleStartDate && ambito === 'personal') {
+    // Ciclo faltante → pedir la fecha del período SOLO con PAREJA (afectivo): es
+    // donde preguntarla es apropiado y Aaron plausiblemente la sabe. Para el resto
+    // de las mujeres (familia/colega/amiga) el 2º horizonte INFIERE el ciclo desde
+    // la conducta sin necesitar la fecha — pedirle a Aaron la regla de su mamá o de
+    // una colega sería invasivo e irreal (línea ética, doc 17). Ver [[fichaProfile]].
+    if (p.gender === 'female' && !p.cycleStartDate && fichaArchetype(p) === 'afectivo') {
       push({
         key: `cycle:${p.id}`, kind: 'cycle', entity: 'person', entityId: p.id,
         entityName: p.name, question: `Para seguir el ciclo de ${firstName(p.name)}, ¿cuándo empezó su último período?`,
