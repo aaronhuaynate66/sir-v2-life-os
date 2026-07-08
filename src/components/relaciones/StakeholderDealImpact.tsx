@@ -39,7 +39,7 @@ export function StakeholderDealImpact({ person }: { person: Person }) {
         <span className="font-medium">Suma a tu vínculo con {first}</span>
       </div>
       {impacts.map((im) => (
-        <Link key={im.dealId} href="/oportunidades" className="block text-foreground/90 hover:underline">
+        <Link key={im.dealId} href={`/oportunidades?deal=${encodeURIComponent(im.dealId)}`} className="block text-foreground/90 hover:underline">
           Avanzar <span className="font-medium">{im.title}</span> (etapa {im.stageLabel}) refuerza tu trabajo con {first} y tu standing.
           {im.recentlyActive ? ' Hay movimiento reciente — buen momento para apoyarte en ese vínculo.' : ''}
           {im.whyMatters ? <span className="mt-0.5 block not-italic text-muted-foreground">Por qué importa: {im.whyMatters}</span> : null}

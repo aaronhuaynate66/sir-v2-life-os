@@ -62,10 +62,10 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
           size="sm"
           variant="outline"
           onClick={openBriefing}
-          className="border-accent/30 bg-accent/10 hover:bg-accent/20"
+          className="border-brand/30 bg-brand/10 hover:bg-brand/20"
         >
-          <Sparkles size={14} strokeWidth={1.75} className="mr-1.5" />
-          Briefing IA
+          <Sparkles size={14} strokeWidth={1.75} className="mr-1.5 text-brand" />
+          Ponme al día
         </Button>
 
         {waUrl ? (
@@ -98,7 +98,7 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Sparkles size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
-              Briefing · {personName}
+              Ponme al día · {personName}
             </SheetTitle>
             <SheetDescription>
               Resumen contextual generado sobre las memorias asociadas. Efímero — no se guarda.
@@ -159,7 +159,7 @@ function BriefingBody({ text }: { text: string }) {
           const value = block.slice(labelMatch.length + 1).trim()
           const isTldr = labelMatch === 'TL;DR'
           return (
-            <div key={i} className={isTldr ? 'rounded-md border border-accent/30 bg-accent/5 p-3' : ''}>
+            <div key={i} className={isTldr ? 'rounded-md border border-brand/30 bg-brand/5 p-3' : ''}>
               <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-1">
                 {labelMatch}
               </div>

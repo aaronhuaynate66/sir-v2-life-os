@@ -65,13 +65,12 @@ import { PatronesCiclo } from './PatronesCiclo'
 import { SemanaConPersona } from './SemanaConPersona'
 import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
-import { RelationalScore } from './RelationalScore'
+import { AccionDeHoy } from './AccionDeHoy'
 import { AMBITO_LABEL, inferAmbito } from '@/lib/people/ambito'
 import { fichaProfile } from '@/lib/people/fichaProfile'
 import { BondEvolutionPanel } from './BondEvolutionPanel'
 import { ConversationAnalyticsCard } from './ConversationAnalyticsCard'
 import { isSystemNote } from '@/lib/memories/fromInteractionLog'
-import { BirthdayCountdown } from './BirthdayCountdown'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
 import { VidaSocial } from './VidaSocial'
@@ -97,7 +96,7 @@ import { TrendChart } from '@/components/charts/TrendChart'
 import { personLogToneSeries } from '@/lib/charts/adapters'
 import { PersonDossier } from './PersonDossier'
 import { ExportCsvButton } from '@/components/export/ExportCsvButton'
-import { personLogsCsv, observationsCsv } from '@/lib/export/adapters'
+import { personLogsCsv } from '@/lib/export/adapters'
 import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
@@ -282,6 +281,13 @@ export function PersonDetail({
     return typeof latest.value === 'number' ? latest.value : null
   }, [personLogs])
 
+  // logged_at del último person_log kind='interaction' manual (reusado por el
+  // vistazo y por el bloque Acción de hoy — misma fuente de "última vez").
+  const lastManualInteractionAt = useMemo(
+    () => personLogs.find((l) => l.kind === 'interaction' && !isSystemNote(l.note ?? ''))?.loggedAt ?? null,
+    [personLogs],
+  )
+
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<EditForm>(() => formFromPerson(live))
@@ -298,6 +304,13 @@ export function PersonDetail({
   function startEditing() {
     setForm(formFromPerson(live))
     setEditing(true)
+  }
+
+  // Editar desde el header: abre el form y salta al tab donde vive (Perfil).
+  function startEditingFromHeader() {
+    startEditing()
+    setTab('perfil')
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function cancelEditing() {
@@ -431,17 +444,24 @@ export function PersonDetail({
                 <Badge variant="brand" className="text-[11px]">{CATEGORY_LABEL[live.category]}</Badge>
                 <Badge variant="outline" className="text-[11px]">{RELATIONSHIP_LABEL[live.relationship]}</Badge>
               </div>
-              <div className="text-xs text-muted-foreground font-mono truncate mt-1.5">
-                /relaciones/<span className="text-foreground">{live.slug ?? '(sin slug)'}</span>
-              </div>
+              {/* El slug/URL es plomería: sale del header (queda en la edición). */}
             </div>
           </div>
-          {/* Botones top-right (#16): Briefing IA + Chat WhatsApp. */}
-          <PersonActions
-            personId={live.id}
-            personName={live.name}
-            phoneNumber={live.phoneNumber ?? null}
-          />
+          {/* Botones top-right: Editar (salta a Perfil con el form) + Briefing
+              IA + Chat WhatsApp. */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {!editing && (
+              <Button size="sm" variant="ghost" onClick={startEditingFromHeader}>
+                <Edit2 size={13} strokeWidth={1.75} className="mr-1.5" />
+                Editar
+              </Button>
+            )}
+            <PersonActions
+              personId={live.id}
+              personName={live.name}
+              phoneNumber={live.phoneNumber ?? null}
+            />
+          </div>
         </div>
       </header>
 
@@ -452,9 +472,16 @@ export function PersonDetail({
       <ResumenPersona
         person={live}
         lastChatObservedAt={lastChat?.observedAt ?? null}
-        lastManualInteractionAt={
-          personLogs.find((l) => l.kind === 'interaction' && !isSystemNote(l.note ?? ''))?.loggedAt ?? null
-        }
+        lastManualInteractionAt={lastManualInteractionAt}
+      />
+
+      {/* F2 (Tanda 2): la próxima acción, ascendida de texto pasivo a BLOQUE
+          accionable con botón real. Entre el vistazo y los tabs. */}
+      <AccionDeHoy
+        person={live}
+        phoneNumber={live.phoneNumber ?? null}
+        lastChatObservedAt={lastChat?.observedAt ?? null}
+        lastManualInteractionAt={lastManualInteractionAt}
       />
 
       {/* Q&A por persona: preguntá a SIR sobre esta persona, aterrizado en su
@@ -463,25 +490,48 @@ export function PersonDetail({
 
       {/* ─── Tabs de la ficha (rediseño). El vistazo de arriba queda siempre;
           el resto se agrupa por tab. ─────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-1 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        {PERSON_TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={cn(
-              'shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-              tab === t.id ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div
+        role="tablist"
+        aria-label="Secciones de la ficha"
+        className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-1 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      >
+        {PERSON_TABS.map((t) => {
+          const active = tab === t.id
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                // Activo marcado por PESO + borde inferior (no solo color), para
+                // que se distinga sin depender de percibir el matiz.
+                'shrink-0 rounded-md px-3 py-1.5 text-xs transition-colors border-b-2',
+                active
+                  ? 'bg-secondary text-foreground font-semibold border-foreground'
+                  : 'text-muted-foreground font-medium border-transparent hover:text-foreground',
+              )}
+            >
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       {tab === 'hoy' && (<>
+      {/* Pendientes: open loops sin resolver con esta persona (una pelea, una
+          promesa, un follow-up médico). Es lo más accionable de "Hoy", así que
+          va primero — se auto-oculta si no hay nada, así que no empuja al resto
+          en el caso común. Al resolver, soft-refetch de la ficha. */}
+      <PendientesConPersona
+        personId={live.id}
+        moments={moments}
+        onChange={() => router.refresh()}
+      />
+
       {/* Horizonte del ciclo (rediseño, módulo protagonista): timeline de eventos
-          × fase del ciclo + tono + ventanas. Primero en "Hoy". Se oculta sin ciclo. */}
+          × fase del ciclo + tono + ventanas. Se oculta sin ciclo. */}
       {profile.showCuidado && (
         <CycleHorizonCard
           cycleStartDate={live.cycleStartDate ?? null}
@@ -519,14 +569,6 @@ export function PersonDetail({
           oculta si no hay suficientes moments para leer patrón. */}
       <PatronesCiclo personName={live.name} moments={moments} personCycles={personCycles} personLogs={personLogs} cycleStartDate={live.cycleStartDate ?? null} cycleLengthDays={live.cycleLengthDays ?? null} />
 
-      {/* Pendientes: moments abiertos con este follow-up. Se oculta si no hay
-          nada. Al resolver, el componente refetchea (soft-reload de la ficha). */}
-      <PendientesConPersona
-        personId={live.id}
-        moments={moments}
-        onChange={() => { if (typeof window !== 'undefined') window.location.reload() }}
-      />
-
       {/* "Antes de contactar": lo accionable que te deja listo para el momento
           justo — actividad reciente (tags de memorias) + notas privadas verbatim
           (discretas, nunca a IA). Determinístico; se oculta si no aporta nada. */}
@@ -539,6 +581,34 @@ export function PersonDetail({
       {/* 15·5 — micro-bid concreto atado a señal real (fecha próxima o tema). */}
       <RelationalBidCard person={live} memories={memories} />
       <ContactWindowBadge person={live} lastTone={lastInteractionTone} />
+
+      {/* Dedup (Tanda 2): el score /100 (RelationalScore) y el cumpleaños
+          (BirthdayCountdown) ya viven en el vistazo (banda compacta) y en
+          <AccionDeHoy>. Acá dejamos solo StakeholderDealImpact (deals que
+          suman al vínculo), que no se muestra en ningún otro lado. */}
+      <div className="mb-4">
+        <StakeholderDealImpact person={live} />
+      </div>
+
+      {/* Dedup ciclo (Tanda 2): el Horizonte del ciclo (arriba) es el módulo
+          protagonista. CicloPanel (estado lunar + actual) queda como detalle
+          COLAPSABLE, para no repetir el ciclo como segundo bloque prominente. */}
+      {profile.showCuidado && (
+        <details className="group mb-4 rounded-lg border border-border bg-card">
+          <summary className="cursor-pointer list-none px-4 py-2.5 text-[11px] uppercase tracking-[0.07em] text-text-tertiary flex items-center justify-between hover:text-foreground">
+            Estado lunar y del ciclo (detalle)
+            <span className="text-muted-foreground/60 transition-transform group-open:rotate-180">▾</span>
+          </summary>
+          <div className="px-1 pb-1">
+            <CicloPanel
+              cycleStartDate={live.cycleStartDate ?? null}
+              cycleLengthDays={live.cycleLengthDays ?? null}
+              personCycles={personCycles}
+              isRomantic={live.relationship === 'romantic'}
+            />
+          </div>
+        </details>
+      )}
 
       </>)}
 
@@ -560,14 +630,41 @@ export function PersonDetail({
           buildCsv={() => personLogsCsv(correlationLogs)}
           label="Registros CSV"
         />
-        <ExportCsvButton
-          filenamePrefix={`observaciones_${live.slug ?? live.id}`}
-          count={curatedObservations.length}
-          buildCsv={() => observationsCsv(curatedObservations)}
-          label="Observaciones CSV"
-        />
+        {/* Export "Observaciones CSV" retirado (Tanda 4): dump crudo con olor a
+            CRM que la auditoría marcó como ruido; el dossier + Registros CSV
+            cubren la exportación. */}
       </div>
 
+      {/* Captura en contexto: subir un pantallazo y asociarlo DIRECTO a esta
+          persona, sin pasar por /captura ni re-seleccionar. Reusa el pipeline
+          detect → process con person_id fijo. */}
+      <AgregarCapturaPanel personId={live.id} personName={live.name} />
+
+      {/* Registro RELACIONAL: tono de la última interacción con esta persona.
+          (Ánimo/Energía/Sueño/Dolor se sacaron de la ficha: son métricas
+          biológicas de self, viven en /yo — no tienen sentido "respecto a esta
+          persona".) Storage Supabase-native en person_logs. */}
+      <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs.filter((l) => !isSystemNote(l.note ?? ''))} />
+
+      <MomentosPanel personId={live.id} />
+      <PersonMoneyPanel personId={live.id} />
+      <IdentidadesPanel personId={live.id} />
+
+      {/* Nota de voz (#12): graba audio -> bucket person-voice-notes +
+          observation voice_note (aparece tambien en la Bitacora). */}
+      <NotaDeVozPanel personId={live.id} observations={curatedObservations} />
+
+      {/* Redes & social (unificado): handles manuales editables + enriquecimiento
+          de la captura de Instagram, en un solo bloque coherente. La captura se
+          hace con el panel inline "Agregar captura" (arriba), no en /captura. */}
+      <RedesSociales person={live} observations={curatedObservations} />
+
+      </>)}
+
+      {/* Identidad + Métricas viven en "Perfil y memoria" (Tanda 2): son quién
+          ES la persona, no un registro/export. El botón Editar del header salta
+          acá con el form abierto. */}
+      {tab === 'perfil' && (<>
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
@@ -608,9 +705,9 @@ export function PersonDetail({
                   </p>
                 </div>
                 <div>
-                  <Label className="text-xs">Tipo de relación</Label>
+                  <Label htmlFor="person-relationship" className="text-xs">Tipo de relación</Label>
                   <Select value={form.relationship} onValueChange={(v) => patch('relationship', v as RelationshipType)} disabled={saving}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="person-relationship" className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(Object.keys(RELATIONSHIP_LABEL) as RelationshipType[]).map((k) => (
                         <SelectItem key={k} value={k}>{RELATIONSHIP_LABEL[k]}</SelectItem>
@@ -619,9 +716,9 @@ export function PersonDetail({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Categoría</Label>
+                  <Label htmlFor="person-category" className="text-xs">Categoría</Label>
                   <Select value={form.category} onValueChange={(v) => patch('category', v as PersonCategory)} disabled={saving}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="person-category" className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(Object.keys(CATEGORY_LABEL) as PersonCategory[]).map((k) => (
                         <SelectItem key={k} value={k}>{CATEGORY_LABEL[k]}</SelectItem>
@@ -630,9 +727,9 @@ export function PersonDetail({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Impacto energético</Label>
+                  <Label htmlFor="person-energy" className="text-xs">Impacto energético</Label>
                   <Select value={form.energyImpact} onValueChange={(v) => patch('energyImpact', v as EnergyImpact)} disabled={saving}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="person-energy" className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(Object.keys(ENERGY_LABEL) as EnergyImpact[]).map((k) => (
                         <SelectItem key={k} value={k}>{ENERGY_LABEL[k]}</SelectItem>
@@ -641,7 +738,7 @@ export function PersonDetail({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Cadencia de contacto</Label>
+                  <Label htmlFor="person-cadence" className="text-xs">Cadencia de contacto</Label>
                   {(() => {
                     const sel = storedToPreset(form.contactFrequency)
                     const customN = sel === 'custom' ? (parseCustomDays(form.contactFrequency) ?? 21) : 21
@@ -652,7 +749,7 @@ export function PersonDetail({
                           onValueChange={(v) => patch('contactFrequency', presetToStored(v as ReturnType<typeof storedToPreset>, customN))}
                           disabled={saving}
                         >
-                          <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="person-cadence" className="flex-1"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {CADENCE_PRESETS.map((p) => (
                               <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
@@ -799,7 +896,7 @@ export function PersonDetail({
         <Card className="shadow-none mb-4">
           <CardContent className="p-4 sm:p-6 space-y-2 text-sm">
             <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-3">
-              Métricas relacionales
+              Datos de la persona
             </div>
             <Row label="Qué es para vos" value={AMBITO_LABEL[live.ambito ?? inferAmbito(live.relationship)]} />
             <Row label="Importancia" value={`${live.importanceScore}/10`} />
@@ -818,28 +915,6 @@ export function PersonDetail({
         </Card>
       )}
 
-      </>)}
-
-      {tab === 'hoy' && (<>
-      {/* ─── Sesion 3 PR-B: RelationalScore + BirthdayCountdown reales ── */}
-      <div className="grid gap-4 sm:grid-cols-2 mb-4">
-        <RelationalScore person={live} lastChat={lastChat} />
-          <StakeholderDealImpact person={live} />
-        <BirthdayCountdown person={live} />
-      </div>
-      </>)}
-
-      {tab === 'conversacion' && (<>
-      <div className="mb-4">
-        <BondEvolutionPanel personId={live.id} />
-      </div>
-      <div className="mb-4">
-        <ConversationAnalyticsCard personId={live.id} personName={live.name} />
-      </div>
-
-      </>)}
-
-      {tab === 'perfil' && (<>
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
       <FechasImportantes person={live} />
 
@@ -847,99 +922,6 @@ export function PersonDetail({
           vive acá, junto a ellas, y colapsada por defecto (no domina la ficha). */}
       <MencionadasPanel personId={live.id} personName={live.name} specialDates={live.specialDates} />
 
-      </>)}
-
-      {tab === 'hoy' && (<>
-      {/* ─── Lunar + Ciclo: estado actual por persona. Solo si es mujer
-          (o ya tiene datos de ciclo cargados, p. ej. registros legacy). ─── */}
-      {profile.showCuidado && (
-        <div className="mb-4">
-          <CicloPanel
-            cycleStartDate={live.cycleStartDate ?? null}
-            cycleLengthDays={live.cycleLengthDays ?? null}
-            personCycles={personCycles}
-            isRomantic={live.relationship === 'romantic'}
-          />
-        </div>
-      )}
-
-      </>)}
-
-      {tab === 'conversacion' && (<>
-      {/* Correlación longitudinal (Fase 3c): person_logs × fase lunar ×
-          fase del ciclo. Determinístico; narrativa IA opcional detrás de
-          botón. Empty state honesto si falta data. */}
-      <div className="mb-4">
-        <CorrelacionPanel
-          personId={live.id}
-          personLogs={correlationLogs}
-          cycleStartDate={live.cycleStartDate ?? null}
-          cycleLengthDays={live.cycleLengthDays ?? null}
-          personCycles={personCycles}
-        />
-      </div>
-
-      {/* Feature 3: evolución del tono de interacción con esta persona. */}
-      <div className="mb-4">
-        <TrendChart
-          label="Tono de interacción"
-          icon={MessageSquareHeart}
-          points={toneSeries}
-          colorClass="text-brand"
-          formatValue={(n) => n.toFixed(1)}
-          emptyHint="Registrá interacciones (arriba) para ver cómo evoluciona el tono."
-        />
-      </div>
-
-      </>)}
-
-      {tab === 'registro' && (<>
-      {/* Captura en contexto: subir un pantallazo y asociarlo DIRECTO a esta
-          persona, sin pasar por /captura ni re-seleccionar. Reusa el pipeline
-          detect → process con person_id fijo. */}
-      <AgregarCapturaPanel personId={live.id} personName={live.name} />
-
-      {/* Registro RELACIONAL: tono de la última interacción con esta persona.
-          (Ánimo/Energía/Sueño/Dolor se sacaron de la ficha: son métricas
-          biológicas de self, viven en /yo — no tienen sentido "respecto a esta
-          persona".) Storage Supabase-native en person_logs. */}
-      <RegistrarInteraccionPanel personId={live.id} recentLogs={personLogs.filter((l) => !isSystemNote(l.note ?? ''))} />
-
-      <MomentosPanel personId={live.id} />
-      <PersonMoneyPanel personId={live.id} />
-      <IdentidadesPanel personId={live.id} />
-
-      {/* Nota de voz (#12): graba audio -> bucket person-voice-notes +
-          observation voice_note (aparece tambien en la Bitacora). */}
-      <NotaDeVozPanel personId={live.id} observations={curatedObservations} />
-
-      {/* Redes & social (unificado): handles manuales editables + enriquecimiento
-          de la captura de Instagram, en un solo bloque coherente. La captura se
-          hace con el panel inline "Agregar captura" (arriba), no en /captura. */}
-      <RedesSociales person={live} observations={curatedObservations} />
-
-      </>)}
-
-      {tab === 'red' && (<>
-      {/* Familia (A.4): vincular padre/madre/etc. como nodos de familia en el
-          grafo (person_links, 0035). Crea el nodo-persona mínimo + la arista. */}
-      <FamiliaPanel person={live} />
-
-      {/* Vínculos profesionales/sociales (0128): quién conoce a quién por trabajo
-          o socialmente. Abre el grafo person↔person para 15·7 (red). */}
-      <ProfessionalLinksPanel person={live} />
-
-      {/* 15·7 — caminos: mutuos que conectan con esta persona (puente para intro). */}
-      <NetworkPathsCard person={live} />
-
-      {/* ─── Los TRES ejes narrativos de la ficha (profesional/social/personal),
-          consistentes entre sí. Profesional + social: síntesis determinística
-          PERSISTIDA (person_profile_axes, 0047) con fallback en vivo. Personal:
-          síntesis IA cacheada (person_synthesis). ─────────────────────────── */}
-
-      </>)}
-
-      {tab === 'perfil' && (<>
       {/* Vida profesional (#6): educación (campo people, 0024) + resumen
           determinístico de la captura LinkedIn. */}
       <VidaProfesional person={live} observations={curatedObservations} axes={profileAxes} />
@@ -951,9 +933,6 @@ export function PersonDetail({
           seguidores en común desde la captura de Instagram. */}
       <VidaSocial observations={curatedObservations} axes={profileAxes} />
 
-      </>)}
-
-      {tab === 'perfil' && (<>
       {/* "Lo personal" (#8): síntesis narrativa LLM, lazy + cacheada en
           person_synthesis. conversationCount = whatsapp_chat curadas. */}
       <LoPersonal
@@ -1039,7 +1018,63 @@ export function PersonDetail({
         </Link>{' '}
         y usá el formulario existente.
       </p>
+
       </>)}
+
+      {tab === 'conversacion' && (<>
+      <div className="mb-4">
+        <BondEvolutionPanel personId={live.id} />
+      </div>
+      <div className="mb-4">
+        <ConversationAnalyticsCard personId={live.id} personName={live.name} />
+      </div>
+
+      {/* Correlación longitudinal (Fase 3c): person_logs × fase lunar ×
+          fase del ciclo. Determinístico; narrativa IA opcional detrás de
+          botón. Empty state honesto si falta data. */}
+      <div className="mb-4">
+        <CorrelacionPanel
+          personId={live.id}
+          personLogs={correlationLogs}
+          cycleStartDate={live.cycleStartDate ?? null}
+          cycleLengthDays={live.cycleLengthDays ?? null}
+          personCycles={personCycles}
+        />
+      </div>
+
+      {/* Feature 3: evolución del tono de interacción con esta persona. */}
+      <div className="mb-4">
+        <TrendChart
+          label="Tono de interacción"
+          icon={MessageSquareHeart}
+          points={toneSeries}
+          colorClass="text-brand"
+          formatValue={(n) => n.toFixed(1)}
+          emptyHint="Registrá interacciones (arriba) para ver cómo evoluciona el tono."
+        />
+      </div>
+
+      </>)}
+
+      {tab === 'red' && (<>
+      {/* Familia (A.4): vincular padre/madre/etc. como nodos de familia en el
+          grafo (person_links, 0035). Crea el nodo-persona mínimo + la arista. */}
+      <FamiliaPanel person={live} />
+
+      {/* Vínculos profesionales/sociales (0128): quién conoce a quién por trabajo
+          o socialmente. Abre el grafo person↔person para 15·7 (red). */}
+      <ProfessionalLinksPanel person={live} />
+
+      {/* 15·7 — caminos: mutuos que conectan con esta persona (puente para intro). */}
+      <NetworkPathsCard person={live} />
+
+      {/* ─── Los TRES ejes narrativos de la ficha (profesional/social/personal),
+          consistentes entre sí. Profesional + social: síntesis determinística
+          PERSISTIDA (person_profile_axes, 0047) con fallback en vivo. Personal:
+          síntesis IA cacheada (person_synthesis). ─────────────────────────── */}
+
+      </>)}
+
       </div>
 
       {/* Dossier imprimible (Parte A): oculto en pantalla, visible al imprimir.

@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SectionTitle } from '@/components/ui/section-title'
+import { OriginBadge } from './OriginBadge'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { toApiError, parseErrorResponse, type ApiError } from '@/lib/api/errors'
 import {
@@ -89,7 +90,14 @@ export function CorrelacionPanel({
         return
       }
       const data = (await res.json()) as { narrative?: string }
-      setNarrative(data.narrative ?? '')
+      const text = (data.narrative ?? '').trim()
+      if (!text) {
+        // Narrativa vacía: NO la guardamos como '' (falsy → volvería a mostrar el
+        // botón y el próximo click re-paga el LLM). La tratamos como error suave.
+        setError(toApiError(new Error('La IA no devolvió una lectura. Probá de nuevo en un momento.')))
+        return
+      }
+      setNarrative(text)
     } catch (e) {
       setError(toApiError(e))
     } finally {
@@ -100,7 +108,10 @@ export function CorrelacionPanel({
   return (
     <Card className="shadow-none mb-4">
       <CardContent className="p-4 sm:p-6">
-        <SectionTitle icon={LineChart} label="Correlación longitudinal" />
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle icon={LineChart} label="Correlación longitudinal" />
+          <OriginBadge origin="computed" />
+        </div>
 
         {!hasData ? (
           <EmptyState />

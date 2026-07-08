@@ -4,6 +4,7 @@
 // le pasaste menos lo que te devolvió.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { Wallet, Plus, X, ArrowUpRight, ArrowDownLeft, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -36,9 +37,13 @@ export function PersonMoneyPanel({ personId }: { personId: string }) {
   const add = useCallback(async () => {
     if (!f.amount || busy) return; setBusy(true)
     try {
-      await fetch('/api/people/money', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const r = await fetch('/api/people/money', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ person_id: personId, direction: f.direction, amount: Number(f.amount), concept: f.concept || undefined, occurred_on: f.occurred_on || undefined, occurred_time: f.occurred_time || undefined }) })
+      // No limpiar el form ni cerrar el panel si el guardado falló: perdería lo tipeado.
+      if (!r.ok) { toast.error('No se pudo guardar el movimiento', { description: `HTTP ${r.status}` }); return }
       setF({ direction: 'out', amount: '', concept: '', occurred_on: '', occurred_time: '' }); setShow(false); await load()
+    } catch (err) {
+      toast.error('No se pudo guardar el movimiento', { description: err instanceof Error ? err.message : undefined })
     } finally { setBusy(false) }
   }, [f, busy, personId, load])
 

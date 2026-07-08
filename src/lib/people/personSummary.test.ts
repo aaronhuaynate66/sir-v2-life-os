@@ -50,12 +50,43 @@ describe('buildPersonSummary — próxima fecha', () => {
     expect(s.nextDate!.nudge.length).toBeGreaterThan(0)
   })
 
-  it('cumpleaños lejano (>60d) no aparece en la franja', () => {
+  it('cumpleaños lejano (>30d) no aparece en la franja', () => {
     const s = buildPersonSummary(
       { person: person({ birthDate: '1995-12-25' }), lastChatObservedAt: null, lastManualInteractionAt: null },
       NOW,
     )
     expect(s.nextDate).toBeNull()
+  })
+
+  it('ventana bajada a 30d: una fecha a ~45d ya no aparece', () => {
+    // NOW = 2026-06-01; cumple 2025-07-16 → ~45 días. Con ventana 60 aparecía;
+    // con 30 no.
+    const s = buildPersonSummary(
+      { person: person({ birthDate: '1995-07-16' }), lastChatObservedAt: null, lastManualInteractionAt: null },
+      NOW,
+    )
+    expect(s.nextDate).toBeNull()
+  })
+
+  it('rankea por relevancia: aniversario de pareja le gana a una fecha de rubro más cercana', () => {
+    const s = buildPersonSummary(
+      {
+        person: person({
+          specialDates: [
+            // Fecha de rubro más CERCANA (10 días).
+            { id: 'sd1', label: 'Día del médico', date: '2020-06-11', recurring: true },
+            // Aniversario de pareja un poco más lejos (20 días) pero más relevante.
+            { id: 'sd2', label: 'Aniversario', date: '2020-06-21', recurring: true },
+          ],
+        }),
+        lastChatObservedAt: null,
+        lastManualInteractionAt: null,
+      },
+      NOW,
+    )
+    expect(s.nextDate).not.toBeNull()
+    expect(s.nextDate!.label).toBe('Aniversario')
+    expect(s.nextDate!.daysUntil).toBe(20)
   })
 })
 

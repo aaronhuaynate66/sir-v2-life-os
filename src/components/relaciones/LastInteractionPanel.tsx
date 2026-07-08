@@ -193,7 +193,7 @@ function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?:
             <div key={i} className={m.author === 'user' ? 'flex justify-end' : 'flex justify-start'}>
               <div className={
                 m.author === 'user'
-                  ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-[#14b8a6]/15 px-3 py-1.5 text-[13px] text-foreground'
+                  ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-ok/15 px-3 py-1.5 text-[13px] text-foreground'
                   : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-card px-3 py-1.5 text-[13px] text-foreground/90'
               }>
                 <span className="block text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">

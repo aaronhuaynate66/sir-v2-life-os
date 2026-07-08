@@ -664,7 +664,7 @@ export function IntakeInteligente() {
             className="text-sm w-full file:mr-3 file:rounded file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-xs file:font-medium hover:file:bg-accent/10"
           />
           {queue.length > 1 && (
-            <div className="rounded-md border border-[#14b8a6]/40 bg-[#14b8a6]/5 px-3 py-1.5 text-[12px] text-foreground">
+            <div className="rounded-md border border-ok/40 bg-ok/5 px-3 py-1.5 text-[12px] text-foreground">
               Detecté <span className="font-semibold">{queue.length} personas distintas</span>. Procesando <span className="font-semibold">persona {queueIdx + 1} de {queue.length}</span> — revisás y confirmás una por una.
             </div>
           )}

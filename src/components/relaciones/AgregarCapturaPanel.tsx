@@ -1030,7 +1030,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
                 )}
                 {noteData?.location && <li className="text-muted-foreground">Lugar → <span className="text-foreground">{noteData.location}</span></li>}
                 {noteData?.specialDates?.map((sd, i) => (
-                  <li key={`sd-${i}`} className="text-[#14b8a6]">📅 {sd.label} → <span className="font-mono">{sd.date}</span>{sd.recurring ? ' (cada año)' : ''} <span className="text-muted-foreground">→ Fechas importantes</span></li>
+                  <li key={`sd-${i}`} className="text-ok">📅 {sd.label} → <span className="font-mono">{sd.date}</span>{sd.recurring ? ' (cada año)' : ''} <span className="text-muted-foreground">→ Fechas importantes</span></li>
                 ))}
                 {noteData?.facts.map((fc, i) => (
                   <li key={i} className="text-muted-foreground">· {fc}</li>

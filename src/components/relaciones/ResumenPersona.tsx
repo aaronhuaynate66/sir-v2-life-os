@@ -16,12 +16,12 @@
 // acción "al día"); los semánticos (warn/bad) sólo cuando hay URGENCIA real
 // (fecha inminente, vínculo frío).
 
-import { Moon, Cake, CalendarHeart, MessageCircle, Activity, ArrowRight } from 'lucide-react'
+import { Moon, Cake, CalendarHeart, MessageCircle, Activity } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { useMounted } from '@/hooks/useMounted'
 import { cn } from '@/lib/utils'
-import { buildPersonSummary, type NextActionUrgency } from '@/lib/people/personSummary'
+import { buildPersonSummary } from '@/lib/people/personSummary'
 import type { Person } from '@/types'
 
 export interface ResumenPersonaProps {
@@ -107,9 +107,8 @@ function SummaryBody({ person, lastChatObservedAt, lastManualInteractionAt }: Re
           </Stat>
         )}
       </div>
-
-      {/* Próxima acción accionable */}
-      {s.nextAction && <NextActionLine text={s.nextAction.text} urgency={s.nextAction.urgency} />}
+      {/* La "próxima acción" ya no vive acá como texto pasivo: la muestra el
+          bloque <AccionDeHoy> (con botón real) debajo del vistazo. */}
     </div>
   )
 }
@@ -130,27 +129,6 @@ function Stat({
         <span className="text-[10px] uppercase tracking-[0.06em] text-text-tertiary truncate">{label}</span>
       </div>
       <div className="flex items-baseline gap-0.5 flex-wrap leading-tight">{children}</div>
-    </div>
-  )
-}
-
-/** Línea de próxima acción. Acento de marca cuando es "al día" (foco);
- *  semántico (warn/bad) sólo ante urgencia real. */
-function NextActionLine({ text, urgency }: { text: string; urgency: NextActionUrgency }) {
-  const styles: Record<NextActionUrgency, string> = {
-    info: 'border-brand/30 bg-brand-soft text-brand-soft-foreground',
-    soon: 'border-warn/30 bg-warn-soft text-warn-foreground',
-    now: 'border-bad/30 bg-bad-soft text-bad-foreground',
-  }
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium',
-        styles[urgency],
-      )}
-    >
-      <ArrowRight size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" />
-      <span>{text}</span>
     </div>
   )
 }

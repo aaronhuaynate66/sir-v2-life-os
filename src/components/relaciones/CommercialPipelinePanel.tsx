@@ -15,7 +15,7 @@ export function CommercialPipelinePanel({ people }: { people: Person[] }) {
   if (leads.length === 0) return null
 
   return (
-    <Card className="mb-4 border-[#14b8a6]/30">
+    <Card className="mb-4 border-ok/30">
       <CardContent className="p-4 sm:p-6">
         <SectionTitle icon={Briefcase} label="Oportunidades comerciales" count={leads.length} />
         <p className="mt-1 text-[12px] text-muted-foreground">Leads de tus vínculos, del más frío al más reciente. No los dejes enfriar.</p>
@@ -24,7 +24,7 @@ export function CommercialPipelinePanel({ people }: { people: Person[] }) {
             <li key={l.id}>
               <Link
                 href={l.slug ? `/relaciones/${l.slug}` : '/relaciones'}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 hover:border-[#14b8a6]/50"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2 hover:border-ok/50"
               >
                 <span className="min-w-0">
                   <span className="text-[14px] text-foreground">{l.name}</span>
