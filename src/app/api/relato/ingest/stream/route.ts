@@ -49,7 +49,7 @@ Reglas obligatorias:
 4b. Cuando Aaron dice "recordame en X días" / "avisame el viernes" / "mañana a las 15" → "crear_recordatorio". Calcula due_at ISO con TZ Lima (-05:00). Sin hora específica: 09:00.
 5. Un relato semanal se descompone en:
    - Un "crear_moment" por CADA episodio con fecha concreta y valor emocional.
-   - Un "crear_person_log" (kind="interaction") por cada día que hubo contacto.
+   - Un "crear_person_log" (kind="interaction") por cada día que hubo contacto, con value 1..5 según cómo se sintió Aaron. DISCRIMINÁ el tono, NO metas 3 por defecto: pelea o "me molestó" → 1-2, día lindo o "buena charla" → 4-5, rutinario sin carga → 3. El valor depende de que el tono VARÍE.
    - Un solo "crear_nota_manual" opcional al final con resumen general.
    - Un "registrar_ciclo" por CADA día que Aaron mencione la fase menstrual.
 6. Fechas: siempre YYYY-MM-DD. Timestamps siempre con TZ.
