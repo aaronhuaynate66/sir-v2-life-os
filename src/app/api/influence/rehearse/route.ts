@@ -16,8 +16,10 @@ import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
 import { gatherRehearseExtras } from '@/lib/influence/rehearseContext'
 import { getSelfBioState } from '@/lib/people/selfState'
-import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext, type RehearseResult } from '@/lib/influence/rehearsePrompt'
+import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext, type RehearseNorte, type RehearseResult } from '@/lib/influence/rehearsePrompt'
 import { checkEthics } from '@/engines/ethics'
+import { buildYearCompass } from '@/lib/year-compass/build'
+import { goalAdapter } from '@/lib/supabase/sync/adapters/goals'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -82,7 +84,7 @@ export async function POST(req: NextRequest) {
   // → cruzaba el cap de 60s de Vercel Hobby). memorias + conversación (WhatsApp) +
   // estado bio de Aaron (doc 13) + contexto rico (ciclo M6 + Pulso C0).
   const rep = (e: unknown) => { reportApiError(e, { route: 'influence/rehearse' }) }
-  const [memories, conversation, selfState, extras] = await Promise.all([
+  const [memories, conversation, selfState, extras, norte] = await Promise.all([
     getMemoriesForPerson(supabase, userId, personId, { limit: 24 })
       .then((rows) => rows.map((m) => (m.content ?? '').trim()).filter(Boolean))
       .catch((e) => { rep(e); return [] as string[] }),
@@ -99,6 +101,29 @@ export async function POST(req: NextRequest) {
       cycleLengthDays: (person.cycle_length_days as number) ?? null,
       lastContactMs: person.last_contact ? Date.parse(person.last_contact as string) : null,
     }, Date.now()).catch((e) => { rep(e); return {} as import('@/lib/influence/rehearseContext').RehearseExtras }),
+    // El norte del año: MISMA fuente que "TU NORTE" del panel. buildYearCompass
+    // elige el ancla explícita (is_anchor, si Aaron tocó el ⚓) o, en su defecto,
+    // la deriva (mayor prioridad + fecha, self-first). Así el ensayo tira del
+    // norte que Aaron realmente ve, no de un flag que hoy nadie prende. Fail-open.
+    (async (): Promise<RehearseNorte | undefined> => {
+      try {
+        const { data } = await supabase
+          .from('goals')
+          .select('id, title, description, category, priority, status, target_date, progress, milestones, related_goals, related_persons, peace_impact, obstacles, next_action, target, baseline, why, is_anchor, anchor_subtitle, created_at, updated_at')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .limit(100)
+        const goals = ((data ?? []) as Record<string, unknown>[]).map((r) => goalAdapter.fromRow(r))
+        const anchor = buildYearCompass(goals, new Date()).anchor
+        if (!anchor) return undefined
+        const na = goals.find((g) => g.id === anchor.id)?.nextAction?.trim()
+        return {
+          title: anchor.title.slice(0, 120),
+          subtitle: anchor.subtitle?.slice(0, 120) || undefined,
+          nextAction: na ? na.slice(0, 120) : undefined,
+        }
+      } catch (e) { rep(e); return undefined }
+    })(),
   ])
   const cycleNote = extras.cycleNote
   const pulse = extras.pulse
@@ -118,6 +143,7 @@ export async function POST(req: NextRequest) {
     pulse,
     openThreads,
     bondState,
+    norte,
   }
   const user = buildRehearseUserContent(ctx, objective)
 
@@ -176,7 +202,7 @@ Ayuda a Aaron con la version mas conveniente sin mentir, coaccionar, explotar vu
       user_id: userId, person_id: personId, person_name: personName, objective, result,
       context_used: {
         cycle: !!cycleNote, pulse: !!pulse, selfState: !!selfState,
-        openThreads: !!openThreads, bondState: !!bondState, memories: memories.length, conversation: !!conversation,
+        openThreads: !!openThreads, bondState: !!bondState, memories: memories.length, conversation: !!conversation, norte: !!norte,
       },
     })
   } catch (e) { reportApiError(e, { route: 'influence/rehearse', stage: 'persist' }) }
