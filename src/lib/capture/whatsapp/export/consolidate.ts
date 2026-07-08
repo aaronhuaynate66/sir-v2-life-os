@@ -17,6 +17,7 @@ import type {
 } from './types'
 import { weeklyVolumeSeries } from '@/lib/conversation-analytics/analyze'
 import { reconcileFacts } from '@/lib/facts/reconcile'
+import { buildDailySignals } from '@/lib/forecast-conductual/dailySignals'
 
 // ─── helpers de merge ───────────────────────────────────────────────
 
@@ -254,6 +255,14 @@ export function buildExportObservationData(
   // habilita la tendencia + changepoint de largo plazo en el Pulso sin guardar
   // 70k mensajes. null si el histórico es corto (los rawMessages ya alcanzan).
   const volumeSeries = weeklyVolumeSeries(parsed.messages.map((m) => m.iso))
+  // Señales diarias del chat COMPLETO (léxico puro, sin LLM) → forecast conductual
+  // (2º horizonte). Se computan acá porque es el único lugar con TODOS los mensajes
+  // (rawMessages es solo una muestra reciente). El endpoint las persiste aparte.
+  const dailySignals = buildDailySignals(
+    parsed.messages
+      .filter((m): m is typeof m & { iso: string } => typeof m.iso === 'string' && m.iso.length >= 10)
+      .map((m) => ({ at: m.iso, author: roleMap.get(m.author) ?? 'other', text: m.content, kind: m.isMedia ? 'media' as const : 'text' as const })),
+  )
   const sample: ExportMessage[] = parsed.messages.slice(-RAW_SAMPLE_SIZE)
   const rawMessages = sample.map((m) => ({
     timestamp: m.time,
@@ -300,5 +309,8 @@ export function buildExportObservationData(
     interactionQuality: consolidated.interactionQuality,
     recentTone: consolidated.recentTone,
     emotionalTone: consolidated.emotionalTone,
+    // Serie diaria completa para el forecast conductual (el endpoint la persiste
+    // en person_daily_signals y NO la guarda en la observación).
+    dailySignals,
   }
 }
