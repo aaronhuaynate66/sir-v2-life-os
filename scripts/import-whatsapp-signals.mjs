@@ -26,6 +26,8 @@ const CHATS = [
 ]
 const DIR = 'C:/Users/huayn/Dropbox/SIR/AARON SIR/whatsapp-chats'
 const USER = 'Aaron Huaynate'
+// Overrides para nombres de contacto ambiguos (el filename no matchea bien).
+const OVERRIDES = { 'lau_113@hotmail.com': 'Laura Alfaro Heredia' }
 
 // ── Léxico (copia fiel de lexicon.ts) ──
 const LEX = {
@@ -108,9 +110,11 @@ async function main() {
   const { data: any1 } = await sb.from('person_daily_signals').select('user_id').limit(1)
   const userId = any1?.[0]?.user_id || (await sb.from('health_metrics').select('user_id').limit(1)).data?.[0]?.user_id
 
+  const only = process.argv[2] // opcional: procesar solo los que incluyan este texto
   for (const file of CHATS) {
+    if (only && !file.includes(only)) continue
     const name = file.replace(/^WhatsApp Chat - /, '').replace(/\.zip$/, '')
-    const person = matchPerson(name, people)
+    const person = matchPerson(OVERRIDES[name] ?? name, people)
     if (!person) { console.log(`SKIP  ${name} → sin match de persona`); continue }
     const dir = mkdtempSync(join(tmpdir(), 'wa-'))
     try { execSync(`unzip -o "${DIR}/${file}" -d "${dir}"`, { stdio: 'ignore' }) } catch { console.log(`ERR unzip ${name}`); continue }
