@@ -87,6 +87,7 @@ import { NotesHistoryDropdown } from './NotesHistoryDropdown'
 import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
+import { ReflexionesPanel } from './ReflexionesPanel'
 import { CicloPanel } from './CicloPanel'
 import { CycleHorizonCard } from './CycleHorizonCard'
 import { CorrelacionPanel } from './CorrelacionPanel'
@@ -790,10 +791,13 @@ export function PersonDetail({
             <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-3">
               Métricas relacionales
             </div>
+            <Row label="Qué es para vos" value={AMBITO_LABEL[live.ambito ?? inferAmbito(live.relationship)]} />
             <Row label="Importancia" value={`${live.importanceScore}/10`} />
             <Row label="Confianza" value={`${live.trustLevel}/10`} />
             <Row label="Impacto energético" value={ENERGY_LABEL[live.energyImpact] ?? live.energyImpact} />
             <Row label="Frecuencia contacto" value={live.contactFrequency || '—'} />
+            {live.gender && <Row label="Sexo" value={live.gender === 'female' ? 'Mujer' : live.gender === 'male' ? 'Hombre' : 'Otro'} />}
+            {live.orgGroup && <Row label="Grupo" value={live.orgGroup} />}
             {live.lastContact && <Row label="Último contacto" value={live.lastContact.slice(0, 10)} />}
             {live.location && <Row label="Ubicación" value={live.location} />}
             {live.estadoCivil && <Row label="Estado civil" value={live.estadoCivil} />}
@@ -806,13 +810,16 @@ export function PersonDetail({
 
       </>)}
 
-      {tab === 'conversacion' && (<>
+      {tab === 'hoy' && (<>
       {/* ─── Sesion 3 PR-B: RelationalScore + BirthdayCountdown reales ── */}
       <div className="grid gap-4 sm:grid-cols-2 mb-4">
         <RelationalScore person={live} lastChat={lastChat} />
           <StakeholderDealImpact person={live} />
         <BirthdayCountdown person={live} />
       </div>
+      </>)}
+
+      {tab === 'conversacion' && (<>
       <div className="mb-4">
         <BondEvolutionPanel personId={live.id} />
       </div>
@@ -949,13 +956,13 @@ export function PersonDetail({
         }
       />
 
-      {/* Datos curados visibles: confirma el contrato is_obsolete=false
-          de la capa de fetch. Las filas LinkedIn alucinadas que dejamos
-          obsoletas en PR #87 NO deberian aparecer aca. */}
-      <CuratedObservationsPanel observations={curatedObservations} />
 
       {/* 15·8 — qué le importa: temas recurrentes de sus memorias (client-side). */}
       <WhatMattersChips memories={memories} tags={live.tags ?? []} name={live.name} />
+
+      {/* Preguntas para reflexionar: rescate del dato huérfano
+          observation.data.reflectionQuestions (WhatsApp Nivel C). Se oculta si no hay. */}
+      <ReflexionesPanel observations={curatedObservations} />
 
       {/* Tensiones y fortalezas: notas relacionales que Aaron carga a mano
           (fricción / fortalezas / metas en común). people.relational_notes (0132). */}
@@ -1046,55 +1053,3 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** Panel de "Datos curados" — muestra el conteo de observations
- *  is_obsolete=false agrupado por capture_type. PR-A lo usa para validar
- *  visualmente el contrato del filtro; PR-B+ va a transformar esto en
- *  paneles de Vida social / profesional / etc. */
-function CuratedObservationsPanel({ observations }: { observations: Observation[] }) {
-  const byType = observations.reduce<Record<string, number>>((acc, obs) => {
-    acc[obs.captureType] = (acc[obs.captureType] ?? 0) + 1
-    return acc
-  }, {})
-  const types = Object.entries(byType).sort((a, b) => b[1] - a[1])
-
-  return (
-    <Card className="shadow-none mb-4 border-dashed">
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex items-baseline justify-between gap-2 mb-3">
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
-            Datos curados
-          </div>
-          <span className="text-[10px] font-mono text-muted-foreground/60">
-            is_obsolete=false
-          </span>
-        </div>
-
-        {observations.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">
-            Sin observaciones curadas para esta persona.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm text-foreground">
-              <span className="text-2xl font-semibold tracking-tight">
-                {observations.length}
-              </span>{' '}
-              <span className="text-muted-foreground">observación{observations.length === 1 ? '' : 'es'} curada{observations.length === 1 ? '' : 's'}</span>
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {types.map(([type, count]) => (
-                <Badge key={type} variant="outline" className="text-[10px] font-mono">
-                  {type} · {count}
-                </Badge>
-              ))}
-            </div>
-            <p className="text-[11px] text-muted-foreground italic">
-              Las visualizaciones que consumen esta data (Vida social,
-              Vida profesional, Bitácora) llegan en PR-B+.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
