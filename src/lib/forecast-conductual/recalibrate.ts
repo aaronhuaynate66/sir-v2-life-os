@@ -38,6 +38,31 @@ export interface Recalibration {
   confidenceDelta: number
 }
 
+/**
+ * Aprende un multiplicador de peso por MODELO (§17): un modelo que fue dominante
+ * en ventanas que acertaron sube; el que dominó en las que fallaron, baja. Necesita
+ * ≥2 observaciones por modelo para ajustar (si no, queda en 1 = neutro). PURO.
+ */
+export function modelWeights(fb: { label: FeedbackLabel; models: string[] }[]): Record<string, number> {
+  const stat: Record<string, { hit: number; n: number }> = {}
+  for (const f of fb) {
+    if (f.label === 'noise') continue // ruido no enseña
+    for (const m of f.models ?? []) {
+      stat[m] ??= { hit: 0, n: 0 }
+      stat[m].n += 1
+      if (f.label === 'hit') stat[m].hit += 1
+      else if (f.label === 'partial') stat[m].hit += 0.5
+    }
+  }
+  const out: Record<string, number> = {}
+  for (const [m, s] of Object.entries(stat)) {
+    if (s.n < 2) continue
+    const rate = s.hit / s.n // 0..1
+    out[m] = Math.round((0.75 + rate * 0.75) * 100) / 100 // 0→0.75, 0.5→1.13, 1→1.5
+  }
+  return out
+}
+
 /** Computa el estado de recalibración desde el historial de feedback. PURO. */
 export function recalibrate(labels: FeedbackLabel[]): Recalibration {
   const hits = labels.filter((l) => l === 'hit').length
