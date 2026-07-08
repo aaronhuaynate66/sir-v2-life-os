@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `be08a31`
+**Hash del último commit humano:** `d9ad27a`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `d9ad27a` | aaronhuaynate66 | docs(backlog): reconciliar con la realidad + barrido de verificación 08-jul (#630) | 2026-07-08 |
 | `be08a31` | aaronhuaynate66 | fix(gaps): pedir la fecha del ciclo solo con pareja, no a mamá/colega (#629) | 2026-07-08 |
 | `cac1c33` | aaronhuaynate66 | fix(relaciones): el gesto solo sugiere temas realmente recurrentes (#628) | 2026-07-08 |
 | `b181692` | aaronhuaynate66 | fix(ciclo): cruce honesto de horizontes por solape de ventanas (#627) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `275861b` | aaronhuaynate66 | feat(forecast-conductual): loop de feedback + recalibración (Fase 2, cierra el spec) (#623) | 2026-07-08 |
 | `81a26e4` | aaronhuaynate66 | feat(ciclo): Estudio del ciclo para TODAS las mujeres, con registro por vínculo (#622) | 2026-07-08 |
 | `b737845` | aaronhuaynate66 | chore(forecast): override de match + filtro por argv en el importer (#621) | 2026-07-08 |
-| `918a07e` | aaronhuaynate66 | chore(forecast): batch importer de señales de WhatsApp por terminal (#620) | 2026-07-08 |
 
 ---
 
@@ -379,10 +379,21 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 31/05/2026 (reconciliación con la realidad de prod + captura del roadmap estratégico).
+> **Última actualización:** 08/07/2026 (barrido de verificación en vivo + reconciliación: varios "pendientes" ya estaban hechos).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## ✅ EN PRODUCCIÓN — barrido de verificación en vivo (2026-07-08)
+
+> Sesión de "mirar la salida con data real" (método de [[project_qa_baseline_user_mode]]). Se cazaron y arreglaron bugs plausibles-pero-mal que un health-check no ve, y se reconcilió el backlog (varios "pendientes" de abajo YA estaban hechos — marcados ✅ in situ).
+
+- **Ficha por tipo de vínculo + cruce de horizontes:** Camino B (calendario personal → línea del ciclo, #626), cruce honesto real↔conductual por solape de ventanas SPM→período (#627). Verificado en Diana (pareja) y Nicolle (familia): guardrails éticos por vínculo OK (familia = presencia, sin flores/intimidad/planner).
+- **fix #628** — «UN GESTO» ya no sugiere fragmentos de frecuencia sueltos ("mudo"): solo temas ≥3 apariciones o tags curados.
+- **fix #629** — «SIR quiere saber» ya NO pide la fecha del período de mujeres que no son pareja (mamá/tía/colega): invasivo e irreal, y el 2º horizonte lo infiere. Solo pregunta con pareja.
+- **Reconciliado como YA HECHO:** `/captura` multi-archivo (#102), toast de fallo de sync, pesos por-modelo del forecast. El backlog los tenía como pendientes.
 
 ---
 
@@ -780,7 +791,7 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
 Mejoras incrementales. Hacer cuando aporte valor concreto.
 
-- **`/captura` — subir VARIAS imágenes a la vez** (pedido 2026-06-08): hoy la ruta `/captura` procesa **una** imagen por vez (Elegí imagen → Detectar tipo → Vincular → Guardar). Permitir seleccionar/soltar múltiples archivos y procesarlos en lote (detectar tipo + vincular + guardar cada uno). **Distinto** de "varias imágenes del MISMO perfil → consolidar en 1" (ya existe) y del panel "Mis capturas" de `/yo`: acá son capturas potencialmente de tipos/personas distintas subidas juntas. Considerar: cola con estado por imagen, detección de tipo por archivo, y resolución de persona por archivo. Esfuerzo: medio.
+- ~~**`/captura` — subir VARIAS imágenes a la vez**~~ ✅ **HECHO (#102, `BatchCapturePanel`):** N imágenes de tipos/personas distintas, procesadas en cola client-side secuencial (detect → process por archivo, estado por imagen, vínculo de persona por captura tras guardar). Aislado del flujo single (que queda intacto); reusa los clientes probados (`detectCaptureType`/`processCapture`/`linkObservationToPerson`). Vive al fondo de `/captura`. (Verificado 2026-07-08 en el barrido de reconciliación.)
 
 - **Storage buckets — cleanup de huérfanos**: las observations soft-deleteadas el 29/05 dejaron imágenes en `linkedin-captures`, `instagram-captures`, `whatsapp-captures`, `person-avatars` bajo `{user_id}/...`. Tarea de datos, no de código: listar paths por bucket vs observations vivas y borrar las huérfanas. Esfuerzo: 30 min con script. **No ejecutar hasta que se decida la política de retención de imágenes asociadas a `observations.is_obsolete=true`** (¿borrar al obsoletar? ¿quedan como referencia?). Pendiente decisión.
 
@@ -849,8 +860,7 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 Detectadas durante el diagnóstico del 28/05/2026, cuando los upserts de `health_metrics` fallaban silenciosamente y la UI mostraba "8 métricas guardadas" aunque sólo estaban en `localStorage`. La causa raíz (migration 0002 incompleta) se resuelve con migration 0006. Estas dos mejoras son la **defensa-en-profundidad** para que falla silenciosa no vuelva a engañar al usuario.
 
-- **Sync engine: surface push failures al usuario.**
-  Hoy `pushWithRetry` en `src/lib/supabase/sync/engine.ts` reintenta 3 veces y, si todas fallan, logea `console.error` y se rinde silencioso. El usuario no se entera de que sus datos no llegaron al DB. Fix: registrar un callback `onSyncFailure(label, op, error)` en el engine y conectarlo a un toast destructivo en `<Sonner>` ("No pude sincronizar tu última métrica. Reintentar?"). Esfuerzo: 1-2h.
+- ~~**Sync engine: surface push failures al usuario.**~~ ✅ **HECHO (`notifySyncFailure` en `src/lib/supabase/sync/engine.ts`):** cuando `pushWithRetry` agota los reintentos, se muestra un toast («No pude sincronizar algunos cambios · quedaron guardados en este dispositivo, reintento al reconectar»), throttled 12s para no spamear en ráfagas offline. Tono tranquilizador (la fila queda en localStorage y se re-pushea al reconectar). (Verificado 2026-07-08.)
 
 - **`persistScaleCapture` no espera ACK del push.**
   `src/lib/capture/scale/client.ts` retorna `{ insertedCount: N }` ni bien hace `setState` — el sync engine procesa el push asíncrono después. Si el push falla, la UI ya pasó al Step 4 "success" con mentira. Fix: agregar arg opcional `awaitSync: boolean` al `persistScaleCapture` que use el callback de arriba para esperar al ACK antes de resolver la promesa. Trade-off: rompe levemente el offline-first (la UI bloquea hasta que el server confirme). Para Captura específicamente, vale la pena porque las 13 métricas son irrecuperables si se pierden. Esfuerzo: 30 min después de tener el callback del punto anterior.
