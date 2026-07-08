@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a56bb13`
+**Hash del último commit humano:** `4013ce4`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `4013ce4` | aaronhuaynate66 | Merge pull request #600 from aaronhuaynate66/fix/tono-real-excluir-placeholders | 2026-07-08 |
+| `d93d769` | Aaron Huaynate | fix(tono): excluir placeholders (llamadas/import-markers) del signal de tono | 2026-07-08 |
 | `a56bb13` | aaronhuaynate66 | Merge pull request #599 from aaronhuaynate66/feat/recalibrar-tono-historico | 2026-07-08 |
 | `ca6cf20` | Aaron Huaynate | feat(relato): recalibrar tono histórico (backfill de los logs en 3) | 2026-07-08 |
 | `f5b3b03` | aaronhuaynate66 | Merge pull request #598 from aaronhuaynate66/fix/tono-interaccion-discrimina | 2026-07-08 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c17f533` | aaronhuaynate66 | Merge pull request #596 from aaronhuaynate66/feat/decidir-premortem-ia | 2026-07-08 |
 | `363ba2c` | Aaron Huaynate | fix: guardado silencioso fuera de la ficha (misma clase que Tanda 1 P0) | 2026-07-08 |
 | `3152f7c` | Aaron Huaynate | feat(decidir): premortem asistido por IA inline (14·M2) | 2026-07-08 |
-| `3b510ed` | aaronhuaynate66 | Merge pull request #595 from aaronhuaynate66/feat/ciclo-forward-predictor | 2026-07-08 |
-| `5638680` | Aaron Huaynate | robustez(ciclo): baseline con TODO el historial (phaseOnDate) + hallazgo honesto | 2026-07-08 |
 
 ---
 
