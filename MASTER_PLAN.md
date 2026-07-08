@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `69d9a44`
+**Hash del último commit humano:** `61a01f2`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `61a01f2` | aaronhuaynate66 | Merge pull request #603 from aaronhuaynate66/feat/energia-ficha-partnereffect | 2026-07-08 |
+| `988a34b` | Aaron Huaynate | feat(ficha): revivir la card de energía con partnerEffect (flag muerto → dato real) | 2026-07-08 |
 | `69d9a44` | aaronhuaynate66 | Merge pull request #602 from aaronhuaynate66/fix/fuerza-cuenta-contacto-real | 2026-07-08 |
 | `56ac90a` | Aaron Huaynate | fix(score): la Fuerza cuenta el contacto real (llamadas contestadas + registros) | 2026-07-08 |
 | `3a0c52a` | aaronhuaynate66 | Merge pull request #601 from aaronhuaynate66/feat/import-tono-por-dia | 2026-07-08 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d93d769` | Aaron Huaynate | fix(tono): excluir placeholders (llamadas/import-markers) del signal de tono | 2026-07-08 |
 | `a56bb13` | aaronhuaynate66 | Merge pull request #599 from aaronhuaynate66/feat/recalibrar-tono-historico | 2026-07-08 |
 | `ca6cf20` | Aaron Huaynate | feat(relato): recalibrar tono histórico (backfill de los logs en 3) | 2026-07-08 |
-| `f5b3b03` | aaronhuaynate66 | Merge pull request #598 from aaronhuaynate66/fix/tono-interaccion-discrimina | 2026-07-08 |
-| `2bdfc8d` | Aaron Huaynate | fix(relato): rúbrica de tono para que el value de interacción DISCRIMINE | 2026-07-08 |
 
 ---
 
