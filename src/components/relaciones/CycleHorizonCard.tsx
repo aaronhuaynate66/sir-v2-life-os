@@ -18,7 +18,7 @@
 //
 // LÍNEA ÉTICA (doc 17): timing y presencia, NUNCA presión ni descalificación.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -89,32 +89,44 @@ export interface CycleHorizonCardProps {
   personId?: string | null
   /** Se incrementa desde afuera cuando se agrega/borra un plan → re-fetch. */
   refreshKey?: number
+  /** Controlado por el Estudio: si viene, NO hace fetch propio (evita duplicado). */
+  events?: PersonalEvent[]
+  /** "Ahora" estable (inyectado por el Estudio) → evita mismatch de hidratación. */
+  now?: Date
+  /** Fecha seleccionada (cursor scrubeable). Compartida con el briefing. */
+  selectedDate?: string | null
+  /** Al arrastrar/tocar la banda → simula esa fecha ('whatif'). */
+  onSelectDate?: (iso: string, mode: 'whatif') => void
 }
 
 export function CycleHorizonCard({
   cycleStartDate, cycleLengthDays, personCycles = [], specialDates = [], birthDate, personName, personId, refreshKey = 0,
+  events: eventsProp, now: nowProp, selectedDate = null, onSelectDate,
 }: CycleHorizonCardProps) {
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [expanded, setExpanded] = useState(false)
-  // CAPA PERSONAL: planes propios de Aaron ligados a ESTA persona (agenda nativa
-  // de SIR, mig 0133). Es lo que va en la línea del ciclo — NO el calendario
-  // laboral (que se mezclaba y metía ruido). Un calendario PERSONAL conectado
-  // (Camino B) alimentará esta misma capa más adelante (source='calendar').
-  const [personalEvents, setPersonalEvents] = useState<PersonalEvent[]>([])
+  const bandRef = useRef<HTMLDivElement>(null)
+  const [dragging, setDragging] = useState(false)
+  // CAPA PERSONAL: planes propios ligados a ESTA persona (agenda nativa, mig 0133).
+  // Si el Estudio inyecta `events`, usamos eso (fetch único allá); si no, fetch propio.
+  const controlled = eventsProp !== undefined
+  const [personalEventsState, setPersonalEventsState] = useState<PersonalEvent[]>([])
 
   useEffect(() => {
-    if (!cycleStartDate || !personId) return
+    if (controlled || !cycleStartDate || !personId) return
     let alive = true
     fetch(`/api/personal-events?personId=${encodeURIComponent(personId)}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (alive && data && Array.isArray(data.events)) setPersonalEvents(data.events as PersonalEvent[]) })
+      .then((data) => { if (alive && data && Array.isArray(data.events)) setPersonalEventsState(data.events as PersonalEvent[]) })
       .catch(() => { /* sin agenda / tabla ausente → la línea sigue con las fechas especiales */ })
     return () => { alive = false }
-  }, [cycleStartDate, personId, refreshKey])
+  }, [controlled, cycleStartDate, personId, refreshKey])
+
+  const personalEvents = eventsProp ?? personalEventsState
 
   const model = useMemo(() => {
     if (!cycleStartDate) return null
-    const now = new Date()
+    const now = nowProp ?? new Date()
     const fromIso = iso(new Date(now.getTime() - HORIZON_BACK_DAYS * 86_400_000))
     const toIso = iso(new Date(now.getTime() + HORIZON_FWD_DAYS * 86_400_000))
     const special = gatherHorizonEvents({ specialDates, birthDate, personName, fromIso, toIso, now })
@@ -131,11 +143,25 @@ export function CycleHorizonCard({
     )
     const cp = cyclePhase(cycleStartDate.slice(0, 10), cycleLengthDays ?? 28, now)
     return { horizon, reg, fromIso, toIso, confirmedIso: cycleStartDate.slice(0, 10), cp }
-  }, [cycleStartDate, cycleLengthDays, personCycles, specialDates, birthDate, personName, personId, personalEvents])
+  }, [cycleStartDate, cycleLengthDays, personCycles, specialDates, birthDate, personName, personId, personalEvents, nowProp])
 
   if (!model?.horizon) return null
   const { horizon, reg, fromIso, toIso, confirmedIso, cp } = model
   if (horizon.events.length === 0) return null
+
+  // Cursor scrubeable: mapear fecha↔% en UTC (igual que el engine) y viceversa.
+  const fromT = Date.parse(`${fromIso}T00:00:00Z`)
+  const toT = Date.parse(`${toIso}T00:00:00Z`)
+  const span = Math.max(1, toT - fromT)
+  const selT = selectedDate ? Date.parse(`${selectedDate}T00:00:00Z`) : NaN
+  const selectedPct = Number.isFinite(selT) && selT >= fromT && selT <= toT ? ((selT - fromT) / span) * 100 : null
+  function scrubToClientX(clientX: number) {
+    if (!onSelectDate || !bandRef.current) return
+    const rect = bandRef.current.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const d = new Date(fromT + pct * span)
+    onSelectDate(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`, 'whatif')
+  }
 
   const shown = horizon.events.filter((e) => !hidden.has(e.label))
   const toggle = (label: string) => setHidden((prev) => {
@@ -241,8 +267,18 @@ export function CycleHorizonCard({
           </span>
         </div>
 
-        {/* Banda de fases */}
-        <div className="relative" style={{ height: 36 }}>
+        {onSelectDate && (
+          <div className="text-[11px] text-muted-foreground -mb-1">Arrastrá sobre la línea para ver cómo llega a cualquier día (o usá los chips de arriba).</div>
+        )}
+        {/* Banda de fases (scrubeable: arrastrar → simula esa fecha) */}
+        <div
+          ref={bandRef}
+          className="relative"
+          style={{ height: 36, touchAction: onSelectDate ? 'none' : undefined, cursor: onSelectDate ? 'ew-resize' : undefined }}
+          onPointerDown={onSelectDate ? (e) => { setDragging(true); try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* noop */ } scrubToClientX(e.clientX) } : undefined}
+          onPointerMove={onSelectDate ? (e) => { if (dragging) scrubToClientX(e.clientX) } : undefined}
+          onPointerUp={onSelectDate ? (e) => { setDragging(false); try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* noop */ } } : undefined}
+        >
           <div className="relative h-full overflow-hidden rounded-lg">
             {horizon.band.map((seg, i) => (
               <div
@@ -264,6 +300,14 @@ export function CycleHorizonCard({
           ))}
           {/* Divisor HOY */}
           <div className="absolute z-10" style={{ left: `${horizon.todayPct}%`, top: -7, bottom: -7, width: 2, background: 'hsl(var(--primary))', borderRadius: 1 }} />
+          {/* Cursor scrubeable (día seleccionado) */}
+          {selectedPct != null && (
+            <div className="absolute z-20 pointer-events-none" style={{ left: `${selectedPct}%`, top: -10, bottom: -10, transform: 'translateX(-50%)' }}
+              role="slider" aria-label="Día seleccionado en la línea" aria-valuetext={selectedDate ?? undefined}>
+              <div style={{ width: 2, height: '100%', background: 'rgb(var(--h-partner))', margin: '0 auto' }} />
+              <div className="rounded-full absolute left-1/2" style={{ top: -5, width: 13, height: 13, transform: 'translateX(-50%)', background: 'rgb(var(--h-partner))', border: '2px solid hsl(var(--background))' }} />
+            </div>
+          )}
           <span className="absolute left-2 top-1/2 -translate-y-1/2 font-mono text-[11px] tracking-[0.1em]" style={{ color: 'hsl(var(--foreground) / 0.6)' }}>← REAL</span>
           <span className="absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[11px] tracking-[0.1em]" style={{ color: 'hsl(var(--foreground) / 0.45)' }}>PREDICCIÓN →</span>
         </div>
