@@ -148,6 +148,12 @@ function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?:
     ? (obs.data.topics as unknown[]).filter((t): t is string => typeof t === 'string')
     : []
 
+  // Tono inferido por conversación (Nivel B): ella + vos. Antes se guardaba y no
+  // se mostraba en ningún lado. Es lectura, no diagnóstico.
+  const emo = obs.data?.emotionalStates as { user?: string; otherPerson?: string } | undefined
+  const emoUser = typeof emo?.user === 'string' ? emo.user.trim() : ''
+  const emoOther = typeof emo?.otherPerson === 'string' ? emo.otherPerson.trim() : ''
+
   // ÚLTIMO INTERCAMBIO REAL: los últimos mensajes verbatim (rawMessages ya es el
   // tramo final del export). Filtra media/omitidos y vacíos; toma los últimos 6.
   // Esto es "lo último que hablaron" — NO el resumen global del vínculo.
@@ -218,6 +224,13 @@ function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?:
               {t}
             </Badge>
           ))}
+        </div>
+      )}
+
+      {(emoOther || emoUser) && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground pt-0.5">
+          {emoOther && <span>Tono {otherLabel || 'de la otra persona'}: <span className="text-foreground/80">{emoOther}</span></span>}
+          {emoUser && <span>Tu tono: <span className="text-foreground/80">{emoUser}</span></span>}
         </div>
       )}
     </div>
