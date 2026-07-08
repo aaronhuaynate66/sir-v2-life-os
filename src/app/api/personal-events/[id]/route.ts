@@ -23,6 +23,8 @@ interface PatchBody {
   date?: unknown
   endDate?: unknown
   note?: unknown
+  /** Re-ligar el plan a una persona (string) o desligarlo (null). */
+  personId?: unknown
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
@@ -40,6 +42,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if (typeof body.date === 'string' && ISO_DATE.test(body.date.slice(0, 10))) patch.event_date = body.date.slice(0, 10)
   if (typeof body.endDate === 'string') patch.end_date = ISO_DATE.test(body.endDate.slice(0, 10)) ? body.endDate.slice(0, 10) : null
   if (typeof body.note === 'string') patch.note = body.note.trim() ? body.note.trim().slice(0, 500) : null
+  // personId presente → asignar (string) o desligar (null/vacío). Ausente → no tocar.
+  if ('personId' in body) patch.person_id = typeof body.personId === 'string' && body.personId ? body.personId : null
 
   try {
     const { data, error } = await supabase

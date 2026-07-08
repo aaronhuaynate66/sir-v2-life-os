@@ -29,6 +29,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
       { href: '/sir', label: 'Preguntá a SIR', Icon: Sparkles },
       { href: '/decidir', label: 'Decidir', Icon: Scale },
       { href: '/horario', label: 'Horario', Icon: Clock },
+      { href: '/planes', label: 'Planes', Icon: CalendarRange },
       { href: '/dia', label: 'Qué pasó el día', Icon: CalendarDays },
       { href: '/linea', label: 'Tu línea', Icon: GitCommitVertical },
     ],
