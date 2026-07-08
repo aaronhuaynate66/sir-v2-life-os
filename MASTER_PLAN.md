@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `26a6fdf`
+**Hash del último commit humano:** `f5b3b03`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f5b3b03` | aaronhuaynate66 | Merge pull request #598 from aaronhuaynate66/fix/tono-interaccion-discrimina | 2026-07-08 |
+| `2bdfc8d` | Aaron Huaynate | fix(relato): rúbrica de tono para que el value de interacción DISCRIMINE | 2026-07-08 |
 | `26a6fdf` | aaronhuaynate66 | Merge pull request #597 from aaronhuaynate66/fix/guardado-silencioso-sweep | 2026-07-08 |
 | `c17f533` | aaronhuaynate66 | Merge pull request #596 from aaronhuaynate66/feat/decidir-premortem-ia | 2026-07-08 |
 | `363ba2c` | Aaron Huaynate | fix: guardado silencioso fuera de la ficha (misma clase que Tanda 1 P0) | 2026-07-08 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5638680` | Aaron Huaynate | robustez(ciclo): baseline con TODO el historial (phaseOnDate) + hallazgo honesto | 2026-07-08 |
 | `11f1f13` | Aaron Huaynate | feat(ciclo): predictor forward ciclo → estado (N-de-1) | 2026-07-08 |
 | `5e97352` | aaronhuaynate66 | Merge pull request #594 from aaronhuaynate66/feat/ficha-p2-horizonte | 2026-07-08 |
-| `7976d19` | Aaron Huaynate | refactor(ficha): Tanda 6 P2 — consolidar cada tab en un bloque contiguo | 2026-07-08 |
-| `625a383` | Aaron Huaynate | feat(ficha): Tanda 5 P2 — sistema visual (botones IA a brand + badges de origen) | 2026-07-08 |
 
 ---
 
