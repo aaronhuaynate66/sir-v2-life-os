@@ -10,7 +10,9 @@
 // dice explícito. Solo se monta en fichas afectivas (showCuidado).
 
 import { useEffect, useMemo, useState } from 'react'
-import { HeartHandshake, Sparkles } from 'lucide-react'
+import { HeartHandshake, Sparkles, Wand2 } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -94,7 +96,7 @@ export function EventCareBriefCard({
           </span>
         </div>
 
-        <MainBrief brief={main} firstName={firstName} />
+        <MainBrief brief={main} firstName={firstName} personId={personId ?? null} />
 
         {rest.length > 0 && (
           <div className="border-t border-border/40 pt-2.5 space-y-1">
@@ -114,9 +116,28 @@ export function EventCareBriefCard({
   )
 }
 
-function MainBrief({ brief, firstName }: { brief: EventCareBrief; firstName: string }) {
+function MainBrief({ brief, firstName, personId }: { brief: EventCareBrief; firstName: string; personId: string | null }) {
   const color = PHASE_COLOR[brief.phase] ?? 'var(--h-luteal)'
   const conf = CONF_LABEL[brief.confidence]
+  const [deep, setDeep] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function readDeep() {
+    if (!personId || loading) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/ciclo/event-brief', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ personId, eventLabel: brief.eventLabel, eventDate: brief.eventDateIso }),
+      })
+      const data = await res.json().catch(() => ({}))
+      setDeep(res.ok && data?.text ? data.text : `No pude leerlo a fondo${data?.error ? `: ${data.error}` : ''}.`)
+    } catch {
+      setDeep('No pude leerlo a fondo (revisá tu conexión).')
+    } finally {
+      setLoading(false)
+    }
+  }
   return (
     <div className="space-y-3">
       {/* Evento + countdown */}
@@ -155,6 +176,22 @@ function MainBrief({ brief, firstName }: { brief: EventCareBrief; firstName: str
       </div>
 
       <p className="text-[11px] leading-relaxed text-muted-foreground border-l-2 border-border/40 pl-3">{brief.caveat}</p>
+
+      {/* SIR lo lee a fondo (IA): lectura personalizada aterrizada en lo que sabe de ella. */}
+      {personId && (
+        <div className="pt-1">
+          {!deep ? (
+            <Button size="sm" variant="outline" onClick={readDeep} disabled={loading} className="text-[12px]">
+              <Wand2 size={13} strokeWidth={1.75} className="mr-1.5" />
+              {loading ? 'SIR lo está leyendo…' : 'SIR lo lee a fondo'}
+            </Button>
+          ) : (
+            <div className="rounded-md border border-brand/25 bg-brand-soft/15 p-3 text-[13px] leading-relaxed text-foreground/90 whitespace-pre-line">
+              {deep}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

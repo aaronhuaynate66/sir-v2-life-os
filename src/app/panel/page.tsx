@@ -51,6 +51,7 @@ import { KnowledgeGapPanel } from '@/components/panel/KnowledgeGapPanel'
 import { WeeklyScoreCard } from '@/components/panel/WeeklyScoreCard'
 import { RecoveryPanel } from '@/components/panel/RecoveryPanel'
 import { ProximoPanel } from '@/components/agenda/ProximoPanel'
+import { UpcomingCarePanel } from '@/components/panel/UpcomingCarePanel'
 import dynamic from 'next/dynamic'
 // YearCompass es la brújula anual — pesa por los grises exactos + el compute
 // de buildYearCompass + norteDrift. En /panel aparece MÁS ABAJO del above-the-fold
@@ -283,6 +284,8 @@ function DashboardContent() {
   const dashboardRail = (
     <div className="space-y-4">
       <ProximoPanel limit={6} showViewAll />
+
+      <UpcomingCarePanel />
 
       {!simplified && (
         <Card className={cardClass}>
