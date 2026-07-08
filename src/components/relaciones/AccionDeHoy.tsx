@@ -38,6 +38,7 @@ export interface AccionDeHoyProps {
   phoneNumber?: string | null
   lastChatObservedAt: string | null
   lastManualInteractionAt: string | null
+  lastContactAt?: string | null
 }
 
 export function AccionDeHoy(props: AccionDeHoyProps) {
@@ -95,10 +96,10 @@ const URGENCY_ACCENT: Record<NextActionUrgency, string> = {
   now: 'border-l-bad/60',
 }
 
-function AccionBody({ person, phoneNumber, lastChatObservedAt, lastManualInteractionAt }: AccionDeHoyProps) {
+function AccionBody({ person, phoneNumber, lastChatObservedAt, lastManualInteractionAt, lastContactAt }: AccionDeHoyProps) {
   const summary = useMemo(
-    () => buildPersonSummary({ person, lastChatObservedAt, lastManualInteractionAt }, new Date()),
-    [person, lastChatObservedAt, lastManualInteractionAt],
+    () => buildPersonSummary({ person, lastChatObservedAt, lastManualInteractionAt, lastContactAt }, new Date()),
+    [person, lastChatObservedAt, lastManualInteractionAt, lastContactAt],
   )
 
   const [loading, setLoading] = useState(false)

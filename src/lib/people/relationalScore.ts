@@ -105,6 +105,11 @@ export interface RelationalScoreInput {
   trustLevel: number
   /** observed_at ISO del último whatsapp_chat curado. null si no hay chat. */
   lastChatObservedAt: string | null
+  /** Último CONTACTO real (interacción registrada o llamada CONTESTADA), ISO.
+   *  La recencia de la Fuerza usa el MÁS RECIENTE entre este y el chat — así un
+   *  contacto por llamada/registro cuenta, no solo los chats importados.
+   *  Opcional: sin él, la Fuerza usa solo el chat (comportamiento previo). */
+  lastContactAt?: string | null
   /** Calidades (1-5) de person_logs kind='interaction', en orden CRONOLÓGICO
    *  (más vieja → más nueva). Opcional: si se omite o va vacío, Reciprocidad
    *  queda null (datos insuficientes), preservando el comportamiento previo.
@@ -128,6 +133,19 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n))
 }
 
+/** El timestamp más reciente (ms) entre varias fechas ISO que NO sea futuro.
+ *  null si ninguna es válida/pasada. */
+function latestPastMs(isos: (string | null | undefined)[], now: Date): number | null {
+  let best: number | null = null
+  for (const iso of isos) {
+    if (!iso) continue
+    const t = new Date(iso).getTime()
+    if (Number.isNaN(t) || t > now.getTime()) continue
+    if (best === null || t > best) best = t
+  }
+  return best
+}
+
 export function computeRelationalScore(
   input: RelationalScoreInput,
   now: Date = new Date(),
@@ -135,6 +153,7 @@ export function computeRelationalScore(
   const importance = clamp(Number(input.importanceScore) || 5, 1, 10)
   const trust = clamp(Number(input.trustLevel) || 5, 1, 10)
 
+  // daysSinceLastChat: SOLO chat (se devuelve en el breakdown, semántica intacta).
   let daysSinceLastChat: number | null = null
   if (input.lastChatObservedAt) {
     const t = new Date(input.lastChatObservedAt).getTime()
@@ -143,13 +162,21 @@ export function computeRelationalScore(
     }
   }
 
-  // Fuerza con ajuste de recencia.
+  // Recencia de CONTACTO = el más reciente entre el chat y otra interacción real
+  // (registro manual o llamada contestada). Es lo que ajusta la Fuerza: un
+  // contacto cuenta aunque no venga de un chat importado.
+  const contactMs = latestPastMs([input.lastChatObservedAt, input.lastContactAt ?? null], now)
+  const daysSinceContact: number | null = contactMs === null
+    ? null
+    : Math.floor((now.getTime() - contactMs) / DAY_MS)
+
+  // Fuerza con ajuste de recencia (por CONTACTO, no solo chat).
   let fuerza = importance * 10
-  if (daysSinceLastChat === null) {
+  if (daysSinceContact === null) {
     fuerza -= 10
-  } else if (daysSinceLastChat < 14) {
+  } else if (daysSinceContact < 14) {
     fuerza += 10
-  } else if (daysSinceLastChat > 60) {
+  } else if (daysSinceContact > 60) {
     fuerza -= 10
   }
   fuerza = clamp(fuerza, 0, 100)

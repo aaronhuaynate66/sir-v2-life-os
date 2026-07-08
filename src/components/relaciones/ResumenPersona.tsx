@@ -30,12 +30,15 @@ export interface ResumenPersonaProps {
   lastChatObservedAt: string | null
   /** logged_at ISO del último person_log kind='interaction'. */
   lastManualInteractionAt: string | null
+  /** logged_at del último contacto real (incl. llamada contestada). */
+  lastContactAt?: string | null
 }
 
 export function ResumenPersona({
   person,
   lastChatObservedAt,
   lastManualInteractionAt,
+  lastContactAt,
 }: ResumenPersonaProps) {
   const mounted = useMounted()
 
@@ -47,6 +50,7 @@ export function ResumenPersona({
             person={person}
             lastChatObservedAt={lastChatObservedAt}
             lastManualInteractionAt={lastManualInteractionAt}
+            lastContactAt={lastContactAt}
           />
         ) : (
           <Placeholder />
@@ -56,8 +60,8 @@ export function ResumenPersona({
   )
 }
 
-function SummaryBody({ person, lastChatObservedAt, lastManualInteractionAt }: ResumenPersonaProps) {
-  const s = buildPersonSummary({ person, lastChatObservedAt, lastManualInteractionAt }, new Date())
+function SummaryBody({ person, lastChatObservedAt, lastManualInteractionAt, lastContactAt }: ResumenPersonaProps) {
+  const s = buildPersonSummary({ person, lastChatObservedAt, lastManualInteractionAt, lastContactAt }, new Date())
 
   return (
     <div className="space-y-4">

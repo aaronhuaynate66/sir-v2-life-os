@@ -20,7 +20,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 import { computeRelationalScore } from '@/lib/people/relationalScore'
-import { isToneBearingInteraction } from '@/lib/person-logs/toneSignal'
+import { isToneBearingInteraction, isContactInteraction } from '@/lib/person-logs/toneSignal'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -101,6 +101,9 @@ export async function GET(req: NextRequest) {
     // la ficha (antes el cron no las leía → reciprocidad siempre null en el
     // historial). No fatal.
     const eventsByPerson = new Map<string, { quality: number; at: string }[]>()
+    // Último CONTACTO real por persona (incluye llamadas contestadas) → recencia
+    // de la Fuerza. Distinto del tono (que excluye llamadas).
+    const lastContactByPerson = new Map<string, string>()
     const { data: logData, error: logErr } = await admin
       .from('person_logs')
       .select('person_id, value, logged_at, note')
@@ -112,6 +115,8 @@ export async function GET(req: NextRequest) {
     }
     for (const r of (logData ?? []) as unknown as { person_id: string | null; value: number; logged_at: string; note: string | null }[]) {
       if (!r.person_id || typeof r.value !== 'number') continue
+      // Recencia de contacto (ascendente → el último gana): llamada contestada sí.
+      if (isContactInteraction(r.note)) lastContactByPerson.set(r.person_id, r.logged_at)
       // Solo tono REAL: llamadas / import-markers son placeholders y no deben
       // mover la Reciprocidad del snapshot.
       if (!isToneBearingInteraction(r.note)) continue
@@ -126,6 +131,7 @@ export async function GET(req: NextRequest) {
           importanceScore: p.importance_score,
           trustLevel: p.trust_level,
           lastChatObservedAt: lastChatByPerson.get(p.id) ?? null,
+          lastContactAt: lastContactByPerson.get(p.id) ?? null,
           interactionEvents: eventsByPerson.get(p.id) ?? [],
         },
         now,
