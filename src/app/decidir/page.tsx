@@ -4,7 +4,7 @@
 // (engines/decision) + LLM. Consume POST /api/decision.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Scale, Loader2, TrendingUp, TrendingDown, Minus, Brain } from 'lucide-react'
+import { Scale, Loader2, TrendingUp, TrendingDown, Minus, Brain, Sparkles } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -174,7 +174,7 @@ export default function DecidirPage() {
 
             {/* 14·M2 — premortem forzado en decisiones riesgosas, antes de la
                 recomendación. Envuelve la calibración (M3/M4) + coherencia (M6). */}
-            <PremortemSection result={result} />
+            <PremortemSection result={result} description={description} />
             {/* 14·M5 — decisiones pasadas parecidas + su resultado (outside view). */}
             <SimilarDecisionsBlock result={result} past={past} description={description} onOutcome={loadPast} />
           </CardContent>
@@ -186,11 +186,56 @@ export default function DecidirPage() {
 
 // 14·M2 — premortem forzado. En decisiones que lo ameritan (irreversibles o
 // veredicto no-go), pide imaginar el fracaso ANTES de mostrar la recomendación
-// completa. Activa Sistema 2. Client-side (la persistencia llega con M5).
-function PremortemSection({ result }: { result: DecisionAssessment }) {
+// completa. Activa Sistema 2. El premortem es TUYO (lo escribís vos); "Pensarlo
+// con SIR" corre el premortem asistido (reusa /api/self/premortem, grounded en
+// tu norte + objetivos + conflictos abiertos) para SEMBRAR el peor caso — no
+// para reemplazar tu pensamiento.
+function PremortemSection({ result, description }: { result: DecisionAssessment; description: string }) {
   const cal = useMemo(() => calibrateDecision(result), [result])
   const [text, setText] = useState('')
   const [done, setDone] = useState(false)
+  const [aiText, setAiText] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiErr, setAiErr] = useState<string | null>(null)
+
+  const runAiPremortem = useCallback(async () => {
+    setAiLoading(true)
+    setAiErr(null)
+    try {
+      const decision = [result.title, description].map((s) => s.trim()).filter(Boolean).join('. ')
+      const res = await fetch('/api/self/premortem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      })
+      const j = (await res.json()) as { premortem?: string; error?: string }
+      if (!res.ok || !j.premortem) { setAiErr(j.error ?? 'No se pudo correr el pre-mortem'); return }
+      setAiText(j.premortem)
+    } catch (e) {
+      setAiErr(e instanceof Error ? e.message : 'No se pudo correr el pre-mortem')
+    } finally {
+      setAiLoading(false)
+    }
+  }, [result.title, description])
+
+  const aiBlock = (aiText || aiLoading || aiErr) ? (
+    <div className="rounded-md border border-brand/25 bg-brand/5 p-2.5 space-y-1">
+      <div className="flex items-center gap-1.5">
+        <Sparkles size={11} className="text-brand" aria-hidden="true" />
+        <span className="text-[10px] uppercase tracking-[0.06em] text-brand-soft-foreground">Pre-mortem de SIR</span>
+      </div>
+      {aiLoading && <p className="text-[11px] text-muted-foreground">Pensando el peor caso…</p>}
+      {aiErr && <p className="text-[11px] text-bad">{aiErr}</p>}
+      {aiText && <p className="text-[11px] text-foreground/85 leading-relaxed whitespace-pre-wrap">{aiText}</p>}
+    </div>
+  ) : null
+
+  const aiButton = !aiText ? (
+    <Button size="sm" variant="ghost" disabled={aiLoading} onClick={() => void runAiPremortem()}>
+      <Sparkles size={12} strokeWidth={2} className="mr-1.5" />
+      {aiLoading ? 'Pensando…' : 'Pensarlo con SIR'}
+    </Button>
+  ) : null
 
   const guidance = (
     <>
@@ -213,6 +258,7 @@ function PremortemSection({ result }: { result: DecisionAssessment }) {
       <p className="text-[11px] text-muted-foreground leading-relaxed">
         Imaginá que en 6 meses esto salió mal. ¿Qué pasó? (Es una decisión cara de revertir o dudosa — pensar el peor caso ahora vale más que después.)
       </p>
+      {aiBlock}
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -220,9 +266,12 @@ function PremortemSection({ result }: { result: DecisionAssessment }) {
         placeholder="Lo que salió mal fue…"
         className="w-full rounded-md border border-border bg-background px-3 py-2 text-[13px] text-foreground"
       />
-      <Button size="sm" variant="outline" disabled={text.trim().length < 3} onClick={() => setDone(true)}>
-        Ver recomendación
-      </Button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button size="sm" variant="outline" disabled={text.trim().length < 3} onClick={() => setDone(true)}>
+          Ver recomendación
+        </Button>
+        {aiButton}
+      </div>
     </div>
   )
 }
