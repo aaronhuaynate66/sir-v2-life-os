@@ -20,6 +20,7 @@ import {
   rowToDto,
   normalizeColor,
   normalizeLabel,
+  normalizeKind,
   validateIcsUrl,
   type CalendarConnectionRow,
 } from '@/lib/calendar/connections'
@@ -27,7 +28,9 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const SELECT_COLS = 'id, label, provider, ics_url, color, enabled, created_at'
+const SELECT_COLS = 'id, label, provider, ics_url, color, enabled, created_at, kind'
+// Sin `kind`: fallback si la migración 0137 aún no corrió (no rompe la UI).
+const SELECT_COLS_LEGACY = 'id, label, provider, ics_url, color, enabled, created_at'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -41,13 +44,25 @@ export async function GET() {
   }
 
   try {
-    const { data, error } = await supabase
+    const primary = await supabase
       .from('calendar_connections')
       .select(SELECT_COLS)
       .order('created_at', { ascending: true })
+    let rows = primary.data as unknown as CalendarConnectionRow[] | null
+    let readError = primary.error
+    // Columna `kind` ausente (migración 0137 sin correr) → reintenta sin ella,
+    // así las conexiones existentes (ej. HNG) NO desaparecen de la UI.
+    if (readError) {
+      const legacy = await supabase
+        .from('calendar_connections')
+        .select(SELECT_COLS_LEGACY)
+        .order('created_at', { ascending: true })
+      rows = legacy.data as unknown as CalendarConnectionRow[] | null
+      readError = legacy.error
+    }
     // Tabla ausente / cualquier error de lectura → lista vacía (tolerante).
-    if (error) return NextResponse.json({ connections: [] })
-    const connections = (data as CalendarConnectionRow[]).map(rowToDto)
+    if (readError || !rows) return NextResponse.json({ connections: [] })
+    const connections = rows.map(rowToDto)
     return NextResponse.json({ connections })
   } catch {
     return NextResponse.json({ connections: [] })
@@ -90,7 +105,9 @@ export async function POST(req: NextRequest) {
         enabled: true,
         updated_at: new Date().toISOString(),
       })
-      .select(SELECT_COLS)
+      // Legacy cols: una conexión nueva es 'work' por default (rowToDto lo asume),
+      // así el POST no depende de que la migración 0137 ya haya corrido.
+      .select(SELECT_COLS_LEGACY)
       .maybeSingle()
     if (error) {
       // No incluimos la URL (sensible) en el detalle.

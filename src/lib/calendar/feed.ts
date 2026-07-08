@@ -53,6 +53,12 @@ export interface FetchCalendarOptions {
   noCache?: boolean
   /** "ahora" inyectable (tests). Default Date.now(). */
   nowMs?: number
+  /**
+   * Filtra las conexiones por tipo ('work'|'personal'). Sin filtro = todas
+   * (comportamiento actual). La línea del ciclo pide ['personal'] para NUNCA
+   * volcar el calendario laboral sobre el ciclo de una persona (Camino B).
+   */
+  kinds?: Array<'work' | 'personal'>
 }
 
 interface FeedWindow {
@@ -126,13 +132,21 @@ async function fetchIcsFeed(url: string, w: FeedWindow): Promise<IcsFetchResult>
 
 // ─── Carga de conexiones (tolerante a tabla ausente) ────────────────
 
-async function loadConnections(supabase: ServerSupabase): Promise<EnabledConnection[]> {
+async function loadConnections(
+  supabase: ServerSupabase,
+  kinds?: Array<'work' | 'personal'>,
+): Promise<EnabledConnection[]> {
   try {
-    const { data, error } = await supabase
+    // No leemos `kind` (EnabledConnection no lo usa): solo FILTRAMOS por él con
+    // `.in`. Así el select queda literal (sin romper el typegen de Supabase) y, si
+    // la migración 0137 aún no corrió, el `.in('kind',…)` falla → catch → [].
+    let query = supabase
       .from('calendar_connections')
       .select('id, label, color, ics_url, enabled, provider')
       .eq('enabled', true)
       .eq('provider', 'ics')
+    if (kinds && kinds.length > 0) query = query.in('kind', kinds)
+    const { data, error } = await query
       .order('created_at', { ascending: true })
     if (error || !data) return []
     const out: EnabledConnection[] = []
@@ -268,8 +282,10 @@ export async function fetchCalendarEvents(opts: FetchCalendarOptions = {}): Prom
     noCache: opts.noCache ?? false,
   }
 
-  const connections = opts.supabase ? await loadConnections(opts.supabase) : []
-  const oauthConns = opts.supabase ? await loadOAuthConnections(opts.supabase) : []
+  const connections = opts.supabase ? await loadConnections(opts.supabase, opts.kinds) : []
+  // OAuth (Google) aún no distingue kind; si se pide un filtro personal-only, lo
+  // omitimos para no leakear un calendario laboral de Google al ciclo.
+  const oauthConns = opts.supabase && !opts.kinds ? await loadOAuthConnections(opts.supabase) : []
 
   // ── Camino multi-calendario ──
   if (connections.length > 0 || oauthConns.length > 0) {
@@ -309,7 +325,8 @@ export async function fetchCalendarEvents(opts: FetchCalendarOptions = {}): Prom
   }
 
   // ── Fallback: env var única (comportamiento legacy) ──
-  const envUrl = process.env.OUTLOOK_ICS_URL?.trim()
+  // El feed env es un Outlook laboral: si se pidió personal-only, no cae a él.
+  const envUrl = opts.kinds ? undefined : process.env.OUTLOOK_ICS_URL?.trim()
   if (!envUrl) {
     // Ni conexiones ni env: estado inicial esperado, NO es error.
     return { configured: false, events: [] }
