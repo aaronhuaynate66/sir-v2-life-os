@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { buildDailySignals } from '@/lib/forecast-conductual/dailySignals'
 import { runForecast } from '@/lib/forecast-conductual/engine'
-import type { ChatMessage, CycleAnchor } from '@/lib/forecast-conductual/types'
+import type { ChatMessage, CycleAnchor, DailySignal } from '@/lib/forecast-conductual/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -55,37 +55,47 @@ export async function POST(req: NextRequest) {
   if (!personId) return errorJson(400, 'personId requerido')
 
   try {
-    // 1) Mensajes desde las observaciones whatsapp_chat (no obsoletas) de la persona.
-    const { data: obs } = await supabase
-      .from('observations')
-      .select('data')
+    // 1) Señales diarias: PRIMERO de person_daily_signals (cobertura completa,
+    // computada al importar el export entero). Fallback: derivarlas de la MUESTRA
+    // reciente de rawMessages (span corto) y persistirlas.
+    let signals: DailySignal[] = []
+    const { data: sigRows } = await supabase
+      .from('person_daily_signals')
+      .select('date, message_count, avg_len, somatic, friction, withdrawal, sensitivity, actions, composite')
       .eq('user_id', userId).eq('person_id', personId)
-      .eq('capture_type', 'whatsapp_chat').eq('is_obsolete', false)
-      .limit(20)
-    const messages: ChatMessage[] = []
-    for (const row of (obs ?? []) as { data: { rawMessages?: RawMsg[] } }[]) {
-      const raw = Array.isArray(row.data?.rawMessages) ? row.data.rawMessages : []
-      for (const m of raw) {
-        const at = typeof m.iso === 'string' && m.iso.length >= 10 ? m.iso : null
-        if (!at) continue
-        messages.push({ at, author: m.author === 'user' ? 'user' : 'other', text: typeof m.content === 'string' ? m.content : '' })
+      .order('date', { ascending: true }).limit(2000)
+    if (sigRows && sigRows.length >= 10) {
+      signals = (sigRows as Record<string, unknown>[]).map((r) => ({
+        date: r.date as string, messageCount: Number(r.message_count) || 0, avgLen: Number(r.avg_len) || 0,
+        somatic: Number(r.somatic) || 0, friction: Number(r.friction) || 0, withdrawal: Number(r.withdrawal) || 0,
+        sensitivity: Number(r.sensitivity) || 0, actions: Number(r.actions) || 0, composite: Number(r.composite) || 0,
+      }))
+    } else {
+      const { data: obs } = await supabase
+        .from('observations').select('data')
+        .eq('user_id', userId).eq('person_id', personId)
+        .eq('capture_type', 'whatsapp_chat').eq('is_obsolete', false).limit(20)
+      const messages: ChatMessage[] = []
+      for (const row of (obs ?? []) as { data: { rawMessages?: RawMsg[] } }[]) {
+        for (const m of (Array.isArray(row.data?.rawMessages) ? row.data.rawMessages : [])) {
+          const at = typeof m.iso === 'string' && m.iso.length >= 10 ? m.iso : null
+          if (!at) continue
+          messages.push({ at, author: m.author === 'user' ? 'user' : 'other', text: typeof m.content === 'string' ? m.content : '' })
+        }
+      }
+      signals = buildDailySignals(messages)
+      if (signals.length > 0) {
+        const rows = signals.map((s) => ({
+          id: `sig:${personId}:${s.date}`, user_id: userId, person_id: personId, date: s.date,
+          message_count: s.messageCount, avg_len: s.avgLen, somatic: s.somatic, friction: s.friction,
+          withdrawal: s.withdrawal, sensitivity: s.sensitivity, actions: s.actions, composite: s.composite,
+          updated_at: new Date().toISOString(),
+        }))
+        await supabase.from('person_daily_signals').upsert(rows, { onConflict: 'id' })
       }
     }
-    if (messages.length < 20) {
-      return errorJson(422, 'Poca data para el forecast', 'Importá más conversación de esta persona (necesito varios meses de mensajes con fecha).')
-    }
-
-    const signals = buildDailySignals(messages)
-
-    // 2) Persistir señales diarias (upsert por día).
-    if (signals.length > 0) {
-      const rows = signals.map((s) => ({
-        id: `sig:${personId}:${s.date}`, user_id: userId, person_id: personId, date: s.date,
-        message_count: s.messageCount, avg_len: s.avgLen, somatic: s.somatic, friction: s.friction,
-        withdrawal: s.withdrawal, sensitivity: s.sensitivity, actions: s.actions, composite: s.composite,
-        updated_at: new Date().toISOString(),
-      }))
-      await supabase.from('person_daily_signals').upsert(rows, { onConflict: 'id' })
+    if (signals.length < 8) {
+      return errorJson(422, 'Poca data para el forecast', 'Importá el export completo de esta persona (necesito varios meses de mensajes con fecha, no solo lo reciente).')
     }
 
     // 3) Anclas = person_cycles (bleeding → period_start, pms → pms).

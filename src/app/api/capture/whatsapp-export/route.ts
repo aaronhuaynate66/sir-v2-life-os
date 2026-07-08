@@ -261,6 +261,30 @@ export async function POST(req: NextRequest) {
     return errorJson(404, 'Persona no encontrada o sin permiso')
   }
 
+  // Señales diarias del chat completo → person_daily_signals (forecast conductual,
+  // 2º horizonte). Best-effort, no bloquea el import. NO van a la observación (el
+  // sanitizer las descarta). Idempotente por día (id sig:persona:fecha).
+  try {
+    const raw = body.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>).dailySignals : null
+    if (Array.isArray(raw) && raw.length > 0) {
+      const clamp = (v: unknown) => Math.max(0, Math.min(1, typeof v === 'number' ? v : 0))
+      const rows = raw.slice(0, 2000).map((s) => {
+        const o = (s ?? {}) as Record<string, unknown>
+        const date = typeof o.date === 'string' ? o.date.slice(0, 10) : null
+        if (!date) return null
+        return {
+          id: `sig:${personId}:${date}`, user_id: userId, person_id: personId, date,
+          message_count: typeof o.messageCount === 'number' ? o.messageCount : 0,
+          avg_len: typeof o.avgLen === 'number' ? o.avgLen : 0,
+          somatic: clamp(o.somatic), friction: clamp(o.friction), withdrawal: clamp(o.withdrawal),
+          sensitivity: clamp(o.sensitivity), actions: clamp(o.actions), composite: clamp(o.composite),
+          updated_at: new Date().toISOString(),
+        }
+      }).filter((r): r is NonNullable<typeof r> => r !== null)
+      if (rows.length > 0) await supabase.from('person_daily_signals').upsert(rows, { onConflict: 'id' })
+    }
+  } catch { /* best-effort: el forecast no debe romper el import */ }
+
   const { data, confidence } = sanitizeData(body.data)
   if (!data.summary && (data.topics as string[]).length === 0) {
     return errorJson(422, 'Sin contenido para guardar', 'La conversación no produjo resumen ni temas.')
