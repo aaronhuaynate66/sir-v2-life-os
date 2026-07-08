@@ -5,6 +5,7 @@
 // ve la respuesta, y califica 0..3. La UI avanza a la siguiente.
 
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Brain, Loader2, Eye, ChevronRight, Sparkles, RefreshCcw, Trash2 } from 'lucide-react'
 
@@ -76,17 +77,20 @@ export default function ReviewPage() {
     const card = cards[i]; if (!card) return
     setGrading(true)
     try {
-      await fetch('/api/review/grade', {
+      const res = await fetch('/api/review/grade', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: card.id, grade: g }),
       })
+      // No avanzar si la nota no se guardó: el spaced-repetition quedaría mal
+      // programado y perderías el repaso.
+      if (!res.ok) { toast.error('No se pudo guardar la nota'); return }
       // Avanzar.
       if (i + 1 < cards.length) {
         setI(i + 1); setRevealed(false)
       } else {
         setCards([])
       }
-    } finally { setGrading(false) }
+    } catch { toast.error('No se pudo guardar la nota') } finally { setGrading(false) }
   }
 
   async function skipDelete(id: string) {

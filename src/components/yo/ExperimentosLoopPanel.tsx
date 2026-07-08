@@ -5,6 +5,7 @@
 // historial de prueba y error. Activación conductual + aprendizaje, no archivo.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { FlaskConical, Loader2, X, History } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -70,14 +71,15 @@ export function ExperimentosLoopPanel() {
     if (!title.trim() || busy) return
     setBusy(true)
     try {
-      await fetch('/api/experiments', {
+      const res = await fetch('/api/experiments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: title.trim(), detail, source, week_start: mondayLima() }),
       })
+      if (!res.ok) { toast.error('No se pudo crear el experimento'); return }
       setCustom('')
       await load()
-    } finally { setBusy(false) }
+    } catch { toast.error('No se pudo crear el experimento') } finally { setBusy(false) }
   }, [busy, load])
 
   const patch = useCallback(async (id: string, body: Record<string, unknown>) => {
