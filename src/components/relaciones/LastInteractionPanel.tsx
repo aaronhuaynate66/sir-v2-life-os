@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { useMounted } from '@/hooks/useMounted'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
+import { humanizeTone } from '@/lib/capture/humanizeTone'
 
 export interface LastInteractionPanelProps {
   /** Ultima observation con capture_type='whatsapp_chat' (ya curada
@@ -151,8 +152,10 @@ function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?:
   // Tono inferido por conversación (Nivel B): ella + vos. Antes se guardaba y no
   // se mostraba en ningún lado. Es lectura, no diagnóstico.
   const emo = obs.data?.emotionalStates as { user?: string; otherPerson?: string } | undefined
-  const emoUser = typeof emo?.user === 'string' ? emo.user.trim() : ''
-  const emoOther = typeof emo?.otherPerson === 'string' ? emo.otherPerson.trim() : ''
+  // El extractor guarda el tono como enum crudo en inglés ("affectionate_routine+
+  // supportive"); lo volvemos legible en español antes de pintarlo.
+  const emoUser = humanizeTone(typeof emo?.user === 'string' ? emo.user : '')
+  const emoOther = humanizeTone(typeof emo?.otherPerson === 'string' ? emo.otherPerson : '')
 
   // ÚLTIMO INTERCAMBIO REAL: los últimos mensajes verbatim (rawMessages ya es el
   // tramo final del export). Filtra media/omitidos y vacíos; toma los últimos 6.

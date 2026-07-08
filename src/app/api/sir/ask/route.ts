@@ -345,6 +345,7 @@ export async function POST(req: NextRequest) {
   // 6. Objetivos para el contexto (todos los activos, acotado).
   const goalsCtx: AskGoalCtx[] = goals.slice(0, 20).map((g) => ({
     title: g.title, status: 'active', nextAction: g.next_action ?? null,
+    isAnchor: Boolean(g.is_anchor),
   }))
 
   // 7. Armar prompt + llamar al modelo.

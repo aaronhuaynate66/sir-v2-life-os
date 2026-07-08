@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { track, EVENTS } from '@/lib/analytics/track'
+import { track, trackCreated, EVENTS } from '@/lib/analytics/track'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight, Upload, Search } from 'lucide-react'
@@ -302,7 +302,7 @@ function RelationshipsContent() {
         updatedAt: now,
       }
       addPerson(newPerson)
-      track(EVENTS.personAdded, { relationship: form.relationship })
+      trackCreated(EVENTS.personAdded, { method: 'form', relationship: form.relationship })
       addMemory(createPersonAddedMemory(newPerson))
       toast.success('Persona agregada', { description: newPerson.name })
     }
