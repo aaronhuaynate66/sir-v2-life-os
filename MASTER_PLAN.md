@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2169c62`
+**Hash del último commit humano:** `5e97352`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `2169c62` | aaronhuaynate66 | Merge pull request #593 from aaronhuaynate66/feat/ficha-redesign-tabs | 2026-07-08 |
-| `5b82d30` | Aaron Huaynate | feat(ficha): cierra gaps de datos sin frontend + QA de cableado | 2026-07-08 |
-| `45ea399` | Aaron Huaynate | feat(ficha): Horizonte — capas de tono por día + ventanas para proponer; primero en Hoy | 2026-07-07 |
-| `52418ec` | Aaron Huaynate | feat(ficha): alinea los tabs al diseño — Hoy · Conversación · Perfil · Registro · Red | 2026-07-07 |
-| `21d18c9` | Aaron Huaynate | feat(ficha): Horizonte del ciclo como línea de tiempo visual (opción 6a del diseño) | 2026-07-07 |
-| `02471a8` | Aaron Huaynate | feat(ficha): reestructura en tabs (v1) — Vínculo/Cuidado/Historia/Red/Datos | 2026-07-07 |
-| `acc5f29` | Aaron Huaynate | feat(ficha): CycleHorizonCard — Horizonte del ciclo con eventos reales | 2026-07-07 |
-| `c34ba9c` | Aaron Huaynate | feat(ciclo): engine puro del Horizonte del ciclo (rediseño ficha) | 2026-07-07 |
-| `4af36d1` | Anakin | docs(design): add cycle horizon to person mockup | 2026-07-07 |
-| `c96a0b5` | Aaron Huaynate | docs(backlog): reconciliación de hechos → regla conservadora (solo mudanza) | 2026-07-07 |
+| `5e97352` | aaronhuaynate66 | Merge pull request #594 from aaronhuaynate66/feat/ficha-p2-horizonte | 2026-07-08 |
+| `7976d19` | Aaron Huaynate | refactor(ficha): Tanda 6 P2 — consolidar cada tab en un bloque contiguo | 2026-07-08 |
+| `625a383` | Aaron Huaynate | feat(ficha): Tanda 5 P2 — sistema visual (botones IA a brand + badges de origen) | 2026-07-08 |
+| `dee99f9` | Aaron Huaynate | feat(ficha): Tanda 4 P1 — cerrar la voz doble (copy) + accesibilidad | 2026-07-08 |
+| `07bd4e8` | Aaron Huaynate | feat(ficha): Tanda 3 P2 — Horizonte del ciclo pulido (theme-aware + a11y) | 2026-07-08 |
+| `67000eb` | Aaron Huaynate | feat(ficha): Tanda 2 P1 — que se pueda actuar (Acción de hoy + jerarquía) | 2026-07-08 |
+| `351257a` | Aaron Huaynate | fix(ficha): Tanda 1 P0 — no perder datos + guardado silencioso | 2026-07-08 |
+| `0b756f0` | Aaron Huaynate | docs: estado actual (hecho + backlog priorizado) + evolución de SIR en el maestro | 2026-07-08 |
+| `9f35205` | Aaron Huaynate | feat(ficha): #3 pipeline como contacto — deals del decisor en su ficha (solo comercial) | 2026-07-08 |
+| `3ab2b68` | Aaron Huaynate | feat(ficha): adaptativa por tipo de vínculo — Cuidado solo afectivo | 2026-07-08 |
 
 ---
 
