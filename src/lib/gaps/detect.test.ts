@@ -19,12 +19,18 @@ describe('detectGaps', () => {
     expect(gaps.find((g) => g.entityId === 'a' && g.kind === 'birthday')).toBeTruthy()
     expect(gaps.find((g) => g.entityId === 'b')).toBeFalsy()
   })
-  it('ciclo faltante si es mujer', () => {
-    const gaps = detectGaps([person({ id: 'd', name: 'Diana', gender: 'female', importanceScore: 9, birthDate: '1998-06-14' })], [])
+  it('pide la fecha del ciclo solo si es PAREJA (afectivo)', () => {
+    const gaps = detectGaps([person({ id: 'd', name: 'Diana', relationship: 'romantic', gender: 'female', importanceScore: 9, birthDate: '1998-06-14' })], [])
     expect(gaps.find((g) => g.kind === 'cycle')).toBeTruthy()
   })
+  it('NO pide la fecha del ciclo a una mujer que NO es pareja (familia/amiga) — el forecast la infiere', () => {
+    const fam = detectGaps([person({ id: 'f', name: 'Nicolle', relationship: 'family', gender: 'female', importanceScore: 9, birthDate: '1998-01-01' })], [])
+    const amiga = detectGaps([person({ id: 'a', name: 'Ana', relationship: 'friend', gender: 'female', importanceScore: 9, birthDate: '1998-01-01' })], [])
+    expect(fam.find((g) => g.kind === 'cycle')).toBeFalsy()
+    expect(amiga.find((g) => g.kind === 'cycle')).toBeFalsy()
+  })
   it('no pide ciclo si ya tiene fecha', () => {
-    const gaps = detectGaps([person({ gender: 'female', importanceScore: 9, birthDate: '1998-06-14', cycleStartDate: '2026-05-26' })], [])
+    const gaps = detectGaps([person({ relationship: 'romantic', gender: 'female', importanceScore: 9, birthDate: '1998-06-14', cycleStartDate: '2026-05-26' })], [])
     expect(gaps.find((g) => g.kind === 'cycle')).toBeFalsy()
   })
   it('objetivo activo sin próximo paso; el ancla prioriza', () => {
