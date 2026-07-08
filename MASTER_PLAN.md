@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `918a07e`
+**Hash del último commit humano:** `b737845`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b737845` | aaronhuaynate66 | chore(forecast): override de match + filtro por argv en el importer (#621) | 2026-07-08 |
 | `918a07e` | aaronhuaynate66 | chore(forecast): batch importer de señales de WhatsApp por terminal (#620) | 2026-07-08 |
 | `9df60c4` | aaronhuaynate66 | feat(forecast-conductual): señales diarias del chat COMPLETO al importar (#619) | 2026-07-08 |
 | `bf15634` | aaronhuaynate66 | feat(forecast-conductual): persistencia + pipeline + 2º horizonte en la ficha (#618) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `f16df69` | aaronhuaynate66 | feat(ciclo): Estudio del ciclo — horizonte movible + briefing multi-evento + "¿qué pasaría si?" (#614) | 2026-07-08 |
 | `b121a11` | aaronhuaynate66 | feat(cuidado): anticipación proactiva + SIR lo lee a fondo (#613) | 2026-07-08 |
 | `3a04bfb` | aaronhuaynate66 | fix(salud): repara drift del check de health_metrics.type + import por terminal (#612) | 2026-07-08 |
-| `07005e6` | aaronhuaynate66 | feat(ciclo): SIR anticipa cómo llega ella a cada plan (briefing de cuidado) (#611) | 2026-07-08 |
 
 ---
 
