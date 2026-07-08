@@ -6,6 +6,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { isToneBearingInteraction } from '@/lib/person-logs/toneSignal'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -18,7 +19,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('person_logs')
-    .select('person_id, value, logged_at')
+    .select('person_id, value, logged_at, note')
     .eq('user_id', auth.user.id)
     .eq('kind', 'interaction')
     .order('logged_at', { ascending: true })
@@ -27,8 +28,11 @@ export async function GET() {
 
   const tones: Record<string, number[]> = {}
   const events: Record<string, { q: number; at: string }[]> = {}
-  for (const r of (data ?? []) as unknown as { person_id: string | null; value: number; logged_at: string }[]) {
+  for (const r of (data ?? []) as unknown as { person_id: string | null; value: number; logged_at: string; note: string | null }[]) {
     if (!r.person_id || typeof r.value !== 'number') continue
+    // Solo tono REAL: las llamadas / import-markers (placeholder value=3) no
+    // deben mover la Reciprocidad.
+    if (!isToneBearingInteraction(r.note)) continue
     ;(tones[r.person_id] ??= []).push(r.value)
     ;(events[r.person_id] ??= []).push({ q: r.value, at: r.logged_at })
   }

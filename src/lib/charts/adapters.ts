@@ -13,6 +13,7 @@ import type {
   HealthMetricType,
 } from '@/types'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
+import { isToneBearingInteraction } from '@/lib/person-logs/toneSignal'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import { aggregateByDay, type SeriesPoint } from './series'
 
@@ -114,7 +115,8 @@ export function personLogToneSeries(
 ): SeriesPoint[] {
   return aggregateByDay(
     logs
-      .filter((l) => l.kind === kind && Number.isFinite(l.value) && l.value > 0)
+      .filter((l) => l.kind === kind && Number.isFinite(l.value) && l.value > 0
+        && (kind !== 'interaction' || isToneBearingInteraction(l.note)))
       .map((l) => ({ date: l.loggedAt, value: l.value })),
     'avg',
   )

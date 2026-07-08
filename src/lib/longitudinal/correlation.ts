@@ -24,6 +24,7 @@
 import { moonPhaseId, type LunarPhaseId } from '@/lib/lunar/phase'
 import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
 import { parseLocalDate } from '@/lib/dates/parseLocalDate'
+import { isToneBearingInteraction } from '@/lib/person-logs/toneSignal'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import type { PersonCycleEntry, CyclePhase } from '@/lib/person-cycles/types'
 
@@ -128,6 +129,9 @@ function aggregate(
 
   for (const log of logs) {
     if (!kinds.includes(log.kind)) continue
+    // El tono de una interacción solo cuenta si es real (no llamada/import-marker,
+    // que son placeholders value=3 y aplastan el promedio).
+    if (log.kind === 'interaction' && !isToneBearingInteraction(log.note)) continue
     if (!Number.isFinite(log.value) || log.value <= 0) continue
     const phaseId = classify(log)
     if (!phaseId) continue

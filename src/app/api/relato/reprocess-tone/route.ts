@@ -18,6 +18,7 @@ import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { TONE_BATCH_SYSTEM, buildToneBatchPrompt, parseToneBatch } from '@/lib/relato-ingest/toneFromNote'
+import { isToneBearingInteraction } from '@/lib/person-logs/toneSignal'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -74,7 +75,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .limit(apply ? MAX_LOGS : sampleSize)
   if (error) return NextResponse.json({ error: 'No se pudo leer los logs', detail: error.message }, { status: 500 })
 
-  const rows = ((data ?? []) as Row[]).filter((r) => (r.note ?? '').trim().length > 0)
+  // Solo notas con tono REAL: saltamos llamadas / import-markers (placeholders
+  // value=3 que no tienen tono que re-inferir — malgastarían la IA).
+  const rows = ((data ?? []) as Row[]).filter(
+    (r) => (r.note ?? '').trim().length > 0 && isToneBearingInteraction(r.note),
+  )
   if (rows.length === 0) {
     return NextResponse.json({ mode: apply ? 'apply' : 'dry', total: 0, changed: 0, message: 'No hay logs para reprocesar.' })
   }

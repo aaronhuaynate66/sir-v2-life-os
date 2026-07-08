@@ -20,6 +20,7 @@
 
 import type { CyclePhaseId } from '@/lib/ciclo/phase'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
+import { isToneBearingInteraction } from '@/lib/person-logs/toneSignal'
 import { phaseOnDate } from '@/lib/longitudinal/cycleTone'
 
 const DEFAULT_HORIZON_DAYS = 28
@@ -140,6 +141,8 @@ export function buildCyclePhaseForecast(
   let totalSamples = 0
   for (const log of logs) {
     if (log.kind !== metric) continue
+    // Placeholders de tono (llamadas / import-markers) no cuentan como tono real.
+    if (metric === 'interaction' && !isToneBearingInteraction(log.note)) continue
     if (!Number.isFinite(log.value) || log.value <= 0) continue
     const phase = phaseOnDate(cycleStartDate, length, (log.loggedAt ?? '').slice(0, 10))
     if (!phase) continue
