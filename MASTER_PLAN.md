@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f82b2bf`
+**Hash del último commit humano:** `b181692`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b181692` | aaronhuaynate66 | fix(ciclo): cruce honesto de horizontes por solape de ventanas (#627) | 2026-07-08 |
 | `f82b2bf` | aaronhuaynate66 | feat(ciclo): calendario personal alimenta la línea del ciclo (Camino B) (#626) | 2026-07-08 |
 | `33d3231` | aaronhuaynate66 | fix(mobile): la fila de la Bitácora envuelve/trunca en pantalla chica (#625) | 2026-07-08 |
 | `2bfe61e` | aaronhuaynate66 | feat(forecast-conductual): aprendizaje de pesos por modelo por persona (§17) (#624) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `918a07e` | aaronhuaynate66 | chore(forecast): batch importer de señales de WhatsApp por terminal (#620) | 2026-07-08 |
 | `9df60c4` | aaronhuaynate66 | feat(forecast-conductual): señales diarias del chat COMPLETO al importar (#619) | 2026-07-08 |
 | `bf15634` | aaronhuaynate66 | feat(forecast-conductual): persistencia + pipeline + 2º horizonte en la ficha (#618) | 2026-07-08 |
-| `0712a67` | aaronhuaynate66 | feat(forecast-conductual): núcleo puro (Fase 1+2) del forecast por conversación (#617) | 2026-07-08 |
 
 ---
 
