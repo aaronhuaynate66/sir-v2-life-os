@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c17f533`
+**Hash del último commit humano:** `26a6fdf`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,7 +341,9 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `26a6fdf` | aaronhuaynate66 | Merge pull request #597 from aaronhuaynate66/fix/guardado-silencioso-sweep | 2026-07-08 |
 | `c17f533` | aaronhuaynate66 | Merge pull request #596 from aaronhuaynate66/feat/decidir-premortem-ia | 2026-07-08 |
+| `363ba2c` | Aaron Huaynate | fix: guardado silencioso fuera de la ficha (misma clase que Tanda 1 P0) | 2026-07-08 |
 | `3152f7c` | Aaron Huaynate | feat(decidir): premortem asistido por IA inline (14·M2) | 2026-07-08 |
 | `3b510ed` | aaronhuaynate66 | Merge pull request #595 from aaronhuaynate66/feat/ciclo-forward-predictor | 2026-07-08 |
 | `5638680` | Aaron Huaynate | robustez(ciclo): baseline con TODO el historial (phaseOnDate) + hallazgo honesto | 2026-07-08 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5e97352` | aaronhuaynate66 | Merge pull request #594 from aaronhuaynate66/feat/ficha-p2-horizonte | 2026-07-08 |
 | `7976d19` | Aaron Huaynate | refactor(ficha): Tanda 6 P2 — consolidar cada tab en un bloque contiguo | 2026-07-08 |
 | `625a383` | Aaron Huaynate | feat(ficha): Tanda 5 P2 — sistema visual (botones IA a brand + badges de origen) | 2026-07-08 |
-| `dee99f9` | Aaron Huaynate | feat(ficha): Tanda 4 P1 — cerrar la voz doble (copy) + accesibilidad | 2026-07-08 |
-| `07bd4e8` | Aaron Huaynate | feat(ficha): Tanda 3 P2 — Horizonte del ciclo pulido (theme-aware + a11y) | 2026-07-08 |
 
 ---
 
