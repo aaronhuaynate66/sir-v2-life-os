@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5e97352`
+**Hash del último commit humano:** `3b510ed`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,9 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `3b510ed` | aaronhuaynate66 | Merge pull request #595 from aaronhuaynate66/feat/ciclo-forward-predictor | 2026-07-08 |
+| `5638680` | Aaron Huaynate | robustez(ciclo): baseline con TODO el historial (phaseOnDate) + hallazgo honesto | 2026-07-08 |
+| `11f1f13` | Aaron Huaynate | feat(ciclo): predictor forward ciclo → estado (N-de-1) | 2026-07-08 |
 | `5e97352` | aaronhuaynate66 | Merge pull request #594 from aaronhuaynate66/feat/ficha-p2-horizonte | 2026-07-08 |
 | `7976d19` | Aaron Huaynate | refactor(ficha): Tanda 6 P2 — consolidar cada tab en un bloque contiguo | 2026-07-08 |
 | `625a383` | Aaron Huaynate | feat(ficha): Tanda 5 P2 — sistema visual (botones IA a brand + badges de origen) | 2026-07-08 |
@@ -348,9 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `07bd4e8` | Aaron Huaynate | feat(ficha): Tanda 3 P2 — Horizonte del ciclo pulido (theme-aware + a11y) | 2026-07-08 |
 | `67000eb` | Aaron Huaynate | feat(ficha): Tanda 2 P1 — que se pueda actuar (Acción de hoy + jerarquía) | 2026-07-08 |
 | `351257a` | Aaron Huaynate | fix(ficha): Tanda 1 P0 — no perder datos + guardado silencioso | 2026-07-08 |
-| `0b756f0` | Aaron Huaynate | docs: estado actual (hecho + backlog priorizado) + evolución de SIR en el maestro | 2026-07-08 |
-| `9f35205` | Aaron Huaynate | feat(ficha): #3 pipeline como contacto — deals del decisor en su ficha (solo comercial) | 2026-07-08 |
-| `3ab2b68` | Aaron Huaynate | feat(ficha): adaptativa por tipo de vínculo — Cuidado solo afectivo | 2026-07-08 |
 
 ---
 
