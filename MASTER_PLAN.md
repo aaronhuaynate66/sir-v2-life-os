@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3a04bfb`
+**Hash del último commit humano:** `b121a11`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b121a11` | aaronhuaynate66 | feat(cuidado): anticipación proactiva + SIR lo lee a fondo (#613) | 2026-07-08 |
 | `3a04bfb` | aaronhuaynate66 | fix(salud): repara drift del check de health_metrics.type + import por terminal (#612) | 2026-07-08 |
 | `07005e6` | aaronhuaynate66 | feat(ciclo): SIR anticipa cómo llega ella a cada plan (briefing de cuidado) (#611) | 2026-07-08 |
 | `809680a` | aaronhuaynate66 | feat(agenda): agenda personal nativa + la línea del ciclo deja de mezclar el trabajo (#610) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `02db0b8` | aaronhuaynate66 | fix(verificación): tono legible en la ficha + norte en el chat + taxonomía GA4 (#606) | 2026-07-08 |
 | `a56fd0a` | aaronhuaynate66 | Merge pull request #605 from aaronhuaynate66/refactor/ritmo-contacto-unificado | 2026-07-08 |
 | `4e12248` | Aaron Huaynate | refactor(ritmo): unificar el cálculo del ritmo de contacto (trajectory + cadence) | 2026-07-08 |
-| `d320171` | aaronhuaynate66 | Merge pull request #604 from aaronhuaynate66/fix/cadencia-ficha-consistente | 2026-07-08 |
 
 ---
 
