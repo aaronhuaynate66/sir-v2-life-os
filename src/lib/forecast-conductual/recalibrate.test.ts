@@ -1,7 +1,7 @@
 // SIR V2 — Tests de la recalibración del forecast conductual.
 
 import { describe, it, expect } from 'vitest'
-import { deriveLabel, recalibrate } from './recalibrate'
+import { deriveLabel, recalibrate, modelWeights } from './recalibrate'
 
 describe('deriveLabel', () => {
   it('"no pasó nada" → miss', () => expect(deriveLabel(['no_paso_nada'])).toBe('miss'))
@@ -29,5 +29,22 @@ describe('recalibrate', () => {
     const r = recalibrate(['miss', 'miss', 'miss', 'hit'])
     expect(r.validated).toBe(false)
     expect(r.confidenceDelta).toBeLessThan(0)
+  })
+})
+
+describe('modelWeights', () => {
+  it('un modelo que acierta sube (>1), uno que falla baja (<1)', () => {
+    const w = modelWeights([
+      { label: 'hit', models: ['grid'] }, { label: 'hit', models: ['grid'] },
+      { label: 'miss', models: ['harmonic'] }, { label: 'miss', models: ['harmonic'] },
+    ])
+    expect(w.grid).toBeGreaterThan(1)
+    expect(w.harmonic).toBeLessThan(1)
+  })
+  it('poca evidencia (<2) → no ajusta', () => {
+    expect(modelWeights([{ label: 'hit', models: ['grid'] }])).toEqual({})
+  })
+  it('el ruido no enseña', () => {
+    expect(modelWeights([{ label: 'noise', models: ['grid'] }, { label: 'noise', models: ['grid'] }])).toEqual({})
   })
 })

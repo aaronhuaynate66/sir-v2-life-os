@@ -137,6 +137,8 @@ export interface RunForecastInput {
   signals: DailySignal[]
   anchors?: CycleAnchor[]
   now?: Date
+  /** Multiplicador por modelo aprendido del feedback (§17). Default 1 c/u. */
+  weightBoost?: Partial<Record<ModelOutput['name'], number>>
 }
 
 /** Corre el ensamble y proyecta la ventana conductual. PURO. null si no hay data. */
@@ -175,7 +177,9 @@ export function runForecast(input: RunForecastInput): BehaviorForecast | null {
     bayesModel(anchors, startT, minFuture),
   ]
 
-  const W = hasAnchors ? W_ANCHORED : W_EXPLORATORY
+  const boost = input.weightBoost ?? {}
+  const baseW = hasAnchors ? W_ANCHORED : W_EXPLORATORY
+  const W = Object.fromEntries((Object.keys(baseW) as ModelOutput['name'][]).map((k) => [k, baseW[k] * (boost[k] ?? 1)])) as Record<ModelOutput['name'], number>
   const valid = models.filter((mo) => mo.centerIndex != null && mo.score > 0 && W[mo.name] > 0)
   if (valid.length === 0) {
     return baseResult(hasAnchors, signals, peaks, anchors, spanDays, composite, byDate, startT, 'Sin patrón cíclico claro todavía — hace falta más historial.')
