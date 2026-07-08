@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { computeCycleRegularity } from '@/lib/ciclo/regularity'
-import { buildEventCareBrief, type EventCareBrief } from '@/lib/ciclo/eventCareBrief'
+import { buildEventCareBrief, type EventCareBrief, type CareBond } from '@/lib/ciclo/eventCareBrief'
 import type { ScrubMode } from '@/lib/ciclo/cycleScrub'
 import type { PersonCycleEntry } from '@/lib/person-cycles/types'
 import type { PersonalEvent } from '@/lib/personal-events/types'
@@ -32,6 +32,10 @@ export interface EventCareBriefCardProps {
   personName: string
   personalEvents: PersonalEvent[]
   now: Date
+  /** Registro del consejo según el vínculo. */
+  bond: CareBond
+  /** IA "a fondo" (prompt de pareja) — solo con pareja. */
+  allowDeepRead?: boolean
   selectedDate: string | null
   mode: ScrubMode
   selectedEventId: string | null
@@ -61,7 +65,7 @@ function isoOf(d: Date): string {
 }
 
 export function EventCareBriefCard(props: EventCareBriefCardProps) {
-  const { cycleStartDate, cycleLengthDays, personCycles = [], personId, personName, personalEvents, now, selectedDate, mode, selectedEventId, onSelectDate, onToday, onPlanSaved } = props
+  const { cycleStartDate, cycleLengthDays, personCycles = [], personId, personName, personalEvents, now, bond, allowDeepRead, selectedDate, mode, selectedEventId, onSelectDate, onToday, onPlanSaved } = props
   const firstName = personName.split(' ')[0] || personName
   const todayIso = isoOf(now)
   const effIso = selectedDate ?? todayIso
@@ -81,9 +85,9 @@ export function EventCareBriefCard(props: EventCareBriefCardProps) {
     return buildEventCareBrief({
       eventLabel: label, eventDateIso: effIso,
       lastPeriodStart: cycleStartDate.slice(0, 10), cycleLengthDays: cycleLengthDays ?? 28,
-      bandDays: reg.bandDays, now,
+      bandDays: reg.bandDays, bond, now,
     })
-  }, [label, effIso, cycleStartDate, cycleLengthDays, personCycles, now])
+  }, [label, effIso, cycleStartDate, cycleLengthDays, personCycles, now, bond])
 
   if (!brief) return null
 
@@ -131,8 +135,8 @@ export function EventCareBriefCard(props: EventCareBriefCardProps) {
           <SaveAsPlan personId={personId} firstName={firstName} dateIso={effIso} onSaved={onPlanSaved} />
         )}
 
-        {/* SIR lo lee a fondo (IA) — solo para eventos reales (aterriza en lo que sabe). */}
-        {mode === 'event' && selectedEvent && (
+        {/* SIR lo lee a fondo (IA) — solo pareja (el prompt es de pareja) + evento real. */}
+        {allowDeepRead && mode === 'event' && selectedEvent && (
           <DeepRead personId={personId} eventLabel={selectedEvent.title} eventDate={selectedEvent.date} />
         )}
       </CardContent>

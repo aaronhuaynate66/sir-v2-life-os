@@ -28,6 +28,24 @@ describe('fichaProfile — Cuidado solo afectivo', () => {
   })
 })
 
+describe('fichaProfile — Estudio del ciclo para toda mujer (08-jul) + careBond', () => {
+  it('colega mujer → showCycleForecast true, pero careBond colleague (NO íntimo)', () => {
+    const p = fichaProfile(base({ relationship: 'professional', gender: 'female' }))
+    expect(p.showCycleForecast).toBe(true)
+    expect(p.showCuidado).toBe(false) // sigue sin el registro íntimo
+    expect(p.careBond).toBe('colleague')
+  })
+  it('pareja → careBond partner', () => {
+    expect(fichaProfile(base({ relationship: 'romantic', gender: 'female' })).careBond).toBe('partner')
+  })
+  it('familia → careBond family', () => {
+    expect(fichaProfile(base({ relationship: 'family', gender: 'female' })).careBond).toBe('family')
+  })
+  it('hombre sin ciclo → no muestra el Estudio', () => {
+    expect(fichaProfile(base({ relationship: 'professional', gender: 'male' })).showCycleForecast).toBe(false)
+  })
+})
+
 describe('fichaProfile — Comercial colega + lead', () => {
   it('lead → comercial', () => expect(fichaProfile(base({ relationship: 'acquaintance' })).showCommercial).toBe(true))
   it('colega → comercial', () => expect(fichaProfile(base({ relationship: 'professional' })).showCommercial).toBe(true))

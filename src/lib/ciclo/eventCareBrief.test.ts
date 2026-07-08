@@ -43,6 +43,27 @@ describe('buildEventCareBrief — fase fértil propone plan lindo', () => {
   })
 })
 
+describe('buildEventCareBrief — registro por vínculo (ético)', () => {
+  const inSPM = { ...BASE, eventLabel: 'Reunión', eventDateIso: '2026-07-18' } // día 26 → SPM
+  it('COLEGA: nada de romance/flores/intimidad — solo respeto y timing', () => {
+    const b = buildEventCareBrief({ ...inSPM, bond: 'colleague' })!
+    const joined = b.suggestions.join(' · ').toLowerCase()
+    expect(joined).not.toMatch(/flor|intimidad|romántic|mimos|cita/)
+    expect(joined).toMatch(/aire|reunion|reuni[oó]n|feedback|presi[oó]n|timing/)
+    expect(b.caveat).toMatch(/no para gestionar ni sacar ventaja/i)
+  })
+  it('PAREJA: sí incluye cuidado íntimo', () => {
+    const b = buildEventCareBrief({ ...inSPM, bond: 'partner' })!
+    expect(b.suggestions.join(' ').toLowerCase()).toMatch(/flor|intimidad|ternura/)
+  })
+  it('FAMILIA/AMIGA: presencia y paciencia, sin romance', () => {
+    const b = buildEventCareBrief({ ...inSPM, bond: 'family' })!
+    const joined = b.suggestions.join(' ').toLowerCase()
+    expect(joined).toMatch(/paciencia|presencia|gesto/)
+    expect(joined).not.toMatch(/flor|intimidad|romántic/)
+  })
+})
+
 describe('buildEventCareBrief — bordes', () => {
   it('fecha inválida → null', () => {
     expect(buildEventCareBrief({ ...BASE, eventLabel: 'x', eventDateIso: 'nope' })).toBeNull()

@@ -46,6 +46,11 @@ export interface EventCareBrief {
   caveat: string
 }
 
+/** Tipo de vínculo → define el REGISTRO del consejo (ético, doc 17):
+ *  partner = cuidado/intimidad; family/friend = presencia y paciencia;
+ *  colleague = respeto y timing profesional (NUNCA gestos íntimos ni "sacar algo"). */
+export type CareBond = 'partner' | 'family' | 'colleague' | 'friend'
+
 export interface EventCareBriefInput {
   eventLabel: string
   eventDateIso: string
@@ -54,6 +59,8 @@ export interface EventCareBriefInput {
   cycleLengthDays: number
   /** ± días de irregularidad (de computeCycleRegularity). 0 = sin banda. */
   bandDays: number
+  /** Registro del consejo según el vínculo. Default 'partner'. */
+  bond?: CareBond
   now?: Date
 }
 
@@ -66,51 +73,56 @@ function isBigSocialEvent(label: string): boolean {
   return /\bboda|matrimonio|casamiento|fiesta|graduaci[oó]n|cumplea[ñn]os|gala|cena de|evento\b/i.test(label)
 }
 
-/** Lectura del estado probable, cálida y honesta, por fase. */
-function stateReadFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean): string {
-  if (isPms) return 'Suele ser la ventana de menos resto: baja la energía, sube la sensibilidad y la batería social se acorta. Puede llegar más cansada o más a flor de piel — nada dramático, pero conviene llegar a cuidarla.'
-  if (phase === 'menstrual') return 'Días de regla: energía baja y ganas de bajar el ritmo. Es más momento de acompañar que de "hacer".'
-  if (isFertile || phase === 'ovulation') return 'Pico de energía y ánimo, más sociable y receptiva. Es su mejor momento para algo lindo juntos.'
-  if (phase === 'follicular') return 'Energía y ánimo en subida, con ganas de hacer cosas. Buen tramo para planes y para reconectar.'
-  return 'Post-ovulación: la energía empieza a bajar de a poco y se pone más hogareña. Ritmo tranquilo.'
+const isLow = (phase: CyclePhaseId, isPms: boolean) => isPms || phase === 'menstrual'
+const isHigh = (phase: CyclePhaseId, isFertile: boolean) => isFertile || phase === 'ovulation' || phase === 'follicular'
+
+/** Lectura del estado probable — base factual (neutral) + cierre según el vínculo. */
+function stateReadFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean, bond: CareBond): string {
+  const base = isPms
+    ? 'Suele ser la ventana de menos resto: baja la energía, sube la sensibilidad y la batería social se acorta. Puede llegar más cansada o más a flor de piel.'
+    : phase === 'menstrual' ? 'Días de regla: energía típicamente más baja y ganas de bajar el ritmo.'
+      : (isFertile || phase === 'ovulation') ? 'Pico de energía y ánimo, más sociable.'
+        : phase === 'follicular' ? 'Energía y ánimo en subida, con ganas de hacer cosas.'
+          : 'Post-ovulación: la energía empieza a bajar de a poco.'
+  const low = isLow(phase, isPms)
+  const closing: Record<CareBond, string> = {
+    partner: low ? ' Nada dramático, pero conviene llegar a cuidarla.' : ' Buen tramo para estar cerca.',
+    family: low ? ' Un poco más de paciencia y presencia simple ayuda.' : ' Buen momento para una charla o un plan.',
+    friend: low ? ' Un gesto simple suma; no la satures.' : ' Buen momento para juntarse.',
+    colleague: low ? ' Si podés, tratá esos días con más aire y menos exigencia.' : ' Buen tramo para lo que requiera empuje.',
+  }
+  return base + closing[bond]
 }
 
-/** Sugerencias de cuidado por fase (voz SIR). Afecto/flores/intimidad enmarcados
- *  como cercanía según SU ritmo — nunca como algo a conseguir. */
-function suggestionsFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean, bigSocial: boolean): string[] {
-  if (isPms || phase === 'menstrual') {
-    const s = [
-      'Un detalle que no le pida nada: flores, algo rico, un mensaje lindo antes — cuidado que no espera nada a cambio.',
-      'Presencia y paciencia antes que exigencia: si está callada o baja, no es contra vos.',
-      'Prevé lo práctico: puede venirle la regla por estos días — que esté cómoda suma; si suele tener migraña o cólicos, llevá su medicación.',
-      'Intimidad como ternura, no como demanda: cercanía, mimos, contacto tranquilo; seguí su ritmo.',
-    ]
-    if (bigSocial) s.unshift('No sobrecargar el día: llegá sin apuro, con margen para descansar, y tené un plan de salida por si se cansa.')
-    else s.unshift('Plan suave e íntimo mejor que una maratón: bajá el ritmo, algo tranquilo suma más que un día a full.')
-    return s
+/** Sugerencias por fase Y por vínculo. Con pareja: cuidado/intimidad. Con familia/
+ *  amiga: presencia y paciencia. Con colega: respeto y timing — SIN gestos íntimos,
+ *  flores ni nada para "conseguir". Ético (doc 17). */
+function suggestionsFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean, bigSocial: boolean, bond: CareBond): string[] {
+  const low = isLow(phase, isPms), high = isHigh(phase, isFertile)
+  if (bond === 'partner') {
+    if (low) {
+      const s = [
+        'Un detalle que no le pida nada: flores, algo rico, un mensaje lindo antes — cuidado que no espera nada a cambio.',
+        'Presencia y paciencia antes que exigencia: si está callada o baja, no es contra vos.',
+        'Prevé lo práctico: puede venirle la regla por estos días — que esté cómoda suma; si suele tener migraña o cólicos, llevá su medicación.',
+        'Intimidad como ternura, no como demanda: cercanía, mimos, contacto tranquilo; seguí su ritmo.',
+      ]
+      s.unshift(bigSocial ? 'No sobrecargar el día: llegá sin apuro, con margen para descansar, y tené un plan de salida por si se cansa.' : 'Plan suave e íntimo mejor que una maratón: bajá el ritmo.')
+      return s
+    }
+    if (high) return ['Es SU mejor momento: si querías proponer algo especial —una cita, una sorpresa—, es ahora.', 'Flores o un detalle romántico brillan más que nunca.', 'Buen momento para una charla importante o para reconectar.', 'Intimidad en su punto más alto de sintonía.']
+    return ['Planes más tranquilos y hogareños.', 'Buen momento para una charla con calma.', 'Un gesto de presencia suma.', 'Cercanía sin sobre-exigir.']
   }
-  if (isFertile || phase === 'ovulation') {
-    return [
-      'Es SU mejor momento: si tenías ganas de proponer algo especial —una cita, una sorpresa—, es ahora.',
-      'Flores o un detalle romántico brillan más que nunca en estos días.',
-      'Buen momento para una charla importante o para reconectar de verdad.',
-      'Intimidad en su punto más alto de sintonía — con ganas y presencia.',
-    ]
+  if (bond === 'family' || bond === 'friend') {
+    const who = bond === 'family' ? 'familiar' : 'amiga'
+    if (low) return [`Puede estar más sensible o con menos energía — más paciencia y un gesto simple; no cargues temas pesados esos días.`, 'Si venía algo tenso, no es el mejor momento para encararlo — dejalo pasar unos días.', `Un mensaje cálido o un pequeño detalle acompaña sin invadir.`, `Presencia, no exigencia (${who}).`]
+    if (high) return ['Buen tramo de energía — buen momento para juntarse, retomar algo pendiente o una charla que venías postergando.', 'Si había un tema para hablar, ahora fluye mejor.']
+    return ['Ritmo tranquilo — un gesto de presencia simple está bien.', 'Buen momento para una charla con calma.']
   }
-  if (phase === 'follicular') {
-    return [
-      'Buen momento para PROPONER: planeá esa salida o actividad que venías queriendo.',
-      'Energía en alza: retomar temas o proyectos juntos cae bien.',
-      'Un detalle sorpresa o una cita linda funcionan muy bien ahora.',
-      'Intimidad con buena sintonía — buen tramo para reconectar.',
-    ]
-  }
-  return [
-    'Planes más tranquilos y hogareños: la energía va bajando de a poco.',
-    'Buen momento para una charla con calma (mejor no temas pesados).',
-    'Un gesto de presencia —un detalle, cocinarle algo— suma.',
-    'Cercanía sin sobre-exigir; cuidala si se cansa.',
-  ]
+  // colleague / lead — SOLO respeto y timing profesional. Nada íntimo.
+  if (low) return ['Puede llegar con menos resto — si podés, evitá reuniones pesadas, feedback difícil o pedirle un esfuerzo extra ese día.', 'Dale aire: más margen, menos presión; no lo tomes personal si está más seca.', 'Timing: dejá los temas espinosos para unos días después.']
+  if (high) return ['Buen tramo de energía — buen momento para lo que requiera empuje, una reunión importante o cerrar algo.', 'Suele estar más receptiva y comunicativa; aprovechá para alinear.']
+  return ['Ritmo normal — sin necesidad de ajustar nada especial.', 'Trato considerado de siempre.']
 }
 
 function confidenceFor(bandDays: number, cyclesAhead: number): 'alta' | 'media' | 'baja' {
@@ -142,12 +154,17 @@ export function buildEventCareBrief(input: EventCareBriefInput): EventCareBrief 
   const cyclesAhead = Math.max(1, Math.floor((evStart.getTime() - start.getTime()) / (length * DAY_MS)))
   const uncertaintyDays = band * cyclesAhead
 
+  const bond: CareBond = input.bond ?? 'partner'
   const bigSocial = isBigSocialEvent(input.eventLabel)
   const energyCurve = Array.from({ length }, (_, i) => toneProfile(i + 1, length))
 
   const headline = `Fase ${PHASE_LABEL[cp.phase]}${cp.isPmsWindow ? ' (premenstrual · SPM)' : ''} · día ${cp.cycleDay}/${length} · su período ~${cp.daysUntilNextPeriod}d`
 
-  const caveat = `Es una tendencia, no su estado real — la gente varía, y sobre una estimación de ±${uncertaintyDays || band}d (su último período confirmado no es reciente). Es para llegar preparado a cuidarla, no para explicar de antemano cómo va a estar. Se recalibra con su próximo período.`
+  const purpose = bond === 'colleague'
+    ? 'Es para tratarla con más consideración y elegir el timing, no para gestionar ni sacar ventaja'
+    : bond === 'partner' ? 'Es para llegar preparado a cuidarla, no para explicar de antemano cómo va a estar'
+      : 'Es para acompañarla con más consideración, no para explicar de antemano cómo va a estar'
+  const caveat = `Es una tendencia, no su estado real — la gente varía, sobre una estimación de ±${uncertaintyDays || band}d. ${purpose}. Coincidencia, no causa; nunca una explicación de lo que siente. Se recalibra con cada período que registres.`
 
   return {
     eventLabel: input.eventLabel,
@@ -165,8 +182,8 @@ export function buildEventCareBrief(input: EventCareBriefInput): EventCareBrief 
     energy: toneProfile(cp.cycleDay, length),
     energyCurve,
     headline,
-    stateRead: stateReadFor(cp.phase, cp.isPmsWindow, cp.isFertileWindow),
-    suggestions: suggestionsFor(cp.phase, cp.isPmsWindow, cp.isFertileWindow, bigSocial),
+    stateRead: stateReadFor(cp.phase, cp.isPmsWindow, cp.isFertileWindow, bond),
+    suggestions: suggestionsFor(cp.phase, cp.isPmsWindow, cp.isFertileWindow, bigSocial, bond),
     caveat,
   }
 }

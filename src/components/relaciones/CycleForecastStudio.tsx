@@ -15,6 +15,7 @@ import { TravelPlannerCard } from './TravelPlannerCard'
 import { BehaviorHorizonCard } from './BehaviorHorizonCard'
 import { scrubReducer, initialScrub } from '@/lib/ciclo/cycleScrub'
 import { usePersonalEvents } from '@/lib/personal-events/usePersonalEvents'
+import type { CareBond } from '@/lib/ciclo/eventCareBrief'
 import type { PersonCycleEntry } from '@/lib/person-cycles/types'
 import type { SpecialDate } from '@/types'
 
@@ -26,6 +27,8 @@ export interface CycleForecastStudioProps {
   birthDate?: string | null
   personId: string
   personName: string
+  /** Registro del briefing según el vínculo (pareja/familia/colega/amiga). */
+  bond: CareBond
   /** Bump desde PersonDetail cuando se agrega/borra un plan (refetch). */
   refreshKey?: number
   /** Avisar a PersonDetail que cambió un plan (para refrescar todo lo demás). */
@@ -37,7 +40,8 @@ function isoOf(d: Date): string {
 }
 
 export function CycleForecastStudio(props: CycleForecastStudioProps) {
-  const { cycleStartDate, cycleLengthDays, personCycles = [], specialDates = [], birthDate, personId, personName, refreshKey = 0, onPlanChange } = props
+  const { cycleStartDate, cycleLengthDays, personCycles = [], specialDates = [], birthDate, personId, personName, bond, refreshKey = 0, onPlanChange } = props
+  const isPartner = bond === 'partner'
 
   // "Ahora" estable (una sola vez) → sin mismatch de hidratación al compartirlo.
   const [now] = useState(() => new Date())
@@ -56,46 +60,53 @@ export function CycleForecastStudio(props: CycleForecastStudioProps) {
     if (up.length > 0) { dispatch({ t: 'event', iso: up[0].date, id: up[0].id }); didInit.current = true }
   }, [events, personId, todayIso])
 
-  if (!cycleStartDate) return null
-
   return (
     <div>
-      <CycleHorizonCard
-        cycleStartDate={cycleStartDate}
-        cycleLengthDays={cycleLengthDays}
-        personCycles={personCycles}
-        specialDates={specialDates}
-        birthDate={birthDate}
-        personName={personName}
-        personId={personId}
-        events={events}
-        now={now}
-        selectedDate={scrub.selectedDate}
-        onSelectDate={(iso) => dispatch({ t: 'date', iso })}
-      />
-      <EventCareBriefCard
-        cycleStartDate={cycleStartDate}
-        cycleLengthDays={cycleLengthDays}
-        personCycles={personCycles}
-        personId={personId}
-        personName={personName}
-        personalEvents={events}
-        now={now}
-        selectedDate={scrub.selectedDate}
-        mode={scrub.mode}
-        selectedEventId={scrub.selectedEventId}
-        onSelectDate={(iso, mode, eventId) => dispatch(mode === 'event' ? { t: 'event', iso, id: eventId ?? '' } : { t: 'date', iso })}
-        onToday={() => dispatch({ t: 'today' })}
-        onPlanSaved={() => { onPlanChange?.() }}
-      />
-      <TravelPlannerCard
-        cycleStartDate={cycleStartDate}
-        cycleLengthDays={cycleLengthDays}
-        personCycles={personCycles}
-        personName={personName}
-        now={now}
-        onSelectDate={(iso) => dispatch({ t: 'date', iso })}
-      />
+      {/* Cards basadas en el ciclo REAL: solo si hay fecha confirmada (ancla). */}
+      {cycleStartDate && (<>
+        <CycleHorizonCard
+          cycleStartDate={cycleStartDate}
+          cycleLengthDays={cycleLengthDays}
+          personCycles={personCycles}
+          specialDates={specialDates}
+          birthDate={birthDate}
+          personName={personName}
+          personId={personId}
+          events={events}
+          now={now}
+          selectedDate={scrub.selectedDate}
+          onSelectDate={(iso) => dispatch({ t: 'date', iso })}
+        />
+        <EventCareBriefCard
+          cycleStartDate={cycleStartDate}
+          cycleLengthDays={cycleLengthDays}
+          personCycles={personCycles}
+          personId={personId}
+          personName={personName}
+          personalEvents={events}
+          now={now}
+          bond={bond}
+          allowDeepRead={isPartner}
+          selectedDate={scrub.selectedDate}
+          mode={scrub.mode}
+          selectedEventId={scrub.selectedEventId}
+          onSelectDate={(iso, mode, eventId) => dispatch(mode === 'event' ? { t: 'event', iso, id: eventId ?? '' } : { t: 'date', iso })}
+          onToday={() => dispatch({ t: 'today' })}
+          onPlanSaved={() => { onPlanChange?.() }}
+        />
+        {/* Planner de viaje: solo con pareja (un "viaje juntos" no aplica a colega). */}
+        {isPartner && (
+          <TravelPlannerCard
+            cycleStartDate={cycleStartDate}
+            cycleLengthDays={cycleLengthDays}
+            personCycles={personCycles}
+            personName={personName}
+            now={now}
+            onSelectDate={(iso) => dispatch({ t: 'date', iso })}
+          />
+        )}
+      </>)}
+      {/* 2º horizonte (conductual): funciona desde las señales, SIN fecha confirmada. */}
       <BehaviorHorizonCard
         personId={personId}
         personName={personName}
