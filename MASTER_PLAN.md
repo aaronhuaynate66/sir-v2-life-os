@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `88c3f46`
+**Hash del último commit humano:** `1d08833`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `1d08833` | aaronhuaynate66 | feat(calendar): botón "Google" también en la agenda general (/planes) (#636) | 2026-07-08 |
 | `88c3f46` | aaronhuaynate66 | feat(calendar): editar un plan + reflejar la edición en Google (update-sync) (#635) | 2026-07-08 |
 | `270fed6` | aaronhuaynate66 | feat(calendar): borrar de Google el plan sincronizado al borrarlo en SIR (#634) | 2026-07-08 |
 | `c4fae4d` | aaronhuaynate66 | feat(calendar): empujar planes de SIR a Google Calendar (#633) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `be08a31` | aaronhuaynate66 | fix(gaps): pedir la fecha del ciclo solo con pareja, no a mamá/colega (#629) | 2026-07-08 |
 | `cac1c33` | aaronhuaynate66 | fix(relaciones): el gesto solo sugiere temas realmente recurrentes (#628) | 2026-07-08 |
 | `b181692` | aaronhuaynate66 | fix(ciclo): cruce honesto de horizontes por solape de ventanas (#627) | 2026-07-08 |
-| `f82b2bf` | aaronhuaynate66 | feat(ciclo): calendario personal alimenta la línea del ciclo (Camino B) (#626) | 2026-07-08 |
 
 ---
 
