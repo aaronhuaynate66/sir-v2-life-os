@@ -253,6 +253,31 @@ export async function createGoogleEvent(
 }
 
 /**
+ * Actualiza un evento existente en `primary` (PATCH → reemplaza título/fecha/
+ * descripción). Reusa el mismo armado de payload que createGoogleEvent. Lanza si
+ * la API falla. Requiere scope `calendar.events`.
+ */
+export async function updateGoogleEvent(
+  accessToken: string,
+  eventId: string,
+  ev: NewGoogleEvent,
+): Promise<{ id: string; htmlLink?: string }> {
+  const id = (eventId || '').trim()
+  if (!id) throw new Error('Falta el id del evento de Google.')
+  const res = await fetch(`${EVENTS_URL}/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildGoogleEventPayload(ev)),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Google Calendar API ${res.status}: ${text.slice(0, 200)}`)
+  }
+  const j = (await res.json()) as { id?: string; htmlLink?: string }
+  return { id: j.id ?? id, htmlLink: j.htmlLink }
+}
+
+/**
  * Borra un evento del calendario `primary`. Si Google responde 404/410 (ya no
  * existe — lo borraste a mano allá), lo tratamos como éxito (idempotente). Lanza
  * en otros errores. Requiere scope `calendar.events`.

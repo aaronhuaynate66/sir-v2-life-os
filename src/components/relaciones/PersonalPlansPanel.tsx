@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { CalendarPlus, CalendarCheck, Plus, X, Loader2 } from 'lucide-react'
+import { CalendarPlus, CalendarCheck, Plus, X, Loader2, Pencil, Check } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,6 +41,12 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
   // ¿Hay un Google Calendar conectado? → habilita el botón "Agendar en Google".
   const [hasGoogle, setHasGoogle] = useState(false)
   const [pushingId, setPushingId] = useState<string | null>(null)
+  // Edición inline de un plan existente.
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editNote, setEditNote] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -118,6 +124,38 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
     }
   }
 
+  function startEdit(e: PersonalEvent) {
+    setEditId(e.id); setEditTitle(e.title); setEditDate(e.date); setEditNote(e.note ?? ''); setAdding(false)
+  }
+  function cancelEdit() { setEditId(null); setEditTitle(''); setEditDate(''); setEditNote('') }
+
+  async function handleSaveEdit() {
+    if (!editId) return
+    const t = editTitle.trim()
+    if (!t) { toast.error('Falta el plan', { description: 'Ponele un título.' }); return }
+    if (!parseLocalDate(editDate)) { toast.error('Fecha inválida', { description: 'Elegí una fecha válida.' }); return }
+    setSavingEdit(true)
+    try {
+      const res = await fetch(`/api/personal-events/${editId}`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: t, date: editDate, note: editNote.trim() }),
+      })
+      const j = (await res.json().catch(() => ({}))) as { event?: PersonalEvent; googleUpdated?: boolean; error?: string }
+      if (!res.ok || !j.event) {
+        toast.error('No se pudo guardar', { description: j.error ?? 'Reintentá.' })
+        return
+      }
+      setEvents((prev) => prev.map((e) => (e.id === editId ? j.event! : e)))
+      toast.success('Plan actualizado', { description: j.googleUpdated ? `${t} · actualizado también en Google` : t })
+      cancelEdit()
+      onChange?.()
+    } catch {
+      toast.error('No se pudo guardar', { description: 'Revisá tu conexión.' })
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
   async function handleRemove(id: string, label: string) {
     // Optimista: lo saco de la lista y aviso; si falla, recargo.
     setEvents((prev) => prev.filter((e) => e.id !== id))
@@ -188,7 +226,25 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
           )
         ) : (
           <ul className="space-y-1.5">
-            {upcoming.map((e) => (
+            {upcoming.map((e) => editId === e.id ? (
+              <li key={e.id} className="rounded-md border border-brand/40 p-3 space-y-2">
+                <Input value={editTitle} onChange={(ev) => setEditTitle(ev.target.value)} placeholder="Plan" aria-label="Editar título del plan" autoFocus />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input type="date" value={editDate} onChange={(ev) => setEditDate(ev.target.value)} className="font-mono text-xs" aria-label="Editar fecha del plan" />
+                  <Input value={editNote} onChange={(ev) => setEditNote(ev.target.value)} placeholder="Nota" aria-label="Editar nota del plan" />
+                </div>
+                {e.gcalEventId && (
+                  <p className="text-[10px] text-muted-foreground">Este plan está en Google — se actualiza allá también.</p>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={savingEdit}>Cancelar</Button>
+                  <Button size="sm" onClick={handleSaveEdit} disabled={savingEdit}>
+                    {savingEdit ? <Loader2 size={13} className="animate-spin mr-1" aria-hidden="true" /> : <Check size={13} strokeWidth={2} className="mr-1" aria-hidden="true" />}
+                    Guardar
+                  </Button>
+                </div>
+              </li>
+            ) : (
               <li key={e.id} className="flex items-center justify-between gap-3 rounded-md border border-border/40 px-3 py-2">
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate">{e.title}</div>
@@ -219,6 +275,14 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
                       Google
                     </button>
                   ) : null}
+                  <button
+                    type="button"
+                    onClick={() => startEdit(e)}
+                    className="flex items-center justify-center h-8 w-8 -m-1.5 rounded text-muted-foreground/50 hover:text-foreground transition-colors"
+                    aria-label="Editar plan"
+                  >
+                    <Pencil size={13} strokeWidth={1.75} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleRemove(e.id, e.title)}

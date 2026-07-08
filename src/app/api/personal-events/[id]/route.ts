@@ -8,12 +8,14 @@ import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { rowToPersonalEvent, type PersonalEventRow } from '@/lib/personal-events/types'
 import { ensureFreshGoogleToken } from '@/lib/calendar/oauth/session'
-import { deleteGoogleEvent } from '@/lib/calendar/oauth/google'
+import { deleteGoogleEvent, updateGoogleEvent } from '@/lib/calendar/oauth/google'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const SELECT_COLS = 'id, person_id, title, event_date, end_date, all_day, note, source, created_at, updated_at'
+const SELECT_COLS = 'id, person_id, title, event_date, end_date, all_day, note, source, gcal_event_id, created_at, updated_at'
+// Sin gcal_event_id: fallback si la migración 0138 aún no corrió.
+const SELECT_COLS_LEGACY = 'id, person_id, title, event_date, end_date, all_day, note, source, created_at, updated_at'
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 function errorJson(status: number, error: string, detail?: string) {
@@ -48,16 +50,36 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   if ('personId' in body) patch.person_id = typeof body.personId === 'string' && body.personId ? body.personId : null
 
   try {
-    const { data, error } = await supabase
-      .from('personal_events')
-      .update(patch)
-      .eq('user_id', auth.user.id)
-      .eq('id', id)
-      .select(SELECT_COLS)
-      .maybeSingle()
+    const doUpdate = (cols: string) => supabase
+      .from('personal_events').update(patch).eq('user_id', auth.user.id).eq('id', id).select(cols).maybeSingle()
+    let { data, error } = await doUpdate(SELECT_COLS)
+    // gcal_event_id ausente (migración 0138 sin correr) → reintentar sin ella.
+    if (error) ({ data, error } = await doUpdate(SELECT_COLS_LEGACY))
     if (error) return errorJson(500, 'No se pudo actualizar', error.message.slice(0, 200))
     if (!data) return errorJson(404, 'No encontré ese plan')
-    return NextResponse.json({ event: rowToPersonalEvent(data as PersonalEventRow) })
+    const row = data as unknown as PersonalEventRow
+
+    // Update-sync: si el plan está en Google, reflejamos la edición allá (best-effort).
+    let googleUpdated = false
+    if (row.gcal_event_id) {
+      try {
+        const fresh = await ensureFreshGoogleToken(supabase, auth.user.id)
+        if (fresh) {
+          await updateGoogleEvent(fresh.token, row.gcal_event_id, {
+            title: row.title,
+            start: (row.event_date ?? '').slice(0, 10),
+            end: row.end_date ? row.end_date.slice(0, 10) : undefined,
+            allDay: row.all_day !== false,
+            description: row.note ?? undefined,
+          })
+          googleUpdated = true
+        }
+      } catch (e) {
+        // No bloquea la edición en SIR; el evento de Google queda desincronizado.
+        reportApiError(e, { route: 'personal-events/[id]', stage: 'gcal-update' })
+      }
+    }
+    return NextResponse.json({ event: rowToPersonalEvent(row), googleUpdated })
   } catch (e) {
     reportApiError(e, { route: 'personal-events/[id]', stage: 'patch' })
     return errorJson(500, 'No se pudo actualizar')
