@@ -67,6 +67,7 @@ import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
 import { RelationalScore } from './RelationalScore'
 import { AMBITO_LABEL, inferAmbito } from '@/lib/people/ambito'
+import { fichaProfile } from '@/lib/people/fichaProfile'
 import { BondEvolutionPanel } from './BondEvolutionPanel'
 import { ConversationAnalyticsCard } from './ConversationAnalyticsCard'
 import { isSystemNote } from '@/lib/memories/fromInteractionLog'
@@ -289,6 +290,10 @@ export function PersonDetail({
   // memoria · Registro · Red).
   const [tab, setTab] = useState<PersonTab>('hoy')
 
+  // Ficha adaptativa por tipo de vínculo: el Cuidado (Horizonte del ciclo +
+  // intimidad) es SOLO afectivo; lo comercial, solo colega/lead. Ver fichaProfile.
+  const profile = fichaProfile(live)
+
   function startEditing() {
     setForm(formFromPerson(live))
     setEditing(true)
@@ -476,7 +481,7 @@ export function PersonDetail({
       {tab === 'hoy' && (<>
       {/* Horizonte del ciclo (rediseño, módulo protagonista): timeline de eventos
           × fase del ciclo + tono + ventanas. Primero en "Hoy". Se oculta sin ciclo. */}
-      {(live.gender === 'female' || live.cycleStartDate) && (
+      {profile.showCuidado && (
         <CycleHorizonCard
           cycleStartDate={live.cycleStartDate ?? null}
           cycleLengthDays={live.cycleLengthDays ?? null}
@@ -842,7 +847,7 @@ export function PersonDetail({
       {tab === 'hoy' && (<>
       {/* ─── Lunar + Ciclo: estado actual por persona. Solo si es mujer
           (o ya tiene datos de ciclo cargados, p. ej. registros legacy). ─── */}
-      {(live.gender === 'female' || live.cycleStartDate) && (
+      {profile.showCuidado && (
         <div className="mb-4">
           <CicloPanel
             cycleStartDate={live.cycleStartDate ?? null}
