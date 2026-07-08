@@ -18,9 +18,9 @@
 //   - La banda de confianza baja con la irregularidad y con pocas muestras.
 //   - El framing de cuidado lo pone la UI; acá solo devolvemos números.
 
-import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
+import type { CyclePhaseId } from '@/lib/ciclo/phase'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
-import { correlateByCyclePhase } from '@/lib/longitudinal/correlation'
+import { phaseOnDate } from '@/lib/longitudinal/cycleTone'
 
 const DEFAULT_HORIZON_DAYS = 28
 const MAX_HORIZON_DAYS = 45
@@ -131,21 +131,44 @@ export function buildCyclePhaseForecast(
   const length = cycleLengthDays ?? 28
   const minPerBucket = input.minSamplesPerBucket ?? 2
 
-  // Baseline N-de-1: reusa el MISMO cálculo que la Correlación descriptiva.
-  const byPhase = correlateByCyclePhase(logs, cycleStartDate, length, {
-    kinds: [metric],
-    minSamplesPerBucket: minPerBucket,
-  })[0]
-  // Sin patrón real entre fases (delta null o por debajo del piso de ruido) →
-  // no hay nada que anticipar.
-  if (!byPhase || !byPhase.delta || byPhase.delta.diff < MIN_DELTA_DIFF) return null
+  // Baseline N-de-1: promedio de la métrica por fase usando TODO el historial.
+  // Clasificamos cada log con phaseOnDate, que proyecta el ciclo hacia ATRÁS por
+  // módulo — a diferencia de cyclePhase, NO descarta los logs anteriores al
+  // último período. Así la base es densa (mismo criterio que cycleTone / 17·M3,
+  // ya en prod), no solo los pocos registros post-cycle_start.
+  const acc = new Map<CyclePhaseId, { sum: number; n: number }>()
+  let totalSamples = 0
+  for (const log of logs) {
+    if (log.kind !== metric) continue
+    if (!Number.isFinite(log.value) || log.value <= 0) continue
+    const phase = phaseOnDate(cycleStartDate, length, (log.loggedAt ?? '').slice(0, 10))
+    if (!phase) continue
+    const cur = acc.get(phase) ?? { sum: 0, n: 0 }
+    cur.sum += log.value
+    cur.n += 1
+    acc.set(phase, cur)
+    totalSamples++
+  }
 
   // Promedio por fase (solo las que superan el umbral de muestras).
   const avgByPhase = new Map<CyclePhaseId, number>()
-  for (const b of byPhase.buckets) {
-    if (b.average != null) avgByPhase.set(b.phaseId as CyclePhaseId, b.average)
+  for (const [phase, s] of acc) {
+    if (s.n >= minPerBucket) avgByPhase.set(phase, round1(s.sum / s.n))
   }
-  if (avgByPhase.size === 0) return null
+  // Sin al menos 2 fases con datos, no hay delta que anticipar.
+  if (avgByPhase.size < 2) return null
+
+  // Delta: fase de mayor vs menor promedio. Piso anti-ruido.
+  let highId: CyclePhaseId | null = null
+  let lowId: CyclePhaseId | null = null
+  let hi = -Infinity
+  let lo = Infinity
+  for (const [phase, avg] of avgByPhase) {
+    if (avg > hi) { hi = avg; highId = phase }
+    if (avg < lo) { lo = avg; lowId = phase }
+  }
+  const deltaDiff = round1(hi - lo)
+  if (!highId || !lowId || deltaDiff < MIN_DELTA_DIFF) return null
 
   const baseline = round1(
     [...avgByPhase.values()].reduce((s, v) => s + v, 0) / avgByPhase.size,
@@ -158,21 +181,17 @@ export function buildCyclePhaseForecast(
   )
   const days: ForecastDay[] = []
   for (let offset = 0; offset <= horizon; offset++) {
-    const d = addLocalDays(now, offset)
-    const cp = cyclePhase(cycleStartDate, length, d)
-    if (!cp) continue // fecha previa al ciclo (no debería pasar hacia adelante).
-    const predicted = avgByPhase.get(cp.phase) ?? null
+    const dayKey = ymd(addLocalDays(now, offset))
+    const phase = phaseOnDate(cycleStartDate, length, dayKey)
+    if (!phase) continue
     days.push({
-      dateKey: ymd(d),
+      dateKey: dayKey,
       offset,
-      phaseId: cp.phase,
-      phaseLabel: CYCLE_LABEL[cp.phase],
-      predicted,
+      phaseId: phase,
+      phaseLabel: CYCLE_LABEL[phase],
+      predicted: avgByPhase.get(phase) ?? null,
     })
   }
-
-  const lowId = byPhase.delta.low.phaseId as CyclePhaseId
-  const highId = byPhase.delta.high.phaseId as CyclePhaseId
 
   return {
     metric,
@@ -181,9 +200,9 @@ export function buildCyclePhaseForecast(
     days,
     nextLow: firstWindowFor(days, lowId),
     nextHigh: firstWindowFor(days, highId),
-    deltaDiff: byPhase.delta.diff,
-    totalSamples: byPhase.totalSamples,
-    confidence: confidenceOf(byPhase.totalSamples),
+    deltaDiff,
+    totalSamples,
+    confidence: confidenceOf(totalSamples),
   }
 }
 
