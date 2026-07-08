@@ -92,6 +92,7 @@ import { ReflexionesPanel } from './ReflexionesPanel'
 import { DealsAsContactPanel } from './DealsAsContactPanel'
 import { CicloPanel } from './CicloPanel'
 import { CycleHorizonCard } from './CycleHorizonCard'
+import { EventCareBriefCard } from './EventCareBriefCard'
 import { PersonalPlansPanel } from './PersonalPlansPanel'
 import { CyclePhaseForecastCard } from './CyclePhaseForecastCard'
 import { CorrelacionPanel } from './CorrelacionPanel'
@@ -543,6 +544,19 @@ export function PersonDetail({
         moments={moments}
         onChange={() => router.refresh()}
       />
+
+      {/* Briefing de cuidado por evento (anticipación): cómo llega ella a tus
+          próximos planes + gráfico + sugerencias. Prominente, arriba del timeline. */}
+      {profile.showCuidado && (
+        <EventCareBriefCard
+          cycleStartDate={live.cycleStartDate ?? null}
+          cycleLengthDays={live.cycleLengthDays ?? null}
+          personCycles={personCycles}
+          personId={live.id}
+          personName={live.name}
+          refreshKey={planRefresh}
+        />
+      )}
 
       {/* Horizonte del ciclo (rediseño, módulo protagonista): timeline de eventos
           × fase del ciclo + tono + ventanas. Se oculta sin ciclo. */}

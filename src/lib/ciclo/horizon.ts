@@ -77,7 +77,7 @@ export interface CycleHorizon {
 
 /** Perfil de tono típico por día del ciclo (0..1). Tendencia poblacional, NO ley
  *  individual: bajo en período, sube en folicular, pico en ovulación, baja a SPM. */
-function toneProfile(cycleDay: number, length: number): number {
+export function toneProfile(cycleDay: number, length: number): number {
   const ovu = length - 14
   if (cycleDay <= 5) return 0.35
   if (cycleDay < ovu - 1) return 0.5 + 0.35 * ((cycleDay - 5) / Math.max(1, ovu - 1 - 5))
