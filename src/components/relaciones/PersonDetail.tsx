@@ -92,6 +92,7 @@ import { ReflexionesPanel } from './ReflexionesPanel'
 import { DealsAsContactPanel } from './DealsAsContactPanel'
 import { CicloPanel } from './CicloPanel'
 import { CycleHorizonCard } from './CycleHorizonCard'
+import { PersonalPlansPanel } from './PersonalPlansPanel'
 import { CyclePhaseForecastCard } from './CyclePhaseForecastCard'
 import { CorrelacionPanel } from './CorrelacionPanel'
 import { TrendChart } from '@/components/charts/TrendChart'
@@ -307,6 +308,10 @@ export function PersonDetail({
   // Ficha adaptativa por tipo de vínculo: el Cuidado (Horizonte del ciclo +
   // intimidad) es SOLO afectivo; lo comercial, solo colega/lead. Ver fichaProfile.
   const profile = fichaProfile(live)
+
+  // Planes personales con la persona (agenda nativa) → refrescan el Horizonte del
+  // ciclo al agregarse/borrarse (el card refetch por refreshKey).
+  const [planRefresh, setPlanRefresh] = useState(0)
 
   function startEditing() {
     setForm(formFromPerson(live))
@@ -549,6 +554,18 @@ export function PersonDetail({
           specialDates={live.specialDates ?? []}
           birthDate={live.birthDate ?? null}
           personName={live.name}
+          personId={live.id}
+          refreshKey={planRefresh}
+        />
+      )}
+
+      {/* Agenda personal CON esta persona (planes propios): alimenta la línea del
+          ciclo, separada del calendario laboral. Solo afectivo, junto al Horizonte. */}
+      {profile.showCuidado && (
+        <PersonalPlansPanel
+          personId={live.id}
+          personName={live.name}
+          onChange={() => setPlanRefresh((n) => n + 1)}
         />
       )}
 
