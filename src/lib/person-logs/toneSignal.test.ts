@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { isToneBearingInteraction } from './toneSignal'
+import { isToneBearingInteraction, isContactInteraction } from './toneSignal'
 
 describe('isToneBearingInteraction', () => {
   it('excluye llamadas (placeholder de tono)', () => {
@@ -27,5 +27,27 @@ describe('isToneBearingInteraction', () => {
     expect(isToneBearingInteraction(null)).toBe(true)
     expect(isToneBearingInteraction('')).toBe(true)
     expect(isToneBearingInteraction('   ')).toBe(true)
+  })
+})
+
+describe('isContactInteraction (recencia)', () => {
+  it('una llamada CONTESTADA sí es contacto', () => {
+    expect(isContactInteraction('📞 Llamada de voz · 21 s · 17:42')).toBe(true)
+    expect(isContactInteraction('📞 Videollamada · 3 min')).toBe(true)
+  })
+
+  it('una llamada PERDIDA no es contacto', () => {
+    expect(isContactInteraction('📞 Llamada de voz perdida · 17:39')).toBe(false)
+    expect(isContactInteraction('📞 Videollamada perdida')).toBe(false)
+  })
+
+  it('el import-marker no cuenta (el chat ya cuenta por su observedAt)', () => {
+    expect(isContactInteraction('Importado del export de WhatsApp · 5574 mensajes')).toBe(false)
+  })
+
+  it('interacción tipeada / tono por-día = contacto', () => {
+    expect(isContactInteraction('Discusión por ubicación')).toBe(true)
+    expect(isContactInteraction('Charla de WhatsApp · plans')).toBe(true)
+    expect(isContactInteraction(null)).toBe(true)
   })
 })

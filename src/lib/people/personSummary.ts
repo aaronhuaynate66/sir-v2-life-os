@@ -109,6 +109,9 @@ export interface PersonSummaryInput {
   lastChatObservedAt: string | null
   /** logged_at ISO del último person_log kind='interaction' (registro manual). */
   lastManualInteractionAt: string | null
+  /** logged_at del último CONTACTO real (interacción o llamada contestada) →
+   *  recencia de la Fuerza del score. Opcional. */
+  lastContactAt?: string | null
 }
 
 /** Umbral de "contacto frío" en días, según la importancia del vínculo: los
@@ -191,6 +194,7 @@ export function buildPersonSummary(
       importanceScore: person.importanceScore,
       trustLevel: person.trustLevel,
       lastChatObservedAt: input.lastChatObservedAt,
+      lastContactAt: input.lastContactAt ?? null,
     },
     now,
   )

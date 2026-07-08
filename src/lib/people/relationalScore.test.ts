@@ -42,6 +42,26 @@ describe('computeRelationalScore', () => {
     expect(b.confianza).toBe(10)
   })
 
+  it('un contacto reciente (llamada/registro) refresca la Fuerza aunque el chat sea viejo', () => {
+    // Chat hace 90d (>60 → -10), pero un contacto hace 3d → la Fuerza usa el
+    // contacto (más reciente): +10 en vez de -10.
+    const b = computeRelationalScore(
+      { importanceScore: 8, trustLevel: 8, lastChatObservedAt: '2026-03-03T12:00:00Z', lastContactAt: '2026-05-29T12:00:00Z' },
+      NOW,
+    )
+    expect(b.fuerza).toBe(90) // 80 + 10 (contacto <14d)
+    // daysSinceLastChat sigue siendo del CHAT (semántica intacta).
+    expect(b.daysSinceLastChat).toBeGreaterThan(60)
+  })
+
+  it('sin lastContactAt, la Fuerza usa solo el chat (comportamiento previo)', () => {
+    const b = computeRelationalScore(
+      { importanceScore: 8, trustLevel: 8, lastChatObservedAt: '2026-03-03T12:00:00Z' },
+      NOW,
+    )
+    expect(b.fuerza).toBe(70) // 80 - 10 (chat >60d, sin otro contacto)
+  })
+
   it('chat 14-60d no ajusta fuerza', () => {
     const b = computeRelationalScore(
       { importanceScore: 5, trustLevel: 5, lastChatObservedAt: '2026-05-01T12:00:00Z' },

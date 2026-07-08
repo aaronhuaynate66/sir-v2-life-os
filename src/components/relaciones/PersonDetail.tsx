@@ -71,6 +71,7 @@ import { fichaProfile } from '@/lib/people/fichaProfile'
 import { BondEvolutionPanel } from './BondEvolutionPanel'
 import { ConversationAnalyticsCard } from './ConversationAnalyticsCard'
 import { isSystemNote } from '@/lib/memories/fromInteractionLog'
+import { isContactInteraction } from '@/lib/person-logs/toneSignal'
 import { FechasImportantes } from './FechasImportantes'
 import { VidaProfesional } from './VidaProfesional'
 import { VidaSocial } from './VidaSocial'
@@ -288,6 +289,11 @@ export function PersonDetail({
     () => personLogs.find((l) => l.kind === 'interaction' && !isSystemNote(l.note ?? ''))?.loggedAt ?? null,
     [personLogs],
   )
+  // Último CONTACTO real (incluye llamadas contestadas) → recencia de la Fuerza.
+  const lastContactAt = useMemo(
+    () => personLogs.find((l) => l.kind === 'interaction' && isContactInteraction(l.note))?.loggedAt ?? null,
+    [personLogs],
+  )
 
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -474,6 +480,7 @@ export function PersonDetail({
         person={live}
         lastChatObservedAt={lastChat?.observedAt ?? null}
         lastManualInteractionAt={lastManualInteractionAt}
+        lastContactAt={lastContactAt}
       />
 
       {/* F2 (Tanda 2): la próxima acción, ascendida de texto pasivo a BLOQUE
@@ -483,6 +490,7 @@ export function PersonDetail({
         phoneNumber={live.phoneNumber ?? null}
         lastChatObservedAt={lastChat?.observedAt ?? null}
         lastManualInteractionAt={lastManualInteractionAt}
+        lastContactAt={lastContactAt}
       />
 
       {/* Q&A por persona: preguntá a SIR sobre esta persona, aterrizado en su

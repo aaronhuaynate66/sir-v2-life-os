@@ -13,6 +13,7 @@
 
 const CALL_RE = /^\s*📞|llamada de voz/i
 const BULK_IMPORT_RE = /^\s*importado (del export|de un chat)/i
+const MISSED_CALL_RE = /perdida/i
 
 /**
  * true si el log de interacción lleva un TONO real (interacción tipeada o tono
@@ -24,5 +25,19 @@ export function isToneBearingInteraction(note: string | null | undefined): boole
   if (!n) return true
   if (CALL_RE.test(n)) return false
   if (BULK_IMPORT_RE.test(n)) return false
+  return true
+}
+
+/**
+ * true si el log representa un CONTACTO real, para la recencia de la Fuerza.
+ * A diferencia del tono: una llamada CONTESTADA sí es contacto (aunque no tenga
+ * tono); una llamada PERDIDA no; el import-marker no (el chat ya cuenta por su
+ * observedAt). Interacciones tipeadas / tono por-día = contacto.
+ */
+export function isContactInteraction(note: string | null | undefined): boolean {
+  const n = (note ?? '').trim()
+  if (!n) return true // registro manual sin nota
+  if (BULK_IMPORT_RE.test(n)) return false // el chat ya cuenta por su observedAt
+  if (CALL_RE.test(n)) return !MISSED_CALL_RE.test(n) // llamada: solo si fue contestada
   return true
 }
