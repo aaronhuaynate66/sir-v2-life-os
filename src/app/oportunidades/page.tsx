@@ -2,7 +2,7 @@
 // SIR V2 — Oportunidades / pipeline comercial estructurado (migración 0084).
 // Lista las oportunidades por etapa + alta/edición. Patrón fetch a /api/deals.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Handshake, Plus, Loader2, Building2, User } from 'lucide-react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
@@ -43,6 +43,22 @@ export default function OportunidadesPage() {
   }, [])
 
   useEffect(() => { void load() }, [load])
+
+  // Deep-link ?deal=<id> (desde la ficha de un contacto): abrir esa oportunidad
+  // en el detalle + scrollear. Solo una vez, para no reabrir al cerrar el form.
+  const deepLinked = useRef(false)
+  useEffect(() => {
+    if (deepLinked.current || loading || deals.length === 0) return
+    if (typeof window === 'undefined') return
+    const id = new URLSearchParams(window.location.search).get('deal')
+    if (!id) return
+    const match = deals.find((d) => d.id === id)
+    if (match) {
+      deepLinked.current = true
+      setDraft(match)
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
+    }
+  }, [deals, loading])
 
   async function save() {
     if (!draft || saving || !(draft.title ?? '').trim()) return

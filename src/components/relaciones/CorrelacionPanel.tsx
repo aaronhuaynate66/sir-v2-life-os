@@ -89,7 +89,14 @@ export function CorrelacionPanel({
         return
       }
       const data = (await res.json()) as { narrative?: string }
-      setNarrative(data.narrative ?? '')
+      const text = (data.narrative ?? '').trim()
+      if (!text) {
+        // Narrativa vacía: NO la guardamos como '' (falsy → volvería a mostrar el
+        // botón y el próximo click re-paga el LLM). La tratamos como error suave.
+        setError(toApiError(new Error('La IA no devolvió una lectura. Probá de nuevo en un momento.')))
+        return
+      }
+      setNarrative(text)
     } catch (e) {
       setError(toApiError(e))
     } finally {

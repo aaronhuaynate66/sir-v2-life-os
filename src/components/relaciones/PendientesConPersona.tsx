@@ -63,7 +63,10 @@ export function PendientesConPersona({ personId, moments, onChange }: Props) {
 
   const rows = useMemo<Row[]>(() => {
     const todayYmd = ymdLocal(new Date())
-    const open = moments.filter((m) => m.status === 'abierto' && m.personId === personId)
+    // Aceptar episodios compartidos: la persona puede ser primaria O participante.
+    const open = moments.filter(
+      (m) => m.status === 'abierto' && (m.personId === personId || (m.participantIds ?? []).includes(personId)),
+    )
     const built = open.map((m) => {
       const { urgency, deltaDays } = urgencyOf(m.followUpOn, todayYmd)
       return { moment: m, urgency, deltaDays }

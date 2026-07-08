@@ -7,7 +7,7 @@
 // "el vínculo subió de 70 a 82 esta semana". Calmo y honesto — si no hay
 // historial suficiente, lo dice; no inventa.
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { TrendingUp, TrendingDown, Minus, Activity } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,26 +19,31 @@ export interface BondEvolutionPanelProps {
 
 export function BondEvolutionPanel({ personId }: BondEvolutionPanelProps) {
   const [evo, setEvo] = useState<BondEvolution | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      try {
-        const res = await fetch('/api/person-score/snapshot')
-        if (!res.ok) return
-        const data = (await res.json()) as { snapshots?: { personId: string; dateBucket: string; global: number }[] }
-        if (cancelled || !Array.isArray(data.snapshots)) return
-        const mine = data.snapshots
-          .filter((s) => s.personId === personId)
-          .map((s) => ({ dateBucket: s.dateBucket, global: s.global }))
-        setEvo(buildBondEvolution(mine))
-      } catch {
-        // best-effort: el panel es opcional.
-      }
-    })()
-    return () => {
-      cancelled = true
+  const [error, setError] = useState(false)
+
+  const load = useCallback(async (signal?: { cancelled: boolean }) => {
+    setError(false)
+    try {
+      const res = await fetch('/api/person-score/snapshot')
+      if (!res.ok) { if (!signal?.cancelled) setError(true); return }
+      const data = (await res.json()) as { snapshots?: { personId: string; dateBucket: string; global: number }[] }
+      if (signal?.cancelled) return
+      if (!Array.isArray(data.snapshots)) { setError(true); return }
+      const mine = data.snapshots
+        .filter((s) => s.personId === personId)
+        .map((s) => ({ dateBucket: s.dateBucket, global: s.global }))
+      setEvo(buildBondEvolution(mine))
+    } catch {
+      // Error real (red/servidor) — NO lo disfrazamos de "poca historia".
+      if (!signal?.cancelled) setError(true)
     }
   }, [personId])
+
+  useEffect(() => {
+    const signal = { cancelled: false }
+    void load(signal)
+    return () => { signal.cancelled = true }
+  }, [load])
 
   const trend = evo?.trend
   const hasShifts = (evo?.shifts.length ?? 0) > 0
@@ -52,7 +57,18 @@ export function BondEvolutionPanel({ personId }: BondEvolutionPanelProps) {
           <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Evolución del vínculo</div>
         </div>
 
-        {insufficient && !hasShifts ? (
+        {error ? (
+          <div className="text-sm py-1">
+            <p className="text-muted-foreground">No se pudo leer el historial del vínculo.</p>
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="mt-1.5 text-[12px] text-foreground underline underline-offset-2 hover:no-underline"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : insufficient && !hasShifts ? (
           <p className="text-sm text-muted-foreground py-1">
             Necesito unos días de historial para leer cómo evoluciona el vínculo. Se irá marcando solo. 🌱
           </p>

@@ -4,6 +4,7 @@
 // semana). Marcá cada una como hecha con click en el checkbox.
 
 import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { Lightbulb, Loader2, RefreshCcw, CheckCircle2, Circle, AlertCircle } from 'lucide-react'
 
@@ -67,14 +68,20 @@ export function RecomendacionesSemanales({ personId, personName }: Props) {
 
   async function toggleDone(recId: string, done: boolean) {
     if (!recs) return
+    const prev = recs
     // Optimistic.
     setRecs(recs.map((r) => r.id === recId ? { ...r, done } : r))
+    const revert = () => {
+      setRecs(prev)
+      toast.error('No se pudo guardar el cambio', { description: 'Revertido. Probá de nuevo.' })
+    }
     try {
-      await fetch('/api/estado-persona/recomendaciones-semanales', {
+      const res = await fetch('/api/estado-persona/recomendaciones-semanales', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ person_id: personId, rec_id: recId, done }),
       })
-    } catch { /* toast could go here */ }
+      if (!res.ok) revert()
+    } catch { revert() }
   }
 
   return (

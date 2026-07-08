@@ -524,7 +524,7 @@ export function PersonDetail({
       <PendientesConPersona
         personId={live.id}
         moments={moments}
-        onChange={() => { if (typeof window !== 'undefined') window.location.reload() }}
+        onChange={() => router.refresh()}
       />
 
       {/* "Antes de contactar": lo accionable que te deja listo para el momento

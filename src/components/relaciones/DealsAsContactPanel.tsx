@@ -66,7 +66,7 @@ export function DealsAsContactPanel({ person }: { person: { id: string; name: st
             return (
               <li key={d.id}>
                 <Link
-                  href="/oportunidades"
+                  href={`/oportunidades?deal=${encodeURIComponent(d.id)}`}
                   className="block rounded-lg border border-border bg-card px-3 py-2 hover:border-[#14b8a6]/50"
                 >
                   <div className="flex items-center justify-between gap-2">

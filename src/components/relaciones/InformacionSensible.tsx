@@ -36,6 +36,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
   const [open, setOpen] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [scanning, setScanning] = useState(false)
@@ -50,6 +51,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setLoadError(false)
     try {
       const d = await getSensitiveData(personId)
       setDocumentoTipo(d.documentoTipo ?? '')
@@ -60,8 +62,11 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
       setFotoPath(d.fotoDocumentoPath ?? null)
       setLoaded(true)
     } catch {
-      // Tolerante: form vacío (tabla pendiente, etc.).
-      setLoaded(true)
+      // OJO: el endpoint devuelve {} (200) cuando no hay fila o la tabla aún no
+      // existe — eso NO lanza. Si getSensitiveData tira, es un error REAL
+      // (sesión vencida, 500, red). NO marcamos loaded ni mostramos form vacío:
+      // guardar ahora pisaría el DNI/pasaporte/notas que sí existen en la DB.
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -77,6 +82,10 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
+      if (!loaded) {
+        toast.error('No se pudo cargar lo que ya tenías; no subo la foto para no pisar tus datos.')
+        return
+      }
       setUploading(true)
       try {
         const path = await uploadDocumentPhoto(personId, file)
@@ -102,7 +111,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
         if (e.target) e.target.value = ''
       }
     },
-    [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes],
+    [personId, loaded, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes],
   )
 
   // Capturar documento: sube la foto al bucket privado + extrae los campos por
@@ -113,6 +122,10 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
       const file = e.target.files?.[0]
       if (e.target) e.target.value = ''
       if (!file) return
+      if (!loaded) {
+        toast.error('No se pudo cargar lo que ya tenías; no leo el documento para no pisar tus datos.')
+        return
+      }
       setScanning(true)
       try {
         // 1. Subir la foto original al bucket privado (queda en el documento).
@@ -148,7 +161,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
         setScanning(false)
       }
     },
-    [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes],
+    [personId, loaded, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes],
   )
 
   const viewPhoto = useCallback(async () => {
@@ -163,6 +176,10 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
   }, [fotoPath])
 
   const save = useCallback(async () => {
+    if (!loaded) {
+      toast.error('No se pudo cargar lo que ya tenías; no guardo para no pisar tus datos.')
+      return
+    }
     setSaving(true)
     try {
       await saveSensitiveData(personId, {
@@ -181,7 +198,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
     } finally {
       setSaving(false)
     }
-  }, [personId, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes, fotoPath])
+  }, [personId, loaded, documentoTipo, documentoNumero, pasaporteNumero, pasaporteVencimiento, privateNotes, fotoPath])
 
   return (
     <Card className="shadow-none mb-4 border-warn/20">
@@ -217,6 +234,17 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
             {loading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
                 <Loader2 size={14} className="animate-spin" /> Cargando…
+              </div>
+            ) : loadError ? (
+              <div className="rounded-md border border-bad/30 bg-bad-soft p-3 text-sm">
+                <p className="text-bad/90 leading-relaxed">
+                  No se pudieron cargar tus datos guardados (puede ser la sesión vencida).
+                  Para no pisar tu DNI/pasaporte/notas, el formulario queda bloqueado hasta
+                  que la carga funcione.
+                </p>
+                <Button size="sm" variant="outline" onClick={() => void load()} className="mt-2.5">
+                  Reintentar
+                </Button>
               </div>
             ) : (
               <div className="space-y-3">
