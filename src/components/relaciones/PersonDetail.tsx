@@ -547,23 +547,24 @@ export function PersonDetail({
       {/* Estudio del ciclo: horizonte MOVIBLE (cursor arrastrable + "¿qué pasaría
           si…?") + briefing multi-evento navegable, con fecha compartida. Reemplaza
           el montaje suelto de briefing + horizonte. Solo afectivo con ciclo. */}
-      {profile.showCuidado && live.cycleStartDate && (
+      {profile.showCycleForecast && (
         <CycleForecastStudio
-          cycleStartDate={live.cycleStartDate}
+          cycleStartDate={live.cycleStartDate ?? null}
           cycleLengthDays={live.cycleLengthDays ?? null}
           personCycles={personCycles}
           specialDates={live.specialDates ?? []}
           birthDate={live.birthDate ?? null}
           personId={live.id}
           personName={live.name}
+          bond={profile.careBond}
           refreshKey={planRefresh}
           onPlanChange={() => setPlanRefresh((n) => n + 1)}
         />
       )}
 
       {/* Agenda personal CON esta persona (planes propios): alimenta la línea del
-          ciclo, separada del calendario laboral. Solo afectivo, junto al Horizonte. */}
-      {profile.showCuidado && (
+          ciclo. Toda mujer con datos (registro por vínculo). */}
+      {profile.showCycleForecast && (
         <PersonalPlansPanel
           personId={live.id}
           personName={live.name}
@@ -572,9 +573,8 @@ export function PersonDetail({
       )}
 
       {/* Predictor forward ciclo → estado: proyecta el tono/energía por fase
-          sobre las próximas semanas (compañero predictivo del Horizonte). Se
-          auto-oculta si no hay patrón real. Solo afectivo con ciclo. */}
-      {profile.showCuidado && (
+          sobre las próximas semanas. Se auto-oculta si no hay patrón/ciclo. */}
+      {profile.showCycleForecast && (
         <CyclePhaseForecastCard
           personLogs={correlationLogs}
           cycleStartDate={live.cycleStartDate ?? null}
@@ -633,7 +633,7 @@ export function PersonDetail({
       {/* Dedup ciclo (Tanda 2): el Horizonte del ciclo (arriba) es el módulo
           protagonista. CicloPanel (estado lunar + actual) queda como detalle
           COLAPSABLE, para no repetir el ciclo como segundo bloque prominente. */}
-      {profile.showCuidado && (
+      {profile.showCycleForecast && live.cycleStartDate && (
         <details className="group mb-4 rounded-lg border border-border bg-card">
           <summary className="cursor-pointer list-none px-4 py-2.5 text-[11px] uppercase tracking-[0.07em] text-text-tertiary flex items-center justify-between hover:text-foreground">
             Estado lunar y del ciclo (detalle)

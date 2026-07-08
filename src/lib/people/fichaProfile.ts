@@ -8,6 +8,7 @@
 
 import type { Person } from '@/types'
 import { effectiveAmbito } from './ambito'
+import type { CareBond } from '@/lib/ciclo/eventCareBrief'
 
 export type FichaArchetype = 'afectivo' | 'familiar' | 'personal' | 'colega' | 'lead'
 
@@ -22,10 +23,23 @@ export const ARCHETYPE_LABEL: Record<FichaArchetype, string> = {
 export interface FichaProfile {
   archetype: FichaArchetype
   label: string
-  /** Horizonte del ciclo + intimidad + timing de cuidado. Solo afectivo con ciclo. */
+  /** Intimidad + planner de viaje + IA a fondo. SOLO afectivo (pareja). */
   showCuidado: boolean
+  /** Estudio del ciclo (2 horizontes + briefing por VÍNCULO). Toda mujer con datos. */
+  showCycleForecast: boolean
+  /** Registro del consejo del briefing según el vínculo. */
+  careBond: CareBond
   /** Pipeline/deals como contacto + próximos pasos comerciales. Colega + lead. */
   showCommercial: boolean
+}
+
+/** Arquetipo → registro del briefing (ético): pareja=cuidado; familia/personal=
+ *  presencia; colega/lead=respeto profesional. */
+export function careBondFor(archetype: FichaArchetype): CareBond {
+  if (archetype === 'afectivo') return 'partner'
+  if (archetype === 'familiar') return 'family'
+  if (archetype === 'colega' || archetype === 'lead') return 'colleague'
+  return 'friend'
 }
 
 type FichaInput = Pick<Person, 'relationship' | 'ambito' | 'gender' | 'cycleStartDate'>
@@ -46,8 +60,13 @@ export function fichaProfile(p: FichaInput): FichaProfile {
   return {
     archetype,
     label: ARCHETYPE_LABEL[archetype],
-    // Cuidado/ciclo: SOLO afectivo (pareja). Una colega mujer ya no lo ve.
+    // Intimidad/planner/IA: SOLO afectivo (pareja).
     showCuidado: archetype === 'afectivo' && hasCycle,
+    // Estudio del ciclo (horizontes + briefing por vínculo): TODA MUJER con datos.
+    // Decisión de Aaron (08-jul): inteligencia conductual para mejorar TODAS las
+    // relaciones; el REGISTRO lo adapta careBond (respeto para colega, no romance).
+    showCycleForecast: hasCycle,
+    careBond: careBondFor(archetype),
     // Comercial: colega (deals internos) + lead (pipeline de venta).
     showCommercial: archetype === 'colega' || archetype === 'lead',
   }
