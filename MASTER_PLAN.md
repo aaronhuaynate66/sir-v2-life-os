@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `275861b`
+**Hash del último commit humano:** `2bfe61e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2bfe61e` | aaronhuaynate66 | feat(forecast-conductual): aprendizaje de pesos por modelo por persona (§17) (#624) | 2026-07-08 |
 | `275861b` | aaronhuaynate66 | feat(forecast-conductual): loop de feedback + recalibración (Fase 2, cierra el spec) (#623) | 2026-07-08 |
 | `81a26e4` | aaronhuaynate66 | feat(ciclo): Estudio del ciclo para TODAS las mujeres, con registro por vínculo (#622) | 2026-07-08 |
 | `b737845` | aaronhuaynate66 | chore(forecast): override de match + filtro por argv en el importer (#621) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `0712a67` | aaronhuaynate66 | feat(forecast-conductual): núcleo puro (Fase 1+2) del forecast por conversación (#617) | 2026-07-08 |
 | `45268df` | aaronhuaynate66 | feat(ciclo): mejor fecha para viajar (rankea ventanas por el ciclo) (#616) | 2026-07-08 |
 | `d1fba78` | aaronhuaynate66 | feat(planes): Fase 4 — vista global de eventos + marcar "con quién" (#615) | 2026-07-08 |
-| `f16df69` | aaronhuaynate66 | feat(ciclo): Estudio del ciclo — horizonte movible + briefing multi-evento + "¿qué pasaría si?" (#614) | 2026-07-08 |
 
 ---
 
