@@ -89,7 +89,7 @@ export function TravelPlannerCard({ cycleStartDate, cycleLengthDays, personCycle
         </div>
 
         {windows.length === 0 ? (
-          <p className="text-[12px] text-muted-foreground italic">No hay ventanas en ese mes con esos filtros. Probá sin "solo findes" o cambiá el mes.</p>
+          <p className="text-[12px] text-muted-foreground italic">No hay ventanas en ese mes con esos filtros. Probá sin «solo findes» o cambiá el mes.</p>
         ) : (
           <ul className="space-y-1.5">
             {windows.map((w, i) => {
