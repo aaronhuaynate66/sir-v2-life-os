@@ -89,6 +89,7 @@ import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 import { PersonActions } from './PersonActions'
 import { LoPersonal } from './LoPersonal'
 import { ReflexionesPanel } from './ReflexionesPanel'
+import { DealsAsContactPanel } from './DealsAsContactPanel'
 import { CicloPanel } from './CicloPanel'
 import { CycleHorizonCard } from './CycleHorizonCard'
 import { CorrelacionPanel } from './CorrelacionPanel'
@@ -491,6 +492,10 @@ export function PersonDetail({
           personName={live.name}
         />
       )}
+
+      {/* Pipeline como contacto (#3): deals donde esta persona es el decisor.
+          Solo comercial (colega/lead) — para pareja/familia ni se monta. */}
+      {profile.showCommercial && <DealsAsContactPanel person={{ id: live.id, name: live.name }} />}
 
       {/* Estado global del vínculo con esta persona (determinístico): cruza
           logs + moments + ciclo + memorias en una etiqueta + insights concretos.
