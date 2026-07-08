@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `0712a67`
+**Hash del último commit humano:** `bf15634`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `bf15634` | aaronhuaynate66 | feat(forecast-conductual): persistencia + pipeline + 2º horizonte en la ficha (#618) | 2026-07-08 |
 | `0712a67` | aaronhuaynate66 | feat(forecast-conductual): núcleo puro (Fase 1+2) del forecast por conversación (#617) | 2026-07-08 |
 | `45268df` | aaronhuaynate66 | feat(ciclo): mejor fecha para viajar (rankea ventanas por el ciclo) (#616) | 2026-07-08 |
 | `d1fba78` | aaronhuaynate66 | feat(planes): Fase 4 — vista global de eventos + marcar "con quién" (#615) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `07005e6` | aaronhuaynate66 | feat(ciclo): SIR anticipa cómo llega ella a cada plan (briefing de cuidado) (#611) | 2026-07-08 |
 | `809680a` | aaronhuaynate66 | feat(agenda): agenda personal nativa + la línea del ciclo deja de mezclar el trabajo (#610) | 2026-07-08 |
 | `a11d637` | aaronhuaynate66 | feat(ciclo): la línea del horizonte jala eventos de tu calendario (#609) | 2026-07-08 |
-| `5d30240` | aaronhuaynate66 | feat(norte): el ensayo y el chat de SIR tiran del norte del año (#608) | 2026-07-08 |
 
 ---
 
