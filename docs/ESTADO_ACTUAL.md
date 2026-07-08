@@ -1,6 +1,6 @@
 # SIR V2 — Estado actual y pendientes
 
-> Documento vivo. Última actualización: **2026-07-07**.
+> Documento vivo. Última actualización: **2026-07-08**.
 > Qué se construyó, qué está en producción, qué falta y en qué orden.
 
 ---
@@ -23,6 +23,27 @@ Todo lo listado en la sección 2 está **mergeado a main y en producción** (`si
 | **Rescate de datos huérfanos** | `ReflexionesPanel` (reflectionQuestions), `emotionalStates` en la última interacción, rows read-only de ámbito/grupo/sexo en Métricas. | ✅ Prod |
 | **Pipeline como contacto (#3)** | `DealsAsContactPanel`: deals donde la persona es el decisor, gateado por comercial. | ✅ Prod |
 | **Limpieza** | Se sacó el `CuratedObservationsPanel` (stub de debug que quedó visible en prod). | ✅ Prod |
+
+---
+
+## 2.bis Integridad de las señales relacionales (PRs #594–#606)
+
+Barrido que arregló la cadena de señales que alimenta score, forecast y ficha. **Origen:** el forecast de ciclo de Diana salía plano porque 180/193 de sus logs eran llamadas/imports (placeholders `value=3`) que envenenaban el promedio de tono. Todo en prod.
+
+| Qué | PR |
+|---|---|
+| **Tono discrimina + backfill histórico** — rúbrica para que el `value` de interacción no colapse a 3; recalibración de los logs viejos. | #598, #599 |
+| **Excluir placeholders del tono** — `isToneBearingInteraction` saca llamadas y marcadores de import del signal de tono (`lib/person-logs/toneSignal.ts`). | #600 |
+| **Import de WhatsApp con tono por día** — el batch genera un log de tono por día ("Charla de WhatsApp") en vez de un marcador plano. | #601 |
+| **Fuerza cuenta el contacto real** — `isContactInteraction`: llamadas contestadas + registros manuales cuentan para recencia; perdidas e imports no. | #602 |
+| **Energía revivida con partnerEffect** — `energy_impact` (campo muerto) → dato real vía `/api/relational/partner-effects` en la ficha. | #603 |
+| **Cadencia de la ficha usa el ritmo real** — la salud del vínculo usa `effectiveCadenceDays` (explícita→ritmo→categoría), no un default por capa. | #604 |
+| **Ritmo de contacto unificado** — primitivo compartido `lib/people/contactRhythm.ts` (antes duplicado en cadence.ts y trajectory.ts). | #605 |
+| **Tono legible + norte en chat + taxonomía GA4** — `humanizeTone` traduce el enum crudo en la ficha; el ancla se marca como "TU NORTE" en el contexto del chat de SIR; `person_added` con `method`, borrados 2 eventos GA4 muertos. | #606 |
+
+**Verificación en vivo (08-jul):** Sala de Ensayo (simulación "aumento a Alex" → argumentos excelentes, integra data real + estado físico), ficha de Diana cableada, norte del Mundial como "TU NORTE", y GA4 — todos OK contra prod. Método: mirar la **salida con data real**, no solo el 200 OK.
+
+**Pendiente menor (decidir con Aaron):** `rehearsePrompt` no incluye el norte (los argumentos del ensayo no se aterrizan en la brújula del año); `YearCompass` infiere ancla pero `NorteDrift` dice "sin norte" sin ancla explícita (contradicción latente, no se dispara hoy porque el Mundial es ancla explícita).
 
 ---
 
@@ -55,15 +76,16 @@ Cada tanda va a rama + preview para validar UI antes de mergear.
 
 ## 5. Backlog completo (priorizado)
 
-### P0 — Bugs (arreglar ya)
-- [ ] **Información sensible: guard de carga** — no permitir guardar si la carga inicial falló (evita pisar DNI/pasaporte/notas). `InformacionSensible.tsx:51-68/165-184`
-- [ ] **Dinero de la persona: chequear `r.ok`** + error visible; no cerrar el panel si falló. `PersonMoneyPanel.tsx:36-43`
-- [ ] **Resolver pendiente hace `window.location.reload()`** → cambiar a soft-refetch (pierde scroll/tab/paneles IA). `PersonDetail.tsx:527`
-- [ ] **Pendientes descarta episodios compartidos** (poblar `participantIds` en el mapper + aceptar en el filtro). `PendientesConPersona.tsx:66`, `lib/moments`
-- [ ] **Evolución del vínculo: error disfrazado de "poca historia"** → estado de error separado + reintento. `BondEvolutionPanel.tsx:26-33`
-- [ ] **Deals linkean a `/oportunidades` genérico** → deep-link `?deal=<id>`. `DealsAsContactPanel.tsx:69`, `StakeholderDealImpact.tsx:42`
-- [ ] **Recomendaciones: el check "hecho" no persiste** (PATCH fire-and-forget). `RecomendacionesSemanales.tsx:68-78`
-- [ ] **Correlación: narrativa IA vacía revierte el botón y re-paga LLM**. `CorrelacionPanel.tsx:91-92,138`
+### P0 — Bugs ✅ TODOS RESUELTOS (#351257a "Tanda 1 P0" + #597 sweep fuera de la ficha)
+- [x] **Información sensible: guard de carga** — no guarda si la carga inicial falló (evita pisar DNI/pasaporte/notas). `InformacionSensible.tsx`
+- [x] **Dinero de la persona: chequear `r.ok`** + error visible. `PersonMoneyPanel.tsx`
+- [x] **Resolver pendiente** → soft-refetch en vez de `window.location.reload()`. `PersonDetail.tsx`
+- [x] **Pendientes descarta episodios compartidos** → `participantIds` poblado. `PendientesConPersona.tsx`, `lib/moments`
+- [x] **Evolución del vínculo: error disfrazado de "poca historia"** → estado de error + reintento. `BondEvolutionPanel.tsx`
+- [x] **Deals deep-link `?deal=<id>`**. `DealsAsContactPanel.tsx`, `StakeholderDealImpact.tsx`
+- [x] **Recomendaciones: el check "hecho" persiste**. `RecomendacionesSemanales.tsx`
+- [x] **Correlación: narrativa IA vacía ya no revierte ni re-paga LLM**. `CorrelacionPanel.tsx`
+- [x] **Guardado silencioso fuera de la ficha** (misma clase): review, ObjectivePlanPanel, BigFiveCard, ExperimentosLoopPanel. (#597)
 
 ### P1 — Acción y jerarquía
 - [ ] **Bloque "Acción de hoy"**: card propia entre vistazo y tabs, con **botón real** (Escribile ahora → wa.me) + sustento visible + micro-chip de origen.
