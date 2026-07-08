@@ -7,14 +7,17 @@
 // período; tendencia, no diagnóstico; coincidencia, no causa; para cuidar.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Waves, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
+import { Waves, RefreshCw, ClipboardCheck } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { cyclePhase } from '@/lib/ciclo/phase'
 
 interface ForecastRow {
+  id: string
   mode: string
   center_date: string | null
   main_window_start: string | null
@@ -27,8 +30,16 @@ interface ForecastRow {
   result: {
     usualPattern?: { friction: number; withdrawal: number; sensitivity: number; somatic: number }
     coverage?: { activeDays: number; spanDays: number; peaks: number; anchors: number }
+    recalibration?: { hitRate: number | null; evaluated: number; validated: boolean }
   }
 }
+
+const FEEDBACK_CATS: { key: string; label: string }[] = [
+  { key: 'periodo', label: 'Período' }, { key: 'pms', label: 'PMS/sensibilidad' },
+  { key: 'dolor', label: 'Dolor' }, { key: 'medicacion', label: 'Medicación' },
+  { key: 'conflicto', label: 'Conflicto' }, { key: 'distancia', label: 'Distancia/retiro' },
+  { key: 'evento_externo', label: 'Evento externo' }, { key: 'no_paso_nada', label: 'No pasó nada' },
+]
 
 export interface BehaviorHorizonCardProps {
   personId: string
@@ -147,12 +158,78 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
               {forecast.result?.coverage ? ` · ${forecast.result.coverage.activeDays} días activos, ${forecast.result.coverage.peaks} picos` : ''}
             </div>
 
+            {forecast.result?.recalibration && forecast.result.recalibration.evaluated > 0 && (
+              <div className="text-[11px] text-muted-foreground">
+                aciertos: <span className="text-foreground">{Math.round((forecast.result.recalibration.hitRate ?? 0) * 100)}%</span> ({forecast.result.recalibration.evaluated} ventanas)
+                {forecast.result.recalibration.validated && <span className="text-ok"> · validado</span>}
+              </div>
+            )}
+
             <p className="text-[11px] leading-relaxed text-muted-foreground border-l-2 border-border/40 pl-3">
               {forecast.interpretation} Coincidencia, no causa — nunca una explicación de lo que siente. Es para acompañar con más cuidado, no para gestionar.
             </p>
+
+            <FeedbackBox personId={personId} forecastId={forecast.id} windowCenter={forecast.center_date} onSaved={load} />
           </div>
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/** "¿Qué pasó en esta ventana?" → registra feedback (recalibra el modelo). */
+function FeedbackBox({ personId, forecastId, windowCenter, onSaved }: { personId: string; forecastId: string; windowCenter: string | null; onSaved: () => void }) {
+  const [open, setOpen] = useState(false)
+  const [cats, setCats] = useState<Set<string>>(new Set())
+  const [date, setDate] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const toggle = (k: string) => setCats((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n })
+
+  async function submit() {
+    if (cats.size === 0) { toast.error('Marcá al menos una'); return }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/forecast/feedback', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ personId, forecastId, windowCenter, categories: [...cats], eventDate: date || undefined }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (!res.ok) { toast.error('No se pudo registrar', { description: d?.error }); return }
+      toast.success(d.anchored ? 'Registrado — fecha guardada como ancla, recalibra el modelo.' : 'Registrado — ajusta el modelo.')
+      setCats(new Set()); setDate(''); setOpen(false)
+      onSaved()
+    } catch { toast.error('No se pudo registrar') } finally { setSaving(false) }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground min-h-[24px]">
+        <ClipboardCheck size={13} strokeWidth={1.75} /> ¿Qué pasó en esta ventana?
+      </button>
+    )
+  }
+  return (
+    <div className="rounded-md border border-border/60 p-3 space-y-2.5">
+      <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">¿Qué pasó? (recalibra el modelo)</div>
+      <div className="flex flex-wrap gap-1.5">
+        {FEEDBACK_CATS.map((c) => (
+          <button key={c.key} type="button" onClick={() => toggle(c.key)} aria-pressed={cats.has(c.key)}
+            className={cn('rounded-full border px-2.5 py-1 text-[11px] min-h-[28px] transition-colors', cats.has(c.key) ? 'border-brand/50 bg-brand/10 text-brand-soft-foreground' : 'border-border text-muted-foreground hover:border-brand/40')}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+      {(cats.has('periodo') || cats.has('pms')) && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-muted-foreground">Fecha (la vuelve ancla):</span>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="font-mono text-[12px] max-w-[160px]" />
+        </div>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button>
+        <Button size="sm" onClick={submit} disabled={saving}>{saving ? 'Guardando…' : 'Registrar'}</Button>
+      </div>
+    </div>
   )
 }

@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { buildDailySignals } from '@/lib/forecast-conductual/dailySignals'
 import { runForecast } from '@/lib/forecast-conductual/engine'
+import { recalibrate, type FeedbackLabel } from '@/lib/forecast-conductual/recalibrate'
 import type { ChatMessage, CycleAnchor, DailySignal } from '@/lib/forecast-conductual/types'
 
 export const runtime = 'nodejs'
@@ -109,6 +110,14 @@ export async function POST(req: NextRequest) {
     // 4) Correr el ensamble.
     const forecast = runForecast({ signals, anchors, now: new Date() })
     if (!forecast) return errorJson(422, 'No se pudo estimar', 'La serie no alcanza para un forecast confiable todavía.')
+
+    // 4b) Recalibración: el feedback histórico ajusta la confianza (§17).
+    try {
+      const { data: fb } = await supabase.from('forecast_feedback').select('label').eq('user_id', userId).eq('person_id', personId).limit(200)
+      const recal = recalibrate(((fb ?? []) as { label: FeedbackLabel | null }[]).map((r) => r.label).filter((l): l is FeedbackLabel => !!l))
+      if (recal.confidenceDelta !== 0) forecast.confidence.score = Math.round(Math.max(0, Math.min(1, forecast.confidence.score + recal.confidenceDelta)) * 100) / 100
+      ;(forecast as unknown as Record<string, unknown>).recalibration = recal
+    } catch { /* best-effort: sin feedback aún */ }
 
     // 5) Persistir el resultado.
     const mw = forecast.mainWindow, ew = forecast.extendedWindow
