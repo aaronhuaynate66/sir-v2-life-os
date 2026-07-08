@@ -251,3 +251,21 @@ export async function createGoogleEvent(
   if (!j.id) throw new Error('Google no devolvió un id de evento.')
   return { id: j.id, htmlLink: j.htmlLink }
 }
+
+/**
+ * Borra un evento del calendario `primary`. Si Google responde 404/410 (ya no
+ * existe — lo borraste a mano allá), lo tratamos como éxito (idempotente). Lanza
+ * en otros errores. Requiere scope `calendar.events`.
+ */
+export async function deleteGoogleEvent(accessToken: string, eventId: string): Promise<void> {
+  const id = (eventId || '').trim()
+  if (!id) return
+  const res = await fetch(`${EVENTS_URL}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  // 204 = borrado; 404/410 = ya no está (idempotente, éxito).
+  if (res.ok || res.status === 404 || res.status === 410) return
+  const text = await res.text()
+  throw new Error(`Google Calendar API ${res.status}: ${text.slice(0, 200)}`)
+}

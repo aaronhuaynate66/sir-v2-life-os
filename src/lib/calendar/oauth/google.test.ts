@@ -1,7 +1,7 @@
-// SIR V2 — Tests del payload de creación de eventos de Google (lógica pura).
+// SIR V2 — Tests del payload de creación + borrado de eventos de Google.
 
-import { describe, it, expect } from 'vitest'
-import { buildGoogleEventPayload } from './google'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { buildGoogleEventPayload, deleteGoogleEvent } from './google'
 
 describe('buildGoogleEventPayload', () => {
   it('día completo (fecha sin hora) → start.date + end.date EXCLUSIVO (+1 día)', () => {
@@ -41,5 +41,32 @@ describe('buildGoogleEventPayload', () => {
 
   it('sin título → lanza', () => {
     expect(() => buildGoogleEventPayload({ title: '  ', start: '2026-07-20' })).toThrow()
+  })
+})
+
+describe('deleteGoogleEvent', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const stub = (status: number) =>
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(status === 204 ? null : 'x', { status })))
+
+  it('204 → resuelve (borrado)', async () => {
+    stub(204)
+    await expect(deleteGoogleEvent('tok', 'ev1')).resolves.toBeUndefined()
+  })
+  it('404/410 → resuelve (ya no existe, idempotente)', async () => {
+    stub(404)
+    await expect(deleteGoogleEvent('tok', 'ev1')).resolves.toBeUndefined()
+    stub(410)
+    await expect(deleteGoogleEvent('tok', 'ev1')).resolves.toBeUndefined()
+  })
+  it('500 → lanza', async () => {
+    stub(500)
+    await expect(deleteGoogleEvent('tok', 'ev1')).rejects.toThrow()
+  })
+  it('id vacío → no-op (no llama a fetch)', async () => {
+    const f = vi.fn()
+    vi.stubGlobal('fetch', f)
+    await deleteGoogleEvent('tok', '  ')
+    expect(f).not.toHaveBeenCalled()
   })
 })

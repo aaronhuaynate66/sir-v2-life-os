@@ -7,6 +7,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { rowToPersonalEvent, type PersonalEventRow } from '@/lib/personal-events/types'
+import { ensureFreshGoogleToken } from '@/lib/calendar/oauth/session'
+import { deleteGoogleEvent } from '@/lib/calendar/oauth/google'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -69,10 +71,32 @@ export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: stri
   if (authErr || !auth?.user) return errorJson(401, 'No autenticado')
   if (!id) return errorJson(400, 'Falta el id')
 
+  // Si el plan estaba empujado a Google (gcal_event_id), lo borramos también allá
+  // (best-effort). Lectura con fallback: si la columna 0138 aún no existe, no hay
+  // nada que sincronizar. NUNCA bloquea el borrado en SIR.
+  let gcalEventId: string | null = null
+  try {
+    const { data } = await supabase
+      .from('personal_events').select('gcal_event_id').eq('user_id', auth.user.id).eq('id', id).maybeSingle()
+    gcalEventId = (data as { gcal_event_id?: string | null } | null)?.gcal_event_id ?? null
+  } catch { /* columna ausente / error → sin sync */ }
+
+  let googleDeleted = false
+  if (gcalEventId) {
+    try {
+      const fresh = await ensureFreshGoogleToken(supabase, auth.user.id)
+      if (fresh) { await deleteGoogleEvent(fresh.token, gcalEventId); googleDeleted = true }
+    } catch (e) {
+      // El evento de Google no se pudo borrar (token/permiso/red): seguimos con el
+      // borrado en SIR igual. Queda un evento huérfano en Google (mejor que no borrar acá).
+      reportApiError(e, { route: 'personal-events/[id]', stage: 'gcal-delete' })
+    }
+  }
+
   try {
     const { error } = await supabase.from('personal_events').delete().eq('user_id', auth.user.id).eq('id', id)
     if (error) return errorJson(500, 'No se pudo borrar', error.message.slice(0, 200))
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, googleDeleted })
   } catch (e) {
     reportApiError(e, { route: 'personal-events/[id]', stage: 'delete' })
     return errorJson(500, 'No se pudo borrar')
