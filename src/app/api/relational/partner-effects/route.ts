@@ -13,7 +13,7 @@ import { logEvent } from '@/lib/observability/logEvent'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: Request) {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
   if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
@@ -41,10 +41,15 @@ export async function GET() {
   const energizing = result.perPerson.filter((p) => p.label === 'energiza').slice(0, 6)
   const draining = result.perPerson.filter((p) => p.label === 'drena').slice(0, 6)
 
+  // ?person=<id> → efecto de ESA persona (de la lista completa, no solo top-6),
+  // para la card de su ficha. null si es neutral / no tiene datos suficientes.
+  const personId = new URL(req.url).searchParams.get('person')
+  const effect = personId ? (result.perPerson.find((p) => p.personId === personId) ?? null) : undefined
+
   await logEvent(supabase, userId, {
     type: 'partner-effects', ok: true, route: 'relational/partner-effects',
     meta: { grandMean: result.grandMean, betweenVar: result.betweenVar, energizing: energizing.length, draining: draining.length, insufficient: result.insufficient },
   })
 
-  return NextResponse.json({ grandMean: result.grandMean, insufficient: result.insufficient, energizing, draining })
+  return NextResponse.json({ grandMean: result.grandMean, insufficient: result.insufficient, energizing, draining, ...(effect !== undefined ? { effect } : {}) })
 }
