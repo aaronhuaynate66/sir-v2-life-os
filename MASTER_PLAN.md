@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `9f88c6e`
+**Hash del último commit humano:** `2169c62`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,16 +341,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
-| `9f88c6e` | aaronhuaynate66 | feat(relaciones): tensiones, fortalezas y metas en común por persona (#592) | 2026-07-07 |
-| `4f7cdbd` | Aaron Huaynate | feat(ensayo): + trayectoria C2 y salud del vínculo (tono reciente) | 2026-07-07 |
-| `3d057d3` | Aaron Huaynate | feat(ensayo): + temas abiertos como señal, sin sumar latencia | 2026-07-07 |
-| `1d0753a` | Aaron Huaynate | feat(ficha): ensayos anteriores con esta persona en su ficha | 2026-07-07 |
-| `07eb8a4` | Aaron Huaynate | fix(mig 0131): person_id text, no uuid (people.id es text) — la FK fallaba | 2026-07-07 |
-| `573bd5e` | Aaron Huaynate | fix(ensayo): max_tokens 1600 (no truncar) + input recortado (memorias 8, conv 1600) | 2026-07-07 |
-| `cda982e` | Aaron Huaynate | perf(ensayo): carga de contexto en paralelo + max_tokens 1200 (fit en 60s Hobby) | 2026-07-07 |
-| `73552ec` | Aaron Huaynate | feat(ensayo): contexto rico (ciclo M6 + Pulso + estado) + histórico de simulaciones | 2026-07-07 |
-| `c2ccabf` | Aaron Huaynate | fix(alineación): palabras-medio (whatsapp/chat) no son keyword de objetivo | 2026-07-07 |
-| `bcc0a0f` | Aaron Huaynate | refactor(relaciones): fuerza de relación desde la capa de Dunbar (categoría), no importancia | 2026-07-07 |
+| `2169c62` | aaronhuaynate66 | Merge pull request #593 from aaronhuaynate66/feat/ficha-redesign-tabs | 2026-07-08 |
+| `5b82d30` | Aaron Huaynate | feat(ficha): cierra gaps de datos sin frontend + QA de cableado | 2026-07-08 |
+| `45ea399` | Aaron Huaynate | feat(ficha): Horizonte — capas de tono por día + ventanas para proponer; primero en Hoy | 2026-07-07 |
+| `52418ec` | Aaron Huaynate | feat(ficha): alinea los tabs al diseño — Hoy · Conversación · Perfil · Registro · Red | 2026-07-07 |
+| `21d18c9` | Aaron Huaynate | feat(ficha): Horizonte del ciclo como línea de tiempo visual (opción 6a del diseño) | 2026-07-07 |
+| `02471a8` | Aaron Huaynate | feat(ficha): reestructura en tabs (v1) — Vínculo/Cuidado/Historia/Red/Datos | 2026-07-07 |
+| `acc5f29` | Aaron Huaynate | feat(ficha): CycleHorizonCard — Horizonte del ciclo con eventos reales | 2026-07-07 |
+| `c34ba9c` | Aaron Huaynate | feat(ciclo): engine puro del Horizonte del ciclo (rediseño ficha) | 2026-07-07 |
+| `4af36d1` | Anakin | docs(design): add cycle horizon to person mockup | 2026-07-07 |
+| `c96a0b5` | Aaron Huaynate | docs(backlog): reconciliación de hechos → regla conservadora (solo mudanza) | 2026-07-07 |
 
 ---
 
@@ -460,7 +460,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 - **Etapa 4 follow-ups:** Human OKRs estructurados, Narrative Intelligence, delta de relationship score (necesita snapshots históricos), tono de interacción desde `person_logs` en el engine, inferencia LLM de dominio para objetivos de texto libre.
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
 - **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
-- **Refactor split-brain → Supabase única fuente** (deuda arquitectónica, ver más abajo).
+- ~~**Refactor split-brain → Supabase única fuente**~~ ✅ RESUELTO (verificado 07-07; ver deuda arquitectónica más abajo). Único residual menor: last-write-wins por fila.
 
 ---
 
@@ -668,20 +668,16 @@ Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_I
 
 Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lógica de engines** (timing / recommendation / signal / relationship — todos puros y testeados, ver `src/engines/*`); en varios casos lo que falta es **exponerla en UI**, no construir el cerebro. Ordenado por prioridad/criterio.
 
-### P0 — Próximo candidato fuerte
-**1. "Reconectar" / serendipia** — bloque en `/panel` que sugiere **3-5 personas por día** para reconectar.
-- **Qué es:** un feed diario "deberías hablarle a X" (por silencio prolongado, fecha relevante, score relacional, señal).
-- **Esfuerzo: BAJO.** La lógica YA EXISTE: `timing` (cadencia/“hace cuánto”), `recommendation` (genera+rankea), `signal` (urgencia), `relationship` (alertas del panel). Es mayormente **wiring + UI** sobre engines puros ya cubiertos por tests.
-- **Prioridad: ALTA.** Marcado como el **próximo candidato fuerte** del backlog.
+### P0 — ✅ CERRADO (2026-07-07)
+**1. "Reconectar" / serendipia** — bloque en `/panel` que sugiere **hasta 5 personas por día** para reconectar. **ENTREGADO** (`72c5eba`): card "Reconectá con tu gente" que reusa el motor de Daily Actions filtrado a proactivos (`contact`/`cooling`/`acknowledge`), sin pisar Próximo (fechas) ni Personas en riesgo (pendientes/tono). `buildDailyActions` ganó filtro puro `kinds`; `/api/daily-actions` acepta `?focus=reconnect&limit=N` (retrocompatible); `DailyActionsPanel` ganó props `focus/limit/title/emptyLabel/hideWhenEmpty`. Gateada por `!simplified` (en recuperación dura no empuja contacto proactivo) y se esconde si no hay nadie enfriándose. 3 tests nuevos del filtro.
+- **Qué era:** un feed diario "deberías hablarle a X" (por silencio prolongado, score relacional, señal).
 
 ### P1 — Alto valor, esfuerzo bajo/medio
-**4. Fuerza de relación visible + filtrable** — exponer `healthScore`/`importanceScore` de forma prominente en cada contacto (alta / media / baja) y **filtrar `/relaciones` por eso**.
-- **Qué es:** badge/indicador de fuerza por contacto + filtro en la lista.
-- **Esfuerzo: BAJO-MEDIO.** El score ya se computa (lo usa el grafo para tamaño de nodo y `RelationalScore`); falta el badge en la lista + un filtro. Reusa `relationship` engine.
+**4. Fuerza de relación visible + filtrable** — ✅ **CERRADO** (`bcc0a0f`, "15·8 Clay #4"). Badge `Fuerte`/`Media`/`Débil` por persona en la lista + filtro con contadores en `/relaciones`. **Decisión de diseño** (`src/lib/relationships/strength.ts`): la fuerza = **cercanía estructural (capa de Dunbar / categoría)**, NO importancia ni salud reciente — un vínculo fuerte con silencio SIGUE siendo fuerte (la salud/atención es otro eje, ya cubierto por termómetro + ventana de contacto). El backlog original pedía basarlo en `importanceScore`/`healthScore`, pero eso quedó descartado (importancia en default 5 para casi todos → no diferenciaba). NO reintroducir la base por importancia sin revisar esta decisión.
 
-**2. Cadence por persona** — frecuencia objetivo de contacto por persona (semanal / quincenal / bimestral / …) + opción **"automática"** donde la IA propone la cadencia; alimenta los recordatorios.
-- **Qué es:** campo de cadencia por persona; el `timing` engine ya sabe "hace cuánto no hablás" → con el target cierra el loop "atrasado vs al día".
-- **Esfuerzo: MEDIO.** Net-new sobre el `timing` engine (campo nuevo en `people` → migración aditiva cuando se haga; el cómputo es engine puro). Insumo directo del item #1.
+**2. Cadence por persona** — ✅ **CERRADO** (2026-07-07). Picker estructurado de cadencia en el form de `/relaciones` (Automática/Diario/Semanal/Quincenal/Mensual/Bimestral/Trimestral/Semestral/Anual/Personalizado) + estado visible por persona en la lista ("al día" / "atrasado 12d" / "sin registro").
+- **SIN migración:** el engine YA cerraba el loop — `contact_frequency` (texto libre) existía y `lib/people/urgency` `contactFrequencyDays` ya lo parseaba con fallback por categoría. El backlog asumía un campo nuevo por desconocer eso. Se reusó el mismo `contact_frequency` (sin split-brain de dos campos); el picker sólo lo hace elegible y visible. Lógica pura nueva en `lib/people/cadence.ts` (+15 tests). "Automática" = default por categoría (ya era el fallback). **Alimenta directo a Reconectar** (`/api/daily-actions` ya lee `contactFrequency`).
+- **"Automática" inteligente ✅ (2026-07-07):** cuando hay señal robusta (≥5 contactos que abarcan ≥45d), la cadencia auto se infiere del **ritmo real** (mediana de gaps entre chats + interacciones + último contacto); si no, cae al default por categoría. Helper puro `suggestCadenceDays`/`effectiveCadenceDays` (+8 tests). Alimenta el MISMO cálculo en la lista (`/api/relaciones/cadence` + `useSuggestedCadence`) y en el scoring de Reconectar (`/api/daily-actions`) → sin divergencia. La lista etiqueta "cada Nd · tu ritmo" cuando aplica.
 
 ### Dirección de diseño (se cruza con el rework de UX en curso)
 **3. Timeline unificado por persona como centro del detalle** — consolidar TODAS las interacciones (observations / capturas / logs / notas de voz) en **un solo hilo cronológico** que sea el **corazón** de la página de detalle, no un bloque más entre otros.
@@ -695,8 +691,7 @@ Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lóg
 **6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**.
 - **Esfuerzo: ALTO.** Integración externa (OAuth calendario, sync, matching a `people`). Backlog lejano.
 
-**7. Q&A por persona (estilo agente "Nexus")** — extender el resumen longitudinal (`person-synthesis` / Fase 3c) a un **preguntá-sobre-esta-persona** usando su contexto (observations + memories + logs).
-- **Esfuerzo: ALTO.** Depende de Fase 3b (búsqueda semántica) activa + RAG (3d). Construye sobre `person-synthesis` ya existente.
+**7. Q&A por persona** — ✅ **CERRADO** (`0a106c2`). Ask-box `PreguntarSobrePersona` en la ficha: reusa `/api/sir/ask` (grounding + RAG, ya hechos) con un `personId` nuevo que pre-scopea el contexto ANTES del cap, así responde aterrizado en esa persona aunque no la nombres. Sugerencias rápidas + `skipInlineGaps`. El backend (name-resolution + memorias semánticas + recall C3) ya existía; esto agregó el scope explícito + la UI. **Pendiente futuro:** verificar en vivo (LLM); multi-turno dentro de la ficha (hoy una pregunta por vez).
 
 **8. Cross-referencing por ubicación** — que la capa de memoria/engines interprete el campo `location` (ya existe en `people`; ahora editable a nivel distrito/ciudad) y lo cruce.
 - **Qué es:** sugerencias contextuales por cercanía — "Diana vive en Barranco → visitala", o "X y vos están cerca" cuando Aaron está en la zona. Aparece en la **Agenda / Próximo**.
@@ -730,7 +725,10 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
 ## 🏗️ DEUDA ARQUITECTÓNICA
 
-### Consistencia temporal de hechos derivados (detectado 2026-06-08, arco futuro)
+### Consistencia temporal de hechos derivados (detectado 2026-06-08 · 🟡 PARCIAL 2026-07-07)
+
+**🟡 Primer slice HECHO (`874051e` + fix conservador `6f28e3c`):** `src/lib/facts/reconcile.ts` (PURO). Regla ÚNICA y conservadora: **solo una MUDANZA explícita** (se mudó / se instaló / llegó a `<NombrePropio>`) deja obsoleta la vivienda ANTERIOR. Sin mudanza, los hechos de vivienda CONVIVEN (son complementarios: "vive en Lima" + "vive con su esposo" describen la misma casa). Cableado en `consolidate.ts` (import de WhatsApp). Nicolle resuelto (backfill hecho). **Lección cara:** la v1 era demasiado agresiva (cualquier "vive con/en X" pisaba lo anterior); un backfill network-wide dropeó facts complementarios válidos → restaurados + motor endurecido. **Falta:** (a) NO aplica a `deriveFromObservations` (memorias) — ahí NO hay `facts`, se derivan de summary/topics; la reconciliación por atributo no encaja en memorias episódicas; (b) backfill network-wide conservador (relocation-only) pendiente de DRY-RUN + aprobación antes de re-aplicar; (c) ocupación (multi-valor) NO se toca.
+
 
 **Síntoma:** la derivación de memorias/hechos (WhatsApp export, observations → memories) UNE hechos de distintas épocas sin saber que el más reciente reemplaza al viejo. Caso real: en la ficha de Nicolle coexisten "vive con Aaron (comparten vivienda)" (cierto en 2024) y "Llegó a Alicante" (se mudó a España para su maestría) — el sistema no marca el primero como obsoleto.
 
@@ -743,16 +741,18 @@ Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 **Mitigación hoy:** la identidad estable (dónde vive, parentesco, estado civil) va en el PERFIL de la persona (campos + vínculo familiar), no se deja depender de la derivación del chat.
 
 
-### Split-brain `localStorage` ↔ Supabase (detectado 29/05/2026)
+### Split-brain `localStorage` ↔ Supabase — ✅ RESUELTO (verificado 2026-07-07)
 
-**Síntoma:** la lista `/relaciones` lee del store Zustand (hidratado de `localStorage`); el detail page `/relaciones/[slug]` lee Supabase directo. El sync engine hace merge **aditivo** (nunca borra el lado local), entonces los `removePerson` solo se propagan por la UI del store — **no emiten DELETE a Supabase**. Mismo patrón en `observations`/`memories` afectó el cleanup-saga del 29/05 (filas alucinadas que parecían borradas en una vista y seguían en la otra).
+**Síntoma original (29/05):** la lista `/relaciones` leía del store Zustand; el detail page leía Supabase directo; el sync engine hacía merge aditivo → `removePerson` no emitía DELETE a Supabase; deletes por SQL directo quedaban huérfanos en localStorage.
 
-**Causa raíz:** dos fuentes de verdad sin reconciliación destructiva. El sync engine fue diseñado offline-first y prioriza no perder data local; ese mismo principio bloquea propagación de deletes.
+**Estado real (verificado en código + tests el 07-07):** el arco de refactor **ya se hizo** (junto con el "Sync en vivo ✅" de más arriba). Hoy el store **es** un cache hidratable con Supabase como única fuente de verdad:
+- **Deletes se propagan:** `flushOps` (engine.ts) emite `.delete().in('id', deletes).eq('user_id', …)` al detectar el borrado en el store; `removePerson` → diff → DELETE a DB.
+- **Reconciliación destructiva:** `reconcilePull` (reconcile.ts, PURO + testeado): DB autoritativo; fila local ausente de DB **sin** push pendiente → **se dropea** (delete remoto, SQL directo o fantasma); **con** pending → se preserva (offline-safe). `pendingIds` positivo, no el viejo `knownIds`.
+- **Escrituras unificadas:** lista y ficha escriben por el store (`updatePerson`/`removePerson`) → engine → DB. La ficha lee Supabase server-side pero muta por el store.
 
-**Arco futuro:** refactor a Supabase como única fuente de verdad. Store Zustand se reduce a cache hidratable, sin escritura local prioritaria. Deletes emiten `DELETE` directo, lecturas pasan por Supabase + revalidación. Esfuerzo estimado: 1-2 sesiones, riesgo medio (toca todos los flujos de relaciones y captura).
+**Regla operativa vieja (YA NO aplica):** ~~"nunca borres por SQL directo, queda huérfano"~~ — un delete directo en Supabase se dropea del store en el próximo re-pull (focus/Realtime), no está en DB ni es pending.
 
-**Regla operativa vigente:**
-> Gestionar personas **siempre por UI** (`/relaciones` modal Eliminar). **Nunca** por SQL directo en Supabase: queda fila huérfana en localStorage del usuario hasta el próximo manual cleanup.
+**Único residual (menor, no bloquea):** last-write-wins por fila — el `upsert onConflict:'id'` pisa la fila entera, así dos ediciones concurrentes de campos distintos se pisan. Impacto casi nulo en mono-usuario. Fix futuro opcional: merge por campo o `updated_at` por columna.
 
 ### Sincronización en vivo entre dispositivos (sync cross-device) ✅ RESUELTO (verificado en vivo)
 
