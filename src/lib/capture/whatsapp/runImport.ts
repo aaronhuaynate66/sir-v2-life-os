@@ -16,6 +16,7 @@ import { extractCalls, callLabel } from './export/calls'
 import { chatFingerprint } from './export/fingerprint'
 import { chunkConversation } from './export/chunk'
 import { consolidateInterpretations, buildExportObservationData } from './export/consolidate'
+import { groupChunkTonesByDay } from './export/toneByDay'
 import type { ChunkInterpretation } from './export/types'
 import { createPersonLog } from '@/components/relaciones/person-logs/client'
 
@@ -95,10 +96,21 @@ export async function runWhatsappImport(
       if (dates.length) await fetch('/api/people/special-dates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ person_id: personId, dates }) })
     } catch { /* */ }
 
-    const quality = consolidated.interactionQuality
-    if (typeof quality === 'number' && quality >= 1 && quality <= 5) {
-      try { await createPersonLog({ personId, kind: 'interaction', value: quality, note: `Importado del export de WhatsApp · ${fresh.messages.length} mensajes` }) } catch { /* */ }
-    }
+    // Tono POR DÍA de conversación (no un solo marcador aplastado): el LLM ya
+    // infiere un toneScore por bloque; groupChunkTonesByDay agrupa por día y
+    // promedia → un log de interacción por día, con su fecha y su tono. Densidad
+    // + variación reales que alimentan el signal de tono (score/Reciprocidad,
+    // correlación, predictor del ciclo). Techo 50 días (maxChunks).
+    const dayTones = groupChunkTonesByDay(parts, chunks)
+    await runPool(dayTones, 4, async ({ day, tone, label }) => {
+      try {
+        await createPersonLog({
+          personId, kind: 'interaction', value: tone,
+          note: `Charla de WhatsApp${label ? ` · ${label}` : ''}`,
+          loggedAt: `${day}T20:00:00-05:00`,
+        })
+      } catch { /* */ }
+    })
     const calls = extractCalls(text, lastImportedISO)
     for (const c of calls.slice(0, 30)) {
       try { await createPersonLog({ personId, kind: 'interaction', value: 3, note: `${callLabel(c)}${c.time ? ` · ${c.time}` : ''}`, ...(c.iso ? { loggedAt: c.iso } : {}) }) } catch { /* */ }
