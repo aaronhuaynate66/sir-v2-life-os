@@ -14,8 +14,12 @@
 
 import type { CalendarEvent } from '../types'
 
+// `calendar.events` da lectura Y escritura de eventos (incluye lo que hacía
+// `calendar.readonly` para el reader). Necesario para crear/editar eventos desde
+// SIR (sync bidireccional). Al reconectar, Google re-pide consentimiento con el
+// scope nuevo (prompt=consent). No pide metadata de calendarios, solo eventos.
 export const GOOGLE_SCOPES = [
-  'https://www.googleapis.com/auth/calendar.readonly',
+  'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/userinfo.email',
 ].join(' ')
 
@@ -153,4 +157,97 @@ export async function fetchGoogleCalendarEvents(accessToken: string, fromIso: st
     })
   }
   return out
+}
+
+// ─── Escritura (sync bidireccional) ─────────────────────────────────
+
+const LIMA_TZ = 'America/Lima'
+
+export interface NewGoogleEvent {
+  /** Título del evento. Requerido. */
+  title: string
+  /** Inicio: 'YYYY-MM-DD' (día completo) o ISO con hora ('2026-07-20T15:00:00-05:00'). */
+  start: string
+  /** Fin (mismo formato). Si falta: +1h (cronometrado) o +1 día (all-day). */
+  end?: string
+  /** Fuerza día completo (usa el campo `date` de Google, no `dateTime`). */
+  allDay?: boolean
+  description?: string
+  location?: string
+  /** Zona horaria para eventos cronometrados. Default America/Lima. */
+  timeZone?: string
+}
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+
+function addOneDay(dateOnly: string): string {
+  const t = Date.parse(`${dateOnly}T00:00:00Z`)
+  const d = new Date(t + 86_400_000)
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+}
+
+export interface GoogleEventPayload {
+  summary: string
+  description?: string
+  location?: string
+  start: { date?: string; dateTime?: string; timeZone?: string }
+  end: { date?: string; dateTime?: string; timeZone?: string }
+}
+
+/**
+ * Arma el body para la API de Google desde un NewGoogleEvent. PURO (testeable).
+ * - all-day → `start.date`/`end.date`, con end EXCLUSIVO (+1 día).
+ * - cronometrado → `start.dateTime`/`end.dateTime` (+1h por defecto) con timeZone.
+ * Lanza si falta el título.
+ */
+export function buildGoogleEventPayload(ev: NewGoogleEvent): GoogleEventPayload {
+  const title = (ev.title || '').trim()
+  if (!title) throw new Error('El evento necesita un título.')
+  const allDay = ev.allDay || DATE_ONLY.test(ev.start)
+  const tz = ev.timeZone || LIMA_TZ
+
+  let start: GoogleEventPayload['start']
+  let end: GoogleEventPayload['end']
+  if (allDay) {
+    const startDate = ev.start.slice(0, 10)
+    // Google trata `end.date` como EXCLUSIVO → un evento de 1 día termina al día siguiente.
+    const endDate = ev.end ? addOneDay(ev.end.slice(0, 10)) : addOneDay(startDate)
+    start = { date: startDate }
+    end = { date: endDate }
+  } else {
+    const startDt = ev.start
+    const endDt = ev.end ?? new Date(Date.parse(startDt) + 3_600_000).toISOString()
+    start = { dateTime: startDt, timeZone: tz }
+    end = { dateTime: endDt, timeZone: tz }
+  }
+  return {
+    summary: title,
+    description: ev.description?.trim() || undefined,
+    location: ev.location?.trim() || undefined,
+    start,
+    end,
+  }
+}
+
+/**
+ * Crea un evento en el calendario `primary` del usuario. Devuelve el id + link
+ * de Google. Requiere un access_token con scope `calendar.events`. Lanza si la
+ * API responde con error (el caller lo mapea a un mensaje al usuario).
+ */
+export async function createGoogleEvent(
+  accessToken: string,
+  ev: NewGoogleEvent,
+): Promise<{ id: string; htmlLink?: string }> {
+  const res = await fetch(EVENTS_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildGoogleEventPayload(ev)),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Google Calendar API ${res.status}: ${text.slice(0, 200)}`)
+  }
+  const j = (await res.json()) as { id?: string; htmlLink?: string }
+  if (!j.id) throw new Error('Google no devolvió un id de evento.')
+  return { id: j.id, htmlLink: j.htmlLink }
 }

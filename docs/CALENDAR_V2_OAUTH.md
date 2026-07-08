@@ -1,11 +1,17 @@
 # Calendario v2 — Fase 2 (OAuth + sync bidireccional)
 
-> **Estado:** NO implementado. Este documento es la checklist de lo que Aaron
-> tiene que registrar/configurar para habilitar el login con Google y Microsoft
-> y, más adelante, la escritura bidireccional. La Fase 1 (ya en prod) deja el
-> modelo y la UI listos: la tabla `calendar_connections` tiene las columnas
-> placeholder `provider`, `access_token`, `refresh_token`, `account_email`,
-> `token_expires_at` esperando esto.
+> **Estado (2026-07-08):**
+> - **Google — CÓDIGO COMPLETO (lectura + escritura).** El flujo OAuth (`start`/
+>   `callback`/`status`), el refresco de tokens cifrados, el reader del feed y la
+>   **creación de eventos** (`POST /api/calendar/events` + quick-add "Nuevo evento
+>   en Google" en el hub de calendarios) ya están en el repo. **Solo falta que
+>   Aaron provisione el OAuth app de Google Cloud y cargue 2 secrets** (§A + §D).
+>   Hasta entonces queda inerte: `start` responde 501 "OAuth no configurado".
+> - **Microsoft/Outlook — pendiente** (sin implementar; ver §B, requiere admin
+>   consent del tenant `grupohng.com`).
+>
+> La tabla `calendar_connections` ya tiene `provider`, `access_token`,
+> `refresh_token`, `account_email`, `token_expires_at` (todo cifrado en reposo).
 
 ---
 
@@ -43,10 +49,23 @@ una conexión (OAuth en vez de pegar URL) y una capa de **escritura**.
    - Copiar **Client ID** y **Client secret**.
 
 ### 2. Scopes
-- Lectura: `https://www.googleapis.com/auth/calendar.readonly`
-- Lectura + escritura (bidireccional): `https://www.googleapis.com/auth/calendar.events`
-  (o `.../auth/calendar` para acceso completo).
-- Pedir `access_type=offline` y `prompt=consent` para recibir **refresh_token**.
+- **SIR pide hoy** `https://www.googleapis.com/auth/calendar.events` (lectura **y**
+  escritura de eventos) + `.../auth/userinfo.email` — definido en
+  `GOOGLE_SCOPES` (`src/lib/calendar/oauth/google.ts`). Con esto el reader lee el
+  feed Y el quick-add crea eventos.
+- Ya se piden `access_type=offline` + `prompt=consent` → se recibe **refresh_token**
+  y, al reconectar una cuenta vieja de solo-lectura, Google re-pide consentimiento
+  con el scope de escritura.
+
+### 3. Qué ya hace el código (Google)
+- `GET /api/calendar/oauth/google/start` → redirige a Google (501 si faltan secrets).
+- `GET /api/calendar/oauth/google/callback` → exchange + guarda tokens cifrados +
+  redirige a `/horario`. Idempotente por `account_email`.
+- Reader (`feed.ts`) lee `primary/events` y refresca el token si expiró.
+- **Escritura:** `POST /api/calendar/events` `{ title, start, end?, allDay?, description?, location? }`
+  → crea el evento en `primary` (helper `createGoogleEvent`, token fresco vía
+  `ensureFreshGoogleToken`). UI: botón "Nuevo evento en Google" en `CalendarConnections`
+  (visible solo si hay un Google conectado).
 
 ---
 

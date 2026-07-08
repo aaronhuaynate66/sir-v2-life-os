@@ -7,7 +7,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Link2, Plus, Trash2, Pencil, Check, X, AlertCircle, Loader2, Globe, Heart, Briefcase } from 'lucide-react'
+import { toast } from 'sonner'
+import { Link2, Plus, Trash2, Pencil, Check, X, AlertCircle, Loader2, Globe, Heart, Briefcase, CalendarPlus } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
@@ -211,8 +212,92 @@ export function CalendarConnections({ onChange }: { onChange?: () => void }) {
             )}
           </ul>
         </div>
+
+        {/* Sync bidireccional: crear un evento en Google (scope calendar.events).
+            Solo si hay un Google conectado y habilitado. */}
+        {connections.some((c) => c.provider === 'google' && c.enabled) && (
+          <NewGoogleEventForm />
+        )}
       </CardContent>
     </Card>
+  )
+}
+
+/** Quick-add: crea un evento en el Google Calendar conectado (POST /api/calendar/events). */
+function NewGoogleEventForm() {
+  const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function submit() {
+    if (!title.trim() || !date) return
+    setSubmitting(true)
+    try {
+      // Con hora → ISO Lima (-05:00); sin hora → día completo ('YYYY-MM-DD').
+      const start = time ? `${date}T${time}:00-05:00` : date
+      const res = await fetch('/api/calendar/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), start, allDay: !time }),
+      })
+      const j = (await res.json().catch(() => ({}))) as { error?: string; detail?: string }
+      if (!res.ok) {
+        toast.error(j.error ?? 'No se pudo crear el evento', { description: j.detail })
+        return
+      }
+      toast.success('Evento creado en Google Calendar')
+      setTitle(''); setDate(''); setTime(''); setOpen(false)
+    } catch {
+      toast.error('No se pudo crear el evento (revisá tu conexión).')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:text-brand/80 transition-colors"
+      >
+        <CalendarPlus size={14} strokeWidth={1.75} aria-hidden="true" />
+        Nuevo evento en Google
+      </button>
+    )
+  }
+
+  return (
+    <div className="mt-4 rounded-md border border-dashed border-border bg-secondary/30 p-3 sm:p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <CalendarPlus size={14} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
+        <span className="text-xs font-medium text-foreground">Nuevo evento en Google Calendar</span>
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="gcal-title" className="text-xs text-muted-foreground">Título</Label>
+        <Input id="gcal-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Reunión, cumpleaños, viaje…" maxLength={200} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="gcal-date" className="text-xs text-muted-foreground">Fecha</Label>
+          <Input id="gcal-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="font-mono text-xs" />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="gcal-time" className="text-xs text-muted-foreground">Hora <span className="text-muted-foreground/60">(opcional)</span></Label>
+          <Input id="gcal-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} className="font-mono text-xs" />
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground">Sin hora → evento de día completo. Se crea en tu calendario principal (hora de Lima).</p>
+      <div className="flex items-center gap-2">
+        <Button variant="brand" size="sm" onClick={submit} disabled={submitting || !title.trim() || !date}>
+          {submitting ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Check size={14} strokeWidth={2} aria-hidden="true" />}
+          Crear evento
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(false)} disabled={submitting}>Cancelar</Button>
+      </div>
+    </div>
   )
 }
 
