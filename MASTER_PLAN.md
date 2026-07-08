@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b337616`
+**Hash del último commit humano:** `f43c22c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f43c22c` | aaronhuaynate66 | Revert "fix(gaps): pedir la fecha del ciclo solo con pareja, no a mamá/colega (#629)" (#632) | 2026-07-08 |
 | `b337616` | aaronhuaynate66 | feat(calendar): escritura bidireccional en Google Calendar (OAuth Fase 2) (#631) | 2026-07-08 |
 | `d9ad27a` | aaronhuaynate66 | docs(backlog): reconciliar con la realidad + barrido de verificación 08-jul (#630) | 2026-07-08 |
 | `be08a31` | aaronhuaynate66 | fix(gaps): pedir la fecha del ciclo solo con pareja, no a mamá/colega (#629) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `33d3231` | aaronhuaynate66 | fix(mobile): la fila de la Bitácora envuelve/trunca en pantalla chica (#625) | 2026-07-08 |
 | `2bfe61e` | aaronhuaynate66 | feat(forecast-conductual): aprendizaje de pesos por modelo por persona (§17) (#624) | 2026-07-08 |
 | `275861b` | aaronhuaynate66 | feat(forecast-conductual): loop de feedback + recalibración (Fase 2, cierra el spec) (#623) | 2026-07-08 |
-| `81a26e4` | aaronhuaynate66 | feat(ciclo): Estudio del ciclo para TODAS las mujeres, con registro por vínculo (#622) | 2026-07-08 |
 
 ---
 
