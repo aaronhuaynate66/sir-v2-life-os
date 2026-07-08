@@ -91,8 +91,7 @@ import { LoPersonal } from './LoPersonal'
 import { ReflexionesPanel } from './ReflexionesPanel'
 import { DealsAsContactPanel } from './DealsAsContactPanel'
 import { CicloPanel } from './CicloPanel'
-import { CycleHorizonCard } from './CycleHorizonCard'
-import { EventCareBriefCard } from './EventCareBriefCard'
+import { CycleForecastStudio } from './CycleForecastStudio'
 import { PersonalPlansPanel } from './PersonalPlansPanel'
 import { CyclePhaseForecastCard } from './CyclePhaseForecastCard'
 import { CorrelacionPanel } from './CorrelacionPanel'
@@ -545,31 +544,20 @@ export function PersonDetail({
         onChange={() => router.refresh()}
       />
 
-      {/* Briefing de cuidado por evento (anticipación): cómo llega ella a tus
-          próximos planes + gráfico + sugerencias. Prominente, arriba del timeline. */}
-      {profile.showCuidado && (
-        <EventCareBriefCard
-          cycleStartDate={live.cycleStartDate ?? null}
-          cycleLengthDays={live.cycleLengthDays ?? null}
-          personCycles={personCycles}
-          personId={live.id}
-          personName={live.name}
-          refreshKey={planRefresh}
-        />
-      )}
-
-      {/* Horizonte del ciclo (rediseño, módulo protagonista): timeline de eventos
-          × fase del ciclo + tono + ventanas. Se oculta sin ciclo. */}
-      {profile.showCuidado && (
-        <CycleHorizonCard
-          cycleStartDate={live.cycleStartDate ?? null}
+      {/* Estudio del ciclo: horizonte MOVIBLE (cursor arrastrable + "¿qué pasaría
+          si…?") + briefing multi-evento navegable, con fecha compartida. Reemplaza
+          el montaje suelto de briefing + horizonte. Solo afectivo con ciclo. */}
+      {profile.showCuidado && live.cycleStartDate && (
+        <CycleForecastStudio
+          cycleStartDate={live.cycleStartDate}
           cycleLengthDays={live.cycleLengthDays ?? null}
           personCycles={personCycles}
           specialDates={live.specialDates ?? []}
           birthDate={live.birthDate ?? null}
-          personName={live.name}
           personId={live.id}
+          personName={live.name}
           refreshKey={planRefresh}
+          onPlanChange={() => setPlanRefresh((n) => n + 1)}
         />
       )}
 
