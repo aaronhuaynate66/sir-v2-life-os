@@ -74,6 +74,10 @@ export interface LinkHealthInput {
   /** Interacciones registradas (person_logs kind='interaction'), cualquier orden. */
   interactions: InteractionPoint[]
   personName?: string
+  /** Cadencia esperada (días) YA resuelta rhythm-aware por el caller (campo
+   *  explícito → ritmo real → capa). Si se pasa, MANDA sobre el default por capa
+   *  → la ficha concuerda con la lista y el proactivo. Sin ella, cae a la capa. */
+  expectedDaysOverride?: number
 }
 
 /**
@@ -82,7 +86,10 @@ export interface LinkHealthInput {
  */
 export function assessLinkHealth(input: LinkHealthInput, now: Date = new Date()): LinkHealth {
   const mode = relationshipMode(input.relationship)
-  const expectedDays = EXPECTED_DAYS[input.category] ?? 90
+  // La cadencia rhythm-aware del caller manda; si no vino, cae al default por capa.
+  const expectedDays = (input.expectedDaysOverride && input.expectedDaysOverride > 0)
+    ? input.expectedDaysOverride
+    : (EXPECTED_DAYS[input.category] ?? 90)
   const nowMs = now.getTime()
 
   // Ordenar interacciones válidas por fecha asc.
