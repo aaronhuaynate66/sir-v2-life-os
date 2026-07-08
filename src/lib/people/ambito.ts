@@ -2,7 +2,7 @@
 import type { Person, PersonAmbito, RelationshipType } from '@/types'
 
 export const AMBITO_LABEL: Record<PersonAmbito, string> = {
-  personal: 'Personal', colega: 'Colega', lead: 'Lead',
+  personal: 'Personal', colega: 'Colega', lead: 'Contacto',
 }
 
 /** Default razonable cuando no está seteado, a partir del tipo de relación.

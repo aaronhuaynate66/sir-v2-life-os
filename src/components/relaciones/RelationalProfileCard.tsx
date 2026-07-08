@@ -103,7 +103,7 @@ export function RelationalProfileCard({ personId }: { personId: string; personNa
                 </div>
                 {profile.strategicValue && <Row label="Valor estratégico"><p className="text-[13px] text-foreground/90 leading-relaxed">{profile.strategicValue}</p></Row>}
                 {profile.risk && <Row label="Riesgo para Aaron"><p className="text-[13px] text-foreground/90 leading-relaxed">{profile.risk}</p></Row>}
-                {profile.reciprocity && <Row label="Reciprocidad"><p className="text-[13px] text-foreground/90 leading-relaxed">{profile.reciprocity}</p></Row>}
+                {profile.reciprocity && <Row label="Ida y vuelta"><p className="text-[13px] text-foreground/90 leading-relaxed">{profile.reciprocity}</p></Row>}
                 {(profile.legitimateLevers ?? []).length > 0 && (
                   <Row label="Palancas legítimas">
                     <div className="flex flex-wrap gap-1.5">

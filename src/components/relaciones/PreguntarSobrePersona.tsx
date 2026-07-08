@@ -88,28 +88,32 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
           </div>
         )}
 
-        {state.kind === 'loading' && (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Loader2 size={12} className="animate-spin" aria-hidden="true" /> Pensando sobre {first}…
-          </div>
-        )}
+        {/* Región viva: el lector de pantalla anuncia el estado (pensando →
+            respuesta / error) cuando cambia, sin que el foco esté acá. */}
+        <div aria-live="polite" aria-atomic="false">
+          {state.kind === 'loading' && (
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <Loader2 size={12} className="animate-spin" aria-hidden="true" /> Pensando sobre {first}…
+            </div>
+          )}
 
-        {state.kind === 'error' && <ApiErrorNotice error={state.error} className="p-2" />}
+          {state.kind === 'error' && <ApiErrorNotice error={state.error} className="p-2" />}
 
-        {state.kind === 'answer' && (
-          <div className="space-y-2">
-            <p className="text-[11px] text-text-tertiary">{state.question}</p>
-            <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{state.text}</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setState({ kind: 'idle' })}
-              className="h-7 text-[11px] text-muted-foreground"
-            >
-              Preguntar otra cosa
-            </Button>
-          </div>
-        )}
+          {state.kind === 'answer' && (
+            <div className="space-y-2">
+              <p className="text-[11px] text-text-tertiary">{state.question}</p>
+              <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{state.text}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setState({ kind: 'idle' })}
+                className="h-7 text-[11px] text-muted-foreground"
+              >
+                Preguntar otra cosa
+              </Button>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

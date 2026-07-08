@@ -65,7 +65,7 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
           className="border-accent/30 bg-accent/10 hover:bg-accent/20"
         >
           <Sparkles size={14} strokeWidth={1.75} className="mr-1.5" />
-          Briefing IA
+          Ponme al día
         </Button>
 
         {waUrl ? (
@@ -98,7 +98,7 @@ export function PersonActions({ personId, personName, phoneNumber }: PersonActio
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <Sparkles size={16} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
-              Briefing · {personName}
+              Ponme al día · {personName}
             </SheetTitle>
             <SheetDescription>
               Resumen contextual generado sobre las memorias asociadas. Efímero — no se guarda.

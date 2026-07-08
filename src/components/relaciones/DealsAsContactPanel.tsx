@@ -55,7 +55,7 @@ export function DealsAsContactPanel({ person }: { person: { id: string; name: st
   const first = (person.name || '').trim().split(/\s+/)[0] || person.name
 
   return (
-    <Card className="mb-4 border-[#14b8a6]/30">
+    <Card className="mb-4 border-ok/30">
       <CardContent className="p-4 sm:p-5">
         <SectionTitle icon={Briefcase} label={`Pipeline con ${first}`} count={mine.length} />
         <p className="mt-1 text-[12px] text-muted-foreground">Deals donde {first} es el contacto/decisor. Sus próximos pasos comerciales.</p>
@@ -67,7 +67,7 @@ export function DealsAsContactPanel({ person }: { person: { id: string; name: st
               <li key={d.id}>
                 <Link
                   href={`/oportunidades?deal=${encodeURIComponent(d.id)}`}
-                  className="block rounded-lg border border-border bg-card px-3 py-2 hover:border-[#14b8a6]/50"
+                  className="block rounded-lg border border-border bg-card px-3 py-2 hover:border-ok/50"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate text-[14px] text-foreground">{d.title}</span>

@@ -96,7 +96,7 @@ import { TrendChart } from '@/components/charts/TrendChart'
 import { personLogToneSeries } from '@/lib/charts/adapters'
 import { PersonDossier } from './PersonDossier'
 import { ExportCsvButton } from '@/components/export/ExportCsvButton'
-import { personLogsCsv, observationsCsv } from '@/lib/export/adapters'
+import { personLogsCsv } from '@/lib/export/adapters'
 import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
@@ -444,9 +444,7 @@ export function PersonDetail({
                 <Badge variant="brand" className="text-[11px]">{CATEGORY_LABEL[live.category]}</Badge>
                 <Badge variant="outline" className="text-[11px]">{RELATIONSHIP_LABEL[live.relationship]}</Badge>
               </div>
-              <div className="text-xs text-muted-foreground font-mono truncate mt-1.5">
-                /relaciones/<span className="text-foreground">{live.slug ?? '(sin slug)'}</span>
-              </div>
+              {/* El slug/URL es plomería: sale del header (queda en la edición). */}
             </div>
           </div>
           {/* Botones top-right: Editar (salta a Perfil con el form) + Briefing
@@ -492,20 +490,33 @@ export function PersonDetail({
 
       {/* ─── Tabs de la ficha (rediseño). El vistazo de arriba queda siempre;
           el resto se agrupa por tab. ─────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-1 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        {PERSON_TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={cn(
-              'shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-              tab === t.id ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div
+        role="tablist"
+        aria-label="Secciones de la ficha"
+        className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-1 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      >
+        {PERSON_TABS.map((t) => {
+          const active = tab === t.id
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                // Activo marcado por PESO + borde inferior (no solo color), para
+                // que se distinga sin depender de percibir el matiz.
+                'shrink-0 rounded-md px-3 py-1.5 text-xs transition-colors border-b-2',
+                active
+                  ? 'bg-secondary text-foreground font-semibold border-foreground'
+                  : 'text-muted-foreground font-medium border-transparent hover:text-foreground',
+              )}
+            >
+              {t.label}
+            </button>
+          )
+        })}
       </div>
 
       {tab === 'hoy' && (<>
@@ -591,12 +602,9 @@ export function PersonDetail({
           buildCsv={() => personLogsCsv(correlationLogs)}
           label="Registros CSV"
         />
-        <ExportCsvButton
-          filenamePrefix={`observaciones_${live.slug ?? live.id}`}
-          count={curatedObservations.length}
-          buildCsv={() => observationsCsv(curatedObservations)}
-          label="Observaciones CSV"
-        />
+        {/* Export "Observaciones CSV" retirado (Tanda 4): dump crudo con olor a
+            CRM que la auditoría marcó como ruido; el dossier + Registros CSV
+            cubren la exportación. */}
       </div>
       </>)}
 
@@ -644,9 +652,9 @@ export function PersonDetail({
                   </p>
                 </div>
                 <div>
-                  <Label className="text-xs">Tipo de relación</Label>
+                  <Label htmlFor="person-relationship" className="text-xs">Tipo de relación</Label>
                   <Select value={form.relationship} onValueChange={(v) => patch('relationship', v as RelationshipType)} disabled={saving}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="person-relationship" className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(Object.keys(RELATIONSHIP_LABEL) as RelationshipType[]).map((k) => (
                         <SelectItem key={k} value={k}>{RELATIONSHIP_LABEL[k]}</SelectItem>
@@ -655,9 +663,9 @@ export function PersonDetail({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Categoría</Label>
+                  <Label htmlFor="person-category" className="text-xs">Categoría</Label>
                   <Select value={form.category} onValueChange={(v) => patch('category', v as PersonCategory)} disabled={saving}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="person-category" className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(Object.keys(CATEGORY_LABEL) as PersonCategory[]).map((k) => (
                         <SelectItem key={k} value={k}>{CATEGORY_LABEL[k]}</SelectItem>
@@ -666,9 +674,9 @@ export function PersonDetail({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Impacto energético</Label>
+                  <Label htmlFor="person-energy" className="text-xs">Impacto energético</Label>
                   <Select value={form.energyImpact} onValueChange={(v) => patch('energyImpact', v as EnergyImpact)} disabled={saving}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectTrigger id="person-energy" className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(Object.keys(ENERGY_LABEL) as EnergyImpact[]).map((k) => (
                         <SelectItem key={k} value={k}>{ENERGY_LABEL[k]}</SelectItem>
@@ -677,7 +685,7 @@ export function PersonDetail({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Cadencia de contacto</Label>
+                  <Label htmlFor="person-cadence" className="text-xs">Cadencia de contacto</Label>
                   {(() => {
                     const sel = storedToPreset(form.contactFrequency)
                     const customN = sel === 'custom' ? (parseCustomDays(form.contactFrequency) ?? 21) : 21
@@ -688,7 +696,7 @@ export function PersonDetail({
                           onValueChange={(v) => patch('contactFrequency', presetToStored(v as ReturnType<typeof storedToPreset>, customN))}
                           disabled={saving}
                         >
-                          <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                          <SelectTrigger id="person-cadence" className="flex-1"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             {CADENCE_PRESETS.map((p) => (
                               <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
@@ -835,7 +843,7 @@ export function PersonDetail({
         <Card className="shadow-none mb-4">
           <CardContent className="p-4 sm:p-6 space-y-2 text-sm">
             <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-3">
-              Métricas relacionales
+              Datos de la persona
             </div>
             <Row label="Qué es para vos" value={AMBITO_LABEL[live.ambito ?? inferAmbito(live.relationship)]} />
             <Row label="Importancia" value={`${live.importanceScore}/10`} />
