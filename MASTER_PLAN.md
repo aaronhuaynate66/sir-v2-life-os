@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a11d637`
+**Hash del último commit humano:** `809680a`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `809680a` | aaronhuaynate66 | feat(agenda): agenda personal nativa + la línea del ciclo deja de mezclar el trabajo (#610) | 2026-07-08 |
 | `a11d637` | aaronhuaynate66 | feat(ciclo): la línea del horizonte jala eventos de tu calendario (#609) | 2026-07-08 |
 | `5d30240` | aaronhuaynate66 | feat(norte): el ensayo y el chat de SIR tiran del norte del año (#608) | 2026-07-08 |
 | `99f62aa` | aaronhuaynate66 | docs(estado): sesión de integridad de señales (#594–606) + P0 bugs resueltos (#607) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d320171` | aaronhuaynate66 | Merge pull request #604 from aaronhuaynate66/fix/cadencia-ficha-consistente | 2026-07-08 |
 | `124c108` | Aaron Huaynate | fix(cadencia): la salud del vínculo de la ficha usa el ritmo real (no un default por capa) | 2026-07-08 |
 | `61a01f2` | aaronhuaynate66 | Merge pull request #603 from aaronhuaynate66/feat/energia-ficha-partnereffect | 2026-07-08 |
-| `988a34b` | Aaron Huaynate | feat(ficha): revivir la card de energía con partnerEffect (flag muerto → dato real) | 2026-07-08 |
 
 ---
 
