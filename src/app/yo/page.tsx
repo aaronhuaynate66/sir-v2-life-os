@@ -28,6 +28,7 @@ const ArquetipoPanel = dynamic(() => import('@/components/yo/ArquetipoPanel').th
 const SelfDiagnosisPanel = dynamic(() => import('@/components/yo/SelfDiagnosisPanel').then((m) => ({ default: m.SelfDiagnosisPanel })), { ssr: false, loading: dynSkeleton })
 const NotificationsCard = dynamic(() => import('@/components/system/NotificationsCard').then((m) => ({ default: m.NotificationsCard })), { ssr: false, loading: dynSkeleton })
 const EmailConnectionPanel = dynamic(() => import('@/components/yo/EmailConnectionPanel').then((m) => ({ default: m.EmailConnectionPanel })), { ssr: false, loading: () => null })
+const RecalibrarTonoPanel = dynamic(() => import('@/components/yo/RecalibrarTonoPanel').then((m) => ({ default: m.RecalibrarTonoPanel })), { ssr: false, loading: () => null })
 
 const cardClass = 'transition-colors duration-200 hover:border-border-strong'
 
@@ -76,6 +77,7 @@ export default function SelfPage() {
         <EmailConnectionPanel />
         <SelfDiagnosisPanel />
         <PersonalTokensPanel />
+        <RecalibrarTonoPanel />
         <PushNotificationsPanel />
         <ExportAllPanel />
       </div>
