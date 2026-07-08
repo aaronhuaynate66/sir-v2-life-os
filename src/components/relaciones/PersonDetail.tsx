@@ -91,6 +91,7 @@ import { ReflexionesPanel } from './ReflexionesPanel'
 import { DealsAsContactPanel } from './DealsAsContactPanel'
 import { CicloPanel } from './CicloPanel'
 import { CycleHorizonCard } from './CycleHorizonCard'
+import { CyclePhaseForecastCard } from './CyclePhaseForecastCard'
 import { CorrelacionPanel } from './CorrelacionPanel'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { personLogToneSeries } from '@/lib/charts/adapters'
@@ -539,6 +540,18 @@ export function PersonDetail({
           personCycles={personCycles}
           specialDates={live.specialDates ?? []}
           birthDate={live.birthDate ?? null}
+          personName={live.name}
+        />
+      )}
+
+      {/* Predictor forward ciclo → estado: proyecta el tono/energía por fase
+          sobre las próximas semanas (compañero predictivo del Horizonte). Se
+          auto-oculta si no hay patrón real. Solo afectivo con ciclo. */}
+      {profile.showCuidado && (
+        <CyclePhaseForecastCard
+          personLogs={correlationLogs}
+          cycleStartDate={live.cycleStartDate ?? null}
+          cycleLengthDays={live.cycleLengthDays ?? null}
           personName={live.name}
         />
       )}
