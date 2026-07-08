@@ -17,6 +17,7 @@ import { enforceRateLimit } from '@/lib/ratelimit'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
+import { getYearNorte } from '@/lib/year-compass/norte'
 import { embedText, toPgVector } from '@/lib/embeddings/client'
 import {
   SIR_ASK_SYSTEM_PROMPT,
@@ -166,6 +167,11 @@ export async function POST(req: NextRequest) {
     .eq('status', 'active')
     .limit(100)
   const goals = (goalRows ?? []) as Array<{ id: string; title: string; related_persons: unknown; next_action?: string | null; is_anchor?: boolean | null }>
+  // El norte del año se DERIVA (misma fuente que "TU NORTE" del panel), no se lee
+  // de is_anchor — que hoy nadie prende, así que el bloque quedaba dormido. null si
+  // no hay ancla elegible. Ver [[getYearNorte]] / lib/year-compass.
+  const norte = await getYearNorte(supabase, userId)
+  const anchorGoalId = norte?.id ?? null
   const goalByPerson: Record<string, string> = {}
   for (const g of goals) {
     const ids = Array.isArray(g.related_persons) ? (g.related_persons as string[]) : []
@@ -209,7 +215,7 @@ export async function POST(req: NextRequest) {
     const inlineGoals = goals.map((g) => ({
       id: g.id, title: g.title, status: 'active',
       nextAction: (g.next_action ?? '') as string,
-      isAnchor: Boolean(g.is_anchor),
+      isAnchor: g.id === anchorGoalId,
     })) as unknown as Goal[]
     const gap = selectInlineGap(question, targetPeople, inlineGoals, dismissedGaps)
     if (gap) {
@@ -345,7 +351,7 @@ export async function POST(req: NextRequest) {
   // 6. Objetivos para el contexto (todos los activos, acotado).
   const goalsCtx: AskGoalCtx[] = goals.slice(0, 20).map((g) => ({
     title: g.title, status: 'active', nextAction: g.next_action ?? null,
-    isAnchor: Boolean(g.is_anchor),
+    isAnchor: g.id === anchorGoalId,
   }))
 
   // 7. Armar prompt + llamar al modelo.

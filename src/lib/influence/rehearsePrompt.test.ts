@@ -16,6 +16,11 @@ describe('REHEARSE_SYSTEM_PROMPT — reglas núcleo', () => {
   it('prohíbe probabilidades numéricas', () => {
     expect(REHEARSE_SYSTEM_PROMPT).toMatch(/No des probabilidades numéricas/i)
   })
+  it('cablea el norte del año, sin usarlo como palanca contra el otro', () => {
+    expect(REHEARSE_SYSTEM_PROMPT).toMatch(/EL NORTE DE AARON/)
+    expect(REHEARSE_SYSTEM_PROMPT).toMatch(/NO fuerces la\s+conexión/i)
+    expect(REHEARSE_SYSTEM_PROMPT).toMatch(/palanca para presionar/i)
+  })
 })
 
 describe('buildRehearseUserContent', () => {
@@ -40,6 +45,23 @@ describe('buildRehearseUserContent', () => {
   it('sin memorias → pide bajar especificidad', () => {
     const out = buildRehearseUserContent({ personName: 'X', memories: [] }, 'x')
     expect(out).toMatch(/poco contexto/i)
+  })
+  it('incluye el norte del año cuando está presente (título + subtítulo + próximo paso)', () => {
+    const out = buildRehearseUserContent(
+      {
+        personName: 'Alex', ambito: 'colega', memories: [],
+        norte: { title: 'Ganar el Mundial de Bomberos', subtitle: 'Medalla de oro en Taekwondo, +80 kg', nextAction: 'Subir a categoría' },
+      },
+      'Que me dé un aumento',
+    )
+    expect(out).toContain('EL NORTE DE AARON')
+    expect(out).toContain('Ganar el Mundial de Bomberos')
+    expect(out).toContain('Medalla de oro en Taekwondo')
+    expect(out).toContain('Subir a categoría')
+  })
+  it('sin norte → no mete el bloque de brújula', () => {
+    const out = buildRehearseUserContent({ personName: 'Alex', memories: [] }, 'x')
+    expect(out).not.toContain('EL NORTE DE AARON')
   })
 })
 

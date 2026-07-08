@@ -19,6 +19,15 @@
 
 import { renderStrategiesForPrompt } from './strategies'
 
+/** El objetivo ancla del año (TU NORTE) — la brújula de Aaron, no un objetivo más. */
+export interface RehearseNorte {
+  title: string
+  /** Subtítulo del ancla (ej. "Medalla de oro en Taekwondo, +80 kg"). */
+  subtitle?: string
+  /** Próximo paso registrado del ancla, si hay. */
+  nextAction?: string
+}
+
 export interface RehearseContext {
   personName: string
   role?: string
@@ -40,6 +49,8 @@ export interface RehearseContext {
   openThreads?: string
   /** Estado del vínculo: trayectoria C2 (¿se enfría?) + tono reciente. */
   bondState?: string
+  /** El norte del año de Aaron (objetivo ancla). Da convicción y stakes al ensayo. */
+  norte?: RehearseNorte
 }
 
 export type Likelihood = 'plausible' | 'optimista' | 'dificil'
@@ -105,6 +116,12 @@ REGLAS DURAS (no negociables):
    en ESAS movidas nombradas (ej. "Validar lo que siente: …", "Preguntar qué necesita: …"). Es la
    base científica de qué funciona sin manipular. En vínculos afectivos son formas de cuidado, no
    tácticas: no las presentes como "para conseguir" algo. No inventes movidas fuera del repertorio.
+8. EL NORTE DEL AÑO: si el contexto trae "EL NORTE DE AARON" (su objetivo ancla del año) y el
+   objetivo de este ensayo conecta genuinamente con él, nombrá ese vínculo en "read" y dejá que
+   aterrice la convicción y el framing — la verdad de Aaron sobre POR QUÉ esto le importa, en su
+   propia voz. Cuando el nexo sea real, puede reforzar un escenario o una acción. NO fuerces la
+   conexión si no existe (muchos ensayos no tocan el norte, y está bien), y NUNCA la uses como
+   palanca para presionar a la otra persona: es la brújula de Aaron, no un argumento contra el otro.
 
 Devolvé EXCLUSIVAMENTE un JSON (sin prosa, sin fences):
 {
@@ -162,6 +179,13 @@ export function buildRehearseUserContent(ctx: RehearseContext, objective: string
   }
   if (ctx.selfState && ctx.selfState.trim()) {
     lines.push('', ctx.selfState.trim().slice(0, 800))
+  }
+  if (ctx.norte && ctx.norte.title.trim()) {
+    const sub = ctx.norte.subtitle && ctx.norte.subtitle.trim() ? ` (${ctx.norte.subtitle.trim()})` : ''
+    const na = ctx.norte.nextAction && ctx.norte.nextAction.trim() ? ` · próximo paso: ${ctx.norte.nextAction.trim()}` : ''
+    lines.push('', '== EL NORTE DE AARON (el ancla del año) ==')
+    lines.push(`- ${ctx.norte.title.trim()}${sub}${na}`)
+    lines.push('Es la brújula del año de Aaron. Si este objetivo conecta genuinamente con el norte, dejalo aterrizar la convicción y el framing; si no lo toca, ignoralo.')
   }
   lines.push('', `El objetivo de Aaron: ${objective.trim().slice(0, 600)}`)
   return lines.join('\n')
