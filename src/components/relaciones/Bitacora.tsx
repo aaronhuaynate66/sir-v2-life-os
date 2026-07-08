@@ -276,13 +276,13 @@ export function Bitacora({ personLogs, observations, notesHistory, moments }: Bi
                         )}
                         aria-hidden="true"
                       />
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="flex items-center justify-between gap-2 flex-wrap min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
                           <Badge variant="outline" className="text-[10px] font-mono uppercase tracking-wider shrink-0">
                             {e.label}
                           </Badge>
                           {e.value && (
-                            <span className="text-xs font-mono tabular-nums text-foreground shrink-0">{e.value}</span>
+                            <span className="text-xs font-mono tabular-nums text-foreground truncate">{e.value}</span>
                           )}
                         </div>
                         <div className="flex flex-col items-end shrink-0 leading-tight">
