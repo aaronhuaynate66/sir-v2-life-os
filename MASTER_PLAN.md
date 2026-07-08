@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d1fba78`
+**Hash del último commit humano:** `45268df`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `45268df` | aaronhuaynate66 | feat(ciclo): mejor fecha para viajar (rankea ventanas por el ciclo) (#616) | 2026-07-08 |
 | `d1fba78` | aaronhuaynate66 | feat(planes): Fase 4 — vista global de eventos + marcar "con quién" (#615) | 2026-07-08 |
 | `f16df69` | aaronhuaynate66 | feat(ciclo): Estudio del ciclo — horizonte movible + briefing multi-evento + "¿qué pasaría si?" (#614) | 2026-07-08 |
 | `b121a11` | aaronhuaynate66 | feat(cuidado): anticipación proactiva + SIR lo lee a fondo (#613) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `a11d637` | aaronhuaynate66 | feat(ciclo): la línea del horizonte jala eventos de tu calendario (#609) | 2026-07-08 |
 | `5d30240` | aaronhuaynate66 | feat(norte): el ensayo y el chat de SIR tiran del norte del año (#608) | 2026-07-08 |
 | `99f62aa` | aaronhuaynate66 | docs(estado): sesión de integridad de señales (#594–606) + P0 bugs resueltos (#607) | 2026-07-08 |
-| `02db0b8` | aaronhuaynate66 | fix(verificación): tono legible en la ficha + norte en el chat + taxonomía GA4 (#606) | 2026-07-08 |
 
 ---
 
