@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `a56fd0a`
+**Hash del último commit humano:** `02db0b8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `02db0b8` | aaronhuaynate66 | fix(verificación): tono legible en la ficha + norte en el chat + taxonomía GA4 (#606) | 2026-07-08 |
 | `a56fd0a` | aaronhuaynate66 | Merge pull request #605 from aaronhuaynate66/refactor/ritmo-contacto-unificado | 2026-07-08 |
 | `4e12248` | Aaron Huaynate | refactor(ritmo): unificar el cálculo del ritmo de contacto (trajectory + cadence) | 2026-07-08 |
 | `d320171` | aaronhuaynate66 | Merge pull request #604 from aaronhuaynate66/fix/cadencia-ficha-consistente | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `69d9a44` | aaronhuaynate66 | Merge pull request #602 from aaronhuaynate66/fix/fuerza-cuenta-contacto-real | 2026-07-08 |
 | `56ac90a` | Aaron Huaynate | fix(score): la Fuerza cuenta el contacto real (llamadas contestadas + registros) | 2026-07-08 |
 | `3a0c52a` | aaronhuaynate66 | Merge pull request #601 from aaronhuaynate66/feat/import-tono-por-dia | 2026-07-08 |
-| `3fbb737` | Aaron Huaynate | feat(import): el import batch de WhatsApp genera tono POR DÍA (no un marcador) | 2026-07-08 |
 
 ---
 
