@@ -18,7 +18,7 @@
 //
 // LÍNEA ÉTICA (doc 17): timing y presencia, NUNCA presión ni descalificación.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -27,6 +27,8 @@ import { computeCycleRegularity } from '@/lib/ciclo/regularity'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import { synthesisCue } from '@/lib/ciclo/horizonCue'
 import { buildCycleHorizon, gatherHorizonEvents, type HorizonEvent, type BandPhase } from '@/lib/ciclo/horizon'
+import { calendarEventsToHorizon, mergeHorizonEvents } from '@/lib/ciclo/calendarHorizon'
+import type { CalendarEvent } from '@/lib/calendar/types'
 import type { PersonCycleEntry } from '@/lib/person-cycles/types'
 import type { SpecialDate } from '@/types'
 
@@ -90,13 +92,35 @@ export function CycleHorizonCard({
 }: CycleHorizonCardProps) {
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [expanded, setExpanded] = useState(false)
+  // Eventos del calendario del usuario (Calendar v2) para cruzar con el ciclo.
+  // Se traen client-side (cookies) sólo si hay ciclo; degrada a [] sin ruido.
+  const [calEvents, setCalEvents] = useState<CalendarEvent[]>([])
+
+  useEffect(() => {
+    if (!cycleStartDate) return
+    let alive = true
+    // Misma ventana que el horizonte: 28d atrás + 67 adelante (past cap del API = 31).
+    fetch(`/api/calendar?past=${HORIZON_BACK_DAYS}&days=${HORIZON_FWD_DAYS}&limit=200`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (alive && data && Array.isArray(data.events)) setCalEvents(data.events as CalendarEvent[]) })
+      .catch(() => { /* sin calendario / feed caído → la línea sigue con las fechas especiales */ })
+    return () => { alive = false }
+  }, [cycleStartDate])
 
   const model = useMemo(() => {
     if (!cycleStartDate) return null
     const now = new Date()
     const fromIso = iso(new Date(now.getTime() - HORIZON_BACK_DAYS * 86_400_000))
     const toIso = iso(new Date(now.getTime() + HORIZON_FWD_DAYS * 86_400_000))
-    const events = gatherHorizonEvents({ specialDates, birthDate, personName, fromIso, toIso, now })
+    const special = gatherHorizonEvents({ specialDates, birthDate, personName, fromIso, toIso, now })
+    // 'upcoming': próximos compromisos del calendario (futuros), deduplicados, con
+    // tope por día y total — el calendario suele ser laboral y denso, no queremos
+    // inundar la línea. Prioriza los que mencionan a la persona y los de día
+    // completo. Las fechas especiales ganan en colisión; los chips dejan ocultar.
+    const cal = calendarEventsToHorizon(calEvents, {
+      personName, fromIso, toIso, mode: 'upcoming', todayIso: iso(now), limit: 8, maxPerDay: 2,
+    })
+    const events = mergeHorizonEvents(special, cal)
     const reg = computeCycleRegularity(personCycles.map((e) => ({ date: e.date, phase: e.phase })))
     const horizon = buildCycleHorizon(
       { lastPeriodStart: cycleStartDate.slice(0, 10), cycleLengthDays: cycleLengthDays ?? 28, bandDays: reg.bandDays, events, horizonFrom: fromIso, horizonTo: toIso },
@@ -104,7 +128,7 @@ export function CycleHorizonCard({
     )
     const cp = cyclePhase(cycleStartDate.slice(0, 10), cycleLengthDays ?? 28, now)
     return { horizon, reg, fromIso, toIso, confirmedIso: cycleStartDate.slice(0, 10), cp }
-  }, [cycleStartDate, cycleLengthDays, personCycles, specialDates, birthDate, personName])
+  }, [cycleStartDate, cycleLengthDays, personCycles, specialDates, birthDate, personName, calEvents])
 
   if (!model?.horizon) return null
   const { horizon, reg, fromIso, toIso, confirmedIso, cp } = model

@@ -47,6 +47,16 @@ describe('buildCycleHorizon', () => {
     expect(ev.reading).toMatch(/gesto|presencia/i)
   })
 
+  it('un evento propio del calendario recibe lectura NEUTRAL, no de gesto hacia ella', () => {
+    // Mismo día/fase, pero kind 'calendar' (ej. "Gym"): la lectura no debe sonar
+    // a "gesto de presencia" — es un compromiso tuyo ubicado en el ciclo.
+    const h = buildCycleHorizon({ ...BASE, events: [{ date: '2026-07-13', label: 'Gym', kind: 'calendar' }] }, NOW)!
+    const ev = h.events[0]
+    expect(ev.phase).toBe('luteal')
+    expect(ev.reading).toMatch(/compromiso|coordinar/i)
+    expect(ev.reading).not.toMatch(/gesto simple de presencia/i)
+  })
+
   it('marca incertidumbre creciente en el futuro y 0 en el pasado', () => {
     const h = buildCycleHorizon({
       ...BASE,
