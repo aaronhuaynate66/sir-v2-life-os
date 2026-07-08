@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `3a0c52a`
+**Hash del último commit humano:** `69d9a44`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `69d9a44` | aaronhuaynate66 | Merge pull request #602 from aaronhuaynate66/fix/fuerza-cuenta-contacto-real | 2026-07-08 |
+| `56ac90a` | Aaron Huaynate | fix(score): la Fuerza cuenta el contacto real (llamadas contestadas + registros) | 2026-07-08 |
 | `3a0c52a` | aaronhuaynate66 | Merge pull request #601 from aaronhuaynate66/feat/import-tono-por-dia | 2026-07-08 |
 | `3fbb737` | Aaron Huaynate | feat(import): el import batch de WhatsApp genera tono POR DÍA (no un marcador) | 2026-07-08 |
 | `4013ce4` | aaronhuaynate66 | Merge pull request #600 from aaronhuaynate66/fix/tono-real-excluir-placeholders | 2026-07-08 |
@@ -349,8 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ca6cf20` | Aaron Huaynate | feat(relato): recalibrar tono histórico (backfill de los logs en 3) | 2026-07-08 |
 | `f5b3b03` | aaronhuaynate66 | Merge pull request #598 from aaronhuaynate66/fix/tono-interaccion-discrimina | 2026-07-08 |
 | `2bdfc8d` | Aaron Huaynate | fix(relato): rúbrica de tono para que el value de interacción DISCRIMINE | 2026-07-08 |
-| `26a6fdf` | aaronhuaynate66 | Merge pull request #597 from aaronhuaynate66/fix/guardado-silencioso-sweep | 2026-07-08 |
-| `c17f533` | aaronhuaynate66 | Merge pull request #596 from aaronhuaynate66/feat/decidir-premortem-ia | 2026-07-08 |
 
 ---
 
