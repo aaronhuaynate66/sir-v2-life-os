@@ -598,7 +598,7 @@ export function PersonDetail({
           ramificada afectivo/profesional. Solo aparece si hay algo que sugerir. */}
       <RelationalHealthCard person={live} personLogs={personLogs} />
       {/* 15·4 — vínculos que drenan vs energizan (energy_impact × self_metrics). */}
-      <RelationalEnergyCard person={live} personLogs={personLogs} />
+      <RelationalEnergyCard person={live} />
       {/* 15·5 — micro-bid concreto atado a señal real (fecha próxima o tema). */}
       <RelationalBidCard person={live} memories={memories} />
       <ContactWindowBadge person={live} lastTone={lastInteractionTone} />
