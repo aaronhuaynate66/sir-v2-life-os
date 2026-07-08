@@ -96,6 +96,28 @@ export function phaseCareReading(phase: CyclePhaseId, isPms: boolean, isFertile:
   return 'Un gesto simple de presencia va bien; mejor no volverlo agenda ni conversación pesada.'
 }
 
+/** Kinds que son un evento CON/DE la pareja → aplica la lectura de cuidado. */
+function isPartnerKind(kind: HorizonEventKind): boolean {
+  return kind === 'mesario' || kind === 'anniversary' || kind === 'birthday' || kind === 'partner'
+}
+
+/**
+ * Lectura para un evento TUYO del calendario (compromiso/plan propio, ej. gym,
+ * reunión, viaje): NO es un gesto hacia ella — sólo ubica el compromiso en la
+ * fase, por si querés coordinar cuidado o tiempo juntos alrededor. Neutral.
+ */
+function calendarPhaseReading(phase: CyclePhaseId, isPms: boolean): string {
+  if (isPms) return 'Cae en su semana más sensible. Si podés, dejá aire para un gesto simple; no sobrecargues esos días.'
+  if (phase === 'menstrual') return 'Cae en sus días de recogimiento. Buen momento para un plan suave juntos si coordina.'
+  if (phase === 'ovulation' || phase === 'follicular') return 'Cae en días de más energía — buen tramo para sumar algo lindo juntos si se puede.'
+  return 'Ubicá este compromiso en el ciclo para coordinar tiempo y cuidado; sin volverlo agenda.'
+}
+
+/** Elige la lectura según el tipo de evento: cuidado (pareja) vs neutral (propio). */
+export function eventReading(kind: HorizonEventKind, phase: CyclePhaseId, isPms: boolean, isFertile: boolean): string {
+  return isPartnerKind(kind) ? phaseCareReading(phase, isPms, isFertile) : calendarPhaseReading(phase, isPms)
+}
+
 function isoOf(t: number): string {
   const d = new Date(t)
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
@@ -234,7 +256,7 @@ export function buildCycleHorizon(input: BuildCycleHorizonInput, now: Date = new
       isFertile: cp.isFertileWindow,
       isFuture,
       uncertainDays: isFuture ? band * cyclesAhead : 0,
-      reading: phaseCareReading(cp.phase, cp.isPmsWindow, cp.isFertileWindow),
+      reading: eventReading(ev.kind, cp.phase, cp.isPmsWindow, cp.isFertileWindow),
       pct: pctOf(evT),
     })
   }
