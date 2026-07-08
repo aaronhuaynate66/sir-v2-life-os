@@ -534,6 +534,12 @@ export interface ObjectiveStep {
   metricCurrent?: number
   /** Unidad para mostrar (ej. 'S/', 'kg', 'clientes'). */
   metricUnit?: string
+  /**
+   * Id del evento en Google Calendar si la tarea fue empujada (0139). Lo escribe
+   * SOLO el route push-to-google (server); el `toRow` del store NO lo manda, así
+   * que un upsert del store lo preserva. Read-only desde el cliente.
+   */
+  gcalEventId?: string | null
 }
 
 export interface Signal {

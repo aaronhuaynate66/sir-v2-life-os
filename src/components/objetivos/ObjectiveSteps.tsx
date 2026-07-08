@@ -34,6 +34,8 @@ import {
   Target,
   Gauge,
   CalendarClock,
+  CalendarPlus,
+  CalendarCheck,
   Lock,
 } from 'lucide-react'
 
@@ -152,6 +154,32 @@ export function ObjectiveSteps({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   // Plan IA
   const [plan, setPlan] = useState<PlanState>({ loading: false, proposed: null, feasibility: [], error: null })
+  // Push de tareas a Google (solo si hay un Google Calendar conectado).
+  const [hasGoogle, setHasGoogle] = useState(false)
+  const [pushingId, setPushingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    fetch('/api/calendar/connections', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d?.connections) return
+        setHasGoogle((d.connections as { provider?: string; enabled?: boolean }[]).some((c) => c.provider === 'google' && c.enabled))
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
+
+  const pushTaskToGoogle = useCallback(async (taskId: string) => {
+    setPushingId(taskId)
+    try {
+      const res = await fetch(`/api/objective-steps/${taskId}/push-to-google`, { method: 'POST' })
+      const j = (await res.json().catch(() => ({}))) as { alreadySynced?: boolean; gcalEventId?: string; error?: string; detail?: string }
+      if (!res.ok) { toast.error(j.error ?? 'No se pudo agendar en Google', { description: j.detail }); return }
+      updateStep(taskId, { gcalEventId: j.gcalEventId ?? 'synced' }) // optimista; toRow no la manda → DB la conserva
+      toast.success(j.alreadySynced ? 'Ya estaba en Google Calendar' : 'Tarea agendada en Google Calendar')
+    } catch { toast.error('No se pudo agendar en Google', { description: 'Revisá tu conexión.' }) } finally { setPushingId(null) }
+  }, [updateStep])
 
   const makeStep = useCallback(
     (opts: {
@@ -452,6 +480,9 @@ export function ObjectiveSteps({
                 setEditId(null)
               }}
               onUpdateKr={updateStep}
+              hasGoogle={hasGoogle}
+              pushingId={pushingId}
+              onPushTask={pushTaskToGoogle}
             />
           ))}
         </ul>
@@ -623,6 +654,9 @@ function KeyResultRow({
   onSetTaskStatus,
   onSaveTaskEdit,
   onUpdateKr,
+  hasGoogle,
+  pushingId,
+  onPushTask,
 }: {
   kr: ObjectiveStep
   tasks: ObjectiveStep[]
@@ -647,6 +681,9 @@ function KeyResultRow({
   onSetTaskStatus: (id: string, ts: TaskStatus) => void
   onSaveTaskEdit: (id: string, patch: Partial<ObjectiveStep>) => void
   onUpdateKr: (id: string, patch: Partial<ObjectiveStep>) => void
+  hasGoogle: boolean
+  pushingId: string | null
+  onPushTask: (id: string) => void
 }) {
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDate, setNewTaskDate] = useState('')
@@ -772,6 +809,9 @@ function KeyResultRow({
                 onStartEdit={() => onStartEdit(t)}
                 onMove={(dir) => onMoveTask(kr, t.id, dir)}
                 onRemove={() => onRemoveTask(kr, t)}
+                hasGoogle={hasGoogle}
+                pushingGoogle={pushingId === t.id}
+                onPushGoogle={() => onPushTask(t.id)}
               />
             ),
           )}
@@ -852,6 +892,9 @@ function TaskRow({
   onStartEdit,
   onMove,
   onRemove,
+  hasGoogle,
+  pushingGoogle,
+  onPushGoogle,
 }: {
   task: ObjectiveStep
   allSteps: ObjectiveStep[]
@@ -861,6 +904,9 @@ function TaskRow({
   onStartEdit: () => void
   onMove: (dir: 'up' | 'down') => void
   onRemove: () => void
+  hasGoogle: boolean
+  pushingGoogle: boolean
+  onPushGoogle: () => void
 }) {
   const effective = effectiveTaskStatus(task)
   const done = effective === 'done'
@@ -921,6 +967,11 @@ function TaskRow({
                 {days != null && <span className="opacity-80">· {dueHint(days)}</span>}
               </span>
             )}
+            {task.gcalEventId && (
+              <span className="inline-flex items-center gap-1 text-ok" title="Esta tarea está en tu Google Calendar">
+                <CalendarCheck size={10} aria-hidden="true" /> en Google
+              </span>
+            )}
             {blocked && (
               <span className="inline-flex items-center gap-1 text-bad-foreground" title="Bloqueada">
                 <Lock size={10} aria-hidden="true" />
@@ -940,6 +991,11 @@ function TaskRow({
           <IconBtn label="Subir tarea" disabled={first} onClick={() => onMove('up')}><ChevronUp size={13} /></IconBtn>
           <IconBtn label="Bajar tarea" disabled={last} onClick={() => onMove('down')}><ChevronDown size={13} /></IconBtn>
         </div>
+        {hasGoogle && task.targetDate && !task.gcalEventId && (
+          <IconBtn label="Agendar en Google Calendar" disabled={pushingGoogle} onClick={onPushGoogle}>
+            {pushingGoogle ? <Loader2 size={12} className="animate-spin" /> : <CalendarPlus size={12} />}
+          </IconBtn>
+        )}
         <IconBtn label="Editar tarea" onClick={onStartEdit}><Pencil size={12} /></IconBtn>
         <IconBtn label="Borrar tarea" danger onClick={onRemove}><Trash2 size={12} /></IconBtn>
       </div>
