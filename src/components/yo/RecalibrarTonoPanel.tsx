@@ -57,9 +57,10 @@ export function RecalibrarTonoPanel() {
           <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Recalibrar tono histórico</span>
         </div>
         <p className="text-[13px] text-muted-foreground leading-relaxed">
-          Muchos registros viejos de interacción quedaron en tono neutro (3) por un bug ya arreglado.
-          SIR puede re-leer tus notas y asignar un tono más fiel (1-5). Empezá por el dry-run para ver
-          la propuesta; solo toca los que están en 3, así que es reversible.
+          Re-lee tus interacciones tipeadas que quedaron en tono neutro (3) y les asigna un tono más
+          fiel (1-5). <span className="text-foreground/80">Solo toca notas con contenido real</span> —
+          las llamadas y los import-markers (que son la mayoría de los 3) se saltan solos. Empezá por
+          el dry-run; es reversible.
         </p>
 
         <div className="flex flex-wrap items-center gap-2">

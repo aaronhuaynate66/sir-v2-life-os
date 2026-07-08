@@ -109,6 +109,23 @@ describe('buildCyclePhaseForecast', () => {
     }
   })
 
+  it('las llamadas (placeholder value=3) NO contaminan el baseline', () => {
+    const real = historyWithLowPhase('luteal') // interacciones reales con patrón
+    // Muchas llamadas neutras (value 3, nota de llamada) en las mismas fechas.
+    const calls = real.map((l, i) => ({ ...l, id: `call-${i}`, value: 3, note: '📞 Llamada de voz · 21 s' }))
+    const withCalls = [...real, ...calls]
+    const base = buildCyclePhaseForecast(
+      { logs: real, cycleStartDate: START, cycleLengthDays: 28, metric: 'interaction' }, NOW,
+    )!
+    const polluted = buildCyclePhaseForecast(
+      { logs: withCalls, cycleStartDate: START, cycleLengthDays: 28, metric: 'interaction' }, NOW,
+    )!
+    // El baseline y el delta deben ser IGUALES: las llamadas se filtran.
+    expect(polluted.deltaDiff).toBe(base.deltaDiff)
+    expect(polluted.totalSamples).toBe(base.totalSamples)
+    expect(polluted.nextLow?.phaseLabel).toBe(base.nextLow?.phaseLabel)
+  })
+
   it('el offset 0 corresponde a hoy y la serie es contigua', () => {
     const f = buildCyclePhaseForecast(
       { logs: historyWithLowPhase('luteal'), cycleStartDate: START, cycleLengthDays: 28, metric: 'interaction', horizonDays: 14 },

@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { groupMomentsByExplicitCycle, groupMomentsByLunar, topBucket } from '@/lib/longitudinal/patrones'
+import { isToneBearingInteraction } from '@/lib/person-logs/toneSignal'
 import { groupLogToneByPhase } from '@/lib/longitudinal/cycleTone'
 import type { RelationshipMoment } from '@/lib/moments/types'
 import type { PersonCycleEntry } from '@/lib/person-cycles/types'
@@ -39,7 +40,7 @@ export function PatronesCiclo({ personName, moments, personCycles, personLogs = 
   // 17·M3 — tono de las interacciones por fase del ciclo.
   const byTone = useMemo(
     () => groupLogToneByPhase(
-      personLogs.filter((l) => l.kind === 'interaction' && Number.isFinite(l.value) && l.value > 0).map((l) => ({ date: l.loggedAt, tone: l.value })),
+      personLogs.filter((l) => l.kind === 'interaction' && Number.isFinite(l.value) && l.value > 0 && isToneBearingInteraction(l.note)).map((l) => ({ date: l.loggedAt, tone: l.value })),
       cycleStartDate, cycleLengthDays,
     ),
     [personLogs, cycleStartDate, cycleLengthDays],
