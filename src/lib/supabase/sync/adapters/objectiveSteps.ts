@@ -111,5 +111,7 @@ export const objectiveStepAdapter: TableAdapter<ObjectiveStep> = {
     metricCurrent: coerceNum(row.metric_current),
     metricUnit: (row.metric_unit as string) || undefined,
     completedAt: (row.completed_at as string) ?? undefined,
+    // Read-only: la escribe el route push-to-google; toRow NO la manda (preserva).
+    gcalEventId: (row.gcal_event_id as string) ?? null,
   }),
 }
