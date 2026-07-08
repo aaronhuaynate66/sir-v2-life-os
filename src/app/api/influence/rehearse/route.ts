@@ -16,10 +16,9 @@ import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
 import { gatherRehearseExtras } from '@/lib/influence/rehearseContext'
 import { getSelfBioState } from '@/lib/people/selfState'
-import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext, type RehearseNorte, type RehearseResult } from '@/lib/influence/rehearsePrompt'
+import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext, type RehearseResult } from '@/lib/influence/rehearsePrompt'
 import { checkEthics } from '@/engines/ethics'
-import { buildYearCompass } from '@/lib/year-compass/build'
-import { goalAdapter } from '@/lib/supabase/sync/adapters/goals'
+import { getYearNorte } from '@/lib/year-compass/norte'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -101,29 +100,10 @@ export async function POST(req: NextRequest) {
       cycleLengthDays: (person.cycle_length_days as number) ?? null,
       lastContactMs: person.last_contact ? Date.parse(person.last_contact as string) : null,
     }, Date.now()).catch((e) => { rep(e); return {} as import('@/lib/influence/rehearseContext').RehearseExtras }),
-    // El norte del año: MISMA fuente que "TU NORTE" del panel. buildYearCompass
-    // elige el ancla explícita (is_anchor, si Aaron tocó el ⚓) o, en su defecto,
-    // la deriva (mayor prioridad + fecha, self-first). Así el ensayo tira del
-    // norte que Aaron realmente ve, no de un flag que hoy nadie prende. Fail-open.
-    (async (): Promise<RehearseNorte | undefined> => {
-      try {
-        const { data } = await supabase
-          .from('goals')
-          .select('id, title, description, category, priority, status, target_date, progress, milestones, related_goals, related_persons, peace_impact, obstacles, next_action, target, baseline, why, is_anchor, anchor_subtitle, created_at, updated_at')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .limit(100)
-        const goals = ((data ?? []) as Record<string, unknown>[]).map((r) => goalAdapter.fromRow(r))
-        const anchor = buildYearCompass(goals, new Date()).anchor
-        if (!anchor) return undefined
-        const na = goals.find((g) => g.id === anchor.id)?.nextAction?.trim()
-        return {
-          title: anchor.title.slice(0, 120),
-          subtitle: anchor.subtitle?.slice(0, 120) || undefined,
-          nextAction: na ? na.slice(0, 120) : undefined,
-        }
-      } catch (e) { rep(e); return undefined }
-    })(),
+    // El norte del año: MISMA fuente que "TU NORTE" del panel (deriva el ancla, no
+    // lee is_anchor — que hoy nadie prende). Así el ensayo tira del norte que Aaron
+    // realmente ve. Fail-open a undefined (getYearNorte ya traga sus errores).
+    getYearNorte(supabase, userId).then((n) => n ?? undefined),
   ])
   const cycleNote = extras.cycleNote
   const pulse = extras.pulse
