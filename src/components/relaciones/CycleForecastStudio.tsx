@@ -12,6 +12,7 @@ import { useEffect, useReducer, useRef, useState } from 'react'
 import { CycleHorizonCard } from './CycleHorizonCard'
 import { EventCareBriefCard } from './EventCareBriefCard'
 import { TravelPlannerCard } from './TravelPlannerCard'
+import { BehaviorHorizonCard } from './BehaviorHorizonCard'
 import { scrubReducer, initialScrub } from '@/lib/ciclo/cycleScrub'
 import { usePersonalEvents } from '@/lib/personal-events/usePersonalEvents'
 import type { PersonCycleEntry } from '@/lib/person-cycles/types'
@@ -94,6 +95,13 @@ export function CycleForecastStudio(props: CycleForecastStudioProps) {
         personName={personName}
         now={now}
         onSelectDate={(iso) => dispatch({ t: 'date', iso })}
+      />
+      <BehaviorHorizonCard
+        personId={personId}
+        personName={personName}
+        cycleStartDate={cycleStartDate}
+        cycleLengthDays={cycleLengthDays}
+        now={now}
       />
     </div>
   )
