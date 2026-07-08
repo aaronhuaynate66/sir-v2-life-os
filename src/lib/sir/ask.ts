@@ -52,6 +52,9 @@ export interface AskGoalCtx {
   title: string
   status?: string | null
   nextAction?: string | null
+  /** El norte del año (goals.is_anchor). Se marca aparte para que el chat
+   *  aterrice sus respuestas en la brújula, no en un objetivo cualquiera. */
+  isAnchor?: boolean | null
 }
 
 export interface AskContextInput {
@@ -111,8 +114,18 @@ export function buildAskContext(input: AskContextInput): string {
   }
 
   if (input.goals.length > 0) {
+    // El norte (ancla) va primero y marcado: es la brújula del año, no un
+    // objetivo más. Aterrizá las respuestas ahí cuando aplique.
+    const anchor = input.goals.find((g) => g.isAnchor)
+    if (anchor) {
+      const na = anchor.nextAction ? ` · próximo paso: ${anchor.nextAction}` : ''
+      lines.push('== TU NORTE (el ancla del año) ==')
+      lines.push(`- ${anchor.title}${na}`)
+      lines.push('')
+    }
     lines.push('== OBJETIVOS ACTIVOS ==')
     for (const g of input.goals.slice(0, 20)) {
+      if (g.isAnchor) continue // ya listado arriba como norte
       const na = g.nextAction ? ` · próximo paso: ${g.nextAction}` : ''
       lines.push(`- ${g.title}${na}`)
     }

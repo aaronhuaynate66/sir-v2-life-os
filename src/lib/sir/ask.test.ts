@@ -36,6 +36,21 @@ describe('buildAskContext', () => {
     expect(ctx).toContain('== OBJETIVOS ACTIVOS ==')
     expect(ctx).toContain('== PREGUNTA ==')
   })
+  it('destaca el ancla como TU NORTE, aparte de los demás objetivos', () => {
+    const ctx = buildAskContext({
+      question: 'x', todayISO: '2026-06-14', people: [], memories: [],
+      goals: [
+        { title: 'Ganar el Mundial WFG26', nextAction: 'Cerrar 3 ventas', isAnchor: true },
+        { title: 'Mejorar mi relación con Francisco' },
+      ],
+    })
+    expect(ctx).toContain('== TU NORTE (el ancla del año) ==')
+    expect(ctx).toContain('Ganar el Mundial WFG26')
+    // El ancla no se repite en la lista de activos.
+    const activos = ctx.slice(ctx.indexOf('== OBJETIVOS ACTIVOS =='))
+    expect(activos).not.toContain('Ganar el Mundial WFG26')
+    expect(activos).toContain('Mejorar mi relación con Francisco')
+  })
   it('avisa cuando no hay data', () => {
     const ctx = buildAskContext({ question: 'x', todayISO: '2026-06-14', people: [], memories: [], goals: [] })
     expect(ctx).toContain('No se encontró data')
