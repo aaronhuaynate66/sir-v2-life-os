@@ -59,6 +59,22 @@ describe('assessLinkHealth — cadencia relativa a la capa', () => {
     expect(r.attention).toBe(true)
   })
 
+  it('expectedDaysOverride (ritmo real) MANDA sobre el default por capa', () => {
+    // Categoría 'close' → default 30d (contacto de 20d sería "al día"). Pero si
+    // tu ritmo real es cada 7d, 20d ya es atrasado.
+    const lastContactAt = new Date(NOW.getTime() - 20 * 86_400_000).toISOString()
+    const sinOverride = assessLinkHealth(
+      { relationship: 'friend', category: 'close', lastContactAt, interactions: [] }, NOW,
+    )
+    const conOverride = assessLinkHealth(
+      { relationship: 'friend', category: 'close', lastContactAt, interactions: [], expectedDaysOverride: 7 }, NOW,
+    )
+    expect(sinOverride.expectedDays).toBe(30)
+    expect(sinOverride.cadence).toBe('ok') // 20 < 30
+    expect(conOverride.expectedDays).toBe(7)
+    expect(conOverride.cadence).toBe('overdue') // 20 > 7
+  })
+
   it('un peripheral con contacto raro es NORMAL, no alerta', () => {
     const r = assessLinkHealth({
       relationship: 'acquaintance', category: 'peripheral',

@@ -11,12 +11,19 @@ import { HeartHandshake } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { assessLinkHealth } from '@/lib/relational/health'
+import { effectiveCadenceDays } from '@/lib/people/cadence'
+import { useSuggestedCadence } from '@/lib/relaciones/useSuggestedCadence'
 import type { Person } from '@/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 
 import { isNoiseLog } from '@/lib/relational/partnerEffect'
 
 export function RelationalHealthCard({ person, personLogs }: { person: Person; personLogs: PersonLog[] }) {
+  // Cadencia esperada rhythm-aware, MISMA fuente que la lista de /relaciones →
+  // la "salud del vínculo" de la ficha ya no contradice el overdue de la lista
+  // ni del proactivo (antes usaba un default por capa hardcodeado).
+  const suggested = useSuggestedCadence()
+
   const health = useMemo(() => {
     const interactions = personLogs
       .filter((l) => l.kind === 'interaction')
@@ -24,14 +31,18 @@ export function RelationalHealthCard({ person, personLogs }: { person: Person; p
       // ruido que aplana el toneTrend hacia 'steady'. Ver isNoiseLog (C2·R1 fix).
       .filter((l) => !isNoiseLog(l.note, l.value))
       .map((l) => ({ quality: l.value, at: l.loggedAt }))
+    const expectedDaysOverride = effectiveCadenceDays(
+      person.contactFrequency, person.category, suggested[person.id] ?? null,
+    ).days
     return assessLinkHealth({
       relationship: person.relationship,
       category: person.category,
       lastContactAt: person.lastContact ?? null,
       interactions,
       personName: person.name,
+      expectedDaysOverride,
     })
-  }, [person, personLogs])
+  }, [person, personLogs, suggested])
 
   // Solo mostramos si hay una sugerencia concreta (oferta descartable).
   if (!health.guidance) return null
