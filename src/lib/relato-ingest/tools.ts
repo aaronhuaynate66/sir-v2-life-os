@@ -45,7 +45,7 @@ export const INGEST_TOOLS = [
       properties: {
         person_full_name: { type: 'string' },
         kind: { type: 'string', enum: ['interaction', 'mood', 'energy'] },
-        value: { type: 'integer', description: '1..5.' },
+        value: { type: 'integer', description: 'Tono 1..5 — DISCRIMINÁ, NO metas 3 por defecto: 1=muy mal (pelea, corte, tensión fuerte), 2=tenso/incómodo, 3=neutro/rutinario (SOLO si de verdad no hubo carga), 4=cálido/buena, 5=excelente/muy conectados. Leé la señal en lo que Aaron cuenta: "le molestó"→2, "buena charla / buen humor"→4, "hermoso día juntos"→5, "pelea fea"→1.' },
         note: { type: 'string', description: 'Nota breve.' },
         logged_at: { type: 'string', description: 'ISO 8601 con TZ. Si Aaron dice solo la fecha, poné 20:00 Lima (-05:00).' },
       },
