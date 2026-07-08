@@ -6,6 +6,7 @@
 // Autoreporte (no inferencia): lo responde quien lo vive, con su permiso.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { UserSquare } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -45,9 +46,10 @@ export function BigFiveCard({ subject, title = 'Perfil Big Five', whoAnswers = '
     if (!computed || saving) return
     setSaving(true)
     try {
-      await fetch('/api/bigfive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject, ...computed }) })
+      const res = await fetch('/api/bigfive', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subject, ...computed }) })
+      if (!res.ok) { toast.error('No se pudo guardar el test'); return }
       setScores(computed); setTaking(false); setAnswers({})
-    } finally { setSaving(false) }
+    } catch { toast.error('No se pudo guardar el test') } finally { setSaving(false) }
   }, [computed, saving, subject])
 
   if (!loaded) return null

@@ -5,6 +5,7 @@
 // trackers enganchados.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { CalendarClock, Plus, Check, X, MapPin, Loader2, Pencil } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -44,18 +45,20 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
   const savePlan = useCallback(async () => {
     if (busy) return; setBusy(true)
     try {
-      await fetch('/api/objectives/plan', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      const res = await fetch('/api/objectives/plan', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal_id: goalId, event_date: form.event_date || null, travel_start: form.travel_start || null, travel_end: form.travel_end || null, location: form.location || null, obstacle: form.obstacle || null, plan_if: form.plan_if || null, plan_then: form.plan_then || null }) })
+      if (!res.ok) { toast.error('No se pudo guardar el plan'); return }
       setEditing(false); await load()
-    } finally { setBusy(false) }
+    } catch { toast.error('No se pudo guardar el plan') } finally { setBusy(false) }
   }, [busy, form, goalId, load])
 
   const addBlocker = useCallback(async () => {
     if (!newBlk.trim() || busy) return; setBusy(true)
     try {
-      await fetch('/api/objectives/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal_id: goalId, title: newBlk.trim(), due_on: newDue || undefined }) })
+      const res = await fetch('/api/objectives/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal_id: goalId, title: newBlk.trim(), due_on: newDue || undefined }) })
+      if (!res.ok) { toast.error('No se pudo agregar el bloqueo'); return }
       setNewBlk(''); setNewDue(''); await load()
-    } finally { setBusy(false) }
+    } catch { toast.error('No se pudo agregar el bloqueo') } finally { setBusy(false) }
   }, [newBlk, newDue, busy, goalId, load])
 
   const toggleBlocker = useCallback(async (b: ObjectiveBlocker) => {
