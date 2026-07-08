@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { CalendarPlus, Plus, X } from 'lucide-react'
+import { CalendarPlus, CalendarCheck, Plus, X, Loader2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -38,6 +38,21 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
   const [date, setDate] = useState('')
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
+  // ¿Hay un Google Calendar conectado? → habilita el botón "Agendar en Google".
+  const [hasGoogle, setHasGoogle] = useState(false)
+  const [pushingId, setPushingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    fetch('/api/calendar/connections', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d?.connections) return
+        setHasGoogle((d.connections as { provider?: string; enabled?: boolean }[]).some((c) => c.provider === 'google' && c.enabled))
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
 
   const load = useCallback(() => {
     let alive = true
@@ -81,6 +96,25 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
       toast.error('No se pudo guardar', { description: 'Revisá tu conexión.' })
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handlePush(id: string, label: string) {
+    setPushingId(id)
+    try {
+      const res = await fetch(`/api/personal-events/${id}/push-to-google`, { method: 'POST' })
+      const j = (await res.json().catch(() => ({}))) as { ok?: boolean; alreadySynced?: boolean; gcalEventId?: string; error?: string; detail?: string }
+      if (!res.ok) {
+        toast.error(j.error ?? 'No se pudo agendar en Google', { description: j.detail })
+        return
+      }
+      // Optimista: marco el plan como sincronizado sin recargar todo.
+      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, gcalEventId: j.gcalEventId ?? 'synced' } : e)))
+      toast.success(j.alreadySynced ? 'Ya estaba en Google Calendar' : 'Agendado en Google Calendar', { description: label })
+    } catch {
+      toast.error('No se pudo agendar en Google', { description: 'Revisá tu conexión.' })
+    } finally {
+      setPushingId(null)
     }
   }
 
@@ -162,14 +196,38 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
                     {fmt(e.date)}{e.note ? ` · ${e.note}` : ''}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemove(e.id, e.title)}
-                  className="flex-shrink-0 flex items-center justify-center h-8 w-8 -m-1.5 rounded text-muted-foreground/50 hover:text-bad transition-colors"
-                  aria-label="Eliminar plan"
-                >
-                  <X size={14} strokeWidth={1.75} />
-                </button>
+                <div className="flex-shrink-0 flex items-center gap-1">
+                  {/* Push a Google: badge si ya está, botón si hay Google conectado. */}
+                  {e.gcalEventId ? (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full border border-ok/40 bg-ok-soft px-2 py-0.5 text-[10px] font-medium text-ok"
+                      title="Este plan ya está en tu Google Calendar"
+                    >
+                      <CalendarCheck size={11} strokeWidth={2} aria-hidden="true" /> En Google
+                    </span>
+                  ) : hasGoogle ? (
+                    <button
+                      type="button"
+                      onClick={() => handlePush(e.id, e.title)}
+                      disabled={pushingId === e.id}
+                      className="inline-flex items-center gap-1 rounded-full border border-brand/40 bg-brand/5 px-2 py-0.5 text-[10px] font-medium text-brand hover:bg-brand/10 transition-colors disabled:opacity-50"
+                      title="Agendar este plan en tu Google Calendar"
+                    >
+                      {pushingId === e.id
+                        ? <Loader2 size={11} className="animate-spin" aria-hidden="true" />
+                        : <CalendarPlus size={11} strokeWidth={2} aria-hidden="true" />}
+                      Google
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(e.id, e.title)}
+                    className="flex items-center justify-center h-8 w-8 -m-1.5 rounded text-muted-foreground/50 hover:text-bad transition-colors"
+                    aria-label="Eliminar plan"
+                  >
+                    <X size={14} strokeWidth={1.75} />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
