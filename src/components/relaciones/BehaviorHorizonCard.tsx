@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { cyclePhase } from '@/lib/ciclo/phase'
+import { crossHorizons } from '@/lib/ciclo/horizonCross'
 
 interface ForecastRow {
   id: string
@@ -89,12 +90,18 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
     return cp?.nextPeriodIso ?? null
   }, [cycleStartDate, cycleLengthDays, now])
 
+  // Cruce HONESTO: la ventana conductual (patrón SPM/fricción) vs la ventana
+  // SPM→período del ciclo real. Rango vs rango — el patrón precede al período, así
+  // que comparar centro-vs-día-1 marcaba "difieren" incluso cuando coinciden.
   const cross = useMemo(() => {
-    if (!forecast?.center_date || !realNext) return null
-    const a = Date.parse(`${forecast.center_date}T00:00:00Z`), b = Date.parse(`${realNext}T00:00:00Z`)
-    const diff = Math.round(Math.abs(a - b) / 86_400_000)
-    return diff
-  }, [forecast?.center_date, realNext])
+    if (!forecast || !realNext) return null
+    return crossHorizons({
+      behaviorStart: forecast.main_window_start,
+      behaviorEnd: forecast.main_window_end,
+      behaviorCenter: forecast.center_date,
+      nextPeriodIso: realNext,
+    })
+  }, [forecast, realNext])
 
   return (
     <Card className="shadow-none mb-4 border-dashed border-border">
@@ -139,16 +146,16 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
               </div>
             )}
 
-            {/* Cruce con el horizonte real */}
-            {realNext && forecast.center_date && (
+            {/* Cruce con el horizonte real (ventana SPM→período vs ventana conductual) */}
+            {realNext && cross && (
               <div className="rounded-md border border-border/50 bg-secondary/30 px-3 py-2 text-[12px] leading-relaxed">
                 <span className="text-text-tertiary">Cruce · </span>
-                real (fechas): <span className="font-mono text-foreground">{fmt(realNext)}</span> · conductual: <span className="font-mono text-foreground">{fmt(forecast.center_date)}</span>
-                {cross != null && (
-                  <span className={cn('block mt-0.5', cross <= 4 ? 'text-ok' : 'text-muted-foreground')}>
-                    {cross <= 4 ? `Coinciden (~${cross}d) — dos señales apuntan a lo mismo.` : `Difieren ~${cross}d — tratá cada una como estimación, registrá qué pasa.`}
-                  </span>
-                )}
+                SPM→período: <span className="font-mono text-foreground">{fmt(cross.pmsFrom)}–{fmt(cross.pmsTo)}</span> · patrón: <span className="font-mono text-foreground">{fmt(cross.behaviorFrom)}–{fmt(cross.behaviorTo)}</span>
+                <span className={cn('block mt-0.5', cross.overlap ? 'text-ok' : 'text-muted-foreground')}>
+                  {cross.overlap
+                    ? 'Las dos ventanas se solapan — dos señales independientes apuntan a lo mismo. Más razón para acompañar con cuidado.'
+                    : `Separadas ~${cross.gapDays}d — tratá cada una como estimación aparte y registrá qué pasa (recalibra el modelo).`}
+                </span>
               </div>
             )}
 
