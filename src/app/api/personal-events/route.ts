@@ -17,7 +17,9 @@ import { rowToPersonalEvent, type PersonalEventRow } from '@/lib/personal-events
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const SELECT_COLS = 'id, person_id, title, event_date, end_date, all_day, note, source, created_at, updated_at'
+const SELECT_COLS = 'id, person_id, title, event_date, end_date, all_day, note, source, gcal_event_id, created_at, updated_at'
+// Sin `gcal_event_id`: fallback si la migración 0138 aún no corrió (los planes no desaparecen).
+const SELECT_COLS_LEGACY = 'id, person_id, title, event_date, end_date, all_day, note, source, created_at, updated_at'
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 function errorJson(status: number, error: string, detail?: string) {
@@ -35,13 +37,18 @@ export async function GET(req: NextRequest) {
   const personId = sp.get('personId')
 
   try {
-    let q = supabase.from('personal_events').select(SELECT_COLS).eq('user_id', auth.user.id)
-    if (from && ISO_DATE.test(from)) q = q.gte('event_date', from)
-    if (to && ISO_DATE.test(to)) q = q.lte('event_date', to)
-    if (personId) q = q.eq('person_id', personId)
-    const { data, error } = await q.order('event_date', { ascending: true }).limit(500)
-    if (error) return NextResponse.json({ events: [] }) // tabla ausente / error de lectura → vacío
-    return NextResponse.json({ events: (data as PersonalEventRow[]).map(rowToPersonalEvent) })
+    const build = (cols: string) => {
+      let q = supabase.from('personal_events').select(cols).eq('user_id', auth.user.id)
+      if (from && ISO_DATE.test(from)) q = q.gte('event_date', from)
+      if (to && ISO_DATE.test(to)) q = q.lte('event_date', to)
+      if (personId) q = q.eq('person_id', personId)
+      return q.order('event_date', { ascending: true }).limit(500)
+    }
+    let { data, error } = await build(SELECT_COLS)
+    // Columna gcal_event_id ausente (migración 0138 sin correr) → reintentar sin ella.
+    if (error) ({ data, error } = await build(SELECT_COLS_LEGACY))
+    if (error) return NextResponse.json({ events: [] }) // tabla ausente / error → vacío
+    return NextResponse.json({ events: (data as unknown as PersonalEventRow[]).map(rowToPersonalEvent) })
   } catch {
     return NextResponse.json({ events: [] })
   }

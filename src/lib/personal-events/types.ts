@@ -22,6 +22,8 @@ export interface PersonalEvent {
   allDay: boolean
   note: string | null
   source: PersonalEventSource
+  /** Id del evento en Google Calendar si el plan fue empujado (null = no). */
+  gcalEventId: string | null
 }
 
 /** Fila de personal_events (snake_case desde Supabase). */
@@ -34,6 +36,8 @@ export interface PersonalEventRow {
   all_day: boolean | null
   note: string | null
   source: string | null
+  /** Puede faltar si la migración 0138 aún no corrió → se asume no-empujado. */
+  gcal_event_id?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -51,6 +55,7 @@ export function rowToPersonalEvent(row: PersonalEventRow): PersonalEvent {
     allDay: row.all_day !== false,
     note: row.note?.trim() || null,
     source,
+    gcalEventId: row.gcal_event_id ?? null,
   }
 }
 

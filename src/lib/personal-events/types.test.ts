@@ -7,7 +7,7 @@ function pe(over: Partial<PersonalEvent>): PersonalEvent {
   return {
     id: over.id ?? 'p1', personId: over.personId ?? 'diana', title: over.title ?? 'Cena',
     date: over.date ?? '2026-07-20', endDate: over.endDate ?? null, allDay: over.allDay ?? true,
-    note: over.note ?? null, source: over.source ?? 'sir', ...over,
+    note: over.note ?? null, source: over.source ?? 'sir', gcalEventId: over.gcalEventId ?? null, ...over,
   }
 }
 
