@@ -92,6 +92,45 @@ por partes" + su señal de confianza, listos para implementar por módulos).
 | **`17_MENSTRUAL_CYCLE`** | Ciclo menstrual: fases, ventana PMS/fértil, trazabilidad por fecha y predicción — para cuidar mejor, nunca para descalificar. |
 | **`18_EXTERNAL_SIGNALS`** | Señales externas: el afuera (dólar, clima, eventos) cruzado con tu contexto. Externo × interno = señal; externo solo = ruido. |
 | **`19_RELATIONAL_PROFILING`** | Leer a la persona: apego, personalidad, valores + modo "explorar hipótesis" — para vincularte/protegerte, nunca para etiquetar/diagnosticar. |
+| **`20_STRATEGIC_AGENCY_POLICY`** | Política de agencia estratégica: cuándo y cómo SIR actúa/recomienda con intención, dentro de la línea ética (influencia genuina + defensa, nunca manipulación). |
 
-Operativos (no base científica): `BUILD_PLAN`, `AARON_OS_INVENTORY`,
-`STRATEGIC_ROADMAP`, `MIGRATIONS`, auditorías.
+Operativos (no base científica): `ESTADO_ACTUAL` (estado vivo + backlog),
+`BUILD_PLAN`, `AARON_OS_INVENTORY`, `STRATEGIC_ROADMAP`, `MIGRATIONS`, auditorías.
+
+---
+
+## Evolución de SIR (de la base científica a lo construido)
+
+SIR no se construyó como app y después se le buscó sentido; se construyó **al
+revés**: primero la base científica (docs 00–20), y sobre cada dominio se fueron
+levantando módulos con su motor puro y su señal de confianza. Este es el arco.
+
+### Capa 0 — Cerebro y arquitectura cognitiva
+- **Pipeline de 9 capas** (doc 01): Datos → Señales → Contexto → Memoria → Timing → Recomendación → Acción, en bucle cerrado.
+- **Cerebro-grafo tipado** (doc 04): `lib/brain` proyecta 14 tablas a aristas tipadas con peso base (**F1**), difunde activación por BFS con decaimiento (**F2**), refuerza/debilita por uso al estilo Hebbian (**F3**), y **surfacea** lo relevante en `/horario` (**F4**). Consolidación nocturna por cron (decae lo no reforzado).
+- **Memoria** (doc 02): observaciones → memorias derivadas (idempotente), con memorias privadas/excluidas que no van a IA.
+
+### Capa 1 — Percepción e ingesta (el afuera entra solo)
+- **Captura sin fricción**: foto/screenshot → Visión (perfiles LinkedIn/IG, sueño, FC, báscula, medicación), texto pegado sin OCR, export de WhatsApp por bloques, multi-imagen → 1 observación.
+- **Ingesta del entorno**: SIR Reader (extensión MV3, Teams/WhatsApp → SIR), correo M365 por Graph, grabador de llamadas (cortes 5min → Whisper), Apple Health (endpoint + import por archivo).
+- **Señales externas** (doc 18): externo × interno = señal.
+
+### Capa 2 — Motores de inteligencia
+- **Motor de predicción (3 capas)**: C0 Pulso, C1 sueño/forecast/N-de-1 cruzado (sueño→energía r≈0.56), C2 trayectoria de vínculos.
+- **Inteligencia relacional** (doc 15): reciprocidad por quality-delta, urgencia de contacto, rituales, esfuerzo ponderado por parentesco, Daily Actions.
+- **Cronobiología del ciclo** (doc 17): fases + ventana PMS/fértil + predicción por fecha — para cuidar, nunca para descalificar.
+- **Verificación** (doc 16): 23 técnicas de propaganda + alter ego filosófico (recomienda corriente por escenario).
+- **Alignment engine**: objetivo ↔ comportamiento (aligned/drifting/needs_attention).
+
+### Capa 3 — Superficie operativa
+- **Horario cockpit**: brief del día/semana/mes, plan del día editable, cruce calendario × OKR × estado físico.
+- **Objetivos SMART + OKR + tareas Jira-light**, TU AÑO (brújula anual), Forecast de fin de mes, Financial OS por intención.
+- **Ficha de persona** (lo más reciente): rediseñada en **tabs**, **adaptativa por tipo de vínculo** (`fichaProfile`: Cuidado solo afectivo, comercial solo colega/lead), con el **Horizonte del ciclo** como módulo protagonista (timeline real/predicción + tono + ventanas + lecturas de cuidado).
+
+### Línea ética (transversal, no negociable)
+Docs 16/17/19/20: influencia genuina + defensa, **nunca manipulación**. En
+vínculos afectivos se prioriza **cuidado, presencia y timing**, no gestión tipo
+CRM. El ciclo se muestra para cuidar mejor, jamás para descalificar.
+
+> El estado detallado (qué está en producción, qué falta, backlog priorizado)
+> vive en `docs/ESTADO_ACTUAL.md`.
