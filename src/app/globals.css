@@ -148,6 +148,28 @@ body {
   @page { margin: 16mm; }
 }
 
+/* ─── Horizonte del ciclo (CycleHorizonCard) — paleta tokenizada, theme-aware.
+   Los hues de fase son intrínsecos (mismo tono en ambos temas); van como
+   triplete RGB para poder ponerles alpha inline: rgb(var(--h-menstrual)/.5).
+   Las NEUTRAS que dependían de fondo oscuro (texto/divisor/HOY) NO viven acá:
+   el componente usa los tokens globales (foreground/primary/border/success),
+   que ya se adaptan solos al tema. La única neutra tematizada es --h-neutral
+   (evento no-pareja): en claro necesita un gris más oscuro para no desaparecer
+   sobre blanco. Antes eran ~20 hex hardcodeados que rompían en tema claro. */
+.sir-horizon {
+  --h-menstrual: 194 91 100;
+  --h-follicular: 95 169 140;
+  --h-ovulation: 217 167 62;
+  --h-luteal: 124 111 212;
+  --h-spm: 224 168 46;
+  --h-partner: 143 118 226;   /* evento de pareja (violeta, legible en claro) */
+  --h-neutral: 110 110 120;   /* evento no-pareja — gris medio (tema claro) */
+}
+.dark .sir-horizon {
+  --h-partner: 184 167 245;   /* violeta más claro sobre fondo oscuro */
+  --h-neutral: 201 201 209;   /* gris claro sobre fondo oscuro */
+}
+
 /* ─── /horario — tokens planos del calendario (port del prototipo de Claude
    Design). Scopeados bajo .sir-horario para NO chocar con los tokens HSL
    globales: acá el componente usa var(--x) directo (no hsl(var(--x))), con los
