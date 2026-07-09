@@ -67,13 +67,12 @@ function SummaryBody({ person, lastChatObservedAt, lastManualInteractionAt, last
     <div className="space-y-4">
       {/* Stats de un vistazo */}
       <div className="flex flex-wrap items-stretch gap-x-5 gap-y-3">
-        {/* Score del vínculo */}
+        {/* Estado del vínculo — cualitativo, sin cifra sobre 100 (un score
+            numérico sobre tu pareja se lee como CRM; la palabra basta). */}
         <Stat Icon={Activity} label="Vínculo">
-          <span className="text-base font-semibold tabular-nums" style={{ color: s.score.band.soft }}>
-            {s.score.global}
+          <span className="text-sm font-medium" style={{ color: s.score.band.soft }}>
+            {s.score.band.label}
           </span>
-          <span className="text-text-tertiary text-[11px]">/100</span>
-          <span className="text-[11px] text-muted-foreground ml-1">· {s.score.band.label}</span>
         </Stat>
 
         {/* Última interacción */}
