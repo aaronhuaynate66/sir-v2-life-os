@@ -159,6 +159,33 @@ export const INGEST_TOOLS = [
     },
   },
   {
+    name: 'registrar_aprendizaje',
+    description:
+      'Registrar una LECCIÓN DURABLE y GENERAL sobre Aaron (no sobre otra persona, no un evento ' +
+      'puntual). Usala cuando Aaron enuncia una preferencia estable ("prefiero findes largos para ' +
+      'viajar"), un patrón propio ("cuando duermo menos de 6h me irrito"), un principio o prioridad ' +
+      'del período ("este año el Mundial va antes que todo") o un hecho estable sobre él. Es memoria ' +
+      'que SIR va a APLICAR al aconsejar más adelante. NO la uses para hechos de una sola vez (eso es ' +
+      'crear_moment) ni para cosas de otra persona. Frasealo en tercera persona, corto y accionable.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        text: { type: 'string', description: 'La lección, corta y en tercera persona ("Aaron prefiere…", "A Aaron le pasa que…").' },
+        kind: {
+          type: 'string',
+          enum: ['preference', 'pattern', 'principle', 'fact'],
+          description: 'preference (le gusta/prefiere), pattern (le pasa que…), principle (regla/prioridad que sostiene), fact (hecho estable).',
+        },
+        confidence: {
+          type: 'string',
+          enum: ['high', 'medium', 'low'],
+          description: 'high si Aaron lo afirma explícito; medium si lo inferís del relato. Default medium.',
+        },
+      },
+      required: ['text', 'kind'],
+    },
+  },
+  {
     name: 'flag_ambiguo',
     description:
       'Cuando Aaron menciona SOLO el primer nombre y hay ambigüedad (o no sabés el apellido), ' +
@@ -195,7 +222,10 @@ export type IngestAction =
   | { kind: 'crear_objetivo'; title: string; category: GoalCategoryEnum; priority: GoalPriorityEnum; targetDate?: string; nextStep?: string }
   | { kind: 'crear_persona'; fullName: string; relationship: PersonRelationshipEnum; category: PersonCategoryEnum; notes?: string }
   | { kind: 'crear_recordatorio'; text: string; dueAt: string; personFullName?: string }
+  | { kind: 'registrar_aprendizaje'; text: string; learningKind: LearningKind; confidence: CycleConfidence }
   | { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
+
+export type LearningKind = 'preference' | 'pattern' | 'principle' | 'fact'
 
 interface RawToolUse { name: string; input: Record<string, unknown> }
 
@@ -303,6 +333,15 @@ export function parseToolUse(raw: RawToolUse): IngestAction | null {
       if (!text || !dueAt) return null
       const personFullName = requireFullName(i.person_full_name) ?? undefined
       return { kind: 'crear_recordatorio', text, dueAt, personFullName }
+    }
+    case 'registrar_aprendizaje': {
+      const text = str(i.text, 500)
+      const lk = i.kind
+      const learningKind: LearningKind | null =
+        lk === 'preference' || lk === 'pattern' || lk === 'principle' || lk === 'fact' ? lk : null
+      if (!text || !learningKind) return null
+      const confidence: CycleConfidence = i.confidence === 'high' || i.confidence === 'low' ? i.confidence : 'medium'
+      return { kind: 'registrar_aprendizaje', text, learningKind, confidence }
     }
     case 'flag_ambiguo': {
       const short = str(i.short_name, 100)

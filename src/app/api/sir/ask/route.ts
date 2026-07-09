@@ -33,6 +33,7 @@ import { parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
 import { resolveModel } from '@/lib/sir/model'
 import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
 import { renderRecallBlock, shouldPersistExchange, type RecallHit } from '@/lib/sir/recall'
+import { renderLearningsBlock, rowToLearning, type LearningRow } from '@/lib/learnings/recall'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
@@ -158,6 +159,21 @@ export async function POST(req: NextRequest) {
       recallBlock = renderRecallBlock(hits, new Date().toISOString())
     } catch { /* tabla 0121 no aplicada / sin RPC → sin recall */ }
   }
+
+  // 3c. Fase 3d — lecciones durables que SIR aprendió de Aaron. Son pocas y
+  //     SIEMPRE relevantes (preferencias/patrones/principios), así que las traemos
+  //     todas las activas. Fail-open: sin tabla 0140 → sin bloque.
+  let learningsBlock = ''
+  try {
+    const { data: lrows } = await supabase
+      .from('learnings')
+      .select('text, kind, confidence, reinforced_count')
+      .eq('user_id', userId).eq('is_active', true)
+      .order('reinforced_count', { ascending: false }).limit(30)
+    if (lrows && lrows.length > 0) {
+      learningsBlock = renderLearningsBlock((lrows as LearningRow[]).map(rowToLearning))
+    }
+  } catch { /* tabla 0140 no aplicada → sin lecciones */ }
 
   // 4. Objetivos activos → mapa personId → título.
   const { data: goalRows } = await supabase
@@ -423,6 +439,7 @@ export async function POST(req: NextRequest) {
   const groundedContext =
     context +
     dayBlock +
+    (learningsBlock ? `\n\n${learningsBlock}` : '') +
     (recallBlock ? `\n\n${recallBlock}` : '') +
     (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 

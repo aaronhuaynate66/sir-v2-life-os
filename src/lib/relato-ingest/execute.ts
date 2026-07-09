@@ -41,6 +41,7 @@ function personRefOf(action: IngestAction): string | null {
   if (action.kind === 'flag_ambiguo') return null
   if (action.kind === 'crear_objetivo') return null // no persona
   if (action.kind === 'crear_persona') return null // crea, no busca
+  if (action.kind === 'registrar_aprendizaje') return null // lección sobre Aaron, sin persona
   if (action.kind === 'crear_recordatorio') return action.personFullName ?? null // opcional
   return action.personFullName
 }
@@ -98,6 +99,29 @@ async function execOne(supabase: Supabase, userId: string, action: IngestAction)
         data: { source: 'relato_ingest', text: action.text, summary: action.text },
         detector_data: null, confidence: 'high',
         observed_at: action.observedAt, needs_review: false,
+      }).select('id').single()
+      if (error) return { action, ok: false, error: error.message }
+      return { action, ok: true, createdId: (data as { id: string }).id }
+    }
+
+    if (action.kind === 'registrar_aprendizaje') {
+      // Dedup ligero: si ya existe una lección activa con el MISMO texto (normalizado),
+      // la reforzamos (reinforced_count++) en vez de duplicar.
+      const needle = norm(action.text)
+      const { data: existing } = await supabase
+        .from('learnings').select('id, text, reinforced_count')
+        .eq('user_id', userId).eq('is_active', true).limit(200)
+      const hit = ((existing ?? []) as Array<{ id: string; text: string; reinforced_count: number }>)
+        .find((r) => norm(r.text) === needle)
+      if (hit) {
+        await supabase.from('learnings')
+          .update({ reinforced_count: (hit.reinforced_count ?? 1) + 1, updated_at: new Date().toISOString() })
+          .eq('id', hit.id).eq('user_id', userId)
+        return { action, ok: true, createdId: hit.id, error: 'reforzada (ya la sabía)' }
+      }
+      const { data, error } = await supabase.from('learnings').insert({
+        user_id: userId, text: action.text, kind: action.learningKind,
+        source: 'relato', confidence: action.confidence,
       }).select('id').single()
       if (error) return { action, ok: false, error: error.message }
       return { action, ok: true, createdId: (data as { id: string }).id }

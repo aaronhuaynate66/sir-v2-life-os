@@ -15,6 +15,7 @@ const LABEL: Record<string, [string, string]> = {
   crear_objetivo: ['objetivo', 'objetivos'],
   crear_recordatorio: ['recordatorio', 'recordatorios'],
   registrar_ciclo: ['dato de ciclo', 'datos de ciclo'],
+  registrar_aprendizaje: ['aprendizaje', 'aprendizajes'],
 }
 
 function plural(kind: string, n: number): string {
