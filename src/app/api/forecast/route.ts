@@ -10,6 +10,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { buildDailySignals } from '@/lib/forecast-conductual/dailySignals'
+import { fetchChatMessages } from '@/lib/chat-messages/read'
 import { runForecast } from '@/lib/forecast-conductual/engine'
 import { recalibrate, modelWeights, type FeedbackLabel } from '@/lib/forecast-conductual/recalibrate'
 import type { ChatMessage, CycleAnchor, DailySignal } from '@/lib/forecast-conductual/types'
@@ -56,9 +57,12 @@ export async function POST(req: NextRequest) {
   if (!personId) return errorJson(400, 'personId requerido')
 
   try {
-    // 1) Señales diarias: PRIMERO de person_daily_signals (cobertura completa,
-    // computada al importar el export entero). Fallback: derivarlas de la MUESTRA
-    // reciente de rawMessages (span corto) y persistirlas.
+    // 1) Señales diarias, en orden de riqueza:
+    //    a) person_daily_signals (precomputadas al importar el export entero).
+    //    b) SUSTRATO (chat_messages, mig 0141): el hilo real ya cargado — evita
+    //       pedir "re-importá" cuando la data ya está, solo en otra tabla.
+    //    c) MUESTRA reciente de rawMessages de la observación (span corto, legacy).
+    //    En (b)/(c) se derivan con el léxico y se persisten a person_daily_signals.
     let signals: DailySignal[] = []
     const { data: sigRows } = await supabase
       .from('person_daily_signals')
@@ -72,19 +76,36 @@ export async function POST(req: NextRequest) {
         sensitivity: Number(r.sensitivity) || 0, actions: Number(r.actions) || 0, composite: Number(r.composite) || 0,
       }))
     } else {
-      const { data: obs } = await supabase
-        .from('observations').select('data')
-        .eq('user_id', userId).eq('person_id', personId)
-        .eq('capture_type', 'whatsapp_chat').eq('is_obsolete', false).limit(20)
-      const messages: ChatMessage[] = []
-      for (const row of (obs ?? []) as { data: { rawMessages?: RawMsg[] } }[]) {
-        for (const m of (Array.isArray(row.data?.rawMessages) ? row.data.rawMessages : [])) {
-          const at = typeof m.iso === 'string' && m.iso.length >= 10 ? m.iso : null
-          if (!at) continue
-          messages.push({ at, author: m.author === 'user' ? 'user' : 'other', text: typeof m.content === 'string' ? m.content : '' })
+      // b) Sustrato: el hilo textual completo de la persona (léxico → señales).
+      const subRows = await fetchChatMessages(supabase, userId, personId, 50_000)
+      const subMessages: ChatMessage[] = subRows
+        .filter((r) => typeof r.sent_at === 'string' && r.sent_at.length >= 10)
+        .map((r) => ({
+          at: r.sent_at as string,
+          author: r.sender === 'user' ? 'user' : 'other',
+          text: r.content ?? '',
+          kind: r.is_media ? 'media' : 'text',
+        }))
+      signals = buildDailySignals(subMessages)
+
+      // c) Fallback legacy: la muestra reciente de rawMessages de la observación.
+      if (signals.length < 8) {
+        const { data: obs } = await supabase
+          .from('observations').select('data')
+          .eq('user_id', userId).eq('person_id', personId)
+          .eq('capture_type', 'whatsapp_chat').eq('is_obsolete', false).limit(20)
+        const messages: ChatMessage[] = []
+        for (const row of (obs ?? []) as { data: { rawMessages?: RawMsg[] } }[]) {
+          for (const m of (Array.isArray(row.data?.rawMessages) ? row.data.rawMessages : [])) {
+            const at = typeof m.iso === 'string' && m.iso.length >= 10 ? m.iso : null
+            if (!at) continue
+            messages.push({ at, author: m.author === 'user' ? 'user' : 'other', text: typeof m.content === 'string' ? m.content : '' })
+          }
         }
+        const legacy = buildDailySignals(messages)
+        if (legacy.length > signals.length) signals = legacy
       }
-      signals = buildDailySignals(messages)
+
       if (signals.length > 0) {
         const rows = signals.map((s) => ({
           id: `sig:${personId}:${s.date}`, user_id: userId, person_id: personId, date: s.date,
@@ -96,7 +117,7 @@ export async function POST(req: NextRequest) {
       }
     }
     if (signals.length < 8) {
-      return errorJson(422, 'Poca data para el forecast', 'Importá el export completo de esta persona (necesito varios meses de mensajes con fecha, no solo lo reciente).')
+      return errorJson(422, 'Poca data para el forecast', 'Necesito varios meses de mensajes con fecha. Subí (o resubí) la conversación de esta persona para llenar el sustrato.')
     }
 
     // 3) Anclas = person_cycles (bleeding → period_start, pms → pms).
