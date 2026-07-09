@@ -103,6 +103,7 @@ import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
 import { WhatMattersChips } from './WhatMattersChips'
 import { TensionesFortalezas } from './TensionesFortalezas'
+import { ContradiceNotaCard } from './ContradiceNotaCard'
 import { RelationalProfileCard } from './RelationalProfileCard'
 import { HypothesesExplorer } from './HypothesesExplorer'
 import { BigFiveCard } from '@/components/profiling/BigFiveCard'
@@ -987,6 +988,11 @@ export function PersonDetail({
       {/* Tensiones y fortalezas: notas relacionales que Aaron carga a mano
           (fricción / fortalezas / metas en común). people.relational_notes (0132). */}
       <TensionesFortalezas person={live} />
+
+      {/* Flag "⚠ contradice una nota": cruza las notas manuales contra el hilo
+          real del sustrato (chat_messages 0141) y marca contradicciones. On-demand,
+          efímero, NUNCA pisa la nota. */}
+      <ContradiceNotaCard personId={live.id} personName={live.name} />
 
       {/* 19·M1 — perfil relacional (cómo vincularte), on-demand + cache diaria. */}
       <RelationalProfileCard personId={live.id} personName={live.name} />
