@@ -84,7 +84,7 @@ export function ContactWindowBadge({ person, lastTone = null }: { person: Person
           </span>
           <span className="text-[13px] text-foreground/90">{win.reason}</span>
         </div>
-        <p className="mt-2 text-[13px] text-muted-foreground">Cómo entrar: {win.tone}</p>
+        <p className="mt-2 text-[13px] text-muted-foreground">Cuándo escribirle: {win.tone}</p>
       </CardContent>
     </Card>
   )

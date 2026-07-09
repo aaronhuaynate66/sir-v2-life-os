@@ -186,7 +186,7 @@ export function buildEstadoInsights(input: BuildInsightsInput): EstadoInsights {
 export const LABEL_HUMAN: Record<EstadoLabel, { label: string; description: string; toneClass: string }> = {
   cerca: {
     label: 'Cerca',
-    description: 'Interacciones recientes con tono alto o subiendo. Momento fértil para invertir.',
+    description: 'Interacciones recientes con tono alto o subiendo. Está viniendo cálido — buen momento para estar cerca.',
     toneClass: 'text-ok border-ok/40 bg-ok-soft',
   },
   estable: {

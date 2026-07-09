@@ -23,7 +23,7 @@
 // notas, no renderiza nada (no abruma con placeholders vacíos).
 
 import { useEffect, useMemo, useState } from 'react'
-import { Eye, Lock, ChevronDown, Activity } from 'lucide-react'
+import { MessageSquare, Lock, ChevronDown, Activity } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -90,9 +90,9 @@ export function AntesDeContactar({ personId, memories }: AntesDeContactarProps) 
           aria-expanded={open}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <Eye size={13} strokeWidth={1.75} className="text-brand/70 shrink-0" aria-hidden="true" />
+            <MessageSquare size={13} strokeWidth={1.75} className="text-brand/70 shrink-0" aria-hidden="true" />
             <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
-              Antes de contactar
+              Lo último entre ustedes
             </span>
             {!open && (
               <span className="text-[11px] text-muted-foreground truncate">
