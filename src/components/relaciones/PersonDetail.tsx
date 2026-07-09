@@ -451,7 +451,7 @@ export function PersonDetail({
           <div className="flex items-center gap-4 min-w-0">
             <PersonAvatar personId={live.id} name={live.name} size="lg" />
             <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate">{live.name}</h1>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight truncate" title={live.name}>{live.name.split(' ')[0]}</h1>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <Badge variant="brand" className="text-[11px]">{CATEGORY_LABEL[live.category]}</Badge>
                 <Badge variant="outline" className="text-[11px]">{RELATIONSHIP_LABEL[live.relationship]}</Badge>

@@ -33,6 +33,9 @@ type State =
 export function PreguntarSobrePersona({ personId, personName }: { personId: string; personName: string }) {
   const [q, setQ] = useState('')
   const [state, setState] = useState<State>({ kind: 'idle' })
+  // Colapsado por default (7a): el ask no ocupa una card entera arriba del fold;
+  // es un botón que se abre cuando lo necesitás.
+  const [open, setOpen] = useState(false)
   const first = personName.split(' ')[0] || 'esta persona'
 
   const ask = useCallback(async (question: string) => {
@@ -50,6 +53,20 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
       setState({ kind: 'error', error: toApiError(e) })
     }
   }, [personId])
+
+  // Colapsado (y sin respuesta aún) → botón discreto que abre el ask.
+  if (!open && state.kind === 'idle') {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mb-4 inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground hover:border-border-strong transition-colors"
+      >
+        <MessageCircle size={15} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
+        Preguntar sobre {first}
+      </button>
+    )
+  }
 
   return (
     <Card className="shadow-none mb-4">
