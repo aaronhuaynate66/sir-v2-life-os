@@ -48,3 +48,31 @@ export async function sendWhatsAppText(to: string, body: string): Promise<{ ok: 
     return { ok: false, error: 'network' }
   }
 }
+
+/**
+ * Descarga un media (audio/voz) del Cloud API por su id. Meta lo entrega en 2
+ * pasos: GET /{media-id} → { url }, y luego GET esa url con el bearer. Devuelve
+ * los bytes + el content-type, o null si algo falla. NUNCA lanza.
+ */
+export async function downloadWhatsAppMedia(mediaId: string): Promise<{ bytes: ArrayBuffer; mimeType: string } | null> {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN
+  if (!token || !mediaId) return null
+  try {
+    const metaRes = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${encodeURIComponent(mediaId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!metaRes.ok) return null
+    const meta = (await metaRes.json()) as { url?: string; mime_type?: string }
+    if (!meta.url) return null
+    // La URL de descarga también exige el bearer.
+    const binRes = await fetch(meta.url, { headers: { Authorization: `Bearer ${token}` } })
+    if (!binRes.ok) return null
+    const bytes = await binRes.arrayBuffer()
+    const mimeType = (meta.mime_type || binRes.headers.get('content-type') || 'audio/ogg').split(';')[0].trim()
+    return { bytes, mimeType }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[whatsapp] descarga de media falló:', e instanceof Error ? e.message : e)
+    return null
+  }
+}
