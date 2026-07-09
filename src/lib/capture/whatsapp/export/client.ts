@@ -126,6 +126,20 @@ export interface ChatMessagePayload {
   isMedia?: boolean
 }
 
+/** Cursor del sustrato: ISO del último mensaje ya guardado en chat_messages para
+ *  esta persona (null = vacío → primer backfill). Se usa para mandar solo el
+ *  delta nuevo. best-effort: si falla, devuelve null (se manda todo, dedupe salva). */
+export async function getChatMessagesCursor(personId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`/api/capture/whatsapp-export/messages?person_id=${encodeURIComponent(personId)}`)
+    if (!res.ok) return null
+    const json = (await res.json()) as { lastISO?: string | null }
+    return typeof json.lastISO === 'string' ? json.lastISO : null
+  } catch {
+    return null
+  }
+}
+
 /** Appenda el delta de mensajes al SUSTRATO canónico (chat_messages) por lotes.
  *  Best-effort e independiente de la observación/LLM: el hilo real se guarda
  *  aunque la interpretación falle. Dedupe idempotente server-side por id. */

@@ -40,6 +40,35 @@ function sanitizeMessage(raw: unknown): ChatMessageInput | null {
   }
 }
 
+/** GET ?person_id= → cursor del sustrato: fecha del ÚLTIMO mensaje ya guardado
+ *  en chat_messages para esa persona. El cliente lo usa para mandar solo el delta
+ *  nuevo en la próxima subida (en vez de reenviar el hilo entero). null = sustrato
+ *  vacío para esa persona → mandar todo (backfill). */
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  try {
+    const supabase = await createClient()
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+    const user = authData?.user
+    if (authError || !user) return errorJson(401, 'No autenticado')
+
+    const personId = req.nextUrl.searchParams.get('person_id')?.trim()
+    if (!personId) return errorJson(400, 'Falta person_id')
+
+    const { data } = await supabase
+      .from('chat_messages')
+      .select('sent_at')
+      .eq('user_id', user.id).eq('person_id', personId)
+      .not('sent_at', 'is', null)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    return NextResponse.json({ lastISO: (data?.sent_at as string | null) ?? null })
+  } catch (e) {
+    reportApiError(e, { route: 'capture/whatsapp-export/messages#GET' })
+    return errorJson(500, e instanceof Error ? e.message : 'Error inesperado')
+  }
+}
+
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const supabase = await createClient()
