@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `676119d`
+**Hash del último commit humano:** `fa42abe`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `fa42abe` | aaronhuaynate66 | feat(chat): cursor propio del sustrato → re-subidas mandan solo el delta (#653) | 2026-07-09 |
 | `676119d` | aaronhuaynate66 | fix(pulso): sacar [media] y URLs de los "temas" de la conversación (#652) | 2026-07-09 |
 | `2800d15` | aaronhuaynate66 | fix(chat): paginar la lectura del sustrato (PostgREST corta a 1000 filas) (#651) | 2026-07-09 |
 | `486845b` | aaronhuaynate66 | feat(chat): la búsqueda del historial lee el sustrato (Fase B.2) (#650) | 2026-07-09 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `872e313` | aaronhuaynate66 | feat(ficha): unificar el ciclo en 1 módulo con 4 sub-vistas (7a Fase 2) (#646) | 2026-07-09 |
 | `7b6aa2d` | aaronhuaynate66 | feat(ficha): banner "Con cuidado." en el hero (Fase 1 · exploración 7a) (#645) | 2026-07-09 |
 | `bea747e` | aaronhuaynate66 | feat(ficha): rediseño del hero (Fase 1 de las exploraciones 7a de Aaron) (#644) | 2026-07-09 |
-| `9c65b73` | aaronhuaynate66 | fix(ficha): copy desde el cuidado, no desde la gestión (review de diseño) (#643) | 2026-07-09 |
 
 ---
 
