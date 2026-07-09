@@ -115,6 +115,7 @@ import { MomentosPanel } from './MomentosPanel'
 import { PersonMoneyPanel } from './PersonMoneyPanel'
 import { ContactWindowBadge } from './ContactWindowBadge'
 import { PreguntarSobrePersona } from './PreguntarSobrePersona'
+import { CareBanner } from './CareBanner'
 import { CADENCE_PRESETS, storedToPreset, presetToStored, parseCustomDays } from '@/lib/people/cadence'
 import { IdentidadesPanel } from './IdentidadesPanel'
 import { FamiliaPanel } from './FamiliaPanel'
@@ -477,6 +478,10 @@ export function PersonDetail({
         </div>
       </header>
 
+      {/* 7a: la ventana de contacto sube al hero como banner de CUIDADO (solo si
+          hay algo — tema abierto/días sensibles o buen momento). Neutral = no se
+          muestra. Reusa la misma lógica que el badge del pie. */}
+      <CareBanner person={live} phoneNumber={live.phoneNumber ?? null} lastTone={lastInteractionTone} />
 
       {/* F2: INFORMACIÓN primero. La franja de resumen (síntesis: quién es +
           estado + score + próxima acción) lidera la ficha; recién después lo
