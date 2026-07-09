@@ -21,10 +21,11 @@ import { Button } from '@/components/ui/button'
 import { DiscardCaptureButton } from './DiscardCaptureButton'
 import { RebuildSummaryButton } from './RebuildSummaryButton'
 import { needsResummary } from '@/lib/capture/observations/summaryHealth'
+import { captureLabel } from '@/lib/capture/humanizeCapture'
 import { cn } from '@/lib/utils'
 import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
 import { isSystemNote } from '@/lib/memories/fromInteractionLog'
-import type { Observation, CaptureType } from '@/lib/capture/observations/types'
+import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 import type { RelationshipMoment } from '@/lib/moments/types'
 
@@ -63,21 +64,6 @@ const LOG_LABEL: Record<PersonLogKind, string> = {
   interaction: 'Interacción',
 }
 
-const CAPTURE_LABEL: Record<CaptureType, string> = {
-  whatsapp_chat: 'WhatsApp',
-  whatsapp_web: 'WhatsApp Web',
-  whatsapp_info: 'WhatsApp · info',
-  instagram: 'Instagram',
-  dm_conversation: 'DM / Chat',
-  linkedin: 'LinkedIn',
-  scale: 'Báscula',
-  sleep_panel: 'Sueño',
-  heart_rate_panel: 'FC',
-  hrv_panel: 'VFC',
-  manual_note: 'Nota',
-  voice_note: 'Nota de voz',
-  unknown: 'Captura',
-}
 
 const INITIAL_VISIBLE = 12
 
@@ -137,7 +123,7 @@ function buildEntries(
       id: `obs:${obs.id}`,
       at: obs.observedAt,
       source: 'observation',
-      label: dataObj?.source === 'call_transcript' ? 'Llamada' : (CAPTURE_LABEL[obs.captureType] ?? obs.captureType),
+      label: dataObj?.source === 'call_transcript' ? 'Llamada' : captureLabel(obs.captureType),
       detail: observationDetail(obs),
       value: null,
       obsId: obs.id,
