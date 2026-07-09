@@ -117,6 +117,37 @@ export async function getLastImportedISO(personId: string): Promise<string | nul
   }
 }
 
+/** Mensaje del delta para el sustrato canónico (chat_messages). */
+export interface ChatMessagePayload {
+  iso: string | null
+  sender: 'user' | 'other'
+  authorName?: string | null
+  content: string
+  isMedia?: boolean
+}
+
+/** Appenda el delta de mensajes al SUSTRATO canónico (chat_messages) por lotes.
+ *  Best-effort e independiente de la observación/LLM: el hilo real se guarda
+ *  aunque la interpretación falle. Dedupe idempotente server-side por id. */
+export async function persistChatMessages(input: {
+  personId: string
+  source?: string
+  messages: ChatMessagePayload[]
+}): Promise<void> {
+  try {
+    const BATCH = 2000
+    for (let i = 0; i < input.messages.length; i += BATCH) {
+      const slice = input.messages.slice(i, i + BATCH)
+      if (slice.length === 0) continue
+      await fetch('/api/capture/whatsapp-export/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person_id: input.personId, source: input.source ?? 'whatsapp', messages: slice }),
+      })
+    }
+  } catch { /* best-effort: nunca debe romper el import */ }
+}
+
 /** Archiva el TEXTO CRUDO del export para "registro completo" + búsqueda
  *  (bitácora). Capa el tramo más reciente (~3MB) para no pegar contra el límite
  *  de body. Best-effort: no debe romper el guardado de la observación. */
