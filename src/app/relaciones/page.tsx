@@ -69,6 +69,7 @@ import {
   alertUrgencyLabel,
 } from '@/lib/people/labels'
 import { CommercialPipelinePanel } from '@/components/relaciones/CommercialPipelinePanel'
+import { RegenerarSintesisTodas } from '@/components/relaciones/RegenerarSintesisTodas'
 import { ScoreTrendChip } from '@/components/relaciones/ScoreTrendChip'
 import { useScoreTrendsByPerson } from '@/lib/relaciones/useScoreTrends'
 import { useSuggestedCadence } from '@/lib/relaciones/useSuggestedCadence'
@@ -326,6 +327,7 @@ function RelationshipsContent() {
           <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">{people.length} personas &middot; {alerts.length} alertas</p>
         </div>
         <div className="flex items-center gap-2">
+          {people.length > 0 && <RegenerarSintesisTodas />}
           <Button variant="outline" size="sm" asChild>
             <Link href="/relaciones/intake">
               <Upload size={14} strokeWidth={1.75} />
