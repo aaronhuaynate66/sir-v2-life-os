@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `fa42abe`
+**Hash del último commit humano:** `6b79b01`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6b79b01` | aaronhuaynate66 | feat(synthesis): "Lo personal" se genera del hilo real del sustrato (#654) | 2026-07-09 |
 | `fa42abe` | aaronhuaynate66 | feat(chat): cursor propio del sustrato → re-subidas mandan solo el delta (#653) | 2026-07-09 |
 | `676119d` | aaronhuaynate66 | fix(pulso): sacar [media] y URLs de los "temas" de la conversación (#652) | 2026-07-09 |
 | `2800d15` | aaronhuaynate66 | fix(chat): paginar la lectura del sustrato (PostgREST corta a 1000 filas) (#651) | 2026-07-09 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `294a1d1` | aaronhuaynate66 | feat(ficha): plegar patrones + tono-por-fase en la tab "Lo que se repite" (#647) | 2026-07-09 |
 | `872e313` | aaronhuaynate66 | feat(ficha): unificar el ciclo en 1 módulo con 4 sub-vistas (7a Fase 2) (#646) | 2026-07-09 |
 | `7b6aa2d` | aaronhuaynate66 | feat(ficha): banner "Con cuidado." en el hero (Fase 1 · exploración 7a) (#645) | 2026-07-09 |
-| `bea747e` | aaronhuaynate66 | feat(ficha): rediseño del hero (Fase 1 de las exploraciones 7a de Aaron) (#644) | 2026-07-09 |
 
 ---
 
