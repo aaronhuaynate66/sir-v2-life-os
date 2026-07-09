@@ -58,6 +58,7 @@ import {
   persistWhatsAppExport,
   getLastImportedISO,
   archiveConversation,
+  persistChatMessages,
 } from '@/lib/capture/whatsapp/export/client'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { transcribeExportAudios } from '@/lib/capture/whatsapp/export/audioClient'
@@ -70,6 +71,7 @@ import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
 import {
   consolidateInterpretations,
   buildExportObservationData,
+  buildAuthorRoleMap,
 } from '@/lib/capture/whatsapp/export/consolidate'
 import type { ChunkInterpretation, ConsolidatedExport, ExtractedDate } from '@/lib/capture/whatsapp/export/types'
 import { createPersonLog } from './person-logs/client'
@@ -775,6 +777,26 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
       // 1a-bis. Archivar el CRUDO SIEMPRE (registro completo + búsqueda), aunque
       //   el import sea "duplicado" y no haya nada nuevo. Best-effort.
       void archiveConversation({ personId, rawText: text, dateFirst: parsed.firstISO, dateLast: parsed.lastISO, messageCount: parsed.messages.length })
+
+      // 1a-ter. SUSTRATO canónico (chat_messages): guardar CADA mensaje del chat
+      //   COMPLETO (texto entero, sin clipear) — la fuente única que los motores
+      //   pueden consultar. Se manda SIEMPRE (incluso si la observación es
+      //   "duplicada"): el dedupe idempotente por id hace que re-subir un chat ya
+      //   importado lo BACKFILLee sin duplicar, y que uno que creció agregue solo
+      //   lo nuevo. Independiente de la interpretación/LLM. Best-effort.
+      //   [Fase B: cursor propio de chat_messages para no reenviar el histórico.]
+      const roleMap = buildAuthorRoleMap(parsed.participants, personName)
+      void persistChatMessages({
+        personId,
+        source: 'whatsapp',
+        messages: parsed.messages.map((m) => ({
+          iso: m.iso,
+          sender: roleMap.get(m.author) ?? 'other',
+          authorName: m.author,
+          content: m.content,
+          isMedia: m.isMedia,
+        })),
+      })
 
       // 1b. INCREMENTAL: ¿hasta qué fecha ya importé a esta persona? Me quedo
       //     solo con los mensajes nuevos (re-subir el mismo chat es seguro;

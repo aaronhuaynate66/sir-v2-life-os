@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { planIngest, type ReaderBatch } from './ingest'
 import { namesLooselyMatch } from '@/lib/people/nameMatch'
+import { appendChatMessages } from '@/lib/chat-messages/append'
 
 const HASH_WINDOW = 400
 
@@ -59,6 +60,25 @@ export async function ingestReaderBatch(client: SupabaseClient, userId: string, 
     confidence: 'high', observed_at: observedAt, is_obsolete: false,
   })
   if (error) throw new Error(error.message)
+
+  // Sustrato canónico: appendar los mensajes nuevos al hilo de la persona (si
+  // se atribuyó a alguien). Emisor best-effort: el autor que matchea el nombre
+  // del hilo es 'other'; el resto, 'user'. Dedupe idempotente por id. Best-effort:
+  // no debe romper el ingest si falla.
+  if (personId) {
+    try {
+      await appendChatMessages(client, {
+        userId, personId, source: 'reader',
+        messages: plan.fresh.map((m) => ({
+          iso: m.ts ?? null,
+          sender: namesLooselyMatch(m.author, batch.threadName) ? 'other' : 'user',
+          authorName: m.author,
+          content: m.text,
+          isMedia: false,
+        })),
+      })
+    } catch { /* best-effort */ }
+  }
 
   const merged = [...seen, ...plan.newHashes].slice(-HASH_WINDOW)
   await client.from('reader_threads').upsert({
