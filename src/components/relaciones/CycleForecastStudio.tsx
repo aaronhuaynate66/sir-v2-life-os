@@ -13,6 +13,8 @@ import { CycleHorizonCard } from './CycleHorizonCard'
 import { EventCareBriefCard } from './EventCareBriefCard'
 import { TravelPlannerCard } from './TravelPlannerCard'
 import { BehaviorHorizonCard } from './BehaviorHorizonCard'
+import { PatronesCiclo } from './PatronesCiclo'
+import { CyclePhaseForecastCard } from './CyclePhaseForecastCard'
 import { scrubReducer, initialScrub } from '@/lib/ciclo/cycleScrub'
 import { usePersonalEvents } from '@/lib/personal-events/usePersonalEvents'
 import { cyclePhase } from '@/lib/ciclo/phase'
@@ -20,6 +22,8 @@ import { computeCycleRegularity } from '@/lib/ciclo/regularity'
 import { cn } from '@/lib/utils'
 import type { CareBond } from '@/lib/ciclo/eventCareBrief'
 import type { PersonCycleEntry } from '@/lib/person-cycles/types'
+import type { RelationshipMoment } from '@/lib/moments/types'
+import type { PersonLog } from '@/lib/person-logs/types'
 import type { SpecialDate } from '@/types'
 
 /** Sub-vistas del módulo de ciclo (7a). */
@@ -31,6 +35,12 @@ export interface CycleForecastStudioProps {
   personCycles?: PersonCycleEntry[]
   specialDates?: SpecialDate[]
   birthDate?: string | null
+  /** Episodios con la persona → patrones por fase (tab "Lo que se repite"). */
+  moments?: RelationshipMoment[]
+  /** Últimos logs (tono por fase en PatronesCiclo). */
+  personLogs?: PersonLog[]
+  /** Set amplio ~2 años (proyección forward por fase). */
+  correlationLogs?: PersonLog[]
   personId: string
   personName: string
   /** Registro del briefing según el vínculo (pareja/familia/colega/amiga). */
@@ -46,7 +56,7 @@ function isoOf(d: Date): string {
 }
 
 export function CycleForecastStudio(props: CycleForecastStudioProps) {
-  const { cycleStartDate, cycleLengthDays, personCycles = [], specialDates = [], birthDate, personId, personName, bond, refreshKey = 0, onPlanChange } = props
+  const { cycleStartDate, cycleLengthDays, personCycles = [], specialDates = [], birthDate, moments = [], personLogs = [], correlationLogs = [], personId, personName, bond, refreshKey = 0, onPlanChange } = props
   const isPartner = bond === 'partner'
 
   // "Ahora" estable (una sola vez) → sin mismatch de hidratación al compartirlo.
@@ -148,7 +158,13 @@ export function CycleForecastStudio(props: CycleForecastStudioProps) {
       {/* ── Sub-vista activa (una sola card a la vez, sin apilar 6). Aplano la
           card interna (borde/fondo/sombra) para que se vea como parte del
           módulo, no como una card dentro de otra. ─────────────────── */}
-      <div className="[&>*]:mb-0 [&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent [&>*]:shadow-none">
+      <div className={cn(
+        '[&>*]:rounded-none [&>*]:border-0 [&>*]:bg-transparent [&>*]:shadow-none',
+        // "Lo que se repite" apila 3 lecturas de patrón → deja el mb-4 propio de
+        // cada card para separarlas (headers claros, sin líneas divisorias); el
+        // resto de sub-vistas es 1 sola card, sin margen sobrante.
+        view === 'repite' ? '[&>*]:mb-4 [&>*:last-child]:mb-0' : '[&>*]:mb-0',
+      )}>
         {view === 'horizonte' && (
           <CycleHorizonCard
             cycleStartDate={cycleStartDate}
@@ -194,13 +210,32 @@ export function CycleForecastStudio(props: CycleForecastStudioProps) {
           />
         )}
         {view === 'repite' && (
-          <BehaviorHorizonCard
-            personId={personId}
-            personName={personName}
-            cycleStartDate={cycleStartDate}
-            cycleLengthDays={cycleLengthDays}
-            now={now}
-          />
+          <>
+            {/* Descriptivo: cómo se distribuyen los episodios y el tono por fase. */}
+            <PatronesCiclo
+              personName={personName}
+              moments={moments}
+              personCycles={personCycles}
+              personLogs={personLogs}
+              cycleStartDate={cycleStartDate}
+              cycleLengthDays={cycleLengthDays}
+            />
+            {/* Proyección forward del tono/energía por fase (cuidado, no diagnóstico). */}
+            <CyclePhaseForecastCard
+              personLogs={correlationLogs}
+              cycleStartDate={cycleStartDate}
+              cycleLengthDays={cycleLengthDays}
+              personName={personName}
+            />
+            {/* 2º horizonte conductual (probabilístico). */}
+            <BehaviorHorizonCard
+              personId={personId}
+              personName={personName}
+              cycleStartDate={cycleStartDate}
+              cycleLengthDays={cycleLengthDays}
+              now={now}
+            />
+          </>
         )}
       </div>
     </div>

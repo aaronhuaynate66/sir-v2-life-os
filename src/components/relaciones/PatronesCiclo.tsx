@@ -7,7 +7,6 @@
 // (mínimo 3 moments cruzables con cycles, o 5 con luna). Cero ruido.
 
 import { useMemo } from 'react'
-import { motion } from 'framer-motion'
 import { LineChart, Sparkles, Moon } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -56,8 +55,7 @@ export function PatronesCiclo({ personName, moments, personCycles, personLogs = 
   const topL = topBucket(byLunar)
 
   return (
-    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mb-4">
-      <Card className="shadow-none">
+      <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <LineChart size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
@@ -95,7 +93,6 @@ export function PatronesCiclo({ personName, moments, personCycles, personLogs = 
           {showTone && <ToneBlock buckets={byTone.buckets.filter((b) => b.count > 0)} total={byTone.total} lowestId={byTone.lowest?.phaseId ?? null} lowestLabel={byTone.lowest?.label ?? null} />}
         </CardContent>
       </Card>
-    </motion.div>
   )
 }
 
