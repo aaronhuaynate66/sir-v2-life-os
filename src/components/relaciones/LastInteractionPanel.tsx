@@ -223,8 +223,8 @@ function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?:
       {topics.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {topics.slice(0, 6).map((t) => (
-            <Badge key={t} variant="outline" className="text-[10px] font-mono">
-              {t}
+            <Badge key={t} variant="outline" className="text-[10px]">
+              {t.replace(/_/g, ' ')}
             </Badge>
           ))}
         </div>

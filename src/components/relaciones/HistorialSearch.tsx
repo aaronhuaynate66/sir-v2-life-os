@@ -38,7 +38,7 @@ export function HistorialSearch({ personId }: { personId: string }) {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="ej. regla, viaje, propuesta…"
+          placeholder="ej. viaje, cumpleaños, mudanza…"
           className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground"
         />
         <button type="submit" disabled={loading || q.trim().length < 2}

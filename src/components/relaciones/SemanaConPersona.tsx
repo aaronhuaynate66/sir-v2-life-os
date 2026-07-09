@@ -56,7 +56,7 @@ const PHASE_BG: Record<CyclePhase, string> = {
 }
 
 const PHASE_ABBR: Record<CyclePhase, string> = {
-  bleeding: 'sang',
+  bleeding: 'regla',
   pms: 'pms',
   mid_cycle: 'mid',
   ovulation: 'ovu',
@@ -175,7 +175,7 @@ export function SemanaConPersona({ personName, personLogs, moments, personCycles
             <div className="flex items-center gap-1"><MessageCircle size={9} /> tono interacción</div>
             <div className="flex items-center gap-1 text-bad"><AlertCircle size={9} /> abierto</div>
             <div className="flex items-center gap-1 text-ok"><CheckCircle2 size={9} /> resuelto</div>
-            <div className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-bad/20" /> sang</div>
+            <div className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-bad/20" /> regla</div>
             <div className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-ok/20" /> mid/ovu</div>
             <div className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-brand/20" /> lútea</div>
           </div>
