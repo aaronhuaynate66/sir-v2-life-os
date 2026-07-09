@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `9c65b73`
+**Hash del último commit humano:** `bea747e`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `bea747e` | aaronhuaynate66 | feat(ficha): rediseño del hero (Fase 1 de las exploraciones 7a de Aaron) (#644) | 2026-07-09 |
 | `9c65b73` | aaronhuaynate66 | fix(ficha): copy desde el cuidado, no desde la gestión (review de diseño) (#643) | 2026-07-09 |
 | `21c5fb9` | aaronhuaynate66 | feat(fase3d): SIR aplica las lecciones también en el ensayo y el brief (#642) | 2026-07-09 |
 | `3cd6adb` | aaronhuaynate66 | feat(fase3d): panel "Lo que SIR aprendió de vos" (ver/gestionar lecciones) (#641) | 2026-07-09 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `2ec3dd2` | aaronhuaynate66 | feat(calendar): empujar tareas de objetivos a Google Calendar (#637) | 2026-07-08 |
 | `1d08833` | aaronhuaynate66 | feat(calendar): botón "Google" también en la agenda general (/planes) (#636) | 2026-07-08 |
 | `88c3f46` | aaronhuaynate66 | feat(calendar): editar un plan + reflejar la edición en Google (update-sync) (#635) | 2026-07-08 |
-| `270fed6` | aaronhuaynate66 | feat(calendar): borrar de Google el plan sincronizado al borrarlo en SIR (#634) | 2026-07-08 |
 
 ---
 
