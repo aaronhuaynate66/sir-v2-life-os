@@ -9,6 +9,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { ConvMsg } from './analyze'
+import { fetchChatMessages, chatRowsToConvMsg } from '@/lib/chat-messages/read'
 
 const RE_TS = /^\[([^\]]+)\]\s*([^:]+?):\s*(.*)$/ // [ISO] Autor: contenido
 const RE_PLAIN = /^([^:[\]]+?):\s*(.*)$/ // Autor: contenido (sin hora, p.ej. mensajes propios)
@@ -64,10 +65,23 @@ export function messagesFromRows(rows: ObsRow[]): ConvMsg[] {
       }
     }
   }
+  return dedupeSortMsgs(msgs)
+}
+
+/** PURO: dedup por (fecha|texto) + orden cronológico. */
+export function dedupeSortMsgs(msgs: ConvMsg[]): ConvMsg[] {
   const seen = new Set<string>()
   return msgs
     .filter((m) => { const k = `${m.at}|${m.text}`; if (seen.has(k)) return false; seen.add(k); return true })
     .sort((a, b) => a.at - b.at)
+}
+
+/** PURO: elige el set de mensajes MÁS RICO entre el sustrato y las observaciones.
+ *  Si el sustrato está backfilleado tiene el hilo completo (texto entero) → gana;
+ *  si aún está vacío/parcial, gana la observación (muestra). Garantiza cero
+ *  regresión: siempre te quedás con el conjunto más grande. */
+export function pickRicherMessages(fromSubstrate: ConvMsg[], fromObservations: ConvMsg[]): ConvMsg[] {
+  return dedupeSortMsgs(fromSubstrate.length >= fromObservations.length ? fromSubstrate : fromObservations)
 }
 
 export interface StoredVolumeSeries {
@@ -105,18 +119,29 @@ export async function getStoredVolumeSeries(
   return null
 }
 
-/** Trae y unifica los mensajes de una persona desde sus observaciones de conversación. */
+/**
+ * Trae y unifica los mensajes reales de una persona. SUSTRATO-FIRST: lee el hilo
+ * completo de chat_messages (mig 0141) y, en paralelo, los mensajes de las
+ * observaciones de conversación (muestra); se queda con el set MÁS RICO. Mientras
+ * el sustrato no esté backfilleado, gana la observación → cero regresión; en
+ * cuanto se re-sube el export, gana el hilo completo (texto entero, sin clipear).
+ */
 export async function getConversationMessages(
   supabase: SupabaseClient,
   userId: string,
   personId: string,
 ): Promise<ConvMsg[]> {
-  const { data } = await supabase
-    .from('observations')
-    .select('capture_type, data')
-    .eq('user_id', userId)
-    .eq('person_id', personId)
-    .in('capture_type', ['dm_conversation', 'whatsapp_chat'])
-    .eq('is_obsolete', false)
-  return messagesFromRows((data ?? []) as ObsRow[])
+  const [subRows, obs] = await Promise.all([
+    fetchChatMessages(supabase, userId, personId),
+    supabase
+      .from('observations')
+      .select('capture_type, data')
+      .eq('user_id', userId)
+      .eq('person_id', personId)
+      .in('capture_type', ['dm_conversation', 'whatsapp_chat'])
+      .eq('is_obsolete', false),
+  ])
+  const fromSubstrate = chatRowsToConvMsg(subRows)
+  const fromObservations = messagesFromRows((obs.data ?? []) as ObsRow[])
+  return pickRicherMessages(fromSubstrate, fromObservations)
 }
