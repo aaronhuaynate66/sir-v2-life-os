@@ -18,9 +18,12 @@ export interface ChatMsgRow {
   is_media?: boolean | null
 }
 
-/** Tope defensivo: un hilo puede tener decenas de miles de mensajes; leemos hasta
- *  acá para el análisis de conversación (más que suficiente para el Pulso/ensayo). */
-const DEFAULT_LIMIT = 50_000
+/** Ventana reciente que leemos para el análisis de conversación. Más que
+ *  suficiente para el Pulso/ensayo (recencia, cadencia, tono, temas); el trend de
+ *  volumen de largo plazo lo cubre la serie semanal pre-agregada. */
+const DEFAULT_LIMIT = 10_000
+/** Supabase/PostgREST corta cada request a ~1000 filas; paginamos con range(). */
+const PAGE = 1_000
 
 /** PURO: mapea filas del sustrato a mensajes unificados (ConvMsg). Descarta los
  *  que no tienen texto o fecha resoluble (no ubicables en el tiempo). */
@@ -36,19 +39,31 @@ export function chatRowsToConvMsg(rows: ChatMsgRow[]): ConvMsg[] {
   return out
 }
 
-/** Trae los mensajes de una persona desde el sustrato, en orden cronológico. */
+/** Trae la ventana RECIENTE de mensajes de una persona desde el sustrato.
+ *  Pagina con range() porque PostgREST corta cada request a ~1000 filas (un
+ *  `.limit(50000)` suelto devolvía solo 1000 — y ascendente, ¡los más VIEJOS!).
+ *  Lee descendente (recientes primero) hasta `limit` y devuelve en orden
+ *  cronológico ascendente. */
 export async function fetchChatMessages(
   supabase: SupabaseClient,
   userId: string,
   personId: string,
   limit: number = DEFAULT_LIMIT,
 ): Promise<ChatMsgRow[]> {
-  const { data } = await supabase
-    .from('chat_messages')
-    .select('sender, sent_at, content, is_media')
-    .eq('user_id', userId)
-    .eq('person_id', personId)
-    .order('sent_at', { ascending: true, nullsFirst: false })
-    .limit(limit)
-  return (data ?? []) as ChatMsgRow[]
+  const out: ChatMsgRow[] = []
+  for (let from = 0; from < limit; from += PAGE) {
+    const to = Math.min(from + PAGE, limit) - 1
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('sender, sent_at, content, is_media')
+      .eq('user_id', userId)
+      .eq('person_id', personId)
+      .order('sent_at', { ascending: false, nullsFirst: false })
+      .range(from, to)
+    if (error || !data || data.length === 0) break
+    out.push(...(data as ChatMsgRow[]))
+    if (data.length < PAGE) break
+  }
+  // Descendente → cronológico ascendente (lo que esperan los analizadores).
+  return out.reverse()
 }
