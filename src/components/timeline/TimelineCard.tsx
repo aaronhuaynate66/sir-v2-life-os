@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { TYPE_VISUALS } from '@/lib/timeline/icons'
 import type { TimelineEvent } from '@/lib/timeline/types'
+import { confidenceLabel } from '@/lib/capture/humanizeCapture'
 import { cn } from '@/lib/utils'
 
 function formatRelative(iso: string, now: number): string {
@@ -90,8 +91,8 @@ export function TimelineCard({ event, nowMs }: TimelineCardProps) {
                 diferenciacion visual + confidence. Mismo patron que el body
                 de TimelineCardGrouped ("Bascula · conf. high"). */}
             {event.captureKind === 'whatsapp' && (
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 font-mono">
-                📱 WhatsApp{typeof event.meta?.confidence === 'string' ? ` · conf. ${event.meta.confidence}` : ''}
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1.5">
+                📱 WhatsApp{typeof event.meta?.confidence === 'string' ? ` · ${confidenceLabel(event.meta.confidence)}` : ''}
               </p>
             )}
 

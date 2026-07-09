@@ -31,6 +31,7 @@ import { useMounted } from '@/hooks/useMounted'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 import { humanizeTone } from '@/lib/capture/humanizeTone'
+import { captureLabel, confidenceLabel } from '@/lib/capture/humanizeCapture'
 
 export interface LastInteractionPanelProps {
   /** Ultima observation con capture_type='whatsapp_chat' (ya curada
@@ -175,17 +176,17 @@ function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?:
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <Badge variant="outline" className="text-[10px] font-mono uppercase tracking-wider">
-          {obs.captureType}
+        <Badge variant="outline" className="text-[10px] tracking-wide">
+          {captureLabel(obs.captureType)}
         </Badge>
         {obs.confidence && (
-          <Badge variant="secondary" className="text-[10px] font-mono">
-            conf. {obs.confidence}
+          <Badge variant="secondary" className="text-[10px]">
+            {confidenceLabel(obs.confidence)}
           </Badge>
         )}
         {obs.needsReview && (
-          <Badge variant="destructive" className="text-[10px] font-mono">
-            needs review
+          <Badge variant="destructive" className="text-[10px]">
+            revisar
           </Badge>
         )}
       </div>
