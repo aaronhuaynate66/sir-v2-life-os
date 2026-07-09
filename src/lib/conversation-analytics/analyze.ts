@@ -97,13 +97,20 @@ const STOP = new Set(['que', 'de', 'la', 'el', 'en', 'y', 'a', 'los', 'las', 'un
   'cosa', 'cosas', 'todo', 'toda', 'todos', 'nada', 'algo', 'tarde', 'ando', 'aja', 'oki', 'okey', 'buenas',
   'buenos', 'vamos', 'estoy', 'estas', 'estás', 'tengo', 'tenes', 'tienes', 'quiero', 'vas', 'voy', 'hace',
   'dice', 'digo', 'igual', 'entonces', 'tambien', 'también', 'ahora', 'antes', 'despues', 'después', 'aca',
-  'acá', 'alla', 'allá', 'aqui', 'aquí', 'este', 'esos', 'esas', 'cuando', 'donde', 'dónde', 'porque', 'quien'])
+  'acá', 'alla', 'allá', 'aqui', 'aquí', 'este', 'esos', 'esas', 'cuando', 'donde', 'dónde', 'porque', 'quien',
+  // Ruido del export de WhatsApp: el placeholder "[media]" tokeniza a "media", y
+  // las URLs a "https"/"http"/"www" → contaminaban los "temas" (aparecían primeros).
+  'media', 'http', 'https', 'www', 'com', 'jpg', 'png', 'gif', 'mp4', 'omitido', 'omitida',
+  // filler adicional visto en data real (buenos días / ya pues / o sea / okok).
+  'pues', 'osea', 'okok', 'dias', 'bueno', 'buena'])
 
 function deburr(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
 function tokens(s: string): string[] {
-  return deburr(s).split(/[^a-z0-9áéíóúñ]+/i).filter((t) => t.length >= 4 && !STOP.has(t))
+  // Sacar URLs enteras ANTES de tokenizar (si no, dejan "https", dominios, etc.).
+  const noUrls = s.replace(/https?:\/\/\S+|www\.\S+/gi, ' ')
+  return deburr(noUrls).split(/[^a-z0-9áéíóúñ]+/i).filter((t) => t.length >= 4 && !STOP.has(t))
 }
 
 function toneOf(text: string): number {

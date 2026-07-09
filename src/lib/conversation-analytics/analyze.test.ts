@@ -77,6 +77,22 @@ describe('analyzeConversation', () => {
     expect(r.topics!.rising).toContain('mudanza')
   })
 
+  it('temas: excluye ruido de WhatsApp ([media] y URLs)', () => {
+    const msgs: ConvMsg[] = []
+    const start = NOW - 40 * DAY
+    // Muchos [media] + URLs mezclados con un tema real ("cumpleaños").
+    for (let i = 0; i < 10; i++) msgs.push({ fromMe: i % 2 === 0, at: start + i * DAY, text: '[media]' })
+    for (let i = 0; i < 6; i++) msgs.push({ fromMe: i % 2 === 0, at: start + (i + 10) * DAY, text: 'mira https://youtu.be/abc123 www.ejemplo.com' })
+    for (let i = 0; i < 6; i++) msgs.push({ fromMe: i % 2 === 0, at: NOW - (6 - i) * DAY, text: 'cumpleaños fiesta cumpleaños' })
+    const r = analyzeConversation(msgs, NOW)
+    expect(r.topics).not.toBeNull()
+    expect(r.topics!.top).toContain('cumpleanos')
+    expect(r.topics!.top).not.toContain('media')
+    expect(r.topics!.top).not.toContain('https')
+    expect(r.topics!.top).not.toContain('www')
+    expect(r.topics!.top).not.toContain('ejemplo') // dominio de la URL, tampoco
+  })
+
   it('temas: fading (lo que se dejó de hablar)', () => {
     const msgs: ConvMsg[] = []
     const start = NOW - 40 * DAY
