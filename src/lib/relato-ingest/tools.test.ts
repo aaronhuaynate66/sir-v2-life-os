@@ -1,6 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import { parseToolUse, requireFullName } from './tools'
 
+describe('parseToolUse registrar_aprendizaje', () => {
+  it('parsea una lección válida', () => {
+    const r = parseToolUse({ name: 'registrar_aprendizaje', input: { text: 'Aaron prefiere findes largos para viajar', kind: 'preference', confidence: 'high' } })
+    expect(r).toEqual({ kind: 'registrar_aprendizaje', text: 'Aaron prefiere findes largos para viajar', learningKind: 'preference', confidence: 'high' })
+  })
+  it('confidence default medium; kind inválido → null', () => {
+    const ok = parseToolUse({ name: 'registrar_aprendizaje', input: { text: 'x y z', kind: 'pattern' } })
+    expect(ok).toMatchObject({ confidence: 'medium', learningKind: 'pattern' })
+    expect(parseToolUse({ name: 'registrar_aprendizaje', input: { text: 'x', kind: 'otro' } })).toBeNull()
+    expect(parseToolUse({ name: 'registrar_aprendizaje', input: { kind: 'fact' } })).toBeNull()
+  })
+})
+
 describe('requireFullName', () => {
   it('acepta "Diana Díaz" (2 tokens)', () => {
     expect(requireFullName('Diana Díaz')).toBe('Diana Díaz')
