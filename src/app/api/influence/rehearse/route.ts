@@ -19,6 +19,7 @@ import { getSelfBioState } from '@/lib/people/selfState'
 import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson, type RehearseContext, type RehearseResult } from '@/lib/influence/rehearsePrompt'
 import { checkEthics } from '@/engines/ethics'
 import { getYearNorte } from '@/lib/year-compass/norte'
+import { renderLearningsBlock, rowToLearning, type LearningRow } from '@/lib/learnings/recall'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -125,7 +126,18 @@ export async function POST(req: NextRequest) {
     bondState,
     norte,
   }
-  const user = buildRehearseUserContent(ctx, objective)
+  // Fase 3d — sumar las lecciones durables que SIR aprendió de Aaron, para que el
+  // ensayo tire de sus principios/preferencias. Fail-open sin la tabla 0140.
+  let learningsBlock = ''
+  try {
+    const { data: lrows } = await supabase
+      .from('learnings').select('text, kind, confidence, reinforced_count')
+      .eq('user_id', userId).eq('is_active', true)
+      .order('reinforced_count', { ascending: false }).limit(30)
+    if (lrows && lrows.length > 0) learningsBlock = renderLearningsBlock((lrows as LearningRow[]).map(rowToLearning))
+  } catch { /* sin tabla → sin bloque */ }
+
+  const user = buildRehearseUserContent(ctx, objective) + (learningsBlock ? `\n\n${learningsBlock}` : '')
 
   if (!process.env.ANTHROPIC_API_KEY) return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
   const client = new Anthropic({ maxRetries: 2 })
