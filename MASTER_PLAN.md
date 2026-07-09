@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `661097f`
+**Hash del último commit humano:** `aa47a72`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `aa47a72` | aaronhuaynate66 | feat(ficha): flag "contradice una nota" — cruza notas manuales vs. el sustrato (#656) | 2026-07-09 |
 | `661097f` | aaronhuaynate66 | fix(ficha): humanizar enums crudos de captura (WHATSAPP_CHAT, conf. high) (#655) | 2026-07-09 |
 | `6b79b01` | aaronhuaynate66 | feat(synthesis): "Lo personal" se genera del hilo real del sustrato (#654) | 2026-07-09 |
 | `fa42abe` | aaronhuaynate66 | feat(chat): cursor propio del sustrato → re-subidas mandan solo el delta (#653) | 2026-07-09 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `60b2b16` | aaronhuaynate66 | feat(chat): ensayo/Pulso leen el hilo real del sustrato (Fase B.1) (#649) | 2026-07-09 |
 | `4ac7967` | aaronhuaynate66 | feat(chat): sustrato canónico del chat a nivel mensaje (Fase A) (#648) | 2026-07-09 |
 | `294a1d1` | aaronhuaynate66 | feat(ficha): plegar patrones + tono-por-fase en la tab "Lo que se repite" (#647) | 2026-07-09 |
-| `872e313` | aaronhuaynate66 | feat(ficha): unificar el ciclo en 1 módulo con 4 sub-vistas (7a Fase 2) (#646) | 2026-07-09 |
 
 ---
 
