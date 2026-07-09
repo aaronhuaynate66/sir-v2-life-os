@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import { crossHorizons } from '@/lib/ciclo/horizonCross'
+import { describeUsualPattern } from '@/lib/forecast-conductual/describe'
 
 interface ForecastRow {
   id: string
@@ -53,7 +54,6 @@ export interface BehaviorHorizonCardProps {
 function fmt(iso: string): string {
   try { return new Date(`${iso}T12:00:00`).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) } catch { return iso }
 }
-function pct(n: number): string { return `${n >= 0 ? '+' : ''}${Math.round(n * 100)}%` }
 const MODEL_LABEL: Record<string, string> = { grid: 'grid periódico', interpeak: 'intervalos', autocorr: 'autocorrelación', harmonic: 'armónica', bayes: 'anclas' }
 
 export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycleLengthDays, now }: BehaviorHorizonCardProps) {
@@ -103,6 +103,9 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
     })
   }, [forecast, realNext])
 
+  // Patrón usual en prosa cualitativa (reemplaza los chips con "+74%").
+  const patternProse = useMemo(() => describeUsualPattern(forecast?.result?.usualPattern), [forecast])
+
   return (
     <Card className="shadow-none mb-4 border-dashed border-border">
       <CardContent className="p-4 sm:p-5 space-y-3">
@@ -136,14 +139,10 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
               </span>
             </div>
 
-            {forecast.result?.usualPattern && (
-              <div className="flex flex-wrap gap-1.5 text-[11px]">
-                {([['fricción', forecast.result.usualPattern.friction], ['retiro', forecast.result.usualPattern.withdrawal], ['sensibilidad', forecast.result.usualPattern.sensitivity], ['somático', forecast.result.usualPattern.somatic]] as [string, number][])
-                  .filter(([, v]) => v > 0.05)
-                  .map(([k, v]) => (
-                    <span key={k} className="rounded-full border border-border px-2 py-0.5 text-muted-foreground">{k} <span className="text-warn">{pct(v)}</span></span>
-                  ))}
-              </div>
+            {patternProse && (
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                En esa ventana suele aparecer <span className="text-foreground/90">{patternProse}</span> de lo habitual. Es una tendencia, no algo que vaya a pasar seguro.
+              </p>
             )}
 
             {/* Cruce con el horizonte real (ventana SPM→período vs ventana conductual) */}
