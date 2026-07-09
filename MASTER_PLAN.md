@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `4ac7967`
+**Hash del último commit humano:** `60b2b16`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `60b2b16` | aaronhuaynate66 | feat(chat): ensayo/Pulso leen el hilo real del sustrato (Fase B.1) (#649) | 2026-07-09 |
 | `4ac7967` | aaronhuaynate66 | feat(chat): sustrato canónico del chat a nivel mensaje (Fase A) (#648) | 2026-07-09 |
 | `294a1d1` | aaronhuaynate66 | feat(ficha): plegar patrones + tono-por-fase en la tab "Lo que se repite" (#647) | 2026-07-09 |
 | `872e313` | aaronhuaynate66 | feat(ficha): unificar el ciclo en 1 módulo con 4 sub-vistas (7a Fase 2) (#646) | 2026-07-09 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `21c5fb9` | aaronhuaynate66 | feat(fase3d): SIR aplica las lecciones también en el ensayo y el brief (#642) | 2026-07-09 |
 | `3cd6adb` | aaronhuaynate66 | feat(fase3d): panel "Lo que SIR aprendió de vos" (ver/gestionar lecciones) (#641) | 2026-07-09 |
 | `9deff40` | aaronhuaynate66 | feat(fase3d): memoria que aprende — lecciones durables que SIR aplica (#640) | 2026-07-09 |
-| `97f5795` | aaronhuaynate66 | feat(whatsapp): notas de voz → transcripción → mismo pipeline (#639) | 2026-07-09 |
 
 ---
 
