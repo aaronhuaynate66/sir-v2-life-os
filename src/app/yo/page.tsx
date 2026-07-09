@@ -21,6 +21,7 @@ import dynamic from 'next/dynamic'
 const dynSkeleton = () => <div className="h-32 rounded-lg border border-border animate-pulse" />
 const EspejoSemanalPanel = dynamic(() => import('@/components/yo/EspejoSemanalPanel').then((m) => ({ default: m.EspejoSemanalPanel })), { ssr: false, loading: dynSkeleton })
 const ExperimentosLoopPanel = dynamic(() => import('@/components/yo/ExperimentosLoopPanel').then((m) => ({ default: m.ExperimentosLoopPanel })), { ssr: false, loading: dynSkeleton })
+const LearningsPanel = dynamic(() => import('@/components/yo/LearningsPanel').then((m) => ({ default: m.LearningsPanel })), { ssr: false, loading: dynSkeleton })
 const PreMortemPanel = dynamic(() => import('@/components/yo/PreMortemPanel').then((m) => ({ default: m.PreMortemPanel })), { ssr: false, loading: dynSkeleton })
 const NorteDriftPanel = dynamic(() => import('@/components/yo/NorteDriftPanel').then((m) => ({ default: m.NorteDriftPanel })), { ssr: false, loading: dynSkeleton })
 const LifeThreadPanel = dynamic(() => import('@/components/yo/LifeThreadPanel').then((m) => ({ default: m.LifeThreadPanel })), { ssr: false, loading: dynSkeleton })
@@ -67,6 +68,7 @@ export default function SelfPage() {
         {/* 19·M5 — autoperfil de Aaron (Big Five, consentido por definición). */}
         <BigFiveCard subject="self" title="Tu perfil Big Five" whoAnswers="Respondé vos" />
         <EspejoSemanalPanel />
+        <LearningsPanel />
         <ExperimentosLoopPanel />
         <PreMortemPanel />
         <NorteDriftPanel />
