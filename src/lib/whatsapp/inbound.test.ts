@@ -50,11 +50,13 @@ describe('parseInboundMessages', () => {
     expect(m).toMatchObject({ from: '51999', messageId: 'wamid.1', type: 'text', text: 'Vi a Diana hoy', profileName: 'Aaron' })
   })
 
-  it('marca no-texto sin text', () => {
-    const audio = { entry: [{ changes: [{ value: { messages: [{ from: '51999', id: 'a', type: 'audio' }] } }] }] }
+  it('audio → mediaId + mimeType, sin text', () => {
+    const audio = { entry: [{ changes: [{ value: { messages: [{ from: '51999', id: 'a', type: 'audio', audio: { id: 'media-99', mime_type: 'audio/ogg; codecs=opus', voice: true } }] } }] }] }
     const [m] = parseInboundMessages(audio)
     expect(m.type).toBe('audio')
     expect(m.text).toBeUndefined()
+    expect(m.mediaId).toBe('media-99')
+    expect(m.mimeType).toContain('ogg')
   })
 
   it('ignora eventos de estado (sin messages)', () => {

@@ -1,8 +1,8 @@
 # Canal SIR por WhatsApp — MVP inbound (setup)
 
-> **Estado:** código completo (inbound de TEXTO), **inerte hasta que Aaron
-> provisione la app de WhatsApp Cloud API + los secrets**. Decisión GO para uso
-> personal en el spike (`docs/SIR-WHATSAPP-SPIKE.md`).
+> **Estado:** código completo (inbound de TEXTO **y VOZ**), **inerte hasta que
+> Aaron provisione la app de WhatsApp Cloud API + los secrets**. Decisión GO para
+> uso personal en el spike (`docs/SIR-WHATSAPP-SPIKE.md`).
 
 ## Qué hace hoy
 
@@ -13,8 +13,9 @@
 - SIR **responde una confirmación**: "✅ Anotado: 2 momentos, 1 registro (con
   Diana Díaz)". Si algo quedó ambiguo, te pide el nombre completo.
 - **$0**: son mensajes de "Servicio" dentro de la ventana de 24h (vos abrís la
-  conversación). Sin plantillas.
-- **Solo TEXTO** por ahora. Voz (transcripción) y reenvío de chats = follow-up.
+  conversación). Sin plantillas. (La transcripción de voz sí consume Whisper, marginal.)
+- **TEXTO y VOZ.** Una nota de voz se baja de Meta, se transcribe con Whisper
+  (OpenAI) y entra por el mismo pipeline. Reenvío de chats = follow-up.
 - **Solo tu número** (allowlist): un desconocido que escriba al número NO escribe
   en tu SIR. Firma HMAC del webhook verificada (viene de Meta, no de un impostor).
 
@@ -52,8 +53,8 @@
 | `WHATSAPP_ALLOWED_NUMBER` | Tu número (solo dígitos, con código de país; ej. `51987654321`) |
 | `WHATSAPP_OWNER_USER_ID` | Tu `user_id` de Supabase (dueño de la data que se escribe) |
 
-Ya deberían existir: `ANTHROPIC_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
-`NEXT_PUBLIC_SUPABASE_URL`.
+Ya deberían existir: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` (Whisper, ya está por
+los embeddings), `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`.
 
 ### 3. Probar
 Escribile al número desde tu WhatsApp: *"Hoy almorcé con Diana Díaz, buena
@@ -68,7 +69,6 @@ charla"*. Deberías recibir "✅ Anotado: 1 momento, 1 registro (con Diana Díaz
   terceros. Ver `docs/SIR-WHATSAPP-SPIKE.md`.
 
 ## Follow-ups (fase 2)
-- **Voz**: audio → `/api/relato/transcribe` → mismo pipeline.
 - **Reenvío de chat**: export → pipeline de whatsapp-export ya existente.
 - **Nudges proactivos**: fuera de la ventana de 24h → plantillas Utility
   aprobadas por Meta ($). Requiere decisión aparte.

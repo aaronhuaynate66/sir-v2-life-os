@@ -40,6 +40,10 @@ export interface InboundMessage {
   type: string
   /** Texto del mensaje (solo si type='text'). */
   text?: string
+  /** Id del media a descargar (audio/voz). Solo si type='audio'. */
+  mediaId?: string
+  /** MIME del media (ej. 'audio/ogg; codecs=opus'). */
+  mimeType?: string
   /** Nombre del perfil de WhatsApp del remitente (si viene). */
   profileName?: string
 }
@@ -50,6 +54,7 @@ interface WaValue {
     id?: string
     type?: string
     text?: { body?: string }
+    audio?: { id?: string; mime_type?: string; voice?: boolean }
   }>
   contacts?: Array<{ profile?: { name?: string }; wa_id?: string }>
 }
@@ -71,6 +76,8 @@ export function parseInboundMessages(payload: unknown): InboundMessage[] {
           messageId: msg.id ?? '',
           type: msg.type ?? 'other',
           text: msg.type === 'text' ? msg.text?.body?.trim() : undefined,
+          mediaId: msg.type === 'audio' ? msg.audio?.id : undefined,
+          mimeType: msg.type === 'audio' ? msg.audio?.mime_type : undefined,
           profileName,
         })
       }

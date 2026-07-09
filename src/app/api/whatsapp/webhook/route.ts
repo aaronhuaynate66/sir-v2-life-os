@@ -18,7 +18,8 @@ import { NextResponse, type NextRequest, after } from 'next/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 
 import { verifyWebhookSignature, parseInboundMessages, normalizePhone, type InboundMessage } from '@/lib/whatsapp/inbound'
-import { sendWhatsAppText, isWhatsAppConfigured } from '@/lib/whatsapp/cloud'
+import { sendWhatsAppText, downloadWhatsAppMedia, isWhatsAppConfigured } from '@/lib/whatsapp/cloud'
+import { transcribeAudio } from '@/lib/ai/transcribeAudio'
 import { runRelatoIngest } from '@/lib/relato-ingest/run'
 import { buildConfirmationReply } from '@/lib/whatsapp/reply'
 
@@ -70,35 +71,52 @@ export async function POST(req: NextRequest) {
       if (allowed && msg.from !== allowed) continue
       if (!ownerId || !apiKey || !svcUrl || !svcKey) continue // sin config completa
 
-      if (msg.type !== 'text' || !msg.text) {
-        await sendWhatsAppText(msg.from, 'Por ahora capturo solo TEXTO 🙂. Voz y reenvíos de chat vienen pronto.')
-        continue
+      const cfg = { ownerId, apiKey, svcUrl, svcKey }
+      if (msg.type === 'text' && msg.text) {
+        await ingestAndReply(msg.from, msg.text, cfg)
+      } else if (msg.type === 'audio' && msg.mediaId) {
+        await handleAudioMessage(msg, cfg)
+      } else {
+        await sendWhatsAppText(msg.from, 'Por ahora capturo TEXTO y notas de VOZ 🙂. Reenvío de chats viene pronto.')
       }
-
-      await handleTextMessage(msg, { ownerId, apiKey, svcUrl, svcKey })
     }
   })
 
   return NextResponse.json({ ok: true })
 }
 
-async function handleTextMessage(
-  msg: InboundMessage,
-  cfg: { ownerId: string; apiKey: string; svcUrl: string; svcKey: string },
-): Promise<void> {
+interface OwnerCfg { ownerId: string; apiKey: string; svcUrl: string; svcKey: string }
+
+/** Corre la ingesta (apply) sobre un texto y responde la confirmación. */
+async function ingestAndReply(from: string, text: string, cfg: OwnerCfg): Promise<void> {
   const supabase = createServiceClient(cfg.svcUrl, cfg.svcKey, { auth: { persistSession: false } })
   try {
     const result = await runRelatoIngest({
       supabase,
       userId: cfg.ownerId,
-      text: msg.text!,
+      text,
       apply: true, // el canal de chat auto-aplica; SIR confirma qué guardó
       apiKey: cfg.apiKey,
     })
-    await sendWhatsAppText(msg.from, buildConfirmationReply(result))
+    await sendWhatsAppText(from, buildConfirmationReply(result))
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn('[whatsapp] ingest falló:', e instanceof Error ? e.message : e)
-    await sendWhatsAppText(msg.from, 'Uf, no pude procesarlo ahora. Reintentá en un momento 🙏')
+    await sendWhatsAppText(from, 'Uf, no pude procesarlo ahora. Reintentá en un momento 🙏')
+  }
+}
+
+/** Baja la nota de voz, la transcribe con Whisper y la pasa por el mismo pipeline. */
+async function handleAudioMessage(msg: InboundMessage, cfg: OwnerCfg): Promise<void> {
+  try {
+    const media = await downloadWhatsAppMedia(msg.mediaId!)
+    if (!media) { await sendWhatsAppText(msg.from, 'No pude bajar el audio 😕. Probá de nuevo o mandámelo por texto.'); return }
+    const text = await transcribeAudio(media.bytes, media.mimeType)
+    if (!text) { await sendWhatsAppText(msg.from, 'No le entendí al audio 😅. ¿Me lo repetís o lo escribís?'); return }
+    await ingestAndReply(msg.from, text, cfg)
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[whatsapp] voz falló:', e instanceof Error ? e.message : e)
+    await sendWhatsAppText(msg.from, 'Uf, no pude procesar la nota de voz. Reintentá en un momento 🙏')
   }
 }
