@@ -37,6 +37,12 @@ import {
   buildSynthesisInput,
   type SynthesisConversation,
 } from '@/lib/person-synthesis/prompt'
+import { fetchChatMessages } from '@/lib/chat-messages/read'
+import {
+  SUBSTRATE_SYNTHESIS_SYSTEM,
+  buildTranscriptSample,
+  buildSubstrateUserMessage,
+} from '@/lib/person-synthesis/fromSubstrate'
 import type { PersonSynthesis, PersonSynthesisError } from '@/lib/person-synthesis/types'
 
 export const runtime = 'nodejs'
@@ -45,6 +51,11 @@ export const maxDuration = 45
 
 const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_CONVERSATIONS = 40
+/** Con al menos esta cantidad de mensajes en el sustrato, sintetizamos del hilo
+ *  REAL (texto) en vez del resumen con pérdida. Debajo, cae a observaciones. */
+const MIN_SUBSTRATE_MSGS = 30
+/** Ventana reciente del sustrato que leemos para la muestra del transcript. */
+const SUBSTRATE_SAMPLE = 3000
 
 interface PostBody {
   person_id?: unknown
@@ -125,26 +136,56 @@ export async function POST(req: NextRequest) {
   }
   const personName = (personRow.name as string) ?? 'esta persona'
 
-  // 4. Conversaciones curadas (whatsapp_chat + whatsapp_web, is_obsolete=false)
-  const observations = await getObservationsForPerson(supabase, userId, personId, {
-    captureType: CONVERSATION_CAPTURE_TYPES,
-    limit: MAX_CONVERSATIONS,
-  })
-  if (observations.length === 0) {
-    return errorJson(
-      422,
-      'Sin conversaciones para sintetizar',
-      'Registrá al menos una captura de WhatsApp con esta persona.',
-    )
-  }
-  const now = new Date()
-  const convs = observations.map((o) => toConversation(o.observedAt, o.data, now))
-  const sourceIds = observations.map((o) => o.id)
-
   // Contexto de objetivos vinculados (conciencia del deal). Tolerante: sin
-  // objetivos → null y la síntesis corre como antes.
+  // objetivos → null y la síntesis corre como antes. Se usa en ambas fuentes.
   const goals = await getGoalsForPerson(supabase, userId, personId)
   const goalContext = buildGoalContext(goals)
+
+  // 4. FUENTE — sustrato-first. Si hay hilo REAL suficiente en chat_messages
+  //    (mig 0141), sintetizamos del transcript textual reciente; si no, caemos
+  //    al resumen curado de las observaciones (camino histórico, sin regresión).
+  const subRows = await fetchChatMessages(supabase, userId, personId, SUBSTRATE_SAMPLE)
+  let system: string
+  let userContent: string
+  let sourceCount: number
+  let sourceIds: string[]
+  let generatedReason: string
+
+  if (subRows.length >= MIN_SUBSTRATE_MSGS) {
+    const first = subRows[0]?.sent_at ? String(subRows[0].sent_at).slice(0, 10) : null
+    const last = subRows[subRows.length - 1]?.sent_at ? String(subRows[subRows.length - 1].sent_at).slice(0, 10) : null
+    system = SUBSTRATE_SYNTHESIS_SYSTEM
+    userContent = buildSubstrateUserMessage(
+      personName,
+      buildTranscriptSample(subRows, personName),
+      subRows.length,
+      first,
+      last,
+      goalContext,
+    )
+    sourceCount = subRows.length
+    sourceIds = []
+    generatedReason = 'chat_messages'
+  } else {
+    const observations = await getObservationsForPerson(supabase, userId, personId, {
+      captureType: CONVERSATION_CAPTURE_TYPES,
+      limit: MAX_CONVERSATIONS,
+    })
+    if (observations.length === 0) {
+      return errorJson(
+        422,
+        'Sin conversaciones para sintetizar',
+        'Registrá al menos una captura de WhatsApp con esta persona.',
+      )
+    }
+    const now = new Date()
+    const convs = observations.map((o) => toConversation(o.observedAt, o.data, now))
+    system = SYNTHESIS_SYSTEM_PROMPT
+    userContent = buildSynthesisInput(personName, convs, goalContext)
+    sourceCount = observations.length
+    sourceIds = observations.map((o) => o.id)
+    generatedReason = 'manual'
+  }
 
   // 5. LLM
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -159,8 +200,8 @@ export async function POST(req: NextRequest) {
     const msg = await client.messages.create({
       model: MODEL_ID,
       max_tokens: 1000,
-      system: SYNTHESIS_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildSynthesisInput(personName, convs, goalContext) }],
+      system,
+      messages: [{ role: 'user', content: userContent }],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
     text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
@@ -193,13 +234,13 @@ export async function POST(req: NextRequest) {
       user_id: userId,
       person_id: personId,
       synthesis_text: text,
-      source_observation_count: observations.length,
+      source_observation_count: sourceCount,
       source_observation_ids: sourceIds,
       model_used: MODEL_ID,
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       is_current: true,
-      generated_reason: 'manual',
+      generated_reason: generatedReason,
     })
     .select(
       'id, person_id, synthesis_text, source_observation_count, source_observation_ids, model_used, input_tokens, output_tokens, generated_at, is_current, generated_reason',
