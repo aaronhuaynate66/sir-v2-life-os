@@ -61,7 +61,6 @@ import { AntesDeContactar } from './AntesDeContactar'
 import { PendientesConPersona } from './PendientesConPersona'
 import { EstadoConPersona } from './EstadoConPersona'
 import { RecomendacionesSemanales } from './RecomendacionesSemanales'
-import { PatronesCiclo } from './PatronesCiclo'
 import { SemanaConPersona } from './SemanaConPersona'
 import { MencionadasPanel } from './MencionadasPanel'
 import { ResumenPersona } from './ResumenPersona'
@@ -93,7 +92,6 @@ import { DealsAsContactPanel } from './DealsAsContactPanel'
 import { CicloPanel } from './CicloPanel'
 import { CycleForecastStudio } from './CycleForecastStudio'
 import { PersonalPlansPanel } from './PersonalPlansPanel'
-import { CyclePhaseForecastCard } from './CyclePhaseForecastCard'
 import { CorrelacionPanel } from './CorrelacionPanel'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { personLogToneSeries } from '@/lib/charts/adapters'
@@ -559,6 +557,9 @@ export function PersonDetail({
           personCycles={personCycles}
           specialDates={live.specialDates ?? []}
           birthDate={live.birthDate ?? null}
+          moments={moments}
+          personLogs={personLogs}
+          correlationLogs={correlationLogs}
           personId={live.id}
           personName={live.name}
           bond={profile.careBond}
@@ -574,17 +575,6 @@ export function PersonDetail({
           personId={live.id}
           personName={live.name}
           onChange={() => setPlanRefresh((n) => n + 1)}
-        />
-      )}
-
-      {/* Predictor forward ciclo → estado: proyecta el tono/energía por fase
-          sobre las próximas semanas. Se auto-oculta si no hay patrón/ciclo. */}
-      {profile.showCycleForecast && (
-        <CyclePhaseForecastCard
-          personLogs={correlationLogs}
-          cycleStartDate={live.cycleStartDate ?? null}
-          cycleLengthDays={live.cycleLengthDays ?? null}
-          personName={live.name}
         />
       )}
 
@@ -609,10 +599,6 @@ export function PersonDetail({
 
       {/* Recomendaciones semanales por Claude — cache por (user, persona, semana). */}
       <RecomendacionesSemanales personId={live.id} personName={live.name} />
-
-      {/* Patrones observados: moments por fase del ciclo + por fase lunar. Se
-          oculta si no hay suficientes moments para leer patrón. */}
-      <PatronesCiclo personName={live.name} moments={moments} personCycles={personCycles} personLogs={personLogs} cycleStartDate={live.cycleStartDate ?? null} cycleLengthDays={live.cycleLengthDays ?? null} />
 
       {/* "Antes de contactar": lo accionable que te deja listo para el momento
           justo — actividad reciente (tags de memorias) + notas privadas verbatim
