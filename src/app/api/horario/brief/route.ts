@@ -26,6 +26,7 @@ import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { extractJsonObject } from '@/lib/objectives/planPrompt'
+import { renderLearningsBlock, rowToLearning, type LearningRow } from '@/lib/learnings/recall'
 import {
   BRIEF_SYSTEM_PROMPT,
   buildBriefInput,
@@ -361,6 +362,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     )
   }
 
+  // Fase 3d — sumar las lecciones durables de Aaron al contexto del brief.
+  let briefInput = prepared.input
+  try {
+    const { data: lrows } = await supabase
+      .from('learnings').select('text, kind, confidence, reinforced_count')
+      .eq('user_id', userId).eq('is_active', true)
+      .order('reinforced_count', { ascending: false }).limit(30)
+    if (lrows && lrows.length > 0) {
+      const block = renderLearningsBlock((lrows as LearningRow[]).map(rowToLearning))
+      if (block) briefInput = `${prepared.input}\n\n${block}`
+    }
+  } catch { /* sin tabla 0140 → sin bloque */ }
+
   let result: BriefResult | null = null
   try {
     const client = new Anthropic({ maxRetries: 2 })
@@ -368,7 +382,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       model: MODEL_ID,
       max_tokens: 400,
       system: prepared.system,
-      messages: [{ role: 'user', content: prepared.input }],
+      messages: [{ role: 'user', content: briefInput }],
     })
     const textBlock = msg.content.find((b) => b.type === 'text')
     const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
