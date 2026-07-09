@@ -59,12 +59,13 @@ import {
   getLastImportedISO,
   archiveConversation,
   persistChatMessages,
+  getChatMessagesCursor,
 } from '@/lib/capture/whatsapp/export/client'
 import { parseWhatsAppExport, isWhatsAppExport } from '@/lib/capture/whatsapp/export/parse'
 import { transcribeExportAudios } from '@/lib/capture/whatsapp/export/audioClient'
 import { triageExportImages } from '@/lib/capture/whatsapp/export/imageClient'
 import { tagExportStickers } from '@/lib/capture/whatsapp/export/stickerClient'
-import { sliceParsedSince, incrementalSummary } from '@/lib/capture/whatsapp/export/incremental'
+import { sliceParsedSince, incrementalSummary, filterMessagesSince } from '@/lib/capture/whatsapp/export/incremental'
 import { extractCalls, callLabel, type ParsedCall } from '@/lib/capture/whatsapp/export/calls'
 import { chatFingerprint } from '@/lib/capture/whatsapp/export/fingerprint'
 import { chunkConversation } from '@/lib/capture/whatsapp/export/chunk'
@@ -778,25 +779,29 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
       //   el import sea "duplicado" y no haya nada nuevo. Best-effort.
       void archiveConversation({ personId, rawText: text, dateFirst: parsed.firstISO, dateLast: parsed.lastISO, messageCount: parsed.messages.length })
 
-      // 1a-ter. SUSTRATO canónico (chat_messages): guardar CADA mensaje del chat
+      // 1a-ter. SUSTRATO canónico (chat_messages): guardar cada mensaje del chat
       //   COMPLETO (texto entero, sin clipear) — la fuente única que los motores
-      //   pueden consultar. Se manda SIEMPRE (incluso si la observación es
-      //   "duplicada"): el dedupe idempotente por id hace que re-subir un chat ya
-      //   importado lo BACKFILLee sin duplicar, y que uno que creció agregue solo
-      //   lo nuevo. Independiente de la interpretación/LLM. Best-effort.
-      //   [Fase B: cursor propio de chat_messages para no reenviar el histórico.]
+      //   consultan. Usa su PROPIO cursor (último sent_at en chat_messages): en el
+      //   primer import manda todo (backfill); en re-subidas manda solo el delta
+      //   nuevo, sin reenviar el hilo entero. El dedupe idempotente por id cubre
+      //   cualquier solape. Independiente de la interpretación/LLM. Best-effort.
       const roleMap = buildAuthorRoleMap(parsed.participants, personName)
-      void persistChatMessages({
-        personId,
-        source: 'whatsapp',
-        messages: parsed.messages.map((m) => ({
-          iso: m.iso,
-          sender: roleMap.get(m.author) ?? 'other',
-          authorName: m.author,
-          content: m.content,
-          isMedia: m.isMedia,
-        })),
-      })
+      void (async () => {
+        const cursor = await getChatMessagesCursor(personId)
+        const delta = filterMessagesSince(parsed.messages, cursor)
+        if (delta.length === 0) return
+        await persistChatMessages({
+          personId,
+          source: 'whatsapp',
+          messages: delta.map((m) => ({
+            iso: m.iso,
+            sender: roleMap.get(m.author) ?? 'other',
+            authorName: m.author,
+            content: m.content,
+            isMedia: m.isMedia,
+          })),
+        })
+      })()
 
       // 1b. INCREMENTAL: ¿hasta qué fecha ya importé a esta persona? Me quedo
       //     solo con los mensajes nuevos (re-subir el mismo chat es seguro;
