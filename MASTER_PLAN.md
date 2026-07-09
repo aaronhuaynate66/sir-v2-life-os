@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `97f5795`
+**Hash del último commit humano:** `9deff40`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `9deff40` | aaronhuaynate66 | feat(fase3d): memoria que aprende — lecciones durables que SIR aplica (#640) | 2026-07-09 |
 | `97f5795` | aaronhuaynate66 | feat(whatsapp): notas de voz → transcripción → mismo pipeline (#639) | 2026-07-09 |
 | `e2f1e53` | aaronhuaynate66 | feat(whatsapp): canal de captura por WhatsApp (MVP inbound de texto) (#638) | 2026-07-09 |
 | `2ec3dd2` | aaronhuaynate66 | feat(calendar): empujar tareas de objetivos a Google Calendar (#637) | 2026-07-08 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c4fae4d` | aaronhuaynate66 | feat(calendar): empujar planes de SIR a Google Calendar (#633) | 2026-07-08 |
 | `f43c22c` | aaronhuaynate66 | Revert "fix(gaps): pedir la fecha del ciclo solo con pareja, no a mamá/colega (#629)" (#632) | 2026-07-08 |
 | `b337616` | aaronhuaynate66 | feat(calendar): escritura bidireccional en Google Calendar (OAuth Fase 2) (#631) | 2026-07-08 |
-| `d9ad27a` | aaronhuaynate66 | docs(backlog): reconciliar con la realidad + barrido de verificación 08-jul (#630) | 2026-07-08 |
 
 ---
 
