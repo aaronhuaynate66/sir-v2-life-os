@@ -10,6 +10,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getConversationMessages, getStoredVolumeSeries } from '@/lib/conversation-analytics/fromObservations'
 import { analyzeConversation, volumeFromWeekly } from '@/lib/conversation-analytics/analyze'
+import { assessCooling } from '@/lib/prediction/coolingSignal'
 import { logEvent } from '@/lib/observability/logEvent'
 
 export const runtime = 'nodejs'
@@ -40,10 +41,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Predictivo (forward-looking): alerta temprana de enfriamiento — compara la
+  // ventana reciente contra la baseline sobre el hilo real del sustrato.
+  const cooling = assessCooling(messages, Date.now())
+
   await logEvent(supabase, auth.user.id, {
     type: 'conversation-analytics', ok: true, route: 'conversation-analytics',
     meta: { personId, total: analytics.total },
   })
 
-  return NextResponse.json({ analytics })
+  return NextResponse.json({ analytics, cooling })
 }
