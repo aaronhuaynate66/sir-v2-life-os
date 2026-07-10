@@ -8,14 +8,14 @@
 import { useMemo } from 'react'
 import { Sparkles } from 'lucide-react'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { EmbeddableCard } from './EmbeddableCard'
 import { suggestMicroBid } from '@/lib/relational/bid'
 import { extractWhatMatters } from '@/lib/people/whatMatters'
 import { computeSpecialDateCountdown } from '@/lib/dates/specialDates'
 import { useSelfStore } from '@/stores'
 import type { Person, Memory } from '@/types'
 
-export function RelationalBidCard({ person, memories }: { person: Person; memories: Memory[] }) {
+export function RelationalBidCard({ person, memories, embedded = false }: { person: Person; memories: Memory[]; embedded?: boolean }) {
   const selfName = useSelfStore((s) => s.identityProfile?.fullName ?? '') // excluir autorreferencia
   const bid = useMemo(() => {
     // Fecha especial más cercana (daysUntil >= 0), la mínima.
@@ -45,15 +45,13 @@ export function RelationalBidCard({ person, memories }: { person: Person; memori
   if (!bid) return null
 
   return (
-    <Card className="shadow-none mb-4">
-      <CardContent className="p-4 sm:p-5 space-y-1.5">
+    <EmbeddableCard embedded={embedded} contentClassName="space-y-1.5">
         <div className="flex items-center gap-2">
           <Sparkles size={14} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
           <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Un gesto</h2>
         </div>
         <p className="text-[13px] text-foreground/90 leading-relaxed">{bid.text}</p>
         <div className="text-[10px] text-muted-foreground/60">{bid.reason} · opcional, descartable</div>
-      </CardContent>
-    </Card>
+    </EmbeddableCard>
   )
 }

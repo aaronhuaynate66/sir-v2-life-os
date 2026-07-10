@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { HeartHandshake, TrendingUp, TrendingDown, Minus, AlertCircle, MessageCircle, Sparkles, Loader2, RefreshCcw } from 'lucide-react'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { EmbeddableCard } from './EmbeddableCard'
 import { OriginBadge } from './OriginBadge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -70,7 +70,7 @@ function overdueUrgencyText(insights: EstadoInsights): string | null {
   return title
 }
 
-export function EstadoConPersona({ personId, personName, personLogs, moments, personCycles, memories }: Props) {
+export function EstadoConPersona({ personId, personName, personLogs, moments, personCycles, memories, embedded = false }: Props & { embedded?: boolean }) {
   const insights = useMemo(
     () => buildEstadoInsights({ personLogs, moments, personCycles, memories, now: new Date() }),
     [personLogs, moments, personCycles, memories],
@@ -124,9 +124,8 @@ export function EstadoConPersona({ personId, personName, personLogs, moments, pe
     : insights.toneDelta > 0 ? 'text-ok' : 'text-bad'
 
   return (
-    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="mb-4">
-      <Card className={cn('shadow-none border', labelMeta.toneClass)}>
-        <CardContent className="p-4 sm:p-5 space-y-3">
+    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+      <EmbeddableCard embedded={embedded} className={cn('border', labelMeta.toneClass)} contentClassName="space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
             <HeartHandshake size={14} strokeWidth={1.75} className="opacity-70" aria-hidden="true" />
             <span className="text-[10px] uppercase tracking-widest font-sans opacity-80">
@@ -245,8 +244,7 @@ export function EstadoConPersona({ personId, personName, personLogs, moments, pe
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+      </EmbeddableCard>
     </motion.div>
   )
 }
