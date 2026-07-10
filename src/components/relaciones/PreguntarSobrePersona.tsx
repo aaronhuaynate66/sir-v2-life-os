@@ -1,21 +1,26 @@
 'use client'
 
-// SIR V2 — "Preguntá sobre esta persona" (Q&A por persona, Clay #7).
+// SIR V2 — Asistente SIR de la persona (Q&A + briefing unificados).
 //
-// Ask-box en la ficha: preguntá a SIR y responde ATERRIZADO en esta persona
-// (score, memorias, conversación, objetivos), aunque no la nombres en la
-// pregunta — se pasa personId para pre-scopear el contexto. Reusa /api/sir/ask
-// (solo lectura, grounding estricto). skipInlineGaps para no cortar con el flujo
-// de "SIR quiere saber" acá; eso vive en el chat global.
+// UN solo punto de IA conversacional en la ficha (antes había dos: el Briefing
+// "Ponme al día" en el header + el ask-box acá). Ahora conviven en un panel:
+//   - "Ponme al día": briefing contextual efímero (reusa generatePersonBriefing).
+//   - Ask-box: preguntá lo que quieras, aterrizado en esta persona (/api/sir/ask,
+//     solo lectura, grounding estricto). skipInlineGaps para no cortar con "SIR
+//     quiere saber" acá; eso vive en el chat global.
+// Los GENERADORES de contenido persistido (Lo personal, Perfil, Hipótesis…)
+// siguen en su panel — producen cosas distintas que viven ahí, no son "chat".
 
 import { useCallback, useState } from 'react'
-import { MessageCircle, Send, Loader2 } from 'lucide-react'
+import { Sparkles, Send, Loader2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
+import { generatePersonBriefing } from './person-briefing/client'
+import { BriefingBody } from './person-briefing/BriefingBody'
 
 const SUGGESTIONS = [
   '¿Cómo viene la relación?',
@@ -27,14 +32,14 @@ const SUGGESTIONS = [
 type State =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'answer'; text: string; question: string }
+  | { kind: 'answer'; text: string; question: string; isBriefing?: boolean }
   | { kind: 'error'; error: ApiError }
 
 export function PreguntarSobrePersona({ personId, personName }: { personId: string; personName: string }) {
   const [q, setQ] = useState('')
   const [state, setState] = useState<State>({ kind: 'idle' })
-  // Colapsado por default (7a): el ask no ocupa una card entera arriba del fold;
-  // es un botón que se abre cuando lo necesitás.
+  // Colapsado por default (7a): el asistente no ocupa una card entera arriba del
+  // fold; es un botón que se abre cuando lo necesitás.
   const [open, setOpen] = useState(false)
   const first = personName.split(' ')[0] || 'esta persona'
 
@@ -54,7 +59,19 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
     }
   }, [personId])
 
-  // Colapsado (y sin respuesta aún) → botón discreto que abre el ask.
+  // Briefing efímero "Ponme al día" — mismo panel, on-demand (no gasta al abrir
+  // la ficha; solo cuando lo pedís).
+  const runBriefing = useCallback(async () => {
+    setState({ kind: 'loading' })
+    try {
+      const text = await generatePersonBriefing(personId)
+      setState({ kind: 'answer', text, question: `Ponme al día con ${first}`, isBriefing: true })
+    } catch (e) {
+      setState({ kind: 'error', error: toApiError(e) })
+    }
+  }, [personId, first])
+
+  // Colapsado (y sin respuesta aún) → botón discreto que abre el asistente.
   if (!open && state.kind === 'idle') {
     return (
       <button
@@ -62,18 +79,31 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
         onClick={() => setOpen(true)}
         className="mb-4 inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground hover:border-border-strong transition-colors"
       >
-        <MessageCircle size={15} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
-        Preguntar sobre {first}
+        <Sparkles size={15} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
+        SIR sobre {first}
       </button>
     )
   }
+
+  const busy = state.kind === 'loading'
 
   return (
     <Card className="shadow-none mb-4">
       <CardContent className="p-4 sm:p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <MessageCircle size={13} strokeWidth={1.75} className="text-text-tertiary" aria-hidden="true" />
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Preguntá sobre {first}</div>
+          <Sparkles size={13} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">SIR sobre {first}</div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void runBriefing()}
+            disabled={busy}
+            className="ml-auto h-7 border-brand/30 bg-brand/10 text-[12px] hover:bg-brand/20"
+          >
+            <Sparkles size={13} strokeWidth={1.75} className="mr-1.5 text-brand" aria-hidden="true" />
+            Ponme al día
+          </Button>
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); void ask(q) }} className="flex gap-2">
@@ -83,8 +113,8 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
             placeholder={`Ej: ¿cómo viene la relación con ${first}?`}
             aria-label={`Preguntá sobre ${first}`}
           />
-          <Button type="submit" size="sm" disabled={state.kind === 'loading' || !q.trim()} aria-label="Preguntar">
-            {state.kind === 'loading'
+          <Button type="submit" size="sm" disabled={busy || !q.trim()} aria-label="Preguntar">
+            {busy
               ? <Loader2 size={14} className="animate-spin" aria-hidden="true" />
               : <Send size={14} strokeWidth={1.75} aria-hidden="true" />}
           </Button>
@@ -119,14 +149,16 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
           {state.kind === 'answer' && (
             <div className="space-y-2">
               <p className="text-[11px] text-text-tertiary">{state.question}</p>
-              <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{state.text}</p>
+              {state.isBriefing
+                ? <BriefingBody text={state.text} />
+                : <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{state.text}</p>}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setState({ kind: 'idle' })}
                 className="h-7 text-[11px] text-muted-foreground"
               >
-                Preguntar otra cosa
+                {state.isBriefing ? 'Cerrar' : 'Preguntar otra cosa'}
               </Button>
             </div>
           )}
