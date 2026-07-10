@@ -12,6 +12,21 @@ describe('rumboPrompt', () => {
     expect(msg.toLowerCase()).toContain('solo usá estos hitos')
   })
 
+  it('buildRumboInput incluye la trayectoria cuando se pasa', () => {
+    const msg = buildRumboInput(
+      [{ label: 'Lograste “X”', date: '2026-06-05T00:00:00Z', kind: 'done' }],
+      null,
+      null,
+      'objetivos: 2 activos, 4 completados; follow-through 80%',
+    )
+    expect(msg).toContain('Trayectoria (arco real de sus objetivos): objetivos: 2 activos, 4 completados; follow-through 80%')
+  })
+
+  it('buildRumboInput omite la trayectoria si es vacía/null', () => {
+    const msg = buildRumboInput([{ label: 'Lograste “X”', date: '2026-06-05T00:00:00Z', kind: 'done' }])
+    expect(msg).not.toContain('Trayectoria')
+  })
+
   it('parseRumboNarrative extrae el insight del JSON', () => {
     expect(parseRumboNarrative('{"insight":"Venís sosteniendo un rumbo."}')).toBe('Venís sosteniendo un rumbo.')
   })

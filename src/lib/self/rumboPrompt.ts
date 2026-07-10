@@ -24,7 +24,8 @@ INVARIANTES ESTRICTOS (no negociables):
 - Pausar o dejar ir un objetivo NO es un fracaso: enmarcá los cambios de rumbo como elecciones válidas, no como abandono.
 - Breve (máx 4 oraciones). Cálido pero sobrio, sin dramatizar ni inflar.
 - Si se incluye un "norte declarado" (tu norte del año), podés relacionar el hilo con él —¿lo que viene haciendo acompaña ese norte?— como observación abierta, sin juzgar y sin inventar nada que no esté en los hitos.
-- Si se incluye "quién es" (roles/bio del usuario), podés enmarcar el rumbo a la luz de su identidad, sin inventar rasgos ni atribuirle motivaciones que no estén.`
+- Si se incluye "quién es" (roles/bio del usuario), podés enmarcar el rumbo a la luz de su identidad, sin inventar rasgos ni atribuirle motivaciones que no estén.
+- Si se incluye "trayectoria" (números reales de su arco de objetivos: cuántos terminó, soltó, en qué áreas), podés reformular ESE patrón en la reflexión —sin inventar números ni cambiarlos, y sin juzgar. Soltar objetivos NO es fracaso.`
 
 export interface RumboMilestoneInput {
   label: string
@@ -37,12 +38,15 @@ export function buildRumboInput(
   milestones: RumboMilestoneInput[],
   anchor?: string | null,
   identity?: string | null,
+  trajectory?: string | null,
 ): string {
   const lines: string[] = []
   const who = (identity ?? '').trim()
   if (who) lines.push(`Quién es (según su perfil): ${who}`, '')
   const north = (anchor ?? '').trim()
   if (north) lines.push(`Tu norte declarado para el año: ${north}`, '')
+  const arc = (trajectory ?? '').trim()
+  if (arc) lines.push(`Trayectoria (arco real de sus objetivos): ${arc}`, '')
   lines.push('Hitos de tu trayectoria (del más reciente al más antiguo):', '')
   for (const m of milestones) {
     const when = m.date.slice(0, 10)
