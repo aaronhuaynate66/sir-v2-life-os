@@ -8,10 +8,11 @@
 // pocos mensajes, lo dice.
 
 import { useEffect, useState } from 'react'
-import { TrendingUp, TrendingDown, Minus, MessageSquare } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, MessageSquare, Snowflake } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import type { ConversationAnalytics, Direction } from '@/lib/conversation-analytics/analyze'
+import type { CoolingSignal } from '@/lib/prediction/coolingSignal'
 import { initiationInsight, latencyInsight } from '@/lib/conversation-analytics/insight'
 
 export interface ConversationAnalyticsCardProps {
@@ -54,6 +55,7 @@ function fmtDate(at: number): string {
 
 export function ConversationAnalyticsCard({ personId, personName }: ConversationAnalyticsCardProps) {
   const [a, setA] = useState<ConversationAnalytics | null>(null)
+  const [cooling, setCooling] = useState<CoolingSignal | null>(null)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -64,8 +66,9 @@ export function ConversationAnalyticsCard({ personId, personName }: Conversation
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ personId }),
         })
         if (!res.ok) return
-        const data = (await res.json()) as { analytics?: ConversationAnalytics }
+        const data = (await res.json()) as { analytics?: ConversationAnalytics; cooling?: CoolingSignal }
         if (!cancelled && data.analytics) setA(data.analytics)
+        if (!cancelled && data.cooling) setCooling(data.cooling)
       } catch {
         // best-effort: el panel es opcional.
       } finally {
@@ -98,6 +101,16 @@ export function ConversationAnalyticsCard({ personId, personName }: Conversation
     <Card className="shadow-none">
       <CardContent className="p-4 sm:p-5 space-y-3">
         <Header />
+
+        {cooling?.status === 'enfriándose' && cooling.reasons.length > 0 && (
+          <div className="flex items-start gap-2 rounded-md border border-warn/30 bg-warn-soft/50 px-3 py-2">
+            <Snowflake size={14} strokeWidth={1.75} className="text-warn mt-0.5 shrink-0" aria-hidden="true" />
+            <p className="text-[13px] leading-relaxed text-foreground">
+              Se está enfriando: {cooling.reasons.join(' · ')}.
+              <span className="text-muted-foreground"> Una señal temprana — buen momento para acercarte, sin alarma.</span>
+            </p>
+          </div>
+        )}
 
         {insights.length > 0 && (
           <div className="space-y-1.5">
