@@ -238,6 +238,12 @@ export function CycleForecastStudio(props: CycleForecastStudioProps) {
           </>
         )}
       </div>
+
+      {/* Disclaimer ético UNA vez para todo el módulo (antes se repetía en cada
+          sub-card ~6×). Doc 17: cuidado, no gestión; tendencia, no diagnóstico. */}
+      <p className="mt-3 pt-3 border-t border-border/40 text-[11px] leading-relaxed text-muted-foreground">
+        Coincidencia, no causa. Es contexto para acompañar con más cuidado — nunca un diagnóstico ni una explicación de lo que {personName.split(' ')[0]} siente.
+      </p>
     </div>
   )
 }

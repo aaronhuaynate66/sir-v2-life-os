@@ -172,7 +172,7 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
             )}
 
             <p className="text-[11px] leading-relaxed text-muted-foreground border-l-2 border-border/40 pl-3">
-              {forecast.interpretation} Coincidencia, no causa — nunca una explicación de lo que siente. Es para acompañar con más cuidado, no para gestionar.
+              {forecast.interpretation}
             </p>
 
             <FeedbackBox personId={personId} forecastId={forecast.id} windowCenter={forecast.center_date} onSaved={load} />
