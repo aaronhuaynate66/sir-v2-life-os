@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `cfded55`
+**Hash del último commit humano:** `a4054ac`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `a4054ac` | aaronhuaynate66 | Merge pull request #690 from aaronhuaynate66/docs/ola2-y-storage | 2026-07-10 |
+| `3cd7174` | Aaron Huaynate | docs(plan): 2ª ola cerrada (#684-689) + storage cleanup aplicado (5 huérfanas) | 2026-07-10 |
 | `cfded55` | aaronhuaynate66 | Merge pull request #689 from aaronhuaynate66/feat/ingestion-documental | 2026-07-10 |
 | `d033e46` | aaronhuaynate66 | Merge pull request #688 from aaronhuaynate66/chore/deuda-dry-run | 2026-07-10 |
 | `50ccf3c` | aaronhuaynate66 | Merge pull request #687 from aaronhuaynate66/feat/cross-ref-ubicacion | 2026-07-10 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ecdebfd` | aaronhuaynate66 | Merge pull request #686 from aaronhuaynate66/feat/e5-profundizar | 2026-07-10 |
 | `df59628` | Aaron Huaynate | feat(relaciones): cross-referencing por ubicación (Clay #8) | 2026-07-10 |
 | `1d087a9` | aaronhuaynate66 | Merge pull request #685 from aaronhuaynate66/feat/e4-remate | 2026-07-10 |
-| `5520393` | aaronhuaynate66 | Merge pull request #684 from aaronhuaynate66/feat/ciclo-17-restante | 2026-07-10 |
-| `dd5886f` | Aaron Huaynate | feat(rumbo): estaciones — capítulos temáticos de la vida (E5) | 2026-07-10 |
 
 ---
 
