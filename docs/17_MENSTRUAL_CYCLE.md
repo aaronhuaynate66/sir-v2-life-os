@@ -154,8 +154,12 @@ hormonal (una tensión sin resolver manda sobre cualquier fase) y lleva el recor
 innegociable: es cuidado, no manejo; su emoción es real tenga la fase que tenga. Toca:
 `lib/ciclo/intimacy` (puro) + M1; consume contexto de `person_logs` / salud del vínculo.
 Solo para vínculo afectivo **activo**, con la privacidad de la postura de arriba (idealmente,
-con que ella lo sepa). PENDIENTE de surface: cargar el ciclo de la persona (`person_cycles`
-hoy vacío) + cablear el contexto (tensión/enfriamiento) en `CicloPanel`.
+con que ella lo sepa). El contexto (tensión / energía baja / enfriamiento) ya está **cableado**
+en `CicloPanel` vía `lib/ciclo/intimacyContext` (`deriveIntimacyContext`, puro): lee el tono de
+las interacciones, mood/energy y la cadencia de contacto de `person_logs` — así el freno que más
+pesa (Nagoski) manda sobre la ventana hormonal en la propia ficha, no solo en teoría. PENDIENTE
+menor: cargar el ciclo real de la persona (`person_cycles` hoy vacío) para que la trazabilidad
+día-a-día tenga data.
 
 Orden sugerido: **M1 → M4 → M2/M3 → M5 → M6** (primero el perfil y la honestidad de la
 confianza; encima, anticipación y trazabilidad; la banda predictiva; y el atunamiento de pareja).
