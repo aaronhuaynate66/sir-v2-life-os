@@ -2,7 +2,7 @@
 
 > **Qué es:** la lista maestra de lo que falta construir, priorizada. Se actualiza
 > con CADA entregable (Claude la mantiene). Fuente de "qué sigue".
-> **Última actualización:** 2026-07-10 (maratón #656–667: sustrato de chat, género+dedup, calendario lectura/escritura/proactivo, predictivo de enfriamiento, P0 de la ficha — todo en prod, 3131 tests verdes). **El pozo de alto valor quedó vaciado; lo que queda es config tuya + pulido + arcos grandes.** Ver el bloque "📍 PENDIENTES VIVOS" abajo — esa es la lista para no revisar todo a cada rato.
+> **Última actualización:** 2026-07-10 — DOS tandas hoy: maratón #656–667 (sustrato, género, calendario, P0 ficha) + sesión #668–681 (14 PRs: báscula ACK, fix columna métricas, ficha completa [grupo+fusión+asistente+multi-turno], sync-roadmap, estados vacíos, y 6 frentes en paralelo: cronotipo→/horario, premortem, E5 trayectoria, timeline en ficha). **Cubeta B CERRADA · D avanzada · E5 arrancada. Todo en prod, CI verde.** Lo que queda necesita tu input o config. Ver "📍 PENDIENTES VIVOS" abajo.
 >
 > **Encuadre:** el *cuerpo* de SIR está en prod (percepción, memoria, cerebro-grafo
 > F1-F4, contexto, señales, salud, finanzas, relaciones, objetivos). Lo que falta es
@@ -34,7 +34,7 @@
 ### 🔨 B — Construible YA (sin depender de tu setup)
 **Ficha de persona (P1 estructura)**
 - [x] **Consolidar la ficha — COMPLETO (10-jul, verificado por UI con Chrome DevTools MCP):** Op.1 grupo "Estado del vínculo" (#669) → Op.2 fusión total en 1 card vía `EmbeddableCard` (#673) · dedup Ventana de contacto (`hideUnlessNeutral`) · **1 solo asistente IA** (#674): Briefing "Ponme al día" + ask-box fusionados en "SIR sobre {X}", el header queda solo con WhatsApp · **Q&A multi-turno** (#675): hilo con `history` a /api/sir/ask (el "eso" resuelve el contexto). Todo probado en vivo (ficha Diana Cencaro): briefing genera OK, multi-turno mantiene contexto.
-- [ ] Timeline unificado como CENTRO de la ficha (un hilo cronológico: observations+capturas+logs+notas; paneles = contexto lateral). *Dirección de diseño (Clay #3). GRANDE — sesión propia.*
+- [x] **Timeline unificado en la ficha (#681, 10-jul, verificado por UI):** la Bitácora ya era un hilo unificado; se le sumó la fuente **PLATA** (person_money con fecha) + **filtro por fuente** (chips REGISTROS/CAPTURAS/MOMENTOS/PLATA/NOTAS, con ≥2 fuentes) + lógica pura extraída (`bitacoraEntries.ts`, 7 tests). Conservador: no usó `lib/timeline/unified` (degradaría acciones por-entry); memorias siguen en su panel.
 - [x] **Fix columna métricas (#672)** — 7 archivos consultaban self_metrics/health_metrics/memories por la columna `timestamp` (nombre del modelo TS) cuando la DB usa measured_at/occurred_at → fallaban en silencio (weather-mood, /día, selfState, woop, morning-push, briefing, recomendaciones leían CERO). Destapado por verificación en vivo. Ver [[project_metrics_column_gotcha]].
 
 **Deuda / limpieza**
@@ -42,7 +42,7 @@
 - [x] **`persistScaleCapture` no espera ACK** del push → UI decía "guardado" antes de confirmar (13 métricas irrecuperables). **HECHO (10-jul):** `awaitSync` + read-back verify puro `waitForRowsConfirmed` (`lib/capture/scale/confirm.ts`, 5 tests); los 3 callers interactivos (Flow/Branch/MisCapturas) esperan el ACK y muestran "guardado en este dispositivo · sincronizando…" si quedó pendiente (sin falso success, sin invitar a reintento que duplique). El batch queda sin awaitSync para no colgar la cola.
 - [x] **Re-baseline del `sync-roadmap`** — el MASTER_PLAN mostraba estado FALSO (42/42, congelado 28-may). **HECHO (10-jul):** el generador (`scripts/generate_roadmap.py` → `section_header`) ahora inyecta un banner ⚠️ "ESTE DOCUMENTO ESTÁ DESFASADO" al tope en CADA regeneración, apuntando a BUILD_PLAN.md (pendientes vivos) + STRATEGIC_ROADMAP.md (arco por etapas). El bot sigue corriendo (mantiene el inventario histórico de issues) pero ya no puede mentir sin la advertencia. Regenerado localmente.
 - [ ] Storage buckets — cleanup de huérfanos (decidir política de retención primero)
-- [ ] Estados vacíos pedagógicos en las rutas que faltan
+- [x] **Estados vacíos pedagógicos (#677, 10-jul):** 6 empty states mejorados al patrón de /memoria (panel: alertas/señales/objetivos críticos · /seguimiento: puntos/alertas · ficha: cumpleaños). Solo copy, sin fake data. Los que ya estaban bien se dejaron.
 - [—] ~~Toggle privacidad de finanzas en /timeline~~ **N/A (10-jul):** `finance` ya es un `TimelineEventType` filtrable en `/historial` (des-tildás "finance" y desaparece del feed). Toggle dedicado = redundante.
 - [—] ~~cap en `relationships.history` (>50 items)~~ **N/A (10-jul):** la tabla está VACÍA en prod (ningún flujo moderno escribe; solo se lee en backfill/grafo — `GraphView.tsx:132`). Cappear algo que no crece = trabajo muerto.
 - [—] ~~fix del Gantt~~ **bajo valor:** vive en `MASTER_PLAN.md`, ya marcado DESFASADO (banner). Arreglar un gráfico de un doc deprecado no rinde.
@@ -56,7 +56,7 @@
 - [x] ~~Auditoría de data muerta: 5 campos rescatables~~ **YA HECHO** (verificado 10-jul contra `project_dead_data_audit`): los 5 rescates reales están cerrados — `deals.why_matters` #538 · `person_cycles.note` #539 · `person_money.settled` #540 · `sleep.awake_min` #543 (+ `dreams` #582 · `finance.related_goal` #581 · `health_metrics.note` #584). Lo que queda son columnas VESTIGIALES (vacías, cero writers → serían features nuevas, no rescates) o grises de bajo valor. El índice de MEMORY.md estaba stale.
 
 ### 🧊 C — Grande / estratégico (sesión propia + decisión de producto tuya)
-- [ ] **Etapa 5 — Life Direction System**: continuidad narrativa profunda (base "Tu rumbo" 🟢 en marcha)
+- [x] **Etapa 5 — Life Direction System (#680, 10-jul):** arranca con el arco largo de trayectoria de vida — motor puro `trajectoryArc` (follow-through: qué terminás vs soltás · momentum 180d · constancia por área de vida · patrón honesto, copy anti-culpa) + `TrajectoryArcPanel` en /yo + reflexión IA opcional con números reales anti-invención. Sin migraciones. **Sigue abierto:** profundizar la continuidad narrativa (es un arco largo).
 - [ ] **Rematar E4**: delta de score (snapshots del relationship score) · tono al alignment engine · inferencia LLM de dominio para objetivos de texto libre
 - [ ] **Familia persona↔persona**: Fase 1 hecha; definir fases siguientes
 - [ ] **Ingestión documental**: MarkItDown (PDF/DOCX→memorias) · import masivo de WhatsApp (años). Brainstorm, no comprometido
@@ -64,20 +64,20 @@
 - [ ] **Reader avanzado**: extensión MV3 (B1) · redes sociales opt-in/ToS (B2) · Teams por Graph OAuth (B3)
 
 ### 🧬 D — Cola de módulos científicos (docs `10`–`19`, cada uno con "Qué construir")
-- COMPLETOS: `12` behavior change · `15` relacional (el norte) · `16` influencia/ética · `18` señales externas · cluster auto-forense
-- [ ] Cola abierta: `11` chronobiology (solo M1) · `13` emotion regulation · `14` decision science (falta premortem) · `17` ciclo (M1/M3/M4 hechos) · `19` profiling (M1/M2/M3 hechos)
+- COMPLETOS: `11` chronobiology (M2-M6 ya estaban #557-560; foco→/horario #679) · `12` behavior change · `13` emotion regulation (M1-M5 #551/#553) · `14` decision science (premortem #678, 10-jul) · `15` relacional (el norte) · `16` influencia/ética · `18` señales externas · cluster auto-forense
+- [ ] Cola abierta: `17` ciclo (M1/M3/M4 hechos, faltan otros) · `19` profiling (M1/M2/M3 hechos, faltan otros)
 
 ### 🧹 E — Housekeeping del repo (working tree)
 - [ ] `src/app/api/dev-login/route.ts` sin commitear — **dev-only, "DELETE after use"**; guardar para dev local, que no llegue a prod
 - [x] `docs/FICHA_DIANA_MAPA.md` commiteado en #669
 - [ ] `scripts/seed-people.mjs` + `.gitignore` modificados sin PR (V3)
 
-### 🎯 Orden de ataque sugerido (actualizado 10-jul, tras 9 PRs #668–675)
-La cubeta B quedó casi vacía (ficha completa, báscula, sync-roadmap, fix columna, multi-turno — todo en prod y verificado por UI). Lo que queda:
-1. **Estados vacíos pedagógicos** — único construible-solo que queda en B.
-2. **Necesita tu input:** subir screenshot de WhatsApp (re-validar Vision fecha/user-other) · género de Sasa Aimo + Shian Navarro.
-3. **Grande / sesión propia:** Timeline unificado (ficha) · módulos científicos D (11 cronotipo, 14 premortem, 13 regulación) · E5 Life Direction.
-4. **Config tuya (cubeta A):** Reader/M365/WhatsApp/Sentry DSN.
+### 🎯 Orden de ataque sugerido (actualizado 10-jul, tras 14 PRs #668–681)
+**Cubeta B CERRADA. D avanzada (11/13/14 hechos). E5 arrancada.** 14 PRs a prod hoy, CI verde. Lo que queda:
+1. **Necesita tu input (rápido):** subir un screenshot de WhatsApp real → re-validar Vision (fecha visible + asignación user/other) · decirme el **género** de Sasa Aimo + Shian Navarro.
+2. **Config tuya (cubeta A):** Reader (verificar Teams en vivo) · Correo M365 (Azure+env) · WhatsApp (app Meta) · Sentry DSN.
+3. **Arcos grandes (sesión propia):** profundizar E5 Life Direction · cerrar módulos `17`/`19` · cubeta C (rematar E4, ingestión documental, cross-ref por ubicación).
+4. **Ojo opcional en lo design-open reciente:** /decidir (premortem #678) · /yo (trayectoria #680) · /horario (foco #679) — additivos, no rompen nada.
 
 ---
 
