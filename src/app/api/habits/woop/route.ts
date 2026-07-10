@@ -61,11 +61,11 @@ export async function GET(): Promise<NextResponse> {
       const sinceIso = new Date(nowMs - 2 * 86_400_000).toISOString()
       const { data: sm } = await supabase
         .from('self_metrics')
-        .select('category, value, timestamp')
+        .select('category, value, timestamp:measured_at')
         .eq('user_id', userId)
         .eq('category', 'stress')
-        .gte('timestamp', sinceIso)
-        .order('timestamp', { ascending: false })
+        .gte('measured_at', sinceIso)
+        .order('measured_at', { ascending: false })
         .limit(20)
       const todayStress = ((sm ?? []) as Array<{ value: number; timestamp: string }>).find(
         (r) => limaDayKey(r.timestamp) === today,

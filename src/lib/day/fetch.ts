@@ -91,16 +91,16 @@ export async function fetchDayContext(
   // 5. Salud: self_metrics + health_metrics (timestamp) + sleep_records (date).
   try {
     const { data } = await supabase.from('self_metrics')
-      .select('category, value, timestamp')
-      .eq('user_id', userId).gte('timestamp', startUtc).lt('timestamp', endUtc).limit(50)
+      .select('category, value, measured_at')
+      .eq('user_id', userId).gte('measured_at', startUtc).lt('measured_at', endUtc).limit(50)
     for (const r of (data ?? []) as Array<{ category: string; value: number }>) {
       slices.health.push({ label: SELF_LABEL[r.category] ?? r.category, value: `${r.value}/10` })
     }
   } catch { /* */ }
   try {
     const { data } = await supabase.from('health_metrics')
-      .select('type, value, unit, timestamp')
-      .eq('user_id', userId).gte('timestamp', startUtc).lt('timestamp', endUtc).limit(60)
+      .select('type, value, unit, measured_at')
+      .eq('user_id', userId).gte('measured_at', startUtc).lt('measured_at', endUtc).limit(60)
     for (const r of (data ?? []) as Array<{ type: string; value: number; unit: string | null }>) {
       const label = HEALTH_METRIC_LABELS[r.type as HealthMetricType] ?? r.type
       slices.health.push({ label, value: `${r.value}${r.unit ? ' ' + r.unit : ''}` })

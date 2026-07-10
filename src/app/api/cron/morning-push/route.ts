@@ -137,10 +137,10 @@ export async function GET(req: NextRequest) {
           if (range) {
             const { data: weightRows } = await admin
               .from('health_metrics')
-              .select('value, timestamp')
+              .select('value, measured_at')
               .eq('user_id', uid)
               .eq('type', 'weight')
-              .order('timestamp', { ascending: false })
+              .order('measured_at', { ascending: false })
               .limit(1)
             const w = (weightRows ?? [])[0] as { value: number } | undefined
             if (w && Number.isFinite(w.value)) {

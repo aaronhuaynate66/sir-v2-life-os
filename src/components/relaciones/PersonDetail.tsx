@@ -33,7 +33,8 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowLeft, Edit2, Check, X as XIcon, MessageSquareHeart, Printer, History } from 'lucide-react'
+import { ArrowLeft, Edit2, Check, X as XIcon, MessageSquareHeart, Printer, History, Activity } from 'lucide-react'
+import { SectionTitle } from '@/components/ui/section-title'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -587,17 +588,38 @@ export function PersonDetail({
           Solo comercial (colega/lead) — para pareja/familia ni se monta. */}
       {profile.showCommercial && <DealsAsContactPanel person={{ id: live.id, name: live.name }} />}
 
-      {/* Estado global del vínculo con esta persona (determinístico): cruza
-          logs + moments + ciclo + memorias en una etiqueta + insights concretos.
-          Se muestra siempre; label "sin_data" cuando aún no hay registros. */}
-      <EstadoConPersona
-        personId={live.id}
-        personName={live.name}
-        personLogs={personLogs}
-        moments={moments}
-        personCycles={personCycles}
-        memories={memories}
-      />
+      {/* ─── Grupo "Estado del vínculo" (consolidación, Opción 1): las señales
+          de cómo está el vínculo y qué hacer viven bajo UN encabezado, en vez de
+          5 cards sueltas (sobre-fragmentación que marcó el review de diseño).
+          Cada motor conserva su lógica pura + su auto-ocultado; solo cambia la
+          envoltura. EstadoConPersona se muestra siempre → ancla el grupo, el
+          encabezado nunca queda huérfano. ─────────────────────────────────── */}
+      <div className="mb-4">
+        <SectionTitle icon={Activity} label="Estado del vínculo" />
+
+        {/* Estado global (determinístico): cruza logs + moments + ciclo +
+            memorias en una etiqueta + insights concretos. Siempre (label
+            "sin_data" cuando aún no hay registros). */}
+        <EstadoConPersona
+          personId={live.id}
+          personName={live.name}
+          personLogs={personLogs}
+          moments={moments}
+          personCycles={personCycles}
+          memories={memories}
+        />
+        {/* 15·3+15·6 — salud del vínculo: tendencia de tono + cadencia por capa,
+            ramificada afectivo/profesional. Solo aparece si hay algo que sugerir. */}
+        <RelationalHealthCard person={live} personLogs={personLogs} />
+        {/* 15·4 — vínculos que drenan vs energizan (energy_impact × self_metrics). */}
+        <RelationalEnergyCard person={live} />
+        {/* 15·5 — micro-bid concreto atado a señal real (fecha próxima o tema). */}
+        <RelationalBidCard person={live} memories={memories} />
+        {/* Ventana de contacto: DEDUP con el CareBanner del hero — acá solo el
+            caso neutral ("Cuando quieras"), que el banner omite. Con señal
+            (buen_momento/con_cuidado), el banner de arriba ya la muestra. */}
+        <ContactWindowBadge person={live} lastTone={lastInteractionTone} hideUnlessNeutral />
+      </div>
 
       {/* Timeline de 7 días con esta persona (visual rápido). */}
       <SemanaConPersona personName={live.name} personLogs={personLogs} moments={moments} personCycles={personCycles} />
@@ -609,14 +631,6 @@ export function PersonDetail({
           justo — actividad reciente (tags de memorias) + notas privadas verbatim
           (discretas, nunca a IA). Determinístico; se oculta si no aporta nada. */}
       <AntesDeContactar personId={live.id} memories={memories} />
-      {/* 15·3+15·6 — salud del vínculo: tendencia de tono + cadencia por capa,
-          ramificada afectivo/profesional. Solo aparece si hay algo que sugerir. */}
-      <RelationalHealthCard person={live} personLogs={personLogs} />
-      {/* 15·4 — vínculos que drenan vs energizan (energy_impact × self_metrics). */}
-      <RelationalEnergyCard person={live} />
-      {/* 15·5 — micro-bid concreto atado a señal real (fecha próxima o tema). */}
-      <RelationalBidCard person={live} memories={memories} />
-      <ContactWindowBadge person={live} lastTone={lastInteractionTone} />
 
       {/* Dedup (Tanda 2): el score /100 (RelationalScore) y el cumpleaños
           (BirthdayCountdown) ya viven en el vistazo (banda compacta) y en
@@ -1108,11 +1122,8 @@ export function PersonDetail({
 
       {/* 15·7 — caminos: mutuos que conectan con esta persona (puente para intro). */}
       <NetworkPathsCard person={live} />
-
-      {/* ─── Los TRES ejes narrativos de la ficha (profesional/social/personal),
-          consistentes entre sí. Profesional + social: síntesis determinística
-          PERSISTIDA (person_profile_axes, 0047) con fallback en vivo. Personal:
-          síntesis IA cacheada (person_synthesis). ─────────────────────────── */}
+      {/* Los tres ejes narrativos (profesional/social/personal) viven en la tab
+          "Perfil y memoria" (VidaProfesional/VidaSocial/LoPersonal), no acá. */}
 
       </>)}
 

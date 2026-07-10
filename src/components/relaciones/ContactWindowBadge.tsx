@@ -17,8 +17,20 @@ const META: Record<ContactWindowState, { label: string; color: string }> = {
   neutral: { label: 'Cuando quieras', color: '#8a8f98' },
 }
 
-export function ContactWindowBadge({ person, lastTone = null }: { person: Person; lastTone?: number | null }) {
+export function ContactWindowBadge({
+  person,
+  lastTone = null,
+  hideUnlessNeutral = false,
+}: {
+  person: Person
+  lastTone?: number | null
+  /** Dedup con el CareBanner del hero: si true, se muestra SOLO en estado
+   *  neutral ("Cuando quieras"). Cuando hay señal (buen_momento/con_cuidado),
+   *  el banner de arriba ya la muestra, así que acá nos ocultamos. */
+  hideUnlessNeutral?: boolean
+}) {
   const win = useContactWindow(person, lastTone)
+  if (hideUnlessNeutral && win.state !== 'neutral') return null
   const meta = META[win.state]
 
   return (
