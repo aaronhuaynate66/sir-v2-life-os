@@ -25,7 +25,8 @@ INVARIANTES ESTRICTOS (no negociables):
 - Breve (máx 4 oraciones). Cálido pero sobrio, sin dramatizar ni inflar.
 - Si se incluye un "norte declarado" (tu norte del año), podés relacionar el hilo con él —¿lo que viene haciendo acompaña ese norte?— como observación abierta, sin juzgar y sin inventar nada que no esté en los hitos.
 - Si se incluye "quién es" (roles/bio del usuario), podés enmarcar el rumbo a la luz de su identidad, sin inventar rasgos ni atribuirle motivaciones que no estén.
-- Si se incluye "trayectoria" (números reales de su arco de objetivos: cuántos terminó, soltó, en qué áreas), podés reformular ESE patrón en la reflexión —sin inventar números ni cambiarlos, y sin juzgar. Soltar objetivos NO es fracaso.`
+- Si se incluye "trayectoria" (números reales de su arco de objetivos: cuántos terminó, soltó, en qué áreas), podés reformular ESE patrón en la reflexión —sin inventar números ni cambiarlos, y sin juzgar. Soltar objetivos NO es fracaso.
+- Si se incluyen "capítulos" (las estaciones temáticas reales de su vida, con sus fechas y su tema, del más reciente al más antiguo), podés apoyarte en ESOS capítulos para leer la continuidad del rumbo —cómo un tramo dio lugar a otro— usando SOLO las etiquetas y fechas provistas, sin inventar temas ni renombrar capítulos.`
 
 export interface RumboMilestoneInput {
   label: string
@@ -39,6 +40,7 @@ export function buildRumboInput(
   anchor?: string | null,
   identity?: string | null,
   trajectory?: string | null,
+  seasons?: string | null,
 ): string {
   const lines: string[] = []
   const who = (identity ?? '').trim()
@@ -47,6 +49,8 @@ export function buildRumboInput(
   if (north) lines.push(`Tu norte declarado para el año: ${north}`, '')
   const arc = (trajectory ?? '').trim()
   if (arc) lines.push(`Trayectoria (arco real de sus objetivos): ${arc}`, '')
+  const chapters = (seasons ?? '').trim()
+  if (chapters) lines.push(`Capítulos (estaciones temáticas reales de su vida): ${chapters}`, '')
   lines.push('Hitos de tu trayectoria (del más reciente al más antiguo):', '')
   for (const m of milestones) {
     const when = m.date.slice(0, 10)
