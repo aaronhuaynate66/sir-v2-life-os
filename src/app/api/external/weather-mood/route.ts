@@ -42,14 +42,14 @@ export async function GET(): Promise<NextResponse> {
   try {
     const { data } = await supabase
       .from('self_metrics')
-      .select('category, value, timestamp')
+      .select('category, value, measured_at')
       .eq('user_id', userId)
       .eq('category', 'energy')
-      .gte('timestamp', sinceIso)
+      .gte('measured_at', sinceIso)
       .limit(60)
     const byDate = new Map<string, number[]>()
-    for (const r of (data ?? []) as Array<{ value: number; timestamp: string }>) {
-      const day = limaDayKey(r.timestamp)
+    for (const r of (data ?? []) as Array<{ value: number; measured_at: string }>) {
+      const day = limaDayKey(r.measured_at)
       if (!day) continue
       const arr = byDate.get(day) ?? []
       arr.push(r.value)

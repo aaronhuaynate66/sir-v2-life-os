@@ -29,8 +29,8 @@ export async function getSelfBioState(
   const sinceIso = new Date(nowMs - 32 * DAY_MS).toISOString()
 
   const [metricsRes, healthRes, sleepRes] = await Promise.all([
-    supabase.from('self_metrics').select('category, value, timestamp').eq('user_id', userId).gte('timestamp', sinceIso).limit(400),
-    supabase.from('health_metrics').select('type, value, timestamp').eq('user_id', userId).eq('type', 'hrv_avg').gte('timestamp', sinceIso).limit(200),
+    supabase.from('self_metrics').select('category, value, timestamp:measured_at').eq('user_id', userId).gte('measured_at', sinceIso).limit(400),
+    supabase.from('health_metrics').select('type, value, timestamp:measured_at').eq('user_id', userId).eq('type', 'hrv_avg').gte('measured_at', sinceIso).limit(200),
     supabase.from('sleep_records').select('date, duration').eq('user_id', userId).gte('date', sinceIso.slice(0, 10)).limit(60),
   ])
 

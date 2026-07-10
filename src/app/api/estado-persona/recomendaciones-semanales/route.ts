@@ -59,10 +59,10 @@ async function loadContext(supabase: Supabase, userId: string, personId: string)
       .eq('user_id', userId).eq('person_id', personId)
       .lte('date', nextWeek)
       .order('date', { ascending: false }).limit(30),
-    supabase.from('memories').select('id, title, content, timestamp, is_private')
+    supabase.from('memories').select('id, title, content, timestamp:occurred_at, is_private')
       .eq('user_id', userId).eq('person_id', personId)
       .eq('is_private', false)
-      .order('timestamp', { ascending: false }).limit(10),
+      .order('occurred_at', { ascending: false }).limit(10),
   ])
 
   return {
