@@ -28,6 +28,7 @@ interface Body {
   start?: unknown
   end?: unknown
   allDay?: unknown
+  recurring?: unknown
   description?: unknown
   location?: unknown
   connectionId?: unknown
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
     start,
     end: str(body.end),
     allDay: body.allDay === true,
+    recurring: body.recurring === true,
     description: str(body.description),
     location: str(body.location),
   }

@@ -34,6 +34,7 @@ import { MacroCalendarStrip } from '@/components/horario/MacroCalendarStrip'
 import { ActiveSlotBanner } from '@/components/horario/ActiveSlotBanner'
 import { WoopPromptCard } from '@/components/horario/WoopPromptCard'
 import { CalendarConnections } from '@/components/agenda/CalendarConnections'
+import { AgendablesPanel } from '@/components/horario/AgendablesPanel'
 import dynamic from 'next/dynamic'
 // HorarioCalendar es el cockpit visual, ~15KB propios + grid grande. Se
 // difiere hasta que el calendar fetch responde (loading:false ya lo cubre
@@ -208,6 +209,10 @@ function HorarioContent() {
       <div className="mt-8">
         <DailyActionsPanel actionableOnly />
       </div>
+
+      {/* Calendario proactivo: fechas próximas de tu gente que SIR puede agendar
+          en Google con un clic (solo si hay conexión Google con escritura). */}
+      <AgendablesPanel />
 
       {/* 12·M5 — WOOP vivo: si el "if" de un plan si-entonces se cumple ahora,
           mostrar el "then". Invisible si ningún disparador está activo. */}
