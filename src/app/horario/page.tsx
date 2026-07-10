@@ -35,6 +35,7 @@ import { ActiveSlotBanner } from '@/components/horario/ActiveSlotBanner'
 import { WoopPromptCard } from '@/components/horario/WoopPromptCard'
 import { CalendarConnections } from '@/components/agenda/CalendarConnections'
 import { AgendablesPanel } from '@/components/horario/AgendablesPanel'
+import { FocusWindowStrip } from '@/components/horario/FocusWindowStrip'
 import dynamic from 'next/dynamic'
 // HorarioCalendar es el cockpit visual, ~15KB propios + grid grande. Se
 // difiere hasta que el calendar fetch responde (loading:false ya lo cubre
@@ -202,6 +203,10 @@ function HorarioContent() {
       ) : (
         <HorarioCalendar events={boardEvents} onAssignTime={handleAssignTime} />
       )}
+
+      {/* 11·M5 — cronotipo aplicado al día: en qué franja agendar trabajo profundo
+          (reusa los motores puros de /salud). Invisible sin data suficiente. */}
+      <FocusWindowStrip />
 
       {/* Acciones del día con la gente, DEBAJO de la agenda (no la empuja).
           "Lo que importa ahora" (ProximoPanel) NO va acá: ya vive en Mission
