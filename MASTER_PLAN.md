@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ee262b0`
+**Hash del último commit humano:** `5026bd8`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `5026bd8` | aaronhuaynate66 | Merge pull request #683 from aaronhuaynate66/fix/whatsapp-fecha-relativa | 2026-07-10 |
+| `b94810f` | Aaron Huaynate | fix(captura): WhatsApp resuelve fechas relativas ("Hoy"/"Ayer"/día) en conversationDate | 2026-07-10 |
 | `ee262b0` | aaronhuaynate66 | Merge pull request #682 from aaronhuaynate66/docs/build-plan-post-6-frentes | 2026-07-10 |
 | `0ad6077` | Aaron Huaynate | docs(plan): lista al día tras los 6 frentes (#677-681) — B cerrada, D avanzada | 2026-07-10 |
 | `b84bb71` | aaronhuaynate66 | Merge pull request #681 from aaronhuaynate66/feat/ficha-timeline-unificado | 2026-07-10 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `532a747` | Aaron Huaynate | feat(e5): "Tu trayectoria" — el arco largo de objetivos como dirección de vida | 2026-07-10 |
 | `e93cb8a` | aaronhuaynate66 | Merge pull request #678 from aaronhuaynate66/feat/premortem | 2026-07-10 |
 | `e940308` | aaronhuaynate66 | Merge pull request #679 from aaronhuaynate66/feat/cronotipo | 2026-07-10 |
-| `ed306de` | aaronhuaynate66 | Merge pull request #677 from aaronhuaynate66/feat/empty-states-pedagogicos | 2026-07-10 |
-| `f6bd87f` | Aaron Huaynate | feat(salud): módulo de cronotipo en /horario (11·M5) | 2026-07-10 |
 
 ---
 
