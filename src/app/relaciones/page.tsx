@@ -70,6 +70,8 @@ import {
 } from '@/lib/people/labels'
 import { CommercialPipelinePanel } from '@/components/relaciones/CommercialPipelinePanel'
 import { RegenerarSintesisTodas } from '@/components/relaciones/RegenerarSintesisTodas'
+import { inferGender } from '@/lib/people/inferGender'
+import { precomputeBehavior } from '@/lib/relaciones/precomputeBehavior'
 import { ScoreTrendChip } from '@/components/relaciones/ScoreTrendChip'
 import { useScoreTrendsByPerson } from '@/lib/relaciones/useScoreTrends'
 import { useSuggestedCadence } from '@/lib/relaciones/useSuggestedCadence'
@@ -305,6 +307,8 @@ function RelationshipsContent() {
       addPerson(newPerson)
       trackCreated(EVENTS.personAdded, { method: 'form', relationship: form.relationship })
       addMemory(createPersonAddedMemory(newPerson))
+      // Al crear una mujer, dispara el análisis conductual (item e: ganar tiempo).
+      if (newPerson.gender === 'female') precomputeBehavior(newPerson.id)
       toast.success('Persona agregada', { description: newPerson.name })
     }
     handleCancel()
@@ -433,7 +437,17 @@ function RelationshipsContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Nombre *</label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre completo" />
+                <Input value={form.name} onChange={(e) => {
+                  const name = e.target.value
+                  // Propone el género inferido si aún no se tocó (no formularios vacíos).
+                  // Solo al crear y solo con confianza alta; siempre editable.
+                  const next = { ...form, name }
+                  if (!editingId && form.gender === '') {
+                    const g = inferGender(name)
+                    if (g.gender && g.confidence === 'alta') next.gender = g.gender
+                  }
+                  setForm(next)
+                }} placeholder="Nombre completo" />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Alias</label>

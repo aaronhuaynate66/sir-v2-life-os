@@ -104,6 +104,7 @@ import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel
 import { WhatMattersChips } from './WhatMattersChips'
 import { TensionesFortalezas } from './TensionesFortalezas'
 import { ContradiceNotaCard } from './ContradiceNotaCard'
+import { precomputeBehavior } from '@/lib/relaciones/precomputeBehavior'
 import { RelationalProfileCard } from './RelationalProfileCard'
 import { HypothesesExplorer } from './HypothesesExplorer'
 import { BigFiveCard } from '@/components/profiling/BigFiveCard'
@@ -396,6 +397,9 @@ export function PersonDetail({
         notes: form.notes,
         updatedAt: now,
       })
+      // Al marcar MUJER (recién ahora), dispara el análisis conductual: su ficha
+      // habilita el 2º horizonte y así no espera al abrirlo (item e). Fire-and-forget.
+      if (form.gender === 'female' && live.gender !== 'female') precomputeBehavior(live.id)
       setEditing(false)
       toast.success('Persona actualizada')
       // Si el slug cambió, redirigir a la nueva URL para mantenerla limpia.
