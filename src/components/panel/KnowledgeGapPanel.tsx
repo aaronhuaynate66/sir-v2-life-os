@@ -12,6 +12,7 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { detectGaps, type KnowledgeGap } from '@/lib/gaps/detect'
 import { resolveBirthdayInput, monthLabels } from '@/lib/dates/birthdayInput'
+import { precomputeBehavior } from '@/lib/relaciones/precomputeBehavior'
 import type { Person, SpecialDate } from '@/types'
 
 const LS_KEY = 'sir-knowledge-gaps-dismissed'
@@ -88,7 +89,13 @@ export function KnowledgeGapPanel() {
           {visible.map((g) => (
             <div key={g.key} className="space-y-1.5">
               <p className="text-sm text-foreground/90">{g.question}</p>
-              {g.kind === 'birthday' ? (
+              {g.kind === 'gender' ? (
+                <GenderGapField
+                  personId={g.entityId}
+                  updatePerson={updatePerson}
+                  onDismiss={() => dismiss(g)}
+                />
+              ) : g.kind === 'birthday' ? (
                 <BirthdayGapField
                   person={people.find((p) => p.id === g.entityId)}
                   updatePerson={updatePerson}
@@ -120,6 +127,37 @@ export function KnowledgeGapPanel() {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Elige género con un toque (Mujer / Hombre). Al marcar MUJER, dispara el
+ * precompute del análisis conductual (item e: ganar tiempo) — su ficha habilita
+ * el 2º horizonte. Auto-resuelve el hueco (detect deja de verlo al haber gender).
+ */
+function GenderGapField({
+  personId,
+  updatePerson,
+  onDismiss,
+}: {
+  personId: string
+  updatePerson: (id: string, patch: Partial<Person>) => void
+  onDismiss: () => void
+}) {
+  function pick(gender: 'female' | 'male') {
+    updatePerson(personId, { gender, updatedAt: new Date().toISOString() })
+    if (gender === 'female') precomputeBehavior(personId)
+  }
+  const btn = 'inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm hover:border-brand/50'
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <button type="button" onClick={() => pick('female')} className={btn}>Mujer</button>
+      <button type="button" onClick={() => pick('male')} className={btn}>Hombre</button>
+      <button type="button" onClick={onDismiss} title="No sé / no preguntar"
+        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground">
+        <X size={13} /> No sé
+      </button>
+    </div>
   )
 }
 

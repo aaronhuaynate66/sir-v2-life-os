@@ -7,7 +7,7 @@ import type { Person, Goal } from '@/types'
 import { effectiveAmbito } from '@/lib/people/ambito'
 import { findBirthdaySpecialDate } from '@/lib/dates/birthdayDetect'
 
-export type GapKind = 'birthday' | 'cycle' | 'goal_next_action'
+export type GapKind = 'gender' | 'birthday' | 'cycle' | 'goal_next_action'
 
 export interface KnowledgeGap {
   /** Clave estable para descartar/no-repetir: `${kind}:${entityId}`. */
@@ -20,8 +20,8 @@ export interface KnowledgeGap {
   /** La pregunta, en segunda persona, mínima. */
   question: string
   /** Campo que rellena la respuesta (para auto-resolver el hueco). */
-  field: 'birthDate' | 'cycleStartDate' | 'nextAction'
-  inputType: 'date' | 'text'
+  field: 'gender' | 'birthDate' | 'cycleStartDate' | 'nextAction'
+  inputType: 'date' | 'text' | 'choice'
   /** Mayor = preguntar antes. */
   priority: number
 }
@@ -43,6 +43,17 @@ export function detectGaps(
   for (const p of people) {
     const imp = Number(p.importanceScore) || 0
     const ambito = effectiveAmbito(p)
+    // Género faltante: es un dato de bajísima fricción (un toque) que DESTRABA
+    // la inteligencia conductual/ciclo (fichaProfile.showCycleForecast). Sin él,
+    // motores enteros quedan dormidos. Se pregunta en vínculos que importan
+    // (≥5/10) o personales/familiares. Máxima prioridad: es la llave de lo demás.
+    if (!p.gender && (imp >= 5 || ambito === 'personal')) {
+      push({
+        key: `gender:${p.id}`, kind: 'gender', entity: 'person', entityId: p.id,
+        entityName: p.name, question: `¿${firstName(p.name)} es hombre o mujer?`,
+        field: 'gender', inputType: 'choice', priority: 70 + imp,
+      })
+    }
     // Cumpleaños faltante en un vínculo que importa (≥6/10). Aplica a TODOS los
     // ámbitos — pero el PARA QUÉ cambia: en personal es afecto; en colega/lead
     // es estratégico (un saludo posiciona, entra en su mente). Distinto dato no,

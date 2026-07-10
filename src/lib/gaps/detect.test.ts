@@ -3,9 +3,11 @@ import { detectGaps } from './detect'
 import type { Person, Goal } from '@/types'
 
 function person(p: Partial<Person>): Person {
+  // gender por defecto seteado para que el gap de género (nuevo) no dispare en
+  // los tests que no son sobre él; los que sí lo prueban pasan gender: undefined.
   return { id: p.id ?? 'p1', name: p.name ?? 'Ana Pérez', relationship: 'friend', category: 'close',
     importanceScore: p.importanceScore ?? 5, energyImpact: 'neutral', trustLevel: 5, contactFrequency: '',
-    tags: [], notes: '', createdAt: '', updatedAt: '', ...p } as Person
+    gender: 'male', tags: [], notes: '', createdAt: '', updatedAt: '', ...p } as Person
 }
 function goal(g: Partial<Goal>): Goal {
   return { id: g.id ?? 'g1', title: g.title ?? 'Objetivo', description: '', category: 'personal',
@@ -18,6 +20,18 @@ describe('detectGaps', () => {
     const gaps = detectGaps([person({ id: 'a', importanceScore: 8 }), person({ id: 'b', importanceScore: 3 })], [])
     expect(gaps.find((g) => g.entityId === 'a' && g.kind === 'birthday')).toBeTruthy()
     expect(gaps.find((g) => g.entityId === 'b')).toBeFalsy()
+  })
+  it('género faltante en vínculo que importa → gap de máxima prioridad', () => {
+    const gaps = detectGaps([person({ id: 'g', gender: undefined, importanceScore: 7 })], [])
+    const g = gaps.find((x) => x.entityId === 'g' && x.kind === 'gender')
+    expect(g).toBeTruthy()
+    expect(g!.field).toBe('gender')
+    expect(g!.inputType).toBe('choice')
+    expect(gaps[0].kind).toBe('gender') // la llave de lo demás va primero
+  })
+  it('NO pide género si ya lo tiene', () => {
+    const gaps = detectGaps([person({ id: 'g', gender: 'female', importanceScore: 7, birthDate: '1990-01-01', cycleStartDate: '2026-05-01' })], [])
+    expect(gaps.find((x) => x.kind === 'gender')).toBeFalsy()
   })
   it('ciclo faltante si es mujer', () => {
     const gaps = detectGaps([person({ id: 'd', name: 'Diana', gender: 'female', importanceScore: 9, birthDate: '1998-06-14' })], [])
