@@ -588,18 +588,16 @@ export function PersonDetail({
           Solo comercial (colega/lead) — para pareja/familia ni se monta. */}
       {profile.showCommercial && <DealsAsContactPanel person={{ id: live.id, name: live.name }} />}
 
-      {/* ─── Grupo "Estado del vínculo" (consolidación, Opción 1): las señales
-          de cómo está el vínculo y qué hacer viven bajo UN encabezado, en vez de
-          5 cards sueltas (sobre-fragmentación que marcó el review de diseño).
-          Cada motor conserva su lógica pura + su auto-ocultado; solo cambia la
-          envoltura. EstadoConPersona se muestra siempre → ancla el grupo, el
-          encabezado nunca queda huérfano. ─────────────────────────────────── */}
-      <div className="mb-4">
-        <SectionTitle icon={Activity} label="Estado del vínculo" />
-
-        {/* Estado global (determinístico): cruza logs + moments + ciclo +
-            memorias en una etiqueta + insights concretos. Siempre (label
-            "sin_data" cuando aún no hay registros). */}
+      {/* ─── Card "Estado del vínculo" (consolidación, Opción 2 · fusión total):
+          las señales de cómo está el vínculo y qué hacer viven en UNA card con
+          secciones separadas por líneas, en vez de N cards sueltas (la
+          sobre-fragmentación que marcó el review). Cada motor renderiza
+          `embedded` (sin su Card propia) y conserva su lógica + auto-ocultado.
+          EstadoConPersona ancla el grupo (siempre visible). ────────────────── */}
+      <Card className="shadow-none mb-4">
+        <div className="px-4 pt-4 sm:px-5">
+          <SectionTitle icon={Activity} label="Estado del vínculo" />
+        </div>
         <EstadoConPersona
           personId={live.id}
           personName={live.name}
@@ -607,19 +605,15 @@ export function PersonDetail({
           moments={moments}
           personCycles={personCycles}
           memories={memories}
+          embedded
         />
-        {/* 15·3+15·6 — salud del vínculo: tendencia de tono + cadencia por capa,
-            ramificada afectivo/profesional. Solo aparece si hay algo que sugerir. */}
-        <RelationalHealthCard person={live} personLogs={personLogs} />
-        {/* 15·4 — vínculos que drenan vs energizan (energy_impact × self_metrics). */}
-        <RelationalEnergyCard person={live} />
-        {/* 15·5 — micro-bid concreto atado a señal real (fecha próxima o tema). */}
-        <RelationalBidCard person={live} memories={memories} />
+        <RelationalHealthCard person={live} personLogs={personLogs} embedded />
+        <RelationalEnergyCard person={live} embedded />
+        <RelationalBidCard person={live} memories={memories} embedded />
         {/* Ventana de contacto: DEDUP con el CareBanner del hero — acá solo el
-            caso neutral ("Cuando quieras"), que el banner omite. Con señal
-            (buen_momento/con_cuidado), el banner de arriba ya la muestra. */}
-        <ContactWindowBadge person={live} lastTone={lastInteractionTone} hideUnlessNeutral />
-      </div>
+            caso neutral ("Cuando quieras"), que el banner omite. */}
+        <ContactWindowBadge person={live} lastTone={lastInteractionTone} hideUnlessNeutral embedded />
+      </Card>
 
       {/* Timeline de 7 días con esta persona (visual rápido). */}
       <SemanaConPersona personName={live.name} personLogs={personLogs} moments={moments} personCycles={personCycles} />

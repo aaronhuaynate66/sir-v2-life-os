@@ -9,7 +9,7 @@
 import { useMemo } from 'react'
 import { HeartHandshake } from 'lucide-react'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { EmbeddableCard } from './EmbeddableCard'
 import { assessLinkHealth } from '@/lib/relational/health'
 import { effectiveCadenceDays } from '@/lib/people/cadence'
 import { useSuggestedCadence } from '@/lib/relaciones/useSuggestedCadence'
@@ -18,7 +18,7 @@ import type { PersonLog } from '@/lib/person-logs/types'
 
 import { isNoiseLog } from '@/lib/relational/partnerEffect'
 
-export function RelationalHealthCard({ person, personLogs }: { person: Person; personLogs: PersonLog[] }) {
+export function RelationalHealthCard({ person, personLogs, embedded = false }: { person: Person; personLogs: PersonLog[]; embedded?: boolean }) {
   // Cadencia esperada rhythm-aware, MISMA fuente que la lista de /relaciones →
   // la "salud del vínculo" de la ficha ya no contradice el overdue de la lista
   // ni del proactivo (antes usaba un default por capa hardcodeado).
@@ -51,8 +51,7 @@ export function RelationalHealthCard({ person, personLogs }: { person: Person; p
   const accent = warm ? 'text-ok' : 'text-warn'
 
   return (
-    <Card className="shadow-none mb-4">
-      <CardContent className="p-4 sm:p-5 space-y-2">
+    <EmbeddableCard embedded={embedded} contentClassName="space-y-2">
         <div className="flex items-center gap-2">
           <HeartHandshake size={14} strokeWidth={1.75} className={accent} aria-hidden="true" />
           <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Salud del vínculo</h2>
@@ -69,7 +68,6 @@ export function RelationalHealthCard({ person, personLogs }: { person: Person; p
           )}
           <span>{health.mode === 'affective' ? 'vínculo afectivo' : 'vínculo profesional'}</span>
         </div>
-      </CardContent>
-    </Card>
+    </EmbeddableCard>
   )
 }

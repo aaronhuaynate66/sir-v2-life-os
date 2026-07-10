@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react'
 import { BatteryLow, BatteryCharging } from 'lucide-react'
 
-import { Card, CardContent } from '@/components/ui/card'
+import { EmbeddableCard } from './EmbeddableCard'
 import { OriginBadge } from './OriginBadge'
 import type { Person } from '@/types'
 
@@ -26,7 +26,7 @@ interface PersonEffect {
   trend: 'sube' | 'baja' | 'estable' | null
 }
 
-export function RelationalEnergyCard({ person }: { person: Person }) {
+export function RelationalEnergyCard({ person, embedded = false }: { person: Person; embedded?: boolean }) {
   const [effect, setEffect] = useState<PersonEffect | null>(null)
 
   useEffect(() => {
@@ -58,8 +58,7 @@ export function RelationalEnergyCard({ person }: { person: Person }) {
     : `${first} te sube el ánimo${strong ? ' (se nota en tus ratings)' : ''}. Cuando andes bajo, apoyarte en ese vínculo suele valer más que aguantar solo/a.`
 
   return (
-    <Card className="shadow-none mb-4">
-      <CardContent className="p-4 sm:p-5 space-y-2">
+    <EmbeddableCard embedded={embedded} contentClassName="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
           <Icon size={14} strokeWidth={1.75} className={accent} aria-hidden="true" />
           <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
@@ -75,7 +74,6 @@ export function RelationalEnergyCard({ person }: { person: Person }) {
           Estimado de tus {effect.n} {effect.n === 1 ? 'rating' : 'ratings'}, ajustado por lo escaso de la muestra
           {effect.trend && effect.trend !== 'estable' ? ` · viene ${effect.trend === 'sube' ? 'mejorando' : 'bajando'}` : ''}.
         </div>
-      </CardContent>
-    </Card>
+    </EmbeddableCard>
   )
 }
