@@ -1,12 +1,21 @@
 # SIR V2 — Master Plan (Life OS)
 
+> ⚠️ **ESTE DOCUMENTO ESTÁ DESFASADO — no es la fuente de verdad.** Lo regenera
+> un bot (`sync-roadmap.yml`) desde los *issues* de GitHub, pero el trabajo real
+> hace rato que va directo a `main` sin abrir issues, así que el sistema de
+> fases/issues de abajo quedó **congelado en su estado histórico (Fases 0–3)** y
+> NO refleja lo construido después. Para el estado REAL:
+>
+> - **Pendientes vivos → [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)** (bloque "📍 PENDIENTES VIVOS").
+> - **Arco por etapas / estado por capa → [`docs/STRATEGIC_ROADMAP.md`](docs/STRATEGIC_ROADMAP.md)**.
+
 ## Estado general
 
 Última actualización: `2026-05-28T19:10:42Z`  
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b885f20`
+**Hash del último commit humano:** `554a661`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +350,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `554a661` | aaronhuaynate66 | feat(calendario): el proactivo también ofrece agendar TAREAS de objetivos (#667) | 2026-07-10 |
 | `b885f20` | aaronhuaynate66 | feat(ficha): P0 del review — baja el countdown del período + consolida disclaimers (#666) | 2026-07-10 |
 | `db81c4d` | aaronhuaynate66 | feat(predictivo): alerta temprana de enfriamiento desde el sustrato (#665) | 2026-07-10 |
 | `31859c6` | aaronhuaynate66 | feat(calendario): proactivo — SIR ofrece agendar fechas próximas en Google (#664) | 2026-07-10 |
@@ -350,7 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `7ac15a8` | aaronhuaynate66 | feat(gente): inteligencia de género — detección, pregunta y auto-análisis (#660) | 2026-07-10 |
 | `1bcd0dc` | aaronhuaynate66 | fix(forecast): el 2º horizonte lee el sustrato (adiós al "importá el export") (#659) | 2026-07-09 |
 | `d541066` | aaronhuaynate66 | feat(relaciones): botón "actualizar Lo personal de todas" desde el sustrato (#658) | 2026-07-09 |
-| `7968fad` | aaronhuaynate66 | feat(ficha): 2º horizonte en prosa cualitativa (adiós a los "+74%") (#657) | 2026-07-09 |
 
 ---
 
