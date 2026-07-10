@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ecdebfd`
+**Hash del último commit humano:** `50ccf3c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,7 +350,9 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `50ccf3c` | aaronhuaynate66 | Merge pull request #687 from aaronhuaynate66/feat/cross-ref-ubicacion | 2026-07-10 |
 | `ecdebfd` | aaronhuaynate66 | Merge pull request #686 from aaronhuaynate66/feat/e5-profundizar | 2026-07-10 |
+| `df59628` | Aaron Huaynate | feat(relaciones): cross-referencing por ubicación (Clay #8) | 2026-07-10 |
 | `1d087a9` | aaronhuaynate66 | Merge pull request #685 from aaronhuaynate66/feat/e4-remate | 2026-07-10 |
 | `5520393` | aaronhuaynate66 | Merge pull request #684 from aaronhuaynate66/feat/ciclo-17-restante | 2026-07-10 |
 | `dd5886f` | Aaron Huaynate | feat(rumbo): estaciones — capítulos temáticos de la vida (E5) | 2026-07-10 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `68e2c4a` | Aaron Huaynate | feat(ciclo): cablea el contexto relacional al atunamiento M6 (doc 17) | 2026-07-10 |
 | `5026bd8` | aaronhuaynate66 | Merge pull request #683 from aaronhuaynate66/fix/whatsapp-fecha-relativa | 2026-07-10 |
 | `b94810f` | Aaron Huaynate | fix(captura): WhatsApp resuelve fechas relativas ("Hoy"/"Ayer"/día) en conversationDate | 2026-07-10 |
-| `ee262b0` | aaronhuaynate66 | Merge pull request #682 from aaronhuaynate66/docs/build-plan-post-6-frentes | 2026-07-10 |
-| `0ad6077` | Aaron Huaynate | docs(plan): lista al día tras los 6 frentes (#677-681) — B cerrada, D avanzada | 2026-07-10 |
 
 ---
 
