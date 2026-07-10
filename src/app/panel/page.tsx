@@ -292,7 +292,9 @@ function DashboardContent() {
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Users} label="Alertas relacionales" count={relAlerts.length} />
             {relAlerts.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-2">Sin alertas relacionales.</div>
+              <div className="text-xs text-muted-foreground/70 py-2 leading-relaxed">
+                Sin alertas relacionales. Cuando un vínculo importante se enfríe por silencio o quede algo pendiente, SIR te avisa acá.
+              </div>
             ) : (
               <div className="space-y-3">
                 {relAlerts.slice(0, 4).map((a, i) => (
@@ -316,7 +318,9 @@ function DashboardContent() {
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Bell} label="Señales activas" count={activeSignals.length} />
             {activeSignals.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-2">Sin señales activas.</div>
+              <div className="text-xs text-muted-foreground/70 py-2 leading-relaxed">
+                Sin señales activas. Las señales son patrones que SIR detecta —o que anotás a mano en «Registro rápido»— y quedan acá hasta que las resolvés.
+              </div>
             ) : (
               <div className="space-y-2">
                 {activeSignals.slice(0, 4).map((sig) => (
@@ -573,7 +577,9 @@ function DashboardContent() {
           <CardContent className="p-4 sm:p-6">
             <SectionTitle icon={Target} label="Objetivos" count={`${goalsDash.criticalGoals.length} criticos`} />
             {goalsDash.criticalGoals.length === 0 ? (
-              <div className="text-xs text-muted-foreground/70 py-2">Sin objetivos críticos.</div>
+              <div className="text-xs text-muted-foreground/70 py-2 leading-relaxed">
+                Sin objetivos críticos. Cuando marques la prioridad de un objetivo como «crítica» en /objetivos, su avance se sigue desde acá.
+              </div>
             ) : (
               <div className="space-y-3">
                 {goalsDash.criticalGoals.slice(0, 3).map((g) => (

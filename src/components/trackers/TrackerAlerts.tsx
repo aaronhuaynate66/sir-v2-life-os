@@ -38,7 +38,9 @@ export function TrackerAlerts({
       <CardContent className="p-4 sm:p-6">
         <SectionTitle icon={Bell} label={title} count={alerts.length || undefined} />
         {alerts.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-2">Sin alertas activas.</p>
+          <p className="text-sm text-muted-foreground py-2 leading-relaxed">
+            Sin alertas activas. Cuando un tracker cruce el umbral que le pusiste o llegue a su meta, el aviso aparece acá.
+          </p>
         ) : (
           <ul className="mt-2 space-y-2">
             {alerts.map((a) => {

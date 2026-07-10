@@ -112,7 +112,9 @@ export function TrackerDetail({ tracker, now = new Date(), className }: TrackerD
         <CardContent className="p-4 sm:p-6">
           <SectionTitle icon={Activity} label="Histórico" count={history.length || undefined} />
           {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-2">Sin puntos.</p>
+            <p className="text-sm text-muted-foreground py-2 leading-relaxed">
+              Sin lecturas todavía. Agregá una arriba —por captura o a mano— y cada punto queda listado acá con su fecha y de dónde salió.
+            </p>
           ) : (
             <ul className="mt-2 divide-y divide-border">
               {history.map((p) => (
