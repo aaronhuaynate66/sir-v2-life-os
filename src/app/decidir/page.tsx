@@ -4,7 +4,7 @@
 // (engines/decision) + LLM. Consume POST /api/decision.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Scale, Loader2, TrendingUp, TrendingDown, Minus, Brain, Sparkles } from 'lucide-react'
+import { Scale, Loader2, TrendingUp, TrendingDown, Minus, Brain, Sparkles, Skull, AlertTriangle, Eye, ShieldCheck } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,6 +18,7 @@ import { findSimilarDecisions, type PastDecision } from '@/lib/decision/similar'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { detectBiases } from '@/engines/bias'
+import type { Premortem, Likelihood } from '@/lib/decision/premortemPrompt'
 import { cn } from '@/lib/utils'
 
 const VERDICT: Record<DecisionAssessment['verdict'], { label: string; cls: string }> = {
@@ -175,6 +176,9 @@ export default function DecidirPage() {
             {/* 14·M2 — premortem forzado en decisiones riesgosas, antes de la
                 recomendación. Envuelve la calibración (M3/M4) + coherencia (M6). */}
             <PremortemSection result={result} description={description} />
+            {/* 14·M2 — premortem estructurado: "salió mal en 6 meses, ¿por qué?"
+                → modos de falla + señales tempranas + mitigaciones (Sonnet). */}
+            <StructuredPremortem title={result.title} description={description} />
             {/* 14·M5 — decisiones pasadas parecidas + su resultado (outside view). */}
             <SimilarDecisionsBlock result={result} past={past} description={description} onOutcome={loadPast} />
           </CardContent>
@@ -272,6 +276,85 @@ function PremortemSection({ result, description }: { result: DecisionAssessment;
         </Button>
         {aiButton}
       </div>
+    </div>
+  )
+}
+
+// 14·M2 — premortem ESTRUCTURADO. Complementa el premortem en prosa: en vez de
+// un párrafo, asume que la decisión ya fracasó a 6 meses y devuelve MODOS DE
+// FALLA (causa + probabilidad + señal temprana + mitigación). Consume
+// /api/decision/premortem (Sonnet, cache diaria). Es anticipación, no predicción.
+const LIKELIHOOD_META: Record<Likelihood, { label: string; cls: string }> = {
+  alta: { label: 'Probable', cls: 'border-bad/30 bg-bad-soft text-bad' },
+  media: { label: 'Posible', cls: 'border-warn/30 bg-warn-soft text-warn' },
+  baja: { label: 'Menos probable', cls: 'border-border bg-muted text-muted-foreground' },
+}
+
+function StructuredPremortem({ title, description }: { title: string; description: string }) {
+  const [data, setData] = useState<Premortem | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const run = useCallback(async () => {
+    if (loading) return
+    setLoading(true); setErr(null)
+    try {
+      const res = await fetch('/api/decision/premortem', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description }),
+      })
+      const j = (await res.json()) as { premortem?: Premortem; error?: string }
+      if (!res.ok || !j.premortem) { setErr(j.error ?? 'No pude armar el premortem'); return }
+      setData(j.premortem)
+    } catch { setErr('No pude armar el premortem') } finally { setLoading(false) }
+  }, [title, description, loading])
+
+  return (
+    <div className="border-t border-border/50 pt-3 space-y-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Skull size={14} strokeWidth={1.75} className="text-muted-foreground" aria-hidden="true" />
+          <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Premortem: imaginá que salió mal</span>
+        </div>
+        {!data && (
+          <Button size="sm" variant="outline" disabled={loading} onClick={() => void run()}>
+            {loading ? <Loader2 size={12} className="mr-1.5 animate-spin" /> : <Skull size={12} className="mr-1.5" />}
+            {loading ? 'Pensando el peor caso…' : 'Imaginar el fracaso'}
+          </Button>
+        )}
+      </div>
+
+      {err && <p className="text-[11px] text-bad">{err}</p>}
+
+      {data && (
+        <div className="space-y-3">
+          <p className="text-[12px] text-foreground/85 leading-relaxed">{data.frame}</p>
+          <ul className="space-y-2.5">
+            {data.failureModes.map((m, i) => (
+              <li key={i} className="rounded-md border border-border/70 bg-muted/20 p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-1.5">
+                    <AlertTriangle size={13} strokeWidth={1.9} className="text-muted-foreground mt-0.5 shrink-0" aria-hidden="true" />
+                    <span className="text-[13px] text-foreground leading-snug">{m.cause}</span>
+                  </div>
+                  <Badge variant="outline" className={cn('text-[10px] shrink-0', LIKELIHOOD_META[m.likelihood].cls)}>
+                    {LIKELIHOOD_META[m.likelihood].label}
+                  </Badge>
+                </div>
+                <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
+                  <Eye size={12} strokeWidth={1.9} className="mt-0.5 shrink-0 text-warn" aria-hidden="true" />
+                  <span><span className="text-text-tertiary uppercase tracking-[0.05em] text-[9px]">Señal temprana · </span>{m.earlySignal}</span>
+                </div>
+                <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground leading-snug">
+                  <ShieldCheck size={12} strokeWidth={1.9} className="mt-0.5 shrink-0 text-ok" aria-hidden="true" />
+                  <span><span className="text-text-tertiary uppercase tracking-[0.05em] text-[9px]">Mitigación · </span>{m.mitigation}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[10px] text-muted-foreground/70 leading-relaxed">Es una herramienta de anticipación, no una predicción — riesgos plausibles para que los tengas a la vista, no un pronóstico de lo que va a pasar.</p>
+        </div>
+      )}
     </div>
   )
 }
