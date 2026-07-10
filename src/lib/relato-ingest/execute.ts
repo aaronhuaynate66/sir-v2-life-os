@@ -92,6 +92,16 @@ async function execOne(supabase: Supabase, userId: string, action: IngestAction)
     }
 
     if (action.kind === 'crear_nota_manual' && person) {
+      // Idempotencia: misma persona + mismo texto ya anotado → se salta (evita
+      // duplicar la nota en la bitácora si Aaron reprocesa el mismo relato).
+      const { data: existing } = await supabase
+        .from('observations').select('id')
+        .eq('user_id', userId).eq('person_id', person.id)
+        .eq('capture_type', 'manual_note')
+        .eq('data->>text', action.text).limit(1)
+      if ((existing ?? []).length > 0) {
+        return { action, ok: true, error: 'ya existía (idempotente)', createdId: ((existing ?? [])[0] as { id: string }).id }
+      }
       const { data, error } = await supabase.from('observations').insert({
         user_id: userId, person_id: person.id,
         capture_type: 'manual_note',
@@ -196,6 +206,14 @@ async function execOne(supabase: Supabase, userId: string, action: IngestAction)
     }
 
     if (action.kind === 'crear_recordatorio') {
+      // Idempotencia: mismo texto + misma fecha/hora → se salta (no repetir el
+      // recordatorio si el relato se reprocesa).
+      const { data: existing } = await supabase
+        .from('reminders').select('id')
+        .eq('user_id', userId).eq('text', action.text).eq('due_at', action.dueAt).limit(1)
+      if ((existing ?? []).length > 0) {
+        return { action, ok: true, error: 'ya existía (idempotente)', createdId: ((existing ?? [])[0] as { id: string }).id }
+      }
       const { data, error } = await supabase.from('reminders').insert({
         user_id: userId,
         text: action.text,
