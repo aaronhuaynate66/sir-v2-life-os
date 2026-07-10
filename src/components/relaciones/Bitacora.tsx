@@ -1,18 +1,26 @@
 'use client'
 // SIR V2 — Bitácora (#17 del detail page V1): historial completo de
-// interacciones, colapsable.
+// interacciones, colapsable. El HILO CRONOLÓGICO ÚNICO de la persona: el
+// corazón navegable de la ficha.
 //
 // Timeline unificado y cronológico de TODO lo registrado con la persona:
 //   - person_logs (ánimo/energía/sueño/dolor/interacción) — Sesión 6.
 //   - observations curadas (WhatsApp, Instagram, LinkedIn, notas, voz).
+//   - notes_history (snapshots del campo `notes` al sobreescribirse).
+//   - moments (decisiones/episodios relacionales).
+//   - money (person_money: préstamos/transferencias con fecha) — antes solo
+//     vivía en su panel de la tab Registro; ahora también en el hilo.
+//
+// Filtro por fuente (chips) cuando hay ≥2 fuentes presentes → hace el hilo
+// navegable sin sacar nada de su lugar.
 //
 // Solo display sobre data ya fetched server-side (no backend, no LLM). Las
 // memorias se omiten a propósito: derivan de las observations y ya tienen
-// su propio panel (MemoriasAsociadasPanel) — incluirlas duplicaría.
+// su propio panel (MemoriasAsociadasPanel) — incluirlas duplicaría el hilo.
 //
-// Colapsada por defecto (puede crecer mucho); el header muestra el total.
+// Abierta por defecto cuando hay contenido; el header muestra el total.
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ChevronDown, NotebookPen } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -20,14 +28,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DiscardCaptureButton } from './DiscardCaptureButton'
 import { RebuildSummaryButton } from './RebuildSummaryButton'
-import { needsResummary } from '@/lib/capture/observations/summaryHealth'
-import { captureLabel } from '@/lib/capture/humanizeCapture'
 import { cn } from '@/lib/utils'
-import type { PersonLog, PersonLogKind } from '@/lib/person-logs/types'
-import { isSystemNote } from '@/lib/memories/fromInteractionLog'
+import type { PersonLog } from '@/lib/person-logs/types'
 import type { Observation } from '@/lib/capture/observations/types'
 import type { PersonNoteHistoryEntry } from '@/lib/person-notes-history/fetch'
 import type { RelationshipMoment } from '@/lib/moments/types'
+import type { MoneyEntry } from '@/lib/money/types'
+import { buildEntries, SOURCE_LABEL, SOURCE_ORDER, type EntrySource } from '@/lib/relaciones/bitacoraEntries'
 
 export interface BitacoraProps {
   personLogs: PersonLog[]
@@ -39,131 +46,12 @@ export interface BitacoraProps {
   /** Momentos / decisiones relacionales de la persona (relationship_moments).
    *  Opcional: si no llega, no aparecen. */
   moments?: RelationshipMoment[]
+  /** Movimientos de plata con fecha (person_money). Opcional: solo los que
+   *  tienen `occurredOn` entran al hilo (sin fecha no se pueden ubicar). */
+  money?: MoneyEntry[]
 }
-
-interface Entry {
-  id: string
-  /** ISO de cuándo ocurrió. */
-  at: string
-  source: 'log' | 'observation' | 'notes_history' | 'moment'
-  label: string
-  detail: string | null
-  /** Para logs: "3/5". Para moments: "Abierto"/"Resuelto". */
-  value: string | null
-  /** id crudo de la observation (solo source='observation') → permite descartar. */
-  obsId?: string
-  /** true si esta obs es whatsapp_chat con summary pobre y podemos regenerarlo. */
-  needsResummary?: boolean
-}
-
-const LOG_LABEL: Record<PersonLogKind, string> = {
-  mood: 'Ánimo',
-  energy: 'Energía',
-  sleep: 'Sueño',
-  pain: 'Dolor',
-  interaction: 'Interacción',
-}
-
 
 const INITIAL_VISIBLE = 12
-
-function observationDetail(obs: Observation): string | null {
-  const d = obs.data ?? {}
-  const summary = typeof d.summary === 'string' ? d.summary : null
-  if (summary) return summary
-  if (obs.captureType === 'instagram' && typeof d.handle === 'string') return `@${d.handle}`
-  if (obs.captureType === 'linkedin' && typeof d.headline === 'string') return d.headline as string
-  return null
-}
-
-function snippet(text: string | null | undefined, max = 140): string | null {
-  if (!text) return null
-  const t = text.replace(/\s+/g, ' ').trim()
-  if (!t) return null
-  return t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`
-}
-
-function buildEntries(
-  personLogs: PersonLog[],
-  observations: Observation[],
-  notesHistory: PersonNoteHistoryEntry[] = [],
-  moments: RelationshipMoment[] = [],
-): Entry[] {
-  const entries: Entry[] = []
-  for (const log of personLogs) {
-    // BUG-005: los logs de sistema (📞 llamadas, "Tono inferido", "Importado")
-    // son ruido de import, no eventos reales de la bitácora → se omiten.
-    if (log.kind === 'interaction' && isSystemNote(log.note ?? '')) continue
-    entries.push({
-      id: `log:${log.id}`,
-      at: log.loggedAt,
-      source: 'log',
-      label: LOG_LABEL[log.kind] ?? log.kind,
-      detail: log.note,
-      value: `${log.value}/5`,
-    })
-  }
-  for (const obs of observations) {
-    // manual_note con data.text = nota inline creada desde AnotarAhora →
-    // label especial + text del data.
-    const dataObj = obs.data as Record<string, unknown> | undefined
-    if (obs.captureType === 'manual_note' && dataObj?.source === 'anotar_ahora' && typeof dataObj.text === 'string') {
-      entries.push({
-        id: `obs:${obs.id}`,
-        at: obs.observedAt,
-        source: 'observation',
-        label: 'Nota',
-        detail: snippet(dataObj.text as string, 400),
-        value: null,
-        obsId: obs.id,
-      })
-      continue
-    }
-    entries.push({
-      id: `obs:${obs.id}`,
-      at: obs.observedAt,
-      source: 'observation',
-      label: dataObj?.source === 'call_transcript' ? 'Llamada' : captureLabel(obs.captureType),
-      detail: observationDetail(obs),
-      value: null,
-      obsId: obs.id,
-      needsResummary: needsResummary(obs),
-    })
-  }
-  for (const nh of notesHistory) {
-    // Solo mostramos snapshots con contenido — un edit que fue de "" a "algo"
-    // guarda snapshot=null (nada antes) y no aporta lectura.
-    if (!nh.snapshot || nh.snapshot.trim().length === 0) continue
-    entries.push({
-      id: `nh:${nh.id}`,
-      at: nh.changedAt,
-      source: 'notes_history',
-      label: 'Nota editada',
-      detail: snippet(nh.snapshot, 200),
-      value: null,
-    })
-  }
-  for (const m of moments) {
-    // Moment.occurredOn es YYYY-MM-DD → normalizamos a T00:00 para el sort.
-    const at = m.occurredOn && /^\d{4}-\d{2}-\d{2}$/.test(m.occurredOn)
-      ? `${m.occurredOn}T00:00:00`
-      : m.createdAt
-    const detailParts: string[] = []
-    if (m.detail) detailParts.push(m.detail)
-    if (m.status === 'resuelto' && m.resolution) detailParts.push(`resolución: ${m.resolution}`)
-    if (m.status === 'abierto' && m.followUpOn) detailParts.push(`follow-up: ${m.followUpOn}`)
-    entries.push({
-      id: `moment:${m.id}`,
-      at,
-      source: 'moment',
-      label: m.title,
-      detail: snippet(detailParts.join(' · '), 240),
-      value: m.status === 'abierto' ? 'abierto' : 'resuelto',
-    })
-  }
-  entries.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-  return entries
-}
 
 const DAY_MS = 86_400_000
 const ABS = new Intl.DateTimeFormat('es', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -204,14 +92,35 @@ function formatAbsolute(iso: string): string {
   return `${day}${year}${hourPart}`
 }
 
-export function Bitacora({ personLogs, observations, notesHistory, moments }: BitacoraProps) {
-  const entries = buildEntries(personLogs, observations, notesHistory ?? [], moments ?? [])
+export function Bitacora({ personLogs, observations, notesHistory, moments, money }: BitacoraProps) {
+  const entries = useMemo(
+    () => buildEntries(personLogs, observations, notesHistory ?? [], moments ?? [], money ?? []),
+    [personLogs, observations, notesHistory, moments, money],
+  )
   // Abierta por defecto cuando hay contenido — Aaron pidió VISIBILIDAD de lo
   // que registró en cada ficha. Vacía queda plegada para no gritar "hueco".
   const [open, setOpen] = useState(entries.length > 0)
   const [showAll, setShowAll] = useState(false)
 
-  const visible = showAll ? entries : entries.slice(0, INITIAL_VISIBLE)
+  // Fuentes presentes (para los chips del filtro) en orden estable.
+  const presentSources = useMemo(() => {
+    const set = new Set(entries.map((e) => e.source))
+    return SOURCE_ORDER.filter((s) => set.has(s))
+  }, [entries])
+
+  // Filtro por fuente: Set de fuentes OCULTAS (vacío = todo visible). Solo se
+  // ofrece cuando hay ≥2 fuentes — con una sola no aporta.
+  const [hidden, setHidden] = useState<Set<EntrySource>>(() => new Set())
+  const toggleSource = (s: EntrySource) =>
+    setHidden((prev) => {
+      const next = new Set(prev)
+      if (next.has(s)) next.delete(s)
+      else next.add(s)
+      return next
+    })
+
+  const filtered = hidden.size === 0 ? entries : entries.filter((e) => !hidden.has(e.source))
+  const visible = showAll ? filtered : filtered.slice(0, INITIAL_VISIBLE)
 
   return (
     <Card className="shadow-none mb-4">
@@ -246,6 +155,37 @@ export function Bitacora({ personLogs, observations, notesHistory, moments }: Bi
               </p>
             ) : (
               <>
+                {/* Filtro por fuente: chips que enfocan el hilo. Solo con ≥2
+                    fuentes presentes (con una no aporta). */}
+                {presentSources.length >= 2 && (
+                  <div className="mb-3 flex flex-wrap gap-1.5" role="group" aria-label="Filtrar por fuente">
+                    {presentSources.map((s) => {
+                      const on = !hidden.has(s)
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => toggleSource(s)}
+                          aria-pressed={on}
+                          className={cn(
+                            'rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider transition-colors',
+                            on
+                              ? 'border-foreground/40 bg-secondary text-foreground'
+                              : 'border-border text-muted-foreground/60 hover:text-foreground',
+                          )}
+                        >
+                          {SOURCE_LABEL[s]}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {filtered.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    Nada con este filtro. Reactivá alguna fuente arriba.
+                  </p>
+                ) : (
                 <ol className="relative space-y-2.5 border-l border-border/50 pl-4">
                   {visible.map((e) => (
                     <li key={e.id} className="relative">
@@ -258,7 +198,9 @@ export function Bitacora({ personLogs, observations, notesHistory, moments }: Bi
                               ? 'bg-warn/70'
                               : e.source === 'moment'
                                 ? 'bg-bad/70'
-                                : 'bg-muted-foreground/50',
+                                : e.source === 'money'
+                                  ? 'bg-ok/70'
+                                  : 'bg-muted-foreground/50',
                         )}
                         aria-hidden="true"
                       />
@@ -302,15 +244,16 @@ export function Bitacora({ personLogs, observations, notesHistory, moments }: Bi
                     </li>
                   ))}
                 </ol>
+                )}
 
-                {entries.length > INITIAL_VISIBLE && (
+                {filtered.length > INITIAL_VISIBLE && (
                   <Button size="sm" variant="ghost" onClick={() => setShowAll((v) => !v)} className="mt-3 w-full">
                     <ChevronDown
                       size={13}
                       strokeWidth={1.75}
                       className={cn('mr-1.5 transition-transform', showAll && 'rotate-180')}
                     />
-                    {showAll ? 'Ver menos' : `Ver todas (${entries.length})`}
+                    {showAll ? 'Ver menos' : `Ver todas (${filtered.length})`}
                   </Button>
                 )}
               </>
