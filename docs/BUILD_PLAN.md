@@ -33,8 +33,9 @@
 
 ### 🔨 B — Construible YA (sin depender de tu setup)
 **Ficha de persona (P1 estructura)**
-- [~] Consolidar la ficha (Opción 1, 10-jul): las 5 cards sueltas de la tab Hoy (Estado/Salud/Energía/Micro-bid/Ventana) ahora viven bajo UN encabezado **"Estado del vínculo"** (`SectionTitle` h2), cada motor conserva su auto-ocultado. **Dedup real de la Ventana de contacto**: `ContactWindowBadge` ganó `hideUnlessNeutral` → en señal (buen_momento/con_cuidado) la muestra el CareBanner del hero, acá solo el caso neutral "Cuando quieras". Verificado: type-check + compila + ficha 200 (render visual no verificable en vivo: `ssr:false` + extensión no attachea a localhost → Aaron confirma con Ctrl+Shift+R). **Pendiente si Aaron quiere:** Opción 2 (fusión total en 1 card) · "1 solo asistente IA" (Briefing/Preguntar/Generar hoy dispersos).
-- [ ] Timeline unificado como CENTRO de la ficha (un hilo cronológico: observations+capturas+logs+notas; paneles = contexto lateral). *Dirección de diseño (Clay #3), se cruza con lo anterior.*
+- [x] **Consolidar la ficha — COMPLETO (10-jul, verificado por UI con Chrome DevTools MCP):** Op.1 grupo "Estado del vínculo" (#669) → Op.2 fusión total en 1 card vía `EmbeddableCard` (#673) · dedup Ventana de contacto (`hideUnlessNeutral`) · **1 solo asistente IA** (#674): Briefing "Ponme al día" + ask-box fusionados en "SIR sobre {X}", el header queda solo con WhatsApp · **Q&A multi-turno** (#675): hilo con `history` a /api/sir/ask (el "eso" resuelve el contexto). Todo probado en vivo (ficha Diana Cencaro): briefing genera OK, multi-turno mantiene contexto.
+- [ ] Timeline unificado como CENTRO de la ficha (un hilo cronológico: observations+capturas+logs+notas; paneles = contexto lateral). *Dirección de diseño (Clay #3). GRANDE — sesión propia.*
+- [x] **Fix columna métricas (#672)** — 7 archivos consultaban self_metrics/health_metrics/memories por la columna `timestamp` (nombre del modelo TS) cuando la DB usa measured_at/occurred_at → fallaban en silencio (weather-mood, /día, selfState, woop, morning-push, briefing, recomendaciones leían CERO). Destapado por verificación en vivo. Ver [[project_metrics_column_gotcha]].
 
 **Deuda / limpieza**
 - [ ] **Consistencia temporal de hechos** (🟡 parcial): backfill network-wide relocation-only con DRY-RUN + OK; (b) no cubre memorias episódicas
@@ -47,7 +48,8 @@
 - [—] ~~fix del Gantt~~ **bajo valor:** vive en `MASTER_PLAN.md`, ya marcado DESFASADO (banner). Arreglar un gráfico de un doc deprecado no rinde.
 
 **Re-validaciones (código listo, falta el ojo)**
-- [ ] Captura WhatsApp con FECHA explícita visible · asignación user/other en Vision · Q&A por persona multi-turno en la ficha
+- [x] Q&A por persona multi-turno ✅ (#675, verificado por UI)
+- [ ] Captura WhatsApp con FECHA explícita visible · asignación user/other en Vision → **necesita que Aaron suba un screenshot de WhatsApp real** (no se puede generar). NOTA (10-jul): ya SÍ se puede verificar lo visual en vivo con Chrome DevTools MCP (ve localhost; la extensión claude-in-chrome NO) — ver [[project_ui_verification_devtools]].
 
 **Datos**
 - [ ] 2 personas sin género (Sasa Aimo, Shian Navarro) → caen al gap "SIR quiere saber"
@@ -67,13 +69,15 @@
 
 ### 🧹 E — Housekeeping del repo (working tree)
 - [ ] `src/app/api/dev-login/route.ts` sin commitear — **dev-only, "DELETE after use"**; guardar para dev local, que no llegue a prod
-- [ ] `docs/FICHA_DIANA_MAPA.md` sin commitear (mapa UX de la ficha)
+- [x] `docs/FICHA_DIANA_MAPA.md` commiteado en #669
 - [ ] `scripts/seed-people.mjs` + `.gitignore` modificados sin PR (V3)
 
-### 🎯 Orden de ataque sugerido (10-jul)
-1. Ficha P1 — consolidar/deduplicar (lo que más ves a diario, ya medio hecho)
-2. `persistScaleCapture` ACK + re-baseline del MASTER_PLAN (deuda barata que limpia mentiras)
-3. Grande: timeline unificado como centro de la ficha (cruza con #1)
+### 🎯 Orden de ataque sugerido (actualizado 10-jul, tras 9 PRs #668–675)
+La cubeta B quedó casi vacía (ficha completa, báscula, sync-roadmap, fix columna, multi-turno — todo en prod y verificado por UI). Lo que queda:
+1. **Estados vacíos pedagógicos** — único construible-solo que queda en B.
+2. **Necesita tu input:** subir screenshot de WhatsApp (re-validar Vision fecha/user-other) · género de Sasa Aimo + Shian Navarro.
+3. **Grande / sesión propia:** Timeline unificado (ficha) · módulos científicos D (11 cronotipo, 14 premortem, 13 regulación) · E5 Life Direction.
+4. **Config tuya (cubeta A):** Reader/M365/WhatsApp/Sentry DSN.
 
 ---
 
