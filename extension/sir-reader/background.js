@@ -59,9 +59,39 @@ async function ingest(batch) {
   }
 }
 
+// Correo scrapeado de Outlook Web → POST <sirUrl>/api/email/ingest con
+// { messages: [...] }. Mismo token/host que el reader (la extensión usa un solo
+// token). El server normaliza y reusa todo el backend de correo.
+async function ingestEmail(messages) {
+  const { sirUrl, token } = await getConfig();
+  if (!token) { await setStatus({ lastError: 'Falta el token — configuralo en el popup' }); return { ok: false, error: 'no-token' }; }
+  try {
+    const res = await fetch(`${sirUrl}/api/email/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-reader-token': token },
+      body: JSON.stringify({ messages }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      await setStatus({ lastError: `HTTP ${res.status} ${detail.slice(0, 140)}` });
+      return { ok: false, status: res.status };
+    }
+    await bump('sent', messages.length);
+    await setStatus({ lastError: null, lastThread: `${messages.length} correo(s)`, lastPlatform: 'outlook' });
+    return { ok: true };
+  } catch (e) {
+    await setStatus({ lastError: String(e).slice(0, 140) });
+    return { ok: false, error: String(e) };
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg && msg.type === 'sir-batch' && msg.batch) {
     ingest(msg.batch).then(sendResponse);
+    return true; // respuesta async
+  }
+  if (msg && msg.type === 'sir-email-batch' && Array.isArray(msg.messages)) {
+    ingestEmail(msg.messages).then(sendResponse);
     return true; // respuesta async
   }
   if (msg && msg.type === 'sir-ping') { sendResponse({ ok: true }); return true; }

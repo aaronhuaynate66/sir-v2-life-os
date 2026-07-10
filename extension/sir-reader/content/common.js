@@ -173,7 +173,17 @@
 
   try {
     chrome.runtime.onMessage.addListener((msg, _s, sendResponse) => {
-      if (msg && msg.type === 'sir-diagnose') { sendResponse(diagnose()); return true; }
+      if (msg && msg.type === 'sir-diagnose') {
+        // Outlook (outlook.js) no usa el CORE de chat: corre su propio scanner y
+        // expone su diagnóstico en window.__SIR_EMAIL. Si no hay adapter de chat
+        // pero sí el módulo de correo, delegamos ahí.
+        if (!window.__SIR_ADAPTER && window.__SIR_EMAIL && typeof window.__SIR_EMAIL.diagnose === 'function') {
+          sendResponse(window.__SIR_EMAIL.diagnose());
+          return true;
+        }
+        sendResponse(diagnose());
+        return true;
+      }
     });
   } catch (_) { /* */ }
 

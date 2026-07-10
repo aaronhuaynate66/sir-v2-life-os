@@ -10,12 +10,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { ingestReaderBatch } from '@/lib/reader/persist'
-import type { ReaderBatch } from '@/lib/reader/ingest'
 import {
   GRAPH, tokenEndpoint, tokenBodyForRefresh, isExpired, expiresAtFrom,
-  parseGraphMessage, messageText, type TokenResponse, type GraphMessage,
+  parseGraphMessage, type TokenResponse, type GraphMessage,
 } from '@/lib/email/graph'
+import { ingestEmailMessages } from '@/lib/email/ingest'
 import { graphConfig, siteOrigin } from '@/lib/email/server'
 
 export const runtime = 'nodejs'
@@ -97,32 +96,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Falló la lectura de correos' }, { status: 502 })
   }
 
-  // 3) Agrupar por remitente → un batch del reader por persona.
-  const bySender = new Map<string, { name: string; msgs: GraphMessage[] }>()
-  for (const m of messages) {
-    const g = bySender.get(m.fromEmail) || { name: m.from, msgs: [] }
-    g.name = m.from || g.name
-    g.msgs.push(m)
-    bySender.set(m.fromEmail, g)
-  }
-
-  let ingested = 0
-  for (const [fromEmail, g] of bySender) {
-    const batch: ReaderBatch = {
-      platform: 'email',
-      threadId: `email:${fromEmail}`,
-      threadName: g.name,
-      messages: g.msgs.map((m) => ({ author: m.from, text: messageText(m), ts: m.receivedAt })),
-    }
-    try {
-      const r = await ingestReaderBatch(supabase as unknown as SupabaseClient, userId, batch)
-      ingested += (r && typeof r === 'object' && 'inserted' in r ? Number((r as { inserted?: number }).inserted) || 0 : 0)
-    } catch (e) { reportApiError(e, { route: 'email/sync', step: 'ingest' }) }
-  }
+  // 3) Agrupar por remitente → un batch del reader por persona (helper compartido
+  //    con /api/email/ingest).
+  const { ingested, senders } = await ingestEmailMessages(
+    supabase as unknown as SupabaseClient, userId, messages, { route: 'email/sync' },
+  )
 
   await supabase.from('email_connections').update({
     delta_link: newDeltaLink, last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString(),
   }).eq('id', conn.id)
 
-  return NextResponse.json({ ok: true, fetched: messages.length, senders: bySender.size, ingested })
+  return NextResponse.json({ ok: true, fetched: messages.length, senders, ingested })
 }
