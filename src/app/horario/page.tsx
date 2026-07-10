@@ -93,15 +93,22 @@ function HorarioContent() {
     const params = new URLSearchParams(window.location.search)
     const ok = params.get('calendar')
     const err = params.get('calendar_error')
+    const detail = params.get('calendar_detail')
     if (!ok && !err) return
     if (ok === 'connected') toast.success('Google Calendar conectado', { description: 'Los eventos se van a mezclar con tus otros calendarios.' })
     else if (ok === 'reconnected') toast.success('Google Calendar reautorizado')
     else if (err === 'denied' || err === 'access_denied') toast.error('Autorización denegada', { description: 'Podés reintentar cuando quieras.' })
     else if (err === 'state_mismatch') toast.error('Sesión OAuth inválida', { description: 'Intentalo de nuevo desde el botón "Conectar con Google".' })
     else if (err === 'session_expired') toast.error('Sesión SIR expiró durante el flow', { description: 'Iniciá sesión y reintentá.' })
-    else if (err) toast.error(`No se pudo completar la conexión (${err})`)
-    // Limpiar los params sin recargar.
-    params.delete('calendar'); params.delete('calendar_error')
+    else if (err) toast.error(`No se pudo completar la conexión (${err})`, detail ? { description: detail } : undefined)
+    if (err) {
+      // Deja rastro legible del fallo del callback (el toast pasa volando).
+      // eslint-disable-next-line no-console
+      console.error('[calendar-oauth] fallo del callback:', err, detail || '')
+    }
+    // Limpiar SOLO el flag de éxito; el error se deja en la URL para diagnóstico.
+    params.delete('calendar')
+    if (!err) { params.delete('calendar_error'); params.delete('calendar_detail') }
     const qs = params.toString()
     const newUrl = window.location.pathname + (qs ? `?${qs}` : '')
     window.history.replaceState({}, '', newUrl)
