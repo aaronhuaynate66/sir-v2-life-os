@@ -421,9 +421,18 @@ function goalActivitySignals(
   linkedPeople: Person[],
   memories: Memory[],
   now: Date,
+  /** Cuando es true, IGNORA los tags de dominio (categoryTags) y exige match por
+   *  PALABRA CLAVE del objetivo. Se usa para INFERIR un vínculo persona↔objetivo:
+   *  un tag de rubro suelto ("comercial") es demasiado genérico para atar a
+   *  alguien a un objetivo — la memoria de flores de Diana no la vincula a
+   *  "Cerrar Boticas Jhodaal". Con vínculo MANUAL (keywordOnly=false), el tag de
+   *  rubro sí enriquece (fue Aaron quien la vinculó a propósito). */
+  keywordOnly = false,
 ): GoalActivity {
   const keywords = goalKeywords(goal)
-  const categoryTags = new Set((CATEGORY_ACTIVITY_TAGS[goal.category] ?? []).map(normalizeToken))
+  const categoryTags = keywordOnly
+    ? new Set<string>()
+    : new Set((CATEGORY_ACTIVITY_TAGS[goal.category] ?? []).map(normalizeToken))
   const signals: ObservedSignal[] = []
   let hadStale = false
   for (const person of linkedPeople) {
@@ -454,7 +463,11 @@ export function computeGoalAlignment(goal: Goal, ctx: AlignmentContext): GoalAli
     // tags/keywords) en conversaciones recientes con alguien, esa persona queda
     // inferida. Se apoya en evidencia real, no en una corazonada del LLM (que
     // queda como capa futura para objetivos sin ninguna evidencia).
-    const inferredActivity = goalActivitySignals(goal, ctx.people, ctx.memories ?? [], now)
+    // keywordOnly=true: para INFERIR el vínculo exigimos una palabra clave
+    // específica del objetivo (jhodaal, marlab, boticas…), no un tag de rubro
+    // suelto. Evita atar a cualquiera con actividad "comercial" a cualquier
+    // objetivo financiero (bug: Diana ↔ 4 objetivos de Marlab por su flower shop).
+    const inferredActivity = goalActivitySignals(goal, ctx.people, ctx.memories ?? [], now, true)
     if (inferredActivity.signals.length > 0) {
       const names: string[] = []
       for (const sig of inferredActivity.signals) {
