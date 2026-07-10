@@ -25,6 +25,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { getExtractorSpec } from '@/lib/capture/extractors'
+import { todayLimaKey } from '@/lib/dates/limaDay'
 import { isValidDetectorResult } from '@/lib/capture/detector/validate'
 import { insertObservation } from '@/lib/capture/observations/insert'
 import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
@@ -338,7 +339,9 @@ export async function POST(req: NextRequest) {
   if (!spec) {
     return errorJson(500, 'Extractor no implementado para este tipo')
   }
-  const systemPrompt = spec.getSystemPrompt({ reflection })
+  // todayISO = ancla temporal para que Vision resuelva "Hoy"/"Ayer"/día en
+  // conversationDate (WhatsApp casi siempre usa separadores relativos).
+  const systemPrompt = spec.getSystemPrompt({ reflection, todayISO: todayLimaKey() })
 
   // 4. Obtener `extracted`: o de confirmed_data (usuario ya revisó → SALTAMOS
   //    Vision para guardar EXACTAMENTE lo revisado, sin re-extraer no-determinista)

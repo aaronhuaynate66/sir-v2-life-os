@@ -46,8 +46,9 @@ import type { CaptureType } from './observations/types'
 
 /** Spec runtime de un extractor. */
 export interface ExtractorSpec {
-  /** System prompt completo. Para whatsapp_chat acepta el flag reflection. */
-  getSystemPrompt: (opts?: { reflection?: boolean }) => string
+  /** System prompt completo. whatsapp_chat acepta reflection + todayISO
+   *  (ancla temporal para resolver "Hoy"/"Ayer"/día en conversationDate). */
+  getSystemPrompt: (opts?: { reflection?: boolean; todayISO?: string }) => string
   /** Type guard que valida la shape devuelta por Vision. */
   isValid: (x: unknown) => boolean
   /** Limpia, trim, clamps el output validado. */
@@ -62,7 +63,7 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
   switch (captureType) {
     case 'whatsapp_chat':
       return {
-        getSystemPrompt: (opts) => getWhatsAppChatSystemPrompt(Boolean(opts?.reflection)),
+        getSystemPrompt: (opts) => getWhatsAppChatSystemPrompt(Boolean(opts?.reflection), opts?.todayISO),
         isValid: isValidWhatsAppCaptureExtracted,
         sanitize: (x) =>
           sanitizeWhatsAppChat(x as Parameters<typeof sanitizeWhatsAppChat>[0]) as unknown as Record<
@@ -77,7 +78,7 @@ export function getExtractorSpec(captureType: CaptureType): ExtractorSpec | null
       // Reusa el prompt de whatsapp_chat pero con validador/sanitizador
       // TOLERANTES (un DM puede venir con shape parcial → no 422; coerce).
       return {
-        getSystemPrompt: () => getWhatsAppChatSystemPrompt(false),
+        getSystemPrompt: (opts) => getWhatsAppChatSystemPrompt(false, opts?.todayISO),
         isValid: isValidDmExtracted,
         sanitize: (x) => sanitizeDmExtracted(x) as unknown as Record<string, unknown>,
         maxTokens: 2000,
