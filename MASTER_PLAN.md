@@ -1,5 +1,14 @@
 # SIR V2 — Master Plan (Life OS)
 
+> ⚠️ **ESTE DOCUMENTO ESTÁ DESFASADO — no es la fuente de verdad.** Lo regenera
+> un bot (`sync-roadmap.yml`) desde los *issues* de GitHub, pero el trabajo real
+> hace rato que va directo a `main` sin abrir issues, así que el sistema de
+> fases/issues de abajo quedó **congelado en su estado histórico (Fases 0–3)** y
+> NO refleja lo construido después. Para el estado REAL:
+>
+> - **Pendientes vivos → [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)** (bloque "📍 PENDIENTES VIVOS").
+> - **Arco por etapas / estado por capa → [`docs/STRATEGIC_ROADMAP.md`](docs/STRATEGIC_ROADMAP.md)**.
+
 ## Estado general
 
 Última actualización: `2026-05-28T19:10:42Z`  
