@@ -653,6 +653,8 @@ export function PersonDetail({
               cycleLengthDays={live.cycleLengthDays ?? null}
               personCycles={personCycles}
               isRomantic={live.relationship === 'romantic'}
+              personLogs={personLogs}
+              personName={live.name}
             />
           </div>
         </details>

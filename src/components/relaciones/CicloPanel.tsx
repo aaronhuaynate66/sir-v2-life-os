@@ -28,6 +28,8 @@ import { cyclePhase, type CyclePhaseId } from '@/lib/ciclo/phase'
 import { computeCycleRegularity, type PredictionConfidence } from '@/lib/ciclo/regularity'
 import { careAnticipation, predictionWindow } from '@/lib/ciclo/forecast'
 import { intimacyGuidance } from '@/lib/ciclo/intimacy'
+import { deriveIntimacyContext } from '@/lib/ciclo/intimacyContext'
+import type { PersonLog } from '@/lib/person-logs/types'
 import type { PersonCycleEntry, CyclePhase } from '@/lib/person-cycles/types'
 import { cycleEntriesWithNotes } from '@/lib/person-cycles/notes'
 import { useMounted } from '@/hooks/useMounted'
@@ -50,6 +52,11 @@ export interface CicloPanelProps {
   personCycles?: PersonCycleEntry[]
   /** 17·M6 — solo con pareja: muestra el atunamiento de intimidad (cuidado). */
   isRomantic?: boolean
+  /** 17·M6 — person_logs para derivar el CONTEXTO relacional (tensión / energía /
+   *  enfriamiento) que manda sobre la ventana hormonal. */
+  personLogs?: PersonLog[]
+  /** 17·M6 — nombre de la persona, para personalizar el atunamiento. */
+  personName?: string
 }
 
 const CONFIDENCE_LABEL: Record<PredictionConfidence, { text: string; cls: string }> = {
@@ -74,7 +81,7 @@ const PHASE_ACCENT_CLASS: Record<CyclePhaseId, string> = {
   luteal: 'text-brand-soft-foreground',
 }
 
-export function CicloPanel({ cycleStartDate, cycleLengthDays, personCycles = [], isRomantic = false }: CicloPanelProps) {
+export function CicloPanel({ cycleStartDate, cycleLengthDays, personCycles = [], isRomantic = false, personLogs = [], personName }: CicloPanelProps) {
   // La fase/día/countdown del ciclo dependen de "hoy" → mount-safe.
   const mounted = useMounted()
   return (
@@ -94,7 +101,7 @@ export function CicloPanel({ cycleStartDate, cycleLengthDays, personCycles = [],
 
         {cycleStartDate ? (
           mounted ? (
-            <Body cycleStartDate={cycleStartDate} cycleLengthDays={cycleLengthDays ?? 28} personCycles={personCycles} isRomantic={isRomantic} />
+            <Body cycleStartDate={cycleStartDate} cycleLengthDays={cycleLengthDays ?? 28} personCycles={personCycles} isRomantic={isRomantic} personLogs={personLogs} personName={personName} />
           ) : (
             <CicloPlaceholder />
           )
@@ -124,11 +131,15 @@ function Body({
   cycleLengthDays,
   personCycles,
   isRomantic,
+  personLogs,
+  personName,
 }: {
   cycleStartDate: string
   cycleLengthDays: number
   personCycles: PersonCycleEntry[]
   isRomantic: boolean
+  personLogs: PersonLog[]
+  personName?: string
 }) {
   const phase = cyclePhase(cycleStartDate, cycleLengthDays)
   // 17·M4 — regularidad observada → confianza de la predicción.
@@ -189,8 +200,10 @@ function Body({
         ) : null
       })()}
 
-      {/* 17·M6 — atunamiento de intimidad (SOLO pareja). Cuidado, no táctica. */}
-      {isRomantic && <IntimacyBlock phase={phase} />}
+      {/* 17·M6 — atunamiento de intimidad (SOLO pareja). Cuidado, no táctica.
+          El contexto relacional (tensión / energía / enfriamiento) manda sobre la
+          ventana hormonal — se deriva de person_logs. */}
+      {isRomantic && <IntimacyBlock phase={phase} personLogs={personLogs} personName={personName} />}
 
       <div className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
         Próximo período:{' '}
@@ -380,8 +393,17 @@ function CicloDonut({
 // 17·M6 — atunamiento de intimidad de pareja. Cuidado y conexión, NO táctica.
 // Prioriza el contexto (Nagoski) sobre la ventana hormonal y lleva el recordatorio
 // innegociable. Solo se monta con vínculo romántico activo.
-function IntimacyBlock({ phase }: { phase: NonNullable<ReturnType<typeof cyclePhase>> }) {
-  const g = intimacyGuidance(phase)
+function IntimacyBlock({
+  phase,
+  personLogs,
+  personName,
+}: {
+  phase: NonNullable<ReturnType<typeof cyclePhase>>
+  personLogs: PersonLog[]
+  personName?: string
+}) {
+  const ctx = deriveIntimacyContext({ personLogs, personName })
+  const g = intimacyGuidance(phase, ctx)
   return (
     <div className="rounded-md border border-brand/25 bg-brand-soft/20 px-3 py-2.5 space-y-1.5 text-[11px] leading-relaxed">
       <div className="font-medium text-brand-soft-foreground">Atunamiento — cuidado, no táctica</div>
