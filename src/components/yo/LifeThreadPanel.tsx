@@ -18,6 +18,7 @@ import { useMemoryStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { buildLifeThread, relationshipMilestones, memoryMilestones, mergeLifeThread, type LifeMilestoneKind, type LifeMilestone } from '@/lib/self/lifeThread'
 import { buildTrajectoryArc, trajectorySummaryLine } from '@/lib/self/trajectoryArc'
+import { buildLifeSeasons, seasonsSummaryLine } from '@/lib/self/lifeSeasons'
 import { buildBondEvolution } from '@/lib/people/bondEvolution'
 import type { ScoreSnapshot } from '@/lib/people/scoreTrend'
 
@@ -103,6 +104,9 @@ export function LifeThreadPanel() {
   // Trayectoria (E5): el arco largo de objetivos, en números reales, para que la
   // reflexión IA lo REFORMULE (no lo invente). Determinístico.
   const trajectorySummary = useMemo(() => trajectorySummaryLine(buildTrajectoryArc(goals)), [goals])
+  // Capítulos (E5): las estaciones temáticas reales, con fechas y tema, para que
+  // la reflexión IA lea la CONTINUIDAD del rumbo sin inventar. Determinístico.
+  const seasonsSummary = useMemo(() => seasonsSummaryLine(buildLifeSeasons(goals)), [goals])
   const [refl, setRefl] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; text?: string }>({ status: 'idle' })
   const generar = useCallback(async () => {
     setRefl({ status: 'loading' })
@@ -110,7 +114,7 @@ export function LifeThreadPanel() {
       const res = await fetch('/api/self/rumbo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText, identity: identitySummary, trajectory: trajectorySummary }),
+        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText, identity: identitySummary, trajectory: trajectorySummary, seasons: seasonsSummary }),
       })
       const data = (await res.json()) as { insight?: string; detail?: string; error?: string }
       if (!res.ok || !data.insight) {
@@ -121,7 +125,7 @@ export function LifeThreadPanel() {
     } catch {
       setRefl({ status: 'error', text: 'No se pudo generar la reflexión.' })
     }
-  }, [shown, anchorText, identitySummary, trajectorySummary])
+  }, [shown, anchorText, identitySummary, trajectorySummary, seasonsSummary])
 
   return (
     <Card className="shadow-none">
