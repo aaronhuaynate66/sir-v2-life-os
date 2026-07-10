@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `db81c4d`
+**Hash del último commit humano:** `b885f20`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `b885f20` | aaronhuaynate66 | feat(ficha): P0 del review — baja el countdown del período + consolida disclaimers (#666) | 2026-07-10 |
 | `db81c4d` | aaronhuaynate66 | feat(predictivo): alerta temprana de enfriamiento desde el sustrato (#665) | 2026-07-10 |
 | `31859c6` | aaronhuaynate66 | feat(calendario): proactivo — SIR ofrece agendar fechas próximas en Google (#664) | 2026-07-10 |
 | `0b45738` | aaronhuaynate66 | fix(relato): idempotencia en crear_nota_manual y crear_recordatorio (#663) | 2026-07-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1bcd0dc` | aaronhuaynate66 | fix(forecast): el 2º horizonte lee el sustrato (adiós al "importá el export") (#659) | 2026-07-09 |
 | `d541066` | aaronhuaynate66 | feat(relaciones): botón "actualizar Lo personal de todas" desde el sustrato (#658) | 2026-07-09 |
 | `7968fad` | aaronhuaynate66 | feat(ficha): 2º horizonte en prosa cualitativa (adiós a los "+74%") (#657) | 2026-07-09 |
-| `aa47a72` | aaronhuaynate66 | feat(ficha): flag "contradice una nota" — cruza notas manuales vs. el sustrato (#656) | 2026-07-09 |
 
 ---
 
