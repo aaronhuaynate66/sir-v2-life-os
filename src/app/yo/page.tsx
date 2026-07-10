@@ -26,6 +26,7 @@ const PreMortemPanel = dynamic(() => import('@/components/yo/PreMortemPanel').th
 const NorteDriftPanel = dynamic(() => import('@/components/yo/NorteDriftPanel').then((m) => ({ default: m.NorteDriftPanel })), { ssr: false, loading: dynSkeleton })
 const TrajectoryArcPanel = dynamic(() => import('@/components/yo/TrajectoryArcPanel').then((m) => ({ default: m.TrajectoryArcPanel })), { ssr: false, loading: dynSkeleton })
 const LifeSeasonsPanel = dynamic(() => import('@/components/yo/LifeSeasonsPanel').then((m) => ({ default: m.LifeSeasonsPanel })), { ssr: false, loading: dynSkeleton })
+const CoherencePanel = dynamic(() => import('@/components/yo/CoherencePanel').then((m) => ({ default: m.CoherencePanel })), { ssr: false, loading: dynSkeleton })
 const LifeThreadPanel = dynamic(() => import('@/components/yo/LifeThreadPanel').then((m) => ({ default: m.LifeThreadPanel })), { ssr: false, loading: dynSkeleton })
 const ArquetipoPanel = dynamic(() => import('@/components/yo/ArquetipoPanel').then((m) => ({ default: m.ArquetipoPanel })), { ssr: false, loading: dynSkeleton })
 const SelfDiagnosisPanel = dynamic(() => import('@/components/yo/SelfDiagnosisPanel').then((m) => ({ default: m.SelfDiagnosisPanel })), { ssr: false, loading: dynSkeleton })
@@ -76,6 +77,7 @@ export default function SelfPage() {
         <NorteDriftPanel />
         <TrajectoryArcPanel />
         <LifeSeasonsPanel />
+        <CoherencePanel />
         <LifeThreadPanel />
         <ArquetipoPanel />
         <NotificationsCard />
