@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2446ec4`
+**Hash del último commit humano:** `ed306de`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `ed306de` | aaronhuaynate66 | Merge pull request #677 from aaronhuaynate66/feat/empty-states-pedagogicos | 2026-07-10 |
+| `fd07611` | Aaron Huaynate | feat(ux): empty states pedagógicos en /panel, /seguimiento y ficha de persona | 2026-07-10 |
 | `2446ec4` | aaronhuaynate66 | Merge pull request #676 from aaronhuaynate66/docs/build-plan-al-10jul-post-maraton | 2026-07-10 |
 | `0dd3168` | Aaron Huaynate | docs(plan): actualiza pendientes vivos tras los 9 PRs del 10-jul | 2026-07-10 |
 | `46fc2e6` | aaronhuaynate66 | Merge pull request #675 from aaronhuaynate66/feat/asistente-multiturno | 2026-07-10 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `1090aa2` | Aaron Huaynate | refactor(ficha): un solo asistente IA conversacional (Briefing + Preguntá a SIR) | 2026-07-10 |
 | `794006f` | aaronhuaynate66 | Merge pull request #673 from aaronhuaynate66/refactor/ficha-fusion-estado-vinculo | 2026-07-10 |
 | `ab79166` | Aaron Huaynate | refactor(ficha): fusión total del "Estado del vínculo" en una sola card (Opción 2) | 2026-07-10 |
-| `bbd52cb` | aaronhuaynate66 | Merge pull request #670 from aaronhuaynate66/chore/sync-roadmap-desfasado-banner | 2026-07-10 |
-| `0cf81fc` | Aaron Huaynate | chore(plan): regenera MASTER_PLAN con banner tras merge de main | 2026-07-10 |
 
 ---
 
