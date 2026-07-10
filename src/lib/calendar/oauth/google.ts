@@ -176,6 +176,8 @@ export interface NewGoogleEvent {
   location?: string
   /** Zona horaria para eventos cronometrados. Default America/Lima. */
   timeZone?: string
+  /** true → evento ANUAL recurrente (cumpleaños/aniversarios): RRULE FREQ=YEARLY. */
+  recurring?: boolean
 }
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
@@ -192,6 +194,8 @@ export interface GoogleEventPayload {
   location?: string
   start: { date?: string; dateTime?: string; timeZone?: string }
   end: { date?: string; dateTime?: string; timeZone?: string }
+  /** RRULE de recurrencia (ej. ['RRULE:FREQ=YEARLY']). Ausente = evento único. */
+  recurrence?: string[]
 }
 
 /**
@@ -226,6 +230,7 @@ export function buildGoogleEventPayload(ev: NewGoogleEvent): GoogleEventPayload 
     location: ev.location?.trim() || undefined,
     start,
     end,
+    recurrence: ev.recurring ? ['RRULE:FREQ=YEARLY'] : undefined,
   }
 }
 
