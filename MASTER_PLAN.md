@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `b84bb71`
+**Hash del último commit humano:** `ee262b0`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `ee262b0` | aaronhuaynate66 | Merge pull request #682 from aaronhuaynate66/docs/build-plan-post-6-frentes | 2026-07-10 |
+| `0ad6077` | Aaron Huaynate | docs(plan): lista al día tras los 6 frentes (#677-681) — B cerrada, D avanzada | 2026-07-10 |
 | `b84bb71` | aaronhuaynate66 | Merge pull request #681 from aaronhuaynate66/feat/ficha-timeline-unificado | 2026-07-10 |
 | `b12b2b3` | Aaron Huaynate | feat(ficha): timeline unificado como corazón navegable de la Bitácora | 2026-07-10 |
 | `ac21c68` | aaronhuaynate66 | Merge pull request #680 from aaronhuaynate66/feat/e5-life-direction | 2026-07-10 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e940308` | aaronhuaynate66 | Merge pull request #679 from aaronhuaynate66/feat/cronotipo | 2026-07-10 |
 | `ed306de` | aaronhuaynate66 | Merge pull request #677 from aaronhuaynate66/feat/empty-states-pedagogicos | 2026-07-10 |
 | `f6bd87f` | Aaron Huaynate | feat(salud): módulo de cronotipo en /horario (11·M5) | 2026-07-10 |
-| `5581c0f` | Aaron Huaynate | feat(decidir): premortem estructurado (14·M2) | 2026-07-10 |
-| `fd07611` | Aaron Huaynate | feat(ux): empty states pedagógicos en /panel, /seguimiento y ficha de persona | 2026-07-10 |
 
 ---
 
