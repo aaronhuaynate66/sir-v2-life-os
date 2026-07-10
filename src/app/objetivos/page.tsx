@@ -24,6 +24,7 @@ import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useMemoryStore } from '@/stores'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
+import { GoalInferLinks } from '@/components/objetivos/GoalInferLinks'
 import { NextStepCard } from '@/components/objetivos/NextStepCard'
 import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
 import { TrackerStrip } from '@/components/trackers/TrackerStrip'
@@ -843,6 +844,27 @@ function GoalsContent() {
 
       <div className="mt-8">
         <AlignmentPanel goals={goals} people={people} relationships={relationships} memories={memories} />
+        {/* Etapa 4 — cierre del MVP: objetivos SUELTOS (sin nadie vinculado)
+            pueden pedir, on-demand, que SIR sugiera dominio/personas. Editable,
+            no auto-aplicado (el vínculo lo confirma el usuario). */}
+        <GoalInferLinks
+          goals={goals}
+          people={people}
+          onApply={(goalId, personIds, category) => {
+            const g = goals.find((x) => x.id === goalId)
+            if (!g) return
+            const validIds = new Set(people.map((p) => p.id))
+            const merged = sanitizePersonIds([...(g.relatedPersons ?? []), ...personIds], validIds)
+            updateGoal(goalId, { relatedPersons: merged, ...(category ? { category } : {}) })
+            const names = merged
+              .map((id) => people.find((p) => p.id === id)?.name)
+              .filter(Boolean)
+              .join(', ')
+            toast.success('Vínculo aplicado', {
+              description: names ? `${g.title} → ${names}` : g.title,
+            })
+          }}
+        />
       </div>
 
       {otherGoals.length > 0 && (
