@@ -1,6 +1,7 @@
 'use client'
 import { StakeholderDealImpact } from '@/components/relaciones/StakeholderDealImpact'
 import { PersonLocationEvents } from '@/components/relaciones/PersonLocationEvents'
+import { PersonasEnZona } from '@/components/relaciones/PersonasEnZona'
 // SIR V2 — /relaciones/[slug] detail UI
 //
 // Render de la persona + EDICIÓN INLINE COMPLETA (#5): el formulario de
@@ -957,6 +958,8 @@ export function PersonDetail({
             {live.orgGroup && <Row label="Grupo" value={live.orgGroup} />}
             {live.lastContact && <Row label="Último contacto" value={live.lastContact.slice(0, 10)} />}
             {live.location && <Row label="Ubicación" value={live.location} />}
+            {/* Cross-ref por ubicación: otras personas de tu red en la misma zona. */}
+            {live.location && <PersonasEnZona person={live} people={people} />}
             {live.estadoCivil && <Row label="Estado civil" value={live.estadoCivil} />}
             {live.birthDate && <Row label="Fecha de nacimiento" value={live.birthDate.slice(0, 10)} />}
             {/* 18·M4 — eventos por ubicación (opt-in, on-demand, confianza baja) */}
