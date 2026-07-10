@@ -32,6 +32,7 @@ import { nextPendingLeaf, daysUntilStep } from '@/lib/objectives/steps'
 import type { IdentityProfile } from '@/lib/identity'
 import { buildSelfKinshipMap, type SelfKinship } from '@/lib/proactive/kinship'
 import { buildRoleDates } from '@/lib/proactive/roleDates'
+import { buildProximityClusters } from '@/lib/relaciones/proximity'
 
 const DAY_MS = 86_400_000
 
@@ -47,6 +48,9 @@ export type AgendaKind =
   | 'self_special_date'
   // Fechas por ROL/RUBRO (calendario comercial, Mundial WFG26). href → /objetivos.
   | 'role_date'
+  // Cross-ref por UBICACIÓN: personas que comparten zona ("3 de tu gente en
+  // Barranco"). Sugerencia CONDICIONAL, no time-bound. href → /relaciones.
+  | 'proximity_cluster'
 
 export interface AgendaItem {
   /** Id estable derivado de la fuente (para keys de React + dedupe). */
@@ -106,6 +110,9 @@ export interface AgendaOptions {
    *  donde el ranking de relaciones lo cubre OTRA superficie (ej. /agenda monta
    *  "Hoy con tu gente") y mostrarlos acá duplicaría. Default false. */
   excludeNoContact?: boolean
+  /** Omitir el cross-ref por ubicación (proximity_cluster). Para pantallas
+   *  donde no aporta o donde otra superficie ya lo cubre. Default false. */
+  excludeProximity?: boolean
 }
 
 const RANK: Record<string, number> = {
@@ -116,6 +123,9 @@ const RANK: Record<string, number> = {
   // Próximo paso SIN fecha: accionable pero no time-bound → debajo de lo datado
   // (los pasos CON fecha entran como 'dated' y compiten por cercanía).
   next_step: 4,
+  // Cross-ref por ubicación: contexto útil pero SIN urgencia ni fecha → al
+  // fondo. Sólo asoma cuando no hay nada más apremiante (o en la vista completa).
+  proximity: 5,
 }
 
 /** medianoche local de hoy. */
@@ -492,6 +502,54 @@ function buildRoleDateItems(
   }))
 }
 
+/** Nombra hasta 3 personas de un cluster ("Diana, Juan y Pedro"); el resto se
+ *  pliega en "y N más". */
+function joinNames(names: string[], max = 3): string {
+  if (names.length <= max) {
+    if (names.length <= 1) return names[0] ?? ''
+    return `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`
+  }
+  const shown = names.slice(0, max).join(', ')
+  const rest = names.length - max
+  return `${shown} y ${rest} más`
+}
+
+/**
+ * Cross-referencing por UBICACIÓN (Clay #8): personas que comparten zona
+ * (people.location). Es CONTEXTO, no un recordatorio con fecha, así que va al
+ * fondo (rank proximity) y es honesto por diseño — afirma sólo el hecho
+ * ("estas personas viven en la misma zona") + una sugerencia CONDICIONAL ("si
+ * vas para allá, aprovechá"). SIR no sabe dónde está Aaron en vivo, así que
+ * nunca dice "estás cerca de X". Vacío si no hay 2+ personas en una misma zona.
+ */
+function buildProximity(people: Person[]): AgendaItem[] {
+  const clusters = buildProximityClusters(
+    people.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      location: p.location,
+      importanceScore: p.importanceScore,
+    })),
+    { maxClusters: 3 },
+  )
+
+  return clusters.map((c) => {
+    const count = c.people.length
+    const names = joinNames(c.people.map((p) => p.name.split(' ')[0]))
+    return {
+      id: `proximity_${c.key}`,
+      kind: 'proximity_cluster' as const,
+      title: `${count} de tu gente en ${c.zoneLabel}`,
+      detail: names,
+      daysUntil: 0,
+      href: '/relaciones',
+      actionHint: `Si caés por ${c.zoneLabel}, aprovechá para verlas de una`,
+      sortRank: RANK.proximity,
+    }
+  })
+}
+
 /**
  * Construye la agenda "Próximo": agrega todas las fuentes, ordena por
  * urgencia/cercanía y opcionalmente recorta.
@@ -522,6 +580,7 @@ export function buildAgenda(
     ...buildSpecialDates(input.people, horizonDays, now),
     ...buildSelfDates(input.identityProfile, horizonDays, now),
     ...buildRoleDateItems(input.identityProfile, input.goals, now),
+    ...(options.excludeProximity ? [] : buildProximity(input.people)),
   ]
 
   items.sort((a, b) => {

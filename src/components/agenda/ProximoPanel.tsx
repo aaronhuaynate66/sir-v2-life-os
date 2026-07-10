@@ -29,6 +29,7 @@ import {
   ChevronRight,
   UserCircle,
   Briefcase,
+  MapPin,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -53,6 +54,7 @@ const KIND_ICON: Record<AgendaKind, LucideIcon> = {
   special_date: CalendarHeart,
   self_special_date: UserCircle,
   role_date: Briefcase,
+  proximity_cluster: MapPin,
 }
 
 const KIND_ACCENT: Record<AgendaKind, string> = {
@@ -64,6 +66,7 @@ const KIND_ACCENT: Record<AgendaKind, string> = {
   special_date: 'text-brand-soft-foreground',
   self_special_date: 'text-brand-soft-foreground',
   role_date: 'text-ok',
+  proximity_cluster: 'text-muted-foreground',
 }
 
 export interface ProximoPanelProps {

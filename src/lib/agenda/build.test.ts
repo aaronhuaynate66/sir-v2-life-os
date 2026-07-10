@@ -760,3 +760,72 @@ describe('buildAgenda — href', () => {
     expect(noSlug.href).toBe('/relaciones/p_noslug')
   })
 })
+
+describe('buildAgenda — cross-ref por ubicación (proximity)', () => {
+  it('surfacea un cluster cuando 2+ personas comparten zona', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        people: [
+          person({ id: 'a', name: 'Diana Díaz', location: 'Barranco, Lima' }),
+          person({ id: 'b', name: 'Juan Pérez', location: 'Barranco, Lima' }),
+        ],
+      },
+      {},
+      NOW,
+    )
+    const prox = items.find((i) => i.kind === 'proximity_cluster')!
+    expect(prox).toBeDefined()
+    expect(prox.title).toBe('2 de tu gente en Barranco')
+    expect(prox.detail).toBe('Diana y Juan')
+    expect(prox.href).toBe('/relaciones')
+    expect(prox.actionHint).toContain('Barranco')
+  })
+
+  it('no inventa cercanía: personas en zonas distintas → sin cluster', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        people: [
+          person({ id: 'a', location: 'Barranco, Lima' }),
+          person({ id: 'b', location: 'Miraflores, Lima' }),
+        ],
+      },
+      {},
+      NOW,
+    )
+    expect(items.some((i) => i.kind === 'proximity_cluster')).toBe(false)
+  })
+
+  it('el cluster va al fondo (rank más bajo que una señal inmediata)', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        people: [
+          person({ id: 'a', location: 'Surco' }),
+          person({ id: 'b', location: 'Surco' }),
+        ],
+        signals: [signal({ id: 's1', content: 'Algo urgente', urgency: 'immediate' })],
+      },
+      {},
+      NOW,
+    )
+    expect(items[0].kind).toBe('critical_signal')
+    expect(items[items.length - 1].kind).toBe('proximity_cluster')
+  })
+
+  it('excludeProximity omite el cluster', () => {
+    const items = buildAgenda(
+      {
+        ...EMPTY,
+        people: [
+          person({ id: 'a', location: 'Surco' }),
+          person({ id: 'b', location: 'Surco' }),
+        ],
+      },
+      { excludeProximity: true },
+      NOW,
+    )
+    expect(items.some((i) => i.kind === 'proximity_cluster')).toBe(false)
+  })
+})
