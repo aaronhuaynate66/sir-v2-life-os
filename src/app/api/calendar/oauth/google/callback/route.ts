@@ -111,8 +111,11 @@ export async function GET(req: NextRequest) {
     res.cookies.delete(STATE_COOKIE)
     return res
   } catch (e) {
+    const m = e instanceof Error ? e.message : String(e)
     // eslint-disable-next-line no-console
-    console.warn('[calendar-oauth] callback error:', e instanceof Error ? e.message : e)
-    return NextResponse.redirect(returnUrl(req, { calendar_error: 'exchange_failed' }), 302)
+    console.warn('[calendar-oauth] callback error:', m)
+    // Pasamos el detalle real al front (truncado) para diagnóstico: sin esto el
+    // error queda mudo y no se distingue "invalid_client" de "insert falló".
+    return NextResponse.redirect(returnUrl(req, { calendar_error: 'exchange_failed', calendar_detail: m.slice(0, 180) }), 302)
   }
 }
