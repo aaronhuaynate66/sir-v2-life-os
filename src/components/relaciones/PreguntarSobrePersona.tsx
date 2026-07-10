@@ -1,13 +1,12 @@
 'use client'
 
-// SIR V2 — Asistente SIR de la persona (Q&A + briefing unificados).
+// SIR V2 — Asistente SIR de la persona (Q&A multi-turno + briefing).
 //
-// UN solo punto de IA conversacional en la ficha (antes había dos: el Briefing
-// "Ponme al día" en el header + el ask-box acá). Ahora conviven en un panel:
-//   - "Ponme al día": briefing contextual efímero (reusa generatePersonBriefing).
-//   - Ask-box: preguntá lo que quieras, aterrizado en esta persona (/api/sir/ask,
-//     solo lectura, grounding estricto). skipInlineGaps para no cortar con "SIR
-//     quiere saber" acá; eso vive en el chat global.
+// UN solo punto de IA conversacional en la ficha:
+//   - "Ponme al día": briefing contextual efímero (on-demand, no gasta al abrir).
+//   - Ask-box MULTI-TURNO: preguntá, y seguí preguntando — el hilo se mantiene y
+//     se manda como `history` a /api/sir/ask, así SIR entiende el "¿y eso por qué?"
+//     sin repetir contexto. Aterrizado en la persona (personId pre-scopea).
 // Los GENERADORES de contenido persistido (Lo personal, Perfil, Hipótesis…)
 // siguen en su panel — producen cosas distintas que viven ahí, no son "chat".
 
@@ -29,50 +28,62 @@ const SUGGESTIONS = [
   '¿Algo que debería tener presente?',
 ]
 
-type State =
-  | { kind: 'idle' }
-  | { kind: 'loading' }
-  | { kind: 'answer'; text: string; question: string; isBriefing?: boolean }
-  | { kind: 'error'; error: ApiError }
+/** Un turno del hilo. role sigue el formato que espera /api/sir/ask (user|sir). */
+type Turn = { role: 'user' | 'sir'; text: string; isBriefing?: boolean }
 
 export function PreguntarSobrePersona({ personId, personName }: { personId: string; personName: string }) {
   const [q, setQ] = useState('')
-  const [state, setState] = useState<State>({ kind: 'idle' })
-  // Colapsado por default (7a): el asistente no ocupa una card entera arriba del
-  // fold; es un botón que se abre cuando lo necesitás.
+  const [thread, setThread] = useState<Turn[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<ApiError | null>(null)
+  // Colapsado por default (7a): el asistente es un botón que se abre cuando lo
+  // necesitás, no una card entera arriba del fold.
   const [open, setOpen] = useState(false)
   const first = personName.split(' ')[0] || 'esta persona'
 
   const ask = useCallback(async (question: string) => {
     const text = question.trim()
-    if (!text) return
-    setState({ kind: 'loading' })
+    if (!text || loading) return
+    setQ('')
+    setError(null)
+    // Historial ANTES de sumar el turno nuevo (lo que SIR ya "sabe" del hilo).
+    const history = thread.map((t) => ({ role: t.role, text: t.text }))
+    setThread((prev) => [...prev, { role: 'user', text }])
+    setLoading(true)
     try {
       const { answer } = await postJson<{ answer: string }>('/api/sir/ask', {
         question: text,
         personId,
         skipInlineGaps: true,
+        history,
       })
-      setState({ kind: 'answer', text: answer, question: text })
+      setThread((prev) => [...prev, { role: 'sir', text: answer }])
     } catch (e) {
-      setState({ kind: 'error', error: toApiError(e) })
+      setError(toApiError(e))
+    } finally {
+      setLoading(false)
     }
-  }, [personId])
+  }, [personId, thread, loading])
 
-  // Briefing efímero "Ponme al día" — mismo panel, on-demand (no gasta al abrir
-  // la ficha; solo cuando lo pedís).
+  // Briefing efímero "Ponme al día" — on-demand, se suma al hilo como turno de
+  // SIR (así una pregunta de seguimiento tiene el briefing de contexto).
   const runBriefing = useCallback(async () => {
-    setState({ kind: 'loading' })
+    if (loading) return
+    setError(null)
+    setThread((prev) => [...prev, { role: 'user', text: `Ponme al día con ${first}` }])
+    setLoading(true)
     try {
       const text = await generatePersonBriefing(personId)
-      setState({ kind: 'answer', text, question: `Ponme al día con ${first}`, isBriefing: true })
+      setThread((prev) => [...prev, { role: 'sir', text, isBriefing: true }])
     } catch (e) {
-      setState({ kind: 'error', error: toApiError(e) })
+      setError(toApiError(e))
+    } finally {
+      setLoading(false)
     }
-  }, [personId, first])
+  }, [personId, first, loading])
 
-  // Colapsado (y sin respuesta aún) → botón discreto que abre el asistente.
-  if (!open && state.kind === 'idle') {
+  // Colapsado (y sin hilo aún) → botón discreto que abre el asistente.
+  if (!open && thread.length === 0) {
     return (
       <button
         type="button"
@@ -85,7 +96,7 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
     )
   }
 
-  const busy = state.kind === 'loading'
+  const empty = thread.length === 0
 
   return (
     <Card className="shadow-none mb-4">
@@ -98,7 +109,7 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
             size="sm"
             variant="outline"
             onClick={() => void runBriefing()}
-            disabled={busy}
+            disabled={loading}
             className="ml-auto h-7 border-brand/30 bg-brand/10 text-[12px] hover:bg-brand/20"
           >
             <Sparkles size={13} strokeWidth={1.75} className="mr-1.5 text-brand" aria-hidden="true" />
@@ -106,27 +117,52 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
           </Button>
         </div>
 
+        {/* Hilo de la conversación. aria-live para que el lector anuncie lo nuevo. */}
+        {!empty && (
+          <div className="space-y-3" aria-live="polite" aria-atomic="false">
+            {thread.map((t, i) =>
+              t.role === 'user' ? (
+                <p key={i} className="text-[13px] text-foreground/70 border-l-2 border-brand/40 pl-2.5">
+                  {t.text}
+                </p>
+              ) : t.isBriefing ? (
+                <BriefingBody key={i} text={t.text} />
+              ) : (
+                <p key={i} className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">
+                  {t.text}
+                </p>
+              ),
+            )}
+            {loading && (
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Loader2 size={12} className="animate-spin" aria-hidden="true" /> Pensando sobre {first}…
+              </div>
+            )}
+            {error && <ApiErrorNotice error={error} className="p-2" />}
+          </div>
+        )}
+
         <form onSubmit={(e) => { e.preventDefault(); void ask(q) }} className="flex gap-2">
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={`Ej: ¿cómo viene la relación con ${first}?`}
+            placeholder={empty ? `Ej: ¿cómo viene la relación con ${first}?` : 'Seguí preguntando…'}
             aria-label={`Preguntá sobre ${first}`}
           />
-          <Button type="submit" size="sm" disabled={busy || !q.trim()} aria-label="Preguntar">
-            {busy
+          <Button type="submit" size="sm" disabled={loading || !q.trim()} aria-label="Preguntar">
+            {loading
               ? <Loader2 size={14} className="animate-spin" aria-hidden="true" />
               : <Send size={14} strokeWidth={1.75} aria-hidden="true" />}
           </Button>
         </form>
 
-        {state.kind === 'idle' && (
+        {empty && !loading && (
           <div className="flex flex-wrap gap-1.5">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
                 type="button"
-                onClick={() => { setQ(s); void ask(s) }}
+                onClick={() => void ask(s)}
                 className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground hover:border-border-strong transition-colors"
               >
                 {s}
@@ -135,34 +171,16 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
           </div>
         )}
 
-        {/* Región viva: el lector de pantalla anuncia el estado (pensando →
-            respuesta / error) cuando cambia, sin que el foco esté acá. */}
-        <div aria-live="polite" aria-atomic="false">
-          {state.kind === 'loading' && (
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Loader2 size={12} className="animate-spin" aria-hidden="true" /> Pensando sobre {first}…
-            </div>
-          )}
-
-          {state.kind === 'error' && <ApiErrorNotice error={state.error} className="p-2" />}
-
-          {state.kind === 'answer' && (
-            <div className="space-y-2">
-              <p className="text-[11px] text-text-tertiary">{state.question}</p>
-              {state.isBriefing
-                ? <BriefingBody text={state.text} />
-                : <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed">{state.text}</p>}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setState({ kind: 'idle' })}
-                className="h-7 text-[11px] text-muted-foreground"
-              >
-                {state.isBriefing ? 'Cerrar' : 'Preguntar otra cosa'}
-              </Button>
-            </div>
-          )}
-        </div>
+        {!empty && !loading && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setThread([]); setError(null) }}
+            className="h-7 text-[11px] text-muted-foreground"
+          >
+            Empezar de nuevo
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
