@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ffcbcc0`
+**Hash del último commit humano:** `68acb6c`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `68acb6c` | aaronhuaynate66 | Merge pull request #692 from aaronhuaynate66/feat/email-reader-outlook | 2026-07-10 |
+| `79fa01c` | Aaron Huaynate | feat(correo): leer Outlook Web (OWA) por scrape, mismo backend que Graph | 2026-07-10 |
 | `ffcbcc0` | aaronhuaynate66 | Merge pull request #691 from aaronhuaynate66/feat/e5-coherencia | 2026-07-10 |
 | `ccb156b` | Aaron Huaynate | feat(coherencia): capa E5 declarado ↔ hecho a escala de vida | 2026-07-10 |
 | `a4054ac` | aaronhuaynate66 | Merge pull request #690 from aaronhuaynate66/docs/ola2-y-storage | 2026-07-10 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `d033e46` | aaronhuaynate66 | Merge pull request #688 from aaronhuaynate66/chore/deuda-dry-run | 2026-07-10 |
 | `50ccf3c` | aaronhuaynate66 | Merge pull request #687 from aaronhuaynate66/feat/cross-ref-ubicacion | 2026-07-10 |
 | `a6c3fd5` | Aaron Huaynate | feat(ingesta): ingestión documental — PDF/texto → memorias con preview | 2026-07-10 |
-| `a4ea260` | Aaron Huaynate | chore(deuda): dry-run read-only de reconcile temporal + huérfanos de Storage | 2026-07-10 |
-| `ecdebfd` | aaronhuaynate66 | Merge pull request #686 from aaronhuaynate66/feat/e5-profundizar | 2026-07-10 |
 
 ---
 
