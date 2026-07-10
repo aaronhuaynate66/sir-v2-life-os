@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `7ac15a8`
+**Hash del último commit humano:** `f1e1fc3`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `f1e1fc3` | aaronhuaynate66 | fix(alignment): no inferir vínculo persona↔objetivo por tag de rubro suelto (#661) | 2026-07-10 |
 | `7ac15a8` | aaronhuaynate66 | feat(gente): inteligencia de género — detección, pregunta y auto-análisis (#660) | 2026-07-10 |
 | `1bcd0dc` | aaronhuaynate66 | fix(forecast): el 2º horizonte lee el sustrato (adiós al "importá el export") (#659) | 2026-07-09 |
 | `d541066` | aaronhuaynate66 | feat(relaciones): botón "actualizar Lo personal de todas" desde el sustrato (#658) | 2026-07-09 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6b79b01` | aaronhuaynate66 | feat(synthesis): "Lo personal" se genera del hilo real del sustrato (#654) | 2026-07-09 |
 | `fa42abe` | aaronhuaynate66 | feat(chat): cursor propio del sustrato → re-subidas mandan solo el delta (#653) | 2026-07-09 |
 | `676119d` | aaronhuaynate66 | fix(pulso): sacar [media] y URLs de los "temas" de la conversación (#652) | 2026-07-09 |
-| `2800d15` | aaronhuaynate66 | fix(chat): paginar la lectura del sustrato (PostgREST corta a 1000 filas) (#651) | 2026-07-09 |
 
 ---
 
