@@ -44,6 +44,7 @@ import { TargetsAtGlanceCard } from '@/components/panel/TargetsAtGlanceCard'
 import { AnduveHoyCard } from '@/components/panel/AnduveHoyCard'
 import { PersonasEnRiesgoCard } from '@/components/panel/PersonasEnRiesgoCard'
 import { DailyActionsPanel } from '@/components/horario/DailyActionsPanel'
+import { InboundFeedPanel } from '@/components/panel/InboundFeedPanel'
 import { StatusAlertsCard } from '@/components/panel/StatusAlertsCard'
 import { SIRPulseWidget } from '@/components/panel/SIRPulseWidget'
 import { RemindersCard } from '@/components/panel/RemindersCard'
@@ -397,6 +398,14 @@ function DashboardContent() {
       <StatusAlertsCard />
       <RemindersCard />
       <PersonasEnRiesgoCard />
+
+      {/* "Lo que entró de tu gente" (feed inbound cross-canal): quién te escribió
+          reciente, por qué canal, y qué quedó en tu cancha. REACTIVO — el espejo
+          de "Reconectá"/"Hoy con tu gente" (que son PROACTIVOS: a quién salir a
+          buscar). Se esconde si no entró nada. */}
+      <div className="mb-4">
+        <InboundFeedPanel limit={8} hideWhenEmpty />
+      </div>
 
       {/* "Reconectá con tu gente" (P0 backlog Clay — serendipia): 3-5 personas
           que se están enfriando por silencio, sin fecha ni pendiente que ya las
