@@ -6,7 +6,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `0b45738`
+**Hash del último commit humano:** `31859c6`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -341,6 +341,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `31859c6` | aaronhuaynate66 | feat(calendario): proactivo — SIR ofrece agendar fechas próximas en Google (#664) | 2026-07-10 |
 | `0b45738` | aaronhuaynate66 | fix(relato): idempotencia en crear_nota_manual y crear_recordatorio (#663) | 2026-07-10 |
 | `14a6147` | aaronhuaynate66 | fix(calendar): surface el error real del callback OAuth de Google (#662) | 2026-07-10 |
 | `f1e1fc3` | aaronhuaynate66 | fix(alignment): no inferir vínculo persona↔objetivo por tag de rubro suelto (#661) | 2026-07-10 |
@@ -350,7 +351,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `7968fad` | aaronhuaynate66 | feat(ficha): 2º horizonte en prosa cualitativa (adiós a los "+74%") (#657) | 2026-07-09 |
 | `aa47a72` | aaronhuaynate66 | feat(ficha): flag "contradice una nota" — cruza notas manuales vs. el sustrato (#656) | 2026-07-09 |
 | `661097f` | aaronhuaynate66 | fix(ficha): humanizar enums crudos de captura (WHATSAPP_CHAT, conf. high) (#655) | 2026-07-09 |
-| `6b79b01` | aaronhuaynate66 | feat(synthesis): "Lo personal" se genera del hilo real del sustrato (#654) | 2026-07-09 |
 
 ---
 
