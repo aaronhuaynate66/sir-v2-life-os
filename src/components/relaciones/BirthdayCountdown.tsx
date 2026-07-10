@@ -291,6 +291,9 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">Sin fecha de nacimiento.</p>
+      <p className="text-xs text-muted-foreground/70 leading-relaxed">
+        Con su cumple cargado, SIR te cuenta los días que faltan y lo suma a tu agenda para que no se te pase.
+      </p>
       <Button size="sm" variant="outline" onClick={onAdd} className="w-full">
         <Cake size={13} strokeWidth={1.75} className="mr-1.5" aria-hidden="true" />
         + Agregar cumpleaños
