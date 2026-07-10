@@ -29,6 +29,7 @@ import { getProfileAxes } from '@/lib/person-axes/fetch'
 import { getNotesHistoryForPerson } from '@/lib/person-notes-history/fetch'
 import { getMomentsForPerson } from '@/lib/moments/fetch'
 import { getPersonCyclesForPerson } from '@/lib/person-cycles/fetch'
+import { getMoneyForPerson } from '@/lib/money/fetch'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -102,6 +103,7 @@ export default async function RelacionPage({ params }: PageProps) {
     notesHistory,
     moments,
     personCycles,
+    money,
   ] =
     await Promise.all([
       getLatestObservation(supabase, userId, personId, CONVERSATION_CAPTURE_TYPES),
@@ -128,6 +130,9 @@ export default async function RelacionPage({ params }: PageProps) {
       // Ciclo REAL de esta persona (mig 0110) día por día para cruzar contra
       // los person_logs. Fail-open [] si la tabla no existe.
       getPersonCyclesForPerson(supabase, userId, personId),
+      // Movimientos de plata con fecha (person_money) → entran al hilo de la
+      // Bitácora. Fail-open [] si la tabla no existe.
+      getMoneyForPerson(supabase, userId, personId, { limit: 100 }),
     ])
 
   return (
@@ -149,6 +154,7 @@ export default async function RelacionPage({ params }: PageProps) {
       notesHistory={notesHistory}
       moments={moments}
       personCycles={personCycles}
+      money={money}
     />
   )
 }

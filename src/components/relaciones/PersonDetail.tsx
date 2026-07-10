@@ -164,6 +164,9 @@ interface PersonDetailProps {
    *  como entries en la Bitácora (label = título, chip abierto/resuelto). */
   moments?: import('@/lib/moments/types').RelationshipMoment[]
   personCycles?: import('@/lib/person-cycles/types').PersonCycleEntry[]
+  /** Movimientos de plata con fecha (person_money). Server-fetched. Se muestran
+   *  en el hilo de la Bitácora (además de su panel editable en Registro). */
+  money?: import('@/lib/money/types').MoneyEntry[]
 }
 
 // Etiquetas en español centralizadas en @/lib/people/labels. Se alían a los
@@ -264,6 +267,7 @@ export function PersonDetail({
   notesHistory = [],
   moments = [],
   personCycles = [],
+  money = [],
 }: PersonDetailProps) {
   const router = useRouter()
   const { people, updatePerson } = useRelationshipStore()
@@ -432,7 +436,7 @@ export function PersonDetail({
       />
       <HistorialSearch personId={live.id} />
       <AnotarAhora personId={live.id} />
-      <Bitacora personLogs={personLogs} observations={curatedObservations} notesHistory={notesHistory} moments={moments} />
+      <Bitacora personLogs={personLogs} observations={curatedObservations} notesHistory={notesHistory} moments={moments} money={money} />
       {/* 19·M3 — red flags de auto-protección sobre tus notas (foco en tu cuidado). */}
       <RelationalFlagsCard personName={live.name} personLogs={personLogs} />
     </div>
