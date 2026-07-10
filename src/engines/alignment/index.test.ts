@@ -96,6 +96,30 @@ describe('computeGoalAlignment — señal de tono (A, Etapa 4)', () => {
     const a = computeGoalAlignment(g, { people: [p], relationships: [], memories: [], now: NOW })
     expect(a.signals.find((s) => s.kind === 'interaction_tone')).toBeUndefined()
   })
+})
+
+describe('computeGoalAlignment — inferencia NO por tag de rubro suelto (fix Diana↔Marlab)', () => {
+  const jhodaal = goal({
+    id: 'g_jho', title: 'Cerrar Boticas Jhodaal como cliente de Marlab',
+    category: 'financial', relatedPersons: [],
+  })
+
+  it('un tag "comercial" sobre su propio emprendimiento NO infiere el vínculo al objetivo', () => {
+    const diana = person({ id: 'p', name: 'Diana' })
+    const m = memory({ id: 'm', personId: 'p', tags: ['comercial'], content: 'Diana vende flores por redes sociales.' })
+    const a = computeGoalAlignment(jhodaal, ctx([diana], [], [m]))
+    expect(a.state).toBe('insufficient_data')
+    expect(a.inferred).toBeFalsy()
+    expect(a.linkedPersonNames).toEqual([])
+  })
+
+  it('un tag/keyword ESPECÍFICO del objetivo (jhodaal) SÍ infiere el vínculo', () => {
+    const contacto = person({ id: 'q', name: 'Contacto Jhodaal' })
+    const m = memory({ id: 'm2', personId: 'q', tags: ['jhodaal'], content: 'Avanzó la propuesta con Boticas Jhodaal.' })
+    const a = computeGoalAlignment(jhodaal, ctx([contacto], [], [m]))
+    expect(a.inferred).toBe(true)
+    expect(a.linkedPersonNames).toEqual(['Contacto Jhodaal'])
+  })
 
   it('usa solo las últimas 5 interacciones', () => {
     const p = person({ id: 'p', name: 'Diana' })
@@ -107,10 +131,12 @@ describe('computeGoalAlignment — señal de tono (A, Etapa 4)', () => {
 })
 
 describe('computeGoalAlignment — inferencia por evidencia (B, Etapa 4)', () => {
-  it('objetivo SIN personas vinculadas pero con memoria que lo menciona → INFERIDO', () => {
+  it('objetivo SIN personas vinculadas pero con memoria que lo menciona (keyword del objetivo) → INFERIDO', () => {
     const g = goal({ id: 'venta', title: 'cerrar venta farmacia', category: 'financial', relatedPersons: [] })
     const p = person({ id: 'diana', name: 'Diana' })
-    const m = memory({ id: 'm1', personId: 'diana', timestamp: '2026-05-30T00:00:00.000Z', tags: ['comercial'] })
+    // El tag 'farmacia' ES palabra clave del objetivo → sí lo menciona. (Un tag
+    // de rubro suelto como 'comercial' NO alcanzaría para inferir — ver fix.)
+    const m = memory({ id: 'm1', personId: 'diana', timestamp: '2026-05-30T00:00:00.000Z', tags: ['farmacia', 'comercial'] })
     const a = computeGoalAlignment(g, ctx([p], [], [m]))
     expect(a.inferred).toBe(true)
     expect(a.linkedPersonNames).toContain('Diana')
@@ -126,10 +152,10 @@ describe('computeGoalAlignment — inferencia por evidencia (B, Etapa 4)', () =>
     expect(a.summary).toContain('No encontramos')
   })
 
-  it('memoria vieja (>45d) NO infiere vínculo', () => {
+  it('memoria vieja (>45d) NO infiere vínculo aunque tenga keyword del objetivo', () => {
     const g = goal({ id: 'venta', title: 'cerrar venta farmacia', category: 'financial', relatedPersons: [] })
     const p = person({ id: 'diana', name: 'Diana' })
-    const m = memory({ id: 'm1', personId: 'diana', timestamp: '2026-01-01T00:00:00.000Z', tags: ['comercial'] })
+    const m = memory({ id: 'm1', personId: 'diana', timestamp: '2026-01-01T00:00:00.000Z', tags: ['farmacia'] })
     const a = computeGoalAlignment(g, ctx([p], [], [m]))
     expect(a.inferred).toBeFalsy()
     expect(a.state).toBe('insufficient_data')
