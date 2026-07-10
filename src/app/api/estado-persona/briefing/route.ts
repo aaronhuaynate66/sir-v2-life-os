@@ -60,10 +60,10 @@ async function loadBundle(supabase: Supabase, userId: string, personId: string):
       .eq('user_id', userId).eq('person_id', personId)
       .gte('date', cutoff.slice(0, 10))
       .order('date', { ascending: false }).limit(60),
-    supabase.from('memories').select('id, person_id, title, content, type, timestamp, tags, is_private')
+    supabase.from('memories').select('id, person_id, title, content, type, timestamp:occurred_at, tags, is_private')
       .eq('user_id', userId).eq('person_id', personId)
       .eq('is_private', false)
-      .order('timestamp', { ascending: false }).limit(20),
+      .order('occurred_at', { ascending: false }).limit(20),
   ])
 
   const personLogs = ((logsRes.data ?? []) as Array<{ id: string; user_id: string; person_id: string; kind: string; value: number; note: string | null; logged_at: string; created_at: string }>)
