@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SIR Reader",
-  "version": "0.4.0",
-  "description": "Lee pasivamente tus conversaciones (Teams, WhatsApp Web) y las manda a tu SIR. Solo lo que ya se ve en pantalla; sin auto-scroll ni requests de fondo.",
+  "version": "0.5.0",
+  "description": "Lee pasivamente tus conversaciones (Teams, WhatsApp Web) y tu correo (Outlook Web) y los manda a tu SIR. Solo lo que ya se ve en pantalla; sin auto-scroll ni requests de fondo.",
   "permissions": ["storage"],
   "host_permissions": [
     "https://teams.microsoft.com/*",
@@ -10,6 +10,8 @@
     "https://teams.cloud.microsoft/*",
     "https://*.cloud.microsoft/*",
     "https://web.whatsapp.com/*",
+    "https://outlook.office.com/*",
+    "https://outlook.office365.com/*",
     "https://sir-v2-life-os.vercel.app/*"
   ],
   "background": { "service_worker": "background.js" },
@@ -28,6 +30,14 @@
     {
       "matches": ["https://web.whatsapp.com/*"],
       "js": ["content/common.js", "content/whatsapp.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://outlook.office.com/*",
+        "https://outlook.office365.com/*"
+      ],
+      "js": ["content/common.js", "content/outlook.js"],
       "run_at": "document_idle"
     }
   ]

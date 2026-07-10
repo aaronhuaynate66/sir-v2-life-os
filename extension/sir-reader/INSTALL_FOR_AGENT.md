@@ -6,6 +6,11 @@ forma **pasiva**, las conversaciones de Teams y las mande a **SIR**
 (`https://sir-v2-life-os.vercel.app`). No hay que scrapear ni auto-scrollear: la
 extensión solo lee lo que ya se ve en pantalla mientras Teams está abierto.
 
+> **También lee el correo** de **Outlook Web** (`outlook.office.com`) con la misma
+> postura pasiva — útil cuando **no** hay acceso admin a Azure/Graph. El correo va
+> a `/api/email/ingest` (mismo token). Si solo te pidieron Teams, dejá el resto en
+> ON igual: no molesta, y captura correo si el humano abre OWA en ese Chrome.
+
 > **Datos que el humano (Aaron) te tiene que pasar aparte** (no están en el repo):
 > - `READER_INGEST_TOKEN` — el token secreto (una cadena larga). Va en `config.js`.
 > - Confirmar la **URL de SIR** (por defecto `https://sir-v2-life-os.vercel.app`).
@@ -66,7 +71,7 @@ Tiene que ser el **mismo Chrome/perfil donde Teams está logueado** (no un Chrom
 ## Reglas (no las cambies)
 
 - **Pasivo:** solo leer lo que ya está en pantalla. **Nada** de auto-scroll, requests automáticos ni crawl de fondo.
-- **Solo Teams (y WhatsApp Web).** No actives LinkedIn/Instagram/Facebook: violan el ToS y arriesgan la cuenta.
+- **Solo Teams, WhatsApp Web y Outlook Web (correo).** No actives LinkedIn/Instagram/Facebook: violan el ToS y arriesgan la cuenta.
 - El token es **secreto**: no lo pegues en el repo, chats públicos, ni logs.
 - Idempotente: reenviar mensajes no duplica (SIR deduplica por hash), así que no pasa nada si recargás la extensión.
 

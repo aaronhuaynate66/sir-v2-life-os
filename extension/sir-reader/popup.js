@@ -9,6 +9,7 @@ async function load() {
   const en = enabled || {};
   $('t-teams').checked = en.teams !== false;
   $('t-whatsapp').checked = en.whatsapp !== false;
+  $('t-outlook').checked = en.outlook !== false;
   renderStatus(status);
 }
 
@@ -30,7 +31,7 @@ function renderStatus(status) {
 async function save() {
   const sirUrl = $('sirUrl').value.trim();
   const token = $('token').value.trim();
-  const enabled = { teams: $('t-teams').checked, whatsapp: $('t-whatsapp').checked };
+  const enabled = { teams: $('t-teams').checked, whatsapp: $('t-whatsapp').checked, outlook: $('t-outlook').checked };
   await chrome.storage.local.set({ sirUrl, token, enabled });
   const btn = $('save');
   btn.textContent = 'Guardado ✓';
