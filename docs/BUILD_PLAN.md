@@ -2,7 +2,7 @@
 
 > **Qué es:** la lista maestra de lo que falta construir, priorizada. Se actualiza
 > con CADA entregable (Claude la mantiene). Fuente de "qué sigue".
-> **Última actualización:** 2026-07-03 (A1–A8 ✅ · U1/U2 ✅ · C1/C2/C3 ✅ · V2 ✅ · B1-simple ✅ · base científica cerrada). **Todo lo autónomamente construible está en prod; lo que queda necesita tu input.**
+> **Última actualización:** 2026-07-10 (maratón #656–667: sustrato de chat, género+dedup, calendario lectura/escritura/proactivo, predictivo de enfriamiento, P0 de la ficha — todo en prod, 3131 tests verdes). **El pozo de alto valor quedó vaciado; lo que queda es config tuya + pulido + arcos grandes.** Ver el bloque "📍 PENDIENTES VIVOS" abajo — esa es la lista para no revisar todo a cada rato.
 >
 > **Encuadre:** el *cuerpo* de SIR está en prod (percepción, memoria, cerebro-grafo
 > F1-F4, contexto, señales, salud, finanzas, relaciones, objetivos). Lo que falta es
@@ -10,6 +10,70 @@
 > = etapa E6 "AI-Native Human OS", la visión-norte) + la extensión del Reader + pulido.
 
 **Leyenda:** ✅ hecho · 🔨 en curso · ⬜ pendiente · | Esfuerzo **S/M/L** · Prioridad **P0/P1/P2**
+
+---
+
+## 📍 PENDIENTES VIVOS (al 2026-07-10)
+
+> **Fuente única de "qué falta".** Rastreo cruzado de memoria, BACKLOG, este plan, roadmap
+> estratégico y docs científicos. `MASTER_PLAN.md` NO cuenta acá (lo regenera el bot desde
+> issues y muestra estado congelado del 28-may). Marcá `[x]` al cerrar; mové a las secciones
+> de detalle de abajo si merece nota larga.
+
+### 🔑 A — Necesita config/acción de Aaron (código ya en prod, espera setup externo)
+- [ ] **SIR Reader** — verificar EN VIVO que Teams llega a SIR (token ya entregado)
+- [ ] **Correo M365** — crear app en Azure + cargar env `MS_*`
+- [ ] **Grabador de llamadas** — probar el micrófono
+- [ ] **Canal WhatsApp** — provisionar la app de Meta (texto #638 + voz #639, inertes hasta eso)
+- [ ] **Sentry** — cargar el DSN en prod para que capture
+- [ ] **Emails Supabase en ES** — pegar `docs/auth-email-templates-es.md` en el dashboard
+- [ ] **V1 — verificación en vivo de la capa cognitiva** — manejar /panel (Foco ahora / Pensar con SIR), /decidir, /salud (Proyección / Tu momento / Qué te funciona) con sesión + data real
+- [ ] **Mobile QA (#44 / C4)** — pulido pantalla-por-pantalla; necesita capturas de tu cel
+- ~~Borrar secret viejo `****kefe` en GCP~~ → **Aaron decidió NO borrarlo**
+
+### 🔨 B — Construible YA (sin depender de tu setup)
+**Ficha de persona (P1 estructura)**
+- [~] Consolidar la ficha (Opción 1, 10-jul): las 5 cards sueltas de la tab Hoy (Estado/Salud/Energía/Micro-bid/Ventana) ahora viven bajo UN encabezado **"Estado del vínculo"** (`SectionTitle` h2), cada motor conserva su auto-ocultado. **Dedup real de la Ventana de contacto**: `ContactWindowBadge` ganó `hideUnlessNeutral` → en señal (buen_momento/con_cuidado) la muestra el CareBanner del hero, acá solo el caso neutral "Cuando quieras". Verificado: type-check + compila + ficha 200 (render visual no verificable en vivo: `ssr:false` + extensión no attachea a localhost → Aaron confirma con Ctrl+Shift+R). **Pendiente si Aaron quiere:** Opción 2 (fusión total en 1 card) · "1 solo asistente IA" (Briefing/Preguntar/Generar hoy dispersos).
+- [ ] Timeline unificado como CENTRO de la ficha (un hilo cronológico: observations+capturas+logs+notas; paneles = contexto lateral). *Dirección de diseño (Clay #3), se cruza con lo anterior.*
+
+**Deuda / limpieza**
+- [ ] **Consistencia temporal de hechos** (🟡 parcial): backfill network-wide relocation-only con DRY-RUN + OK; (b) no cubre memorias episódicas
+- [x] **`persistScaleCapture` no espera ACK** del push → UI decía "guardado" antes de confirmar (13 métricas irrecuperables). **HECHO (10-jul):** `awaitSync` + read-back verify puro `waitForRowsConfirmed` (`lib/capture/scale/confirm.ts`, 5 tests); los 3 callers interactivos (Flow/Branch/MisCapturas) esperan el ACK y muestran "guardado en este dispositivo · sincronizando…" si quedó pendiente (sin falso success, sin invitar a reintento que duplique). El batch queda sin awaitSync para no colgar la cola.
+- [x] **Re-baseline del `sync-roadmap`** — el MASTER_PLAN mostraba estado FALSO (42/42, congelado 28-may). **HECHO (10-jul):** el generador (`scripts/generate_roadmap.py` → `section_header`) ahora inyecta un banner ⚠️ "ESTE DOCUMENTO ESTÁ DESFASADO" al tope en CADA regeneración, apuntando a BUILD_PLAN.md (pendientes vivos) + STRATEGIC_ROADMAP.md (arco por etapas). El bot sigue corriendo (mantiene el inventario histórico de issues) pero ya no puede mentir sin la advertencia. Regenerado localmente.
+- [ ] Storage buckets — cleanup de huérfanos (decidir política de retención primero)
+- [ ] Estados vacíos pedagógicos en las rutas que faltan
+- [—] ~~Toggle privacidad de finanzas en /timeline~~ **N/A (10-jul):** `finance` ya es un `TimelineEventType` filtrable en `/historial` (des-tildás "finance" y desaparece del feed). Toggle dedicado = redundante.
+- [—] ~~cap en `relationships.history` (>50 items)~~ **N/A (10-jul):** la tabla está VACÍA en prod (ningún flujo moderno escribe; solo se lee en backfill/grafo — `GraphView.tsx:132`). Cappear algo que no crece = trabajo muerto.
+- [—] ~~fix del Gantt~~ **bajo valor:** vive en `MASTER_PLAN.md`, ya marcado DESFASADO (banner). Arreglar un gráfico de un doc deprecado no rinde.
+
+**Re-validaciones (código listo, falta el ojo)**
+- [ ] Captura WhatsApp con FECHA explícita visible · asignación user/other en Vision · Q&A por persona multi-turno en la ficha
+
+**Datos**
+- [ ] 2 personas sin género (Sasa Aimo, Shian Navarro) → caen al gap "SIR quiere saber"
+- [x] ~~Auditoría de data muerta: 5 campos rescatables~~ **YA HECHO** (verificado 10-jul contra `project_dead_data_audit`): los 5 rescates reales están cerrados — `deals.why_matters` #538 · `person_cycles.note` #539 · `person_money.settled` #540 · `sleep.awake_min` #543 (+ `dreams` #582 · `finance.related_goal` #581 · `health_metrics.note` #584). Lo que queda son columnas VESTIGIALES (vacías, cero writers → serían features nuevas, no rescates) o grises de bajo valor. El índice de MEMORY.md estaba stale.
+
+### 🧊 C — Grande / estratégico (sesión propia + decisión de producto tuya)
+- [ ] **Etapa 5 — Life Direction System**: continuidad narrativa profunda (base "Tu rumbo" 🟢 en marcha)
+- [ ] **Rematar E4**: delta de score (snapshots del relationship score) · tono al alignment engine · inferencia LLM de dominio para objetivos de texto libre
+- [ ] **Familia persona↔persona**: Fase 1 hecha; definir fases siguientes
+- [ ] **Ingestión documental**: MarkItDown (PDF/DOCX→memorias) · import masivo de WhatsApp (años). Brainstorm, no comprometido
+- [ ] **Cross-referencing por ubicación** (Clay #8): "X vive en Barranco → visitala"
+- [ ] **Reader avanzado**: extensión MV3 (B1) · redes sociales opt-in/ToS (B2) · Teams por Graph OAuth (B3)
+
+### 🧬 D — Cola de módulos científicos (docs `10`–`19`, cada uno con "Qué construir")
+- COMPLETOS: `12` behavior change · `15` relacional (el norte) · `16` influencia/ética · `18` señales externas · cluster auto-forense
+- [ ] Cola abierta: `11` chronobiology (solo M1) · `13` emotion regulation · `14` decision science (falta premortem) · `17` ciclo (M1/M3/M4 hechos) · `19` profiling (M1/M2/M3 hechos)
+
+### 🧹 E — Housekeeping del repo (working tree)
+- [ ] `src/app/api/dev-login/route.ts` sin commitear — **dev-only, "DELETE after use"**; guardar para dev local, que no llegue a prod
+- [ ] `docs/FICHA_DIANA_MAPA.md` sin commitear (mapa UX de la ficha)
+- [ ] `scripts/seed-people.mjs` + `.gitignore` modificados sin PR (V3)
+
+### 🎯 Orden de ataque sugerido (10-jul)
+1. Ficha P1 — consolidar/deduplicar (lo que más ves a diario, ya medio hecho)
+2. `persistScaleCapture` ACK + re-baseline del MASTER_PLAN (deuda barata que limpia mentiras)
+3. Grande: timeline unificado como centro de la ficha (cruza con #1)
 
 ---
 
