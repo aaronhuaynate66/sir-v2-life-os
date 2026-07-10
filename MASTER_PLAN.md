@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5520393`
+**Hash del último commit humano:** `1d087a9`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,7 +350,9 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `1d087a9` | aaronhuaynate66 | Merge pull request #685 from aaronhuaynate66/feat/e4-remate | 2026-07-10 |
 | `5520393` | aaronhuaynate66 | Merge pull request #684 from aaronhuaynate66/feat/ciclo-17-restante | 2026-07-10 |
+| `0ad9abf` | Aaron Huaynate | feat(alignment): inferencia LLM on-demand de dominio/personas para objetivos sueltos (E4) | 2026-07-10 |
 | `68e2c4a` | Aaron Huaynate | feat(ciclo): cablea el contexto relacional al atunamiento M6 (doc 17) | 2026-07-10 |
 | `5026bd8` | aaronhuaynate66 | Merge pull request #683 from aaronhuaynate66/fix/whatsapp-fecha-relativa | 2026-07-10 |
 | `b94810f` | Aaron Huaynate | fix(captura): WhatsApp resuelve fechas relativas ("Hoy"/"Ayer"/día) en conversationDate | 2026-07-10 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `0ad6077` | Aaron Huaynate | docs(plan): lista al día tras los 6 frentes (#677-681) — B cerrada, D avanzada | 2026-07-10 |
 | `b84bb71` | aaronhuaynate66 | Merge pull request #681 from aaronhuaynate66/feat/ficha-timeline-unificado | 2026-07-10 |
 | `b12b2b3` | Aaron Huaynate | feat(ficha): timeline unificado como corazón navegable de la Bitácora | 2026-07-10 |
-| `ac21c68` | aaronhuaynate66 | Merge pull request #680 from aaronhuaynate66/feat/e5-life-direction | 2026-07-10 |
-| `532a747` | Aaron Huaynate | feat(e5): "Tu trayectoria" — el arco largo de objetivos como dirección de vida | 2026-07-10 |
 
 ---
 
