@@ -135,5 +135,10 @@ whatsapp-captures/   5c23c82c-…/dm_conversation/1781491517034-1j8k35qd.webp
 
 - [x] Tooling read-only construido y corrido.
 - [x] Reporte generado con números reales.
-- [ ] **Pendiente tu OK** para construir el apply (obsoletar facts / borrar
-      huérfanos). Nada se toca hasta entonces.
+- [x] **Deuda 1 (facts):** 0 para obsoletar → nada que aplicar. Cerrada.
+- [x] **Deuda 2 (storage) — APLICADO PARCIAL (10-jul, con OK de Aaron):** borradas las
+      **5 huérfanas seguras** (3 `scale-captures/cap_*` + 2 `person-avatars/*`),
+      verificado (esos buckets → 0 huérfanos). **RETENIDAS a propósito:** las 2
+      `whatsapp-captures/whatsapp-chat/*` (caveat #1: posible extra de captura
+      multi-imagen viva) + las 4 solo-obsoletas. Si querés purgar también esas,
+      decidí antes si borrás la observation obsoleta que las referencia.
