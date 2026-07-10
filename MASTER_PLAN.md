@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `55d2a0d`
+**Hash del último commit humano:** `bbd52cb`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,16 +350,16 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `bbd52cb` | aaronhuaynate66 | Merge pull request #670 from aaronhuaynate66/chore/sync-roadmap-desfasado-banner | 2026-07-10 |
+| `0cf81fc` | Aaron Huaynate | chore(plan): regenera MASTER_PLAN con banner tras merge de main | 2026-07-10 |
 | `55d2a0d` | aaronhuaynate66 | Merge pull request #671 from aaronhuaynate66/docs/build-plan-pendientes-vivos | 2026-07-10 |
 | `c368fc8` | aaronhuaynate66 | Merge pull request #669 from aaronhuaynate66/refactor/ficha-estado-vinculo-group | 2026-07-10 |
 | `46c3aca` | aaronhuaynate66 | Merge pull request #668 from aaronhuaynate66/fix/scale-capture-await-sync | 2026-07-10 |
 | `8b43577` | aaronhuaynate66 | Merge pull request #672 from aaronhuaynate66/fix/metrics-timestamp-column | 2026-07-10 |
 | `e7322d9` | Aaron Huaynate | fix(métricas): queries directos usaban la columna 'timestamp' inexistente | 2026-07-10 |
 | `6fd1411` | Aaron Huaynate | docs(plan): consolida los pendientes vivos al 10-jul en BUILD_PLAN | 2026-07-10 |
+| `db400a8` | Aaron Huaynate | chore(plan): el MASTER_PLAN se autoetiqueta DESFASADO (banner en el generador) | 2026-07-10 |
 | `584aad9` | Aaron Huaynate | refactor(ficha): agrupa las señales del vínculo + dedup de la ventana de contacto | 2026-07-10 |
-| `84ff756` | Aaron Huaynate | fix(captura): la báscula confirma el push antes de cantar "guardado" | 2026-07-10 |
-| `554a661` | aaronhuaynate66 | feat(calendario): el proactivo también ofrece agendar TAREAS de objetivos (#667) | 2026-07-10 |
-| `b885f20` | aaronhuaynate66 | feat(ficha): P0 del review — baja el countdown del período + consolida disclaimers (#666) | 2026-07-10 |
 
 ---
 
