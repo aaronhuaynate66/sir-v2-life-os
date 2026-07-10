@@ -185,6 +185,23 @@ NO preguntas tipo:
  * Para Nivel B (default): solo BASE_PROMPT.
  * Para Nivel C (toggle ON): BASE_PROMPT + REFLECTION_ADDENDUM.
  */
-export function getSystemPrompt(reflection: boolean): string {
-  return reflection ? `${BASE_PROMPT}${REFLECTION_ADDENDUM}` : BASE_PROMPT
+export function getSystemPrompt(reflection: boolean, todayISO?: string): string {
+  const base = reflection ? `${BASE_PROMPT}${REFLECTION_ADDENDUM}` : BASE_PROMPT
+  // Sin el ancla de HOY el modelo no puede resolver los separadores relativos
+  // ("Hoy"/"Ayer"/nombre de día) → conversationDate quedaba null aunque el chat
+  // SÍ mostrara la fecha. Se lo pasamos (mismo patrón que el extractor de notas).
+  if (todayISO && /^\d{4}-\d{2}-\d{2}$/.test(todayISO)) {
+    const weekday = new Date(`${todayISO}T12:00:00Z`).toLocaleDateString('es-PE', {
+      weekday: 'long',
+      timeZone: 'UTC',
+    })
+    const temporal =
+      `CONTEXTO TEMPORAL (para conversationDate): el día de HOY es ${todayISO} (${weekday}), zona Lima -05:00. ` +
+      `Usalo para resolver los separadores RELATIVOS del chat: "Hoy"→${todayISO}; "Ayer"→hoy menos 1 día; ` +
+      `un nombre de día ("miércoles", "lunes"…)→la fecha más reciente ANTERIOR o IGUAL a hoy que caiga en ese día. ` +
+      `Si hay VARIOS separadores, conversationDate = el del bloque de mensajes MÁS RECIENTE (el de más abajo). ` +
+      `Esto NO cambia la regla dura: si NO hay ningún separador de fecha visible, conversationDate = null.\n\n`
+    return `${temporal}${base}`
+  }
+  return base
 }
