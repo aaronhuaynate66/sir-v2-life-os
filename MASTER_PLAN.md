@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `bbd52cb`
+**Hash del último commit humano:** `794006f`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `794006f` | aaronhuaynate66 | Merge pull request #673 from aaronhuaynate66/refactor/ficha-fusion-estado-vinculo | 2026-07-10 |
+| `ab79166` | Aaron Huaynate | refactor(ficha): fusión total del "Estado del vínculo" en una sola card (Opción 2) | 2026-07-10 |
 | `bbd52cb` | aaronhuaynate66 | Merge pull request #670 from aaronhuaynate66/chore/sync-roadmap-desfasado-banner | 2026-07-10 |
 | `0cf81fc` | Aaron Huaynate | chore(plan): regenera MASTER_PLAN con banner tras merge de main | 2026-07-10 |
 | `55d2a0d` | aaronhuaynate66 | Merge pull request #671 from aaronhuaynate66/docs/build-plan-pendientes-vivos | 2026-07-10 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `8b43577` | aaronhuaynate66 | Merge pull request #672 from aaronhuaynate66/fix/metrics-timestamp-column | 2026-07-10 |
 | `e7322d9` | Aaron Huaynate | fix(métricas): queries directos usaban la columna 'timestamp' inexistente | 2026-07-10 |
 | `6fd1411` | Aaron Huaynate | docs(plan): consolida los pendientes vivos al 10-jul en BUILD_PLAN | 2026-07-10 |
-| `db400a8` | Aaron Huaynate | chore(plan): el MASTER_PLAN se autoetiqueta DESFASADO (banner en el generador) | 2026-07-10 |
-| `584aad9` | Aaron Huaynate | refactor(ficha): agrupa las señales del vínculo + dedup de la ventana de contacto | 2026-07-10 |
 
 ---
 
