@@ -17,6 +17,7 @@ import { useSelfStore } from '@/stores/useSelfStore'
 import { useMemoryStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { buildLifeThread, relationshipMilestones, memoryMilestones, mergeLifeThread, type LifeMilestoneKind, type LifeMilestone } from '@/lib/self/lifeThread'
+import { buildTrajectoryArc, trajectorySummaryLine } from '@/lib/self/trajectoryArc'
 import { buildBondEvolution } from '@/lib/people/bondEvolution'
 import type { ScoreSnapshot } from '@/lib/people/scoreTrend'
 
@@ -99,6 +100,9 @@ export function LifeThreadPanel() {
     if (p.bio && p.bio.trim()) parts.push(p.bio.trim().slice(0, 160))
     return parts.length > 0 ? parts.join(' · ') : null
   }, [identityProfile])
+  // Trayectoria (E5): el arco largo de objetivos, en números reales, para que la
+  // reflexión IA lo REFORMULE (no lo invente). Determinístico.
+  const trajectorySummary = useMemo(() => trajectorySummaryLine(buildTrajectoryArc(goals)), [goals])
   const [refl, setRefl] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; text?: string }>({ status: 'idle' })
   const generar = useCallback(async () => {
     setRefl({ status: 'loading' })
@@ -106,7 +110,7 @@ export function LifeThreadPanel() {
       const res = await fetch('/api/self/rumbo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText, identity: identitySummary }),
+        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText, identity: identitySummary, trajectory: trajectorySummary }),
       })
       const data = (await res.json()) as { insight?: string; detail?: string; error?: string }
       if (!res.ok || !data.insight) {
@@ -117,7 +121,7 @@ export function LifeThreadPanel() {
     } catch {
       setRefl({ status: 'error', text: 'No se pudo generar la reflexión.' })
     }
-  }, [shown, anchorText, identitySummary])
+  }, [shown, anchorText, identitySummary, trajectorySummary])
 
   return (
     <Card className="shadow-none">
