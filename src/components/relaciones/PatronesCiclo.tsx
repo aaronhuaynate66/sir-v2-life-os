@@ -65,7 +65,7 @@ export function PatronesCiclo({ personName, moments, personCycles, personLogs = 
           </div>
 
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Distribución de episodios por fase. Coincidencia, no causa — describí antes de concluir.
+            Distribución de episodios por fase.
           </p>
 
           {showCycle && (
@@ -123,7 +123,7 @@ function ToneBlock({ buckets, total, lowestId, lowestLabel }: {
       {lowestLabel && (
         <p className="text-[11px] text-muted-foreground leading-relaxed">
           El tono tiende a ser más bajo en <span className="text-warn font-medium">{lowestLabel.toLowerCase()}</span>. Es contexto para
-          acompañar con más suavidad — coincidencia, no causa; nunca una explicación de lo que siente.
+          acompañar con más suavidad.
         </p>
       )}
     </div>

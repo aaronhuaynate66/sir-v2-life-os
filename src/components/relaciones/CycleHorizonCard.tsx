@@ -212,7 +212,6 @@ export function CycleHorizonCard({
           {cp ? (
             <p className="text-sm text-foreground leading-relaxed">
               Ahora: <span className="font-medium">{cp.label}</span>, día {cp.cycleDay}
-              <span className="text-muted-foreground"> · próximo período en ~{cp.daysUntilNextPeriod} d</span>
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">Estimación del ciclo pendiente de datos.</p>
