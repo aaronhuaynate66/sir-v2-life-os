@@ -72,12 +72,12 @@
 - [x] `docs/FICHA_DIANA_MAPA.md` commiteado en #669
 - [ ] `scripts/seed-people.mjs` + `.gitignore` modificados sin PR (V3)
 
-### 🎯 Orden de ataque sugerido (actualizado 10-jul, tras 14 PRs #668–681)
-**Cubeta B CERRADA. D avanzada (11/13/14 hechos). E5 arrancada.** 14 PRs a prod hoy, CI verde. Lo que queda:
-1. **Necesita tu input (rápido):** subir un screenshot de WhatsApp real → re-validar Vision (fecha visible + asignación user/other) · decirme el **género** de Sasa Aimo + Shian Navarro.
-2. **Config tuya (cubeta A):** Reader (verificar Teams en vivo) · Correo M365 (Azure+env) · WhatsApp (app Meta) · Sentry DSN.
-3. **Arcos grandes (sesión propia):** profundizar E5 Life Direction · cerrar módulos `17`/`19` · cubeta C (rematar E4, ingestión documental, cross-ref por ubicación).
-4. **Ojo opcional en lo design-open reciente:** /decidir (premortem #678) · /yo (trayectoria #680) · /horario (foco #679) — additivos, no rompen nada.
+### 🎯 Orden de ataque sugerido (actualizado 10-jul, tras 22 PRs #668–689)
+**Cubetas B, C y D esencialmente CERRADAS.** 22 PRs a prod hoy, CI verde. Cerrado en la 2ª ola: WhatsApp fecha relativa (#683), E5 Estaciones (#686), E4 inferencia de vínculos (#685), ciclo 17 atunamiento (#684), ingestión documental PDF (#689), cross-ref por ubicación (#687), dry-run de deuda (#688 → facts: 0 para aplicar; storage: 5 huérfanas borradas, 2 whatsapp retenidas por caveat multi-imagen). Módulos 19 y 13/11 ya estaban completos. Lo que queda:
+1. **Config tuya (cubeta A):** Reader (Teams en vivo) · Correo M365 (Azure+env) · WhatsApp (app Meta) · Sentry DSN. **← todo lo demás construible está hecho.**
+2. **Menor pendiente de tu OK:** 2 imágenes whatsapp huérfanas (posible multi-imagen) + 4 solo-obsoletas — dejadas a propósito, ver `docs/DRY_RUN_DEUDA.md`.
+3. **Ojo opcional** en lo nuevo: /yo (Estaciones + trayectoria) · /objetivos (sugerir vínculos IA) · /captura/documento · Agenda (gente por zona) · /decidir (premortem) · /horario (foco).
+4. **Si querés MÁS profundidad:** los arcos de C/D admiten más módulos (ej. capítulos vs coherencia en E5, más módulos científicos), pero el "Qué construir" de los docs quedó mayormente vaciado.
 
 ---
 
