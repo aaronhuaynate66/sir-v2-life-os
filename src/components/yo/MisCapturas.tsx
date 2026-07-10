@@ -472,12 +472,23 @@ export function MisCapturas() {
           measuredAt,
           imageBlob: item.blob,
           confidence: item.scale?.confidence,
+          awaitSync: true,
         })
+        const plural = result.insertedCount === 1 ? '' : 's'
+        const pending = result.confirmed === false
         patchBio(item.id, {
           status: 'saved',
-          savedSummary: `${result.insertedCount} métrica${result.insertedCount === 1 ? '' : 's'} guardada${result.insertedCount === 1 ? '' : 's'}`,
+          savedSummary: pending
+            ? `${result.insertedCount} guardada${plural} · sincronizando…`
+            : `${result.insertedCount} métrica${plural} guardada${plural}`,
         })
-        toast.success(`${result.insertedCount} métricas guardadas`)
+        if (pending) {
+          toast.success(`${result.insertedCount} métricas guardadas en este dispositivo`, {
+            description: 'Sincronizando con el servidor…',
+          })
+        } else {
+          toast.success(`${result.insertedCount} métricas guardadas`)
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Falló al guardar.'
         toast.error('No se pudo guardar', { description: msg })

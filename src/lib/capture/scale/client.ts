@@ -10,9 +10,25 @@ import { createClient } from '@/lib/supabase/client'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { blobToBase64 } from './compress'
 import { buildScaleHealthMetrics } from './map'
+import { waitForRowsConfirmed } from './confirm'
 import type { ScaleCaptureExtracted, ScaleMetric } from './types'
 
 const STORAGE_BUCKET = 'scale-captures'
+
+/** Cuántos de esos ids ya están confirmados en health_metrics (read-back). */
+async function countConfirmedMetrics(
+  supabase: ReturnType<typeof createClient>,
+  ids: string[],
+  userId: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('health_metrics')
+    .select('id')
+    .eq('user_id', userId)
+    .in('id', ids)
+  if (error) return 0
+  return (data ?? []).length
+}
 
 /**
  * Llama al endpoint /api/capture/scale con la imagen base64.
@@ -51,12 +67,26 @@ export interface PersistArgs {
   imageBlob: Blob
   /** Confidence del Vision para guardarla como nota (opcional debug). */
   confidence?: 'high' | 'medium' | 'low'
+  /**
+   * Si true, NO resuelve hasta confirmar (read-back) que los rows llegaron a
+   * Supabase. Rompe levemente el offline-first (la UI bloquea ~1s hasta el ACK)
+   * pero vale la pena en captura: las 13 métricas son irrecuperables si el push
+   * falla en silencio y el usuario cree que se guardaron. Default false (flujo
+   * anterior intacto — ej. el batch, que no debe colgarse por imagen).
+   */
+  awaitSync?: boolean
 }
 
 export interface PersistResult {
   captureId: string
   sourceImagePath: string
   insertedCount: number
+  /**
+   * Solo con `awaitSync`: true = confirmado en DB; false = quedó pendiente
+   * (guardado local, se re-pushea al reconectar → la UI debe decir "guardado en
+   * este dispositivo", NO error). undefined = no se verificó (sin awaitSync).
+   */
+  confirmed?: boolean
 }
 
 /**
@@ -108,5 +138,16 @@ export async function persistScaleCapture(args: PersistArgs): Promise<PersistRes
   // request a Supabase.
   useSelfStore.setState((s) => ({ healthMetrics: [...s.healthMetrics, ...metrics] }))
 
-  return { captureId, sourceImagePath, insertedCount: metrics.length }
+  // 4. Read-back verify (opt-in): esperar a que el sync engine confirme el push
+  // en DB antes de que la UI cante "guardado". Sin awaitSync, retorna al toque
+  // como antes (confirmed = undefined).
+  let confirmed: boolean | undefined
+  if (args.awaitSync) {
+    const ids = metrics.map((m) => m.id)
+    confirmed = await waitForRowsConfirmed(ids, (chunk) =>
+      countConfirmedMetrics(supabase, chunk, userId),
+    )
+  }
+
+  return { captureId, sourceImagePath, insertedCount: metrics.length, confirmed }
 }

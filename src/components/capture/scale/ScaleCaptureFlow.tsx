@@ -97,8 +97,15 @@ export function ScaleCaptureFlow() {
           measuredAt: args.measuredAt,
           imageBlob: args.blob,
           confidence: args.extracted.confidence,
+          awaitSync: true,
         })
-        toast.success(`${result.insertedCount} métricas guardadas`)
+        if (result.confirmed === false) {
+          toast.success(`${result.insertedCount} métricas guardadas en este dispositivo`, {
+            description: 'Sincronizando con el servidor…',
+          })
+        } else {
+          toast.success(`${result.insertedCount} métricas guardadas`)
+        }
         setStep({ kind: 'success', insertedCount: result.insertedCount })
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Falló al guardar.'
