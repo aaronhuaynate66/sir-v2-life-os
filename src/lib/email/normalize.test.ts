@@ -96,6 +96,16 @@ describe('normalizeScrapedEmail', () => {
     expect(normalizeScrapedEmail(null, NOW)).toBeNull()
     expect(normalizeScrapedEmail('no-objeto', NOW)).toBeNull()
   })
+  it('descarta el correo cuando el scraper tomó la HORA como remitente (sin email)', () => {
+    // Bug de OWA: los selectores fallan y el fallback toma "15:15" como remitente.
+    expect(normalizeScrapedEmail({ from: '15:15', subject: 'Ayúdanos con la compra' }, NOW)).toBeNull()
+    expect(normalizeScrapedEmail({ from: '3:05 p. m.', subject: 'x' }, NOW)).toBeNull()
+  })
+  it('pero conserva el correo si hay email real, aunque el nombre parezca hora', () => {
+    const n = normalizeScrapedEmail({ from: '15:15', fromEmail: 'jefe@work.com', subject: 'x' }, NOW)
+    expect(n).not.toBeNull()
+    expect(n?.fromEmail).toBe('jefe@work.com')
+  })
 })
 
 describe('normalizeScrapedEmails (dedup de re-scrapes)', () => {
