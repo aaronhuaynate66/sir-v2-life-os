@@ -36,7 +36,7 @@ Lee, **pasivo**, tus conversaciones de **Microsoft Teams**, **WhatsApp Web** y t
 ## Usar
 
 - **Chats:** abrí **teams.microsoft.com** o **web.whatsapp.com** (logueado) y **entrá a un chat**.
-- **Correo:** abrí **outlook.office.com** (o `outlook.office365.com`), logueado. Andá viendo tu bandeja normal; abrí algún correo para que también capture el cuerpo completo.
+- **Correo:** abrí **outlook.office.com** (o `outlook.office365.com` / `outlook.cloud.microsoft`), logueado. Andá viendo tu bandeja normal; abrí algún correo para que también capture el cuerpo completo.
 - Andá mirando/scrolleando normal. La extensión detecta lo nuevo y lo manda en lotes (cada ~4s).
 - Volvé a abrir el popup: vas a ver **"Mensajes enviados"** subir. Si hay algo mal, muestra el error.
 - En SIR: chats y correos aparecen como observaciones `dm_conversation` (correo agrupado por remitente) → alimentan *Lo personal*, recencia, tono, memorias, y podés preguntarle a SIR sobre esos hilos.

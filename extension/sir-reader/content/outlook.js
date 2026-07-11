@@ -1,4 +1,5 @@
-// SIR Reader — adaptador Outlook Web / OWA (outlook.office.com, outlook.office365.com).
+// SIR Reader — adaptador Outlook Web / OWA
+// (outlook.office.com, outlook.office365.com, outlook.cloud.microsoft).
 //
 // Lee, PASIVO, tu correo de trabajo cuando NO hay acceso admin a Azure/Graph:
 // scrapea los correos VISIBLES de la lista (remitente, asunto, fecha, preview) +

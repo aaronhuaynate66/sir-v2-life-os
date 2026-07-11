@@ -6,7 +6,7 @@ forma **pasiva**, las conversaciones de Teams y las mande a **SIR**
 (`https://sir-v2-life-os.vercel.app`). No hay que scrapear ni auto-scrollear: la
 extensión solo lee lo que ya se ve en pantalla mientras Teams está abierto.
 
-> **También lee el correo** de **Outlook Web** (`outlook.office.com`) con la misma
+> **También lee el correo** de **Outlook Web** (`outlook.office.com` / `outlook.cloud.microsoft`) con la misma
 > postura pasiva — útil cuando **no** hay acceso admin a Azure/Graph. El correo va
 > a `/api/email/ingest` (mismo token). Si solo te pidieron Teams, dejá el resto en
 > ON igual: no molesta, y captura correo si el humano abre OWA en ese Chrome.
