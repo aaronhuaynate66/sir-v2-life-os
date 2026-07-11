@@ -30,6 +30,15 @@ describe('computeNorteDrift', () => {
     const anchor = goal({ id: 'n', isAnchor: true, updatedAt: '2026-05-20T00:00:00Z' })
     expect(computeNorteDrift([anchor, ...others], NOW).state).toBe('disperso')
   })
+  it('reconoce el norte INFERIDO: prioritario con fecha, sin marcar ⚓ (isAnchor false)', () => {
+    // El caso real: Aaron no marca el ancla, pero el Mundial (crítico, con fecha)
+    // ES su norte según buildYearCompass. Antes daba "sin_norte" en falso.
+    const r = computeNorteDrift([
+      goal({ id: 'n', title: 'Mundial', priority: 'critical', targetDate: '2026-11-01', isAnchor: false, updatedAt: '2026-06-13T00:00:00Z' }),
+    ], NOW)
+    expect(r.state).not.toBe('sin_norte')
+    expect(r.norteTitle).toBe('Mundial')
+  })
   it('cuenta activeOthers y othersMovedRecently', () => {
     const r = computeNorteDrift([
       goal({ id: 'n', isAnchor: true, updatedAt: '2026-06-14T00:00:00Z' }),
