@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `6375cf9`
+**Hash del último commit humano:** `5fff3ee`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `5fff3ee` | aaronhuaynate66 | Merge pull request #698 from aaronhuaynate66/feat/e5-persist-rumbo | 2026-07-11 |
+| `19050b8` | Aaron Huaynate | feat(e5): persiste la reflexión del rumbo (durable + evolución) | 2026-07-11 |
 | `6375cf9` | aaronhuaynate66 | Merge pull request #697 from aaronhuaynate66/feat/e5-seasons-substrate | 2026-07-11 |
 | `a743a6f` | Aaron Huaynate | feat(e5): cruza las estaciones con el sustrato vivido (/linea) | 2026-07-11 |
 | `f56d8b0` | aaronhuaynate66 | Merge pull request #696 from aaronhuaynate66/fix/unify-norte-inferred | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `ce68b2b` | Aaron Huaynate | feat(e5): 'Tu rumbo' — hilo de dirección de vida (pasado→presente→futuro) | 2026-07-11 |
 | `16d02b5` | Aaron Huaynate | Merge pull request #693 from aaronhuaynate66/feat/inbound-feed | 2026-07-11 |
 | `21da592` | aaronhuaynate66 | Merge pull request #694 from aaronhuaynate66/fix/outlook-sender-time | 2026-07-11 |
-| `4b070ca` | Aaron Huaynate | fix(correo): el scraper de OWA tomaba la HORA como remitente | 2026-07-11 |
-| `feeb124` | Anakin | fix(reader): support outlook cloud host | 2026-07-11 |
 
 ---
 
