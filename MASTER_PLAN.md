@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `31f2428`
+**Hash del último commit humano:** `d60f3c3`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `d60f3c3` | aaronhuaynate66 | Merge pull request #713 from aaronhuaynate66/docs/build-plan-yolo | 2026-07-11 |
+| `2064151` | Aaron Huaynate | docs(plan): sesión asistente conversacional + modo yolo (13 PRs) | 2026-07-11 |
 | `31f2428` | aaronhuaynate66 | Merge pull request #712 from aaronhuaynate66/chore/remove-dead-code | 2026-07-11 |
 | `acbb715` | Aaron Huaynate | chore: borra código muerto (auditoría de cableado) | 2026-07-11 |
 | `bb7b435` | aaronhuaynate66 | Merge pull request #711 from aaronhuaynate66/feat/telegram-commands | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `50bf0cb` | Aaron Huaynate | feat(panel): saludo contextual + resumen del día (quick win Rimu) | 2026-07-11 |
 | `eb3cd64` | aaronhuaynate66 | Merge pull request #709 from aaronhuaynate66/feat/ga4-telegram | 2026-07-11 |
 | `4ff0125` | Aaron Huaynate | feat(analytics): tracking server-side de GA4 para el canal Telegram | 2026-07-11 |
-| `843b2bf` | aaronhuaynate66 | Merge pull request #708 from aaronhuaynate66/feat/telegram-voice | 2026-07-11 |
-| `dadebf8` | Aaron Huaynate | feat(telegram): notas de voz → Whisper → askSir | 2026-07-11 |
 
 ---
 
