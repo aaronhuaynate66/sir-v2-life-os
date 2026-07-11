@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2c2cc97`
+**Hash del último commit humano:** `c8c2d80`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `c8c2d80` | aaronhuaynate66 | Merge pull request #701 from aaronhuaynate66/ci/bump-actions-node24 | 2026-07-11 |
+| `6bed599` | Aaron Huaynate | ci: bump actions/checkout y setup-node a v5 (Node 24) | 2026-07-11 |
 | `2c2cc97` | aaronhuaynate66 | Merge pull request #700 from aaronhuaynate66/ci/validate-on-pr | 2026-07-11 |
 | `19b3357` | Aaron Huaynate | ci(validate): corre type-check/lint/test/build también en pull_request | 2026-07-11 |
 | `ed2b164` | aaronhuaynate66 | Merge pull request #699 from aaronhuaynate66/fix/gitignore-secrets | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `9f0f855` | Aaron Huaynate | docs(plan): E5 Life Direction completo (6 PRs #693-698) + limpia stale [skip ci] | 2026-07-11 |
 | `5fff3ee` | aaronhuaynate66 | Merge pull request #698 from aaronhuaynate66/feat/e5-persist-rumbo | 2026-07-11 |
 | `19050b8` | Aaron Huaynate | feat(e5): persiste la reflexión del rumbo (durable + evolución) | 2026-07-11 |
-| `6375cf9` | aaronhuaynate66 | Merge pull request #697 from aaronhuaynate66/feat/e5-seasons-substrate | 2026-07-11 |
-| `a743a6f` | Aaron Huaynate | feat(e5): cruza las estaciones con el sustrato vivido (/linea) | 2026-07-11 |
 
 ---
 
