@@ -147,6 +147,13 @@ export function normalizeScrapedEmail(raw: unknown, nowMs: number = Date.now()):
   const body = clean(o.body, MAX_BODY) || clean(o.snippet, MAX_BODY)
   const receivedAt = normalizeReceivedAt(o.receivedAt, nowMs)
 
+  // Red anti-ruido del scraper de OWA: cuando sus selectores fallan, el fallback
+  // por líneas a veces toma la HORA del renglón ("15:15") como remitente. Sin un
+  // email real que lo respalde, ese correo no tiene remitente confiable → es ruido
+  // ("conversación con 15:15", sin persona, ensucia el feed). Lo descartamos; el
+  // fix del scraper (outlook.js) evita generarlo de entrada.
+  if (!fromEmail && HHMM_RE.test(fromName)) return null
+
   if (!fromName && !fromEmail && !subject && !body) return null
 
   return {

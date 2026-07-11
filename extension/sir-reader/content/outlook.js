@@ -43,6 +43,13 @@
   const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i
   function firstEmail(s) { const m = (s || '').match(EMAIL_RE); return m ? m[0] : '' }
 
+  // El renglón de OWA muestra la HORA del correo ("15:15", "3:05 p. m."). Cuando
+  // los selectores de remitente fallan, el fallback por líneas la confunde con el
+  // nombre → correos atribuidos a "15:15". Detectarla para NO tomarla como
+  // remitente (y sí como fecha si no teníamos otra).
+  const TIME_RE = /^\d{1,2}:\d{2}(\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm))?$/i
+  function looksLikeTime(s) { return TIME_RE.test((s || '').trim()) }
+
   // Llave de dedup en memoria — alineada en espíritu con emailDedupKey del server
   // (messageId si hay; si no from|subject|receivedAt). Solo evita re-mandar lo
   // mismo dentro de la misma sesión de página; el server dedup es la verdad.
@@ -98,12 +105,19 @@
     let snippet = text(previewEl)
     let receivedAt = (timeEl && (attr(timeEl, 'datetime') || attr(timeEl, 'title'))) || text(timeEl)
 
-    // Fallback total: partir el texto/aria del renglón en líneas.
+    // Si el selector de remitente cayó sobre el chip de la hora, no es un nombre.
+    if (looksLikeTime(from)) { if (!receivedAt) receivedAt = from; from = '' }
+
+    // Fallback total: partir el texto/aria del renglón en líneas. La hora suele
+    // colarse como una línea más → se excluye del candidato a remitente/asunto y,
+    // si no teníamos fecha, se reaprovecha como receivedAt.
     if (!from || !subject) {
       const lines = (text(row) || attr(row, 'aria-label')).split(/\s{2,}|\n|,\s/).map((x) => x.trim()).filter(Boolean)
-      if (!from && lines[0]) from = lines[0]
-      if (!subject && lines[1]) subject = lines[1]
-      if (!snippet && lines[2]) snippet = lines[2]
+      if (!receivedAt) { const t = lines.find(looksLikeTime); if (t) receivedAt = t }
+      const nameLines = lines.filter((l) => !looksLikeTime(l))
+      if (!from && nameLines[0]) from = nameLines[0]
+      if (!subject && nameLines[1]) subject = nameLines[1]
+      if (!snippet && nameLines[2]) snippet = nameLines[2]
     }
     const fromEmail = firstEmail(attr(senderEl, 'title') || attr(row, 'aria-label') || from)
 
