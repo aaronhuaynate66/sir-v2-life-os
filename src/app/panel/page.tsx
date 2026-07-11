@@ -14,6 +14,7 @@ import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
 import { analyzeFinancialStability, detectFinancialAlerts, analyzeSpendingByIntent } from '@/engines/financial'
 import { detectRelationshipAlerts } from '@/engines/relationship'
 import { LunarChip } from '@/components/lunar/LunarChip'
+import { timeGreeting, daySummary } from '@/lib/panel/greeting'
 import { buildSignalContext } from '@/engines/signal'
 import { generateRecommendations, domainForRecommendation, rankRecommendations } from '@/engines/recommendation'
 import { computeEffectiveness, adjustByLearning } from '@/engines/learning'
@@ -279,6 +280,15 @@ function DashboardContent() {
   const recTimingLabel = topRec?.timing === 'now' ? 'AHORA' : topRec?.timing === 'today' ? 'HOY' : topRec?.timing === 'this_week' ? 'ESTA SEMANA' : 'CUANDO LISTO'
   const recTimingClass = topRec?.timing === 'now' ? 'border-bad/30 bg-bad-soft text-bad-foreground' : topRec?.timing === 'today' ? 'border-brand/30 bg-brand-soft text-brand-soft-foreground' : 'border-border bg-muted text-muted-foreground'
 
+  // Saludo contextual + resumen del día (idea de Rimu, adaptada a lo RELACIONAL).
+  const greet = now ? timeGreeting(now.getHours()) : null
+  const daySummaryText = daySummary({
+    care: relAlerts.length,
+    birthdays: 0, // los cumpleaños viven en UpcomingCarePanel; se suman a futuro
+    signals: activeSignals.length,
+    criticalGoals: goalsDash.criticalGoals.length,
+  })
+
   // Columna derecha (Fase 2): "qué viene" + "qué pide atención". Descomprime
   // la densidad del centro. En recuperación dura ocultamos las listas
   // secundarias (igual que el cuerpo principal) y dejamos sólo Próximo.
@@ -359,8 +369,10 @@ function DashboardContent() {
           que en mobile tapaba el header sticky y el botón de menú — removido. */}
       <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="flex justify-between items-start gap-4 mb-6 sm:mb-8">
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Mission Control</h1>
-          <div className="flex items-center gap-2 flex-wrap mt-1">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{greet ? `${greet.greeting}.` : 'Mission Control'}</h1>
+          {greet && <p className="text-sm text-muted-foreground mt-1">{greet.phrase}</p>}
+          <p className="text-sm text-foreground/80 mt-2 leading-relaxed">{daySummaryText}</p>
+          <div className="flex items-center gap-2 flex-wrap mt-2">
             <span className="text-xs sm:text-sm text-muted-foreground capitalize">{now ? now.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}</span>
             {now && <LunarChip date={now} />}
           </div>
