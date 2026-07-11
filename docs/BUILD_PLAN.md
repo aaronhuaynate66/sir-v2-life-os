@@ -23,7 +23,7 @@
 > de detalle de abajo si merece nota larga.
 
 ### 🔑 A — Necesita config/acción de Aaron (código ya en prod, espera setup externo)
-- [ ] **SIR Reader** — verificar EN VIVO que Teams llega a SIR (token ya entregado)
+- [x] **SIR Reader — VERIFICADO EN VIVO (11-jul, consulta directa a la DB):** la extensión está llegando a SIR. `reader_threads`: **21 hilos Teams** (último ingest hace ~13h) + **9 hilos email/OWA** (último hace ~9h: Anthropic, Fathom, K2). `observations dm_conversation`: 99 `reader/teams` + 9 `reader/email`. El token está OK en Vercel (si no, 401). **Confirma el diseño:** `email_connections` (Graph OAuth) VACÍO → NO se usa el Azure de la empresa; el correo entra 100% por la extensión. **Residual detectado y explicado:** 4 cursores basura con nombre-hora (`15:15/15:25/15:30/15:59`) en `reader_threads`, todos creados **00:21 UTC** = ANTES del fix #694 (01:38 UTC) → el scraper (código) está OK, es data pre-fix. **Acción pendiente de Aaron:** actualizar la extensión en la otra PC (`git pull` + recargar en `chrome://extensions`) para garantizar que corre el fix #694; opcional limpiar los 4 cursores basura.
 - [ ] **Correo M365** — crear app en Azure + cargar env `MS_*`
 - [ ] **Grabador de llamadas** — probar el micrófono
 - [ ] **Canal WhatsApp** — provisionar la app de Meta (texto #638 + voz #639, inertes hasta eso)
