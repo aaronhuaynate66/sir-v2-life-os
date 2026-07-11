@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `ed2b164`
+**Hash del último commit humano:** `2c2cc97`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `2c2cc97` | aaronhuaynate66 | Merge pull request #700 from aaronhuaynate66/ci/validate-on-pr | 2026-07-11 |
+| `19b3357` | Aaron Huaynate | ci(validate): corre type-check/lint/test/build también en pull_request | 2026-07-11 |
 | `ed2b164` | aaronhuaynate66 | Merge pull request #699 from aaronhuaynate66/fix/gitignore-secrets | 2026-07-11 |
 | `b4d8753` | Aaron Huaynate | chore(security): ignora github-token, env.download y package-lock.json | 2026-07-11 |
 | `d88f6fb` | Anakin | feat(policy): enable strategic agency v2 | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `19050b8` | Aaron Huaynate | feat(e5): persiste la reflexión del rumbo (durable + evolución) | 2026-07-11 |
 | `6375cf9` | aaronhuaynate66 | Merge pull request #697 from aaronhuaynate66/feat/e5-seasons-substrate | 2026-07-11 |
 | `a743a6f` | Aaron Huaynate | feat(e5): cruza las estaciones con el sustrato vivido (/linea) | 2026-07-11 |
-| `f56d8b0` | aaronhuaynate66 | Merge pull request #696 from aaronhuaynate66/fix/unify-norte-inferred | 2026-07-11 |
-| `c9100f6` | Aaron Huaynate | fix(e5): unifica el norte — NorteDrift reconoce el ancla inferida | 2026-07-11 |
 
 ---
 
