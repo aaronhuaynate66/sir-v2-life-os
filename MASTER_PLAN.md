@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `f56d8b0`
+**Hash del último commit humano:** `6375cf9`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6375cf9` | aaronhuaynate66 | Merge pull request #697 from aaronhuaynate66/feat/e5-seasons-substrate | 2026-07-11 |
+| `a743a6f` | Aaron Huaynate | feat(e5): cruza las estaciones con el sustrato vivido (/linea) | 2026-07-11 |
 | `f56d8b0` | aaronhuaynate66 | Merge pull request #696 from aaronhuaynate66/fix/unify-norte-inferred | 2026-07-11 |
 | `c9100f6` | Aaron Huaynate | fix(e5): unifica el norte — NorteDrift reconoce el ancla inferida | 2026-07-11 |
 | `6888d93` | aaronhuaynate66 | Merge pull request #695 from aaronhuaynate66/feat/e5-life-direction | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `21da592` | aaronhuaynate66 | Merge pull request #694 from aaronhuaynate66/fix/outlook-sender-time | 2026-07-11 |
 | `4b070ca` | Aaron Huaynate | fix(correo): el scraper de OWA tomaba la HORA como remitente | 2026-07-11 |
 | `feeb124` | Anakin | fix(reader): support outlook cloud host | 2026-07-11 |
-| `617ab31` | Aaron Huaynate | feat(panel): 'Lo que entró de tu gente' — feed inbound cross-canal | 2026-07-10 |
-| `4e934a4` | Aaron Huaynate | Add dev-login API route; ignore local .claude config | 2026-07-10 |
 
 ---
 
