@@ -2,7 +2,9 @@
 
 > **Qué es:** la lista maestra de lo que falta construir, priorizada. Se actualiza
 > con CADA entregable (Claude la mantiene). Fuente de "qué sigue".
-> **Última actualización:** 2026-07-10 — DOS tandas hoy: maratón #656–667 (sustrato, género, calendario, P0 ficha) + sesión #668–681 (14 PRs: báscula ACK, fix columna métricas, ficha completa [grupo+fusión+asistente+multi-turno], sync-roadmap, estados vacíos, y 6 frentes en paralelo: cronotipo→/horario, premortem, E5 trayectoria, timeline en ficha). **Cubeta B CERRADA · D avanzada · E5 arrancada. Todo en prod, CI verde.** Lo que queda necesita tu input o config. Ver "📍 PENDIENTES VIVOS" abajo.
+> **Última actualización:** 2026-07-10 — sesión E5 (6 PRs, todos en prod + verificados en vivo con Chrome DevTools MCP): **#693** feed inbound "Lo que entró de tu gente" + **#694** fix scraper OWA (tomaba la hora como remitente) · **E5 Life Direction System COMPLETO**: **#695** "Tu rumbo" (hilo pasado→presente→futuro, `lib/self/lifeDirection.ts`) · **#696** norte unificado (`resolveAnchorGoal`: ancla explícita o inferida, misma fuente que /panel) · **#697** estaciones × sustrato vivido (`lib/self/seasonSubstrate.ts`: cómo viviste cada capítulo) · **#698** persistir la reflexión del rumbo (mig **0142** `life_direction_reflections`, verificada round-trip). Ingesta ambiental (Teams/Outlook/WhatsApp) VERIFICADA llegando a SIR. **E5 tiene columna vertebral completa; el resto necesita tu input o config.** Ver "📍 PENDIENTES VIVOS" abajo.
+>
+> **Tandas previas 2026-07-10:** maratón #656–667 (sustrato, género, calendario, P0 ficha) + #668–681 (báscula ACK, fix columna métricas, ficha completa, sync-roadmap, estados vacíos, cronotipo, premortem, E5 trayectoria, timeline ficha).
 >
 > **Encuadre:** el *cuerpo* de SIR está en prod (percepción, memoria, cerebro-grafo
 > F1-F4, contexto, señales, salud, finanzas, relaciones, objetivos). Lo que falta es
@@ -52,7 +54,7 @@
 - [ ] Captura WhatsApp con FECHA explícita visible · asignación user/other en Vision → **necesita que Aaron suba un screenshot de WhatsApp real** (no se puede generar). NOTA (10-jul): ya SÍ se puede verificar lo visual en vivo con Chrome DevTools MCP (ve localhost; la extensión claude-in-chrome NO) — ver [[project_ui_verification_devtools]].
 
 **Datos**
-- [ ] 2 personas sin género (Sasa Aimo, Shian Navarro) → caen al gap "SIR quiere saber"
+- [x] ~~2 personas sin género (Sasa Aimo, Shian Navarro)~~ **RESUELTO 10-jul: Aaron confirmó que ambos son hombres (gender=male); 0 sin género en la DB.**
 - [x] ~~Auditoría de data muerta: 5 campos rescatables~~ **YA HECHO** (verificado 10-jul contra `project_dead_data_audit`): los 5 rescates reales están cerrados — `deals.why_matters` #538 · `person_cycles.note` #539 · `person_money.settled` #540 · `sleep.awake_min` #543 (+ `dreams` #582 · `finance.related_goal` #581 · `health_metrics.note` #584). Lo que queda son columnas VESTIGIALES (vacías, cero writers → serían features nuevas, no rescates) o grises de bajo valor. El índice de MEMORY.md estaba stale.
 
 ### 🧊 C — Grande / estratégico (sesión propia + decisión de producto tuya)
@@ -68,7 +70,7 @@
 - [ ] Cola abierta: `17` ciclo (M1/M3/M4 hechos, faltan otros) · `19` profiling (M1/M2/M3 hechos, faltan otros)
 
 ### 🧹 E — Housekeeping del repo (working tree)
-- [ ] `src/app/api/dev-login/route.ts` sin commitear — **dev-only, "DELETE after use"**; guardar para dev local, que no llegue a prod
+- [x] ~~`src/app/api/dev-login/route.ts` sin commitear~~ **commiteado (4e934a4); guardado en `main` (dev-only, guardado por RLS `NODE_ENV==='development'`).**
 - [x] `docs/FICHA_DIANA_MAPA.md` commiteado en #669
 - [ ] `scripts/seed-people.mjs` + `.gitignore` modificados sin PR (V3)
 
