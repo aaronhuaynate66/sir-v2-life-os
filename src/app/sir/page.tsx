@@ -135,8 +135,11 @@ export default function SirChatPage() {
   const [goalSel, setGoalSel] = useState<Record<string, boolean>>({})
   const [clarifyDraft, setClarifyDraft] = useState<Record<number, string>>({})
   const THREAD_KEY = 'sir_chat_thread'
-  // Cargar el hilo guardado al montar (persiste entre recargas/sesiones).
+  // Cargar el hilo al montar: primero lo local (instantáneo), luego el canónico
+  // de la DB (sir_messages) que incluye lo hablado por Telegram → historial
+  // unificado cross-canal (Fase 2). Fail-open: sin red o sin tabla, queda local.
   useEffect(() => {
+    let cancelled = false
     try {
       const raw = localStorage.getItem(THREAD_KEY)
       if (raw) {
@@ -144,6 +147,17 @@ export default function SirChatPage() {
         if (Array.isArray(parsed)) setTurns(parsed as Turn[])
       }
     } catch { /* noop */ }
+    fetch('/api/sir/thread')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d || !Array.isArray(d.turns) || d.turns.length === 0) return
+        const dbTurns = (d.turns as Array<{ role?: unknown; text?: unknown }>)
+          .filter((t) => (t.role === 'user' || t.role === 'sir') && typeof t.text === 'string')
+          .map((t) => ({ role: t.role as 'user' | 'sir', text: t.text as string }))
+        if (dbTurns.length > 0) setTurns(dbTurns)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
   }, [])
   // Guardar el hilo (acotado a los últimos 40 turnos) cuando cambia.
   useEffect(() => {

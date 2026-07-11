@@ -14,6 +14,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { askSir, AskSirConfigError } from '@/lib/sir/askSir'
+import { appendSirThread } from '@/lib/sir/thread'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
       mode: body.mode === 'socratic' ? 'socratic' : null,
       userContext: typeof body.userContext === 'string' ? body.userContext : undefined,
     })
+    // Hilo unificado (Fase 2): persisto el intercambio al hilo canónico para que
+    // Telegram (y otros dispositivos) vean lo hablado acá. Fail-open.
+    await appendSirThread(supabase, userId, 'web', body.question as string, result.answer)
     return NextResponse.json(result, { status: 200 })
   } catch (e) {
     if (e instanceof AskSirConfigError) {
