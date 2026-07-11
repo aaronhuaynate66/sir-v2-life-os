@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `6e9b767`
+**Hash del último commit humano:** `70c22dd`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `70c22dd` | aaronhuaynate66 | Merge pull request #703 from aaronhuaynate66/feat/sentry-verify-endpoint | 2026-07-11 |
+| `103cdbe` | Aaron Huaynate | feat(observability): endpoint /api/debug/sentry para verificar el DSN | 2026-07-11 |
 | `6e9b767` | aaronhuaynate66 | Merge pull request #702 from aaronhuaynate66/docs/reconcile-build-plan | 2026-07-11 |
 | `78d3c44` | Aaron Huaynate | docs(plan): reconcilia BUILD_PLAN — 17/19/E4 estaban COMPLETOS (plan stale) | 2026-07-11 |
 | `c8c2d80` | aaronhuaynate66 | Merge pull request #701 from aaronhuaynate66/ci/bump-actions-node24 | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `19b3357` | Aaron Huaynate | ci(validate): corre type-check/lint/test/build también en pull_request | 2026-07-11 |
 | `ed2b164` | aaronhuaynate66 | Merge pull request #699 from aaronhuaynate66/fix/gitignore-secrets | 2026-07-11 |
 | `b4d8753` | Aaron Huaynate | chore(security): ignora github-token, env.download y package-lock.json | 2026-07-11 |
-| `d88f6fb` | Anakin | feat(policy): enable strategic agency v2 | 2026-07-11 |
-| `9f0f855` | Aaron Huaynate | docs(plan): E5 Life Direction completo (6 PRs #693-698) + limpia stale [skip ci] | 2026-07-11 |
 
 ---
 
