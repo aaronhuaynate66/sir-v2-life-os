@@ -132,7 +132,7 @@ export function LifeThreadPanel() {
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center gap-2 mb-1">
           <Compass size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tu rumbo</div>
+          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tus hitos</div>
         </div>
         <p className="text-xs text-muted-foreground mb-3">Qué te propusiste y hacia dónde venís yendo, en el tiempo.</p>
         {hydrated && anchorText && (

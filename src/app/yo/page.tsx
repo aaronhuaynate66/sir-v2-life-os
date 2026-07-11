@@ -23,6 +23,7 @@ const EspejoSemanalPanel = dynamic(() => import('@/components/yo/EspejoSemanalPa
 const ExperimentosLoopPanel = dynamic(() => import('@/components/yo/ExperimentosLoopPanel').then((m) => ({ default: m.ExperimentosLoopPanel })), { ssr: false, loading: dynSkeleton })
 const LearningsPanel = dynamic(() => import('@/components/yo/LearningsPanel').then((m) => ({ default: m.LearningsPanel })), { ssr: false, loading: dynSkeleton })
 const PreMortemPanel = dynamic(() => import('@/components/yo/PreMortemPanel').then((m) => ({ default: m.PreMortemPanel })), { ssr: false, loading: dynSkeleton })
+const LifeDirectionPanel = dynamic(() => import('@/components/yo/LifeDirectionPanel').then((m) => ({ default: m.LifeDirectionPanel })), { ssr: false, loading: dynSkeleton })
 const NorteDriftPanel = dynamic(() => import('@/components/yo/NorteDriftPanel').then((m) => ({ default: m.NorteDriftPanel })), { ssr: false, loading: dynSkeleton })
 const TrajectoryArcPanel = dynamic(() => import('@/components/yo/TrajectoryArcPanel').then((m) => ({ default: m.TrajectoryArcPanel })), { ssr: false, loading: dynSkeleton })
 const LifeSeasonsPanel = dynamic(() => import('@/components/yo/LifeSeasonsPanel').then((m) => ({ default: m.LifeSeasonsPanel })), { ssr: false, loading: dynSkeleton })
@@ -74,6 +75,9 @@ export default function SelfPage() {
         <LearningsPanel />
         <ExperimentosLoopPanel />
         <PreMortemPanel />
+        {/* E5 — la síntesis del rumbo (pasado→presente→futuro) encabeza el bloque
+            de dirección de vida; abajo, el detalle de cada motor. */}
+        <LifeDirectionPanel />
         <NorteDriftPanel />
         <TrajectoryArcPanel />
         <LifeSeasonsPanel />
