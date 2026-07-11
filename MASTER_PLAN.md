@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `212bc18`
+**Hash del último commit humano:** `4b4d685`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `4b4d685` | Anakin | fix(reader): ignore localized Outlook time senders | 2026-07-11 |
 | `212bc18` | aaronhuaynate66 | Merge pull request #704 from aaronhuaynate66/docs/reader-verified | 2026-07-11 |
 | `03bdcb6` | Aaron Huaynate | docs(plan): SIR Reader verificado en vivo (Teams + correo llegando) | 2026-07-11 |
 | `70c22dd` | aaronhuaynate66 | Merge pull request #703 from aaronhuaynate66/feat/sentry-verify-endpoint | 2026-07-11 |
@@ -359,7 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c8c2d80` | aaronhuaynate66 | Merge pull request #701 from aaronhuaynate66/ci/bump-actions-node24 | 2026-07-11 |
 | `6bed599` | Aaron Huaynate | ci: bump actions/checkout y setup-node a v5 (Node 24) | 2026-07-11 |
 | `2c2cc97` | aaronhuaynate66 | Merge pull request #700 from aaronhuaynate66/ci/validate-on-pr | 2026-07-11 |
-| `19b3357` | Aaron Huaynate | ci(validate): corre type-check/lint/test/build también en pull_request | 2026-07-11 |
 
 ---
 
