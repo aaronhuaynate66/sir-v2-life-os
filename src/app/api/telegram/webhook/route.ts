@@ -18,7 +18,8 @@ import { NextResponse, type NextRequest, after } from 'next/server'
 import { createClient as createServiceClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import { parseTelegramUpdate } from '@/lib/telegram/inbound'
-import { isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage } from '@/lib/telegram/client'
+import { isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage, downloadTelegramFile } from '@/lib/telegram/client'
+import { transcribeAudio } from '@/lib/ai/transcribeAudio'
 import { askSir, AskSirConfigError } from '@/lib/sir/askSir'
 import { getSirThread, appendSirThread } from '@/lib/sir/thread'
 
@@ -69,18 +70,29 @@ export async function POST(req: NextRequest) {
     if (String(msg.chatId) !== allowedChat) return
     if (!svcUrl || !svcKey) return
 
-    if (msg.isVoice) {
-      await sendTelegramMessage(msg.chatId, 'Por ahora te leo por TEXTO 🙂. La voz viene pronto.')
-      return
-    }
-    if (!msg.text) return
-
     const supabase = createServiceClient(svcUrl, svcKey, { auth: { persistSession: false } })
     const ownerId = await resolveOwnerId(supabase)
     if (!ownerId) {
       await sendTelegramMessage(msg.chatId, 'Falta configurar TELEGRAM_OWNER_USER_ID en el server 🙏.')
       return
     }
+
+    // Resolver el texto de la consulta: directo, o transcribiendo la nota de voz
+    // con Whisper (mismo pipeline que WhatsApp).
+    let text = msg.text
+    if (!text && msg.isVoice && msg.voiceFileId) {
+      const media = await downloadTelegramFile(msg.voiceFileId)
+      if (!media) {
+        await sendTelegramMessage(msg.chatId, 'No pude bajar el audio 😕. Probá de nuevo o escribime.')
+        return
+      }
+      try { text = (await transcribeAudio(media.bytes, media.mimeType)).trim() } catch { text = '' }
+      if (!text) {
+        await sendTelegramMessage(msg.chatId, 'No le entendí al audio 😅. ¿Me lo repetís o lo escribís?')
+        return
+      }
+    }
+    if (!text) return
 
     try {
       // Hilo unificado (Fase 2): traigo el historial cross-canal para continuidad
@@ -89,14 +101,14 @@ export async function POST(req: NextRequest) {
       const result = await askSir({
         supabase,
         userId: ownerId,
-        question: msg.text,
+        question: text,
         history,
         // MVP: sin el ida-vuelta de gaps aclaratorios por chat; respuesta directa.
         skipInlineGaps: true,
       })
       await sendTelegramMessage(msg.chatId, result.answer)
       // Persisto ambos turnos al hilo canónico (compartido con la web).
-      await appendSirThread(supabase, ownerId, 'telegram', msg.text, result.answer)
+      await appendSirThread(supabase, ownerId, 'telegram', text, result.answer)
     } catch (e) {
       if (e instanceof AskSirConfigError) {
         await sendTelegramMessage(msg.chatId, 'Me falta una API key en el server para pensar 🤔. Avisale a Aaron.')

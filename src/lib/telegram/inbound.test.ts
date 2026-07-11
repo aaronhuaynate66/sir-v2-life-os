@@ -7,12 +7,13 @@ describe('parseTelegramUpdate', () => {
       update_id: 1,
       message: { message_id: 10, chat: { id: 12345 }, text: '  ¿cómo viene Diana?  ', from: { first_name: 'Aaron', last_name: 'H' } },
     })
-    expect(r).toEqual({ chatId: 12345, messageId: 10, text: '¿cómo viene Diana?', isVoice: false, fromName: 'Aaron H' })
+    expect(r).toEqual({ chatId: 12345, messageId: 10, text: '¿cómo viene Diana?', isVoice: false, voiceFileId: null, fromName: 'Aaron H' })
   })
 
-  it('detecta voz y deja el texto vacío', () => {
+  it('detecta voz y captura el file_id', () => {
     const r = parseTelegramUpdate({ message: { message_id: 2, chat: { id: 9 }, voice: { file_id: 'abc' } } })
     expect(r?.isVoice).toBe(true)
+    expect(r?.voiceFileId).toBe('abc')
     expect(r?.text).toBe('')
     expect(r?.chatId).toBe(9)
   })

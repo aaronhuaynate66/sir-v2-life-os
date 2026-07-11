@@ -31,6 +31,32 @@ export function verifyTelegramSecret(header: string | null): boolean {
 }
 
 /**
+ * Descarga una nota de voz/audio por su file_id. Telegram lo entrega en 2 pasos:
+ * getFile → { file_path }, y luego GET a /file/bot<token>/<file_path>. Devuelve
+ * los bytes + mimeType (el voice de Telegram es ogg/opus), o null. NUNCA lanza.
+ */
+export async function downloadTelegramFile(fileId: string): Promise<{ bytes: ArrayBuffer; mimeType: string } | null> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token || !fileId) return null
+  try {
+    const metaRes = await fetch(`${API}/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`)
+    if (!metaRes.ok) return null
+    const meta = (await metaRes.json()) as { ok?: boolean; result?: { file_path?: string } }
+    const path = meta?.result?.file_path
+    if (!path) return null
+    const binRes = await fetch(`${API}/file/bot${token}/${path}`)
+    if (!binRes.ok) return null
+    const bytes = await binRes.arrayBuffer()
+    const mimeType = (binRes.headers.get('content-type') || 'audio/ogg').split(';')[0].trim()
+    return { bytes, mimeType }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('[telegram] descarga de audio falló:', e instanceof Error ? e.message : e)
+    return null
+  }
+}
+
+/**
  * Envía un mensaje de texto a un chat. No lanza: un fallo de envío no debe
  * romper el webhook (Telegram reintenta si no devolvemos 200). Telegram corta
  * los mensajes en ~4096 chars.

@@ -10,8 +10,10 @@ export interface TelegramInbound {
   messageId: number
   /** Texto del mensaje (vacío si es voz u otro tipo). */
   text: string
-  /** El mensaje es una nota de voz / audio (para avisar "aún no"). */
+  /** El mensaje es una nota de voz / audio. */
   isVoice: boolean
+  /** file_id del audio/voz para descargarlo (null si no es voz). */
+  voiceFileId: string | null
   /** Nombre visible del remitente, best-effort (para logs/bootstrap). */
   fromName: string | null
 }
@@ -33,15 +35,17 @@ export function parseTelegramUpdate(payload: unknown): TelegramInbound | null {
 
   const messageId = typeof message.message_id === 'number' ? message.message_id : 0
   const text = typeof message.text === 'string' ? message.text.trim() : ''
-  const isVoice = !!(message.voice || message.audio)
+  const voice = asRecord(message.voice) ?? asRecord(message.audio)
+  const voiceFileId = voice && typeof voice.file_id === 'string' ? voice.file_id : null
+  const isVoice = !!voiceFileId
 
   const from = asRecord(message.from)
   const fromName = from
     ? [from.first_name, from.last_name].filter((s): s is string => typeof s === 'string' && s.length > 0).join(' ') || null
     : null
 
-  // Solo nos sirve si hay texto o es voz (para el aviso). Otro tipo → ignorar.
+  // Solo nos sirve si hay texto o es voz. Otro tipo → ignorar.
   if (!text && !isVoice) return null
 
-  return { chatId, messageId, text, isVoice, fromName }
+  return { chatId, messageId, text, isVoice, voiceFileId, fromName }
 }
