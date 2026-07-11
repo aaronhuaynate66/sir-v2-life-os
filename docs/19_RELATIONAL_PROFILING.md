@@ -1,32 +1,30 @@
 # 19 — PERFILADO RELACIONAL (leer a la persona)
 
 Para relacionarte mejor —y para anticiparte a problemas serios— ayuda entender
-con QUÉ tipo de persona estás tratando: su estilo de apego, su personalidad
-tendencial, qué valora, cómo comunica y maneja el conflicto. Este dominio arma
-ese perfil desde patrones observados + marcos científicos, y ofrece un modo de
-**explorar hipótesis** cuando algo preocupa — todo como *hipótesis para cuidar y
-protegerte*, nunca como etiquetas para clasificar.
+con QUÉ tipo de persona estás tratando: estilo de apego, personalidad tendencial,
+valores, forma de comunicar, manejo de conflicto, predisposiciones, riesgos y
+patrones compatibles con trastornos/enfermedades. Este dominio arma ese perfil
+desde patrones observados + marcos científicos, y ofrece un modo de **explorar
+hipótesis** cuando algo preocupa.
 
 ---
 
 ## La postura (la línea — va primero, gobierna todo)
 
-**Hipótesis para vincularte / protegerte. NUNCA una etiqueta para clasificar a la
-persona.**
+**Hipótesis para vincularte, protegerte e influir mejor. Nunca diagnóstico
+confirmado como hecho.**
 
-- **SIR no diagnostica.** Un diagnóstico psiquiátrico no se hace desde afuera, con
-  data indirecta, sin evaluación clínica — ni los profesionales pueden con alguien
-  que no examinaron (*regla Goldwater*). Lo que SIR ofrece son **hipótesis
-  tentativas**, con confianza baja, que apuntan a una ACCIÓN de cuidado o
-  protección, no un rótulo.
+- **SIR sí estima predisposiciones/riesgos.** No afirma "X tiene Y" como
+  diagnóstico confirmado; sí detecta indicios, patrones compatibles,
+  vulnerabilidades, señales de riesgo y necesidades de abordaje.
 - **El test validado es autoreporte, no tu inferencia.** Big Five, apego, etc. los
   responde la persona sobre sí misma. Inferir su "tipo" desde lo que vos observás
   es una hipótesis útil — no el instrumento. La versión más válida: si alguien
   QUIERE, hace el test real y lo comparte (consentido).
-- **Nunca para etiquetar, dismissar o manipular.** Ponerle un rótulo clínico a tu
-  gente es el "estás hormonal" a escala + el lente de vigilancia (Pathfinder)
-  apuntado a los que querés. Corroe el vínculo. La salida es siempre cuidado,
-  protección o sugerir ayuda — jamás "confrontala con la etiqueta" ni usarla.
+- **Para abordar mejor y protegerte.** La hipótesis sirve para elegir tono, timing,
+  límites, distancia, documentación, ruta de conversación o recurso profesional.
+  También sirve cuando la persona puede tener malas intenciones: conocer el riesgo
+  mejora defensa y estrategia.
 - **Contra tu propio sesgo.** Una etiqueta que te creés se vuelve profecía
   autocumplida y daña la relación aunque nunca la digas. Por eso el modo hipótesis
   ofrece explicaciones que COMPITEN y se mantiene tentativo (engancha con 14·M1).
@@ -36,8 +34,8 @@ persona.**
   parás frente a la persona; no se comparten ni se le tiran encima. Mismo criterio
   de aislamiento que `self_diagnosis`.
 
-**Prueba de fuego:** *¿esto te ayuda a vincularte/protegerte mejor, o a
-"manejar"/clasificar a la persona?* Si es lo segundo, SIR no va.
+**Formato obligatorio:** hechos observados → hipótesis/predisposición → confianza
+→ alternativas que la contradicen → riesgo si SIR se equivoca → abordaje sugerido.
 
 ---
 
@@ -100,8 +98,9 @@ Sala de ensayo (16·M4). Toca: reasoner + `memories` + `person_logs` + `15·8`.
 persona + lo que te preocupa, SIR ofrece 2-4 **hipótesis que compiten** (relacional
 / contextual / clínico-adyacente honesta) — cada una con qué la apoyaría/
 contradiría, confianza baja, y la **acción de cuidado/protección** que sugiere.
-Frame fijo: *no sos clínico, esto no es diagnóstico*. Peligro real → recurso
-profesional. Toca: reasoner + guardrail (como `16·M5`).
+Frame fijo: *esto no es diagnóstico confirmado; es una hipótesis de riesgo para
+abordar mejor*. Peligro real → recurso profesional. Toca: reasoner + guardrail
+(como `16·M5`).
 
 **M3 — Red flags de auto-protección (confianza media). ✅ HECHO.** `engines/relational-flags` puro (control/aislamiento/gaslighting/devaluación/blame-shift/intermitente, ES+EN, exige recurrencia ≥2) + RelationalFlagsCard en la ficha (solo aparece con recurrencia; encuadre de cuidado, no rotula; concern → sugiere hablar con alguien/profesional). Detectar patrones de cómo
 alguien te trata que ameritan cuidado (control, manipulación, devaluación) → cómo
@@ -123,10 +122,10 @@ hipótesis con sus guardrails; luego los tests consentidos).
 
 ## Modos de falla / qué NO hacer
 
-- **No diagnósticos asertados.** Nunca "X tiene [trastorno]" como hecho. Hipótesis
-  tentativas, múltiples, de baja confianza.
-- **No arma.** La hipótesis apunta a cuidar/protegerte/sugerir ayuda — jamás a
-  confrontar con la etiqueta, dismissar o manipular.
+- **No diagnósticos confirmados.** Nunca "X tiene [trastorno]" como hecho cerrado.
+  Sí: "hay indicios compatibles con...", "riesgo de...", "predisposición posible".
+- **Uso estratégico legítimo.** La hipótesis apunta a cuidar, protegerte, influir
+  mejor, poner límites o sugerir ayuda; no a invalidar a la persona.
 - **No profecía.** Ofrecer explicaciones que compiten; re-chequear contra evidencia
   nueva; no cerrarte en una (tu sesgo es el riesgo).
 - **No jugar al terapeuta.** Riesgo real (abuso, crisis, autolesión) → derivar a un

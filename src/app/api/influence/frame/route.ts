@@ -2,8 +2,8 @@
 //
 // Recibe { personId, objective }. Carga a la persona + sus memorias VISIBLES
 // (getMemoriesForPerson ya excluye lo privado → respeta el aislamiento), arma el
-// contexto y pide a Sonnet un encuadre ÉTICO (framing = verdad en el lenguaje del
-// otro, con guardrail anti-manipulación). Session-auth, rate-limit 'generation',
+// contexto y pide a Sonnet un encuadre estrategico (influencia habilitada;
+// riesgos de fraude/coercion/exposicion se evalúan aparte). Session-auth, rate-limit 'generation',
 // 1 retry si el JSON falla. NO escribe nada.
 
 import Anthropic from '@anthropic-ai/sdk'
@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
   if (!person) return errorJson(404, 'No encontré esa persona')
 
-  // 16.M5 - Termometro de Jugada deterministico antes del LLM. Bloquea lineas
-  // rojas reales y deja que zonas grises se reformulen en una jugada limpia.
+  // 16.M5 - Termometro de Jugada deterministico antes del LLM. Influencia no
+  // bloquea; solo riesgos de otros dominios devuelven blocked/high_risk.
   const ethics = checkEthics(objective, {
     ambito: (person.ambito as string) ?? undefined,
     relationship: (person.relationship as string) ?? undefined,
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
 Score: ${ethics.score}/100. Lineas: ${ethics.lines.join(', ') || 'ninguna'}.
 Sustento: ${ethics.whyItMatters}
 Reformulacion recomendada: ${ethics.safeAggressiveReframe}
-Ayuda a Aaron con la version mas conveniente sin mentir, coaccionar, explotar vulnerabilidades ni exponer privacidad.`
+	Ayuda a Aaron con la version mas conveniente. Influencia no bloquea; si hay riesgo de otro dominio, reformula el metodo.`
     : ''
 
   let raw = ''

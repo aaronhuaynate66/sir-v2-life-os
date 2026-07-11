@@ -3,7 +3,8 @@
 // Recibe { personId, objective }. Carga a la persona (incl. ámbito, que decide el
 // registro afectivo vs profesional) + sus memorias VISIBLES (getMemoriesForPerson
 // ya excluye lo privado), arma el contexto y pide a Sonnet los caminos/objeciones/
-// acciones como HIPÓTESIS (ensayo, no predicción), con guardrail ético. NO escribe.
+// acciones como HIPÓTESIS (ensayo, no predicción), con influencia habilitada y
+// riesgos de otros dominios separados. NO escribe.
 
 import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
@@ -61,8 +62,8 @@ export async function POST(req: NextRequest) {
 
   const personName = (person.name as string) ?? 'esa persona'
 
-  // 16.M5 - Termometro de Jugada ANTES del LLM. Solo bloquea lineas rojas reales;
-  // zonas grises se pasan al modelo como instruccion de reformulacion estrategica.
+  // 16.M5 - Termometro de Jugada ANTES del LLM. Influencia no bloquea; solo
+  // riesgos de otros dominios se pasan como blocked/high_risk.
   const ethics = checkEthics(objective, {
     ambito: (person.ambito as string) ?? undefined,
     relationship: (person.relationship as string) ?? undefined,
@@ -159,14 +160,14 @@ export async function POST(req: NextRequest) {
     return text ? `{${text}` : ''
   }
 
-  // 16.M5: si la jugada cae en zona gris o riesgo alto, el modelo no bloquea por
-  // defecto; reformula hacia una version agresiva, verdadera y sostenible.
+  // 16.M5: si aparece riesgo de otro dominio, el modelo no bloquea por influencia;
+  // reformula hacia una version estrategica y sostenible.
   const ethicsExtra = ethics.verdict === 'caution' || ethics.verdict === 'high_risk'
     ? `TERMOMETRO DE JUGADA (16.M5): ${ethics.message}
 Score: ${ethics.score}/100. Lineas: ${ethics.lines.join(', ') || 'ninguna'}.
 Sustento: ${ethics.whyItMatters}
 Reformulacion recomendada: ${ethics.safeAggressiveReframe}
-Ayuda a Aaron con la version mas conveniente sin mentir, coaccionar, explotar vulnerabilidades ni exponer privacidad.`
+	Ayuda a Aaron con la version mas conveniente. Influencia no bloquea; si hay riesgo de otro dominio, reformula el metodo.`
     : ''
 
   const t0 = Date.now()

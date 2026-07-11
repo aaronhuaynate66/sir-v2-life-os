@@ -16,10 +16,11 @@
 //   - EXTRACCIÓN ESTRUCTURADA: categorías (profesional/comercial/reciprocidad/
 //     riesgo/objeción/personal) + una próxima acción sugerida.
 //
-// INVARIANTES (#1 bienestar, #5 correlación ≠ causa / no diagnóstico):
+// INVARIANTES (#1 bienestar, #5 hipótesis ≠ diagnóstico confirmado):
 //   - Sólo hechos presentes en el material. No inventar.
-//   - Sin diagnóstico clínico, etiquetas de salud mental ni consejo médico.
-//   - Sin causalidad ni predicción. Observacional, sobrio, sin dramatizar.
+//   - Sí a indicios/predisposiciones/riesgos como hipótesis con evidencia.
+//   - Sin diagnóstico clínico confirmado ni consejo médico.
+//   - Observacional, sobrio, sin dramatizar.
 
 import type { ObservationDigest } from './deriveFromObservations'
 import type { DerivedMemoryItem } from './deriveFromObservations'
@@ -37,7 +38,7 @@ Devolvé EXCLUSIVAMENTE un objeto JSON con esta forma (sin texto adicional, sin 
     {
       "observationIndex": 0,
       "type": "episodic" | "semantic" | "emotional" | "social",
-      "category": "profesional" | "comercial" | "reciprocidad" | "riesgo" | "objecion" | "personal" | "proxima_accion",
+      "category": "profesional" | "comercial" | "reciprocidad" | "riesgo" | "predisposicion" | "objecion" | "personal" | "proxima_accion",
       "title": "string corto",
       "content": "1-2 oraciones, en tercera persona, factual",
       "recency": "recent" | "historical",
@@ -52,7 +53,8 @@ Devolvé EXCLUSIVAMENTE un objeto JSON con esta forma (sin texto adicional, sin 
 QUÉ EXTRAER (priorizá en este orden cuando el material lo permita):
 - profesional: rol y empresa ACTUALES de la persona (no los de hace años).
 - comercial: oportunidades, interés/temperatura, compromisos, timing, decisores, "ganchos" útiles para los objetivos del usuario.
-- objecion / riesgo: dudas, frenos, condiciones, señales de enfriamiento.
+- objecion / riesgo: dudas, frenos, condiciones, señales de enfriamiento, control, impulsividad, evitación, dependencia, agresividad, inestabilidad o mala intención.
+- predisposicion: indicios compatibles con trastornos/enfermedades, vulnerabilidades o patrones psicológicos relevantes para abordaje. Siempre como hipótesis operativa, nunca diagnóstico confirmado.
 - reciprocidad: favores dados/recibidos, deudas de gratitud, gestos de cuidado.
 - personal: datos personales relevantes RECIENTES (familia, salud, planes).
 - proxima_accion: UNA memoria con la próxima acción concreta sugerida para el usuario respecto de esta persona/objetivo (category="proxima_accion", importance alta).
@@ -66,7 +68,8 @@ REGLAS ESTRICTAS:
 - Hasta 8 memorias por conversación; hasta 2 por perfil/nota. Si algo no aporta, omitilo. Calidad > cantidad, pero NO subextraigas: una conversación rica debe dar varias señales, no 1-2 triviales.
 - "observationIndex" DEBE ser el índice de una observación provista.
 - Usá SOLO información presente en el material. PROHIBIDO inventar hechos, nombres, fechas, cifras o sentimientos no expresados. Si el objetivo habla de un deal pero la charla no lo toca, NO lo inventes.
-- PROHIBIDO: diagnóstico clínico, etiquetas de salud mental, consejo médico/psicológico, afirmaciones de causa-efecto, predicciones.
+- Permitido: hipótesis de riesgo/predisposición/patrón compatible si hay evidencia explícita o repetida, con lenguaje tentativo.
+- PROHIBIDO: presentar diagnóstico clínico como hecho confirmado, consejo médico/psicológico, afirmaciones de causa-efecto sin base.
 - "type": 'emotional' SOLO si la observación reporta un estado emocional explícito.
 - Tono observacional y sobrio, sin dramatizar. Español neutro.
 - Si no hay nada notable en todo el conjunto, devolvé {"memories": []}.`

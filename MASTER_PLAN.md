@@ -981,14 +981,14 @@ Invariantes del sistema. NO se contradicen por nuevas features.
 2. **Local-first + sync transparente.**
    El usuario debe poder usar SIR offline. El sync con Supabase es invisible.
 
-3. **Privacidad por defecto.**
-   RLS en todas las tablas. Datos de terceros requieren consentimiento explícito (Diana ya consintió; otros contactos pendientes).
+3. **Privacidad por defecto, uso privado permitido.**
+   RLS en todas las tablas. SIR puede analizar en privado información que Aaron posee, recibe, registra, consulta en fuentes que maneja o que fue publicada por otros. Consentimiento/confirmación aplica para publicar, compartir, exponer, automatizar acciones hacia terceros o sacar datos íntimos fuera del espacio privado.
 
 4. **De frente a producción.**
    Merge directo a `main` con squash; la validación ocurre **en producción** (Vercel deploy automático), no en preview ni en localhost. Las exigencias de CI verde (tsc + lint + build) son no negociables. Excepciones que requieren confirmación previa siguen vigentes: migraciones `DROP`/`DELETE`, rotación de keys (Anthropic/Supabase/pagos/identidad), cambios en `NEXT_PUBLIC_*`.
 
-5. **Human-in-the-loop para decisiones sensibles.**
-   Las skills/engines no pueden modificarse autónomamente. Toda evolución pasa por aprobación humana explícita.
+5. **Human-in-the-loop para acciones sensibles, no para pensar.**
+   SIR puede analizar, clasificar, priorizar, redactar borradores y proponer sin pedir confirmación. Requiere confirmación humana antes de enviar mensajes/correos, publicar, compartir datos, borrar información importante, tocar secretos/configuración, pagos, salud, legal, finanzas o automatizar acciones sobre terceros.
 
 6. **Documentar descartados con razón.**
    Toda idea evaluada y NO incluida se documenta acá. Evita re-evaluar en conversaciones futuras.

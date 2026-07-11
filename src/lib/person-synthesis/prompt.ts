@@ -15,8 +15,8 @@
 //
 // INVARIANTES (principios fundacionales del sistema):
 //   - #1 bienestar, no engagement: tono respetuoso, sin dramatizar.
-//   - #5 sin decisiones sensibles: NADA de diagnóstico clínico, etiquetas
-//     patologizantes ni consejo médico/psicológico.
+//   - #5 hipótesis ≠ diagnóstico confirmado: sí a predisposiciones/riesgos con
+//     evidencia y confianza; nada de diagnóstico clínico cerrado ni consejo médico.
 //   - No inventar: solo lo observable en la data provista. Si hay poca,
 //     decirlo y ser breve.
 
@@ -26,13 +26,13 @@ Tu tarea: escribir un retrato narrativo breve del vínculo entre el usuario y un
 
 ESTRUCTURA — exactamente 3 párrafos cortos (2-4 oraciones cada uno), en español neutro:
 1. La dinámica ACTUAL del vínculo y el tono emocional predominante HOY (basate en lo más reciente; lo viejo es solo contexto).
-2. Los temas recurrentes y patrones, distinguiendo lo que sigue vigente de lo que quedó atrás.
-3. Cómo se manifiesta hoy la conexión (cercanía, reciprocidad, cuidado mutuo o fricciones) y —si hay un objetivo vinculado— cómo está el vínculo respecto de eso (interés, momentum, un próximo paso natural), siempre de forma observacional.
+2. Los temas recurrentes, patrones, predisposiciones o riesgos conductuales observables, distinguiendo lo que sigue vigente de lo que quedó atrás.
+3. Cómo se manifiesta hoy la conexión (cercanía, reciprocidad, cuidado mutuo, fricciones, riesgos o abordaje recomendado) y —si hay un objetivo vinculado— cómo está el vínculo respecto de eso (interés, momentum, un próximo paso natural), siempre de forma observacional.
 
 REGLAS ESTRICTAS:
 - LIDERÁ con lo reciente. Un dato viejo (ej. un rol de hace años) NO debe dominar el retrato ni presentarse como si fuera el estado actual.
-- Observacional, NO diagnóstico. Describí lo que se ve, no etiquetes a nadie.
-- PROHIBIDO: diagnósticos clínicos, etiquetas de salud mental, consejo médico o psicológico, predicciones sobre la relación.
+- Permitido: hipótesis de predisposición, riesgo o patrón compatible cuando la data lo sostenga; separá evidencia/confianza y mantené alternativas posibles.
+- PROHIBIDO: presentar diagnósticos clínicos como hechos confirmados, consejo médico o psicológico, predicciones cerradas sobre la relación.
 - No inventes hechos, nombres, fechas ni eventos que no estén en la data. Si hay un objetivo pero las conversaciones no lo tocan, no fabriques señales: decí honestamente que el vínculo no muestra todavía movimiento sobre eso.
 - Si la data es escasa, decilo con honestidad y escribí menos (los 3 párrafos pueden ser de 1-2 oraciones).
 - Tono cálido y respetuoso, nunca dramático ni alarmista.

@@ -18,13 +18,13 @@ Tu tarea: escribir un retrato narrativo breve del vínculo entre el usuario (Aar
 
 ESTRUCTURA — exactamente 3 párrafos cortos (2-4 oraciones cada uno), en español neutro:
 1. La dinámica ACTUAL del vínculo y el tono emocional predominante hoy.
-2. Los temas recurrentes y patrones que se ven en cómo hablan.
-3. Cómo se manifiesta la conexión hoy (cercanía, reciprocidad, cuidado mutuo o fricciones).
+2. Los temas recurrentes, patrones, predisposiciones o riesgos conductuales que se ven en cómo hablan.
+3. Cómo se manifiesta la conexión hoy (cercanía, reciprocidad, cuidado mutuo, fricciones, riesgos o abordaje recomendado).
 
 REGLAS ESTRICTAS:
 - Basate SOLO en lo que se ve en los mensajes. No inventes hechos, nombres, fechas ni eventos que no estén en la muestra.
-- Observacional, NO diagnóstico. Describí lo que se ve, no etiquetes a nadie.
-- PROHIBIDO: diagnósticos clínicos, etiquetas de salud mental, consejo médico o psicológico, predicciones sobre la relación.
+- Permitido: hipótesis de predisposición, riesgo o patrón compatible cuando la muestra lo sostenga; separá evidencia/confianza y mantené alternativas posibles.
+- PROHIBIDO: presentar diagnósticos clínicos como hechos confirmados, consejo médico o psicológico, predicciones cerradas sobre la relación.
 - Si la muestra es pobre o repetitiva (solo logística, saludos), decilo con honestidad y escribí menos.
 - Tono cálido y respetuoso, nunca dramático ni alarmista. Bienestar, no enganche.
 

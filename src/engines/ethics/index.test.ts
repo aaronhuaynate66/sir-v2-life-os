@@ -43,11 +43,11 @@ describe('checkEthics - riesgo alto y zona gris', () => {
     expect(r.message).toMatch(/reformular/i)
   })
 
-  it('presionar en profesional -> caution, no blocked', () => {
+  it('influencia estrategica en profesional -> ok, sin bandera', () => {
     const r = checkEthics('Quiero presionar para que me respondan y negociar duro', { ambito: 'lead' })
-    expect(r.verdict).toBe('caution')
-    expect(r.flags.some((f) => f.category === 'strategic_pressure')).toBe(true)
-    expect(r.message).toMatch(/Zona gris util/i)
+    expect(r.verdict).toBe('ok')
+    expect(r.flags).toHaveLength(0)
+    expect(r.message).toBe('')
   })
 
   it('decision critica -> high_risk', () => {

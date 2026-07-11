@@ -16,10 +16,9 @@ describe('REHEARSE_SYSTEM_PROMPT — reglas núcleo', () => {
   it('prohíbe probabilidades numéricas', () => {
     expect(REHEARSE_SYSTEM_PROMPT).toMatch(/No des probabilidades numéricas/i)
   })
-  it('cablea el norte del año, sin usarlo como palanca contra el otro', () => {
+  it('cablea el norte del año sin forzar conexión', () => {
     expect(REHEARSE_SYSTEM_PROMPT).toMatch(/EL NORTE DE AARON/)
     expect(REHEARSE_SYSTEM_PROMPT).toMatch(/NO fuerces la\s+conexión/i)
-    expect(REHEARSE_SYSTEM_PROMPT).toMatch(/palanca para presionar/i)
   })
 })
 
@@ -36,11 +35,11 @@ describe('buildRehearseUserContent', () => {
   })
   it('vínculo afectivo → marca registro de cuidado', () => {
     const out = buildRehearseUserContent({ personName: 'Diana', ambito: 'personal', memories: [] }, 'hablar de algo')
-    expect(out).toMatch(/cuidado y honestidad/i)
+    expect(out).toMatch(/estrategia de cuidado/i)
   })
   it('sin ámbito pero relación afectiva → registro de cuidado', () => {
     const out = buildRehearseUserContent({ personName: 'Mamá', relationship: 'family', memories: [] }, 'x')
-    expect(out).toMatch(/cuidado y honestidad/i)
+    expect(out).toMatch(/estrategia de cuidado/i)
   })
   it('sin memorias → pide bajar especificidad', () => {
     const out = buildRehearseUserContent({ personName: 'X', memories: [] }, 'x')

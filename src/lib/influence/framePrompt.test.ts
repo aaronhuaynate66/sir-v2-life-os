@@ -3,10 +3,11 @@
 import { describe, it, expect } from 'vitest'
 import { FRAME_SYSTEM_PROMPT, buildFrameUserContent, parseFrameJson } from './framePrompt'
 
-describe('FRAME_SYSTEM_PROMPT — guardrail ético', () => {
-  it('prohíbe mentir/exagerar y explotar', () => {
-    expect(FRAME_SYSTEM_PROMPT).toMatch(/NUNCA sugieras decir algo falso/i)
-    expect(FRAME_SYSTEM_PROMPT).toMatch(/manipular/i)
+describe('FRAME_SYSTEM_PROMPT — agencia estratégica', () => {
+  it('habilita influencia y separa riesgos de otros dominios', () => {
+    expect(FRAME_SYSTEM_PROMPT).toMatch(/Influencia y poder NO bloquean/i)
+    expect(FRAME_SYSTEM_PROMPT).toMatch(/fraude, coerción, exposición de privacidad/i)
+    expect(FRAME_SYSTEM_PROMPT).toMatch(/diagnóstico clínico confirmado/i)
     expect(FRAME_SYSTEM_PROMPT).toMatch(/ethicalNote/)
   })
 })

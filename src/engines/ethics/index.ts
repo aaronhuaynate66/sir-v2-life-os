@@ -16,7 +16,6 @@ export type EthicsCategory =
   | 'illegal_or_fraud'
   | 'critical_decision'
   | 'affective_control'
-  | 'strategic_pressure'
 
 export type EthicsLine =
   | 'truth'
@@ -189,22 +188,6 @@ const DEFS: Record<EthicsCategory, CategoryDef> = {
       /\bhacer que dependa\b/g,
       /\bque (acepte|ceda|haga lo que|me de lo que)\b/g,
       /\bmanejar(la|lo)? para\b/g,
-    ],
-  },
-  strategic_pressure: {
-    label: 'Presion estrategica',
-    reason: 'Hay influencia fuerte o insistencia. No se bloquea: exige sostener verdad, salida libre y consecuencia real.',
-    line: 'pressure',
-    severity: 'caution',
-    patterns: [
-      /\bpresionar(la|lo|le|los)?\b/g,
-      /\bmeterle presion\b/g,
-      /\binsistir\b/g,
-      /\bconvencer(la|lo|le)?\b/g,
-      /\blograr que\b/g,
-      /\bnegociar duro\b/g,
-      /\bsacar ventaja\b/g,
-      /\bposicionar(me|la|lo)?\b/g,
     ],
   },
 }
