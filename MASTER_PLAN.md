@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `70c22dd`
+**Hash del último commit humano:** `212bc18`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `212bc18` | aaronhuaynate66 | Merge pull request #704 from aaronhuaynate66/docs/reader-verified | 2026-07-11 |
+| `03bdcb6` | Aaron Huaynate | docs(plan): SIR Reader verificado en vivo (Teams + correo llegando) | 2026-07-11 |
 | `70c22dd` | aaronhuaynate66 | Merge pull request #703 from aaronhuaynate66/feat/sentry-verify-endpoint | 2026-07-11 |
 | `103cdbe` | Aaron Huaynate | feat(observability): endpoint /api/debug/sentry para verificar el DSN | 2026-07-11 |
 | `6e9b767` | aaronhuaynate66 | Merge pull request #702 from aaronhuaynate66/docs/reconcile-build-plan | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `6bed599` | Aaron Huaynate | ci: bump actions/checkout y setup-node a v5 (Node 24) | 2026-07-11 |
 | `2c2cc97` | aaronhuaynate66 | Merge pull request #700 from aaronhuaynate66/ci/validate-on-pr | 2026-07-11 |
 | `19b3357` | Aaron Huaynate | ci(validate): corre type-check/lint/test/build también en pull_request | 2026-07-11 |
-| `ed2b164` | aaronhuaynate66 | Merge pull request #699 from aaronhuaynate66/fix/gitignore-secrets | 2026-07-11 |
-| `b4d8753` | Aaron Huaynate | chore(security): ignora github-token, env.download y package-lock.json | 2026-07-11 |
 
 ---
 
