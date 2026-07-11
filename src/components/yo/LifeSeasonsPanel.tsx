@@ -11,9 +11,12 @@ import { CalendarRange, ArrowRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
 import { useGoalStore } from '@/stores/useGoalStore'
+import { useSelfStore } from '@/stores/useSelfStore'
+import { useMemoryStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { buildLifeSeasons } from '@/lib/self/lifeSeasons'
 import { categoryLabelEs } from '@/lib/self/trajectoryArc'
+import { summarizeSeasonSubstrate } from '@/lib/self/seasonSubstrate'
 
 const CURRENT_COLOR = '#14b8a6'
 const PAST_COLOR = '#8a8f98'
@@ -21,7 +24,21 @@ const PAST_COLOR = '#8a8f98'
 export function LifeSeasonsPanel() {
   const hydrated = useHasHydrated()
   const goals = useGoalStore((s) => s.goals)
+  const selfMetrics = useSelfStore((s) => s.selfMetrics)
+  const sleepRecords = useSelfStore((s) => s.sleepRecords)
+  const memories = useMemoryStore((s) => s.memories)
   const seasons = useMemo(() => buildLifeSeasons(goals), [goals])
+
+  // El sustrato vivido (ánimo/energía, sueño, momentos) cruzado con cada capítulo:
+  // no solo QUÉ objetivos lo habitaron, sino CÓMO lo viviste. Puro, por ventana.
+  const vitalsBySeason = useMemo(() => {
+    const substrate = { metrics: selfMetrics, sleep: sleepRecords, memories }
+    const map = new Map<string, ReturnType<typeof summarizeSeasonSubstrate>>()
+    for (const s of seasons.seasons) {
+      map.set(s.id, summarizeSeasonSubstrate(s.startDate, s.endDate, substrate))
+    }
+    return map
+  }, [seasons, selfMetrics, sleepRecords, memories])
 
   if (!hydrated) return null
 
@@ -46,6 +63,7 @@ export function LifeSeasonsPanel() {
           {shown.map((s) => {
             const color = s.isCurrent ? CURRENT_COLOR : PAST_COLOR
             const cats = s.categories.slice(0, 3).map((c) => categoryLabelEs(c.category))
+            const vitals = vitalsBySeason.get(s.id)
             return (
               <li key={s.id} className="flex items-start gap-3">
                 <span
@@ -76,6 +94,18 @@ export function LifeSeasonsPanel() {
                       {s.paused > 0 ? ` · ${s.paused} pausado(s)` : ''}
                     </span>
                   </div>
+                  {/* Cómo VIVISTE el capítulo: el sustrato (sueño/ánimo/energía y
+                      el momento que más pesó) cruzado con la ventana. Solo si hubo data. */}
+                  {vitals?.hasSubstrate && (
+                    <div className="mt-1 space-y-0.5 leading-snug text-text-tertiary">
+                      {vitals.line && <div className="text-[11px] italic">{vitals.line}</div>}
+                      {vitals.topMoment && (
+                        <div className="text-[11px]">
+                          lo que más pesó: <span className="text-foreground/80">“{vitals.topMoment}”</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </li>
             )
