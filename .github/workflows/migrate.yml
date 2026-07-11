@@ -50,7 +50,7 @@ jobs:
 
       - name: Checkout
         if: steps.secrets.outputs.ready == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Supabase CLI
         if: steps.secrets.outputs.ready == 'true'
