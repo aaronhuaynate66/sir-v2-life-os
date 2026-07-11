@@ -47,7 +47,7 @@
   // los selectores de remitente fallan, el fallback por líneas la confunde con el
   // nombre → correos atribuidos a "15:15". Detectarla para NO tomarla como
   // remitente (y sí como fecha si no teníamos otra).
-  const TIME_RE = /^\d{1,2}:\d{2}(\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm))?$/i
+  const TIME_RE = /^((lun|mar|mi[eé]|jue|vie|s[aá]b|dom)\s+)?\d{1,2}:\d{2}(\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm))?$/i
   function looksLikeTime(s) { return TIME_RE.test((s || '').trim()) }
 
   // Llave de dedup en memoria — alineada en espíritu con emailDedupKey del server
