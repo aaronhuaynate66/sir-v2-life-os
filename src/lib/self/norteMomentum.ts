@@ -8,6 +8,7 @@
 // usa completedAt (fecha real de completado, migración 0070).
 
 import type { Goal, ObjectiveStep } from '@/types'
+import { resolveAnchorGoal } from '@/lib/year-compass/build'
 
 export type NorteEfficacy = 'sin_norte' | 'avanzando' | 'sin_avances'
 export type NorteCadence = 'mejor' | 'igual' | 'peor' | 'sin_datos'
@@ -44,7 +45,8 @@ export function computeNorteMomentum(
   steps: ObjectiveStep[],
   now: Date = new Date(),
 ): NorteMomentum {
-  const anchor = goals.find((g) => g.status === 'active' && g.isAnchor)
+  // Norte = ancla explícita o INFERIDA (misma fuente que /panel), no isAnchor suelto.
+  const anchor = resolveAnchorGoal(goals, now)
   const nowMs = now.getTime()
   const thisYm = ym(nowMs)
   // Mes anterior (primer día del mes actual menos 1 día → su YYYY-MM).

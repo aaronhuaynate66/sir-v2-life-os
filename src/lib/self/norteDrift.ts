@@ -10,6 +10,7 @@
 // Umbrales = heurística declarada (tweakable), NO ciencia.
 
 import type { Goal } from '@/types'
+import { resolveAnchorGoal } from '@/lib/year-compass/build'
 
 export type NorteDriftState = 'sin_norte' | 'enfocado' | 'a_medias' | 'disperso' | 'estancado'
 
@@ -38,8 +39,10 @@ function daysBetween(now: Date, iso: string): number | null {
 
 export function computeNorteDrift(goals: Goal[], now: Date = new Date()): NorteDrift {
   const active = goals.filter((g) => g.status === 'active')
-  const anchor = active.find((g) => g.isAnchor)
-  const others = active.filter((g) => !g.isAnchor)
+  // El norte REAL es el que ve el usuario en /panel: ancla explícita si la marcó,
+  // si no la INFERIDA (buildYearCompass). No usar isAnchor suelto → "sin norte" falso.
+  const anchor = resolveAnchorGoal(active, now)
+  const others = anchor ? active.filter((g) => g.id !== anchor.id) : active
   const activeOthers = others.length
 
   if (!anchor) {

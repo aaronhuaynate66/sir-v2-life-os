@@ -97,6 +97,22 @@ function deriveAnchorSubtitle(goal: Goal): string | null {
  * @param goals  todos los objetivos (se filtran activos internamente)
  * @param now    "hoy" (inyectado para determinismo)
  */
+/**
+ * El OBJETIVO ancla del año (el "norte"), resuelto por la MISMA regla que ve el
+ * usuario en /panel ("Tu año"): explícito (`is_anchor`) si lo marcó, si no
+ * INFERIDO por prioridad+fecha. Devuelve el Goal completo (para leer
+ * updatedAt/progress/nextAction), o null.
+ *
+ * Usar ESTO en vez de `goals.find((g) => g.isAnchor)`: Aaron casi nunca toca el
+ * ⚓, así que el flag suelto deja los motores del norte "sin norte" en falso.
+ * Ver `lib/year-compass/norte.ts` (deriveNorte usa la misma fuente).
+ */
+export function resolveAnchorGoal(goals: Goal[], now: Date): Goal | null {
+  const anchor = buildYearCompass(goals, now).anchor
+  if (!anchor) return null
+  return goals.find((g) => g.id === anchor.id) ?? null
+}
+
 export function buildYearCompass(goals: Goal[], now: Date): YearCompass {
   const year = now.getFullYear()
   const currentMonthIndex = now.getMonth()
