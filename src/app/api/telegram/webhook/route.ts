@@ -95,6 +95,19 @@ export async function POST(req: NextRequest) {
     }
     if (!text) return
 
+    // Comandos del bot (/start, /help): bienvenida — no van al cerebro.
+    if (text.startsWith('/')) {
+      const cmd = text.slice(1).split(/\s+/)[0].toLowerCase()
+      if (cmd === 'start' || cmd === 'help') {
+        await sendTelegramMessage(
+          msg.chatId,
+          'Soy SIR 🌿. Preguntame lo que quieras sobre tu gente, tus objetivos o tu día — cruzo tu contexto y te respondo con lo que sé de vos. También te leo notas de voz. Escribime nomás.',
+        )
+        return
+      }
+      // Comando desconocido → sigue como pregunta normal (no cortamos).
+    }
+
     try {
       // Hilo unificado (Fase 2): traigo el historial cross-canal para continuidad
       // multi-turno (ve también lo hablado por la web). Fail-open → [].
