@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `843b2bf`
+**Hash del último commit humano:** `eb3cd64`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `eb3cd64` | aaronhuaynate66 | Merge pull request #709 from aaronhuaynate66/feat/ga4-telegram | 2026-07-11 |
+| `4ff0125` | Aaron Huaynate | feat(analytics): tracking server-side de GA4 para el canal Telegram | 2026-07-11 |
 | `843b2bf` | aaronhuaynate66 | Merge pull request #708 from aaronhuaynate66/feat/telegram-voice | 2026-07-11 |
 | `dadebf8` | Aaron Huaynate | feat(telegram): notas de voz → Whisper → askSir | 2026-07-11 |
 | `c42dfa8` | aaronhuaynate66 | Merge pull request #707 from aaronhuaynate66/feat/unified-thread | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `c2a1c0a` | Aaron Huaynate | feat(telegram): canal conversacional — le preguntás a SIR por Telegram | 2026-07-11 |
 | `c8f529a` | aaronhuaynate66 | Merge pull request #705 from aaronhuaynate66/refactor/extract-asksir | 2026-07-11 |
 | `ca9b4d5` | Aaron Huaynate | refactor(sir): extrae el cerebro conversacional a askSir() puro | 2026-07-11 |
-| `4b4d685` | Anakin | fix(reader): ignore localized Outlook time senders | 2026-07-11 |
-| `212bc18` | aaronhuaynate66 | Merge pull request #704 from aaronhuaynate66/docs/reader-verified | 2026-07-11 |
 
 ---
 
