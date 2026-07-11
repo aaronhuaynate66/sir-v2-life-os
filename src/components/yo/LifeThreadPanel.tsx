@@ -108,6 +108,37 @@ export function LifeThreadPanel() {
   // la reflexión IA lea la CONTINUIDAD del rumbo sin inventar. Determinístico.
   const seasonsSummary = useMemo(() => seasonsSummaryLine(buildLifeSeasons(goals)), [goals])
   const [refl, setRefl] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; text?: string }>({ status: 'idle' })
+  // La reflexión anterior persistida (día distinto, texto distinto): para ver cómo
+  // cambió tu rumbo con el tiempo.
+  const [prevRefl, setPrevRefl] = useState<{ day: string; text: string } | null>(null)
+  const [showPrev, setShowPrev] = useState(false)
+
+  // Al montar: traer la reflexión persistida (GET, sin gastar LLM). Si existe, se
+  // muestra directamente en vez del botón "Generar".
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/self/rumbo', { cache: 'no-store' })
+        if (!res.ok) return
+        const data = (await res.json()) as {
+          latest?: { insight: string } | null
+          previous?: { insight: string; day_key: string } | null
+        }
+        if (cancelled || !data.latest?.insight) return
+        setRefl({ status: 'ready', text: data.latest.insight })
+        if (data.previous?.insight && data.previous.insight !== data.latest.insight) {
+          setPrevRefl({ day: data.previous.day_key, text: data.previous.insight })
+        }
+      } catch {
+        /* fail-soft: queda el botón de generar */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const generar = useCallback(async () => {
     setRefl({ status: 'loading' })
     try {
@@ -172,9 +203,27 @@ export function LifeThreadPanel() {
         {hydrated && shown.length >= 2 && (
           <div className="mt-4 pt-4 border-t border-border/40">
             {refl.status === 'ready' && refl.text ? (
-              <div className="flex items-start gap-2.5">
-                <Sparkles size={14} strokeWidth={1.75} className="mt-0.5 shrink-0 text-brand-soft-foreground" aria-hidden="true" />
-                <p className="text-[13px] leading-relaxed text-foreground/90 break-words">{refl.text}</p>
+              <div>
+                <div className="flex items-start gap-2.5">
+                  <Sparkles size={14} strokeWidth={1.75} className="mt-0.5 shrink-0 text-brand-soft-foreground" aria-hidden="true" />
+                  <p className="text-[13px] leading-relaxed text-foreground/90 break-words">{refl.text}</p>
+                </div>
+                <div className="mt-2 flex items-center gap-3 pl-[26px]">
+                  <button type="button" onClick={generar} className="text-[11px] text-text-tertiary hover:text-foreground/80">
+                    Regenerar
+                  </button>
+                  {prevRefl && (
+                    <button type="button" onClick={() => setShowPrev((v) => !v)} className="text-[11px] text-text-tertiary hover:text-foreground/80">
+                      {showPrev ? 'Ocultar cambio' : 'Cómo cambió'}
+                    </button>
+                  )}
+                </div>
+                {showPrev && prevRefl && (
+                  <div className="mt-2 ml-[9px] border-l border-border pl-4">
+                    <div className="text-[10px] uppercase tracking-[0.06em] text-text-tertiary mb-0.5">Antes · {prevRefl.day}</div>
+                    <p className="text-[12px] italic leading-relaxed text-muted-foreground break-words">{prevRefl.text}</p>
+                  </div>
+                )}
               </div>
             ) : (
               <button

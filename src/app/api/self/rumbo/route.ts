@@ -17,6 +17,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
+import { todayLimaKey } from '@/lib/dates/limaDay'
 import {
   RUMBO_NARRATIVE_SYSTEM_PROMPT,
   buildRumboInput,
@@ -108,10 +109,48 @@ export async function POST(req: NextRequest) {
     if (!insight) {
       return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
     }
+
+    // Persistir la reflexión: 1 vigente por día (regenerar el mismo día actualiza).
+    // Best-effort — si el guardado falla, igual devolvemos la reflexión generada.
+    try {
+      await supabase
+        .from('life_direction_reflections')
+        .upsert(
+          { user_id: authData.user.id, day_key: todayLimaKey(), insight, anchor, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id,day_key' },
+        )
+    } catch (persistErr) {
+      reportApiError(persistErr, { route: 'self/rumbo:persist' })
+    }
+
     return NextResponse.json({ insight }, { status: 200 })
   } catch (e) {
     reportApiError(e)
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar la reflexión', detail)
+  }
+}
+
+// GET — la reflexión de rumbo persistida más reciente + la anterior (para ver la
+// EVOLUCIÓN del rumbo). Sin generar nada: el panel la muestra al cargar sin gastar
+// LLM ni exigir que el usuario apriete "Generar". Fail-soft → { latest:null }.
+export async function GET() {
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) {
+    return errorJson(401, 'No autenticado')
+  }
+  try {
+    const { data } = await supabase
+      .from('life_direction_reflections')
+      .select('day_key, insight, anchor, updated_at')
+      .eq('user_id', authData.user.id)
+      .order('day_key', { ascending: false })
+      .limit(2)
+    const rows = (data ?? []) as Array<{ day_key: string; insight: string; anchor: string | null; updated_at: string }>
+    return NextResponse.json({ latest: rows[0] ?? null, previous: rows[1] ?? null }, { status: 200 })
+  } catch (e) {
+    reportApiError(e, { route: 'self/rumbo:get' })
+    return NextResponse.json({ latest: null, previous: null }, { status: 200 })
   }
 }
