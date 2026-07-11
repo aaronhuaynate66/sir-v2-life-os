@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `665d843`
+**Hash del último commit humano:** `bb7b435`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `bb7b435` | aaronhuaynate66 | Merge pull request #711 from aaronhuaynate66/feat/telegram-commands | 2026-07-11 |
+| `aff237f` | Aaron Huaynate | feat(telegram): comandos /start y /help con bienvenida | 2026-07-11 |
 | `665d843` | aaronhuaynate66 | Merge pull request #710 from aaronhuaynate66/feat/panel-greeting | 2026-07-11 |
 | `50bf0cb` | Aaron Huaynate | feat(panel): saludo contextual + resumen del día (quick win Rimu) | 2026-07-11 |
 | `eb3cd64` | aaronhuaynate66 | Merge pull request #709 from aaronhuaynate66/feat/ga4-telegram | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `dadebf8` | Aaron Huaynate | feat(telegram): notas de voz → Whisper → askSir | 2026-07-11 |
 | `c42dfa8` | aaronhuaynate66 | Merge pull request #707 from aaronhuaynate66/feat/unified-thread | 2026-07-11 |
 | `4602986` | Aaron Huaynate | feat(sir): historial conversacional unificado cross-canal (Fase 2) | 2026-07-11 |
-| `920ff75` | aaronhuaynate66 | Merge pull request #706 from aaronhuaynate66/feat/telegram-channel | 2026-07-11 |
-| `c2a1c0a` | Aaron Huaynate | feat(telegram): canal conversacional — le preguntás a SIR por Telegram | 2026-07-11 |
 
 ---
 
