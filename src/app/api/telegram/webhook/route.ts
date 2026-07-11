@@ -22,6 +22,7 @@ import { isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage, downlo
 import { transcribeAudio } from '@/lib/ai/transcribeAudio'
 import { askSir, AskSirConfigError } from '@/lib/sir/askSir'
 import { getSirThread, appendSirThread } from '@/lib/sir/thread'
+import { trackServer } from '@/lib/analytics/serverTrack'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -109,6 +110,8 @@ export async function POST(req: NextRequest) {
       await sendTelegramMessage(msg.chatId, result.answer)
       // Persisto ambos turnos al hilo canónico (compartido con la web).
       await appendSirThread(supabase, ownerId, 'telegram', text, result.answer)
+      // GA4 server-side: sin esto el uso por Telegram no aparece en analytics.
+      await trackServer('sir_asked', { channel: 'telegram', input_type: msg.isVoice ? 'voice' : 'text' }, ownerId)
     } catch (e) {
       if (e instanceof AskSirConfigError) {
         await sendTelegramMessage(msg.chatId, 'Me falta una API key en el server para pensar 🤔. Avisale a Aaron.')
