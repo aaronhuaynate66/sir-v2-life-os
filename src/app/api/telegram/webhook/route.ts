@@ -20,6 +20,7 @@ import { createClient as createServiceClient, type SupabaseClient } from '@supab
 import { parseTelegramUpdate } from '@/lib/telegram/inbound'
 import { isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage } from '@/lib/telegram/client'
 import { askSir, AskSirConfigError } from '@/lib/sir/askSir'
+import { getSirThread, appendSirThread } from '@/lib/sir/thread'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -82,14 +83,20 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      // Hilo unificado (Fase 2): traigo el historial cross-canal para continuidad
+      // multi-turno (ve también lo hablado por la web). Fail-open → [].
+      const history = await getSirThread(supabase, ownerId, 12)
       const result = await askSir({
         supabase,
         userId: ownerId,
         question: msg.text,
+        history,
         // MVP: sin el ida-vuelta de gaps aclaratorios por chat; respuesta directa.
         skipInlineGaps: true,
       })
       await sendTelegramMessage(msg.chatId, result.answer)
+      // Persisto ambos turnos al hilo canónico (compartido con la web).
+      await appendSirThread(supabase, ownerId, 'telegram', msg.text, result.answer)
     } catch (e) {
       if (e instanceof AskSirConfigError) {
         await sendTelegramMessage(msg.chatId, 'Me falta una API key en el server para pensar 🤔. Avisale a Aaron.')
