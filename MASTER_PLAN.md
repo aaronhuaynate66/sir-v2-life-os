@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `16d02b5`
+**Hash del último commit humano:** `6888d93`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `6888d93` | aaronhuaynate66 | Merge pull request #695 from aaronhuaynate66/feat/e5-life-direction | 2026-07-11 |
+| `ce68b2b` | Aaron Huaynate | feat(e5): 'Tu rumbo' — hilo de dirección de vida (pasado→presente→futuro) | 2026-07-11 |
 | `16d02b5` | Aaron Huaynate | Merge pull request #693 from aaronhuaynate66/feat/inbound-feed | 2026-07-11 |
 | `21da592` | aaronhuaynate66 | Merge pull request #694 from aaronhuaynate66/fix/outlook-sender-time | 2026-07-11 |
 | `4b070ca` | Aaron Huaynate | fix(correo): el scraper de OWA tomaba la HORA como remitente | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `4e934a4` | Aaron Huaynate | Add dev-login API route; ignore local .claude config | 2026-07-10 |
 | `68acb6c` | aaronhuaynate66 | Merge pull request #692 from aaronhuaynate66/feat/email-reader-outlook | 2026-07-10 |
 | `79fa01c` | Aaron Huaynate | feat(correo): leer Outlook Web (OWA) por scrape, mismo backend que Graph | 2026-07-10 |
-| `ffcbcc0` | aaronhuaynate66 | Merge pull request #691 from aaronhuaynate66/feat/e5-coherencia | 2026-07-10 |
-| `ccb156b` | Aaron Huaynate | feat(coherencia): capa E5 declarado ↔ hecho a escala de vida | 2026-07-10 |
 
 ---
 
