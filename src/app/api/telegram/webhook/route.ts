@@ -119,6 +119,8 @@ export async function POST(req: NextRequest) {
         history,
         // MVP: sin el ida-vuelta de gaps aclaratorios por chat; respuesta directa.
         skipInlineGaps: true,
+        // Telegram es un chat: breve, conversacional, sin markdown (el ** se veía crudo).
+        chatStyle: true,
       })
       await sendTelegramMessage(msg.chatId, result.answer)
       // Persisto ambos turnos al hilo canónico (compartido con la web).
