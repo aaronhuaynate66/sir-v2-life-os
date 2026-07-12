@@ -272,8 +272,10 @@ export default function SirChatPage() {
             personId: a.personId,
             type: person?.relationship ?? 'acquaintance',
             status: 'ended',
-            depth: 0,
-            reciprocity: 0,
+            // depth/reciprocity DEBEN estar en 1..10 (check de la tabla): con 0 el
+            // upsert a Supabase fallaba en silencio y el cierre nunca persistía.
+            depth: 5,
+            reciprocity: 5,
             history: [],
             sharedGoals: [],
             tensions: [],
