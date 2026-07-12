@@ -16,6 +16,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { ProposedActionResolved } from '@/lib/sir/askSir'
 import { shouldMaterializeInteraction, interactionLogToMemoryRow } from '@/lib/memories/fromInteractionLog'
+import { generateSlug } from '@/lib/people/slug'
 
 export interface ExecuteResult {
   ok: boolean
@@ -23,9 +24,29 @@ export interface ExecuteResult {
   message: string
 }
 
-/** ¿Este tipo de acción ya se puede ejecutar por chat? (gate del MVP). */
+/** ¿Este tipo de acción ya se puede ejecutar por chat?
+ *  registrar_interaccion + crear_objetivo + crear_persona. `cerrar_relacion`
+ *  queda web-only por ahora (multi-tabla + constraints; ver PR de captura). */
 export function isExecutableByChat(kind: string): boolean {
-  return kind === 'registrar_interaccion'
+  return kind === 'registrar_interaccion' || kind === 'crear_objetivo' || kind === 'crear_persona'
+}
+
+function randSuffix(n: number): string {
+  const alpha = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  let s = ''
+  for (let i = 0; i < n; i++) s += alpha[Math.floor(Math.random() * alpha.length)]
+  return s
+}
+
+/** Slug único para una persona nueva (evita chocar con los existentes). */
+async function uniquePersonSlug(supabase: SupabaseClient, userId: string, name: string): Promise<string> {
+  let slug = generateSlug(name)
+  try {
+    const { data } = await supabase.from('people').select('slug').eq('user_id', userId)
+    const taken = new Set(((data as Array<{ slug: string | null }>) ?? []).map((r) => r.slug).filter(Boolean) as string[])
+    while (taken.has(slug)) slug = `${slug}-${randSuffix(3)}`
+  } catch { /* best-effort: si falla la query, usamos el slug base */ }
+  return slug
 }
 
 export async function executeProposedAction(
@@ -73,6 +94,63 @@ export async function executeProposedAction(
       ok: true,
       message: `✅ Registré la interacción con ${name} (tono ${value}/5)${note ? ` — "${note.slice(0, 90)}${note.length > 90 ? '…' : ''}"` : ''}.`,
     }
+  }
+
+  if (action.kind === 'crear_objetivo') {
+    const titulo = (action.titulo || '').trim()
+    if (titulo.length < 2) return { ok: false, message: 'Faltó el título del objetivo, no creé nada.' }
+    const now = new Date().toISOString()
+    const id = `g_${Date.now()}_${randSuffix(4)}`
+    // Si el modelo ligó una persona, la resolvió a personId (askSir). La sumamos.
+    const relatedPersons = action.personId ? [action.personId] : []
+    const { error } = await supabase.from('goals').insert({
+      id,
+      user_id: userId,
+      title: titulo.slice(0, 200),
+      description: '',
+      category: action.categoria,
+      priority: action.prioridad,
+      status: 'active',
+      progress: 0,
+      milestones: [],
+      related_goals: [],
+      related_persons: relatedPersons,
+      peace_impact: Math.max(1, Math.min(10, Math.round(Number(action.impactoPaz) || 5))),
+      obstacles: [],
+      next_action: (action.proximoPaso || '').slice(0, 240),
+      created_at: now,
+      updated_at: now,
+    })
+    if (error) return { ok: false, message: 'Uf, no pude crear el objetivo. Reintentá en un momento.' }
+    return { ok: true, message: `🎯 Creé el objetivo "${titulo.slice(0, 90)}".` }
+  }
+
+  if (action.kind === 'crear_persona') {
+    const name = (action.nombre || '').trim()
+    if (name.length < 2) return { ok: false, message: 'Faltó el nombre, no creé la persona.' }
+    const now = new Date().toISOString()
+    const slug = await uniquePersonSlug(supabase, userId, name)
+    const id = `per_${Date.now()}_${randSuffix(6)}`
+    // Mismas columnas NOT NULL que usa el import y el alta desde la web.
+    const { error } = await supabase.from('people').insert({
+      id,
+      user_id: userId,
+      name: name.slice(0, 120),
+      slug,
+      relationship: action.relacion,
+      category: action.categoria,
+      importance_score: 5,
+      trust_level: 5,
+      energy_impact: 'neutral',
+      contact_frequency: '',
+      tags: [],
+      notes: 'Creado desde el chat de SIR.',
+      relational_notes: {},
+      created_at: now,
+      updated_at: now,
+    })
+    if (error) return { ok: false, message: 'Uf, no pude agregar a la persona. Reintentá en un momento.' }
+    return { ok: true, message: `👤 Agregué a ${name.slice(0, 80)} a tu red.` }
   }
 
   return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hacelo desde la web.' }
