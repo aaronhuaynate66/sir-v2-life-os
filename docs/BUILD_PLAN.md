@@ -30,6 +30,7 @@
 - [ ] **Sentry** — cargar el DSN en prod para que capture (endpoint verificador `/api/debug/sentry` ya listo, #703)
 - [x] **Canal Telegram (asistente) — ACTIVO 11-jul:** 4 env vars cargadas en Vercel + bot @sir_aaron_bot verificado. Reemplaza el plan de WhatsApp/Meta para "hablarle a SIR" (más barato y sin la trampa de pricing de Meta).
 - [ ] **GA4_API_SECRET** — crear en GA4 Admin → Data Streams → Measurement Protocol + cargar en Vercel, para que el uso por Telegram aparezca en analytics (#709, inerte hasta eso)
+- [x] **DOS bots de Telegram separados (12-jul):** `@sir_aaron_bot` = SOLO SIR (relacional, webhook askSir) · `@sir_aaron_dev_bot` = SOLO dev (builds/deploys/PRs/errores). Workflow `notify-telegram` (#715/#716) avisa por el bot de dev en cada merge a main. Secrets `TELEGRAM_DEV_BOT_TOKEN`/`TELEGRAM_DEV_CHAT_ID` cargados en GitHub. chat_id de Aaron = 774532238.
 - [ ] **Verificar en Vercel** que `NEXT_PUBLIC_GA4_ID` + `NEXT_PUBLIC_CLARITY_ID` sigan seteados (único punto de falla silenciosa de analytics; el código está OK)
 - [ ] **Emails Supabase en ES** — pegar `docs/auth-email-templates-es.md` en el dashboard
 
