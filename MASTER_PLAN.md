@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `5aff7dd`
+**Hash del último commit humano:** `fd9ca1a`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `fd9ca1a` | aaronhuaynate66 | feat(sir): SIR busca en el historial COMPLETO al responder (FTS del sustrato) (#732) | 2026-07-12 |
 | `5aff7dd` | aaronhuaynate66 | feat(chat): índice FTS (español) sobre chat_messages.content (#731) | 2026-07-12 |
 | `5a0b3ae` | aaronhuaynate66 | fix(sir): cerrar vínculo desde la web ahora SÍ persiste (depth/reciprocity válidos) (#730) | 2026-07-12 |
 | `aab7a3e` | aaronhuaynate66 | feat(sir): SIR te escribe el brief de la mañana por Telegram (proactivo, opt-in) (#729) | 2026-07-12 |
@@ -359,7 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `b6c89c2` | aaronhuaynate66 | fix(whatsapp): identifica a Aaron por su nombre en tagAuthors (evita autor invertido) (#725) | 2026-07-12 |
 | `b43d42b` | aaronhuaynate66 | feat(sir): el cerebro lee el sustrato real (chat_messages) con la voz transcrita (#724) | 2026-07-12 |
 | `d174e4b` | aaronhuaynate66 | Merge pull request #723 from aaronhuaynate66/feat/wa-substrate-consolidation | 2026-07-12 |
-| `c9e6068` | Aaron Huaynate | feat(scripts): import WhatsApp llena el sustrato chat_messages (historial completo) | 2026-07-12 |
 
 ---
 
