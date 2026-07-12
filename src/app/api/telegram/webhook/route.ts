@@ -19,6 +19,7 @@ import { createClient as createServiceClient, type SupabaseClient } from '@supab
 
 import { parseTelegramUpdate } from '@/lib/telegram/inbound'
 import { isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage, downloadTelegramFile } from '@/lib/telegram/client'
+import { toPlainText } from '@/lib/telegram/format'
 import { transcribeAudio } from '@/lib/ai/transcribeAudio'
 import { askSir, AskSirConfigError } from '@/lib/sir/askSir'
 import { getSirThread, appendSirThread } from '@/lib/sir/thread'
@@ -122,7 +123,10 @@ export async function POST(req: NextRequest) {
         // Telegram es un chat: breve, conversacional, sin markdown (el ** se veía crudo).
         chatStyle: true,
       })
-      await sendTelegramMessage(msg.chatId, result.answer)
+      // toPlainText garantiza que no viajen ** ## --- crudos a Telegram (el
+      // chatStyle del prompt ayuda, esto lo asegura aunque el modelo desobedezca).
+      const reply = toPlainText(result.answer)
+      await sendTelegramMessage(msg.chatId, reply)
       // Persisto ambos turnos al hilo canónico (compartido con la web).
       await appendSirThread(supabase, ownerId, 'telegram', text, result.answer)
       // GA4 server-side: sin esto el uso por Telegram no aparece en analytics.
