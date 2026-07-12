@@ -24,9 +24,9 @@
 
 ### 🔑 A — Necesita config/acción de Aaron (código ya en prod, espera setup externo)
 - [x] **SIR Reader — VERIFICADO EN VIVO (11-jul, consulta directa a la DB):** la extensión está llegando a SIR. `reader_threads`: **21 hilos Teams** (último ingest hace ~13h) + **9 hilos email/OWA** (último hace ~9h: Anthropic, Fathom, K2). `observations dm_conversation`: 99 `reader/teams` + 9 `reader/email`. El token está OK en Vercel (si no, 401). **Confirma el diseño:** `email_connections` (Graph OAuth) VACÍO → NO se usa el Azure de la empresa; el correo entra 100% por la extensión. **Residual detectado y explicado:** 4 cursores basura con nombre-hora (`15:15/15:25/15:30/15:59`) en `reader_threads`, todos creados **00:21 UTC** = ANTES del fix #694 (01:38 UTC) → el scraper (código) está OK, es data pre-fix. **Acción pendiente de Aaron:** actualizar la extensión en la otra PC (`git pull` + recargar en `chrome://extensions`) para garantizar que corre el fix #694; opcional limpiar los 4 cursores basura.
-- [ ] **Correo M365** — crear app en Azure + cargar env `MS_*`
+- [—] ~~**Correo M365** — app en Azure + env `MS_*`~~ **N/A (12-jul, decisión de Aaron):** el correo entra 100% por la extensión (SIR Reader → Outlook Web); `email_connections` (Graph OAuth) vacío confirmado. NO se usa el Azure de la empresa. No re-agregar.
 - [ ] **Grabador de llamadas** — probar el micrófono
-- [ ] **Canal WhatsApp** — provisionar la app de Meta (texto #638 + voz #639, inertes hasta eso)
+- [—] ~~**Canal WhatsApp** — app de Meta~~ **N/A (12-jul, decisión de Aaron):** "hablarle a SIR" es por Telegram (@sir_aaron_bot). Meta descartado por pricing (cobra desde 1-oct-2026) + fricción de montar la app. WhatsApp para LEER chats = la extensión (WA Web, pendiente lunes). No re-agregar.
 - [ ] **Sentry** — cargar el DSN en prod para que capture (endpoint verificador `/api/debug/sentry` ya listo, #703)
 - [x] **Canal Telegram (asistente) — ACTIVO 11-jul:** 4 env vars cargadas en Vercel + bot @sir_aaron_bot verificado. Reemplaza el plan de WhatsApp/Meta para "hablarle a SIR" (más barato y sin la trampa de pricing de Meta).
 - [ ] **GA4_API_SECRET** — crear en GA4 Admin → Data Streams → Measurement Protocol + cargar en Vercel, para que el uso por Telegram aparezca en analytics (#709, inerte hasta eso)
