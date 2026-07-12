@@ -16,6 +16,7 @@ import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
 import { getYearNorte } from '@/lib/year-compass/norte'
+import { cyclePhase } from '@/lib/ciclo/phase'
 import { embedText, toPgVector } from '@/lib/embeddings/client'
 import {
   SIR_ASK_SYSTEM_PROMPT,
@@ -101,6 +102,7 @@ export interface AskSirParams {
 export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   const { supabase, userId } = params
   const nowISO = params.nowISO ?? new Date().toISOString()
+  const nowDate = new Date(nowISO)
   const question = params.question.trim().slice(0, 1000)
 
   // Historial multi-turno: solo texto, acotado. Resuelve referentes ("¿y ella?")
@@ -116,7 +118,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   // 1. Todas las personas (para resolver nombres + traer su contexto).
   const { data: peopleRows } = await supabase
     .from('people')
-    .select('id, name, slug, relationship, last_contact, importance_score, trust_level, organization, org_group, birth_date, gender, cycle_start_date, ambito')
+    .select('id, name, slug, relationship, last_contact, importance_score, trust_level, organization, org_group, birth_date, gender, cycle_start_date, cycle_length_days, ambito')
     .eq('user_id', userId)
     .limit(1000)
   const allPeople = (peopleRows ?? []) as Array<Record<string, unknown>>
@@ -310,6 +312,19 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       if (conv) conversation = renderConversationForPrompt(conv, (row.name as string) ?? 'esa persona')
     } catch { conversation = null }
 
+    // Ciclo menstrual: si la persona tiene fecha de período cargada, computamos
+    // la fase actual (dato sensible → el prompt lo enmarca para CUIDAR, doc 17).
+    let cycle: AskPersonCtx['cycle'] = null
+    const cycleStart = (row.cycle_start_date as string | null) ?? null
+    if (cycleStart) {
+      const cp = cyclePhase(cycleStart, Number(row.cycle_length_days) || 28, nowDate)
+      if (cp) cycle = {
+        label: cp.label, cycleDay: cp.cycleDay, cycleLength: cp.cycleLength,
+        daysUntilNextPeriod: cp.daysUntilNextPeriod, isPmsWindow: cp.isPmsWindow,
+        isFertileWindow: cp.isFertileWindow, note: cp.contextNote,
+      }
+    }
+
     peopleCtx.push({
       name: (row.name as string) ?? 'alguien',
       relationship: (row.relationship as string | null) ?? null,
@@ -322,6 +337,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       recentMemories: recent,
       activeGoal: goalByPerson[pid] ?? null,
       conversation,
+      cycle,
     })
   }
 

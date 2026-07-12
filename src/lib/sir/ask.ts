@@ -18,6 +18,11 @@ REGLAS DURAS:
 - No moralices ni adornes. Pocas palabras, alto valor.
 - Si la pregunta es sobre cómo acercarte a alguien, basate en su último contacto, su score y lo que sabés de la relación; sé específico y realista.
 
+CICLO MENSTRUAL (cuando el CONTEXTO trae la fase del ciclo de una persona — dato sensible, sobre todo de tu pareja):
+- Usála SOLO para atunarte y cuidar mejor: timing, suavidad, presencia, anticipación amable. Podés decir en qué fase está y qué tiende a pasar en esa fase, siempre como CUIDADO.
+- NUNCA la uses para descalificar ("está hormonal"), invalidar lo que siente, ni predecir su conducta como si fuera un mecanismo. El ciclo MODULA, no dicta: una emoción real es real, tenga la fase que tenga; es contexto, jamás la explicación única.
+- Es tendencia poblacional, no ley individual. Hablá de posibilidades de cuidado, no de certezas conductuales. Si te piden "probabilidades de comportamiento" por la fase, reencuadrá hacia cómo acompañar mejor, sin reducir a la persona a su biología.
+
 PERSPECTIVA / ÁNIMO (solo cuando Aaron habla de cómo está, de un momento difícil, o te pide perspectiva, espejo o una idea creativa sobre su situación):
 - Acá SÍ podés salir del modo dato seco: respondé como un asesor que lo conoce y lo banca, breve y humano.
 - Primero reconocé lo que está cargando, sin minimizarlo, basándote en el CONTEXTO real (conflictos recientes, vínculos tensos, su norte). No inventes lo que no está.
@@ -40,6 +45,17 @@ export interface AskPersonCtx {
   organization?: string | null
   /** Bloque de conversación reciente importada (WhatsApp), ya renderizado. */
   conversation?: string | null
+  /** Fase del ciclo menstrual (computada de cycle_start_date). Dato SENSIBLE:
+   *  para cuidar/atunarse, nunca para descalificar (ver doc 17). null si no aplica. */
+  cycle?: {
+    label: string
+    cycleDay: number
+    cycleLength: number
+    daysUntilNextPeriod: number
+    isPmsWindow: boolean
+    isFertileWindow: boolean
+    note: string
+  } | null
 }
 
 export interface AskMemoryHit {
@@ -98,6 +114,15 @@ export function buildAskContext(input: AskContextInput): string {
       }
       if (p.conversation && p.conversation.trim()) {
         lines.push('  ' + p.conversation.trim().slice(0, 3000).replace(/\n/g, '\n  '))
+      }
+      if (p.cycle) {
+        const c = p.cycle
+        const until = c.daysUntilNextPeriod === 0 ? 'período estimado hoy' : `~${c.daysUntilNextPeriod} día(s) para el próximo período`
+        lines.push('  ciclo menstrual (dato SENSIBLE — para atunarte y cuidar, NUNCA para descalificar ni predecir su conducta):')
+        lines.push(`   - fase actual: ${c.label} (día ${c.cycleDay}/${c.cycleLength}) · ${until}`)
+        if (c.isPmsWindow) lines.push('   - ventana premenstrual: puede haber más sensibilidad — presencia y suavidad suman')
+        if (c.isFertileWindow) lines.push('   - ventana fértil (orientativa, NO método anticonceptivo)')
+        lines.push(`   - tendencia típica de la fase: ${c.note} (tendencia poblacional, NO certeza; estimado desde la última fecha de período, asume ciclo regular)`)
       }
       lines.push('')
     }
