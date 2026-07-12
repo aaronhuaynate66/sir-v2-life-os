@@ -24,11 +24,14 @@ export interface ExecuteResult {
   message: string
 }
 
-/** ¿Este tipo de acción ya se puede ejecutar por chat?
- *  registrar_interaccion + crear_objetivo + crear_persona. `cerrar_relacion`
- *  queda web-only por ahora (multi-tabla + constraints; ver PR de captura). */
+/** ¿Este tipo de acción ya se puede ejecutar por chat? Las cuatro. */
 export function isExecutableByChat(kind: string): boolean {
-  return kind === 'registrar_interaccion' || kind === 'crear_objetivo' || kind === 'crear_persona'
+  return (
+    kind === 'registrar_interaccion' ||
+    kind === 'crear_objetivo' ||
+    kind === 'crear_persona' ||
+    kind === 'cerrar_relacion'
+  )
 }
 
 function randSuffix(n: number): string {
@@ -153,5 +156,83 @@ export async function executeProposedAction(
     return { ok: true, message: `👤 Agregué a ${name.slice(0, 80)} a tu red.` }
   }
 
+  if (action.kind === 'cerrar_relacion') {
+    const personId = action.personId
+    if (!personId) {
+      return { ok: false, message: `No encontré a ${action.persona || 'esa persona'} en tu red, así que no cerré nada.` }
+    }
+    const { data: person } = await supabase
+      .from('people').select('id, name, notes, relationship').eq('user_id', userId).eq('id', personId).maybeSingle()
+    if (!person) {
+      return { ok: false, message: 'No encontré esa persona (o no es tuya), no cerré nada.' }
+    }
+    const p = person as { name?: string; notes?: string | null; relationship?: string | null }
+    const now = new Date().toISOString()
+
+    // 1) Marcar el vínculo como 'ended' — ES lo que leen daily-actions/urgency
+    //    para dejar de sugerir retomar contacto. La tabla suele estar vacía →
+    //    insert. Robusto ante el tipo de `id` (uuid default vs text 'rel_…').
+    const okRel = await markRelationshipEnded(supabase, userId, personId, p.relationship || 'acquaintance')
+
+    // 2) Nota de cierre en la persona (no se borra nada).
+    const closingNote = `Vínculo cerrado el ${now.slice(0, 10)}${action.motivo ? ` — ${action.motivo}` : ''}.`
+    try {
+      await supabase.from('people')
+        .update({ notes: p.notes ? `${p.notes}\n${closingNote}` : closingNote, updated_at: now })
+        .eq('user_id', userId).eq('id', personId)
+    } catch { /* fail-soft */ }
+
+    // 3) Pausar los objetivos activos ligados a esa persona.
+    let paused = 0
+    try {
+      const { data: linked } = await supabase.from('goals')
+        .select('id').eq('user_id', userId).eq('status', 'active').contains('related_persons', [personId])
+      const ids = ((linked as Array<{ id: string }>) ?? []).map((g) => g.id)
+      if (ids.length > 0) {
+        const { error } = await supabase.from('goals').update({ status: 'paused', updated_at: now }).in('id', ids)
+        if (!error) paused = ids.length
+      }
+    } catch { /* fail-soft */ }
+
+    const name = p.name || action.persona || 'esa persona'
+    if (!okRel) {
+      return { ok: false, message: `No pude marcar el vínculo con ${name} como cerrado. Reintentá o hacelo desde la web.` }
+    }
+    return {
+      ok: true,
+      message: `🔚 Cerré tu vínculo con ${name}: dejo de sugerirte retomar contacto${paused > 0 ? `, y pausé ${paused} objetivo(s) ligado(s)` : ''}. No borré nada.`,
+    }
+  }
+
   return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hacelo desde la web.' }
+}
+
+/** Marca el vínculo con una persona como 'ended'. Si ya hay fila → update; si no
+ *  → insert con valores VÁLIDOS (depth/reciprocity 1..10; la web usa 0 y viola el
+ *  check, por eso la tabla queda vacía). Robusto ante el tipo de `id`: intenta sin
+ *  id (uuid default) y si falla reintenta con id text 'rel_…'. Devuelve si quedó. */
+async function markRelationshipEnded(
+  supabase: SupabaseClient, userId: string, personId: string, type: string,
+): Promise<boolean> {
+  try {
+    const { data: existing } = await supabase
+      .from('relationships').select('id').eq('user_id', userId).eq('person_id', personId).limit(1).maybeSingle()
+    if (existing && (existing as { id: string }).id) {
+      const { error } = await supabase.from('relationships')
+        .update({ status: 'ended', updated_at: new Date().toISOString() })
+        .eq('id', (existing as { id: string }).id)
+      return !error
+    }
+    const base: Record<string, unknown> = {
+      user_id: userId, person_id: personId, type, status: 'ended',
+      depth: 5, reciprocity: 5, history: [], shared_goals: [], tensions: [], strengths: [],
+    }
+    const first = await supabase.from('relationships').insert(base)
+    if (!first.error) return true
+    // Fallback: la columna id podría ser TEXT sin default (drift) → proveerla.
+    const second = await supabase.from('relationships').insert({ ...base, id: `rel_${Date.now()}_${randSuffix(6)}` })
+    return !second.error
+  } catch {
+    return false
+  }
 }

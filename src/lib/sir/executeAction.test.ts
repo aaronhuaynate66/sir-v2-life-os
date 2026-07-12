@@ -5,24 +5,30 @@ import { executeProposedAction, isExecutableByChat } from './executeAction'
 import type { ProposedActionResolved } from './askSir'
 
 // Mock de Supabase que ramifica por tabla y captura lo escrito.
-function mockSb(opts: { person?: { id: string; name: string } | null; slugs?: string[] } = {}) {
-  const person = opts.person === undefined ? { id: 'p1', name: 'Pablo' } : opts.person
+function mockSb(opts: {
+  person?: { id: string; name: string; notes?: string | null; relationship?: string } | null
+  slugs?: string[]
+  existingRel?: { id: string } | null
+  linkedGoals?: Array<{ id: string }>
+  relInsertError?: unknown
+} = {}) {
+  const person = opts.person === undefined ? { id: 'p1', name: 'Pablo', notes: null, relationship: 'friend' } : opts.person
   const slugs = opts.slugs ?? []
-  const calls: {
-    logInsert?: Record<string, unknown>; memUpsert?: unknown[]
-    goalInsert?: Record<string, unknown>; peopleInsert?: Record<string, unknown>
-  } = {}
+  const existingRel = opts.existingRel ?? null
+  const linkedGoals = opts.linkedGoals ?? []
+  const relInsertError = opts.relInsertError ?? null
+  const calls: Record<string, unknown> = {}
   const thenable = (result: unknown) => ({ then: (res: (v: unknown) => void) => res(result) })
+
   const sb = {
     from(table: string) {
       if (table === 'people') {
         const chain: Record<string, unknown> = {
-          select: () => chain,
-          eq: () => chain,
+          select: () => chain, eq: () => chain,
           maybeSingle: async () => ({ data: person }),
-          // La query de slugs (select('slug').eq('user_id',…)) se awaitea directo.
           then: (res: (v: unknown) => void) => res({ data: slugs.map((s) => ({ slug: s })), error: null }),
           insert: (row: Record<string, unknown>) => { calls.peopleInsert = row; return thenable({ error: null }) },
+          update: (row: Record<string, unknown>) => { calls.peopleUpdate = row; return chain },
         }
         return chain
       }
@@ -38,7 +44,22 @@ function mockSb(opts: { person?: { id: string; name: string } | null; slugs?: st
         return { upsert: (rows: unknown[]) => { calls.memUpsert = rows; return Promise.resolve({ error: null }) } }
       }
       if (table === 'goals') {
-        return { insert: (row: Record<string, unknown>) => { calls.goalInsert = row; return thenable({ error: null }) } }
+        const chain: Record<string, unknown> = {
+          select: () => chain, eq: () => chain, contains: () => chain,
+          then: (res: (v: unknown) => void) => res({ data: linkedGoals, error: null }),
+          insert: (row: Record<string, unknown>) => { calls.goalInsert = row; return thenable({ error: null }) },
+          update: (row: Record<string, unknown>) => { calls.goalUpdate = row; return { in: () => thenable({ error: null }) } },
+        }
+        return chain
+      }
+      if (table === 'relationships') {
+        const chain: Record<string, unknown> = {
+          select: () => chain, eq: () => chain, limit: () => chain,
+          maybeSingle: async () => ({ data: existingRel }),
+          insert: (row: Record<string, unknown>) => { calls.relInsert = row; return thenable({ error: relInsertError }) },
+          update: (row: Record<string, unknown>) => { calls.relUpdate = row; return { eq: () => thenable({ error: null }) } },
+        }
+        return chain
       }
       return {}
     },
@@ -144,20 +165,57 @@ describe('executeProposedAction — crear_persona', () => {
   })
 })
 
-describe('executeProposedAction — cerrar_relacion (aún web-only)', () => {
-  it('devuelve ok:false y deriva a la web', async () => {
-    const { sb } = mockSb()
-    const r = await executeProposedAction(sb, 'u1', { kind: 'cerrar_relacion', persona: 'Ana', motivo: '', personId: 'p9' } as ProposedActionResolved)
+describe('executeProposedAction — cerrar_relacion', () => {
+  const cierre: ProposedActionResolved = { kind: 'cerrar_relacion', persona: 'Ana', motivo: 'se terminó', personId: 'p1' } as ProposedActionResolved
+
+  it('marca el vínculo ended, agrega nota de cierre y no borra nada', async () => {
+    const { sb, calls } = mockSb({ person: { id: 'p1', name: 'Ana', notes: 'algo previo', relationship: 'romantic' } })
+    const r = await executeProposedAction(sb, 'u1', cierre)
+    expect(r.ok).toBe(true)
+    expect(r.message).toContain('Ana')
+    expect(r.message).toMatch(/no borré nada/i)
+    // insertó una relationship con status ended y depth/reciprocity VÁLIDOS (no 0)
+    expect(calls.relInsert).toMatchObject({ user_id: 'u1', person_id: 'p1', status: 'ended', depth: 5, reciprocity: 5 })
+    // nota de cierre appendeada (no reemplaza la previa)
+    expect((calls.peopleUpdate as { notes: string }).notes).toMatch(/algo previo[\s\S]*Vínculo cerrado/)
+  })
+
+  it('pausa los objetivos activos ligados a la persona', async () => {
+    const { sb, calls } = mockSb({ linkedGoals: [{ id: 'g1' }, { id: 'g2' }] })
+    const r = await executeProposedAction(sb, 'u1', cierre)
+    expect(r.ok).toBe(true)
+    expect(r.message).toMatch(/2 objetivo/)
+    expect(calls.goalUpdate).toMatchObject({ status: 'paused' })
+  })
+
+  it('usa update (no insert) si ya existe una fila de relationship', async () => {
+    const { sb, calls } = mockSb({ existingRel: { id: 'rel_x' } })
+    await executeProposedAction(sb, 'u1', cierre)
+    expect(calls.relUpdate).toMatchObject({ status: 'ended' })
+    expect(calls.relInsert).toBeUndefined()
+  })
+
+  it('falla si la persona no existe', async () => {
+    const { sb } = mockSb({ person: null })
+    const r = await executeProposedAction(sb, 'u1', cierre)
     expect(r.ok).toBe(false)
-    expect(r.message).toMatch(/web/i)
+    expect(r.message).toMatch(/no encontré/i)
+  })
+
+  it('ok:false si no se pudo marcar el vínculo (insert falla)', async () => {
+    const { sb } = mockSb({ relInsertError: { message: 'boom' } })
+    const r = await executeProposedAction(sb, 'u1', cierre)
+    expect(r.ok).toBe(false)
+    expect(r.message).toMatch(/web|reintent/i)
   })
 })
 
 describe('isExecutableByChat', () => {
-  it('interacción, objetivo y persona sí; cerrar_relacion no (todavía)', () => {
+  it('las cuatro acciones están habilitadas por chat', () => {
     expect(isExecutableByChat('registrar_interaccion')).toBe(true)
     expect(isExecutableByChat('crear_objetivo')).toBe(true)
     expect(isExecutableByChat('crear_persona')).toBe(true)
-    expect(isExecutableByChat('cerrar_relacion')).toBe(false)
+    expect(isExecutableByChat('cerrar_relacion')).toBe(true)
+    expect(isExecutableByChat('otra_cosa')).toBe(false)
   })
 })
