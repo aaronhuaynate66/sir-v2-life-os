@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `d60f3c3`
+**Hash del último commit humano:** `e1921ff`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `e1921ff` | aaronhuaynate66 | Merge pull request #714 from aaronhuaynate66/fix/sir-cycle-context | 2026-07-12 |
+| `bcc45cd` | Aaron Huaynate | fix(sir): incluye la fase del ciclo en el contexto por-persona | 2026-07-12 |
 | `d60f3c3` | aaronhuaynate66 | Merge pull request #713 from aaronhuaynate66/docs/build-plan-yolo | 2026-07-11 |
 | `2064151` | Aaron Huaynate | docs(plan): sesión asistente conversacional + modo yolo (13 PRs) | 2026-07-11 |
 | `31f2428` | aaronhuaynate66 | Merge pull request #712 from aaronhuaynate66/chore/remove-dead-code | 2026-07-11 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `aff237f` | Aaron Huaynate | feat(telegram): comandos /start y /help con bienvenida | 2026-07-11 |
 | `665d843` | aaronhuaynate66 | Merge pull request #710 from aaronhuaynate66/feat/panel-greeting | 2026-07-11 |
 | `50bf0cb` | Aaron Huaynate | feat(panel): saludo contextual + resumen del día (quick win Rimu) | 2026-07-11 |
-| `eb3cd64` | aaronhuaynate66 | Merge pull request #709 from aaronhuaynate66/feat/ga4-telegram | 2026-07-11 |
-| `4ff0125` | Aaron Huaynate | feat(analytics): tracking server-side de GA4 para el canal Telegram | 2026-07-11 |
 
 ---
 
