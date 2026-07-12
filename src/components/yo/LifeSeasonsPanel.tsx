@@ -17,6 +17,7 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { buildLifeSeasons } from '@/lib/self/lifeSeasons'
 import { categoryLabelEs } from '@/lib/self/trajectoryArc'
 import { summarizeSeasonSubstrate } from '@/lib/self/seasonSubstrate'
+import { computeNarrativeCoherence } from '@/lib/self/narrativeCoherence'
 
 const CURRENT_COLOR = '#14b8a6'
 const PAST_COLOR = '#8a8f98'
@@ -28,6 +29,15 @@ export function LifeSeasonsPanel() {
   const sleepRecords = useSelfStore((s) => s.sleepRecords)
   const memories = useMemoryStore((s) => s.memories)
   const seasons = useMemo(() => buildLifeSeasons(goals), [goals])
+  // Coherencia narrativa: ¿los capítulos forman un hilo, pivotean, o se dispersan?
+  const anchorCategory = useMemo(
+    () => goals.find((g) => g.isAnchor && g.status === 'active')?.category ?? null,
+    [goals],
+  )
+  const narrative = useMemo(
+    () => computeNarrativeCoherence(seasons.seasons, anchorCategory),
+    [seasons, anchorCategory],
+  )
 
   // El sustrato vivido (ánimo/energía, sueño, momentos) cruzado con cada capítulo:
   // no solo QUÉ objetivos lo habitaron, sino CÓMO lo viviste. Puro, por ventana.
@@ -111,6 +121,23 @@ export function LifeSeasonsPanel() {
             )
           })}
         </ol>
+
+        {/* El arco: coherencia narrativa ENTRE capítulos (hilo / transición /
+            fragmentación). Sin moralizar. Invisible con < 2 capítulos. */}
+        {narrative.state !== 'insufficient' && (
+          <div className="mt-4 border-t border-border pt-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">El arco de tu historia</span>
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                style={{ backgroundColor: `${CURRENT_COLOR}18`, color: CURRENT_COLOR }}
+              >
+                {narrative.state === 'continuous' ? 'hilo continuo' : narrative.state === 'transitioning' ? 'en transición' : 'exploración'}
+              </span>
+            </div>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/85">{narrative.message}</p>
+          </div>
+        )}
 
         <Link
           href="/objetivos"
