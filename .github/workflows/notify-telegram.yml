@@ -29,10 +29,8 @@ jobs:
           fi
           # Solo la primera línea del mensaje de commit (evita cuerpos largos).
           TITLE=$(printf '%s' "$COMMIT_MSG" | head -n1)
-          TEXT="🚀 main actualizado
-${TITLE}
-— ${COMMIT_AUTHOR} · ${SHA:0:7}
-${COMMIT_URL}"
+          # printf con \n → una sola línea indentada (no rompe el YAML block).
+          TEXT=$(printf '🚀 main actualizado\n%s\n— %s · %s\n%s' "$TITLE" "$COMMIT_AUTHOR" "${SHA:0:7}" "$COMMIT_URL")
           curl -s "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TG_CHAT}" \
             --data-urlencode "text=${TEXT}" \
