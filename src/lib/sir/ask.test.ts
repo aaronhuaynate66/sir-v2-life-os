@@ -55,6 +55,40 @@ describe('buildAskContext', () => {
     const ctx = buildAskContext({ question: 'x', todayISO: '2026-06-14', people: [], memories: [], goals: [] })
     expect(ctx).toContain('No se encontró data')
   })
+  it('incluye la fase del ciclo con encuadre de cuidado (no determinista)', () => {
+    const ctx = buildAskContext({
+      question: '¿en qué fase está Diana?',
+      todayISO: '2026-07-12',
+      people: [{
+        name: 'Diana', relationship: 'pareja', recentMemories: [],
+        cycle: { label: 'Lútea', cycleDay: 20, cycleLength: 28, daysUntilNextPeriod: 9, isPmsWindow: false, isFertileWindow: false, note: 'Fase lútea. Energía decreciente.' },
+      }],
+      memories: [], goals: [],
+    })
+    expect(ctx).toContain('fase actual: Lútea (día 20/28)')
+    expect(ctx).toContain('~9 día(s) para el próximo período')
+    expect(ctx).toContain('NUNCA para descalificar') // el encuadre ético viaja con el dato
+  })
+  it('marca la ventana premenstrual cuando aplica', () => {
+    const ctx = buildAskContext({
+      question: 'x', todayISO: '2026-07-12',
+      people: [{
+        name: 'Diana', recentMemories: [],
+        cycle: { label: 'Lútea', cycleDay: 26, cycleLength: 28, daysUntilNextPeriod: 3, isPmsWindow: true, isFertileWindow: false, note: 'Fase lútea.' },
+      }],
+      memories: [], goals: [],
+    })
+    expect(ctx).toContain('ventana premenstrual')
+    expect(ctx).toContain('presencia y suavidad')
+  })
+  it('no renderiza ciclo si la persona no lo tiene', () => {
+    const ctx = buildAskContext({
+      question: 'x', todayISO: '2026-07-12',
+      people: [{ name: 'Francisco', recentMemories: [] }],
+      memories: [], goals: [],
+    })
+    expect(ctx).not.toContain('ciclo menstrual')
+  })
 })
 
 import { isPerspectiveQuery, selectStrengthMemories } from './ask'
