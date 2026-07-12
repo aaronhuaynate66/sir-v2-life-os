@@ -13,6 +13,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
+import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
+import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
@@ -62,6 +64,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'No se pudieron leer suscripciones', detail: subErr.message }, { status: 500 })
   }
   const userIds = [...new Set((subRows ?? []).map((r) => (r as { user_id: string }).user_id).filter(Boolean))]
+
+  // Brief de la mañana TAMBIÉN por Telegram (canal conversacional proactivo).
+  // Opt-in explícito con TELEGRAM_MORNING_BRIEF=1 (comportamiento saliente
+  // recurrente → no se activa solo). Al dueño se le manda aunque no tenga
+  // suscripción Web Push, así que lo sumamos al set de usuarios a procesar.
+  const briefEnabled = process.env.TELEGRAM_MORNING_BRIEF === '1' && isTelegramConfigured()
+  const tgOwnerId = process.env.TELEGRAM_OWNER_USER_ID?.trim() || null
+  const tgChat = process.env.TELEGRAM_ALLOWED_CHAT_ID?.trim() || null
+  if (briefEnabled && tgOwnerId && tgChat && !userIds.includes(tgOwnerId)) userIds.push(tgOwnerId)
+  let telegramBriefs = 0
 
   const now = new Date()
   const today = limaToday(now)
@@ -229,10 +241,24 @@ export async function GET(req: NextRequest) {
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
       results.push({ user: uid.slice(0, 8), sent: r.sent })
+
+      // Mismo brief, por Telegram, al dueño (proactivo). El contenido es el
+      // mismo determinístico; lo persistimos al hilo unificado para que aparezca
+      // también en /sir (web). Fail-open: un fallo no rompe el cron.
+      if (briefEnabled && tgOwnerId && tgChat && uid === tgOwnerId) {
+        const chatText = formatMorningBriefForChat(push)
+        const tg = await sendTelegramMessage(Number(tgChat), chatText)
+        if (tg.ok) {
+          telegramBriefs++
+          try {
+            await admin.from('sir_messages').insert({ user_id: uid, role: 'sir', content: chatText.slice(0, 4000), channel: 'telegram' })
+          } catch { /* fail-open: el hilo es un extra */ }
+        }
+      }
     } catch {
       results.push({ user: uid.slice(0, 8), sent: 0 })
     }
   }
 
-  return NextResponse.json({ ok: true, users: userIds.length, sent, results }, { status: 200 })
+  return NextResponse.json({ ok: true, users: userIds.length, sent, telegramBriefs, results }, { status: 200 })
 }
