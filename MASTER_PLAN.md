@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `cec0afb`
+**Hash del último commit humano:** `57eb2fa`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `57eb2fa` | aaronhuaynate66 | Merge pull request #717 from aaronhuaynate66/docs/telegram-channels | 2026-07-12 |
+| `9f12197` | Aaron Huaynate | docs(plan): dos bots de Telegram (SIR vs dev) + workflow de notificaciones | 2026-07-12 |
 | `cec0afb` | aaronhuaynate66 | Merge pull request #716 from aaronhuaynate66/ci/fix-notify-yaml | 2026-07-12 |
 | `05f4452` | Aaron Huaynate | ci(fix): notify-telegram — el TEXT multilínea rompía el YAML block | 2026-07-12 |
 | `b1963ad` | aaronhuaynate66 | Merge pull request #715 from aaronhuaynate66/ci/notify-telegram | 2026-07-12 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `bcc45cd` | Aaron Huaynate | fix(sir): incluye la fase del ciclo en el contexto por-persona | 2026-07-12 |
 | `d60f3c3` | aaronhuaynate66 | Merge pull request #713 from aaronhuaynate66/docs/build-plan-yolo | 2026-07-11 |
 | `2064151` | Aaron Huaynate | docs(plan): sesión asistente conversacional + modo yolo (13 PRs) | 2026-07-11 |
-| `31f2428` | aaronhuaynate66 | Merge pull request #712 from aaronhuaynate66/chore/remove-dead-code | 2026-07-11 |
-| `acbb715` | Aaron Huaynate | chore: borra código muerto (auditoría de cableado) | 2026-07-11 |
 
 ---
 
