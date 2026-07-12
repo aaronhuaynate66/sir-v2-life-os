@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c3bda32`
+**Hash del último commit humano:** `efd9553`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `efd9553` | aaronhuaynate66 | Merge pull request #719 from aaronhuaynate66/fix/telegram-plaintext | 2026-07-12 |
+| `8fb4c6e` | Aaron Huaynate | fix(telegram): limpia markdown crudo antes de enviar (garantía server-side) | 2026-07-12 |
 | `c3bda32` | aaronhuaynate66 | Merge pull request #718 from aaronhuaynate66/feat/telegram-chat-style | 2026-07-12 |
 | `32f9425` | Aaron Huaynate | feat(telegram): respuestas en estilo chat (breve, sin markdown) | 2026-07-12 |
 | `57eb2fa` | aaronhuaynate66 | Merge pull request #717 from aaronhuaynate66/docs/telegram-channels | 2026-07-12 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `05f4452` | Aaron Huaynate | ci(fix): notify-telegram — el TEXT multilínea rompía el YAML block | 2026-07-12 |
 | `b1963ad` | aaronhuaynate66 | Merge pull request #715 from aaronhuaynate66/ci/notify-telegram | 2026-07-12 |
 | `2230b37` | Aaron Huaynate | ci: notifica por el bot de dev de Telegram en cada push a main | 2026-07-12 |
-| `e1921ff` | aaronhuaynate66 | Merge pull request #714 from aaronhuaynate66/fix/sir-cycle-context | 2026-07-12 |
-| `bcc45cd` | Aaron Huaynate | fix(sir): incluye la fase del ciclo en el contexto por-persona | 2026-07-12 |
 
 ---
 
