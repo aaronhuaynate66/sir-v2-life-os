@@ -14,6 +14,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
+import { searchChatMessages, renderChatSearchBlock } from '@/lib/chat-messages/search'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
 import { getYearNorte } from '@/lib/year-compass/norte'
 import { cyclePhase } from '@/lib/ciclo/phase'
@@ -313,6 +314,15 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       const conv = await getPersonConversation(supabase, userId, pid)
       if (conv) conversation = renderConversationForPrompt(conv, (row.name as string) ?? 'esa persona')
     } catch { conversation = null }
+
+    // Búsqueda full-text sobre el historial COMPLETO (mig 0145): trae mensajes
+    // relevantes a la consulta más allá de la ventana reciente (ej. algo dicho
+    // años atrás). Se anexa al bloque de conversación. Fail-open.
+    try {
+      const hits = await searchChatMessages(supabase, userId, pid, retrievalText, 6)
+      const block = renderChatSearchBlock(hits, (row.name as string) ?? 'esa persona')
+      if (block) conversation = conversation ? `${conversation}\n\n${block}` : block
+    } catch { /* fail-open: la búsqueda es un extra */ }
 
     // Ciclo menstrual: si la persona tiene fecha de período cargada, computamos
     // la fase actual (dato sensible → el prompt lo enmarca para CUIDAR, doc 17).
