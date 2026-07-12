@@ -92,10 +92,15 @@ function parseExport(txt) {
   return msgs
 }
 
-// El "user" (Aaron) = el autor que NO matchea el nombre del contacto.
+// El "user" es Aaron. Lo identificamos por SU nombre (constante "Aaron ..." en
+// todos los exports) — robusto ante overrides del nombre del contacto (ej. zip
+// "Papa" → persona "Esteban Huaynate", donde el criterio por-contacto cruzaba los
+// roles). Fallback al criterio viejo (por nombre del contacto) si no aparece Aaron.
 function tagAuthors(msgs, contact) {
-  const ctoks = new Set(sigTokens(contact))
   const authors = [...new Set(msgs.map((m) => m.author))]
+  const aaron = authors.find((a) => /^aaron/i.test((a || '').trim()))
+  if (aaron) return msgs.map((m) => ({ ...m, side: m.author === aaron ? 'user' : 'other' }))
+  const ctoks = new Set(sigTokens(contact))
   const otherAuthor = authors.find((a) => sigTokens(a).some((t) => ctoks.has(t))) || authors[0]
   return msgs.map((m) => ({ ...m, side: m.author === otherAuthor ? 'other' : 'user' }))
 }
