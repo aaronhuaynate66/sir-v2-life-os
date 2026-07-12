@@ -18,8 +18,39 @@ export interface TelegramInbound {
   fromName: string | null
 }
 
+/** Tap de un botón inline (callback_query). Ver captura de notas por chat. */
+export interface TelegramCallback {
+  /** id del callback_query (para answerCallbackQuery). */
+  callbackId: string
+  chatId: number
+  /** id del mensaje que tiene los botones (para editarlo tras resolver). */
+  messageId: number
+  /** callback_data del botón tapeado. */
+  data: string
+}
+
 function asRecord(x: unknown): Record<string, unknown> | null {
   return x && typeof x === 'object' ? (x as Record<string, unknown>) : null
+}
+
+/**
+ * Parsea un update de tipo callback_query (tap de botón inline). null si el
+ * payload no es un callback que sepamos manejar. No lanza.
+ * Ref: https://core.telegram.org/bots/api#callbackquery
+ */
+export function parseTelegramCallback(payload: unknown): TelegramCallback | null {
+  const root = asRecord(payload)
+  if (!root) return null
+  const cq = asRecord(root.callback_query)
+  if (!cq) return null
+  const callbackId = typeof cq.id === 'string' ? cq.id : null
+  const data = typeof cq.data === 'string' ? cq.data : null
+  const message = asRecord(cq.message)
+  const chat = message ? asRecord(message.chat) : null
+  const chatId = chat && typeof chat.id === 'number' ? chat.id : null
+  const messageId = message && typeof message.message_id === 'number' ? message.message_id : 0
+  if (!callbackId || !data || chatId === null) return null
+  return { callbackId, chatId, messageId, data }
 }
 
 export function parseTelegramUpdate(payload: unknown): TelegramInbound | null {

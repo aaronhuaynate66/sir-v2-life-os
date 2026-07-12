@@ -17,12 +17,18 @@
 import { NextResponse, type NextRequest, after } from 'next/server'
 import { createClient as createServiceClient, type SupabaseClient } from '@supabase/supabase-js'
 
-import { parseTelegramUpdate } from '@/lib/telegram/inbound'
-import { isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage, downloadTelegramFile } from '@/lib/telegram/client'
+import { parseTelegramUpdate, parseTelegramCallback } from '@/lib/telegram/inbound'
+import {
+  isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage, downloadTelegramFile,
+  answerCallbackQuery, editTelegramMessageText,
+} from '@/lib/telegram/client'
 import { toPlainText } from '@/lib/telegram/format'
 import { transcribeAudio } from '@/lib/ai/transcribeAudio'
 import { askSir, AskSirConfigError } from '@/lib/sir/askSir'
 import { getSirThread, appendSirThread } from '@/lib/sir/thread'
+import { executeProposedAction, isExecutableByChat } from '@/lib/sir/executeAction'
+import { savePendingAction, loadPendingAction, deletePendingAction } from '@/lib/sir/pendingActions'
+import { summarizeActionForConfirm } from '@/lib/sir/actionSummary'
 import { trackServer } from '@/lib/analytics/serverTrack'
 
 export const runtime = 'nodejs'
@@ -51,12 +57,52 @@ export async function POST(req: NextRequest) {
 
   let payload: unknown
   try { payload = await req.json() } catch { return NextResponse.json({ ok: true }) }
-  const msg = parseTelegramUpdate(payload)
-  if (!msg) return NextResponse.json({ ok: true })
 
   const allowedChat = process.env.TELEGRAM_ALLOWED_CHAT_ID?.trim()
   const svcUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  // ── Tap de botón inline: confirmación de captura de notas ───────────
+  // callback_data: "sv|<pendingId>|1" (guardar) | "sv|<pendingId>|0" (descartar).
+  const cb = parseTelegramCallback(payload)
+  if (cb) {
+    after(async () => {
+      if (!allowedChat || String(cb.chatId) !== allowedChat || !svcUrl || !svcKey) {
+        await answerCallbackQuery(cb.callbackId)
+        return
+      }
+      const supabase = createServiceClient(svcUrl, svcKey, { auth: { persistSession: false } })
+      const ownerId = await resolveOwnerId(supabase)
+      if (!ownerId) { await answerCallbackQuery(cb.callbackId); return }
+
+      const parts = cb.data.split('|')
+      if (parts[0] !== 'sv' || parts.length < 3) { await answerCallbackQuery(cb.callbackId); return }
+      const pendingId = parts[1]
+      const confirm = parts[2] === '1'
+
+      const action = await loadPendingAction(supabase, ownerId, pendingId)
+      if (!action) {
+        await answerCallbackQuery(cb.callbackId, 'Ya no está disponible')
+        await editTelegramMessageText(cb.chatId, cb.messageId, 'Esta propuesta ya venció o se resolvió.')
+        return
+      }
+      if (!confirm) {
+        await deletePendingAction(supabase, ownerId, pendingId)
+        await answerCallbackQuery(cb.callbackId, 'Descartado')
+        await editTelegramMessageText(cb.chatId, cb.messageId, '✗ Listo, no guardé nada.')
+        return
+      }
+      const result = await executeProposedAction(supabase, ownerId, action)
+      await deletePendingAction(supabase, ownerId, pendingId)
+      await answerCallbackQuery(cb.callbackId, result.ok ? 'Guardado ✓' : 'No se pudo')
+      await editTelegramMessageText(cb.chatId, cb.messageId, result.message)
+      if (result.ok) await trackServer('sir_action_confirmed', { channel: 'telegram', kind: action.kind }, ownerId)
+    })
+    return NextResponse.json({ ok: true })
+  }
+
+  const msg = parseTelegramUpdate(payload)
+  if (!msg) return NextResponse.json({ ok: true })
 
   // Ack rápido + proceso en background (Telegram reintenta si tardamos).
   after(async () => {
@@ -131,6 +177,20 @@ export async function POST(req: NextRequest) {
       await appendSirThread(supabase, ownerId, 'telegram', text, result.answer)
       // GA4 server-side: sin esto el uso por Telegram no aparece en analytics.
       await trackServer('sir_asked', { channel: 'telegram', input_type: msg.isVoice ? 'voice' : 'text' }, ownerId)
+
+      // CAPTURA DE NOTAS: si Aaron DICTÓ una acción (no solo preguntó), SIR la
+      // propone con botones para que confirme. Nunca escritura silenciosa: se
+      // guarda pendiente y solo se ejecuta al tap de "✅ Guardar".
+      const pa = result.proposedAction
+      if (pa && isExecutableByChat(pa.kind)) {
+        const pendingId = await savePendingAction(supabase, ownerId, pa)
+        if (pendingId) {
+          await sendTelegramMessage(msg.chatId, summarizeActionForConfirm(pa), [
+            { text: '✅ Guardar', callbackData: `sv|${pendingId}|1` },
+            { text: '✗ Descartar', callbackData: `sv|${pendingId}|0` },
+          ])
+        }
+      }
     } catch (e) {
       if (e instanceof AskSirConfigError) {
         await sendTelegramMessage(msg.chatId, 'Me falta una API key en el server para pensar 🤔. Avisale a Aaron.')

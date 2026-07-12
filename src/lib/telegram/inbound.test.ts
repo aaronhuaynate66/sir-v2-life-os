@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseTelegramUpdate } from './inbound'
+import { parseTelegramUpdate, parseTelegramCallback } from './inbound'
 
 describe('parseTelegramUpdate', () => {
   it('parsea un mensaje de texto', () => {
@@ -40,5 +40,28 @@ describe('parseTelegramUpdate', () => {
     expect(parseTelegramUpdate(null)).toBeNull()
     expect(parseTelegramUpdate('x')).toBeNull()
     expect(parseTelegramUpdate(42)).toBeNull()
+  })
+})
+
+describe('parseTelegramCallback', () => {
+  it('parsea el tap de un botón inline', () => {
+    const r = parseTelegramCallback({
+      callback_query: { id: 'cbq1', data: 'sv|abc|1', message: { message_id: 55, chat: { id: 774532238 } } },
+    })
+    expect(r).toEqual({ callbackId: 'cbq1', chatId: 774532238, messageId: 55, data: 'sv|abc|1' })
+  })
+
+  it('devuelve null si no es callback_query (mensaje normal)', () => {
+    expect(parseTelegramCallback({ message: { message_id: 1, chat: { id: 5 }, text: 'hola' } })).toBeNull()
+  })
+
+  it('devuelve null sin data o sin chat', () => {
+    expect(parseTelegramCallback({ callback_query: { id: 'x', message: { chat: { id: 1 } } } })).toBeNull()
+    expect(parseTelegramCallback({ callback_query: { id: 'x', data: 'sv|a|1' } })).toBeNull()
+  })
+
+  it('no lanza con basura', () => {
+    expect(parseTelegramCallback(null)).toBeNull()
+    expect(parseTelegramCallback(42)).toBeNull()
   })
 })

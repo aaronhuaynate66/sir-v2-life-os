@@ -56,19 +56,37 @@ export async function downloadTelegramFile(fileId: string): Promise<{ bytes: Arr
   }
 }
 
+/** Un botón inline (subconjunto de la Telegram Bot API que usamos). */
+export interface InlineButton { text: string; callbackData: string }
+
 /**
  * Envía un mensaje de texto a un chat. No lanza: un fallo de envío no debe
  * romper el webhook (Telegram reintenta si no devolvemos 200). Telegram corta
- * los mensajes en ~4096 chars.
+ * los mensajes en ~4096 chars. Opcionalmente adjunta UNA fila de botones inline
+ * (para la confirmación de captura de notas: ✅ Guardar / ✗ Descartar).
  */
-export async function sendTelegramMessage(chatId: number, text: string): Promise<{ ok: boolean; error?: string }> {
+export async function sendTelegramMessage(
+  chatId: number,
+  text: string,
+  buttons?: InlineButton[],
+): Promise<{ ok: boolean; error?: string }> {
   const token = process.env.TELEGRAM_BOT_TOKEN
   if (!token) return { ok: false, error: 'TELEGRAM_BOT_TOKEN no configurado' }
   try {
+    const body: Record<string, unknown> = {
+      chat_id: chatId,
+      text: text.slice(0, 4096),
+      disable_web_page_preview: true,
+    }
+    if (buttons && buttons.length > 0) {
+      body.reply_markup = {
+        inline_keyboard: [buttons.map((b) => ({ text: b.text, callback_data: b.callbackData }))],
+      }
+    }
     const res = await fetch(`${API}/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: text.slice(0, 4096), disable_web_page_preview: true }),
+      body: JSON.stringify(body),
     })
     if (!res.ok) {
       const t = await res.text()
@@ -82,4 +100,36 @@ export async function sendTelegramMessage(chatId: number, text: string): Promise
     console.warn('[telegram] envío error:', e instanceof Error ? e.message : e)
     return { ok: false, error: 'network' }
   }
+}
+
+/**
+ * Responde un callback_query (tap de botón inline). Telegram lo exige para que
+ * el spinner del botón pare; opcionalmente muestra un toast. No lanza.
+ */
+export async function answerCallbackQuery(callbackId: string, text?: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return
+  try {
+    await fetch(`${API}/bot${token}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callback_query_id: callbackId, ...(text ? { text: text.slice(0, 200) } : {}) }),
+    })
+  } catch { /* no-op */ }
+}
+
+/**
+ * Reemplaza el texto de un mensaje ya enviado y le quita los botones (se usa tras
+ * confirmar/descartar, para dejar el resultado y que no se pueda re-tapear). No lanza.
+ */
+export async function editTelegramMessageText(chatId: number, messageId: number, text: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return
+  try {
+    await fetch(`${API}/bot${token}/editMessageText`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: text.slice(0, 4096), reply_markup: { inline_keyboard: [] } }),
+    })
+  } catch { /* no-op */ }
 }
