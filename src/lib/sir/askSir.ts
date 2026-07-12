@@ -268,89 +268,94 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     }
   }
 
-  // 5. Contexto por persona (cap MAX_PEOPLE): score + memorias recientes.
+  // 5. Contexto por persona (cap MAX_PEOPLE): score + memorias + conversación +
+  //    búsqueda en el historial. Se arma EN PARALELO —entre personas y entre las
+  //    queries de cada persona— porque son independientes: en serie eran ~25
+  //    queries encadenadas (decenas de segundos con el sustrato de 428k msgs).
   const peopleCtx: AskPersonCtx[] = []
   const ctxSignals: ContextualSignal[] = []
-  for (const pid of [...targetIds].slice(0, MAX_PEOPLE)) {
-    const row = byId.get(pid)
-    if (!row) continue
-    let interactionEvents: { quality: number; at: string }[] = []
-    try {
-      const { data: logs } = await supabase
-        .from('person_logs')
-        .select('value, logged_at')
-        .eq('user_id', userId)
-        .eq('person_id', pid)
-        .eq('kind', 'interaction')
-        .order('logged_at', { ascending: true })
-        .limit(50)
-      interactionEvents = ((logs as Array<{ value: number; logged_at: string }>) ?? [])
+  const pids = [...targetIds].slice(0, MAX_PEOPLE)
+  const built = await Promise.all(
+    pids.map(async (pid) => {
+      const row = byId.get(pid)
+      if (!row) return null
+      const name = (row.name as string) ?? 'esa persona'
+
+      // Las 4 lecturas de la persona, concurrentes y fail-open cada una.
+      const logsP = (async () => {
+        try {
+          const { data } = await supabase
+            .from('person_logs')
+            .select('value, logged_at')
+            .eq('user_id', userId).eq('person_id', pid).eq('kind', 'interaction')
+            .order('logged_at', { ascending: true }).limit(50)
+          return (data as Array<{ value: number; logged_at: string }>) ?? []
+        } catch { return [] as Array<{ value: number; logged_at: string }> }
+      })()
+      const memsP = getMemoriesForPerson(supabase, userId, pid, { limit: MAX_MEM_PER_PERSON }).catch(() => [])
+      const convP = getPersonConversation(supabase, userId, pid).catch(() => null)
+      const hitsP = searchChatMessages(supabase, userId, pid, retrievalText, 6).catch(() => [])
+      const [logs, mems, conv, hits] = await Promise.all([logsP, memsP, convP, hitsP])
+
+      const interactionEvents = logs
         .filter((l) => Number.isFinite(Number(l.value)))
         .map((l) => ({ quality: Number(l.value), at: l.logged_at }))
-    } catch { interactionEvents = [] }
-    const latestEv = interactionEvents.length ? interactionEvents[interactionEvents.length - 1] : null
-    ctxSignals.push({
-      id: pid, name: (row.name as string) ?? '',
-      latestInteractionQuality: latestEv ? latestEv.quality : null,
-      latestInteractionAt: latestEv ? latestEv.at : (row.last_contact as string | null) ?? null,
-      importance: Number(row.importance_score) || 0,
-    })
-
-    const score = computeRelationalScore({
-      importanceScore: Number(row.importance_score) || 5,
-      trustLevel: Number(row.trust_level) || 5,
-      lastChatObservedAt: (row.last_contact as string | null) ?? null,
-      interactionEvents,
-    })
-
-    let recent: string[] = []
-    try {
-      const mems = await getMemoriesForPerson(supabase, userId, pid, { limit: MAX_MEM_PER_PERSON })
-      recent = mems.map((m) => m.content).filter(Boolean)
-    } catch { recent = [] }
-
-    let conversation: string | null = null
-    try {
-      const conv = await getPersonConversation(supabase, userId, pid)
-      if (conv) conversation = renderConversationForPrompt(conv, (row.name as string) ?? 'esa persona')
-    } catch { conversation = null }
-
-    // Búsqueda full-text sobre el historial COMPLETO (mig 0145): trae mensajes
-    // relevantes a la consulta más allá de la ventana reciente (ej. algo dicho
-    // años atrás). Se anexa al bloque de conversación. Fail-open.
-    try {
-      const hits = await searchChatMessages(supabase, userId, pid, retrievalText, 6)
-      const block = renderChatSearchBlock(hits, (row.name as string) ?? 'esa persona')
-      if (block) conversation = conversation ? `${conversation}\n\n${block}` : block
-    } catch { /* fail-open: la búsqueda es un extra */ }
-
-    // Ciclo menstrual: si la persona tiene fecha de período cargada, computamos
-    // la fase actual (dato sensible → el prompt lo enmarca para CUIDAR, doc 17).
-    let cycle: AskPersonCtx['cycle'] = null
-    const cycleStart = (row.cycle_start_date as string | null) ?? null
-    if (cycleStart) {
-      const cp = cyclePhase(cycleStart, Number(row.cycle_length_days) || 28, nowDate)
-      if (cp) cycle = {
-        label: cp.label, cycleDay: cp.cycleDay, cycleLength: cp.cycleLength,
-        daysUntilNextPeriod: cp.daysUntilNextPeriod, isPmsWindow: cp.isPmsWindow,
-        isFertileWindow: cp.isFertileWindow, note: cp.contextNote,
+      const latestEv = interactionEvents.length ? interactionEvents[interactionEvents.length - 1] : null
+      const ctxSignal: ContextualSignal = {
+        id: pid, name: (row.name as string) ?? '',
+        latestInteractionQuality: latestEv ? latestEv.quality : null,
+        latestInteractionAt: latestEv ? latestEv.at : (row.last_contact as string | null) ?? null,
+        importance: Number(row.importance_score) || 0,
       }
-    }
 
-    peopleCtx.push({
-      name: (row.name as string) ?? 'alguien',
-      relationship: (row.relationship as string | null) ?? null,
-      lastContact: (row.last_contact as string | null) ?? null,
-      organization: (row.organization as string | null) ?? null,
-      scoreGlobal: score.global,
-      fuerza: score.fuerza,
-      reciprocidad: score.reciprocidad,
-      confianza: score.confianza,
-      recentMemories: recent,
-      activeGoal: goalByPerson[pid] ?? null,
-      conversation,
-      cycle,
-    })
+      const score = computeRelationalScore({
+        importanceScore: Number(row.importance_score) || 5,
+        trustLevel: Number(row.trust_level) || 5,
+        lastChatObservedAt: (row.last_contact as string | null) ?? null,
+        interactionEvents,
+      })
+
+      const recent = (mems as Array<{ content: string }>).map((m) => m.content).filter(Boolean)
+
+      // Conversación (ventana reciente del sustrato + observación) + búsqueda FTS
+      // en el historial completo, anexada.
+      let conversation: string | null = conv ? renderConversationForPrompt(conv, name) : null
+      const block = renderChatSearchBlock(hits, name)
+      if (block) conversation = conversation ? `${conversation}\n\n${block}` : block
+
+      // Ciclo menstrual: si tiene fecha de período, fase actual (dato sensible).
+      let cycle: AskPersonCtx['cycle'] = null
+      const cycleStart = (row.cycle_start_date as string | null) ?? null
+      if (cycleStart) {
+        const cp = cyclePhase(cycleStart, Number(row.cycle_length_days) || 28, nowDate)
+        if (cp) cycle = {
+          label: cp.label, cycleDay: cp.cycleDay, cycleLength: cp.cycleLength,
+          daysUntilNextPeriod: cp.daysUntilNextPeriod, isPmsWindow: cp.isPmsWindow,
+          isFertileWindow: cp.isFertileWindow, note: cp.contextNote,
+        }
+      }
+
+      const personCtx: AskPersonCtx = {
+        name: (row.name as string) ?? 'alguien',
+        relationship: (row.relationship as string | null) ?? null,
+        lastContact: (row.last_contact as string | null) ?? null,
+        organization: (row.organization as string | null) ?? null,
+        scoreGlobal: score.global,
+        fuerza: score.fuerza,
+        reciprocidad: score.reciprocidad,
+        confianza: score.confianza,
+        recentMemories: recent,
+        activeGoal: goalByPerson[pid] ?? null,
+        conversation,
+        cycle,
+      }
+      return { ctxSignal, personCtx }
+    }),
+  )
+  for (const b of built) {
+    if (!b) continue
+    ctxSignals.push(b.ctxSignal)
+    peopleCtx.push(b.personCtx)
   }
 
   // GAP-ENGINE INLINE · capa CONTEXTUAL: consulta de contacto + último dato tenso
