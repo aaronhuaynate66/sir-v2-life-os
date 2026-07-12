@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `6639c75`
+**Hash del último commit humano:** `5cd3341`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `5cd3341` | aaronhuaynate66 | feat(sir): captura por chat cierra vínculos (PR3, completa las 4 acciones) (#728) | 2026-07-12 |
 | `6639c75` | aaronhuaynate66 | feat(sir): captura por chat también crea objetivos y personas (PR2) (#727) | 2026-07-12 |
 | `09df05f` | aaronhuaynate66 | feat(sir): captura de notas por Telegram con confirmación (interacción) (#726) | 2026-07-12 |
 | `b6c89c2` | aaronhuaynate66 | fix(whatsapp): identifica a Aaron por su nombre en tagAuthors (evita autor invertido) (#725) | 2026-07-12 |
@@ -359,7 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `e7cac87` | aaronhuaynate66 | Merge pull request #722 from aaronhuaynate66/feat/whatsapp-batch-import | 2026-07-12 |
 | `9b02f92` | Aaron Huaynate | feat(scripts): importador batch de exports de WhatsApp (local, sin UI) | 2026-07-12 |
 | `5737f25` | aaronhuaynate66 | Merge pull request #721 from aaronhuaynate66/feat/e5-narrative-coherence | 2026-07-12 |
-| `d2a6872` | Aaron Huaynate | feat(e5): coherencia narrativa entre capítulos de vida | 2026-07-12 |
 
 ---
 
