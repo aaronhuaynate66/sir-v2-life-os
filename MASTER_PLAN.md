@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `e7cac87`
+**Hash del último commit humano:** `d174e4b`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `d174e4b` | aaronhuaynate66 | Merge pull request #723 from aaronhuaynate66/feat/wa-substrate-consolidation | 2026-07-12 |
+| `c9e6068` | Aaron Huaynate | feat(scripts): import WhatsApp llena el sustrato chat_messages (historial completo) | 2026-07-12 |
 | `e7cac87` | aaronhuaynate66 | Merge pull request #722 from aaronhuaynate66/feat/whatsapp-batch-import | 2026-07-12 |
 | `9b02f92` | Aaron Huaynate | feat(scripts): importador batch de exports de WhatsApp (local, sin UI) | 2026-07-12 |
 | `5737f25` | aaronhuaynate66 | Merge pull request #721 from aaronhuaynate66/feat/e5-narrative-coherence | 2026-07-12 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `2e9126c` | Aaron Huaynate | docs(plan): descarta Correo M365 (Azure) y Canal WhatsApp (Meta) | 2026-07-12 |
 | `efd9553` | aaronhuaynate66 | Merge pull request #719 from aaronhuaynate66/fix/telegram-plaintext | 2026-07-12 |
 | `8fb4c6e` | Aaron Huaynate | fix(telegram): limpia markdown crudo antes de enviar (garantía server-side) | 2026-07-12 |
-| `c3bda32` | aaronhuaynate66 | Merge pull request #718 from aaronhuaynate66/feat/telegram-chat-style | 2026-07-12 |
-| `32f9425` | Aaron Huaynate | feat(telegram): respuestas en estilo chat (breve, sin markdown) | 2026-07-12 |
 
 ---
 
