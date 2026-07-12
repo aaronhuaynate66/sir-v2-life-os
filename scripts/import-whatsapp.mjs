@@ -17,7 +17,7 @@
 import JSZip from 'jszip'
 import { readFileSync, readdirSync } from 'fs'
 import { join } from 'path'
-import { randomUUID } from 'node:crypto'
+import { randomUUID, createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 
 // ─── Config ──────────────────────────────────────────────────────────
@@ -27,6 +27,8 @@ const DIR = argVal('--dir') || 'C:/Users/huayn/Downloads'
 const ONLY = argVal('--only')
 const LIMIT = argVal('--limit') ? Number(argVal('--limit')) : null
 const DRY = args.includes('--dry')
+// Solo llenar el sustrato chat_messages (historial completo, sin LLM ni observación).
+const MESSAGES_ONLY = args.includes('--messages-only')
 const MODEL = 'claude-sonnet-4-5-20250929'
 const AARON = '5c23c82c-2beb-401b-8555-706ac0b81248'
 
@@ -96,6 +98,34 @@ function tagAuthors(msgs, contact) {
   const authors = [...new Set(msgs.map((m) => m.author))]
   const otherAuthor = authors.find((a) => sigTokens(a).some((t) => ctoks.has(t))) || authors[0]
   return msgs.map((m) => ({ ...m, side: m.author === otherAuthor ? 'other' : 'user' }))
+}
+
+// Capa 1 — sustrato canónico chat_messages (mismo id determinístico que
+// lib/chat-messages/append.ts → dedupe idempotente, re-correr es seguro).
+function chatMessageId(personId, source, iso, sender, content) {
+  const s = `${AARON}|${personId}|${source}|${iso ?? ''}|${sender}|${content}`
+  return 'cm_' + createHash('sha1').update(s).digest('hex')
+}
+async function appendMessages(personId, tagged) {
+  const source = 'whatsapp'
+  const seen = new Set(); const rows = []
+  for (const m of tagged) {
+    const content = (m.content || '').slice(0, 8000)
+    if (!content) continue
+    const iso = m.iso && m.iso.length >= 10 ? m.iso : null
+    const id = chatMessageId(personId, source, iso, m.side, content)
+    if (seen.has(id)) continue
+    seen.add(id)
+    rows.push({ id, user_id: AARON, person_id: personId, source, sender: m.side, author_name: (m.author || '').slice(0, 120) || null, sent_at: iso, content, is_media: false })
+  }
+  let n = 0
+  for (let i = 0; i < rows.length; i += 500) {
+    const slice = rows.slice(i, i + 500)
+    const { error } = await sb.from('chat_messages').upsert(slice, { onConflict: 'id', ignoreDuplicates: true })
+    if (error) throw new Error(`chat_messages: ${error.message}`)
+    n += slice.length
+  }
+  return n
 }
 
 async function anthropic(system, user, maxTokens = 1500) {
@@ -193,9 +223,27 @@ async function main() {
       const person = await resolvePerson(contact, people)
       if (!person) { console.log(`  ⤳ ${contact}: salteado (SKIP en overrides)`); continue }
       const first = msgs[0].iso, last = msgs[msgs.length - 1].iso
+      const tagged = tagAuthors(msgs, person.name)
+
+      // CAPA 1 — historial completo al sustrato (siempre; barato, sin LLM).
+      const appended = DRY ? 0 : await appendMessages(person.id, tagged)
+
+      // Modo solo-sustrato: no interpretamos ni tocamos observaciones (ya existen).
+      if (MESSAGES_ONLY) {
+        // last_contact al último mensaje si adelanta.
+        const day = last.slice(0, 10)
+        if (!DRY) {
+          const { data: prow } = await sb.from('people').select('last_contact').eq('id', person.id).maybeSingle()
+          if (!prow?.last_contact || prow.last_contact.slice(0, 10) < day) await sb.from('people').update({ last_contact: day }).eq('id', person.id)
+        }
+        console.log(`  ${contact} → ${person.name}${person.created ? ' (NUEVA)' : ''} · ${msgs.length} msgs → ${appended} al sustrato`)
+        continue
+      }
+
+      // CAPA 2 — síntesis (observación) con LLM.
       process.stdout.write(`  ${contact} → ${person.name}${person.created ? ' (NUEVA)' : ''} · ${msgs.length} msgs · interpretando… `)
       const { parsed, blockSummaries } = await interpretChat(msgs, person.name)
-      const sample = tagAuthors(msgs, person.name).slice(-40).map((m) => ({ timestamp: m.iso.slice(11, 16), iso: m.iso, author: m.side, content: m.content.slice(0, 300) })).filter((m) => m.content)
+      const sample = tagged.slice(-40).map((m) => ({ timestamp: m.iso.slice(11, 16), iso: m.iso, author: m.side, content: m.content.slice(0, 300) })).filter((m) => m.content)
       const data = {
         personName: person.name, conversationDate: last, source: 'whatsapp_export',
         summary: parsed.summary || '', topics: parsed.topics || [], facts: parsed.facts || [], events: parsed.events || [],
