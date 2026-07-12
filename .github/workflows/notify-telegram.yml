@@ -1,0 +1,40 @@
+name: Notify main (Telegram Dev)
+
+# Avisa por el bot de dev (@sir_aaron_dev_bot) en cada push a main (merge de PR).
+# Los commits del bot con [skip ci] NO disparan workflows → no generan ruido.
+# FAIL-OPEN: sin los secrets TELEGRAM_DEV_* simplemente no notifica (no rompe).
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Telegram notify
+        env:
+          # Pasados como env (no interpolados en el script) → sin inyección por
+          # el mensaje de commit.
+          TG_TOKEN: ${{ secrets.TELEGRAM_DEV_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_DEV_CHAT_ID }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
+          SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
+            echo "TELEGRAM_DEV_* secrets no configurados — skip (fail-open)"
+            exit 0
+          fi
+          # Solo la primera línea del mensaje de commit (evita cuerpos largos).
+          TITLE=$(printf '%s' "$COMMIT_MSG" | head -n1)
+          TEXT="🚀 main actualizado
+${TITLE}
+— ${COMMIT_AUTHOR} · ${SHA:0:7}
+${COMMIT_URL}"
+          curl -s "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "text=${TEXT}" \
+            -d "disable_web_page_preview=true" \
+            -o /dev/null -w "notify: HTTP %{http_code}\n"
