@@ -34,12 +34,16 @@ const dianaObservation = {
   observed_at: '2026-07-03T15:00:00Z',
 }
 
-// Mock chainable de Supabase que resuelve a la observación de arriba.
-function mockSupabase(row: unknown): SupabaseClient {
+// Mock chainable de Supabase. La observación se resuelve por `.maybeSingle()`
+// (tabla observations) y el sustrato por `.range()` (tabla chat_messages, lo que
+// lee fetchChatMessages). Por defecto el sustrato viene vacío → getPersonConversation
+// cae al fallback de la muestra de la observación.
+function mockSupabase(row: unknown, chatRows: unknown[] = []): SupabaseClient {
   const chain: Record<string, unknown> = {}
   const methods = ['select', 'eq', 'order', 'limit']
   for (const m of methods) chain[m] = vi.fn(() => chain)
   chain.maybeSingle = vi.fn(async () => ({ data: row, error: null }))
+  chain.range = vi.fn(async () => ({ data: chatRows, error: null }))
   return { from: vi.fn(() => chain) } as unknown as SupabaseClient
 }
 
@@ -55,9 +59,27 @@ describe('caso Diana — la conversación importada llega al prompt', () => {
     expect(conv!.recentMessages).toHaveLength(3)
   })
 
-  it('devuelve null si no hay observación (persona sin chat, ej. la otra Diana)', async () => {
+  it('devuelve null si no hay observación NI sustrato (persona sin chat, ej. la otra Diana)', async () => {
     const conv = await getPersonConversation(mockSupabase(null), 'user-1', 'diana-cencaro-id')
     expect(conv).toBeNull()
+  })
+
+  it('PREFIERE el sustrato (chat_messages) sobre la muestra derivada, e incluye la voz transcrita', async () => {
+    const chatRows = [
+      { sender: 'other', sent_at: '2026-07-08T12:00:00Z', content: '🎙️ hola hijo, ¿te acuerdas de la talonera que te compré?', is_media: true },
+      { sender: 'user', sent_at: '2026-07-08T12:05:00Z', content: 'sí, la del talón, claro', is_media: false },
+    ]
+    const conv = await getPersonConversation(mockSupabase(dianaObservation, chatRows), 'user-1', 'diana-id')
+    expect(conv).not.toBeNull()
+    // Los mensajes vienen del sustrato REAL (con la voz 🎙️), no de la muestra vieja.
+    expect(conv!.recentMessages).toHaveLength(2)
+    expect(conv!.recentMessages.some((m) => /🎙️.*talonera/.test(m.content))).toBe(true)
+    expect(conv!.recentMessages.some((m) => m.content === 'no me aceptas en redes')).toBe(false)
+    // Pero el resumen/temas/tono destilados siguen viniendo de la observación.
+    expect(conv!.summary).toMatch(/reconciliación frágil/)
+    expect(conv!.userState).toBe('inseguro/celoso')
+    // Y el render lleva la voz al prompt.
+    expect(renderConversationForPrompt(conv!, 'Papá')).toMatch(/🎙️.*talonera/)
   })
 
   it('el prompt de SIR (ask) incluye el contenido del chat, no solo metadata', async () => {

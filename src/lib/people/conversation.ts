@@ -7,6 +7,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { fetchChatMessages } from '@/lib/chat-messages/read'
+
 export interface ConvMessage {
   author: 'user' | 'other'
   content: string
@@ -49,15 +51,34 @@ export async function getPersonConversation(
     .maybeSingle()
 
   const d = (data?.data ?? null) as Record<string, unknown> | null
-  if (!d) return null
 
-  const emo = (d.emotionalStates && typeof d.emotionalStates === 'object' ? d.emotionalStates : {}) as Record<string, unknown>
-  const rawMessages = Array.isArray(d.rawMessages) ? d.rawMessages : []
+  // Mensajes recientes: preferimos el SUSTRATO canónico (chat_messages, mig 0141)
+  // sobre la muestra derivada de la observación. El sustrato es el texto REAL,
+  // completo y AL DÍA — e incluye las notas de voz transcritas (prefijo 🎙️), que
+  // la muestra vieja no tenía. Fallback a la muestra de la observación si el
+  // sustrato está vacío (personas sin import a chat_messages todavía).
+  let recentMessages: ConvMessage[] = []
+  try {
+    const sub = await fetchChatMessages(supabase, userId, personId, 240) // ventana reciente (asc)
+    recentMessages = sub
+      .map((r) => ({
+        author: r.sender === 'user' ? ('user' as const) : ('other' as const),
+        content: (r.content ?? '').trim(),
+        timestamp: r.sent_at ?? undefined,
+      }))
+      .filter((m) => m.content.length > 0)
+      .slice(-60)
+  } catch { recentMessages = [] }
 
-  return {
-    summary: str(d.summary),
-    topics: Array.isArray(d.topics) ? d.topics.filter((t): t is string => typeof t === 'string').slice(0, 20) : [],
-    recentMessages: rawMessages
+  // Sin observación NI sustrato → no hay nada que aportar.
+  if (!d && recentMessages.length === 0) return null
+
+  const dd = d ?? {}
+  const emo = (dd.emotionalStates && typeof dd.emotionalStates === 'object' ? dd.emotionalStates : {}) as Record<string, unknown>
+  if (recentMessages.length === 0) {
+    // Fallback: la muestra derivada (audio como <adjunto:...>, sin transcribir).
+    const rawMessages = Array.isArray(dd.rawMessages) ? dd.rawMessages : []
+    recentMessages = rawMessages
       .map((m) => {
         const o = (m && typeof m === 'object' ? m : {}) as Record<string, unknown>
         return {
@@ -67,10 +88,16 @@ export async function getPersonConversation(
         }
       })
       .filter((m) => m.content.length > 0)
-      .slice(0, 40),
+      .slice(0, 40)
+  }
+
+  return {
+    summary: str(dd.summary),
+    topics: Array.isArray(dd.topics) ? dd.topics.filter((t): t is string => typeof t === 'string').slice(0, 20) : [],
+    recentMessages,
     userState: str(emo.user) || undefined,
     otherState: str(emo.otherPerson) || undefined,
-    messageCount: typeof d.messageCount === 'number' ? d.messageCount : undefined,
+    messageCount: typeof dd.messageCount === 'number' ? dd.messageCount : undefined,
     observedAt: (data?.observed_at as string) ?? null,
   }
 }
