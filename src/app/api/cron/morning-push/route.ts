@@ -17,6 +17,8 @@ import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client
 import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
+import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDates'
+import type { SpecialDate } from '@/types'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
 import { bodySignal } from '@/lib/health/bodySignal'
 import { parseWeightCategory } from '@/engines/targets'
@@ -26,6 +28,25 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const BIRTHDAY_WINDOW_DAYS = 5
+/** Ventana para avisar de un aniversario/fecha especial (incluye el mensario).
+ *  Corta: un aniversario es puntual, no un evento de agenda semanal. */
+const ANNIVERSARY_WINDOW_DAYS = 2
+
+/** Normaliza el jsonb special_dates a SpecialDate[] tolerando filas viejas. */
+function toSpecialDates(raw: unknown): SpecialDate[] {
+  if (!Array.isArray(raw)) return []
+  const out: SpecialDate[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const r = item as Record<string, unknown>
+    const label = typeof r.label === 'string' ? r.label : ''
+    const date = typeof r.date === 'string' ? r.date : ''
+    if (!label || !date) continue
+    const cadence = r.cadence === 'monthly' || r.cadence === 'yearly' || r.cadence === 'once' ? r.cadence : undefined
+    out.push({ id: typeof r.id === 'string' ? r.id : `${date}-${label}`, label, date, recurring: r.recurring === true, ...(cadence ? { cadence } : {}) })
+  }
+  return out
+}
 
 /** Fecha "hoy" en Lima (UTC-5) como YYYY-MM-DD. El cron corre ~11:00 UTC. */
 function limaToday(now: Date): string {
@@ -82,19 +103,35 @@ export async function GET(req: NextRequest) {
 
   for (const uid of userIds) {
     try {
-      // Gente y fechas: cumpleaños próximos (≤ ventana).
+      // Gente y fechas: cumpleaños + fechas especiales (aniversarios, mensario).
       const { data: peopleRows } = await admin
         .from('people')
-        .select('name, birth_date')
+        .select('name, birth_date, special_dates')
         .eq('user_id', uid)
-        .not('birth_date', 'is', null)
         .limit(1000)
+      const people = (peopleRows ?? []) as Array<{ name: string; birth_date: string | null; special_dates: unknown }>
       const birthdays: MorningBirthday[] = []
-      for (const p of (peopleRows ?? []) as Array<{ name: string; birth_date: string | null }>) {
+      for (const p of people) {
         const d = daysUntilNextBirthday(p.birth_date, now)
         if (d !== null && d <= BIRTHDAY_WINDOW_DAYS) birthdays.push({ name: p.name, days: d })
       }
       birthdays.sort((a, b) => a.days - b.days)
+
+      // Fechas especiales próximas (aniversarios anuales + mensario). Reusa el
+      // MISMO motor de countdown que la ficha/agenda (cadencia mensual incluida)
+      // → dedup + orden ya resueltos. Ventana corta; excluye cumpleaños (ya van
+      // arriba) para no duplicar.
+      const importantDatesRanked: Array<{ text: string; days: number }> = []
+      for (const p of people) {
+        const { valid } = sortSpecialDates(toSpecialDates(p.special_dates), now)
+        for (const cd of valid) {
+          if (cd.isPast || cd.daysUntil > ANNIVERSARY_WINDOW_DAYS) continue
+          if (/cumple|natalicio/i.test(cd.sd.label)) continue // el cumple va en birthdays
+          importantDatesRanked.push({ text: `${cd.sd.label} · ${formatCountdownPhrase(cd)}`, days: cd.daysUntil })
+        }
+      }
+      importantDatesRanked.sort((a, b) => a.days - b.days)
+      const importantDates = importantDatesRanked.slice(0, 3).map((d) => d.text)
 
       // Tareas que vencen hoy (no hechas).
       const { data: stepRows } = await admin
@@ -236,7 +273,7 @@ export async function GET(req: NextRequest) {
         /* fail-soft */
       }
 
-      const push = buildMorningPush({ birthdays, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText })
+      const push = buildMorningPush({ birthdays, importantDates, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
