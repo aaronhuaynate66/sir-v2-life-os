@@ -14,6 +14,9 @@ export interface MorningBirthday {
 export interface MorningInput {
   /** Cumpleaños próximos (≤ unos días), ya filtrados y ordenados por cercanía. */
   birthdays?: MorningBirthday[]
+  /** Fechas especiales próximas (aniversarios, mensario…) ya formateadas y
+   *  ordenadas por cercanía. Ej. "Aniversario mensual relación (13) · ¡Hoy!". */
+  importantDates?: string[]
   /** Títulos de tareas que vencen hoy (no hechas). */
   dueTasks?: string[]
   /** El foco del día (ancla del año o próximo paso de un objetivo clave). */
@@ -60,7 +63,13 @@ export function buildMorningPush(input: MorningInput): MorningPush {
     parts.push(input.metricAlert)
   }
 
-  // 1. Gente y fechas (lo más humano primero).
+  // 1. Gente y fechas (lo más humano primero). Los aniversarios/fechas
+  //    especiales van ANTES que los cumpleaños: un aniversario HOY pesa más que
+  //    un cumple en 5 días (ya vienen filtrados a la ventana + ordenados).
+  for (const d of (input.importantDates ?? []).slice(0, 2)) {
+    if (parts.length >= MAX_PARTS) break
+    parts.push(d)
+  }
   for (const b of (input.birthdays ?? []).slice(0, 2)) {
     if (parts.length >= MAX_PARTS) break
     parts.push(birthdayPhrase(b))

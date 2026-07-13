@@ -48,3 +48,18 @@ describe('buildMorningPush — hábito a retomar', () => {
     expect(p.body).not.toContain('Foco') // quedó fuera del cap (hábito entró antes)
   })
 })
+
+describe('buildMorningPush — fechas especiales / aniversarios', () => {
+  it('incluye el aniversario mensual (mesario) en el brief', () => {
+    const p = buildMorningPush({ importantDates: ['Aniversario mensual relación (13) · ¡Hoy!'] })
+    expect(p.body).toContain('Aniversario mensual')
+    expect(p.body).toContain('¡Hoy!')
+  })
+  it('las fechas especiales van ANTES que los cumpleaños', () => {
+    const p = buildMorningPush({
+      importantDates: ['Aniversario con Diana · ¡Hoy!'],
+      birthdays: [{ name: 'Pedro', days: 4 }],
+    })
+    expect(p.body.indexOf('Aniversario con Diana')).toBeLessThan(p.body.indexOf('Pedro'))
+  })
+})
