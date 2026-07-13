@@ -5,8 +5,8 @@
 // "¿qué pasó con Dayana?" o "¿cómo me acerco a Francisco esta semana?".
 // v1 NO ejecuta acciones — solo lee y responde/sugiere (POST /api/sir/ask).
 
-import { useEffect, useRef, useState } from 'react'
-import { Sparkles, Send, Loader2, ArrowLeft, User, Check, X, CalendarCheck, Mic, MicOff } from 'lucide-react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Sparkles, Send, Loader2, ArrowLeft, ArrowDown, User, Check, X, CalendarCheck, Mic, MicOff } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
@@ -120,6 +120,18 @@ export default function SirChatPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
+  // Scroll conversacional: al abrir aterrizamos en lo ÚLTIMO (como WhatsApp/
+  // Telegram), no arriba en lo más viejo. `atBottomRef` = el usuario está al pie
+  // (así un append lo scrollea, pero si está leyendo historia arriba NO lo
+  // tironeamos). `showJump` muestra el FAB "saltar a lo último" cuando subió.
+  const atBottomRef = useRef(true)
+  const didInitialScrollRef = useRef(false)
+  const [showJump, setShowJump] = useState(false)
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior) => {
+    if (typeof window === 'undefined') return
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior })
+  }, [])
   const addGoal = useGoalStore((st) => st.addGoal)
   const updateGoal = useGoalStore((st) => st.updateGoal)
   const pauseGoal = useGoalStore((st) => st.pauseGoal)
@@ -166,6 +178,33 @@ export default function SirChatPage() {
       else localStorage.setItem(THREAD_KEY, JSON.stringify(turns.slice(-40)))
     } catch { /* noop */ }
   }, [turns])
+
+  // Detectar si estamos al pie del documento (la ventana scrollea, no un div).
+  useEffect(() => {
+    const onScroll = () => {
+      const nearBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 120
+      atBottomRef.current = nearBottom
+      setShowJump(!nearBottom)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Aterrizar en lo último: la PRIMERA carga del hilo (local o DB) salta al pie
+  // SIN animación (useLayoutEffect + 'auto' = cero salto visible). Los appends
+  // posteriores scrollean solo si el usuario ya estaba al pie. Reemplaza los
+  // viejos setTimeout(scrollIntoView) frágiles de ask().
+  useLayoutEffect(() => {
+    if (turns.length === 0) { didInitialScrollRef.current = false; return }
+    if (!didInitialScrollRef.current) {
+      didInitialScrollRef.current = true
+      scrollToBottom('auto')
+    } else if (atBottomRef.current) {
+      scrollToBottom('smooth')
+    }
+  }, [turns, scrollToBottom])
 
   useEffect(() => {
     fetch('/api/sir/settings')
@@ -314,6 +353,7 @@ export default function SirChatPage() {
     if (!q || loading) return
     setError(null)
     setInput('')
+    atBottomRef.current = true // enviar siempre lleva a lo último
     if (!opts.suppressUserTurn) setTurns((t) => [...t, { role: 'user', text: q }])
     setLoading(true)
     track(EVENTS.sirAsked, { length: q.length })
@@ -343,13 +383,11 @@ export default function SirChatPage() {
           role: 'sir', text: data.answer ?? '', clarifying,
           clarifyState: 'pending', originalQuestion: q,
         }])
-        setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
         return
       }
       const action = data.proposedAction as ProposedAction | null
       if (action) track(EVENTS.sirActionProposed, { type: action.kind })
       setTurns((t) => [...t, { role: 'sir', text: data.answer ?? '', sources: data.sources, action: action ?? undefined, actionState: action ? 'pending' : undefined }])
-      setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     } catch {
       trackAiError('sir_ask', { status: 0, message: 'Error de red' }) // GA4
       setError('Error de red')
@@ -408,7 +446,14 @@ export default function SirChatPage() {
           </Link>
           {turns.length > 0 && (
             <button
-              onClick={() => { setTurns([]); setError(null) }}
+              onClick={() => {
+                const prev = turns
+                setTurns([]); setError(null)
+                toast('Conversación vaciada', {
+                  description: 'El historial se limpió (incluye lo hablado por Telegram).',
+                  action: { label: 'Deshacer', onClick: () => setTurns(prev) },
+                })
+              }}
               className="text-[12px] text-muted-foreground hover:text-foreground"
             >
               Nueva conversación
@@ -464,7 +509,7 @@ export default function SirChatPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-4" aria-live="polite" aria-atomic="false">
           {turns.map((t, i) => (
             <div key={i} className={t.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
               <div
@@ -603,6 +648,19 @@ export default function SirChatPage() {
           {error && <div className="text-sm text-red-400">{error}</div>}
           <div ref={endRef} />
         </div>
+
+        {showJump && turns.length > 0 && (
+          <div className="sticky bottom-20 flex justify-center pointer-events-none">
+            <button
+              type="button"
+              onClick={() => scrollToBottom('smooth')}
+              className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[12px] text-foreground shadow-lg hover:border-border-strong"
+              aria-label="Saltar a lo último"
+            >
+              <ArrowDown size={14} /> Lo último
+            </button>
+          </div>
+        )}
 
         <form
           onSubmit={(e) => { e.preventDefault(); ask(input) }}

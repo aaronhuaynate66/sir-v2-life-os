@@ -181,7 +181,7 @@ function ScoreContent({ person, lastChat }: RelationalScoreProps) {
         <ScoreBar
           label="Reciprocidad"
           value={breakdown.reciprocidad}
-          insufficientHint="Necesita un log de interacciones recíprocas (sesión futura)."
+          insufficientHint="Necesita un registro de interacciones recíprocas."
         />
         <ScoreBar label="Confianza" value={breakdown.confianza} />
       </div>
