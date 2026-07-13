@@ -15,10 +15,24 @@
 // Env (de .env.local): ANTHROPIC_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 
 import JSZip from 'jszip'
-import { readFileSync, readdirSync } from 'fs'
+import { readFileSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
 import { randomUUID, createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
+
+// Zips gigantes (miles de fotos/videos) superan el límite de 2GB de readFileSync
+// de Node. Para esos, extraemos SOLO el _chat.txt por streaming con `unzip -p`
+// (evita cargar el zip entero en memoria). Umbral conservador a 1.5GB.
+const BIG_ZIP_BYTES = 1.5e9
+async function readChatTxt(zpath) {
+  if (statSync(zpath).size > BIG_ZIP_BYTES) {
+    return execFileSync('unzip', ['-p', zpath, '*_chat.txt'], { maxBuffer: 512 * 1024 * 1024, encoding: 'utf8' })
+  }
+  const zip = await JSZip.loadAsync(readFileSync(zpath))
+  const txtName = Object.keys(zip.files).find((n) => n.toLowerCase().endsWith('.txt'))
+  return txtName ? zip.files[txtName].async('string') : ''
+}
 
 // ─── Config ──────────────────────────────────────────────────────────
 const args = process.argv.slice(2)
@@ -38,6 +52,7 @@ const OVERRIDES = {
   'Carlo Rodríguez': 'CREATE:Carlo Rodríguez',
   'Papa': 'Esteban Huaynate',
   'Diana HNG': 'Diana Cencaro',
+  'Diana Carolina ❣️': 'Diana Carolina Díaz Sánchez', // pareja; desambigua de Diana Cencaro
   'Miluska Castillo Hv': 'Miluska Castillo',
   'Piero Gadea 127': 'CREATE:Piero Gadea',
   'Coordinaciones Marlab - Creatas': 'SKIP', // grupo, no persona 1:1
@@ -235,7 +250,7 @@ async function main() {
   let files = readdirSync(DIR).filter((f) => /^WhatsApp Chat - .+\.zip$/i.test(f))
   if (ONLY) files = files.filter((f) => f.toLowerCase().includes(ONLY.toLowerCase()))
   // más chicos primero (para validar barato)
-  const sized = files.map((f) => ({ f, size: readFileSync(join(DIR, f)).length })).sort((a, b) => a.size - b.size)
+  const sized = files.map((f) => ({ f, size: statSync(join(DIR, f)).size })).sort((a, b) => a.size - b.size)
   let list = sized.map((s) => s.f)
   if (LIMIT) list = list.slice(0, LIMIT)
 
@@ -243,9 +258,7 @@ async function main() {
   for (const f of list) {
     const contact = f.replace(/^WhatsApp Chat - /i, '').replace(/\.zip$/i, '')
     try {
-      const zip = await JSZip.loadAsync(readFileSync(join(DIR, f)))
-      const txtName = Object.keys(zip.files).find((n) => n.toLowerCase().endsWith('.txt'))
-      const txt = await zip.files[txtName].async('string')
+      const txt = await readChatTxt(join(DIR, f))
       const msgs = parseExport(txt)
       if (msgs.length === 0) { console.log(`  ⚠️ ${contact}: sin mensajes parseados`); continue }
       // Detección de GRUPO: más de 2 autores distintos → no es un chat 1:1.
