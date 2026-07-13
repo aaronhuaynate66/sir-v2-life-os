@@ -62,9 +62,12 @@ Se auditó la ficha con 6 agentes (UX/navegación, diseño visual, accesibilidad
 
 ---
 
-## 4. Plan inmediato — 3 tandas
+## 4. Plan inmediato — 3 tandas ✅ CERRADAS (reconciliado 2026-07-13)
 
-Cada tanda va a rama + preview para validar UI antes de mergear.
+> **Reconciliación 2026-07-13:** las 3 tandas ya están en prod. Verificado en código:
+> - **Tanda 2 (Acción):** `AccionDeHoy.tsx` (montado en `PersonDetail.tsx:507`) — botón real wa.me + "Preparar mensaje" (Haiku vía `/api/daily-actions/message`) + chip de origen. Vistazo rankea la próxima fecha por relevancia (`personSummary.ts:160-171`). Dedup score/cumple/ciclo (`PersonDetail.tsx:634-645`, "Tanda 2"). Botón "Editar" en el header (`PersonDetail.tsx:478`).
+> - **Copy:** "Lead"→"Contacto" (`ambito.ts:5`), "Briefing IA"→"Ponme al día" (Asistente SIR), "Métricas relacionales"→"Datos de la persona" (`PersonDetail.tsx:950`), slug fuera del header.
+> - El detalle histórico del plan queda abajo como bitácora.
 
 - **Tanda 1 — No perder datos + quick wins** (P0): arreglar los bugs de pérdida/guardado silencioso + renombres de copy + fixes de accesibilidad de copiar-pegar.
 - **Tanda 2 — Que se pueda actuar** (P1): bloque **Acción de hoy** (con botón real + mensaje sugerido) + arreglo del vistazo (fecha rankeada) + dedup de ciclo/cumple/score + botón "Editar" en el header.
@@ -87,22 +90,22 @@ Cada tanda va a rama + preview para validar UI antes de mergear.
 - [x] **Correlación: narrativa IA vacía ya no revierte ni re-paga LLM**. `CorrelacionPanel.tsx`
 - [x] **Guardado silencioso fuera de la ficha** (misma clase): review, ObjectivePlanPanel, BigFiveCard, ExperimentosLoopPanel. (#597)
 
-### P1 — Acción y jerarquía
-- [ ] **Bloque "Acción de hoy"**: card propia entre vistazo y tabs, con **botón real** (Escribile ahora → wa.me) + sustento visible + micro-chip de origen.
-- [ ] **Botón "Preparar mensaje"**: redacta un borrador editable (reusar `/api/daily-actions/message`, Haiku). Idea del análisis externo.
-- [ ] **Vistazo: rankear la próxima fecha** por relevancia/parentesco (evento de pareja > fecha de rubro) + bajar ventana a ~30 días. `lib/people/personSummary.ts:139-148`
-- [ ] **Dedup**: un solo módulo de ciclo en Hoy (CicloPanel → colapsable), cumpleaños 1×, score 1×.
-- [ ] **Botón "Editar" en el header** + mover Identidad/Métricas fuera del tab "Registro".
-- [ ] **Subir/priorizar Pendientes** (hoy 7º en Hoy).
+### P1 — Acción y jerarquía ✅ (reconciliado 2026-07-13 — todo en prod)
+- [x] **Bloque "Acción de hoy"**: `AccionDeHoy.tsx`, montado en `PersonDetail.tsx:507`. Botón real wa.me + sustento + chip de origen + acento por urgencia.
+- [x] **Botón "Preparar mensaje"**: borrador editable vía `/api/daily-actions/message` (Haiku), copiable/enviable por WA.
+- [x] **Vistazo: rankear la próxima fecha** por relevancia + ventana. `personSummary.ts:160-171` (`dateRelevanceRank`).
+- [x] **Dedup**: score/cumple viven en el vistazo; CicloPanel como detalle. `PersonDetail.tsx:634-645`.
+- [x] **Botón "Editar" en el header**. `PersonDetail.tsx:478`.
+- [ ] **Subir/priorizar Pendientes** (hoy 7º en Hoy). _(único candidato posible aún abierto — verificar orden real antes de tocar.)_
 
-### P1 — Copy (cerrar la contradicción de voz)
-- [ ] "Lead" → "Contacto" (display de ámbito). `lib/people/ambito.ts:5`
-- [ ] "Métricas relacionales" → "Datos de la persona". `PersonDetail.tsx:802`
-- [ ] "Briefing IA" → "Ponme al día" / "Qué debo saber". `PersonActions.tsx:68`
-- [ ] Sacar el slug/URL del header (dejarlo solo en edición). `PersonDetail.tsx:434-436`
-- [ ] Traducir el enum de tono (`affectionate_routine+supportive` → legible). `LastInteractionPanel`
-- [ ] Renombrar una de las dos "Salud del vínculo" (el anillo /100 → "Termómetro del vínculo"). `RelationalScore.tsx:64`
-- [ ] Suavizar "Reciprocidad" → "Ida y vuelta"; sacar "(sesión futura)", "Observaciones CSV".
+### P1 — Copy (cerrar la contradicción de voz) ✅ (reconciliado 2026-07-13)
+- [x] "Lead" → "Contacto" (display de ámbito). `lib/people/ambito.ts:5`
+- [x] "Métricas relacionales" → "Datos de la persona". `PersonDetail.tsx:950`
+- [x] "Briefing IA" → "Ponme al día" (movido al Asistente SIR). `PersonActions.tsx`
+- [x] Sacar el slug/URL del header (dejarlo solo en edición). `PersonDetail.tsx:469`
+- [x] Traducir el enum de tono → `humanizeTone` aplicado. `LastInteractionPanel.tsx:158-159`
+- [ ] Renombrar "Salud del vínculo"/"Reciprocidad" (anillo /100 → "Termómetro"; "Ida y vuelta"). **DECISIÓN de Aaron pendiente** (quiere el número explícito; ver §4 nota de score). No renombrar sin su OK. `RelationalScore.tsx:64,182`
+- [ ] Micro-copy: sacar "(sesión futura)", "Observaciones CSV". `PersonDetail.tsx` / `RelationalScore.tsx` _(bajo impacto)_
 
 ### P1 — Accesibilidad (patrón ya existe en el repo)
 - [ ] `aria-live` en la respuesta del ask-box. `PreguntarSobrePersona.tsx:91-112`
