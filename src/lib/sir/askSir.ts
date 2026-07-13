@@ -14,7 +14,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
-import { searchChatMessages, renderChatSearchBlock } from '@/lib/chat-messages/search'
+import { searchChatMessages, renderChatSearchBlock, searchChatMessagesGlobal, dateMentionQuery } from '@/lib/chat-messages/search'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
 import { getYearNorte } from '@/lib/year-compass/norte'
 import { cyclePhase } from '@/lib/ciclo/phase'
@@ -466,6 +466,24 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     if (dayRef) {
       const slices = await fetchDayContext(supabase, userId, dayRef)
       dayBlock = '\n\n' + renderDayContext(slices)
+      // CRUCE por MENCIÓN de la fecha: además de lo agendado ESE día, buscamos en
+      // TODO el chat si alguien MENCIONÓ esa fecha (planes: "quedamos el 18 de
+      // julio", "el 18 viajo"). Clave para fechas FUTURAS —el calendario está
+      // vacío pero puede haber un plan hablado—. Fail-open.
+      const dq = dateMentionQuery(dayRef)
+      if (dq) {
+        const hits = await searchChatMessagesGlobal(supabase, userId, dq, 8)
+        if (hits.length > 0) {
+          const lines = hits
+            .slice()
+            .sort((a, b) => (a.sent_at ?? '').localeCompare(b.sent_at ?? ''))
+            .map((h) => {
+              const who = h.sender === 'user' ? 'Aaron' : (namesById.get(h.personId) ?? 'alguien')
+              return `  [${(h.sent_at ?? '').slice(0, 10)}] ${who}: ${(h.content ?? '').slice(0, 200)}`
+            })
+          dayBlock += `\n\nMenciones de esa fecha en tus chats (planes/citas habladas, de cualquier persona):\n${lines.join('\n')}`
+        }
+      }
     }
   } catch { /* best-effort: el día no debe romper la respuesta */ }
 
