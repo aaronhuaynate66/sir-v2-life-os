@@ -91,3 +91,4 @@ El índice se mantiene como tabla rápida; el sistema Living Roadmap también li
 | [0007](0007-scope-finanzas-salud.md) | Scope de Finanzas y Salud: salud se queda (Etapa 3); finanzas se congela como input de bienestar, no pilar | Accepted | 2026-06-08 |
 | [0008](0008-analytics-ga4-clarity.md) | Analytics GA4 + Clarity (tensión de privacidad aceptada; Clarity masking estricto obligatorio) | Accepted | 2026-06-09 |
 - [0009 — Privacidad de terceros: SIR usa la data sensible para asistir, con límites de exposición](./0009-privacidad-terceros.md)
+- [0010 — Inferir el ciclo desde el chat, en paralelo al dato exacto, para toda mujer](./0010-ciclo-inferido-del-chat.md)

@@ -93,7 +93,7 @@ export function ImportarLote() {
       setRow(r.key, { status: 'processing', detail: '', progress: null })
       const res = await runWhatsappImport(r.file, r.personId, r.personName ?? r.waName, opts, (p) => setRow(r.key, { progress: p }))
       if (res.ok && res.alreadyImported) setRow(r.key, { status: 'dup', detail: 'ya estaba al día', progress: null })
-      else if (res.ok) setRow(r.key, { status: 'done', detail: `${res.messageCount ?? 0} msgs · ${res.blocks ?? 0} bloques${res.calls ? ` · ${res.calls} llamadas` : ''}`, progress: null })
+      else if (res.ok) setRow(r.key, { status: 'done', detail: `${res.messageCount ?? 0} msgs · ${res.blocks ?? 0} bloques${res.calls ? ` · ${res.calls} llamadas` : ''}${res.inferredCycles ? ` · ${res.inferredCycles} ciclo${res.inferredCycles === 1 ? '' : 's'} inferido${res.inferredCycles === 1 ? '' : 's'}` : ''}`, progress: null })
       else setRow(r.key, { status: 'error', detail: res.error ?? 'falló', progress: null })
     }
     setRunning(false)

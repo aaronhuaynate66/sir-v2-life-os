@@ -7,7 +7,12 @@
 
 export type CyclePhase = 'bleeding' | 'pms' | 'mid_cycle' | 'ovulation' | 'luteal' | 'unknown'
 export type CycleConfidence = 'high' | 'medium' | 'low'
-export type CycleSource = 'aaron' | 'self_report'
+/** Origen del dato:
+ *  - 'aaron'        → Aaron lo observa/reporta (dato exacto).
+ *  - 'self_report'  → la persona lo confirma (dato exacto).
+ *  - 'chat_inferred'→ inferido PASIVAMENTE de una mención en el chat (mig 0146,
+ *    modelo probabilístico, siempre confidence='low'; el dato exacto lo pisa). */
+export type CycleSource = 'aaron' | 'self_report' | 'chat_inferred'
 
 export interface PersonCycleEntry {
   id: string
@@ -39,7 +44,7 @@ export function mapPersonCycleRow(r: RawRow): PersonCycleEntry {
     date: (r.date || '').slice(0, 10),
     phase: (['bleeding', 'pms', 'mid_cycle', 'ovulation', 'luteal', 'unknown'] as const).includes(r.phase as CyclePhase) ? (r.phase as CyclePhase) : 'unknown',
     confidence: (['high', 'medium', 'low'] as const).includes(r.confidence as CycleConfidence) ? (r.confidence as CycleConfidence) : 'medium',
-    source: (['aaron', 'self_report'] as const).includes(r.source as CycleSource) ? (r.source as CycleSource) : 'aaron',
+    source: (['aaron', 'self_report', 'chat_inferred'] as const).includes(r.source as CycleSource) ? (r.source as CycleSource) : 'aaron',
     note: r.note,
     createdAt: r.created_at,
   }

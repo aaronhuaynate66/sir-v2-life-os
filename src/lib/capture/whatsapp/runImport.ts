@@ -15,7 +15,8 @@ import { sliceParsedSince, incrementalSummary } from './export/incremental'
 import { extractCalls, callLabel } from './export/calls'
 import { chatFingerprint } from './export/fingerprint'
 import { chunkConversation } from './export/chunk'
-import { consolidateInterpretations, buildExportObservationData } from './export/consolidate'
+import { consolidateInterpretations, buildExportObservationData, buildAuthorRoleMap } from './export/consolidate'
+import { extractCycleSignals } from './export/cycleSignals'
 import { groupChunkTonesByDay } from './export/toneByDay'
 import type { ChunkInterpretation } from './export/types'
 import { createPersonLog } from '@/components/relaciones/person-logs/client'
@@ -24,7 +25,7 @@ export interface RunImportOpts { transcribeAudios?: boolean; readImages?: boolea
 export type RunPhase = 'reading' | 'media' | 'interpreting' | 'persisting'
 export interface RunImportProgress { phase: RunPhase; done?: number; total?: number; label?: string }
 export interface RunImportResult {
-  ok: boolean; alreadyImported?: boolean; messageCount?: number; blocks?: number; calls?: number; error?: string
+  ok: boolean; alreadyImported?: boolean; messageCount?: number; blocks?: number; calls?: number; inferredCycles?: number; error?: string
 }
 
 async function runPool<T>(items: T[], limit: number, worker: (item: T, i: number) => Promise<void>): Promise<void> {
@@ -115,11 +116,29 @@ export async function runWhatsappImport(
     for (const c of calls.slice(0, 30)) {
       try { await createPersonLog({ personId, kind: 'interaction', value: 3, note: `${callLabel(c)}${c.time ? ` · ${c.time}` : ''}`, ...(c.iso ? { loggedAt: c.iso } : {}) }) } catch { /* */ }
     }
+    // Ciclo INFERIDO del chat (C4, mig 0146): menciones en 1ª persona de la
+    // contacta ("me vino la regla", "ando con SPM") → eventos de ciclo con
+    // confidence baja. El endpoint gatea a mujeres y NO pisa el dato exacto; acá
+    // solo posteamos. Modelo probabilístico que ANCLA el forecast conductual.
+    let inferredCycles = 0
+    try {
+      const roleMap = buildAuthorRoleMap(parsed.participants, personName)
+      const signals = extractCycleSignals(fresh.messages, roleMap, lastImportedISO).slice(0, 40)
+      for (const s of signals) {
+        try {
+          const r = await fetch('/api/person-cycles', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ person_id: personId, date: s.date, phase: s.phase, source: 'chat_inferred', confidence: 'low', note: `Inferido del chat: «${s.matched}»` }),
+          })
+          if (r.ok) inferredCycles += 1
+        } catch { /* */ }
+      }
+    } catch { /* */ }
     const fingerprint = chatFingerprint(parsed.participants)
     if (fingerprint) {
       try { await fetch('/api/chat-identities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fingerprint, person_id: personId }) }) } catch { /* */ }
     }
-    return { ok: true, messageCount: fresh.messages.length, blocks: valid.length, calls: calls.length }
+    return { ok: true, messageCount: fresh.messages.length, blocks: valid.length, calls: calls.length, inferredCycles }
   } catch (e) {
     return { ok: false, error: String(e).slice(0, 140) }
   }
