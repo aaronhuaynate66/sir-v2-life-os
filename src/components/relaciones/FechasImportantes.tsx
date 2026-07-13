@@ -24,17 +24,22 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useRelationshipStore } from '@/stores'
-import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 import { useMounted } from '@/hooks/useMounted'
 import {
   sortSpecialDates,
   formatSpecialDate,
   formatCountdownPhrase,
   inferAnnualRecurrence,
+  inferMonthlyRecurrence,
   type SpecialDateCountdown,
+  type Cadence,
 } from '@/lib/dates/specialDates'
+import { resolveBirthdayInput, monthLabels, BIRTHDAY_FILLER_YEAR } from '@/lib/dates/birthdayInput'
 import { cn } from '@/lib/utils'
 import type { Person, SpecialDate } from '@/types'
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
+const CADENCE_LABEL: Record<Cadence, string> = { once: 'Una vez', yearly: 'Cada año', monthly: 'Cada mes' }
 
 export interface FechasImportantesProps {
   person: Person
@@ -45,12 +50,15 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
 
   const [adding, setAdding] = useState(false)
   const [label, setLabel] = useState('')
-  const [date, setDate] = useState('')
-  const [recurring, setRecurring] = useState(false)
-  // ¿El usuario tocó el toggle a mano? Si no, lo auto-deducimos de la etiqueta
-  // ("Aniversario" / "cumple" → anual) mientras escribe. Un toggle manual
-  // congela su decisión (incluso para etiquetas de aniversario).
-  const [recurringTouched, setRecurringTouched] = useState(false)
+  // Fecha por partes: el AÑO es opcional (un aniversario/santo se repite igual
+  // sin año; forzarlo — como el date-picker nativo — es la fricción que evitamos).
+  const [day, setDay] = useState('')
+  const [month, setMonth] = useState('')
+  const [year, setYear] = useState('')
+  const [cadence, setCadence] = useState<Cadence>('once')
+  // ¿El usuario tocó la cadencia a mano? Si no, la auto-deducimos de la etiqueta
+  // ("Aniversario"→anual, "mes de relación"→mensual) mientras escribe.
+  const [cadenceTouched, setCadenceTouched] = useState(false)
 
   const dates = person.specialDates ?? []
   // Los countdowns dependen de "hoy" → se computan solo tras montar. Server y
@@ -61,17 +69,19 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
 
   function resetForm() {
     setLabel('')
-    setDate('')
-    setRecurring(false)
-    setRecurringTouched(false)
+    setDay(''); setMonth(''); setYear('')
+    setCadence('once')
+    setCadenceTouched(false)
     setAdding(false)
   }
 
-  // Al tipear la etiqueta: si el usuario no tocó el toggle, lo sincronizamos
-  // con la inferencia ("Aniversario de bodas" → anual ON).
+  // Al tipear la etiqueta: si el usuario no tocó la cadencia, la sincronizamos
+  // con la inferencia ("Aniversario de bodas"→anual; "mes de relación"→mensual).
   function onLabelChange(value: string) {
     setLabel(value)
-    if (!recurringTouched) setRecurring(inferAnnualRecurrence(value))
+    if (!cadenceTouched) {
+      setCadence(inferMonthlyRecurrence(value) ? 'monthly' : inferAnnualRecurrence(value) ? 'yearly' : 'once')
+    }
   }
 
   function handleAdd() {
@@ -80,15 +90,38 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
       toast.error('Falta la etiqueta', { description: 'Ponele un nombre a la fecha.' })
       return
     }
-    if (!parseLocalDate(date)) {
-      toast.error('Fecha inválida', { description: 'Elegí una fecha válida.' })
+    // Mensual: solo el DÍA importa (el 13 de cada mes). Sin mes ni año.
+    if (cadence === 'monthly') {
+      const d = parseInt(day, 10)
+      if (!Number.isFinite(d) || d < 1 || d > 31) {
+        toast.error('Elegí el día del mes', { description: 'Ej. el 13 de cada mes.' })
+        return
+      }
+      saveDate(trimmedLabel, `${BIRTHDAY_FILLER_YEAR}-01-${pad2(d)}`)
       return
     }
+    // Una vez: el año es OBLIGATORIO (una fecha puntual sin año no ubica el evento).
+    // Cada año: el año es OPCIONAL (si no lo sabés, el countdown usa solo día/mes).
+    if (cadence === 'once' && !year.trim()) {
+      toast.error('Falta el año', { description: 'Una fecha única necesita el año. Si se repite, elegí “Cada año”.' })
+      return
+    }
+    const now = new Date().getFullYear()
+    const r = resolveBirthdayInput(day, month, year || null, { maxYear: now + 1 })
+    if (!r.ok) {
+      toast.error('Fecha inválida', { description: r.error })
+      return
+    }
+    saveDate(trimmedLabel, r.iso)
+  }
+
+  function saveDate(trimmedLabel: string, iso: string) {
     const newDate: SpecialDate = {
       id: crypto.randomUUID(),
       label: trimmedLabel,
-      date,
-      recurring,
+      date: iso,
+      recurring: cadence !== 'once',
+      cadence,
     }
     updatePerson(person.id, {
       specialDates: [...dates, newDate],
@@ -144,40 +177,76 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
                 autoFocus
               />
             </div>
+            {/* Cadencia PRIMERO: define qué campos de fecha pedimos. */}
             <div>
-              <Label htmlFor="sd-date" className="text-xs">
-                Fecha
-              </Label>
-              <Input
-                id="sd-date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="mt-1 font-mono"
-              />
+              <Label className="text-xs">¿Se repite?</Label>
+              <div className="mt-1 flex gap-1.5" role="group" aria-label="Cadencia">
+                {(['once', 'yearly', 'monthly'] as Cadence[]).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => { setCadenceTouched(true); setCadence(c) }}
+                    aria-pressed={cadence === c}
+                    className={cn(
+                      'flex-1 rounded-md border px-2 py-1.5 text-xs transition-colors',
+                      cadence === c
+                        ? 'border-brand/60 bg-brand/10 text-foreground'
+                        : 'border-border text-muted-foreground hover:border-brand/40',
+                    )}
+                  >
+                    {CADENCE_LABEL[c]}
+                  </button>
+                ))}
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setRecurringTouched(true)
-                setRecurring((v) => !v)
-              }}
-              className={cn(
-                'flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-colors',
-                recurring
-                  ? 'border-accent/50 bg-accent/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:border-accent/40',
-              )}
-              aria-pressed={recurring}
-            >
-              <Repeat
-                size={13}
-                strokeWidth={1.75}
-                className={cn(recurring && 'text-brand')}
-                aria-hidden="true"
-              />
-              Se repite cada año
-            </button>
+
+            {/* Fecha por partes. El AÑO es opcional salvo en "Una vez". */}
+            <div>
+              <Label className="text-xs">Fecha</Label>
+              <div className="mt-1 flex gap-1.5">
+                {cadence !== 'monthly' && (
+                  <select
+                    aria-label="Mes"
+                    value={month}
+                    onChange={(e) => setMonth(e.target.value)}
+                    className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm capitalize"
+                  >
+                    <option value="">Mes</option>
+                    {monthLabels().map((m, i) => (
+                      <option key={m} value={String(i + 1)} className="capitalize">{m}</option>
+                    ))}
+                  </select>
+                )}
+                <select
+                  aria-label="Día"
+                  value={day}
+                  onChange={(e) => setDay(e.target.value)}
+                  className="w-20 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                >
+                  <option value="">Día</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <option key={d} value={String(d)}>{d}</option>
+                  ))}
+                </select>
+                {cadence !== 'monthly' && (
+                  <Input
+                    aria-label="Año"
+                    inputMode="numeric"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder={cadence === 'once' ? 'Año' : 'Año (opc.)'}
+                    className="w-24 font-mono"
+                  />
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {cadence === 'monthly'
+                  ? `El ${day || 'N'} de cada mes.`
+                  : cadence === 'yearly'
+                    ? 'Si no sabés el año, dejalo vacío — solo se usa día y mes.'
+                    : 'Una fecha puntual necesita el año.'}
+              </p>
+            </div>
             <div className="flex gap-2 justify-end">
               <Button size="sm" variant="ghost" onClick={resetForm}>
                 Cancelar
@@ -253,7 +322,7 @@ function DateRow({
           {cd.recurring && (
             <Badge variant="outline" className="text-[9px] font-normal gap-1 px-1.5 py-0">
               <Repeat size={9} strokeWidth={2} aria-hidden="true" />
-              anual
+              {cd.cadence === 'monthly' ? 'cada mes' : 'anual'}
             </Badge>
           )}
         </div>
