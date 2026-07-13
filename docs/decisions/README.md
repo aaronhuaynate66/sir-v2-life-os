@@ -92,3 +92,5 @@ El índice se mantiene como tabla rápida; el sistema Living Roadmap también li
 | [0008](0008-analytics-ga4-clarity.md) | Analytics GA4 + Clarity (tensión de privacidad aceptada; Clarity masking estricto obligatorio) | Accepted | 2026-06-09 |
 - [0009 — Privacidad de terceros: SIR usa la data sensible para asistir, con límites de exposición](./0009-privacidad-terceros.md)
 - [0010 — Inferir el ciclo desde el chat, en paralelo al dato exacto, para toda mujer](./0010-ciclo-inferido-del-chat.md)
+- [0011 — LLM multi-proveedor + política de datos: costo sobre exclusividad de proveedor (supersede 0009 en ruteo)](./0011-llm-multiproveedor-y-datos.md)
+- [0012 — Algoritmo-primero: la IA es una capa de mejora, no el cimiento](./0012-algoritmo-primero.md)

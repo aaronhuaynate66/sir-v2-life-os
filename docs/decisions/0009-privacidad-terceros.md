@@ -1,8 +1,10 @@
 # 0009 — Privacidad de terceros: SIR usa la data sensible para asistir, con límites de exposición
 
-- **Estado:** Accepted
+- **Estado:** Superseded (en parte) por [0011](0011-llm-multiproveedor-y-datos.md) — 2026-07-13
 - **Fecha:** 2026-06-16
 - **Decisor:** Aaron
+
+> ⚠️ **2026-07-13:** el punto 1 ("a la IA sí, pero lo más sensible conviene Anthropic directo, no ruteado por OSS/OpenRouter") fue **revertido** por [[0011-llm-multiproveedor-y-datos]]: ahora el contenido sensible de terceros PUEDE rutearse a proveedores baratos/extranjeros (incluso los que entrenan con el input), priorizando costo. **Sí sigue vigente** el punto 2 (nada de PII a analytics/logs/URLs) y RLS. Ver 0011 para el riesgo aceptado.
 
 ## Contexto
 
