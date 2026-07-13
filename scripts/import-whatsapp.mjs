@@ -113,11 +113,32 @@ function chatMessageId(personId, source, iso, sender, content) {
 }
 async function appendMessages(personId, tagged) {
   const source = 'whatsapp'
+  // DEDUP DE VOZ EN RE-IMPORTS: si un audio de este chat YA fue transcrito (fila
+  // con content '🎙️…'), su id quedó basado en la transcripción, no en el
+  // '<adjunto:…opus>'. Re-importar el export re-agregaría el placeholder como
+  // fila nueva (y se re-transcribiría). Para evitarlo, cargamos las slots ya
+  // transcritas (por instante+emisor) y saltamos esas líneas de audio.
+  const transcribed = new Set()
+  try {
+    for (let from = 0; ; from += 1000) {
+      const { data } = await sb.from('chat_messages')
+        .select('sent_at, sender').eq('user_id', AARON).eq('person_id', personId)
+        .like('content', '🎙️%').range(from, from + 999)
+      if (!data || data.length === 0) break
+      for (const r of data) if (r.sent_at) transcribed.add(`${Date.parse(r.sent_at)}|${r.sender}`)
+      if (data.length < 1000) break
+    }
+  } catch { /* best-effort: sin esto, el peor caso es un duplicado en re-import */ }
+  const isAudioLine = (c) => /<adjunto[^>]*AUDIO[^>]*\.opus>/i.test(c) || /AUDIO-\d.*\.opus/i.test(c)
+
   const seen = new Set(); const rows = []
   for (const m of tagged) {
     const content = (m.content || '').slice(0, 8000)
     if (!content) continue
     const iso = m.iso && m.iso.length >= 10 ? m.iso : null
+    // Si es una línea de audio y esa slot (instante+emisor) ya está transcrita,
+    // no re-agregamos el placeholder (evita duplicar la nota de voz).
+    if (iso && isAudioLine(content) && transcribed.has(`${Date.parse(iso)}|${m.side}`)) continue
     const id = chatMessageId(personId, source, iso, m.side, content)
     if (seen.has(id)) continue
     seen.add(id)
