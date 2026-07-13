@@ -15,6 +15,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
 import { searchChatMessages, renderChatSearchBlock, searchChatMessagesGlobal, dateMentionQuery } from '@/lib/chat-messages/search'
+import { resolveKinshipMentions } from '@/lib/people/kinship'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
 import { getYearNorte } from '@/lib/year-compass/norte'
 import { cyclePhase } from '@/lib/ciclo/phase'
@@ -138,6 +139,24 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   for (const p of allPeople) {
     if (mentioned.includes((p.name as string) ?? '')) targetIds.add(p.id as string)
   }
+
+  // 2b. PARENTESCO: "mi papá / mi vieja / mi novia" no matchean por nombre. El
+  //     vínculo vive en person_links (person_a_id='self', kind='padre'|...).
+  //     Sin esto, preguntar por un pariente por su ROL no lo traía al contexto
+  //     y el modelo confabulaba. Fail-open.
+  try {
+    const { data: links } = await supabase
+      .from('person_links')
+      .select('person_b_id, kind')
+      .eq('user_id', userId)
+      .eq('person_a_id', 'self')
+      .limit(100)
+    const selfLinks = ((links as Array<{ person_b_id: string; kind: string }>) ?? [])
+      .map((l) => ({ personId: l.person_b_id, kind: l.kind }))
+    for (const pid of resolveKinshipMentions(retrievalText, selfLinks)) {
+      if (byId.has(pid)) targetIds.add(pid)
+    }
+  } catch { /* best-effort */ }
 
   // Scope explícito por persona (ask-box de la ficha): garantiza que ESA persona
   // entre al contexto aunque la pregunta no la nombre. Antes del augmento por
