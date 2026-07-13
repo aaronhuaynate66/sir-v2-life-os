@@ -4,15 +4,12 @@ name: Sync Roadmap
 # de issues, milestones, ADRs y commits, y commitea solo si el contenido cambio.
 # Ver docs/decisions/0002-rich-context-snapshot.md y el README del sistema.
 
+# DESACTIVADO el auto-sync (2026-07-12): MASTER_PLAN.md quedaba DESFASADO y no es
+# fuente de verdad (lo es docs/BACKLOG.md), y el auto-commit a main en cada
+# issue/PR/schedule metía ruido de commits. Queda SOLO manual (workflow_dispatch):
+# se puede regenerar a mano cuando se quiera, pero no corre solo.
 on:
-  issues:
-    types: [opened, closed, reopened, labeled, unlabeled, edited, milestoned, demilestoned]
-  pull_request:
-    types: [closed]
   workflow_dispatch:
-  schedule:
-    # 13:00 UTC = 08:00 Lima. Safety net diario si un evento se perdio.
-    - cron: "0 13 * * *"
 
 # Cola las corridas: cancel-in-progress=false a proposito.
 concurrency:
