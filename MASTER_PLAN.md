@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `2c86ad7`
+**Hash del último commit humano:** `0330965`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,8 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `0330965` | aaronhuaynate66 | feat(sir): cierre del día por Telegram que invita a dictar notas (opt-in) (#734) | 2026-07-13 |
+| `b776612` | Aaron Huaynate | chore: redeploy para activar TELEGRAM_MORNING_BRIEF (brief matutino por Telegram) | 2026-07-13 |
 | `2c86ad7` | aaronhuaynate66 | perf(sir): arma el contexto por persona en paralelo (evita el timeout) (#733) | 2026-07-12 |
 | `fd9ca1a` | aaronhuaynate66 | feat(sir): SIR busca en el historial COMPLETO al responder (FTS del sustrato) (#732) | 2026-07-12 |
 | `5aff7dd` | aaronhuaynate66 | feat(chat): índice FTS (español) sobre chat_messages.content (#731) | 2026-07-12 |
@@ -358,8 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5cd3341` | aaronhuaynate66 | feat(sir): captura por chat cierra vínculos (PR3, completa las 4 acciones) (#728) | 2026-07-12 |
 | `6639c75` | aaronhuaynate66 | feat(sir): captura por chat también crea objetivos y personas (PR2) (#727) | 2026-07-12 |
 | `09df05f` | aaronhuaynate66 | feat(sir): captura de notas por Telegram con confirmación (interacción) (#726) | 2026-07-12 |
-| `b6c89c2` | aaronhuaynate66 | fix(whatsapp): identifica a Aaron por su nombre en tagAuthors (evita autor invertido) (#725) | 2026-07-12 |
-| `b43d42b` | aaronhuaynate66 | feat(sir): el cerebro lee el sustrato real (chat_messages) con la voz transcrita (#724) | 2026-07-12 |
 
 ---
 
