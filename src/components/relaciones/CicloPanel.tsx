@@ -256,7 +256,10 @@ function CycleNotes({ entries }: { entries: PersonCycleEntry[] }) {
               {e.source === 'self_report' && (
                 <span className="not-italic rounded bg-ok-soft/50 px-1 py-px text-ok text-[9px] tracking-normal">ella lo registró</span>
               )}
-              {e.confidence === 'low' && <span className="text-muted-foreground/50">· dato incierto</span>}
+              {e.source === 'chat_inferred' && (
+                <span className="not-italic rounded bg-muted px-1 py-px text-muted-foreground text-[9px] tracking-normal">inferido del chat</span>
+              )}
+              {e.confidence === 'low' && e.source !== 'chat_inferred' && <span className="text-muted-foreground/50">· dato incierto</span>}
             </div>
             <p className="text-foreground/85 mt-0.5">{e.note}</p>
           </li>

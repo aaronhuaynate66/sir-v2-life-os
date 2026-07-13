@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 const SELECT = 'id, person_id, date, phase, confidence, source, note, created_at'
 const PHASES = ['bleeding', 'pms', 'mid_cycle', 'ovulation', 'luteal', 'unknown'] as const
 const CONFIDENCES = ['high', 'medium', 'low'] as const
-const SOURCES = ['aaron', 'self_report'] as const
+const SOURCES = ['aaron', 'self_report', 'chat_inferred'] as const
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -74,23 +74,36 @@ export async function POST(req: NextRequest) {
   if (!SOURCES.includes(source)) return errorJson(400, 'source inválida')
   const note = str(body.note, 500)
 
-  // Ownership de la persona.
+  // Ownership + género de la persona.
   const { data: ownedPerson } = await supabase
-    .from('people').select('id').eq('user_id', auth.user.id).eq('id', personId).single()
+    .from('people').select('id, gender').eq('user_id', auth.user.id).eq('id', personId).single()
   if (!ownedPerson) return errorJson(404, 'Persona no encontrada')
 
+  // GUARDRAIL de la inferencia por chat (mig 0146): el modelo probabilístico
+  // solo aplica a MUJERES y siempre entra con confidence baja. El dato exacto
+  // (aaron/self_report) no tiene esta restricción — Aaron sabe lo que registra.
+  const isInferred = source === 'chat_inferred'
+  if (isInferred && (ownedPerson as { gender?: string | null }).gender !== 'female') {
+    return errorJson(422, 'Inferencia de ciclo solo aplica a mujeres')
+  }
+  const finalConfidence = isInferred ? 'low' : confidence
+
   try {
+    // chat_inferred NUNCA pisa una entrada existente (el dato exacto manda, y no
+    // re-escribe al re-subir el chat): ignoreDuplicates. Las fuentes manuales sí
+    // mergean (Aaron corrigiendo/confirmando).
     const { data, error } = await supabase.from('person_cycles').upsert({
       user_id: auth.user.id,
       person_id: personId,
       date,
       phase,
-      confidence,
+      confidence: finalConfidence,
       source,
       note,
-    }, { onConflict: 'user_id,person_id,date' }).select(SELECT).single()
+    }, { onConflict: 'user_id,person_id,date', ignoreDuplicates: isInferred }).select(SELECT).maybeSingle()
     if (error) return errorJson(500, 'No pude guardar', error.message)
-    return NextResponse.json({ entry: data }, { status: 201 })
+    // Con ignoreDuplicates, un conflicto devuelve null (no se insertó) — no es error.
+    return NextResponse.json({ entry: data, skipped: isInferred && !data }, { status: 201 })
   } catch (e) {
     return errorJson(500, 'No pude guardar', e instanceof Error ? e.message : String(e))
   }
