@@ -15,7 +15,7 @@
 Generado automáticamente por `.github/workflows/sync-roadmap.yml`
 
 **Fase activa:** Fase 3b - Búsqueda Semántica — Embeddings + pgvector para busqueda por significado  
-**Hash del último commit humano:** `c6f0112`
+**Hash del último commit humano:** `8a941b6`
 
 > 📋 El backlog vive embebido más abajo (sección "Backlog"). Fuente editable: [docs/BACKLOG.md](docs/BACKLOG.md). Cada regeneración del MASTER_PLAN re-embebe ese archivo verbatim.
 
@@ -350,6 +350,7 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 
 | Hash | Autor | Mensaje | Fecha |
 |------|-------|---------|-------|
+| `8a941b6` | aaronhuaynate66 | fix(whatsapp): re-import no duplica notas de voz ya transcritas (#736) | 2026-07-13 |
 | `c6f0112` | aaronhuaynate66 | fix(whatsapp): el import mantiene people.last_contact = último mensaje real (#735) | 2026-07-13 |
 | `0330965` | aaronhuaynate66 | feat(sir): cierre del día por Telegram que invita a dictar notas (opt-in) (#734) | 2026-07-13 |
 | `b776612` | Aaron Huaynate | chore: redeploy para activar TELEGRAM_MORNING_BRIEF (brief matutino por Telegram) | 2026-07-13 |
@@ -359,7 +360,6 @@ Validación manual end-to-end del Context Engine (ver issue R5.1E):
 | `5a0b3ae` | aaronhuaynate66 | fix(sir): cerrar vínculo desde la web ahora SÍ persiste (depth/reciprocity válidos) (#730) | 2026-07-12 |
 | `aab7a3e` | aaronhuaynate66 | feat(sir): SIR te escribe el brief de la mañana por Telegram (proactivo, opt-in) (#729) | 2026-07-12 |
 | `5cd3341` | aaronhuaynate66 | feat(sir): captura por chat cierra vínculos (PR3, completa las 4 acciones) (#728) | 2026-07-12 |
-| `6639c75` | aaronhuaynate66 | feat(sir): captura por chat también crea objetivos y personas (PR2) (#727) | 2026-07-12 |
 
 ---
 
