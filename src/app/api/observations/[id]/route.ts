@@ -16,6 +16,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 import { recomputeAxisFor, axisForCapture } from '@/lib/person-axes/recompute'
+import { inferCyclesFromWhatsappData } from '@/lib/person-cycles/fromWhatsappObservation'
 import type {
   CaptureType,
   Confidence,
@@ -147,6 +148,32 @@ export async function PATCH(
     if (axis && pid) {
       try { await recomputeAxisFor(supabase, authData.user.id, pid, axis) } catch { /* best-effort */ }
     }
+  }
+
+  // Al VINCULAR una captura de WhatsApp (screenshot) a una MUJER, inferir el
+  // ciclo de las menciones ("me vino el 25 de junio"). Reusa el mismo extractor
+  // que el import por archivo. chat_inferred + confidence baja, no pisa el dato
+  // exacto (ignoreDuplicates). Guardrail de género acá mismo. Best-effort.
+  if (hasPersonId && typeof body.person_id === 'string' && body.person_id) {
+    try {
+      const row = data as Record<string, unknown>
+      const captureType = typeof row.capture_type === 'string' ? row.capture_type : ''
+      if (captureType.startsWith('whatsapp')) {
+        const { data: person } = await supabase
+          .from('people').select('gender').eq('user_id', authData.user.id).eq('id', body.person_id).single()
+        if ((person as { gender?: string } | null)?.gender === 'female') {
+          const today = new Date().toISOString().slice(0, 10)
+          const inferred = inferCyclesFromWhatsappData(row.data, today).slice(0, 20)
+          for (const c of inferred) {
+            await supabase.from('person_cycles').upsert({
+              user_id: authData.user.id, person_id: body.person_id,
+              date: c.date, phase: c.phase, confidence: 'low', source: 'chat_inferred',
+              note: `Inferido de captura: «${c.matched}»`,
+            }, { onConflict: 'user_id,person_id,date', ignoreDuplicates: true })
+          }
+        }
+      }
+    } catch { /* best-effort: la vinculación no depende de la inferencia */ }
   }
 
   const observation = toObservation(data as Record<string, unknown>)
