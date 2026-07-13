@@ -3,11 +3,13 @@
 // terceros. MVP: huecos que se AUTO-RESUELVEN al responder (rellenan un campo),
 // + descarte ("no sé") persistido para no repetir.
 
-import type { Person, Goal } from '@/types'
+import type { Person, Goal, SpecialDate } from '@/types'
 import { effectiveAmbito } from '@/lib/people/ambito'
 import { findBirthdaySpecialDate } from '@/lib/dates/birthdayDetect'
+import { effectiveCadence } from '@/lib/dates/specialDates'
+import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 
-export type GapKind = 'gender' | 'birthday' | 'cycle' | 'goal_next_action'
+export type GapKind = 'gender' | 'birthday' | 'cycle' | 'goal_next_action' | 'recurring_event'
 
 export interface KnowledgeGap {
   /** Clave estable para descartar/no-repetir: `${kind}:${entityId}`. */
@@ -20,10 +22,41 @@ export interface KnowledgeGap {
   /** La pregunta, en segunda persona, mínima. */
   question: string
   /** Campo que rellena la respuesta (para auto-resolver el hueco). */
-  field: 'gender' | 'birthDate' | 'cycleStartDate' | 'nextAction'
-  inputType: 'date' | 'text' | 'choice'
+  field: 'gender' | 'birthDate' | 'cycleStartDate' | 'nextAction' | 'specialDateCadence'
+  inputType: 'date' | 'text' | 'choice' | 'confirm'
   /** Mayor = preguntar antes. */
   priority: number
+  /** Solo para 'recurring_event': la fecha especial que se marcaría mensual y
+   *  la cadencia propuesta. La respuesta "Sí" setea sd.cadence = proposedCadence. */
+  specialDateId?: string
+  proposedCadence?: 'monthly'
+}
+
+/** Detecta un candidato a hito MENSUAL ambiguo: ≥2 fechas one-time en el MISMO
+ *  día-del-mes pero en meses distintos, ninguna ya marcada como recurrente. Es
+ *  la señal de "parece que el día X se repite cada mes" cuando la etiqueta no lo
+ *  dice (las que sí lo dicen ya se infieren monthly). PURO. Devuelve la fecha
+ *  canónica a proponer (la más antigua) o null. */
+export function detectMonthlyCandidate(specialDates: SpecialDate[] | undefined): SpecialDate | null {
+  const byDom = new Map<number, SpecialDate[]>()
+  for (const sd of specialDates ?? []) {
+    if (effectiveCadence(sd) !== 'once') continue // ya es recurrente (o inferida)
+    const parsed = parseLocalDate(sd.date)
+    if (!parsed) continue
+    const dom = parsed.getDate()
+    const arr = byDom.get(dom) ?? []
+    arr.push(sd)
+    byDom.set(dom, arr)
+  }
+  for (const [, arr] of byDom) {
+    // Meses distintos (no el mismo evento repetido el mismo mes/año).
+    const months = new Set(arr.map((s) => (parseLocalDate(s.date)!.getMonth() + '-' + parseLocalDate(s.date)!.getFullYear())))
+    if (arr.length >= 2 && months.size >= 2) {
+      // Canónica = la más antigua (ancla del hito).
+      return [...arr].sort((a, b) => a.date.localeCompare(b.date))[0]
+    }
+  }
+  return null
 }
 
 const firstName = (n: string) => (n || '').trim().split(/\s+/)[0] || n
@@ -71,6 +104,21 @@ export function detectGaps(
           ? `¿Cuándo cumple ${firstName(p.name)}? Un saludo de cumpleaños lo posiciona.`
           : `¿Cuándo cumple ${firstName(p.name)}?`,
         field: 'birthDate', inputType: 'date', priority: (comercial ? 25 : 40) + imp,
+      })
+    }
+    // Hito MENSUAL ambiguo: SIR detecta el patrón (varias fechas el mismo día
+    // del mes) y PREGUNTA si se repite cada mes. Si Aaron confirma, lo marca
+    // recurrente y desde ahí lo recuerda. Idea de Aaron: no hardcodear, detectar
+    // + preguntar. Las que ya dicen "mensual/mes de relación" se infieren solas.
+    const monthlyCand = detectMonthlyCandidate(p.specialDates)
+    if (monthlyCand) {
+      const dom = parseLocalDate(monthlyCand.date)?.getDate()
+      push({
+        key: `recurring_event:${p.id}:${monthlyCand.id}`, kind: 'recurring_event',
+        entity: 'person', entityId: p.id, entityName: p.name,
+        question: `Veo varias fechas de ${firstName(p.name)} el ${dom} del mes ("${monthlyCand.label}"). ¿Es un aniversario que se repite cada mes? Lo marco y te lo recuerdo.`,
+        field: 'specialDateCadence', inputType: 'confirm', priority: 45 + imp,
+        specialDateId: monthlyCand.id, proposedCadence: 'monthly',
       })
     }
     // Ciclo faltante (mujer) → habilita el panel de ciclo (caso Diana).

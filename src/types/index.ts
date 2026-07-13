@@ -272,8 +272,15 @@ export interface SpecialDate {
    *  para evitar el shift UTC en Lima. */
   date: string
   /** true = se repite cada año (countdown al próximo aniversario, como un
-   *  cumpleaños). false = evento único (el countdown puede quedar en pasado). */
+   *  cumpleaños). false = evento único (el countdown puede quedar en pasado).
+   *  Legacy: se mantiene por compat; `cadence` la reemplaza cuando está presente. */
   recurring: boolean
+  /** Ritmo de repetición. Reemplaza a `recurring` (una sola fuente de verdad):
+   *  - 'once'    → evento único (== recurring:false).
+   *  - 'yearly'  → cada año (== recurring:true; ej. cumpleaños, aniversario anual).
+   *  - 'monthly' → cada mes en el mismo día (ej. "aniversario del 13", mesario).
+   *  Si falta, la cadencia efectiva se infiere de `recurring` + la etiqueta. */
+  cadence?: 'once' | 'yearly' | 'monthly'
 }
 
 export interface Relationship {

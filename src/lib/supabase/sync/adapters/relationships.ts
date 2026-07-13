@@ -19,11 +19,13 @@ function parseSpecialDates(raw: unknown): SpecialDate[] {
     const label = typeof r.label === 'string' ? r.label : ''
     const date = typeof r.date === 'string' ? r.date : ''
     if (!label || !date) continue
+    const cadence = r.cadence === 'monthly' || r.cadence === 'yearly' || r.cadence === 'once' ? r.cadence : undefined
     out.push({
       id: typeof r.id === 'string' && r.id ? r.id : `${date}-${label}`,
       label,
       date,
       recurring: r.recurring === true,
+      ...(cadence ? { cadence } : {}),
     })
   }
   return out
