@@ -77,6 +77,50 @@ export async function searchChatMessages(
   }
 }
 
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+/** Query websearch para buscar MENCIONES de una fecha en el chat (planes/citas).
+ *  dayRef 'YYYY-MM-DD' → '"18 de julio" or "18 julio"'. PURO. '' si inválido. */
+export function dateMentionQuery(dayRef: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dayRef || '')
+  if (!m) return ''
+  const day = Number(m[3]); const mes = MESES[Number(m[2]) - 1]
+  if (!day || !mes) return ''
+  return `"${day} de ${mes}" or "${day} ${mes}"`
+}
+
+export interface GlobalHit extends ChatSearchHit { personId: string }
+
+/** FTS sobre TODO el chat del usuario (cross-persona) — para menciones de una
+ *  fecha/tema sin fijar persona. Devuelve personId para atribuir. Fail-open. */
+export async function searchChatMessagesGlobal(
+  supabase: SupabaseClient,
+  userId: string,
+  query: string,
+  limit = 8,
+): Promise<GlobalHit[]> {
+  const q = (query || '').trim()
+  if (q.length < 3) return []
+  try {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('person_id, sender, sent_at, content')
+      .eq('user_id', userId)
+      .textSearch('content', q, { type: 'websearch', config: 'spanish' })
+      .order('sent_at', { ascending: false })
+      .limit(limit)
+    if (error || !data) return []
+    return (data as Array<Record<string, unknown>>).map((r) => ({
+      personId: (r.person_id as string) ?? '',
+      sender: (r.sender as string) ?? 'other',
+      sent_at: (r.sent_at as string | null) ?? null,
+      content: (r.content as string) ?? '',
+    }))
+  } catch {
+    return []
+  }
+}
+
 /** Renderiza los hits como bloque para el prompt. '' si no hay. PURO. */
 export function renderChatSearchBlock(hits: ChatSearchHit[], personName: string): string {
   if (!hits.length) return ''

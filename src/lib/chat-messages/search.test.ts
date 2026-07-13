@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractSearchTerms, renderChatSearchBlock, type ChatSearchHit } from './search'
+import { extractSearchTerms, renderChatSearchBlock, dateMentionQuery, type ChatSearchHit } from './search'
 
 describe('extractSearchTerms', () => {
   it('saca términos salientes, sin tildes ni stopwords, más largos primero', () => {
@@ -26,6 +26,18 @@ describe('extractSearchTerms', () => {
   it('cap al máximo pedido', () => {
     const t = extractSearchTerms('terreno chosica herencia abogado notaria escritura testamento', 3)
     expect(t).toHaveLength(3)
+  })
+})
+
+describe('dateMentionQuery', () => {
+  it('arma la query de menciones de una fecha con nombre de mes ES', () => {
+    const q = dateMentionQuery('2026-07-18')
+    expect(q).toContain('"18 de julio"')
+    expect(q).toContain('or')
+  })
+  it('devuelve "" para fecha inválida', () => {
+    expect(dateMentionQuery('')).toBe('')
+    expect(dateMentionQuery('nope')).toBe('')
   })
 })
 
