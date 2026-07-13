@@ -7,10 +7,9 @@
 // Response 200: { briefing: string }
 // 422 si no hay contexto suficiente; 500 si falta ANTHROPIC_API_KEY (ya en prod).
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { recordAiUsage } from '@/lib/ai/usage'
+import { complete, LlmError } from '@/lib/llm'
 
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
@@ -31,7 +30,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const DAY_MS = 86_400_000
 const RECENT_DAYS = 3
 
@@ -175,29 +173,29 @@ export async function POST(_req: NextRequest) {
     }
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
-
   const today = new Date().toISOString().slice(0, 10)
   const lunarPhase = moonPhase(new Date()).label
 
+  // Capa llm/ (ADR 0011): router + fallback + telemetría. Con solo ANTHROPIC_API_KEY
+  // rutea a Anthropic (mismo comportamiento); al sumar la key de un proveedor
+  // barato en Vercel, el router lo aprovecha sin tocar esta ruta.
   let text = ''
   try {
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 700,
+    const res = await complete({
+      task: 'briefing_daily',
+      sensitivity: 'third_party',
       system: DAILY_BRIEFING_SYSTEM_PROMPT,
       messages: [
         { role: 'user', content: buildDailyInput({ today, lunarPhase, goals, signals, logStats, observations, moments, cycles }) },
       ],
-    })
-    void recordAiUsage(supabase, userId, 'briefing', MODEL_ID, msg.usage)
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
+      maxTokens: 700,
+    }, { supabase, userId })
+    text = res.text
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo de briefing', m.slice(0, 300))
   }
