@@ -130,6 +130,14 @@ async function appendMessages(personId, tagged) {
     if (error) throw new Error(`chat_messages: ${error.message}`)
     n += slice.length
   }
+  // Mantener people.last_contact al día = fecha del último mensaje (maneja la
+  // urgencia de contacto). Solo AVANZA (never backward): si el export trae algo
+  // más reciente que el last_contact actual, lo actualiza. Sin esto quedaba stale.
+  const maxIso = rows.reduce((mx, r) => (r.sent_at && r.sent_at > mx ? r.sent_at : mx), '')
+  if (maxIso) {
+    await sb.from('people').update({ last_contact: maxIso, updated_at: new Date().toISOString() })
+      .eq('user_id', AARON).eq('id', personId).or(`last_contact.is.null,last_contact.lt.${maxIso}`)
+  }
   return n
 }
 
