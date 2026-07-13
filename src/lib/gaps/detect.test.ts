@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { detectGaps } from './detect'
-import type { Person, Goal } from '@/types'
+import { detectGaps, detectMonthlyCandidate } from './detect'
+import type { Person, Goal, SpecialDate } from '@/types'
 
 function person(p: Partial<Person>): Person {
   // gender por defecto seteado para que el gap de género (nuevo) no dispare en
@@ -77,5 +77,25 @@ describe('detectGaps', () => {
   it('NO pide ciclo a una colega/lead (solo personal)', () => {
     const gaps = detectGaps([person({ id: 'c', gender: 'female', importanceScore: 8, birthDate: '1990-01-01', ambito: 'colega' })], [])
     expect(gaps.find((g) => g.kind === 'cycle')).toBeFalsy()
+  })
+})
+
+describe('detectMonthlyCandidate + gap recurring_event', () => {
+  const sd = (label: string, date: string): SpecialDate => ({ id: `${date}-${label}`, label, date, recurring: false })
+  it('detecta ≥2 fechas one-time el mismo día del mes en meses distintos', () => {
+    const cand = detectMonthlyCandidate([sd('Salida', '2025-02-13'), sd('Cena', '2025-05-13')])
+    expect(cand?.date).toBe('2025-02-13') // la más antigua = canónica
+  })
+  it('NO dispara con una sola fecha, ni si ya es recurrente/mensual', () => {
+    expect(detectMonthlyCandidate([sd('Salida', '2025-02-13')])).toBeNull()
+    expect(detectMonthlyCandidate([sd('Aniversario mensual', '2025-02-13'), sd('x', '2025-05-13')])).toBeNull()
+  })
+  it('emite gap confirmable de tipo recurring_event', () => {
+    const gaps = detectGaps([person({ id: 'd', gender: 'female', importanceScore: 9,
+      specialDates: [sd('Salida', '2025-02-13'), sd('Cena', '2025-05-13')] })], [])
+    const g = gaps.find((x) => x.kind === 'recurring_event')
+    expect(g?.inputType).toBe('confirm')
+    expect(g?.proposedCadence).toBe('monthly')
+    expect(g?.specialDateId).toBe('2025-02-13-Salida')
   })
 })

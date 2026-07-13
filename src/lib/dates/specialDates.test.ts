@@ -236,3 +236,62 @@ describe('dedupeSpecialDates', () => {
     expect(out).toHaveLength(2)
   })
 })
+
+describe('recurrencia MENSUAL (aniversario del mes / mesario)', () => {
+  const NOW = new Date(2026, 6, 20) // 20-jul-2026
+  const sd = (over: Partial<SpecialDate>): SpecialDate => ({
+    id: 'm1', label: 'Aniversario mensual', date: '2025-02-13', recurring: false, ...over,
+  })
+  it('infiere cadencia mensual por etiqueta y calcula el próximo día-del-mes', () => {
+    const cd = computeSpecialDateCountdown(sd({ label: 'Aniversario mensual relación (13 del mes)' }), NOW)!
+    expect(cd.cadence).toBe('monthly')
+    // Próximo 13 tras el 20-jul → 13-ago-2026.
+    expect(cd.occurrence.getFullYear()).toBe(2026)
+    expect(cd.occurrence.getMonth()).toBe(7)
+    expect(cd.occurrence.getDate()).toBe(13)
+    expect(cd.daysUntil).toBe(24)
+  })
+  it('cadence explícita monthly gana sobre la etiqueta', () => {
+    const cd = computeSpecialDateCountdown(sd({ label: 'algo', cadence: 'monthly', date: '2024-12-13' }), NOW)!
+    expect(cd.cadence).toBe('monthly')
+    expect(cd.occurrence.getDate()).toBe(13)
+  })
+  it('"¡Hoy!" cuando el día-del-mes es hoy', () => {
+    const cd = computeSpecialDateCountdown(sd({ cadence: 'monthly', date: '2025-01-20' }), NOW)!
+    expect(cd.daysUntil).toBe(0)
+    expect(formatCountdownPhrase(cd)).toBe('¡Hoy!')
+  })
+  it('día 31 en un mes corto cae al último día', () => {
+    const feb = new Date(2026, 1, 5) // 5-feb
+    const cd = computeSpecialDateCountdown(sd({ cadence: 'monthly', date: '2025-01-31' }), feb)!
+    expect(cd.occurrence.getMonth()).toBe(1) // feb
+    expect(cd.occurrence.getDate()).toBe(28) // 2026 no bisiesto
+  })
+  it('formato mensual legible', () => {
+    const cd = computeSpecialDateCountdown(sd({ cadence: 'monthly', date: '2025-02-13' }), NOW)!
+    expect(formatSpecialDate(cd)).toBe('13 de cada mes')
+  })
+})
+
+describe('dedup MENSUAL — caso Diana (mesario 3×)', () => {
+  const sd = (over: Partial<SpecialDate>): SpecialDate => ({
+    id: Math.random().toString(36).slice(2), label: 'x', date: '2025-02-13', recurring: false, ...over,
+  })
+  it('colapsa las 3 entradas del 13 en una, conservando la más específica', () => {
+    const out = dedupeSpecialDates([
+      sd({ label: 'Aniversario mensual relación (13 del mes)', date: '2025-02-13' }),
+      sd({ label: 'Feliz mes de relación', date: '2025-10-13' }),
+      sd({ label: '10 meses de relación', date: '2025-05-13' }),
+    ])
+    expect(out).toHaveLength(1)
+    expect(out[0].label).toContain('Aniversario mensual')
+  })
+  it('no fusiona el aniversario ANUAL del 13-dic con el mesario', () => {
+    const out = dedupeSpecialDates([
+      sd({ label: 'Aniversario mensual relación (13 del mes)', date: '2025-02-13' }),
+      sd({ label: 'Aniversario Aaron y Diana Carolina', date: '2024-12-13', recurring: true }),
+    ])
+    // uno mensual (m:13) + uno anual (o:...) → 2 claves distintas.
+    expect(out).toHaveLength(2)
+  })
+})

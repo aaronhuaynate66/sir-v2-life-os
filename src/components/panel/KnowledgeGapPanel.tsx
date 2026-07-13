@@ -69,6 +69,18 @@ export function KnowledgeGapPanel() {
     setDrafts((d) => { const n = { ...d }; delete n[g.key]; return n })
     // El hueco se auto-resuelve (el campo ya está); el detector deja de verlo.
   }
+
+  /** Confirma un hito mensual: marca esa fecha especial con cadence='monthly'
+   *  para que SIR la recuerde cada mes. Se auto-resuelve (el detector deja de
+   *  verla al estar ya recurrente). */
+  function confirmMonthly(g: KnowledgeGap) {
+    const person = people.find((p) => p.id === g.entityId)
+    if (!person || !g.specialDateId) return
+    const next = (person.specialDates ?? []).map((sd) =>
+      sd.id === g.specialDateId ? { ...sd, cadence: g.proposedCadence, recurring: true } : sd,
+    )
+    updatePerson(g.entityId, { specialDates: next })
+  }
   function dismiss(g: KnowledgeGap) {
     const next = [...dismissed, g.key]
     setDismissed(next); writeDismissed(next)
@@ -101,6 +113,17 @@ export function KnowledgeGapPanel() {
                   updatePerson={updatePerson}
                   onDismiss={() => dismiss(g)}
                 />
+              ) : g.inputType === 'confirm' ? (
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => confirmMonthly(g)}
+                    className="inline-flex items-center gap-1 rounded-md bg-brand px-2.5 py-1.5 text-xs text-brand-foreground">
+                    <Check size={13} /> Sí, cada mes
+                  </button>
+                  <button type="button" onClick={() => dismiss(g)}
+                    className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground">
+                    <X size={13} /> No
+                  </button>
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <input
