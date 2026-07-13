@@ -9,9 +9,9 @@
 // seguimos (igual que rate_limits con su RPC). El contexto sensible (nombre,
 // ubicación, notas) lo trae el SERVER desde la fila de la persona, no el cliente.
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { complete, LlmError } from '@/lib/llm'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -28,8 +28,6 @@ import type { Person } from '@/types'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MODEL_ID = 'claude-haiku-4-5-20251001'
 
 const KIND_LABEL: Record<string, string> = {
   contact: 'retomar contacto',
@@ -127,21 +125,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     tensions: person.relationalNotes?.tensions ?? null,
   })
 
-  // ── 4. Generación (un solo Haiku) ──
+  // ── 4. Generación (tarea barata → capa llm/: router + fallback + telemetría) ──
   let suggestion: MessageSuggestion | null = null
   try {
-    const client = new Anthropic({ maxRetries: 2 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 400,
+    const res = await complete({
+      task: 'message_draft',
+      sensitivity: 'third_party',
       system: MESSAGE_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: context }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-    suggestion = parseMessageJson(text)
+      maxTokens: 400,
+    }, { supabase, userId })
+    suggestion = parseMessageJson(res.text)
   } catch (e) {
     reportApiError(e, { route: 'daily-actions/message', personId })
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar el mensaje', detail)
   }
