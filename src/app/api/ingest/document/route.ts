@@ -18,9 +18,9 @@
 // Auth: sesión activa. Rate limit: bucket 'generation' (es un completion, no
 // Visión). Mono-usuario: RLS + user_id explícito.
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { complete, LlmError, type CompleteOpts } from '@/lib/llm'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -40,7 +40,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MIN_TEXT_CHARS = 40
 const MAX_TEXT_CHARS = 200_000
 
@@ -53,16 +52,20 @@ function errorJson(status: number, error: string, detail?: string): NextResponse
   return NextResponse.json({ error, detail }, { status })
 }
 
-async function callDocumentLlm(client: Anthropic, userInput: string, extra = ''): Promise<string> {
+async function callDocumentLlm(
+  userInput: string,
+  extra: string,
+  ctx: CompleteOpts,
+): Promise<string> {
   const system = extra ? `${DOCUMENT_INGEST_SYSTEM_PROMPT}\n\n${extra}` : DOCUMENT_INGEST_SYSTEM_PROMPT
-  const msg = await client.messages.create({
-    model: MODEL_ID,
-    max_tokens: 3000,
+  const res = await complete({
+    task: 'extract',
+    sensitivity: 'third_party',
     system,
-    messages: [{ role: 'user', content: [{ type: 'text', text: userInput }] }],
-  })
-  const block = msg.content.find((b) => b.type === 'text')
-  return block && block.type === 'text' ? block.text : ''
+    messages: [{ role: 'user', content: userInput }],
+    maxTokens: 3000,
+  }, ctx)
+  return res.text
 }
 
 export async function POST(req: NextRequest) {
@@ -161,27 +164,26 @@ export async function POST(req: NextRequest) {
     return errorJson(413, 'Documento demasiado largo', `Máx ${MAX_TEXT_CHARS} caracteres.`)
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-
-  const client = new Anthropic({ maxRetries: 2 })
   const input = buildDocumentInput(filename, trimmed, { pagesRead, totalPages })
+  const llmCtx: CompleteOpts = { supabase, userId }
 
   let parsed = null
   try {
-    const raw = await callDocumentLlm(client, input)
+    const raw = await callDocumentLlm(input, '', llmCtx)
     parsed = parseDocumentResponse(raw)
     if (!parsed) {
       const raw2 = await callDocumentLlm(
-        client,
         input,
         'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON del schema, sin texto adicional, sin markdown fences. Empezá con `{` y terminá con `}`.',
+        llmCtx,
       )
       parsed = parseDocumentResponse(raw2)
     }
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la síntesis del documento', msg.slice(0, 300))
   }
