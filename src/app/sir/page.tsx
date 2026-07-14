@@ -18,8 +18,9 @@ import type { Goal, GoalCategory, Person, RelationshipType, PersonCategory } fro
 import { SIR_MODELS, normalizeTier, type SirModelTier } from '@/lib/sir/model'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito'
   persona?: string
+  habito?: string
   calidad?: number
   nota?: string
   titulo?: string
@@ -294,6 +295,25 @@ export default function SirChatPage() {
         track(EVENTS.personAdded, { method: 'sir_chat' })
         toast.success(`${name} agregado`, { description: 'Lo creé en tu red.' })
         setTurnState(idx, 'done')
+      } else if (a.kind === 'marcar_habito') {
+        const query = (a.habito ?? '').trim()
+        if (!query) { toast.error('No entendí qué hábito'); return }
+        const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+        const r = await fetch('/api/habits')
+        const j = r.ok ? (await r.json()) as { habits: { id: string; title: string; checkinDates: string[] }[] } : { habits: [] }
+        const q = norm(query)
+        const hit = j.habits.find((h) => norm(h.title) === q)
+          ?? j.habits.filter((h) => norm(h.title).includes(q) || q.includes(norm(h.title)))[0]
+        if (!hit) { toast.error(`No encontré el hábito "${query}"`, { description: j.habits.length ? `Tenés: ${j.habits.slice(0, 6).map((h) => h.title).join(', ')}` : 'No tenés hábitos activos.' }); return }
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
+        if (hit.checkinDates?.includes(today)) {
+          toast.success(`"${hit.title}" ya estaba marcado hoy`)
+          setTurnState(idx, 'done'); return
+        }
+        const res = await fetch('/api/habits/checkin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ habit_id: hit.id }) })
+        if (!res.ok) { toast.error('No se pudo marcar el hábito'); return }
+        toast.success(`✅ Marqué "${hit.title}" como hecho hoy`)
+        setTurnState(idx, 'done')
       } else if (a.kind === 'cerrar_relacion') {
         if (!a.personId) {
           toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Cerrá el vínculo desde su ficha.' })
@@ -567,7 +587,7 @@ export default function SirChatPage() {
                   <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
                       <CalendarCheck size={12} />
-                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : 'Cerrar vínculo'}
+                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : 'Cerrar vínculo'}
                     </div>
                     {t.action.kind === 'registrar_interaccion' ? (
                       <div className="text-[13px] text-foreground/90">
@@ -589,6 +609,11 @@ export default function SirChatPage() {
                       <div className="text-[13px] text-foreground/90">
                         <span className="font-medium">{t.action.nombre}</span>
                         <div className="mt-0.5 text-muted-foreground">{t.action.relacion} · {t.action.categoria}</div>
+                      </div>
+                    ) : t.action.kind === 'marcar_habito' ? (
+                      <div className="text-[13px] text-foreground/90">
+                        <span className="font-medium">{t.action.habito}</span>
+                        <div className="mt-0.5 text-muted-foreground">Marcar como hecho hoy</div>
                       </div>
                     ) : (
                       <div className="text-[13px] text-foreground/90">

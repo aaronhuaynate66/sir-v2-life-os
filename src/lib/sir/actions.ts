@@ -61,6 +61,18 @@ export const SIR_ACTION_TOOLS = [
     },
   },
   {
+    name: 'proponer_marcar_habito',
+    description:
+      'Proponé marcar un hábito del día como HECHO (NO lo marques vos, solo proponelo para que Aaron confirme). Usá esto cuando Aaron dice que hizo/completó un hábito ("ya medité", "hice la cama", "leí"). El nombre debe ser el del hábito tal como Aaron lo nombró.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        habito: { type: 'string', description: 'Nombre del hábito tal como Aaron lo nombró (ej. "meditar", "leer 20 min").' },
+      },
+      required: ['habito'],
+    },
+  },
+  {
     name: 'proponer_cerrar_relacion',
     description:
       'Proponé CERRAR un vínculo (NO lo cierres vos, solo proponelo para que Aaron confirme). Usá esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
@@ -101,7 +113,11 @@ export interface ProposedCierre {
   persona: string
   motivo: string
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre
+export interface ProposedHabito {
+  kind: 'marcar_habito'
+  habito: string
+}
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -163,6 +179,11 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
     const persona = str(o.persona, 120)
     if (!persona) return null
     return { kind: 'cerrar_relacion', persona, motivo: str(o.motivo, 280) }
+  }
+  if (toolName === 'proponer_marcar_habito') {
+    const habito = str(o.habito, 120)
+    if (!habito) return null
+    return { kind: 'marcar_habito', habito }
   }
   return null
 }

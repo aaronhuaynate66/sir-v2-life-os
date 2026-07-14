@@ -17,6 +17,8 @@ export function summarizeActionForConfirm(a: ProposedActionResolved): string {
       return `👤 Agregar a ${(a.nombre || '').slice(0, 80)} a tu red.\n\n¿La agrego?`
     case 'cerrar_relacion':
       return `🔚 Cerrar el vínculo con ${a.persona || 'esa persona'}.\n\n¿Lo cierro?`
+    case 'marcar_habito':
+      return `✅ Marcar el hábito "${(a.habito || '').slice(0, 80)}" como hecho hoy.\n\n¿Lo marco?`
     default:
       return '¿Lo guardo?'
   }
