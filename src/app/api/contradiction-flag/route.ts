@@ -18,11 +18,10 @@
 //
 // NUNCA lee person_sensitive_data (aislada de la IA por diseño).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { recordAiUsage } from '@/lib/ai/usage'
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { fetchChatMessages } from '@/lib/chat-messages/read'
@@ -42,7 +41,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 /** Ventana reciente del sustrato que leemos para la muestra del transcript. */
 const SUBSTRATE_SAMPLE = 3000
 /** Debajo de esto, no hay hilo suficiente para juzgar contradicciones. */
@@ -151,27 +149,24 @@ export async function POST(req: NextRequest) {
   }
   const transcript = buildTranscript(subRows, personName)
 
-  // 4. LLM.
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // 4. LLM — vía capa llm/ (router + fallback + telemetría en ai_usage). tier
+  //    balanced: contraste notas↔hilo de un tercero → sensitivity third_party.
   let text = ''
   try {
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 1200,
-      system: CONTRADICTION_SYSTEM,
-      messages: [
-        { role: 'user', content: buildContradictionInput(personName, notes, transcript, subRows.length) },
-      ],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
-    void recordAiUsage(supabase, userId, 'contradiction_flag', MODEL_ID, msg.usage)
+    const res = await complete(
+      {
+        task: 'contradiction_flag', tier: 'balanced', sensitivity: 'third_party', maxTokens: 1200,
+        system: CONTRADICTION_SYSTEM,
+        messages: [
+          { role: 'user', content: buildContradictionInput(personName, notes, transcript, subRows.length) },
+        ],
+      },
+      { supabase, userId },
+    )
+    text = res.text.trim()
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(500, 'No hay proveedor LLM configurado en el server')
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo', m.slice(0, 300))
   }

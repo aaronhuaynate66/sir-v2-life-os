@@ -13,7 +13,7 @@
 1. **`complete()` ya soporta VISIÓN** (`content` acepta bloques `image`, PR #761); el router filtra a proveedores con modelo multimodal (`registry.vision`) y prioriza Anthropic. Falta **tool-calling** para migrar el chat. ⇒ las 14 rutas de visión YA pueden migrar; el chat con tools NO hasta extender la capa.
 2. **~35 constantes `MODEL_ID` hardcodeadas** por archivo (deriva de model-ids); migrar centraliza en el registry.
 3. **Telemetría de costo solo vía `complete()`** → migrar = observabilidad gratis.
-4. **Ya migradas (NO re-hacer):** `briefing/daily`, `daily-actions/message`, `alignment/narrative`, `alignment/infer-links`.
+4. **Bucket (a) prácticamente COMPLETO** (2026-07-14): todas las rutas de TEXTO migradas a `complete()`. Lo único que queda con `new Anthropic()` directo son las rutas de **visión** (track F) + el **chat con tools** (`sir/*`, `telegram`) + `ai/health` (algoritmo-primero). Ver checklist abajo.
 
 ## Estado de migración (checklist)
 
@@ -22,17 +22,13 @@
 - [x] `api/daily-actions/message` — `message_draft`/cheap
 - [x] `api/alignment/narrative` — `synthesis`/capable
 - [x] `api/alignment/infer-links` — `extract`/cheap
+- [x] `api/self/rumbo` · `api/self/arquetipo` · `api/self/coherencia` (#760)
+- [x] `api/ingest/document` · `api/seed/extract` · `api/capture/note` · `api/empresas/extract` · `api/relaciones/intake-suggest`
+- [x] `api/person-synthesis` · `api/person-briefing` · `api/ciclo/event-brief` · `api/horario/brief` (#763, balanced)
+- [x] **batch 2 (#764):** `api/decision` · `api/decision/premortem` · `api/reason` · `api/influence/rehearse` · `api/influence/frame` · `api/profiling/relational` · `api/profiling/hypotheses` · `api/alter-ego` (capable); `api/empresas/strategic` · `api/contradiction-flag` · `api/verificar/deep` · `api/longitudinal/correlation-narrative` · `api/objectives/smart` · `api/objetivos/suggest` (balanced); `api/relato/reprocess-tone` (cheap=Haiku) · `api/capture/whatsapp-export/interpret` (balanced — se dejó Sonnet por fidelidad, NO cheap); `lib/memories/deriveForPerson` · `lib/longitudinal/generate` (helpers)
 
-### (a) Migrar tal cual (texto, sin tools/visión) — behavior-preserving, MÁXIMO AHORRO
-Ordenadas por ahorro (tokens × frecuencia):
-- [ ] `api/ingest/document` (3000 tok) → `cheap`  ·  `api/seed/extract` (2500) → `cheap`
-- [ ] `lib/memories/deriveForPerson` (3500 tok; usada por `api/memories/derive` + `derive-all`) → `balanced` *(helper, M)*
-- [ ] `api/capture/whatsapp-export/interpret` (1500, por-chunk) → `cheap`
-- [ ] `lib/longitudinal/generate` (900; usada por `api/longitudinal/weekly` + `api/cron/weekly-summary`) → `balanced` *(helper, M)*
-- [ ] extracción corta → `cheap`: `api/capture/note`, `api/empresas/extract`, `api/relaciones/intake-suggest`
-- [ ] narrativa corta Sonnet→barato: `api/longitudinal/correlation-narrative`→`cheap`, `api/horario/brief`→`cheap`; `api/self/rumbo`, `api/self/arquetipo`, `api/self/coherencia`, `api/empresas/strategic`, `api/ciclo/event-brief`, `api/person-synthesis`, `api/person-briefing`, `api/contradiction-flag`, `api/verificar/deep` → `balanced`
-- [ ] alto-valor → `capable` (migrar por fallback+telemetría, NO bajar calidad): `api/decision`, `api/decision/premortem`, `api/reason`, `api/influence/rehearse`, `api/influence/frame`, `api/profiling/relational`, `api/profiling/hypotheses`, `api/alter-ego`
-- [ ] `api/relato/reprocess-tone` (ya Haiku) → `cheap`
+### (a) Migrar tal cual (texto) — ✅ COMPLETO
+Todas migradas (arriba). Nota: `whatsapp-export/interpret` quedó en `balanced` (no `cheap`) para no degradar la extracción del import; revisar Haiko-vs-Sonnet antes de bajarla. `correlation-narrative` quedó en `balanced` (el audit sugería `cheap`/algoritmo — evaluar en track b).
 
 ### (b) Reemplazar por algoritmo (matar/reducir IA)
 - [ ] `api/longitudinal/correlation-narrative` → templar prosa desde el digest (ya es determinístico) o dejar `cheap` *(evaluar calidad)*

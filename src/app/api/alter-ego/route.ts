@@ -5,7 +5,7 @@
 // ANTHROPIC_API_KEY, agrega una "voz" del alter ego que las aplica al caso. Lo
 // determinístico siempre sale; el LLM es opcional. NO diagnostica, NO manipula.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -16,8 +16,6 @@ import type { Domain } from '@/lib/philosophy/schools'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
-
-const MODEL_ID = 'claude-sonnet-4-5'
 
 function domainFromAmbito(ambito?: string | null, relationship?: string | null): Domain | undefined {
   const a = (ambito ?? '').toLowerCase()
@@ -59,24 +57,24 @@ export async function POST(req: NextRequest) {
     blindSpot: p.school.blindSpot, reason: p.reason, isCheck: !!p.isCheck,
   }))
 
-  // Voz del alter ego (opcional, best-effort).
+  // Voz del alter ego (opcional, best-effort) — vía capa llm/. tier capable:
+  // postura filosófica para Aaron. Sin proveedor → sin voz (lo determinístico igual sale).
   let voice: string | undefined
-  if (process.env.ANTHROPIC_API_KEY) {
-    try {
-      const client = new Anthropic({ maxRetries: 1 })
-      const list = picks.map((p) => `- ${p.name}${p.isCheck ? ' (freno ético)' : ''}: ${p.stance}`).join('\n')
-      const msg = await client.messages.create({
-        model: MODEL_ID, max_tokens: 400,
+  try {
+    const list = picks.map((p) => `- ${p.name}${p.isCheck ? ' (freno ético)' : ''}: ${p.stance}`).join('\n')
+    const res = await complete(
+      {
+        task: 'alter_ego', tier: 'capable', sensitivity: 'self', maxTokens: 400,
         system: "Sos el 'alter ego' de Aaron: una voz interior lúcida que lo ayuda a encarar una situación desde una postura filosófica. Hablás en segunda persona, directo, sin floritura ni citas de manual. NO diagnostiques, NO propongas manipular a nadie. Máximo 4 frases: qué postura tomar acá y el PRIMER movimiento concreto.",
         messages: [{ role: 'user', content: `Situación: ${situation}\n\nPosturas que mejor sirven:\n${list}\n\nLínea que no se cruza: ${stance.ethicalLine}\n\nDame la voz del alter ego.` }],
-      })
-      const block = msg.content.find((b) => b.type === 'text')
-      voice = block && block.type === 'text' ? block.text.trim() : undefined
-    } catch (e) {
-      // best-effort: sin voz, igual devolvemos lo determinístico.
-      voice = undefined
-      void e
-    }
+      },
+      { supabase, userId },
+    )
+    voice = res.text.trim() || undefined
+  } catch (e) {
+    // best-effort: sin voz, igual devolvemos lo determinístico.
+    voice = undefined
+    void e
   }
 
   await logEvent(supabase, userId, { type: 'alter-ego', ok: true, route: 'alter-ego', meta: { tags: stance.tags, domain: stance.domain, picks: picks.map((p) => p.id), withVoice: !!voice } })

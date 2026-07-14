@@ -4,7 +4,7 @@
 // y el evaluador PURO (engines/decision) computa el ponderado + veredicto con el
 // gate de reversibilidad. Devuelve el desglose. Session-auth, Sonnet, on-demand.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -17,8 +17,6 @@ import { todayLimaKey } from '@/lib/dates/limaDay'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 40
-
-const MODEL_ID = 'claude-sonnet-4-5'
 
 const SYSTEM = `Sos SIR V2, el sistema del usuario (Aaron). Evaluás una DECISIÓN en 7 dimensiones.
 Para cada dimensión asigná un "score" de -2 (muy en contra) a +2 (muy a favor), y una "note" de 1 línea concreta.
@@ -83,24 +81,26 @@ export async function POST(req: NextRequest) {
   const rl = await enforceRateLimit(supabase, auth.user.id, 'generation')
   if (!rl.ok) return rl.response
 
-  if (!process.env.ANTHROPIC_API_KEY) return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  const client = new Anthropic({ maxRetries: 2 })
+  const userId = auth.user.id
   const user = `Decisión: ${title || '(sin título)'}\n${description ? `Contexto: ${description}` : ''}\n\nPuntuá las 7 dimensiones.`
 
+  // LLM vía capa llm/ (router + fallback + telemetría). tier capable: puntaje de
+  // decisión de Aaron (juicio) — no bajar modelo (AI_USAGE_AUDIT bucket a).
   async function call(extra = ''): Promise<string> {
-    const msg = await client.messages.create({
-      model: MODEL_ID, max_tokens: 700,
-      system: extra ? `${SYSTEM}\n\n${extra}` : SYSTEM,
-      messages: [{ role: 'user', content: user }],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    return block && block.type === 'text' ? block.text : ''
+    const res = await complete(
+      { task: 'decision', tier: 'capable', sensitivity: 'self', maxTokens: 700,
+        system: extra ? `${SYSTEM}\n\n${extra}` : SYSTEM,
+        messages: [{ role: 'user', content: user }] },
+      { supabase, userId },
+    )
+    return res.text
   }
 
   let raw = ''
   try { raw = await call() } catch (e) {
     reportApiError(e)
-    return errorJson(502, 'Falló la llamada a Claude', (e instanceof Error ? e.message : String(e)).slice(0, 300))
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    return errorJson(502, 'Falló la llamada al modelo', (e instanceof Error ? e.message : String(e)).slice(0, 300))
   }
 
   let parsed: unknown = null

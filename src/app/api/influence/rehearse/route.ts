@@ -6,7 +6,7 @@
 // acciones como HIPÓTESIS (ensayo, no predicción), con influencia habilitada y
 // riesgos de otros dominios separados. NO escribe.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -29,8 +29,6 @@ export const dynamic = 'force-dynamic'
 // crece y una persona como Diana llegaba a cortar a los 60s. La plataforma soporta
 // hasta 300s; 120s cubre el peor caso de doble llamada con holgura.
 export const maxDuration = 120
-
-const MODEL_ID = 'claude-sonnet-4-5'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -140,23 +138,24 @@ export async function POST(req: NextRequest) {
 
   const user = buildRehearseUserContent(ctx, objective) + (learningsBlock ? `\n\n${learningsBlock}` : '')
 
-  if (!process.env.ANTHROPIC_API_KEY) return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // LLM vía capa llm/ (router + fallback + telemetría). tier capable:
+  // ensayo de abordaje (carga contexto de un tercero → sensitivity third_party).
   async function call(extra = ''): Promise<string> {
-    const msg = await client.messages.create({
-      model: MODEL_ID, max_tokens: 1600,
-      system: extra ? `${REHEARSE_SYSTEM_PROMPT}\n\n${extra}` : REHEARSE_SYSTEM_PROMPT,
-      // Prefill '{' fuerza a Claude a arrancar el JSON directo → UNA sola llamada
-      // confiable, sin el doble-call de reintento que empujaba el request > 60s
-      // (Vercel Hobby corta a 60s e IGNORA el maxDuration=120 de arriba).
-      messages: [
-        { role: 'user', content: user },
-        { role: 'assistant', content: '{' },
-      ],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    const text = block && block.type === 'text' ? block.text : ''
+    const res = await complete(
+      {
+        task: 'influence_rehearse', tier: 'capable', sensitivity: 'third_party', maxTokens: 1600,
+        system: extra ? `${REHEARSE_SYSTEM_PROMPT}\n\n${extra}` : REHEARSE_SYSTEM_PROMPT,
+        // Prefill '{' fuerza a Claude a arrancar el JSON directo → UNA sola llamada
+        // confiable, sin el doble-call de reintento que empujaba el request > 60s
+        // (Vercel Hobby corta a 60s e IGNORA el maxDuration=120 de arriba).
+        messages: [
+          { role: 'user', content: user },
+          { role: 'assistant', content: '{' },
+        ],
+      },
+      { supabase, userId },
+    )
+    const text = res.text
     return text ? `{${text}` : ''
   }
 
@@ -178,7 +177,8 @@ Reformulacion recomendada: ${ethics.safeAggressiveReframe}
     const detail = (e instanceof Error ? e.message : String(e)).slice(0, 300)
     reportApiError(e, { route: 'influence/rehearse' })
     await logEvent(supabase, userId, { type: 'rehearse', ok: false, route: 'influence/rehearse', durationMs: Date.now() - t0, meta: { stage: 'llm', personId, detail } })
-    return errorJson(502, 'Falló la llamada a Claude', detail)
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    return errorJson(502, 'Falló la llamada al modelo', detail)
   }
 
   const result = parseRehearseJson(raw)

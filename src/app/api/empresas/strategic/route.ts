@@ -5,7 +5,7 @@
 // Misma línea que el briefing: estrategia legítima sobre vínculos genuinos, sin
 // engaño ni daño.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -22,8 +22,6 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -85,10 +83,6 @@ export async function POST(req: NextRequest) {
   const hub = buildCompanyHub(slug, people, goals)
   if (!hub.found) return errorJson(404, 'Empresa no encontrada')
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(503, 'IA no disponible', 'Falta configurar ANTHROPIC_API_KEY.')
-  }
-
   const input: StrategicInput = {
     label: hub.label,
     level: hub.level,
@@ -103,20 +97,21 @@ export async function POST(req: NextRequest) {
     goals: hub.goals.map((g) => g.title),
   }
 
+  // LLM vía capa llm/ (router + fallback + telemetría). tier balanced:
+  // lectura estratégica de una empresa (AI_USAGE_AUDIT bucket a). IA opcional → 503.
   try {
-    const client = new Anthropic({ maxRetries: 2 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 500,
-      system: STRATEGIC_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildStrategicInput(input) }],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    const insight = parseStrategicInsight(block && block.type === 'text' ? block.text : '')
+    const res = await complete(
+      { task: 'empresas_strategic', tier: 'balanced', sensitivity: 'self', maxTokens: 500,
+        system: STRATEGIC_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildStrategicInput(input) }] },
+      { supabase, userId },
+    )
+    const insight = parseStrategicInsight(res.text)
     if (!insight) return errorJson(502, 'No se pudo generar la lectura')
     return NextResponse.json({ insight }, { status: 200 })
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(503, 'IA no disponible', 'No hay proveedor LLM configurado.')
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo', m.slice(0, 300))
   }

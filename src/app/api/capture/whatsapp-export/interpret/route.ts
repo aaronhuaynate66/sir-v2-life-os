@@ -9,10 +9,9 @@
 // Rate limit: bucket 'whatsapp_export' (alto: una acción intencional puede
 // gatillar decenas de bloques legítimos).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { recordAiUsage, type TokenUsage } from '@/lib/ai/usage'
 
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
@@ -26,9 +25,10 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_CHUNK_CHARS = 120_000
 const MIN_CHUNK_CHARS = 1
+
+type Supabase = Awaited<ReturnType<typeof createClient>>
 
 interface ErrorBody {
   error: string
@@ -52,21 +52,26 @@ interface PostBody {
   person_name?: unknown
 }
 
+// Vía capa llm/ (tier cheap: extracción por bloque). La telemetría (task
+// 'import_whatsapp') la registra complete() por cada llamada.
 async function callInterpret(
-  client: Anthropic,
   system: string,
   userMsg: string,
+  supabase: Supabase,
+  userId: string,
   extra = '',
-): Promise<{ text: string; usage: TokenUsage }> {
+): Promise<string> {
   const sys = extra ? `${system}\n\n${extra}` : system
-  const msg = await client.messages.create({
-    model: MODEL_ID,
-    max_tokens: 1500,
-    system: sys,
-    messages: [{ role: 'user', content: userMsg }],
-  })
-  const block = msg.content.find((b) => b.type === 'text')
-  return { text: block && block.type === 'text' ? block.text : '', usage: msg.usage as TokenUsage }
+  const res = await complete(
+    // tier balanced (=Sonnet en Anthropic-only): preserva la calidad de extracción
+    // del import de WhatsApp. El audit lo marcó 'cheap' (Haiku) por ahorro, pero la
+    // fidelidad del contenido de relaciones es crítica → NO bajamos el modelo hasta
+    // validar Haiku contra Sonnet en este flujo. Ver AI_USAGE_AUDIT bucket (a).
+    { task: 'import_whatsapp', tier: 'balanced', sensitivity: 'third_party', maxTokens: 1500,
+      system: sys, messages: [{ role: 'user', content: userMsg }] },
+    { supabase, userId },
+  )
+  return res.text
 }
 
 export async function POST(req: NextRequest) {
@@ -95,21 +100,16 @@ export async function POST(req: NextRequest) {
   }
   const personName = typeof body.person_name === 'string' ? body.person_name : ''
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
   const system = getInterpretSystemPrompt(personName)
   const userMsg = buildInterpretUserMessage(chunkText)
+  const userId = authData.user.id
 
   let raw = ''
-  const usageAcc: TokenUsage = { input_tokens: 0, output_tokens: 0 }
-  const addUsage = (u: TokenUsage) => { usageAcc.input_tokens = (usageAcc.input_tokens ?? 0) + (u.input_tokens ?? 0); usageAcc.output_tokens = (usageAcc.output_tokens ?? 0) + (u.output_tokens ?? 0) }
   try {
-    const r = await callInterpret(client, system, userMsg)
-    raw = r.text; addUsage(r.usage)
+    raw = await callInterpret(system, userMsg, supabase, userId)
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(500, 'No hay proveedor LLM configurado en el server')
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la interpretación del bloque', msg.slice(0, 300))
   }
@@ -119,13 +119,13 @@ export async function POST(req: NextRequest) {
     parsed = JSON.parse(stripJsonFences(raw))
   } catch {
     try {
-      const r2 = await callInterpret(
-        client,
+      raw = await callInterpret(
         system,
         userMsg,
+        supabase,
+        userId,
         'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON, sin texto ni markdown fences. Empezá con `{` y terminá con `}`.',
       )
-      raw = r2.text; addUsage(r2.usage)
       parsed = JSON.parse(stripJsonFences(raw))
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
@@ -137,6 +137,5 @@ export async function POST(req: NextRequest) {
   if (!interpretation) {
     return errorJson(422, 'La interpretación no cumple el formato esperado')
   }
-  void recordAiUsage(supabase, authData.user.id, 'import_whatsapp', MODEL_ID, usageAcc)
   return NextResponse.json({ interpretation }, { status: 200 })
 }

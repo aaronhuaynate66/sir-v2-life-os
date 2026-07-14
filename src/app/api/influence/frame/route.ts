@@ -6,7 +6,7 @@
 // riesgos de fraude/coercion/exposicion se evalúan aparte). Session-auth, rate-limit 'generation',
 // 1 retry si el JSON falla. NO escribe nada.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -19,8 +19,6 @@ import { checkEthics } from '@/engines/ethics'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 40
-
-const MODEL_ID = 'claude-sonnet-4-5'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -86,17 +84,16 @@ export async function POST(req: NextRequest) {
   }
   const user = buildFrameUserContent(ctx, objective)
 
-  if (!process.env.ANTHROPIC_API_KEY) return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // LLM vía capa llm/ (router + fallback + telemetría). tier capable:
+  // encuadre de abordaje (carga memorias de un tercero → sensitivity third_party).
   async function call(extra = ''): Promise<string> {
-    const msg = await client.messages.create({
-      model: MODEL_ID, max_tokens: 900,
-      system: extra ? `${FRAME_SYSTEM_PROMPT}\n\n${extra}` : FRAME_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: user }],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    return block && block.type === 'text' ? block.text : ''
+    const res = await complete(
+      { task: 'influence_frame', tier: 'capable', sensitivity: 'third_party', maxTokens: 900,
+        system: extra ? `${FRAME_SYSTEM_PROMPT}\n\n${extra}` : FRAME_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: user }] },
+      { supabase, userId },
+    )
+    return res.text
   }
 
   const ethicsExtra = ethics.verdict === 'caution' || ethics.verdict === 'high_risk'
@@ -112,7 +109,8 @@ Reformulacion recomendada: ${ethics.safeAggressiveReframe}
     raw = await call(ethicsExtra)
   } catch (e) {
     reportApiError(e, { route: 'influence/frame' })
-    return errorJson(502, 'Falló la llamada a Claude', (e instanceof Error ? e.message : String(e)).slice(0, 300))
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    return errorJson(502, 'Falló la llamada al modelo', (e instanceof Error ? e.message : String(e)).slice(0, 300))
   }
 
   let result = parseFrameJson(raw)

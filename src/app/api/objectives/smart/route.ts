@@ -11,7 +11,7 @@
 // Body JSON: { title, description?, category?, targetDate? }
 // Response 200: { smart: { target, baseline?, why, suggestedTargetDate? } }
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -28,8 +28,6 @@ export const dynamic = 'force-dynamic'
 // Coherente con /plan: 60s (máx Hobby) para no arriesgar 504 si el LLM se
 // demora. La salida es chica (~800 tokens), así que normalmente termina <15s.
 export const maxDuration = 60
-
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 
 interface ErrorBody {
   error: string
@@ -66,14 +64,6 @@ export async function POST(req: NextRequest) {
   // Aceptamos title vacío SOLO en modo dictado (el párrafo es la fuente).
   if (!title && !dictation) return errorJson(400, 'title o dictation requerido (string no vacío)')
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(
-      503,
-      'Generación no disponible',
-      'Falta ANTHROPIC_API_KEY. Podés definir el objetivo SMART a mano igual.',
-    )
-  }
-
   const input = {
     title,
     description: typeof body.description === 'string' ? body.description : undefined,
@@ -85,23 +75,25 @@ export async function POST(req: NextRequest) {
     today: todayIso(),
   }
 
+  // LLM vía capa llm/ (router + fallback + telemetría). tier balanced:
+  // definición SMART de un objetivo de Aaron. IA opcional → 503.
   try {
-    const client = new Anthropic({ maxRetries: 2 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 800,
-      system: OBJECTIVE_SMART_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildSmartInput(input) }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-    const smart = parseSmart(text)
+    const res = await complete(
+      { task: 'objective_smart', tier: 'balanced', sensitivity: 'self', maxTokens: 800,
+        system: OBJECTIVE_SMART_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildSmartInput(input) }] },
+      { supabase, userId: authData.user.id },
+    )
+    const smart = parseSmart(res.text)
     if (!smart) {
       return errorJson(502, 'Propuesta vacía del modelo', 'No se pudo extraer una definición SMART. Reintentá.')
     }
     return NextResponse.json({ smart }, { status: 200 })
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(503, 'Generación no disponible', 'No hay proveedor LLM configurado. Podés definir el objetivo SMART a mano igual.')
+    }
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar la definición SMART', detail)
   }

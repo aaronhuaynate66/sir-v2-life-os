@@ -7,9 +7,9 @@
 // Siempre filtra por user_id EXPLICITO, así funciona igual con un cliente
 // RLS (datos propios) o service-role (cualquier user, acotado a mano).
 
-import Anthropic from '@anthropic-ai/sdk'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { complete, LlmError } from '@/lib/llm'
 import { rowToLongitudinalSummary } from './fetch'
 import { moonPhase } from '@/lib/lunar/phase'
 import { cyclePhase } from '@/lib/ciclo/phase'
@@ -191,40 +191,43 @@ export async function generateWeeklySummaryForUser(
 
   const sourceCounts = { logs: logRows.length, observations: obsRows.length, memories: memRows.length }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return { status: 'no_api_key', detail: 'ANTHROPIC_API_KEY no configurada en el server' }
-  }
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // LLM vía capa llm/ (router + fallback + telemetría). tier balanced:
+  // retrospectiva longitudinal de Aaron (AI_USAGE_AUDIT bucket a).
   let text = ''
   let inputTokens: number | null = null
   let outputTokens: number | null = null
+  let modelUsed = WEEKLY_MODEL_ID
   try {
-    const msg = await client.messages.create({
-      model: WEEKLY_MODEL_ID,
-      max_tokens: 900,
-      system: WEEKLY_SUMMARY_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: buildWeeklyInput({
-            periodStart,
-            periodEnd,
-            logStats,
-            observations,
-            memories,
-            lunarPhasesInWeek,
-            lunarStats,
-            cycleNotes,
-          }),
-        },
-      ],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
-    inputTokens = msg.usage?.input_tokens ?? null
-    outputTokens = msg.usage?.output_tokens ?? null
+    const res = await complete(
+      {
+        task: 'weekly_summary', tier: 'balanced', sensitivity: 'self', maxTokens: 900,
+        system: WEEKLY_SUMMARY_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: buildWeeklyInput({
+              periodStart,
+              periodEnd,
+              logStats,
+              observations,
+              memories,
+              lunarPhasesInWeek,
+              lunarStats,
+              cycleNotes,
+            }),
+          },
+        ],
+      },
+      { supabase, userId },
+    )
+    text = res.text.trim()
+    inputTokens = res.usage.inputTokens
+    outputTokens = res.usage.outputTokens
+    modelUsed = res.model
   } catch (e) {
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return { status: 'no_api_key', detail: 'No hay proveedor LLM configurado en el server' }
+    }
     return { status: 'llm_error', detail: (e instanceof Error ? e.message : String(e)).slice(0, 300) }
   }
   if (!text) return { status: 'llm_error', detail: 'El modelo devolvió un resumen vacío' }
@@ -238,7 +241,7 @@ export async function generateWeeklySummaryForUser(
       period_end: periodEnd,
       summary_text: text,
       source_counts: sourceCounts,
-      model_used: WEEKLY_MODEL_ID,
+      model_used: modelUsed,
       input_tokens: inputTokens,
       output_tokens: outputTokens,
     })

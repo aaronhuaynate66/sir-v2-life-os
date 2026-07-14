@@ -3,7 +3,7 @@
 // NO persiste: la propuesta prefilla el formulario para confirmar/editar.
 // Espeja /api/relaciones/intake-suggest.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -18,8 +18,6 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -40,21 +38,20 @@ export async function POST(req: NextRequest) {
     return errorJson(400, 'Texto insuficiente', 'Contale a SIR de qué se trata el objetivo (mínimo una frase).')
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // LLM vía capa llm/ (router + fallback + telemetría). tier balanced:
+  // estructura un objetivo de Aaron desde relato libre.
   let raw = ''
   try {
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 800,
-      system: GOAL_SUGGEST_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildGoalSuggestInput(text) }],
-    })
-    const tb = msg.content.find((b) => b.type === 'text')
-    raw = tb && tb.type === 'text' ? tb.text : ''
+    const res = await complete(
+      { task: 'goal_suggest', tier: 'balanced', sensitivity: 'self', maxTokens: 800,
+        system: GOAL_SUGGEST_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildGoalSuggestInput(text) }] },
+      { supabase, userId: authData.user.id },
+    )
+    raw = res.text
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(500, 'No hay proveedor LLM configurado en el server')
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo', m.slice(0, 300))
   }
