@@ -7,8 +7,8 @@
 // Body JSON: { text: string }
 // Response 200: { extract: NoteExtract }
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { complete, LlmError } from '@/lib/llm'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
@@ -18,8 +18,6 @@ import { NOTE_EXTRACT_SYSTEM_PROMPT, buildNoteInput, parseNoteExtract } from '@/
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_TEXT = 6000
 
 interface ErrorBody {
@@ -54,27 +52,24 @@ export async function POST(req: NextRequest) {
   const text = typeof body.text === 'string' ? body.text.trim().slice(0, MAX_TEXT) : ''
   if (text.length < 3) return errorJson(400, 'text requerido (texto no vacio)')
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(503, 'Extracción no disponible', 'Falta ANTHROPIC_API_KEY.')
-  }
-
   try {
-    const client = new Anthropic({ maxRetries: 2 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 600,
+    const res = await complete({
+      task: 'extract',
+      sensitivity: 'third_party',
       system: NOTE_EXTRACT_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildNoteInput(text, todayInLima()) }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    const raw = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-    const extract = parseNoteExtract(raw)
+      maxTokens: 600,
+    }, { supabase, userId: authData.user.id })
+    const extract = parseNoteExtract(res.text)
     if (!extract) {
       return errorJson(422, 'Sin datos en la nota', 'No encontré datos claros sobre la persona en esa nota.')
     }
     return NextResponse.json({ extract }, { status: 200 })
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(503, 'Extracción no disponible', 'No hay proveedor LLM configurado.')
+    }
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo procesar la nota', detail)
   }

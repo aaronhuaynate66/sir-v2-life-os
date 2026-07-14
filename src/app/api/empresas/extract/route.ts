@@ -9,8 +9,8 @@
 // NO persiste: devuelve campos para que EditOrgProfile los muestre a revisión y
 // el usuario guarde con el POST /api/empresas/profile existente.
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { complete, LlmError } from '@/lib/llm'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
@@ -26,8 +26,6 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_HTML_BYTES = 600_000
 
 function errorJson(status: number, error: string, detail?: string) {
@@ -117,25 +115,24 @@ export async function POST(req: NextRequest) {
 
   // 2) Texto pegado → extracción IA (camino robusto). Pisa la descripción de meta.
   if (text) {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return errorJson(503, 'IA no disponible', 'Falta configurar ANTHROPIC_API_KEY.')
-    }
     try {
-      const client = new Anthropic({ maxRetries: 2 })
-      const msg = await client.messages.create({
-        model: MODEL_ID,
-        max_tokens: 700,
+      const res = await complete({
+        task: 'extract',
+        sensitivity: 'none',
         system: EXTRACT_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildExtractInput({ text, label }) }],
-      })
-      const block = msg.content.find((b) => b.type === 'text')
-      const parsed = parseExtraction(block && block.type === 'text' ? block.text : '')
+        maxTokens: 700,
+      }, { supabase, userId: authData.user.id })
+      const parsed = parseExtraction(res.text)
       if (parsed) {
         if (parsed.description) description = parsed.description
         notes = foldNotes(parsed.notes, parsed.sectors)
       }
     } catch (e) {
       reportApiError(e)
+      if (e instanceof LlmError && e.code === 'no_provider') {
+        return errorJson(503, 'IA no disponible', 'No hay proveedor LLM configurado.')
+      }
       const m = e instanceof Error ? e.message : String(e)
       return errorJson(502, 'Falló la extracción con IA', m.slice(0, 300))
     }
