@@ -4,8 +4,8 @@
 // a la IA que proponga identidad + tipo de relación. NO persiste: la propuesta
 // se confirma/edita en la UI. Espeja el patrón de /api/empresas/extract.
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { complete, LlmError } from '@/lib/llm'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
@@ -20,8 +20,6 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -72,24 +70,22 @@ export async function POST(req: NextRequest) {
   const hasAny = signals.linkedin || signals.instagram || signals.whatsapp
   if (!hasAny) return errorJson(400, 'Sin señales para analizar')
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(503, 'IA no disponible', 'Falta configurar ANTHROPIC_API_KEY.')
-  }
-
   try {
-    const client = new Anthropic({ maxRetries: 2 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 400,
+    const res = await complete({
+      task: 'extract',
+      sensitivity: 'third_party',
       system: INTAKE_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildIntakeInput(signals) }],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    const suggestion = parseIntakeSuggestion(block && block.type === 'text' ? block.text : '')
+      maxTokens: 400,
+    }, { supabase, userId: authData.user.id })
+    const suggestion = parseIntakeSuggestion(res.text)
     if (!suggestion) return errorJson(502, 'No se pudo proponer una identidad')
     return NextResponse.json({ suggestion }, { status: 200 })
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(503, 'IA no disponible', 'No hay proveedor LLM configurado.')
+    }
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo', m.slice(0, 300))
   }
