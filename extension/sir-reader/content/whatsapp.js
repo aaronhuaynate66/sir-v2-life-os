@@ -15,9 +15,16 @@
     // drawer "Detalles del perfil"). Sin scope, querySelector agarraba el del
     // panel de perfil → el hilo salía "Detalles del perfil" y no matcheaba a
     // nadie. El header de la conversación SIEMPRE vive dentro de #main.
-    const header =
-      document.querySelector('#main header [title], #main header span[dir="auto"][title]') ||
-      document.querySelector('#main header span[dir="auto"]');
+    // WhatsApp mete un [title="Detalles del perfil"] DENTRO de #main header,
+    // ANTES del nombre real → el scope de #757 no alcanzaba. Elegimos el primer
+    // elemento VISIBLE (rect > 0) cuyo nombre NO sea ese label del drawer.
+    const header = Array.from(document.querySelectorAll(
+      '#main header span[dir="auto"], #main header [title], #main header span[dir="auto"][title]'
+    )).find((el) => {
+      const r = el.getBoundingClientRect();
+      const name = (el.getAttribute('title') || text(el)).trim();
+      return r.width > 0 && r.height > 0 && name && !/^detalles del perfil$/i.test(name);
+    });
     const name = header ? (header.getAttribute('title') || text(header)) : '';
     // Guardas: sin #main abierto no hay conversación; y descartamos el label del
     // drawer por si algún layout lo colara.
@@ -88,16 +95,24 @@
 
   function extractMessages(container) {
     const out = [];
-    // Cada mensaje entrante/saliente tiene .message-in / .message-out.
-    const rows = container.querySelectorAll('.message-in, .message-out');
+    // WhatsApp cambia seguido sus clases. La señal más estable para texto sigue
+    // siendo data-pre-plain-text del bloque copiable.
+    const rows = container.querySelectorAll(
+      '.message-in, .message-out, .copyable-text[data-pre-plain-text]'
+    );
     rows.forEach((row) => {
-      const copyable = row.querySelector('.copyable-text');
+      const copyable = row.matches('.copyable-text[data-pre-plain-text]')
+        ? row
+        : row.querySelector('.copyable-text[data-pre-plain-text], .copyable-text');
       const pre = copyable ? copyable.getAttribute('data-pre-plain-text') : '';
       const { ts, author } = parsePrePlain(pre);
       // Texto del mensaje.
       const body =
+        copyable?.querySelector('span.selectable-text.copyable-text') ||
+        copyable?.querySelector('span.selectable-text') ||
         row.querySelector('span.selectable-text.copyable-text') ||
         row.querySelector('span.selectable-text') ||
+        copyable?.querySelector('span') ||
         row.querySelector('.copyable-text span');
       const t = text(body);
       if (!t) return;
