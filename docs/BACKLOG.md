@@ -1,9 +1,27 @@
 # SIR V2 — Backlog Canónico
 
-> **Última actualización:** 08/07/2026 (barrido de verificación en vivo + reconciliación: varios "pendientes" ya estaban hechos).
+> **Última actualización:** 14/07/2026 (reconciliación grande — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## 🔁 RECONCILIACIÓN 2026-07-14 — el backlog estaba MUY atrasado
+
+Verificado contra el código en vivo. Varios ítems listados abajo como "grandes / no empezados" o "pendientes" **YA ESTÁN construidos** (deuda de documentación, no de código). NO re-hacer:
+
+- ✅ **Familia / person↔person** — migración `0035_person_links`, `personLinkAdapter`, tipos `PersonLink/FamilyKind/LinkKind`, `FamiliaPanel.tsx`, aristas en el grafo (`GraphView`), + `NetworkPathsCard`/`NetworkIntrosPanel`/`MencionadasPanel`/`InfluenceMapCard`. **HECHO** (era "sub-proyecto diferido").
+- ✅ **Calendar v2** — OAuth Google (`/api/calendar/oauth/google/{start,callback,status}`), `connections` (multi-calendario), `events` con **POST (crea eventos → bidireccional)**. Gap REAL: falta el proveedor **Microsoft/Outlook** (solo Google). Requiere que Aaron cree la OAuth app de MS.
+- ✅ **SIR por WhatsApp (canal captura)** — `/api/whatsapp/webhook` real: recibe mensajes (allowlist), corre `runRelatoIngest`, responde. **Captura funcionando.** Gap posible: nudges proactivos.
+- ✅ **Ingestión documental** — `/api/ingest/document` + `/captura/documento` (UI): PDF (pdfjs client-side) + texto pegado. Gap REAL: formatos no-PDF (DOCX…) vía MarkItDown — pero PDF+texto cubre el 90%.
+- ✅ **Fase 3d — memoria que aprende** — `/api/learnings` + `lib/learnings/recall.ts`, cableado al brief del horario. **HECHO** (al menos el núcleo de learnings/recall).
+- ✅ **Cross-referencing por ubicación** — `location` en Person + usado en `lib/agenda/build.ts` + `ProximoPanel`.
+- ✅ **`/100` score explícito** y ✅ **toggle privacidad finanzas /timeline** (filtro por fuente): ya estaban.
+
+**Gaps REALES que quedan** (lo poco que NO está): Calendar → provider Microsoft/Outlook (necesita OAuth app de Aaron); Ingestión → formatos DOCX (MarkItDown); **Etapas 5–6** (aspiracional, sin alcance concreto definido); nudges proactivos de SIR-WhatsApp. Deuda técnica menor: consistencia temporal de hechos (parcial), last-write-wins por fila (impacto nulo mono-usuario). Limpieza: huérfanos de Storage (bloqueado: decidir retención), mobile QA, empty states parciales.
+
+> Migración LLM (multi-proveedor `lib/llm/`): COMPLETA — texto + visión por `complete()`, chat en Haiku, OpenRouter activo. Ver `docs/AI_USAGE_AUDIT.md` + `docs/LLM_PROVIDER_KEYS.md`.
 
 ---
 
