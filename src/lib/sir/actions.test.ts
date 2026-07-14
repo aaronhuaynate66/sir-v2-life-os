@@ -24,6 +24,12 @@ describe('parseProposedAction', () => {
     expect(parseProposedAction('proponer_crear_persona', { relacion: 'friend' })).toBeNull()
   })
 
+  it('marcar_habito: exige el nombre del hábito', () => {
+    expect(parseProposedAction('proponer_marcar_habito', { habito: 'meditar' })).toEqual({ kind: 'marcar_habito', habito: 'meditar' })
+    expect(parseProposedAction('proponer_marcar_habito', {})).toBeNull()
+    expect(parseProposedAction('proponer_marcar_habito', { habito: '  ' })).toBeNull()
+  })
+
   it('toolName desconocido → null', () => {
     expect(parseProposedAction('otra_cosa', {})).toBeNull()
   })

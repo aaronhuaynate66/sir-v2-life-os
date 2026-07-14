@@ -17,6 +17,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ProposedActionResolved } from '@/lib/sir/askSir'
 import { shouldMaterializeInteraction, interactionLogToMemoryRow } from '@/lib/memories/fromInteractionLog'
 import { generateSlug } from '@/lib/people/slug'
+import { limaDayString } from '@/lib/habits/streak'
 
 export interface ExecuteResult {
   ok: boolean
@@ -24,14 +25,30 @@ export interface ExecuteResult {
   message: string
 }
 
-/** ¿Este tipo de acción ya se puede ejecutar por chat? Las cuatro. */
+/** ¿Este tipo de acción ya se puede ejecutar por chat? */
 export function isExecutableByChat(kind: string): boolean {
   return (
     kind === 'registrar_interaccion' ||
     kind === 'crear_objetivo' ||
     kind === 'crear_persona' ||
-    kind === 'cerrar_relacion'
+    kind === 'cerrar_relacion' ||
+    kind === 'marcar_habito'
   )
+}
+
+function normText(s: string): string {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+}
+
+/** Matchea un hábito por nombre (exacto normalizado → inclusión). Devuelve la
+ *  fila o null si es ambiguo/no encontrado. */
+function matchHabit(habits: Array<{ id: string; title: string }>, query: string): { id: string; title: string } | null {
+  const q = normText(query)
+  if (!q) return null
+  const exact = habits.find((h) => normText(h.title) === q)
+  if (exact) return exact
+  const inc = habits.filter((h) => { const t = normText(h.title); return t.includes(q) || q.includes(t) })
+  return inc.length === 1 ? inc[0] : null
 }
 
 function randSuffix(n: number): string {
@@ -202,6 +219,30 @@ export async function executeProposedAction(
       ok: true,
       message: `🔚 Cerré tu vínculo con ${name}: dejo de sugerirte retomar contacto${paused > 0 ? `, y pausé ${paused} objetivo(s) ligado(s)` : ''}. No borré nada.`,
     }
+  }
+
+  if (action.kind === 'marcar_habito') {
+    const query = (action.habito || '').trim()
+    if (!query) return { ok: false, message: 'No entendí qué hábito marcar.' }
+    const { data: habitsRaw } = await supabase
+      .from('habits').select('id, title').eq('user_id', userId).eq('active', true).limit(200)
+    const habits = ((habitsRaw as Array<{ id: string; title: string }>) ?? [])
+    if (habits.length === 0) return { ok: false, message: 'No tenés hábitos activos cargados.' }
+    const hit = matchHabit(habits, query)
+    if (!hit) {
+      return { ok: false, message: `No encontré un hábito que matchee "${query.slice(0, 60)}". Tus hábitos: ${habits.slice(0, 8).map((h) => h.title).join(', ')}.` }
+    }
+    const target = limaDayString(new Date())
+    // Idempotente: si ya está marcado hoy, no lo desmarcamos (a diferencia del
+    // toggle de la web) — "ya medité" siempre significa marcar, nunca desmarcar.
+    const { data: existing } = await supabase
+      .from('habit_checkins').select('id')
+      .eq('user_id', userId).eq('habit_id', hit.id).eq('date', target).maybeSingle()
+    if (existing) return { ok: true, message: `✅ "${hit.title}" ya estaba marcado hoy. Listo.` }
+    const { error } = await supabase
+      .from('habit_checkins').insert({ user_id: userId, habit_id: hit.id, date: target })
+    if (error) return { ok: false, message: 'Uf, no pude marcar el hábito. Reintentá en un momento.' }
+    return { ok: true, message: `✅ Marqué "${hit.title}" como hecho hoy.` }
   }
 
   return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hacelo desde la web.' }
