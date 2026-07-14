@@ -10,10 +10,18 @@
   function text(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }
 
   function getThread() {
-    // Título del chat abierto (header).
-    const header = document.querySelector('header [title], header span[dir="auto"][title]');
+    // Título del chat abierto. SCOPEADO a #main (el panel de la conversación):
+    // WhatsApp Web tiene varios <header> (lista de chats, conversación, y el
+    // drawer "Detalles del perfil"). Sin scope, querySelector agarraba el del
+    // panel de perfil → el hilo salía "Detalles del perfil" y no matcheaba a
+    // nadie. El header de la conversación SIEMPRE vive dentro de #main.
+    const header =
+      document.querySelector('#main header [title], #main header span[dir="auto"][title]') ||
+      document.querySelector('#main header span[dir="auto"]');
     const name = header ? (header.getAttribute('title') || text(header)) : '';
-    if (!name) return null;
+    // Guardas: sin #main abierto no hay conversación; y descartamos el label del
+    // drawer por si algún layout lo colara.
+    if (!name || /^detalles del perfil$/i.test(name)) return null;
     return { threadId: `wa:${name}`, threadName: name };
   }
 
