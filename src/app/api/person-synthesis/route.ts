@@ -20,10 +20,9 @@
 // Nota: el paso 4 es un flag-flip (UPDATE), no un DELETE destructivo, así
 // que conserva el historial de síntesis previas.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { recordAiUsage } from '@/lib/ai/usage'
 
 import { createClient } from '@/lib/supabase/server'
 import { enforceRateLimit } from '@/lib/ratelimit'
@@ -49,7 +48,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_CONVERSATIONS = 40
 /** Con al menos esta cantidad de mensajes en el sustrato, sintetizamos del hilo
  *  REAL (texto) en vez del resumen con pérdida. Debajo, cae a observaciones. */
@@ -187,29 +185,31 @@ export async function POST(req: NextRequest) {
     generatedReason = 'manual'
   }
 
-  // 5. LLM
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // 5. LLM — vía capa llm/ (router + fallback + telemetría en ai_usage).
+  //    tier balanced: narrativa corta sobre un vínculo (ver AI_USAGE_AUDIT bucket a).
   let text = ''
   let inputTokens: number | null = null
   let outputTokens: number | null = null
+  let modelUsed = ''
   try {
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 1000,
-      system,
-      messages: [{ role: 'user', content: userContent }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
-    inputTokens = msg.usage?.input_tokens ?? null
-    outputTokens = msg.usage?.output_tokens ?? null
-    void recordAiUsage(supabase, userId, 'person_synthesis', MODEL_ID, msg.usage)
+    const res = await complete(
+      {
+        task: 'person_synthesis', tier: 'balanced', sensitivity: 'third_party',
+        system,
+        messages: [{ role: 'user', content: userContent }],
+        maxTokens: 1000,
+      },
+      { supabase, userId },
+    )
+    text = res.text.trim()
+    inputTokens = res.usage.inputTokens
+    outputTokens = res.usage.outputTokens
+    modelUsed = res.model
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo de síntesis', m.slice(0, 300))
   }
@@ -236,7 +236,7 @@ export async function POST(req: NextRequest) {
       synthesis_text: text,
       source_observation_count: sourceCount,
       source_observation_ids: sourceIds,
-      model_used: MODEL_ID,
+      model_used: modelUsed,
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       is_current: true,

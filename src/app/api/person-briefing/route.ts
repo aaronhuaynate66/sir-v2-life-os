@@ -12,7 +12,7 @@
 //   3. Anthropic Sonnet 4.5. 500 si falta ANTHROPIC_API_KEY.
 //   4. Devolver el texto. NO se escribe a DB (briefing es transitorio).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -38,7 +38,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_MEMORIES = 60
 const SELF_STATE_DAYS = 3
 const DAY_MS = 86_400_000
@@ -277,47 +276,49 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // LLM — vía capa llm/ (router + fallback + telemetría). tier balanced:
+  // briefing narrativo de un vínculo (ver AI_USAGE_AUDIT bucket a).
   let text = ''
   try {
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 600,
-      system: BRIEFING_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: buildBriefingInput(
-            {
-              name: (personRow.name as string) ?? 'esta persona',
-              relationship: (personRow.relationship as string) ?? 'desconocido',
-              category: (personRow.category as string) ?? 'desconocido',
-              lastContact: (personRow.last_contact as string | null) ?? null,
-              importanceScore:
-                personRow.importance_score !== null && personRow.importance_score !== undefined
-                  ? Number(personRow.importance_score)
-                  : undefined,
-              energyImpact: (personRow.energy_impact as string) ?? undefined,
-              organization: (personRow.organization as string | null) ?? undefined,
-              orgGroup: (personRow.org_group as string | null) ?? undefined,
-              recentConflict,
-            },
-            briefingMemories,
-            selfStats,
-            colleagues,
-            activeGoals,
-          ),
-        },
-      ],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
+    const res = await complete(
+      {
+        task: 'person_briefing', tier: 'balanced', sensitivity: 'third_party',
+        system: BRIEFING_SYSTEM_PROMPT,
+        maxTokens: 600,
+        messages: [
+          {
+            role: 'user',
+            content: buildBriefingInput(
+              {
+                name: (personRow.name as string) ?? 'esta persona',
+                relationship: (personRow.relationship as string) ?? 'desconocido',
+                category: (personRow.category as string) ?? 'desconocido',
+                lastContact: (personRow.last_contact as string | null) ?? null,
+                importanceScore:
+                  personRow.importance_score !== null && personRow.importance_score !== undefined
+                    ? Number(personRow.importance_score)
+                    : undefined,
+                energyImpact: (personRow.energy_impact as string) ?? undefined,
+                organization: (personRow.organization as string | null) ?? undefined,
+                orgGroup: (personRow.org_group as string | null) ?? undefined,
+                recentConflict,
+              },
+              briefingMemories,
+              selfStats,
+              colleagues,
+              activeGoals,
+            ),
+          },
+        ],
+      },
+      { supabase, userId },
+    )
+    text = res.text.trim()
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo de briefing', m.slice(0, 300))
   }

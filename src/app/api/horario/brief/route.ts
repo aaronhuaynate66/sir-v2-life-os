@@ -19,7 +19,7 @@
 // (incluido el del día) cachea: las queries con `scope` devuelven error y
 // degradamos a on-demand. Al correr 0065 vuelve el cache. Fail-open, sin romper.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -55,7 +55,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 type Scope = 'day' | 'week' | 'month'
@@ -354,14 +353,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (cached) return NextResponse.json({ ...cached, cached: true }, { status: 200 })
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(
-      503,
-      'Brief no disponible',
-      'Falta ANTHROPIC_API_KEY. El resumen se muestra igual sin la narrativa.',
-    )
-  }
-
   // Fase 3d — sumar las lecciones durables de Aaron al contexto del brief.
   let briefInput = prepared.input
   try {
@@ -375,20 +366,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   } catch { /* sin tabla 0140 → sin bloque */ }
 
+  // LLM — vía capa llm/ (router + fallback + telemetría). tier balanced:
+  // reformula señales del horizonte de Aaron (ver AI_USAGE_AUDIT bucket a).
   let result: BriefResult | null = null
   try {
-    const client = new Anthropic({ maxRetries: 2 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 400,
-      system: prepared.system,
-      messages: [{ role: 'user', content: briefInput }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-    result = parseBriefJson(text, extractJsonObject)
+    const res = await complete(
+      {
+        task: 'horario_brief', tier: 'balanced', sensitivity: 'self',
+        system: prepared.system,
+        maxTokens: 400,
+        messages: [{ role: 'user', content: briefInput }],
+      },
+      { supabase, userId },
+    )
+    result = parseBriefJson(res.text, extractJsonObject)
   } catch (e) {
     reportApiError(e, { route: 'horario/brief', scope })
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(503, 'Brief no disponible', 'No hay proveedor LLM configurado. El resumen se muestra igual sin la narrativa.')
+    }
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar el brief', detail)
   }

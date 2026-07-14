@@ -8,7 +8,7 @@
 //
 // Body: { personId, eventLabel, eventDate }  →  { text }
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -21,8 +21,6 @@ import { buildEventCareBrief } from '@/lib/ciclo/eventCareBrief'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
-
-const MODEL_ID = 'claude-sonnet-4-5'
 
 const SYSTEM = `Sos SIR, el sistema personal de Aaron, hablándole a ÉL sobre su pareja. Aaron tiene un
 PLAN con ella y querés ayudarlo a llegar preparado para CUIDARLA mejor. Escribís cálido, directo
@@ -94,19 +92,25 @@ export async function POST(req: NextRequest) {
   }
   lines.push('', `Escribile a Aaron una lectura cálida y personalizada de cómo llega ${firstName} a este plan y qué puede hacer para cuidarla y estar más cerca.`)
 
-  if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: 'ANTHROPIC_API_KEY no configurada' }, { status: 500 })
-  const client = new Anthropic({ maxRetries: 2 })
+  // LLM — vía capa llm/ (router + fallback + telemetría). tier balanced:
+  // narrativa de cuidado (ver AI_USAGE_AUDIT bucket a). Dato sensible de la pareja.
   try {
-    const msg = await client.messages.create({
-      model: MODEL_ID, max_tokens: 900, system: SYSTEM,
-      messages: [{ role: 'user', content: lines.join('\n') }],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    const text = block && block.type === 'text' ? block.text.trim() : ''
+    const res = await complete(
+      {
+        task: 'ciclo_event_brief', tier: 'balanced', sensitivity: 'third_party',
+        system: SYSTEM, maxTokens: 900,
+        messages: [{ role: 'user', content: lines.join('\n') }],
+      },
+      { supabase, userId },
+    )
+    const text = res.text.trim()
     if (!text) return NextResponse.json({ error: 'Respuesta vacía' }, { status: 502 })
     return NextResponse.json({ text, brief: { phaseLabel: brief.phaseLabel, isPms: brief.isPms } })
   } catch (e) {
     reportApiError(e, { route: 'ciclo/event-brief' })
-    return NextResponse.json({ error: 'Falló la llamada a Claude', detail: (e instanceof Error ? e.message : String(e)).slice(0, 200) }, { status: 502 })
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return NextResponse.json({ error: 'No hay proveedor LLM configurado' }, { status: 500 })
+    }
+    return NextResponse.json({ error: 'Falló la llamada al modelo', detail: (e instanceof Error ? e.message : String(e)).slice(0, 200) }, { status: 502 })
   }
 }
