@@ -15,7 +15,7 @@ import { useGoalStore } from '@/stores/useGoalStore'
 import { useRelationshipStore } from '@/stores'
 import { generateSlug } from '@/lib/people/slug'
 import type { Goal, GoalCategory, Person, RelationshipType, PersonCategory } from '@/types'
-import { SIR_MODELS, normalizeTier, type SirModelTier } from '@/lib/sir/model'
+import { SIR_MODELS, normalizeTier, DEFAULT_SIR_TIER, type SirModelTier } from '@/lib/sir/model'
 
 interface ProposedAction {
   kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito'
@@ -51,6 +51,9 @@ interface ClarifyingGap {
 interface Turn {
   role: 'user' | 'sir'
   text: string
+  /** ISO del momento del turno (para timestamp + separador de día). Los turnos
+   *  legados / cargados de la DB pueden no tenerlo → se degrada sin romper. */
+  at?: string
   sources?: { people: string[]; memories: number }
   action?: ProposedAction
   actionState?: 'pending' | 'done' | 'discarded'
@@ -76,6 +79,17 @@ const SUGGESTIONS = [
   '¿A quién tengo descuidado?',
   '¿Cómo voy con mis objetivos?',
 ]
+
+// Timestamp + separador de día en zona Lima (como WhatsApp/Telegram).
+const TIME_FMT = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Lima' })
+const DAY_FMT = new Intl.DateTimeFormat('es', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Lima' })
+/** Clave de día 'YYYY-MM-DD' en Lima (para agrupar por jornada). null si no hay `at`. */
+function dayKeyLima(iso: string | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return null
+  return d.toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
+}
 
 interface SpeechLike {
   lang: string
@@ -142,7 +156,7 @@ export default function SirChatPage() {
   const relationships = useRelationshipStore((st) => st.relationships)
   const updateRelationship = useRelationshipStore((st) => st.updateRelationship)
   const addRelationship = useRelationshipStore((st) => st.addRelationship)
-  const [model, setModel] = useState<SirModelTier>('sonnet')
+  const [model, setModel] = useState<SirModelTier>(DEFAULT_SIR_TIER)
   const [socratic, setSocratic] = useState(false)
 
   const [goalSel, setGoalSel] = useState<Record<string, boolean>>({})
@@ -374,7 +388,7 @@ export default function SirChatPage() {
     setError(null)
     setInput('')
     atBottomRef.current = true // enviar siempre lleva a lo último
-    if (!opts.suppressUserTurn) setTurns((t) => [...t, { role: 'user', text: q }])
+    if (!opts.suppressUserTurn) setTurns((t) => [...t, { role: 'user', text: q, at: new Date().toISOString() }])
     setLoading(true)
     track(EVENTS.sirAsked, { length: q.length })
     try {
@@ -401,13 +415,13 @@ export default function SirChatPage() {
         track(EVENTS.sirGapAsked, { kind: clarifying.kind })
         setTurns((t) => [...t, {
           role: 'sir', text: data.answer ?? '', clarifying,
-          clarifyState: 'pending', originalQuestion: q,
+          clarifyState: 'pending', originalQuestion: q, at: new Date().toISOString(),
         }])
         return
       }
       const action = data.proposedAction as ProposedAction | null
       if (action) track(EVENTS.sirActionProposed, { type: action.kind })
-      setTurns((t) => [...t, { role: 'sir', text: data.answer ?? '', sources: data.sources, action: action ?? undefined, actionState: action ? 'pending' : undefined }])
+      setTurns((t) => [...t, { role: 'sir', text: data.answer ?? '', sources: data.sources, action: action ?? undefined, actionState: action ? 'pending' : undefined, at: new Date().toISOString() }])
     } catch {
       trackAiError('sir_ask', { status: 0, message: 'Error de red' }) // GA4
       setError('Error de red')
@@ -530,8 +544,22 @@ export default function SirChatPage() {
         )}
 
         <div className="space-y-4" aria-live="polite" aria-atomic="false">
-          {turns.map((t, i) => (
-            <div key={i} className={t.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+          {turns.map((t, i) => {
+            // Separador de día: cuando la jornada (Lima) de este turno difiere de
+            // la del anterior. También al inicio del primer turno con fecha.
+            const dayKey = dayKeyLima(t.at)
+            const prevDayKey = i > 0 ? dayKeyLima(turns[i - 1].at) : null
+            const showDaySep = dayKey !== null && dayKey !== prevDayKey
+            return (
+            <div key={i}>
+              {showDaySep && (
+                <div className="my-3 flex items-center justify-center">
+                  <span className="rounded-full border border-border bg-card px-2.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {DAY_FMT.format(new Date(t.at!))}
+                  </span>
+                </div>
+              )}
+              <div className={t.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
               <div
                 className={
                   t.role === 'user'
@@ -662,9 +690,16 @@ export default function SirChatPage() {
                     )}
                   </div>
                 )}
+                {t.at && (
+                  <div className={`mt-1.5 text-[10px] tabular-nums text-muted-foreground/50 ${t.role === 'user' ? 'text-right' : 'text-left'}`}>
+                    {TIME_FMT.format(new Date(t.at))}
+                  </div>
+                )}
               </div>
             </div>
-          ))}
+            </div>
+            )
+          })}
           {loading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 size={14} className="animate-spin" /> SIR está pensando…
