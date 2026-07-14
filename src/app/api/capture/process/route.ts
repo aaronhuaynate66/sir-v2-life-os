@@ -18,7 +18,7 @@
 //
 // Auth: requiere sesion activa.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -46,9 +46,10 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const EXTRACTOR_MODEL_ID = 'claude-sonnet-4-5-20250929'
 const ALLOWED_MIME = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif'])
 const MAX_FILE_BYTES = 10 * 1024 * 1024
+
+type Supabase = Awaited<ReturnType<typeof createClient>>
 const VALID_CAPTURE_TYPES_WITH_EXTRACTOR: ReadonlySet<CaptureType> = new Set([
   'whatsapp_chat',
   'whatsapp_web',
@@ -83,8 +84,11 @@ async function blobToBase64(file: Blob): Promise<string> {
   return Buffer.from(arrayBuffer).toString('base64')
 }
 
+// Vía capa llm/. tier balanced → Sonnet (mismo modelo que el extractor usaba).
+// sensitivity third_party (perfil/conversación de un tercero).
 async function callExtractorVision(
-  client: Anthropic,
+  supabase: Supabase,
+  userId: string,
   systemPrompt: string,
   imageBase64: string,
   mediaType: 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif',
@@ -92,22 +96,23 @@ async function callExtractorVision(
   systemExtra: string = '',
 ): Promise<string> {
   const system = systemExtra ? `${systemPrompt}\n\n${systemExtra}` : systemPrompt
-  const msg = await client.messages.create({
-    model: EXTRACTOR_MODEL_ID,
-    max_tokens: maxTokens,
-    system,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
-          { type: 'text', text: 'Extraer.' },
-        ],
-      },
-    ],
-  })
-  const textBlock = msg.content.find((b) => b.type === 'text')
-  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+  const res = await complete(
+    {
+      task: 'capture_process', tier: 'balanced', sensitivity: 'third_party',
+      system, maxTokens,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', mediaType, data: imageBase64 } },
+            { type: 'text', text: 'Extraer.' },
+          ],
+        },
+      ],
+    },
+    { supabase, userId },
+  )
+  return res.text
 }
 
 // Modo TEXTO PEGADO: en vez de una imagen, el usuario pegó el texto del perfil
@@ -125,7 +130,8 @@ const MAX_TEXT_CHARS = 20_000
 const MIN_TEXT_CHARS = 12
 
 async function callExtractorText(
-  client: Anthropic,
+  supabase: Supabase,
+  userId: string,
   systemPrompt: string,
   profileText: string,
   maxTokens: number,
@@ -133,19 +139,20 @@ async function callExtractorText(
 ): Promise<string> {
   const base = `${systemPrompt}\n\n${TEXT_INPUT_EXTRA}`
   const system = systemExtra ? `${base}\n\n${systemExtra}` : base
-  const msg = await client.messages.create({
-    model: EXTRACTOR_MODEL_ID,
-    max_tokens: maxTokens,
-    system,
-    messages: [
-      {
-        role: 'user',
-        content: [{ type: 'text', text: `PERFIL (texto pegado):\n\n${profileText}` }],
-      },
-    ],
-  })
-  const textBlock = msg.content.find((b) => b.type === 'text')
-  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+  const res = await complete(
+    {
+      task: 'capture_process', tier: 'balanced', sensitivity: 'third_party',
+      system, maxTokens,
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: `PERFIL (texto pegado):\n\n${profileText}` }],
+        },
+      ],
+    },
+    { supabase, userId },
+  )
+  return res.text
 }
 
 function bucketSlugFor(captureType: CaptureType): string {
@@ -364,14 +371,13 @@ export async function POST(req: NextRequest) {
     raw = '(confirmado por el usuario)'
   } else if (isTextMode) {
     // Vía TEXTO: structuramos el texto pegado con el MISMO extractor (sin Visión).
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-    }
-    const client = new Anthropic({ maxRetries: 2 })
     try {
-      raw = await callExtractorText(client, systemPrompt, profileText, spec.maxTokens)
+      raw = await callExtractorText(supabase, userId, systemPrompt, profileText, spec.maxTokens)
     } catch (e) {
       reportApiError(e)
+      if (e instanceof LlmError && e.code === 'no_provider') {
+        return errorJson(500, 'No hay proveedor LLM configurado en el server')
+      }
       const msg = e instanceof Error ? e.message : String(e)
       return errorJson(502, 'Falló la extracción del texto', msg.slice(0, 300))
     }
@@ -379,7 +385,7 @@ export async function POST(req: NextRequest) {
       parsed = JSON.parse(stripJsonFences(raw))
     } catch {
       try {
-        raw = await callExtractorText(client, systemPrompt, profileText, spec.maxTokens, RETRY_EXTRA)
+        raw = await callExtractorText(supabase, userId, systemPrompt, profileText, spec.maxTokens, RETRY_EXTRA)
         parsed = JSON.parse(stripJsonFences(raw))
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -387,16 +393,15 @@ export async function POST(req: NextRequest) {
       }
     }
   } else {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-    }
-    const client = new Anthropic({ maxRetries: 2 })
     const imageBase64 = await blobToBase64(file as Blob)
 
     try {
-      raw = await callExtractorVision(client, systemPrompt, imageBase64, mediaType!, spec.maxTokens)
+      raw = await callExtractorVision(supabase, userId, systemPrompt, imageBase64, mediaType!, spec.maxTokens)
     } catch (e) {
       reportApiError(e)
+      if (e instanceof LlmError && e.code === 'no_provider') {
+        return errorJson(500, 'No hay proveedor LLM configurado en el server')
+      }
       const msg = e instanceof Error ? e.message : String(e)
       return errorJson(502, 'Falló la llamada Vision al extractor', msg.slice(0, 300))
     }
@@ -406,7 +411,7 @@ export async function POST(req: NextRequest) {
       parsed = JSON.parse(stripJsonFences(raw))
     } catch {
       try {
-        raw = await callExtractorVision(client, systemPrompt, imageBase64, mediaType!, spec.maxTokens, RETRY_EXTRA)
+        raw = await callExtractorVision(supabase, userId, systemPrompt, imageBase64, mediaType!, spec.maxTokens, RETRY_EXTRA)
         parsed = JSON.parse(stripJsonFences(raw))
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)

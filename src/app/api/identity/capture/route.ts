@@ -16,7 +16,7 @@
 //                       'generation'; sin OCR, texto fiel).
 // Respuesta 200: { extracted, confidence }. Auth: requiere sesión activa.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -32,7 +32,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const EXTRACTOR_MODEL_ID = 'claude-sonnet-4-5-20250929'
 // Generoso (como LinkedIn) para no truncar listas largas de skills/experiencia
 // y evitar 502 por respuesta cortada.
 const MAX_TOKENS = 1800
@@ -42,6 +41,7 @@ const MAX_TEXT_CHARS = 20_000
 const MIN_TEXT_CHARS = 12
 
 type MediaType = 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
+type Supabase = Awaited<ReturnType<typeof createClient>>
 
 interface ErrorBody {
   error: string
@@ -65,8 +65,11 @@ async function blobToBase64(file: Blob): Promise<string> {
   return Buffer.from(arrayBuffer).toString('base64')
 }
 
+// Vía capa llm/. tier balanced → Sonnet (mismo modelo). sensitivity self: es el
+// perfil PROPIO de Aaron.
 async function callVision(
-  client: Anthropic,
+  supabase: Supabase,
+  userId: string,
   imageBase64: string,
   mediaType: MediaType,
   systemExtra = '',
@@ -74,44 +77,47 @@ async function callVision(
   const system = systemExtra
     ? `${SELF_PROFILE_SYSTEM_PROMPT}\n\n${systemExtra}`
     : SELF_PROFILE_SYSTEM_PROMPT
-  const msg = await client.messages.create({
-    model: EXTRACTOR_MODEL_ID,
-    max_tokens: MAX_TOKENS,
-    system,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
-          { type: 'text', text: 'Extraer.' },
-        ],
-      },
-    ],
-  })
-  const textBlock = msg.content.find((b) => b.type === 'text')
-  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+  const res = await complete(
+    {
+      task: 'identity_capture', tier: 'balanced', sensitivity: 'self',
+      system, maxTokens: MAX_TOKENS,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', mediaType, data: imageBase64 } },
+            { type: 'text', text: 'Extraer.' },
+          ],
+        },
+      ],
+    },
+    { supabase, userId },
+  )
+  return res.text
 }
 
 async function callText(
-  client: Anthropic,
+  supabase: Supabase,
+  userId: string,
   profileText: string,
   systemExtra = '',
 ): Promise<string> {
   const base = `${SELF_PROFILE_SYSTEM_PROMPT}\n\n${SELF_PROFILE_TEXT_EXTRA}`
   const system = systemExtra ? `${base}\n\n${systemExtra}` : base
-  const msg = await client.messages.create({
-    model: EXTRACTOR_MODEL_ID,
-    max_tokens: MAX_TOKENS,
-    system,
-    messages: [
-      {
-        role: 'user',
-        content: [{ type: 'text', text: `RELATO DEL USUARIO (en sus palabras):\n\n${profileText}` }],
-      },
-    ],
-  })
-  const textBlock = msg.content.find((b) => b.type === 'text')
-  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+  const res = await complete(
+    {
+      task: 'identity_capture', tier: 'balanced', sensitivity: 'self',
+      system, maxTokens: MAX_TOKENS,
+      messages: [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: `RELATO DEL USUARIO (en sus palabras):\n\n${profileText}` }],
+        },
+      ],
+    },
+    { supabase, userId },
+  )
+  return res.text
 }
 
 const RETRY_EXTRA =
@@ -165,20 +171,18 @@ export async function POST(req: NextRequest) {
   const rl = await enforceRateLimit(supabase, userId, isTextMode ? 'generation' : 'vision')
   if (!rl.ok) return rl.response
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-
   // 4. Extracción (1 retry si el JSON sale mal). La vía depende del modo.
-  const client = new Anthropic({ maxRetries: 2 })
   let raw = ''
   let parsed: unknown = null
 
   if (isTextMode) {
     try {
-      raw = await callText(client, profileText)
+      raw = await callText(supabase, userId, profileText)
     } catch (e) {
       reportApiError(e)
+      if (e instanceof LlmError && e.code === 'no_provider') {
+        return errorJson(500, 'No hay proveedor LLM configurado en el server')
+      }
       const msg = e instanceof Error ? e.message : String(e)
       return errorJson(502, 'Falló la extracción del relato', msg.slice(0, 300))
     }
@@ -186,7 +190,7 @@ export async function POST(req: NextRequest) {
       parsed = JSON.parse(stripJsonFences(raw))
     } catch {
       try {
-        raw = await callText(client, profileText, RETRY_EXTRA)
+        raw = await callText(supabase, userId, profileText, RETRY_EXTRA)
         parsed = JSON.parse(stripJsonFences(raw))
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -197,9 +201,12 @@ export async function POST(req: NextRequest) {
     const imageBase64 = await blobToBase64(file as Blob)
     const mediaType = (file as Blob).type as MediaType
     try {
-      raw = await callVision(client, imageBase64, mediaType)
+      raw = await callVision(supabase, userId, imageBase64, mediaType)
     } catch (e) {
       reportApiError(e)
+      if (e instanceof LlmError && e.code === 'no_provider') {
+        return errorJson(500, 'No hay proveedor LLM configurado en el server')
+      }
       const msg = e instanceof Error ? e.message : String(e)
       return errorJson(502, 'Falló la llamada Vision', msg.slice(0, 300))
     }
@@ -207,7 +214,7 @@ export async function POST(req: NextRequest) {
       parsed = JSON.parse(stripJsonFences(raw))
     } catch {
       try {
-        raw = await callVision(client, imageBase64, mediaType, RETRY_EXTRA)
+        raw = await callVision(supabase, userId, imageBase64, mediaType, RETRY_EXTRA)
         parsed = JSON.parse(stripJsonFences(raw))
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)

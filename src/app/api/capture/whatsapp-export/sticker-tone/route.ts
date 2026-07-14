@@ -1,16 +1,14 @@
 // SIR V2 — POST /api/capture/whatsapp-export/sticker-tone (multipart 'file').
 // Devuelve el TONO emocional de un sticker (.webp) en 1-3 palabras. NO guarda el
 // sticker: solo su carga emocional, para alimentar el tono de la conversación.
-import Anthropic from '@anthropic-ai/sdk'
+import { complete } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { recordAiUsage } from '@/lib/ai/usage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-const MODEL_ID = 'claude-haiku-4-5-20251001'
 const MAX_BYTES = 3 * 1024 * 1024
 
 export async function POST(req: NextRequest) {
@@ -25,19 +23,20 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_BYTES || file.size === 0) return NextResponse.json({ tone: '' })
   try {
     const b64 = Buffer.from(await file.arrayBuffer()).toString('base64')
-    const client = new Anthropic({ maxRetries: 1 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 30,
-      system: 'Devolvés SOLO JSON.',
-      messages: [{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: 'image/webp', data: b64 } },
-        { type: 'text', text: 'Este es un sticker de WhatsApp. ¿Qué carga emocional transmite? Respondé SOLO {"tone":"<1-3 palabras en español: ej. cariño, humor, fastidio, ternura, enojo, festejo, bajar tensión, neutral>"}.' },
-      ] }],
-    })
-    if (auth?.user) void recordAiUsage(supabase, auth.user.id, 'import_whatsapp', MODEL_ID, msg.usage)
-    const block = msg.content.find((b) => b.type === 'text')
-    const raw = block && block.type === 'text' ? block.text : ''
+    // Vía capa llm/. tier cheap → Haiku (mismo modelo). sensitivity third_party.
+    // La telemetría la registra complete() (antes recordAiUsage manual).
+    const res = await complete(
+      {
+        task: 'import_whatsapp', tier: 'cheap', sensitivity: 'third_party', maxTokens: 30,
+        system: 'Devolvés SOLO JSON.',
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', mediaType: 'image/webp', data: b64 } },
+          { type: 'text', text: 'Este es un sticker de WhatsApp. ¿Qué carga emocional transmite? Respondé SOLO {"tone":"<1-3 palabras en español: ej. cariño, humor, fastidio, ternura, enojo, festejo, bajar tensión, neutral>"}.' },
+        ] }],
+      },
+      { supabase, userId: auth.user.id },
+    )
+    const raw = res.text
     const s = raw.indexOf('{'); const e = raw.lastIndexOf('}')
     if (s < 0 || e <= s) return NextResponse.json({ tone: '' })
     const p = JSON.parse(raw.slice(s, e + 1)) as { tone?: string }

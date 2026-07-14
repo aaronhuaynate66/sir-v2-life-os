@@ -45,8 +45,14 @@ Todas migradas (arriba). Nota: `whatsapp-export/interpret` quedó en `balanced` 
 ### (E) Vía `runSirChat` (parsean JSON, tools innecesarias) — migrar quitando tools
 - [ ] `api/sir/router`, `api/habits/suggest`, `api/self/retrato`, `api/self/premortem`, `api/self/espejo-lectura`
 
-### (F) Visión — BLOQUEADAS hasta soportar `image` en la capa
-14 rutas (`capture/*`, `identity/capture`, `relato/transcribe`, `trackers/extract`, `meds/extract`, `avatars/detect`…). Mientras tanto, sin tocar la capa: **bajar Sonnet→Haiku** en las 5 que están en Sonnet: `capture/route`, `capture/process`, `relato/transcribe`, `identity/capture` (dejar `capture/document` en Sonnet por precisión).
+### (F) Visión — ✅ MIGRADAS (#766)
+Las 14 rutas de visión pasan por `complete()`. El router es tier-aware para imágenes
+(`registry.visionCapable` + `models[tier]`), así que se **preservó el modelo por ruta**:
+Haiku→`cheap` (`capture/scale`, `hr`, `hrv`, `sleep`, `meds/extract`, `trackers/extract`,
+`whatsapp-export/image-triage`, `whatsapp-export/sticker-tone`, `avatars/detect`);
+Sonnet→`balanced` (`capture/process`, `capture/route`, `identity/capture`, `relato/transcribe`);
+Sonnet→`capable` (`capture/document`, precisión DNI/pasaporte). Cuando se sume un
+proveedor de visión más barato (qwen-vl, glm-4v), se marca `visionCapable` y entra al fallback.
 
 ### (H) No-chat (informativo, dejar)
 - Embeddings: OpenAI `text-embedding-3-small` (`lib/embeddings/client.ts`). Barato, dejar.
