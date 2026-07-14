@@ -18,13 +18,16 @@ export interface SirModelInfo {
 }
 
 export const SIR_MODELS: Record<SirModelTier, SirModelInfo> = {
-  haiku: { tier: 'haiku', provider: 'anthropic', modelId: 'claude-haiku-4-5-20251001', label: 'Rápido y barato (Claude)', hint: 'Respuestas ágiles, menor costo.', envKey: 'ANTHROPIC_API_KEY' },
-  sonnet: { tier: 'sonnet', provider: 'anthropic', modelId: 'claude-sonnet-4-5-20250929', label: 'Equilibrado (Claude)', hint: 'Mejor razonamiento, costo medio (default).', envKey: 'ANTHROPIC_API_KEY' },
+  haiku: { tier: 'haiku', provider: 'anthropic', modelId: 'claude-haiku-4-5-20251001', label: 'Rápido y barato (Claude)', hint: 'Respuestas ágiles, menor costo (default).', envKey: 'ANTHROPIC_API_KEY' },
+  sonnet: { tier: 'sonnet', provider: 'anthropic', modelId: 'claude-sonnet-4-5-20250929', label: 'Equilibrado (Claude)', hint: 'Mejor razonamiento, costo más alto.', envKey: 'ANTHROPIC_API_KEY' },
   oss_llama: { tier: 'oss_llama', provider: 'openrouter', modelId: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (OSS)', hint: 'Open-source vía OpenRouter, más barato. Requiere OPENROUTER_API_KEY.', envKey: 'OPENROUTER_API_KEY' },
   oss_qwen: { tier: 'oss_qwen', provider: 'openrouter', modelId: 'qwen/qwen-2.5-72b-instruct', label: 'Qwen 2.5 72B (OSS)', hint: 'Open-source vía OpenRouter, más barato. Requiere OPENROUTER_API_KEY.', envKey: 'OPENROUTER_API_KEY' },
 }
 
-export const DEFAULT_SIR_TIER: SirModelTier = 'sonnet'
+// Default: Haiku (Claude) — misma familia y tool-calling confiable que Sonnet,
+// a una fracción del costo. El chat es la superficie más usada; Sonnet queda
+// como opción explícita para quien quiera máximo razonamiento.
+export const DEFAULT_SIR_TIER: SirModelTier = 'haiku'
 
 /** Normaliza un valor cualquiera a un tier válido (default sonnet). */
 export function normalizeTier(v: unknown): SirModelTier {

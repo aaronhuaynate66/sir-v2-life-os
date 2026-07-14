@@ -4,7 +4,7 @@ import { normalizeTier, resolveModel, resolveModelId, SIR_MODELS, DEFAULT_SIR_TI
 describe('sir model registry', () => {
   it('normaliza inválidos al default', () => {
     expect(normalizeTier('xxx')).toBe(DEFAULT_SIR_TIER)
-    expect(normalizeTier(null)).toBe('sonnet')
+    expect(normalizeTier(null)).toBe(DEFAULT_SIR_TIER)
     expect(normalizeTier('haiku')).toBe('haiku')
     expect(normalizeTier('oss_llama')).toBe('oss_llama')
   })
