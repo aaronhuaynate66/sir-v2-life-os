@@ -105,20 +105,21 @@ Human OKRs, Alignment Engine (incoherencia valores ↔ conducta), Narrative Inte
 
 **Estado (2026-05-31): 🟡 ARRANCADA (Alignment Engine MVP en prod).**
 - **Alignment Engine MVP:** engine puro `src/engines/alignment/` que deriva, por objetivo activo, un estado (`aligned` / `drifting` / `needs_attention` / `insufficient_data`) desde señales observables reales (frecuencia de contacto, estado de relación, impacto energético) cuando el objetivo está vinculado a personas (`goal.relatedPersons`). Capa narrativa reflexiva opcional (`POST /api/alignment/narrative`, Anthropic; el LLM solo reformula señales reales, no inventa la brecha; invariantes anti-culpa). Panel "Alineación" en `/objetivos` + **selector de personas** en el form de objetivos (cierra el eslabón que dejaba al engine inerte).
-- **Pendiente de E4:**
-  - **Human OKRs estructurados** (objetivos con key-results medibles, hoy el goal es título + progreso libre).
-  - **Narrative Intelligence** (narrativa longitudinal de identidad, no insights puntuales).
-  - **Delta de score** (la incoherencia usa el estado actual, no la tendencia: falta historial/snapshots del relationship score).
-  - **Tono de interacción** desde `person_logs` (hoy Supabase-only, no llega al engine client-side).
-  - **Inferencia LLM de dominio/persona** para objetivos de texto libre sin vínculo estructurado (deliberadamente fuera del MVP para no inventar brechas).
+- **Pendiente de E4 — 🔁 RECONCILIADO 2026-07-14: casi todo YA está hecho** (este bloque estaba desactualizado desde el 31-may):
+  - ✅ **Human OKRs estructurados** — HECHO. `ObjectiveStepKind='key_result'`, migraciones 0040/0041 (OKR 2 niveles: KR → tareas) + 0068 (KR con métrica medible `metricTarget`).
+  - ✅ **Narrative Intelligence** — CONSTRUIDO. Carpeta `api/self/` completa: `rumbo` (rumbo/dirección), `arquetipo`, `coherencia` (valores↔conducta), `retrato`, `espejo-lectura/relacional/snapshot`, `premortem`. + `life_direction_reflections` + YearCompass.
+  - ✅ **Delta de score** — HECHO. `lib/people/scoreTrend.ts` + `bondEvolution.ts` + `person_score_snapshots` (tendencia, no solo estado; `TrendBadge` en la ficha).
+  - ✅ **Tono de interacción** — HECHO. `api/person-logs/interactions` alimenta la Reciprocidad del relationalScore.
+  - ⬜ **Inferencia LLM de dominio/persona** para objetivos de texto libre — sigue fuera del MVP a propósito (no inventar brechas). Único ítem realmente abierto de E4.
+  - **Lectura:** E4 está de hecho MADURA. El sustrato que E5 pedía ya existe.
 
 ---
 
 ### Etapa 5 — Life Direction System `(5–10 años)`
 Continuidad narrativa: quién eras, quién sos, hacia dónde vas. El sistema sostiene el hilo de la vida.
 
-**Estado (2026-05-31): ⬜ NO INICIADA.**
-Requiere E4 madura (identidad + alineación estructuradas) como sustrato.
+**Estado — 🔁 RECONCILIADO 2026-07-14: 🟡 SEMILLAS EN PROD** (ya no "no iniciada"; E4 está madura).
+Las piezas del hilo narrativo ya existen y están en la app: `api/self/rumbo` ("Tu rumbo": reflexión sobre la dirección desde los hitos), `arquetipo`, `coherencia`, `retrato`, `espejo-*`, `premortem`, `life_direction_reflections` (1 reflexión vigente/día con evolución), y **YearCompass** (brújula anual en el panel). Lo que NO es un "build" pendiente sino un trabajo de PRODUCTO/UX: que estas piezas **cohesionen en UNA experiencia narrativa** ("quién eras → quién sos → hacia dónde vas") en vez de features sueltas, y validarlas con data real de Aaron. Requiere decisión de producto, no código nuevo a ciegas.
 
 ---
 
