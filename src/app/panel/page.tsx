@@ -6,8 +6,9 @@ import {
   Activity, Target, Brain, Wallet, Users, Bell,
   Moon, Zap, ArrowRightLeft, Sparkles,
   AlertCircle, TrendingUp, TrendingDown, Minus,
-  CheckCircle2, X, ChevronDown, PlusCircle,
+  CheckCircle2, X, ChevronDown, ChevronRight, PlusCircle,
 } from 'lucide-react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { calculatePeaceScore, detectPeaceThreats } from '@/engines/peace'
 import { analyzeBiologicalState, analyzeSleepTrend } from '@/engines/biological'
@@ -308,16 +309,27 @@ function DashboardContent() {
               </div>
             ) : (
               <div className="space-y-3">
-                {relAlerts.slice(0, 4).map((a, i) => (
-                  <div key={i} className="flex gap-3 py-1.5 border-b border-border/40 last:border-0">
-                    <div className={cn('w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0', a.urgency === 'immediate' ? 'bg-bad' : 'bg-warn')} />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm text-foreground">{a.personName}</div>
-                      <div className="text-xs text-muted-foreground">{a.message}</div>
-                      {a.suggestedAction && <div className="text-[11px] text-muted-foreground/60 mt-0.5">{a.suggestedAction}</div>}
-                    </div>
-                  </div>
-                ))}
+                {relAlerts.slice(0, 4).map((a, i) => {
+                  // El clic lleva a la ficha de la persona (patrón canónico del
+                  // dashboard). El slug se resuelve desde el store people; si falta,
+                  // cae al listado. Antes eran <div> planos → no navegaban.
+                  const slug = people.find((p) => p.id === a.personId)?.slug
+                  return (
+                    <Link
+                      key={i}
+                      href={slug ? `/relaciones/${slug}` : '/relaciones'}
+                      className="flex gap-3 py-1.5 border-b border-border/40 last:border-0 items-start hover:opacity-80 transition-opacity"
+                    >
+                      <div className={cn('w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0', a.urgency === 'immediate' ? 'bg-bad' : 'bg-warn')} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-foreground">{a.personName}</div>
+                        <div className="text-xs text-muted-foreground">{a.message}</div>
+                        {a.suggestedAction && <div className="text-[11px] text-muted-foreground/60 mt-0.5">{a.suggestedAction}</div>}
+                      </div>
+                      <ChevronRight size={12} className="flex-shrink-0 opacity-40 mt-1" aria-hidden="true" />
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </CardContent>
