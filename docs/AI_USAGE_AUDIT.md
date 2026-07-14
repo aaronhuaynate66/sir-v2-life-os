@@ -10,7 +10,7 @@
 
 ## Hallazgos transversales
 
-1. **`complete()` NO soporta visión ni tool-calling aún** (`content` es `string`). ⇒ visión (14 rutas) y el chat con tools NO migran hasta extender la capa. Parte el trabajo en tracks.
+1. **`complete()` ya soporta VISIÓN** (`content` acepta bloques `image`, PR #761); el router filtra a proveedores con modelo multimodal (`registry.vision`) y prioriza Anthropic. Falta **tool-calling** para migrar el chat. ⇒ las 14 rutas de visión YA pueden migrar; el chat con tools NO hasta extender la capa.
 2. **~35 constantes `MODEL_ID` hardcodeadas** por archivo (deriva de model-ids); migrar centraliza en el registry.
 3. **Telemetría de costo solo vía `complete()`** → migrar = observabilidad gratis.
 4. **Ya migradas (NO re-hacer):** `briefing/daily`, `daily-actions/message`, `alignment/narrative`, `alignment/infer-links`.
@@ -57,8 +57,8 @@ Ordenadas por ahorro (tokens × frecuencia):
 - STT: OpenAI Whisper (`lib/ai/transcribeAudio.ts`). Claude no hace audio; evaluar STT barato aparte.
 
 ## Trabajo habilitador (desbloquea tracks enteros)
-- **Extender `lib/llm/` para bloques `image`** (L) → desbloquea las 14 rutas de visión.
-- **Extender `complete()` para tool-calling** (L) → recién ahí migra el chat.
+- [x] **Extender `lib/llm/` para bloques `image`** (PR #761) → desbloqueadas las 14 rutas de visión. `LlmMessage.content` acepta `string | LlmContentBlock[]`; adaptadores mapean a `source` (Anthropic) / `image_url` data-URI (OpenAI-compat); router filtra por `registry.vision`. Sumar visión barata = una línea en el registry.
+- [ ] **Extender `complete()` para tool-calling** (L) → recién ahí migra el chat.
 
 ## Orden recomendado
 1. Bucket (a) — máximo ahorro, riesgo mínimo, todo S/M.

@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { planChain, tierFor } from './router'
+import { planChain, tierFor, requestHasImages } from './router'
 import { availableProviders, estimateCost } from './registry'
-import type { LlmProvider } from './types'
+import type { LlmMessage, LlmProvider } from './types'
+
+const IMG_MSG: LlmMessage = {
+  role: 'user',
+  content: [
+    { type: 'image', source: { type: 'base64', mediaType: 'image/png', data: 'AAAA' } },
+    { type: 'text', text: 'Extraer.' },
+  ],
+}
 
 describe('tierFor', () => {
   it('infiere el tier de la tarea, con default balanced', () => {
@@ -61,6 +69,30 @@ describe('planChain', () => {
   it('la chain incluye fallbacks (más de un proveedor)', () => {
     const chain = planChain({ task: 'sir_chat', messages: [] }, ['deepseek', 'anthropic'])
     expect(chain.length).toBe(2)
+  })
+
+  it('visión → solo proveedores con modelo multimodal, Anthropic al frente', () => {
+    const chain = planChain({ task: 'extract', messages: [IMG_MSG] }, ALL)
+    // hoy solo anthropic declara `vision` → chain de 1, con su modelo de visión
+    expect(chain.map((c) => c.provider)).toEqual(['anthropic'])
+    expect(chain[0].model).toBe('claude-sonnet-4-5-20250929')
+  })
+
+  it('visión sin proveedor multimodal disponible → chain vacía', () => {
+    const chain = planChain({ task: 'extract', messages: [IMG_MSG] }, ['deepseek', 'qwen'])
+    expect(chain).toEqual([])
+  })
+})
+
+describe('requestHasImages', () => {
+  it('detecta imágenes en bloques mixtos', () => {
+    expect(requestHasImages({ task: 'extract', messages: [IMG_MSG] })).toBe(true)
+  })
+  it('false para contenido de solo texto (string o bloques)', () => {
+    expect(requestHasImages({ task: 'extract', messages: [{ role: 'user', content: 'hola' }] })).toBe(false)
+    expect(
+      requestHasImages({ task: 'extract', messages: [{ role: 'user', content: [{ type: 'text', text: 'hola' }] }] }),
+    ).toBe(false)
   })
 })
 
