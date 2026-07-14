@@ -11,7 +11,7 @@
 // Mono-usuario, session-auth, rate-limited, Haiku (barato). Solo prod tiene
 // ANTHROPIC_API_KEY (503 si falta).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -24,24 +24,22 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
-const MODEL_ID = 'claude-haiku-4-5-20251001'
 const BATCH = 25
 const DEFAULT_SAMPLE = 40
 const MAX_LOGS = 2000
 
+type Supabase = Awaited<ReturnType<typeof createClient>>
 interface Row { id: string; note: string | null }
 
-/** Clasifica un lote de notas → tonos 1-5 (o null si el modelo falló/no matcheó). */
-async function classifyBatch(client: Anthropic, notes: string[]): Promise<number[] | null> {
-  const msg = await client.messages.create({
-    model: MODEL_ID,
-    max_tokens: 700,
-    system: TONE_BATCH_SYSTEM,
-    messages: [{ role: 'user', content: buildToneBatchPrompt(notes) }],
-  })
-  const block = msg.content.find((b) => b.type === 'text')
-  const text = block && block.type === 'text' ? block.text : ''
-  return parseToneBatch(text, notes.length)
+/** Clasifica un lote de notas → tonos 1-5 (o null si el modelo falló/no matcheó).
+ *  Vía capa llm/ (tier cheap: clasificación mecánica de tono). */
+async function classifyBatch(notes: string[], supabase: Supabase, userId: string): Promise<number[] | null> {
+  const res = await complete(
+    { task: 'reprocess_tone', tier: 'cheap', sensitivity: 'self', maxTokens: 700,
+      system: TONE_BATCH_SYSTEM, messages: [{ role: 'user', content: buildToneBatchPrompt(notes) }] },
+    { supabase, userId },
+  )
+  return parseToneBatch(res.text, notes.length)
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -52,10 +50,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const rl = await enforceRateLimit(supabase, userId, 'generation')
   if (!rl.ok) return rl.response
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: 'Falta ANTHROPIC_API_KEY (solo en prod)' }, { status: 503 })
-  }
 
   let body: { apply?: unknown; sampleSize?: unknown }
   try { body = (await req.json()) as typeof body } catch { body = {} }
@@ -84,18 +78,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ mode: apply ? 'apply' : 'dry', total: 0, changed: 0, message: 'No hay logs para reprocesar.' })
   }
 
-  const client = new Anthropic({ maxRetries: 2 })
   const proposals: { id: string; to: number; note: string }[] = []
   let skipped = 0
   try {
     for (let i = 0; i < rows.length; i += BATCH) {
       const chunk = rows.slice(i, i + BATCH)
-      const tones = await classifyBatch(client, chunk.map((r) => r.note as string))
+      const tones = await classifyBatch(chunk.map((r) => r.note as string), supabase, userId)
       if (!tones) { skipped += chunk.length; continue }
       chunk.forEach((r, j) => proposals.push({ id: r.id, to: tones[j], note: r.note as string }))
     }
   } catch (e) {
     reportApiError(e, { route: 'relato/reprocess-tone' })
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return NextResponse.json({ error: 'No hay proveedor LLM configurado' }, { status: 503 })
+    }
     return NextResponse.json({ error: 'Falló la clasificación', detail: String(e).slice(0, 140) }, { status: 502 })
   }
 

@@ -7,7 +7,7 @@
 // comportamiento respecto del original; solo devuelve un resultado tipado en
 // vez de NextResponse.
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete } from '@/lib/llm'
 
 import type { createClient } from '@/lib/supabase/server'
 import { getObservationsForPerson } from '@/lib/observations/fetch'
@@ -37,7 +37,6 @@ import {
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_OBSERVATIONS = 30
 
 export interface DeriveResult {
@@ -220,12 +219,13 @@ export async function deriveForPerson(
 
   let memories = [] as ReturnType<typeof baseMemoriesFromObservations>
   let usedLlm = false
-  if (process.env.ANTHROPIC_API_KEY) {
-    try {
-      const client = new Anthropic({ maxRetries: 2 })
-      const msg = await client.messages.create({
-        model: MODEL_ID,
-        max_tokens: 3500,
+  // LLM vía capa llm/ (router + fallback + telemetría). tier balanced, dato de
+  // un tercero. Best-effort: cualquier fallo (incl. sin proveedor) cae al
+  // fallback determinístico de abajo.
+  try {
+    const res = await complete(
+      {
+        task: 'derive_memories', tier: 'balanced', sensitivity: 'third_party', maxTokens: 3500,
         system: DERIVE_MEMORIES_SYSTEM_PROMPT,
         messages: [
           {
@@ -233,20 +233,19 @@ export async function deriveForPerson(
             content: buildDeriveInput(personName, digestObservations(toProcess, now), goalContext),
           },
         ],
+      },
+      { supabase, userId },
+    )
+    const items = parseDeriveResponse(res.text)
+    if (items.length > 0) {
+      memories = memoriesFromLlmItems(personName, toProcess, items, {
+        maxPerObservation: (obs) => (isConversationCapture(obs.captureType) ? MAX_MEMORIES_PER_CONVERSATION : 2),
+        reservedIndices: reservedByObs,
       })
-      const textBlock = msg.content.find((b) => b.type === 'text')
-      const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-      const items = parseDeriveResponse(text)
-      if (items.length > 0) {
-        memories = memoriesFromLlmItems(personName, toProcess, items, {
-          maxPerObservation: (obs) => (isConversationCapture(obs.captureType) ? MAX_MEMORIES_PER_CONVERSATION : 2),
-          reservedIndices: reservedByObs,
-        })
-        usedLlm = true
-      }
-    } catch {
-      // Silencioso: caemos al fallback determinístico abajo.
+      usedLlm = true
     }
+  } catch {
+    // Silencioso: caemos al fallback determinístico abajo.
   }
 
   if (memories.length === 0) {

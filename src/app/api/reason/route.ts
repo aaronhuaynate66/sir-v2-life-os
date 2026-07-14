@@ -9,7 +9,7 @@
 // Auth: sesión de Supabase. Rate-limit 'generation'. Mismo pipeline tolerante
 // que /api/meds/extract (retry si el JSON falla).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -25,8 +25,6 @@ import { todayLimaKey } from '@/lib/dates/limaDay'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 40
-
-const MODEL_ID = 'claude-sonnet-4-5'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -117,18 +115,18 @@ export async function POST(req: NextRequest) {
 
   const personas = selectPersonas(focusDomains(assessment))
   const { system, user } = buildReasonerPrompt(assessment, personas)
+  const userId = auth.user.id
 
-  if (!process.env.ANTHROPIC_API_KEY) return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // LLM vía capa llm/ (router + fallback + telemetría). tier capable:
+  // razonamiento multi-lente de Aaron (AI_USAGE_AUDIT bucket a).
   async function call(extra = ''): Promise<string> {
-    const msg = await client.messages.create({
-      model: MODEL_ID, max_tokens: 900,
-      system: extra ? `${system}\n\n${extra}` : system,
-      messages: [{ role: 'user', content: user }],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    return block && block.type === 'text' ? block.text : ''
+    const res = await complete(
+      { task: 'reason', tier: 'capable', sensitivity: 'self', maxTokens: 900,
+        system: extra ? `${system}\n\n${extra}` : system,
+        messages: [{ role: 'user', content: user }] },
+      { supabase, userId },
+    )
+    return res.text
   }
 
   let raw = ''
@@ -136,7 +134,8 @@ export async function POST(req: NextRequest) {
     raw = await call()
   } catch (e) {
     reportApiError(e)
-    return errorJson(502, 'Falló la llamada a Claude', (e instanceof Error ? e.message : String(e)).slice(0, 300))
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    return errorJson(502, 'Falló la llamada al modelo', (e instanceof Error ? e.message : String(e)).slice(0, 300))
   }
 
   let parsed: unknown = null

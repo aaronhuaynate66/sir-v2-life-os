@@ -10,7 +10,7 @@
 // Response 200: { narrative: string }
 // 422 si no hay data suficiente para narrar (digest vacío).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -31,7 +31,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_LOGS = 730 // ~2 años de registros.
 
 interface ErrorBody {
@@ -95,23 +94,20 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // LLM vía capa llm/ (router + fallback + telemetría). tier balanced:
+  // prosa de correlación de una persona → sensitivity third_party.
   let text = ''
   try {
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 400,
-      system: CORRELATION_NARRATIVE_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildNarrativeUserMessage(digest) }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    text = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : ''
+    const res = await complete(
+      { task: 'correlation_narrative', tier: 'balanced', sensitivity: 'third_party', maxTokens: 400,
+        system: CORRELATION_NARRATIVE_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: buildNarrativeUserMessage(digest) }] },
+      { supabase, userId },
+    )
+    text = res.text.trim()
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') return errorJson(500, 'No hay proveedor LLM configurado en el server')
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo', m.slice(0, 300))
   }
