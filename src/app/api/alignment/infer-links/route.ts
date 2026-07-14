@@ -12,8 +12,8 @@
 // Body JSON: { title, description?, target?, why?, candidateNames: string[] }
 // Response 200: { inference: { personNames, category, reasoning, confident } }
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { complete, LlmError } from '@/lib/llm'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
@@ -27,8 +27,6 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -63,27 +61,21 @@ export async function POST(req: NextRequest) {
     why: typeof body.why === 'string' ? body.why : undefined,
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(
-      503,
-      'Sugerencia no disponible',
-      'Falta ANTHROPIC_API_KEY. Podés vincular personas a mano igual.',
-    )
-  }
-
-  const client = new Anthropic({ maxRetries: 2 })
   let raw = ''
   try {
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 500,
+    const res = await complete({
+      task: 'extract',
+      sensitivity: 'third_party',
       system: GOAL_INFER_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildGoalInferInput(goal, candidateNames) }],
-    })
-    const tb = msg.content.find((b) => b.type === 'text')
-    raw = tb && tb.type === 'text' ? tb.text : ''
+      maxTokens: 500,
+    }, { supabase, userId: authData.user.id })
+    raw = res.text
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(503, 'Sugerencia no disponible', 'No hay proveedor LLM configurado. Podés vincular personas a mano igual.')
+    }
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo', m.slice(0, 300))
   }

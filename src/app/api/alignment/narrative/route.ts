@@ -12,8 +12,8 @@
 // Body JSON: { title, category, description?, state, linkedPersonNames?, signals: [{label, concern}] }
 // Response 200: { insight: string }
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { complete, LlmError } from '@/lib/llm'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
@@ -30,7 +30,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 
 const VALID_STATES: readonly AlignmentState[] = [
   'aligned',
@@ -128,22 +127,23 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const client = new Anthropic({ maxRetries: 2 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 400,
+    const res = await complete({
+      task: 'synthesis',
+      sensitivity: 'third_party',
       system: ALIGNMENT_NARRATIVE_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildAlignmentInput(input) }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-    const insight = parseAlignmentNarrative(text)
+      maxTokens: 400,
+    }, { supabase, userId: authData.user.id })
+    const insight = parseAlignmentNarrative(res.text)
     if (!insight) {
       return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
     }
     return NextResponse.json({ insight }, { status: 200 })
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar la reflexión', detail)
   }
