@@ -10,7 +10,7 @@
 //
 // Auth: requiere sesión activa de Supabase (vía cookies).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -27,9 +27,10 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const MODEL_ID = 'claude-haiku-4-5-20251001'
 const ALLOWED_MIME = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif'])
 const MAX_BASE64_BYTES = 8 * 1024 * 1024 // ~6 MB de imagen decodificada — overprovision
+
+type Supabase = Awaited<ReturnType<typeof createClient>>
 
 function errorJson(status: number, error: string, detail?: string): NextResponse<HeartRateCaptureError> {
   return NextResponse.json({ error, detail }, { status })
@@ -57,8 +58,11 @@ function stripJsonFences(s: string): string {
   return trimmed
 }
 
+// Vía capa llm/ (router + fallback + telemetría). tier cheap → Haiku (mismo
+// modelo que antes). sensitivity self: salud del propio Aaron.
 async function callVision(
-  client: Anthropic,
+  supabase: Supabase,
+  userId: string,
   imageBase64: string,
   mediaType: 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif',
   systemExtra: string = '',
@@ -66,25 +70,23 @@ async function callVision(
   const system = systemExtra
     ? `${HR_VISION_SYSTEM_PROMPT}\n\n${systemExtra}`
     : HR_VISION_SYSTEM_PROMPT
-  const msg = await client.messages.create({
-    model: MODEL_ID,
-    max_tokens: 1500,
-    system,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: imageBase64 },
-          },
-          { type: 'text', text: 'Extraer los datos de frecuencia cardíaca del panel de la imagen.' },
-        ],
-      },
-    ],
-  })
-  const textBlock = msg.content.find((b) => b.type === 'text')
-  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+  const res = await complete(
+    {
+      task: 'capture_hr', tier: 'cheap', sensitivity: 'self',
+      system, maxTokens: 1500,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', mediaType, data: imageBase64 } },
+            { type: 'text', text: 'Extraer los datos de frecuencia cardíaca del panel de la imagen.' },
+          ],
+        },
+      ],
+    },
+    { supabase, userId },
+  )
+  return res.text
 }
 
 export async function POST(req: NextRequest) {
@@ -116,19 +118,16 @@ export async function POST(req: NextRequest) {
     return errorJson(413, 'Imagen demasiado grande (max ~6 MB)')
   }
 
-  // 3. Anthropic client (lee ANTHROPIC_API_KEY del entorno)
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 }) // SDK retries transient 5xx/429
-
   // 4. Llamada Vision + parse del JSON
   const mediaType = mimeType as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
   let raw = ''
   try {
-    raw = await callVision(client, imageBase64, mediaType)
+    raw = await callVision(supabase, authData.user.id, imageBase64, mediaType)
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada a Claude Vision', msg.slice(0, 300))
   }
@@ -145,7 +144,8 @@ export async function POST(req: NextRequest) {
   if (parseError || !isValidHeartRatePanelExtracted(parsed)) {
     try {
       raw = await callVision(
-        client,
+        supabase,
+        authData.user.id,
         imageBase64,
         mediaType,
         'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá la respuesta con `{` y terminá con `}`.',

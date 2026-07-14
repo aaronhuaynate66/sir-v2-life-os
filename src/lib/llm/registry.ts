@@ -18,9 +18,11 @@ export interface ProviderConfig {
   envKey: string
   /** Modelo por tier. */
   models: Record<LlmTier, string>
-  /** Modelo multimodal (visión). Si falta, el proveedor NO recibe requests con
-   *  imágenes: el router lo filtra de la chain. Sumar visión barata = una línea. */
-  vision?: string
+  /** ¿Sus modelos por tier son multimodales (aceptan imágenes)? Si no, el router
+   *  filtra este proveedor de las requests con imágenes. En visión se usa el
+   *  modelo del tier (no uno fijo), así `cheap`→Haiku y `capable`→Sonnet se
+   *  preservan. Anthropic: todos sus tiers son multimodales. */
+  visionCapable?: boolean
   /** Orden de costo (menor = más barato). Ordena el fallback por costo. */
   costRank: number
   /** ¿Entrena con el input? Documentado (ADR 0011 no lo usa para excluir). */
@@ -34,9 +36,10 @@ export const PROVIDERS: Record<LlmProvider, ProviderConfig> = {
   anthropic: {
     provider: 'anthropic', kind: 'anthropic', envKey: 'ANTHROPIC_API_KEY',
     models: { cheap: 'claude-haiku-4-5-20251001', balanced: 'claude-sonnet-4-5-20250929', capable: 'claude-sonnet-4-5-20250929' },
-    // Visión: Sonnet 4.5 (multimodal) — es el modelo que ya usan hoy los
-    // extractores de captura. Migrar a la capa NO cambia el modelo (behavior-preserving).
-    vision: 'claude-sonnet-4-5-20250929',
+    // Todos los tiers de Anthropic (Haiku 4.5 / Sonnet 4.5) son multimodales →
+    // en visión se usa models[tier], preservando el modelo por-ruta (Haiku barato
+    // para básculas/HR, Sonnet para documentos/precisión).
+    visionCapable: true,
     costRank: 100, trainsOnInput: false, price: { in: 3, out: 15 },
   },
   deepseek: {

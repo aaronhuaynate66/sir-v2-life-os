@@ -71,11 +71,16 @@ describe('planChain', () => {
     expect(chain.length).toBe(2)
   })
 
-  it('visión → solo proveedores con modelo multimodal, Anthropic al frente', () => {
+  it('visión → solo proveedores multimodales (hoy solo Anthropic)', () => {
     const chain = planChain({ task: 'extract', messages: [IMG_MSG] }, ALL)
-    // hoy solo anthropic declara `vision` → chain de 1, con su modelo de visión
     expect(chain.map((c) => c.provider)).toEqual(['anthropic'])
-    expect(chain[0].model).toBe('claude-sonnet-4-5-20250929')
+  })
+
+  it('visión respeta el tier: cheap→Haiku, capable→Sonnet (ambos multimodales)', () => {
+    const cheap = planChain({ task: 'extract', tier: 'cheap', messages: [IMG_MSG] }, ALL)
+    expect(cheap[0].model).toBe('claude-haiku-4-5-20251001')
+    const capable = planChain({ task: 'extract', tier: 'capable', messages: [IMG_MSG] }, ALL)
+    expect(capable[0].model).toBe('claude-sonnet-4-5-20250929')
   })
 
   it('visión sin proveedor multimodal disponible → chain vacía', () => {

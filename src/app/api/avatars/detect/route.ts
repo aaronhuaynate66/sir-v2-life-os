@@ -2,7 +2,7 @@
 // pide a la visión la caja (bounding box) de la foto de perfil / cara principal.
 // Devuelve {found, x, y, w, h} normalizado 0..1 (esquina sup-izq + tamaño).
 // El usuario CONFIRMA el recorte después (esto solo pre-encuadra).
-import Anthropic from '@anthropic-ai/sdk'
+import { complete } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -11,7 +11,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const MODEL_ID = 'claude-haiku-4-5-20251001'
 const MAX_BYTES = 6 * 1024 * 1024
 
 function mediaType(t: string): 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' {
@@ -35,21 +34,22 @@ export async function POST(req: NextRequest) {
 
   try {
     const b64 = Buffer.from(await file.arrayBuffer()).toString('base64')
-    const client = new Anthropic({ maxRetries: 1 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 150,
-      system: 'Sos un detector de fotos de perfil. Devolvés SOLO JSON, sin texto extra.',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType(file.type || 'image/jpeg'), data: b64 } },
-          { type: 'text', text: 'Esta es una captura de un perfil (Instagram/LinkedIn). Ubicá EXCLUSIVAMENTE la FOTO DE PERFIL: el avatar CIRCULAR (o cuadrado, en LinkedIn) que está ARRIBA, junto al nombre de usuario / @handle. NO elijas caras de las publicaciones del feed, de historias destacadas, de fotos sugeridas, ni de otras personas — SOLO el avatar del perfil de la persona dueña de la cuenta. Si el avatar es chico, igual devolvé su caja exacta. Devolvé SOLO este JSON con la caja normalizada 0..1 (origen arriba-izquierda), un poco amplia para incluir toda la cabeza: {"found": true|false, "x": <izq>, "y": <arriba>, "w": <ancho>, "h": <alto>}. Si no ves un avatar de perfil claro, found:false (mejor eso que agarrar la cara equivocada).' },
-        ],
-      }],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    const raw = block && block.type === 'text' ? block.text : ''
+    // Vía capa llm/. tier cheap → Haiku (mismo modelo). sensitivity third_party.
+    const res = await complete(
+      {
+        task: 'avatars_detect', tier: 'cheap', sensitivity: 'third_party', maxTokens: 150,
+        system: 'Sos un detector de fotos de perfil. Devolvés SOLO JSON, sin texto extra.',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', mediaType: mediaType(file.type || 'image/jpeg'), data: b64 } },
+            { type: 'text', text: 'Esta es una captura de un perfil (Instagram/LinkedIn). Ubicá EXCLUSIVAMENTE la FOTO DE PERFIL: el avatar CIRCULAR (o cuadrado, en LinkedIn) que está ARRIBA, junto al nombre de usuario / @handle. NO elijas caras de las publicaciones del feed, de historias destacadas, de fotos sugeridas, ni de otras personas — SOLO el avatar del perfil de la persona dueña de la cuenta. Si el avatar es chico, igual devolvé su caja exacta. Devolvé SOLO este JSON con la caja normalizada 0..1 (origen arriba-izquierda), un poco amplia para incluir toda la cabeza: {"found": true|false, "x": <izq>, "y": <arriba>, "w": <ancho>, "h": <alto>}. Si no ves un avatar de perfil claro, found:false (mejor eso que agarrar la cara equivocada).' },
+          ],
+        }],
+      },
+      { supabase, userId: auth.user.id },
+    )
+    const raw = res.text
     const s = raw.indexOf('{'); const e = raw.lastIndexOf('}')
     if (s < 0 || e <= s) return NextResponse.json({ found: false })
     const p = JSON.parse(raw.slice(s, e + 1)) as { found?: boolean; x?: number; y?: number; w?: number; h?: number }

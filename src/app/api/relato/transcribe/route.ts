@@ -9,7 +9,7 @@
 // Body: { imageBase64, mimeType }. Response: { text } | { text: null } (sin datos).
 // Session-auth + rate-limit 'vision' + 1 retry (mismo patrón que capture/document).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -21,7 +21,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929' // fechas/nombres → precisión sobre costo
 const ALLOWED_MIME = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif'])
 const MAX_BASE64_BYTES = 8 * 1024 * 1024
 
@@ -40,6 +39,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
   if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  const userId = auth.user.id
 
   const rl = await enforceRateLimit(supabase, auth.user.id, 'vision')
   if (!rl.ok) return rl.response
@@ -53,24 +53,24 @@ export async function POST(req: NextRequest) {
   const b64 = body.imageBase64.replace(/^data:[^;]+;base64,/, '')
   if (b64.length > MAX_BASE64_BYTES) return errorJson(413, 'Imagen muy grande', 'Probá con una foto más chica.')
 
-  if (!process.env.ANTHROPIC_API_KEY) return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // Vía capa llm/. tier balanced → Sonnet (fechas/nombres: precisión). self.
+  const mediaType = mimeType as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
   async function call(extra = ''): Promise<string> {
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 1200,
-      system: extra ? `${RELATO_TRANSCRIBE_SYSTEM_PROMPT}\n\n${extra}` : RELATO_TRANSCRIBE_SYSTEM_PROMPT,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mimeType as 'image/jpeg', data: b64 } },
-          { type: 'text', text: 'Transcribí a prosa todo dato útil de esta imagen.' },
-        ],
-      }],
-    })
-    const block = msg.content.find((b) => b.type === 'text')
-    return block && block.type === 'text' ? block.text : ''
+    const res = await complete(
+      {
+        task: 'relato_transcribe', tier: 'balanced', sensitivity: 'self', maxTokens: 1200,
+        system: extra ? `${RELATO_TRANSCRIBE_SYSTEM_PROMPT}\n\n${extra}` : RELATO_TRANSCRIBE_SYSTEM_PROMPT,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', mediaType, data: b64 } },
+            { type: 'text', text: 'Transcribí a prosa todo dato útil de esta imagen.' },
+          ],
+        }],
+      },
+      { supabase, userId },
+    )
+    return res.text
   }
 
   let raw = ''
@@ -78,6 +78,9 @@ export async function POST(req: NextRequest) {
     raw = await call()
   } catch (e) {
     reportApiError(e, { route: 'relato/transcribe' })
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     return errorJson(502, 'Falló la transcripción', (e instanceof Error ? e.message : String(e)).slice(0, 300))
   }
 

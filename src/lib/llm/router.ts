@@ -32,10 +32,11 @@ export function tierFor(task: string, explicit?: LlmTier): LlmTier {
   return explicit ?? TASK_TIER[task] ?? 'balanced'
 }
 
-function toCall(provider: LlmProvider, tier: LlmTier, needsVision: boolean, forcedModel?: string): PlannedCall {
+function toCall(provider: LlmProvider, tier: LlmTier, forcedModel?: string): PlannedCall {
   const cfg = PROVIDERS[provider]
-  const model = forcedModel ?? (needsVision ? cfg.vision! : cfg.models[tier])
-  return { provider, model, kind: cfg.kind }
+  // Visión y texto usan el modelo del tier: Anthropic es multimodal en todos sus
+  // tiers, así que cheap→Haiku / capable→Sonnet se preservan también con imágenes.
+  return { provider, model: forcedModel ?? cfg.models[tier], kind: cfg.kind }
 }
 
 /** ¿La request lleva alguna imagen? (algún mensaje con bloques y ≥1 de tipo 'image'). */
@@ -49,16 +50,16 @@ export function requestHasImages(req: LlmRequest): boolean {
  * Arma la chain ordenada de intentos. Devuelve [] si no hay ningún proveedor
  * disponible/apto (complete() lo traduce a un error claro).
  *
- * Visión: si la request lleva imágenes, se filtran los proveedores SIN modelo
- * multimodal (registry.vision) y se prioriza calidad (Anthropic al frente).
+ * Visión: si la request lleva imágenes, se filtran los proveedores no multimodales
+ * (registry.visionCapable) y se prioriza calidad (Anthropic al frente).
  */
 export function planChain(req: LlmRequest, available: LlmProvider[]): PlannedCall[] {
   if (available.length === 0) return []
   const tier = tierFor(req.task, req.tier)
   const needsVision = requestHasImages(req)
 
-  // Solo proveedores aptos: si hay imágenes, exigimos modelo de visión.
-  const candidates = needsVision ? available.filter((p) => PROVIDERS[p].vision != null) : available
+  // Solo proveedores aptos: si hay imágenes, exigimos multimodalidad.
+  const candidates = needsVision ? available.filter((p) => PROVIDERS[p].visionCapable) : available
   if (candidates.length === 0) return []
   const has = new Set(candidates)
 
@@ -80,6 +81,6 @@ export function planChain(req: LlmRequest, available: LlmProvider[]): PlannedCal
 
   return ordered.map((p, i) =>
     // El modelId forzado solo aplica al primer intento del proveedor forzado.
-    toCall(p, tier, needsVision, i === 0 && req.provider === p ? req.model : undefined),
+    toCall(p, tier, i === 0 && req.provider === p ? req.model : undefined),
   )
 }

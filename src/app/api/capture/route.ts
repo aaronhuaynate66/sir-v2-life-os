@@ -13,7 +13,7 @@
 // Coexiste con /api/capture/whatsapp y /api/capture/scale — esos siguen
 // funcionando sin cambios (paths tipados son atajos que saltan el detector).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
@@ -33,7 +33,6 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const DETECTOR_MODEL_ID = 'claude-sonnet-4-5-20250929'
 const ALLOWED_MIME = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif'])
 const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10 MB
 const VALID_TYPE_HINTS: ReadonlySet<CaptureType> = new Set<CaptureType>([
@@ -65,8 +64,13 @@ async function blobToBase64(file: Blob): Promise<string> {
   return Buffer.from(arrayBuffer).toString('base64')
 }
 
+type Supabase = Awaited<ReturnType<typeof createClient>>
+
+// Vía capa llm/. tier balanced → Sonnet (mismo modelo que el detector usaba).
+// sensitivity third_party (clasifica capturas de terceros).
 async function callDetectorVision(
-  client: Anthropic,
+  supabase: Supabase,
+  userId: string,
   imageBase64: string,
   mediaType: 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif',
   systemExtra: string = '',
@@ -74,22 +78,23 @@ async function callDetectorVision(
   const system = systemExtra
     ? `${DETECTOR_SYSTEM_PROMPT}\n\n${systemExtra}`
     : DETECTOR_SYSTEM_PROMPT
-  const msg = await client.messages.create({
-    model: DETECTOR_MODEL_ID,
-    max_tokens: 300, // detector output es chiquito (<200 tokens normales)
-    system,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
-          { type: 'text', text: 'Clasificar.' },
-        ],
-      },
-    ],
-  })
-  const textBlock = msg.content.find((b) => b.type === 'text')
-  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+  const res = await complete(
+    {
+      task: 'capture_detect', tier: 'balanced', sensitivity: 'third_party',
+      system, maxTokens: 300, // detector output es chiquito (<200 tokens normales)
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', mediaType, data: imageBase64 } },
+            { type: 'text', text: 'Clasificar.' },
+          ],
+        },
+      ],
+    },
+    { supabase, userId },
+  )
+  return res.text
 }
 
 /** Atajo cuando el cliente sabe el tipo de antemano (skip detector). */
@@ -144,20 +149,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(response, { status: 200 })
   }
 
-  // 4. Anthropic client + detector
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
-
+  // 4. Detector (vía capa llm/)
   const mediaType = file.type as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
   const imageBase64 = await blobToBase64(file)
 
   let raw = ''
   try {
-    raw = await callDetectorVision(client, imageBase64, mediaType)
+    raw = await callDetectorVision(supabase, authData.user.id, imageBase64, mediaType)
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const msg = e instanceof Error ? e.message : String(e)
     // Sin créditos de Anthropic: mensaje accionable en vez del error críptico.
     if (isAiCreditError(e)) return errorJson(402, 'Sin créditos de IA', AI_CREDIT_BANNER)
@@ -171,7 +174,8 @@ export async function POST(req: NextRequest) {
   } catch {
     try {
       raw = await callDetectorVision(
-        client,
+        supabase,
+        authData.user.id,
         imageBase64,
         mediaType,
         'CRÍTICO: tu respuesta anterior no era JSON valido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá la respuesta con `{` y terminá con `}`.',

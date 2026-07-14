@@ -12,7 +12,7 @@
 //
 // Mismo patrón que /api/capture/scale (auth + rate-limit vision + parse/retry).
 
-import Anthropic from '@anthropic-ai/sdk'
+import { complete, LlmError } from '@/lib/llm'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -26,9 +26,10 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
 
-const MODEL_ID = 'claude-sonnet-4-5-20250929' // números/fechas → precisión sobre costo
 const ALLOWED_MIME = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif'])
 const MAX_BASE64_BYTES = 8 * 1024 * 1024
+
+type Supabase = Awaited<ReturnType<typeof createClient>>
 
 function errorJson(status: number, error: string, detail?: string): NextResponse<DocumentCaptureError> {
   return NextResponse.json({ error, detail }, { status })
@@ -53,8 +54,12 @@ function stripJsonFences(s: string): string {
   return trimmed
 }
 
+// Vía capa llm/. tier capable → Sonnet (precisión sobre costo: números/fechas
+// de un documento de identidad). sensitivity third_party (datos de un tercero).
+// NO se loguean los valores.
 async function callVision(
-  client: Anthropic,
+  supabase: Supabase,
+  userId: string,
   imageBase64: string,
   mediaType: 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif',
   systemExtra = '',
@@ -62,22 +67,23 @@ async function callVision(
   const system = systemExtra
     ? `${DOCUMENT_VISION_SYSTEM_PROMPT}\n\n${systemExtra}`
     : DOCUMENT_VISION_SYSTEM_PROMPT
-  const msg = await client.messages.create({
-    model: MODEL_ID,
-    max_tokens: 500,
-    system,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
-          { type: 'text', text: 'Extraé los datos del documento.' },
-        ],
-      },
-    ],
-  })
-  const textBlock = msg.content.find((b) => b.type === 'text')
-  return textBlock && textBlock.type === 'text' ? textBlock.text : ''
+  const res = await complete(
+    {
+      task: 'capture_document', tier: 'capable', sensitivity: 'third_party',
+      system, maxTokens: 500,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', mediaType, data: imageBase64 } },
+            { type: 'text', text: 'Extraé los datos del documento.' },
+          ],
+        },
+      ],
+    },
+    { supabase, userId },
+  )
+  return res.text
 }
 
 export async function POST(req: NextRequest) {
@@ -107,17 +113,16 @@ export async function POST(req: NextRequest) {
     return errorJson(413, 'Imagen demasiado grande (max ~6 MB)')
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(500, 'ANTHROPIC_API_KEY no configurada en el server')
-  }
-  const client = new Anthropic({ maxRetries: 2 })
   const mediaType = mimeType as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
 
   let raw = ''
   try {
-    raw = await callVision(client, imageBase64, mediaType)
+    raw = await callVision(supabase, authData.user.id, imageBase64, mediaType)
   } catch (e) {
     reportApiError(e) // captura la excepción, NUNCA la imagen ni los valores
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(500, 'No hay proveedor LLM configurado en el server')
+    }
     const msg = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada a Claude Vision', msg.slice(0, 300))
   }
@@ -133,7 +138,8 @@ export async function POST(req: NextRequest) {
   if (parseError || !isValidDocumentRaw(parsed)) {
     try {
       raw = await callVision(
-        client,
+        supabase,
+        authData.user.id,
         imageBase64,
         mediaType,
         'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON del schema, sin texto adicional, sin markdown fences. Empezá con `{` y terminá con `}`.',
