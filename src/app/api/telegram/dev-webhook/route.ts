@@ -15,6 +15,8 @@ import { parseTelegramUpdate } from '@/lib/telegram/inbound'
 import { isDevBotConfigured, verifyDevSecret, sendDevMessage } from '@/lib/telegram/devClient'
 import { fetchGithubStatus } from '@/lib/dev/githubStatus'
 import { askDev } from '@/lib/dev/askDev'
+import { classifyDevMessage } from '@/lib/dev/classifyDevMessage'
+import { createGithubIssue } from '@/lib/dev/githubIssue'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -49,9 +51,29 @@ export async function POST(req: NextRequest) {
     if (text.startsWith('/')) {
       const cmd = text.slice(1).split(/\s+/)[0].toLowerCase()
       if (cmd === 'start' || cmd === 'help') {
-        await sendDevMessage(msg.chatId, '🛠️ Soy el bot de dev de SIR. Preguntame por el estado técnico: "¿pasó CI?", "¿qué PRs hay abiertos?", "¿qué se mergeó hoy?", "¿último commit?". Cruzo la GitHub API en vivo.')
+        await sendDevMessage(msg.chatId, '🛠️ Soy el bot de dev de SIR.\n\n• PREGUNTAME por el estado técnico: "¿pasó CI?", "¿qué PRs hay?", "¿qué se mergeó hoy?" — cruzo la GitHub API en vivo.\n• DECIME un pedido de dev (bug, mejora, cambio): "el botón X no anda", "arreglá Y", "estaría bueno Z" — lo anoto como issue en el repo para que se agarre y se arregle.')
         return
       }
+    }
+
+    // ¿Es un PEDIDO de dev (bug/feature/cambio) o una PREGUNTA de estado?
+    // Request → lo capturamos como issue de GitHub (cola accionable 'dev-inbox').
+    // Status → cae al Q&A de siempre. Ante la duda el clasificador elige 'status'.
+    const intent = await classifyDevMessage(text)
+    if (intent.kind === 'request') {
+      const ghToken = process.env.GITHUB_TOKEN
+      if (!ghToken) {
+        await sendDevMessage(msg.chatId, 'Te leí el pedido pero falta GITHUB_TOKEN en el server para anotarlo como issue 🙏.')
+        return
+      }
+      const body = `${text}\n\n---\n_Reportado por Aaron vía el bot de dev de Telegram (@sir_aaron_dev_bot)._`
+      const issue = await createGithubIssue(REPO, ghToken, intent.title, body)
+      if (issue) {
+        await sendDevMessage(msg.chatId, `📌 Anotado como issue #${issue.number}: ${intent.title}\n${issue.url}\n\nQueda en la cola de dev (label dev-inbox). Lo agarro cuando trabajemos.`)
+      } else {
+        await sendDevMessage(msg.chatId, 'Te leí el pedido pero no pude crear el issue (¿permisos del GITHUB_TOKEN para issues?). Reintentá o avisame por acá.')
+      }
+      return
     }
 
     try {
