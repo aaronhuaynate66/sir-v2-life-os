@@ -134,7 +134,10 @@ export const relationshipAdapter: TableAdapter<Relationship> = {
     status: r.status,
     depth: r.depth,
     reciprocity: r.reciprocity,
-    history: r.history ?? [],
+    // Cap de seguridad (ADR 0005 R7): a lo sumo los 50 eventos más recientes por
+    // relación. history es append-cronológico y hoy queda casi vacío (la app usa
+    // observations/memories), pero esto evita filas gigantes si algún flujo lo llena.
+    history: (r.history ?? []).slice(-50),
     shared_goals: r.sharedGoals ?? [],
     tensions: r.tensions ?? [],
     strengths: r.strengths ?? [],
