@@ -11,8 +11,8 @@
 // Body JSON: { coherence: string, anchor?: string, identity?: string }
 // Response 200: { insight: string }
 
-import Anthropic from '@anthropic-ai/sdk'
 import { NextResponse, type NextRequest } from 'next/server'
+import { complete, LlmError } from '@/lib/llm'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
@@ -26,8 +26,6 @@ import {
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30
-
-const MODEL_ID = 'claude-sonnet-4-5-20250929'
 const MAX_COHERENCE_CHARS = 600
 
 interface ErrorBody {
@@ -68,31 +66,23 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return errorJson(
-      503,
-      'Reflexión no disponible',
-      'Falta ANTHROPIC_API_KEY. Tu coherencia se ve igual sin la reflexión.',
-    )
-  }
-
   try {
-    const client = new Anthropic({ maxRetries: 2 })
-    const msg = await client.messages.create({
-      model: MODEL_ID,
-      max_tokens: 400,
+    const res = await complete({
+      task: 'synthesis', sensitivity: 'self',
       system: COHERENCE_NARRATIVE_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildCoherenceInput({ coherence, anchor, identity }) }],
-    })
-    const textBlock = msg.content.find((b) => b.type === 'text')
-    const text = textBlock && textBlock.type === 'text' ? textBlock.text : ''
-    const insight = parseCoherenceNarrative(text)
+      maxTokens: 400,
+    }, { supabase, userId: authData.user.id })
+    const insight = parseCoherenceNarrative(res.text)
     if (!insight) {
       return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
     }
     return NextResponse.json({ insight }, { status: 200 })
   } catch (e) {
     reportApiError(e)
+    if (e instanceof LlmError && e.code === 'no_provider') {
+      return errorJson(503, 'Reflexión no disponible', 'No hay proveedor LLM configurado. Tu coherencia se ve igual sin la reflexión.')
+    }
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar la reflexión', detail)
   }
