@@ -1,7 +1,18 @@
 // SIR V2 — Adaptador Anthropic nativo para la capa llm/.
 
 import Anthropic from '@anthropic-ai/sdk'
-import type { LlmRequest, LlmUsage } from '../types'
+import type { LlmMessage, LlmRequest, LlmUsage } from '../types'
+
+/** Traduce el `content` de un LlmMessage al formato nativo de Anthropic.
+ *  String → string; bloques → text/image nativos. */
+function toAnthropicContent(content: LlmMessage['content']): Anthropic.MessageParam['content'] {
+  if (typeof content === 'string') return content
+  return content.map((b) =>
+    b.type === 'image'
+      ? { type: 'image' as const, source: { type: 'base64' as const, media_type: b.source.mediaType, data: b.source.data } }
+      : { type: 'text' as const, text: b.text },
+  )
+}
 
 export async function callAnthropic(
   model: string,
@@ -13,7 +24,7 @@ export async function callAnthropic(
     max_tokens: req.maxTokens ?? 1024,
     ...(req.temperature != null ? { temperature: req.temperature } : {}),
     ...(req.system ? { system: req.system } : {}),
-    messages: req.messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: req.messages.map((m) => ({ role: m.role, content: toAnthropicContent(m.content) })),
   })
   const block = msg.content.find((b) => b.type === 'text')
   const text = block && block.type === 'text' ? block.text.trim() : ''

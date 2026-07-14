@@ -4,13 +4,28 @@
 // OpenRouter y cualquier proveedor con /chat/completions estilo OpenAI. La
 // diferencia entre proveedores vive en el registry (baseURL + envKey + modelId).
 
-import type { LlmRequest, LlmUsage } from '../types'
+import type { LlmMessage, LlmRequest, LlmUsage } from '../types'
 import type { ProviderConfig } from '../registry'
 
 interface ChatCompletion {
   choices?: Array<{ message?: { content?: string } }>
   usage?: { prompt_tokens?: number; completion_tokens?: number }
   error?: { message?: string }
+}
+
+type OpenAiPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+
+/** Traduce el `content` de un LlmMessage al formato OpenAI (Chat Completions).
+ *  String → string; imagen → `image_url` con data-URI base64. */
+function toOpenAiContent(content: LlmMessage['content']): string | OpenAiPart[] {
+  if (typeof content === 'string') return content
+  return content.map((b) =>
+    b.type === 'image'
+      ? { type: 'image_url' as const, image_url: { url: `data:${b.source.mediaType};base64,${b.source.data}` } }
+      : { type: 'text' as const, text: b.text },
+  )
 }
 
 export async function callOpenAiCompat(
@@ -22,7 +37,7 @@ export async function callOpenAiCompat(
   if (!key) throw new Error(`Falta ${cfg.envKey} para ${cfg.provider}`)
   const messages = [
     ...(req.system ? [{ role: 'system' as const, content: req.system }] : []),
-    ...req.messages.map((m) => ({ role: m.role, content: m.content })),
+    ...req.messages.map((m) => ({ role: m.role, content: toOpenAiContent(m.content) })),
   ]
   const res = await fetch(`${cfg.baseURL}/chat/completions`, {
     method: 'POST',

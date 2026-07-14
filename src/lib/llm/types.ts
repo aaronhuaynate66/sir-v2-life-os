@@ -7,9 +7,27 @@
 
 export type LlmRole = 'user' | 'assistant'
 
+/** Formatos de imagen soportados (coinciden con los media types de Anthropic). */
+export type LlmImageMediaType = 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
+
+export interface LlmTextBlock {
+  type: 'text'
+  text: string
+}
+
+/** Bloque de imagen inline (base64). El adaptador la traduce al formato de cada
+ *  proveedor: `source` nativo en Anthropic, `image_url` data-URI en OpenAI-compat. */
+export interface LlmImageBlock {
+  type: 'image'
+  source: { type: 'base64'; mediaType: LlmImageMediaType; data: string }
+}
+
+export type LlmContentBlock = LlmTextBlock | LlmImageBlock
+
 export interface LlmMessage {
   role: LlmRole
-  content: string
+  /** Texto plano, o bloques mixtos (texto + imagen) para visión. */
+  content: string | LlmContentBlock[]
 }
 
 /** Sensibilidad del contenido. Por ADR 0011 NO excluye proveedores (Aaron

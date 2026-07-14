@@ -32,38 +32,54 @@ export function tierFor(task: string, explicit?: LlmTier): LlmTier {
   return explicit ?? TASK_TIER[task] ?? 'balanced'
 }
 
-function toCall(provider: LlmProvider, tier: LlmTier, forcedModel?: string): PlannedCall {
+function toCall(provider: LlmProvider, tier: LlmTier, needsVision: boolean, forcedModel?: string): PlannedCall {
   const cfg = PROVIDERS[provider]
-  return { provider, model: forcedModel ?? cfg.models[tier], kind: cfg.kind }
+  const model = forcedModel ?? (needsVision ? cfg.vision! : cfg.models[tier])
+  return { provider, model, kind: cfg.kind }
+}
+
+/** ¿La request lleva alguna imagen? (algún mensaje con bloques y ≥1 de tipo 'image'). */
+export function requestHasImages(req: LlmRequest): boolean {
+  return req.messages.some(
+    (m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'image'),
+  )
 }
 
 /**
  * Arma la chain ordenada de intentos. Devuelve [] si no hay ningún proveedor
- * disponible (complete() lo traduce a un error claro).
+ * disponible/apto (complete() lo traduce a un error claro).
+ *
+ * Visión: si la request lleva imágenes, se filtran los proveedores SIN modelo
+ * multimodal (registry.vision) y se prioriza calidad (Anthropic al frente).
  */
 export function planChain(req: LlmRequest, available: LlmProvider[]): PlannedCall[] {
-  const has = new Set(available)
-  if (has.size === 0) return []
+  if (available.length === 0) return []
   const tier = tierFor(req.task, req.tier)
+  const needsVision = requestHasImages(req)
+
+  // Solo proveedores aptos: si hay imágenes, exigimos modelo de visión.
+  const candidates = needsVision ? available.filter((p) => PROVIDERS[p].vision != null) : available
+  if (candidates.length === 0) return []
+  const has = new Set(candidates)
 
   // Orden base por costo (más barato primero).
-  const byCost = [...available].sort((a, b) => PROVIDERS[a].costRank - PROVIDERS[b].costRank)
+  const byCost = [...candidates].sort((a, b) => PROVIDERS[a].costRank - PROVIDERS[b].costRank)
 
-  // capable → calidad primero: Anthropic al frente si está disponible.
+  // Calidad primero (Anthropic al frente) para capable y para visión.
   let ordered: LlmProvider[]
-  if (tier === 'capable' && has.has('anthropic')) {
+  if ((tier === 'capable' || needsVision) && has.has('anthropic')) {
     ordered = ['anthropic', ...byCost.filter((p) => p !== 'anthropic')]
   } else {
     ordered = byCost
   }
 
-  // Proveedor forzado (si está disponible) va primero, sin duplicar.
+  // Proveedor forzado (si está entre los aptos) va primero, sin duplicar.
   if (req.provider && has.has(req.provider)) {
     ordered = [req.provider, ...ordered.filter((p) => p !== req.provider)]
   }
 
   return ordered.map((p, i) =>
     // El modelId forzado solo aplica al primer intento del proveedor forzado.
-    toCall(p, tier, i === 0 && req.provider === p ? req.model : undefined),
+    toCall(p, tier, needsVision, i === 0 && req.provider === p ? req.model : undefined),
   )
 }
