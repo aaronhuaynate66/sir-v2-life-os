@@ -1,5 +1,10 @@
 # SIR V2 — Backlog Canónico
 
+> ⚠️ **ESTE DOC SE MANTIENE A MANO Y DERIVA.** El código avanza más rápido que este
+> archivo, así que acumula ítems "ya hechos pero listados como pendientes". **Antes de
+> tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
+> feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
+>
 > **Última actualización:** 14/07/2026 (reconciliación grande — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
