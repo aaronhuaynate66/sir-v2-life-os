@@ -27,8 +27,8 @@
   const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
   const MAX_BATCH = 80;               // igual que common.js
   const BACKFILL_COUNT = 300;         // mensajes recientes a mirar por chat
-  const CHAT_DELAY_MS = 900;          // ritmo humano entre chats
-  const MAX_CHATS = 120;              // backstop de seguridad (recencia ya acota)
+  const CHAT_DELAY_MS = 400;          // pausa entre chats (getMessages lee el Store local)
+  const MAX_CHATS = 300;              // backstop de seguridad (recencia ya acota al último mes)
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const idStr = (id) => (id && (id._serialized || id.id || id)) || '';
@@ -103,14 +103,13 @@
   async function backfill() {
     const all = await waitForChats();
     const cutoff = Date.now() - MONTH_MS;
-    const active = all
+    const activeAll = all
       .filter((c) => !isSkippable(c))
       .map((c) => ({ c, t: Number(c.t) || 0 }))
       .filter((x) => x.t * 1000 >= cutoff)     // solo activos en el último mes
-      .sort((a, b) => b.t - a.t)                // más recientes primero
-      .slice(0, MAX_CHATS)
-      .map((x) => x.c);
-    log(`backfill: ${all.length} chats totales, ${active.length} activos en el último mes → procesando`);
+      .sort((a, b) => b.t - a.t);               // más recientes primero
+    const active = activeAll.slice(0, MAX_CHATS).map((x) => x.c);
+    log(`backfill: ${all.length} totales · ${activeAll.length} activos en el último mes · procesando ${active.length}${activeAll.length > active.length ? ' (CAP — subir MAX_CHATS si querés todos)' : ''}`);
     if (!active.length && all.length) {
       warn('0 activos por recencia (¿chat.t vacío?). No fuerzo — revisá si falta data de fecha.');
     }
