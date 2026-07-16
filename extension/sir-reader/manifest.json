@@ -34,6 +34,12 @@
       "run_at": "document_idle"
     },
     {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["vendor/wppconnect-wa.js", "content/waStoreProbe.js"],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
       "matches": [
         "https://outlook.office.com/*",
         "https://outlook.office365.com/*",
