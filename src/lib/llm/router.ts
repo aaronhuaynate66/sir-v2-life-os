@@ -66,9 +66,13 @@ export function planChain(req: LlmRequest, available: LlmProvider[]): PlannedCal
   // Orden base por costo (más barato primero).
   const byCost = [...candidates].sort((a, b) => PROVIDERS[a].costRank - PROVIDERS[b].costRank)
 
-  // Calidad primero (Anthropic al frente) para capable y para visión.
+  // Calidad/fiabilidad primero (Anthropic al frente) para balanced, capable y visión.
+  // El tier `cheap` (extracción simple, alto volumen) se queda en el más barato
+  // disponible (OpenRouter llama-3.3-70b, rápido y validado) → ahí vive el ahorro.
+  // `balanced` en OpenRouter (qwen-2.5-72b) daba TIMEOUT >30s en rutas interactivas
+  // (bug 2026-07-16) → se prioriza Anthropic Sonnet, confiable. Solo `cheap` ahorra.
   let ordered: LlmProvider[]
-  if ((tier === 'capable' || needsVision) && has.has('anthropic')) {
+  if ((tier === 'capable' || tier === 'balanced' || needsVision) && has.has('anthropic')) {
     ordered = ['anthropic', ...byCost.filter((p) => p !== 'anthropic')]
   } else {
     ordered = byCost

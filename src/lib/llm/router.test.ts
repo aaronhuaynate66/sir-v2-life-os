@@ -43,6 +43,22 @@ describe('planChain', () => {
     expect(chain[0].provider).toBe('anthropic')
   })
 
+  it('balanced → Anthropic al frente (fiabilidad; el OSS balanced daba timeout, bug 2026-07-16)', () => {
+    const chain = planChain({ task: 'sir_chat', messages: [] }, ALL)
+    expect(chain[0].provider).toBe('anthropic')
+    expect(chain[0].model).toBe('claude-sonnet-4-5-20250929')
+  })
+
+  it('balanced sin Anthropic → cae al más barato disponible', () => {
+    const chain = planChain({ task: 'sir_chat', messages: [] }, ['openrouter', 'qwen'])
+    expect(chain[0].provider).toBe('qwen') // costRank 10 < openrouter 30
+  })
+
+  it('cheap NO cambia: sigue el más barato (ahorro intacto)', () => {
+    const chain = planChain({ task: 'classify', messages: [] }, ['anthropic', 'openrouter'])
+    expect(chain[0].provider).toBe('openrouter')
+  })
+
   it('capable sin Anthropic → cae al más barato disponible', () => {
     const chain = planChain({ task: 'synthesis', messages: [] }, ['deepseek', 'qwen'])
     expect(chain[0].provider).toBe('deepseek')
