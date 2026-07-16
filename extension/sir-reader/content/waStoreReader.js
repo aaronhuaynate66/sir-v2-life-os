@@ -7,11 +7,11 @@
 // background → /api/reader/ingest). READ-ONLY: nunca envía mensajes a WhatsApp.
 //
 //   F2: escucha mensajes nuevos en vivo (WPP.on('chat.new_message')).
-//   F3: backfill del ÚLTIMO MES al arrancar (itera chats, lee historial reciente).
-//   F4: al activarse, marca `data-sir-wajs="active"` en <html> → common.js apaga
-//       el scraper DOM (evita duplicados; el DOM queda de fallback si wa-js no carga).
+//   F3: backfill del ÚLTIMO MES al arrancar (SOLO chats con actividad en el último
+//       mes, ordenados por recencia; espera a que el store cargue los chats).
+//   F4: al activarse, marca `data-sir-wajs="active"` → common.js apaga el DOM.
 //
-// Debug manual: window.__sirProbe()  ·  window.__sirBackfill()
+// Debug manual: window.__sirBackfill()  ·  window.__sirProbe()
 (function () {
   const TAG = '[SIR waStore]';
   const log = (...a) => { try { console.log(TAG, ...a); } catch (_) {} };
@@ -21,7 +21,6 @@
     warn('window.WPP ausente → wa-js no cargó. El scraper DOM (fallback) sigue activo.');
     return;
   }
-  // F4: avisar (por el DOM compartido) que wa-js maneja WhatsApp → DOM en standby.
   try { document.documentElement.dataset.sirWajs = 'active'; } catch (_) {}
   log('wa-js', WPP.version || '?', '→ modo Store activo (DOM scraper en standby).');
 
@@ -29,11 +28,19 @@
   const MAX_BATCH = 80;               // igual que common.js
   const BACKFILL_COUNT = 300;         // mensajes recientes a mirar por chat
   const CHAT_DELAY_MS = 900;          // ritmo humano entre chats
+  const MAX_CHATS = 120;              // backstop de seguridad (recencia ya acota)
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const idStr = (id) => (id && (id._serialized || id.id || id)) || '';
 
-  // Nombre para atribución. Usamos `wa:<nombre>` como threadId (igual que el
-  // scraper DOM) para que el dedupe del server alinee ambas vías.
+  // Chats a ignorar: estados/historias y canales (no son conversaciones).
+  function isSkippable(chat) {
+    const id = idStr(chat && chat.id).toLowerCase();
+    return !id || id.includes('status@broadcast') || id.endsWith('@newsletter') || id.includes('broadcast');
+  }
+
+  // Nombre para atribución. `wa:<nombre>` como threadId (igual que el scraper DOM)
+  // para que el dedupe del server alinee ambas vías.
   function chatName(chat) {
     return (
       (chat && (chat.formattedTitle || chat.name)) ||
@@ -44,30 +51,24 @@
   }
 
   function toIso(t) {
-    // wa-js `t` es unix en segundos. null si no hay.
     if (!t && t !== 0) return null;
     const ms = Number(t) * 1000;
     if (!Number.isFinite(ms) || ms <= 0) return null;
     try { return new Date(ms).toISOString(); } catch (_) { return null; }
   }
 
-  // Nombre del remitente de un mensaje entrante (para grupos y 1:1).
   function senderName(m, fallbackChatName) {
     if (m.fromMe) return 'Aaron';
     const s = m.senderObj || m.sender;
     return (
       (s && (s.pushname || s.name || s.formattedName)) ||
-      m.notifyName ||
-      fallbackChatName ||
-      'otro'
+      m.notifyName || fallbackChatName || 'otro'
     );
   }
 
-  // Mapea un mensaje del Store a {author, text, ts}. null si no es texto útil.
   function mapMsg(m, cName) {
-    // Solo texto por ahora (media/voz fuera de alcance, como el pipeline actual).
     const body = (m.body != null ? String(m.body) : '').trim();
-    if (!body) return null;
+    if (!body) return null; // solo texto (media/voz fuera de alcance)
     return { author: senderName(m, cName), text: body, ts: toIso(m.t) };
   }
 
@@ -76,12 +77,7 @@
     if (!clean.length) return;
     for (let i = 0; i < clean.length; i += MAX_BATCH) {
       const chunk = clean.slice(i, i + MAX_BATCH);
-      const batch = {
-        platform: 'whatsapp',
-        threadId: `wa:${threadName}`,
-        threadName,
-        messages: chunk,
-      };
+      const batch = { platform: 'whatsapp', threadId: `wa:${threadName}`, threadName, messages: chunk };
       try { window.postMessage({ __sirReader: true, batch }, '*'); } catch (e) { warn('postMessage falló', e && e.message); }
     }
     log(`→ ${threadName}: ${clean.length} msgs al puente`);
@@ -92,32 +88,57 @@
     catch (e) { warn('WPP.chat.list falló:', e && e.message); return []; }
   }
 
-  // F3 — backfill del último mes: por cada chat, últimos mensajes acotados a 30d.
+  // Espera a que el store cargue los chats (race: mainReady=true pero list()=0).
+  async function waitForChats() {
+    for (let i = 0; i < 25; i++) {
+      const chats = await listChats();
+      if (chats.length > 0) return chats;
+      await sleep(2000);
+    }
+    return [];
+  }
+
+  // F3 — backfill del último mes: SOLO chats con actividad en el último mes,
+  // ordenados por recencia (evita iterar los 1000+ chats históricos).
   async function backfill() {
-    const chats = await listChats();
-    log(`backfill: ${chats.length} chats`);
+    const all = await waitForChats();
     const cutoff = Date.now() - MONTH_MS;
+    const active = all
+      .filter((c) => !isSkippable(c))
+      .map((c) => ({ c, t: Number(c.t) || 0 }))
+      .filter((x) => x.t * 1000 >= cutoff)     // solo activos en el último mes
+      .sort((a, b) => b.t - a.t)                // más recientes primero
+      .slice(0, MAX_CHATS)
+      .map((x) => x.c);
+    log(`backfill: ${all.length} chats totales, ${active.length} activos en el último mes → procesando`);
+    if (!active.length && all.length) {
+      warn('0 activos por recencia (¿chat.t vacío?). No fuerzo — revisá si falta data de fecha.');
+    }
     let total = 0;
-    for (const chat of chats) {
+    for (const chat of active) {
       const cName = chatName(chat);
       let msgs = [];
       try { msgs = (await WPP.chat.getMessages(chat.id, { count: BACKFILL_COUNT })) || []; }
       catch (e) { warn(`getMessages ${cName} falló:`, e && e.message); continue; }
-      const recent = msgs.filter((m) => (Number(m.t) * 1000) >= cutoff);
-      const mapped = recent.map((m) => mapMsg(m, cName)).filter(Boolean);
+      const mapped = msgs
+        .filter((m) => (Number(m.t) * 1000) >= cutoff)
+        .map((m) => mapMsg(m, cName))
+        .filter(Boolean);
       if (mapped.length) { post(cName, mapped); total += mapped.length; }
-      await new Promise((r) => setTimeout(r, CHAT_DELAY_MS)); // ritmo humano
+      await sleep(CHAT_DELAY_MS); // ritmo humano
     }
-    log(`backfill listo: ${total} msgs del último mes enviados al puente.`);
+    log(`backfill listo: ${total} msgs del último mes (${active.length} chats) enviados al puente.`);
     return total;
   }
 
-  // F2 — vivo: cada mensaje nuevo → puente.
+  // F2 — vivo.
   function subscribeLive() {
     try {
       WPP.on('chat.new_message', (msg) => {
         try {
-          const cName = chatName(msg.chat || { id: msg.from });
+          const chat = msg.chat || { id: msg.from };
+          if (isSkippable(chat)) return;
+          const cName = chatName(chat);
           const mapped = mapMsg(msg, cName);
           if (mapped) post(cName, [mapped]);
         } catch (e) { warn('new_message handler:', e && e.message); }
@@ -127,23 +148,17 @@
   }
 
   function start() {
-    log('WhatsApp Web listo → backfill del último mes + live.');
+    log('WhatsApp Web listo → live + backfill del último mes.');
     subscribeLive();
     backfill().catch((e) => warn('backfill error:', e && e.message));
   }
 
-  // Debug manual
   window.__sirBackfill = backfill;
   window.__sirProbe = async () => {
     const chats = await listChats();
-    log('probe: chats', chats.length, chats.slice(0, 8).map((c) => `${chatName(c)} [${idStr(c.id)}]`));
-    if (chats[0]) {
-      const m = await WPP.chat.getMessages(chats[0].id, { count: 3 }).catch(() => []);
-      log('probe: sample', (m || []).map((x) => ({ from: senderName(x, chatName(chats[0])), body: (x.body || '').slice(0, 50) })));
-    }
+    log('probe: chats', chats.length, chats.slice(0, 8).map((c) => `${chatName(c)} [${idStr(c.id)}] t=${c.t}`));
   };
 
-  // Arranque cuando WhatsApp Web esté listo.
   if (WPP.webpack && typeof WPP.webpack.onReady === 'function') {
     WPP.webpack.onReady(start);
   } else {
