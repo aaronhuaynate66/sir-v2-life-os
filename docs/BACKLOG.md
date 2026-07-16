@@ -5,7 +5,7 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 14/07/2026 (reconciliación grande — ver bloque abajo).
+> **Última actualización:** 16/07/2026 (reconciliación automática — ítems puntuales marcados ✅/🟡 con evidencia de código; ver bloque de 14/07 para la reconciliación grande).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
@@ -215,22 +215,24 @@ Agregar campos al schema B.4:
 - `hasBannerImage` (ya está)
 - `isOpenToWork` (ya está)
 
-### Nuevo capture_type whatsapp_web [P2]
+### Nuevo capture_type whatsapp_web [P2] — ✅ HECHO (reconciliación 2026-07-16)
 Detector debe distinguir `whatsapp_chat` móvil (bubbles columna) vs `whatsapp_web` (3 paneles: lista chats + conversación + info contacto).
 Prompt nuevo **B.6** + agregar al CHECK constraint de `observations.capture_type` (migration 0012).
+- **Evidencia:** `supabase/migrations/0020_observations_whatsapp_web.sql` agrega `'whatsapp_web'` al CHECK (reforzado en `0078_observations_dm_conversation.sql`); detector (`src/lib/capture/detector/prompt.ts`, `validate.ts`) y extractor (`src/lib/capture/extractors.ts`) ya distinguen el tipo. Esto ya estaba anotado como en prod en la reconciliación del 31/05 ("Captura whatsapp_web") pero este ítem duplicado había quedado sin marcar.
 
-### Captura por TEXTO pegado para perfiles (LinkedIn/IG) [P1 — media]
+### Captura por TEXTO pegado para perfiles (LinkedIn/IG) [P1 — media] — ✅ HECHO (reconciliación 2026-07-16)
 Permitir **pegar el texto** del perfil (LinkedIn/Instagram) en lugar de subir una imagen → extracción exacta **sin OCR/Visión**. **Resuelve de raíz** el problema recurrente de capturas ilegibles de página entera (letra diminuta → el LLM alucina o lee mal con confianza alta; ver BUG-001 y el fix 01/06 de detección de legibilidad). El texto pegado ya viene en caracteres reales: el extractor sólo estructura, no adivina píxeles.
-- Opcional/relacionado: leer el texto del perfil vía **Claude-in-Chrome** sobre la sesión logueada del usuario (NO scraping) — el usuario abre el perfil, el agente lee el DOM/texto visible.
-- Esfuerzo: bajo/medio. Nuevo modo de entrada en `/captura` y en `AgregarCapturaPanel` (textarea → mismo pipeline de extracción/observación, salteando Visión).
+- Opcional/relacionado: leer el texto del perfil vía **Claude-in-Chrome** sobre la sesión logueada del usuario (NO scraping) — el usuario abre el perfil, el agente lee el DOM/texto visible. **(esto sigue sin implementar; solo el modo textarea manual está hecho)**.
+- **Evidencia:** `src/lib/capture/text/detectFromText.ts` (detección pura linkedin/instagram desde marcadores del texto) + wireado en `src/components/relaciones/AgregarCapturaPanel.tsx` (import `TextProfileType`, selector `textType`, UI de textarea).
 
-### Calendario v2 — OAuth + sync bidireccional + multi-calendario [prioridad: a definir]
+### Calendario v2 — OAuth + sync bidireccional + multi-calendario — 🟡 MAYORMENTE HECHO (Google), Microsoft descartado (reconciliación 2026-07-16)
 Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_ICS_URL`). Subir a:
 - **Conexión fácil por login/OAuth** (Google/Gmail y Outlook/Microsoft) además de la URL `.ics`.
 - **Sync BIDIRECCIONAL en tiempo real** (crear/editar eventos desde SIR, no solo leer).
 - **Múltiples calendarios conectados a la vez** (ej. trabajo Outlook + personal Gmail).
 - **Feature grande**: OAuth por proveedor (consent screens, refresh tokens, scopes, almacenamiento seguro de tokens), webhooks/push para tiempo real, manejo de conflictos en el merge bidireccional. **Definir alcance ANTES de construir** (¿qué proveedores primero? ¿escritura o solo lectura multi-fuente en v2.0?).
 - Prioridad: **a definir** (revisión mañana).
+- **Evidencia (ya construido):** OAuth Google completo (`src/app/api/calendar/oauth/google/{start,callback,status}/route.ts`), `connections` para multi-calendario (`src/app/api/calendar/connections/route.ts` + `[id]/route.ts`, `src/lib/calendar/connections.ts`), y `POST /api/calendar/events` que crea eventos (bidireccional) — ver `src/app/api/calendar/events/route.ts`. Ya estaba anotado como hecho en la reconciliación del 14/07 pero este ítem original había quedado sin actualizar. **Microsoft/Outlook OAuth queda ❌ DESCARTADO** (ver tabla de DESCARTADO — bloqueado por el tenant de HNG); la vía `.ics` sigue siendo el camino para Outlook.
 
 ---
 
@@ -258,25 +260,20 @@ Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_I
 3. ✅ **Cumpleaños** con countdown — entregado en `BirthdayCountdown.tsx` (PR #89) + `birth_date` editable end-to-end.
 4. ✅ **Última interacción** con countdown — entregado en `LastInteractionPanel.tsx` (PR #88) leyendo `whatsapp_chat` más reciente filtrado por `is_obsolete=false`.
 5. ✅ **Registro rápido** — entregado en `RegistroRapidoPanel.tsx` (Sesión 6). 4 acciones (Ánimo / Energía / Sueño / Dolor) con selector 1-5. Storage Supabase-native en tabla `person_logs` (migration 0013) vía POST `/api/person-logs`, no `relationships.history`. Alimenta correlación lunar/ciclo (Fase 3c).
-6. **Vida profesional**: resumen autogenerado (LinkedIn + carrera, ej. "Titulada en Administración de Empresas...").
-7. **Vida social**: stats redes + seguidores en común (ej. "23 publicaciones y sigue a 1,374 personas... 14 seguidores en común").
-8. **Lo personal**: 3 párrafos narrativos auto-extraídos sobre la relación (tono emocional, dinámica, observaciones).
-9. **Fechas importantes**: lista con countdown (ej. "14 de junio - en 16 días").
-10. **Perfil profesional**: sección colapsable.
-11. **Redes sociales**: conectadas con escaneo (ej. "@diana.carolina.d").
-12. **Nota de voz**: botón para grabar audio asociado a la persona.
-13. **Fechas especiales**: añadibles.
+6. ✅ **Vida profesional** — entregado en `VidaProfesional.tsx` (resumen autogenerado LinkedIn + carrera; `professionalAxisFromFacts` deriva del chat cuando no hay LinkedIn, ver BUG-006).
+7. ✅ **Vida social** — entregado en `VidaSocial.tsx` (stats de redes + seguidores en común).
+8. ✅ **Lo personal** — entregado en `LoPersonal.tsx` + `person-synthesis/client.ts` (síntesis narrativa de la relación).
+9. ✅ **Fechas importantes** — entregado en `FechasImportantes.tsx` (lista con countdown).
+10. ✅ **Perfil profesional** — entregado en `PerfilProfesional.tsx` (sección colapsable).
+11. ✅ **Redes sociales** — entregado en `RedesSociales.tsx` (conectadas con escaneo, auto-link de handle).
+12. ✅ **Nota de voz** — entregado en `NotaDeVozPanel.tsx` (migración 0014, botón grabar audio asociado a la persona).
+13. ✅ **Fechas especiales** — cubierto por `FechasImportantes.tsx` (añadibles vía edición inline del detail page).
 14. ✅ **Registrar interacción** — entregado en `RegistrarInteraccionPanel.tsx` (Sesión 6). 5 estados emocionales (corazón roto → pleno = 1-5) + nota opcional. Mismo storage que #5 (tabla `person_logs`, `kind='interaction'`).
-15. **MEMORIAS ASOCIADAS** (sidebar derecho, lo más crítico):
-    - Tipos: `SEMANTIC`, `EPISODIC`, `EMOTIONAL`, `SOCIAL`.
-    - Auto-pobladas desde capturas WhatsApp (PR #85 ya guarda `relationships.history` items, falta extracción a tabla `memories`).
-    - Cada memoria con timestamp + content + person_id.
-    - 20+ memorias visibles en perfil de V1.
-16. **Botones top-right**:
-    - **Briefing IA**: genera resumen contextual de la persona usando LLM sobre todas las memorias asociadas.
-    - **Chat WhatsApp**: link directo a `wa.me/{teléfono}`.
-    - **Analizar screenshot**: atajo a `/captura/whatsapp` con la persona pre-seleccionada.
-17. **Bitácora**: colapsable con historial completo de interacciones.
+15. ✅ **MEMORIAS ASOCIADAS** (sidebar derecho, lo más crítico) — entregado en `MemoriasAsociadasPanel.tsx` + tabla `memories` (tipos SEMANTIC/EPISODIC/EMOTIONAL/SOCIAL) + derivación desde `observations` (`src/lib/memories/deriveFromObservations.ts`, `src/lib/memories/extract.ts`).
+16. ✅ **Botones top-right** — entregado en `PersonActions.tsx`: Chat WhatsApp (`wa.me/{teléfono}`) + Analizar screenshot; **Briefing IA** entregado aparte en `person-briefing/` (`client.ts` + `BriefingBody.tsx`).
+17. ✅ **Bitácora** — entregado en `Bitacora.tsx` (colapsable, historial completo de interacciones; ver también BUG-005 sobre filtrado de ruido).
+
+> **Nota de reconciliación (2026-07-16):** los ítems 6-13 y 15-17 de arriba no tenían el ✅ pese a que la propia sección ya decía "CERRADO" y el bloque de reconciliación 2026-07-14 (arriba del todo) ya listaba los 17 componentes como existentes. Verificado ahora contra el código real (`src/components/relaciones/*.tsx`) — todos existen. Marcados acá para que no se re-litigue.
 
 **Schema requerido:**
 
@@ -309,11 +306,12 @@ Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_I
 
 ---
 
-### 1. Issues de Fase 3b (planning estratégico)
+### 1. Issues de Fase 3b (planning estratégico) — ✅ SUPERADO (Fase 3b ya activa desde 2026-06-08)
 
-- Decidir scope concreto de "Búsqueda Semántica".
-- Posibles issues: pgvector setup, embeddings generation, search UI, re-rank, etc.
-- Estimación de planning: 30-60 min.
+- ~~Decidir scope concreto de "Búsqueda Semántica".~~
+- ~~Posibles issues: pgvector setup, embeddings generation, search UI, re-rank, etc.~~
+- ~~Estimación de planning: 30-60 min.~~
+- **Nota (reconciliación 2026-07-16):** este ítem de planning quedó obsoleto — ver "🎯 EN CURSO" arriba y la fila 3b de la tabla de FASES PLANEADAS: pgvector, embeddings, `/api/search`, `/buscar` ya están construidos y activos.
 
 > **Nota:** Captura Báscula (PR #79) y Captura WhatsApp Relaciones core (PR #85) **ya están en producción**. Sus residuales viven en "Pendientes menores" más abajo (sync engine hardening + re-validación conversationDate + variante whatsapp_web + extracción `relationships.history` → tabla `memories`).
 
@@ -372,7 +370,7 @@ Sub-fases ya estructuradas como milestones en GitHub.
 | 3a | Historial Profundo | ✅ CERRADA | (cerrada 28/05) |
 | 3b | Búsqueda semántica (pgvector + embeddings) | ✅ ACTIVA (2026-06-08) | key + memorias indexadas; cobertura cerrada con "Actualizar índice completo" (PR #100); decisión: no embeddear `observations` crudas |
 | 3c | Resumen automático de patrones longitudinales | ✅ ENTREGADA | correlación lunar/ciclo + resumen semanal (`874f019`, 0016) |
-| 3d | Memoria que aprende (RAG cross-session) | ⬜ Pendiente | 5-8 sesiones; depende de 3b activa |
+| 3d | Memoria que aprende (RAG cross-session) | 🟡 NÚCLEO HECHO | `/api/learnings` + `src/lib/learnings/recall.ts`, wireado en `src/app/api/horario/brief/route.ts` (`renderLearningsBlock`) y en `askSir.ts`/`influence/rehearse`. Coincide con la reconciliación 2026-07-14 (línea de arriba); esta fila había quedado sin actualizar. Falta evaluar si el alcance RAG cross-session pretendido originalmente está completo o si el núcleo actual es un subconjunto. |
 
 Timeline aspiracional: Fase 3 entera en 2-3 meses (4-8 semanas activas).
 
@@ -453,7 +451,7 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - **Toggle privacidad finance en /timeline**: mostrar/ocultar movimientos financieros del feed. Útil si compartís pantalla. Esfuerzo: 30 min.
 
-- **Cap en `relationships.history`**: cuando aparezca volumen >50 items por relación. R7 del ADR 0005. Esfuerzo: 15 min.
+- **Cap en `relationships.history`**: cuando aparezca volumen >50 items por relación. R7 del ADR 0005. Esfuerzo: 15 min. — 🔍 **REVISAR (reconciliación 2026-07-16):** `src/components/red/GraphView.tsx:132` comenta "el interactionCount viene de `relationships.history`, que en prod está vacío" — sugiere que el campo ya no es la storage activa (superado por `person_logs`/`observations`/`memories`), lo que podría volver este cap innecesario. No confirmado del todo (no verifiqué si algún otro camino todavía escribe ahí) — dejar para que Aaron decida si cerrar el ítem o mantenerlo.
 
 - ~~**Robots.txt + noindex para rutas autenticadas**~~ ✅ Resuelto: `src/app/robots.ts` en prod.
 
@@ -506,8 +504,7 @@ Detectadas durante el diagnóstico del 28/05/2026, cuando los upserts de `health
 
 - ~~**Sync engine: surface push failures al usuario.**~~ ✅ **HECHO (`notifySyncFailure` en `src/lib/supabase/sync/engine.ts`):** cuando `pushWithRetry` agota los reintentos, se muestra un toast («No pude sincronizar algunos cambios · quedaron guardados en este dispositivo, reintento al reconectar»), throttled 12s para no spamear en ráfagas offline. Tono tranquilizador (la fila queda en localStorage y se re-pushea al reconectar). (Verificado 2026-07-08.)
 
-- **`persistScaleCapture` no espera ACK del push.**
-  `src/lib/capture/scale/client.ts` retorna `{ insertedCount: N }` ni bien hace `setState` — el sync engine procesa el push asíncrono después. Si el push falla, la UI ya pasó al Step 4 "success" con mentira. Fix: agregar arg opcional `awaitSync: boolean` al `persistScaleCapture` que use el callback de arriba para esperar al ACK antes de resolver la promesa. Trade-off: rompe levemente el offline-first (la UI bloquea hasta que el server confirme). Para Captura específicamente, vale la pena porque las 13 métricas son irrecuperables si se pierden. Esfuerzo: 30 min después de tener el callback del punto anterior.
+- ~~**`persistScaleCapture` no espera ACK del push.**~~ ✅ **HECHO (reconciliación 2026-07-16):** `src/lib/capture/scale/client.ts` tiene el arg opcional `awaitSync?: boolean` (espera confirmación en DB antes de resolver la promesa) y está pasado como `awaitSync: true` en los 3 call-sites de UI (`MisCapturas.tsx`, `ScaleCaptureFlow.tsx`, `ScaleCaptureBranch.tsx`). Solo `healthBatch.ts` (batch server-side) no lo pasa, lo cual es correcto — no hay UI esperando ahí.
 
 ---
 
