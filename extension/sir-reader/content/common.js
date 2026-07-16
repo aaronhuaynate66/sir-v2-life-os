@@ -101,16 +101,27 @@
     log('observando', adapter.platform, container);
   }
 
+  // F4: en WhatsApp, si el lector wa-js (MAIN world) está activo marca
+  // <html data-sir-wajs="active"> → el scraper DOM se pone en standby para NO
+  // duplicar (wa-js ya captura todo). Si wa-js no cargó, el DOM corre como antes.
+  function wajsActive(platform) {
+    return platform === 'whatsapp' && document.documentElement.dataset.sirWajs === 'active';
+  }
+
   async function boot() {
     const adapter = window.__SIR_ADAPTER;
     if (!adapter) return;
     if (!(await isEnabled(adapter.platform))) { log(adapter.platform, 'apagado'); return; }
     if (CORE.started) return;
+    if (wajsActive(adapter.platform)) { log('wa-js activo → scraper DOM en standby'); return; }
     // El contenedor de mensajes puede tardar en aparecer (SPA). Reintentamos.
     let tries = 0;
     const iv = setInterval(() => {
       tries++;
-      if (adapter.getContainer()) {
+      if (wajsActive(adapter.platform)) {
+        clearInterval(iv);
+        log('wa-js activo → scraper DOM en standby');
+      } else if (adapter.getContainer()) {
         clearInterval(iv);
         CORE.started = true;
         attachObserver();
@@ -184,6 +195,21 @@
         sendResponse(diagnose());
         return true;
       }
+    });
+  } catch (_) { /* */ }
+
+  // Puente MAIN→ISOLATED: el lector wa-js (waStoreReader.js) corre en MAIN world
+  // (sin chrome.*) y nos manda los batches por window.postMessage. Los reenviamos
+  // por el MISMO transporte que el scraper DOM (sir-batch → background →
+  // /api/reader/ingest). El server deduplica por hash, así que es idempotente.
+  try {
+    window.addEventListener('message', (e) => {
+      if (e.source !== window) return;
+      const d = e.data;
+      if (!d || d.__sirReader !== true || !d.batch || !Array.isArray(d.batch.messages)) return;
+      chrome.runtime.sendMessage({ type: 'sir-batch', batch: d.batch })
+        .then((res) => log('puente→', d.batch.threadName, d.batch.messages.length, res && res.ok ? 'ok' : res))
+        .catch((err) => log('puente error', err));
     });
   } catch (_) { /* */ }
 
