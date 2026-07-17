@@ -49,6 +49,23 @@ describe('buildMorningPush — hábito a retomar', () => {
   })
 })
 
+describe('buildMorningPush — a quién cuidar hoy (nudge relacional)', () => {
+  it('incluye el nudge relacional cuando viene', () => {
+    const p = buildMorningPush({ relationshipNudge: 'Diana (tu pareja) — Sin hablar hace 12 días' })
+    expect(p.body).toContain('Diana (tu pareja)')
+    expect(p.body).toContain('Sin hablar hace 12 días')
+  })
+  it('va después de las fechas pero antes de las tareas', () => {
+    const p = buildMorningPush({
+      birthdays: [{ name: 'Pedro', days: 2 }],
+      relationshipNudge: 'Sasa — Relación dormida',
+      dueTasks: ['Cerrar reporte'],
+    })
+    expect(p.body.indexOf('Pedro')).toBeLessThan(p.body.indexOf('Sasa'))
+    expect(p.body.indexOf('Sasa')).toBeLessThan(p.body.indexOf('Cerrar reporte'))
+  })
+})
+
 describe('buildMorningPush — fechas especiales / aniversarios', () => {
   it('incluye el aniversario mensual (mesario) en el brief', () => {
     const p = buildMorningPush({ importantDates: ['Aniversario mensual relación (13) · ¡Hoy!'] })

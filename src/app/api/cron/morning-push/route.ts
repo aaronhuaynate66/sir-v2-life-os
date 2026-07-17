@@ -25,6 +25,8 @@ import { vitalsAnomaly, type DailyVitals } from '@/lib/health/vitalsAnomaly'
 import { calibrateRanges, type VitalsHistory } from '@/lib/health/calibrate'
 import { healthDataGap } from '@/lib/health/dataGap'
 import { parseWeightCategory } from '@/engines/targets'
+import { assembleDailyActions } from '@/lib/daily-actions/assemble'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -335,7 +337,22 @@ export async function GET(req: NextRequest) {
         /* fail-soft */
       }
 
-      const push = buildMorningPush({ birthdays, importantDates, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText })
+      // A QUIÉN CUIDAR HOY: el vínculo más urgente de "Reconectar", con el MISMO
+      // motor que la app (assembleDailyActions). SIR sabe a quién estás
+      // descuidando; esto lo saca de la app y te lo dice en el push/Telegram.
+      let relationshipNudgeText: string | undefined
+      try {
+        const { actions } = await assembleDailyActions(admin as unknown as SupabaseClient, uid, now, { focus: 'reconnect', limit: 1 })
+        const top = actions[0]
+        if (top && (top.urgency === 'high' || top.urgency === 'medium')) {
+          const who = top.kinLabel ? `${top.personName} (${top.kinLabel})` : top.personName
+          relationshipNudgeText = `${who} — ${top.headline}`
+        }
+      } catch {
+        /* fail-soft: el nudge relacional es un extra, no rompe el push */
+      }
+
+      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
