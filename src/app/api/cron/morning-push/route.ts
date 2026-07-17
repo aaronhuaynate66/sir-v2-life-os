@@ -22,6 +22,7 @@ import type { SpecialDate } from '@/types'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
 import { bodySignal } from '@/lib/health/bodySignal'
 import { vitalsAnomaly, type DailyVitals } from '@/lib/health/vitalsAnomaly'
+import { calibrateRanges, type VitalsHistory } from '@/lib/health/calibrate'
 import { healthDataGap } from '@/lib/health/dataGap'
 import { parseWeightCategory } from '@/engines/targets'
 
@@ -214,28 +215,34 @@ export async function GET(req: NextRequest) {
       // sobre el aviso de peso: una señal de salud aguda importa más.
       let vitalsAlerted = false
       try {
-        const since = new Date(now.getTime() - 5 * 86_400_000).toISOString().slice(0, 10)
+        // Ventana de 30 días: sirve tanto para detectar el día de hoy como para
+        // AUTO-CALIBRAR los umbrales contra el baseline personal de Aaron.
+        const since = new Date(now.getTime() - 30 * 86_400_000).toISOString().slice(0, 10)
         const { data: vitalRows } = await admin
           .from('health_metrics')
           .select('type, value, measured_at')
           .eq('user_id', uid)
           .in('type', ['hrv_avg', 'sleeping_heart_rate', 'respiratory_rate', 'heart_rate_high_alerts'])
           .gte('measured_at', since)
-          .limit(200)
+          .limit(500)
         const byDate = new Map<string, DailyVitals>()
+        const hist: VitalsHistory = { hrvAvg: [], sleepingHr: [], respRate: [], highHrAlerts: [] }
         for (const r of (vitalRows ?? []) as Array<{ type: string; value: number; measured_at: string }>) {
           const iso = (r.measured_at ?? '').slice(0, 10)
           if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue
           const v = Number(r.value)
           if (!Number.isFinite(v)) continue
           const d = byDate.get(iso) ?? { date: iso }
-          if (r.type === 'hrv_avg') d.hrvAvg = v
-          else if (r.type === 'sleeping_heart_rate') d.sleepingHr = v
-          else if (r.type === 'respiratory_rate') d.respRate = v
-          else if (r.type === 'heart_rate_high_alerts') d.highHrAlerts = v
+          if (r.type === 'hrv_avg') { d.hrvAvg = v; hist.hrvAvg.push(v) }
+          else if (r.type === 'sleeping_heart_rate') { d.sleepingHr = v; hist.sleepingHr.push(v) }
+          else if (r.type === 'respiratory_rate') { d.respRate = v; hist.respRate.push(v) }
+          else if (r.type === 'heart_rate_high_alerts') { d.highHrAlerts = v; hist.highHrAlerts.push(v) }
           byDate.set(iso, d)
         }
-        const anomaly = vitalsAnomaly([...byDate.values()])
+        // Umbrales personales (percentiles de su propia historia); con poca data
+        // caen a los defaults del rango Zepp.
+        const { ranges } = calibrateRanges(hist)
+        const anomaly = vitalsAnomaly([...byDate.values()], ranges)
         if (anomaly) { metricAlertText = anomaly.text; vitalsAlerted = true }
       } catch {
         /* fail-soft */
