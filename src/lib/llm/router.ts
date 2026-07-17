@@ -52,8 +52,16 @@ export function requestHasImages(req: LlmRequest): boolean {
  *
  * Visión: si la request lleva imágenes, se filtran los proveedores no multimodales
  * (registry.visionCapable) y se prioriza calidad (Anthropic al frente).
+ *
+ * `degraded`: proveedores que la telemetría marcó lentos/caídos (providerHealth).
+ * Se mandan al FINAL de la chain (no se eliminan → siguen como último recurso),
+ * así un proveedor barato pero enfermo no hace perder tiempo yendo primero.
  */
-export function planChain(req: LlmRequest, available: LlmProvider[]): PlannedCall[] {
+export function planChain(
+  req: LlmRequest,
+  available: LlmProvider[],
+  degraded: Set<LlmProvider> = new Set(),
+): PlannedCall[] {
   if (available.length === 0) return []
   const tier = tierFor(req.task, req.tier)
   const needsVision = requestHasImages(req)
@@ -77,6 +85,14 @@ export function planChain(req: LlmRequest, available: LlmProvider[]): PlannedCal
     ordered = ['anthropic', ...byCost.filter((p) => p !== 'anthropic')]
   } else {
     ordered = byCost
+  }
+
+  // Salud: degradados (lentos/caídos) al final, preservando el orden relativo.
+  // Nunca vacía la chain — siguen como fallback por si los sanos también fallan.
+  if (degraded.size) {
+    const healthy = ordered.filter((p) => !degraded.has(p))
+    const bad = ordered.filter((p) => degraded.has(p))
+    if (healthy.length) ordered = [...healthy, ...bad]
   }
 
   // Proveedor forzado (si está entre los aptos) va primero, sin duplicar.

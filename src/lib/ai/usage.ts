@@ -24,19 +24,38 @@ export function estimateCostUSD(model: string | null | undefined, inputTokens: n
   return (inputTokens / 1_000_000) * p.in + (outputTokens / 1_000_000) * p.out
 }
 
-/** Registra un consumo (best-effort, nunca rompe el flujo principal). */
+/** Metadatos del intento para el router auto-ajustable. */
+export interface AttemptMeta {
+  /** Latencia del intento en ms. */
+  latencyMs?: number
+  /** 'ok' | 'error'. Default 'ok'. Los 'error' se registran aunque no haya tokens. */
+  status?: 'ok' | 'error'
+}
+
+/** Registra un consumo (best-effort, nunca rompe el flujo principal).
+ *  Con `meta` guarda latencia + estado para medir salud de proveedores. */
 export async function recordAiUsage(
   supabase: SupabaseClient,
   userId: string,
   feature: string,
   model: string | null,
   usage: TokenUsage | null | undefined,
+  meta?: AttemptMeta,
 ): Promise<void> {
-  if (!usage) return
-  const input = Math.max(0, Math.round(usage.input_tokens ?? 0))
-  const output = Math.max(0, Math.round(usage.output_tokens ?? 0))
-  if (input === 0 && output === 0) return
+  const status = meta?.status ?? 'ok'
+  const input = Math.max(0, Math.round(usage?.input_tokens ?? 0))
+  const output = Math.max(0, Math.round(usage?.output_tokens ?? 0))
+  // Éxitos sin tokens no valen la pena; los FALLOS sí (los necesita la salud).
+  if (status === 'ok' && input === 0 && output === 0) return
+  const base = { user_id: userId, feature, model, input_tokens: input, output_tokens: output }
+  const latency_ms = typeof meta?.latencyMs === 'number' && Number.isFinite(meta.latencyMs)
+    ? Math.max(0, Math.round(meta.latencyMs))
+    : null
   try {
-    await supabase.from('ai_usage').insert({ user_id: userId, feature, model, input_tokens: input, output_tokens: output })
-  } catch { /* best-effort */ }
+    const { error } = await supabase.from('ai_usage').insert({ ...base, status, latency_ms })
+    if (error) throw error
+  } catch {
+    // Tolerante a pre-migración: si aún no existen status/latency_ms, insert mínimo.
+    try { await supabase.from('ai_usage').insert(base) } catch { /* best-effort */ }
+  }
 }
