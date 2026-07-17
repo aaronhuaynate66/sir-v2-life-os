@@ -1,4 +1,4 @@
-// SIR V2 — Transcripción por foto para "Contale a SIR" (relato).
+// SIR V2 — Transcripción por foto para "Cuéntale a SIR" (relato).
 //
 // Aaron (03-jul): en /relato/ingest el clip solo deja adjuntar PDF. Cuando SIR
 // le muestra un dato que venía preguntando (ej. el cumple de los Heilbrunn) y le
@@ -12,18 +12,20 @@
 
 /** System prompt de la transcripción. Pide prosa fiel, sin invención, con las
  *  fechas/cumpleaños hechos explícitos para que el router del relato los tome. */
-export const RELATO_TRANSCRIBE_SYSTEM_PROMPT = `Sos SIR V2. Te paso una FOTO (una pantalla, una tarjeta, un cartel, una captura).
+export const RELATO_TRANSCRIBE_SYSTEM_PROMPT = `Eres SIR V2. Te paso una FOTO (una pantalla, una tarjeta, un cartel, una captura).
 Tu trabajo es TRANSCRIBIR a prosa, en español, TODO dato útil que se vea: nombres y apellidos,
 cargos, empresas, fechas, cumpleaños, teléfonos, direcciones, montos, lo que sea.
 
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
+
 Reglas:
-- NO inventes NADA. Transcribí solo lo que está en la imagen. Si algo está cortado o ilegible, omitilo.
-- Escribí las FECHAS de forma explícita y natural. Si ves un cumpleaños, decilo así:
+- NO inventes NADA. Transcribe solo lo que está en la imagen. Si algo está cortado o ilegible, omítelo.
+- Escribe las FECHAS de forma explícita y natural. Si ves un cumpleaños, dilo así:
   "Alex Heilbrunn cumple el 31 de julio." (una oración por persona).
-- Preferí nombres COMPLETOS (nombre + apellido) cuando la imagen los muestre.
-- Devolvé SOLO el texto en prosa, sin encabezados, sin viñetas, sin comillas de bloque,
-  sin explicar qué hiciste. Ese texto va directo al input de "Contale a SIR".
-- Si la imagen no tiene ningún dato útil (borrosa, sin texto), devolvé exactamente: SIN_DATOS`
+- Prefiere nombres COMPLETOS (nombre + apellido) cuando la imagen los muestre.
+- Devuelve SOLO el texto en prosa, sin encabezados, sin viñetas, sin comillas de bloque,
+  sin explicar qué hiciste. Ese texto va directo al input de "Cuéntale a SIR".
+- Si la imagen no tiene ningún dato útil (borrosa, sin texto), devuelve exactamente: SIN_DATOS`
 
 /** Sentinel que el modelo devuelve cuando no hay nada transcribible. */
 export const NO_DATA_SENTINEL = 'SIN_DATOS'

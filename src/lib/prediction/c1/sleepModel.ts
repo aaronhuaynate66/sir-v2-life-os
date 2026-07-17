@@ -102,7 +102,7 @@ export function analyzeSleep(records: SleepRecord[], nowMs: number): SleepC1 {
   }
 
   if (n < MIN_DAYS) {
-    insufficient.push(`hacen falta ≥${MIN_DAYS} noches para tu baseline (tenés ${n})`)
+    insufficient.push(`hacen falta ≥${MIN_DAYS} noches para tu baseline (tienes ${n})`)
     return empty
   }
 
@@ -169,7 +169,7 @@ export function analyzeSleep(records: SleepRecord[], nowMs: number): SleepC1 {
       }
     }
   } else {
-    insufficient.push(`ritmo semanal: hacen falta ≥${MIN_WEEKLY} noches (tenés ${n})`)
+    insufficient.push(`ritmo semanal: hacen falta ≥${MIN_WEEKLY} noches (tienes ${n})`)
   }
 
   // --- deuda de sueño (últimas 7 noches vs baseline) ---
@@ -207,7 +207,7 @@ export function analyzeSleep(records: SleepRecord[], nowMs: number): SleepC1 {
       architecture = { deepPct, remPct, note }
     }
   } else {
-    insufficient.push(`arquitectura: hacen falta ≥${MIN_ARCH} noches con profundo/REM (tenés ${archRows.length})`)
+    insufficient.push(`arquitectura: hacen falta ≥${MIN_ARCH} noches con profundo/REM (tienes ${archRows.length})`)
   }
 
   // --- proyección de la próxima noche ---

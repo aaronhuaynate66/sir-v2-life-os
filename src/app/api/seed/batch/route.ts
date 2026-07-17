@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authErr } = await supabase.auth.getUser()
   if (authErr || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
   }
   const userId = authData.user.id
 

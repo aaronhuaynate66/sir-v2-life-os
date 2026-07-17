@@ -29,7 +29,7 @@ function TimelineContent() {
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
           Explora tus eventos en orden cronológico: memorias, métricas, sueño, finanzas,
-          señales, objetivos y relaciones. Filtrá por rango, tipo o búsqueda textual.
+          señales, objetivos y relaciones. Filtra por rango, tipo o búsqueda textual.
         </p>
       </header>
 

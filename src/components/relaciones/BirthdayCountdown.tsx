@@ -121,7 +121,7 @@ export function BirthdayCountdown({ person }: BirthdayCountdownProps) {
 
   function save() {
     if (!parseLocalDate(draft)) {
-      toast.error('Fecha inválida', { description: 'Elegí una fecha de nacimiento válida.' })
+      toast.error('Fecha inválida', { description: 'Elige una fecha de nacimiento válida.' })
       return
     }
     updatePerson(person.id, { birthDate: draft, updatedAt: new Date().toISOString() })
@@ -220,7 +220,7 @@ function Body({ birthDate }: { birthDate: string }) {
   if (!next) {
     return (
       <p className="text-sm text-muted-foreground italic">
-        Fecha de nacimiento con formato inválido. Editala arriba.
+        Fecha de nacimiento con formato inválido. Edítala arriba.
       </p>
     )
   }

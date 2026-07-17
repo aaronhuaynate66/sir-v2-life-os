@@ -5,7 +5,7 @@
 // directa a la vista relevante.
 //
 // Al click en el ícono ▾ de cualquiera → expande in-place con detalle:
-//   - Peace: top 3 personas en riesgo con mini info (equivale a Empezá por acá).
+//   - Peace: top 3 personas en riesgo con mini info (equivale a Empieza por acá).
 //   - Urgente: top 3 personas con el título del pendiente + delta días.
 //   - Novedad: últimas 3 alertas con from → to y persona.
 //

@@ -42,7 +42,7 @@ export default function ConsumoPage() {
             <Gauge size={20} className="text-[#14b8a6]" />
             <h1 className="text-2xl font-semibold tracking-tight">Consumo de IA</h1>
           </div>
-          <p className="text-sm text-muted-foreground">Lo que SIR gastó en IA los últimos 30 días. Costo <span className="font-medium">estimado</span> (la API no expone tu saldo; activá auto-reload en la consola de Anthropic para no quedarte sin créditos).</p>
+          <p className="text-sm text-muted-foreground">Lo que SIR gastó en IA los últimos 30 días. Costo <span className="font-medium">estimado</span> (la API no expone tu saldo; activa auto-reload en la consola de Anthropic para no quedarte sin créditos).</p>
         </header>
 
         {loading ? (

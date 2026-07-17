@@ -120,7 +120,7 @@ export function LoPersonal({ personId, synthesis, conversationCount }: LoPersona
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground leading-relaxed">
               Hay {conversationCount} conversación{conversationCount === 1 ? '' : 'es'} registrada
-              {conversationCount === 1 ? '' : 's'}. Generá un retrato narrativo del vínculo a partir
+              {conversationCount === 1 ? '' : 's'}. Genera un retrato narrativo del vínculo a partir
               de ellas.
             </p>
             <Button size="sm" onClick={handleGenerate} disabled={generating}>
@@ -147,8 +147,8 @@ function EmptyState() {
   return (
     <p className="text-sm text-muted-foreground italic leading-relaxed">
       Sin síntesis generada. Cuando haya al menos una conversación de WhatsApp
-      registrada con esta persona, vas a poder generar acá un retrato narrativo
-      del vínculo. Empezá registrando una con{' '}
+      registrada con esta persona, vas a poder generar aquí un retrato narrativo
+      del vínculo. Empieza registrando una con{' '}
       <span className="not-italic font-medium text-foreground">Agregar captura</span> (arriba).
     </p>
   )

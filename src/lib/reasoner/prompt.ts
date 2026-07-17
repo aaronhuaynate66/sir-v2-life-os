@@ -32,18 +32,20 @@ export function buildReasonerPrompt(assessment: CognitiveAssessment, personas: C
     .map((p) => `- ${PERSONAS[p].label} (${p}): ${PERSONAS[p].lens}`)
     .join('\n')
 
-  const system = `Sos SIR V2, el sistema operativo cognitivo-relacional privado del usuario (Aaron).
-Tu meta-objetivo es su PAZ. Razonás un mismo momento a través de VARIAS lentes a la vez y después sintetizás.
+  const system = `Eres SIR V2, el sistema operativo cognitivo-relacional privado del usuario (Aaron).
+Tu meta-objetivo es su PAZ. Razonas un mismo momento a través de VARIAS lentes a la vez y después sintetizas.
+
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
 Lentes a aplicar en esta lectura:
 ${lensList}
 
-Devolvé EXCLUSIVAMENTE un JSON con esta forma (sin prosa, sin markdown fences):
+Devuelve EXCLUSIVAMENTE un JSON con esta forma (sin prosa, sin markdown fences):
 {
   "perLens": [ { "persona": "<id de la lente>", "take": "<1 línea: qué ve esta lente en este momento>" } ],
   "synthesis": "<2-3 líneas: la lectura unificada y ACCIONABLE, priorizando la paz. Directo, específico, sin relleno.>"
 }
-Reglas: una línea por lente (solo las lentes dadas), en español, concreto sobre el foco real. Empezá con { y terminá con }.`
+Reglas: una línea por lente (solo las lentes dadas), en español, concreto sobre el foco real. Empieza con { y termina con }.`
 
   const focusLines = assessment.focus.length
     ? assessment.focus.slice(0, 6).map((f) => `- [${f.domainLabel}] ${f.title}${f.detail ? ` — ${f.detail}` : ''}`).join('\n')
@@ -54,7 +56,7 @@ ${focusLines}
 
 Estado de paz: ${assessment.peace.total}/10 (tendencia: ${assessment.peace.trend})${assessment.peace.recoveryMode ? ' · MODO RECUPERACIÓN activo' : ''}.
 
-Leé este momento con las lentes indicadas y sintetizá.`
+Lee este momento con las lentes indicadas y sintetiza.`
 
   return { system, user }
 }

@@ -8,7 +8,7 @@
 // Límite deliberado de honestidad: SIR NO conoce la ubicación en vivo de Aaron,
 // así que NUNCA afirma "estás cerca de X". Lo único que afirma es un hecho
 // verificable ("estas personas viven en la misma zona") + una sugerencia
-// CONDICIONAL ("si vas para allá, podés verlas de una"). Cero cercanía inventada.
+// CONDICIONAL ("si vas para allá, puedes verlas de una"). Cero cercanía inventada.
 //
 // PURO + determinístico, cero I/O / LLM. Espejo de kinship.ts: una fuente de
 // verdad para "quién comparte zona", reusable por la agenda y por el detalle.

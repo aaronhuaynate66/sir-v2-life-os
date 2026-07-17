@@ -58,7 +58,7 @@ export function QuickStateLog() {
   return (
     <Card>
       <CardContent className="p-4 space-y-3">
-        <p className="text-sm font-medium text-foreground">¿Cómo venís hoy?</p>
+        <p className="text-sm font-medium text-foreground">¿Cómo vienes hoy?</p>
         {ROWS.map(({ category, label, Icon }) => {
           const current = hydrated ? loggedTodayValue(category) : null
           const done = current !== null

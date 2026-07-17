@@ -18,7 +18,7 @@ export interface MedExtracted {
   confidence: 'high' | 'medium' | 'low'
 }
 
-export const MED_EXTRACT_SYSTEM_PROMPT = `Sos un asistente que lee información de MEDICAMENTOS y devuelve su desglose estructurado.
+export const MED_EXTRACT_SYSTEM_PROMPT = `Eres un asistente que lee información de MEDICAMENTOS y devuelve su desglose estructurado.
 
 Entrada posible:
 - Una FOTO de la caja/empaque o prospecto de un medicamento.
@@ -37,7 +37,7 @@ Reglas:
 - Usá SOLO lo que ves en la imagen o lo que conocés con certeza del nombre. NO inventes dosis.
 - Si un principio activo trata la migraña (ergotamina, triptanes), la clase es "antimigrañoso".
 - Si no estás seguro de un campo, ponelo en null y bajá "confidence".
-- Respondé SOLO el JSON, sin texto extra, sin markdown fences. Empezá con { y terminá con }.`
+- Respondé SOLO el JSON, sin texto extra, sin markdown fences. Empieza con { y termina con }.`
 
 function str(v: unknown, max: number): string | null {
   if (typeof v !== 'string') return null

@@ -232,7 +232,7 @@ const RHETORIC_PATTERNS: Record<string, RegExp[]> = {
   ],
   doubt: [
     /\bquien te dice que\b/g, /\bseguro que \w+ (miente|te miente|te oculta)\b/g,
-    /\bno podes confiar en\b/g, /\bno es tan \w+ como (parece|dice|crees)\b/g,
+    /\bno puedes confiar en\b/g, /\bno es tan \w+ como (parece|dice|crees)\b/g,
     /\bque te hace pensar que\b/g,
   ],
   ad_hominem: [

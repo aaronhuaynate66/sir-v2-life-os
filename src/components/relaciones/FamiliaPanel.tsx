@@ -10,7 +10,7 @@
 //     person_a_id='self', migration 0058). El dropdown genérico "Relación"
 //     (PersonDetail) sigue intacto; esto es el parentesco específico.
 //   • AUTOCOMPLETAR: al agregar un familiar de ESTA persona buscás entre las
-//     personas que ya tenés (match tolerante a tildes/primer nombre) y elegís
+//     personas que ya tienes (match tolerante a tildes/primer nombre) y eliges
 //     UNA, o creás una nueva. Se guarda la ARISTA, no texto.
 //   • BIDIRECCIONAL: una arista dirigida link(A→B, kind) se ve como "B es <kind>
 //     de A" en la ficha de A y como "A es <inverso> de B" en la ficha de B.
@@ -211,7 +211,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
     if (selectedTargetId) return selectedTargetId
     const trimmed = query.trim()
     if (!trimmed) {
-      toast.error('Elegí o nombrá un familiar')
+      toast.error('Elige o nombra un familiar')
       return null
     }
     const takenSlugs = new Set(people.map((p) => p.slug).filter(Boolean) as string[])
@@ -239,7 +239,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
   /** Vincula fromId → toId con el parentesco `linkKind` (dirigido). */
   function createLink(fromId: string, toId: string, linkKind: FamilyKind, label: string) {
     if (toId === fromId) {
-      toast.error('No podés vincular a la persona consigo misma')
+      toast.error('No puedes vincular a la persona consigo misma')
       return false
     }
     const dup = links.some(
@@ -357,7 +357,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
 
           {showSelfSetter && (
             <div className="space-y-2">
-              <p className="text-[11px] text-muted-foreground/70">¿Quién es esta persona para vos?</p>
+              <p className="text-[11px] text-muted-foreground/70">¿Quién es esta persona para ti?</p>
               <div className="flex items-end gap-2">
                 <div className="flex-1">
                   <Select value={selfKind} onValueChange={(v) => setSelfKind(v as FamilyKind)}>
@@ -422,7 +422,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
                     setQuery(e.target.value)
                     setSelectedTargetId(null)
                   }}
-                  placeholder="Ej: María (escribí para buscar)…"
+                  placeholder="Ej: María (escribe para buscar)…"
                   className="pl-8"
                   autoFocus
                   autoComplete="off"
@@ -516,7 +516,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
         {familyRows.length === 0 ? (
           !adding && (
             <p className="text-sm text-muted-foreground">
-              Sin familiares vinculados. <span className="text-muted-foreground/60">Opcional — agregá padre, madre, hermanos, etc.</span>
+              Sin familiares vinculados. <span className="text-muted-foreground/60">Opcional — agrega padre, madre, hermanos, etc.</span>
             </p>
           )
         ) : (
@@ -627,7 +627,7 @@ function SuggestionRow({
       </div>
       <div className="flex flex-wrap gap-1.5">
         {suggestion.candidates.length === 0 ? (
-          <span className="text-[11px] text-muted-foreground/60">Sin coincidencias entre tus personas — agregalo manualmente arriba.</span>
+          <span className="text-[11px] text-muted-foreground/60">Sin coincidencias entre tus personas — agrégalo manualmente arriba.</span>
         ) : (
           suggestion.candidates.slice(0, 3).map((c) => {
             const p = peopleById.get(c.personId)

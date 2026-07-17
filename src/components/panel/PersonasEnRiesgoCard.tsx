@@ -86,7 +86,7 @@ export function PersonasEnRiesgoCard() {
           <div className="flex items-center gap-2 flex-wrap">
             <Users size={14} strokeWidth={1.75} className="text-warn" aria-hidden="true" />
             <span className="text-[10px] uppercase tracking-widest text-text-tertiary font-sans">
-              Empezá por acá
+              Empieza por acá
             </span>
             <Badge variant="outline" className="text-[10px] font-mono">{personas.length}</Badge>
             <span className="text-[10px] text-muted-foreground ml-auto">Personas con algo abierto o tono bajo</span>

@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
 
   const userId = authData.user.id
@@ -284,7 +284,7 @@ export async function POST(req: NextRequest) {
 
   if (isTextMode) {
     if (profileText.length < MIN_TEXT_CHARS) {
-      return errorJson(400, 'Texto demasiado corto', `Pegá el texto del perfil (mín ${MIN_TEXT_CHARS} caracteres).`)
+      return errorJson(400, 'Texto demasiado corto', `Pega el texto del perfil (mín ${MIN_TEXT_CHARS} caracteres).`)
     }
     if (profileText.length > MAX_TEXT_CHARS) {
       return errorJson(413, 'Texto demasiado largo', `Máx ${MAX_TEXT_CHARS} caracteres.`)
@@ -357,7 +357,7 @@ export async function POST(req: NextRequest) {
     ? null
     : ((file as Blob).type as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif')
   const RETRY_EXTRA =
-    'CRÍTICO: tu respuesta anterior no era JSON valido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá la respuesta con `{` y terminá con `}`.'
+    'CRÍTICO: tu respuesta anterior no era JSON valido. Devuelve SOLO el JSON, sin texto adicional, sin markdown fences. Empieza la respuesta con `{` y termina con `}`.'
   let raw = ''
   let parsed: unknown = null
 

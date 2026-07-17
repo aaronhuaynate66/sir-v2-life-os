@@ -158,7 +158,7 @@ export async function deriveForPerson(
       ok: false,
       status: 422,
       error: 'Sin observaciones para derivar',
-      detail: 'Subí capturas (WhatsApp, Instagram, LinkedIn) o notas de esta persona y reintentá.',
+      detail: 'Subí capturas (WhatsApp, Instagram, LinkedIn) o notas de esta persona y reinténtalo.',
     }
   }
 
@@ -169,7 +169,7 @@ export async function deriveForPerson(
       status: 422,
       error: 'Las capturas disponibles no son confiables para derivar',
       detail:
-        'Todas las capturas de esta persona quedaron descartadas o con baja confianza de lectura. Volvé a capturar con imágenes más nítidas (las secciones del perfil, no la página entera) y reintentá.',
+        'Todas las capturas de esta persona quedaron descartadas o con baja confianza de lectura. Volvé a capturar con imágenes más nítidas (las secciones del perfil, no la página entera) y reinténtalo.',
     }
   }
 

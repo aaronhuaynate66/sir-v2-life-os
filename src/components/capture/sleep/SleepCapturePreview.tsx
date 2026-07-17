@@ -226,7 +226,7 @@ export function SleepCapturePreview({
                   value={totalRaw}
                   onChange={(e) => setTotalRaw(e.target.value)}
                   disabled={saving}
-                  placeholder="Se deriva de las fases si lo dejás vacío"
+                  placeholder="Se deriva de las fases si lo dejas vacío"
                   className="mt-1 font-mono tabular-nums"
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">
@@ -320,7 +320,7 @@ export function SleepCapturePreview({
                   <span className="font-mono tabular-nums">{fmtHm(effectiveTotal)}</span> de sueño.
                 </>
               ) : (
-                'Completá la fecha y la duración para guardar.'
+                'Completa la fecha y la duración para guardar.'
               )}
             </div>
             <div className="flex gap-2 justify-end">

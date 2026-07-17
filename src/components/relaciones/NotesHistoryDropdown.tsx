@@ -116,7 +116,7 @@ export function NotesHistoryDropdown({ history, onRestore, disabled }: NotesHist
           </ul>
           <div className="p-2 border-t border-border/60">
             <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
-              &quot;Usar este&quot; reemplaza el textarea. Aún tenés que darle a &quot;Guardar&quot;
+              &quot;Usar este&quot; reemplaza el textarea. Aún tienes que darle a &quot;Guardar&quot;
               para confirmar.
             </p>
           </div>

@@ -73,13 +73,13 @@ export function IdentityProposalReview({
     <div className="space-y-4 rounded-md border border-primary/20 bg-muted/10 p-3">
       <div className="flex items-center gap-2">
         <Sparkles size={14} strokeWidth={1.75} className="text-primary flex-shrink-0" aria-hidden="true" />
-        <span className="text-xs font-medium text-foreground">Revisá lo que encontré</span>
+        <span className="text-xs font-medium text-foreground">Revisa lo que encontré</span>
       </div>
       <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
         {intro}
         {added > 0
-          ? 'Esto SUMA a lo que ya tenías (no lo reemplaza). Corregí lo que haga falta antes de guardar.'
-          : 'No encontré datos nuevos sobre lo que ya tenías. Podés ajustar igual.'}
+          ? 'Esto SUMA a lo que ya tenías (no lo reemplaza). Corrige lo que haga falta antes de guardar.'
+          : 'No encontré datos nuevos sobre lo que ya tenías. Puedes ajustar igual.'}
       </p>
 
       {diff && (diff.addedRoles.length > 0 || diff.addedInterests.length > 0 || diff.filled.length > 0) && (
@@ -127,7 +127,7 @@ export function IdentityProposalReview({
           <Textarea value={draft.trajectory} placeholder="Estudios + experiencia…" onChange={(e) => setDraft({ ...draft, trajectory: e.target.value })} className="min-h-[60px] resize-y" />
         </Field>
         <Field icon={FileText} label="Bio">
-          <Textarea value={draft.bio} placeholder="Sobre vos…" onChange={(e) => setDraft({ ...draft, bio: e.target.value })} className="min-h-[60px] resize-y" />
+          <Textarea value={draft.bio} placeholder="Sobre ti…" onChange={(e) => setDraft({ ...draft, bio: e.target.value })} className="min-h-[60px] resize-y" />
         </Field>
       </div>
 

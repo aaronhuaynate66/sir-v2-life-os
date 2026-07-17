@@ -194,9 +194,9 @@ export function moonPhase(date: Date = new Date()): LunarPhase {
 }
 
 /**
- * Helper liviano cuando solo querés el id de fase. Equivalente a
+ * Helper liviano cuando solo quieres el id de fase. Equivalente a
  * `moonPhase(date).phase` pero evita construir el objeto completo si
- * solo lo necesitás para etiquetar al vuelo (ej. en una lista grande).
+ * solo lo necesitas para etiquetar al vuelo (ej. en una lista grande).
  */
 export function moonPhaseId(date: Date): LunarPhaseId {
   const jd = toJulianDay(date)

@@ -117,7 +117,7 @@ export function MencionadasPanel({ personId, personName, specialDates }: Props) 
 
   function create(m: MentionedPerson) {
     const name = nameFor(m)
-    if (name.length < 2) { toast.error('Ponele un nombre'); return }
+    if (name.length < 2) { toast.error('Ponle un nombre'); return }
     const taken = new Set(people.map((p) => p.slug).filter(Boolean) as string[])
     let slug = generateSlug(name)
     while (taken.has(slug)) slug = `${slug}-${rand(3)}`
@@ -155,7 +155,7 @@ export function MencionadasPanel({ personId, personName, specialDates }: Props) 
             <span className="ml-auto text-[11px] text-muted-foreground hidden group-open:inline">ocultar ▾</span>
           </summary>
         <p className="text-[11px] text-muted-foreground mb-3 mt-3">
-          Detecté terceros en sus fechas importantes. Confirmá para crearlos como contacto + vínculo + cumple. Si ya lo tenés, te ofrezco vincularlo.
+          Detecté terceros en sus fechas importantes. Confirma para crearlos como contacto + vínculo + cumple. Si ya lo tienes, te ofrezco vincularlo.
         </p>
         <div className="space-y-3">
           {visible.map((m) => {
@@ -166,7 +166,7 @@ export function MencionadasPanel({ personId, personName, specialDates }: Props) 
                 {ex ? (
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="flex-1 min-w-0 text-sm">
-                      Ya tenés a <span className="font-medium">{ex.name}</span> — ¿es el mismo?
+                      Ya tienes a <span className="font-medium">{ex.name}</span> — ¿es el mismo?
                     </div>
                     <div className="flex gap-1.5">
                       <Button size="sm" onClick={() => linkExisting(m, ex)}>

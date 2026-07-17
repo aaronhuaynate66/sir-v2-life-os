@@ -17,13 +17,13 @@ export const INGEST_TOOLS = [
     name: 'crear_moment',
     description:
       'Crear un episodio relacional (pelea, encuentro, decisión, follow-up médico, etc.) ' +
-      'con una persona identificada por nombre completo. Usá status="abierto" cuando queda ' +
+      'con una persona identificada por nombre completo. Usa status="abierto" cuando queda ' +
       'algo pendiente (con follow_up_on si Aaron mencionó fecha) y "resuelto" cuando el ' +
       'evento cerró en el mismo día.',
     input_schema: {
       type: 'object' as const,
       properties: {
-        person_full_name: { type: 'string', description: 'NOMBRE COMPLETO (nombre + al menos un apellido). Si no sabés el apellido, usá flag_ambiguo.' },
+        person_full_name: { type: 'string', description: 'NOMBRE COMPLETO (nombre + al menos un apellido). Si no sabes el apellido, usa flag_ambiguo.' },
         title: { type: 'string', description: 'Título corto del episodio (≤80 chars).' },
         detail: { type: 'string', description: 'Detalle 2-4 líneas de qué pasó.' },
         occurred_on: { type: 'string', description: 'Fecha del evento, YYYY-MM-DD.' },
@@ -45,9 +45,9 @@ export const INGEST_TOOLS = [
       properties: {
         person_full_name: { type: 'string' },
         kind: { type: 'string', enum: ['interaction', 'mood', 'energy'] },
-        value: { type: 'integer', description: 'Tono 1..5 — DISCRIMINÁ, NO metas 3 por defecto: 1=muy mal (pelea, corte, tensión fuerte), 2=tenso/incómodo, 3=neutro/rutinario (SOLO si de verdad no hubo carga), 4=cálido/buena, 5=excelente/muy conectados. Leé la señal en lo que Aaron cuenta: "le molestó"→2, "buena charla / buen humor"→4, "hermoso día juntos"→5, "pelea fea"→1.' },
+        value: { type: 'integer', description: 'Tono 1..5 — DISCRIMINA, NO metas 3 por defecto: 1=muy mal (pelea, corte, tensión fuerte), 2=tenso/incómodo, 3=neutro/rutinario (SOLO si de verdad no hubo carga), 4=cálido/buena, 5=excelente/muy conectados. Lee la señal en lo que Aaron cuenta: "le molestó"→2, "buena charla / buen humor"→4, "hermoso día juntos"→5, "pelea fea"→1.' },
         note: { type: 'string', description: 'Nota breve.' },
-        logged_at: { type: 'string', description: 'ISO 8601 con TZ. Si Aaron dice solo la fecha, poné 20:00 Lima (-05:00).' },
+        logged_at: { type: 'string', description: 'ISO 8601 con TZ. Si Aaron dice solo la fecha, pon 20:00 Lima (-05:00).' },
       },
       required: ['person_full_name', 'kind', 'value', 'logged_at'],
     },
@@ -102,7 +102,7 @@ export const INGEST_TOOLS = [
   {
     name: 'crear_persona',
     description:
-      'Crear una persona nueva en la red cuando Aaron menciona a alguien que NO está en la lista de personas ya conocidas. Usá esto cuando el relato introduce a alguien con nombre completo por primera vez. NO uses esto si la persona ya existe.',
+      'Crear una persona nueva en la red cuando Aaron menciona a alguien que NO está en la lista de personas ya conocidas. Usa esto cuando el relato introduce a alguien con nombre completo por primera vez. NO uses esto si la persona ya existe.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -119,12 +119,12 @@ export const INGEST_TOOLS = [
     description:
       'Crear un recordatorio agendado cuando Aaron dice "recordame X en Y días" / "en Z horas" / ' +
       '"el viernes a las 15" / "mañana" / "la semana que viene". SIR agenda + dispara push cuando ' +
-      'llega el momento. Si menciona una persona, incluí person_full_name para deep-link.',
+      'llega el momento. Si menciona una persona, incluye person_full_name para deep-link.',
     input_schema: {
       type: 'object' as const,
       properties: {
         text: { type: 'string', description: 'Qué hay que recordar, en 1-2 líneas.' },
-        due_at: { type: 'string', description: 'Timestamp ISO 8601 con TZ (ej. 2026-07-05T15:00:00-05:00). Si Aaron dice "mañana a las 15" y hoy es 2026-07-03, poné 2026-07-04T15:00:00-05:00. Si dice solo "mañana" sin hora, usá 09:00 de Lima.' },
+        due_at: { type: 'string', description: 'Timestamp ISO 8601 con TZ (ej. 2026-07-05T15:00:00-05:00). Si Aaron dice "mañana a las 15" y hoy es 2026-07-03, pon 2026-07-04T15:00:00-05:00. Si dice solo "mañana" sin hora, usa 09:00 de Lima.' },
         person_full_name: { type: 'string', description: 'Opcional. Nombre completo si el recordatorio es sobre alguien.' },
       },
       required: ['text', 'due_at'],
@@ -134,10 +134,10 @@ export const INGEST_TOOLS = [
     name: 'registrar_ciclo',
     description:
       'Registrar UN DÍA del ciclo menstrual de una persona (típicamente la pareja) cuando Aaron ' +
-      'lo menciona en el relato. Usá phase="bleeding" cuando dice "estaba con la regla", "tenía ' +
+      'lo menciona en el relato. Usa phase="bleeding" cuando dice "estaba con la regla", "tenía ' +
       'un resto de regla", "sangrando". "pms" cuando menciona síntomas premenstruales. "unknown" ' +
       'si Aaron dice que ella está en ciertos días sin saber la fase exacta. Un evento = un día; ' +
-      'si dice "el lunes todavía tenía regla" y también "el domingo", creá 2 acciones separadas.',
+      'si dice "el lunes todavía tenía regla" y también "el domingo", crea 2 acciones separadas.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -162,11 +162,11 @@ export const INGEST_TOOLS = [
     name: 'registrar_aprendizaje',
     description:
       'Registrar una LECCIÓN DURABLE y GENERAL sobre Aaron (no sobre otra persona, no un evento ' +
-      'puntual). Usala cuando Aaron enuncia una preferencia estable ("prefiero findes largos para ' +
+      'puntual). Úsala cuando Aaron enuncia una preferencia estable ("prefiero findes largos para ' +
       'viajar"), un patrón propio ("cuando duermo menos de 6h me irrito"), un principio o prioridad ' +
       'del período ("este año el Mundial va antes que todo") o un hecho estable sobre él. Es memoria ' +
       'que SIR va a APLICAR al aconsejar más adelante. NO la uses para hechos de una sola vez (eso es ' +
-      'crear_moment) ni para cosas de otra persona. Frasealo en tercera persona, corto y accionable.',
+      'crear_moment) ni para cosas de otra persona. Fraséalo en tercera persona, corto y accionable.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -179,7 +179,7 @@ export const INGEST_TOOLS = [
         confidence: {
           type: 'string',
           enum: ['high', 'medium', 'low'],
-          description: 'high si Aaron lo afirma explícito; medium si lo inferís del relato. Default medium.',
+          description: 'high si Aaron lo afirma explícito; medium si lo infieres del relato. Default medium.',
         },
       },
       required: ['text', 'kind'],
@@ -188,15 +188,15 @@ export const INGEST_TOOLS = [
   {
     name: 'flag_ambiguo',
     description:
-      'Cuando Aaron menciona SOLO el primer nombre y hay ambigüedad (o no sabés el apellido), ' +
-      'llamá esta tool para pedirle que aclare. NO crees moments/logs/notas sin apellido — ' +
+      'Cuando Aaron menciona SOLO el primer nombre y hay ambigüedad (o no sabes el apellido), ' +
+      'llama esta tool para pedirle que aclare. NO crees moments/logs/notas sin apellido — ' +
       'usar esta tool en su lugar. Aaron va a corregir el relato y reenviarlo.',
     input_schema: {
       type: 'object' as const,
       properties: {
         short_name: { type: 'string', description: 'Nombre corto mencionado (ej. "Diana").' },
         context_hint: { type: 'string', description: 'Contexto que da Aaron (afectivo, trabajo, familiar…) — opcional.' },
-        options_seen: { type: 'array', items: { type: 'string' }, description: 'Nombres completos conocidos que colisionan (si podés listar).' },
+        options_seen: { type: 'array', items: { type: 'string' }, description: 'Nombres completos conocidos que colisionan (si puedes listar).' },
       },
       required: ['short_name'],
     },

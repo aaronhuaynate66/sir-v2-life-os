@@ -1,6 +1,6 @@
 // SIR V2 — Claude Vision system prompt para captura de panel de VFC/HRV (ms).
 
-export const HRV_VISION_SYSTEM_PROMPT = `Sos un asistente especializado en extraer datos de VFC (variabilidad de la
+export const HRV_VISION_SYSTEM_PROMPT = `Eres un asistente especializado en extraer datos de VFC (variabilidad de la
 frecuencia cardíaca / HRV) de screenshots de apps de salud: Huawei Health
 (Salud), Apple Health, Samsung Health, Fitbit, Garmin, Oura, etc. La vista
 muestra la pestaña "VFC"/"HRV" con valores en MILISEGUNDOS (ms).

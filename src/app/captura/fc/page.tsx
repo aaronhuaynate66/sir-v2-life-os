@@ -37,10 +37,10 @@ function CaptureHeartRateContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Captura frecuencia cardíaca</h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Subí una foto del panel de frecuencia cardíaca de tu app de salud (Huawei
+          Sube una foto del panel de frecuencia cardíaca de tu app de salud (Huawei
           Health, Apple Health, Samsung Health, etc.). Claude Vision extrae tu FC en
-          reposo, el rango del día (mín–máx) y el promedio; vos los revisás y
-          confirmás. Tu FC en reposo pasa a ser tu FC actual en Self.
+          reposo, el rango del día (mín–máx) y el promedio; tú los revisas y
+          confirmas. Tu FC en reposo pasa a ser tu FC actual en Self.
         </p>
       </header>
 

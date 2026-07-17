@@ -378,13 +378,13 @@ describe('contactDatesInRange — fechas de la red con aviso anticipado', () => 
     expect(dates[0].daysUntil).toBe(5)
     expect(dates[0].detail).toContain('cumple 31')
     expect(dates[0].detail).toContain('en 5 días')
-    expect(dates[0].nudge).toBe('Esta semana: conseguí un detalle')
+    expect(dates[0].nudge).toBe('Esta semana: consigue un detalle')
   })
 
   it('cumpleaños lejano (con tiempo) → nudge de planear regalo', () => {
     const dates = contactDatesInRange([person({ birthDate: '1990-06-12' })], 14, NOW)
     expect(dates[0].daysUntil).toBe(11)
-    expect(dates[0].nudge).toBe('Con tiempo: planeá un regalo')
+    expect(dates[0].nudge).toBe('Con tiempo: planea un regalo')
   })
 
   it('fuera del lead-time → excluido', () => {
@@ -403,7 +403,7 @@ describe('contactDatesInRange — fechas de la red con aviso anticipado', () => 
     expect(dates[0].kind).toBe('special_date')
     expect(dates[0].title).toBe('Aniversario · Diana')
     expect(dates[0].daysUntil).toBe(9)
-    expect(dates[0].nudge).toBe('Planeá algo especial')
+    expect(dates[0].nudge).toBe('Planea algo especial')
     expect(dates[0].href).toBe('/relaciones/diana')
   })
 

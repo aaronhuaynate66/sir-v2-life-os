@@ -94,7 +94,7 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
           <button type="button" onClick={() => setEditing((v) => !v)} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground"><Pencil size={12} /> {plan?.eventDate ? 'editar' : 'fechas'}</button>
         </div>
 
-        {empty && <p className="mt-2 text-[13px] text-muted-foreground">Poné la fecha del evento y los bloqueos (visa, inscripción, vuelo…) para volver esto un plan vivo, con cuenta regresiva.</p>}
+        {empty && <p className="mt-2 text-[13px] text-muted-foreground">Pon la fecha del evento y los bloqueos (visa, inscripción, vuelo…) para volver esto un plan vivo, con cuenta regresiva.</p>}
 
         {/* Countdown + ventana */}
         {plan?.eventDate && !editing && (
@@ -152,7 +152,7 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
                   onClick={() => setForm((f) => ({ ...f, plan_if: contextProposal.planIf }))}
                   className="mt-1.5 text-left text-[12px] text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <span className="text-primary">SIR:</span> {contextProposal.confidence === 'sugerida' ? 'solés' : 'podrías estar'} avanzando esto {contextProposal.planIf.toLowerCase()} ({contextProposal.support} de {contextProposal.total} veces) — tocá para usarlo de disparador.
+                  <span className="text-primary">SIR:</span> {contextProposal.confidence === 'sugerida' ? 'sueles' : 'podrías estar'} avanzando esto {contextProposal.planIf.toLowerCase()} ({contextProposal.support} de {contextProposal.total} veces) — toca para usarlo de disparador.
                 </button>
               )}
             </div>

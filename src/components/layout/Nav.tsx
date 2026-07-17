@@ -26,7 +26,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
     title: 'Hoy',
     items: [
       { href: '/panel', label: 'Mission Control', Icon: LayoutDashboard },
-      { href: '/sir', label: 'Preguntá a SIR', Icon: Sparkles },
+      { href: '/sir', label: 'Pregunta a SIR', Icon: Sparkles },
       { href: '/decidir', label: 'Decidir', Icon: Scale },
       { href: '/horario', label: 'Horario', Icon: Clock },
       { href: '/planes', label: 'Planes', Icon: CalendarRange },
@@ -51,7 +51,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
     title: 'Gente',
     items: [
       { href: '/relaciones', label: 'Relaciones', Icon: Users },
-      { href: '/relato/ingest', label: 'Contale a SIR', Icon: Wand2 },
+      { href: '/relato/ingest', label: 'Cuéntale a SIR', Icon: Wand2 },
       { href: '/plantear', label: 'Cómo plantear algo', Icon: MessagesSquare },
       { href: '/ensayo', label: 'Sala de ensayo', Icon: Drama },
       { href: '/alter-ego', label: 'Alter ego', Icon: Compass },

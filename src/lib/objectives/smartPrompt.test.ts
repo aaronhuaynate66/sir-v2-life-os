@@ -15,7 +15,7 @@ describe('buildSmartInput', () => {
     expect(msg).toContain('Estar en forma')
     expect(msg).toContain('Dominio: health')
     expect(msg).toContain('Hoy es: 2026-06-01')
-    expect(msg).toContain('sugerí una realista')
+    expect(msg).toContain('sugiere una realista')
   })
 
   it('si ya hay fecha → pide no sugerir otra', () => {
@@ -30,7 +30,7 @@ describe('buildSmartInput', () => {
       context: 'DATOS REALES DEL USUARIO:\n- Cuerpo (báscula): peso 82 kg.',
     })
     expect(msg).toContain('peso 82 kg')
-    expect(msg).toContain('Inferí "baseline" de esos DATOS REALES')
+    expect(msg).toContain('Infiere "baseline" de esos DATOS REALES')
   })
 
   it('modo dictado → usa el párrafo libre como fuente', () => {
@@ -39,7 +39,7 @@ describe('buildSmartInput', () => {
       today: '2026-06-01',
       dictation: 'Quiero ahorrar para un fondo de emergencia este año',
     })
-    expect(msg).toContain('extraé los campos SMART')
+    expect(msg).toContain('extrae los campos SMART')
     expect(msg).toContain('fondo de emergencia')
   })
 })

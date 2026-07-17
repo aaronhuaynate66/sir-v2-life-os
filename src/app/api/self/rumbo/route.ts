@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
   }
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       422,
       'Hilo insuficiente',
-      'Necesito al menos un par de hitos para reflexionar sobre tu rumbo. Se va tejiendo a medida que ponés y movés objetivos.',
+      'Necesito al menos un par de hitos para reflexionar sobre tu rumbo. Se va tejiendo a medida que pones y mueves objetivos.',
     )
   }
 
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     }, { supabase, userId: authData.user.id })
     const insight = parseRumboNarrative(res.text)
     if (!insight) {
-      return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
+      return errorJson(502, 'Respuesta vacía del modelo', 'Reintenta en unos segundos.')
     }
 
     // Persistir la reflexión: 1 vigente por día (regenerar el mismo día actualiza).

@@ -36,13 +36,13 @@ function stripFences(s: string): string {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
 
   let body: { title?: unknown; description?: unknown; force?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : ''
   const description = typeof body.description === 'string' ? body.description.trim().slice(0, 1500) : ''
-  if (!title && !description) return errorJson(400, 'Contame qué estás por decidir')
+  if (!title && !description) return errorJson(400, 'Cuéntame qué estás por decidir')
   const force = body.force === true
 
   // Cache por (día + hash del texto), kind='premortem'. Chequeo antes del
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   let premortem = parsePremortem(parsed)
   if (!premortem) {
     try {
-      parsed = JSON.parse(stripFences(await call('CRÍTICO: devolvé SOLO el JSON, empezando con { y terminando con }.')))
+      parsed = JSON.parse(stripFences(await call('CRÍTICO: devuelve SOLO el JSON, empezando con { y terminando con }.')))
       premortem = parsePremortem(parsed)
     } catch { premortem = null }
   }

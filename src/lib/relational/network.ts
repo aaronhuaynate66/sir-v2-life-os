@@ -3,7 +3,7 @@
 //
 // Sobre el grafo person↔person (person_links, ahora con aristas profesionales/
 // sociales del capturador 0128), tres cosas honestas:
-//   (a) CAMINOS: "querés llegar a X; conocés a Y que lo conoce" — mutuos que
+//   (a) CAMINOS: "quieres llegar a X; conocés a Y que lo conoce" — mutuos que
 //       puentean hacia una persona objetivo, rankeados por qué tan buen puente son.
 //   (b) PRESENTACIONES: dos personas tuyas que NO están conectadas pero comparten
 //       organización → una intro de valor que podrías hacer vos.
@@ -21,7 +21,7 @@ export interface NetEdge {
 export interface NetPerson {
   id: string
   name: string
-  /** 0-10; proxy de cuánto "pull"/cercanía tenés con esa persona. */
+  /** 0-10; proxy de cuánto "pull"/cercanía tienes con esa persona. */
   importance?: number
   organization?: string | null
 }

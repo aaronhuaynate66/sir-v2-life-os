@@ -135,7 +135,7 @@ export function computeEspejoSemanal(
     if (rel.openConflicts > 0) {
       gaps.push({
         key: 'conflicto_abierto',
-        label: rel.openConflicts === 1 ? 'Tenés un conflicto abierto sin cerrar' : `Tenés ${rel.openConflicts} conflictos abiertos sin cerrar`,
+        label: rel.openConflicts === 1 ? 'Tienes un conflicto abierto sin cerrar' : `Tienes ${rel.openConflicts} conflictos abiertos sin cerrar`,
         observed: rel.topConflict ? `el más caliente: «${rel.topConflict}»` : 'siguen pendientes de resolverse',
         severity: rel.openConflicts >= 2 ? 'alta' : 'media',
       })
@@ -155,9 +155,9 @@ export function computeEspejoSemanal(
   // ── SUEÑO ───────────────────────────────────────────────────────────
   if (sleepAvg !== null) {
     if (sleepAvg < 6) {
-      gaps.push({ key: 'sueño', label: 'Sueño: tu cuerpo es la base de todo lo que querés lograr', observed: `dormiste ${round1(sleepAvg)} h promedio esta semana`, severity: 'alta' })
+      gaps.push({ key: 'sueño', label: 'Sueño: tu cuerpo es la base de todo lo que quieres lograr', observed: `dormiste ${round1(sleepAvg)} h promedio esta semana`, severity: 'alta' })
     } else if (sleepAvg < 6.5) {
-      gaps.push({ key: 'sueño', label: 'Sueño: venís corto', observed: `${round1(sleepAvg)} h promedio (apuntá a ${SLEEP_TARGET})`, severity: 'media' })
+      gaps.push({ key: 'sueño', label: 'Sueño: vienes corto', observed: `${round1(sleepAvg)} h promedio (apunta a ${SLEEP_TARGET})`, severity: 'media' })
     } else if (sleepAvg >= SLEEP_TARGET) {
       wins.push(`Dormiste bien (${round1(sleepAvg)} h promedio).`)
     }
@@ -180,7 +180,7 @@ export function computeEspejoSemanal(
     headline = 'Todavía no hay suficientes registros de esta semana para devolverte un reflejo honesto.'
   } else if (!anchor) {
     state = 'sin_norte'
-    headline = 'No tenés un norte fijado. Sin él no hay vara para medir si la semana te acercó o te alejó.'
+    headline = 'No tienes un norte fijado. Sin él no hay vara para medir si la semana te acercó o te alejó.'
   } else {
     const hasAlta = gaps.some((g) => g.severity === 'alta')
     if (hasAlta) {

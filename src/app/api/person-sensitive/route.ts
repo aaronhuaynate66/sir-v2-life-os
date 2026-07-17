@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
 
   const personId = req.nextUrl.searchParams.get('personId')?.trim()
@@ -116,7 +116,7 @@ export async function PUT(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
   const userId = authData.user.id
 

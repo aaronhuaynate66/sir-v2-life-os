@@ -36,12 +36,12 @@ export async function POST(req: NextRequest) {
     const res = await complete(
       {
         task: 'import_whatsapp', tier: 'cheap', sensitivity: 'third_party', maxTokens: 400,
-        system: 'Clasificás imágenes de chats. Devolvés SOLO JSON, sin texto extra.',
+        system: 'Clasificas imágenes de chats. Devuelve SOLO JSON, sin texto extra.',
         messages: [{
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', mediaType: mediaType(file.type || 'image/jpeg'), data: b64 } },
-            { type: 'text', text: 'Clasificá esta imagen de un chat de WhatsApp. ¿Es una FOTO PERSONAL/social (gente, familia, viaje, comida, meme gracioso, paisaje) o un DOCUMENTO/CAPTURA con DATA útil (factura, comprobante, dirección, ficha, screenshot de info, pantallazo de texto, captura de otra app, voucher, dni, contrato)? Devolvé SOLO este JSON: {"keep": true|false, "kind": "personal"|"documento"|"captura"|"otro", "text": "<si keep=true, la DATA/texto importante en <=300 chars; si no, vacío>"}. keep=true SOLO si tiene info que valga la pena guardar (documento/captura). Fotos personales/memes/paisajes/comida → keep=false. No describas fotos personales.' },
+            { type: 'text', text: 'Clasifica esta imagen de un chat de WhatsApp. ¿Es una FOTO PERSONAL/social (gente, familia, viaje, comida, meme gracioso, paisaje) o un DOCUMENTO/CAPTURA con DATA útil (factura, comprobante, dirección, ficha, screenshot de info, pantallazo de texto, captura de otra app, voucher, dni, contrato)? Devuelve SOLO este JSON: {"keep": true|false, "kind": "personal"|"documento"|"captura"|"otro", "text": "<si keep=true, la DATA/texto importante en <=300 chars; si no, vacío>"}. keep=true SOLO si tiene info que valga la pena guardar (documento/captura). Fotos personales/memes/paisajes/comida → keep=false. No describas fotos personales.' },
           ],
         }],
       },

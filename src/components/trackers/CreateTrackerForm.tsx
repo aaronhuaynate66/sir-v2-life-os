@@ -78,7 +78,7 @@ export function CreateTrackerForm({ defaultObjectiveId, defaultObjectiveStepId, 
       return
     }
     if (conditionKind === 'days_until_lt' && !conditionDate) {
-      toast.error('Falta la fecha objetivo', { description: 'Para "faltan < N días" elegí la fecha.' })
+      toast.error('Falta la fecha objetivo', { description: 'Para "faltan < N días" elige la fecha.' })
       return
     }
 

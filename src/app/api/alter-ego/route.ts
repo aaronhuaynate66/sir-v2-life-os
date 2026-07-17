@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   let body: { situation?: unknown; personId?: unknown }
   try { body = (await req.json()) as typeof body } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
   const situation = typeof body.situation === 'string' ? body.situation.trim().slice(0, 1500) : ''
-  if (!situation) return NextResponse.json({ error: 'Contame la situación' }, { status: 400 })
+  if (!situation) return NextResponse.json({ error: 'Cuéntame la situación' }, { status: 400 })
   const personId = typeof body.personId === 'string' ? body.personId : ''
 
   let domain: Domain | undefined
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const res = await complete(
       {
         task: 'alter_ego', tier: 'capable', sensitivity: 'self', maxTokens: 400,
-        system: "Sos el 'alter ego' de Aaron: una voz interior lúcida que lo ayuda a encarar una situación desde una postura filosófica. Hablás en segunda persona, directo, sin floritura ni citas de manual. NO diagnostiques, NO propongas manipular a nadie. Máximo 4 frases: qué postura tomar acá y el PRIMER movimiento concreto.",
+        system: "Eres el 'alter ego' de Aaron: una voz interior lúcida que lo ayuda a encarar una situación desde una postura filosófica. Escribe SIEMPRE en español del Perú (tuteo con \"tú\"); PROHIBIDO el voseo y los giros argentinos (\"vos\", \"sos\", \"tenés\", \"querés\", \"mirá\", \"che\", \"dale\"). Hablas en segunda persona, directo, sin floritura ni citas de manual. NO diagnostiques, NO propongas manipular a nadie. Máximo 4 frases: qué postura tomar aquí y el PRIMER movimiento concreto.",
         messages: [{ role: 'user', content: `Situación: ${situation}\n\nPosturas que mejor sirven:\n${list}\n\nLínea que no se cruza: ${stance.ethicalLine}\n\nDame la voz del alter ego.` }],
       },
       { supabase, userId },

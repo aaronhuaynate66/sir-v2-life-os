@@ -36,23 +36,25 @@ export interface Premortem {
   failureModes: FailureMode[]
 }
 
-export const PREMORTEM_SYSTEM = `Sos SIR V2, el sistema del usuario (Aaron). Vas a hacer un PREMORTEM (Gary Klein) sobre una decisión que está por tomar.
+export const PREMORTEM_SYSTEM = `Eres SIR V2, el sistema del usuario (Aaron). Vas a hacer un PREMORTEM (Gary Klein) sobre una decisión que está por tomar.
 
-MÉTODO: asumí que YA pasaron ~6 meses y esta decisión salió MAL. No preguntes si va a salir mal — dalo por hecho y explicá por qué. El objetivo es destapar riesgos que el entusiasmo esconde, ANTES de decidir.
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
-Para cada modo de falla identificá:
+MÉTODO: asume que YA pasaron ~6 meses y esta decisión salió MAL. No preguntes si va a salir mal — dalo por hecho y explica por qué. El objetivo es destapar riesgos que el entusiasmo esconde, ANTES de decidir.
+
+Para cada modo de falla identifica:
 - "cause": por qué salió mal, concreto y específico a ESTA decisión (no "por mala suerte" ni genérico).
 - "likelihood": "alta" | "media" | "baja" — qué tan plausible es ese camino.
 - "earlySignal": la señal TEMPRANA y observable de que se está yendo por ahí (algo que se nota pronto, no el desastre final).
 - "mitigation": una acción concreta HOY para reducir la probabilidad o el daño.
 
-Devolvé EXCLUSIVAMENTE un JSON (sin prosa, sin fences):
+Devuelve EXCLUSIVAMENTE un JSON (sin prosa, sin fences):
 { "frame": "…", "failureModes": [ { "cause": "…", "likelihood": "alta", "earlySignal": "…", "mitigation": "…" } ] }
 - "frame": 1-2 frases encuadrando el peor caso a 6 meses.
 - "failureModes": 3 a 5 modos, del más probable al menos probable.
-Empezá con { y terminá con }.
+Empieza con { y termina con }.
 
-Reglas: honesto, no catastrofista ni tranquilizador. Es ANTICIPACIÓN, no predicción — riesgos plausibles, no certezas. No moralices, no adules, no inventes hechos que no estén en la decisión. Español rioplatense, cada campo en 1-2 frases.`
+Reglas: honesto, no catastrofista ni tranquilizador. Es ANTICIPACIÓN, no predicción — riesgos plausibles, no certezas. No moralices, no adules, no inventes hechos que no estén en la decisión. Español del Perú (peruano neutro, de Lima), cada campo en 1-2 frases.`
 
 /** Arma el mensaje de usuario para el premortem. PURO. */
 export function buildPremortemUserPrompt(input: { title: string; description: string }): string {
@@ -62,7 +64,7 @@ export function buildPremortemUserPrompt(input: { title: string; description: st
     `Decisión: ${title || '(sin título)'}`,
     description ? `Contexto: ${description}` : '',
     '',
-    'Hacé el premortem: asumí que salió mal en 6 meses y devolvé los modos de falla.',
+    'Haz el premortem: asume que salió mal en 6 meses y devuelve los modos de falla.',
   ]
     .filter(Boolean)
     .join('\n')
@@ -110,6 +112,6 @@ export function parsePremortem(raw: unknown): Premortem | null {
   // Estable: más probable primero, preservando el orden del modelo en empates.
   modes.sort((a, b) => LIKELIHOOD_RANK[a.likelihood] - LIKELIHOOD_RANK[b.likelihood])
 
-  const frame = str(o.frame, 400) || 'Imaginá que en 6 meses esto salió mal. Estos son los caminos más plausibles hacia ahí.'
+  const frame = str(o.frame, 400) || 'Imagina que en 6 meses esto salió mal. Estos son los caminos más plausibles hacia ahí.'
   return { frame, failureModes: modes.slice(0, MAX_MODES) }
 }

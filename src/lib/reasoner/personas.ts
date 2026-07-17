@@ -33,7 +33,7 @@ export const PERSONAS: Record<CognitivePersona, PersonaDef> = {
   finance_master: { label: 'Maestro de Finanzas', lens: 'los flujos de dinero como flujos de energía; riesgo y oportunidad económica' },
   tactician: { label: 'Táctico', lens: 'el timing de conversaciones y decisiones en el corto plazo' },
   human_biologist: { label: 'Biólogo Humano', lens: 'sueño, energía y cuerpo como sistema; las señales biológicas como datos' },
-  identity_architect: { label: 'Arquitecto de Identidad', lens: 'quién querés ser; alinear las decisiones con tus valores y misión' },
+  identity_architect: { label: 'Arquitecto de Identidad', lens: 'quién quieres ser; alinear las decisiones con tus valores y misión' },
 }
 
 /** Lentes que cada dominio "enciende". Base (coach+estratega) siempre presente. */

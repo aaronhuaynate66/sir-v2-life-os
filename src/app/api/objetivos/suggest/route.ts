@@ -26,7 +26,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
   if (!rl.ok) return rl.response
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   try { body = await req.json() } catch { return errorJson(400, 'JSON inválido en el body') }
   const text = (body as { text?: unknown })?.text
   if (typeof text !== 'string' || text.trim().length < 8) {
-    return errorJson(400, 'Texto insuficiente', 'Contale a SIR de qué se trata el objetivo (mínimo una frase).')
+    return errorJson(400, 'Texto insuficiente', 'Cuéntale a SIR de qué se trata el objetivo (mínimo una frase).')
   }
 
   // LLM vía capa llm/ (router + fallback + telemetría). tier balanced:
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   const suggestion = parseGoalSuggestion(raw)
   if (!suggestion) {
-    return errorJson(422, 'No pude armar un objetivo del texto', 'Probá contándolo con un poco más de detalle.')
+    return errorJson(422, 'No pude armar un objetivo del texto', 'Prueba contándolo con un poco más de detalle.')
   }
   return NextResponse.json({ suggestion }, { status: 200 })
 }

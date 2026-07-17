@@ -77,7 +77,7 @@ describe('withTimeoutHint', () => {
       const out = withTimeoutHint({ status, message: 'HTTP ' + status })
       expect(out.status).toBe(status)
       expect(out.message).toBe('La generación tardó demasiado')
-      expect(out.detail).toContain('Reintentá')
+      expect(out.detail).toContain('Reinténtalo')
     }
   })
 

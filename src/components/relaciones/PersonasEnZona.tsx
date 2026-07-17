@@ -50,7 +50,7 @@ export function PersonasEnZona({ person, people }: { person: Person; people: Per
       </ul>
       <p className="mt-2 text-[10.5px] text-muted-foreground/70">
         {firstName} comparte zona con {mates.length === 1 ? 'esta persona' : 'estas personas'}. Si
-        caés por {zone.label}, podés verlas de una.
+        caes por {zone.label}, puedes verlas de paso.
       </p>
     </div>
   )

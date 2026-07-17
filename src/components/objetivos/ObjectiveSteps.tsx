@@ -178,7 +178,7 @@ export function ObjectiveSteps({
       if (!res.ok) { toast.error(j.error ?? 'No se pudo agendar en Google', { description: j.detail }); return }
       updateStep(taskId, { gcalEventId: j.gcalEventId ?? 'synced' }) // optimista; toRow no la manda → DB la conserva
       toast.success(j.alreadySynced ? 'Ya estaba en Google Calendar' : 'Tarea agendada en Google Calendar')
-    } catch { toast.error('No se pudo agendar en Google', { description: 'Revisá tu conexión.' }) } finally { setPushingId(null) }
+    } catch { toast.error('No se pudo agendar en Google', { description: 'Revisa tu conexión.' }) } finally { setPushingId(null) }
   }, [updateStep])
 
   const makeStep = useCallback(
@@ -488,8 +488,8 @@ export function ObjectiveSteps({
         </ul>
       ) : (
         <p className="text-xs text-muted-foreground/70">
-          Sin resultados clave todavía. Descomponé este objetivo en outcomes medibles (KRs) y, bajo
-          cada uno, tareas concretas — o generá un plan con IA.
+          Sin resultados clave todavía. Descompón este objetivo en outcomes medibles (KRs) y, bajo
+          cada uno, tareas concretas — o genera un plan con IA.
         </p>
       )}
 
@@ -540,7 +540,7 @@ export function ObjectiveSteps({
               <Sparkles size={12} className="mr-2" />Definir objetivo
             </Button>
             <p className="text-[11px] text-muted-foreground/70">
-              Definí el objetivo en formato SMART (meta, punto de partida, fecha y por qué) para que el plan IA salga aterrizado.
+              Define el objetivo en formato SMART (meta, punto de partida, fecha y por qué) para que el plan IA salga aterrizado.
             </p>
           </div>
         )}
@@ -1076,7 +1076,7 @@ function TaskEditor({
         <Textarea
           value={acceptance}
           onChange={(e) => setAcceptance(e.target.value)}
-          placeholder="¿Cómo sabés que quedó terminada? Ej.: visa aprobada y en pasaporte."
+          placeholder="¿Cómo sabes que quedó terminada? Ej.: visa aprobada y en pasaporte."
           className="mt-0.5 min-h-[44px] text-[13px]"
         />
       </div>
@@ -1105,7 +1105,7 @@ function TaskEditor({
             onChange={(e) => setTime(e.target.value)}
             className="h-7 w-28 font-mono text-xs normal-case tracking-normal disabled:opacity-50"
             aria-label="Hora de la tarea (opcional)"
-            title={date ? 'Hora opcional: cae en la franja del día en /horario' : 'Primero elegí una fecha'}
+            title={date ? 'Hora opcional: cae en la franja del día en /horario' : 'Primero elige una fecha'}
           />
           {time && (
             <button
@@ -1212,7 +1212,7 @@ function PlanReview({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs text-brand-soft-foreground">
           <Sparkles size={13} />
-          Plan OKR propuesto · revisá, editá y aceptá (o descartá)
+          Plan OKR propuesto · revisa, edita y acepta (o descarta)
         </div>
         <button
           type="button"
@@ -1325,7 +1325,7 @@ function PlanReview({
       {confirming && hasExistingPlan ? (
         <div className="rounded-md border border-warn/30 bg-warn-soft p-2.5 space-y-2">
           <p className="text-[12px] text-foreground/90 leading-snug">
-            Este objetivo ya tiene un plan. ¿Querés <strong>reemplazarlo</strong> por el nuevo o{' '}
+            Este objetivo ya tiene un plan. ¿Quieres <strong>reemplazarlo</strong> por el nuevo o{' '}
             <strong>sumar</strong> los nuevos a los actuales?
           </p>
           <div className="flex flex-wrap gap-2">

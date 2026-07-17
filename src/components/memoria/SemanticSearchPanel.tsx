@@ -111,7 +111,7 @@ export function SemanticSearchPanel() {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-3">
-        Preguntá en lenguaje natural. Busca por significado, no por palabras exactas.
+        Pregunta en lenguaje natural. Busca por significado, no por palabras exactas.
       </p>
 
       <form onSubmit={runSearch} className="flex gap-2 mb-3">
@@ -130,7 +130,7 @@ export function SemanticSearchPanel() {
 
       <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
         <p className="text-[11px] text-muted-foreground/70">
-          ¿Resultados vacíos? Indexá tus memorias primero (genera los embeddings).
+          ¿Resultados vacíos? Indexa tus memorias primero (genera los embeddings).
         </p>
         <div className="flex items-center gap-1.5">
           <Button size="sm" variant="ghost" onClick={indexMemories} disabled={indexing || rebuilding}>
@@ -154,7 +154,7 @@ export function SemanticSearchPanel() {
         <ApiErrorNotice error={error} className="mb-4">
           {(error.status === 500 || error.status === 502) && (
             <div className="text-muted-foreground/70 pt-1">
-              Verificá que la migración 0015 esté aplicada y que OPENAI_API_KEY esté configurada en el server.
+              Verifica que la migración 0015 esté aplicada y que OPENAI_API_KEY esté configurada en el server.
             </div>
           )}
         </ApiErrorNotice>
@@ -163,7 +163,7 @@ export function SemanticSearchPanel() {
       {results !== null && !searching && (
         results.length === 0 ? (
           <div className="text-center py-10 text-sm text-muted-foreground">
-            Sin resultados. Probá reformular o indexá tus memorias.
+            Sin resultados. Prueba reformular o indexa tus memorias.
           </div>
         ) : (
           <div className="space-y-3">

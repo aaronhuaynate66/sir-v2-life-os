@@ -33,7 +33,7 @@ interface BiasDef { label: string; question: string; patterns: RegExp[] }
 const BIASES: Record<Bias, BiasDef> = {
   sunk_cost: {
     label: 'Costo hundido',
-    question: '¿El pasado (lo ya invertido) debería pesar en lo que decidís hacia adelante?',
+    question: '¿El pasado (lo ya invertido) debería pesar en lo que decides hacia adelante?',
     patterns: [
       /\bya (invert[ií]|gast[eé]|puse|met[ií])\b/g,
       /\bdespues de todo (este tiempo|lo que|el esfuerzo)\b/g,

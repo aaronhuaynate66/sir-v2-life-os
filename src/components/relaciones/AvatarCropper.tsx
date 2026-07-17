@@ -115,14 +115,14 @@ export function AvatarCropper({ personId, file, onDone, onCancel }: {
       const cropped = new File([blob], `${personId}.jpg`, { type: 'image/jpeg' })
       const url = await uploadAvatar(personId, cropped)
       onDone(url)
-    } catch { setErr('No se pudo recortar. Reintentá.'); setBusy(false) }
+    } catch { setErr('No se pudo recortar. Reintenta.'); setBusy(false) }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true">
       <div className="w-full max-w-sm rounded-xl bg-background border border-border p-4 shadow-xl">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-semibold">Recortá la foto</div>
+          <div className="text-sm font-semibold">Recorta la foto</div>
           <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
         </div>
         <div className="mx-auto overflow-hidden rounded-full bg-muted touch-none select-none" style={{ width: BOX, height: BOX, position: 'relative' }}

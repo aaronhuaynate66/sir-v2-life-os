@@ -54,7 +54,7 @@ export function computeNorteDrift(goals: Goal[], now: Date = new Date()): NorteD
       activeOthers,
       othersMovedRecently: 0,
       message: activeOthers > 0
-        ? 'No tenés un norte fijado. Marcá un objetivo como tu norte del año para medir si vas hacia él.'
+        ? 'No tienes un norte fijado. Marca un objetivo como tu norte del año para medir si vas hacia él.'
         : 'Todavía no fijaste objetivos ni un norte.',
     }
   }
@@ -71,16 +71,16 @@ export function computeNorteDrift(goals: Goal[], now: Date = new Date()): NorteD
 
   if (daysSinceTouch > STALE_DAYS) {
     state = 'estancado'
-    message = `Hace ${daysSinceTouch} días que no movés tu norte ("${norte}"). Quedó parado mientras la vida sigue.`
+    message = `Hace ${daysSinceTouch} días que no mueves tu norte ("${norte}"). Quedó parado mientras la vida sigue.`
   } else if (othersMovedRecently >= 3 && daysSinceTouch > RECENT_DAYS) {
     state = 'disperso'
-    message = `Movés ${othersMovedRecently} frentes a la vez, pero tu norte ("${norte}") quedó atrás hace ${daysSinceTouch} días. Energía dispersa.`
+    message = `Mueves ${othersMovedRecently} frentes a la vez, pero tu norte ("${norte}") quedó atrás hace ${daysSinceTouch} días. Energía dispersa.`
   } else if (daysSinceTouch <= RECENT_DAYS && othersMovedRecently <= 2) {
     state = 'enfocado'
     message = `Tu energía reciente apunta a tu norte ("${norte}") — lo tocaste hace ${daysSinceTouch} día(s) y no estás disperso.`
   } else {
     state = 'a_medias'
-    message = `Avanzás tu norte ("${norte}") pero con varios frentes abiertos (${othersMovedRecently} activos en paralelo). Ojo con dispersarte.`
+    message = `Avanzas tu norte ("${norte}") pero con varios frentes abiertos (${othersMovedRecently} activos en paralelo). Ojo con dispersarte.`
   }
 
   return {

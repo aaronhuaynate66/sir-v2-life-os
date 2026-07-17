@@ -55,8 +55,8 @@ export default function PegarConversacionPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Pegar conversación</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Copiá un hilo de Teams (o cualquier chat) y pegalo acá. SIR lo lee y lo suma al contexto de esa persona.
-          Podés pegar de nuevo cuando quieras: solo se agrega lo nuevo.
+          Copia un hilo de Teams (o cualquier chat) y pégalo aquí. SIR lo lee y lo suma al contexto de esa persona.
+          Puedes pegar de nuevo cuando quieras: solo se agrega lo nuevo.
         </p>
       </div>
 
@@ -82,7 +82,7 @@ export default function PegarConversacionPage() {
             <label htmlFor="conv" className="text-xs text-muted-foreground">La conversación</label>
             <textarea
               id="conv" value={text} onChange={(e) => setText(e.target.value)}
-              rows={12} placeholder="Pegá acá el texto del hilo (Ctrl+A en el chat → Ctrl+C → Ctrl+V acá)…"
+              rows={12} placeholder="Pega aquí el texto del hilo (Ctrl+A en el chat → Ctrl+C → Ctrl+V aquí)…"
               className="mt-1 w-full resize-y rounded-md border border-border bg-background p-3 font-mono text-[12px] leading-relaxed"
             />
           </div>
@@ -104,7 +104,7 @@ export default function PegarConversacionPage() {
               {result.ingested > 0 ? (
                 <>
                   <span className="font-medium text-foreground">{result.ingested} mensaje{result.ingested === 1 ? '' : 's'} nuevo{result.ingested === 1 ? '' : 's'}</span> importado{result.ingested === 1 ? '' : 's'}.
-                  {result.personMatched ? ' Ligado a la ficha de la persona.' : ' No encontré a esa persona por el nombre — quedó sin ligar (revisá el nombre o creá la ficha).'}
+                  {result.personMatched ? ' Ligado a la ficha de la persona.' : ' No encontré a esa persona por el nombre — quedó sin ligar (revisa el nombre o crea la ficha).'}
                 </>
               ) : (
                 <>Nada nuevo para importar — ya tenías esta conversación.</>

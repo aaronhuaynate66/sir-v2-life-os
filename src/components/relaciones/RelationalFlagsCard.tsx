@@ -36,7 +36,7 @@ export function RelationalFlagsCard({ personName, personLogs }: { personName: st
 
         <p className="text-[12px] text-muted-foreground leading-relaxed">
           Notaste patrones que se repiten en cómo {first} te trata. Esto <span className="text-foreground/85">no es un diagnóstico de {first}</span> —
-          son cosas que vos registraste, acá para que te cuides.
+          son cosas que tú registraste, acá para que te cuides.
         </p>
 
         <ul className="space-y-2.5">
@@ -53,7 +53,7 @@ export function RelationalFlagsCard({ personName, personLogs }: { personName: st
 
         {result.seekSupport && (
           <p className="text-[12px] leading-relaxed rounded-md border border-bad/30 bg-bad-soft/30 px-3 py-2 text-foreground/90">
-            Estos patrones ameritan hablarlo con alguien de confianza o un profesional. No tenés que resolverlo solo — pedir apoyo es cuidarte, no exagerar.
+            Estos patrones ameritan hablarlo con alguien de confianza o un profesional. No tienes que resolverlo solo — pedir apoyo es cuidarte, no exagerar.
           </p>
         )}
       </CardContent>

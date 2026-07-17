@@ -87,23 +87,23 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
   function handleAdd() {
     const trimmedLabel = label.trim()
     if (!trimmedLabel) {
-      toast.error('Falta la etiqueta', { description: 'Ponele un nombre a la fecha.' })
+      toast.error('Falta la etiqueta', { description: 'Ponle un nombre a la fecha.' })
       return
     }
     // Mensual: solo el DÍA importa (el 13 de cada mes). Sin mes ni año.
     if (cadence === 'monthly') {
       const d = parseInt(day, 10)
       if (!Number.isFinite(d) || d < 1 || d > 31) {
-        toast.error('Elegí el día del mes', { description: 'Ej. el 13 de cada mes.' })
+        toast.error('Elige el día del mes', { description: 'Ej. el 13 de cada mes.' })
         return
       }
       saveDate(trimmedLabel, `${BIRTHDAY_FILLER_YEAR}-01-${pad2(d)}`)
       return
     }
     // Una vez: el año es OBLIGATORIO (una fecha puntual sin año no ubica el evento).
-    // Cada año: el año es OPCIONAL (si no lo sabés, el countdown usa solo día/mes).
+    // Cada año: el año es OPCIONAL (si no lo sabes, el countdown usa solo día/mes).
     if (cadence === 'once' && !year.trim()) {
-      toast.error('Falta el año', { description: 'Una fecha única necesita el año. Si se repite, elegí “Cada año”.' })
+      toast.error('Falta el año', { description: 'Una fecha única necesita el año. Si se repite, elige “Cada año”.' })
       return
     }
     const now = new Date().getFullYear()
@@ -243,7 +243,7 @@ export function FechasImportantes({ person }: FechasImportantesProps) {
                 {cadence === 'monthly'
                   ? `El ${day || 'N'} de cada mes.`
                   : cadence === 'yearly'
-                    ? 'Si no sabés el año, dejalo vacío — solo se usa día y mes.'
+                    ? 'Si no sabes el año, déjalo vacío — solo se usa día y mes.'
                     : 'Una fecha puntual necesita el año.'}
               </p>
             </div>
@@ -361,7 +361,7 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
 function EmptyState() {
   return (
     <p className="text-sm text-muted-foreground italic leading-relaxed">
-      Sin fechas importantes. Agregá aniversarios, fechas especiales o
+      Sin fechas importantes. Agrega aniversarios, fechas especiales o
       recordatorios con el botón <span className="not-italic font-medium">Agregar</span>.
     </p>
   )

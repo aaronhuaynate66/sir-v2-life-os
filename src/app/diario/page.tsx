@@ -120,7 +120,7 @@ export default function DiarioPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Diario</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Escribí lo que quieras. Sin estructura, sin obligación. Si mencionás a alguien conocido,
+          Escribe lo que quieras. Sin estructura, sin obligación. Si mencionas a alguien conocido,
           se linkea a su ficha. Los hashtags <code className="text-[11px] font-mono">#así</code> se
           indexan para filtrar.
         </p>
@@ -135,7 +135,7 @@ export default function DiarioPage() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void submit() }
             }}
-            placeholder="¿Qué pasó hoy? ¿Qué estás pensando? Podés usar #tags."
+            placeholder="¿Qué pasó hoy? ¿Qué estás pensando? Puedes usar #tags."
             rows={4}
             className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30 min-h-[100px] max-h-[400px]"
             disabled={busy}
@@ -222,7 +222,7 @@ export default function DiarioPage() {
       {entries && entries.length === 0 && (
         <Card className="shadow-none">
           <CardContent className="p-6 text-center text-sm text-muted-foreground">
-            {search || activeTag ? 'Sin entradas con ese filtro.' : 'Todavía no escribiste nada. Arriba tenés el input.'}
+            {search || activeTag ? 'Sin entradas con ese filtro.' : 'Todavía no escribiste nada. Arriba tienes el input.'}
           </CardContent>
         </Card>
       )}

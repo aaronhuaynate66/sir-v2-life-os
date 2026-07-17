@@ -1,5 +1,5 @@
 'use client'
-// SIR V2 — "Patrones observados". Cruza la data que YA tenés (sueño, ánimo,
+// SIR V2 — "Patrones observados". Cruza la data que YA tienes (sueño, ánimo,
 // energía, estrés, FC, días de migraña) y muestra asociaciones SOLO cuando hay
 // muestra suficiente. NO predice: es observación, con el n a la vista.
 
@@ -87,7 +87,7 @@ export function PatronesPanel() {
 
           {observations.length === 0 ? (
             <p className="text-sm text-muted-foreground py-1">
-              Todavía no hay suficientes registros para sacar patrones confiables. Seguí registrando sueño, ánimo y energía — con unas semanas más, SIR empieza a cruzarlos.
+              Todavía no hay suficientes registros para sacar patrones confiables. Sigue registrando sueño, ánimo y energía — con unas semanas más, SIR empieza a cruzarlos.
             </p>
           ) : (
             <ul className="space-y-2">

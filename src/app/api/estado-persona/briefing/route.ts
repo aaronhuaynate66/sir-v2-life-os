@@ -138,18 +138,19 @@ Memorias recientes:
 ${recentMemories}`
 }
 
-const SYSTEM_PROMPT = `Sos un asistente que ayuda a Aaron a leer el estado de sus vínculos con sus personas cercanas.
-Tarea: escribí 3-4 líneas de estado en prosa neutral, en español rioplatense.
+const SYSTEM_PROMPT = `Eres un asistente que ayuda a Aaron a leer el estado de sus vínculos con sus personas cercanas.
+Tarea: escribe 3-4 líneas de estado en prosa neutral, en español del Perú (peruano neutro, de Lima).
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
 Reglas:
 - NO diagnosticar ("estás distanciándote") — reportar hechos + patrones observables ("las últimas 3 interacciones estuvieron en 2-3/5, viniendo de 5/5").
-- Si hay overdue, mencionalo con la fecha vencida.
-- Si hay un patrón que cruza (ej. peleas concentradas en fase 'bleeding'), señalalo con humildad ("coincide que…", "posible correlación entre…").
-- Cerrá con UNA sugerencia concreta y proporcional (no dramática): un llamado, un mensaje, resolver un pendiente puntual, tocar un tema específico. No moralizar.
-- NO usar bullets — devolvé texto continuo en 3-4 oraciones.
+- Si hay overdue, menciónalo con la fecha vencida.
+- Si hay un patrón que cruza (ej. peleas concentradas en fase 'bleeding'), señálalo con humildad ("coincide que…", "posible correlación entre…").
+- Cierra con UNA sugerencia concreta y proporcional (no dramática): un llamado, un mensaje, resolver un pendiente puntual, tocar un tema específico. No moralizar.
+- NO usar bullets — devuelve texto continuo en 3-4 oraciones.
 - NO empezar con "Aaron" (él ya sabe que es su vida).
 
-Devolvé SOLO la prosa, sin encabezado, sin "Estado:", nada extra.`
+Devuelve SOLO la prosa, sin encabezado, sin "Estado:", nada extra.`
 
 interface AnthropicResp {
   content?: Array<{ type: string; text?: string }>

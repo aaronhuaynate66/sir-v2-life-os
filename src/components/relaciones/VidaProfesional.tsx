@@ -209,7 +209,7 @@ function EmptyState() {
     <div className="text-sm text-muted-foreground space-y-1.5">
       <p>Sin captura de LinkedIn.</p>
       <p className="text-xs leading-relaxed">
-        Subí un pantallazo del perfil con{' '}
+        Sube un pantallazo del perfil con{' '}
         <span className="font-medium text-foreground">Agregar captura</span> (arriba) para poblar
         esta sección — se asocia directo a esta persona.
       </p>

@@ -7,7 +7,7 @@
 // sin markdown fences. El endpoint hace retry una vez si el JSON es
 // invalido, con instruccion extra.
 
-export const DETECTOR_SYSTEM_PROMPT = `Sos un clasificador de screenshots. Tu unica tarea: mirar UNA imagen
+export const DETECTOR_SYSTEM_PROMPT = `Eres un clasificador de screenshots. Tu unica tarea: mirar UNA imagen
 y devolver UN JSON ESTRICTO con el tipo de captura.
 
 Schema EXACTO de respuesta (debe parsear con JSON.parse() sin error —
@@ -196,7 +196,7 @@ REGLA CRITICA — Anti-hallucination:
 
 Si tu confidence seria 'low' porque la imagen esta borrosa, de baja
 resolucion o ilegible:
-- Devolvé type='unknown' con confidence='low'
+- Devuelve type='unknown' con confidence='low'
 - NO INVENTES un tipo plausible
 - NO devuelvas 'medium' para forzar una respuesta
 - Es PREFERIBLE 'unknown' a una clasificacion incorrecta
@@ -207,5 +207,5 @@ Aplica tambien a suggestedPersonName:
 
 CRITICO:
 - Solo JSON. Sin prosa antes o despues. Sin markdown fences.
-- Empezá la respuesta con \`{\` y terminá con \`}\`.
+- Empieza la respuesta con \`{\` y termina con \`}\`.
 `

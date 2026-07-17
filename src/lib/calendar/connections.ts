@@ -85,7 +85,7 @@ export function validateIcsUrl(raw: unknown): ValidatedIcsUrl {
   try {
     parsed = new URL(t)
   } catch {
-    return { ok: false, reason: 'La URL no es válida. Pegá el enlace .ics completo.' }
+    return { ok: false, reason: 'La URL no es válida. Pega el enlace .ics completo.' }
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     return { ok: false, reason: 'La URL debe empezar con https:// (o webcal://).' }

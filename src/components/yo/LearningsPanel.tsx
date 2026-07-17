@@ -39,7 +39,7 @@ export function LearningsPanel() {
 
   async function add() {
     const t = newText.trim()
-    if (!t) { toast.error('Escribí la lección'); return }
+    if (!t) { toast.error('Escribe la lección'); return }
     setSaving(true)
     try {
       const res = await fetch('/api/learnings', {
@@ -83,7 +83,7 @@ export function LearningsPanel() {
         <div className="flex items-center justify-between gap-2 mb-1">
           <div className="flex items-center gap-2">
             <Brain size={15} strokeWidth={1.75} className="text-muted-foreground/80" aria-hidden="true" />
-            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Lo que SIR aprendió de vos</span>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Lo que SIR aprendió de ti</span>
           </div>
           {!adding && (
             <Button size="sm" variant="ghost" onClick={() => setAdding(true)}>
@@ -92,8 +92,8 @@ export function LearningsPanel() {
           )}
         </div>
         <p className="text-[12px] text-muted-foreground leading-relaxed mb-3">
-          Lecciones durables sobre vos (preferencias, patrones, principios) que SIR tiene presentes al aconsejar.
-          Las captura de lo que le contás — acá las ves y decidís cuáles valen.
+          Lecciones durables sobre ti (preferencias, patrones, principios) que SIR tiene presentes al aconsejar.
+          Las captura de lo que le cuentas — acá las ves y decides cuáles valen.
         </p>
 
         {adding && (
@@ -121,7 +121,7 @@ export function LearningsPanel() {
           <div className="space-y-1.5" aria-hidden="true">{[0, 1, 2].map((i) => <div key={i} className="h-10 rounded-md bg-muted/25 animate-pulse" />)}</div>
         ) : active.length === 0 && !adding ? (
           <p className="text-sm text-muted-foreground italic leading-relaxed">
-            SIR todavía no aprendió nada durable de vos. Contale por chat o WhatsApp algo estable —
+            SIR todavía no aprendió nada durable de ti. Cuéntale por chat o WhatsApp algo estable —
             «prefiero X», «me pasa que Y», «este año priorizo Z» — y aparece acá.
           </p>
         ) : (

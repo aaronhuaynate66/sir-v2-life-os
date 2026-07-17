@@ -77,9 +77,9 @@ export function summarizeRegulation(logs: RegulationLog[]): RegulationSummary {
   if (comparable.length >= 1) {
     best = comparable[0]
     if (comparable.length >= 2 && comparable[0].helpRate - comparable[1].helpRate >= 0.2) {
-      insight = `Para vos, ${comparable[0].label} suele ayudar más que ${comparable[1].label} (patrón observado en ${comparable[0].rated} veces — no es una ley).`
+      insight = `Para ti, ${comparable[0].label} suele ayudar más que ${comparable[1].label} (patrón observado en ${comparable[0].rated} veces — no es una ley).`
     } else if (best.helpRate >= 0.6) {
-      insight = `Para vos, ${best.label} viene funcionando (${Math.round(best.helpRate * 100)}% de las veces que la probaste — patrón observado, no ley).`
+      insight = `Para ti, ${best.label} viene funcionando (${Math.round(best.helpRate * 100)}% de las veces que la probaste — patrón observado, no ley).`
     }
   }
 

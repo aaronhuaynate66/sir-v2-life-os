@@ -5,7 +5,7 @@
 // ("feliz", "agradecido", "molesto"…) + un `summary`, pero NO un número.
 // La Reciprocidad del relationalScore se alimenta de person_logs
 // kind='interaction' con value 1-5 (QUALITY_DELTA). Hasta ahora un DM solo
-// subía last_contact (Fuerza por recencia) y NO movía la Reciprocidad.
+// subea last_contact (Fuerza por recencia) y NO movía la Reciprocidad.
 //
 // Este módulo deriva un value 1-5 con un léxico de sentimiento ES (sin LLM:
 // cero latencia/costo, determinístico → testeable). Devuelve `null` cuando NO

@@ -113,7 +113,7 @@ export interface RelationalScoreInput {
   /** Calidades (1-5) de person_logs kind='interaction', en orden CRONOLÓGICO
    *  (más vieja → más nueva). Opcional: si se omite o va vacío, Reciprocidad
    *  queda null (datos insuficientes), preservando el comportamiento previo.
-   *  LEGACY: sin fecha → sin decaimiento. Preferí `interactionEvents`. */
+   *  LEGACY: sin fecha → sin decaimiento. Prefiere `interactionEvents`. */
   interactionQualities?: number[]
   /** Interacciones CON fecha → Reciprocidad ponderada por recencia (RFM-R).
    *  Si se provee y tiene elementos, TIENE PRECEDENCIA sobre interactionQualities. */

@@ -189,7 +189,7 @@ const INTENT_LABEL: Record<SpendIntent, string> = {
  */
 export function renderGroundingForPrompt(ctx: GroundingContext): string {
   if (ctx.empty) return ''
-  const lines: string[] = ['DATOS REALES DEL USUARIO (usalos para aterrizar el plan y la feasibility):']
+  const lines: string[] = ['DATOS REALES DEL USUARIO (úsalos para aterrizar el plan y la feasibility):']
 
   if (ctx.finance) {
     const f = ctx.finance

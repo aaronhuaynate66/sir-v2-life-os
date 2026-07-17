@@ -111,7 +111,7 @@ export function BehavioralSuggestionCard({ now }: BehavioralSuggestionCardProps 
           </div>
 
           <p className="mt-3 text-[10px] leading-snug text-muted-foreground/60">
-            Observación para reflexionar — SIR asiste, no juzga. Descartá si no resuena.
+            Observación para reflexionar — SIR asiste, no juzga. Descarta si no resuena.
           </p>
         </CardContent>
       </Card>

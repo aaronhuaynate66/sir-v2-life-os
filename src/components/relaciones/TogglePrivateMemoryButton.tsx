@@ -112,7 +112,7 @@ export function TogglePrivateMemoryButton({
           <AlertDialogTitle>¿Marcar esta memoria como privada?</AlertDialogTitle>
           <AlertDialogDescription>
             {snippet ? `“${snippet}” ` : ''}Sale de la vista general y deja de alimentar a la IA
-            (briefing, “Antes de contactar”, resúmenes). Se conserva aparte y podés reincorporarla
+            (briefing, “Antes de contactar”, resúmenes). Se conserva aparte y puedes reincorporarla
             cuando quieras. Importante: re-derivar tus conversaciones <strong>no</strong> la vuelve a
             crear.
           </AlertDialogDescription>

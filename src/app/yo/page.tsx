@@ -48,7 +48,7 @@ export default function SelfPage() {
           <Brain size={28} strokeWidth={1.5} className="text-muted-foreground" />
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Yo</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">Quién sos: identidad, anclas y autodiagnóstico</p>
+        <p className="text-sm text-muted-foreground mt-1">Quién eres: identidad, anclas y autodiagnóstico</p>
       </div>
 
       {/* La salud vive en su propia página (/salud). Acceso directo. */}
@@ -70,7 +70,7 @@ export default function SelfPage() {
         <RetratoPanel />
         <IdentityProfilePanel />
         {/* 19·M5 — autoperfil de Aaron (Big Five, consentido por definición). */}
-        <BigFiveCard subject="self" title="Tu perfil Big Five" whoAnswers="Respondé vos" />
+        <BigFiveCard subject="self" title="Tu perfil Big Five" whoAnswers="Responde tú" />
         <EspejoSemanalPanel />
         <LearningsPanel />
         <ExperimentosLoopPanel />

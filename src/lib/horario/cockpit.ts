@@ -239,16 +239,16 @@ function normalizeLabel(s: string): string {
 function contactNudge(kind: CockpitDate['kind'], label: string, daysUntil: number): string {
   const soon = daysUntil <= 1
   if (kind === 'birthday') {
-    if (soon) return 'Es ya: escribile y saludalo'
-    if (daysUntil <= 7) return 'Esta semana: conseguí un detalle'
-    return 'Con tiempo: planeá un regalo'
+    if (soon) return 'Es ya: escríbele y salúdalo'
+    if (daysUntil <= 7) return 'Esta semana: consigue un detalle'
+    return 'Con tiempo: planea un regalo'
   }
   const n = normalizeLabel(label)
   if (ANNIVERSARY_HINTS.some((h) => n.includes(h))) {
-    return soon ? 'Es ya: confirmá tu plan' : 'Planeá algo especial'
+    return soon ? 'Es ya: confirma tu plan' : 'Planea algo especial'
   }
-  if (SAINT_HINTS.some((h) => n.includes(h))) return 'Mandale un saludo'
-  return soon ? 'Tenelo presente hoy' : 'Tenelo en el radar'
+  if (SAINT_HINTS.some((h) => n.includes(h))) return 'Mándale un saludo'
+  return soon ? 'Tenlo presente hoy' : 'Tenlo en el radar'
 }
 
 // ─── Tareas OKR con fecha en el horizonte ──────────────────────────────

@@ -34,7 +34,7 @@ export async function GET() {
       dsnConfigured: false,
       captured: false,
       environment,
-      hint: 'Falta el DSN. Cargá NEXT_PUBLIC_SENTRY_DSN en Vercel (scope Production) y redesplegá.',
+      hint: 'Falta el DSN. Carga NEXT_PUBLIC_SENTRY_DSN en Vercel (scope Production) y redesplegá.',
     })
   }
 

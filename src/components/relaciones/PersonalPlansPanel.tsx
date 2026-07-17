@@ -81,8 +81,8 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
 
   async function handleAdd() {
     const t = title.trim()
-    if (!t) { toast.error('Falta el plan', { description: 'Ponele un título.' }); return }
-    if (!parseLocalDate(date)) { toast.error('Fecha inválida', { description: 'Elegí una fecha válida.' }); return }
+    if (!t) { toast.error('Falta el plan', { description: 'Ponle un título.' }); return }
+    if (!parseLocalDate(date)) { toast.error('Fecha inválida', { description: 'Elige una fecha válida.' }); return }
     setSaving(true)
     try {
       const res = await fetch('/api/personal-events', {
@@ -91,7 +91,7 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        toast.error('No se pudo guardar', { description: err?.error ?? 'Reintentá en un momento.' })
+        toast.error('No se pudo guardar', { description: err?.error ?? 'Reintenta en un momento.' })
         return
       }
       toast.success('Plan agregado', { description: t })
@@ -99,7 +99,7 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
       load()
       onChange?.()
     } catch {
-      toast.error('No se pudo guardar', { description: 'Revisá tu conexión.' })
+      toast.error('No se pudo guardar', { description: 'Revisa tu conexión.' })
     } finally {
       setSaving(false)
     }
@@ -118,7 +118,7 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
       setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, gcalEventId: j.gcalEventId ?? 'synced' } : e)))
       toast.success(j.alreadySynced ? 'Ya estaba en Google Calendar' : 'Agendado en Google Calendar', { description: label })
     } catch {
-      toast.error('No se pudo agendar en Google', { description: 'Revisá tu conexión.' })
+      toast.error('No se pudo agendar en Google', { description: 'Revisa tu conexión.' })
     } finally {
       setPushingId(null)
     }
@@ -132,8 +132,8 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
   async function handleSaveEdit() {
     if (!editId) return
     const t = editTitle.trim()
-    if (!t) { toast.error('Falta el plan', { description: 'Ponele un título.' }); return }
-    if (!parseLocalDate(editDate)) { toast.error('Fecha inválida', { description: 'Elegí una fecha válida.' }); return }
+    if (!t) { toast.error('Falta el plan', { description: 'Ponle un título.' }); return }
+    if (!parseLocalDate(editDate)) { toast.error('Fecha inválida', { description: 'Elige una fecha válida.' }); return }
     setSavingEdit(true)
     try {
       const res = await fetch(`/api/personal-events/${editId}`, {
@@ -142,7 +142,7 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
       })
       const j = (await res.json().catch(() => ({}))) as { event?: PersonalEvent; googleUpdated?: boolean; error?: string }
       if (!res.ok || !j.event) {
-        toast.error('No se pudo guardar', { description: j.error ?? 'Reintentá.' })
+        toast.error('No se pudo guardar', { description: j.error ?? 'Reintenta.' })
         return
       }
       setEvents((prev) => prev.map((e) => (e.id === editId ? j.event! : e)))
@@ -150,7 +150,7 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
       cancelEdit()
       onChange?.()
     } catch {
-      toast.error('No se pudo guardar', { description: 'Revisá tu conexión.' })
+      toast.error('No se pudo guardar', { description: 'Revisa tu conexión.' })
     } finally {
       setSavingEdit(false)
     }
@@ -221,7 +221,7 @@ export function PersonalPlansPanel({ personId, personName, onChange }: PersonalP
         ) : upcoming.length === 0 ? (
           !adding && (
             <p className="text-sm text-muted-foreground italic leading-relaxed">
-              Sin planes con {firstName} todavía. Agregá una cena, un viaje o cualquier plan — cae en su línea del ciclo con el mejor timing. También podés pedírmelo por chat.
+              Sin planes con {firstName} todavía. Agrega una cena, un viaje o cualquier plan — cae en su línea del ciclo con el mejor timing. También puedes pedírmelo por chat.
             </p>
           )
         ) : (

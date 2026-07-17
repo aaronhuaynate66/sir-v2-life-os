@@ -105,7 +105,7 @@ export function ScaleCaptureUploader({ onFile, disabled }: ScaleCaptureUploaderP
             </div>
             <div>
               <div className="text-sm font-medium text-foreground">
-                Arrastrá una foto o tocá para elegir
+                Arrastra una foto o toca para elegir
               </div>
               <div className="text-xs text-muted-foreground mt-1">
                 Acepta JPG, PNG, WebP (máx 10 MB)

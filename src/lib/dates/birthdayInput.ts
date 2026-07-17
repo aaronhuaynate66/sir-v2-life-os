@@ -5,7 +5,7 @@
 // año de `people.birth_date` se usa para MOSTRAR la edad → un año inventado le
 // pone una edad falsa a la persona. Solución honesta, coherente con el resto del
 // sistema (ver birthdayDetect.ts / BirthdayCountdown DetectedBody):
-//   - con año  → va a birth_date (afirma edad, porque la sabés).
+//   - con año  → va a birth_date (afirma edad, porque la sabes).
 //   - sin año  → va a special_dates como "Cumpleaños de X" recurrente. El
 //     countdown usa solo día/mes; nunca inventa la edad. El año-relleno es un
 //     placeholder para tener un YYYY-MM-DD parseable; NUNCA se muestra.

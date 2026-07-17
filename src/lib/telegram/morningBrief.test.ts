@@ -7,13 +7,13 @@ describe('formatMorningBriefForChat', () => {
     expect(s).toMatch(/buen día/i)
     expect(s).toContain('María cumple mañana')
     expect(s).toContain('Foco: cerrar el trato')
-    expect(s).toMatch(/escribime/i)
+    expect(s).toMatch(/escríbeme/i)
   })
 
   it('funciona aunque el cuerpo venga vacío', () => {
     const s = formatMorningBriefForChat({ title: 'Buenos días', body: '' })
     expect(s).toMatch(/buen día/i)
-    expect(s).toMatch(/escribime/i)
+    expect(s).toMatch(/escríbeme/i)
   })
 
   it('no usa markdown (Telegram lo muestra crudo)', () => {

@@ -1,4 +1,4 @@
-// SIR V2 — Onboarding por TEXTO de identidad ("Contale a SIR quién sos").
+// SIR V2 — Onboarding por TEXTO de identidad ("Cuéntale a SIR quién sos").
 //
 // Sub-panel del panel unificado "Mis capturas". Aaron escribe/dicta un párrafo
 // sobre quién es; la extracción (sin Visión/OCR) arma una PROPUESTA editable que
@@ -117,8 +117,8 @@ export function ContaleASir() {
         <div className="rounded-md border border-warn/30 bg-warn/5 p-3 text-xs flex items-start gap-2">
           <AlertCircle size={14} strokeWidth={1.75} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
           <span className="text-warn-foreground">
-            No pude sacar datos claros de tu relato. Contá un poco más sobre vos —
-            a qué te dedicás, qué te importa, dónde vivís. No guardé nada.
+            No pude sacar datos claros de tu relato. Cuenta un poco más sobre ti —
+            a qué te dedicas, qué te importa, dónde vives. No guardé nada.
           </span>
         </div>
         <Button size="sm" variant="outline" onClick={() => setPhase('idle')} className="w-full">
@@ -145,8 +145,8 @@ export function ContaleASir() {
   return (
     <div className="space-y-3">
       <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
-        Contá en tus palabras <span className="font-medium text-foreground">quién sos</span>: a qué te
-        dedicás, qué te importa, cuándo naciste, dónde vivís. Escribí o dictá un párrafo — saco las
+        Cuenta en tus palabras <span className="font-medium text-foreground">quién eres</span>: a qué te
+        dedicas, qué te importa, cuándo naciste, dónde vives. Escribe o dicta un párrafo — saco las
         anclas y te las muestro para revisar.{' '}
         <span className="font-medium text-foreground">Nunca piso lo que ya escribiste.</span>
       </p>

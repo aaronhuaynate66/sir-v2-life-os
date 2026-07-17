@@ -1,6 +1,6 @@
 'use client'
 // SIR V2 — Pre-Mortem de decisiones (Motor #3). Antes de un movimiento grande,
-// SIR proyecta la consecuencia más probable DESDE tu propio patrón. Ahora podés
+// SIR proyecta la consecuencia más probable DESDE tu propio patrón. Ahora puedes
 // GUARDAR la decisión + la proyección, y después registrar qué pasó realmente
 // para comparar predicción vs realidad y aprender de tus decisiones.
 
@@ -107,7 +107,7 @@ export function PreMortemPanel() {
             <div className="mt-2">
               {saved ? (
                 <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: '#2dd4a7' }}>
-                  <Check size={13} /> Guardado — lo revisás más adelante
+                  <Check size={13} /> Guardado — lo revisas más adelante
                 </span>
               ) : (
                 <Button size="sm" variant="secondary" disabled={busy} onClick={save}>

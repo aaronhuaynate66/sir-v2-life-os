@@ -104,7 +104,7 @@ export type Surface =
 /** Método de creación de una entidad (param `method`). */
 export type CreateMethod =
   | 'form'         // formulario manual
-  | 'texto_ia'     // "Contale a SIR" (relato → IA)
+  | 'texto_ia'     // "Cuéntale a SIR" (relato → IA)
   | 'intake'       // intake inteligente
   | 'mencionada'   // auto-crear persona mencionada (PR-B)
   | 'captura'      // derivada de una captura

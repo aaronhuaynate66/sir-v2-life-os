@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   after(async () => {
     // Bootstrap: si aún no fijaste el chat_id, te lo devuelvo.
     if (!allowedChat) {
-      await sendDevMessage(msg.chatId, `🛠️ Bot de dev. Tu chat_id es: ${msg.chatId}. Seteá TELEGRAM_DEV_CHAT_ID=${msg.chatId} en Vercel y redesplegá.`)
+      await sendDevMessage(msg.chatId, `🛠️ Bot de dev. Tu chat_id es: ${msg.chatId}. Setea TELEGRAM_DEV_CHAT_ID=${msg.chatId} en Vercel y vuelve a desplegar.`)
       return
     }
     if (String(msg.chatId) !== allowedChat) return
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (text.startsWith('/')) {
       const cmd = text.slice(1).split(/\s+/)[0].toLowerCase()
       if (cmd === 'start' || cmd === 'help') {
-        await sendDevMessage(msg.chatId, '🛠️ Soy el bot de dev de SIR.\n\n• PREGUNTAME por el estado técnico: "¿pasó CI?", "¿qué PRs hay?", "¿qué se mergeó hoy?" — cruzo la GitHub API en vivo.\n• DECIME un pedido de dev (bug, mejora, cambio): "el botón X no anda", "arreglá Y", "estaría bueno Z" — lo anoto como issue en el repo para que se agarre y se arregle.')
+        await sendDevMessage(msg.chatId, '🛠️ Soy el bot de dev de SIR.\n\n• PREGÚNTAME por el estado técnico: "¿pasó CI?", "¿qué PRs hay?", "¿qué se mergeó hoy?" — cruzo la GitHub API en vivo.\n• DIME un pedido de dev (bug, mejora, cambio): "el botón X no anda", "arregla Y", "estaría bueno Z" — lo anoto como issue en el repo para que se agarre y se arregle.')
         return
       }
     }
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       if (issue) {
         await sendDevMessage(msg.chatId, `📌 Anotado como issue #${issue.number}: ${intent.title}\n${issue.url}\n\nQueda en la cola de dev (label dev-inbox). Lo agarro cuando trabajemos.`)
       } else {
-        await sendDevMessage(msg.chatId, 'Te leí el pedido pero no pude crear el issue (¿permisos del GITHUB_TOKEN para issues?). Reintentá o avisame por acá.')
+        await sendDevMessage(msg.chatId, 'Te leí el pedido pero no pude crear el issue (¿permisos del GITHUB_TOKEN para issues?). Reintenta o avísame por aquí.')
       }
       return
     }
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       const answer = await askDev(text, status)
       await sendDevMessage(msg.chatId, answer)
     } catch {
-      await sendDevMessage(msg.chatId, 'No pude leer el estado ahora. Reintentá en un momento.')
+      await sendDevMessage(msg.chatId, 'No pude leer el estado ahora. Reintenta en un momento.')
     }
   })
 

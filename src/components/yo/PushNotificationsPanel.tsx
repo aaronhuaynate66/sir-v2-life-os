@@ -137,7 +137,7 @@ export function PushNotificationsPanel() {
         {state.kind === 'not-configured' && (
           <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
             <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
-            El server no tiene VAPID configurado. Pedí que se setee <code className="text-[11px] font-mono">VAPID_PUBLIC_KEY</code>{' '}
+            El server no tiene VAPID configurado. Pide que se setee <code className="text-[11px] font-mono">VAPID_PUBLIC_KEY</code>{' '}
             + <code className="text-[11px] font-mono">VAPID_PRIVATE_KEY</code> en Vercel.
           </div>
         )}

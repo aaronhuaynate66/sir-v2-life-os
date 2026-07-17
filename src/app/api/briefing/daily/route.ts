@@ -45,7 +45,7 @@ export async function POST(_req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
@@ -112,7 +112,7 @@ export async function POST(_req: NextRequest) {
     return errorJson(
       422,
       'Sin contexto para un briefing',
-      'No hay objetivos activos, señales, registros ni interacciones recientes. Registrá algo y reintentá.',
+      'No hay objetivos activos, señales, registros ni interacciones recientes. Registra algo y reinténtalo.',
     )
   }
 

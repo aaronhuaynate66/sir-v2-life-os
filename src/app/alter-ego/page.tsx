@@ -52,8 +52,8 @@ export default function AlterEgoPage() {
       if (!res.ok) { setErr(data.error ?? 'No se pudo consultar'); return }
       setResult(data.result ?? null); setVoice(data.voice)
     } catch {
-      trackAiError('alter_ego', { status: 0, message: 'No se pudo consultar. Reintentá.' }) // GA4
-      setErr('No se pudo consultar. Reintentá.')
+      trackAiError('alter_ego', { status: 0, message: 'No se pudo consultar. Reinténtalo.' }) // GA4
+      setErr('No se pudo consultar. Reintenta.')
     } finally {
       setBusy(false)
     }
@@ -70,7 +70,7 @@ export default function AlterEgoPage() {
             <h1 className="text-lg font-semibold text-foreground">Alter ego</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Contame la situación que tenés que enfrentar. Te digo desde qué corriente encararla y el primer movimiento.
+            Cuéntame la situación que tienes que enfrentar. Te digo desde qué corriente encararla y el primer movimiento.
           </p>
         </div>
 

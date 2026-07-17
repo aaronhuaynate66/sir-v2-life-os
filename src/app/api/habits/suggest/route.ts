@@ -13,16 +13,18 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const SYSTEM = `Sos SIR, el asesor de Aaron. Te paso su NORTE del año, sus objetivos activos y los hábitos que YA tiene. Proponé como MÁXIMO 2 hábitos conductuales nuevos que lo acerquen de forma concreta a esos objetivos.
+const SYSTEM = `Eres SIR, el asesor de Aaron. Te paso su NORTE del año, sus objetivos activos y los hábitos que YA tiene. Propón como MÁXIMO 2 hábitos conductuales nuevos que lo acerquen de forma concreta a esos objetivos.
+
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
 Reglas duras:
-- Pocos y sostenibles. Mejor 1 bueno que 2 forzados. Si ya tiene cubierto lo importante, devolvé [].
+- Pocos y sostenibles. Mejor 1 bueno que 2 forzados. Si ya tiene cubierto lo importante, devuelve [].
 - NO repitas un hábito que ya tiene.
 - Cada hábito es una acción conductual concreta y marcable a diario o por semana (no una meta vaga).
-- cadence 'daily' (todos los días) o 'weekly' con targetPerPeriod 1-7 (veces por semana). Usá 'weekly' cuando a diario no tenga sentido (ej. entrenar fuerte 3x/semana).
-- rationale: una frase corta que ate el hábito a SU objetivo real (citalo).
+- cadence 'daily' (todos los días) o 'weekly' con targetPerPeriod 1-7 (veces por semana). Usa 'weekly' cuando a diario no tenga sentido (ej. entrenar fuerte 3x/semana).
+- rationale: una frase corta que ate el hábito a SU objetivo real (cítalo).
 
-Respondé SOLO un array JSON, sin texto alrededor:
+Responde SOLO un array JSON, sin texto alrededor:
 [{"title":"...","cadence":"daily|weekly","targetPerPeriod":1,"rationale":"..."}]`
 
 export async function GET() {

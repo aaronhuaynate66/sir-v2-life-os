@@ -130,7 +130,7 @@ function findPayday(today: Date, leadDays: number): MacroHit | null {
       kind: 'payday',
       title: isQuincena ? 'Quincena' : 'Fin de mes',
       daysUntil: i,
-      hint: `${which} suele venir con más gasto — es un PATRÓN habitual, no una regla. Si querés cuidar el mes, decidí antes en qué NO.`,
+      hint: `${which} suele venir con más gasto — es un PATRÓN habitual, no una regla. Si quieres cuidar el mes, decidí antes en qué NO.`,
     }
   }
   return null

@@ -9,7 +9,7 @@ describe('rumboPrompt', () => {
     ])
     expect(msg).toContain('2026-06-05 · Lograste “X”')
     expect(msg).toContain('2026-05-01 · Te propusiste “Y”')
-    expect(msg.toLowerCase()).toContain('solo usá estos hitos')
+    expect(msg.toLowerCase()).toContain('solo usa estos hitos')
   })
 
   it('buildRumboInput incluye la trayectoria cuando se pasa', () => {

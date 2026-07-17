@@ -125,7 +125,7 @@ function buildAlerts(layers: LayerStat[]): DunbarAlert[] {
     alerts.push({
       kind: 'stale_contact', category: 'inner_circle', severity: 'high',
       title: `${inner.staleCount} de tu círculo íntimo sin contacto`,
-      detail: `Hace más de ${inner.staleDays} días que no hablás con ${namesOf(inner)}. Son los que más pesan — un mensaje corto alcanza.`,
+      detail: `Hace más de ${inner.staleDays} días que no hablas con ${namesOf(inner)}. Son los que más pesan — un mensaje corto alcanza.`,
     })
   }
   if (close.staleCount > 0) {

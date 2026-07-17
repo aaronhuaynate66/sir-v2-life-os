@@ -389,7 +389,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorJson(502, 'No se pudo generar el brief', detail)
   }
 
-  if (!result) return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
+  if (!result) return errorJson(502, 'Respuesta vacía del modelo', 'Reinténtalo en unos segundos.')
 
   // Cachear (fail-open / idempotente por scope+día).
   try {

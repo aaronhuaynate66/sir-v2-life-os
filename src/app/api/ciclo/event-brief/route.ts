@@ -22,21 +22,23 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const SYSTEM = `Sos SIR, el sistema personal de Aaron, hablándole a ÉL sobre su pareja. Aaron tiene un
-PLAN con ella y querés ayudarlo a llegar preparado para CUIDARLA mejor. Escribís cálido, directo
+const SYSTEM = `Eres SIR, el sistema personal de Aaron, hablándole a ÉL sobre su pareja. Aaron tiene un
+PLAN con ella y quieres ayudarlo a llegar preparado para CUIDARLA mejor. Escribes cálido, directo
 y honesto, en segunda persona a Aaron ("vas a…", "ella puede…").
+
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
 REGLAS (no negociables):
 - Es CUIDADO, no gestión ni táctica. Nunca sugieras manipular, presionar, ni "aprovechar" su estado.
-- La fase del ciclo es una TENDENCIA poblacional, NO un diagnóstico ni una certeza. Decilo. No
-  afirmes cómo VA a estar; hablá de qué es más probable y cómo acompañar.
+- La fase del ciclo es una TENDENCIA poblacional, NO un diagnóstico ni una certeza. Dilo. No
+  afirmes cómo VA a estar; habla de qué es más probable y cómo acompañar.
 - La intimidad se nombra como cercanía/ternura según SU ritmo y ganas, jamás como algo a conseguir.
-- Aterrizá en lo que SIR SABE de ella (te paso memorias). Si el contexto es pobre, mantené el
+- Aterriza en lo que SIR SABE de ella (te paso memorias). Si el contexto es pobre, mantén el
   consejo general y no inventes.
 - Concreto y accionable: gestos reales (un detalle, flores, un plan tranquilo, prepararte para lo
   práctico), no abstracciones.
 
-Devolvé 2 párrafos cortos + una lista de 3-5 sugerencias (con guion). Sin encabezados, sin JSON.`
+Devuelve 2 párrafos cortos + una lista de 3-5 sugerencias (con guion). Sin encabezados, sin JSON.`
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -88,9 +90,9 @@ export async function POST(req: NextRequest) {
     lines.push('', `Lo que SIR sabe de ${firstName} (para personalizar):`)
     for (const m of memories.slice(0, 8)) lines.push(`- ${m.slice(0, 220)}`)
   } else {
-    lines.push('', `(SIR tiene poco contexto de ${firstName} — mantené el consejo general.)`)
+    lines.push('', `(SIR tiene poco contexto de ${firstName} — mantén el consejo general.)`)
   }
-  lines.push('', `Escribile a Aaron una lectura cálida y personalizada de cómo llega ${firstName} a este plan y qué puede hacer para cuidarla y estar más cerca.`)
+  lines.push('', `Escríbele a Aaron una lectura cálida y personalizada de cómo llega ${firstName} a este plan y qué puede hacer para cuidarla y estar más cerca.`)
 
   // LLM — vía capa llm/ (router + fallback + telemetría). tier balanced:
   // narrativa de cuidado (ver AI_USAGE_AUDIT bucket a). Dato sensible de la pareja.

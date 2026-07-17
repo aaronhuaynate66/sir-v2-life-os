@@ -97,7 +97,7 @@ export function ProfessionalLinksPanel({ person }: { person: Person }) {
   function ensureTargetPerson(): string | null {
     if (selectedTargetId) return selectedTargetId
     const trimmed = query.trim()
-    if (!trimmed) { toast.error('Elegí o nombrá a la persona'); return null }
+    if (!trimmed) { toast.error('Elige o nombra a la persona'); return null }
     const takenSlugs = new Set(people.map((p) => p.slug).filter(Boolean) as string[])
     const slug = localUniqueSlug(generateSlug(trimmed), takenSlugs)
     const now = new Date().toISOString()
@@ -113,7 +113,7 @@ export function ProfessionalLinksPanel({ person }: { person: Person }) {
   function handleLink() {
     const targetId = ensureTargetPerson()
     if (!targetId) return
-    if (targetId === person.id) { toast.error('No podés vincular a la persona consigo misma'); return }
+    if (targetId === person.id) { toast.error('No puedes vincular a la persona consigo misma'); return }
     const dup = links.some(
       (l) => (l.personAId === person.id && l.personBId === targetId) || (l.personAId === targetId && l.personBId === person.id),
     )
@@ -158,7 +158,7 @@ export function ProfessionalLinksPanel({ person }: { person: Person }) {
                   id="pro-search"
                   value={query}
                   onChange={(e) => { setQuery(e.target.value); setSelectedTargetId(null) }}
-                  placeholder="Escribí para buscar entre tu gente…"
+                  placeholder="Escribe para buscar entre tu gente…"
                   className="pl-8" autoFocus autoComplete="off"
                 />
               </div>
@@ -206,7 +206,7 @@ export function ProfessionalLinksPanel({ person }: { person: Person }) {
             </div>
 
             <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
-              Enlaza a una persona REAL del grafo. Esto abre los caminos de red (a quién llegás vía quién) sin mezclarse con la familia.
+              Enlaza a una persona REAL del grafo. Esto abre los caminos de red (a quién llegas vía quién) sin mezclarse con la familia.
             </p>
             <div className="flex gap-2 justify-end">
               <Button size="sm" variant="ghost" onClick={resetForm}>Cancelar</Button>
@@ -218,7 +218,7 @@ export function ProfessionalLinksPanel({ person }: { person: Person }) {
         {proRows.length === 0 ? (
           !adding && (
             <p className="text-sm text-muted-foreground">
-              Sin vínculos profesionales/sociales. <span className="text-muted-foreground/60">Declará quién conoce a quién para trazar caminos de red.</span>
+              Sin vínculos profesionales/sociales. <span className="text-muted-foreground/60">Declara quién conoce a quién para trazar caminos de red.</span>
             </p>
           )
         ) : (

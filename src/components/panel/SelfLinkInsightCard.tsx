@@ -43,7 +43,7 @@ export function SelfLinkInsightCard() {
       <CardContent className="p-4 space-y-2">
         <div className="flex items-center gap-2">
           <Activity size={14} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
-          <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Lo que SIR va aprendiendo de vos</h2>
+          <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Lo que SIR va aprendiendo de ti</h2>
         </div>
 
         {links.length > 0 ? (
@@ -60,7 +60,7 @@ export function SelfLinkInsightCard() {
           </ul>
         ) : (
           <p className="text-sm text-muted-foreground leading-snug">
-            Todavía faltan días para leer tu patrón sueño↔energía. Seguí registrando: cada día suma un par y lo afina.
+            Todavía faltan días para leer tu patrón sueño↔energía. Sigue registrando: cada día suma un par y lo afina.
           </p>
         )}
 

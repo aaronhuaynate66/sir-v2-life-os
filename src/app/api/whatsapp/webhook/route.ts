@@ -102,7 +102,7 @@ async function ingestAndReply(from: string, text: string, cfg: OwnerCfg): Promis
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn('[whatsapp] ingest falló:', e instanceof Error ? e.message : e)
-    await sendWhatsAppText(from, 'Uf, no pude procesarlo ahora. Reintentá en un momento 🙏')
+    await sendWhatsAppText(from, 'Uf, no pude procesarlo ahora. Reintenta en un momento 🙏')
   }
 }
 
@@ -110,13 +110,13 @@ async function ingestAndReply(from: string, text: string, cfg: OwnerCfg): Promis
 async function handleAudioMessage(msg: InboundMessage, cfg: OwnerCfg): Promise<void> {
   try {
     const media = await downloadWhatsAppMedia(msg.mediaId!)
-    if (!media) { await sendWhatsAppText(msg.from, 'No pude bajar el audio 😕. Probá de nuevo o mandámelo por texto.'); return }
+    if (!media) { await sendWhatsAppText(msg.from, 'No pude bajar el audio 😕. Prueba de nuevo o mándamelo por texto.'); return }
     const text = await transcribeAudio(media.bytes, media.mimeType)
-    if (!text) { await sendWhatsAppText(msg.from, 'No le entendí al audio 😅. ¿Me lo repetís o lo escribís?'); return }
+    if (!text) { await sendWhatsAppText(msg.from, 'No le entendí al audio 😅. ¿Me lo repites o lo escribes?'); return }
     await ingestAndReply(msg.from, text, cfg)
   } catch (e) {
     // eslint-disable-next-line no-console
     console.warn('[whatsapp] voz falló:', e instanceof Error ? e.message : e)
-    await sendWhatsAppText(msg.from, 'Uf, no pude procesar la nota de voz. Reintentá en un momento 🙏')
+    await sendWhatsAppText(msg.from, 'Uf, no pude procesar la nota de voz. Reintenta en un momento 🙏')
   }
 }

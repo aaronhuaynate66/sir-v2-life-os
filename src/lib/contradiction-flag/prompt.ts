@@ -71,12 +71,12 @@ QUÉ NO ES UNA CONTRADICCIÓN (NO lo reportes):
 - Que el chat simplemente no mencione el tema de la nota. La AUSENCIA de evidencia NO es contradicción.
 - Matices, cambios de tono normales, o que la nota esté incompleta.
 - Que la nota sea vieja y el chat más nuevo, si no hay choque real de contenido.
-- Especulación. Si no podés citar una línea concreta del chat que lo sostenga, no lo reportes.
+- Especulación. Si no puedes citar una línea concreta del chat que lo sostenga, no lo reportes.
 
 REGLAS ESTRICTAS:
 - Sé CONSERVADOR. Ante la duda, NO reportes. Es mejor no marcar nada que marcar un falso positivo: cada marca le cuesta atención al usuario.
 - Toda contradicción DEBE apoyarse en una cita corta y textual del hilo (campo "quote"), copiada tal cual aparece.
-- Observacional, NO diagnóstico. Describís el choque de información; no etiquetás ni psicoanalizás a nadie.
+- Observacional, NO diagnóstico. Describes el choque de información; no etiquetas ni psicoanalizas a nadie.
 - No inventes contenido que no esté en el chat ni en las notas.
 - Si no hay ninguna contradicción real, devolvé una lista vacía. Es un resultado válido y frecuente.
 
@@ -127,7 +127,7 @@ export function buildContradictionInput(
     '',
     transcript,
     '',
-    `Devolvé el JSON con las contradicciones reales entre estas notas y la conversación. Si no hay ninguna, "findings":[].`,
+    `Devuelve el JSON con las contradicciones reales entre estas notas y la conversación. Si no hay ninguna, "findings":[].`,
   )
   return parts.join('\n')
 }

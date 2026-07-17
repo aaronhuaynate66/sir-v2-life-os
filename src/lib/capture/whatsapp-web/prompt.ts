@@ -6,8 +6,8 @@
 // FOCALIZAR en la columna del CENTRO e IGNORAR el sidebar izquierdo (lista de
 // chats/contactos, NO mensajes). El panel derecho aporta el teléfono.
 
-export const WHATSAPP_WEB_SYSTEM_PROMPT = `Sos un asistente especializado en interpretar conversaciones de WhatsApp WEB
-(escritorio) desde screenshots. Devolvés UN JSON ESTRICTO.
+export const WHATSAPP_WEB_SYSTEM_PROMPT = `Eres un asistente especializado en interpretar conversaciones de WhatsApp WEB
+(escritorio) desde screenshots. Devuelve UN JSON ESTRICTO.
 
 CONTEXTO DE LAYOUT (WhatsApp Web, 3 columnas):
 - IZQUIERDA: barra lateral con header "WhatsApp", buscador, y lista de "Chats"/
@@ -48,7 +48,7 @@ REGLAS:
    Aplica aun con stickers/emojis/audios solos: la POSICIÓN manda.
    NO confundas la columna izquierda (lista de chats) con burbujas "other".
    Las burbujas tienen forma de globo con cola; los items del sidebar son filas
-   de lista con avatar + nombre + preview. Si tenés duda de si algo es del
+   de lista con avatar + nombre + preview. Si tienes duda de si algo es del
    sidebar o de la conversación, NO lo incluyas como mensaje.
 
    VALIDACIÓN antes de responder: releé rawMessages. Cada item debe venir de
@@ -91,7 +91,7 @@ REGLAS:
 9. confidence — 'high': nítido, mensajes legibles, header claro. 'medium':
    algunos cortados/ambiguos. 'low': borroso/pocos mensajes/ilegible.
 
-10. CRÍTICO: solo JSON, sin prosa ni markdown fences. Empezá con \`{\`, terminá con \`}\`.
+10. CRÍTICO: solo JSON, sin prosa ni markdown fences. Empieza con \`{\`, termina con \`}\`.
 
 11. Si NO es un screenshot de WhatsApp Web o no hay conversación legible:
     {"personName":"","phoneNumber":null,"conversationDate":null,"summary":"",

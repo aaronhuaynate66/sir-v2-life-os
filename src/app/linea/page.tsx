@@ -104,7 +104,7 @@ function LineaContent() {
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
           Tu vida en una sola línea: finanzas, ánimo, sueño, salud y eventos, día por día.
-          Para <span className="text-foreground/80">verte</span> — cruzá lo que pasó junto.
+          Para <span className="text-foreground/80">verte</span> — cruza lo que pasó junto.
         </p>
       </div>
 
@@ -129,7 +129,7 @@ function LineaContent() {
       )}
 
       {timeline.total === 0 ? (
-        <EmptyState icon={GitCommitVertical} size="sm" title="Todavía no hay nada en tu línea." hint="Registrá finanzas, ánimo, sueño o eventos y acá se cruzan solos." />
+        <EmptyState icon={GitCommitVertical} size="sm" title="Todavía no hay nada en tu línea." hint="Registra finanzas, ánimo, sueño o eventos y aquí se cruzan solos." />
       ) : (
         <div className="space-y-5">
           {timeline.days.map((day) => (

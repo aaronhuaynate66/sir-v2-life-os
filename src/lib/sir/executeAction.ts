@@ -94,7 +94,7 @@ export async function executeProposedAction(
       .select('id, logged_at, created_at')
       .single()
     if (error || !log) {
-      return { ok: false, message: 'Uf, no pude registrar la interacción. Reintentá en un momento.' }
+      return { ok: false, message: 'Uf, no pude registrar la interacción. Reinténtalo en un momento.' }
     }
 
     // Materializar como memoria (mismo camino que el endpoint web). Fail-soft.
@@ -141,7 +141,7 @@ export async function executeProposedAction(
       created_at: now,
       updated_at: now,
     })
-    if (error) return { ok: false, message: 'Uf, no pude crear el objetivo. Reintentá en un momento.' }
+    if (error) return { ok: false, message: 'Uf, no pude crear el objetivo. Reinténtalo en un momento.' }
     return { ok: true, message: `🎯 Creé el objetivo "${titulo.slice(0, 90)}".` }
   }
 
@@ -169,7 +169,7 @@ export async function executeProposedAction(
       created_at: now,
       updated_at: now,
     })
-    if (error) return { ok: false, message: 'Uf, no pude agregar a la persona. Reintentá en un momento.' }
+    if (error) return { ok: false, message: 'Uf, no pude agregar a la persona. Reinténtalo en un momento.' }
     return { ok: true, message: `👤 Agregué a ${name.slice(0, 80)} a tu red.` }
   }
 
@@ -213,7 +213,7 @@ export async function executeProposedAction(
 
     const name = p.name || action.persona || 'esa persona'
     if (!okRel) {
-      return { ok: false, message: `No pude marcar el vínculo con ${name} como cerrado. Reintentá o hacelo desde la web.` }
+      return { ok: false, message: `No pude marcar el vínculo con ${name} como cerrado. Reinténtalo o hacelo desde la web.` }
     }
     return {
       ok: true,
@@ -227,7 +227,7 @@ export async function executeProposedAction(
     const { data: habitsRaw } = await supabase
       .from('habits').select('id, title').eq('user_id', userId).eq('active', true).limit(200)
     const habits = ((habitsRaw as Array<{ id: string; title: string }>) ?? [])
-    if (habits.length === 0) return { ok: false, message: 'No tenés hábitos activos cargados.' }
+    if (habits.length === 0) return { ok: false, message: 'No tienes hábitos activos cargados.' }
     const hit = matchHabit(habits, query)
     if (!hit) {
       return { ok: false, message: `No encontré un hábito que matchee "${query.slice(0, 60)}". Tus hábitos: ${habits.slice(0, 8).map((h) => h.title).join(', ')}.` }
@@ -241,7 +241,7 @@ export async function executeProposedAction(
     if (existing) return { ok: true, message: `✅ "${hit.title}" ya estaba marcado hoy. Listo.` }
     const { error } = await supabase
       .from('habit_checkins').insert({ user_id: userId, habit_id: hit.id, date: target })
-    if (error) return { ok: false, message: 'Uf, no pude marcar el hábito. Reintentá en un momento.' }
+    if (error) return { ok: false, message: 'Uf, no pude marcar el hábito. Reinténtalo en un momento.' }
     return { ok: true, message: `✅ Marqué "${hit.title}" como hecho hoy.` }
   }
 

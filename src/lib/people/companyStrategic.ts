@@ -1,6 +1,6 @@
 // SIR V2 — Lectura estratégica de una empresa/holding (escalón 3b). La IA lee
 // el hub (tu gente ahí, sus vínculos, objetivos en juego, estructura) y devuelve
-// una lectura BREVE: dónde tenés palancas, en quién apoyarte, qué está en juego.
+// una lectura BREVE: dónde tienes palancas, en quién apoyarte, qué está en juego.
 //
 // LÍNEA (misma que el briefing relacional): inteligencia táctica/estratégica
 // legítima, apoyada en vínculos GENUINOS e intereses reales. PROHIBIDO sugerir
@@ -13,7 +13,7 @@ Recibís: el nombre del grupo/empresa, la gente que el usuario conoce ahí (con 
 
 Tu tarea: devolver UNA lectura breve y útil para que el usuario navegue su situación en esa organización — dónde tiene aliados o palancas reales, en quién conviene invertir el vínculo, qué objetivo está en juego, qué movimiento concreto tiene sentido.
 
-Devolvé EXCLUSIVAMENTE un objeto JSON (sin markdown):
+Devuelve EXCLUSIVAMENTE un objeto JSON (sin markdown):
 { "insight": "2 a 5 oraciones en español neutro, directo y sobrio" }
 
 REGLAS ESTRICTAS:
@@ -62,7 +62,7 @@ export function buildStrategicInput(input: StrategicInput): string {
   lines.push('', `Objetivos activos ligados a esta organización (${input.goals.length}):`)
   if (input.goals.length === 0) lines.push('  (ninguno)')
   else for (const g of input.goals) lines.push(`  - ${g}`)
-  lines.push('', 'Devolvé la lectura estratégica en el JSON especificado.')
+  lines.push('', 'Devuelve la lectura estratégica en el JSON especificado.')
   return lines.join('\n')
 }
 

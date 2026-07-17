@@ -19,24 +19,24 @@ export function suggestionForGap(gap: EspejoGap, espejo: EspejoSemanal): Experim
     case 'conflicto_abierto':
       return {
         title: 'Una conversación esta semana para descomprimir, sin defender',
-        detail: 'Entrá a escuchar de verdad, sin justificar tu posición. Al final anotá cómo terminó.',
+        detail: 'Entra a escuchar de verdad, sin justificar tu posición. Al final anota cómo terminó.',
       }
     case 'norte':
       return {
         title: espejo.norteTitle
-          ? `Esta semana, cerrá UN paso concreto de «${espejo.norteTitle}»`
-          : 'Esta semana, cerrá UN paso concreto de tu norte',
-        detail: 'Uno solo, terminado. No planear: hacer. Al final de la semana lo registrás como hecho o no.',
+          ? `Esta semana, cierra UN paso concreto de «${espejo.norteTitle}»`
+          : 'Esta semana, cierra UN paso concreto de tu norte',
+        detail: 'Uno solo, terminado. No planear: hacer. Al final de la semana lo registras como hecho o no.',
       }
     case 'dispersion':
       return {
         title: 'El primer paso del día va a tu norte',
-        detail: 'Antes de tocar otros frentes, avanzá algo del norte. Probá 5 de los próximos 7 días.',
+        detail: 'Antes de tocar otros frentes, avanza algo del norte. Prueba 5 de los próximos 7 días.',
       }
     case 'sueño':
       return {
-        title: 'Acostate antes de medianoche 5 de las próximas 7 noches',
-        detail: 'El sueño es la base del resto. Registrá cada noche que lo cumpliste.',
+        title: 'Acuéstate antes de medianoche 5 de las próximas 7 noches',
+        detail: 'El sueño es la base del resto. Registra cada noche que lo cumpliste.',
       }
     case 'estrés':
       return {
@@ -46,7 +46,7 @@ export function suggestionForGap(gap: EspejoGap, espejo: EspejoSemanal): Experim
     default:
       return {
         title: `Esta semana, una acción concreta sobre: ${gap.label}`,
-        detail: 'Una sola, medible. Al final de la semana registrás qué pasó.',
+        detail: 'Una sola, medible. Al final de la semana registras qué pasó.',
       }
   }
 }
@@ -55,8 +55,8 @@ export function suggestExperiment(espejo: EspejoSemanal): ExperimentSuggestion |
   if (espejo.state === 'sin_datos') return null
   if (espejo.state === 'sin_norte') {
     return {
-      title: 'Fijá tu norte del año',
-      detail: 'Sin un norte no hay experimento que mueva la aguja. Marcá un objetivo como tu norte para poder medir la semana.',
+      title: 'Fija tu norte del año',
+      detail: 'Sin un norte no hay experimento que mueva la aguja. Marca un objetivo como tu norte para poder medir la semana.',
     }
   }
 
@@ -64,9 +64,9 @@ export function suggestExperiment(espejo: EspejoSemanal): ExperimentSuggestion |
   if (top) return suggestionForGap(top, espejo)
 
   return {
-    title: 'Sostené lo que viene funcionando',
+    title: 'Sostén lo que viene funcionando',
     detail: espejo.norteTitle
-      ? `Repetí esta semana lo que te acercó a «${espejo.norteTitle}» — un paso más, igual de concreto.`
-      : 'Repetí esta semana lo que te viene funcionando — un paso más, igual de concreto.',
+      ? `Repite esta semana lo que te acercó a «${espejo.norteTitle}» — un paso más, igual de concreto.`
+      : 'Repite esta semana lo que te viene funcionando — un paso más, igual de concreto.',
   }
 }

@@ -179,7 +179,7 @@ export default async function EmpresaPage({ params }: PageProps) {
 
       <section className="space-y-3">
         <h2 className="text-sm uppercase tracking-wide text-muted-foreground">
-          Tu gente acá ({hub.people.length})
+          Tu gente aquí ({hub.people.length})
         </h2>
         <div className="space-y-2">
           {hub.people.map((p) => (

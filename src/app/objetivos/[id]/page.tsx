@@ -72,7 +72,7 @@ export default function ObjetivoDetailPage() {
         </Link>
 
         {!goal ? (
-          <Card><CardContent className="p-5 text-sm text-muted-foreground">No encontré ese objetivo. Quizá lo recargás desde <Link href="/objetivos" className="text-primary hover:underline">Objetivos</Link>.</CardContent></Card>
+          <Card><CardContent className="p-5 text-sm text-muted-foreground">No encontré ese objetivo. Quizá lo recargas desde <Link href="/objetivos" className="text-primary hover:underline">Objetivos</Link>.</CardContent></Card>
         ) : (
           <>
             <header className="space-y-2">

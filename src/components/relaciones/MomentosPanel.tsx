@@ -161,7 +161,7 @@ export function MomentosPanel({ personId }: { personId: string }) {
         {moments === null ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando…</div>
         ) : moments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin momentos registrados. Anotá una decisión o conversación clave para que SIR la siga.</p>
+          <p className="text-sm text-muted-foreground">Sin momentos registrados. Anota una decisión o conversación clave para que SIR la siga.</p>
         ) : (
           <div className="space-y-2">
             {abiertos.map((m) => {

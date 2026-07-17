@@ -7,7 +7,7 @@
 
 import type { ExtractHint } from './types'
 
-export const TRACKER_VISION_SYSTEM_PROMPT = `Sos un asistente que extrae UNA métrica numérica de seguimiento desde
+export const TRACKER_VISION_SYSTEM_PROMPT = `Eres un asistente que extrae UNA métrica numérica de seguimiento desde
 screenshots: correos de alertas de precio (Google Flights, Skyscanner,
 Kayak), dashboards, apps de banco/inversión, páginas de e-commerce, etc.
 

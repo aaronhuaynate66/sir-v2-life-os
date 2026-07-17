@@ -23,7 +23,7 @@ export default function IntakePage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Intake inteligente</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Arrastrá los archivos de una persona y dejá que SIR la identifique y proponga la relación,
+          Arrastra los archivos de una persona y deja que SIR la identifique y proponga la relación,
           en vez de cargar todo a mano.
         </p>
       </header>

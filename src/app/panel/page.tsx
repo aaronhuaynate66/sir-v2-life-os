@@ -260,7 +260,7 @@ function DashboardContent() {
     toast.success('Movimiento registrado', { description: `${finType === 'income' ? '+' : '-'}${formatPEN(amt)}` })
   }
   function handleAddSignal() {
-    if (!signalContent.trim()) { toast.error('Señal vacía', { description: 'Escribí el contenido de la señal.' }); return }
+    if (!signalContent.trim()) { toast.error('Señal vacía', { description: 'Escribe el contenido de la señal.' }); return }
     const sig = { id: `sig_${Date.now()}`, source: 'manual' as const, type: 'pattern' as const, content: signalContent, strength: 5, urgency: 'soon' as const, relatedPersons: [], relatedGoals: [], meaning: signalContent, actionRequired: false, detectedAt: new Date().toISOString(), resolved: false }
     addSignal(sig); addMemory(createSignalAddedMemory(sig)); setSignalContent('')
     toast.success('Señal registrada')
@@ -305,7 +305,7 @@ function DashboardContent() {
             <SectionTitle icon={Users} label="Alertas relacionales" count={relAlerts.length} />
             {relAlerts.length === 0 ? (
               <div className="text-xs text-muted-foreground/70 py-2 leading-relaxed">
-                Sin alertas relacionales. Cuando un vínculo importante se enfríe por silencio o quede algo pendiente, SIR te avisa acá.
+                Sin alertas relacionales. Cuando un vínculo importante se enfríe por silencio o quede algo pendiente, SIR te avisa aquí.
               </div>
             ) : (
               <div className="space-y-3">
@@ -342,7 +342,7 @@ function DashboardContent() {
             <SectionTitle icon={Bell} label="Señales activas" count={activeSignals.length} />
             {activeSignals.length === 0 ? (
               <div className="text-xs text-muted-foreground/70 py-2 leading-relaxed">
-                Sin señales activas. Las señales son patrones que SIR detecta —o que anotás a mano en «Registro rápido»— y quedan acá hasta que las resolvés.
+                Sin señales activas. Las señales son patrones que SIR detecta —o que anotas a mano en «Registro rápido»— y quedan aquí hasta que las resuelves.
               </div>
             ) : (
               <div className="space-y-2">
@@ -442,7 +442,7 @@ function DashboardContent() {
           <DailyActionsPanel
             focus="reconnect"
             limit={5}
-            title="Reconectá con tu gente"
+            title="Reconecta con tu gente"
             emptyLabel="Estás al día con tu gente. Nadie enfriándose por silencio. 🌿"
             hideWhenEmpty
           />
@@ -502,7 +502,7 @@ function DashboardContent() {
                   <span className="text-xl sm:text-2xl text-muted-foreground/50 font-mono">/10</span>
                 </div>
                 <p className="text-xs text-muted-foreground/70 leading-relaxed">
-                  Calibrando. Registrá sueño, energía o tus primeros movimientos para calcular tu paz.
+                  Calibrando. Registra sueño, energía o tus primeros movimientos para calcular tu paz.
                 </p>
               </>
             ) : (
@@ -611,7 +611,7 @@ function DashboardContent() {
             <SectionTitle icon={Target} label="Objetivos" count={`${goalsDash.criticalGoals.length} criticos`} />
             {goalsDash.criticalGoals.length === 0 ? (
               <div className="text-xs text-muted-foreground/70 py-2 leading-relaxed">
-                Sin objetivos críticos. Cuando marques la prioridad de un objetivo como «crítica» en /objetivos, su avance se sigue desde acá.
+                Sin objetivos críticos. Cuando marques la prioridad de un objetivo como «crítica» en /objetivos, su avance se sigue desde aquí.
               </div>
             ) : (
               <div className="space-y-3">
@@ -658,7 +658,7 @@ function DashboardContent() {
               <Row label="Sueño" value="sin datos" />
             )}
             {!hasEnergyData && !hasSleepData && (
-              <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registrá energía y sueño en &laquo;Registro rápido&raquo; para ver tu estado.</p>
+              <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registra energía y sueño en &laquo;Registro rápido&raquo; para ver tu estado.</p>
             )}
           </CardContent>
         </Card>
@@ -675,7 +675,7 @@ function DashboardContent() {
             ) : (
               <>
                 <Row label="Estabilidad" value="sin datos" />
-                <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registrá movimientos en /finanzas para ver tu estabilidad.</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-2 leading-snug">Registra movimientos en /finanzas para ver tu estabilidad.</p>
               </>
             )}
             {hasFinanceData && finAlerts[0] && (

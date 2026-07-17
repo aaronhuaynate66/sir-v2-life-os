@@ -69,7 +69,7 @@ async function callModel(
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'vision')
   if (!rl.ok) return rl.response
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   try { parsed = JSON.parse(stripJsonFences(raw)) } catch { parsed = null }
   if (!isValidMedExtracted(parsed)) {
     try {
-      raw = await callModel(supabase, authData.user.id, input, 'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON, empezando con { y terminando con }.')
+      raw = await callModel(supabase, authData.user.id, input, 'CRÍTICO: tu respuesta anterior no era JSON válido. Devuelve SOLO el JSON, empezando con { y terminando con }.')
       parsed = JSON.parse(stripJsonFences(raw))
     } catch (e) {
       return errorJson(502, 'Claude devolvió formato inválido', (e instanceof Error ? e.message : String(e)).slice(0, 200))

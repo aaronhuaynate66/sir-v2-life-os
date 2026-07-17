@@ -1,6 +1,6 @@
 // SIR V2 — POST /api/relato/transcribe
 //
-// Toma una FOTO (base64) que Aaron sacó desde "Contale a SIR" y la transcribe a
+// Toma una FOTO (base64) que Aaron sacó desde "Cuéntale a SIR" y la transcribe a
 // prosa con Claude Vision, para que ese texto caiga en el input del relato y el
 // pipeline de siempre lo estructure (cumples, episodios, notas…). NO escribe en
 // la base, NO crea observation: solo transcribe y devuelve texto (la foto se
@@ -38,7 +38,7 @@ function isPostBody(x: unknown): x is PostBody {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
   const userId = auth.user.id
 
   const rl = await enforceRateLimit(supabase, auth.user.id, 'vision')
@@ -48,10 +48,10 @@ export async function POST(req: NextRequest) {
   try { body = await req.json() } catch { return errorJson(400, 'JSON inválido') }
   if (!isPostBody(body)) return errorJson(400, 'Falta imageBase64 / mimeType')
   const mimeType = body.mimeType.toLowerCase()
-  if (!ALLOWED_MIME.has(mimeType)) return errorJson(400, 'Formato no soportado', 'Usá JPG, PNG, WebP o GIF.')
+  if (!ALLOWED_MIME.has(mimeType)) return errorJson(400, 'Formato no soportado', 'Usa JPG, PNG, WebP o GIF.')
   // El base64 crudo (sin data: prefix) no debe pasar el límite.
   const b64 = body.imageBase64.replace(/^data:[^;]+;base64,/, '')
-  if (b64.length > MAX_BASE64_BYTES) return errorJson(413, 'Imagen muy grande', 'Probá con una foto más chica.')
+  if (b64.length > MAX_BASE64_BYTES) return errorJson(413, 'Imagen muy grande', 'Prueba con una foto más chica.')
 
   // Vía capa llm/. tier balanced → Sonnet (fechas/nombres: precisión). self.
   const mediaType = mimeType as 'image/webp' | 'image/png' | 'image/jpeg' | 'image/gif'
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', mediaType, data: b64 } },
-            { type: 'text', text: 'Transcribí a prosa todo dato útil de esta imagen.' },
+            { type: 'text', text: 'Transcribe a prosa todo dato útil de esta imagen.' },
           ],
         }],
       },

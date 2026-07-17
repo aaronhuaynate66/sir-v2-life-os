@@ -65,7 +65,7 @@ export function ImportarGrupo() {
   async function procesar() {
     if (!file || running) return
     const members = rows.filter((r) => r.include && r.personId).map((r) => ({ id: r.personId as string, name: r.personName as string }))
-    if (members.length === 0) { setErr('Marcá al menos un miembro con persona asignada.'); return }
+    if (members.length === 0) { setErr('Marca al menos un miembro con persona asignada.'); return }
     setRunning(true); setErr(null)
     members.forEach((m) => setRows((prev) => prev.map((r) => (r.personId === m.id ? { ...r, status: 'processing' } : r))))
     const res = await runGroupImport(file, members, { transcribeAudios, readImages, readStickers }, (p) => setProg(p))
@@ -88,12 +88,12 @@ export function ImportarGrupo() {
           <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Importar un chat grupal (por autor)</div>
         </div>
         <p className="text-sm text-muted-foreground mb-3">
-          Para grupos (mamá + hermana, equipo, etc.). SIR atribuye lo de cada uno a SU ficha, sin mezclar. El que sos vos queda excluido.
+          Para grupos (mamá + hermana, equipo, etc.). SIR atribuye lo de cada uno a SU ficha, sin mezclar. El que eres tú queda excluido.
         </p>
 
         <label className="mb-3 flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/40">
           {reading ? <Loader2 size={15} className="animate-spin" /> : <Users size={15} />}
-          <span>{reading ? 'Leyendo participantes…' : (file ? file.name : 'Elegí el .zip del grupo')}</span>
+          <span>{reading ? 'Leyendo participantes…' : (file ? file.name : 'Elige el .zip del grupo')}</span>
           <input type="file" accept=".txt,.zip,text/plain,application/zip" className="hidden" disabled={running}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); e.currentTarget.value = '' }} />
         </label>
@@ -115,7 +115,7 @@ export function ImportarGrupo() {
                       <span className="min-w-0">
                         <span className="font-medium text-foreground">{r.author}</span>
                         <span className="text-[10px] text-muted-foreground">
-                          {' '}→ {r.personName ? <span className="text-foreground">{r.personName}</span> : <span className="text-warn">sin persona (¿sos vos?)</span>}
+                          {' '}→ {r.personName ? <span className="text-foreground">{r.personName}</span> : <span className="text-warn">sin persona (¿eres tú?)</span>}
                         </span>
                       </span>
                     </label>
@@ -146,7 +146,7 @@ export function ImportarGrupo() {
 
             {hechos.length > 0 && !running && (
               <div className="mb-2 rounded-lg border border-good/40 bg-good/10 p-2.5 text-xs text-foreground">
-                ✓ Listo — importado a {hechos.map((r) => r.personName).join(' y ')}. Mirá sus fichas; cada uno recibió SU parte de la conversación.
+                ✓ Listo — importado a {hechos.map((r) => r.personName).join(' y ')}. Mira sus fichas; cada uno recibió SU parte de la conversación.
               </div>
             )}
             {prog?.phase === 'member' && <div className="text-[11px] text-muted-foreground mb-2">Atribuyendo a {prog.member}… {prog.done ?? 0}/{prog.total ?? 0}</div>}

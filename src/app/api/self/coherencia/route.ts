@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
   }
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     }, { supabase, userId: authData.user.id })
     const insight = parseCoherenceNarrative(res.text)
     if (!insight) {
-      return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
+      return errorJson(502, 'Respuesta vacía del modelo', 'Reintenta en unos segundos.')
     }
     return NextResponse.json({ insight }, { status: 200 })
   } catch (e) {

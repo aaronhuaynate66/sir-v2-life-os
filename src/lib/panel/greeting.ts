@@ -18,8 +18,8 @@ export function timeGreeting(hour: number): TimeGreeting {
   const h = Number.isFinite(hour) ? ((Math.floor(hour) % 24) + 24) % 24 : 12
   if (h >= 5 && h < 12) return { greeting: 'Buenos días', phrase: 'Un día nuevo para estar presente.' }
   if (h >= 12 && h < 19) return { greeting: 'Buenas tardes', phrase: 'El ritmo del día, a tu tiempo.' }
-  if (h >= 19 && h < 24) return { greeting: 'Buenas noches', phrase: 'Cerrá el día con calma.' }
-  return { greeting: 'Buenas madrugadas', phrase: 'La noche también es tuya — cuidá el descanso.' }
+  if (h >= 19 && h < 24) return { greeting: 'Buenas noches', phrase: 'Cierra el día con calma.' }
+  return { greeting: 'Buenas madrugadas', phrase: 'La noche también es tuya — cuida el descanso.' }
 }
 
 export interface DayCounts {

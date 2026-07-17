@@ -51,7 +51,7 @@ export function HypothesesExplorer({ personId, personName }: { personId: string;
         {open && (
           <div className="mt-3 space-y-3">
             <p className="text-[11px] text-muted-foreground leading-snug">
-              Contame qué te preocupa de {personName}. SIR abre <span className="font-medium text-foreground/80">hipótesis que compiten</span> —para
+              Cuéntame qué te preocupa de {personName}. SIR abre <span className="font-medium text-foreground/80">hipótesis que compiten</span> —para
               entender, protegerte y decidir mejor, no para diagnosticar ni etiquetar.
             </p>
             <textarea

@@ -89,7 +89,7 @@ export default async function RedPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Red</h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Vos en el centro, conectado a cada persona por categoría. Filtrá por tipo
+          Tú en el centro, conectado a cada persona por categoría. Filtra por tipo
           de relación o salud mínima. La lista completa con edición vive en{' '}
           <span className="font-mono text-foreground/70">/relaciones</span>.
         </p>

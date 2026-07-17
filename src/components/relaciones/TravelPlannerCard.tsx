@@ -89,7 +89,7 @@ export function TravelPlannerCard({ cycleStartDate, cycleLengthDays, personCycle
         </div>
 
         {windows.length === 0 ? (
-          <p className="text-[12px] text-muted-foreground italic">No hay ventanas en ese mes con esos filtros. Probá sin «solo findes» o cambiá el mes.</p>
+          <p className="text-[12px] text-muted-foreground italic">No hay ventanas en ese mes con esos filtros. Prueba sin «solo findes» o cambia el mes.</p>
         ) : (
           <ul className="space-y-1.5">
             {windows.map((w, i) => {
@@ -114,7 +114,7 @@ export function TravelPlannerCard({ cycleStartDate, cycleLengthDays, personCycle
         )}
 
         <p className="text-[11px] leading-relaxed text-muted-foreground border-l-2 border-border/40 pl-3">
-          Rankeado por su energía típica en cada tramo — para que la disfrute, no para forzar nada. Es una tendencia (±días) y se recalibra con cada período que registres. Tocá una fecha para ver el detalle.
+          Rankeado por su energía típica en cada tramo — para que la disfrute, no para forzar nada. Es una tendencia (±días) y se recalibra con cada período que registres. Toca una fecha para ver el detalle.
         </p>
       </CardContent>
     </Card>

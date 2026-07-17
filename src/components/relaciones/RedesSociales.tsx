@@ -165,8 +165,8 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
             {/* Nada manual ni capturado → empty state que apunta al panel inline. */}
             {!hasAny && !igObs && !liObs && (
               <p className="text-sm text-muted-foreground italic">
-                Sin redes ni capturas. Usá <span className="not-italic font-medium">Editar</span>{' '}
-                para vincular teléfono, Instagram, LinkedIn o Twitter — o subí una captura con{' '}
+                Sin redes ni capturas. Usa <span className="not-italic font-medium">Editar</span>{' '}
+                para vincular teléfono, Instagram, LinkedIn o Twitter — o sube una captura con{' '}
                 <span className="not-italic font-medium">Agregar captura</span> (arriba) para enriquecer el perfil.
               </p>
             )}
@@ -208,7 +208,7 @@ export function RedesSociales({ person, observations }: RedesSocialesProps) {
             {!person.linkedinUrl && !scannedLinkedinUrl && liObs && (
               <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1.5">
                 <Sparkles size={11} strokeWidth={1.75} className="text-brand" aria-hidden="true" />
-                Hay una captura de LinkedIn — pegá la URL del perfil en Editar para enlazarla.
+                Hay una captura de LinkedIn — pega la URL del perfil en Editar para enlazarla.
               </p>
             )}
 

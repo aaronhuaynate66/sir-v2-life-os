@@ -17,7 +17,7 @@ export default function PlanesPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-none">Planes</h1>
           <p className="text-[11px] text-muted-foreground mt-1">
-            Tus planes personales. Marcá con quién es cada uno — si es con tu pareja, cae en su línea del ciclo.
+            Tus planes personales. Marca con quién es cada uno — si es con tu pareja, cae en su línea del ciclo.
           </p>
         </div>
       </div>

@@ -5,7 +5,7 @@
 // el nivel — editable, nunca impuesta ni formulario vacío (principio doc/08). Con
 // el tiempo, la diversidad de emociones nombradas es una señal de habilidad.
 
-/** Vocabulario fino por banda de ánimo (1-10). Curado, en español rioplatense. */
+/** Vocabulario fino por banda de ánimo (1-10). Curado, en español del Perú (peruano neutro, de Lima). */
 const BY_BAND: { max: number; labels: string[] }[] = [
   { max: 3, labels: ['angustia', 'bronca', 'soledad', 'vacío', 'agobio', 'miedo', 'impotencia'] },
   { max: 5, labels: ['frustración', 'decepción', 'sobrecarga', 'ansiedad', 'desánimo', 'inquietud'] },

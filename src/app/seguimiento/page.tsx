@@ -79,7 +79,7 @@ function SeguimientoContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Seguimiento</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Métricas externas que monitoreás en el tiempo, con alerta por umbral.
+          Métricas externas que monitoreas en el tiempo, con alerta por umbral.
         </p>
       </div>
 
@@ -143,8 +143,8 @@ function SeguimientoContent() {
           {trackers.length === 0 ? (
             <EmptyState
               icon={LineChart}
-              title="Todavía no seguís ninguna métrica."
-              hint='Creá un tracker (ej. "Precio vuelo Lima→Dammam") y subí capturas para armar la serie.'
+              title="Todavía no sigues ninguna métrica."
+              hint='Crea un tracker (ej. "Precio vuelo Lima→Dammam") y sube capturas para armar la serie.'
             />
           ) : (
             <ul className="space-y-2">

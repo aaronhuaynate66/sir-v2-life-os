@@ -60,12 +60,13 @@ async function reGenSummary(apiKey: string, personName: string, rawMessages: Raw
     .map((m) => `[${m.ts ?? '?'}] ${m.author ?? '?'}: ${(m.content ?? '').replace(/\n+/g, ' ').slice(0, 300)}`)
     .join('\n')
 
-  const system = `Sos un asistente que resume conversaciones de WhatsApp. Vas a recibir un extracto de mensajes intercambiados entre Aaron y ${personName}. Tu tarea es:
-1. Escribir un summary de 3-5 líneas en prosa neutra, en español rioplatense — qué temas se hablaron, tono general, si hubo tensión, si algo quedó pendiente. NO uses frases genéricas del tipo "Conversación de WhatsApp con X".
+  const system = `Eres un asistente que resume conversaciones de WhatsApp. Vas a recibir un extracto de mensajes intercambiados entre Aaron y ${personName}. Tu tarea es:
+1. Escribir un summary de 3-5 líneas en prosa neutra, en español del Perú (peruano neutro, de Lima) — qué temas se hablaron, tono general, si hubo tensión, si algo quedó pendiente. NO uses frases genéricas del tipo "Conversación de WhatsApp con X".
 2. Listar entre 3 y 8 topics cortos (2-4 palabras cada uno).
 3. Estimar el estado emocional del USER (Aaron) y de la OTRA persona (${personName}), en 1-3 palabras cada uno. Null si no queda claro.
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
-Devolvé SOLO un JSON con este shape:
+Devuelve SOLO un JSON con este shape:
 {"summary": "...", "topics": ["...", "..."], "emotionalUser": "...", "emotionalOther": "..."}`
 
   const res = await fetch(ANTHROPIC_URL, {
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
   if (row.capture_type !== 'whatsapp_chat') return err(400, 'Solo aplicable a observations whatsapp_chat')
   const data = row.data ?? {}
   if (!force && !isPoorSummary(data.summary)) {
-    return NextResponse.json({ skipped: true, reason: 'summary ya parece bueno; pasá force:true si querés regenerarlo igual' })
+    return NextResponse.json({ skipped: true, reason: 'summary ya parece bueno; pasá force:true si quieres regenerarlo igual' })
   }
   const rawMessages = Array.isArray(data.rawMessages) ? data.rawMessages : []
   if (rawMessages.length === 0) return err(422, 'Esta observation no tiene rawMessages persistidos — no puedo reconstruir')

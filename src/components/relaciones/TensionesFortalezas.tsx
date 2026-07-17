@@ -67,7 +67,7 @@ export function TensionesFortalezas({ person }: { person: Person }) {
           <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tensiones y fortalezas</h2>
         </div>
         <p className="text-[11px] text-muted-foreground mb-4 leading-snug">
-          Lo que vos sabés de este vínculo — para que el contacto sea real, no genérico.
+          Lo que tú sabes de este vínculo — para que el contacto sea real, no genérico.
         </p>
 
         <div className="space-y-4">
@@ -196,7 +196,7 @@ function NoteList({
       )}
       {atCap && (
         <p className="mt-1.5 text-[10px] text-muted-foreground/60">
-          Máximo {MAX_NOTES_PER_KIND} — quitá alguna para agregar otra.
+          Máximo {MAX_NOTES_PER_KIND} — quita alguna para agregar otra.
         </p>
       )}
     </div>

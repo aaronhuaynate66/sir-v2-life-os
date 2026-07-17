@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   let body: { narrative?: unknown }
   try { body = (await req.json()) as { narrative?: unknown } } catch { return NextResponse.json({ error: 'Body inválido' }, { status: 400 }) }
   const narrative = typeof body.narrative === 'string' ? body.narrative.trim().slice(0, 4000) : ''
-  if (narrative.length < 8) return NextResponse.json({ error: 'Contame el relato (un poco más largo).' }, { status: 400 })
+  if (narrative.length < 8) return NextResponse.json({ error: 'Cuéntame el relato (un poco más largo).' }, { status: 400 })
 
   // ── Contexto para dedup: nombres de personas, empresas y objetivos ──
   const people: string[] = []
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     `Hoy es ${new Date().toISOString().slice(0, 10)}.`,
     people.length ? `Personas que YA existen (no las dupliques): ${people.slice(0, 300).join('; ')}.` : 'No tiene personas cargadas todavía.',
     orgs.length ? `Empresas/entidades que YA existen: ${orgs.join('; ')}.` : 'No tiene empresas cargadas.',
-    goals.length ? `Objetivos activos (usá el título exacto): ${goals.join('; ')}.` : 'No tiene objetivos activos.',
+    goals.length ? `Objetivos activos (usa el título exacto): ${goals.join('; ')}.` : 'No tiene objetivos activos.',
   ].join('\n')
   const userContent = `CONTEXTO:\n${ctx}\n\nRELATO:\n${narrative}`
 

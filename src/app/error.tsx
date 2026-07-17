@@ -42,7 +42,7 @@ export default function RouteError({
             <h1 className="text-lg font-semibold tracking-tight">Algo se rompió en esta vista</h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Ocurrió un error inesperado al renderizar esta sección. Tus datos están a salvo
-              (viven en el servidor). Probá reintentar; si persiste, recargá o volvé al panel.
+              (viven en el servidor). Prueba reintentar; si persiste, recarga o vuelve al panel.
             </p>
             {error.digest && (
               <p className="text-[10px] font-mono text-muted-foreground/50 pt-1">

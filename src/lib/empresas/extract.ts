@@ -7,9 +7,9 @@
 // No persiste nada: alimenta el form de EditOrgProfile para REVISIÓN antes de
 // guardar (vía el POST /api/empresas/profile existente).
 
-export const EXTRACT_SYSTEM_PROMPT = `Sos un asistente que estructura información PÚBLICA de una empresa a partir de texto que el usuario pegó (de su web, LinkedIn, etc.).
+export const EXTRACT_SYSTEM_PROMPT = `Eres un asistente que estructura información PÚBLICA de una empresa a partir de texto que el usuario pegó (de su web, LinkedIn, etc.).
 
-Devolvé EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor, con esta forma:
+Devuelve EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor, con esta forma:
 {"description": string, "sectors": string[], "notes": string}
 
 Reglas:

@@ -17,23 +17,23 @@ Tu tarea: a partir del historial reciente del usuario (registros de estado, conv
 ESTRUCTURA DE SALIDA (texto plano, exactamente estos 4 bloques, cada uno separado por una línea en blanco, con su etiqueta literal):
 Resumen: una sola oración con cómo fue la semana en lo esencial.
 
-Patrones: 2 a 4 observaciones de tendencias (ánimo/energía/sueño, temas recurrentes, ritmo de contacto). Cada observación en su propia línea, empezando con "- ". Basate en los números y textos provistos.
+Patrones: 2 a 4 observaciones de tendencias (ánimo/energía/sueño, temas recurrentes, ritmo de contacto). Cada observación en su propia línea, empezando con "- ". Básate en los números y textos provistos.
 
 Destacado: 1 a 2 oraciones sobre lo que más marcó la semana (un evento, una conversación, un cambio).
 
 Próxima semana: UNA acción concreta y respetuosa para la semana que viene, orientada al bienestar (descanso, un vínculo a cuidar, un hábito a sostener). Nunca una táctica para "engancharse" más con la app.
 
 CORRELACIÓN LUNAR / CICLO (opcional, solo si aparece en los datos):
-- Si el "Contexto lunar" o el "Contexto de ciclo" muestran una coincidencia CLARA entre el estado (ánimo/energía/sueño) y una fase lunar o de ciclo, mencionála en Patrones como señal fuerte u observación contextual. Puede ser central si los datos lo sostienen, pero no la presentes como causa única.
+- Si el "Contexto lunar" o el "Contexto de ciclo" muestran una coincidencia CLARA entre el estado (ánimo/energía/sueño) y una fase lunar o de ciclo, menciónala en Patrones como señal fuerte u observación contextual. Puede ser central si los datos lo sostienen, pero no la presentes como causa única.
 - Si NO hay una señal clara (pocos datos, sin variación), NO la menciones. Mejor omitir que forzar.
 - PROHIBIDO: astrología prescriptiva, certeza falsa o reducir la conducta de otra persona solo a su fase. El ciclo es señal habilitada, no identidad total.
 
 REGLAS ESTRICTAS:
-- Usá SOLO los datos provistos. No inventes números, eventos ni personas.
+- Usa SOLO los datos provistos. No inventes números, eventos ni personas.
 - Permitido: hipótesis de riesgo, predisposición o patrón compatible si aparece en los datos, con lenguaje tentativo y confianza implícita por cantidad de registros.
 - PROHIBIDO: presentar diagnósticos clínicos como hechos confirmados, consejo médico/psicológico, alarmismo.
-- Si hay pocos datos, decilo con honestidad y mantené el resumen corto.
-- Español neutro, cálido y directo. Sin markdown extra, sin emojis. Respetá las etiquetas "Resumen:", "Patrones:", "Destacado:", "Próxima semana:" tal cual.`
+- Si hay pocos datos, dilo con honestidad y mantén el resumen corto.
+- Escribe SIEMPRE en español del Perú (tuteo con "tú"), cálido y directo; PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). Sin markdown extra, sin emojis. Respeta las etiquetas "Resumen:", "Patrones:", "Destacado:", "Próxima semana:" tal cual.`
 
 export interface WeeklyLogStat {
   kind: string
@@ -141,6 +141,6 @@ export function buildWeeklyInput(d: WeeklyInputData): string {
     }
   }
 
-  lines.push('', 'Escribí el resumen semanal con la estructura indicada.')
+  lines.push('', 'Escribe el resumen semanal con la estructura indicada.')
   return lines.join('\n')
 }

@@ -63,8 +63,8 @@ export async function enforceRateLimit(
 
   if (worstRetryAfterSec > 0) {
     const body = {
-      error: 'Alcanzaste el límite de uso por ahora. Esperá un momento y reintentá.',
-      detail: `Reintentá en ~${worstRetryAfterSec}s.`,
+      error: 'Alcanzaste el límite de uso por ahora. Esperá un momento y reinténtalo.',
+      detail: `Reinténtalo en ~${worstRetryAfterSec}s.`,
     }
     return {
       ok: false,

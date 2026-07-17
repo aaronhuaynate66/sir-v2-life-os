@@ -16,17 +16,17 @@ export const SUBSTRATE_SYNTHESIS_SYSTEM = `Eres el módulo de síntesis relacion
 
 Tu tarea: escribir un retrato narrativo breve del vínculo entre el usuario (Aaron) y una persona, leyendo una MUESTRA REAL Y RECIENTE de su conversación de WhatsApp (mensajes textuales). La muestra es reciente: refleja el estado ACTUAL del vínculo.
 
-ESTRUCTURA — exactamente 3 párrafos cortos (2-4 oraciones cada uno), en español neutro:
+ESTRUCTURA — exactamente 3 párrafos cortos (2-4 oraciones cada uno), en español del Perú (tuteo con "tú"):
 1. La dinámica ACTUAL del vínculo y el tono emocional predominante hoy.
 2. Los temas recurrentes, patrones, predisposiciones o riesgos conductuales que se ven en cómo hablan.
 3. Cómo se manifiesta la conexión hoy (cercanía, reciprocidad, cuidado mutuo, fricciones, riesgos o abordaje recomendado).
 
 REGLAS ESTRICTAS:
-- Basate SOLO en lo que se ve en los mensajes. No inventes hechos, nombres, fechas ni eventos que no estén en la muestra.
-- Permitido: hipótesis de predisposición, riesgo o patrón compatible cuando la muestra lo sostenga; separá evidencia/confianza y mantené alternativas posibles.
+- Básate SOLO en lo que se ve en los mensajes. No inventes hechos, nombres, fechas ni eventos que no estén en la muestra.
+- Permitido: hipótesis de predisposición, riesgo o patrón compatible cuando la muestra lo sostenga; separa evidencia/confianza y mantén alternativas posibles.
 - PROHIBIDO: presentar diagnósticos clínicos como hechos confirmados, consejo médico o psicológico, predicciones cerradas sobre la relación.
-- Si la muestra es pobre o repetitiva (solo logística, saludos), decilo con honestidad y escribí menos.
-- Tono cálido y respetuoso, nunca dramático ni alarmista. Bienestar, no enganche.
+- Si la muestra es pobre o repetitiva (solo logística, saludos), dilo con honestidad y escribe menos.
+- Tono cálido y respetuoso, nunca dramático ni alarmista. Bienestar, no enganche. Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
 FORMATO DE SALIDA:
 - SOLO los 3 párrafos en texto plano, separados por una línea en blanco.
@@ -60,7 +60,7 @@ export function buildSubstrateUserMessage(
 ): string {
   const parts: string[] = [`Persona: ${personName}`]
   if (goalContext) {
-    parts.push('', 'OBJETIVOS DEL USUARIO VINCULADOS A ESTA PERSONA (reflejá el estado del vínculo respecto de esto, sin inventar señales):', goalContext)
+    parts.push('', 'OBJETIVOS DEL USUARIO VINCULADOS A ESTA PERSONA (refleja el estado del vínculo respecto de esto, sin inventar señales):', goalContext)
   }
   const span = first && last ? `, del ${first} al ${last}` : ''
   parts.push(
@@ -69,7 +69,7 @@ export function buildSubstrateUserMessage(
     '',
     transcript,
     '',
-    `Escribí los 3 párrafos de "Lo personal" sobre ${personName}.`,
+    `Escribe los 3 párrafos de "Lo personal" sobre ${personName}.`,
   )
   return parts.join('\n')
 }

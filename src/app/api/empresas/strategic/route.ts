@@ -30,7 +30,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
   if (!rl.ok) return rl.response

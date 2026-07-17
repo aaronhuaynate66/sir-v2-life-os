@@ -68,7 +68,7 @@ function PlantearContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Cómo plantear algo</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-          Elegí a quién y qué le querés plantear. SIR encuadra <span className="text-foreground/80">tu verdad en el
+          Elige a quién y qué le quieres plantear. SIR encuadra <span className="text-foreground/80">tu verdad en el
           lenguaje de lo que esa persona valora</span> — para que se entienda, no para manipular. (Ideal para el
           pedido de aumento.)
         </p>
@@ -79,7 +79,7 @@ function PlantearContent() {
           <div>
             <label className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-1.5">A quién</label>
             <Select value={personId} onValueChange={setPersonId}>
-              <SelectTrigger><SelectValue placeholder="Elegí una persona…" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Elige una persona…" /></SelectTrigger>
               <SelectContent>
                 {sorted.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
@@ -90,7 +90,7 @@ function PlantearContent() {
             </Select>
           </div>
           <div>
-            <label htmlFor="obj" className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-1.5">Qué le querés plantear</label>
+            <label htmlFor="obj" className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-1.5">Qué le quieres plantear</label>
             <textarea
               id="obj"
               value={objective}
@@ -127,7 +127,7 @@ function FrameView({ result, ethics, forName, hadContext }: { result: FrameResul
             <div className="flex items-start gap-3">
               <ShieldAlert size={20} strokeWidth={1.75} className="text-warn mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div>
-                <div className="text-sm font-semibold text-warn">Un alto acá</div>
+                <div className="text-sm font-semibold text-warn">Un alto aquí</div>
                 <p className="text-sm text-foreground/90 leading-relaxed mt-1">{result.ethicalNote}</p>
               </div>
             </div>
@@ -142,7 +142,7 @@ function FrameView({ result, ethics, forName, hadContext }: { result: FrameResul
               Qué mueve a {forName || 'esta persona'}
             </div>
             {!hadContext && (
-              <p className="text-[11px] text-muted-foreground/80 mb-2">SIR tenía poco registro de esta persona — esto es inferido de su rol, tomalo con pinzas.</p>
+              <p className="text-[11px] text-muted-foreground/80 mb-2">SIR tenía poco registro de esta persona — esto es inferido de su rol, tómalo con pinzas.</p>
             )}
             <div className="flex flex-wrap gap-1.5">
               {result.values.map((v, i) => (
@@ -161,7 +161,7 @@ function FrameView({ result, ethics, forName, hadContext }: { result: FrameResul
             {result.leadWith && (
               <div className="mt-3 flex items-start gap-2 text-sm">
                 <ArrowRight size={15} strokeWidth={1.75} className="text-brand mt-0.5 flex-shrink-0" aria-hidden="true" />
-                <span className="text-foreground/90"><span className="text-text-tertiary text-[11px] uppercase tracking-[0.07em] mr-2">Abrí con</span>{result.leadWith}</span>
+                <span className="text-foreground/90"><span className="text-text-tertiary text-[11px] uppercase tracking-[0.07em] mr-2">Abre con</span>{result.leadWith}</span>
               </div>
             )}
           </CardContent>
@@ -198,7 +198,7 @@ function FrameView({ result, ethics, forName, hadContext }: { result: FrameResul
 
       <p className="text-[11px] text-muted-foreground/80 leading-relaxed px-1">
         Es <span className="font-medium text-foreground/70">tu verdad en el lenguaje del otro</span>, no un libreto para
-        engañar. Decilo solo si lo podés sostener — si tenés que mentir para que funcione, no es el camino.
+        engañar. Dilo solo si lo puedes sostener — si tienes que mentir para que funcione, no es el camino.
       </p>
     </div>
   )

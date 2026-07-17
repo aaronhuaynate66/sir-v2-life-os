@@ -144,25 +144,25 @@ export function GraphView({ selfFullName, selfEmail, directContactIds = [], inte
     if (noNodesAtAll) {
       return {
         title: 'Tu red está vacía',
-        body: 'Agregá personas desde /relaciones para que aparezcan en el grafo.',
+        body: 'Agrega personas desde /relaciones para que aparezcan en el grafo.',
       }
     }
     if (noNodesInFilter && filters.category !== 'all') {
       if (filters.category === 'estrategico' || filters.category === 'desarrollo') {
         return {
           title: 'Sin contactos en esta categoría',
-          body: `Marcá personas con tag '${filters.category}' desde su perfil para que aparezcan acá.`,
+          body: `Marca personas con tag '${filters.category}' desde su perfil para que aparezcan aquí.`,
         }
       }
       return {
         title: 'Sin contactos en esta categoría con esa salud',
-        body: 'Ajustá los filtros para ver más contactos.',
+        body: 'Ajusta los filtros para ver más contactos.',
       }
     }
     if (noNodesInFilter) {
       return {
         title: 'Sin contactos con esa salud mínima',
-        body: 'Bajá el slider para ver más contactos.',
+        body: 'Baja el slider para ver más contactos.',
       }
     }
     return null

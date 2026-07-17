@@ -282,7 +282,7 @@ function buildNoContact(
 
     const weight = kin?.weight ?? 1
     const title = kin
-      ? `Hace tiempo no hablás con ${kin.label} ${p.name}`
+      ? `Hace tiempo no hablas con ${kin.label} ${p.name}`
       : `Hace tiempo no contactás a ${p.name}`
     items.push({
       id: `nocontact_${p.id}`,

@@ -22,7 +22,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
 
   const all = req.nextUrl.searchParams.get('all') === '1'
   try {
@@ -41,7 +41,7 @@ interface PostBody { text?: unknown; kind?: unknown; confidence?: unknown }
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
 
   let body: PostBody
   try { body = (await req.json()) as PostBody } catch { return errorJson(400, 'Body inválido') }

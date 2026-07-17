@@ -67,7 +67,7 @@ export function GoalCosts({ goalId, relationalNames }: { goalId: string; relatio
           </span>
         </div>
       ))}
-      {costs.length === 0 && relationalNames.length === 0 && <p className="text-[11px] text-muted-foreground">Todavía sin costos. Sumá pasaje, entrenamientos, inscripción…</p>}
+      {costs.length === 0 && relationalNames.length === 0 && <p className="text-[11px] text-muted-foreground">Todavía sin costos. Suma pasaje, entrenamientos, inscripción…</p>}
       {totalLabel && <div className="text-[12px] font-medium text-foreground border-t border-border pt-1.5">Total invertido: {totalLabel}</div>}
 
       {adding ? (

@@ -95,7 +95,7 @@ export function RetratoPanel() {
     <Card>
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center justify-between gap-2">
-          <SectionTitle icon={Sparkles} label="Quién sos hoy" />
+          <SectionTitle icon={Sparkles} label="Quién eres hoy" />
           {retrato && (
             <button type="button" onClick={generar} disabled={busy} className="flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground">
               {busy ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} actualizar
@@ -108,7 +108,7 @@ export function RetratoPanel() {
         ) : (
           <>
             <p className="mt-2 text-[13px] text-muted-foreground">
-              SIR puede armar un retrato de quién sos hoy a partir de lo que ya tiene — tu identidad, tu norte, cómo venís y tus vínculos.
+              SIR puede armar un retrato de quién eres hoy a partir de lo que ya tiene — tu identidad, tu norte, cómo vienes y tus vínculos.
             </p>
             <Button size="sm" className="mt-3" disabled={busy} onClick={generar}>
               {busy ? <Loader2 size={14} className="mr-1 animate-spin" /> : null}

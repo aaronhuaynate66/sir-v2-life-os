@@ -152,7 +152,7 @@ export function AntesDeContactar({ personId, memories }: AntesDeContactarProps) 
                   <span className="text-[10px] uppercase tracking-[0.06em] text-warn/80">
                     Notas privadas
                   </span>
-                  <span className="text-[10px] text-muted-foreground/80">· solo vos lo ves · nunca a IA</span>
+                  <span className="text-[10px] text-muted-foreground/80">· solo tú lo ves · nunca a IA</span>
                 </div>
                 <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{notes}</p>
               </div>

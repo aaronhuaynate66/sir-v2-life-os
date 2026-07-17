@@ -4,7 +4,7 @@
 
 import { formatGithubStatus, type GithubStatus } from '@/lib/dev/githubStatus'
 
-const SYS = `Sos el asistente técnico de SIR (proyecto de Aaron), respondiendo por Telegram al bot de dev. Te paso el ESTADO REAL del repo (commits, CI, PRs). Respondé la pregunta de Aaron de forma BREVE y concreta, en español, texto plano (sin markdown). Si la pregunta no se puede responder con el estado dado, decilo. No inventes.`
+const SYS = `Eres el asistente técnico de SIR (proyecto de Aaron), respondiendo por Telegram al bot de dev. Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). Te paso el ESTADO REAL del repo (commits, CI, PRs). Responde la pregunta de Aaron de forma BREVE y concreta, en español, texto plano (sin markdown). Si la pregunta no se puede responder con el estado dado, dilo. No inventes.`
 
 export async function askDev(question: string, status: GithubStatus): Promise<string> {
   const statusText = formatGithubStatus(status)

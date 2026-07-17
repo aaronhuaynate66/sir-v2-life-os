@@ -78,7 +78,7 @@ export function DolarSignalCard() {
               son <span className={cn('font-medium', up ? 'text-bad' : 'text-ok')}>~S/ {absImpact.toLocaleString('es')} {up ? 'más' : 'menos'}</span> que antes.
             </p>
             <p className="text-[11px] text-muted-foreground/70 mt-1.5 leading-relaxed">
-              Toca lo que tengas o necesites en dólares — no los soles que ya tenés. Contexto, no alarma.
+              Toca lo que tengas o necesites en dólares — no los soles que ya tienes. Contexto, no alarma.
             </p>
             <button
               type="button"

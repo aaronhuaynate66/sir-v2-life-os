@@ -44,7 +44,7 @@ async function gatherPulse(supabase: SupabaseClient, userId: string, personId: s
     const bits: string[] = []
     if (a.tone) bits.push(`tono ${a.tone.direction}`)
     if (a.volume) bits.push(`volumen ${a.volume.direction}${a.volume.changePoint ? ` (${a.volume.changePoint.direction} hace poco)` : ''}`)
-    if (a.myInitiationShare != null) bits.push(`vos iniciás el ${Math.round(a.myInitiationShare * 100)}% de las charlas`)
+    if (a.myInitiationShare != null) bits.push(`tú inicias el ${Math.round(a.myInitiationShare * 100)}% de las charlas`)
     if (a.cadence) bits.push(`se hablan ~cada ${a.cadence.medianGapDays.toFixed(1)} días`)
     return bits.length ? `Pulso de la conversación (dinámica reciente): ${bits.join(', ')}.` : undefined
   } catch { return undefined }

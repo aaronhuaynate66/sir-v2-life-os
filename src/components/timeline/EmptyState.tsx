@@ -20,20 +20,20 @@ const COPY: Record<EmptyVariant, { Icon: LucideIcon; title: (q?: string) => stri
   'no-range': {
     Icon: Calendar,
     title: () => 'No hay eventos en este rango.',
-    sub: 'Probá ampliar el período o cambiar los tipos seleccionados.',
+    sub: 'Prueba ampliar el período o cambiar los tipos seleccionados.',
     iconClass: 'text-muted-foreground/60',
   },
   'no-search': {
     Icon: SearchX,
     title: (q) => `No encontré resultados para «${q ?? ''}».`,
-    sub: 'Probá otros términos o limpiá la búsqueda.',
+    sub: 'Prueba otros términos o limpia la búsqueda.',
     iconClass: 'text-muted-foreground/60',
   },
   error: {
     Icon: AlertTriangle,
     // Fallo de carga recuperable: ámbar (no rojo) — es reintentable, no crítico.
     title: () => 'No pudimos cargar el historial.',
-    sub: 'Verificá tu conexión y reintentá.',
+    sub: 'Verifica tu conexión y reintenta.',
     iconClass: 'text-warn',
   },
 }

@@ -59,7 +59,7 @@ export function RecalibrarTonoPanel() {
         <p className="text-[13px] text-muted-foreground leading-relaxed">
           Re-lee tus interacciones tipeadas que quedaron en tono neutro (3) y les asigna un tono más
           fiel (1-5). <span className="text-foreground/80">Solo toca notas con contenido real</span> —
-          las llamadas y los import-markers (que son la mayoría de los 3) se saltan solos. Empezá por
+          las llamadas y los import-markers (que son la mayoría de los 3) se saltan solos. Empieza por
           el dry-run; es reversible.
         </p>
 
@@ -96,7 +96,7 @@ export function RecalibrarTonoPanel() {
               </ul>
             )}
             <p className="text-[11px] text-muted-foreground/70">
-              Si la propuesta pinta bien, aplicá a todo. Se procesan todos tus logs en 3 (puede tardar ~1 min).
+              Si la propuesta pinta bien, aplica a todo. Se procesan todos tus logs en 3 (puede tardar ~1 min).
             </p>
           </div>
         )}

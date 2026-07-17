@@ -19,7 +19,7 @@ describe('HYPOTHESES_SYSTEM_PROMPT — guardrails', () => {
   it('mantiene enfoque Aaron-first sin habilitar explotación', () => {
     expect(HYPOTHESES_SYSTEM_PROMPT).toMatch(/SIR está del lado de Aaron/i)
     expect(HYPOTHESES_SYSTEM_PROMPT).toMatch(/acción útil para Aaron/i)
-    expect(HYPOTHESES_SYSTEM_PROMPT).toMatch(/usá su herida/i)
+    expect(HYPOTHESES_SYSTEM_PROMPT).toMatch(/usa su herida/i)
   })
 })
 

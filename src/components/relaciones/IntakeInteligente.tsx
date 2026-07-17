@@ -161,7 +161,7 @@ export function IntakeInteligente() {
   const [phase, setPhase] = useState<Phase>('idle')
   const [error, setError] = useState<ErrorState | null>(null)
   const [files, setFiles] = useState<File[]>([])
-  // Cola multi-persona: si subís archivos de varias personas, se procesan de a una.
+  // Cola multi-persona: si subes archivos de varias personas, se procesan de a una.
   const [queue, setQueue] = useState<File[][]>([])
   const [queueIdx, setQueueIdx] = useState(0)
   const [semRows, setSemRows] = useState<SemRow[]>([])
@@ -312,7 +312,7 @@ export function IntakeInteligente() {
           organization: '',
           relationship: (li || prof?.captureType === 'linkedin') ? 'professional' : 'friend',
           category: 'network',
-          reason: bestName ? 'Inferido del archivo (sin IA).' : 'No pude leer la imagen — escribí el nombre abajo y seguí.',
+          reason: bestName ? 'Inferido del archivo (sin IA).' : 'No pude leer la imagen — escribe el nombre abajo y sigue.',
         })
         setName(bestName); setRelationship((li || prof?.captureType === 'linkedin') ? 'professional' : 'friend'); setCategory('network')
       }
@@ -452,7 +452,7 @@ export function IntakeInteligente() {
       for (const f of exportFiles) {
         try { const text = await readExportText(f); if (isWhatsAppExport(text)) chats.push({ parsed: parseWhatsAppExport(text), name: cleanExportFileName(f.name), raw: text }) } catch { /* ignore */ }
       }
-      if (chats.length === 0) { rows.push({ group, label, chats: [], candidates: [], match: null, tier: 'amarillo', status: 'pendiente', detail: 'sin export de WhatsApp — revisá a mano' }); continue }
+      if (chats.length === 0) { rows.push({ group, label, chats: [], candidates: [], match: null, tier: 'amarillo', status: 'pendiente', detail: 'sin export de WhatsApp — revisa a mano' }); continue }
       const participants = Array.from(new Set(chats.flatMap((c) => c.parsed.participants)))
       const fp = chatFingerprint(participants)
       let match: SemRow['match'] = null
@@ -555,7 +555,7 @@ export function IntakeInteligente() {
       <Card className="shadow-none"><CardContent className="p-4 sm:p-6 space-y-4">
         <div className="flex items-center gap-2"><Users size={16} className="text-muted-foreground/70" /><h2 className="text-sm font-semibold tracking-tight">Intake masivo — semáforo</h2></div>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          {semRows.length} chats. <span className="text-ok">Verde</span> = SIR ya sabe de quién es (lo importa solo). <span className="text-warn">Amarillo</span> = dudoso, elegís vos. <span className="text-bad">Rojo</span> = persona nueva. Importar dispara la lectura con IA (usa créditos).
+          {semRows.length} chats. <span className="text-ok">Verde</span> = SIR ya sabe de quién es (lo importa solo). <span className="text-warn">Amarillo</span> = dudoso, eliges tú. <span className="text-bad">Rojo</span> = persona nueva. Importar dispara la lectura con IA (usa créditos).
         </p>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -639,9 +639,9 @@ export function IntakeInteligente() {
           <h2 className="text-sm font-semibold tracking-tight">Intake inteligente</h2>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
-          Arrastrá varios archivos de una misma persona — el export de WhatsApp (.zip/.txt) y su
+          Arrastra varios archivos de una misma persona — el export de WhatsApp (.zip/.txt) y su
           captura de LinkedIn/Instagram. SIR extrae los datos, te dice <span className="text-foreground">quién es</span> y
-          propone el <span className="text-foreground">tipo de relación</span>. También podés <span className="text-foreground">pegar el texto de su LinkedIn</span> y lo crea con su Vida Profesional. Confirmás y queda todo en su perfil.
+          propone el <span className="text-foreground">tipo de relación</span>. También puedes <span className="text-foreground">pegar el texto de su LinkedIn</span> y lo crea con su Vida Profesional. Confirmas y queda todo en su perfil.
         </p>
 
         {/* Archivos */}
@@ -665,7 +665,7 @@ export function IntakeInteligente() {
           />
           {queue.length > 1 && (
             <div className="rounded-md border border-ok/40 bg-ok/5 px-3 py-1.5 text-[12px] text-foreground">
-              Detecté <span className="font-semibold">{queue.length} personas distintas</span>. Procesando <span className="font-semibold">persona {queueIdx + 1} de {queue.length}</span> — revisás y confirmás una por una.
+              Detecté <span className="font-semibold">{queue.length} personas distintas</span>. Procesando <span className="font-semibold">persona {queueIdx + 1} de {queue.length}</span> — revisas y confirmas una por una.
             </div>
           )}
           {files.length > 0 && (
@@ -679,14 +679,14 @@ export function IntakeInteligente() {
           )}
           <div className="pt-1">
             <label className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary block mb-1">
-              …o pegá el texto de su perfil (LinkedIn / Instagram)
+              …o pega el texto de su perfil (LinkedIn / Instagram)
             </label>
             <textarea
               aria-label="Texto del perfil para intake inteligente"
               value={profileText}
               onChange={(e) => { setProfileText(e.target.value); setSuggestion(null); setPhase('idle'); setError(null); setSelected(null) }}
               rows={3}
-              placeholder="Pegá el 'Acerca de' + experiencia del perfil. Más confiable que la captura de página entera."
+              placeholder="Pega el 'Acerca de' + experiencia del perfil. Más confiable que la captura de página entera."
               className="w-full rounded border border-border bg-background px-3 py-2 text-sm"
               disabled={phase === 'analyzing' || phase === 'importing'}
             />
@@ -754,7 +754,7 @@ export function IntakeInteligente() {
             {/* Matcher: ¿ya existe? */}
             {candidates.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{selected && candidates.some((c) => c.id === selected.id) ? 'Lo vinculamos a este (cambialo si no es)' : '¿Es alguno que ya tenés?'}</div>
+                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">{selected && candidates.some((c) => c.id === selected.id) ? 'Lo vinculamos a este (cámbialo si no es)' : '¿Es alguno que ya tienes?'}</div>
                 {candidates.map((c) => (
                   <button key={c.id} type="button"
                     onClick={() => setSelected(selected?.id === c.id ? null : { id: c.id, name: c.name, slug: c.slug })}

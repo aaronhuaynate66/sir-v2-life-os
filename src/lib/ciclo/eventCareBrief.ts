@@ -89,7 +89,7 @@ function stateReadFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean, b
     partner: low ? ' Nada dramático, pero conviene llegar a cuidarla.' : ' Buen tramo para estar cerca.',
     family: low ? ' Un poco más de paciencia y presencia simple ayuda.' : ' Buen momento para una charla o un plan.',
     friend: low ? ' Un gesto simple suma; no la satures.' : ' Buen momento para juntarse.',
-    colleague: low ? ' Si podés, tratá esos días con más aire y menos exigencia.' : ' Buen tramo para lo que requiera empuje.',
+    colleague: low ? ' Si puedes, tratá esos días con más aire y menos exigencia.' : ' Buen tramo para lo que requiera empuje.',
   }
   return base + closing[bond]
 }
@@ -120,7 +120,7 @@ function suggestionsFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean,
     return ['Ritmo tranquilo — un gesto de presencia simple está bien.', 'Buen momento para una charla con calma.']
   }
   // colleague / lead — SOLO respeto y timing profesional. Nada íntimo.
-  if (low) return ['Puede llegar con menos resto — si podés, evitá reuniones pesadas, feedback difícil o pedirle un esfuerzo extra ese día.', 'Dale aire: más margen, menos presión; no lo tomes personal si está más seca.', 'Timing: dejá los temas espinosos para unos días después.']
+  if (low) return ['Puede llegar con menos resto — si puedes, evitá reuniones pesadas, feedback difícil o pedirle un esfuerzo extra ese día.', 'Dale aire: más margen, menos presión; no lo tomes personal si está más seca.', 'Timing: dejá los temas espinosos para unos días después.']
   if (high) return ['Buen tramo de energía — buen momento para lo que requiera empuje, una reunión importante o cerrar algo.', 'Suele estar más receptiva y comunicativa; aprovechá para alinear.']
   return ['Ritmo normal — sin necesidad de ajustar nada especial.', 'Trato considerado de siempre.']
 }

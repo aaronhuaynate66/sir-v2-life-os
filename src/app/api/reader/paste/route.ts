@@ -32,7 +32,7 @@ function threadIdFor(platform: string, threadName: string): string {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
 
   let body: { platform?: unknown; threadName?: unknown; text?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const threadName = typeof body.threadName === 'string' ? body.threadName.trim().slice(0, 120) : ''
   const text = typeof body.text === 'string' ? body.text : ''
   if (!threadName) return errorJson(400, 'Decime con quién es la conversación (nombre).')
-  if (!text.trim()) return errorJson(400, 'Pegá la conversación.')
+  if (!text.trim()) return errorJson(400, 'Pega la conversación.')
 
   const messages = parsePastedConversation(text)
   if (messages.length === 0) return errorJson(400, 'No pude leer mensajes en lo que pegaste.')

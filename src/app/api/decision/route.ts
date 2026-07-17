@@ -18,8 +18,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 40
 
-const SYSTEM = `Sos SIR V2, el sistema del usuario (Aaron). Evaluás una DECISIÓN en 7 dimensiones.
-Para cada dimensión asigná un "score" de -2 (muy en contra) a +2 (muy a favor), y una "note" de 1 línea concreta.
+const SYSTEM = `Eres SIR V2, el sistema del usuario (Aaron). Evalúas una DECISIÓN en 7 dimensiones.
+
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
+
+Para cada dimensión asigna un "score" de -2 (muy en contra) a +2 (muy a favor), y una "note" de 1 línea concreta.
 
 Dimensiones:
 - peace: ¿aumenta o reduce su paz mental? (meta-objetivo)
@@ -31,9 +34,9 @@ Dimensiones:
 - timing: ¿es el momento correcto? (+2 sí, -2 mal momento)
 - reversibility: ¿es reversible si se equivoca? (+2 totalmente reversible, -2 irreversible)
 
-Devolvé EXCLUSIVAMENTE un JSON (sin prosa, sin fences), con las 7 claves:
+Devuelve EXCLUSIVAMENTE un JSON (sin prosa, sin fences), con las 7 claves:
 { "peace": {"score": n, "note": "…"}, "values": {...}, "biological": {...}, "financial": {...}, "alignment": {...}, "relational": {...}, "timing": {...}, "reversibility": {...} }
-Empezá con { y terminá con }. Si una dimensión no aplica, poné score 0.`
+Empieza con { y termina con }. Si una dimensión no aplica, pon score 0.`
 
 function errorJson(status: number, error: string, detail?: string) {
   return NextResponse.json({ error, detail }, { status })
@@ -58,13 +61,13 @@ function toScores(x: unknown): DecisionInput['scores'] {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
 
   let body: { title?: unknown; description?: unknown; force?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : ''
   const description = typeof body.description === 'string' ? body.description.trim().slice(0, 1500) : ''
-  if (!title && !description) return errorJson(400, 'Contame qué estás por decidir')
+  if (!title && !description) return errorJson(400, 'Cuéntame qué estás por decidir')
   const force = body.force === true
 
   // V2 — cache por (día + hash del texto): evaluar la MISMA decisión el mismo día
@@ -106,7 +109,7 @@ export async function POST(req: NextRequest) {
   let parsed: unknown = null
   try { parsed = JSON.parse(stripFences(raw)) } catch { parsed = null }
   if (!parsed || typeof parsed !== 'object') {
-    try { parsed = JSON.parse(stripFences(await call('CRÍTICO: devolvé SOLO el JSON, empezando con { y terminando con }.'))) } catch {
+    try { parsed = JSON.parse(stripFences(await call('CRÍTICO: devuelve SOLO el JSON, empezando con { y terminando con }.'))) } catch {
       return errorJson(502, 'Claude devolvió formato inválido')
     }
   }

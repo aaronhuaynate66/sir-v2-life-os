@@ -36,7 +36,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
   const { id } = await ctx.params
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   if (!id) return errorJson(400, 'Falta el id del plan')
 
   // Cargar el plan (con fallback si la columna gcal_event_id aún no existe).
@@ -66,7 +66,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     return errorJson(
       409,
       'No hay un Google Calendar conectado',
-      'Conectá tu Google Calendar desde el hub de calendarios y reintentá.',
+      'Conectá tu Google Calendar desde el hub de calendarios y reinténtalo.',
     )
   }
 

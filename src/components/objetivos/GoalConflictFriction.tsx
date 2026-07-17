@@ -47,8 +47,8 @@ export function GoalConflictFriction({ goal, conflicts, people, isNorte }: Props
       <AlertTriangle size={12} className="mt-0.5 shrink-0 text-warn" aria-hidden="true" />
       <span className="text-foreground/90 leading-relaxed">
         {isNorte ? 'Tu norte está generando roce' : 'Este objetivo está generando roce'} con{' '}
-        <span className="font-medium">{peopleLabel}</span>. Una conversación reciente se tensó por este tema. Cuidá el
-        vínculo sin resignar el objetivo — mirá el briefing de {names.length === 1 ? 'esa persona' : 'esas personas'}.
+        <span className="font-medium">{peopleLabel}</span>. Una conversación reciente se tensó por este tema. Cuida el
+        vínculo sin resignar el objetivo — mira el briefing de {names.length === 1 ? 'esa persona' : 'esas personas'}.
       </span>
     </div>
   )

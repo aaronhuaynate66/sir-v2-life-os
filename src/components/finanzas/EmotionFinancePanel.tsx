@@ -37,8 +37,8 @@ export function EmotionFinancePanel({ data }: { data: EmotionFinanceCorrelation 
             <Activity size={22} strokeWidth={1.5} className="text-muted-foreground/60 mx-auto mb-2" aria-hidden="true" />
             <p className="text-sm text-muted-foreground">Aún no hay suficientes días para ver una relación.</p>
             <p className="text-xs text-muted-foreground/60 mt-1 max-w-md mx-auto leading-snug">
-              Registrá tu estrés en <span className="font-mono text-foreground/80">/yo</span> y clasificá tus
-              gastos por intención acá. {totalDays > 0 ? `Llevás ${totalDays} día${totalDays === 1 ? '' : 's'} con estrés registrado.` : ''}
+              Registra tu estrés en <span className="font-mono text-foreground/80">/yo</span> y clasifica tus
+              gastos por intención acá. {totalDays > 0 ? `Llevas ${totalDays} día${totalDays === 1 ? '' : 's'} con estrés registrado.` : ''}
             </p>
           </div>
         ) : (

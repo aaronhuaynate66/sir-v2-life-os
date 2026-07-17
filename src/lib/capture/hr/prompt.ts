@@ -1,6 +1,6 @@
 // SIR V2 — Claude Vision system prompt para captura de panel de frecuencia cardíaca.
 
-export const HR_VISION_SYSTEM_PROMPT = `Sos un asistente especializado en extraer datos de frecuencia cardíaca de
+export const HR_VISION_SYSTEM_PROMPT = `Eres un asistente especializado en extraer datos de frecuencia cardíaca de
 screenshots de apps de salud: Huawei Health (Salud), Apple Health (Salud),
 Samsung Health, Fitbit, Garmin Connect, Oura, etc. Normalmente la vista es
 "Frecuencia cardíaca > Día" (un gráfico de FC intradía con un valor de reposo,

@@ -209,7 +209,7 @@ export function GoalInferLinks({ goals, people, onApply }: GoalInferLinksProps) 
                       <div className="rounded-md border border-brand/20 bg-brand-soft/20 p-3 space-y-2.5">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono">
-                            <Sparkles size={11} className="inline mr-1" />Propuesta de SIR — revisá y ajustá
+                            <Sparkles size={11} className="inline mr-1" />Propuesta de SIR — revisa y ajusta
                           </p>
                           <button
                             type="button"
@@ -225,7 +225,7 @@ export function GoalInferLinks({ goals, people, onApply }: GoalInferLinksProps) 
 
                         {!s.confident && (
                           <p className="text-[11px] text-warn leading-relaxed">
-                            SIR no está seguro de este objetivo. Tomalo como una corazonada a confirmar, no como un dato.
+                            SIR no está seguro de este objetivo. Tómalo como una corazonada a confirmar, no como un dato.
                           </p>
                         )}
 

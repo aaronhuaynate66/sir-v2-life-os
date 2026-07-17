@@ -37,7 +37,7 @@ export function TrajectoryArcPanel() {
       <CardContent className="p-4 sm:p-6">
         <SectionTitle icon={Route} label="Tu trayectoria" />
         <p className="mt-1 text-[13px] text-muted-foreground">
-          El arco largo: de todo lo que te propusiste, qué venís terminando y qué soltando, en el tiempo.
+          El arco largo: de todo lo que te propusiste, qué vienes terminando y qué soltando, en el tiempo.
         </p>
 
         {arc.total === 0 ? (

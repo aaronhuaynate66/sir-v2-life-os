@@ -312,9 +312,9 @@ function FooterLine({
     <div className="text-[11px] text-muted-foreground border-t border-border/40 pt-3">
       Sin contacto registrado.{' '}
       <Link href="/captura" className="underline underline-offset-2 hover:text-foreground">
-        Subí una conversación
+        Sube una conversación
       </Link>{' '}
-      o editá el último contacto desde la persona.
+      o edita el último contacto desde la persona.
     </div>
   )
 }

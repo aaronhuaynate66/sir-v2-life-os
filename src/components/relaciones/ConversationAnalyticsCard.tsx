@@ -150,11 +150,11 @@ export function ConversationAnalyticsCard({ personId, personName }: Conversation
         )}
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
-          <Stat label="Mensajes" value={`${a.total}`} sub={mePct != null ? `vos ${mePct}% / ${personName.split(' ')[0]} ${100 - mePct}%` : undefined} />
+          <Stat label="Mensajes" value={`${a.total}`} sub={mePct != null ? `tú ${mePct}% / ${personName.split(' ')[0]} ${100 - mePct}%` : undefined} />
           <Stat label="Última vez" value={days(a.lastContactDaysAgo)} />
           {a.cadence && <Stat label="Se hablan cada" value={`~${a.cadence.medianGapDays} d`} sub={a.cadence.nextContactAt ? `próximo ${whenFromNow(a.cadence.nextContactAt)}` : undefined} />}
-          {a.latency?.myMedianMinutes != null && <Stat label="Respondés en" value={`~${a.latency.myMedianMinutes} min`} />}
-          {a.myInitiationShare != null && <Stat label="Iniciás vos" value={`${Math.round(a.myInitiationShare * 100)}%`} sub="de las charlas" />}
+          {a.latency?.myMedianMinutes != null && <Stat label="Respondes en" value={`~${a.latency.myMedianMinutes} min`} />}
+          {a.myInitiationShare != null && <Stat label="Inicias tú" value={`${Math.round(a.myInitiationShare * 100)}%`} sub="de las charlas" />}
           {a.tone && <Stat label="Tono" value={a.tone.index > 0.05 ? 'positivo' : a.tone.index < -0.05 ? 'tenso' : 'neutro'} sub={a.tone.direction !== 'estable' ? a.tone.direction : undefined} />}
         </div>
 

@@ -63,7 +63,7 @@ export function TrackerCaptureForm({ tracker, className }: TrackerCaptureFormPro
       )
       if (readings.length === 0) {
         toast.error('No se leyó ningún valor', {
-          description: 'Ninguna captura tenía un número legible. Probá con texto pegado.',
+          description: 'Ninguna captura tenía un número legible. Prueba con texto pegado.',
         })
         return
       }
@@ -84,7 +84,7 @@ export function TrackerCaptureForm({ tracker, className }: TrackerCaptureFormPro
   function processText() {
     const reading = ingestText(text, fallbackDate)
     if (!reading) {
-      toast.error('No se detectó un valor', { description: 'Pegá un texto con un número (ej. "PEN 5,075").' })
+      toast.error('No se detectó un valor', { description: 'Pega un texto con un número (ej. "PEN 5,075").' })
       return
     }
     const pts = buildPoints(tracker.id, [reading], `pt_${Date.now()}`)

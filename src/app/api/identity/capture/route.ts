@@ -121,14 +121,14 @@ async function callText(
 }
 
 const RETRY_EXTRA =
-  'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences. Empezá con `{` y terminá con `}`.'
+  'CRÍTICO: tu respuesta anterior no era JSON válido. Devuelve SOLO el JSON, sin texto adicional, sin markdown fences. Empieza con `{` y termina con `}`.'
 
 export async function POST(req: NextRequest) {
   // 1. Auth
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
   const userId = authData.user.id
 

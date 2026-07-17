@@ -2,8 +2,8 @@
 // SIR V2 — ExportAllPanel: botón "Descargar todo" en /yo.
 //
 // Trigger de GET /api/export/all → descarga un .zip con todos los CSVs de tu
-// data. Data ownership seria: si SIR desaparece, tenés todo en Excel-friendly.
-// La descarga puede tardar unos segundos si tenés muchos observations —
+// data. Data ownership seria: si SIR desaparece, tienes todo en Excel-friendly.
+// La descarga puede tardar unos segundos si tienes muchos observations —
 // mostramos un spinner mientras.
 
 import { useState } from 'react'
@@ -51,8 +51,8 @@ export function ExportAllPanel() {
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">
           Un <code className="text-[11px] font-mono">.zip</code> con todos tus datos como CSVs (personas,
-          moments, memorias, logs, objetivos, ciclos, briefings…). Abrí con Excel/Sheets. Data ownership real:
-          si SIR desaparece, seguís teniendo todo.
+          moments, memorias, logs, objetivos, ciclos, briefings…). Abre con Excel/Sheets. Data ownership real:
+          si SIR desaparece, sigues teniendo todo.
         </p>
         <div className="flex items-center gap-2 flex-wrap pt-1">
           <Button size="sm" onClick={() => void download()} disabled={busy}>

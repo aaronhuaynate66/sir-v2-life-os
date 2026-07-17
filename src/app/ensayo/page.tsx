@@ -81,8 +81,8 @@ function EnsayoContent() {
           j.error
             ? `${j.error}${j.detail ? ` — ${j.detail}` : ''}`
             : res.status === 504 || res.status === 502
-              ? 'El ensayo tardó demasiado y el servidor cortó (suele ser el modelo). Probá de nuevo, o con un objetivo más corto.'
-              : `No pude armar el ensayo (código ${res.status || '—'}). Reintentá en un momento.`,
+              ? 'El ensayo tardó demasiado y el servidor cortó (suele ser el modelo). Prueba de nuevo, o con un objetivo más corto.'
+              : `No pude armar el ensayo (código ${res.status || '—'}). Reintenta en un momento.`,
         )
         return
       }
@@ -102,7 +102,7 @@ function EnsayoContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Sala de ensayo</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-          Elegí a quién y qué querés lograr. SIR te juega los <span className="text-foreground/80">caminos posibles,
+          Elige a quién y qué quieres lograr. SIR te juega los <span className="text-foreground/80">caminos posibles,
           las objeciones y qué mueve la aguja</span> — para que ENSAYES, no para adivinar. La gente real sorprende.
         </p>
       </div>
@@ -112,7 +112,7 @@ function EnsayoContent() {
           <div>
             <label className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-1.5">Con quién</label>
             <Select value={personId} onValueChange={setPersonId}>
-              <SelectTrigger><SelectValue placeholder="Elegí una persona…" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Elige una persona…" /></SelectTrigger>
               <SelectContent>
                 {sorted.map((p) => (
                   <SelectItem key={p.id} value={p.id}>{p.name}{p.title ? ` · ${p.title}` : ''}</SelectItem>
@@ -121,7 +121,7 @@ function EnsayoContent() {
             </Select>
           </div>
           <div>
-            <label htmlFor="obj" className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-1.5">Qué querés lograr</label>
+            <label htmlFor="obj" className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-1.5">Qué quieres lograr</label>
             <textarea
               id="obj"
               value={objective}
@@ -210,7 +210,7 @@ function RehearseView({ result, ethics, forName, hadContext }: { result: Rehears
       {result.objections.length > 0 && (
         <Card className="shadow-none">
           <CardContent className="p-4 sm:p-5">
-            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-3">Objeciones que podés encontrar</div>
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-3">Objeciones que puedes encontrar</div>
             <ul className="space-y-3">
               {result.objections.map((o, i) => (
                 <li key={i} className="flex items-start gap-3">
@@ -218,7 +218,7 @@ function RehearseView({ result, ethics, forName, hadContext }: { result: Rehears
                   <div className="min-w-0">
                     <div className="text-sm text-foreground">&ldquo;{o.objection}&rdquo;</div>
                     <p className="text-[13px] text-muted-foreground leading-relaxed mt-0.5">
-                      <span className="text-text-tertiary text-[11px] uppercase tracking-[0.07em] mr-1.5">respondé</span>{o.response}
+                      <span className="text-text-tertiary text-[11px] uppercase tracking-[0.07em] mr-1.5">responde</span>{o.response}
                     </p>
                   </div>
                 </li>
@@ -257,7 +257,7 @@ function RehearseView({ result, ethics, forName, hadContext }: { result: Rehears
       )}
 
       <p className="text-[11px] text-muted-foreground/80 leading-relaxed px-1">
-        {result.watchout || 'Esto es un ensayo, no una predicción — la gente real sorprende. Usalo para prepararte, no para decidir por la profecía.'}
+        {result.watchout || 'Esto es un ensayo, no una predicción — la gente real sorprende. Úsalo para prepararte, no para decidir por la profecía.'}
       </p>
     </div>
   )

@@ -24,7 +24,7 @@ import { relativeEs } from '@/lib/graph/hover'
 const DAY_MS = 86_400_000
 
 /** Ventana (días) para considerar una memoria "actividad reciente". Más allá de
- *  esto ya no es lo que tenés presente al abrir la ficha para escribirle. */
+ *  esto ya no es lo que tienes presente al abrir la ficha para escribirle. */
 export const ACTIVITY_RECENT_DAYS = 60
 
 /** Máximo de señales recientes a mostrar (compacto, no abrumar). */

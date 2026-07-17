@@ -15,12 +15,12 @@ function base(over: Partial<ConversationAnalytics> = {}): ConversationAnalytics 
 describe('initiationInsight', () => {
   it('caso Diana: abrís vos pero se engancha (manda más + responde al toque)', () => {
     const s = initiationInsight(base(), 'Diana')
-    expect(s).toBe('Abrís vos 80% de las charlas, pero Diana se engancha: manda más (57%) y responde al toque.')
+    expect(s).toBe('Abres tú 80% de las charlas, pero Diana se engancha: manda más (57%) y responde al toque.')
   })
 
   it('sin latencia rápida omite el "responde al toque"', () => {
     const s = initiationInsight(base({ latency: { myMedianMinutes: 3, theirMedianMinutes: 90 } }), 'Diana')
-    expect(s).toBe('Abrís vos 80% de las charlas, pero Diana se engancha: manda más (57%).')
+    expect(s).toBe('Abres tú 80% de las charlas, pero Diana se engancha: manda más (57%).')
   })
 
   it('la otra persona abre casi siempre', () => {
@@ -30,7 +30,7 @@ describe('initiationInsight', () => {
 
   it('llevás vos los dos ejes (abrís y hablás más)', () => {
     const s = initiationInsight(base({ myInitiationShare: 0.8, myShare: 0.62 }), 'Ivis')
-    expect(s).toBe('Llevás vos la conversación: abrís 80% y mandás 62% de los mensajes.')
+    expect(s).toBe('Llevas tú la conversación: abres 80% y mandas 62% de los mensajes.')
   })
 
   it('conversación pareja → sin insight (null)', () => {
@@ -46,15 +46,15 @@ describe('initiationInsight', () => {
 describe('latencyInsight', () => {
   it('la otra persona responde mucho más rápido', () => {
     const s = latencyInsight(base({ latency: { myMedianMinutes: 120, theirMedianMinutes: 2 } }), 'Diana')
-    expect(s).toBe('Diana responde mucho más rápido que vos (~2 min vs ~2 h).')
+    expect(s).toBe('Diana responde mucho más rápido que tú (~2 min vs ~2 h).')
   })
   it('vos respondés mucho más rápido', () => {
     const s = latencyInsight(base({ latency: { myMedianMinutes: 3, theirMedianMinutes: 45 } }), 'Fran')
-    expect(s).toBe('Respondés mucho más rápido que Fran (~3 min vs ~45 min).')
+    expect(s).toBe('Respondes mucho más rápido que Fran (~3 min vs ~45 min).')
   })
   it('latencia 0 de un lado → "al toque"', () => {
     const s = latencyInsight(base({ latency: { myMedianMinutes: 45, theirMedianMinutes: 0 } }), 'Ana')
-    expect(s).toBe('Ana responde mucho más rápido que vos (al toque vs ~45 min).')
+    expect(s).toBe('Ana responde mucho más rápido que tú (al toque vs ~45 min).')
   })
   it('ambos rápidos o parejo → null', () => {
     expect(latencyInsight(base({ latency: { myMedianMinutes: 2, theirMedianMinutes: 5 } }), 'Ana')).toBeNull()

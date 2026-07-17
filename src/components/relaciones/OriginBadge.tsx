@@ -23,13 +23,13 @@ const ORIGIN: Record<DataOrigin, { label: string; Icon: typeof Cpu; cls: string;
     label: 'IA',
     Icon: Sparkles,
     cls: 'text-brand-soft-foreground border-brand/30 bg-brand/5',
-    hint: 'Generado por IA — orientativo, editalo antes de usarlo.',
+    hint: 'Generado por IA — orientativo, edítalo antes de usarlo.',
   },
   manual: {
     label: 'Manual',
     Icon: PenLine,
     cls: 'text-muted-foreground border-border',
-    hint: 'Cargado por vos a mano.',
+    hint: 'Cargado por ti a mano.',
   },
   extracted: {
     label: 'Extraído',
