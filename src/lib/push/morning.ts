@@ -17,6 +17,10 @@ export interface MorningInput {
   /** Fechas especiales próximas (aniversarios, mensario…) ya formateadas y
    *  ordenadas por cercanía. Ej. "Aniversario mensual relación (13) · ¡Hoy!". */
   importantDates?: string[]
+  /** A quién cuidar hoy: el vínculo más urgente de "Reconectar" (persona +
+   *  razón, ya formado). SIR sabe a quién estás descuidando; esto lo dice sin
+   *  que abras la app. Texto corto ya armado. */
+  relationshipNudge?: string
   /** Títulos de tareas que vencen hoy (no hechas). */
   dueTasks?: string[]
   /** El foco del día (ancla del año o próximo paso de un objetivo clave). */
@@ -73,6 +77,13 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   for (const b of (input.birthdays ?? []).slice(0, 2)) {
     if (parts.length >= MAX_PARTS) break
     parts.push(birthdayPhrase(b))
+  }
+
+  // 1.5 A quién cuidar hoy (vínculo más urgente de "Reconectar"). Va después de
+  //     las fechas (un cumple HOY es puntual) pero antes de tareas/foco: cuidar
+  //     un vínculo que se enfría es el corazón relacional de SIR, no un pendiente.
+  if (input.relationshipNudge && parts.length < MAX_PARTS) {
+    parts.push(input.relationshipNudge)
   }
 
   // 2. Tareas que vencen hoy.
