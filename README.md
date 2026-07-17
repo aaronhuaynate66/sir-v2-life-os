@@ -27,3 +27,5 @@ src/app/dashboard/ - Mission Control UI
 datos to señales to contexto to memoria to timing to recomendacion to accion
 
 Fase 1 completada. Ver docs/09_ROADMAP.md para el plan completo.
+
+> SIR — Life OS personal de Aaron.
