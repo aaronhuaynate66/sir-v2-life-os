@@ -35,6 +35,10 @@ const SintesisCruzadaPanel = dynamic(
   () => import('@/components/salud/SintesisCruzadaPanel').then((m) => ({ default: m.SintesisCruzadaPanel })),
   { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
 )
+const ChequeosPanel = dynamic(
+  () => import('@/components/salud/ChequeosPanel').then((m) => ({ default: m.ChequeosPanel })),
+  { ssr: false },
+)
 const HeartRateAlertsPanel = dynamic(
   () => import('@/components/salud/HeartRateAlertsPanel').then((m) => ({ default: m.HeartRateAlertsPanel })),
   { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
@@ -285,6 +289,7 @@ function SaludContent() {
         <PatronesPanel />
         <LearningCard />
         <SintesisCruzadaPanel />
+        <div className="mt-4"><ChequeosPanel /></div>
       </div>
 
       {/* Días con alertas de FC elevada (señal episódica de activación). */}
