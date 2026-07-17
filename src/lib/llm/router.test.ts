@@ -43,15 +43,26 @@ describe('planChain', () => {
     expect(chain[0].provider).toBe('anthropic')
   })
 
-  it('balanced → Anthropic al frente (fiabilidad; el OSS balanced daba timeout, bug 2026-07-16)', () => {
+  it('balanced → DeepSeek primero si está (barato Y fiable con JSON → recupera el ahorro)', () => {
     const chain = planChain({ task: 'sir_chat', messages: [] }, ALL)
-    expect(chain[0].provider).toBe('anthropic')
-    expect(chain[0].model).toBe('claude-sonnet-4-5-20250929')
+    expect(chain[0].provider).toBe('deepseek') // más barato de los DIRECTOS (costRank 5)
+    expect(chain[0].model).toBe('deepseek-chat')
   })
 
-  it('balanced sin Anthropic → cae al más barato disponible', () => {
-    const chain = planChain({ task: 'sir_chat', messages: [] }, ['openrouter', 'qwen'])
-    expect(chain[0].provider).toBe('qwen') // costRank 10 < openrouter 30
+  it('balanced sin DeepSeek → Anthropic (fiable); OpenRouter degradado a fallback', () => {
+    const chain = planChain({ task: 'sir_chat', messages: [] }, ['anthropic', 'openrouter'])
+    expect(chain[0].provider).toBe('anthropic') // openrouter (qwen lento) va último
+    expect(chain[chain.length - 1].provider).toBe('openrouter')
+  })
+
+  it('balanced: OpenRouter siempre al final (su modelo balanced daba timeout)', () => {
+    const chain = planChain({ task: 'sir_chat', messages: [] }, ALL)
+    expect(chain[chain.length - 1].provider).toBe('openrouter')
+  })
+
+  it('balanced solo con OpenRouter → lo usa igual (único disponible)', () => {
+    const chain = planChain({ task: 'sir_chat', messages: [] }, ['openrouter'])
+    expect(chain[0].provider).toBe('openrouter')
   })
 
   it('cheap NO cambia: sigue el más barato (ahorro intacto)', () => {

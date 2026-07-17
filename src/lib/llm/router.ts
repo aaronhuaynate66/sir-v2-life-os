@@ -66,14 +66,22 @@ export function planChain(req: LlmRequest, available: LlmProvider[]): PlannedCal
   // Orden base por costo (más barato primero).
   const byCost = [...candidates].sort((a, b) => PROVIDERS[a].costRank - PROVIDERS[b].costRank)
 
-  // Calidad/fiabilidad primero (Anthropic al frente) para balanced, capable y visión.
-  // El tier `cheap` (extracción simple, alto volumen) se queda en el más barato
-  // disponible (OpenRouter llama-3.3-70b, rápido y validado) → ahí vive el ahorro.
-  // `balanced` en OpenRouter (qwen-2.5-72b) daba TIMEOUT >30s en rutas interactivas
-  // (bug 2026-07-16) → se prioriza Anthropic Sonnet, confiable. Solo `cheap` ahorra.
+  // Orden por tier (fiabilidad + costo):
+  //  - `capable` / visión: CALIDAD primero → Anthropic al frente.
+  //  - `balanced`: el más barato de los proveedores DIRECTOS primero (DeepSeek si está,
+  //    que es barato Y fiable con JSON → ahí se recupera el ahorro; si no, Anthropic).
+  //    OpenRouter se DEGRADA a último recurso: su modelo balanced (qwen-2.5-72b) daba
+  //    TIMEOUT >30s en rutas interactivas (bug 2026-07-16). No se usa como primario.
+  //  - `cheap` (alto volumen, extracción simple): el más barato disponible tal cual
+  //    (DeepSeek si está; si no, OpenRouter llama-3.3-70b, rápido y validado). Ahí vive
+  //    el grueso del ahorro. En visión, `candidates` ya quedó filtrado a Anthropic.
   let ordered: LlmProvider[]
-  if ((tier === 'capable' || tier === 'balanced' || needsVision) && has.has('anthropic')) {
+  if ((tier === 'capable' || needsVision) && has.has('anthropic')) {
     ordered = ['anthropic', ...byCost.filter((p) => p !== 'anthropic')]
+  } else if (tier === 'balanced') {
+    const primary = byCost.filter((p) => p !== 'openrouter')
+    const fallback = byCost.filter((p) => p === 'openrouter')
+    ordered = primary.length ? [...primary, ...fallback] : byCost
   } else {
     ordered = byCost
   }
