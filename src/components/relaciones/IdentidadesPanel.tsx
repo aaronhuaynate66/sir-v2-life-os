@@ -90,7 +90,7 @@ export function IdentidadesPanel({ personId }: { personId: string }) {
         {items === null ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando…</div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin alias guardados. Agregá cómo se llama en WhatsApp/Instagram para homologar su info.</p>
+          <p className="text-sm text-muted-foreground">Sin alias guardados. Agrega cómo se llama en WhatsApp/Instagram para homologar su info.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {items.map((i) => (

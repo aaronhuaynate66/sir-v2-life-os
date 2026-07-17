@@ -47,7 +47,7 @@ export function calibrateDecision(a: DecisionAssessment): DecisionCalibration {
       ? 'Puerta de dos vías: equivocarte acá es barato porque volvés. No la sobre-pienses — decidí rápido y ajustá.'
       : doorType === 'one_way'
         ? 'Puerta de una vía: cara de revertir. Acá sí vale tomarte el tiempo, mirar más dimensiones y pensar el peor caso.'
-        : 'Reversibilidad poco clara: si podés volver atrás sin gran costo, tratala como reversible y decidí; si no, andá con cuidado.'
+        : 'Reversibilidad poco clara: si puedes volver atrás sin gran costo, trátala como reversible y decidí; si no, anda con cuidado.'
 
   // Alto sentido = valores en juego con fuerza (magnitud), no solo signo.
   const highSense = values !== null && Math.abs(values) >= 1

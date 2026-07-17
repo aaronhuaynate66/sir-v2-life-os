@@ -1,7 +1,7 @@
 'use client'
 // SIR V2 — RecomendacionesSemanales: acciones concretas para esta semana con
 // esta persona. Generadas por Claude Sonnet, cacheadas por (user, persona,
-// semana). Marcá cada una como hecha con click en el checkbox.
+// semana). Marca cada una como hecha con click en el checkbox.
 
 import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
@@ -74,7 +74,7 @@ export function RecomendacionesSemanales({ personId, personName }: Props) {
     setRecs(recs.map((r) => r.id === recId ? { ...r, done } : r))
     const revert = () => {
       setRecs(prev)
-      toast.error('No se pudo guardar el cambio', { description: 'Revertido. Probá de nuevo.' })
+      toast.error('No se pudo guardar el cambio', { description: 'Revertido. Prueba de nuevo.' })
     }
     try {
       const res = await fetch('/api/estado-persona/recomendaciones-semanales', {

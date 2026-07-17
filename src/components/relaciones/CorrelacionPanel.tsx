@@ -94,7 +94,7 @@ export function CorrelacionPanel({
       if (!text) {
         // Narrativa vacía: NO la guardamos como '' (falsy → volvería a mostrar el
         // botón y el próximo click re-paga el LLM). La tratamos como error suave.
-        setError(toApiError(new Error('La IA no devolvió una lectura. Probá de nuevo en un momento.')))
+        setError(toApiError(new Error('La IA no devolvió una lectura. Prueba de nuevo en un momento.')))
         return
       }
       setNarrative(text)
@@ -249,7 +249,7 @@ function EmptyState() {
         <span className="text-foreground/80">energía</span>,{' '}
         <span className="text-foreground/80">sueño</span> o{' '}
         <span className="text-foreground/80">dolor</span> en distintos días para
-        empezar a cruzarlos con la fase lunar y la del ciclo. Registralos arriba en
+        empezar a cruzarlos con la fase lunar y la del ciclo. Regístralos arriba en
         “Registro rápido”. No inventamos patrones sobre poca data.
       </p>
     </div>

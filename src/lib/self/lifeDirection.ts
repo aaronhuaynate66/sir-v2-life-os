@@ -113,7 +113,7 @@ function deriveOutlook(
     return {
       outlook: 'insufficient',
       rationale:
-        'Todavía hay poco recorrido cerrado para leer hacia dónde vas. Se afina a medida que cerrás o soltás objetivos —sin apuro.',
+        'Todavía hay poco recorrido cerrado para leer hacia dónde vas. Se afina a medida que cierras o sueltas objetivos —sin apuro.',
     }
   }
 
@@ -126,7 +126,7 @@ function deriveOutlook(
       return {
         outlook: 'steady_no_anchor',
         rationale:
-          'Venís sostenido, pero no hay un norte declarado que le dé marco. Elegir un ancla haría que este hilo apunte a algo.',
+          'Vienes sostenido, pero no hay un norte declarado que le dé marco. Elegir un ancla haría que este hilo apunte a algo.',
       }
     }
     return {
@@ -157,8 +157,8 @@ function deriveOutlook(
 
 function riskRationale(arc: TrajectoryArc, coherence: LifeCoherence): string {
   const bits: string[] = []
-  if (arc.pattern === 'releasing') bits.push('últimamente soltás más de lo que cerrás')
-  if (arc.momentum === 'desacelera') bits.push('el ritmo con que cerrás viene bajando')
+  if (arc.pattern === 'releasing') bits.push('últimamente sueltas más de lo que cierras')
+  if (arc.momentum === 'desacelera') bits.push('el ritmo con que cierras viene bajando')
   if (coherence.state === 'diverging') bits.push('el grueso de tu foco cae fuera de lo declarado')
   if (coherence.trend === 'alejandose') bits.push('tu foco viene alejándose de lo declarado')
   const head = bits.length ? bits.slice(0, 2).join(' y ') : 'las señales recientes no acompañan'
@@ -169,8 +169,8 @@ function riskRationale(arc: TrajectoryArc, coherence: LifeCoherence): string {
 
 function goodRationale(arc: TrajectoryArc, coherence: LifeCoherence): string {
   const bits: string[] = []
-  if (arc.pattern === 'building') bits.push('cerrás más de lo que soltás')
-  else if (arc.pattern === 'steady') bits.push('sostenés un equilibrio entre lo que cerrás y lo que soltás')
+  if (arc.pattern === 'building') bits.push('cierras más de lo que sueltas')
+  else if (arc.pattern === 'steady') bits.push('sostienes un equilibrio entre lo que cierras y lo que sueltas')
   if (arc.momentum === 'acelera') bits.push('tu ritmo viene subiendo')
   if (coherence.state === 'coherent') bits.push('tu foco reciente cae en lo declarado')
   if (coherence.trend === 'convergiendo') bits.push('tu foco viene acercándose a lo declarado')
@@ -190,11 +190,11 @@ function buildMessage(
   let here: string
   if (present.currentSeasonLabel) {
     here = past.previousSeasonLabel
-      ? `Venís de “${past.previousSeasonLabel}”, hoy estás en “${present.currentSeasonLabel}”`
+      ? `Vienes de “${past.previousSeasonLabel}”, hoy estás en “${present.currentSeasonLabel}”`
       : `Estás en tu primer capítulo, “${present.currentSeasonLabel}”`
   } else {
     here = past.previousSeasonLabel
-      ? `Venís de “${past.previousSeasonLabel}”, hoy transitás una pausa entre capítulos`
+      ? `Vienes de “${past.previousSeasonLabel}”, hoy transitas una pausa entre capítulos`
       : 'Estás arrancando tu rumbo'
   }
   let to: string

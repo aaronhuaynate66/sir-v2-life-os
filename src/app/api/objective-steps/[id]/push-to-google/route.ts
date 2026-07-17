@@ -37,7 +37,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
   const { id } = await ctx.params
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   if (!id) return errorJson(400, 'Falta el id de la tarea')
 
   const COLS = 'title, description, target_date, due_time, gcal_event_id'
@@ -63,7 +63,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
   }
 
   const fresh = await ensureFreshGoogleToken(supabase, auth.user.id)
-  if (!fresh) return errorJson(409, 'No hay un Google Calendar conectado', 'Conectá tu Google Calendar y reintentá.')
+  if (!fresh) return errorJson(409, 'No hay un Google Calendar conectado', 'Conectá tu Google Calendar y reinténtalo.')
 
   // Con due_time válida → evento cronometrado (reloj Lima); sin hora → día completo.
   const timed = step.due_time && DUE_TIME_RE.test(step.due_time)

@@ -99,7 +99,7 @@ export function BodyMetricsTrend({ metrics, range, offset }: BodyMetricsTrendPro
         <CardContent className="p-4 sm:p-6">
           <SectionHeader />
           <p className="text-sm text-muted-foreground py-2">
-            Sin métricas corporales todavía. Subí una captura de báscula para ver la tendencia.
+            Sin métricas corporales todavía. Sube una captura de báscula para ver la tendencia.
           </p>
         </CardContent>
       </Card>
@@ -142,7 +142,7 @@ export function BodyMetricsTrend({ metrics, range, offset }: BodyMetricsTrendPro
           <CardContent className="p-4 sm:p-6">
             <p className="text-sm text-muted-foreground py-2">
               {series.length === 1
-                ? `Solo 1 registro de ${getHealthMetricLabel(active)} (${fmt(series[0].value)}). Necesitás 2+ capturas para ver la tendencia.`
+                ? `Solo 1 registro de ${getHealthMetricLabel(active)} (${fmt(series[0].value)}). Necesitas 2+ capturas para ver la tendencia.`
                 : `Sin registros de ${getHealthMetricLabel(active)} todavía.`}
             </p>
           </CardContent>

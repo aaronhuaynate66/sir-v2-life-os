@@ -43,18 +43,20 @@ export interface GoalLinkInference {
   confident: boolean
 }
 
-export const GOAL_INFER_SYSTEM_PROMPT = `Sos un asistente que ayuda a mapear un OBJETIVO suelto del usuario a su contexto real: a qué DOMINIO pertenece y a cuáles de SUS CONTACTOS (si alguno) involucra.
+export const GOAL_INFER_SYSTEM_PROMPT = `Eres un asistente que ayuda a mapear un OBJETIVO suelto del usuario a su contexto real: a qué DOMINIO pertenece y a cuáles de SUS CONTACTOS (si alguno) involucra.
 
-Recibís el texto de un objetivo y la LISTA de nombres de los contactos reales del usuario. Devolvé EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor:
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
+
+Recibes el texto de un objetivo y la LISTA de nombres de los contactos reales del usuario. Devuelve EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor:
 {"personNames": string[], "category": string|null, "reasoning": string, "confident": boolean}
 
 Reglas ESTRICTAS (anti-invención, no negociables):
-- "personNames": SOLO nombres tomados EXACTAMENTE de la lista de contactos provista, y solo si el objetivo los involucra de forma clara y plausible. NUNCA inventes un nombre ni incluyas a alguien que no esté en la lista. Si ninguno calza, devolvé [].
-- No fuerces un vínculo: la mayoría de los objetivos personales no involucran a nadie. Ante la duda, dejá [] y confident=false.
+- "personNames": SOLO nombres tomados EXACTAMENTE de la lista de contactos provista, y solo si el objetivo los involucra de forma clara y plausible. NUNCA inventes un nombre ni incluyas a alguien que no esté en la lista. Si ninguno calza, devuelve [].
+- No fuerces un vínculo: la mayoría de los objetivos personales no involucran a nadie. Ante la duda, deja [] y confident=false.
 - "category": UNA de: financial, personal, relational, health, career, spiritual, creative — la que mejor describe el objetivo. Si no está claro, null.
-- "confident": true SOLO si tenés evidencia razonable en el texto para el dominio y/o las personas. Si estás adivinando, false.
-- "reasoning": 1-2 frases en español neutro explicando la sugerencia y marcando qué es suposición. Es una propuesta para que el usuario confirme, no un veredicto.
-- No inventes hechos, fechas ni relaciones que el texto no diga. Solo mapeás lo que ya está.`
+- "confident": true SOLO si tienes evidencia razonable en el texto para el dominio y/o las personas. Si estás adivinando, false.
+- "reasoning": 1-2 frases en español del Perú (peruano neutro, de Lima) explicando la sugerencia y marcando qué es suposición. Es una propuesta para que el usuario confirme, no un veredicto.
+- No inventes hechos, fechas ni relaciones que el texto no diga. Solo mapeas lo que ya está.`
 
 /** Normaliza un nombre para comparar sin acentos/mayúsculas/espacios extra. */
 function normalizeName(s: string): string {
@@ -83,10 +85,10 @@ export function buildGoalInferInput(goal: GoalInferTextInput, candidateNames: st
   lines.push('')
   lines.push(
     clean.length > 0
-      ? `Contactos del usuario (elegí SOLO de esta lista, o ninguno):\n${clean.map((n) => `- ${n}`).join('\n')}`
-      : 'El usuario no tiene contactos cargados: devolvé personNames vacío.',
+      ? `Contactos del usuario (elige SOLO de esta lista, o ninguno):\n${clean.map((n) => `- ${n}`).join('\n')}`
+      : 'El usuario no tiene contactos cargados: devuelve personNames vacío.',
   )
-  lines.push('', 'Devolvé el JSON con la sugerencia.')
+  lines.push('', 'Devuelve el JSON con la sugerencia.')
   return lines.join('\n')
 }
 

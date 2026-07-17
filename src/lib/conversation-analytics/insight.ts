@@ -9,7 +9,7 @@ import type { ConversationAnalytics } from './analyze'
 
 /**
  * La lectura más saliente del balance de la conversación, en una frase.
- * Prioriza la asimetría de iniciación (abrís vos / abre la otra persona)
+ * Prioriza la asimetría de iniciación (abres vos / abre la otra persona)
  * cruzada con quién manda más y qué tan rápido responde.
  */
 export function initiationInsight(a: ConversationAnalytics, firstName: string): string | null {
@@ -24,20 +24,20 @@ export function initiationInsight(a: ConversationAnalytics, firstName: string): 
   // 1) Abrís vos casi siempre, pero se engancha (manda igual o más). El caso
   //    interesante: parece distancia ("no escribe primero") pero es lo contrario.
   if (init >= 65 && them >= me) {
-    const carga = them >= me + 6 ? `manda más (${them}%)` : `manda tanto como vos (${them}%)`
+    const carga = them >= me + 6 ? `manda más (${them}%)` : `manda tanto como tú (${them}%)`
     const rapido = themFast ? ' y responde al toque' : ''
-    return `Abrís vos ${init}% de las charlas, pero ${name} se engancha: ${carga}${rapido}.`
+    return `Abres tú ${init}% de las charlas, pero ${name} se engancha: ${carga}${rapido}.`
   }
 
   // 2) Abre casi siempre la otra persona.
   if (init <= 35) {
-    const rapido = themFast ? '; le respondés rápido' : ''
+    const rapido = themFast ? '; le respondes rápido' : ''
     return `${name} abre casi siempre (${100 - init}% de las charlas)${rapido}.`
   }
 
-  // 3) Llevás vos la conversación en los dos ejes (abrís y hablás más).
+  // 3) Llevas tú la conversación en los dos ejes (abres y hablas más).
   if (init >= 65 && me >= them + 6) {
-    return `Llevás vos la conversación: abrís ${init}% y mandás ${me}% de los mensajes.`
+    return `Llevas tú la conversación: abres ${init}% y mandas ${me}% de los mensajes.`
   }
 
   return null
@@ -63,6 +63,6 @@ export function latencyInsight(a: ConversationAnalytics, firstName: string): str
   if (hi < 15) return null       // ambos rápidos → sin asimetría relevante
   if (hi < lo * 3) return null    // no es notablemente asimétrico
   return theirs < mine
-    ? `${name} responde mucho más rápido que vos (${fmtMin(theirs)} vs ${fmtMin(mine)}).`
-    : `Respondés mucho más rápido que ${name} (${fmtMin(mine)} vs ${fmtMin(theirs)}).`
+    ? `${name} responde mucho más rápido que tú (${fmtMin(theirs)} vs ${fmtMin(mine)}).`
+    : `Respondes mucho más rápido que ${name} (${fmtMin(mine)} vs ${fmtMin(theirs)}).`
 }

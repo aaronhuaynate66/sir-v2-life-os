@@ -250,7 +250,7 @@ export default function SirChatPage() {
     try {
       if (a.kind === 'registrar_interaccion') {
         if (!a.personId) {
-          toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Abrí su ficha y registralo ahí, o nombrala distinto.' })
+          toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Abre su ficha y regístralo ahí, o nómbrala distinto.' })
           return
         }
         const res = await fetch('/api/person-logs', {
@@ -318,7 +318,7 @@ export default function SirChatPage() {
         const q = norm(query)
         const hit = j.habits.find((h) => norm(h.title) === q)
           ?? j.habits.filter((h) => norm(h.title).includes(q) || q.includes(norm(h.title)))[0]
-        if (!hit) { toast.error(`No encontré el hábito "${query}"`, { description: j.habits.length ? `Tenés: ${j.habits.slice(0, 6).map((h) => h.title).join(', ')}` : 'No tenés hábitos activos.' }); return }
+        if (!hit) { toast.error(`No encontré el hábito "${query}"`, { description: j.habits.length ? `Tienes: ${j.habits.slice(0, 6).map((h) => h.title).join(', ')}` : 'No tienes hábitos activos.' }); return }
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
         if (hit.checkinDates?.includes(today)) {
           toast.success(`"${hit.title}" ya estaba marcado hoy`)
@@ -330,7 +330,7 @@ export default function SirChatPage() {
         setTurnState(idx, 'done')
       } else if (a.kind === 'cerrar_relacion') {
         if (!a.personId) {
-          toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Cerrá el vínculo desde su ficha.' })
+          toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Cierra el vínculo desde su ficha.' })
           return
         }
         const person = people.find((p) => p.id === a.personId)
@@ -498,11 +498,11 @@ export default function SirChatPage() {
         <header className="space-y-1">
           <div className="flex items-center gap-2">
             <Sparkles size={20} className="text-[#14b8a6]" />
-            <h1 className="text-2xl font-semibold tracking-tight">Preguntá a SIR</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Pregunta a SIR</h1>
           </div>
           <p className="text-sm text-muted-foreground">
             Pregunto sobre tu gente, tus vínculos y tus objetivos. Respondo con lo que tengo registrado —
-            si no lo sé, te lo digo. Si me pedís registrar algo o crear un objetivo, te lo propongo y vos confirmás.
+            si no lo sé, te lo digo. Si me pides registrar algo o crear un objetivo, te lo propongo y tú confirmas.
           </p>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="text-[11px] uppercase tracking-wide text-muted-foreground">Modelo</span>
@@ -734,7 +734,7 @@ export default function SirChatPage() {
               if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input) }
             }}
             rows={1}
-            placeholder="Preguntale algo a SIR…"
+            placeholder="Pregúntale algo a SIR…"
             className="flex-1 resize-none bg-transparent px-2 py-1.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
             disabled={loading}
           />

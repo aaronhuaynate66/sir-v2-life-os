@@ -58,13 +58,13 @@ export function PersonLocationEvents({ location, personName }: { location: strin
         <p className="text-[12px] text-muted-foreground">Sin titulares recientes de {cityLabel}.</p>
       )}
       {state === 'error' && (
-        <p className="text-[12px] text-muted-foreground">No se pudo consultar ahora. Reintentá más tarde.</p>
+        <p className="text-[12px] text-muted-foreground">No se pudo consultar ahora. Reinténtalo más tarde.</p>
       )}
 
       {state === 'done' && (
         <div>
           <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
-            Titulares de {cityLabel} · donde vive {personName.split(' ')[0]} (confirmá vos si toca algo)
+            Titulares de {cityLabel} · donde vive {personName.split(' ')[0]} (confírmalo tú si toca algo)
           </p>
           <ul className="space-y-1.5">
             {events.map((e) => (
@@ -78,7 +78,7 @@ export function PersonLocationEvents({ location, personName }: { location: strin
             ))}
           </ul>
           <p className="mt-2 text-[10.5px] text-muted-foreground/70">
-            Titulares automáticos (GDELT), confianza baja. SIR no afirma que te afecten ni que afecten a {personName.split(' ')[0]} — son contexto para que vos juzgues.
+            Titulares automáticos (GDELT), confianza baja. SIR no afirma que te afecten ni que afecten a {personName.split(' ')[0]} — son contexto para que tú juzgues.
           </p>
         </div>
       )}

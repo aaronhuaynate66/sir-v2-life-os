@@ -80,7 +80,7 @@ export function WeeklyScoreCard({ data, delta }: { data: WeeklyScore; delta?: We
           <div className="text-center py-6">
             <Gauge size={22} strokeWidth={1.5} className="text-muted-foreground/60 mx-auto mb-2" aria-hidden="true" />
             <p className="text-sm text-muted-foreground">Todavía no hay nada que medir esta semana.</p>
-            <p className="text-xs text-muted-foreground/60 mt-1">Registrá sueño y energía/estrés para empezar a ver tu score.</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Registra sueño y energía/estrés para empezar a ver tu score.</p>
           </div>
         ) : (
           <div className="mt-1 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4 sm:gap-6 sm:items-center">

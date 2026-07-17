@@ -75,7 +75,7 @@ function ExplorarContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Explorar conexiones</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-          Elegí una persona o un objetivo y SIR te muestra <span className="text-foreground/80">cómo se conecta con el resto de tu vida</span> —
+          Elige una persona o un objetivo y SIR te muestra <span className="text-foreground/80">cómo se conecta con el resto de tu vida</span> —
           quién y qué se enciende, y por qué. Sobre el cerebro-grafo que ya arma solo.
         </p>
       </div>
@@ -84,7 +84,7 @@ function ExplorarContent() {
         <CardContent className="p-4 sm:p-5">
           <label className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans block mb-1.5">Desde…</label>
           <Select value={seed} onValueChange={setSeed}>
-            <SelectTrigger><SelectValue placeholder="Elegí una persona u objetivo…" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Elige una persona u objetivo…" /></SelectTrigger>
             <SelectContent>
               {sortedPeople.length > 0 && (
                 <SelectGroup>
@@ -107,7 +107,7 @@ function ExplorarContent() {
       {error && <p className="text-[12px] text-bad">{error}</p>}
 
       {rows && !busy && rows.length === 0 && !error && (
-        <EmptyState icon={Waypoints} size="sm" title="Nada conectado todavía." hint="Este nodo aún no tiene vínculos en el grafo — cargá interacciones, objetivos o vínculos y volvé." />
+        <EmptyState icon={Waypoints} size="sm" title="Nada conectado todavía." hint="Este nodo aún no tiene vínculos en el grafo — carga interacciones, objetivos o vínculos y vuelve." />
       )}
 
       {seedLabel && rows && rows.length > 0 && (

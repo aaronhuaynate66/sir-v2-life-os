@@ -69,11 +69,11 @@ interface StepMeta {
 }
 
 const STEPS: StepMeta[] = [
-  { key: 'specific', letter: 'S', title: '¿Qué querés lograr, exactamente?', hint: 'Afiná el objetivo a una frase nítida. Sin ambigüedad.', icon: Pencil },
+  { key: 'specific', letter: 'S', title: '¿Qué quieres lograr, exactamente?', hint: 'Afina el objetivo a una frase nítida. Sin ambigüedad.', icon: Pencil },
   { key: 'measurable', letter: 'M', title: '¿Cómo vas a medir que lo lograste?', hint: 'Un número, umbral o estado verificable. Algo que se pueda tachar como hecho.', icon: Gauge },
-  { key: 'baseline', letter: 'B', title: '¿Dónde estás hoy?', hint: 'El punto de partida. SIR lo propone desde tu data real — confirmá o ajustá.', icon: Target },
+  { key: 'baseline', letter: 'B', title: '¿Dónde estás hoy?', hint: 'El punto de partida. SIR lo propone desde tu data real — confirma o ajusta.', icon: Target },
   { key: 'timeBound', letter: 'T', title: '¿Para cuándo?', hint: 'La fecha límite. Realista para la ambición de la meta.', icon: CalendarClock },
-  { key: 'relevant', letter: 'R', title: '¿Por qué importa ahora?', hint: 'La relevancia honesta para vos. Es lo que te va a sostener.', icon: Heart },
+  { key: 'relevant', letter: 'R', title: '¿Por qué importa ahora?', hint: 'La relevancia honesta para ti. Es lo que te va a sostener.', icon: Heart },
 ]
 
 function todayIso(): string {
@@ -164,7 +164,7 @@ export function SmartWizard({ goal, onClose }: { goal: Goal; onClose: () => void
         if (dict) {
           setShowDictation(false)
           setStep(0)
-          toast.success('Borrador extraído', { description: 'Revisá cada paso y ajustá lo que haga falta.' })
+          toast.success('Borrador extraído', { description: 'Revisa cada paso y ajusta lo que haga falta.' })
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -188,7 +188,7 @@ export function SmartWizard({ goal, onClose }: { goal: Goal; onClose: () => void
 
   function handleSave() {
     if (!isComplete) {
-      toast.error('Faltan campos', { description: 'Completá las 5 dimensiones SMART para guardar.' })
+      toast.error('Faltan campos', { description: 'Completa las 5 dimensiones SMART para guardar.' })
       return
     }
     updateGoal(goal.id, {
@@ -198,7 +198,7 @@ export function SmartWizard({ goal, onClose }: { goal: Goal; onClose: () => void
       targetDate: targetDate || undefined,
       why: why.trim(),
     })
-    toast.success('Objetivo definido', { description: 'Ahora podés generar un plan aterrizado.' })
+    toast.success('Objetivo definido', { description: 'Ahora puedes generar un plan aterrizado.' })
     onClose()
   }
 
@@ -313,7 +313,7 @@ export function SmartWizard({ goal, onClose }: { goal: Goal; onClose: () => void
               className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             >
               <Wand2 size={12} />
-              ¿Preferís dictarlo todo de una? Pegá un párrafo y la IA lo ordena.
+              ¿Prefieres dictarlo todo de una? Pega un párrafo y la IA lo ordena.
             </button>
           )}
         </div>
@@ -360,7 +360,7 @@ export function SmartWizard({ goal, onClose }: { goal: Goal; onClose: () => void
             {/* Baseline auto-propuesto: hint del diferenciador */}
             {current.key === 'baseline' && baselineFromData && stepFilled && (
               <p className="mt-1.5 text-[11px] text-ok-foreground flex items-center gap-1.5">
-                <Sparkles size={11} /> Propuesto desde tu data real. Confirmá o ajustá.
+                <Sparkles size={11} /> Propuesto desde tu data real. Confirma o ajusta.
               </p>
             )}
             {current.key === 'baseline' && !groundingText && (

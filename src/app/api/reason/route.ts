@@ -91,7 +91,7 @@ function sanitizeResult(x: unknown, personas: CognitivePersona[]): ReasonerResul
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
 
   let body: unknown
   try { body = await req.json() } catch { return errorJson(400, 'JSON inválido') }

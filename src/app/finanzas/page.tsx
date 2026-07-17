@@ -133,7 +133,7 @@ function FinanceContent() {
       amountPEN = amt
     } else {
       rate = parseFloat(exchangeRate)
-      if (isNaN(rate) || rate <= 0) { toast.error('Tipo de cambio inválido', { description: 'Ingresá un TC mayor que 0.' }); return }
+      if (isNaN(rate) || rate <= 0) { toast.error('Tipo de cambio inválido', { description: 'Ingresa un TC mayor que 0.' }); return }
       amountPEN = amt * rate
     }
     // La intención solo tiene sentido en salidas de dinero (expense/debt).
@@ -235,7 +235,7 @@ function FinanceContent() {
       </div>
       {!hasFinanceData && (
         <p className="text-xs text-muted-foreground/60 mb-6">
-          Registrá tus primeros movimientos para calcular estabilidad, balance y tasa de ahorro.
+          Registra tus primeros movimientos para calcular estabilidad, balance y tasa de ahorro.
         </p>
       )}
 
@@ -247,7 +247,7 @@ function FinanceContent() {
           points={balanceSeries}
           colorClass={balanceSeries.length > 0 && (balanceSeries[balanceSeries.length - 1]?.value ?? 0) >= 0 ? 'text-ok' : 'text-bad'}
           formatValue={(n) => formatPEN(n)}
-          emptyHint="Registrá movimientos para ver cómo evoluciona tu balance."
+          emptyHint="Registra movimientos para ver cómo evoluciona tu balance."
         />
       </div>
 
@@ -403,7 +403,7 @@ function FinanceContent() {
         <EmptyState
           icon={ArrowRightLeft}
           title="Sin movimientos en este filtro."
-          hint="Registrá un movimiento arriba para empezar."
+          hint="Registra un movimiento arriba para empezar."
         />
       ) : (
         <div className="space-y-1">

@@ -39,7 +39,7 @@ export function TrackerAlerts({
         <SectionTitle icon={Bell} label={title} count={alerts.length || undefined} />
         {alerts.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2 leading-relaxed">
-            Sin alertas activas. Cuando un tracker cruce el umbral que le pusiste o llegue a su meta, el aviso aparece acá.
+            Sin alertas activas. Cuando un tracker cruce el umbral que le pusiste o llegue a su meta, el aviso aparece aquí.
           </p>
         ) : (
           <ul className="mt-2 space-y-2">

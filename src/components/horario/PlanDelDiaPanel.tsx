@@ -108,18 +108,18 @@ export function PlanDelDiaPanel({
         {appliedCount !== null && !proposed ? (
           <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1.5">
             <Check size={14} strokeWidth={2} className="text-ok shrink-0" aria-hidden="true" />
-            Listo: programé {appliedCount} en tu día. Ajustá horas en{' '}
+            Listo: programé {appliedCount} en tu día. Ajusta horas en{' '}
             <span className="text-foreground/80">/objetivos</span> si hace falta.
           </p>
         ) : noGaps ? (
           <p className="text-sm text-muted-foreground mt-2">
-            No hay huecos libres hoy para encajar tus tareas. Liberá un bloque y volvé a intentar.
+            No hay huecos libres hoy para encajar tus tareas. Libera un bloque y vuelve a intentar.
           </p>
         ) : !proposed ? (
           <>
             <p className="text-sm text-muted-foreground mt-1 mb-3">
               {untimedTasks.length} tarea{untimedTasks.length === 1 ? '' : 's'} sin hora · {gaps.length} hueco
-              {gaps.length === 1 ? '' : 's'} libre{gaps.length === 1 ? '' : 's'}. Te propongo un orden y vos lo ajustás.
+              {gaps.length === 1 ? '' : 's'} libre{gaps.length === 1 ? '' : 's'}. Te propongo un orden y tú lo ajustas.
             </p>
             <Button
               variant="outline"
@@ -134,7 +134,7 @@ export function PlanDelDiaPanel({
         ) : (
           <>
             <p className="text-[11px] text-muted-foreground mt-1 mb-3">
-              Propuesta — revisá el hueco de cada tarea y aceptá. Nada se programa hasta que confirmes.
+              Propuesta — revisa el hueco de cada tarea y acepta. Nada se programa hasta que confirmes.
             </p>
             <ul className="space-y-2">
               {untimedTasks.map((task) => {

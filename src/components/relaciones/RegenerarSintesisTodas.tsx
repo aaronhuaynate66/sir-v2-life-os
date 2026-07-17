@@ -76,7 +76,7 @@ export function RegenerarSintesisTodas() {
     if (failed === 0) {
       toast.success(`"Lo personal" actualizado en ${ok} ficha${ok === 1 ? '' : 's'} desde el hilo real.`)
     } else {
-      toast.warning(`Actualizadas ${ok}/${results.length}. ${failed} fallaron — reintentá más tarde.`)
+      toast.warning(`Actualizadas ${ok}/${results.length}. ${failed} fallaron — reinténtalo más tarde.`)
     }
   }
 

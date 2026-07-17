@@ -64,7 +64,7 @@ export function LifeDirectionPanel() {
           <Header />
           <p className="text-sm text-muted-foreground py-1 leading-relaxed">
             Tu rumbo se dibuja con tus objetivos. Cuando te propongas metas y las vayas cerrando o
-            soltando, acá vas a ver de dónde venís, dónde estás y hacia dónde vas —en un solo hilo. 🧭
+            soltando, acá vas a ver de dónde vienes, dónde estás y hacia dónde vas —en un solo hilo. 🧭
           </p>
         </CardContent>
       </Card>
@@ -85,7 +85,7 @@ export function LifeDirectionPanel() {
 
         <div className="grid gap-3 sm:grid-cols-3">
           {/* PASADO */}
-          <Segment icon={History} label="De dónde venís">
+          <Segment icon={History} label="De dónde vienes">
             {past.previousSeasonLabel ? (
               <span className="text-foreground">{past.previousSeasonLabel}</span>
             ) : (
@@ -140,7 +140,7 @@ function Header() {
     <div className="flex items-center gap-2 mb-3">
       <Route size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
       <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tu rumbo</div>
-      <span className="text-[11px] text-text-tertiary/70">· de dónde venís, dónde estás, hacia dónde vas</span>
+      <span className="text-[11px] text-text-tertiary/70">· de dónde vienes, dónde estás, hacia dónde vas</span>
     </div>
   )
 }
@@ -163,8 +163,8 @@ function Meta({ children }: { children: React.ReactNode }) {
 
 function patternLabel(p: string): string {
   switch (p) {
-    case 'building': return 'Cerrás más de lo que soltás'
-    case 'releasing': return 'Soltás más de lo que cerrás'
+    case 'building': return 'Cierras más de lo que sueltas'
+    case 'releasing': return 'Sueltas más de lo que cierras'
     case 'steady': return 'Equilibrio entre cerrar y soltar'
     case 'exploring': return 'Muchos frentes abiertos'
     default: return 'Todavía sin arco para leer'

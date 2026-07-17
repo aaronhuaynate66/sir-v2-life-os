@@ -80,7 +80,7 @@ export function computeCycleRegularity(entries: { date: string; phase: string }[
       meanLengthDays: mean,
       spreadDays: null,
       bandDays: 5,
-      note: 'Aún no hay suficientes ciclos registrados para medir la regularidad. Registrá algunos inicios de período y la predicción se afina — hasta entonces, es una estimación amplia.',
+      note: 'Aún no hay suficientes ciclos registrados para medir la regularidad. Registra algunos inicios de período y la predicción se afina — hasta entonces, es una estimación amplia.',
     }
   }
 

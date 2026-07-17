@@ -74,13 +74,13 @@ export default async function EmpresasPage() {
 
       {allOrgs.length === 0 ? (
         <div className="rounded-lg border border-border p-6 text-sm text-muted-foreground space-y-3">
-          <p>Todavía no hay organizaciones. Cuando una persona tenga empresa o grupo cargado, aparece acá.</p>
+          <p>Todavía no hay organizaciones. Cuando una persona tenga empresa o grupo cargado, aparece aquí.</p>
           <div className="flex flex-wrap gap-2">
             <Link href="/captura" className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/10 transition-colors">
               Agregar desde captura
             </Link>
             <Link href="/relato" className="inline-flex items-center rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent/10 transition-colors">
-              Contale a SIR
+              Cuéntale a SIR
             </Link>
           </div>
         </div>

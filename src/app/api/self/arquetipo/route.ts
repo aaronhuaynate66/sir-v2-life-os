@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const milestones = sanitize(body.milestones)
   const anchor = typeof body.anchor === 'string' ? body.anchor.trim().slice(0, 200) : null
   const identity = typeof body.identity === 'string' ? body.identity.trim().slice(0, 300) : null
-  if (milestones.length < 2) return NextResponse.json({ error: 'Hilo insuficiente', detail: 'Necesito un par de hitos para leer tu arquetipo. Se teje a medida que ponés y movés objetivos.' }, { status: 422 })
+  if (milestones.length < 2) return NextResponse.json({ error: 'Hilo insuficiente', detail: 'Necesito un par de hitos para leer tu arquetipo. Se teje a medida que pones y mueves objetivos.' }, { status: 422 })
   try {
     const res = await complete({
       task: 'synthesis', sensitivity: 'self',

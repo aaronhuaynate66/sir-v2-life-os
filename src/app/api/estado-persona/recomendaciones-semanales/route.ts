@@ -98,12 +98,13 @@ Memorias recientes:
 ${memories}`
 }
 
-const SYSTEM_PROMPT = `Sos un asistente que ayuda a Aaron a llevar mejor sus vínculos. Recibís la data de una persona (moments abiertos, últimas interacciones, ciclo, memorias) y devolvés 3-5 recomendaciones CONCRETAS para esta semana.
+const SYSTEM_PROMPT = `Eres un asistente que ayuda a Aaron a llevar mejor sus vínculos. Recibes la data de una persona (moments abiertos, últimas interacciones, ciclo, memorias) y devuelves 3-5 recomendaciones CONCRETAS para esta semana.
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
 Reglas:
-- Cada recomendación es UNA acción ejecutable ("Mandale un mensaje sobre X", "Llamala el martes", "Pedile que te cuente cómo va Y"). NO consejos vagos.
+- Cada recomendación es UNA acción ejecutable ("Mándale un mensaje sobre X", "Llámala el martes", "Pídele que te cuente cómo va Y"). NO consejos vagos.
 - Si hay overdue, la primera recomendación debe ser resolverlo.
-- Si el ciclo sugiere un mejor día para conversar temas duros, incluilo ("evitá tocar el tema del examen mientras esté en bleeding; esperá al miércoles").
+- Si el ciclo sugiere un mejor día para conversar temas duros, inclúyelo ("evita tocar el tema del examen mientras esté en bleeding; espera al miércoles").
 - Cada recomendación puede tener un deadline sugerido (fecha o "esta semana"/"antes del viernes").
 - Máximo 5. Ordenadas de más urgente a menos.
 - NO moralizar, no dramatizar, no diagnósticar.
@@ -209,7 +210,7 @@ export async function POST(req: NextRequest) {
     void recordAiUsage(supabase, auth.user.id, 'estado_recomendaciones_semanales', MODEL, r.usage)
   }
   catch (e) { return err(502, 'Falló la síntesis con Claude', e instanceof Error ? e.message : String(e)) }
-  if (raw.length === 0) return err(422, 'Claude no generó recomendaciones — probá con force:true si insistís')
+  if (raw.length === 0) return err(422, 'Claude no generó recomendaciones — prueba con force:true si insistes')
 
   const recs: Recommendation[] = raw.map((r) => ({
     id: randomUUID(), text: r.text,

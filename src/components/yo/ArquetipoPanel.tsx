@@ -97,11 +97,11 @@ export function ArquetipoPanel() {
       <CardContent className="p-4 sm:p-6">
         <SectionTitle icon={Drama} label="Tu arquetipo" />
         <p className="mt-1 text-[13px] text-muted-foreground">
-          ¿Qué historia estás viviendo? SIR la nombra desde tus hitos — para que decidas si es la que elegís.
+          ¿Qué historia estás viviendo? SIR la nombra desde tus hitos — para que decidas si es la que eliges.
         </p>
 
         {hydrated && shown.length < 2 && (
-          <p className="mt-3 text-[13px] text-muted-foreground">Se teje a medida que ponés y movés objetivos. Necesito un par de hitos.</p>
+          <p className="mt-3 text-[13px] text-muted-foreground">Se teje a medida que pones y mueves objetivos. Necesito un par de hitos.</p>
         )}
 
         {shown.length >= 2 && state.status !== 'ready' && (

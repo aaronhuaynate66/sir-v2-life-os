@@ -29,7 +29,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   const userId = auth.user.id
 
   const rl = await enforceRateLimit(supabase, userId, 'generation')
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const personId = typeof body.personId === 'string' ? body.personId : ''
   const concern = typeof body.concern === 'string' ? body.concern.trim().slice(0, 800) : ''
   if (!personId) return errorJson(400, 'Falta la persona')
-  if (!concern) return errorJson(400, 'Contame qué te preocupa')
+  if (!concern) return errorJson(400, 'Cuéntame qué te preocupa')
 
   const { data: person } = await supabase
     .from('people')
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
   let result = parseHypothesesJson(raw)
   if (!result) {
-    try { result = parseHypothesesJson(await call('CRÍTICO: devolvé SOLO el JSON, empezando con { y terminando con }.')) } catch { result = null }
+    try { result = parseHypothesesJson(await call('CRÍTICO: devuelve SOLO el JSON, empezando con { y terminando con }.')) } catch { result = null }
   }
   if (!result) return errorJson(502, 'Claude devolvió formato inválido')
 

@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
   const userId = authData.user.id
 
@@ -93,14 +93,14 @@ export async function POST(req: NextRequest) {
     const docHash = typeof body.docHash === 'string' ? body.docHash.trim() : ''
     const title = typeof body.title === 'string' ? body.title.trim().slice(0, 160) : 'Documento'
     if (!/^[a-f0-9]{6,32}$/.test(docHash)) {
-      return errorJson(400, 'docHash inválido', 'Volvé a generar el preview y reintentá.')
+      return errorJson(400, 'docHash inválido', 'Volvé a generar el preview y reinténtalo.')
     }
     const personId =
       typeof body.person_id === 'string' && body.person_id.length > 0 ? body.person_id : null
 
     const proposals = sanitizeProposals(body.memories)
     if (proposals.length === 0) {
-      return errorJson(422, 'Sin memorias para guardar', 'Revisá que al menos una tenga contenido.')
+      return errorJson(422, 'Sin memorias para guardar', 'Revisa que al menos una tenga contenido.')
     }
 
     // Si viene person_id, verificar pertenencia (RLS + .eq defensivo).
@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       422,
       'El documento no tiene texto legible',
-      'Puede ser un PDF escaneado (sólo imágenes). Para esos, subilo como imagen desde /captura (Visión). Para un PDF con texto real, reintentá.',
+      'Puede ser un PDF escaneado (sólo imágenes). Para esos, súbelo como imagen desde /captura (Visión). Para un PDF con texto real, reinténtalo.',
     )
   }
   if (text.length > MAX_TEXT_CHARS) {
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
     if (!parsed) {
       const raw2 = await callDocumentLlm(
         input,
-        'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON del schema, sin texto adicional, sin markdown fences. Empezá con `{` y terminá con `}`.',
+        'CRÍTICO: tu respuesta anterior no era JSON válido. Devuelve SOLO el JSON del schema, sin texto adicional, sin markdown fences. Empieza con `{` y termina con `}`.',
         llmCtx,
       )
       parsed = parseDocumentResponse(raw2)
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!parsed) {
-    return errorJson(502, 'El modelo devolvió un formato inválido', 'Reintentá en un momento.')
+    return errorJson(502, 'El modelo devolvió un formato inválido', 'Reinténtalo en un momento.')
   }
 
   const preview: DocumentIngestPreview = {

@@ -444,7 +444,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     throw new AskSirConfigError(
       model.envKey,
       model.provider === 'openrouter'
-        ? 'Agregá OPENROUTER_API_KEY en Vercel para usar modelos OSS, o elegí un modelo Claude.'
+        ? 'Agrega OPENROUTER_API_KEY en Vercel para usar modelos OSS, o elegí un modelo Claude.'
         : 'Configurá la API key de Anthropic.',
     )
   }
@@ -526,11 +526,11 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   }
 
   const SOCRATIC_RULE =
-    '\n\nMODO SOCRÁTICO: en vez de darle la respuesta cómoda, devolvé la PREGUNTA dura y precisa que lo obligue a pensar, aterrizada en SUS hechos (citá el dato, la persona o el patrón concreto del contexto). Máximo una o dos preguntas, directas, sin rodeos ni adulación. La pregunta debe abrir una grieta real en su razonamiento, no interrogar por interrogar. Si pide HACER algo concreto, igual proponé la acción con la tool.'
+    '\n\nMODO SOCRÁTICO: en vez de darle la respuesta cómoda, devuélvele la PREGUNTA dura y precisa que lo obligue a pensar, aterrizada en SUS hechos (cita el dato, la persona o el patrón concreto del contexto). Máximo una o dos preguntas, directas, sin rodeos ni adulación. La pregunta debe abrir una grieta real en su razonamiento, no interrogar por interrogar. Si pide HACER algo concreto, igual propón la acción con la tool.'
   const ACTION_RULE =
-    '\n\nSi Aaron pide HACER algo (registrar/anotar una interacción, crear/fijar un objetivo, agregar una persona, cerrar un vínculo, o MARCAR UN HÁBITO DEL DÍA como hecho — "ya medití", "hice la cama", "leí"), NO lo hagas ni digas que está hecho: llamá a la tool correspondiente para PROPONERLO. Aaron lo confirma aparte. Si solo pregunta, respondé en texto sin tools.'
+    '\n\nSi Aaron pide HACER algo (registrar/anotar una interacción, crear/fijar un objetivo, agregar una persona, cerrar un vínculo, o MARCAR UN HÁBITO DEL DÍA como hecho — "ya medití", "hice la cama", "leí"), NO lo hagas ni digas que está hecho: llama a la tool correspondiente para PROPONERLO. Aaron lo confirma aparte. Si solo pregunta, responde en texto sin tools.'
   const CHAT_STYLE_RULE =
-    '\n\nESTILO CHAT (mensajería tipo Telegram/WhatsApp): estás en un chat, no en una app con formato. Sé BREVE y conversacional — 1 a 3 párrafos cortos, como un mensaje de un amigo que te conoce. PROHIBIDO el markdown: NADA de **negritas**, ni ## títulos, ni listas con - o números, ni tablas. Texto corrido, cálido, directo. Si necesitás enumerar, hacelo dentro de una frase. Dá lo esencial primero; si hay más, ofrecé seguir en vez de volcarlo todo.'
+    '\n\nESTILO CHAT (mensajería tipo Telegram/WhatsApp): estás en un chat, no en una app con formato. Sé BREVE y conversacional — 1 a 3 párrafos cortos, como un mensaje de un amigo que te conoce. PROHIBIDO el markdown: NADA de **negritas**, ni ## títulos, ni listas con - o números, ni tablas. Texto corrido, cálido, directo. Si necesitas enumerar, hazlo dentro de una frase. Da lo esencial primero; si hay más, ofrece seguir en vez de volcarlo todo.'
 
   const chatHistory: ChatTurn[] = history.map((h) => ({
     role: h.role === 'sir' ? 'assistant' : 'user',

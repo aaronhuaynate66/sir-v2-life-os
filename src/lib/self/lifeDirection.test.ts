@@ -114,7 +114,7 @@ describe('buildLifeDirection', () => {
       seasons: seasons({ seasons: [cur, prev], current: cur }),
       compass: compass('Mundial'),
     }))
-    expect(d.message).toMatch(/Venís de/)
+    expect(d.message).toMatch(/Vienes de/)
     expect(d.message).toMatch(/hoy estás en/)
   })
 

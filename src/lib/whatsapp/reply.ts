@@ -52,7 +52,7 @@ export function buildConfirmationReply(result: RelatoIngestResult): string {
     const names = [...new Set(okActions.map(personName).filter((n): n is string => !!n))].slice(0, 3)
     if (names.length > 0) lines[0] += ` (con ${names.join(', ')})`
   } else if (executed.length === 0 && result.plan.length === 0 && result.ambiguous.length === 0) {
-    lines.push('No encontré nada concreto para anotar. Contame con un poco más de detalle (quién, qué, cuándo).')
+    lines.push('No encontré nada concreto para anotar. Cuéntame con un poco más de detalle (quién, qué, cuándo).')
   }
 
   if (result.ambiguous.length > 0) {

@@ -29,18 +29,18 @@ export interface IntakeSuggestion {
   reason: string
 }
 
-export const INTAKE_SYSTEM_PROMPT = `Sos un asistente que, a partir de señales extraídas de archivos (perfil de LinkedIn, export de WhatsApp, perfil de Instagram), PROPONE la identidad de una persona y el tipo de relación con el usuario.
+export const INTAKE_SYSTEM_PROMPT = `Eres un asistente que, a partir de señales extraídas de archivos (perfil de LinkedIn, export de WhatsApp, perfil de Instagram), PROPONE la identidad de una persona y el tipo de relación con el usuario.
 
-Devolvé EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor:
+Devuelve EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor:
 {"name": string, "organization": string, "relationship": string, "category": string, "reason": string}
 
 Reglas:
-- "name": el nombre real más completo y confiable (preferí el de LinkedIn por sobre el del archivo de WhatsApp). Sin emojis ni apodos de agenda.
+- "name": el nombre real más completo y confiable (prefiere el de LinkedIn por sobre el del archivo de WhatsApp). Sin emojis ni apodos de agenda.
 - "organization": empresa/empleador actual si aparece; "" si no.
 - "relationship": UNO de: family, friend, romantic, professional, mentor, mentee. Si hay LinkedIn y trato laboral → professional. Familiar solo si las señales lo indican.
 - "category": UNO de: inner_circle, close, network, peripheral. Por defecto network salvo señales de cercanía.
-- "reason": 1 frase corta en español explicando en qué te basaste.
-- SOLO usá lo que está en las señales. NO inventes nombres, empresas ni vínculos. Si algo no se sabe, dejalo vacío o usá los defaults (professional/network).`
+- "reason": 1 frase corta en español del Perú (tuteo con "tú"; PROHIBIDO el voseo y los giros argentinos como "vos", "sos", "tenés", "mirá") explicando en qué te basaste.
+- SOLO usa lo que está en las señales. NO inventes nombres, empresas ni vínculos. Si algo no se sabe, déjalo vacío o usa los defaults (professional/network).`
 
 export function buildIntakeInput(signals: IntakeSignals): string {
   const parts: string[] = []
@@ -61,7 +61,7 @@ export function buildIntakeInput(signals: IntakeSignals): string {
     )
   }
   if (parts.length === 0) parts.push('(sin señales)')
-  return `Señales:\n\n${parts.join('\n\n')}\n\nDevolvé el JSON.`
+  return `Señales:\n\n${parts.join('\n\n')}\n\nDevuelve el JSON.`
 }
 
 function pickEnum<T extends string>(v: unknown, allowed: T[], fallback: T): T {

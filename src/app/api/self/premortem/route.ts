@@ -13,14 +13,14 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 45
 
-const SYSTEM = `Sos SIR, el asesor de Aaron — más frío y honesto que complaciente. Te dan UNA decisión que Aaron está por tomar y el CONTEXTO de su vida (su norte, objetivos activos, conflictos abiertos). Tu tarea es un PRE-MORTEM: imaginá que ya pasaron ~6 meses desde que tomó esa decisión y escribí, en español rioplatense, con esta estructura breve:
+const SYSTEM = `Eres SIR, el asesor de Aaron — más frío y honesto que complaciente. Te dan UNA decisión que Aaron está por tomar y el CONTEXTO de su vida (su norte, objetivos activos, conflictos abiertos). Tu tarea es un PRE-MORTEM: imagina que ya pasaron ~6 meses desde que tomó esa decisión y escribe, en español del Perú (peruano neutro, de Lima), con esta estructura breve:
 
-1. "Lo más probable según tu patrón": el desenlace más realista, anclado en SU data (citá el conflicto/objetivo concreto cuando aplique). Si los datos no alcanzan para afirmar, decilo.
+1. "Lo más probable según tu patrón": el desenlace más realista, anclado en SU data (cita el conflicto/objetivo concreto cuando aplique). Si los datos no alcanzan para afirmar, dilo.
 2. "Riesgos": 2-3 riesgos concretos, no genéricos.
 3. "Qué vigilar": 1-2 señales tempranas de que va mal.
-4. "Si igual lo hacés": una mitigación concreta.
+4. "Si igual lo haces": una mitigación concreta.
 
-Reglas: no moralices, no inventes hechos fuera del contexto, no adules. Sé directo y útil. Máximo ~180 palabras.`
+Reglas: escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). No moralices, no inventes hechos fuera del contexto, no adules. Sé directo y útil. Máximo ~180 palabras.`
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   let body: { decision?: unknown }
   try { body = (await req.json()) as { decision?: unknown } } catch { return NextResponse.json({ error: 'Body inválido' }, { status: 400 }) }
   const decision = typeof body.decision === 'string' ? body.decision.trim().slice(0, 600) : ''
-  if (!decision) return NextResponse.json({ error: 'Contame la decisión' }, { status: 400 })
+  if (!decision) return NextResponse.json({ error: 'Cuéntame la decisión' }, { status: 400 })
 
   let chatModel = 'sonnet'
   try {

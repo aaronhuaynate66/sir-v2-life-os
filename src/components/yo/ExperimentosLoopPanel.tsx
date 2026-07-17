@@ -158,7 +158,7 @@ export function ExperimentosLoopPanel() {
         {active.length === 0 && (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <Input
-              placeholder="…o escribí tu propio experimento de la semana"
+              placeholder="…o escribe tu propio experimento de la semana"
               value={custom}
               onChange={(ev) => setCustom(ev.target.value)}
               className="text-[13px]"

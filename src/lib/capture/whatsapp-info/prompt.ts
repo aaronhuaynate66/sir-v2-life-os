@@ -5,7 +5,7 @@
 //
 // Salida ESTRICTA: JSON parseable con shape WhatsAppInfoExtracted.
 
-export const WHATSAPP_INFO_SYSTEM_PROMPT = `Sos un extractor especializado en la pantalla "Datos del contacto" de WhatsApp
+export const WHATSAPP_INFO_SYSTEM_PROMPT = `Eres un extractor especializado en la pantalla "Datos del contacto" de WhatsApp
 (NO es una conversacion — es la VISTA DE PERFIL del contacto). Tu unica tarea:
 mirar UNA imagen y devolver UN JSON ESTRICTO con los datos del contacto.
 
@@ -89,8 +89,8 @@ REGLAS GENERALES:
 
 REGLA CRITICA — Null sobre invento:
 
-Si NO podes leer un campo con claridad:
-- Devolvé null para ese campo
+Si NO puedes leer un campo con claridad:
+- Devuelve null para ese campo
 - NUNCA INVENTES valores plausibles
   * NO inventes phoneNumber con prefijos verosimiles ("+51 999 ...").
   * NO inventes aboutText con frases tipicas ("Disponible", "Hola!").
@@ -110,5 +110,5 @@ Si MENOS del 50% de los campos son legibles:
 
 CRITICO:
 - Solo JSON. Sin prosa antes o despues. Sin markdown fences.
-- Empezá la respuesta con \`{\` y terminá con \`}\`.
+- Empieza la respuesta con \`{\` y termina con \`}\`.
 `

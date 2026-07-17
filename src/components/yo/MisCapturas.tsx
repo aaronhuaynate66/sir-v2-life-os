@@ -14,7 +14,7 @@
 // pisar lo manual). Reusa los previews existentes de cada tipo + la propuesta
 // editable de identidad. Las imágenes del perfil propio se consolidan en UNA
 // sola propuesta (varias secciones → un perfil). El relato de identidad
-// ("Contale a SIR") vive en el mismo panel.
+// ("Cuéntale a SIR") vive en el mismo panel.
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -266,7 +266,7 @@ export function MisCapturas() {
           if (preview.healthMetrics === 0 && preview.sleepRecords === 0) {
             const detail = preview.skipped.length
               ? `No encontré métricas que SIR sepa importar. Apple mandó: ${preview.skipped.join(', ')}.`
-              : 'El archivo no trae métricas para importar (revisá el rango exportado).'
+              : 'El archivo no trae métricas para importar (revisa el rango exportado).'
             patchHealth(id, { status: 'error', error: detail })
             return
           }
@@ -404,7 +404,7 @@ export function MisCapturas() {
                   status: 'error',
                   error:
                     failed > 0
-                      ? `${failed} imagen(es) no se pudieron procesar. Reintentá en unos segundos.`
+                      ? `${failed} imagen(es) no se pudieron procesar. Reintenta en unos segundos.`
                       : 'No se pudo procesar tu perfil.',
                 }
               : prev,
@@ -602,10 +602,10 @@ export function MisCapturas() {
           <h2 className="text-base sm:text-lg font-semibold tracking-tight">Mis capturas</h2>
         </div>
         <p className="text-xs text-muted-foreground mb-4 leading-snug">
-          Una sola caja para tu data: subí varios pantallazos a la vez (báscula, sueño, frecuencia
+          Una sola caja para tu data: sube varios pantallazos a la vez (báscula, sueño, frecuencia
           cardíaca o tu propio perfil de LinkedIn/Instagram), o el archivo de{' '}
           <span className="font-medium">Apple Health</span> (Health Auto Export → Manual Export → JSON,
-          también .zip). SIR detecta cada uno y lo manda al lugar correcto. Revisás y guardás. Las
+          también .zip). SIR detecta cada uno y lo manda al lugar correcto. Revisas y guardas. Las
           capturas de <span className="font-medium">otras personas</span> van por{' '}
           <Link href="/captura" className="underline underline-offset-2 hover:text-foreground">Captura</Link>.
         </p>
@@ -624,9 +624,9 @@ export function MisCapturas() {
           />
 
           <p className="text-[11px] text-muted-foreground/70 -mt-1">
-            Podés elegir <span className="text-foreground/80">varias a la vez</span> en el diálogo, o agregarlas
+            Puedes elegir <span className="text-foreground/80">varias a la vez</span> en el diálogo, o agregarlas
             de a una: se van acumulando en la lista de abajo (el control dice &ldquo;ningún archivo&rdquo; a
-            propósito, para dejarte sumar más). Tocá ✕ para quitar.
+            propósito, para dejarte sumar más). Toca ✕ para quitar.
           </p>
 
           {files.length > 0 && (
@@ -944,7 +944,7 @@ function IdentityResult({
         <div className="min-w-0 flex-1">
           <div className="text-xs font-medium text-foreground">Tu perfil</div>
           <div className="text-[11px] text-warn-foreground leading-snug mt-0.5">
-            No pude leer datos claros. Probá con capturas más nítidas o más cercanas —
+            No pude leer datos claros. Prueba con capturas más nítidas o más cercanas —
             las secciones del perfil (no la página entera), con la letra grande. No guardé nada.
           </div>
         </div>

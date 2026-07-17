@@ -112,7 +112,7 @@ export function DailyBriefingCard() {
         {!briefing && !error && !loading && (
           <p className="text-sm text-muted-foreground leading-relaxed">
             Un resumen accionable de tu día a partir de tus objetivos, señales y estado reciente.
-            Tocá <span className="text-foreground font-medium">Generar briefing</span>.
+            Toca <span className="text-foreground font-medium">Generar briefing</span>.
           </p>
         )}
 

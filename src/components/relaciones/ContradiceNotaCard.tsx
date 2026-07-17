@@ -120,7 +120,7 @@ export function ContradiceNotaCard({ personId, personName }: { personId: string;
               <div className="space-y-3">
                 <p className="text-[11px] text-muted-foreground leading-snug">
                   {findings.length === 1 ? 'Una nota parece' : `${findings.length} notas parecen`} contradecir el hilo.
-                  Decidí vos qué hacer — SIR no cambia nada.
+                  Decide tú qué hacer — SIR no cambia nada.
                 </p>
                 {findings.map((f, i) => {
                   const note = notesByRef.get(f.noteRef)

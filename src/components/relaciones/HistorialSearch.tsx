@@ -49,7 +49,7 @@ export function HistorialSearch({ personId }: { personId: string }) {
       {hits !== null && (
         <div className="mt-3 space-y-1.5">
           {meta && !meta.archived && (
-            <p className="text-[12px] text-muted-foreground">Todavía no hay historial crudo archivado de esta persona. Subí una conversación de WhatsApp y vas a poder buscar acá.</p>
+            <p className="text-[12px] text-muted-foreground">Todavía no hay historial crudo archivado de esta persona. Sube una conversación de WhatsApp y vas a poder buscar aquí.</p>
           )}
           {meta?.archived && hits.length === 0 && (
             <p className="text-[12px] text-muted-foreground">Sin coincidencias para “{q}”.</p>

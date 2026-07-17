@@ -203,7 +203,7 @@ describe('computeGoalAlignment — datos insuficientes (no inventa brecha)', () 
     const a = computeGoalAlignment(g, ctx([]))
     expect(a.state).toBe('insufficient_data')
     expect(a.signals).toEqual([])
-    expect(a.summary).toContain('Vinculá personas')
+    expect(a.summary).toContain('Vincula personas')
   })
 
   it('persona vinculada que NO existe en el store → insufficient_data', () => {

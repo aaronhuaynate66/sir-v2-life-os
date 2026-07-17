@@ -81,7 +81,7 @@ export function IdentityProfilePanel() {
   function save() {
     if (!draft) return
     if (draft.birthDate && !parseLocalDate(draft.birthDate)) {
-      toast.error('Fecha de nacimiento inválida', { description: 'Elegí una fecha válida o dejala vacía.' })
+      toast.error('Fecha de nacimiento inválida', { description: 'Elige una fecha válida o déjala vacía.' })
       return
     }
     const clean = normalizeIdentityProfile({ ...draft, updatedAt: new Date().toISOString() })
@@ -103,7 +103,7 @@ export function IdentityProfilePanel() {
               <h2 className="text-base sm:text-lg font-semibold tracking-tight">Identidad</h2>
             </div>
             <p className="text-xs text-muted-foreground mt-1 leading-snug">
-              Tus anclas: quién sos, desde cuándo y dónde. Base de los recordatorios y el motor proactivo.
+              Tus anclas: quién eres, desde cuándo y dónde. Base de los recordatorios y el motor proactivo.
             </p>
           </div>
           {!editing && (
@@ -136,9 +136,9 @@ function EmptyState({ onStart }: { onStart: () => void }) {
   return (
     <div className="text-center py-8">
       <IdCard size={26} strokeWidth={1.5} className="text-primary/40 mx-auto mb-3" aria-hidden="true" />
-      <p className="text-sm text-foreground/80">Definí tus anclas de identidad.</p>
+      <p className="text-sm text-foreground/80">Define tus anclas de identidad.</p>
       <p className="text-xs text-muted-foreground/70 mt-1 max-w-md mx-auto leading-snug">
-        Nombre completo, fecha de nacimiento, tus roles (bombero, fundador, atleta…) y dónde vivís.
+        Nombre completo, fecha de nacimiento, tus roles (bombero, fundador, atleta…) y dónde vives.
       </p>
       <Button size="sm" onClick={onStart} className="mt-4 inline-flex items-center gap-1.5">
         <Plus size={14} strokeWidth={1.75} aria-hidden="true" />
@@ -305,7 +305,7 @@ function EditView({ draft, setDraft, onSave, onCancel }: EditViewProps) {
         <FieldLabel icon={FileText} label="Bio" />
         <Textarea
           value={draft.bio}
-          placeholder="Sobre vos, en pocas líneas…"
+          placeholder="Sobre ti, en pocas líneas…"
           onChange={(e) => setDraft({ ...draft, bio: e.target.value })}
           className="min-h-[64px] resize-y"
         />
@@ -416,7 +416,7 @@ function MisFechasImportantes() {
       return
     }
     if (!parseLocalDate(date)) {
-      toast.error('Fecha inválida', { description: 'Elegí una fecha válida.' })
+      toast.error('Fecha inválida', { description: 'Elige una fecha válida.' })
       return
     }
     const newDate: SpecialDate = { id: crypto.randomUUID(), label: trimmedLabel, date, recurring }
@@ -505,7 +505,7 @@ function MisFechasImportantes() {
       ) : valid.length === 0 && invalid.length === 0 ? (
         !adding && (
           <p className="text-sm text-muted-foreground italic leading-relaxed">
-            Sin fechas propias. Agregá tus aniversarios o fechas personales con el botón{' '}
+            Sin fechas propias. Agrega tus aniversarios o fechas personales con el botón{' '}
             <span className="not-italic font-medium">Agregar</span>.
           </p>
         )

@@ -38,12 +38,12 @@ export async function POST(req: NextRequest) {
     const res = await complete(
       {
         task: 'avatars_detect', tier: 'cheap', sensitivity: 'third_party', maxTokens: 150,
-        system: 'Sos un detector de fotos de perfil. Devolvés SOLO JSON, sin texto extra.',
+        system: 'Eres un detector de fotos de perfil. Devuelve SOLO JSON, sin texto extra.',
         messages: [{
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', mediaType: mediaType(file.type || 'image/jpeg'), data: b64 } },
-            { type: 'text', text: 'Esta es una captura de un perfil (Instagram/LinkedIn). Ubicá EXCLUSIVAMENTE la FOTO DE PERFIL: el avatar CIRCULAR (o cuadrado, en LinkedIn) que está ARRIBA, junto al nombre de usuario / @handle. NO elijas caras de las publicaciones del feed, de historias destacadas, de fotos sugeridas, ni de otras personas — SOLO el avatar del perfil de la persona dueña de la cuenta. Si el avatar es chico, igual devolvé su caja exacta. Devolvé SOLO este JSON con la caja normalizada 0..1 (origen arriba-izquierda), un poco amplia para incluir toda la cabeza: {"found": true|false, "x": <izq>, "y": <arriba>, "w": <ancho>, "h": <alto>}. Si no ves un avatar de perfil claro, found:false (mejor eso que agarrar la cara equivocada).' },
+            { type: 'text', text: 'Esta es una captura de un perfil (Instagram/LinkedIn). Ubica EXCLUSIVAMENTE la FOTO DE PERFIL: el avatar CIRCULAR (o cuadrado, en LinkedIn) que está ARRIBA, junto al nombre de usuario / @handle. NO elijas caras de las publicaciones del feed, de historias destacadas, de fotos sugeridas, ni de otras personas — SOLO el avatar del perfil de la persona dueña de la cuenta. Si el avatar es chico, igual devolvé su caja exacta. Devuelve SOLO este JSON con la caja normalizada 0..1 (origen arriba-izquierda), un poco amplia para incluir toda la cabeza: {"found": true|false, "x": <izq>, "y": <arriba>, "w": <ancho>, "h": <alto>}. Si no ves un avatar de perfil claro, found:false (mejor eso que agarrar la cara equivocada).' },
           ],
         }],
       },

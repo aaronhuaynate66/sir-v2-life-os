@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
@@ -86,13 +86,13 @@ export async function POST(req: NextRequest) {
     )
     const smart = parseSmart(res.text)
     if (!smart) {
-      return errorJson(502, 'Propuesta vacía del modelo', 'No se pudo extraer una definición SMART. Reintentá.')
+      return errorJson(502, 'Propuesta vacía del modelo', 'No se pudo extraer una definición SMART. Reintenta.')
     }
     return NextResponse.json({ smart }, { status: 200 })
   } catch (e) {
     reportApiError(e)
     if (e instanceof LlmError && e.code === 'no_provider') {
-      return errorJson(503, 'Generación no disponible', 'No hay proveedor LLM configurado. Podés definir el objetivo SMART a mano igual.')
+      return errorJson(503, 'Generación no disponible', 'No hay proveedor LLM configurado. Puedes definir el objetivo SMART a mano igual.')
     }
     const detail = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'No se pudo generar la definición SMART', detail)

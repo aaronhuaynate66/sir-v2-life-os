@@ -99,9 +99,9 @@ function HorarioContent() {
     if (!ok && !err) return
     if (ok === 'connected') toast.success('Google Calendar conectado', { description: 'Los eventos se van a mezclar con tus otros calendarios.' })
     else if (ok === 'reconnected') toast.success('Google Calendar reautorizado')
-    else if (err === 'denied' || err === 'access_denied') toast.error('Autorización denegada', { description: 'Podés reintentar cuando quieras.' })
-    else if (err === 'state_mismatch') toast.error('Sesión OAuth inválida', { description: 'Intentalo de nuevo desde el botón "Conectar con Google".' })
-    else if (err === 'session_expired') toast.error('Sesión SIR expiró durante el flow', { description: 'Iniciá sesión y reintentá.' })
+    else if (err === 'denied' || err === 'access_denied') toast.error('Autorización denegada', { description: 'Puedes reintentar cuando quieras.' })
+    else if (err === 'state_mismatch') toast.error('Sesión OAuth inválida', { description: 'Inténtalo de nuevo desde el botón "Conectar con Google".' })
+    else if (err === 'session_expired') toast.error('Sesión SIR expiró durante el flow', { description: 'Inicia sesión y reintenta.' })
     else if (err) toast.error(`No se pudo completar la conexión (${err})`, detail ? { description: detail } : undefined)
     if (err) {
       // Deja rastro legible del fallo del callback (el toast pasa volando).

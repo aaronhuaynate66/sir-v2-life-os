@@ -41,7 +41,7 @@ export function PersonActions({ phoneNumber }: PersonActionsProps) {
           size="sm"
           variant="outline"
           disabled
-          title="Agregá un teléfono en Redes sociales para habilitar el chat."
+          title="Agrega un teléfono en Redes sociales para habilitar el chat."
         >
           <MessageCircle size={14} strokeWidth={1.75} className="mr-1.5" />
           Chat WhatsApp

@@ -302,7 +302,7 @@ export function HeartRateCapturePreview({
                   'Vas a guardar el rango del día (sin FC en reposo).'
                 )
               ) : (
-                'Completá la fecha y al menos un valor de FC para guardar.'
+                'Completa la fecha y al menos un valor de FC para guardar.'
               )}
             </div>
             <div className="flex gap-2 justify-end">

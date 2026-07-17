@@ -66,7 +66,7 @@ export default function ReviewPage() {
       const r = await fetch('/api/review/generate', { method: 'POST' })
       const j = (await r.json()) as { created?: number; byKind?: Record<string, number> }
       if (r.ok) {
-        setGenMsg(j.created ? `Generadas ${j.created} cards nuevas${j.byKind ? ` (${Object.entries(j.byKind).map(([k, v]) => `${v} ${k}`).join(', ')})` : ''}` : 'No hay cards nuevas para generar. Cargá cumpleaños o memorias importantes primero.')
+        setGenMsg(j.created ? `Generadas ${j.created} cards nuevas${j.byKind ? ` (${Object.entries(j.byKind).map(([k, v]) => `${v} ${k}`).join(', ')})` : ''}` : 'No hay cards nuevas para generar. Carga cumpleaños o memorias importantes primero.')
         if (j.created) await load()
       }
     } finally { setGenerating(false) }
@@ -116,7 +116,7 @@ export default function ReviewPage() {
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
           Repaso con intervalos crecientes (spaced repetition) para no olvidar
           detalles de la gente cercana. Cumpleaños, memorias importantes,
-          identidad. Calificá honesto — el intervalo se ajusta solo.
+          identidad. Califica honesto — el intervalo se ajusta solo.
         </p>
       </div>
 
@@ -131,7 +131,7 @@ export default function ReviewPage() {
           <CardContent className="p-6 text-center space-y-3">
             <Sparkles size={22} strokeWidth={1.5} className="text-muted-foreground mx-auto" />
             <p className="text-sm text-muted-foreground">
-              No hay cards para repasar ahora. Volvé cuando toque, o generá nuevas desde tus datos.
+              No hay cards para repasar ahora. Vuelve cuando toque, o genera nuevas desde tus datos.
             </p>
             <div className="flex gap-2 justify-center">
               <Button size="sm" variant="outline" onClick={() => void generate()} disabled={generating}>

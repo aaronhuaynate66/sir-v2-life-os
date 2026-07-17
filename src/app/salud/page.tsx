@@ -138,7 +138,7 @@ function SaludContent() {
   }
   function addHealth() {
     const v = parseFloat(hVal)
-    if (isNaN(v)) { toast.error('Valor inválido', { description: 'Ingresá un número válido.' }); return }
+    if (isNaN(v)) { toast.error('Valor inválido', { description: 'Ingresa un número válido.' }); return }
     addHealthMetric({ id: 'h_' + Date.now(), type: hType, value: v, unit: hUnit, timestamp: new Date().toISOString(), note: hNote.trim() || undefined })
     setHVal(''); setHNote('')
     toast.success('Registro de salud agregado', { description: `${getHealthMetricLabel(hType)}: ${v} ${hUnit}` })
@@ -231,7 +231,7 @@ function SaludContent() {
           offset={chartOffset}
           colorClass="text-brand"
           formatValue={(n) => n.toFixed(1)}
-          emptyHint="Registrá tu energía para ver la evolución."
+          emptyHint="Registra tu energía para ver la evolución."
         />
         <TrendChart
           label="Sueño (horas)"
@@ -242,7 +242,7 @@ function SaludContent() {
           offset={chartOffset}
           colorClass="text-brand"
           formatValue={(n) => `${n.toFixed(1)}h`}
-          emptyHint="Registrá tus noches para ver la tendencia."
+          emptyHint="Registra tus noches para ver la tendencia."
         />
       </div>
 
@@ -309,7 +309,7 @@ function SaludContent() {
                   etiquetas finas (editable, nunca impuesta). Suma a la nota. */}
               {mCat === 'mood' && mVal !== '' && !isNaN(parseFloat(mVal)) && (
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[10px] text-text-tertiary self-center mr-0.5">nombralo mejor:</span>
+                  <span className="text-[10px] text-text-tertiary self-center mr-0.5">nómbralo mejor:</span>
                   {proposeEmotionLabels(parseFloat(mVal)).map((label) => (
                     <button
                       key={label}
@@ -360,7 +360,7 @@ function SaludContent() {
               icon={Activity}
               size="sm"
               title="Sin métricas todavía."
-              hint="Registrá tu primera medición arriba."
+              hint="Registra tu primera medición arriba."
             />
           ) : (
             <div className="space-y-1">
@@ -415,7 +415,7 @@ function SaludContent() {
               icon={Heart}
               size="sm"
               title="Sin registros de salud."
-              hint="Agregá una medición con el formulario de arriba, o importá Apple Health desde Mis capturas."
+              hint="Agrega una medición con el formulario de arriba, o importa Apple Health desde Mis capturas."
             />
           ) : (
             <div className="space-y-1">

@@ -48,7 +48,7 @@ export function ImportarLote() {
   // (amarillo) → nada (rojo).
   const classify = useCallback(async (file: File): Promise<Row> => {
     const waName = waNameFromFile(file.name)
-    const base: Row = { key: `${file.name}-${file.size}-${file.lastModified}`, file, waName, personId: null, personName: null, conf: 'red', reason: 'elegí a quién', status: 'idle', detail: '', progress: null }
+    const base: Row = { key: `${file.name}-${file.size}-${file.lastModified}`, file, waName, personId: null, personName: null, conf: 'red', reason: 'elige a quién', status: 'idle', detail: '', progress: null }
     if (!waName) return base
     // 1) alias exacto por red (whatsapp)
     try {
@@ -111,12 +111,12 @@ export function ImportarLote() {
           <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Importar varios chats (lote)</div>
         </div>
         <p className="text-sm text-muted-foreground mb-3">
-          Soltá todos los <span className="font-mono">.zip</span> de una. SIR rutea por alias/nombre; verificás los dudosos y procesa la cola. La media corre en tu navegador, secuencial.
+          Suelta todos los <span className="font-mono">.zip</span> de una. SIR rutea por alias/nombre; verificas los dudosos y procesa la cola. La media corre en tu navegador, secuencial.
         </p>
 
         <label className="mb-3 flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/40">
           {classifying ? <Loader2 size={15} className="animate-spin" /> : <Layers size={15} />}
-          <span>{classifying ? 'Clasificando…' : 'Elegí varios .zip / .txt'}</span>
+          <span>{classifying ? 'Clasificando…' : 'Elige varios .zip / .txt'}</span>
           <input ref={inputRef} type="file" accept=".txt,.zip,text/plain,application/zip" multiple className="hidden" disabled={running}
             onChange={(e) => { void onFiles(e.target.files); e.currentTarget.value = '' }} />
         </label>

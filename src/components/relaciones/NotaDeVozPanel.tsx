@@ -171,7 +171,7 @@ export function NotaDeVozPanel({ personId, observations }: NotaDeVozPanelProps) 
           <div className="h-9 w-28 rounded bg-muted/40 animate-pulse" aria-hidden="true" />
         ) : !supported ? (
           <p className="text-sm text-muted-foreground italic">
-            Tu navegador no soporta grabación de audio. Probá desde Chrome o Safari actualizados.
+            Tu navegador no soporta grabación de audio. Prueba desde Chrome o Safari actualizados.
           </p>
         ) : (
           <div className="space-y-3">

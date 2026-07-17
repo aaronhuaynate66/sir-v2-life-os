@@ -145,7 +145,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return errorJson(502, 'No se pudo generar el mensaje', detail)
   }
 
-  if (!suggestion) return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
+  if (!suggestion) return errorJson(502, 'Respuesta vacía del modelo', 'Reinténtalo en unos segundos.')
 
   // ── 5. Cachear (fail-open / idempotente por día) ──
   try {

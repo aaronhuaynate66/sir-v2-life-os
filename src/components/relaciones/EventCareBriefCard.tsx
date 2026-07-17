@@ -97,7 +97,7 @@ export function EventCareBriefCard(props: EventCareBriefCardProps) {
         <div className="flex items-center gap-2">
           <HeartHandshake size={15} strokeWidth={1.75} className="text-brand-soft-foreground" aria-hidden="true" />
           <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-brand-soft-foreground">
-            Cómo llega {firstName} — elegí el día
+            Cómo llega {firstName} — elige el día
           </span>
         </div>
 
@@ -123,7 +123,7 @@ export function EventCareBriefCard(props: EventCareBriefCardProps) {
             <input
               type="date" value={mode === 'whatif' ? effIso : ''} min={todayIso}
               onChange={(e) => e.target.value && onSelectDate(e.target.value, 'whatif', null)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Elegí una fecha para simular"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-label="Elige una fecha para simular"
             />
           </label>
         </div>
@@ -170,7 +170,7 @@ function MainBrief({ brief, mode, color, conf }: { brief: EventCareBrief; mode: 
       <p className="text-[13px] leading-relaxed text-foreground/90">{brief.stateRead}</p>
 
       <div className="space-y-1.5">
-        <div className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary">Qué podés hacer</div>
+        <div className="text-[10px] uppercase tracking-[0.07em] text-text-tertiary">Qué puedes hacer</div>
         <ul className="space-y-1.5">
           {brief.suggestions.map((s, i) => (
             <li key={i} className="flex gap-2 text-[13px] leading-relaxed text-foreground/90">
@@ -214,7 +214,7 @@ function SaveAsPlan({ personId, firstName, dateIso, onSaved }: { personId: strin
   const [saving, setSaving] = useState(false)
   async function save() {
     const t = title.trim()
-    if (!t) { toast.error('Ponele un nombre al plan'); return }
+    if (!t) { toast.error('Ponle un nombre al plan'); return }
     setSaving(true)
     try {
       const res = await fetch('/api/personal-events', {
@@ -229,7 +229,7 @@ function SaveAsPlan({ personId, firstName, dateIso, onSaved }: { personId: strin
   return (
     <div className="rounded-md border border-brand/25 bg-brand-soft/15 p-3 space-y-2">
       <div className="flex items-center gap-1.5 text-[11px] text-brand-soft-foreground">
-        <CalendarClock size={13} strokeWidth={1.75} aria-hidden="true" /> ¿Lo hacés plan? Cae en la línea de {firstName}.
+        <CalendarClock size={13} strokeWidth={1.75} aria-hidden="true" /> ¿Lo haces plan? Cae en la línea de {firstName}.
       </div>
       <div className="flex gap-2">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`Ej: Viaje con ${firstName}`} className="text-[13px]" />
@@ -252,7 +252,7 @@ function DeepRead({ personId, eventLabel, eventDate }: { personId: string; event
       })
       const data = await res.json().catch(() => ({}))
       setDeep(res.ok && data?.text ? data.text : `No pude leerlo a fondo${data?.error ? `: ${data.error}` : ''}.`)
-    } catch { setDeep('No pude leerlo a fondo (revisá tu conexión).') } finally { setLoading(false) }
+    } catch { setDeep('No pude leerlo a fondo (revisa tu conexión).') } finally { setLoading(false) }
   }
   return (
     <div className="pt-1">

@@ -117,7 +117,7 @@ export default function CapturaBatchPage() {
   }
 
   async function extractFromText() {
-    if (!rawText.trim()) { setError('Pegá el texto a extraer.'); return }
+    if (!rawText.trim()) { setError('Pega el texto a extraer.'); return }
     setExtracting(true); setError(null)
     try {
       const res = await fetch('/api/seed/extract', {
@@ -140,7 +140,7 @@ export default function CapturaBatchPage() {
   }
 
   async function submit(dry: boolean) {
-    if (!parsedOk) { setError('El JSON no parsea. Revisá comillas o llaves.'); return }
+    if (!parsedOk) { setError('El JSON no parsea. Revisa comillas o llaves.'); return }
     if (shapeError) { setError(shapeError); return }
     setBusy(true); setError(null); if (dry) setApplied(null)
     try {
@@ -176,7 +176,7 @@ export default function CapturaBatchPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Cargar batch (JSON)</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-          Pegá texto crudo y <span className="text-foreground/80">SIR arma el JSON</span>, o cargá un{' '}
+          Pega texto crudo y <span className="text-foreground/80">SIR arma el JSON</span>, o carga un{' '}
           <code className="text-xs">.json</code> ya hecho. Siempre ves el plan antes de aplicar.
         </p>
       </div>
@@ -189,7 +189,7 @@ export default function CapturaBatchPage() {
             <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Desde texto (extraer con SIR)</h2>
           </div>
           <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
-            Pegá un relato, el texto de un PDF/CV o un perfil de LinkedIn. SIR extrae las personas
+            Pega un relato, el texto de un PDF/CV o un perfil de LinkedIn. SIR extrae las personas
             y arma el JSON abajo para que lo revises y apliques.
           </p>
           <label htmlFor="raw-text" className="sr-only">Texto a extraer</label>
@@ -215,7 +215,7 @@ export default function CapturaBatchPage() {
                 Limpiar texto
               </button>
             )}
-            <span className="text-[11px] text-muted-foreground/70 ml-auto">Revisás el JSON antes de aplicar</span>
+            <span className="text-[11px] text-muted-foreground/70 ml-auto">Revisas el JSON antes de aplicar</span>
           </div>
         </CardContent>
       </Card>
@@ -267,7 +267,7 @@ export default function CapturaBatchPage() {
             />
             {dragging && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-brand/5 border-2 border-dashed border-brand/60">
-                <span className="text-xs text-brand font-medium">Soltá el archivo aquí</span>
+                <span className="text-xs text-brand font-medium">Suelta el archivo aquí</span>
               </div>
             )}
           </div>
@@ -310,7 +310,7 @@ export default function CapturaBatchPage() {
                     ? ` (${applied.skippedLinks} sin metadata — 0107 aún no aplicada)` : ''}
                 </p>
                 <p className="mt-2 text-[11px] text-muted-foreground/70 leading-relaxed">
-                  Realtime sincroniza el store local en 1-2s. Si no aparece, tocá &quot;Refrescar&quot;.
+                  Realtime sincroniza el store local en 1-2s. Si no aparece, toca &quot;Refrescar&quot;.
                 </p>
               </div>
             </div>

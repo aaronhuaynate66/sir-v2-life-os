@@ -427,11 +427,11 @@ function RelationshipsContent() {
 
           {!editingId && (
             <div className="mb-4 rounded-md border border-border/60 bg-muted/20 p-3 text-xs text-muted-foreground leading-relaxed">
-              ¿Tenés su LinkedIn o un chat? En vez de llenar todo a mano, usá{' '}
+              ¿Tienes su LinkedIn o un chat? En vez de llenar todo a mano, usa{' '}
               <Link href="/relaciones/intake" className="text-brand-soft-foreground underline underline-offset-2">
                 Intake inteligente
               </Link>{' '}
-              — pegás el perfil (o arrastrás el chat) y SIR lo crea con su Vida Profesional ya cargada.
+              — pegas el perfil (o arrastras el chat) y SIR lo crea con su Vida Profesional ya cargada.
             </div>
           )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -481,7 +481,7 @@ function RelationshipsContent() {
                 </Select>
               </div>
               <div>
-                <label className="block text-xs text-muted-foreground mb-1">Ámbito (qué es para vos)</label>
+                <label className="block text-xs text-muted-foreground mb-1">Ámbito (qué es para ti)</label>
                 <Select value={form.ambito || inferAmbito(form.relationship)} onValueChange={(v) => setForm({ ...form, ambito: v as PersonAmbito })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -558,7 +558,7 @@ function RelationshipsContent() {
                     </div>
                   )
                 })()}
-                <p className="text-[10px] text-muted-foreground/70 mt-1">Cada cuánto querés mantener contacto. Automática = por categoría.</p>
+                <p className="text-[10px] text-muted-foreground/70 mt-1">Cada cuánto quieres mantener contacto. Automática = por categoría.</p>
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Ubicacion</label>

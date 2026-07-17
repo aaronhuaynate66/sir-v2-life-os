@@ -152,10 +152,10 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
           privateNotes: privateNotes.trim() || undefined,
           fotoDocumentoPath: path,
         })
-        toast.success('Documento leído y guardado', { description: 'Revisá los datos y corregí si hace falta.' })
+        toast.success('Documento leído y guardado', { description: 'Revisa los datos y corrige si hace falta.' })
       } catch (err) {
         toast.error('No se pudo leer el documento', {
-          description: err instanceof Error ? err.message : 'La foto quedó guardada; podés cargar los datos a mano.',
+          description: err instanceof Error ? err.message : 'La foto quedó guardada; puedes cargar los datos a mano.',
         })
       } finally {
         setScanning(false)
@@ -276,7 +276,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
                 <div>
                   <div className="flex items-center justify-between gap-2">
                     <Label htmlFor="sd-private-notes" className="text-xs">Notas privadas</Label>
-                    <span className="text-[10px] text-warn/70">Solo vos lo ves · nunca se envía a IA</span>
+                    <span className="text-[10px] text-warn/70">Solo tú lo ves · nunca se envía a IA</span>
                   </div>
                   <Textarea
                     id="sd-private-notes"
@@ -297,7 +297,7 @@ export function InformacionSensible({ personId }: InformacionSensibleProps) {
                     {fotoPath && <span className="text-ok">· cargada</span>}
                   </div>
                   <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
-                    Subí una foto del DNI o pasaporte y la leo para autocompletar los campos de arriba
+                    Sube una foto del DNI o pasaporte y la leo para autocompletar los campos de arriba
                     (extracción puntual; la imagen queda en tu almacenamiento privado).
                   </p>
                   <div className="flex flex-wrap items-center gap-2">

@@ -220,7 +220,7 @@ export function runForecast(input: RunForecastInput): BehaviorForecast | null {
     usualPattern: usualPattern(peaks, byDate, startT, composite.length),
     interpretation: hasAnchors
       ? 'Ventana conductual asociada a tu registro de ciclo. Orientativa, no un diagnóstico.'
-      : 'Ventana conductual candidata (exploratoria). No es período confirmado — registrá qué pasa para calibrar.',
+      : 'Ventana conductual candidata (exploratoria). No es período confirmado — registra qué pasa para calibrar.',
     coverage: { days: composite.length, activeDays: signals.length, spanDays, peaks: peaks.length, anchors: anchors.length },
   }
 }

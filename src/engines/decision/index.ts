@@ -42,7 +42,7 @@ const DIMENSION_DOMAIN: Partial<Record<DecisionDimension, PriorityDomain>> = {
 function weightOf(d: DecisionDimension): number {
   if (d === 'reversibility') return 0
   if (d === 'timing') return 2
-  if (d === 'values') return 5 // pesa como salud: quién querés ser es ancla
+  if (d === 'values') return 5 // pesa como salud: quién quieres ser es ancla
   const dom = DIMENSION_DOMAIN[d]
   return dom ? 6 - PRIORITY_LEVEL[dom] : 1 // peace=6 … relational=2
 }

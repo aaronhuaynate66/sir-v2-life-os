@@ -43,7 +43,7 @@ const TIMEOUT_STATUSES = new Set([408, 504, 524])
 
 /**
  * Si el ApiError es un timeout de gateway, reescribe su mensaje a algo claro y
- * accionable ("tardó demasiado, reintentá"). El resto pasa sin cambios. Útil
+ * accionable ("tardó demasiado, reinténtalo"). El resto pasa sin cambios. Útil
  * para las rutas LLM (plan/SMART) donde un 504 viene como HTML sin nuestro JSON.
  */
 export function withTimeoutHint(err: ApiError): ApiError {
@@ -51,7 +51,7 @@ export function withTimeoutHint(err: ApiError): ApiError {
     return {
       status: err.status,
       message: 'La generación tardó demasiado',
-      detail: 'El modelo no respondió a tiempo. Reintentá en unos segundos.',
+      detail: 'El modelo no respondió a tiempo. Reinténtalo en unos segundos.',
     }
   }
   return err

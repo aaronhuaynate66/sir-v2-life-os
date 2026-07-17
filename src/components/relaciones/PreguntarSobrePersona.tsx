@@ -37,7 +37,7 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
   // Colapsado por default (7a): el asistente es un botón que se abre cuando lo
-  // necesitás, no una card entera arriba del fold.
+  // necesitas, no una card entera arriba del fold.
   const [open, setOpen] = useState(false)
   const first = personName.split(' ')[0] || 'esta persona'
 
@@ -146,8 +146,8 @@ export function PreguntarSobrePersona({ personId, personName }: { personId: stri
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={empty ? `Ej: ¿cómo viene la relación con ${first}?` : 'Seguí preguntando…'}
-            aria-label={`Preguntá sobre ${first}`}
+            placeholder={empty ? `Ej: ¿cómo viene la relación con ${first}?` : 'Sigue preguntando…'}
+            aria-label={`Pregunta sobre ${first}`}
           />
           <Button type="submit" size="sm" disabled={loading || !q.trim()} aria-label="Preguntar">
             {loading

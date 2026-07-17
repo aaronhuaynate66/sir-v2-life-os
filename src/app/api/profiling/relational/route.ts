@@ -32,7 +32,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   const userId = auth.user.id
 
   let body: { personId?: unknown; force?: unknown }
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
   let profile = parseRelationalProfileJson(raw)
   if (!profile) {
-    try { profile = parseRelationalProfileJson(await call('CRÍTICO: devolvé SOLO el JSON, empezando con { y terminando con }.')) } catch { profile = null }
+    try { profile = parseRelationalProfileJson(await call('CRÍTICO: devuelve SOLO el JSON, empezando con { y terminando con }.')) } catch { profile = null }
   }
   if (!profile) return errorJson(502, 'Claude devolvió formato inválido')
 

@@ -132,7 +132,7 @@ export function HrvCapturePreview({ previewUrl, extracted, fallbackDay, saving, 
           <Separator className="my-6" />
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="text-xs text-muted-foreground">
-              {canSave ? 'Vas a guardar tu VFC (ms).' : 'Completá la fecha y al menos un valor de VFC para guardar.'}
+              {canSave ? 'Vas a guardar tu VFC (ms).' : 'Completa la fecha y al menos un valor de VFC para guardar.'}
             </div>
             <div className="flex gap-2 justify-end">
               <Button type="button" variant="ghost" onClick={onCancel} disabled={saving} size="sm">Cancelar</Button>

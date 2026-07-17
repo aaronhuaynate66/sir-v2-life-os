@@ -40,7 +40,7 @@ export function LearningCard() {
           <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Qué te funciona</h2>
         </div>
         <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
-          Qué tipo de acción efectivamente te <span className="font-medium text-foreground/80">sube la paz</span> los días después. SIR aprende de lo que hacés.
+          Qué tipo de acción efectivamente te <span className="font-medium text-foreground/80">sube la paz</span> los días después. SIR aprende de lo que haces.
         </p>
 
         {eff.length === 0 ? (

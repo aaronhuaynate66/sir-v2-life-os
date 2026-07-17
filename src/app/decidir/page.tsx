@@ -22,9 +22,9 @@ import type { Premortem, Likelihood } from '@/lib/decision/premortemPrompt'
 import { cn } from '@/lib/utils'
 
 const VERDICT: Record<DecisionAssessment['verdict'], { label: string; cls: string }> = {
-  go: { label: 'Avanzá', cls: 'border-ok/30 bg-ok-soft text-ok' },
+  go: { label: 'Avanza', cls: 'border-ok/30 bg-ok-soft text-ok' },
   caution: { label: 'Con cuidado', cls: 'border-warn/30 bg-warn-soft text-warn' },
-  hold: { label: 'Frená', cls: 'border-bad/30 bg-bad-soft text-bad' },
+  hold: { label: 'Frena', cls: 'border-bad/30 bg-bad-soft text-bad' },
 }
 
 function ScoreBar({ score }: { score: number }) {
@@ -92,7 +92,7 @@ export default function DecidirPage() {
           <Scale size={28} strokeWidth={1.5} className="text-muted-foreground" aria-hidden="true" />
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Decidir</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">Contame qué estás por decidir. SIR lo mira en 7 dimensiones — con la paz primero y sin ignorar si es reversible.</p>
+        <p className="text-sm text-muted-foreground mt-1">Cuéntame qué estás por decidir. SIR lo mira en 7 dimensiones — con la paz primero y sin ignorar si es reversible.</p>
       </div>
 
       <Card className="mb-4">
@@ -258,9 +258,9 @@ function PremortemSection({ result, description }: { result: DecisionAssessment;
 
   return (
     <div className="border-t border-border/50 pt-3 space-y-2">
-      <p className="text-xs font-medium text-warn">Antes de la recomendación: hacé el premortem.</p>
+      <p className="text-xs font-medium text-warn">Antes de la recomendación: haz el premortem.</p>
       <p className="text-[11px] text-muted-foreground leading-relaxed">
-        Imaginá que en 6 meses esto salió mal. ¿Qué pasó? (Es una decisión cara de revertir o dudosa — pensar el peor caso ahora vale más que después.)
+        Imagina que en 6 meses esto salió mal. ¿Qué pasó? (Es una decisión cara de revertir o dudosa — pensar el peor caso ahora vale más que después.)
       </p>
       {aiBlock}
       <textarea
@@ -314,7 +314,7 @@ function StructuredPremortem({ title, description }: { title: string; descriptio
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <Skull size={14} strokeWidth={1.75} className="text-muted-foreground" aria-hidden="true" />
-          <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Premortem: imaginá que salió mal</span>
+          <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Premortem: imagina que salió mal</span>
         </div>
         {!data && (
           <Button size="sm" variant="outline" disabled={loading} onClick={() => void run()}>
@@ -471,7 +471,7 @@ function ValuesCoherenceBlock({ result }: { result: DecisionAssessment }) {
     <div className="border-t border-border/50 pt-3">
       <p className="text-[11px] text-warn font-medium">Esto tensiona tus valores.</p>
       <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
-        No hay respuesta limpia (los valores compiten), pero antes de cerrar, mirala contra tus anclas:
+        No hay respuesta limpia (los valores compiten), pero antes de cerrar, mírala contra tus anclas:
       </p>
       <ul className="mt-2 space-y-1">
         {anchors.map((a) => (

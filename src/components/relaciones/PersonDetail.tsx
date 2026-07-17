@@ -344,7 +344,7 @@ export function PersonDetail({
     const trimmedName = form.name.trim()
     const trimmedSlug = form.slug.trim()
     if (!trimmedName) {
-      toast.error('Nombre vacío', { description: 'Ingresá al menos un nombre.' })
+      toast.error('Nombre vacío', { description: 'Ingresa al menos un nombre.' })
       return
     }
     if (!isValidSlug(trimmedSlug)) {
@@ -848,7 +848,7 @@ export function PersonDetail({
                   <Input id="person-education" value={form.education} onChange={(e) => patch('education', e.target.value)} disabled={saving} className="mt-1" placeholder="ej. Universitario · Ing. Industrial (UNI)" />
                 </div>
                 <div>
-                  <Label htmlFor="person-ambito" className="text-xs">Ámbito (qué es para vos)</Label>
+                  <Label htmlFor="person-ambito" className="text-xs">Ámbito (qué es para ti)</Label>
                   <Select value={form.ambito || 'personal'} onValueChange={(v) => patch('ambito', v)} disabled={saving}>
                     <SelectTrigger id="person-ambito" className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -949,7 +949,7 @@ export function PersonDetail({
             <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-3">
               Datos de la persona
             </div>
-            <Row label="Qué es para vos" value={AMBITO_LABEL[live.ambito ?? inferAmbito(live.relationship)]} />
+            <Row label="Qué es para ti" value={AMBITO_LABEL[live.ambito ?? inferAmbito(live.relationship)]} />
             <Row label="Importancia" value={`${live.importanceScore}/10`} />
             <Row label="Confianza" value={`${live.trustLevel}/10`} />
             <Row label="Impacto energético" value={ENERGY_LABEL[live.energyImpact] ?? live.energyImpact} />
@@ -1070,11 +1070,11 @@ export function PersonDetail({
 
       <Separator className="my-6" />
       <p className="text-xs text-muted-foreground">
-        Para editar el resto de los campos, volvé a{' '}
+        Para editar el resto de los campos, vuelve a{' '}
         <Link href="/relaciones" className="text-foreground underline underline-offset-2">
           /relaciones
         </Link>{' '}
-        y usá el formulario existente.
+        y usa el formulario existente.
       </p>
 
       </>)}
@@ -1108,7 +1108,7 @@ export function PersonDetail({
           points={toneSeries}
           colorClass="text-brand"
           formatValue={(n) => n.toFixed(1)}
-          emptyHint="Registrá interacciones (arriba) para ver cómo evoluciona el tono."
+          emptyHint="Registra interacciones (arriba) para ver cómo evoluciona el tono."
         />
       </div>
 

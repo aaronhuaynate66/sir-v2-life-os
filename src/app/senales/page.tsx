@@ -74,7 +74,7 @@ function SignalsContent() {
   const [showResolved, setShowResolved] = useState(false)
 
   function submit() {
-    if (!content.trim()) { toast.error('Señal vacía', { description: 'Escribí el contenido de la señal.' }); return }
+    if (!content.trim()) { toast.error('Señal vacía', { description: 'Escribe el contenido de la señal.' }); return }
     const s: Signal = {
       id: `sig_${Date.now()}`, source, type, content, strength: 5, urgency,
       relatedPersons: [], relatedGoals: [],
@@ -219,7 +219,7 @@ function SignalsContent() {
         <EmptyState
           icon={Bell}
           title="Sin señales en este filtro."
-          hint="Registrá una señal arriba o ajustá los filtros."
+          hint="Registra una señal arriba o ajusta los filtros."
         />
       ) : (
         <div className="space-y-2">

@@ -242,7 +242,7 @@ function BirthdayGapField({
           {monthLabels().map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
         </select>
         <input
-          type="number" min={1900} placeholder="año (si lo sabés)" aria-label="año"
+          type="number" min={1900} placeholder="año (si lo sabes)" aria-label="año"
           value={year} onChange={(e) => { setYear(e.target.value); setErr(null) }}
           className={`${inputCls} w-32`}
           onKeyDown={(e) => { if (e.key === 'Enter') save() }}
@@ -257,7 +257,7 @@ function BirthdayGapField({
         </button>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Si no sabés el año, dejalo vacío — guardo el día y mes, sin inventar la edad.
+        Si no sabes el año, déjalo vacío — guardo el día y mes, sin inventar la edad.
       </p>
       {err && <p className="text-[11px] text-bad">{err}</p>}
     </div>

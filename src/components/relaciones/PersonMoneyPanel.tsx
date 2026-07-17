@@ -120,7 +120,7 @@ export function PersonMoneyPanel({ personId }: { personId: string }) {
             ))}
           </ul>
         )}
-        {entries.length === 0 && !show && <p className="mt-2 text-[13px] text-muted-foreground">Sin movimientos. Registrá préstamos o transferencias para llevar el neto.</p>}
+        {entries.length === 0 && !show && <p className="mt-2 text-[13px] text-muted-foreground">Sin movimientos. Registra préstamos o transferencias para llevar el neto.</p>}
       </CardContent>
     </Card>
   )

@@ -5,7 +5,7 @@ import { REHEARSE_SYSTEM_PROMPT, buildRehearseUserContent, parseRehearseJson } f
 
 describe('REHEARSE_SYSTEM_PROMPT — reglas núcleo', () => {
   it('deja claro que ensaya, NO predice', () => {
-    expect(REHEARSE_SYSTEM_PROMPT).toMatch(/NO predec[ií]s/i)
+    expect(REHEARSE_SYSTEM_PROMPT).toMatch(/NO predices/i)
     expect(REHEARSE_SYSTEM_PROMPT).toMatch(/sorprende/i)
   })
   it('trae el guardrail ético + el registro por vínculo', () => {

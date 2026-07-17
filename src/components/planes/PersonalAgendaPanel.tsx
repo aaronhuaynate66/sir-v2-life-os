@@ -75,7 +75,7 @@ export function PersonalAgendaPanel() {
       if (!res.ok) { toast.error(j.error ?? 'No se pudo agendar en Google', { description: j.detail }); return }
       setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, gcalEventId: j.gcalEventId ?? 'synced' } : e)))
       toast.success(j.alreadySynced ? 'Ya estaba en Google Calendar' : 'Agendado en Google Calendar', { description: label })
-    } catch { toast.error('No se pudo agendar en Google', { description: 'Revisá tu conexión.' }) } finally { setPushingId(null) }
+    } catch { toast.error('No se pudo agendar en Google', { description: 'Revisa tu conexión.' }) } finally { setPushingId(null) }
   }
 
   const today = isoToday()
@@ -140,7 +140,7 @@ export function PersonalAgendaPanel() {
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <CalendarDays size={15} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tus planes · marcá con quién es cada uno</span>
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tus planes · marca con quién es cada uno</span>
           </div>
           {!adding && (
             <Button size="sm" variant="ghost" onClick={() => setAdding(true)}>
@@ -180,7 +180,7 @@ export function PersonalAgendaPanel() {
             {[0, 1, 2].map((i) => <div key={i} className="h-11 rounded-md bg-muted/25 animate-pulse" />)}
           </div>
         ) : upcoming.length === 0 && past.length === 0 ? (
-          !adding && <p className="text-sm text-muted-foreground italic">Sin planes todavía. Agregá uno y marcá con quién es — si es con tu pareja, cae en su línea del ciclo.</p>
+          !adding && <p className="text-sm text-muted-foreground italic">Sin planes todavía. Agrega uno y marca con quién es — si es con tu pareja, cae en su línea del ciclo.</p>
         ) : (
           <div className="space-y-4">
             {upcoming.length > 0 && (

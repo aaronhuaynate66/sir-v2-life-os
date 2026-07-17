@@ -76,7 +76,7 @@ export default function MedicacionPage() {
           <Pill size={28} strokeWidth={1.5} className="text-muted-foreground" aria-hidden="true" />
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Medicación</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">Registrá cada toma con un toque. Día y hora quedan guardados y se cruzan con el resto de tus datos.</p>
+        <p className="text-sm text-muted-foreground mt-1">Registra cada toma con un toque. Día y hora quedan guardados y se cruzan con el resto de tus datos.</p>
       </div>
 
       {error && <div className="mb-4"><ApiErrorNotice error={error} /></div>}
@@ -208,7 +208,7 @@ function MedBreakdownEditor({ registry, onSaved }: { registry: RegMed[]; onSaved
       <CardContent className="p-4">
         <div className="text-[11px] uppercase tracking-[0.06em] text-text-tertiary mb-1">Desglose · qué es cada uno</div>
         <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
-          Contale a SIR la composición y para qué es cada medicamento. Con eso, una toma de un antimigrañoso cuenta como <span className="text-foreground/80">día de migraña</span> y se cruza con tu FC, sueño y ánimo — un analgésico común, no.
+          Cuéntale a SIR la composición y para qué es cada medicamento. Con eso, una toma de un antimigrañoso cuenta como <span className="text-foreground/80">día de migraña</span> y se cruza con tu FC, sueño y ánimo — un analgésico común, no.
         </p>
         <div className="space-y-2">
           {registry.map((r) => {
@@ -249,7 +249,7 @@ function MedBreakdownForm({ reg, onSaved }: { reg: RegMed; onSaved: () => void }
     if (x.component) setComponent(x.component)
     if (x.drugClass) setDrugClass(x.drugClass)
     if (x.treats) setTreats(x.treats)
-    setExtractNote(`Extraído (confianza ${x.confidence}). Revisá y guardá.`)
+    setExtractNote(`Extraído (confianza ${x.confidence}). Revisa y guarda.`)
   }
 
   async function extract(payload: object) {
@@ -296,7 +296,7 @@ function MedBreakdownForm({ reg, onSaved }: { reg: RegMed; onSaved: () => void }
         <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={extracting}>
           <Camera size={13} className="mr-1.5" /> Foto de la caja
         </Button>
-        <Input value={extractText} onChange={(e) => setExtractText(e.target.value)} placeholder="…o pegá el link / nombre" className="text-sm flex-1 min-w-[8rem]"
+        <Input value={extractText} onChange={(e) => setExtractText(e.target.value)} placeholder="…o pega el link / nombre" className="text-sm flex-1 min-w-[8rem]"
           onKeyDown={(e) => { if (e.key === 'Enter' && extractText.trim()) void extract({ text: extractText.trim() }) }} />
         <Button size="sm" variant="outline" onClick={() => void extract({ text: extractText.trim() })} disabled={extracting || !extractText.trim()}>
           {extracting ? <Loader2 size={13} className="mr-1.5 animate-spin" /> : null} Extraer

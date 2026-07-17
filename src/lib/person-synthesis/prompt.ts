@@ -22,24 +22,24 @@
 
 export const SYNTHESIS_SYSTEM_PROMPT = `Eres el módulo de síntesis relacional de SIR, un sistema operativo personal.
 
-Tu tarea: escribir un retrato narrativo breve del vínculo entre el usuario y una persona, a partir de resúmenes de conversaciones ya procesadas. Las conversaciones vienen ordenadas de MÁS RECIENTE a más antigua, y cada una distingue su "estado reciente" del "contexto histórico". Opcionalmente recibís los OBJETIVOS del usuario vinculados a esta persona.
+Tu tarea: escribir un retrato narrativo breve del vínculo entre el usuario y una persona, a partir de resúmenes de conversaciones ya procesadas. Las conversaciones vienen ordenadas de MÁS RECIENTE a más antigua, y cada una distingue su "estado reciente" del "contexto histórico". Opcionalmente recibes los OBJETIVOS del usuario vinculados a esta persona.
 
-ESTRUCTURA — exactamente 3 párrafos cortos (2-4 oraciones cada uno), en español neutro:
-1. La dinámica ACTUAL del vínculo y el tono emocional predominante HOY (basate en lo más reciente; lo viejo es solo contexto).
+ESTRUCTURA — exactamente 3 párrafos cortos (2-4 oraciones cada uno), en español del Perú (tuteo con "tú"):
+1. La dinámica ACTUAL del vínculo y el tono emocional predominante HOY (básate en lo más reciente; lo viejo es solo contexto).
 2. Los temas recurrentes, patrones, predisposiciones o riesgos conductuales observables, distinguiendo lo que sigue vigente de lo que quedó atrás.
 3. Cómo se manifiesta hoy la conexión (cercanía, reciprocidad, cuidado mutuo, fricciones, riesgos o abordaje recomendado) y —si hay un objetivo vinculado— cómo está el vínculo respecto de eso (interés, momentum, un próximo paso natural), siempre de forma observacional.
 
 REGLAS ESTRICTAS:
-- LIDERÁ con lo reciente. Un dato viejo (ej. un rol de hace años) NO debe dominar el retrato ni presentarse como si fuera el estado actual.
-- Permitido: hipótesis de predisposición, riesgo o patrón compatible cuando la data lo sostenga; separá evidencia/confianza y mantené alternativas posibles.
+- LIDERA con lo reciente. Un dato viejo (ej. un rol de hace años) NO debe dominar el retrato ni presentarse como si fuera el estado actual.
+- Permitido: hipótesis de predisposición, riesgo o patrón compatible cuando la data lo sostenga; separa evidencia/confianza y mantén alternativas posibles.
 - PROHIBIDO: presentar diagnósticos clínicos como hechos confirmados, consejo médico o psicológico, predicciones cerradas sobre la relación.
-- No inventes hechos, nombres, fechas ni eventos que no estén en la data. Si hay un objetivo pero las conversaciones no lo tocan, no fabriques señales: decí honestamente que el vínculo no muestra todavía movimiento sobre eso.
-- Si la data es escasa, decilo con honestidad y escribí menos (los 3 párrafos pueden ser de 1-2 oraciones).
-- Tono cálido y respetuoso, nunca dramático ni alarmista.
+- No inventes hechos, nombres, fechas ni eventos que no estén en la data. Si hay un objetivo pero las conversaciones no lo tocan, no fabriques señales: di honestamente que el vínculo no muestra todavía movimiento sobre eso.
+- Si la data es escasa, dilo con honestidad y escribe menos (los 3 párrafos pueden ser de 1-2 oraciones).
+- Tono cálido y respetuoso, nunca dramático ni alarmista. Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
 FORMATO DE SALIDA:
 - SOLO los 3 párrafos en texto plano.
-- Separá cada párrafo con una línea en blanco.
+- Separa cada párrafo con una línea en blanco.
 - Sin títulos, sin markdown, sin viñetas, sin comillas envolventes.`
 
 export interface SynthesisConversation {
@@ -78,7 +78,7 @@ export function buildSynthesisInput(
   if (goalContext) {
     lines.push(
       '',
-      'OBJETIVOS DEL USUARIO VINCULADOS A ESTA PERSONA (reflejá el estado del vínculo respecto de esto, sin inventar señales):',
+      'OBJETIVOS DEL USUARIO VINCULADOS A ESTA PERSONA (refleja el estado del vínculo respecto de esto, sin inventar señales):',
       goalContext,
     )
   }
@@ -102,6 +102,6 @@ export function buildSynthesisInput(
     if (emo.length) lines.push(`   estados: ${emo.join('; ')}`)
   })
 
-  lines.push('', 'Escribí los 3 párrafos.')
+  lines.push('', 'Escribe los 3 párrafos.')
   return lines.join('\n')
 }

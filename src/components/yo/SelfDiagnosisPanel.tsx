@@ -52,10 +52,10 @@ const FIELDS: FieldDef[] = [
   { kind: 'text', key: 'emotionalState', label: 'Estado emocional actual', icon: HeartPulse, accent: 'text-text-tertiary', placeholder: '¿Cómo estás hoy, de verdad? Sin filtro.' },
   { kind: 'list', key: 'anxieties', label: 'Principales ansiedades / preocupaciones', icon: AlertTriangle, accent: 'text-text-tertiary', placeholder: 'Una preocupación y Enter…' },
   { kind: 'list', key: 'blocks', label: 'Bloqueos detectados', icon: Ban, accent: 'text-text-tertiary', placeholder: 'Algo que te traba y Enter…' },
-  { kind: 'list', key: 'stoppedTolerating', label: 'Lo que dejé de tolerar', icon: Ban, accent: 'text-text-tertiary', placeholder: 'Algo que ya no aceptás y Enter…' },
+  { kind: 'list', key: 'stoppedTolerating', label: 'Lo que dejé de tolerar', icon: Ban, accent: 'text-text-tertiary', placeholder: 'Algo que ya no aceptas y Enter…' },
   { kind: 'list', key: 'understandings', label: 'Lo que entiendo', icon: Lightbulb, accent: 'text-text-tertiary', placeholder: 'Una claridad que ganaste y Enter…' },
   { kind: 'text', key: 'idealLifeVision', label: 'Visión de vida ideal', icon: Sparkles, accent: 'text-text-tertiary', placeholder: 'Cómo se ve tu vida cuando todo está en su lugar…' },
-  { kind: 'text', key: 'futureSelf', label: 'Modelo del yo futuro', icon: Compass, accent: 'text-text-tertiary', placeholder: 'Quién es el vos en el que te estás convirtiendo…' },
+  { kind: 'text', key: 'futureSelf', label: 'Modelo del yo futuro', icon: Compass, accent: 'text-text-tertiary', placeholder: 'Quién es el tú en el que te estás convirtiendo…' },
   { kind: 'list', key: 'anchors', label: 'Frases ancla / valores', icon: Anchor, accent: 'text-text-tertiary', placeholder: 'Una frase o valor que te sostiene y Enter…' },
 ]
 
@@ -89,7 +89,7 @@ export function SelfDiagnosisPanel() {
     setDiagnosis(clean)
     setDraft(null)
     setEditing(false)
-    toast.success('Diagnóstico guardado', { description: 'Privado · solo vos lo ves.' })
+    toast.success('Diagnóstico guardado', { description: 'Privado · solo tú lo ves.' })
   }
 
   const empty = isDiagnosisEmpty(diagnosis)
@@ -107,7 +107,7 @@ export function SelfDiagnosisPanel() {
               <h2 className="text-base sm:text-lg font-semibold tracking-tight">Espacio personal</h2>
             </div>
             <p className="text-xs text-muted-foreground mt-1 leading-snug">
-              Tu diagnóstico para llevar una mejor vida. Privado · solo vos lo ves · no se envía a IA.
+              Tu diagnóstico para llevar una mejor vida. Privado · solo tú lo ves · no se envía a IA.
             </p>
           </div>
           {!editing && (
@@ -150,7 +150,7 @@ function EmptyState({ onStart }: { onStart: () => void }) {
       <HeartPulse size={26} strokeWidth={1.5} className="text-primary/40 mx-auto mb-3" aria-hidden="true" />
       <p className="text-sm text-foreground/80">Tu espacio para verte con honestidad.</p>
       <p className="text-xs text-muted-foreground/70 mt-1 max-w-md mx-auto leading-snug">
-        Estado emocional, ansiedades, bloqueos, lo que dejaste de tolerar, lo que entendés,
+        Estado emocional, ansiedades, bloqueos, lo que dejaste de tolerar, lo que entiendes,
         tu visión de vida ideal y tus frases ancla. Nadie más lo ve.
       </p>
       <Button size="sm" onClick={onStart} className="mt-4 inline-flex items-center gap-1.5">

@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authError } = await supabase.auth.getUser()
   if (authError || !auth?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
 
   let body: Body
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       409,
       'No hay un Google Calendar conectado',
-      'Conectá tu Google Calendar (con permiso de escritura) desde /horario o /agenda y reintentá.',
+      'Conectá tu Google Calendar (con permiso de escritura) desde /horario o /agenda y reinténtalo.',
     )
   }
 

@@ -39,7 +39,7 @@ function buildAlertMessage(personName: string, from: EstadoLabel, to: EstadoLabe
   if (to === 'en_tension') {
     if (overdueCount > 0) return `${transition}. ${overdueCount} pendiente${overdueCount === 1 ? '' : 's'} vencido${overdueCount === 1 ? '' : 's'}.`
     if (toneAvg != null && toneAvg <= 2.3) return `${transition}. El tono viene bajo (${toneAvg}/5).`
-    return `${transition}. Revisá qué está pasando.`
+    return `${transition}. Revisa qué está pasando.`
   }
   if (to === 'distante') return `${transition}. Hace tiempo sin contacto significativo.`
   return `${transition}.`

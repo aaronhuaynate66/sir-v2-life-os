@@ -347,13 +347,13 @@ export default function RelatoIngestPage() {
       const r = await pdfFileToText(file, { maxPages: 10 })
       if (r.error) { setPdfNotice(`Error: ${r.error}`); return }
       if (r.looksLikeScan || r.text.trim().length < 50) {
-        setPdfNotice(`El PDF parece ser un scan sin texto (${r.pagesRead} páginas). Subilo desde /captura con Vision para mejores resultados.`)
+        setPdfNotice(`El PDF parece ser un scan sin texto (${r.pagesRead} páginas). Súbelo desde /captura con Vision para mejores resultados.`)
         return
       }
       // Metemos el texto al final del draft con marker + resumen.
       const marker = `\n\n--- Contenido del PDF: ${file.name} (${r.pagesRead}/${r.totalPages} páginas) ---\n${r.text}\n--- FIN PDF ---\n`
       setDraft((d) => (d + marker).slice(0, 8000))
-      setPdfNotice(`OK: pegué el texto de ${r.pagesRead} páginas. Editá el mensaje y enviá cuando estés listo.`)
+      setPdfNotice(`OK: pegué el texto de ${r.pagesRead} páginas. Edita el mensaje y envía cuando estés listo.`)
     } finally { setAttachingPdf(false) }
   }
 
@@ -372,9 +372,9 @@ export default function RelatoIngestPage() {
       })
       const j = (await res.json()) as { text?: string | null; error?: string; detail?: string }
       if (!res.ok) { setPdfNotice(`Error: ${j.error ?? `HTTP ${res.status}`}`); return }
-      if (!j.text) { setPdfNotice('No vi datos claros en la foto. Probá con más luz o más cerca.'); return }
+      if (!j.text) { setPdfNotice('No vi datos claros en la foto. Prueba con más luz o más cerca.'); return }
       setDraft((d) => (d ? `${d}\n${j.text}` : (j.text as string)).slice(0, 8000))
-      setPdfNotice('OK: transcribí la foto. Revisá el texto y enviá cuando estés listo.')
+      setPdfNotice('OK: transcribí la foto. Revisa el texto y envía cuando estés listo.')
     } catch (e) {
       setPdfNotice(`Error: ${e instanceof Error ? e.message : String(e)}`)
     } finally { setTranscribing(false) }
@@ -386,9 +386,9 @@ export default function RelatoIngestPage() {
         <div className="flex items-center gap-3">
           <Sparkles size={22} strokeWidth={1.5} className="text-muted-foreground" />
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-none">Contale a SIR</h1>
+            <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-none">Cuéntale a SIR</h1>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Contame en prosa qué pasó — episodios, con quién, cómo te sentiste. Yo estructuro y vos aprobás.
+              Cuéntame en prosa qué pasó — episodios, con quién, cómo te sentiste. Yo estructuro y tú apruebas.
             </p>
           </div>
         </div>
@@ -430,7 +430,7 @@ export default function RelatoIngestPage() {
                   <Wand2 size={18} strokeWidth={1.75} className="text-muted-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                  Escribí abajo un relato en prosa. Usá nombres completos (nombre + apellido) para evitar confusiones.
+                  Escribe abajo un relato en prosa. Usa nombres completos (nombre + apellido) para evitar confusiones.
                 </p>
                 <div className="pt-2 flex flex-wrap gap-1.5 justify-center max-w-2xl mx-auto">
                   {[
@@ -524,7 +524,7 @@ export default function RelatoIngestPage() {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void enviar() }
                 }}
                 rows={2}
-                placeholder="Contame qué pasó… (Ctrl/⌘ + Enter · 📷 foto o PDF con los botones)"
+                placeholder="Cuéntame qué pasó… (Ctrl/⌘ + Enter · 📷 foto o PDF con los botones)"
                 className="flex-1 min-w-0 resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/30 min-h-[44px] max-h-[240px]"
                 disabled={busy}
               />
@@ -536,7 +536,7 @@ export default function RelatoIngestPage() {
               <p>
                 {aplicarDirecto
                   ? 'Modo aplicar directo — se guarda al toque, sin revisión.'
-                  : 'Modo revisar — verás el plan y aprobás antes de guardar.'}
+                  : 'Modo revisar — verás el plan y apruebas antes de guardar.'}
               </p>
               {pdfNotice && <p className={pdfNotice.startsWith('OK') ? 'text-ok' : 'text-warn'}>{pdfNotice}</p>}
             </div>
@@ -619,7 +619,7 @@ function SirBubble({
 
         {msg.plan.length === 0 && !msg.error && !msg.executed && msg.ambiguous.length === 0 && (
           <div className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
-            No encontré acciones concretas. Contá con más detalle (fechas, con quién, qué pasó).
+            No encontré acciones concretas. Cuenta con más detalle (fechas, con quién, qué pasó).
           </div>
         )}
 
@@ -629,7 +629,7 @@ function SirBubble({
               <div key={i} className="text-xs text-foreground/90 leading-relaxed">
                 Mencionaste <span className="font-medium">&quot;{a.shortName}&quot;</span> sin apellido.
                 {a.optionsSeen && a.optionsSeen.length > 0 && (
-                  <> Podría ser: {a.optionsSeen.join(', ')}. Aclará y reenviá.</>
+                  <> Podría ser: {a.optionsSeen.join(', ')}. Aclara y reenvía.</>
                 )}
               </div>
             ))}

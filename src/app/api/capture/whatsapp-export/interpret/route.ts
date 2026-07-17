@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'whatsapp_export')
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         userMsg,
         supabase,
         userId,
-        'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON, sin texto ni markdown fences. Empezá con `{` y terminá con `}`.',
+        'CRÍTICO: tu respuesta anterior no era JSON válido. Devuelve SOLO el JSON, sin texto ni markdown fences. Empieza con `{` y termina con `}`.',
       )
       parsed = JSON.parse(stripJsonFences(raw))
     } catch (e) {

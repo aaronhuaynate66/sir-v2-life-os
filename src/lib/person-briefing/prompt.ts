@@ -35,16 +35,16 @@ Dinámica: 1-2 oraciones sobre el tono y los temas que vienen apareciendo.
 Oportunidad: 1 acción concreta hacia ADELANTE para el próximo contacto. Debe servir al vínculo y al bienestar del usuario. Puede ser un acercamiento (un tema para retomar, algo por lo que preguntar, un gesto de cuidado), un movimiento estratégico que apalanque la red profesional (ej. apoyarse en un colega de confianza del mismo grupo, conectar un objetivo en juego), O un límite sano / una conversación franca: mejorar una relación no siempre es acercarse.
 
 REGLAS ESTRICTAS:
-- Usá SOLO la información provista. No inventes nombres, fechas, eventos ni rasgos.
-- RECENCIA: la fecha de "Último contacto registrado" (si está presente) es la verdad sobre cuándo se contactaron por última vez — NO la fecha de la memoria más reciente. Las memorias pueden ser de hace semanas aunque el contacto sea de hoy (el contacto reciente puede ser breve y no haber dejado memoria). PROHIBIDO afirmar "sin contacto hace X", "hace dos semanas que no hablan" o similar si el último contacto registrado es más reciente. Como mucho, podés notar que el contacto reciente fue breve o que el ritmo bajó, sin negar que hubo contacto.
-- El ESTADO RECIENTE del usuario sirve únicamente para calibrar el TIMING y el TONO de la oportunidad (ej: si viene con poca energía o durmió poco, sugerí un primer paso liviano y dejar lo difícil para cuando esté entero). PROHIBIDO usarlo para explicar por qué la relación va mal, para atribuir causas a lo que pasó, o para dar consejo de salud. Mirá hacia adelante, no hacia atrás.
-- La RED PROFESIONAL (otras personas del usuario en la misma empresa/grupo) es inteligencia estratégica legítima: usala para leer el tablero (quién se relaciona con quién, intereses compartidos, vías de influencia, con quién ya hay un objetivo en juego) y, si aplica, proponé en la Oportunidad un movimiento que apalanque esas conexiones reales. Esto NO es manipulación: la línea es que el movimiento se apoye en vínculos GENUINOS y en intereses reales, sin engaño, sin coerción y sin usar a nadie en contra de su propio interés. Si una jugada requeriría mentir, presionar o dañar a alguien, no la sugieras.
-- Si un colega tiene un cumpleaños cerca, un contacto frío o un vínculo a cuidar, usalo para TIMING y para sugerir un acercamiento GENUINO (saludar, retomar). PERO un gesto de cuidado —como saludar un cumpleaños— vale por sí mismo y NO debe presentarse como un pretexto para extraer información o sacar ventaja. El saludo se sostiene aunque no hubiera nada que ganar; si de esa conexión real surge contexto útil, mejor, pero ese no es el motivo del gesto.
-- CONFLICTO RECIENTE: si en los datos aparece una "ALERTA: conversación reciente tensa", NO la ignores ni la suavices hasta volverla invisible. Nombrala explícitamente en Dinámica (qué pasó, en términos del usuario, sin diagnosticar ni psicoanalizar a nadie) y hacé que la Oportunidad sea un paso concreto para MANEJAR la situación: puede ser reparar, poner un límite sano, o una conversación franca. La reparación NUNCA exige que el usuario renuncie a sus objetivos para apaciguar al otro.
-- OBJETIVO EN JUEGO: si el conflicto reciente es sobre uno de los objetivos del usuario (sobre todo TU NORTE, el objetivo ancla), nombrá esa tensión con honestidad — el vínculo de un lado, el objetivo del otro — y orientá la Oportunidad a sostener AMBOS: cuidar la relación sin abandonar el objetivo. No tomes partido por el otro contra el objetivo del usuario, ni al revés; mostrá el trade-off real y un siguiente paso.
+- Usa SOLO la información provista. No inventes nombres, fechas, eventos ni rasgos.
+- RECENCIA: la fecha de "Último contacto registrado" (si está presente) es la verdad sobre cuándo se contactaron por última vez — NO la fecha de la memoria más reciente. Las memorias pueden ser de hace semanas aunque el contacto sea de hoy (el contacto reciente puede ser breve y no haber dejado memoria). PROHIBIDO afirmar "sin contacto hace X", "hace dos semanas que no hablan" o similar si el último contacto registrado es más reciente. Como mucho, puedes notar que el contacto reciente fue breve o que el ritmo bajó, sin negar que hubo contacto.
+- El ESTADO RECIENTE del usuario sirve únicamente para calibrar el TIMING y el TONO de la oportunidad (ej: si viene con poca energía o durmió poco, sugiere un primer paso liviano y dejar lo difícil para cuando esté entero). PROHIBIDO usarlo para explicar por qué la relación va mal, para atribuir causas a lo que pasó, o para dar consejo de salud. Mira hacia adelante, no hacia atrás.
+- La RED PROFESIONAL (otras personas del usuario en la misma empresa/grupo) es inteligencia estratégica legítima: úsala para leer el tablero (quién se relaciona con quién, intereses compartidos, vías de influencia, con quién ya hay un objetivo en juego) y, si aplica, propón en la Oportunidad un movimiento que apalanque esas conexiones reales. Esto NO es manipulación: la línea es que el movimiento se apoye en vínculos GENUINOS y en intereses reales, sin engaño, sin coerción y sin usar a nadie en contra de su propio interés. Si una jugada requeriría mentir, presionar o dañar a alguien, no la sugieras.
+- Si un colega tiene un cumpleaños cerca, un contacto frío o un vínculo a cuidar, úsalo para TIMING y para sugerir un acercamiento GENUINO (saludar, retomar). PERO un gesto de cuidado —como saludar un cumpleaños— vale por sí mismo y NO debe presentarse como un pretexto para extraer información o sacar ventaja. El saludo se sostiene aunque no hubiera nada que ganar; si de esa conexión real surge contexto útil, mejor, pero ese no es el motivo del gesto.
+- CONFLICTO RECIENTE: si en los datos aparece una "ALERTA: conversación reciente tensa", NO la ignores ni la suavices hasta volverla invisible. Nómbrala explícitamente en Dinámica (qué pasó, en términos del usuario, sin diagnosticar ni psicoanalizar a nadie) y haz que la Oportunidad sea un paso concreto para MANEJAR la situación: puede ser reparar, poner un límite sano, o una conversación franca. La reparación NUNCA exige que el usuario renuncie a sus objetivos para apaciguar al otro.
+- OBJETIVO EN JUEGO: si el conflicto reciente es sobre uno de los objetivos del usuario (sobre todo TU NORTE, el objetivo ancla), nombra esa tensión con honestidad — el vínculo de un lado, el objetivo del otro — y orienta la Oportunidad a sostener AMBOS: cuidar la relación sin abandonar el objetivo. No tomes partido por el otro contra el objetivo del usuario, ni al revés; muestra el trade-off real y un siguiente paso.
 - PROHIBIDO: diagnósticos clínicos, etiquetas de salud mental, consejo médico/psicológico, tácticas de manipulación, jugadas para "obtener" algo o "recuperar terreno", generar dependencia.
-- Tono cálido, directo y honesto. Si hay poca información, decilo y mantené el briefing corto.
-- Español neutro. Sin markdown, sin viñetas con guiones, sin emojis. Respetá las etiquetas "TL;DR:", "Contexto:", "Dinámica:", "Oportunidad:" tal cual, cada una en su propio bloque separado por una línea en blanco.`
+- Tono cálido, directo y honesto. Si hay poca información, dilo y mantén el briefing corto.
+- Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). Sin markdown, sin viñetas con guiones, sin emojis. Respeta las etiquetas "TL;DR:", "Contexto:", "Dinámica:", "Oportunidad:" tal cual, cada una en su propio bloque separado por una línea en blanco.`
 
 export interface BriefingPersonFacts {
   name: string
@@ -174,7 +174,7 @@ export function buildBriefingInput(
     for (const c of colleagues) {
       const bits: string[] = []
       if (c.orgLabel) bits.push(c.orgLabel)
-      if (typeof c.importance === 'number') bits.push(`importancia ${c.importance}/10 para vos`)
+      if (typeof c.importance === 'number') bits.push(`importancia ${c.importance}/10 para ti`)
       if (typeof c.relScore === 'number') bits.push(`vínculo ${c.relScore}/100`)
       if (c.lastContact) bits.push(`último contacto ${c.lastContact}`)
       if (typeof c.birthdayInDays === 'number') {
@@ -186,7 +186,7 @@ export function buildBriefingInput(
               : `cumple en ${c.birthdayInDays} días`
         bits.push(b)
       }
-      if (c.activeGoalTitle) bits.push(`tenés un objetivo activo que lo involucra: "${c.activeGoalTitle}"`)
+      if (c.activeGoalTitle) bits.push(`tienes un objetivo activo que lo involucra: "${c.activeGoalTitle}"`)
       lines.push(`  - ${c.name}${bits.length ? ' — ' + bits.join(' · ') : ''}`)
     }
   }
@@ -195,6 +195,6 @@ export function buildBriefingInput(
   memories.forEach((m, i) => {
     lines.push(`${i + 1}. [${m.timestamp.slice(0, 10)} · ${m.type}] ${m.content}`)
   })
-  lines.push('', 'Escribí el briefing con la estructura indicada, cerrando con la Oportunidad.')
+  lines.push('', 'Escribe el briefing con la estructura indicada, cerrando con la Oportunidad.')
   return lines.join('\n')
 }

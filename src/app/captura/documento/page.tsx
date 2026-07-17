@@ -76,7 +76,7 @@ function DocumentoContent() {
       if (r.error) { setNotice(`No pude leer el PDF: ${r.error}`); return }
       if (r.looksLikeScan || r.text.trim().length < 40) {
         setNotice(
-          `El PDF parece un scan sin texto (${r.pagesRead} pág.). Para esos conviene subirlo como imagen desde Captura (Visión). Si tiene texto real, probá otro archivo.`,
+          `El PDF parece un scan sin texto (${r.pagesRead} pág.). Para esos conviene subirlo como imagen desde Captura (Visión). Si tiene texto real, prueba otro archivo.`,
         )
         return
       }
@@ -178,8 +178,8 @@ function DocumentoContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Subir un documento</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-          Subí un PDF (un informe, un paper, una entrada de journal) o pegá su texto. SIR lo lee, lo
-          resume y propone memorias — vos las revisás y editás antes de guardar. Nada se guarda solo.
+          Sube un PDF (un informe, un paper, una entrada de journal) o pega su texto. SIR lo lee, lo
+          resume y propone memorias — tú las revisas y editas antes de guardar. Nada se guarda solo.
         </p>
       </div>
 
@@ -230,7 +230,7 @@ function DocumentoContent() {
               value={pastedText}
               onChange={(e) => { setPastedText(e.target.value); resetPreview() }}
               rows={10}
-              placeholder="Pegá acá el texto del documento…"
+              placeholder="Pega aquí el texto del documento…"
               className="w-full resize-y rounded-md border border-border bg-background p-3 font-mono text-[12px] leading-relaxed"
             />
           )}
@@ -245,7 +245,7 @@ function DocumentoContent() {
               Analizar documento
             </Button>
             {source === 'texto' && pastedText.trim().length > 0 && pastedText.trim().length < 40 && (
-              <span className="text-xs text-muted-foreground">Pegá un poco más de texto (mín 40 caracteres).</span>
+              <span className="text-xs text-muted-foreground">Pega un poco más de texto (mín 40 caracteres).</span>
             )}
           </div>
         </CardContent>
@@ -260,7 +260,7 @@ function DocumentoContent() {
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="outline" className="text-[10px] font-mono uppercase tracking-wider">Propuesta</Badge>
               <Badge variant="secondary" className="text-[10px] font-mono">{preview.docKind}</Badge>
-              <span className="text-[11px] text-muted-foreground">Revisá y editá antes de guardar</span>
+              <span className="text-[11px] text-muted-foreground">Revisa y edita antes de guardar</span>
             </div>
 
             <div>
@@ -357,7 +357,7 @@ function DocumentoContent() {
                 Guardar {includedCount} memoria{includedCount === 1 ? '' : 's'}
               </Button>
               {!preview.legible && (
-                <span className="text-xs text-warn">El texto se leyó con dificultad — revisá bien antes de guardar.</span>
+                <span className="text-xs text-warn">El texto se leyó con dificultad — revisa bien antes de guardar.</span>
               )}
             </div>
           </CardContent>

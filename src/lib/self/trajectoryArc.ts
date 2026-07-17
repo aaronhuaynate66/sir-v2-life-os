@@ -264,31 +264,31 @@ function buildMessage(p: MessageParts): string {
       core = `Fijaste ${p.total} objetivo${p.total === 1 ? '' : 's'} y todavía cerraste poco (${p.completed} completado${p.completed === 1 ? '' : 's'}). Hay poco recorrido resuelto para leer un arco: se va a ir dibujando a medida que algunos cierren o los sueltes.`
       break
     case 'exploring':
-      core = `Tenés ${p.active} frentes abiertos y ${p.resolved} objetivo${p.resolved === 1 ? '' : 's'} ya resuelto${p.resolved === 1 ? '' : 's'}. Estás en modo exploración: abrís mucho y todavía cerraste poco. El arco se lee mejor cuando algunos frentes se cierren o se suelten a propósito.`
+      core = `Tienes ${p.active} frentes abiertos y ${p.resolved} objetivo${p.resolved === 1 ? '' : 's'} ya resuelto${p.resolved === 1 ? '' : 's'}. Estás en modo exploración: abres mucho y todavía cerraste poco. El arco se lee mejor cuando algunos frentes se cierren o se suelten a propósito.`
       break
     case 'building':
-      core = `De los ${p.resolved} objetivos que ya resolviste, cerraste ${p.completed} (${ftTxt}). Venís siendo alguien que termina lo que empieza.`
+      core = `De los ${p.resolved} objetivos que ya resolviste, cerraste ${p.completed} (${ftTxt}). Vienes siendo alguien que termina lo que empieza.`
       break
     case 'releasing':
       core = `De los ${p.resolved} objetivos que ya resolviste, soltaste ${p.abandoned} y cerraste ${p.completed} (${ftTxt} completados). Soltar no es fracasar —a veces es corregir el rumbo—; vale mirar si viene de una elección o de un desgaste.`
       break
     case 'steady':
     default:
-      core = `De los ${p.resolved} objetivos que ya resolviste, cerraste ${p.completed} y soltaste ${p.abandoned} (${ftTxt} completados). Terminás y soltás en proporciones parecidas.`
+      core = `De los ${p.resolved} objetivos que ya resolviste, cerraste ${p.completed} y soltaste ${p.abandoned} (${ftTxt} completados). Terminas y sueltas en proporciones parecidas.`
       break
   }
 
   const extras: string[] = []
   if (p.strongestArea && p.weakestArea) {
     extras.push(
-      `Donde más cerrás es ${categoryLabelEs(p.strongestArea.category)}; donde más soltás, ${categoryLabelEs(p.weakestArea.category)}.`,
+      `Donde más cierras es ${categoryLabelEs(p.strongestArea.category)}; donde más sueltas, ${categoryLabelEs(p.weakestArea.category)}.`,
     )
   } else if (p.strongestArea) {
-    extras.push(`Donde más constancia mostrás es en ${categoryLabelEs(p.strongestArea.category)}.`)
+    extras.push(`Donde más constancia muestras es en ${categoryLabelEs(p.strongestArea.category)}.`)
   }
   if (p.pattern === 'building' || p.pattern === 'releasing' || p.pattern === 'steady') {
-    if (p.momentum === 'acelera') extras.push('Y venís cerrando más seguido que antes.')
-    else if (p.momentum === 'desacelera') extras.push('Últimamente venís cerrando menos que antes.')
+    if (p.momentum === 'acelera') extras.push('Y vienes cerrando más seguido que antes.')
+    else if (p.momentum === 'desacelera') extras.push('Últimamente vienes cerrando menos que antes.')
   }
 
   return [core, ...extras].join(' ')

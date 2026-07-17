@@ -161,8 +161,8 @@ export function BatchCapturePanel() {
         {open && (
           <>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Elegí varios pantallazos (WhatsApp, Instagram o LinkedIn). Se procesan en cola, uno por
-              uno, y después vinculás la persona de cada captura. Báscula / sueño / FC también se
+              Elige varios pantallazos (WhatsApp, Instagram o LinkedIn). Se procesan en cola, uno por
+              uno, y después vinculas la persona de cada captura. Báscula / sueño / FC también se
               procesan (se guardan como tus métricas, con la fecha de cada panel).
             </p>
 

@@ -107,7 +107,7 @@ export function AnduveHoyCard({ now }: AnduveHoyCardProps = {}) {
 
           {events.length === 0 ? (
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Todavía no registré nada tuyo hoy. Marcá un hábito, logueá un estado, o anotá algo sobre alguien — todo aparece acá.
+              Todavía no registré nada tuyo hoy. Marca un hábito, loguea un estado, o anota algo sobre alguien — todo aparece acá.
             </p>
           ) : (
             <>

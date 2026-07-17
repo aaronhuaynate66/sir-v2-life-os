@@ -127,7 +127,7 @@ function AccionBody({ person, phoneNumber, lastChatObservedAt, lastManualInterac
       const data = (await res.json()) as { suggestion?: MessageSuggestion }
       const text = data.suggestion?.message_suggestion?.trim()
       if (!text) {
-        setError(toApiError(new Error('La IA no devolvió un mensaje. Probá de nuevo en un momento.')))
+        setError(toApiError(new Error('La IA no devolvió un mensaje. Prueba de nuevo en un momento.')))
         return
       }
       setSuggestion(data.suggestion ?? null)
@@ -186,13 +186,13 @@ function AccionBody({ person, phoneNumber, lastChatObservedAt, lastManualInterac
             >
               <a href={waWithText ?? waBase} target="_blank" rel="noopener noreferrer">
                 <MessageCircle size={14} strokeWidth={1.75} className="mr-1.5" />
-                {draft ? 'Enviar por WhatsApp' : `Escribile a ${firstName}`}
+                {draft ? 'Enviar por WhatsApp' : `Escríbele a ${firstName}`}
               </a>
             </Button>
           ) : (
-            <Button size="sm" variant="outline" disabled title="Agregá un teléfono en Redes sociales para habilitar el chat.">
+            <Button size="sm" variant="outline" disabled title="Agrega un teléfono en Redes sociales para habilitar el chat.">
               <MessageCircle size={14} strokeWidth={1.75} className="mr-1.5" />
-              Escribile ahora
+              Escríbele ahora
             </Button>
           )}
 
@@ -234,7 +234,7 @@ function AccionBody({ person, phoneNumber, lastChatObservedAt, lastManualInterac
                 <Copy size={13} strokeWidth={1.75} className="mr-1.5" />
                 Copiar
               </Button>
-              <span className="text-[10px] text-muted-foreground/70">Editalo antes de enviar — es un borrador.</span>
+              <span className="text-[10px] text-muted-foreground/70">Edítalo antes de enviar — es un borrador.</span>
             </div>
           </div>
         )}

@@ -131,12 +131,12 @@ export async function POST(req: NextRequest) {
     if (!text && msg.isVoice && msg.voiceFileId) {
       const media = await downloadTelegramFile(msg.voiceFileId)
       if (!media) {
-        await sendTelegramMessage(msg.chatId, 'No pude bajar el audio 😕. Probá de nuevo o escribime.')
+        await sendTelegramMessage(msg.chatId, 'No pude bajar el audio 😕. Prueba de nuevo o escríbeme.')
         return
       }
       try { text = (await transcribeAudio(media.bytes, media.mimeType)).trim() } catch { text = '' }
       if (!text) {
-        await sendTelegramMessage(msg.chatId, 'No le entendí al audio 😅. ¿Me lo repetís o lo escribís?')
+        await sendTelegramMessage(msg.chatId, 'No le entendí al audio 😅. ¿Me lo repites o lo escribes?')
         return
       }
     }
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
       } else {
         // eslint-disable-next-line no-console
         console.warn('[telegram] askSir falló:', e instanceof Error ? e.message : e)
-        await sendTelegramMessage(msg.chatId, 'Uf, no pude procesarlo ahora. Reintentá en un momento 🙏')
+        await sendTelegramMessage(msg.chatId, 'Uf, no pude procesarlo ahora. Reintenta en un momento 🙏')
       }
     }
   })

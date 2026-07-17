@@ -30,25 +30,27 @@ export interface GoalSuggestion {
   reasoning: string
 }
 
-export const GOAL_SUGGEST_SYSTEM_PROMPT = `Sos un asistente que toma un RELATO LIBRE del usuario (ej. lo que habló con alguien, una idea, una decisión) y PROPONE un objetivo estructurado para su sistema personal.
+export const GOAL_SUGGEST_SYSTEM_PROMPT = `Eres un asistente que toma un RELATO LIBRE del usuario (ej. lo que habló con alguien, una idea, una decisión) y PROPONE un objetivo estructurado para su sistema personal.
 
-Devolvé EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor:
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
+
+Devuelve EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor:
 {"title": string, "description": string, "category": string, "priority": string, "peaceImpact": number, "nextAction": string, "targetDate": string|null, "relatedPersonNames": string[], "reasoning": string}
 
 Reglas:
 - "title": corto y accionable (máx ~80 chars). Ej: "Ingresar al RIT (CGBVP)".
 - "description": 1-3 frases con el contexto y el disparador. NO inventes datos que no estén en el relato.
-- "category": UNA de: financial, personal, relational, health, career, spiritual, creative. Default 'personal'; usá 'career' si es claramente vocacional/profesional; 'health' si es físico/salud; 'relational' si el objetivo ES mejorar un vínculo.
+- "category": UNA de: financial, personal, relational, health, career, spiritual, creative. Default 'personal'; usa 'career' si es claramente vocacional/profesional; 'health' si es físico/salud; 'relational' si el objetivo ES mejorar un vínculo.
 - "priority": UNA de: critical, high, medium, low. Default 'high' si importa de verdad. 'critical' SOLO si hay un deadline real o algo urgente/en riesgo. Si el timing no lo controla el usuario o no hay fecha, NO uses critical.
-- "peaceImpact": entero 1-10, cuánta paz/peso real tiene para el usuario. Si no podés inferirlo, 5.
+- "peaceImpact": entero 1-10, cuánta paz/peso real tiene para el usuario. Si no puedes inferirlo, 5.
 - "nextAction": el primer paso concreto y bajo el control del usuario.
-- "targetDate": 'YYYY-MM-DD' SOLO si el relato da una fecha objetivo real. Si el objetivo se gatilla por un EVENTO (ej. "cuando abran el curso") o no hay fecha, devolvé null. NUNCA inventes una fecha.
+- "targetDate": 'YYYY-MM-DD' SOLO si el relato da una fecha objetivo real. Si el objetivo se gatilla por un EVENTO (ej. "cuando abran el curso") o no hay fecha, devuelve null. NUNCA inventes una fecha.
 - "relatedPersonNames": nombres de personas mencionadas en el relato (literales, sin apodos de agenda). [] si ninguna.
-- "reasoning": 1-3 frases en español explicando tus elecciones; mencioná explícitamente si la prioridad o el impacto son una suposición a confirmar.
-- SOLO usá lo que está en el relato. No inventes personas, fechas ni métricas.`
+- "reasoning": 1-3 frases en español explicando tus elecciones; menciona explícitamente si la prioridad o el impacto son una suposición a confirmar.
+- SOLO usa lo que está en el relato. No inventes personas, fechas ni métricas.`
 
 export function buildGoalSuggestInput(text: string): string {
-  return `Relato del usuario:\n\n"""\n${text.trim().slice(0, 4000)}\n"""\n\nDevolvé el JSON del objetivo propuesto.`
+  return `Relato del usuario:\n\n"""\n${text.trim().slice(0, 4000)}\n"""\n\nDevuelve el JSON del objetivo propuesto.`
 }
 
 function pickEnum<T extends string>(v: unknown, allowed: T[], fallback: T): T {

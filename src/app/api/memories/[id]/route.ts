@@ -54,7 +54,7 @@ export async function PATCH(
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   }
 
   const { id } = await ctx.params
@@ -109,14 +109,14 @@ export async function PATCH(
       return errorJson(
         503,
         'Falta correr la migración 0064',
-        'La columna memories.is_private no existe todavía. Corré supabase/migrations/0064_memories_is_private.sql y reintentá.',
+        'La columna memories.is_private no existe todavía. Corré supabase/migrations/0064_memories_is_private.sql y reinténtalo.',
       )
     }
     if (isMissingColumn(error.message, 'is_obsolete')) {
       return errorJson(
         503,
         'Falta correr la migración 0045',
-        'La columna memories.is_obsolete no existe todavía. Corré supabase/migrations/0045_memories_is_obsolete.sql y reintentá.',
+        'La columna memories.is_obsolete no existe todavía. Corré supabase/migrations/0045_memories_is_obsolete.sql y reinténtalo.',
       )
     }
     return errorJson(404, 'Memoria no encontrada o sin permiso', error.message)

@@ -147,7 +147,7 @@ export function ImportarChat() {
       }
       // Sin match: dejamos el archivo cargado y caemos al matcher por nombre.
     } catch {
-      setErr('No pude leer el archivo. Probá elegir a la persona manualmente.')
+      setErr('No pude leer el archivo. Prueba elegir a la persona manualmente.')
     } finally {
       setRecognizing(false)
     }
@@ -186,8 +186,8 @@ export function ImportarChat() {
           </Button>
         </div>
         <p className="text-[11px] text-muted-foreground mb-2 leading-relaxed">
-          Tip: este mismo panel también suma su perfil — tras importar el chat, tocá la pestaña{' '}
-          <span className="text-foreground font-medium">Imagen</span> y subí su captura de
+          Tip: este mismo panel también suma su perfil — tras importar el chat, toca la pestaña{' '}
+          <span className="text-foreground font-medium">Imagen</span> y sube su captura de
           LinkedIn/Instagram para enriquecer a <span className="text-foreground">{resolved.name}</span>.
         </p>
         {recognized && <p className="text-[11px] text-ok mb-2 inline-flex items-center gap-1"><CheckCircle2 size={12} /> Reconocí este chat por sus participantes — lo ruteé solo.</p>}
@@ -219,23 +219,23 @@ export function ImportarChat() {
           <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Importar un chat de WhatsApp</div>
         </div>
         <p className="text-sm text-muted-foreground mb-3">
-          Subí el export de una conversación y creá o vinculá su contacto en un paso. ¿De quién es el chat?
+          Sube el export de una conversación y crea o vincula su contacto en un paso. ¿De quién es el chat?
         </p>
 
         <label className="mb-3 flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/40">
           {recognizing ? <Loader2 size={15} className="animate-spin" /> : <FileUp size={15} />}
-          <span>{recognizing ? 'Reconociendo el chat…' : 'Subí el .zip y lo reconozco solo (si ya lo importaste antes)'}</span>
+          <span>{recognizing ? 'Reconociendo el chat…' : 'Sube el .zip y lo reconozco solo (si ya lo importaste antes)'}</span>
           <input type="file" accept=".txt,.zip,text/plain,application/zip" className="hidden" disabled={recognizing}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void reconocer(f); e.currentTarget.value = '' }} />
         </label>
         {waFile && !recognizing && (
-          <p className="text-[11px] text-muted-foreground mb-2">No reconocí este chat (primera vez). Elegí la persona abajo — la próxima lo ruteo solo.</p>
+          <p className="text-[11px] text-muted-foreground mb-2">No reconocí este chat (primera vez). Elige la persona abajo — la próxima lo ruteo solo.</p>
         )}
 
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Empezá a escribir el nombre del contacto…"
+          placeholder="Empieza a escribir el nombre del contacto…"
           className="w-full"
         />
 
@@ -278,7 +278,7 @@ export function ImportarChat() {
 
         {name.trim().length >= 2 && !searching && candidates.length === 0 && (
           <div className="text-xs text-muted-foreground italic mt-2">
-            Sin coincidencias — creá el contacto nuevo abajo.
+            Sin coincidencias — crea el contacto nuevo abajo.
           </div>
         )}
 

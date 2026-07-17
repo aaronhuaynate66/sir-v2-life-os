@@ -174,7 +174,7 @@ function dayKey(iso: string): string | null {
 
 /**
  * Agrega puntos por día con una función reductora. Útil cuando hay varias
- * lecturas el mismo día (ej. 3 métricas de energía) y querés un punto por día.
+ * lecturas el mismo día (ej. 3 métricas de energía) y quieres un punto por día.
  */
 export function aggregateByDay(
   points: SeriesPoint[],

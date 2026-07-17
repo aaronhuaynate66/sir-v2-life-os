@@ -253,7 +253,7 @@ export function buildLifeSeasons(goals: Goal[], now: Date = new Date()): LifeSea
       seasons: [],
       current: null,
       message:
-        'Todavía no hay capítulos que dibujar. Se van formando a medida que ponés y movés objetivos: cada racha de actividad se vuelve una estación de tu vida.',
+        'Todavía no hay capítulos que dibujar. Se van formando a medida que pones y mueves objetivos: cada racha de actividad se vuelve una estación de tu vida.',
     }
   }
 
@@ -295,7 +295,7 @@ function buildMessage(seasons: LifeSeason[], current: LifeSeason | null): string
     if (prev) parts.push(`Antes: ${lower(prev.summary)}`)
   } else {
     parts.push(`Tu último capítulo fue sobre ${seasons[0].label}.`)
-    parts.push('Ahora venís en una pausa entre capítulos: hace un tiempo que no movés un objetivo.')
+    parts.push('Ahora vienes en una pausa entre capítulos: hace un tiempo que no mueves un objetivo.')
   }
   return parts.join(' ')
 }

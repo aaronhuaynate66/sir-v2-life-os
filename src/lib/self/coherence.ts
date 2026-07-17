@@ -222,7 +222,7 @@ export function computeLifeCoherence(
       state: 'insufficient',
       trend: 'sin_datos',
       message:
-        'No marcaste prioridades: sin un norte del año ni objetivos de prioridad alta, no hay un "declarado" con qué comparar tu actividad. Fijá tu norte o subí la prioridad de lo que más importa.',
+        'No marcaste prioridades: sin un norte del año ni objetivos de prioridad alta, no hay un "declarado" con qué comparar tu actividad. Fija tu norte o sube la prioridad de lo que más importa.',
     }
   }
 
@@ -274,7 +274,7 @@ function trendClause(trend: CoherenceTrend, recentShare: number | null, priorSha
   if (trend === 'sin_datos' || recentShare === null || priorShare === null) return ''
   const from = pct(priorShare)
   const to = pct(recentShare)
-  if (trend === 'convergiendo') return ` Y esa proporción viene subiendo respecto del período anterior (${from}% → ${to}%): venís convergiendo hacia lo declarado.`
+  if (trend === 'convergiendo') return ` Y esa proporción viene subiendo respecto del período anterior (${from}% → ${to}%): vienes convergiendo hacia lo declarado.`
   if (trend === 'alejandose') return ` Y esa proporción viene bajando respecto del período anterior (${from}% → ${to}%).`
   return ''
 }
@@ -291,7 +291,7 @@ function buildMessage(state: CoherenceState, trend: CoherenceTrend, c: LifeCoher
   const trailTrend = trendClause(trend, c.recentShare, c.priorShare)
 
   if (state === 'coherent') {
-    return `De tus últimos ${c.recentTotalDone} avances, ${c.recentDeclaredDone} (${share}%) fueron sobre ${decl}. Tu actividad acompaña lo que decís que importa.${trailTrend}${idleClause(c.declaredIdle)}`
+    return `De tus últimos ${c.recentTotalDone} avances, ${c.recentDeclaredDone} (${share}%) fueron sobre ${decl}. Tu actividad acompaña lo que dices que importa.${trailTrend}${idleClause(c.declaredIdle)}`
   }
 
   if (state === 'mixed') {
@@ -303,7 +303,7 @@ function buildMessage(state: CoherenceState, trend: CoherenceTrend, c: LifeCoher
     c.topActivityArea && !c.topActivityAreaDeclared
       ? ` El grueso fue a ${categoryLabelEs(c.topActivityArea.category)}, un área que hoy no está entre tus prioridades declaradas.`
       : ''
-  return `De tus últimos ${c.recentTotalDone} avances, solo ${c.recentDeclaredDone} (${share}%) fueron sobre ${decl}.${areaClause} No es un reproche: puede ser un cambio de foco a propósito. Vale mirar si querés que tus prioridades declaradas reflejen dónde está yendo tu energía —o al revés.${trailTrend}${idleClause(c.declaredIdle)}`
+  return `De tus últimos ${c.recentTotalDone} avances, solo ${c.recentDeclaredDone} (${share}%) fueron sobre ${decl}.${areaClause} No es un reproche: puede ser un cambio de foco a propósito. Vale mirar si quieres que tus prioridades declaradas reflejen dónde está yendo tu energía —o al revés.${trailTrend}${idleClause(c.declaredIdle)}`
 }
 
 /** Resumen compacto de una línea para la reflexión IA: números REALES que el LLM

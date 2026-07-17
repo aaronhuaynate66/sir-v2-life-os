@@ -49,7 +49,7 @@ export function SleepDebtCard() {
 
         <p className="text-[12px] text-muted-foreground leading-relaxed mt-1">
           {!debt.sufficient
-            ? `Poca cobertura reciente (${debt.recentCoverage}/7 noches) — es una estimación floja. Registrá tus noches para afinarla.`
+            ? `Poca cobertura reciente (${debt.recentCoverage}/7 noches) — es una estimación floja. Registra tus noches para afinarla.`
             : hasDebt
               ? `Se acumuló noche a noche. A este ritmo, ~${debt.nightsToBase} noche${debt.nightsToBase === 1 ? '' : 's'} durmiendo bien para volver a base. Una noche larga suelta paga solo una parte.`
               : 'Al día — sin deuda acumulada. Buen ritmo.'}

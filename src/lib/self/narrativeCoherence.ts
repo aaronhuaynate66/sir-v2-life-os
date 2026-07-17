@@ -79,7 +79,7 @@ export function computeNarrativeCoherence(
       state: 'insufficient',
       message:
         chapterCount === 0
-          ? 'Todavía no hay capítulos para leer un arco. Se dibuja a medida que vivís estaciones (rachas de objetivos).'
+          ? 'Todavía no hay capítulos para leer un arco. Se dibuja a medida que vives estaciones (rachas de objetivos).'
           : 'Estás en tu primer capítulo. El arco —si tus temas forman un hilo o pivotean— se va a poder leer cuando haya un segundo.',
     }
   }
@@ -183,7 +183,7 @@ function buildMessage(state: NarrativeState, c: MsgCtx): string {
     const base = hilo
       ? `Tu historia tiene un hilo: ${hilo} reaparece capítulo tras capítulo.`
       : 'Tus capítulos se encadenan: el actual retoma el tema del anterior.'
-    return `${base}${bridge}${anchorClause} No sos fragmentos sueltos: hay una dirección que persiste.`
+    return `${base}${bridge}${anchorClause} No eres fragmentos sueltos: hay una dirección que persiste.`
   }
 
   if (state === 'transitioning') {
@@ -191,11 +191,11 @@ function buildMessage(state: NarrativeState, c: MsgCtx): string {
     const curLabel = c.current.label
     const hiloPrev = throughlinePhrase(c.throughlines)
     const hiloClause = hiloPrev ? ` El hilo de fondo sigue siendo ${hiloPrev}.` : ''
-    return `Estás en una transición: tu capítulo anterior giró en torno a ${prevLabel} y el actual pivotea hacia ${curLabel}.${hiloClause}${anchorClause} Un giro de tema no rompe tu historia —puede ser exactamente el capítulo nuevo que necesitás—; vale mirar si es un rumbo elegido o una deriva.`
+    return `Estás en una transición: tu capítulo anterior giró en torno a ${prevLabel} y el actual pivotea hacia ${curLabel}.${hiloClause}${anchorClause} Un giro de tema no rompe tu historia —puede ser exactamente el capítulo nuevo que necesitas—; vale mirar si es un rumbo elegido o una deriva.`
   }
 
   // fragmented — descriptivo, sin reproche.
-  return `Por ahora tus ${c.chapterCount} capítulos no comparten un hilo temático claro: cada uno giró en torno a algo distinto, sin un área que reaparezca. Eso no es malo —puede ser una etapa de exploración o de reinvención—, pero si buscás sentido de continuidad, elegí un frente que quieras sostener entre estaciones.`
+  return `Por ahora tus ${c.chapterCount} capítulos no comparten un hilo temático claro: cada uno giró en torno a algo distinto, sin un área que reaparezca. Eso no es malo —puede ser una etapa de exploración o de reinvención—, pero si buscas sentido de continuidad, elige un frente que quieras sostener entre estaciones.`
 }
 
 /** Resumen de una línea para la reflexión IA del rumbo. null si no hay arco que

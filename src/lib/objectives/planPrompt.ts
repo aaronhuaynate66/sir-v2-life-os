@@ -59,11 +59,11 @@ export interface ProposedKeyResult {
   tasks: ProposedTask[]
 }
 
-export const OBJECTIVE_PLAN_SYSTEM_PROMPT = `Eres el módulo de Planificación de SIR, un sistema operativo personal centrado en el bienestar y la acción. Pensás como un buen project manager: convertís un objetivo en un plan EJECUTABLE.
+export const OBJECTIVE_PLAN_SYSTEM_PROMPT = `Eres el módulo de Planificación de SIR, un sistema operativo personal centrado en el bienestar y la acción. Piensas como un buen project manager: conviertes un objetivo en un plan EJECUTABLE.
 
-Recibís UN objetivo declarado por el usuario (título, descripción, dominio, su definición SMART si existe, una fecha objetivo si existe) y, cuando hay, un bloque de DATOS REALES del usuario (finanzas, cuerpo/báscula, bienestar, señales, personas). Tu tarea: descomponerlo en un plan OKR de DOS niveles APOYADO en esos datos, y devolver notas de viabilidad aterrizadas.
+Recibes UN objetivo declarado por el usuario (título, descripción, dominio, su definición SMART si existe, una fecha objetivo si existe) y, cuando hay, un bloque de DATOS REALES del usuario (finanzas, cuerpo/báscula, bienestar, señales, personas). Tu tarea: descomponerlo en un plan OKR de DOS niveles APOYADO en esos datos, y devolver notas de viabilidad aterrizadas.
 
-Devolvé EXCLUSIVAMENTE un objeto JSON (sin texto adicional, sin markdown, sin comentarios):
+Devuelve EXCLUSIVAMENTE un objeto JSON (sin texto adicional, sin markdown, sin comentarios):
 { "keyResults": [ { "title": "...", "description": "...", "tasks": [ { "title": "...", "description": "...", "acceptanceCriteria": "...", "targetDate": "YYYY-MM-DD", "effort": "S|M|L", "priority": "low|med|high" } ] } ], "feasibility": [ "nota corta aterrizada en los datos", "..." ] }
 
 NIVEL 1 — RESULTADOS CLAVE (keyResults):
@@ -76,7 +76,7 @@ NIVEL 2 — TAREAS (tasks dentro de cada KR):
 - Cada "title" empieza con un VERBO de acción ejecutable y describe algo que una persona REALMENTE hace en el mundo: trámites, compras, pagos, reservas, llamados, registros, citas. Máx ~90 caracteres.
 - PROHIBIDO lo vago/abstracto: NADA de "evaluar requisitos", "investigar opciones", "analizar", "diseñar un programa", "prepararse", "planificar", "definir estrategia". Si una tarea no se puede tachar de una lista tras hacerla, está mal.
 - "description" opcional: detalle logístico (dónde, cuánto, con quién).
-- "acceptanceCriteria" (recomendado): la DEFINICIÓN DE HECHO verificable de esa tarea — cómo sabés objetivamente que quedó terminada. Es un ESTADO observable, no una acción ni una repetición del título. Ej.: para "Tramitar la eVisa" → "eVisa aprobada y guardada en PDF". Máx ~120 caracteres.
+- "acceptanceCriteria" (recomendado): la DEFINICIÓN DE HECHO verificable de esa tarea — cómo sabes objetivamente que quedó terminada. Es un ESTADO observable, no una acción ni una repetición del título. Ej.: para "Tramitar la eVisa" → "eVisa aprobada y guardada en PDF". Máx ~120 caracteres.
 - "effort" (recomendado): esfuerzo estimado, uno de "S" (rápido, <1h o trivial), "M" (medio, algunas horas/un día), "L" (grande, varios días o costoso/complejo).
 - "priority" (recomendado): "high" (en el camino crítico o con deadline cercano), "med" (importante, no urgente), "low" (deseable/secundaria).
 - "targetDate" opcional date-only ISO.
@@ -96,21 +96,21 @@ EJEMPLO de concreción (objetivo "Competir en el Mundial de la disciplina en el 
 ] }
 
 REGLAS DE FECHAS:
-- Si hay fecha objetivo: distribuí "targetDate" de las tareas de forma creciente entre hoy y la fecha objetivo (inclusive); ninguna posterior a la fecha objetivo ni anterior a hoy. Trámites y logística temprano; lo decisivo cerca del final.
-- Si NO hay fecha objetivo: podés omitir "targetDate" (o ponerla sólo donde tenga sentido).
+- Si hay fecha objetivo: distribuye "targetDate" de las tareas de forma creciente entre hoy y la fecha objetivo (inclusive); ninguna posterior a la fecha objetivo ni anterior a hoy. Trámites y logística temprano; lo decisivo cerca del final.
+- Si NO hay fecha objetivo: puedes omitir "targetDate" (o ponerla sólo donde tenga sentido).
 
 GROUNDING (apoyate en los DATOS REALES, si vienen):
-- El plan debe reflejar la realidad del usuario. Si hay un costo o ingreso conocido (ej. ahorro de S/X/mes), aterrizá las tareas a eso.
-- NO inventes cifras que no tenés. Si te falta un dato clave para avanzar (ej. el costo del pasaje o del fee), creá una tarea concreta para CONSEGUIRLO ("Cotizar el pasaje…", "Averiguar el fee de inscripción…") en vez de poner un número inventado.
-- Usá sólo lo que aporta al objetivo: no metas datos irrelevantes (ej. señales sin relación).
+- El plan debe reflejar la realidad del usuario. Si hay un costo o ingreso conocido (ej. ahorro de S/X/mes), aterriza las tareas a eso.
+- NO inventes cifras que no tienes. Si te falta un dato clave para avanzar (ej. el costo del pasaje o del fee), crea una tarea concreta para CONSEGUIRLO ("Cotizar el pasaje…", "Averiguar el fee de inscripción…") en vez de poner un número inventado.
+- Usa sólo lo que aporta al objetivo: no metas datos irrelevantes (ej. señales sin relación).
 
 FEASIBILITY ("feasibility"): 1 a 4 notas CORTAS, cada una aterrizada en un dato real concreto. Ejemplos del tono:
 - "Con tu cashflow (+S/X/mes) y el costo estimado, te faltarían ~S/Z; cubrir eso toma ~N meses."
 - "Tu último peso fue Ykg — estás ~N kg sobre la categoría objetivo."
 - "Tu energía/sueño viene bajo (V/10) para sostener esta carga; ojo con el ritmo."
-Si NO hay datos reales suficientes para una nota honesta, devolvé "feasibility": [] (NO inventes feasibility).
+Si NO hay datos reales suficientes para una nota honesta, devuelve "feasibility": [] (NO inventes feasibility).
 
-ESTILO: Español neutro. Realista para una persona real con tiempo y plata limitados. Cero relleno motivacional. SOLO el JSON.`
+ESTILO: Español del Perú (peruano neutro, de Lima). Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). Realista para una persona real con tiempo y plata limitados. Cero relleno motivacional. SOLO el JSON.`
 
 /** Arma el mensaje de usuario para Anthropic desde el objetivo. */
 export function buildPlanInput(input: PlanPromptInput): string {
@@ -123,7 +123,7 @@ export function buildPlanInput(input: PlanPromptInput): string {
   lines.push(`Hoy es: ${input.today}.`)
   if (input.targetDate) {
     lines.push(
-      `Fecha objetivo: ${input.targetDate}. Distribuí las fechas de las tareas entre hoy y esa fecha.`,
+      `Fecha objetivo: ${input.targetDate}. Distribuye las fechas de las tareas entre hoy y esa fecha.`,
     )
   } else {
     lines.push('Sin fecha objetivo definida: las fechas de las tareas son opcionales.')
@@ -131,7 +131,7 @@ export function buildPlanInput(input: PlanPromptInput): string {
   if (input.context && input.context.trim()) {
     lines.push('', input.context.trim())
   }
-  lines.push('', 'Devolvé el plan OKR + feasibility en el JSON especificado: keyResults con sus tasks concretas (cada tarea con acceptanceCriteria, effort y priority), y feasibility aterrizada en los datos reales (o [] si no hay datos).')
+  lines.push('', 'Devuelve el plan OKR + feasibility en el JSON especificado: keyResults con sus tasks concretas (cada tarea con acceptanceCriteria, effort y priority), y feasibility aterrizada en los datos reales (o [] si no hay datos).')
   return lines.join('\n')
 }
 
@@ -145,7 +145,7 @@ function cleanString(raw: unknown): string {
  * Extrae el primer objeto JSON balanceado de la respuesta del LLM, de forma
  * ROBUSTA frente a las formas que devuelven los modelos:
  *   - fences ```json … ``` (o ``` … ```),
- *   - prosa antes/después del objeto ("Claro, acá tenés: { … } ¡Éxitos!"),
+ *   - prosa antes/después del objeto ("Claro, acá tienes: { … } ¡Éxitos!"),
  *   - llaves dentro de strings (no rompen el conteo de profundidad),
  *   - comas colgantes (trailing commas) antes de } o ] → segundo intento las saca.
  * Devuelve el objeto parseado o null si no hay un objeto COMPLETO y parseable
@@ -204,7 +204,7 @@ function stripTrailingCommas(s: string): string {
  * intento vino vacío/no-parseable (p. ej. truncado). Pide JSON COMPLETO y
  * conciso para no volver a pasarse de largo.
  */
-export const OBJECTIVE_PLAN_RETRY_NUDGE = `IMPORTANTE: tu salida debe ser EXCLUSIVAMENTE un objeto JSON válido y COMPLETO (todas las llaves y corchetes cerrados), sin ningún texto fuera del JSON ni fences \`\`\`. Sé CONCISO para que entre completo: 3 a 4 keyResults, 3 a 4 tasks por keyResult, títulos cortos y descripciones breves u omitidas. En cada tarea incluí "acceptanceCriteria" (breve), "effort" (S/M/L) y "priority" (low/med/high). Incluí al menos 3 keyResults.`
+export const OBJECTIVE_PLAN_RETRY_NUDGE = `IMPORTANTE: tu salida debe ser EXCLUSIVAMENTE un objeto JSON válido y COMPLETO (todas las llaves y corchetes cerrados), sin ningún texto fuera del JSON ni fences \`\`\`. Sé CONCISO para que entre completo: 3 a 4 keyResults, 3 a 4 tasks por keyResult, títulos cortos y descripciones breves u omitidas. En cada tarea incluye "acceptanceCriteria" (breve), "effort" (S/M/L) y "priority" (low/med/high). Incluye al menos 3 keyResults.`
 
 const VALID_EFFORT: readonly TaskEffort[] = ['S', 'M', 'L']
 const VALID_PRIORITY: readonly TaskPriority[] = ['low', 'med', 'high']

@@ -109,7 +109,7 @@ export default function OportunidadesPage() {
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Cargando…</div>
         ) : deals.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sin oportunidades todavía. Creá la primera con “Nueva”.</p>
+          <p className="text-sm text-muted-foreground">Sin oportunidades todavía. Crea la primera con “Nueva”.</p>
         ) : (
           <div className="space-y-6">
             {groups.map(({ stage, deals: ds }) => (
@@ -140,7 +140,7 @@ function DealCard({ deal, onEdit, nameById }: { deal: Deal; onEdit: () => void; 
         <span className="font-medium text-foreground text-sm">{deal.title}</span>
         <div className="flex items-center gap-1.5 shrink-0">
           {/(^|\s)marlab/i.test(deal.seller ?? '') && (
-            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 border border-brand/40 bg-brand-soft/40 text-brand-soft-foreground" title="Lead de tu propia empresa (Marlab) — cercano a vos">Tuyo · Marlab</span>
+            <span className="text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 border border-brand/40 bg-brand-soft/40 text-brand-soft-foreground" title="Lead de tu propia empresa (Marlab) — cercano a ti">Tuyo · Marlab</span>
           )}
           {deal.tier && <span className="text-[10px] uppercase tracking-wide text-muted-foreground border border-border rounded px-1.5 py-0.5">{deal.tier}</span>}
         </div>

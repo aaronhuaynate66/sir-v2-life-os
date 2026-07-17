@@ -16,9 +16,9 @@ import type { DocKind, DocMemoryProposal, DocMemoryType } from './types'
 
 export const DOCUMENT_INGEST_SYSTEM_PROMPT = `Eres el módulo de ingestión documental de SIR, un sistema operativo personal centrado en el bienestar del usuario.
 
-Recibís el TEXTO de un documento que el usuario subió (un informe, un artículo/paper, una entrada de journal, un contrato, una nota). El texto puede venir con ruido de extracción (saltos raros, números de página, encabezados repetidos). Tu tarea es destilarlo en una síntesis breve + una lista de MEMORIAS notables y reutilizables, en JSON.
+Recibes el TEXTO de un documento que el usuario subió (un informe, un artículo/paper, una entrada de journal, un contrato, una nota). El texto puede venir con ruido de extracción (saltos raros, números de página, encabezados repetidos). Tu tarea es destilarlo en una síntesis breve + una lista de MEMORIAS notables y reutilizables, en JSON.
 
-Devolvé EXCLUSIVAMENTE un objeto JSON con esta forma (sin texto adicional, sin markdown fences):
+Devuelve EXCLUSIVAMENTE un objeto JSON con esta forma (sin texto adicional, sin markdown fences):
 {
   "title": "título corto y descriptivo del documento",
   "docKind": "informe" | "articulo" | "journal" | "contrato" | "nota" | "otro",
@@ -38,15 +38,15 @@ Devolvé EXCLUSIVAMENTE un objeto JSON con esta forma (sin texto adicional, sin 
 QUÉ EXTRAER:
 - Los HECHOS, datos, conclusiones o compromisos NOTABLES del documento — los que valga la pena que SIR recuerde después.
 - Cada memoria debe ser AUTOCONTENIDA: al leerla sin el documento, se entiende.
-- Preferí 'semantic' para conocimiento/datos estables; 'episodic' para un evento fechado; 'temporal' para plazos/fechas; 'emotional' SÓLO si el documento reporta un estado emocional explícito (típico en un journal).
-- Cargá 'importance' según cuánto importa el dato para el usuario (un plazo o una cifra clave = alto; un detalle marginal = bajo).
+- Prefiere 'semantic' para conocimiento/datos estables; 'episodic' para un evento fechado; 'temporal' para plazos/fechas; 'emotional' SÓLO si el documento reporta un estado emocional explícito (típico en un journal).
+- Carga 'importance' según cuánto importa el dato para el usuario (un plazo o una cifra clave = alto; un detalle marginal = bajo).
 
 REGLAS ESTRICTAS:
 - Entre 3 y 12 memorias. Si el documento es pobre, menos. Calidad > cantidad, pero no subextraigas un documento rico.
-- Usá SOLO información presente en el texto. PROHIBIDO inventar hechos, nombres, fechas o cifras.
-- PROHIBIDO: diagnóstico clínico, etiquetas de salud mental, consejo médico/psicológico. Si el documento es médico, reportá lo que DICE ("el informe indica X") sin interpretar ni diagnosticar.
-- Sin dramatizar. Tono observacional. Español neutro (rioplatense liviano en el resumen si querés, pero factual).
-- Si el texto está vacío, es ilegible, o es sólo ruido de extracción (un scan sin texto real), devolvé legible=false, summary explicando el problema, y memories=[].`
+- Usa SOLO información presente en el texto. PROHIBIDO inventar hechos, nombres, fechas o cifras.
+- PROHIBIDO: diagnóstico clínico, etiquetas de salud mental, consejo médico/psicológico. Si el documento es médico, reporta lo que DICE ("el informe indica X") sin interpretar ni diagnosticar.
+- Sin dramatizar. Tono observacional. Español del Perú (peruano neutro, de Lima); registro liviano en el resumen si quieres, pero factual. Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
+- Si el texto está vacío, es ilegible, o es sólo ruido de extracción (un scan sin texto real), devuelve legible=false, summary explicando el problema, y memories=[].`
 
 /** Recorte defensivo del texto para no inflar el input al LLM. */
 const MAX_INPUT_CHARS = 40_000
@@ -66,7 +66,7 @@ export function buildDocumentInput(
   if (truncated) {
     parts.push(`(Texto recortado a ${MAX_INPUT_CHARS} caracteres — se procesa el comienzo.)`)
   }
-  parts.push('', 'TEXTO DEL DOCUMENTO:', '"""', clipped, '"""', '', 'Destilá la síntesis y las memorias en el JSON especificado.')
+  parts.push('', 'TEXTO DEL DOCUMENTO:', '"""', clipped, '"""', '', 'Destila la síntesis y las memorias en el JSON especificado.')
   return parts.join('\n')
 }
 

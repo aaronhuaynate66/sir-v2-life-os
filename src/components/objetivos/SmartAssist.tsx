@@ -103,7 +103,7 @@ export function SmartAssist({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs text-brand-soft-foreground">
               <Sparkles size={13} />
-              Definición SMART propuesta · revisá, editá y aceptá
+              Definición SMART propuesta · revisa, edita y acepta
             </div>
             <button type="button" onClick={discard} className="text-muted-foreground/60 hover:text-foreground" aria-label="Descartar">
               <X size={14} />

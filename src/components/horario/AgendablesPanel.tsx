@@ -79,7 +79,7 @@ export function AgendablesPanel() {
       setDismissed((prev) => new Set(prev).add(a.key))
       toast.success('Agendado en Google Calendar', { description: a.title })
     } catch {
-      toast.error('No se pudo agendar (revisá tu conexión).')
+      toast.error('No se pudo agendar (revisa tu conexión).')
     } finally {
       setBusyKey(null)
     }

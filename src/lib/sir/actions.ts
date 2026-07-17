@@ -18,7 +18,7 @@ export const SIR_ACTION_TOOLS = [
   {
     name: 'proponer_registrar_interaccion',
     description:
-      'Proponé registrar una interacción con una persona (NO la registres vos, solo proponela para que Aaron confirme). Usá esto cuando Aaron pide registrar/anotar que habló o se vio con alguien y cómo estuvo.',
+      'Propón registrar una interacción con una persona (NO la registres tú, solo propónla para que Aaron confirme). Usa esto cuando Aaron pide registrar/anotar que habló o se vio con alguien y cómo estuvo.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -32,7 +32,7 @@ export const SIR_ACTION_TOOLS = [
   {
     name: 'proponer_crear_objetivo',
     description:
-      'Proponé crear un objetivo (NO lo crees vos, solo proponelo para que Aaron confirme). Usá esto cuando Aaron quiere fijar una meta. NO inventes fecha límite.',
+      'Propón crear un objetivo (NO lo crees tú, solo propónlo para que Aaron confirme). Usa esto cuando Aaron quiere fijar una meta. NO inventes fecha límite.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -49,7 +49,7 @@ export const SIR_ACTION_TOOLS = [
   {
     name: 'proponer_crear_persona',
     description:
-      'Proponé crear una persona nueva en la red de Aaron (NO la crees vos, solo proponela para que confirme). Usá esto cuando Aaron quiere agregar/dar de alta a alguien que todavía no está.',
+      'Propón crear una persona nueva en la red de Aaron (NO la crees tú, solo propónla para que confirme). Usa esto cuando Aaron quiere agregar/dar de alta a alguien que todavía no está.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -63,7 +63,7 @@ export const SIR_ACTION_TOOLS = [
   {
     name: 'proponer_marcar_habito',
     description:
-      'Proponé marcar un hábito del día como HECHO (NO lo marques vos, solo proponelo para que Aaron confirme). Usá esto cuando Aaron dice que hizo/completó un hábito ("ya medité", "hice la cama", "leí"). El nombre debe ser el del hábito tal como Aaron lo nombró.',
+      'Propón marcar un hábito del día como HECHO (NO lo marques tú, solo propónlo para que Aaron confirme). Usa esto cuando Aaron dice que hizo/completó un hábito ("ya medité", "hice la cama", "leí"). El nombre debe ser el del hábito tal como Aaron lo nombró.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -75,7 +75,7 @@ export const SIR_ACTION_TOOLS = [
   {
     name: 'proponer_cerrar_relacion',
     description:
-      'Proponé CERRAR un vínculo (NO lo cierres vos, solo proponelo para que Aaron confirme). Usá esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
+      'Propón CERRAR un vínculo (NO lo cierres tú, solo propónlo para que Aaron confirme). Usa esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
     input_schema: {
       type: 'object' as const,
       properties: {

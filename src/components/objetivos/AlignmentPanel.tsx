@@ -207,7 +207,7 @@ export function AlignmentPanel({ goals, people, relationships, memories }: Align
         <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
           Solo para los objetivos donde vinculaste personas: cómo se compara lo que declaraste querer
           con tu comportamiento observado. Son observaciones para reflexionar — la IA asiste, no juzga.
-          Podés descartarlas.
+          Puedes descartarlas.
         </p>
 
         <div className="space-y-3">
@@ -270,7 +270,7 @@ export function AlignmentPanel({ goals, people, relationships, memories }: Align
                           </button>
                         </div>
                         <div className="text-[10px] text-muted-foreground/60 mt-2">
-                          Una perspectiva para mirar, no un veredicto. Descartá si no resuena.
+                          Una perspectiva para mirar, no un veredicto. Descarta si no resuena.
                         </div>
                       </div>
                     ) : (

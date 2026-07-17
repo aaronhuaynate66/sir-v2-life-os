@@ -47,7 +47,7 @@ function toHHMM(min: number): string {
   const m = Math.round(min % 60)
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
-/** Sáb/Dom (por día de despertar) ≈ noche libre (podés dormir de más). */
+/** Sáb/Dom (por día de despertar) ≈ noche libre (puedes dormir de más). */
 function isFreeDay(date: string): boolean {
   const t = Date.parse(`${date}T12:00:00Z`)
   if (!Number.isFinite(t)) return false

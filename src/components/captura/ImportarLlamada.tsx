@@ -87,7 +87,7 @@ export function ImportarLlamada() {
     try {
       const c = await createPerson({ name: n })
       setResolved({ id: c.person.id, name: c.person.name, created: true })
-    } catch { setErr('No se pudo crear la persona. Reintentá.') } finally { setBusy(false) }
+    } catch { setErr('No se pudo crear la persona. Reintenta.') } finally { setBusy(false) }
   }
 
   function reset() {
@@ -113,7 +113,7 @@ export function ImportarLlamada() {
       const supabase = createClient()
       const { data: authData } = await supabase.auth.getUser()
       const userId = authData?.user?.id
-      if (!userId) { setErr('Sesión expirada. Recargá la página.'); return }
+      if (!userId) { setErr('Sesión expirada. Recarga la página.'); return }
       const mime = fileAudio.type || 'audio/mp4'
       const path = `${userId}/${resolved.id}/call-${crypto.randomUUID()}.${extForMime(mime)}`
       const { error: upErr } = await supabase.storage.from('person-voice-notes').upload(path, fileAudio, { contentType: mime, upsert: false })
@@ -133,8 +133,8 @@ export function ImportarLlamada() {
       setInputMode('text') // pasa a revisión: ve el texto antes de procesar
       setProgress(null)
     } catch {
-      trackAiError('call_import', { status: 0, message: 'No se pudo procesar el audio. Reintentá.' }) // GA4
-      setErr('No se pudo procesar el audio. Reintentá.')
+      trackAiError('call_import', { status: 0, message: 'No se pudo procesar el audio. Reintenta.' }) // GA4
+      setErr('No se pudo procesar el audio. Reintenta.')
     } finally { setTranscribing(false); setProgress(null) }
   }
 
@@ -200,7 +200,7 @@ export function ImportarLlamada() {
       elapsedTimerRef.current = setInterval(() => setElapsed((e) => e + 1), 1000)
       startChunk()
     } catch {
-      setErr('No pude acceder al micrófono. Dale permiso y reintentá.')
+      setErr('No pude acceder al micrófono. Dale permiso y reintenta.')
     }
   }
 
@@ -230,7 +230,7 @@ export function ImportarLlamada() {
   async function procesar() {
     if (!resolved || busy) return
     const text = transcript.trim()
-    if (text.length < 20) { setErr('Pegá la transcripción de la llamada (al menos unas líneas).'); return }
+    if (text.length < 20) { setErr('Pega la transcripción de la llamada (al menos unas líneas).'); return }
     setBusy(true); setErr(null); setProgress(null)
     try {
       const chunks = chunkText(text)
@@ -280,8 +280,8 @@ export function ImportarLlamada() {
       setDone({ summary: data.summary as string, quality: consolidated.interactionQuality })
       setProgress(null)
     } catch {
-      trackAiError('call_import', { status: 0, message: 'No se pudo procesar la llamada. Reintentá en un momento.' }) // GA4
-      setErr('No se pudo procesar la llamada. Reintentá en un momento.')
+      trackAiError('call_import', { status: 0, message: 'No se pudo procesar la llamada. Reintenta en un momento.' }) // GA4
+      setErr('No se pudo procesar la llamada. Reintenta en un momento.')
       setProgress(null)
     } finally { setBusy(false) }
   }
@@ -294,7 +294,7 @@ export function ImportarLlamada() {
           <h3 className="text-base font-semibold">Transcripción de llamada</h3>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          Grabá una reunión o llamada <span className="text-foreground/80">en vivo</span> (SIR va transcribiendo por tramos), subí un audio, o pegá una transcripción. SIR la convierte en una interacción: resumen, tono, temas y fechas — y la cruza con todo.
+          Graba una reunión o llamada <span className="text-foreground/80">en vivo</span> (SIR va transcribiendo por tramos), sube un audio, o pega una transcripción. SIR la convierte en una interacción: resumen, tono, temas y fechas — y la cruza con todo.
         </p>
 
         {done ? (
@@ -356,7 +356,7 @@ export function ImportarLlamada() {
             {inputMode === 'audio' ? (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Para WhatsApp: poné la llamada en altavoz, grabá con Notas de Voz y subí el archivo acá. SIR lo transcribe (usa créditos de IA) y lo procesa igual.
+                  Para WhatsApp: pon la llamada en altavoz, graba con Notas de Voz y sube el archivo aquí. SIR lo transcribe (usa créditos de IA) y lo procesa igual.
                 </p>
                 <label className="flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground hover:bg-muted/40">
                   <Upload size={15} />
@@ -366,13 +366,13 @@ export function ImportarLlamada() {
                 </label>
                 {transcribing && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={12} className="animate-spin" /> {progress ?? 'Procesando…'}</div>}
                 {transcript.trim().length > 0 && !transcribing && (
-                  <div className="text-xs text-good">Transcripción lista — revisala en “Pegar texto” y procesá.</div>
+                  <div className="text-xs text-good">Transcripción lista — revísala en “Pegar texto” y procésala.</div>
                 )}
               </div>
             ) : inputMode === 'record' ? (
               <div className="space-y-3">
                 <div className="rounded-lg border border-warn/30 bg-warn-soft/40 p-2.5 text-[11px] text-muted-foreground leading-relaxed">
-                  Grabás una reunión o llamada en la que <span className="text-foreground/80">vos participás</span>. Avisales a los demás si corresponde — SIR guarda el TEXTO, no el audio (cada tramo se borra al transcribirse).
+                  Grabas una reunión o llamada en la que <span className="text-foreground/80">tú participas</span>. Avísales a los demás si corresponde — SIR guarda el TEXTO, no el audio (cada tramo se borra al transcribirse).
                 </div>
                 <div className="flex items-center gap-3">
                   {!recording ? (
@@ -392,7 +392,7 @@ export function ImportarLlamada() {
                   )}
                 </div>
                 <p className="text-[11px] text-muted-foreground/70">
-                  Procesa por tramos de ~5 min sobre la marcha. Mantené esta pestaña abierta y visible mientras grabás.
+                  Procesa por tramos de ~5 min sobre la marcha. Mantén esta pestaña abierta y visible mientras grabas.
                 </p>
                 {chunkStatus && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 size={12} className="animate-spin" /> {chunkStatus}</div>}
                 {transcript.trim().length > 0 && (
@@ -404,7 +404,7 @@ export function ImportarLlamada() {
             ) : (
               <textarea
                 value={transcript} onChange={(e) => setTranscript(e.target.value)} rows={8}
-                placeholder="Pegá acá la transcripción de la llamada…"
+                placeholder="Pega aquí la transcripción de la llamada…"
                 className="w-full rounded-lg border border-border bg-background p-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
               />
             )}

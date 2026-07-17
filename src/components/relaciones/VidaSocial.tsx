@@ -77,7 +77,7 @@ function EmptyState() {
     <div className="text-sm text-muted-foreground space-y-1.5">
       <p>Sin captura de Instagram.</p>
       <p className="text-xs leading-relaxed">
-        Subí un pantallazo del perfil con{' '}
+        Sube un pantallazo del perfil con{' '}
         <span className="font-medium text-foreground">Agregar captura</span> (arriba) para sintetizar
         esta sección — identidad social, alcance y seguidores en común.
       </p>

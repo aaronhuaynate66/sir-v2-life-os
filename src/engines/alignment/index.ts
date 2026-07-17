@@ -489,7 +489,7 @@ export function computeGoalAlignment(goal: Goal, ctx: AlignmentContext): GoalAli
       linkedPersonNames: [],
       signals: [],
       summary:
-        'No encontramos personas ni conversaciones recientes ligadas a este objetivo. Vinculá personas a mano, o capturá una charla que lo mencione.',
+        'No encontramos personas ni conversaciones recientes ligadas a este objetivo. Vincula personas a mano, o captura una charla que lo mencione.',
     }
   }
 

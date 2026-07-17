@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const personId = typeof body.personId === 'string' ? body.personId : ''
   if (!personId) return errorJson(400, 'personId requerido')
   const categories = (Array.isArray(body.categories) ? body.categories : []).filter((c): c is FeedbackCategory => typeof c === 'string' && (VALID_CATS as string[]).includes(c))
-  if (categories.length === 0) return errorJson(400, 'Marcá al menos una categoría')
+  if (categories.length === 0) return errorJson(400, 'Marca al menos una categoría')
 
   const eventDate = typeof body.eventDate === 'string' && ISO.test(body.eventDate.slice(0, 10)) ? body.eventDate.slice(0, 10) : null
   const windowCenter = typeof body.windowCenter === 'string' && ISO.test(body.windowCenter.slice(0, 10)) ? body.windowCenter.slice(0, 10) : null

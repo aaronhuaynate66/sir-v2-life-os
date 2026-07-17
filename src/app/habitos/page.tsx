@@ -89,7 +89,7 @@ export default function HabitosPage() {
       const res = await fetch('/api/habits/suggest')
       const j = (await res.json()) as { suggestions?: HabitSuggestion[]; note?: string; error?: string }
       if (!res.ok) { setSuggestErr(j.error ?? 'No se pudo generar'); return }
-      if (j.note === 'sin_objetivos') { setSuggestErr('Primero fijá tu norte u objetivos para que SIR sugiera hábitos alineados.'); setSuggestions([]); return }
+      if (j.note === 'sin_objetivos') { setSuggestErr('Primero fija tu norte u objetivos para que SIR sugiera hábitos alineados.'); setSuggestions([]); return }
       setSuggestions(j.suggestions ?? [])
     } catch { setSuggestErr('No se pudo generar') } finally { setSuggesting(false) }
   }, [suggesting])
@@ -132,7 +132,7 @@ export default function HabitosPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Hábitos</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Comportamientos recurrentes. Marcá el día y mirá la racha.
+          Comportamientos recurrentes. Marca el día y mira la racha.
         </p>
       </div>
 
@@ -224,7 +224,7 @@ export default function HabitosPage() {
         </div>
       ) : habits.length === 0 ? (
         <div className="text-center py-10 text-sm text-muted-foreground">
-          Todavía no tenés hábitos. Creá el primero arriba.
+          Todavía no tienes hábitos. Crea el primero arriba.
         </div>
       ) : (
         <div className="space-y-3">
@@ -273,7 +273,7 @@ export default function HabitosPage() {
                     {risk.atRisk
                       ? <div className="text-[11px] text-warn mt-0.5 leading-snug">{risk.message}</div>
                       : reinf.message && <div className="text-[11px] text-ok/90 mt-0.5 leading-snug">{reinf.message}</div>}
-                    <div className="mt-1.5 flex items-end gap-1.5" aria-label="Últimos 7 días (tocá para marcar)">
+                    <div className="mt-1.5 flex items-end gap-1.5" aria-label="Últimos 7 días (toca para marcar)">
                       {marks.map((m) => {
                         const t = limaTimeHHMM(h.checkinTimes[m.iso])
                         return (
@@ -282,7 +282,7 @@ export default function HabitosPage() {
                             type="button"
                             onClick={() => void toggleDay(h.id, m.iso)}
                             disabled={toggling === h.id}
-                            title={`${m.iso}${m.isToday ? ' · hoy' : ''}${m.done ? ` · hecho${t ? ` ${t}` : ''}` : ' · pendiente'} — tocá para marcar`}
+                            title={`${m.iso}${m.isToday ? ' · hoy' : ''}${m.done ? ` · hecho${t ? ` ${t}` : ''}` : ' · pendiente'} — toca para marcar`}
                             aria-label={`${m.iso}${m.done ? ' hecho' : ' pendiente'}`}
                             className="flex flex-col items-center gap-0.5 disabled:opacity-50"
                           >

@@ -147,7 +147,7 @@ function Body({
   if (!phase) {
     return (
       <p className="text-sm text-muted-foreground italic">
-        Fecha de inicio inválida o en el futuro. Editala desde{' '}
+        Fecha de inicio inválida o en el futuro. Edítala desde{' '}
         <Link href="/relaciones" className="underline underline-offset-2 hover:text-foreground">
           /relaciones
         </Link>
@@ -195,7 +195,7 @@ function Body({
         const care = careAnticipation({ daysUntilNextPeriod: phase.daysUntilNextPeriod, isPmsWindow: phase.isPmsWindow, confidence: reg.confidence })
         return care.show ? (
           <div className="rounded-md border border-brand/25 bg-brand-soft/25 px-3 py-2 text-[11px] text-foreground/90 leading-relaxed">
-            <span className="font-medium text-brand-soft-foreground">Anticipá con cuidado.</span> {care.message}
+            <span className="font-medium text-brand-soft-foreground">Anticipa con cuidado.</span> {care.message}
           </div>
         ) : null
       })()}
@@ -277,7 +277,7 @@ function EmptyState() {
     <div className="text-sm text-muted-foreground space-y-1.5">
       <p>Sin datos de ciclo.</p>
       <p className="text-xs leading-relaxed">
-        Agregá <span className="font-mono text-foreground/80">Inicio del último período</span>{' '}
+        Agrega <span className="font-mono text-foreground/80">Inicio del último período</span>{' '}
         desde{' '}
         <Link href="/relaciones" className="underline underline-offset-2 hover:text-foreground">
           /relaciones

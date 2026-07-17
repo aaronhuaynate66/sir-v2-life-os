@@ -3,10 +3,10 @@
 //
 // Aaron quería subir una captura desde el detalle de la persona y que se
 // asocie DIRECTO a ella, sin re-seleccionar en /captura. Acá la persona está
-// FIJA: subís la imagen, el detector reconoce el tipo y se procesa hacia el
+// FIJA: subes la imagen, el detector reconoce el tipo y se procesa hacia el
 // perfil de ESTA persona — sin matcher.
 //
-// MULTI-IMAGEN (mismo perfil): podés subir VARIAS capturas del mismo perfil de
+// MULTI-IMAGEN (mismo perfil): puedes subir VARIAS capturas del mismo perfil de
 // una sola vez (p. ej. 3 screenshots de distintas secciones de un LinkedIn).
 // Cada imagen pasa por el pipeline existente (detect → preview Vision → assess)
 // con UNA llamada por imagen (respeta maxDuration de Vercel, sin riesgo de
@@ -841,7 +841,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
         setError({
           status: 0,
           message: 'No se pudo interpretar la conversación',
-          detail: 'Ningún bloque devolvió resultado. Reintentá en unos segundos.',
+          detail: 'Ningún bloque devolvió resultado. Reintenta en unos segundos.',
         })
         setPhase('idle')
         return
@@ -949,7 +949,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
             <div className="flex items-center gap-2 flex-wrap">
               <Eye size={13} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
               <span className="text-xs text-foreground font-medium">
-                Revisá lo extraído antes de guardar
+                Revisa lo extraído antes de guardar
               </span>
               {preview && (
                 <Badge variant="outline" className={cn('text-[10px] font-normal', CONF_META[preview.confidence ?? 'unknown'].chip)}>
@@ -982,11 +982,11 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
 
                 <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
                   {preview?.batch && preview.batch.used > 1 ? (
-                    <>Combiné {preview.batch.used} capturas en un solo perfil. Confirmá que los datos están bien antes de asociarlos a {personName}.</>
+                    <>Combiné {preview.batch.used} capturas en un solo perfil. Confirma que los datos están bien antes de asociarlos a {personName}.</>
                   ) : (
-                    <>La confianza no es alta: confirmá que los datos están bien antes de asociarlos a {personName}.</>
+                    <>La confianza no es alta: confirma que los datos están bien antes de asociarlos a {personName}.</>
                   )}{' '}
-                  Si la extracción salió mal (foto de baja resolución, datos cruzados), descartala.
+                  Si la extracción salió mal (foto de baja resolución, datos cruzados), descártala.
                 </p>
 
                 {preview && (
@@ -1028,7 +1028,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
               <Scale size={14} strokeWidth={1.75} className="text-warn flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span className="text-warn/90">
                 Esto parece tu báscula. Las métricas corporales van a <span className="font-medium">tu salud</span>,
-                no al perfil de {personName}. Usá el flujo de báscula para guardarlas.
+                no al perfil de {personName}. Usa el flujo de báscula para guardarlas.
               </span>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
@@ -1075,7 +1075,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
               <AlertCircle size={14} strokeWidth={1.75} className="text-muted-foreground flex-shrink-0 mt-0.5" aria-hidden="true" />
               <span className="text-muted-foreground">
                 No reconocí un tipo asociable (chat de WhatsApp, perfil de Instagram/LinkedIn).
-                Probá con otras imágenes.
+                Prueba con otras imágenes.
               </span>
             </div>
             <Button size="sm" variant="outline" onClick={reset} className="w-full">
@@ -1089,14 +1089,14 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
               <span className="text-warn-foreground">
                 {preview?.source === 'whatsapp' ? (
                   <>
-                    No reconocí esto como un <span className="font-medium">export de WhatsApp</span>. Abrí el chat
-                    con {personName} → ⋮/menú → <span className="font-medium">Exportar chat</span> y subí el{' '}
+                    No reconocí esto como un <span className="font-medium">export de WhatsApp</span>. Abre el chat
+                    con {personName} → ⋮/menú → <span className="font-medium">Exportar chat</span> y sube el{' '}
                     <span className="font-mono">.txt</span> o el <span className="font-mono">.zip</span> resultante.
                     No guardé nada.
                   </>
                 ) : preview?.source === 'text' ? (
                   <>
-                    No pude extraer datos claros de ese texto. Asegurate de pegar el contenido del{' '}
+                    No pude extraer datos claros de ese texto. Asegúrate de pegar el contenido del{' '}
                     <span className="font-medium">perfil</span> (nombre, headline, experiencia…). No guardé nada.
                   </>
                 ) : (
@@ -1104,9 +1104,9 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
                     {preview?.batch && preview.batch.total > 1
                       ? `Ninguna de las ${preview.batch.total} imágenes se pudo leer bien. `
                       : 'No pude leer bien esta imagen. '}
-                    Probá con capturas más nítidas o más cercanas —
+                    Prueba con capturas más nítidas o más cercanas —
                     las <span className="font-medium">secciones del perfil</span> (no la página entera),
-                    que la letra se lea grande. Tip: pegá el <span className="font-medium">texto</span> del
+                    que la letra se lea grande. Tip: pega el <span className="font-medium">texto</span> del
                     perfil, es más confiable. No guardé nada.
                   </>
                 )}
@@ -1146,8 +1146,8 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
             {mode === 'whatsapp' ? (
               <>
                 <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
-                  Subí el <span className="font-medium text-foreground">export del chat de WhatsApp</span> con{' '}
-                  {personName}: el <span className="font-mono">.txt</span> (exportá «Sin archivos») o el{' '}
+                  Sube el <span className="font-medium text-foreground">export del chat de WhatsApp</span> con{' '}
+                  {personName}: el <span className="font-mono">.txt</span> (exporta «Sin archivos») o el{' '}
                   <span className="font-mono">.zip</span> (con media — los audios, fotos y stickers se procesan según las casillas de abajo). Es texto{' '}
                   <span className="font-medium text-foreground">fiel</span>: sin límite de largo, se procesa por
                   bloques y se consolida en una sola conversación (resumen, tono, fechas y temas).
@@ -1257,7 +1257,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
             ) : mode === 'text' ? (
               <>
                 <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
-                  Pegá el texto de un <span className="font-medium text-foreground">perfil</span> (LinkedIn/Instagram) o una{' '}
+                  Pega el texto de un <span className="font-medium text-foreground">perfil</span> (LinkedIn/Instagram) o una{' '}
                   <span className="font-medium text-foreground">nota</span> de lo que te enteraste — SIR detecta cuál es. Es la vía{' '}
                   <span className="font-medium text-foreground">confiable</span>: se lee exacto, sin
                   los errores de las capturas de página entera.
@@ -1267,7 +1267,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
                   onChange={(e) => onPastedTextChange(e.target.value)}
                   disabled={working}
                   rows={6}
-                  placeholder="Pegá un perfil (nombre, headline, experiencia…) o una nota (“me contó que cumple el 20 de junio”)…"
+                  placeholder="Pega un perfil (nombre, headline, experiencia…) o una nota (“me contó que cumple el 20 de junio”)…"
                   className="w-full rounded-md border border-border bg-background p-2.5 text-sm leading-relaxed disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-accent/40"
                 />
                 {/* Tipo detectado, con override. */}
@@ -1446,7 +1446,7 @@ function WhatsAppExportReview({
         <MessagesSquare size={13} strokeWidth={1.75} className="text-muted-foreground/60 flex-shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           Consolidé <span className="font-medium text-foreground">{messageCount}</span> mensajes en{' '}
-          {blocksUsed} bloque{blocksUsed === 1 ? '' : 's'}. Revisá antes de asociar a {personName}.
+          {blocksUsed} bloque{blocksUsed === 1 ? '' : 's'}. Revisa antes de asociar a {personName}.
         </span>
       </div>
 

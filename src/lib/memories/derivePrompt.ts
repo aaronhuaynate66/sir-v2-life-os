@@ -28,11 +28,13 @@ import { recencyLabel } from './conversationSignals'
 
 export const DERIVE_MEMORIES_SYSTEM_PROMPT = `Eres el módulo de memoria de SIR, un sistema operativo personal centrado en el bienestar y en ayudar al usuario a actuar sobre lo que le importa.
 
-Recibís un conjunto de observaciones ya capturadas sobre una persona (conversaciones, perfiles, notas), cada una con un índice. Las conversaciones largas vienen PARTIDAS en "estado reciente" (lo último que pasó) y "contexto histórico" (lo viejo). Opcionalmente recibís los OBJETIVOS del usuario vinculados a esta persona.
+Recibes un conjunto de observaciones ya capturadas sobre una persona (conversaciones, perfiles, notas), cada una con un índice. Las conversaciones largas vienen PARTIDAS en "estado reciente" (lo último que pasó) y "contexto histórico" (lo viejo). Opcionalmente recibes los OBJETIVOS del usuario vinculados a esta persona.
+
+Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale").
 
 Tu tarea: destilar las MEMORIAS NOTABLES y ACCIONABLES del vínculo — priorizando lo RECIENTE y lo RELEVANTE A LOS OBJETIVOS — en una lista JSON.
 
-Devolvé EXCLUSIVAMENTE un objeto JSON con esta forma (sin texto adicional, sin markdown):
+Devuelve EXCLUSIVAMENTE un objeto JSON con esta forma (sin texto adicional, sin markdown):
 {
   "memories": [
     {
@@ -50,7 +52,7 @@ Devolvé EXCLUSIVAMENTE un objeto JSON con esta forma (sin texto adicional, sin 
   ]
 }
 
-QUÉ EXTRAER (priorizá en este orden cuando el material lo permita):
+QUÉ EXTRAER (prioriza en este orden cuando el material lo permita):
 - profesional: rol y empresa ACTUALES de la persona (no los de hace años).
 - comercial: oportunidades, interés/temperatura, compromisos, timing, decisores, "ganchos" útiles para los objetivos del usuario.
 - objecion / riesgo: dudas, frenos, condiciones, señales de enfriamiento, control, impulsividad, evitación, dependencia, agresividad, inestabilidad o mala intención.
@@ -61,18 +63,18 @@ QUÉ EXTRAER (priorizá en este orden cuando el material lo permita):
 
 REGLAS DE RECENCIA (clave):
 - "recency": "recent" para el estado actual / lo accionable; "historical" para contexto viejo que ya no es el estado de hoy.
-- "isStale": true si el hecho YA NO está vigente (ej. "fue delegada de clase hace años", "trabajaba en X" si ahora trabaja en otro lado). Lo viejo se conserva como contexto pero NO debe dominar: marcalo, no lo infles.
+- "isStale": true si el hecho YA NO está vigente (ej. "fue delegada de clase hace años", "trabajaba en X" si ahora trabaja en otro lado). Lo viejo se conserva como contexto pero NO debe dominar: márcalo, no lo infles.
 - Si la conversación es reciente, su estado actual manda sobre cualquier dato antiguo.
 
 REGLAS ESTRICTAS:
-- Hasta 8 memorias por conversación; hasta 2 por perfil/nota. Si algo no aporta, omitilo. Calidad > cantidad, pero NO subextraigas: una conversación rica debe dar varias señales, no 1-2 triviales.
+- Hasta 8 memorias por conversación; hasta 2 por perfil/nota. Si algo no aporta, omítelo. Calidad > cantidad, pero NO subextraigas: una conversación rica debe dar varias señales, no 1-2 triviales.
 - "observationIndex" DEBE ser el índice de una observación provista.
-- Usá SOLO información presente en el material. PROHIBIDO inventar hechos, nombres, fechas, cifras o sentimientos no expresados. Si el objetivo habla de un deal pero la charla no lo toca, NO lo inventes.
+- Usa SOLO información presente en el material. PROHIBIDO inventar hechos, nombres, fechas, cifras o sentimientos no expresados. Si el objetivo habla de un deal pero la charla no lo toca, NO lo inventes.
 - Permitido: hipótesis de riesgo/predisposición/patrón compatible si hay evidencia explícita o repetida, con lenguaje tentativo.
 - PROHIBIDO: presentar diagnóstico clínico como hecho confirmado, consejo médico/psicológico, afirmaciones de causa-efecto sin base.
 - "type": 'emotional' SOLO si la observación reporta un estado emocional explícito.
-- Tono observacional y sobrio, sin dramatizar. Español neutro.
-- Si no hay nada notable en todo el conjunto, devolvé {"memories": []}.`
+- Tono observacional y sobrio, sin dramatizar. Español del Perú (peruano neutro, de Lima).
+- Si no hay nada notable en todo el conjunto, devuelve {"memories": []}.`
 
 /** Recorte defensivo de listas para el prompt (no inflar el input). */
 function bullets(items: string[], cap: number): string {
@@ -153,11 +155,11 @@ export function buildDeriveInput(
   if (goalContext) {
     parts.push(
       '',
-      'OBJETIVOS DEL USUARIO VINCULADOS A ESTA PERSONA (extraé señales relevantes a esto, sin inventar):',
+      'OBJETIVOS DEL USUARIO VINCULADOS A ESTA PERSONA (extrae señales relevantes a esto, sin inventar):',
       goalContext,
     )
   }
-  parts.push('', 'Observaciones:', blocks.join('\n\n'), '', 'Destilá las memorias notables en el JSON especificado.')
+  parts.push('', 'Observaciones:', blocks.join('\n\n'), '', 'Destila las memorias notables en el JSON especificado.')
   return parts.join('\n')
 }
 

@@ -37,7 +37,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   const userId = auth.user.id
 
   const rl = await enforceRateLimit(supabase, userId, 'generation')
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   const personId = typeof body.personId === 'string' ? body.personId : ''
   const objective = typeof body.objective === 'string' ? body.objective.trim().slice(0, 600) : ''
   if (!personId) return errorJson(400, 'Falta la persona')
-  if (!objective) return errorJson(400, 'Contame qué querés lograr')
+  if (!objective) return errorJson(400, 'Cuéntame qué quieres lograr')
 
   const { data: person } = await supabase
     .from('people')
@@ -184,7 +184,7 @@ Reformulacion recomendada: ${ethics.safeAggressiveReframe}
   const result = parseRehearseJson(raw)
   if (!result) {
     await logEvent(supabase, userId, { type: 'rehearse', ok: false, route: 'influence/rehearse', durationMs: Date.now() - t0, meta: { stage: 'parse', personId } })
-    return errorJson(502, 'Claude devolvió un formato inesperado', 'Reintentá en un momento.')
+    return errorJson(502, 'Claude devolvió un formato inesperado', 'Reintenta en un momento.')
   }
 
   await logEvent(supabase, userId, { type: 'rehearse', ok: true, route: 'influence/rehearse', durationMs: Date.now() - t0, meta: { personId, scenarios: result.scenarios.length } })

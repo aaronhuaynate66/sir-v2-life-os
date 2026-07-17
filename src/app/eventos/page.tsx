@@ -80,9 +80,9 @@ export default function EventosPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Eventos que sigo</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-          El afuera que te importa, en tus términos. Anotá un evento externo (el Mundial, una elección, un deadline)
+          El afuera que te importa, en tus términos. Anota un evento externo (el Mundial, una elección, un deadline)
           con su fecha, <span className="text-foreground/80">qué nodo tuyo toca</span> y el impacto — y SIR lo cruza
-          con tu horizonte. Sin feed de noticias: vos elegís qué mundo mirar.
+          con tu horizonte. Sin feed de noticias: tú eliges qué mundo mirar.
         </p>
       </div>
 
@@ -114,7 +114,7 @@ export default function EventosPage() {
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-4"><Loader2 size={14} className="animate-spin" /> Cargando…</div>
       ) : classified.length === 0 ? (
-        <EmptyState icon={Radar} size="sm" title="Sin eventos que seguir todavía." hint="Anotá el primero arriba — el Mundial, un pago grande, una fecha de la red." />
+        <EmptyState icon={Radar} size="sm" title="Sin eventos que seguir todavía." hint="Anota el primero arriba — el Mundial, un pago grande, una fecha de la red." />
       ) : (
         <Card className="shadow-none">
           <CardContent className="p-4 sm:p-5">
@@ -145,7 +145,7 @@ export default function EventosPage() {
       )}
 
       <p className="text-[11px] text-muted-foreground/70 leading-relaxed mt-4 px-1">
-        Contexto, no alarma. Un evento externo suma solo cuando toca algo tuyo — por eso vos elegís cuáles seguir.
+        Contexto, no alarma. Un evento externo suma solo cuando toca algo tuyo — por eso tú eliges cuáles seguir.
       </p>
     </AppShell>
   )

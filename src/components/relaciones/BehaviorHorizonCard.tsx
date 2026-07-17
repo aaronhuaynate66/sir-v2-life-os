@@ -80,7 +80,7 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
       const d = await res.json().catch(() => ({}))
       if (!res.ok) { setMsg(d?.detail || d?.error || 'No se pudo calcular.'); return }
       setForecast(d.forecast ?? null)
-    } catch { setMsg('No se pudo calcular (revisá tu conexión).') } finally { setRunning(false) }
+    } catch { setMsg('No se pudo calcular (revisa tu conexión).') } finally { setRunning(false) }
   }
 
   // Cruce con el ciclo REAL: próximo período estimado por fechas confirmadas.
@@ -126,7 +126,7 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
           <div className="h-16 rounded-md bg-muted/25 animate-pulse" aria-hidden="true" />
         ) : !forecast ? (
           <p className="text-[12px] text-muted-foreground leading-relaxed">
-            SIR puede estimar, desde la conversación con {firstName}, una <span className="text-foreground/80">ventana donde suele aparecer un patrón</span> (más fricción, retiro o sensibilidad). No es período — es un patrón conductual. {msg ? <span className="block mt-1 text-warn">{msg}</span> : <>Tocá <span className="font-medium">Calcular</span>.</>}
+            SIR puede estimar, desde la conversación con {firstName}, una <span className="text-foreground/80">ventana donde suele aparecer un patrón</span> (más fricción, retiro o sensibilidad). No es período — es un patrón conductual. {msg ? <span className="block mt-1 text-warn">{msg}</span> : <>Toca <span className="font-medium">Calcular</span>.</>}
           </p>
         ) : (
           <div className="space-y-2.5">
@@ -153,7 +153,7 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
                 <span className={cn('block mt-0.5', cross.overlap ? 'text-ok' : 'text-muted-foreground')}>
                   {cross.overlap
                     ? 'Las dos ventanas se solapan — dos señales independientes apuntan a lo mismo. Más razón para acompañar con cuidado.'
-                    : `Separadas ~${cross.gapDays}d — tratá cada una como estimación aparte y registrá qué pasa (recalibra el modelo).`}
+                    : `Separadas ~${cross.gapDays}d — trata cada una como estimación aparte y registra qué pasa (recalibra el modelo).`}
                 </span>
               </div>
             )}
@@ -193,7 +193,7 @@ function FeedbackBox({ personId, forecastId, windowCenter, onSaved }: { personId
   const toggle = (k: string) => setCats((prev) => { const n = new Set(prev); if (n.has(k)) n.delete(k); else n.add(k); return n })
 
   async function submit() {
-    if (cats.size === 0) { toast.error('Marcá al menos una'); return }
+    if (cats.size === 0) { toast.error('Marca al menos una'); return }
     setSaving(true)
     try {
       const res = await fetch('/api/forecast/feedback', {

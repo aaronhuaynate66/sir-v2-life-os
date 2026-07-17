@@ -439,9 +439,9 @@ function EmptyState() {
     <div className="text-sm text-muted-foreground space-y-2">
       <p>Sin memorias todavía.</p>
       <p className="text-xs leading-relaxed">
-        Usá <span className="font-mono text-foreground/80">Derivar desde mis conversaciones</span>{' '}
+        Usa <span className="font-mono text-foreground/80">Derivar desde mis conversaciones</span>{' '}
         para destilar memorias desde tus capturas reales (WhatsApp, Instagram, LinkedIn) y notas
-        de esta persona. Re-correrlo es idempotente (no duplica). También podés{' '}
+        de esta persona. Re-correrlo es idempotente (no duplica). También puedes{' '}
         <Link
           href="/captura"
           className="inline-flex items-center gap-1 underline underline-offset-2 hover:text-foreground"

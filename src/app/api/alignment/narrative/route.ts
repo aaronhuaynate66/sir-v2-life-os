@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user) {
-    return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+    return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
   }
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       422,
       'Sin señales para reformular',
-      'No hay señales suficientes para una reflexión honesta. Vinculá personas, registrá contacto/estado o capturá una conversación reciente.',
+      'No hay señales suficientes para una reflexión honesta. Vincula personas, registra contacto/estado o captura una conversación reciente.',
     )
   }
 
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
     }, { supabase, userId: authData.user.id })
     const insight = parseAlignmentNarrative(res.text)
     if (!insight) {
-      return errorJson(502, 'Respuesta vacía del modelo', 'Reintentá en unos segundos.')
+      return errorJson(502, 'Respuesta vacía del modelo', 'Reintenta en unos segundos.')
     }
     return NextResponse.json({ insight }, { status: 200 })
   } catch (e) {

@@ -93,7 +93,7 @@ export default function ReaderStatusPage() {
 
             {data.totals.threads === 0 && (
               <Card><CardContent className="p-4 text-sm text-muted-foreground">
-                Todavía no llegó nada del reader. Verificá que la extensión esté instalada en la otra PC, con el token correcto, y con un chat REAL abierto (no el panel de perfil).
+                Todavía no llegó nada del reader. Verifica que la extensión esté instalada en la otra PC, con el token correcto, y con un chat REAL abierto (no el panel de perfil).
               </CardContent></Card>
             )}
 

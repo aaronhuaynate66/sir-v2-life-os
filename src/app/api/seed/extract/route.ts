@@ -26,7 +26,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
   const userId = auth.user.id
 
   const rl = await enforceRateLimit(supabase, userId, 'generation')
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   let body: { text?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
   const text = typeof body.text === 'string' ? body.text.trim().slice(0, MAX_TEXT) : ''
-  if (!text) return errorJson(400, 'Pegá el texto a extraer')
+  if (!text) return errorJson(400, 'Pega el texto a extraer')
 
   const system = buildSeedExtractSystemPrompt()
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
   let batch = parseSeedExtractJson(raw)
   if (!batch) {
-    try { batch = parseSeedExtractJson(await call('CRÍTICO: devolvé SOLO el JSON, empezando con { y terminando con }.')) } catch { batch = null }
+    try { batch = parseSeedExtractJson(await call('CRÍTICO: devuelve SOLO el JSON, empezando con { y terminando con }.')) } catch { batch = null }
   }
   if (!batch) return errorJson(502, 'Claude devolvió formato inválido')
 

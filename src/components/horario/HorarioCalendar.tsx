@@ -234,7 +234,7 @@ function Detail({ ev, onClose, onAssignTime }: { ev: Ev | null; onClose: () => v
   const canAssign = ev.origin === 'task' && !!ev.stepId && ev.allDay && !!onAssignTime
   const d = parseYmd(ev.date)
   const dateLong = `${DOW_FULL[dowMon(d)]} ${d.getDate()} ${MON_FULL[d.getMonth()]}`
-  const cta = { cal: ev.loc ? 'Unirse' : 'Ver evento', date: 'Escribíle para saludar', task: 'Abrir tarea', health: 'Ver en Salud', milestone: 'Abrir objetivo' }[ev.origin]
+  const cta = { cal: ev.loc ? 'Unirse' : 'Ver evento', date: 'Escríbele para saludar', task: 'Abrir tarea', health: 'Ver en Salud', milestone: 'Abrir objetivo' }[ev.origin]
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: 380, maxWidth: '100%', background: 'var(--s1)', border: '.5px solid var(--border-strong)', borderRadius: 'var(--r-card)', padding: 22 }}>

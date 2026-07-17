@@ -108,7 +108,7 @@ export function HabitsStrip() {
           <p className="text-xs text-muted-foreground">
             Sin hábitos todavía.{' '}
             <Link href="/habitos" className="underline underline-offset-2 hover:text-foreground">
-              Creá el primero
+              Crea el primero
             </Link>
             .
           </p>

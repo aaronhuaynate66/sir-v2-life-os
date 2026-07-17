@@ -3,13 +3,13 @@
 // Anthropic directo (Haiku, liviano — mismo patrón que askDev). Fallback SEGURO:
 // 'status' → nunca crea issues por accidente si el LLM no está o falla/parsea mal.
 
-const SYS = `Clasificás un mensaje que Aaron le mandó al bot de DEV de su proyecto SIR (por Telegram).
-Decidí si es:
+const SYS = `Clasificas un mensaje que Aaron le mandó al bot de DEV de su proyecto SIR (por Telegram).
+Decide si es:
 - "status": una PREGUNTA sobre el estado del repo/deploy/CI (ej: "¿pasó CI?", "¿qué PRs hay?", "¿se deployó?", "¿último commit?", "¿cómo viene X?").
-- "request": un PEDIDO DE DESARROLLO — reportar un bug, pedir un arreglo, una mejora o un cambio (ej: "el botón X no anda", "arreglá Y", "quiero que Z", "falta A", "cuando hago B pasa C", "estaría bueno que...").
-Si es "request", generá un TÍTULO corto para un issue de GitHub: máx 70 chars, imperativo/descriptivo, español, sin comillas.
-Ante la duda, elegí "status" (es más seguro no crear un issue de más).
-Devolvé SOLO JSON, sin texto extra ni markdown: {"kind":"status"} o {"kind":"request","title":"..."}.`
+- "request": un PEDIDO DE DESARROLLO — reportar un bug, pedir un arreglo, una mejora o un cambio (ej: "el botón X no anda", "arregla Y", "quiero que Z", "falta A", "cuando hago B pasa C", "estaría bueno que...").
+Si es "request", genera un TÍTULO corto para un issue de GitHub: máx 70 chars, imperativo/descriptivo, español, sin comillas.
+Ante la duda, elige "status" (es más seguro no crear un issue de más).
+Devuelve SOLO JSON, sin texto extra ni markdown: {"kind":"status"} o {"kind":"request","title":"..."}.`
 
 export type DevIntent = { kind: 'status' } | { kind: 'request'; title: string }
 

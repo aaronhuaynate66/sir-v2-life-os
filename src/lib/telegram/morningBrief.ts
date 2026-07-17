@@ -14,6 +14,6 @@ export function formatMorningBriefForChat(push: BriefSource): string {
   const body = (push.body || '').trim()
   const lines: string[] = ['🌿 Buen día.']
   if (body) lines.push(body)
-  lines.push('Si querés que profundice en algo (tu gente, tus objetivos, tu día), escribime 💬')
+  lines.push('Si quieres que profundice en algo (tu gente, tus objetivos, tu día), escríbeme 💬')
   return lines.join('\n\n')
 }

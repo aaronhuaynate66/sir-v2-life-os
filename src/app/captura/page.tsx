@@ -139,7 +139,7 @@ function CapturaIndexContent() {
         // Aviso soft: seguimos, pero el usuario sabe que solo va la p1.
         setDetectError({
           status: 0,
-          message: `El PDF tiene ${r.totalPages} páginas — se usó solo la primera. Para las N páginas juntas, subilo desde la ficha de la persona.`,
+          message: `El PDF tiene ${r.totalPages} páginas — se usó solo la primera. Para las N páginas juntas, súbelo desde la ficha de la persona.`,
         })
       }
     },
@@ -342,7 +342,7 @@ function CapturaIndexContent() {
           </Link>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Subí un pantallazo de un chat de <span className="text-foreground">WhatsApp</span>, de un
+          Sube un pantallazo de un chat de <span className="text-foreground">WhatsApp</span>, de un
           perfil de <span className="text-foreground">Instagram</span> /{' '}
           <span className="text-foreground">LinkedIn</span>, del panel de tu{' '}
           <span className="text-foreground">báscula inteligente</span>, de tu{' '}
@@ -356,9 +356,9 @@ function CapturaIndexContent() {
       {/* Guía de primer uso: 3 pasos, visible antes de subir nada. */}
       <ol className="mb-6 grid gap-2 sm:grid-cols-3">
         {[
-          { n: 1, t: 'Elegí la imagen', d: 'Un pantallazo de WhatsApp, Instagram o LinkedIn.' },
-          { n: 2, t: 'Vinculá la persona', d: 'SIR sugiere a quién pertenece; confirmás o creás una.' },
-          { n: 3, t: 'Guardá', d: 'Los datos quedan en el perfil de esa persona.' },
+          { n: 1, t: 'Elige la imagen', d: 'Un pantallazo de WhatsApp, Instagram o LinkedIn.' },
+          { n: 2, t: 'Vincula la persona', d: 'SIR sugiere a quién pertenece; confirmas o creas una.' },
+          { n: 3, t: 'Guarda', d: 'Los datos quedan en el perfil de esa persona.' },
         ].map((s) => (
           <li key={s.n} className="rounded-md border border-border/50 bg-muted/10 p-3">
             <div className="flex items-center gap-2 mb-1">
@@ -706,7 +706,7 @@ function CapturaIndexContent() {
             <p className="text-xs text-muted-foreground">
               Esta imagen se detectó como{' '}
               <span className="font-mono">{detection.detected.type}</span>, que todavía no se puede
-              extraer automáticamente. Probá con un pantallazo de un chat de WhatsApp, un perfil de
+              extraer automáticamente. Prueba con un pantallazo de un chat de WhatsApp, un perfil de
               Instagram / LinkedIn, el panel de tu báscula inteligente, el panel de tu app de sueño
               o el panel de tu frecuencia cardíaca.
             </p>

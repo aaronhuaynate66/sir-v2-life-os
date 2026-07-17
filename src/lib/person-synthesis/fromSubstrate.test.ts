@@ -33,7 +33,7 @@ describe('buildSubstrateUserMessage', () => {
     expect(m).toContain('120 mensajes')
     expect(m).toContain('del 2026-01-01 al 2026-07-01')
     expect(m).toContain('Diana: hola')
-    expect(m).toContain('Escribí los 3 párrafos')
+    expect(m).toContain('Escribe los 3 párrafos')
   })
 
   it('incluye el contexto de objetivos cuando se pasa', () => {

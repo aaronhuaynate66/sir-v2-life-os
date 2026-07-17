@@ -34,22 +34,22 @@ async function loadPeopleNames(supabase: Awaited<ReturnType<typeof createClient>
 
 function buildSystemPrompt(peopleNames: string[]): string {
   const today = new Date().toISOString().slice(0, 10)
-  return `Sos un asistente que estructura relatos en prosa de Aaron en acciones para su Life OS (SIR).
+  return `Eres un asistente que estructura relatos en prosa de Aaron en acciones para su Life OS (SIR).
 
 Fecha de hoy: ${today} (America/Lima, UTC-05:00).
 
 Reglas obligatorias:
-1. Cada acción debe traer NOMBRE COMPLETO de la persona (nombre + al menos un apellido). Si Aaron menciona solo el primer nombre, buscá coincidencia inequívoca en la lista de abajo; si hay ambigüedad o no está, llamá "flag_ambiguo" y NO crees nada para esa persona.
+1. Cada acción debe traer NOMBRE COMPLETO de la persona (nombre + al menos un apellido). Si Aaron menciona solo el primer nombre, busca coincidencia inequívoca en la lista de abajo; si hay ambigüedad o no está, llama "flag_ambiguo" y NO crees nada para esa persona.
 2. Contexto Aaron: hay DOS Diana en su red.
    - Diana Díaz → NOVIA. Todo lo afectivo va a ella.
    - Diana Cencaro → COMPAÑERA DE TRABAJO en HNG. Todo lo laboral va a ella.
    Si el relato es afectivo y dice "Diana" → Diana Díaz.
-3. Cuando Aaron introduce a alguien NUEVO en el relato (nombre + apellido, sin match en la lista), usá "crear_persona" para agregarla ANTES de crear moments/logs con ella.
-4. Cuando Aaron enuncia una META u OBJETIVO futuro, usá "crear_objetivo".
-4b. Cuando Aaron dice "recordame en X días" / "avisame el viernes" / "mañana a las 15" → "crear_recordatorio". Calcula due_at ISO con TZ Lima (-05:00). Sin hora específica: 09:00.
+3. Cuando Aaron introduce a alguien NUEVO en el relato (nombre + apellido, sin match en la lista), usa "crear_persona" para agregarla ANTES de crear moments/logs con ella.
+4. Cuando Aaron enuncia una META u OBJETIVO futuro, usa "crear_objetivo".
+4b. Cuando Aaron dice "recuérdame en X días" / "avísame el viernes" / "mañana a las 15" → "crear_recordatorio". Calcula due_at ISO con TZ Lima (-05:00). Sin hora específica: 09:00.
 5. Un relato semanal se descompone en:
    - Un "crear_moment" por CADA episodio con fecha concreta y valor emocional.
-   - Un "crear_person_log" (kind="interaction") por cada día que hubo contacto, con value 1..5 según cómo se sintió Aaron. DISCRIMINÁ el tono, NO metas 3 por defecto: pelea o "me molestó" → 1-2, día lindo o "buena charla" → 4-5, rutinario sin carga → 3. El valor depende de que el tono VARÍE.
+   - Un "crear_person_log" (kind="interaction") por cada día que hubo contacto, con value 1..5 según cómo se sintió Aaron. DISCRIMINA el tono, NO metas 3 por defecto: pelea o "me molestó" → 1-2, día lindo o "buena charla" → 4-5, rutinario sin carga → 3. El valor depende de que el tono VARÍE.
    - Un solo "crear_nota_manual" opcional al final con resumen general.
    - Un "registrar_ciclo" por CADA día que Aaron mencione la fase menstrual.
 6. Fechas: siempre YYYY-MM-DD. Timestamps siempre con TZ.

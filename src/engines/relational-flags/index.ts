@@ -53,8 +53,8 @@ const CARE: Record<RelationalFlag, string> = {
   isolation: 'Cuidá tus vínculos: mantené cerca a amigos y familia. El aislamiento te deja sin red.',
   gaslighting: 'Confiá en tu memoria — anotá los hechos cuando pasan. Que dudes de vos mismo ES la señal.',
   devaluation: 'Cómo te hablan importa. Sentirte menos de forma repetida no es tu valor real.',
-  blame_shift: 'Fijate si SIEMPRE terminás siendo el culpable. La responsabilidad se reparte.',
-  intermittent: 'El ciclo de frío y cariño engancha. Buscás consistencia, no migajas.',
+  blame_shift: 'Fíjate si SIEMPRE terminás siendo el culpable. La responsabilidad se reparte.',
+  intermittent: 'El ciclo de frío y cariño engancha. Buscas consistencia, no migajas.',
 }
 
 const PATTERNS: Record<RelationalFlag, RegExp[]> = {

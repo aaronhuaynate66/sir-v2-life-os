@@ -11,14 +11,14 @@ import type { ChunkInterpretation, ExtractedDate } from './types'
 /** System prompt para interpretar UN bloque. Recibe el nombre del contacto. */
 export function getInterpretSystemPrompt(personName: string): string {
   const contact = personName.trim() || 'la otra persona'
-  return `Sos un analista de conversaciones de WhatsApp. Recibís UN BLOQUE de una
+  return `Eres un analista de conversaciones de WhatsApp. Recibís UN BLOQUE de una
 conversación entre el usuario y su contacto "${contact}" (texto exportado,
 fiel y exacto — NO es OCR, no hay nada que adivinar). Tu única tarea: devolver
 UN JSON ESTRICTO (parseable con JSON.parse(), sin prosa, sin markdown fences).
 
 Cada línea del bloque viene como "[YYYY-MM-DD HH:mm] Autor: contenido". Usá ESA
 fecha para resolver fechas relativas (ver regla de fechas). "[media]" marca un
-adjunto omitido (foto/audio/sticker/etc.) que NO podés ver: NO inventes su
+adjunto omitido (foto/audio/sticker/etc.) que NO puedes ver: NO inventes su
 contenido.
 
 Schema EXACTO:
@@ -100,7 +100,7 @@ REGLAS:
    (formato afiche con 🗓/🕒), cadenas y publicidad. No generes dates, facts ni
    events a partir de ellos; tampoco cuentan para el tono.
 
-CRÍTICO: empezá con \`{\` y terminá con \`}\`. Solo JSON.`
+CRÍTICO: empezá con \`{\` y termina con \`}\`. Solo JSON.`
 }
 
 /** Mensaje de usuario con el bloque a interpretar. */

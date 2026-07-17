@@ -36,8 +36,8 @@ function CaptureScaleContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Captura báscula</h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Subí una foto del panel de tu báscula inteligente (Mi Scale, Renpho, Garmin, etc.).
-          Claude Vision extrae las 13 métricas, vos las revisás y confirmás.
+          Sube una foto del panel de tu báscula inteligente (Mi Scale, Renpho, Garmin, etc.).
+          Claude Vision extrae las 13 métricas, tú las revisas y confirmas.
           La imagen queda archivada en tu bucket privado.
         </p>
       </header>

@@ -165,7 +165,7 @@ export function LifeThreadPanel() {
           <Compass size={16} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
           <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Tus hitos</div>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">Qué te propusiste y hacia dónde venís yendo, en el tiempo.</p>
+        <p className="text-xs text-muted-foreground mb-3">Qué te propusiste y hacia dónde vienes yendo, en el tiempo.</p>
         {hydrated && anchorText && (
           <div className="mb-4 rounded-lg border border-brand/30 bg-brand/5 px-3 py-2">
             <div className="text-[10px] uppercase tracking-[0.07em] text-brand-soft-foreground mb-0.5">Tu norte del año</div>

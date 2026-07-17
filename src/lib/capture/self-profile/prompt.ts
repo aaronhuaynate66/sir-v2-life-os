@@ -7,7 +7,7 @@
 // Modelo: claude-sonnet-4-5-20250929. Salida ESTRICTA: JSON SelfProfileExtracted.
 // Misma disciplina anti-invención que el extractor de perfiles de personas.
 
-export const SELF_PROFILE_SYSTEM_PROMPT = `Sos un extractor que mira UN screenshot del PROPIO perfil del usuario (su
+export const SELF_PROFILE_SYSTEM_PROMPT = `Eres un extractor que mira UN screenshot del PROPIO perfil del usuario (su
 LinkedIn o su Instagram) y devuelve UN JSON ESTRICTO con sus datos de identidad.
 El objetivo es que la app conozca al DUEÑO de la cuenta — no a un tercero.
 
@@ -51,7 +51,7 @@ QUÉ EXTRAER SEGÚN LA RED:
   - roles: del headline y de los cargos visibles en Experiencia. Ej. headline
     "Bombero · Fundador de Marlab · Atleta de taekwondo" → roles = ["Bombero",
     "Fundador de Marlab", "Atleta de taekwondo"]. Cada rol como un tag corto y
-    limpio (sin "en Empresa" si querés, pero podés dejar "Fundador de Marlab").
+    limpio (sin "en Empresa" si quieres, pero puedes dejar "Fundador de Marlab").
   - location: la línea de ubicación bajo el nombre/headline.
   - skills: la sección "Aptitudes"/"Skills" si está visible. Cada skill un tag.
   - trajectory: UNA línea breve combinando experiencia y educación legibles
@@ -64,7 +64,7 @@ QUÉ EXTRAER SEGÚN LA RED:
   - interests/hobbies: de la BIO, los highlights y la categoría. Ej. bio
     "🥋 Taekwondo | 📷 Fotografía | Café de especialidad" → interests =
     ["Taekwondo", "Fotografía", "Café de especialidad"]. Tags cortos.
-  - bio: la bio literal (sin los emojis sueltos si querés, pero podés dejarlos).
+  - bio: la bio literal (sin los emojis sueltos si quieres, pero puedes dejarlos).
   - fullName: el displayName (nombre real) si está; el @handle NO es el nombre.
   - roles: si la bio/categoría indica ocupación ("Emprendedor", "Atleta"),
     ponelos; si no, [].
@@ -90,7 +90,7 @@ REGLAS DE CONFIANZA:
 
 CRÍTICO:
 - Solo JSON. Sin prosa antes/después. Sin markdown fences.
-- Empezá la respuesta con \`{\` y terminá con \`}\`.
+- Empieza la respuesta con \`{\` y termina con \`}\`.
 `
 
 // Extra que se ANTEPONE/añade al system prompt cuando la fuente NO es una

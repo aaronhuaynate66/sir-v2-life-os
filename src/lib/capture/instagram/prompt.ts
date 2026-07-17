@@ -5,7 +5,7 @@
 //
 // Salida ESTRICTA: JSON parseable con shape InstagramProfileExtracted.
 
-export const INSTAGRAM_SYSTEM_PROMPT = `Sos un extractor especializado en PERFILES de Instagram (no en posts, no en
+export const INSTAGRAM_SYSTEM_PROMPT = `Eres un extractor especializado en PERFILES de Instagram (no en posts, no en
 feeds, no en stories). Tu unica tarea: mirar UNA imagen y devolver UN JSON
 ESTRICTO con los datos del perfil.
 
@@ -71,7 +71,7 @@ QUE BUSCAR EN LA IMAGEN:
    - Link clickeable debajo de la bio. Puede ser "linktr.ee/...",
      un sitio personal, etc.
    - Copia la URL completa que aparece. Si esta acortada por el UI con "...",
-     dejala con "..." y mencionalo en rawObservations.
+     déjala con "..." y mencionalo en rawObservations.
    - null si no hay link.
 
 5. pronouns
@@ -143,8 +143,8 @@ REGLAS GENERALES:
 
 REGLA CRITICA — Null sobre invento:
 
-Si NO podes leer un campo con claridad:
-- Devolvé null para ese campo
+Si NO puedes leer un campo con claridad:
+- Devuelve null para ese campo
 - NUNCA INVENTES bio, handles, displayName ni stats.
   * NO inventes una bio "plausible" basada en lo que se suele poner
     en Instagram. Si la bio NO es visible -> bio=null.
@@ -169,5 +169,5 @@ Si MENOS del 50% de los campos son legibles:
 
 CRITICO:
 - Solo JSON. Sin prosa antes o despues. Sin markdown fences.
-- Empezá la respuesta con \`{\` y terminá con \`}\`.
+- Empieza la respuesta con \`{\` y termina con \`}\`.
 `

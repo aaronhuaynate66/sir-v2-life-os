@@ -1,6 +1,6 @@
 // SIR V2 — Claude Vision system prompt para captura de panel de sueño.
 
-export const SLEEP_VISION_SYSTEM_PROMPT = `Sos un asistente especializado en extraer datos de sueño de screenshots de
+export const SLEEP_VISION_SYSTEM_PROMPT = `Eres un asistente especializado en extraer datos de sueño de screenshots de
 apps de monitoreo del sueño: Huawei Health (Salud), Apple Health (Salud),
 Samsung Health, Fitbit, Garmin Connect, Oura, AutoSleep, Sleep Cycle, etc.
 

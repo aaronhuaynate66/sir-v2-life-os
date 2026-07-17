@@ -201,7 +201,7 @@ export const LABEL_HUMAN: Record<EstadoLabel, { label: string; description: stri
   },
   distante: {
     label: 'Distante',
-    description: 'Hace tiempo sin contacto significativo. Considerá si querés reconectar.',
+    description: 'Hace tiempo sin contacto significativo. Considerá si quieres reconectar.',
     toneClass: 'text-warn border-warn/40 bg-warn-soft',
   },
   sin_data: {

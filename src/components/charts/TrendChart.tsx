@@ -193,7 +193,7 @@ export function TrendChart({
 
         {!hasData ? (
           <p className="text-sm text-muted-foreground py-2">
-            {windowable ? `Sin datos en ${offset === 0 ? (range === 'semana' ? 'esta semana' : 'este mes') : windowLabel}.` : (emptyHint ?? 'Sin datos todavía. Registrá algunos para ver la tendencia.')}
+            {windowable ? `Sin datos en ${offset === 0 ? (range === 'semana' ? 'esta semana' : 'este mes') : windowLabel}.` : (emptyHint ?? 'Sin datos todavía. Registra algunos para ver la tendencia.')}
           </p>
         ) : (
           <div className="space-y-3">

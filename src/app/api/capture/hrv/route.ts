@@ -67,7 +67,7 @@ async function callVision(
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'vision')
   if (!rl.ok) return rl.response
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
   if (parseError || !isValidHrvPanelExtracted(parsed)) {
     try {
       raw = await callVision(supabase, authData.user.id, imageBase64, mediaType,
-        'CRÍTICO: tu respuesta anterior no era JSON válido. Devolvé SOLO el JSON, sin texto adicional, sin markdown fences.')
+        'CRÍTICO: tu respuesta anterior no era JSON válido. Devuelve SOLO el JSON, sin texto adicional, sin markdown fences.')
       parsed = JSON.parse(stripJsonFences(raw))
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)

@@ -81,9 +81,9 @@ export function PosiblesDuplicados() {
           <Badge variant="secondary" className="text-[10px] font-mono">{groups.length}</Badge>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
-          Estas personas parecen la misma. Marcá con <span className="text-foreground font-medium">Fusionar aquí</span> las
-          que querés unir al nombre principal — se mueven observaciones, memorias, links, tags y notas al canónico, y la
-          duplicada se borra. No hay undo, así que revisá antes.
+          Estas personas parecen la misma. Marca con <span className="text-foreground font-medium">Fusionar aquí</span> las
+          que quieres unir al nombre principal — se mueven observaciones, memorias, links, tags y notas al canónico, y la
+          duplicada se borra. No hay undo, así que revisa antes.
         </p>
         {errorMsg && (
           <div className="rounded-md border border-bad/30 bg-bad-soft px-3 py-2 text-xs text-bad flex items-start gap-2">

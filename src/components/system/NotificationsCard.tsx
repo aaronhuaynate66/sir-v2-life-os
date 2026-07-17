@@ -77,10 +77,10 @@ export function NotificationsCard() {
       })
       if (!res.ok) throw new Error('save failed')
       setState('subscribed')
-      toast.success('Notificaciones activadas', { description: 'Probá enviarte una.' })
+      toast.success('Notificaciones activadas', { description: 'Prueba enviarte una.' })
     } catch {
       setState('idle')
-      toast.error('No se pudo activar', { description: 'Reintentá; en iOS tiene que ser desde la app instalada.' })
+      toast.error('No se pudo activar', { description: 'Reintenta; en iOS tiene que ser desde la app instalada.' })
     }
   }, [vapid])
 

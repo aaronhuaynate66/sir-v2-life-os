@@ -46,24 +46,24 @@ export const STRATEGIES: Strategy[] = [
   { id: 'elicit_preference', label: 'Preguntar qué necesita', group: 'entender', scope: 'ambos',
     how: 'Preguntar qué le importa / qué necesita, en vez de suponerlo.' },
   { id: 'acknowledge_need', label: 'Reconocer su necesidad', group: 'entender', scope: 'ambos',
-    how: 'Decir explícitamente que ves y respetás lo que el otro necesita (no solo lo tuyo).' },
+    how: 'Decir explícitamente que ves y respetas lo que el otro necesita (no solo lo tuyo).' },
   // ── Apelar con la verdad ─────────────────────────────────────────────────
   { id: 'personal_story', label: 'Contar tu experiencia real', group: 'apelar', scope: 'ambos',
     how: 'Compartir algo tuyo verdadero para que se entienda desde lo humano, no en abstracto.' },
-  { id: 'emotion_honest', label: 'Decir lo que sentís', group: 'apelar', scope: 'ambos',
+  { id: 'emotion_honest', label: 'Decir lo que sientes', group: 'apelar', scope: 'ambos',
     how: 'Compartir tu emoción REAL (miedo, ganas), sin fabricarla ni exagerarla.' },
   { id: 'logical_appeal', label: 'Razón y datos', group: 'apelar', scope: 'profesional',
     how: 'Argumento con motivos y datos verificables que el otro pueda chequear.' },
   { id: 'credibility_appeal', label: 'Mostrar tu valor real', group: 'apelar', scope: 'profesional',
-    how: 'Tu track-record / lo que aportás, honesto y concreto, sin inflar.' },
+    how: 'Tu track-record / lo que aportas, honesto y concreto, sin inflar.' },
   { id: 'self_modeling', label: 'Predicar con el ejemplo', group: 'apelar', scope: 'profesional',
     how: 'Mostrar tu propio compromiso/acción primero, como modelo.' },
   // ── Dar primero (reciprocidad genuina) ───────────────────────────────────
   { id: 'generosity', label: 'Ceder algo que suma', group: 'dar', scope: 'ambos',
-    how: 'Ofrecer algo que a vos te cuesta poco y al otro le importa (no-need): genera confianza.' },
+    how: 'Ofrecer algo que a ti te cuesta poco y al otro le importa (no-need): genera confianza.' },
   // ── Encuadrar el pedido ──────────────────────────────────────────────────
   { id: 'express_need_reason', label: 'Tu necesidad con el porqué', group: 'encuadrar', scope: 'ambos',
-    how: 'Decir lo que necesitás CON el motivo, como pedido claro, no como exigencia ni reproche.' },
+    how: 'Decir lo que necesitas CON el motivo, como pedido claro, no como exigencia ni reproche.' },
   { id: 'vouch_fairness', label: 'Apelar a lo justo', group: 'encuadrar', scope: 'profesional',
     how: 'Anclar en un criterio objetivo/justo que ambos aceptarían de antemano.' },
   { id: 'foot_in_the_door', label: 'Empezar por un paso chico', group: 'encuadrar', scope: 'profesional',
@@ -89,9 +89,9 @@ export function renderStrategiesForPrompt(ambito?: string, relationship?: string
     ['romantic', 'family', 'friend'].some((k) => (relationship ?? '').toLowerCase().includes(k))
   const header = affective
     ? 'REPERTORIO DE CUIDADO Y CLARIDAD ESTRATEGICA (base: persuasion pro-social + comunicacion cooperativa). ' +
-      'NO son tácticas para controlar: sirven para timing, limites, reparacion y reciprocidad sin control afectivo. Elegi de esta lista y NOMBRALA en cada accion; jamas sugieras algo que Aaron no pueda sostener con la verdad:'
+      'NO son tácticas para controlar: sirven para timing, limites, reparacion y reciprocidad sin control afectivo. Elige de esta lista y NÓMBRALA en cada accion; jamas sugieras algo que Aaron no pueda sostener con la verdad:'
     : 'REPERTORIO DE MOVIDAS HONESTAS E INTEGRATIVAS (base: PersuasionForGood + negociación cooperativa CaSiNo). ' +
-      'Preparacion legitima cuando el objetivo de Aaron se alinea con el interes del otro. Elegi de esta lista y NOMBRALA en cada accion; nada de engano, presion fabricada ni explotar debilidades:'
+      'Preparacion legitima cuando el objetivo de Aaron se alinea con el interes del otro. Elige de esta lista y NÓMBRALA en cada accion; nada de engano, presion fabricada ni explotar debilidades:'
   const lines = [header]
   for (const s of list) lines.push(`- ${s.label} (${GROUP_LABEL[s.group]}): ${s.how}`)
   return lines.join('\n')

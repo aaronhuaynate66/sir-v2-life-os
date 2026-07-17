@@ -27,7 +27,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
-  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authErr || !auth?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
   const userId = auth.user.id
 
   const rl = await enforceRateLimit(supabase, userId, 'generation')
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const personId = typeof body.personId === 'string' ? body.personId : ''
   const objective = typeof body.objective === 'string' ? body.objective.trim().slice(0, 600) : ''
   if (!personId) return errorJson(400, 'Falta la persona')
-  if (!objective) return errorJson(400, 'Contame qué le querés plantear')
+  if (!objective) return errorJson(400, 'Cuéntame qué le quieres plantear')
 
   // Cargar la persona (del user, RLS + eq user_id defensivo).
   const { data: person } = await supabase
@@ -115,7 +115,7 @@ Reformulacion recomendada: ${ethics.safeAggressiveReframe}
 
   let result = parseFrameJson(raw)
   if (!result) {
-    try { result = parseFrameJson(await call('CRÍTICO: devolvé SOLO el JSON, empezando con { y terminando con }.')) } catch { result = null }
+    try { result = parseFrameJson(await call('CRÍTICO: devuelve SOLO el JSON, empezando con { y terminando con }.')) } catch { result = null }
   }
   if (!result) return errorJson(502, 'Claude devolvió formato inválido')
 

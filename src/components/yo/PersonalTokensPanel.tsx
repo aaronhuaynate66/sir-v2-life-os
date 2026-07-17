@@ -121,9 +121,9 @@ export function PersonalTokensPanel() {
         {open && (
           <div className="mt-4 space-y-3">
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Generá un token para que un cliente externo (Claude Code, un script) hable con SIR como si
-              fueras vos. Los tokens se muestran UNA vez al crearlos — copiálos ahí. Después solo verás
-              el prefijo y podés revocarlos.
+              Genera un token para que un cliente externo (Claude Code, un script) hable con SIR como si
+              fueras tú. Los tokens se muestran UNA vez al crearlos — cópialos ahí. Después solo verás
+              el prefijo y puedes revocarlos.
             </p>
 
             {/* Recién creado — mostrar plano una vez. */}
@@ -131,10 +131,10 @@ export function PersonalTokensPanel() {
               <div className="rounded-md border border-ok/40 bg-ok-soft p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={13} strokeWidth={1.75} className="text-ok" aria-hidden="true" />
-                  <span className="text-xs font-medium text-foreground">Token creado — copialo AHORA</span>
+                  <span className="text-xs font-medium text-foreground">Token creado — cópialo AHORA</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  No vas a poder verlo de nuevo. Si lo perdés, revocalo y generá otro.
+                  No vas a poder verlo de nuevo. Si lo pierdes, revócalo y genera otro.
                 </p>
                 <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5">
                   <code className="flex-1 min-w-0 text-[11px] font-mono text-foreground break-all">

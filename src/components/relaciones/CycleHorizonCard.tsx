@@ -288,7 +288,7 @@ export function CycleHorizonCard({
         </div>
 
         {onSelectDate && (
-          <div className="text-[11px] text-muted-foreground -mb-1">Arrastrá sobre la línea para ver cómo llega a cualquier día (o usá los chips de arriba).</div>
+          <div className="text-[11px] text-muted-foreground -mb-1">Arrastra sobre la línea para ver cómo llega a cualquier día (o usa los chips de arriba).</div>
         )}
         {/* Banda de fases (scrubeable: arrastrar → simula esa fecha) */}
         <div

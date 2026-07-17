@@ -111,7 +111,7 @@ describe('computeLifeCoherence — veredicto', () => {
     expect(r.state).toBe('coherent')
     expect(r.recentDeclaredDone).toBe(5)
     expect(r.recentTotalDone).toBe(6)
-    expect(r.message).toMatch(/acompaña lo que decís que importa/)
+    expect(r.message).toMatch(/acompaña lo que dices que importa/)
   })
 
   it('diverging: el grueso de la actividad cae fuera de lo declarado, sin reproche', () => {

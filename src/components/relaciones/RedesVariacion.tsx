@@ -45,7 +45,7 @@ export function RedesVariacion({ personId }: { personId: string }) {
     if (series.length === 0) return null
     return (
       <p className="mt-2 text-[11px] text-muted-foreground">
-        Tenés 1 captura de Instagram. Subí otra más adelante (Agregar captura → Imagen) y acá vas a ver cómo varían seguidores, seguidos y posts.
+        Tienes 1 captura de Instagram. Sube otra más adelante (Agregar captura → Imagen) y aquí vas a ver cómo varían seguidores, seguidos y posts.
       </p>
     )
   }
@@ -76,7 +76,7 @@ export function RedesVariacion({ personId }: { personId: string }) {
         icon={Users}
         points={series}
         formatValue={(n) => n.toLocaleString('es-PE')}
-        emptyHint="Subí capturas en distintos momentos para ver la variación."
+        emptyHint="Sube capturas en distintos momentos para ver la variación."
       />
     </div>
   )

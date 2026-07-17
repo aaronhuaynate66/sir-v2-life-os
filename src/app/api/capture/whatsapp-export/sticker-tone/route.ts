@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const res = await complete(
       {
         task: 'import_whatsapp', tier: 'cheap', sensitivity: 'third_party', maxTokens: 30,
-        system: 'Devolvés SOLO JSON.',
+        system: 'Devuelve SOLO JSON.',
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', mediaType: 'image/webp', data: b64 } },
           { type: 'text', text: 'Este es un sticker de WhatsApp. ¿Qué carga emocional transmite? Respondé SOLO {"tone":"<1-3 palabras en español: ej. cariño, humor, fastidio, ternura, enojo, festejo, bajar tensión, neutral>"}.' },

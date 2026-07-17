@@ -57,12 +57,12 @@ export default function VerificarPage() {
       })
       const data = (await res.json().catch(() => null)) as { result?: DeepScanResult; error?: string } | null
       if (!res.ok || !data?.result) {
-        setDeep({ kind: 'error', message: data?.error ?? 'No se pudo analizar. Reintentá.' })
+        setDeep({ kind: 'error', message: data?.error ?? 'No se pudo analizar. Reintenta.' })
         return
       }
       setDeep({ kind: 'done', result: data.result })
     } catch {
-      setDeep({ kind: 'error', message: 'No se pudo analizar. Reintentá.' })
+      setDeep({ kind: 'error', message: 'No se pudo analizar. Reintenta.' })
     }
   }
 
@@ -74,7 +74,7 @@ export default function VerificarPage() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Verificar mensaje</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 leading-relaxed max-w-2xl">
-          Pegá un mensaje que te llegó (mail, chat, un pedido raro) y SIR marca las señales de
+          Pega un mensaje que te llegó (mail, chat, un pedido raro) y SIR marca las señales de
           manipulación — presión de ingeniería social y técnicas de propaganda. El scan instantáneo corre
           en tu navegador: el texto <span className="text-foreground/80">no se guarda ni se manda a ningún lado.</span>
         </p>
@@ -90,7 +90,7 @@ export default function VerificarPage() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={7}
-            placeholder="Ej: 'Soy del banco. Detectamos actividad sospechosa y tu cuenta será suspendida. Ingresá acá ahora mismo para verificar tus datos.'"
+            placeholder="Ej: 'Soy del banco. Detectamos actividad sospechosa y tu cuenta será suspendida. Ingresa aquí ahora mismo para verificar tus datos.'"
             className="w-full resize-y rounded-md border border-border bg-background p-3 text-sm leading-relaxed outline-none focus:border-foreground/30 min-h-[140px]"
           />
           <div className="mt-3 flex items-center gap-2">
@@ -222,7 +222,7 @@ function ResultView({
       <p className="text-[11px] text-muted-foreground/80 leading-relaxed px-1">
         Esto es una <span className="font-medium text-foreground/70">luz de alerta, no un veredicto</span>. Una señal
         no prueba que sea manipulación, y no detectar señales no prueba que el mensaje sea legítimo. Ante la duda —
-        sobre todo si te piden plata, datos o acceso— verificá por un canal que YA tengas (llamá vos), nunca por el
+        sobre todo si te piden plata, datos o acceso— verifica por un canal que YA tengas (llama tú), nunca por el
         del mensaje.
       </p>
     </div>

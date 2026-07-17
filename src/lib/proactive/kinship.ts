@@ -35,7 +35,7 @@ const WEIGHT_BY_CATEGORY: Record<KindCategory, number> = {
 }
 
 /** Etiqueta posesiva en 2ª persona ("tu pareja", "tu madre"). Para la copy de
- *  las alertas ("Hace tiempo no hablás con tu pareja Diana"). */
+ *  las alertas ("Hace tiempo no hablas con tu pareja Diana"). */
 const POSSESSIVE_LABEL: Record<FamilyKind, string> = {
   madre: 'tu mamá',
   padre: 'tu papá',

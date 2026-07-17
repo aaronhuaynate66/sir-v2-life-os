@@ -64,9 +64,9 @@ export function buildPlanningHint(focus: FocusWindow, chrono: Chronotype): Plann
 
   const chronoNote =
     chrono.position === 'búho'
-      ? ' Sos búho: no fuerces lo pesado temprano.'
+      ? ' Eres búho: no fuerces lo pesado temprano.'
       : chrono.position === 'alondra'
-        ? ' Sos alondra: la mañana es tu mejor carta.'
+        ? ' Eres alondra: la mañana es tu mejor carta.'
         : ''
 
   const restPart = restLabel ? ` Lo mecánico, mejor en el bajón (~${restLabel}).` : ''

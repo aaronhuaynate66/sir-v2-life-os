@@ -334,7 +334,7 @@ export function CalendarHint({ compact = false }: { compact?: boolean }) {
     return (
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground/70 px-2 py-1.5">
         <Settings2 size={12} strokeWidth={1.75} aria-hidden="true" />
-        Conectá tu calendario en{' '}
+        Conecta tu calendario en{' '}
         <Link href="/agenda" className="text-primary hover:underline">
           /agenda
         </Link>{' '}
@@ -347,14 +347,14 @@ export function CalendarHint({ compact = false }: { compact?: boolean }) {
       <CardContent className="p-5">
         <div className="flex items-center gap-2 mb-1.5">
           <Settings2 size={15} strokeWidth={1.75} className="text-muted-foreground" aria-hidden="true" />
-          <span className="text-sm font-medium text-foreground/90">Conectá tu calendario</span>
+          <span className="text-sm font-medium text-foreground/90">Conecta tu calendario</span>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Los eventos (reuniones, citas) salen de tu calendario. Conectalo desde{' '}
+          Los eventos (reuniones, citas) salen de tu calendario. Conéctalo desde{' '}
           <Link href="/agenda" className="text-primary hover:underline">
             /agenda
           </Link>{' '}
-          o seteá <span className="font-mono text-foreground/80">OUTLOOK_ICS_URL</span>. Mientras tanto, abajo ves
+          o setea <span className="font-mono text-foreground/80">OUTLOOK_ICS_URL</span>. Mientras tanto, abajo ves
           igual tus objetivos y fechas.
         </p>
       </CardContent>

@@ -35,7 +35,7 @@ function errorJson(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
-  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Iniciá sesión y reintentá.')
+  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reintenta.')
 
   const rl = await enforceRateLimit(supabase, authData.user.id, 'generation')
   if (!rl.ok) return rl.response
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     reportApiError(e)
     if (e instanceof LlmError && e.code === 'no_provider') {
-      return errorJson(503, 'Sugerencia no disponible', 'No hay proveedor LLM configurado. Podés vincular personas a mano igual.')
+      return errorJson(503, 'Sugerencia no disponible', 'No hay proveedor LLM configurado. Puedes vincular personas a mano igual.')
     }
     const m = e instanceof Error ? e.message : String(e)
     return errorJson(502, 'Falló la llamada al modelo', m.slice(0, 300))
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   const inference = parseGoalInference(raw, candidateNames)
   if (!inference) {
-    return errorJson(422, 'No pude leer una sugerencia', 'Reintentá en unos segundos.')
+    return errorJson(422, 'No pude leer una sugerencia', 'Reintenta en unos segundos.')
   }
   return NextResponse.json({ inference }, { status: 200 })
 }

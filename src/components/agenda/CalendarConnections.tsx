@@ -431,7 +431,7 @@ function ConnectionForm({
 
   const submit = async () => {
     if (!form.icsUrl.trim()) {
-      setError('Pegá la URL .ics de tu calendario.')
+      setError('Pega la URL .ics de tu calendario.')
       return
     }
     setSubmitting(true)

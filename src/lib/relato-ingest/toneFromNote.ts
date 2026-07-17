@@ -11,16 +11,16 @@
 // no fabrica interacciones ni tono donde no hay nota.
 
 /** Prompt de sistema para clasificar tono en lote. */
-export const TONE_BATCH_SYSTEM = `Sos un clasificador de tono. Te doy notas que Aaron escribió sobre interacciones con personas de su vida. Para CADA nota inferí el tono que tuvo esa interacción PARA ÉL, en escala 1-5:
+export const TONE_BATCH_SYSTEM = `Eres un clasificador de tono. Te doy notas que Aaron escribió sobre interacciones con personas de su vida. Para CADA nota infiere el tono que tuvo esa interacción PARA ÉL, en escala 1-5:
 1 = muy mal (pelea, corte, tensión fuerte)
 2 = tenso / incómodo
 3 = neutro / rutinario (sin carga emocional real)
 4 = cálido / buena
 5 = excelente / muy conectados
 
-Leé la carga emocional real de lo que cuenta ("le molestó" → 2, "buena charla / buen humor" → 4, "hermoso día juntos" → 5, "pelea fea" → 1). Ante duda GENUINA (nota sin señal), 3.
+Lee la carga emocional real de lo que cuenta ("le molestó" → 2, "buena charla / buen humor" → 4, "hermoso día juntos" → 5, "pelea fea" → 1). Ante duda GENUINA (nota sin señal), 3.
 
-Devolvé SOLO un array JSON de enteros 1-5, uno por nota EN ORDEN, misma cantidad que notas recibidas. Sin texto extra, sin explicación.`
+Devuelve SOLO un array JSON de enteros 1-5, uno por nota EN ORDEN, misma cantidad que notas recibidas. Sin texto extra, sin explicación.`
 
 /** Arma el contenido de usuario: notas numeradas. */
 export function buildToneBatchPrompt(notes: string[]): string {

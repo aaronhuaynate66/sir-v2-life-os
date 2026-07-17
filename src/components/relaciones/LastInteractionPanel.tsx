@@ -201,7 +201,7 @@ function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?:
                   : 'max-w-[85%] rounded-2xl rounded-bl-sm border border-border bg-card px-3 py-1.5 text-[13px] text-foreground/90'
               }>
                 <span className="block text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">
-                  {m.author === 'user' ? 'Vos' : (otherLabel || 'Contacto')}
+                  {m.author === 'user' ? 'Tú' : (otherLabel || 'Contacto')}
                 </span>
                 {m.content}
               </div>

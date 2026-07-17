@@ -40,7 +40,7 @@ export default function ScoresPage() {
           </div>
           <p className="text-sm text-muted-foreground">
             Qué hay detrás de cada número de SIR. Nada es magia ni IA: son fórmulas simples y predecibles
-            sobre lo que vos registrás. Acá están, tal cual las usa el sistema.
+            sobre lo que tú registras. Aquí están, tal cual las usa el sistema.
           </p>
         </header>
 
@@ -67,7 +67,7 @@ export default function ScoresPage() {
 
             <Section title="Reciprocidad" accent="#14b8a6">
               El tono acumulado de tus interacciones. Arranca neutra (50) y se mueve con cada interacción que
-              registrás (a mano o que SIR infiere de una captura). Si nunca registraste ninguna, queda
+              registras (a mano o que SIR infiere de una captura). Si nunca registraste ninguna, queda
               <em> sin dato</em> (no inventa un número).
               <Formula>{`Por cada interacción (calidad 1-5):
   calidad 1 → −5     calidad 4 → +3
@@ -79,7 +79,7 @@ Cada paso se suma como round(delta × 0.6) sobre 50 (recortado 0–100).`}</Form
             </Section>
 
             <Section title="Confianza" accent="#14b8a6">
-              Cuánto confiás en la persona. Es directo, sin ajustes.
+              Cuánto confías en la persona. Es directo, sin ajustes.
               <Formula>{`Confianza = confianza (1-10) × 10`}</Formula>
             </Section>
 

@@ -27,6 +27,6 @@ export function anchorsToCheck(s: CoherenceSources | null | undefined): AnchorCh
     if (t) out.push({ label, text: t })
   }
   push('Tu ancla del año', s.yearAnchor)
-  push('Quién sos', s.identityBio)
+  push('Quién eres', s.identityBio)
   return out
 }

@@ -41,8 +41,8 @@ export default function GlobalError({
             La aplicación encontró un error
           </h1>
           <p style={{ fontSize: 14, lineHeight: 1.6, color: '#a3a3a3', margin: '0 0 20px' }}>
-            Ocurrió un error inesperado al cargar SIR. Tus datos están a salvo. Reintentá o
-            recargá la página.
+            Ocurrió un error inesperado al cargar SIR. Tus datos están a salvo. Reintenta o
+            recarga la página.
           </p>
           {error.digest && (
             <p style={{ fontSize: 11, fontFamily: 'monospace', color: '#666', margin: '0 0 16px' }}>

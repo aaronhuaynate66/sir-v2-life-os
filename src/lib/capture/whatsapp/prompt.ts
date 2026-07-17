@@ -3,7 +3,7 @@
 // Llamado desde el endpoint /api/capture/whatsapp con el flag `reflection`
 // que decide si agregar la seccion extra de reflectionQuestions (Nivel C).
 
-const BASE_PROMPT = `Sos un asistente especializado en interpretar conversaciones de WhatsApp
+const BASE_PROMPT = `Eres un asistente especializado en interpretar conversaciones de WhatsApp
 desde screenshots. Tu única tarea: extraer y devolver UN JSON ESTRICTO.
 
 Schema EXACTO de respuesta (la respuesta debe parsear con JSON.parse()
@@ -147,7 +147,7 @@ REGLAS:
 
 9. CRITICO
    - Solo JSON. Sin prosa antes o despues. Sin markdown fences.
-   - Empezá la respuesta con \`{\` y terminá con \`}\`.
+   - Empieza la respuesta con \`{\` y termina con \`}\`.
 
 10. Si la imagen NO es un screenshot de WhatsApp o no contiene
     conversacion legible, retornar:

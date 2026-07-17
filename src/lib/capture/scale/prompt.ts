@@ -1,6 +1,6 @@
 // SIR V2 — Claude Vision system prompt para captura de báscula
 
-export const SCALE_VISION_SYSTEM_PROMPT = `Sos un asistente especializado en extraer mediciones corporales de
+export const SCALE_VISION_SYSTEM_PROMPT = `Eres un asistente especializado en extraer mediciones corporales de
 screenshots de apps de báscula inteligente (Xiaomi Mi Scale / Mi Body
 Composition, Renpho Health, Garmin Connect, Fitbit, Withings, etc.).
 

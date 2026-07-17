@@ -36,9 +36,9 @@ function CaptureSleepContent() {
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Captura sueño</h1>
         </div>
         <p className="text-xs sm:text-sm text-muted-foreground mt-2 max-w-2xl leading-relaxed">
-          Subí una foto del panel de tu app de sueño (Huawei Health, Apple Health,
+          Sube una foto del panel de tu app de sueño (Huawei Health, Apple Health,
           Samsung Health, Fitbit, etc.). Claude Vision extrae duración, horario,
-          fases y puntuación; vos los revisás y confirmás. Se guarda como tu noche
+          fases y puntuación; tú los revisas y confirmas. Se guarda como tu noche
           en Self.
         </p>
       </header>

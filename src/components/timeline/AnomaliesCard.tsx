@@ -41,7 +41,7 @@ export function AnomaliesCard() {
           <span className="text-[10px] text-muted-foreground/50 ml-auto">{anomalies.length}</span>
         </div>
         <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
-          Lo que se sale de tu patrón — <span className="font-medium text-foreground/80">mirá si tiene sentido</span>. No es alarma ni veredicto.
+          Lo que se sale de tu patrón — <span className="font-medium text-foreground/80">mira si tiene sentido</span>. No es alarma ni veredicto.
         </p>
         <ul className="space-y-2.5">
           {anomalies.map((a) => {

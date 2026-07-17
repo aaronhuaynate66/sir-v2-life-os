@@ -36,7 +36,7 @@ function err(status: number, error: string, detail?: string) {
 export async function POST(req: NextRequest) {
   // Auth combinada: sesión (cookie) o bearer con token personal (Fase 1).
   const user = await authenticateRequest(req)
-  if (!user) return err(401, 'No autenticado', 'Iniciá sesión o mandá un token personal (Bearer).')
+  if (!user) return err(401, 'No autenticado', 'Inicia sesión o manda un token personal (Bearer).')
   const userId = user.userId
   // Cliente: sesión con RLS si vino por cookie; service-role (scoped por userId)
   // si vino por token — el caller externo no tiene sesión.

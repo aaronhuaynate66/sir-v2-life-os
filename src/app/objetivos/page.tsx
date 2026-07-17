@@ -164,7 +164,7 @@ function GoalsContent() {
   }, [goals])
 
   const [adding, setAdding] = useState(false)
-  // "Contale a SIR": relato libre → IA propone el objetivo → prefilla el form.
+  // "Cuéntale a SIR": relato libre → IA propone el objetivo → prefilla el form.
   const [aiOpen, setAiOpen] = useState(false)
   const [aiText, setAiText] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
@@ -372,7 +372,7 @@ function GoalsContent() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => { setAiOpen((v) => !v); setAiError(null) }}>
-            <Sparkles size={13} className="mr-1.5" />{aiOpen ? 'Cerrar' : 'Contale a SIR'}
+            <Sparkles size={13} className="mr-1.5" />{aiOpen ? 'Cerrar' : 'Cuéntale a SIR'}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Nuevo objetivo'}</Button>
         </div>
@@ -384,9 +384,9 @@ function GoalsContent() {
       {aiOpen && (
         <Card className={cn('mb-4', cardClass)}>
           <CardContent className="p-4 sm:p-6 space-y-3">
-            <SectionTitle icon={Sparkles} label="Contale a SIR" />
+            <SectionTitle icon={Sparkles} label="Cuéntale a SIR" />
             <p className="text-xs text-muted-foreground">
-              Escribí en tus palabras qué objetivo querés (ej. una charla que tuviste). SIR arma un borrador editable — vos confirmás. No inventa fechas.
+              Escribe en tus palabras qué objetivo quieres (ej. una charla que tuviste). SIR arma un borrador editable — tú confirmas. No inventa fechas.
             </p>
             <textarea
               value={aiText}
@@ -429,12 +429,12 @@ function GoalsContent() {
                 {aiReason && !editId && (
                   <div className="mb-3 rounded-md border border-brand/20 bg-brand-soft/20 px-3 py-2">
                     <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono mb-1">
-                      <Sparkles size={11} className="inline mr-1" />Propuesta de SIR — revisá y ajustá
+                      <Sparkles size={11} className="inline mr-1" />Propuesta de SIR — revisa y ajusta
                     </p>
                     <p className="text-xs text-foreground/90 leading-snug">{aiReason}</p>
                     {aiUnmatched.length > 0 && (
                       <p className="text-[11px] text-warn mt-1.5">
-                        No encontré en tus contactos: {aiUnmatched.join(', ')}. Crealos en Relaciones y vinculalos después.
+                        No encontré en tus contactos: {aiUnmatched.join(', ')}. Créalos en Relaciones y vincúlalos después.
                       </p>
                     )}
                   </div>
@@ -460,7 +460,7 @@ function GoalsContent() {
                   <div className="sm:col-span-2">
                     <Input placeholder="Subtítulo del norte (ej. Al Khobar · Taekwondo +80kg) · opcional" value={anchorSubtitle} onChange={e => setAnchorSubtitle(e.target.value)} />
                     <p className="text-[10px] text-muted-foreground/60 mt-1">
-                      Solo si marcás este objetivo como <span className="font-mono text-foreground/80">tu norte del año</span>. Si lo dejás vacío, la brújula deriva el detalle del target o la descripción.
+                      Solo si marcas este objetivo como <span className="font-mono text-foreground/80">tu norte del año</span>. Si lo dejas vacío, la brújula deriva el detalle del target o la descripción.
                     </p>
                   </div>
 
@@ -494,7 +494,7 @@ function GoalsContent() {
                       {keyResults.map((kr, i) => (
                         <Input key={i} value={kr} placeholder={`Resultado clave ${i + 1} (ej. Pesar 75 kg · Cerrar 1 cliente)`} onChange={(e) => setKeyResults((a) => a.map((x, j) => (j === i ? e.target.value : x)))} />
                       ))}
-                      <p className="text-[10px] text-muted-foreground/60">Medibles, con un &ldquo;hoy → meta&rdquo;. El progreso del objetivo sale de acá, no de un % a mano.</p>
+                      <p className="text-[10px] text-muted-foreground/60">Medibles, con un &ldquo;hoy → meta&rdquo;. El progreso del objetivo sale de aquí, no de un % a mano.</p>
                     </div>
                   )}
 
@@ -531,7 +531,7 @@ function GoalsContent() {
                     )}
                     <p className="text-[10px] text-muted-foreground/60 mt-1.5">
                       Opcional. La mayoría de los objetivos personales no involucran a nadie. Si este sí,
-                      vinculá personas para ver señales de alineación (declarado ↔ comportamiento observado).
+                      vincula personas para ver señales de alineación (declarado ↔ comportamiento observado).
                     </p>
                   </div>
                 </div>
@@ -552,7 +552,7 @@ function GoalsContent() {
         <EmptyState
           icon={Target}
           title="Sin objetivos activos."
-          hint="Creá tu primer objetivo para empezar a medir tu paz."
+          hint="Crea tu primer objetivo para empezar a medir tu paz."
           action={<Button variant="outline" size="sm" onClick={() => setAdding(true)}>+ Crear primer objetivo</Button>}
         />
       ) : (

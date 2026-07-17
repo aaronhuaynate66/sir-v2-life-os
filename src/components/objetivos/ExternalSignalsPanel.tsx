@@ -86,7 +86,7 @@ export function ExternalSignalsPanel({ goalId }: { goalId: string }) {
         {events.length > 0 && (
           <div className="mt-3 border-t border-border pt-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
-              Noticias de {location.split(',').slice(-1)[0].trim()} · podrían tocar tu viaje (confirmá vos)
+              Noticias de {location.split(',').slice(-1)[0].trim()} · podrían tocar tu viaje (confírmalo tú)
             </p>
             <ul className="space-y-1.5">
               {events.map((e) => (
@@ -99,7 +99,7 @@ export function ExternalSignalsPanel({ goalId }: { goalId: string }) {
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-[10.5px] text-muted-foreground/70">Titulares automáticos (GDELT). SIR no afirma que te afecten — son contexto para que vos juzgues.</p>
+            <p className="mt-2 text-[10.5px] text-muted-foreground/70">Titulares automáticos (GDELT). SIR no afirma que te afecten — son contexto para que tú juzgues.</p>
           </div>
         )}
       </CardContent>
