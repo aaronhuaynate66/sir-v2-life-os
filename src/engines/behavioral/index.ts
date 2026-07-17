@@ -216,7 +216,7 @@ export function detectBehavioralPattern(
       priority: 'high',
       title: `${stressStreak} días con estrés alto`,
       observation: `Tu estrés lleva ${stressStreak} días arriba de ${STRESS_HIGH}/10. Suele bajar solo si le das aire.`,
-      suggestion: 'Salí a caminar 20 min sin celular. O llamá a alguien de confianza — no para hablar del problema, para tomar aire de la mente.',
+      suggestion: 'Sal a caminar 20 min sin celular. O llama a alguien de confianza — no para hablar del problema, para tomar aire de la mente.',
       evidence: {
         avgStress: avgStress != null ? Math.round(avgStress * 10) / 10 : undefined,
         daysCovered: w.daysCovered,

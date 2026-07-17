@@ -62,7 +62,7 @@ export function resolveBirthdayInput(
 ): BirthdayResolve {
   const day = toInt(dayRaw)
   const month = toInt(monthRaw)
-  if (day === null || month === null) return { ok: false, error: 'Elegí día y mes.' }
+  if (day === null || month === null) return { ok: false, error: 'Elige día y mes.' }
   if (month < 1 || month > 12) return { ok: false, error: 'Mes inválido.' }
   if (day < 1 || day > 31) return { ok: false, error: 'Día inválido.' }
 
