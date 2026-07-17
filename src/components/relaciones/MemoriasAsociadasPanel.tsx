@@ -17,9 +17,10 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, Loader2, Camera, ChevronDown, Wand2 } from 'lucide-react'
+import { Sparkles, Loader2, Camera, ChevronDown, Wand2, MessageSquare, PenLine, HelpCircle } from 'lucide-react'
 
 import { Lock } from 'lucide-react'
+import { memoryProvenance, type MemoryOriginIcon } from '@/lib/memories/provenance'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -406,6 +407,36 @@ export function MemoriasAsociadasPanel({
   )
 }
 
+/** Recibo por dato: de dónde salió la memoria y cuán confiable es. El
+ *  diferenciador — SIR nunca afirma "a ciegas", muestra la fuente. */
+function ProvenanceChip({ source }: { source: Memory['source'] }) {
+  const p = memoryProvenance(source)
+  const Icon = ORIGIN_ICON[p.icon]
+  const tone =
+    p.confidence === 'certain' ? 'text-ok/80'
+      : p.confidence === 'high' ? 'text-brand/80'
+        : p.confidence === 'medium' ? 'text-muted-foreground'
+          : 'text-warn/80'
+  return (
+    <span
+      className={cn('inline-flex items-center gap-1 text-[10px]', tone)}
+      title={`${p.label} · ${p.confidenceLabel}`}
+    >
+      <Icon size={11} strokeWidth={1.75} aria-hidden="true" />
+      <span>{p.label}</span>
+      <span className="text-muted-foreground/50" aria-hidden="true">·</span>
+      <span className="text-muted-foreground/80">{p.confidenceLabel}</span>
+    </span>
+  )
+}
+
+const ORIGIN_ICON: Record<MemoryOriginIcon, typeof MessageSquare> = {
+  chat: MessageSquare,
+  manual: PenLine,
+  inferred: Wand2,
+  unknown: HelpCircle,
+}
+
 function FilterChip({
   label,
   count,
@@ -481,15 +512,18 @@ function MemoryList({ memories }: { memories: Memory[] }) {
             </div>
           </div>
           <p className="text-sm text-foreground leading-relaxed">{m.content}</p>
-          {m.tags && m.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {m.tags.slice(0, 6).map((tag) => (
-                <Badge key={tag} variant="outline" className="text-[10px] font-mono">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-0.5">
+            <ProvenanceChip source={m.source} />
+            {m.tags && m.tags.length > 0 && (
+              <span className="flex flex-wrap gap-1.5">
+                {m.tags.slice(0, 6).map((tag) => (
+                  <Badge key={tag} variant="outline" className="text-[10px] font-mono">
+                    {tag}
+                  </Badge>
+                ))}
+              </span>
+            )}
+          </div>
         </li>
       ))}
     </ul>
