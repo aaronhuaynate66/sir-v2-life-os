@@ -21,6 +21,7 @@ import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDate
 import type { SpecialDate } from '@/types'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
 import { bodySignal } from '@/lib/health/bodySignal'
+import { vitalsAnomaly, type DailyVitals } from '@/lib/health/vitalsAnomaly'
 import { parseWeightCategory } from '@/engines/targets'
 
 export const runtime = 'nodejs'
@@ -202,6 +203,38 @@ export async function GET(req: NextRequest) {
             }
           }
         }
+      } catch {
+        /* fail-soft */
+      }
+
+      // ANOMALÍA DE SIGNOS VITALES: si varias señales (VFC / FC en sueño /
+      // respiración / alertas de FC) se desvían adversamente EL MISMO día, el
+      // cuerpo está bajo carga (incubando algo, fiebre, estrés). Tiene prioridad
+      // sobre el aviso de peso: una señal de salud aguda importa más.
+      try {
+        const since = new Date(now.getTime() - 5 * 86_400_000).toISOString().slice(0, 10)
+        const { data: vitalRows } = await admin
+          .from('health_metrics')
+          .select('type, value, measured_at')
+          .eq('user_id', uid)
+          .in('type', ['hrv_avg', 'sleeping_heart_rate', 'respiratory_rate', 'heart_rate_high_alerts'])
+          .gte('measured_at', since)
+          .limit(200)
+        const byDate = new Map<string, DailyVitals>()
+        for (const r of (vitalRows ?? []) as Array<{ type: string; value: number; measured_at: string }>) {
+          const iso = (r.measured_at ?? '').slice(0, 10)
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue
+          const v = Number(r.value)
+          if (!Number.isFinite(v)) continue
+          const d = byDate.get(iso) ?? { date: iso }
+          if (r.type === 'hrv_avg') d.hrvAvg = v
+          else if (r.type === 'sleeping_heart_rate') d.sleepingHr = v
+          else if (r.type === 'respiratory_rate') d.respRate = v
+          else if (r.type === 'heart_rate_high_alerts') d.highHrAlerts = v
+          byDate.set(iso, d)
+        }
+        const anomaly = vitalsAnomaly([...byDate.values()])
+        if (anomaly) metricAlertText = anomaly.text
       } catch {
         /* fail-soft */
       }
