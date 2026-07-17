@@ -60,6 +60,7 @@ import { CONVERSATION_CAPTURE_TYPES } from '@/lib/capture/observations/types'
 import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
+import { ContactReminders } from './ContactReminders'
 import { PendientesConPersona } from './PendientesConPersona'
 import { EstadoConPersona } from './EstadoConPersona'
 import { RecomendacionesSemanales } from './RecomendacionesSemanales'
@@ -630,6 +631,11 @@ export function PersonDetail({
           justo — actividad reciente (tags de memorias) + notas privadas verbatim
           (discretas, nunca a IA). Determinístico; se oculta si no aporta nada. */}
       <AntesDeContactar personId={live.id} memories={memories} />
+
+      {/* "Recordar antes de contactar" (#3): repetición espaciada relacional —
+          cosas que SIR te resurge antes de tu próximo contacto con la persona. */}
+      <ContactReminders personId={live.id} personName={live.name} />
+
 
       {/* Dedup (Tanda 2): el score /100 (RelationalScore) y el cumpleaños
           (BirthdayCountdown) ya viven en el vistazo (banda compacta) y en
