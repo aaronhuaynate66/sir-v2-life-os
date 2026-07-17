@@ -10,6 +10,8 @@
 import { useEffect } from 'react'
 import * as Sentry from '@sentry/nextjs'
 
+import { trackRenderError } from '@/lib/analytics/track'
+
 export default function GlobalError({
   error,
   reset,
@@ -19,6 +21,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     Sentry.captureException(error)
+    trackRenderError('global', error)
   }, [error])
 
   return (

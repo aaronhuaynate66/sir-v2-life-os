@@ -17,6 +17,7 @@ import { AlertTriangle, RotateCw, Home } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { trackRenderError } from '@/lib/analytics/track'
 
 export default function RouteError({
   error,
@@ -27,6 +28,7 @@ export default function RouteError({
 }) {
   useEffect(() => {
     Sentry.captureException(error)
+    trackRenderError('route', error)
     // eslint-disable-next-line no-console
     console.error('[route-error]', error)
   }, [error])
