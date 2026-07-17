@@ -18,9 +18,10 @@ import type { Goal, GoalCategory, Person, RelationshipType, PersonCategory } fro
 import { SIR_MODELS, normalizeTier, DEFAULT_SIR_TIER, type SirModelTier } from '@/lib/sir/model'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'crear_plan'
   persona?: string
   habito?: string
+  fecha?: string
   calidad?: number
   nota?: string
   titulo?: string
@@ -328,6 +329,18 @@ export default function SirChatPage() {
         if (!res.ok) { toast.error('No se pudo marcar el hábito'); return }
         toast.success(`✅ Marqué "${hit.title}" como hecho hoy`)
         setTurnState(idx, 'done')
+      } else if (a.kind === 'crear_plan') {
+        const titulo = (a.titulo ?? '').trim()
+        if (titulo.length < 2) { toast.error('Falta el título del plan'); return }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(a.fecha ?? '')) { toast.error('No entendí la fecha del plan'); return }
+        const res = await fetch('/api/personal-events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: titulo, date: a.fecha, note: a.nota || undefined, personId: a.personId || undefined }),
+        })
+        if (!res.ok) { toast.error('No se pudo agendar el plan'); return }
+        toast.success('Plan agendado', { description: `${titulo}${a.persona ? ` con ${a.persona}` : ''} · ${a.fecha}` })
+        setTurnState(idx, 'done')
       } else if (a.kind === 'cerrar_relacion') {
         if (!a.personId) {
           toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Cierra el vínculo desde su ficha.' })
@@ -615,7 +628,7 @@ export default function SirChatPage() {
                   <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
                       <CalendarCheck size={12} />
-                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : 'Cerrar vínculo'}
+                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'crear_plan' ? 'Agendar plan' : 'Cerrar vínculo'}
                     </div>
                     {t.action.kind === 'registrar_interaccion' ? (
                       <div className="text-[13px] text-foreground/90">
@@ -642,6 +655,14 @@ export default function SirChatPage() {
                       <div className="text-[13px] text-foreground/90">
                         <span className="font-medium">{t.action.habito}</span>
                         <div className="mt-0.5 text-muted-foreground">Marcar como hecho hoy</div>
+                      </div>
+                    ) : t.action.kind === 'crear_plan' ? (
+                      <div className="text-[13px] text-foreground/90">
+                        <span className="font-medium">{t.action.titulo}</span>
+                        <div className="mt-0.5 text-muted-foreground">
+                          {t.action.fecha}{t.action.persona ? ` · con ${t.action.persona}` : ''}
+                        </div>
+                        {t.action.nota && <div className="mt-0.5 text-muted-foreground">{t.action.nota}</div>}
                       </div>
                     ) : (
                       <div className="text-[13px] text-foreground/90">

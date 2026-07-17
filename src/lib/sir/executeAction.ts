@@ -32,7 +32,8 @@ export function isExecutableByChat(kind: string): boolean {
     kind === 'crear_objetivo' ||
     kind === 'crear_persona' ||
     kind === 'cerrar_relacion' ||
-    kind === 'marcar_habito'
+    kind === 'marcar_habito' ||
+    kind === 'crear_plan'
   )
 }
 
@@ -245,7 +246,29 @@ export async function executeProposedAction(
     return { ok: true, message: `✅ Marqué "${hit.title}" como hecho hoy.` }
   }
 
-  return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hacelo desde la web.' }
+  if (action.kind === 'crear_plan') {
+    const titulo = (action.titulo || '').trim()
+    if (titulo.length < 2) return { ok: false, message: 'Faltó el título del plan, no agendé nada.' }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(action.fecha)) {
+      return { ok: false, message: 'No me quedó clara la fecha del plan. Dímela (ej. 2026-07-19) y lo agendo.' }
+    }
+    const note = (action.nota || '').trim().slice(0, 500) || null
+    // person_id solo si se resolvió a alguien de la red (plan "con X"); si no, plan suelto.
+    const { error } = await supabase.from('personal_events').insert({
+      user_id: userId,
+      person_id: action.personId ?? null,
+      title: titulo.slice(0, 200),
+      event_date: action.fecha,
+      all_day: true,
+      note,
+      source: 'sir',
+    })
+    if (error) return { ok: false, message: 'Uf, no pude agendar el plan. Reinténtalo en un momento.' }
+    const withWho = action.personId && action.persona ? ` con ${action.persona}` : ''
+    return { ok: true, message: `📆 Agendé "${titulo.slice(0, 80)}"${withWho} para el ${action.fecha}.` }
+  }
+
+  return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hazlo desde la web.' }
 }
 
 /** Marca el vínculo con una persona como 'ended'. Si ya hay fila → update; si no
