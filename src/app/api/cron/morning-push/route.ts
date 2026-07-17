@@ -21,6 +21,8 @@ import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDate
 import type { SpecialDate } from '@/types'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
 import { bodySignal } from '@/lib/health/bodySignal'
+import { vitalsAnomaly, type DailyVitals } from '@/lib/health/vitalsAnomaly'
+import { healthDataGap } from '@/lib/health/dataGap'
 import { parseWeightCategory } from '@/engines/targets'
 
 export const runtime = 'nodejs'
@@ -204,6 +206,59 @@ export async function GET(req: NextRequest) {
         }
       } catch {
         /* fail-soft */
+      }
+
+      // ANOMALÍA DE SIGNOS VITALES: si varias señales (VFC / FC en sueño /
+      // respiración / alertas de FC) se desvían adversamente EL MISMO día, el
+      // cuerpo está bajo carga (incubando algo, fiebre, estrés). Tiene prioridad
+      // sobre el aviso de peso: una señal de salud aguda importa más.
+      let vitalsAlerted = false
+      try {
+        const since = new Date(now.getTime() - 5 * 86_400_000).toISOString().slice(0, 10)
+        const { data: vitalRows } = await admin
+          .from('health_metrics')
+          .select('type, value, measured_at')
+          .eq('user_id', uid)
+          .in('type', ['hrv_avg', 'sleeping_heart_rate', 'respiratory_rate', 'heart_rate_high_alerts'])
+          .gte('measured_at', since)
+          .limit(200)
+        const byDate = new Map<string, DailyVitals>()
+        for (const r of (vitalRows ?? []) as Array<{ type: string; value: number; measured_at: string }>) {
+          const iso = (r.measured_at ?? '').slice(0, 10)
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue
+          const v = Number(r.value)
+          if (!Number.isFinite(v)) continue
+          const d = byDate.get(iso) ?? { date: iso }
+          if (r.type === 'hrv_avg') d.hrvAvg = v
+          else if (r.type === 'sleeping_heart_rate') d.sleepingHr = v
+          else if (r.type === 'respiratory_rate') d.respRate = v
+          else if (r.type === 'heart_rate_high_alerts') d.highHrAlerts = v
+          byDate.set(iso, d)
+        }
+        const anomaly = vitalsAnomaly([...byDate.values()])
+        if (anomaly) { metricAlertText = anomaly.text; vitalsAlerted = true }
+      } catch {
+        /* fail-soft */
+      }
+
+      // AVISO DE DATA FALTANTE: si NO hubo anomalía fresca y hace ≥3 días que no
+      // se carga salud, recordarlo (sin data SIR queda ciego). La salud entra por
+      // carga manual de capturas. Prioridad: anomalía > gap > peso.
+      if (!vitalsAlerted) {
+        try {
+          const [{ data: hmLast }, { data: slLast }] = await Promise.all([
+            admin.from('health_metrics').select('measured_at').eq('user_id', uid).order('measured_at', { ascending: false }).limit(1),
+            admin.from('sleep_records').select('date').eq('user_id', uid).order('date', { ascending: false }).limit(1),
+          ])
+          const last = [
+            ((hmLast ?? [])[0] as { measured_at?: string } | undefined)?.measured_at?.slice(0, 10),
+            ((slLast ?? [])[0] as { date?: string } | undefined)?.date?.slice(0, 10),
+          ].filter((s): s is string => !!s).sort().at(-1) ?? null
+          const gap = healthDataGap(last, now.toISOString().slice(0, 10))
+          if (gap) metricAlertText = gap
+        } catch {
+          /* fail-soft */
+        }
       }
 
       // Una señal sin resolver (la primera de mayor urgencia).
