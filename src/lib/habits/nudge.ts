@@ -37,7 +37,7 @@ export function habitNudge(habits: NudgeHabit[], today: Date = new Date()): Habi
   // (2) Pendientes de hoy.
   const undone = states.filter((x) => !x.s.doneToday)
   if (undone.length === 0) {
-    return { tone: 'win', text: 'Marcaste todos tus hábitos hoy. Seguí así.' }
+    return { tone: 'win', text: 'Marcaste todos tus hábitos hoy. Sigue así.' }
   }
   if (undone.length === states.length) {
     return { tone: 'nudge', text: `Arrancá el día: marcá tus ${states.length === 1 ? 'hábito' : 'hábitos'}.` }

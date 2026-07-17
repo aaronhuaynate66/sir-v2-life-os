@@ -129,7 +129,7 @@ export function NotificationsCard() {
 
         {(state === 'idle' || state === 'subscribing') && (
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Recibí un aviso calmo a la mañana con lo que importa hoy.</p>
+            <p className="text-sm text-muted-foreground">Recibe un aviso tranquilo por la mañana con lo que importa hoy.</p>
             <Button size="sm" onClick={enable} disabled={state === 'subscribing'} className="inline-flex items-center gap-1.5">
               {state === 'subscribing' ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} strokeWidth={1.75} />}
               Activar notificaciones

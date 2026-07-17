@@ -12,7 +12,7 @@
 // permission-denied, no-suscrito (todo listo, falta subscribir), suscrito.
 
 import { useCallback, useEffect, useState } from 'react'
-import { Bell, BellOff, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Bell, BellOff, Loader2, AlertCircle, CheckCircle2, Send } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,7 @@ export function PushNotificationsPanel() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [testMsg, setTestMsg] = useState<string | null>(null)
 
   const init = useCallback(async () => {
     // 1. Soporte del browser.
@@ -94,9 +95,21 @@ export function PushNotificationsPanel() {
     } finally { setBusy(false) }
   }
 
+  async function sendTest() {
+    setBusy(true); setError(null); setTestMsg(null)
+    try {
+      const r = await fetch('/api/push/test', { method: 'POST' })
+      const j = (await r.json().catch(() => ({}))) as { sent?: number; error?: string; detail?: string }
+      if (!r.ok) throw new Error(j.detail || j.error || `HTTP ${r.status}`)
+      setTestMsg(`Enviada a ${j.sent ?? 0} dispositivo${j.sent === 1 ? '' : 's'} — revisa la notificación.`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally { setBusy(false) }
+  }
+
   async function deactivate() {
     if (state.kind !== 'subscribed') return
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setTestMsg(null)
     try {
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.getSubscription()
@@ -118,7 +131,7 @@ export function PushNotificationsPanel() {
           </span>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Recibí en tu browser cuando el estado con alguien empeora
+          Recibe en tu navegador cuando el estado con alguien empeora
           (cerca → en tensión, follow-ups vencidos, etc.), sin tener que abrir SIR.
         </p>
 
@@ -145,7 +158,7 @@ export function PushNotificationsPanel() {
         {state.kind === 'denied' && (
           <div className="flex items-start gap-1.5 text-xs text-warn">
             <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
-            Bloqueado en la configuración del browser. Habilitalo desde el candado en la URL → &quot;Notificaciones&quot; → Permitir.
+            Bloqueado en la configuración del navegador. Habilítalo desde el candado en la URL → &quot;Notificaciones&quot; → Permitir.
           </div>
         )}
 
@@ -154,7 +167,7 @@ export function PushNotificationsPanel() {
             <Button size="sm" onClick={() => void activate()} disabled={busy}>
               {busy ? <><Loader2 size={11} className="mr-1.5 animate-spin" /> Activando…</> : <><Bell size={11} className="mr-1.5" /> Activar</>}
             </Button>
-            <span className="text-[10px] text-muted-foreground/60">Tu browser te va a pedir permiso.</span>
+            <span className="text-[10px] text-muted-foreground/60">Tu navegador te va a pedir permiso.</span>
           </div>
         )}
 
@@ -164,10 +177,20 @@ export function PushNotificationsPanel() {
               <CheckCircle2 size={12} strokeWidth={1.75} />
               Activadas en este dispositivo
             </div>
-            <Button size="sm" variant="ghost" onClick={() => void deactivate()} disabled={busy} className="ml-auto text-xs h-7">
+            <Button size="sm" variant="outline" onClick={() => void sendTest()} disabled={busy} className="ml-auto text-xs h-7">
+              {busy ? <Loader2 size={11} className="mr-1.5 animate-spin" /> : <Send size={11} className="mr-1.5" />}
+              Enviar prueba
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => void deactivate()} disabled={busy} className="text-xs h-7">
               {busy ? <Loader2 size={11} className="mr-1.5 animate-spin" /> : <BellOff size={11} className="mr-1.5" />}
               Desactivar
             </Button>
+          </div>
+        )}
+
+        {testMsg && (
+          <div className="flex items-start gap-1.5 text-[11px] text-ok pt-1">
+            <CheckCircle2 size={11} className="mt-0.5" /> {testMsg}
           </div>
         )}
 
