@@ -57,6 +57,14 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   /**
+   * `sharp` es un módulo nativo (libvips): si webpack intenta bundlearlo, falla
+   * al resolver sus binarios (@img/sharp-libvips-*). Marcándolo como externo del
+   * servidor, Next lo carga en runtime desde node_modules (como corresponde a un
+   * addon nativo). Lo usa /api/avatars/auto para recortar el avatar.
+   */
+  serverExternalPackages: ['sharp'],
+
+  /**
    * Security headers en TODAS las rutas. Ver SECURITY_HEADERS / CSP_REPORT_ONLY.
    */
   async headers() {
