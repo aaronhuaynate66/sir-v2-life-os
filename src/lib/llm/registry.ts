@@ -64,7 +64,9 @@ export const PROVIDERS: Record<LlmProvider, ProviderConfig> = {
   },
   openrouter: {
     provider: 'openrouter', kind: 'openai-compat', baseURL: 'https://openrouter.ai/api/v1', envKey: 'OPENROUTER_API_KEY',
-    models: { cheap: 'meta-llama/llama-3.3-70b-instruct', balanced: 'qwen/qwen-2.5-72b-instruct', capable: 'deepseek/deepseek-r1' },
+    // balanced usa deepseek-chat (rápido, barato, fiable con JSON) en vez del
+    // qwen-2.5-72b, que daba timeout >30s en rutas interactivas (bug 2026-07-16).
+    models: { cheap: 'meta-llama/llama-3.3-70b-instruct', balanced: 'deepseek/deepseek-chat', capable: 'deepseek/deepseek-r1' },
     costRank: 30, trainsOnInput: false, price: { in: 0.5, out: 1.5 },
   },
 }
