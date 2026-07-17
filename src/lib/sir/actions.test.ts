@@ -30,6 +30,16 @@ describe('parseProposedAction', () => {
     expect(parseProposedAction('proponer_marcar_habito', { habito: '  ' })).toBeNull()
   })
 
+  it('crear_plan: exige título y fecha ISO', () => {
+    expect(parseProposedAction('proponer_crear_plan', { titulo: 'Ver depa', fecha: '2026-07-19', persona: 'Diana', nota: '14:00' }))
+      .toEqual({ kind: 'crear_plan', titulo: 'Ver depa', fecha: '2026-07-19', persona: 'Diana', nota: '14:00' })
+    // fecha no-ISO → se descarta (queda '') para que el flujo pida aclararla
+    expect(parseProposedAction('proponer_crear_plan', { titulo: 'Ver depa', fecha: 'el sábado' }))
+      .toMatchObject({ kind: 'crear_plan', fecha: '', persona: null })
+    // sin título → null
+    expect(parseProposedAction('proponer_crear_plan', { fecha: '2026-07-19' })).toBeNull()
+  })
+
   it('toolName desconocido → null', () => {
     expect(parseProposedAction('otra_cosa', {})).toBeNull()
   })

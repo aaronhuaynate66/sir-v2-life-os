@@ -73,6 +73,21 @@ export const SIR_ACTION_TOOLS = [
     },
   },
   {
+    name: 'proponer_crear_plan',
+    description:
+      'Propón AGENDAR un plan/cita/evento (NO lo agendes tú, solo propónlo para que Aaron confirme). Usa esto SIEMPRE que Aaron pida agendar/anotar una cita, salida, visita o plan a futuro (ej. "agéndame ver el depa con Diana el sábado", "anota que voy al matrimonio de Laura"). NUNCA digas que ya lo agendaste sin llamar a esta tool. `fecha` DEBE ser YYYY-MM-DD — calcúlala a partir de "Hoy es ..." del contexto (ej. "el sábado" → la fecha real). `persona` = con quién va, si Aaron la nombró.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        titulo: { type: 'string', description: 'Qué es el plan (ej. "Ver departamento", "Matrimonio de Laura").' },
+        fecha: { type: 'string', description: 'Fecha del plan en formato YYYY-MM-DD (calculada desde la fecha de hoy del contexto).' },
+        persona: { type: 'string', description: 'Opcional: con quién va (nombre tal como Aaron la nombró).' },
+        nota: { type: 'string', description: 'Opcional: detalle (hora, lugar, etc.).' },
+      },
+      required: ['titulo', 'fecha'],
+    },
+  },
+  {
     name: 'proponer_cerrar_relacion',
     description:
       'Propón CERRAR un vínculo (NO lo cierres tú, solo propónlo para que Aaron confirme). Usa esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
@@ -117,7 +132,16 @@ export interface ProposedHabito {
   kind: 'marcar_habito'
   habito: string
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito
+export interface ProposedPlan {
+  kind: 'crear_plan'
+  titulo: string
+  /** YYYY-MM-DD, o '' si el modelo no dio una fecha válida. */
+  fecha: string
+  /** Con quién va (nombre), o null. */
+  persona: string | null
+  nota: string
+}
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedPlan
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -184,6 +208,14 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
     const habito = str(o.habito, 120)
     if (!habito) return null
     return { kind: 'marcar_habito', habito }
+  }
+  if (toolName === 'proponer_crear_plan') {
+    const titulo = str(o.titulo, 200)
+    if (!titulo) return null
+    const rawFecha = str(o.fecha, 10)
+    const fecha = /^\d{4}-\d{2}-\d{2}$/.test(rawFecha) ? rawFecha : ''
+    const persona = str(o.persona, 120)
+    return { kind: 'crear_plan', titulo, fecha, persona: persona || null, nota: str(o.nota, 500) }
   }
   return null
 }
