@@ -11,6 +11,7 @@ import { planChain, type PlannedCall } from './router'
 import { callAnthropic } from './providers/anthropic'
 import { callOpenAiCompat } from './providers/openaiCompat'
 import { recordAiUsage } from '@/lib/ai/usage'
+import { getDegradedProviders } from './health'
 
 type Supabase = Parameters<typeof recordAiUsage>[0]
 
@@ -29,7 +30,10 @@ export interface CompleteOpts {
  * Lanza LlmError si no hay proveedor configurado o si todos fallan.
  */
 export async function complete(req: LlmRequest, opts: CompleteOpts = {}): Promise<LlmResponse> {
-  const chain = planChain(req, availableProviders())
+  // Salud reciente (cacheada) → el router degrada a los lentos/caídos. Solo si
+  // hay cliente; sin él, ruteo por tier+costo tal cual.
+  const degraded = opts.supabase ? await getDegradedProviders(opts.supabase) : undefined
+  const chain = planChain(req, availableProviders(), degraded)
   if (chain.length === 0) {
     throw new LlmError('no_provider', 'No hay proveedor LLM configurado — falta la API key en el entorno.')
   }
@@ -37,14 +41,15 @@ export async function complete(req: LlmRequest, opts: CompleteOpts = {}): Promis
   let lastErr: unknown = null
   for (let i = 0; i < chain.length; i++) {
     const call = chain[i]
+    const startedAt = Date.now()
     try {
       const { text, usage } = await dispatch(call, req)
       if (!text) throw new Error(`${call.provider} devolvió texto vacío`)
-      // Telemetría best-effort (no rompe la respuesta).
+      // Telemetría best-effort (no rompe la respuesta): tokens + latencia + ok.
       if (opts.supabase && opts.userId) {
-        void recordAiUsage(opts.supabase, opts.userId, req.task, `${call.provider}:${call.model}`, {
-          input_tokens: usage.inputTokens, output_tokens: usage.outputTokens,
-        })
+        void recordAiUsage(opts.supabase, opts.userId, req.task, `${call.provider}:${call.model}`,
+          { input_tokens: usage.inputTokens, output_tokens: usage.outputTokens },
+          { latencyMs: Date.now() - startedAt, status: 'ok' })
       }
       return {
         text,
@@ -55,6 +60,11 @@ export async function complete(req: LlmRequest, opts: CompleteOpts = {}): Promis
         ...(i > 0 ? { fellBackTo: call.provider } : {}),
       }
     } catch (e) {
+      // Registrar el FALLO (con latencia) para que la salud lo vea. Best-effort.
+      if (opts.supabase && opts.userId) {
+        void recordAiUsage(opts.supabase, opts.userId, req.task, `${call.provider}:${call.model}`,
+          null, { latencyMs: Date.now() - startedAt, status: 'error' })
+      }
       lastErr = e // probamos el siguiente proveedor de la chain
     }
   }

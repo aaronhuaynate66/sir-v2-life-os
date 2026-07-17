@@ -111,6 +111,26 @@ describe('planChain', () => {
     const chain = planChain({ task: 'extract', messages: [IMG_MSG] }, ['deepseek', 'qwen'])
     expect(chain).toEqual([])
   })
+
+  it('degradado va al FINAL (no se elimina → sigue como fallback)', () => {
+    // balanced con openrouter+anthropic: normalmente openrouter primero (más barato);
+    // si openrouter está degradado (lento/caído), pasa al final.
+    const chain = planChain({ task: 'sir_chat', messages: [] }, ['anthropic', 'openrouter'], new Set(['openrouter']))
+    expect(chain[0].provider).toBe('anthropic')
+    expect(chain[chain.length - 1].provider).toBe('openrouter')
+    expect(chain.length).toBe(2) // no se pierde
+  })
+
+  it('si TODOS están degradados → conserva el orden (no vacía)', () => {
+    const chain = planChain({ task: 'sir_chat', messages: [] }, ['anthropic', 'openrouter'], new Set(['anthropic', 'openrouter']))
+    expect(chain.length).toBe(2)
+    expect(chain[0].provider).toBe('openrouter') // orden por costo intacto
+  })
+
+  it('sin degradados (default) → comportamiento normal', () => {
+    const chain = planChain({ task: 'classify', messages: [] }, ['anthropic', 'openrouter'])
+    expect(chain[0].provider).toBe('openrouter')
+  })
 })
 
 describe('requestHasImages', () => {
