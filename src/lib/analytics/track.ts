@@ -80,6 +80,9 @@ export const EVENTS = {
   personOpened: 'person_opened',
   // /oportunidades — creación/edición de deals.
   dealSaved: 'deal_saved',
+  // Error boundary que renderizó la pantalla "Algo se rompió". El param
+  // `boundary` distingue el de segmento ('route') del último recurso ('global').
+  renderError: 'render_error',
 } as const
 
 // ─── TAXONOMÍA ESTÁNDAR ───────────────────────────────────────────────
@@ -155,4 +158,20 @@ export function trackAiError(
   err: { status?: number; message?: string; detail?: string },
 ): void {
   track(EVENTS.aiCallFailed, { feature, reason: classifyAiError(err), status: err.status ?? 0 })
+}
+
+/** Mide en GA4 un error de render atrapado por un error boundary (la pantalla
+ *  "Algo se rompió"). `boundary` distingue el de segmento ('route') del global
+ *  (último recurso). Adjunta digest, ruta y un recorte del mensaje para triaje.
+ *  Silencioso sin gtag — en el boundary global gtag puede no estar cargado. */
+export function trackRenderError(
+  boundary: 'route' | 'global',
+  error: { message?: string; digest?: string },
+): void {
+  track(EVENTS.renderError, {
+    boundary,
+    digest: error.digest ?? undefined,
+    message: (error.message ?? '').slice(0, 120),
+    path: typeof window !== 'undefined' ? window.location.pathname : undefined,
+  })
 }
