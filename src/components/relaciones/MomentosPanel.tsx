@@ -6,7 +6,7 @@
 // involucrados, y aparece en la ficha de cada uno y en el día-X.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Flag, Plus, Loader2, Check, X, Clock, Users } from 'lucide-react'
+import { Flag, Plus, Loader2, Check, X, Clock, Users, Sparkles } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,6 +36,10 @@ export function MomentosPanel({ personId }: { personId: string }) {
   const [coQuery, setCoQuery] = useState('')
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  // Cruce chat→temas abiertos: SIR sugiere cuáles ya se resolvieron (con evidencia).
+  const [suggestions, setSuggestions] = useState<Record<string, { evidence: string }>>({})
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const [checked, setChecked] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -46,6 +50,26 @@ export function MomentosPanel({ personId }: { personId: string }) {
     } catch { setMoments([]) }
   }, [personId])
   useEffect(() => { void load() }, [load])
+
+  // Una vez cargados, si hay temas abiertos, preguntá al backend si el chat
+  // reciente ya resolvió alguno. Corre UNA vez por ficha. Fail-soft.
+  useEffect(() => {
+    if (checked || moments === null) return
+    if (!moments.some((m) => m.status === 'abierto')) return
+    setChecked(true)
+    void (async () => {
+      try {
+        const res = await fetch('/api/relaciones/moment-check', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ person_id: personId }),
+        })
+        const j = (await res.json()) as { suggestions?: Array<{ momentId: string; evidence: string }> }
+        const map: Record<string, { evidence: string }> = {}
+        for (const s of j.suggestions ?? []) map[s.momentId] = { evidence: s.evidence }
+        setSuggestions(map)
+      } catch { /* fail-soft: sin sugerencias */ }
+    })()
+  }, [moments, checked, personId])
 
   // candidatos para sumar al episodio: excluye a la persona actual y a los ya elegidos.
   const coCandidates = useMemo(() => {
@@ -78,12 +102,20 @@ export function MomentosPanel({ personId }: { personId: string }) {
     } catch { setErr('No se pudo guardar.') } finally { setSaving(false) }
   }
 
-  async function resolver(id: string) {
-    const resolution = window.prompt('¿Cómo se resolvió? (opcional)') ?? ''
+  async function resolverCon(id: string, resolution: string) {
     setMoments((prev) => (prev ?? []).map((m) => (m.id === id ? { ...m, status: 'resuelto', resolution: resolution || m.resolution } : m)))
+    setSuggestions((prev) => { const n = { ...prev }; delete n[id]; return n })
     try {
       await fetch('/api/moments', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, status: 'resuelto', resolution: resolution || undefined }) })
     } catch { /* */ }
+  }
+
+  async function resolver(id: string) {
+    await resolverCon(id, window.prompt('¿Cómo se resolvió? (opcional)') ?? '')
+  }
+
+  function descartarSugerencia(id: string) {
+    setDismissed((prev) => new Set(prev).add(id))
   }
 
   async function borrar(id: string) {
@@ -184,6 +216,22 @@ export function MomentosPanel({ personId }: { personId: string }) {
                       <button type="button" onClick={() => void borrar(m.id)} aria-label="Borrar" className="text-muted-foreground hover:text-bad"><X size={14} /></button>
                     </div>
                   </div>
+                  {suggestions[m.id] && !dismissed.has(m.id) && (
+                    <div className="mt-2.5 rounded-md border border-good/30 bg-good-soft/40 p-2.5">
+                      <div className="flex items-start gap-1.5">
+                        <Sparkles size={12} strokeWidth={1.75} className="mt-0.5 shrink-0 text-good" aria-hidden="true" />
+                        <div className="min-w-0 text-[12px] text-foreground/90 leading-snug">
+                          SIR cree que esto ya se resolvió, según tu chat: <span className="italic text-muted-foreground">&ldquo;{suggestions[m.id].evidence}&rdquo;</span>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2">
+                        <button type="button" onClick={() => void resolverCon(m.id, `Resuelto según el chat: "${suggestions[m.id].evidence}"`)} className="inline-flex items-center gap-1 rounded-full bg-good/15 px-2.5 py-1 text-[11px] font-medium text-good hover:bg-good/25">
+                          <Check size={11} strokeWidth={2} /> Marcar resuelto
+                        </button>
+                        <button type="button" onClick={() => descartarSugerencia(m.id)} className="text-[11px] text-muted-foreground hover:text-foreground">Sigue abierto</button>
+                      </div>
+                    </div>
+                  )}
                   <ReferenciasEpisodio momentId={m.id} />
                 </div>
               )
