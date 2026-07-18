@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { outOfRangeCount, type HealthExam, type ExamValue } from '@/lib/health-exams/types'
 import { buildLabTrends } from '@/lib/health-exams/trend'
+import { labPatterns } from '@/lib/health-exams/patterns'
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 function fmtDate(iso: string): string {
@@ -48,6 +49,7 @@ export function ChequeosPanel() {
 
   // Pre-carga o sin chequeos → no metemos un cascarón vacío en /salud.
   if (!exams || exams.length === 0) return null
+  const patterns = labPatterns(exams)
 
   return (
     <Card className="shadow-none">
@@ -65,6 +67,20 @@ export function ChequeosPanel() {
             </div>
           )}
         </div>
+
+        {patterns.length > 0 && (
+          <div className="space-y-1.5">
+            {patterns.map((p, i) => (
+              <div key={i} className={cn('flex items-start gap-2 rounded-md border p-2.5 text-[12.5px] leading-snug',
+                p.severity === 'alert' ? 'border-warn/30 bg-warn-soft/40 text-foreground' : 'border-accent/25 bg-accent/5 text-muted-foreground')}>
+                {p.direction === 'down'
+                  ? <TrendingDown size={13} strokeWidth={1.75} className={cn('mt-0.5 shrink-0', p.severity === 'alert' ? 'text-warn' : 'text-accent')} aria-hidden="true" />
+                  : <TrendingUp size={13} strokeWidth={1.75} className={cn('mt-0.5 shrink-0', p.severity === 'alert' ? 'text-warn' : 'text-accent')} aria-hidden="true" />}
+                <span>{p.message}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {view === 'trend' ? <TrendTable exams={exams} /> : (
         <ul className="space-y-2.5">
