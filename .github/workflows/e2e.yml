@@ -1,0 +1,63 @@
+name: E2E — QA móvil (Playwright)
+
+# Harness de QA móvil (issue #819). AISLADO de "Validate SIR V2": corre aparte,
+# manual o nightly, porque necesita levantar el server + secrets de Supabase y es
+# más lento. NO bloquea PRs.
+#
+# GATE POR SECRETS: si faltan los de Supabase, se OMITE con un aviso (no es error).
+# Agregalos en Settings > Secrets and variables > Actions para activarlo:
+#   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * *' # ~04:00 Lima, diario
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Gate por secrets
+        id: secrets
+        env:
+          URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          ANON: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SR: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$ANON" ] || [ -z "$SR" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=E2E omitido::Faltan secrets de Supabase (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) en Actions. No es un error: agregalos para activar el harness. Ver e2e/README.md."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.secrets.outputs.ready == 'true'
+        run: npm install
+
+      - name: Install Playwright (chromium + deps)
+        if: steps.secrets.outputs.ready == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          CI: 'true'
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run test:e2e
+
+      - name: Subir reporte HTML
+        if: always() && steps.secrets.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
