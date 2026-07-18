@@ -21,6 +21,7 @@ import { Sparkles, Loader2, Camera, ChevronDown, Wand2, MessageSquare, PenLine, 
 
 import { Lock } from 'lucide-react'
 import { memoryProvenance, type MemoryOriginIcon } from '@/lib/memories/provenance'
+import { profileMaturity, type MaturityLevel } from '@/lib/memories/maturity'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -117,6 +118,10 @@ export function MemoriasAsociadasPanel({
   // Affordance de privadas/excluidas: colapsado por defecto.
   const [privateOpen, setPrivateOpen] = useState(false)
 
+  // Madurez del perfil: cuán bien conoce SIR a esta persona y sobre qué base
+  // (recibos por dato → resumen). Se calcula sobre las memorias VISIBLES.
+  const maturity = useMemo(() => profileMaturity(memories), [memories])
+
   // Conteo por tipo presente (para los chips de filtro).
   const typeCounts = useMemo(() => {
     const counts = new Map<MemoryType, number>()
@@ -202,6 +207,7 @@ export function MemoriasAsociadasPanel({
                 {memories.length}
               </Badge>
             )}
+            {memories.length > 0 && <MaturityBadge m={maturity} />}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button
@@ -404,6 +410,28 @@ export function MemoriasAsociadasPanel({
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/** Insignia de madurez del perfil: cuán bien conoce SIR a la persona y sobre qué
+ *  base. Resume los recibos por dato de un vistazo; el tooltip trae la base y el
+ *  siguiente paso para afianzarlo. */
+const MATURITY_DOT: Record<MaturityLevel, string> = {
+  naciente: 'bg-warn/70',
+  en_formacion: 'bg-muted-foreground/60',
+  solido: 'bg-brand',
+  profundo: 'bg-ok',
+}
+function MaturityBadge({ m }: { m: ReturnType<typeof profileMaturity> }) {
+  const title = [m.basis && `Base: ${m.basis}`, m.nextStep].filter(Boolean).join(' — ')
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground"
+      title={title || m.label}
+    >
+      <span className={cn('h-1.5 w-1.5 rounded-full', MATURITY_DOT[m.level])} aria-hidden="true" />
+      {m.label}
+    </span>
   )
 }
 
