@@ -13,6 +13,8 @@
     "https://outlook.office.com/*",
     "https://outlook.office365.com/*",
     "https://outlook.cloud.microsoft/*",
+    "https://www.instagram.com/*",
+    "https://www.linkedin.com/*",
     "https://sir-v2-life-os.vercel.app/*"
   ],
   "background": { "service_worker": "background.js" },
@@ -47,6 +49,28 @@
       ],
       "js": ["content/common.js", "content/outlook.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["content/socialBridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.instagram.com/*"],
+      "js": ["content/instagramReader.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content/socialBridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content/linkedinReader.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
     }
   ]
 }
