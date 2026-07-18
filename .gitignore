@@ -31,3 +31,10 @@ __pycache__/
 
 .vercel
 .claude/
+
+# Playwright e2e (issue #819)
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+e2e/.auth/
