@@ -26,10 +26,15 @@
     const pi = node.publicIdentifier;
     const headline = node.headline;
     if (typeof pi === 'string' && pi && typeof headline === 'string' && headline.trim()) {
+      // Nombre (para matchear/auto-setear la persona la 1ª vez, sin URL previa).
+      const fn = typeof node.firstName === 'string' ? node.firstName.trim() : '';
+      const ln = typeof node.lastName === 'string' ? node.lastName.trim() : '';
+      const name = `${fn} ${ln}`.trim();
       acc.push({
         platform: 'linkedin',
         linkedinUrl: `https://linkedin.com/in/${pi}`,
         headline: headline.trim().slice(0, 200),
+        name: name || undefined,
       });
     }
     for (const k in node) { const v = node[k]; if (v && typeof v === 'object') scan(v, depth + 1, acc); }
