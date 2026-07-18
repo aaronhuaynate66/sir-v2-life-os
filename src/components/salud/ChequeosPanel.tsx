@@ -5,13 +5,14 @@
 // hallazgos CIE10, valores clave (resaltando los fuera de rango) y link al PDF
 // original. Client-side + fail-soft: si la tabla aún no propagó, no renderiza.
 
-import { useCallback, useEffect, useState } from 'react'
-import { ClipboardList, FileText, ChevronDown, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { ClipboardList, FileText, ChevronDown, AlertTriangle, CheckCircle2, TrendingUp, TrendingDown, Repeat } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { outOfRangeCount, type HealthExam, type ExamValue } from '@/lib/health-exams/types'
+import { buildLabTrends } from '@/lib/health-exams/trend'
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 function fmtDate(iso: string): string {
@@ -23,6 +24,7 @@ function fmtDate(iso: string): string {
 export function ChequeosPanel() {
   const [exams, setExams] = useState<HealthExam[] | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [view, setView] = useState<'exams' | 'trend'>('exams')
 
   useEffect(() => {
     let alive = true
@@ -50,12 +52,21 @@ export function ChequeosPanel() {
   return (
     <Card className="shadow-none">
       <CardContent className="p-4 sm:p-6 space-y-3">
-        <div className="flex items-center gap-2">
-          <ClipboardList size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Historial médico · chequeos</span>
-          <Badge variant="outline" className="text-[10px] font-mono">{exams.length}</Badge>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <ClipboardList size={14} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
+            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Historial médico · chequeos</span>
+            <Badge variant="outline" className="text-[10px] font-mono">{exams.length}</Badge>
+          </div>
+          {exams.length >= 2 && (
+            <div className="inline-flex rounded-full border border-border p-0.5 text-[11px]">
+              <button type="button" onClick={() => setView('exams')} className={cn('rounded-full px-2.5 py-0.5 transition-colors', view === 'exams' ? 'bg-accent/15 text-foreground' : 'text-muted-foreground')}>Exámenes</button>
+              <button type="button" onClick={() => setView('trend')} className={cn('rounded-full px-2.5 py-0.5 transition-colors', view === 'trend' ? 'bg-accent/15 text-foreground' : 'text-muted-foreground')}>Tendencia</button>
+            </div>
+          )}
         </div>
 
+        {view === 'trend' ? <TrendTable exams={exams} /> : (
         <ul className="space-y-2.5">
           {exams.map((ex) => {
             const open = openId === ex.id
@@ -144,8 +155,69 @@ export function ChequeosPanel() {
             )
           })}
         </ul>
+        )}
       </CardContent>
     </Card>
+  )
+}
+
+function TrendTable({ exams }: { exams: HealthExam[] }) {
+  const { dates, byCategory } = buildLabTrends(exams)
+  const fmt = (iso: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+    return m ? `${m[3]}/${m[2]}` : iso
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        Cada valor a través de tus exámenes. <Repeat size={10} className="inline -mt-0.5" /> = tendencia consistente (3+ mediciones siempre en la misma dirección) — lo que vale la pena vigilar.
+      </p>
+      <div className="overflow-x-auto rounded-lg border border-border/60">
+        <table className="w-full min-w-[420px] text-[12.5px]">
+          <thead>
+            <tr className="bg-muted/20">
+              <th className="text-left font-medium text-muted-foreground px-3 py-2">Analito</th>
+              {dates.map((d) => <th key={d} className="text-right font-mono font-normal text-muted-foreground px-2.5 py-2 whitespace-nowrap">{fmt(d)}</th>)}
+              <th className="px-2 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {byCategory.map((cat) => (
+              <FragmentCat key={cat.category} category={cat.category} span={dates.length + 2}>
+                {cat.trends.map((t) => (
+                  <tr key={t.name} className="border-t border-border/40">
+                    <td className="px-3 py-1.5 text-foreground">
+                      {t.name}
+                      {t.unit && <span className="text-muted-foreground/60"> · {t.unit}</span>}
+                      {t.range && <span className="block text-[10px] text-muted-foreground/50 font-mono">rango {t.range}</span>}
+                    </td>
+                    {t.points.map((p, i) => (
+                      <td key={i} className={cn('px-2.5 py-1.5 text-right font-mono tabular-nums', !p ? 'text-muted-foreground/30' : p.flag === 'high' || p.flag === 'low' ? 'text-warn font-semibold' : 'text-foreground')}>
+                        {p ? `${p.value}${p.flag === 'high' ? ' ↑' : p.flag === 'low' ? ' ↓' : ''}` : '·'}
+                      </td>
+                    ))}
+                    <td className="px-2 py-1.5 text-right whitespace-nowrap">
+                      {t.consistent && <Repeat size={12} className="inline text-accent" aria-label="tendencia consistente" />}
+                      {t.direction === 'up' && <TrendingUp size={12} className="inline text-muted-foreground ml-0.5" aria-label="subiendo" />}
+                      {t.direction === 'down' && <TrendingDown size={12} className="inline text-muted-foreground ml-0.5" aria-label="bajando" />}
+                    </td>
+                  </tr>
+                ))}
+              </FragmentCat>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function FragmentCat({ category, span, children }: { category: string; span: number; children: ReactNode }) {
+  return (
+    <>
+      <tr><td colSpan={span} className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-[0.06em] text-accent font-semibold">{category}</td></tr>
+      {children}
+    </>
   )
 }
 
