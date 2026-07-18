@@ -24,6 +24,12 @@ function base(over: Partial<LinkedInProfileExtracted> = {}): LinkedInProfileExtr
     educationHistory: [],
     profileUrl: null,
     connectionsCount: 500,
+    followersCount: null,
+    isVerified: false,
+    certifications: [],
+    languages: [],
+    organizations: [],
+    volunteerWork: [],
     isOpenToWork: false,
     hasProfilePhoto: true,
     hasBannerImage: false,
@@ -69,6 +75,46 @@ describe('isValidLinkedInProfileExtracted', () => {
     o.profileUrl = 42
     expect(isValidLinkedInProfileExtracted(o)).toBe(true)
     expect(sanitizeLinkedInProfile(o as never).profileUrl).toBeNull()
+  })
+})
+
+describe('sanitizeLinkedInProfile — campos nuevos (certs/idiomas/orgs/voluntariado/followers/verificado)', () => {
+  it('sanea listas de strings: trim, dedupe case-insensitive, dropea vacías', () => {
+    const out = sanitizeLinkedInProfile(base({
+      certifications: ['  Google Analytics  ', 'google analytics', '', 'Scrum Master'] as unknown as string[],
+      languages: ['Español', 'Inglés', 'español'] as unknown as string[],
+      organizations: ['Colegio de Ingenieros'] as unknown as string[],
+    }))
+    expect(out.certifications).toEqual(['Google Analytics', 'Scrum Master'])
+    expect(out.languages).toEqual(['Español', 'Inglés'])
+    expect(out.organizations).toEqual(['Colegio de Ingenieros'])
+  })
+  it('voluntariado usa la misma sanitización de orgRefs (descarta sin nombre)', () => {
+    const out = sanitizeLinkedInProfile(base({
+      volunteerWork: [
+        { name: 'Cruz Roja', title: 'Voluntario', dateRange: '2020 - 2021' },
+        { title: 'sin org' } as unknown as never,
+      ],
+    }))
+    expect(out.volunteerWork).toHaveLength(1)
+    expect(out.volunteerWork[0].name).toBe('Cruz Roja')
+  })
+  it('followersCount separado de connectionsCount; isVerified solo true si === true', () => {
+    const out = sanitizeLinkedInProfile(base({ connectionsCount: 500, followersCount: 12000, isVerified: true }))
+    expect(out.connectionsCount).toBe(500)
+    expect(out.followersCount).toBe(12000)
+    expect(out.isVerified).toBe(true)
+    expect(sanitizeLinkedInProfile(base({ isVerified: 'yes' as unknown as boolean })).isVerified).toBe(false)
+  })
+  it('tolera campos nuevos ausentes (rows viejos) → defaults vacíos', () => {
+    const o = base() as unknown as Record<string, unknown>
+    delete o.certifications; delete o.languages; delete o.organizations; delete o.volunteerWork; delete o.followersCount; delete o.isVerified
+    expect(isValidLinkedInProfileExtracted(o)).toBe(true)
+    const out = sanitizeLinkedInProfile(o as never)
+    expect(out.certifications).toEqual([])
+    expect(out.volunteerWork).toEqual([])
+    expect(out.followersCount).toBeNull()
+    expect(out.isVerified).toBe(false)
   })
 })
 
