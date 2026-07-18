@@ -4,6 +4,7 @@ Lee, **pasivo**, tus conversaciones de **Microsoft Teams**, **WhatsApp Web** y t
 
 - Los **chats** (Teams / WhatsApp) van a `/api/reader/ingest`.
 - El **correo** (Outlook Web) va a `/api/email/ingest` — la misma normalización y el mismo backend que el sync por Microsoft Graph, pero **sin** necesitar acceso admin a Azure. Es una **fuente alternativa** al flujo Graph (que sigue existiendo).
+- Las **señales de timing** de **Instagram / LinkedIn** van a `/api/social/ingest` (ver abajo).
 
 ## Antes de empezar (una vez)
 
@@ -41,15 +42,29 @@ Lee, **pasivo**, tus conversaciones de **Microsoft Teams**, **WhatsApp Web** y t
 - Volvé a abrir el popup: vas a ver **"Mensajes enviados"** subir. Si hay algo mal, muestra el error.
 - En SIR: chats y correos aparecen como observaciones `dm_conversation` (correo agrupado por remitente) → alimentan *Lo personal*, recencia, tono, memorias, y podés preguntarle a SIR sobre esos hilos.
 
+## Instagram / LinkedIn — señales de TIMING (Parte A del reader social)
+
+Para que SIR no te deje pedirle algo a alguien en **mal momento** (caso: contacto **de viaje**), la extensión lee —**pasivo, por interceptación de red**— el JSON que IG/LinkedIn **ya le mandan a tu navegador mientras vos navegás normal**. NO hace requests propios ni "ve" stories por su cuenta (eso IG detecta y banea): solo lee lo que ya cargaste.
+
+- **Instagram** (`www.instagram.com`): del tray de stories y de la story que abrís, saca `handle` + ¿tiene story activa? + el texto visible. El server deriva la señal: texto con pistas de viaje (✈️, "escapadita", aeropuerto…) → **de viaje**; si no, una story reciente → **por acá/activa**.
+- **LinkedIn** (`www.linkedin.com`): cuando ves el perfil de un contacto, saca su `headline`. Si **cambió** respecto al guardado → señal **cambió de trabajo**.
+- El server (`/api/social/ingest`, mismo `x-reader-token`) resuelve el handle → persona y arma el veredicto **"buen/mal momento para contactar a X"** (aparece en la ficha, el push y `/negociar` · `/tacticas` · Ensayo).
+
+**Requisito de matcheo:** la persona en SIR debe tener seteado su **`instagram_handle`** (sin @) y/o su **`linkedin_url`** (`.../in/<slug>`), si no la señal llega pero no se puede atribuir (queda como `unmatched`).
+
+**Guardrail:** solo contactos con los que ya tenés relación, solo lo que ellos difunden, y solo para cuidar el timing — no vigilancia. No se guarda contenido crudo: solo la señal + un detalle corto.
+
 ## Si no captura (ajuste de selectores)
 
 Teams, WhatsApp y Outlook cambian su HTML seguido. Si el contador no sube:
 1. En la pestaña, abrí la consola (F12 → Console) y filtrá por `SIR Reader`.
 2. Si dice *"no encontré el contenedor…"*, los selectores necesitan ajuste → se actualizan en `content/teams.js`, `content/whatsapp.js` o `content/outlook.js` y recargás la extensión (botón ↻ en `chrome://extensions`). El botón **"Probar detección"** del popup también corre en OWA y te da una muestra + HTML crudo de fila para afinar los selectores.
+3. **IG/LinkedIn:** el shape interno del JSON de IG (tray/reels) y de LinkedIn (voyager) cambia seguido. El extractor es un deep-scan tolerante, pero si deja de capturar hay que ajustar `content/instagramReader.js` / `content/linkedinReader.js`. Para depurar: en la consola de la pestaña de IG/LinkedIn vas a ver `instagram reader activo`/`linkedin reader activo`; agregá un `console.debug` en `handle()` para ver los JSON que llegan y de ahí afinar los campos.
 
 ## Límites honestos
 
 - **Pasivo por diseño:** solo captura lo que vos ves. Si querés traer historial viejo, scrolleá hacia arriba (vos, natural) y lo va leyendo.
-- **Teams/WhatsApp/Outlook = tu data, tu sesión → riesgo bajo.** LinkedIn/IG/FB quedan afuera a propósito (riesgo de cuenta) — esos van on-demand por captura.
+- **Teams/WhatsApp/Outlook = tu data, tu sesión → riesgo bajo.**
+- **IG/LinkedIn = pasivo por interceptación de red → el enfoque de MENOR riesgo** (según el research): no hace requests propios, solo lee lo que ya cargaste al navegar. Aun así IG/LinkedIn son sensibles a la automatización; mantenelo pasivo (nada de auto-abrir stories ni polling). FB queda afuera.
 - **Correo, dedup honesto:** el mismo correo se re-scrapea al re-abrir el inbox; se deduplica por `messageId` cuando OWA lo expone, y si no por `remitente+asunto+fecha`. Las horas relativas de OWA ("10:32", "ayer") son un ancla aproximado; el dedup fuerte es el `messageId`. Ver el correo en la lista (preview) y después abierto (cuerpo completo) puede sumar una vez el cuerpo más rico.
 - **Idempotente:** reenviar el mismo mensaje no duplica (SIR deduplica por hash).

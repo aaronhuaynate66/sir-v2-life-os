@@ -85,9 +85,39 @@ async function ingestEmail(messages) {
   }
 }
 
+// Señales sociales (IG/LinkedIn) leídas pasivamente → POST /api/social/ingest.
+// El server resuelve handle→persona y deriva la señal de timing (Parte A/B).
+async function ingestSocial(items) {
+  const { sirUrl, token } = await getConfig();
+  if (!token) { await setStatus({ lastError: 'Falta el token — configuralo en el popup' }); return { ok: false, error: 'no-token' }; }
+  try {
+    const res = await fetch(`${sirUrl}/api/social/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-reader-token': token },
+      body: JSON.stringify({ items }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      await setStatus({ lastError: `HTTP ${res.status} ${detail.slice(0, 140)}` });
+      return { ok: false, status: res.status };
+    }
+    const j = await res.json().catch(() => ({}));
+    if (j && typeof j.inserted === 'number') await bump('sent', j.inserted);
+    await setStatus({ lastError: null, lastThread: `social: ${items.length} señal(es)`, lastPlatform: (items[0] && items[0].platform) || 'social' });
+    return { ok: true };
+  } catch (e) {
+    await setStatus({ lastError: String(e).slice(0, 140) });
+    return { ok: false, error: String(e) };
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg && msg.type === 'sir-batch' && msg.batch) {
     ingest(msg.batch).then(sendResponse);
+    return true; // respuesta async
+  }
+  if (msg && msg.type === 'sir-social-batch' && Array.isArray(msg.items)) {
+    ingestSocial(msg.items).then(sendResponse);
     return true; // respuesta async
   }
   if (msg && msg.type === 'sir-email-batch' && Array.isArray(msg.messages)) {
