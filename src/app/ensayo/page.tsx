@@ -9,7 +9,7 @@
 // Llama a /api/influence/rehearse (Sonnet).
 
 import { useMemo, useState } from 'react'
-import { Drama, Loader2, Sparkles, ShieldAlert, Lightbulb, ArrowRight, MessageCircleQuestion } from 'lucide-react'
+import { Drama, Loader2, Sparkles, ShieldAlert, Lightbulb, ArrowRight, MessageCircleQuestion, Scale } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -24,6 +24,7 @@ import { InfluenceMapCard } from '@/components/influence/InfluenceMapCard'
 import { StrategicRiskMeter } from '@/components/influence/StrategicRiskMeter'
 import { cn } from '@/lib/utils'
 import type { RehearseResult, Likelihood } from '@/lib/influence/rehearsePrompt'
+import type { RehearseCritique } from '@/lib/influence/critiquePrompt'
 import { trackAiError } from '@/lib/analytics/track'
 import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
 import type { EthicsCheck } from '@/engines/ethics'
@@ -152,14 +153,30 @@ function EnsayoContent() {
       {/* 16·M2 — quién más pesa alrededor de esta persona (grafo, client-side). */}
       {personId && <InfluenceMapCard targetId={personId} />}
 
-      {result && <RehearseView result={result} ethics={ethics} forName={forName} hadContext={hadContext} />}
+      {result && <RehearseView result={result} ethics={ethics} forName={forName} hadContext={hadContext} objective={objective} />}
 
       <RehearsalHistoryPanel personId={personId || undefined} reloadKey={reloadKey} />
     </AppShell>
   )
 }
 
-function RehearseView({ result, ethics, forName, hadContext }: { result: RehearseResult; ethics?: EthicsCheck | null; forName: string; hadContext: boolean }) {
+function RehearseView({ result, ethics, forName, hadContext, objective }: { result: RehearseResult; ethics?: EthicsCheck | null; forName: string; hadContext: boolean; objective: string }) {
+  const [critique, setCritique] = useState<RehearseCritique | null>(null)
+  const [critBusy, setCritBusy] = useState(false)
+  const [critErr, setCritErr] = useState<string | null>(null)
+  async function pedirCritica() {
+    if (critBusy) return
+    setCritBusy(true); setCritErr(null)
+    try {
+      const r = await fetch('/api/influence/rehearse/critique', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ personName: forName, objective, read: result.read, opener: result.opener, actions: result.actions }),
+      })
+      const j = (await r.json()) as { critique?: RehearseCritique; detail?: string; error?: string }
+      if (r.ok && j.critique) setCritique(j.critique)
+      else setCritErr(j.detail || j.error || 'No se pudo generar la crítica')
+    } catch { setCritErr('Red caída, reinténtalo') } finally { setCritBusy(false) }
+  }
   return (
     <div className="space-y-4">
       <StrategicRiskMeter ethics={ethics} />
@@ -261,6 +278,40 @@ function RehearseView({ result, ethics, forName, hadContext }: { result: Rehears
           </CardContent>
         </Card>
       )}
+
+      {/* Crítico del Ensayo: segundo par de ojos (ética + eficacia). Opt-in. */}
+      <Card className="shadow-none">
+        <CardContent className="p-4 sm:p-5">
+          {!critique ? (
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <span className="flex items-center gap-2 min-w-0 text-sm text-muted-foreground">
+                <Scale size={14} strokeWidth={1.75} className="text-muted-foreground/70 shrink-0" aria-hidden="true" />
+                ¿Este acercamiento cuida el vínculo o se pasa? Pide un segundo par de ojos.
+              </span>
+              <Button size="sm" variant="outline" onClick={() => void pedirCritica()} disabled={critBusy}>
+                {critBusy ? <><Loader2 size={13} className="mr-1.5 animate-spin" /> Revisando…</> : <><Scale size={13} className="mr-1.5" /> Pedir una crítica</>}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Scale size={14} strokeWidth={1.75} className={cn(critique.tone === 'manipula' ? 'text-bad' : critique.tone === 'presiona' ? 'text-warn' : 'text-ok')} aria-hidden="true" />
+                <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans">Crítica del acercamiento</span>
+                <span className={cn('text-[11px] rounded-full px-2 py-0.5', critique.tone === 'manipula' ? 'bg-bad-soft text-bad' : critique.tone === 'presiona' ? 'bg-warn-soft text-warn' : 'bg-ok-soft text-ok')}>
+                  {critique.tone === 'manipula' ? 'cruza la línea' : critique.tone === 'presiona' ? 'presiona de más' : 'sano'}
+                </span>
+              </div>
+              <p className="text-sm text-foreground/90 leading-relaxed">{critique.note}</p>
+              {critique.betterMove && (
+                <p className="text-[13px] text-muted-foreground leading-relaxed">
+                  <span className="text-text-tertiary text-[11px] uppercase tracking-[0.07em] mr-1.5">mejor</span>{critique.betterMove}
+                </p>
+              )}
+            </div>
+          )}
+          {critErr && <p className="text-[12px] text-bad mt-2">{critErr}</p>}
+        </CardContent>
+      </Card>
 
       <p className="text-[11px] text-muted-foreground/80 leading-relaxed px-1">
         {result.watchout || 'Esto es un ensayo, no una predicción — la gente real sorprende. Úsalo para prepararte, no para decidir por la profecía.'}
