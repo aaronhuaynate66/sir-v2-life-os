@@ -217,6 +217,12 @@ function RehearseView({ result, ethics, forName, hadContext }: { result: Rehears
                   <MessageCircleQuestion size={15} strokeWidth={1.75} className="text-warn mt-0.5 flex-shrink-0" aria-hidden="true" />
                   <div className="min-w-0">
                     <div className="text-sm text-foreground">&ldquo;{o.objection}&rdquo;</div>
+                    {o.evidence && (
+                      <p className="text-[12px] text-accent/90 leading-relaxed mt-1 border-l-2 border-accent/30 pl-2">
+                        <span className="text-text-tertiary text-[10px] uppercase tracking-[0.07em] mr-1.5">de su chat</span>
+                        <span className="italic">&ldquo;{o.evidence}&rdquo;</span>
+                      </p>
+                    )}
                     <p className="text-[13px] text-muted-foreground leading-relaxed mt-0.5">
                       <span className="text-text-tertiary text-[11px] uppercase tracking-[0.07em] mr-1.5">responde</span>{o.response}
                     </p>

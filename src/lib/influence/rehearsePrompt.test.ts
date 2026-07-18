@@ -101,4 +101,9 @@ describe('parseRehearseJson', () => {
   it('null si no parsea', () => {
     expect(parseRehearseJson('nope')).toBeNull()
   })
+  it('objeción con evidence (cita del chat) se preserva; sin evidence queda sin el campo', () => {
+    const r = parseRehearseJson('{"scenarios":[{"title":"a","path":"b","likelihood":"plausible"}],"objections":[{"objection":"no tengo tiempo","response":"...","evidence":"ando full esta semana"},{"objection":"otra","response":"..."}]}')
+    expect(r?.objections[0].evidence).toBe('ando full esta semana')
+    expect(r?.objections[1].evidence).toBeUndefined()
+  })
 })
