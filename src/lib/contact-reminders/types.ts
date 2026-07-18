@@ -35,3 +35,11 @@ export function sortContactReminders(rs: ContactReminder[]): ContactReminder[] {
     return a.createdAt.localeCompare(b.createdAt)
   })
 }
+
+/** El texto del recordatorio de contacto MÁS relevante (pending, standing antes
+ *  que el once más viejo) para surgirlo "antes de contactar" en el push/brief.
+ *  null si no hay ninguno pendiente. PURO. */
+export function topContactReminderText(rs: ContactReminder[]): string | null {
+  const pending = sortContactReminders(rs.filter((r) => r.status === 'pending'))
+  return pending[0]?.text.trim() || null
+}

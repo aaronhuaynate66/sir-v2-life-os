@@ -66,6 +66,24 @@ describe('buildMorningPush — a quién cuidar hoy (nudge relacional)', () => {
   })
 })
 
+describe('buildMorningPush — vigilancia de laboratorio', () => {
+  it('incluye el healthWatch cuando viene', () => {
+    const p = buildMorningPush({ healthWatch: 'Chequeo · Glucosa viene subiendo 3 exámenes seguidos y salió de rango — conviene revisarlo' })
+    expect(p.body).toContain('Glucosa')
+    expect(p.body).toContain('revisarlo')
+  })
+  it('va bajo: cede el paso a las señales agudas (cap de 3)', () => {
+    const p = buildMorningPush({
+      birthdays: [{ name: 'A', days: 1 }],
+      relationshipNudge: 'Diana dormida',
+      dueTasks: ['T1'],
+      healthWatch: 'Chequeo Glucosa fuera de rango',
+    })
+    expect(p.body.split(' · ').length).toBe(3)
+    expect(p.body).not.toContain('Glucosa') // quedó fuera del cap (lo agudo entró antes)
+  })
+})
+
 describe('buildMorningPush — fechas especiales / aniversarios', () => {
   it('incluye el aniversario mensual (mesario) en el brief', () => {
     const p = buildMorningPush({ importantDates: ['Aniversario mensual relación (13) · ¡Hoy!'] })

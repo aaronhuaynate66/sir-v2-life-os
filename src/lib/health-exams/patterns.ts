@@ -57,3 +57,16 @@ export function labPatterns(exams: HealthExam[]): LabPattern[] {
   // alerts primero, luego watch
   return out.sort((a, b) => (a.severity === b.severity ? 0 : a.severity === 'alert' ? -1 : 1))
 }
+
+/**
+ * Línea compacta para el brief/push matutino: el patrón 'alert' más relevante,
+ * o null si no hay ninguno. SOLO 'alert' (algo consistente que YA se salió de
+ * rango) merece un empujón proactivo — el 'watch' vive en el panel, sin urgencia.
+ * Es "que no se quede al baúl" (idea de Aaron) hecho recordatorio. PURO.
+ */
+export function labAlertPushLine(patterns: LabPattern[]): string | null {
+  const alert = patterns.find((p) => p.severity === 'alert')
+  if (!alert) return null
+  const dir = alert.direction === 'up' ? 'subiendo' : 'bajando'
+  return `Chequeo · ${alert.name} viene ${dir} ${alert.values.length} exámenes seguidos y salió de rango — conviene revisarlo`
+}

@@ -26,6 +26,9 @@ import { calibrateRanges, type VitalsHistory } from '@/lib/health/calibrate'
 import { healthDataGap } from '@/lib/health/dataGap'
 import { parseWeightCategory } from '@/engines/targets'
 import { assembleDailyActions } from '@/lib/daily-actions/assemble'
+import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
+import { rowToHealthExam } from '@/lib/health-exams/types'
+import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -103,6 +106,9 @@ export async function GET(req: NextRequest) {
 
   const now = new Date()
   const today = limaToday(now)
+  // Día de la semana en Lima (UTC-5). Los patrones de laboratorio se avisan solo
+  // los LUNES: son crónicos (anuales), no agudos → un recordatorio semanal, no ruido diario.
+  const isMondayLima = new Date(now.getTime() - 5 * 3_600_000).getUTCDay() === 1
   let sent = 0
   const results: Array<{ user: string; sent: number }> = []
 
@@ -337,6 +343,29 @@ export async function GET(req: NextRequest) {
         /* fail-soft */
       }
 
+      // VIGILANCIA DE LABORATORIO (semanal, lunes): un patrón de chequeos
+      // consistente que YA se salió de rango no debe quedar "al baúl" (idea de
+      // Aaron). Solo los lunes → recordatorio periódico, no alarma diaria. Es la
+      // capa crónica de salud, aparte de la aguda (anomalía de vitales de arriba).
+      let healthWatchText: string | undefined
+      if (isMondayLima) {
+        try {
+          const { data: examRows } = await admin
+            .from('health_exams')
+            .select('id, exam_date, provider, title, summary, findings, values, recommendations, storage_path')
+            .eq('user_id', uid)
+            .order('exam_date', { ascending: true })
+            .limit(50)
+          const exams = (examRows ?? []).map((r) => ({ ...rowToHealthExam(r as Record<string, unknown>), pdfUrl: null }))
+          if (exams.length >= 2) {
+            const line = labAlertPushLine(labPatterns(exams))
+            if (line) healthWatchText = line
+          }
+        } catch {
+          /* fail-soft: la tabla puede no haber propagado aún */
+        }
+      }
+
       // A QUIÉN CUIDAR HOY: el vínculo más urgente de "Reconectar", con el MISMO
       // motor que la app (assembleDailyActions). SIR sabe a quién estás
       // descuidando; esto lo saca de la app y te lo dice en el push/Telegram.
@@ -347,12 +376,26 @@ export async function GET(req: NextRequest) {
         if (top && (top.urgency === 'high' || top.urgency === 'medium')) {
           const who = top.kinLabel ? `${top.personName} (${top.kinLabel})` : top.personName
           relationshipNudgeText = `${who} — ${top.headline}`
+          // Si hay un recordatorio "antes de contactar" para ESTA persona, este es
+          // EL momento de surgirlo: el push ya te empuja a escribirle. Es el punto
+          // de los contact_reminders (#801) — que aparezcan, no que se olviden. Fail-soft.
+          try {
+            const { data: crRows } = await admin
+              .from('contact_reminders')
+              .select('id, person_id, text, kind, status, created_at, done_at')
+              .eq('user_id', uid)
+              .eq('person_id', top.personId)
+              .eq('status', 'pending')
+              .limit(20)
+            const rt = topContactReminderText((crRows ?? []).map((r) => rowToContactReminder(r as Record<string, unknown>)))
+            if (rt) relationshipNudgeText += ` · antes de escribirle: ${rt}`
+          } catch { /* tabla 0148 sin propagar → sin recordatorio */ }
         }
       } catch {
         /* fail-soft: el nudge relacional es un extra, no rompe el push */
       }
 
-      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText })
+      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
