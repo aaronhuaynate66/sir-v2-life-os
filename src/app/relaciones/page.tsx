@@ -330,7 +330,7 @@ function RelationshipsContent() {
           </div>
           <p className="text-sm text-muted-foreground mt-1 font-mono tabular-nums">{people.length} personas &middot; {alerts.length} alertas</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {people.length > 0 && <RegenerarSintesisTodas />}
           <Button variant="outline" size="sm" asChild>
             <Link href="/relaciones/intake">

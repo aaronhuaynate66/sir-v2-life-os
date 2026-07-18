@@ -55,18 +55,29 @@ export async function expectNoHorizontalOverflow(page: Page, label: string): Pro
  */
 export async function findOverflowingElements(page: Page): Promise<string[]> {
   return page.evaluate(() => {
-    const out: string[] = []
     const vw = document.documentElement.clientWidth
+    const hits: { sel: string; ow: number; right: number; sw: number; ox: string }[] = []
     for (const el of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
-      if (el.scrollWidth > vw + 1) {
-        const style = getComputedStyle(el)
-        if (style.overflowX === 'visible') {
-          const id = el.id ? `#${el.id}` : ''
-          const cls = typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : ''
-          out.push(`${el.tagName.toLowerCase()}${id}${cls}`.slice(0, 80))
-        }
-      }
+      const rect = el.getBoundingClientRect()
+      // Solo lo que REALMENTE sale del viewport por la derecha causa scroll de
+      // página. Un elemento con scrollWidth enorme pero clippeado (overflow-x
+      // hidden/auto) y dentro del viewport NO desborda → se ignora (era ruido).
+      if (rect.right <= vw + 1) continue
+      const style = getComputedStyle(el)
+      const id = el.id ? `#${el.id}` : ''
+      const cls = typeof el.className === 'string' && el.className.trim()
+        ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.')
+        : ''
+      hits.push({
+        sel: `${el.tagName.toLowerCase()}${id}${cls}`.slice(0, 90),
+        ow: Math.round(rect.width),
+        right: Math.round(rect.right),
+        sw: el.scrollWidth,
+        ox: style.overflowX,
+      })
     }
-    return Array.from(new Set(out)).slice(0, 10)
+    // El que más sobresale a la derecha primero: ese arrastra el scroll del doc.
+    hits.sort((a, b) => b.right - a.right)
+    return hits.slice(0, 8).map((h) => `${h.sel} [w=${h.ow} right=${h.right} sw=${h.sw} ox=${h.ox}]`)
   })
 }

@@ -75,7 +75,7 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
             Patrones observados de tu semana (estado, conversaciones y memorias), con una acción para la próxima.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button onClick={() => generate('weekly')} disabled={generating}>
             {generating ? <Loader2 size={15} className="animate-spin mr-1.5" /> : <Sparkles size={15} strokeWidth={1.75} className="mr-1.5" />}
             {generating ? 'Generando…' : 'Resumen de la semana'}
