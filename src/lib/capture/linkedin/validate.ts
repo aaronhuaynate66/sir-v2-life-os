@@ -89,6 +89,26 @@ function sanitizeOrgRef(v: LinkedInOrgRef | null): LinkedInOrgRef | null {
  *  que devuelven listas enormes; un perfil real rara vez supera esto). */
 const MAX_HISTORY_ENTRIES = 12
 
+/** Sanitiza una lista de strings (certificaciones/idiomas/organizaciones):
+ *  trimea, dropea vacías, dedupe case-insensitive, clampa longitud y cantidad.
+ *  Tolerante a no-array (rows viejos / modelo que omitió) -> []. */
+function sanitizeStringList(v: unknown, maxLen = 160): string[] {
+  if (!Array.isArray(v)) return []
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const item of v) {
+    if (typeof item !== 'string') continue
+    const t = item.trim().slice(0, maxLen)
+    if (!t) continue
+    const key = t.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(t)
+    if (out.length >= MAX_HISTORY_ENTRIES) break
+  }
+  return out
+}
+
 /** Sanitiza una lista de orgRefs: dropea inválidas/vacías, dedupe por
  *  name+title, clampa al máximo. Tolerante a entradas no-array. */
 function sanitizeOrgRefList(v: unknown): LinkedInOrgRef[] {
@@ -156,6 +176,12 @@ export function sanitizeLinkedInProfile(
     profileUrl: normalizeLinkedinProfileUrl((rawRec.profileUrl as string | null) ?? null),
     // Campos de imagen: defaults seguros cuando el path de texto los omite.
     connectionsCount: isNonNegIntOrNull(rawRec.connectionsCount) ? (rawRec.connectionsCount as number | null) : null,
+    followersCount: isNonNegIntOrNull(rawRec.followersCount) ? (rawRec.followersCount as number | null) : null,
+    isVerified: rawRec.isVerified === true,
+    certifications: sanitizeStringList(rawRec.certifications),
+    languages: sanitizeStringList(rawRec.languages, 60),
+    organizations: sanitizeStringList(rawRec.organizations),
+    volunteerWork: sanitizeOrgRefList(rawRec.volunteerWork),
     isOpenToWork: rawRec.isOpenToWork === true,
     hasProfilePhoto: rawRec.hasProfilePhoto === true,
     hasBannerImage: rawRec.hasBannerImage === true,

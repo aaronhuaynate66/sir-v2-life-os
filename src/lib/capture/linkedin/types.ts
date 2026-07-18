@@ -53,9 +53,28 @@ export interface LinkedInProfileExtracted {
    *  (https://linkedin.com/in/<handle>), gema V1. null si el handle no se ve
    *  literal — NO se inventa a partir del nombre. */
   profileUrl: string | null
-  /** Numero de conexiones si la metrica esta visible ("500+ connections",
-   *  "1,234 followers"). Devolver el entero (500+ -> 500). null si no esta. */
+  /** Numero de conexiones si la metrica esta visible ("500+ connections").
+   *  Devolver el entero (500+ -> 500). null si no esta. */
   connectionsCount: number | null
+  /** Numero de SEGUIDORES si la metrica esta visible ("1,234 followers"),
+   *  distinto de connectionsCount. Entero (12K -> 12000). null si no esta. */
+  followersCount: number | null
+  /** True si el perfil tiene el badge de VERIFICACION de LinkedIn (checkmark
+   *  al lado del nombre). false si no se ve. */
+  isVerified: boolean
+  /** Certificaciones / licencias visibles (seccion "Licenses & certifications"
+   *  / "Licencias y certificaciones"). Solo nombres LITERALES; vacio si la
+   *  seccion no es legible (anti-hallucination). */
+  certifications: string[]
+  /** Idiomas visibles (seccion "Languages" / "Idiomas"). Solo literales; vacio
+   *  si no. */
+  languages: string[]
+  /** Organizaciones / afiliaciones visibles (seccion "Organizations"). Solo
+   *  nombres literales; vacio si no. */
+  organizations: string[]
+  /** Voluntariado visible (seccion "Volunteer experience"): org + rol + rango.
+   *  Vacio si la seccion no es legible. */
+  volunteerWork: LinkedInOrgRef[]
   /** True si la cuenta tiene "Open to work" / disponible visible. */
   isOpenToWork: boolean
   /** True si hay foto de perfil real (no avatar default). */

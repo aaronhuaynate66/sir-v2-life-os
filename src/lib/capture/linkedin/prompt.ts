@@ -89,6 +89,12 @@ prosa, sin markdown fences):
   "educationHistory": [ { "name": "<institucion>", "title": "<grado/programa>" | null, "dateRange": "<rango>" | null } ],
   "profileUrl": "<https://linkedin.com/in/<handle> construida desde el vanity visible, o null>",
   "connectionsCount": <entero o null>,
+  "followersCount": <entero o null>,
+  "isVerified": <true|false>,
+  "certifications": [ "<nombre de certificacion/licencia literal>" ],
+  "languages": [ "<idioma literal>" ],
+  "organizations": [ "<nombre de organizacion/afiliacion literal>" ],
+  "volunteerWork": [ { "name": "<organizacion>", "title": "<rol>" | null, "dateRange": "<rango>" | null } ],
   "isOpenToWork": <true|false>,
   "hasProfilePhoto": <true|false>,
   "hasBannerImage": <true|false>,
@@ -176,6 +182,32 @@ QUE BUSCAR EN LA IMAGEN:
      * "1,234" -> 1234
      * "12K" -> 12000
    - null si no es visible.
+
+8b. followersCount
+   - Linea "1,234 followers" / "1.234 seguidores" (distinta de connections).
+     Mismas reglas: "12K" -> 12000, "1,234" -> 1234. null si no es visible.
+   - Un perfil puede mostrar AMBOS (connections y followers): llena cada uno
+     con su numero; NO copies el de connections en followers ni al reves.
+
+8c. isVerified
+   - true SOLO si hay un badge de VERIFICACION de LinkedIn (checkmark) al lado
+     del nombre. false si no se ve. NO lo infieras de que el perfil "se ve serio".
+
+12. certifications / languages / organizations (LISTAS — solo lo LITERAL)
+    - certifications: seccion "Licenses & certifications" / "Licencias y
+      certificaciones". Devuelve los NOMBRES de las certificaciones legibles.
+    - languages: seccion "Languages" / "Idiomas". Los idiomas listados.
+    - organizations: seccion "Organizations" / afiliaciones. Los nombres.
+    - REGLA (anti-hallucination, PRIORIDAD): array VACIO [] si la seccion no
+      esta visible o no es legible. NO inventes certificaciones "tipicas"
+      (ej. "Google Analytics", "Scrum Master"), idiomas "probables" (ej.
+      "Ingles") ni organizaciones plausibles. Solo lo que se lee LITERAL.
+
+13. volunteerWork (VOLUNTARIADO — misma logica que workHistory)
+    - Seccion "Volunteer experience" / "Experiencia de voluntariado". Cada
+      entrada: name = organizacion, title = rol (null si no legible),
+      dateRange = rango (null si no legible). Array VACIO [] si no es visible.
+    - NO completes entradas que no se leen literal.
 
 9. isOpenToWork
    - true si aparece el banner verde / circulo verde con "#OpenToWork" o
