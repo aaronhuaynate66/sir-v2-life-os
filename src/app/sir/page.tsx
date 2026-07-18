@@ -16,6 +16,8 @@ import { useRelationshipStore } from '@/stores'
 import { generateSlug } from '@/lib/people/slug'
 import type { Goal, GoalCategory, Person, RelationshipType, PersonCategory } from '@/types'
 import { SIR_MODELS, normalizeTier, DEFAULT_SIR_TIER, type SirModelTier } from '@/lib/sir/model'
+import type { SirReceipt } from '@/lib/sir/ask'
+import { memoryProvenance } from '@/lib/memories/provenance'
 
 interface ProposedAction {
   kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'crear_plan'
@@ -55,7 +57,7 @@ interface Turn {
   /** ISO del momento del turno (para timestamp + separador de día). Los turnos
    *  legados / cargados de la DB pueden no tenerlo → se degrada sin romper. */
   at?: string
-  sources?: { people: string[]; memories: number }
+  sources?: { people: string[]; memories: number; receipts?: SirReceipt[] }
   action?: ProposedAction
   actionState?: 'pending' | 'done' | 'discarded'
   // Gap-engine inline: SIR pide UNA pieza antes de responder.
@@ -592,6 +594,9 @@ export default function SirChatPage() {
                     {t.sources.people.join(' · ')}
                   </div>
                 )}
+                {t.role === 'sir' && t.sources?.receipts && t.sources.receipts.length > 0 && (
+                  <SirReceipts receipts={t.sources.receipts} />
+                )}
                 {t.clarifying && (
                   <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
@@ -781,5 +786,47 @@ export default function SirChatPage() {
         </form>
       </main>
     </AppShell>
+  )
+}
+
+/** Recibos del chat: las memorias REALES que aterrizaron la respuesta, con su
+ *  origen y confianza (recibos por dato aplicados al chat). No las genera el
+ *  modelo → no se pueden alucinar. Colapsado por defecto para no ensuciar. */
+function SirReceipts({ receipts }: { receipts: SirReceipt[] }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-1.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 text-[11px] text-muted-foreground/80 hover:text-foreground transition-colors"
+        aria-expanded={open}
+      >
+        <ArrowDown size={11} className={open ? '' : '-rotate-90'} style={{ transition: 'transform 120ms' }} />
+        En qué se basa · {receipts.length} {receipts.length === 1 ? 'recibo' : 'recibos'}
+      </button>
+      {open && (
+        <ul className="mt-1.5 space-y-1.5 border-l-2 border-border/60 pl-2.5">
+          {receipts.map((r, i) => {
+            const p = memoryProvenance(r.source)
+            const tone =
+              p.confidence === 'certain' ? 'text-ok/80'
+                : p.confidence === 'high' ? 'text-[#14b8a6]'
+                  : p.confidence === 'medium' ? 'text-muted-foreground'
+                    : 'text-amber-400/80'
+            return (
+              <li key={i} className="text-[12px] leading-snug">
+                <span className="text-foreground/85">{r.text}</span>
+                <span className="mt-0.5 flex flex-wrap items-center gap-1 text-[10px] text-muted-foreground/70">
+                  <User size={9} /> {r.person}
+                  <span aria-hidden="true">·</span>
+                  <span className={tone}>{p.label} · {p.confidenceLabel}</span>
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
   )
 }

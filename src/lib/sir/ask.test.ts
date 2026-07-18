@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildAskContext, extractCandidateNames } from './ask'
+import { buildAskContext, extractCandidateNames, buildReceipts } from './ask'
 
 describe('extractCandidateNames', () => {
   const known = ['Dayana Yrribarren Terrones', 'Francisco Pérez', 'Adrian Prochazca', 'Victor Rodriguez']
@@ -117,5 +117,38 @@ describe('selectStrengthMemories', () => {
   })
   it('ignora memorias sin fuerza', () => {
     expect(selectStrengthMemories([{ content: 'compré pan', occurredAt: '2026-06-18' }])).toHaveLength(0)
+  })
+})
+
+describe('buildReceipts', () => {
+  it('arma recibos con persona + texto + origen, cap por persona', () => {
+    const r = buildReceipts([
+      { name: 'Dayana', memories: [
+        { content: 'Le diste SEO y fulfillment', source: 'whatsapp_capture' },
+        { content: 'Maneja Nutriday', source: 'inferred' },
+        { content: 'Ex Jhodaal', source: 'inferred' },
+        { content: 'cuarta — se corta', source: 'manual' },
+      ] },
+    ], { perPerson: 3 })
+    expect(r).toHaveLength(3)
+    expect(r[0]).toEqual({ person: 'Dayana', text: 'Le diste SEO y fulfillment', source: 'whatsapp_capture' })
+    expect(r.map((x) => x.text)).not.toContain('cuarta — se corta')
+  })
+  it('dedupe por texto y respeta el cap total', () => {
+    const r = buildReceipts([
+      { name: 'A', memories: [{ content: 'igual', source: 'manual' }] },
+      { name: 'B', memories: [{ content: 'igual', source: 'inferred' }, { content: 'otra', source: 'manual' }] },
+    ], { cap: 5 })
+    expect(r.map((x) => x.text)).toEqual(['igual', 'otra']) // 'igual' de B se descarta (dup)
+  })
+  it('descarta vacíos y clampa el cap total', () => {
+    const many = Array.from({ length: 20 }, (_, i) => ({ content: `m${i}`, source: 'manual' as const }))
+    const r = buildReceipts([{ name: 'X', memories: [{ content: '  ', source: 'manual' }, ...many] }], { perPerson: 20, cap: 6 })
+    expect(r).toHaveLength(6)
+    expect(r.every((x) => x.text.length > 0)).toBe(true)
+  })
+  it('conserva source undefined (memoria legada sin origen)', () => {
+    const r = buildReceipts([{ name: 'X', memories: [{ content: 'vieja' }] }])
+    expect(r[0].source).toBeUndefined()
   })
 })

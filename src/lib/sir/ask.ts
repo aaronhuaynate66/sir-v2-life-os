@@ -8,6 +8,8 @@
 // alucinar sobre personas reales que a Aaron le importan rompe la confianza
 // en todo SIR. v1 NO escribe nada (las acciones llegan en una fase posterior).
 
+import type { Memory } from '@/types'
+
 export const SIR_ASK_SYSTEM_PROMPT = `Eres SIR, el sistema de inteligencia relacional de Aaron. Respondes como un asesor cercano, breve y directo.
 
 IDIOMA (REGLA INQUEBRANTABLE — SIEMPRE, sin excepción):
@@ -175,6 +177,45 @@ export function buildAskContext(input: AskContextInput): string {
   lines.push('== PREGUNTA ==')
   lines.push(input.question)
   return lines.join('\n')
+}
+
+/** Un "recibo" del chat: una memoria REAL que alimentó la respuesta, con su
+ *  persona y origen. La UI deriva la confianza con memoryProvenance. */
+export interface SirReceipt {
+  person: string
+  text: string
+  source: Memory['source']
+}
+
+/**
+ * Arma los recibos del chat: las memorias reales inyectadas al contexto (con su
+ * origen), para que Aaron VEA sobre qué se paró SIR y pueda verificar. NO las
+ * genera el modelo → no se pueden alucinar (a diferencia de una cita inline que
+ * el LLM podría inventar). Toma hasta `perPerson` por persona, dedupe por texto,
+ * cap total. PURO.
+ */
+export function buildReceipts(
+  people: { name: string; memories: { content: string; source?: Memory['source'] }[] }[],
+  opts: { perPerson?: number; cap?: number } = {},
+): SirReceipt[] {
+  const perPerson = opts.perPerson ?? 3
+  const cap = opts.cap ?? 6
+  const out: SirReceipt[] = []
+  const seen = new Set<string>()
+  for (const p of people) {
+    let n = 0
+    for (const m of p.memories) {
+      const text = (m.content ?? '').trim()
+      if (!text) continue
+      const key = text.toLowerCase().slice(0, 120)
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push({ person: p.name, text: text.slice(0, 240), source: m.source })
+      if (out.length >= cap) return out
+      if (++n >= perPerson) break
+    }
+  }
+  return out
 }
 
 /** Normaliza para match: minúsculas, sin tildes. */
