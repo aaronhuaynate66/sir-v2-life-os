@@ -29,6 +29,8 @@ import { assembleDailyActions } from '@/lib/daily-actions/assemble'
 import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
+import { rowToContactSignal } from '@/lib/contact-timing/types'
+import { assessContactTiming, timingPushLine } from '@/lib/contact-timing/assess'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -390,6 +392,21 @@ export async function GET(req: NextRequest) {
             const rt = topContactReminderText((crRows ?? []).map((r) => rowToContactReminder(r as Record<string, unknown>)))
             if (rt) relationshipNudgeText += ` · antes de escribirle: ${rt}`
           } catch { /* tabla 0148 sin propagar → sin recordatorio */ }
+          // TIMING (Parte B): si SIR sabe que ESTE no es buen momento (de viaje,
+          // a full…), lo avisa acá — para que Aaron no se estampe pidiendo algo
+          // en mal momento (caso Dayana). Fail-soft si la tabla 0150 no propagó.
+          try {
+            const { data: caRows } = await admin
+              .from('contact_activity')
+              .select('id, person_id, kind, detail, source, observed_at, expires_at')
+              .eq('user_id', uid)
+              .eq('person_id', top.personId)
+              .order('observed_at', { ascending: false })
+              .limit(50)
+            const verdict = assessContactTiming((caRows ?? []).map((r) => rowToContactSignal(r as Record<string, unknown>)), now.getTime())
+            const line = timingPushLine(verdict)
+            if (line) relationshipNudgeText += ` · ⏳ ${line}`
+          } catch { /* tabla 0150 sin propagar → sin aviso de timing */ }
         }
       } catch {
         /* fail-soft: el nudge relacional es un extra, no rompe el push */
