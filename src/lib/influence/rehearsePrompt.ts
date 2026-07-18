@@ -63,6 +63,10 @@ export interface RehearseScenario {
 export interface RehearseObjection {
   objection: string
   response: string
+  /** Frase TEXTUAL del chat que sostiene esta objeción (copiada literal de la
+   *  conversación provista), o '' si no hay una línea real que la respalde.
+   *  "No vibes": SIR nunca inventa la cita. */
+  evidence?: string
 }
 export interface RehearseResult {
   /** Lectura corta de la situación/persona dado el contexto. */
@@ -131,12 +135,17 @@ REGLAS DURAS (no negociables):
    aterrice la convicción y el framing — la verdad de Aaron sobre POR QUÉ esto le importa, en su
    propia voz. Cuando el nexo sea real, puede reforzar un escenario o una acción. NO fuerces la
    conexión si no existe.
+12. EVIDENCIA — "NO VIBES" (clave): cada objeción lleva un campo "evidence" con una frase
+   COPIADA LITERAL de la conversación que te di, que muestre que la persona realmente piensa/
+   siente/objeta eso. Es lo que le deja a Aaron VERIFICAR, no confiar a ciegas. Si NO hay una
+   línea real en el chat que sostenga esa objeción, deja "evidence" en "" — PROHIBIDO inventar,
+   parafrasear o fabricar una cita. Mejor "" que una cita falsa.
 
 Devuelve EXCLUSIVAMENTE un JSON (sin prosa, sin fences):
 {
   "read": "lectura corta de la situación y de qué mueve a esta persona (2-3 frases)",
   "scenarios": [{"title":"...","path":"cómo se juega, 2-3 frases","likelihood":"plausible|optimista|dificil"}],
-  "objections": [{"objection":"lo que la persona podría objetar","response":"cómo responder con honestidad"}],
+  "objections": [{"objection":"lo que la persona podría objetar","response":"cómo responder con honestidad","evidence":"frase TEXTUAL del chat que lo sostiene, copiada literal; \"\" si no hay"}],
   "actions": ["acciones concretas que mueven la aguja, antes o durante"],
   "opener": "una línea concreta para abrir (su verdad, en el lenguaje del otro)",
   "watchout": "el recordatorio de que esto es ENSAYO, no predicción, + la cautela propia del vínculo",
@@ -227,7 +236,8 @@ export function parseRehearseJson(raw: string): RehearseResult | null {
   const objections: RehearseObjection[] = Array.isArray(o.objections)
     ? o.objections.map((s) => {
         const x = (s ?? {}) as Record<string, unknown>
-        return { objection: str(x.objection, 300), response: str(x.response, 500) }
+        const evidence = str(x.evidence, 240)
+        return { objection: str(x.objection, 300), response: str(x.response, 500), ...(evidence ? { evidence } : {}) }
       }).filter((s) => s.objection).slice(0, 4)
     : []
   const actions = Array.isArray(o.actions)
