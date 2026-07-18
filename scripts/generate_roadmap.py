@@ -490,12 +490,16 @@ def compute_phase_dates(milestones: list[Milestone]) -> dict[str, tuple[str, str
         ms = by_title.get(meta["milestone_title"])
         end = iso_date_only(ms.due_on) if ms else None
         if not end:
-            prev_end = None
+            # Fase sin due_on (comun en fases futuras): se omite del Gantt, pero
+            # NO reseteamos prev_end. Antes se ponia None y eso hacia que una
+            # fase POSTERIOR con fecha (tipicamente la ACTIVA) quedara sin start
+            # y tambien se omitiera. Ahora encadena desde la ultima fase con
+            # fecha conocida, saltando el hueco de la fase sin fecha.
             continue
-        start = PHASE0_START_DATE if idx == 0 else prev_end
-        if not start:
-            prev_end = end
-            continue
+        # start: la fase 0 arranca en la fecha global; el resto encadena desde el
+        # fin de la ultima fase con fecha. Fallback a la fecha global si ninguna
+        # previa tenia fecha, para NO omitir esta fase (p.ej. la activa).
+        start = PHASE0_START_DATE if idx == 0 else (prev_end or PHASE0_START_DATE)
         dates[meta["milestone_title"]] = (start, end)
         prev_end = end
     return dates
