@@ -1,21 +1,23 @@
 // SIR V2 — POST /api/social/ingest  (Parte A: reader social pasivo)
 //
 // Recibe capturas PASIVAS de la extensión (lo que Aaron ya ve al navegar IG/
-// LinkedIn de su sesión — nada de requests automáticos). Resuelve el handle →
-// persona (people.instagram_handle / linkedin_url), deriva una señal de timing
-// (deriveSocialSignal) y la inserta en contact_activity → alimenta el veredicto
-// "buen/mal momento" (Parte B). No guarda contenido crudo: solo la señal + un
-// detalle corto.
+// LinkedIn de su sesión — nada de requests automáticos). Resuelve el handle/URL/
+// NOMBRE → persona, deriva una señal de timing (deriveSocialSignal) y la inserta
+// en contact_activity → alimenta el veredicto "buen/mal momento" (Parte B).
+//
+// AUTO-BOOTSTRAP de LinkedIn: si matchea por NOMBRE una persona sin linkedin_url,
+// se lo RELLENA con la URL capturada — así, con solo ver el perfil, queda seteado
+// sin que Aaron cargue URLs a mano. No guarda contenido crudo: solo la señal.
 //
 // Auth: TOKEN (no sesión), MISMO esquema que /api/reader/ingest:
 //   x-reader-token | Authorization: Bearer  ==  READER_INGEST_TOKEN
-// Cliente service-role; user_id vía READER_INGEST_USER_ID || único profile.
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
+import { buildPersonIndex, matchPerson, linkedinSlug, type PersonLite } from '@/lib/social-reader/match'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -50,23 +52,13 @@ interface SocialItem {
   platform: string
   handle?: string
   linkedinUrl?: string
+  name?: string
   text?: string
   hasActiveStory?: boolean
   headline?: string
 }
 
-/** Handle IG canónico: sin @, minúsculas, sin espacios. */
-function canonHandle(h: string): string {
-  return h.trim().replace(/^@/, '').toLowerCase()
-}
-/** Slug de una URL/handle de LinkedIn (linkedin.com/in/<slug>). */
-function linkedinSlug(v: string): string | null {
-  const m = v.match(/\/in\/([^/?#\s]+)/i) || v.match(/^([A-Za-z0-9\-_%]+)$/)
-  return m ? m[1].replace(/\/+$/, '').toLowerCase() : null
-}
-
-// Dedup: no insertamos la MISMA señal (persona+kind) más de una vez cada 6h,
-// para que ver la misma story varias veces no la multiplique.
+// Dedup: no insertamos la MISMA señal (persona+kind) más de una vez cada 6h.
 const DEDUP_HOURS = 6
 
 export async function POST(req: NextRequest) {
@@ -86,32 +78,42 @@ export async function POST(req: NextRequest) {
   let body: { items?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
   const items = Array.isArray(body.items) ? (body.items as SocialItem[]).slice(0, 100) : []
-  if (items.length === 0) return NextResponse.json({ inserted: 0, matched: 0, unmatched: 0, skipped: 0 })
+  if (items.length === 0) return NextResponse.json({ inserted: 0, matched: 0, unmatched: 0, skipped: 0, backfilled: 0 })
 
   const nowIso = new Date().toISOString()
   const sinceIso = new Date(Date.now() - DEDUP_HOURS * 3_600_000).toISOString()
-  let inserted = 0, matched = 0, unmatched = 0, skipped = 0
+  let inserted = 0, matched = 0, unmatched = 0, skipped = 0, backfilled = 0
 
   try {
+    // Personas una sola vez → índice para matcheo por handle/slug/nombre.
+    const { data: peopleRows } = await admin
+      .from('people').select('id, name, instagram_handle, linkedin_url, title').eq('user_id', userId).limit(2000)
+    const people: PersonLite[] = (peopleRows ?? []).map((r) => ({
+      id: String(r.id), name: String(r.name ?? ''),
+      instagramHandle: (r.instagram_handle as string | null) ?? null,
+      linkedinUrl: (r.linkedin_url as string | null) ?? null,
+      title: (r.title as string | null) ?? null,
+    }))
+    const index = buildPersonIndex(people)
+
     for (const it of items) {
       const platform = typeof it.platform === 'string' ? it.platform : ''
       if (platform !== 'instagram' && platform !== 'linkedin') { skipped++; continue }
 
-      // Resolver persona por handle/URL.
-      let person: { id: string; title: string | null } | null = null
-      if (platform === 'instagram' && it.handle) {
-        const h = canonHandle(it.handle)
-        const { data } = await admin.from('people').select('id, title').eq('user_id', userId).ilike('instagram_handle', h).limit(1)
-        person = (data?.[0] as { id: string; title: string | null }) ?? null
-      } else if (platform === 'linkedin') {
-        const slug = it.linkedinUrl ? linkedinSlug(it.linkedinUrl) : (it.handle ? linkedinSlug(it.handle) : null)
+      const m = matchPerson(index, { platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: it.name })
+      if (!m) { unmatched++; continue }
+      matched++
+      const person = m.person
+
+      // Auto-bootstrap: matcheó por nombre (o slug) una persona sin URL → la seteamos.
+      if (platform === 'linkedin' && !person.linkedinUrl && it.linkedinUrl) {
+        const slug = linkedinSlug(it.linkedinUrl)
         if (slug) {
-          const { data } = await admin.from('people').select('id, title').eq('user_id', userId).ilike('linkedin_url', `%/in/${slug}%`).limit(1)
-          person = (data?.[0] as { id: string; title: string | null }) ?? null
+          const canonUrl = `https://linkedin.com/in/${slug}`
+          const { error: upErr } = await admin.from('people').update({ linkedin_url: canonUrl }).eq('user_id', userId).eq('id', person.id)
+          if (!upErr) { person.linkedinUrl = canonUrl; backfilled++ }
         }
       }
-      if (!person) { unmatched++; continue }
-      matched++
 
       const signal = deriveSocialSignal({
         platform,
@@ -122,7 +124,6 @@ export async function POST(req: NextRequest) {
       })
       if (!signal) { skipped++; continue }
 
-      // Dedup: ¿ya hay una señal igual (persona+kind) reciente?
       const { data: recent } = await admin
         .from('contact_activity')
         .select('id')
@@ -143,5 +144,5 @@ export async function POST(req: NextRequest) {
     return errorJson(500, 'Fallo procesando la ingesta', e instanceof Error ? e.message : String(e))
   }
 
-  return NextResponse.json({ inserted, matched, unmatched, skipped })
+  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled })
 }

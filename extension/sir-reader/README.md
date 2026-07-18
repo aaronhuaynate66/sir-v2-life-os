@@ -50,7 +50,9 @@ Para que SIR no te deje pedirle algo a alguien en **mal momento** (caso: contact
 - **LinkedIn** (`www.linkedin.com`): cuando ves el perfil de un contacto, saca su `headline`. Si **cambió** respecto al guardado → señal **cambió de trabajo**.
 - El server (`/api/social/ingest`, mismo `x-reader-token`) resuelve el handle → persona y arma el veredicto **"buen/mal momento para contactar a X"** (aparece en la ficha, el push y `/negociar` · `/tacticas` · Ensayo).
 
-**Requisito de matcheo:** la persona en SIR debe tener seteado su **`instagram_handle`** (sin @) y/o su **`linkedin_url`** (`.../in/<slug>`), si no la señal llega pero no se puede atribuir (queda como `unmatched`).
+**Matcheo:**
+- **Instagram:** la persona debe tener seteado su **`instagram_handle`** (sin @); si no, la señal llega pero queda `unmatched`.
+- **LinkedIn: auto-bootstrap.** No necesitás cargar la URL a mano — la primera vez que ves el perfil de un contacto, SIR lo matchea por **nombre** y le **rellena `linkedin_url` solo**. (Si dos personas tienen el mismo nombre exacto, ese queda ambiguo y no se auto-setea: ahí sí cargá la URL a mano.)
 
 **Guardrail:** solo contactos con los que ya tenés relación, solo lo que ellos difunden, y solo para cuidar el timing — no vigilancia. No se guarda contenido crudo: solo la señal + un detalle corto.
 
