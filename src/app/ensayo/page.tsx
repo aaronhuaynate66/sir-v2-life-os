@@ -21,6 +21,7 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { detectBiases } from '@/engines/bias'
 import { InfluenceMapCard } from '@/components/influence/InfluenceMapCard'
+import { ContactTimingBanner } from '@/components/relaciones/ContactTimingBanner'
 import { StrategicRiskMeter } from '@/components/influence/StrategicRiskMeter'
 import { cn } from '@/lib/utils'
 import type { RehearseResult, Likelihood } from '@/lib/influence/rehearsePrompt'
@@ -151,6 +152,8 @@ function EnsayoContent() {
       </Card>
 
       {/* 16·M2 — quién más pesa alrededor de esta persona (grafo, client-side). */}
+      {personId && <ContactTimingBanner personId={personId} className="mb-4" />}
+
       {personId && <InfluenceMapCard targetId={personId} />}
 
       {result && <RehearseView result={result} ethics={ethics} forName={forName} hadContext={hadContext} objective={objective} />}

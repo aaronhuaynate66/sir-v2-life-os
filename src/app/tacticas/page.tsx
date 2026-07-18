@@ -26,6 +26,7 @@ import {
 } from '@/lib/influence/tactics'
 import type { EthicsCheck } from '@/engines/ethics'
 import { StrategicRiskMeter } from '@/components/influence/StrategicRiskMeter'
+import { ContactTimingBanner } from '@/components/relaciones/ContactTimingBanner'
 
 export default function TacticasPage() {
   const hydrated = useHasHydrated()
@@ -142,6 +143,8 @@ function TacticasContent() {
           {error && <div className="rounded-md border border-bad/30 bg-bad-soft p-2.5 text-[12px] text-bad leading-relaxed">{error}</div>}
         </CardContent>
       </Card>
+
+      {personId && <ContactTimingBanner personId={personId} className="mb-4" />}
 
       {blocked && (
         <Card className="shadow-none border-warn/40 mb-4">
