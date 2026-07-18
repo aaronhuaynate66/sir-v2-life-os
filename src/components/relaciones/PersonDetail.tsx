@@ -61,6 +61,7 @@ import { cn } from '@/lib/utils'
 import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
 import { ContactReminders } from './ContactReminders'
+import { ContactTiming } from './ContactTiming'
 import { PendientesConPersona } from './PendientesConPersona'
 import { EstadoConPersona } from './EstadoConPersona'
 import { RecomendacionesSemanales } from './RecomendacionesSemanales'
@@ -631,6 +632,10 @@ export function PersonDetail({
           justo — actividad reciente (tags de memorias) + notas privadas verbatim
           (discretas, nunca a IA). Determinístico; se oculta si no aporta nada. */}
       <AntesDeContactar personId={live.id} memories={memories} />
+
+      {/* Momento para contactar (Parte B del reader social): SIR te cuida el
+          timing — marca lo que ves (de viaje, a full) y te frena antes de pedir. */}
+      <ContactTiming personId={live.id} personName={live.name} />
 
       {/* "Recordar antes de contactar" (#3): repetición espaciada relacional —
           cosas que SIR te resurge antes de tu próximo contacto con la persona. */}
