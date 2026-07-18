@@ -35,6 +35,10 @@ export interface MorningInput {
   weekFocus?: string
   /** Alerta de metrica dura (peso Mundial fuera de categoria, etc.). Texto ya formado. */
   metricAlert?: string
+  /** Vigilancia de laboratorio: patrón de chequeos consistente que ya salió de
+   *  rango (idea de Aaron: no dejarlo "al baúl"). NO es agudo → prioridad baja y
+   *  el cron lo manda throttled (semanal). Texto ya formado. */
+  healthWatch?: string
 }
 
 export interface MorningPush {
@@ -102,6 +106,13 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // 2.6 Señal del cuerpo (deuda de sueño) — cuidado, no reproche.
   if (input.bodySignal && parts.length < MAX_PARTS) {
     parts.push(input.bodySignal)
+  }
+
+  // 2.7 Vigilancia de laboratorio: un patrón de chequeos que YA se salió de rango
+  //     (el cron lo manda solo semanal). No es agudo, por eso va bajo — después
+  //     del cuerpo y antes del foco. Es "que no se quede al baúl", no una alarma.
+  if (input.healthWatch && parts.length < MAX_PARTS) {
+    parts.push(input.healthWatch)
   }
 
   // 3. Foco del día.
