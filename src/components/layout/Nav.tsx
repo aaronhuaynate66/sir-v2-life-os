@@ -55,6 +55,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
       { href: '/plantear', label: 'Cómo plantear algo', Icon: MessagesSquare },
       { href: '/ensayo', label: 'Sala de ensayo', Icon: Drama },
       { href: '/tacticas', label: 'Qué táctica usar', Icon: Swords },
+      { href: '/negociar', label: 'Preparar negociación', Icon: Handshake },
       { href: '/alter-ego', label: 'Alter ego', Icon: Compass },
       { href: '/verificar', label: 'Verificar mensaje', Icon: ShieldAlert },
       { href: '/empresas', label: 'Empresas', Icon: Building2 },
