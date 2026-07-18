@@ -23,12 +23,14 @@ import { embedText, toPgVector } from '@/lib/embeddings/client'
 import {
   SIR_ASK_SYSTEM_PROMPT,
   buildAskContext,
+  buildReceipts,
   isPerspectiveQuery,
   selectStrengthMemories,
   extractCandidateNames,
   type AskPersonCtx,
   type AskMemoryHit,
   type AskGoalCtx,
+  type SirReceipt,
 } from '@/lib/sir/ask'
 import { parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
 import { resolveModel } from '@/lib/sir/model'
@@ -39,7 +41,7 @@ import { todayLimaKey } from '@/lib/dates/limaDay'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
-import type { Person, Goal } from '@/types'
+import type { Person, Goal, Memory } from '@/types'
 
 const MAX_PEOPLE = 5
 const MAX_MEM_PER_PERSON = 12
@@ -74,7 +76,7 @@ export interface AskSirResult {
   /** Presente solo cuando SIR corta antes del modelo para pedir una pieza. */
   clarifying?: AskSirClarifying
   proposedAction: ProposedActionResolved | null
-  sources: { people: string[]; memories: number }
+  sources: { people: string[]; memories: number; receipts?: SirReceipt[] }
 }
 
 export interface AskSirParams {
@@ -334,7 +336,10 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
         interactionEvents,
       })
 
-      const recent = (mems as Array<{ content: string }>).map((m) => m.content).filter(Boolean)
+      const memsWithSource = (mems as Array<{ content: string; source?: Memory['source'] }>)
+        .map((m) => ({ content: m.content, source: m.source }))
+        .filter((m) => m.content)
+      const recent = memsWithSource.map((m) => m.content)
 
       // Conversación (ventana reciente del sustrato + observación) + búsqueda FTS
       // en el historial completo, anexada.
@@ -368,13 +373,15 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
         conversation,
         cycle,
       }
-      return { ctxSignal, personCtx }
+      return { ctxSignal, personCtx, receiptMems: memsWithSource }
     }),
   )
+  const receiptPeople: { name: string; memories: { content: string; source?: Memory['source'] }[] }[] = []
   for (const b of built) {
     if (!b) continue
     ctxSignals.push(b.ctxSignal)
     peopleCtx.push(b.personCtx)
+    if (b.receiptMems.length > 0) receiptPeople.push({ name: b.personCtx.name, memories: b.receiptMems })
   }
 
   // GAP-ENGINE INLINE · capa CONTEXTUAL: consulta de contacto + último dato tenso
@@ -591,6 +598,12 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   return {
     answer,
     proposedAction,
-    sources: { people: peopleCtx.map((p) => p.name), memories: memoryHits.length },
+    sources: {
+      people: peopleCtx.map((p) => p.name),
+      memories: memoryHits.length,
+      // Recibos: las memorias reales que aterrizaron la respuesta, con su origen.
+      // Se muestran en el chat para que Aaron verifique, no confíe a ciegas.
+      receipts: buildReceipts(receiptPeople),
+    },
   }
 }
