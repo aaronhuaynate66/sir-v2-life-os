@@ -5,10 +5,27 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 17/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 18/07/2026 (reconciliación automática — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-18
+
+Pase de mantenimiento contra el código real (agente automático). Esta vez el drift estaba en la sección "PENDIENTES MENORES", que contradecía a otras partes del doc ya reconciliadas (14/07 y 17/07) — 4 ítems que ya estaban HECHOS seguían listados ahí como pendientes:
+
+- ✅ **Toggle privacidad finanzas en `/timeline`** — ya HECHO. `src/components/timeline/TimelineFeed.tsx` (líneas 67-78) define `financeHidden`/`toggleFinance()` + botón "Ocultar/Mostrar finanzas" (icono Eye/EyeOff). Coincide con lo ya declarado en la reconciliación 14/07 de arriba ("toggle privacidad finanzas /timeline: ya estaban") — el ítem suelto en PENDIENTES MENORES había quedado desactualizado.
+- ✅ **Estados vacíos pedagógicos** — ya HECHO (no "parcial"). Componente compartido `src/components/ui/empty-state.tsx` con prop `hint` (siguiente paso accionable), usado en ≥9 rutas (`salud`, `finanzas`, `objetivos`, `seguimiento`, `senales`, `relaciones`, `panel`, `linea`, `eventos`, `explorar`); `memoria/page.tsx` tiene su propio empty state hand-rolled aún más detallado. Coincide con la reconciliación 14/07 ("empty states ✅ ya existen, pedagógicos").
+- ✅ **Cap en `relationships.history`** (ADR 0005 R7, >50 items) — ya HECHO. `src/lib/supabase/sync/adapters/relationships.ts` (líneas 137-140): `history: (r.history ?? []).slice(-50)` con comentario explícito citando el ADR, aplicado en el push local→Supabase.
+- ✅ **`persistScaleCapture` espera ACK del push** — ya HECHO. `src/lib/capture/scale/client.ts` línea 77 tiene el arg `awaitSync?: boolean` (línea 144-150 espera `waitForRowsConfirmed`), y ya está cableado con `awaitSync: true` en `ScaleCaptureBranch.tsx`, `ScaleCaptureFlow.tsx` y `MisCapturas.tsx`. Solo el flujo batch (`healthBatch.ts`) no lo usa, intencionalmente (no debe colgarse por una imagen).
+
+**Verificado y quedó IGUAL (sin drift):**
+- **Mobile QA estructurado** — sigue genuinamente pendiente. No se encontró test con viewport 375/390/414/768px ni doc de auditoría formal ejecutada (solo hay spec de diseño en `docs/phase-3a/issue-69-analysis-design.md`, que no es evidencia de un pase de QA). Nota: la línea de la reconciliación 14/07 de arriba ("mobile QA ✅ smoke pasó @390px") queda como registro histórico de esa sesión puntual, pero no reemplaza la necesidad de un pase estructurado — se mantiene la entrada de PENDIENTES MENORES sin cambios.
+- **Campos LinkedIn nuevos** (`certifications[]`, `volunteerWork[]`, `languages[]`, `organizations[]`, followers count, `isVerified`) — siguen genuinamente pendientes. `src/lib/capture/linkedin/types.ts` solo tiene `isOpenToWork`/`hasBannerImage` de la lista; el resto no existe en `types.ts`/`prompt.ts`/`validate.ts`.
+
+**No re-verificado este pase** (fuera de alcance — no son items marcados "pendiente" en el doc, o ya quedaron con nota "revisar"/"no verificable por grep" en pases anteriores): todo lo demás.
 
 ---
 
@@ -459,9 +476,9 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - ~~**Sentry + Vercel Analytics**~~ ✅ INSTALADO: `@sentry/nextjs` + `@vercel/analytics` cableados (`instrumentation.ts`/`instrumentation-client.ts`, `onRequestError`; no-op sin DSN). Falta solo cargar el DSN en prod para que capture.
 
-- **Mobile QA estructurado**: validar flujos críticos en 375px / 390px / 414px / 768px. Esfuerzo: 1h. _(Pendiente — sin evidencia de pase formal.)_
+- **Mobile QA estructurado**: validar flujos críticos en 375px / 390px / 414px / 768px. Esfuerzo: 1h. _(Pendiente — sin evidencia de pase formal. Verificado 2026-07-18: no hay test con estos viewports ni doc de auditoría formal.)_
 
-- **Estados vacíos pedagógicos**: parcial — `/memoria` ya tiene empty state pedagógico (`0de0114`); resto de rutas pendiente.
+- ~~**Estados vacíos pedagógicos**~~ ✅ **HECHO (verificado 2026-07-18):** componente compartido `src/components/ui/empty-state.tsx` con prop `hint` (siguiente paso accionable), usado en ≥9 rutas (`salud`, `finanzas`, `objetivos`, `seguimiento`, `senales`, `relaciones`, `panel`, `linea`, `eventos`, `explorar`); `/memoria` tiene su propio empty state hand-rolled (`0de0114`) aún más detallado. No quedaba "resto pendiente".
 
 - ~~**Emails Supabase template ES**~~ ✅ Template ES listo en `docs/auth-email-templates-es.md`. **Pegarlo en el dashboard de Supabase = acción manual** (no versionable desde el repo).
 
@@ -469,9 +486,9 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - **Gantt fix**: el Gantt del MASTER_PLAN omite la fase activa cuando las previas no tienen due_on. Fix: usar fecha de creación del milestone como fallback. Esfuerzo: 30 min.
 
-- **Toggle privacidad finance en /timeline**: mostrar/ocultar movimientos financieros del feed. Útil si compartís pantalla. Esfuerzo: 30 min.
+- ~~**Toggle privacidad finance en /timeline**~~ ✅ **HECHO (verificado 2026-07-18):** `src/components/timeline/TimelineFeed.tsx` (líneas 67-78) — `financeHidden`/`toggleFinance()` + botón "Ocultar/Mostrar finanzas" (Eye/EyeOff). Coincide con la reconciliación 14/07 de arriba.
 
-- **Cap en `relationships.history`**: cuando aparezca volumen >50 items por relación. R7 del ADR 0005. Esfuerzo: 15 min.
+- ~~**Cap en `relationships.history`**~~ ✅ **HECHO (verificado 2026-07-18):** `src/lib/supabase/sync/adapters/relationships.ts` (líneas 137-140) — `history: (r.history ?? []).slice(-50)`, comentario cita el ADR 0005 R7 explícitamente. Aplicado en el push local→Supabase.
 
 - ~~**Robots.txt + noindex para rutas autenticadas**~~ ✅ Resuelto: `src/app/robots.ts` en prod.
 
@@ -524,8 +541,8 @@ Detectadas durante el diagnóstico del 28/05/2026, cuando los upserts de `health
 
 - ~~**Sync engine: surface push failures al usuario.**~~ ✅ **HECHO (`notifySyncFailure` en `src/lib/supabase/sync/engine.ts`):** cuando `pushWithRetry` agota los reintentos, se muestra un toast («No pude sincronizar algunos cambios · quedaron guardados en este dispositivo, reintento al reconectar»), throttled 12s para no spamear en ráfagas offline. Tono tranquilizador (la fila queda en localStorage y se re-pushea al reconectar). (Verificado 2026-07-08.)
 
-- **`persistScaleCapture` no espera ACK del push.**
-  `src/lib/capture/scale/client.ts` retorna `{ insertedCount: N }` ni bien hace `setState` — el sync engine procesa el push asíncrono después. Si el push falla, la UI ya pasó al Step 4 "success" con mentira. Fix: agregar arg opcional `awaitSync: boolean` al `persistScaleCapture` que use el callback de arriba para esperar al ACK antes de resolver la promesa. Trade-off: rompe levemente el offline-first (la UI bloquea hasta que el server confirme). Para Captura específicamente, vale la pena porque las 13 métricas son irrecuperables si se pierden. Esfuerzo: 30 min después de tener el callback del punto anterior.
+- ~~**`persistScaleCapture` no espera ACK del push.**~~ ✅ **HECHO (verificado 2026-07-18):** `src/lib/capture/scale/client.ts` línea 77 ya tiene el arg opcional `awaitSync?: boolean` (líneas 144-150, espera `waitForRowsConfirmed`), cableado con `awaitSync: true` en `ScaleCaptureBranch.tsx`, `ScaleCaptureFlow.tsx` y `MisCapturas.tsx`. Solo el flujo batch (`healthBatch.ts`) no lo usa, intencionalmente (comentario: no debe colgarse por una imagen).
+  Texto original (histórico): `src/lib/capture/scale/client.ts` retorna `{ insertedCount: N }` ni bien hace `setState` — el sync engine procesa el push asíncrono después. Si el push falla, la UI ya pasó al Step 4 "success" con mentira. Fix: agregar arg opcional `awaitSync: boolean` al `persistScaleCapture` que use el callback de arriba para esperar al ACK antes de resolver la promesa. Trade-off: rompe levemente el offline-first (la UI bloquea hasta que el server confirme). Para Captura específicamente, vale la pena porque las 13 métricas son irrecuperables si se pierden. Esfuerzo: 30 min después de tener el callback del punto anterior.
 
 ---
 
