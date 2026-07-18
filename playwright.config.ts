@@ -22,11 +22,12 @@ export default defineConfig({
   // El primer hit a cada ruta en `next dev` compila on-demand → damos aire.
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  // `next dev` no aguanta bien mucha concurrencia (compila on-demand).
-  workers: process.env.CI ? 2 : undefined,
+  // UN worker: hay un solo server (dev, SSR + Supabase real). Navegación paralela
+  // lo satura y da timeouts en cascada (visto en el primer run). Serial = estable.
+  workers: 1,
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never' }], ['github']]
     : [['list'], ['html', { open: 'never' }]],
@@ -38,12 +39,15 @@ export default defineConfig({
     actionTimeout: 15_000,
     navigationTimeout: 45_000,
   },
-  // Viewports de QA móvil pedidos (375/390/414/768) + un baseline desktop.
+  // Viewports de QA móvil pedidos (375/390/414/768) + baseline desktop.
+  // TODOS sobre Chromium (emulación de viewport): un solo navegador para instalar
+  // (CI hace `playwright install chromium`), consistente, y suficiente para cazar
+  // roturas de layout/overflow. `isMobile`/`hasTouch` son chromium-only.
   projects: [
-    { name: 'mobile-se', use: { ...devices['iPhone SE'] } },              // 375×667
-    { name: 'mobile-390', use: { ...devices['iPhone 12'] } },             // 390×844
-    { name: 'mobile-xl', use: { ...devices['iPhone 11 Pro Max'] } },      // 414×896
-    { name: 'tablet', use: { ...devices['iPad Mini'] } },                 // 768×1024
+    { name: 'mobile-se', use: { ...devices['Desktop Chrome'], viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true } },
+    { name: 'mobile-390', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
+    { name: 'mobile-xl', use: { ...devices['Desktop Chrome'], viewport: { width: 414, height: 896 }, isMobile: true, hasTouch: true } },
+    { name: 'tablet', use: { ...devices['Desktop Chrome'], viewport: { width: 768, height: 1024 }, hasTouch: true } },
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
   ],
   // Sin E2E_BASE_URL, levantamos el server nosotros (modo dev para dev-login).

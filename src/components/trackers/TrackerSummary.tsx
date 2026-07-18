@@ -51,14 +51,14 @@ export function TrackerSummary({ tracker, points, now = new Date(), className }:
     <Link
       href={trackerHref(tracker.id)}
       className={cn(
-        'group flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-colors hover:border-border-strong',
+        'group flex min-w-0 items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs transition-colors hover:border-border-strong',
         meta.cls,
         className,
       )}
       title={`${tracker.label} — ${conditionLabel(tracker)}`}
     >
       <meta.Icon size={13} strokeWidth={1.75} className="flex-shrink-0" aria-hidden="true" />
-      <span className="truncate max-w-[10rem] font-sans">{tracker.label}</span>
+      <span className="truncate min-w-0 flex-1 font-sans">{tracker.label}</span>
       <span className="font-mono tabular-nums font-semibold">
         {formatTrackerValue(tracker.currentValue, tracker.unit)}
       </span>
