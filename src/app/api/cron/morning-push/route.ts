@@ -28,6 +28,7 @@ import { parseWeightCategory } from '@/engines/targets'
 import { assembleDailyActions } from '@/lib/daily-actions/assemble'
 import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
 import { rowToHealthExam } from '@/lib/health-exams/types'
+import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -375,6 +376,20 @@ export async function GET(req: NextRequest) {
         if (top && (top.urgency === 'high' || top.urgency === 'medium')) {
           const who = top.kinLabel ? `${top.personName} (${top.kinLabel})` : top.personName
           relationshipNudgeText = `${who} — ${top.headline}`
+          // Si hay un recordatorio "antes de contactar" para ESTA persona, este es
+          // EL momento de surgirlo: el push ya te empuja a escribirle. Es el punto
+          // de los contact_reminders (#801) — que aparezcan, no que se olviden. Fail-soft.
+          try {
+            const { data: crRows } = await admin
+              .from('contact_reminders')
+              .select('id, person_id, text, kind, status, created_at, done_at')
+              .eq('user_id', uid)
+              .eq('person_id', top.personId)
+              .eq('status', 'pending')
+              .limit(20)
+            const rt = topContactReminderText((crRows ?? []).map((r) => rowToContactReminder(r as Record<string, unknown>)))
+            if (rt) relationshipNudgeText += ` · antes de escribirle: ${rt}`
+          } catch { /* tabla 0148 sin propagar → sin recordatorio */ }
         }
       } catch {
         /* fail-soft: el nudge relacional es un extra, no rompe el push */
