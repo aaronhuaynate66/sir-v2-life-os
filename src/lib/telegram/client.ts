@@ -6,6 +6,8 @@
 //                               como header X-Telegram-Bot-Api-Secret-Token)
 // El token NUNCA se loguea.
 
+import { stripMarkdown } from './plainText'
+
 const API = 'https://api.telegram.org'
 
 export function isTelegramConfigured(): boolean {
@@ -75,7 +77,8 @@ export async function sendTelegramMessage(
   try {
     const body: Record<string, unknown> = {
       chat_id: chatId,
-      text: text.slice(0, 4096),
+      // Sin parse_mode → limpiamos markdown para que no salgan **, `, ## crudos.
+      text: stripMarkdown(text).slice(0, 4096),
       disable_web_page_preview: true,
     }
     if (buttons && buttons.length > 0) {
