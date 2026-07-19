@@ -5,10 +5,27 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 18/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 19/07/2026 (reconciliación automática — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-19
+
+Pase de mantenimiento contra el código real (agente automático). El drift esta vez estaba en la sección **"🧲 BACKLOG inspirado en Clay"**: dos ítems (#8 y #9) contradecían la reconciliación 14/07 de arriba, que ya los daba por HECHOS — el texto suelto de esos ítems nunca se actualizó y seguía describiéndolos como "no implementar aún" / "no existe modelo". Además, un ítem del checklist "Portar detail page V2" tenía una nota de estado vencida:
+
+- ✅ **Familia / relaciones persona↔persona** (ítem #9, Clay backlog) — el texto decía "Hoy NO existe modelo persona↔persona", pero está construido y ampliado bastante más allá del alcance original: migraciones `0035_person_links.sql`, `0052_person_links_realtime.sql`, `0058_person_links_self_sentinel.sql`, `0106_brain_edge_weights.sql`, `0107_person_links_metadata.sql`, `0128_person_links_category.sql`; `FamiliaPanel.tsx`, aristas persona↔persona en `src/lib/graph/builder.ts`. Coincide con la reconciliación 14/07 de arriba.
+- ✅ **Cross-referencing por ubicación** (ítem #8, Clay backlog) — el texto decía "no implementar aún, solo anotado", pero `buildProximityClusters` (`src/lib/relaciones/proximity.ts`) ya está cableado en `src/lib/agenda/build.ts` (`AgendaKind: 'proximity_cluster'`) y renderizado en `ProximoPanel.tsx`. Coincide con la reconciliación 14/07 de arriba.
+- 🟡→✅ **Reciprocidad del score relacional** (ítem #1, checklist "Portar detail page V2") — decía "sigue 'datos insuficientes' hasta tener log de interacciones recíprocas". Ese log (`person_logs kind='interaction'`, Sesión 6) ya existe y ya está cableado: `RelationalScore.tsx` hace fetch a `/api/person-logs/interactions` y alimenta `computeRelationalScore` con `interactionEvents` (RFM-R). Solo cae a null cuando la persona no tiene NINGUNA interacción registrada — comportamiento esperado, no gap.
+
+**Verificado y quedó IGUAL (sin drift):**
+- **Gantt fix** (MASTER_PLAN omite fase activa sin `due_on`) — sigue genuinamente pendiente. `scripts/generate_roadmap.py` (líneas ~484-493) confirma: fases sin `due_on` se siguen omitiendo del Gantt, sin fallback a fecha de creación.
+- **CicloPanel diferidos** (derivación de `cycleStartDate` desde captura WhatsApp) — sigue genuinamente pendiente. No se encontró ningún `cycleStartDate`/`cycle_start_date` en `src/lib/capture/`.
+- **Re-validar Captura WhatsApp con fecha explícita / ajuste prompt user-other** — no verificables por grep (requieren prueba en vivo con captura real), se dejan como estaban.
+
+**No re-verificado este pase** (fuera de alcance — ya tenían nota "revisar"/pendiente genuino confirmado en pases anteriores, o requieren validación en vivo no verificable por grep): todo lo demás.
 
 ---
 
@@ -291,7 +308,7 @@ Hoy el calendario es **solo-lectura, una vía**, vía **URL `.ics`** (`OUTLOOK_I
 
 **Features pendientes a portar:** los 4 base ya están en prod (#1 score, #3 cumple, #4 última interacción + ruta detalle entregadas Sesión 3 PR-A/B). Quedan 13:
 
-1. ✅ **Score relacional global** (base) — entregado en `RelationalScore.tsx` (PR #89). Reciprocidad sigue "datos insuficientes" hasta tener log de interacciones recíprocas; itera cuando la fuente exista.
+1. ✅ **Score relacional global** (base) — entregado en `RelationalScore.tsx` (PR #89). 🟡→✅ **Reciprocidad HECHA (verificado 2026-07-19):** ya NO se queda perpetuamente en "datos insuficientes" — el log de interacciones recíprocas que faltaba (Sesión 6, `person_logs kind='interaction'`) ya existe; `RelationalScore.tsx` (líneas 74-92) hace fetch a `/api/person-logs/interactions` y pasa `interactionEvents` a `computeRelationalScore` (`src/lib/people/relationalScore.ts`, RFM-R ponderado por recencia). Sigue cayendo a `null` ("datos insuficientes") solo cuando la persona no tiene NINGUNA interacción registrada aún — eso es esperado, no un gap. Test: `relationalScore.test.ts:129` ("con interacciones, Reciprocidad ya no es NULL").
 2. 🟡 **Visualización del ciclo menstrual** — ENTREGADO PARCIAL en `CicloPanel.tsx` (Sesión 5): donut con fase actual (menstrual/folicular/ovulación/lútea), día del ciclo, próximo período estimado, nota contextual estática por fase. `cycleStartDate` + `cycleLengthDays` editables end-to-end. **Diferido:** (a) derivación de `cycle_start_date` desde capturas WhatsApp, (b) serie/historial de períodos, (c) overlay en timeline (Fase 3c).
 3. ✅ **Cumpleaños** con countdown — entregado en `BirthdayCountdown.tsx` (PR #89) + `birth_date` editable end-to-end.
 4. ✅ **Última interacción** con countdown — entregado en `LastInteractionPanel.tsx` (PR #88) leyendo `whatsapp_chat` más reciente filtrado por `is_obsolete=false`.
@@ -383,15 +400,13 @@ Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lóg
 
 **7. Q&A por persona** — ✅ **CERRADO** (`0a106c2`). Ask-box `PreguntarSobrePersona` en la ficha: reusa `/api/sir/ask` (grounding + RAG, ya hechos) con un `personId` nuevo que pre-scopea el contexto ANTES del cap, así responde aterrizado en esa persona aunque no la nombres. Sugerencias rápidas + `skipInlineGaps`. El backend (name-resolution + memorias semánticas + recall C3) ya existía; esto agregó el scope explícito + la UI. **Pendiente futuro:** verificar en vivo (LLM); multi-turno dentro de la ficha (hoy una pregunta por vez).
 
-**8. Cross-referencing por ubicación** — que la capa de memoria/engines interprete el campo `location` (ya existe en `people`; ahora editable a nivel distrito/ciudad) y lo cruce.
-- **Qué es:** sugerencias contextuales por cercanía — "Diana vive en Barranco → visitala", o "X y vos están cerca" cuando Aaron está en la zona. Aparece en la **Agenda / Próximo**.
-- **Conecta con:** `timing` + `recommendation` engines y la vista Agenda. Requiere normalizar `location` (distrito/ciudad) y, para "estás cerca", una fuente de ubicación de Aaron (manual o futura). Esfuerzo medio; no implementar aún, solo anotado.
+**8. Cross-referencing por ubicación** — ✅ **HECHO (verificado 2026-07-19, corrige drift con la reconciliación 14/07 de arriba, línea "Cross-referencing por ubicación", que este ítem suelto no reflejaba).** `src/lib/relaciones/proximity.ts` (`buildProximityClusters`) agrupa personas por `location` compartida; cableado en `src/lib/agenda/build.ts` como el `AgendaKind` `proximity_cluster` ("Cross-ref por UBICACIÓN: personas que comparten zona... Sugerencia CONDICIONAL, no time-bound. href → /relaciones", comentario línea ~51-53) y renderizado en `ProximoPanel.tsx`. Este ítem suelto quedó desactualizado ("no implementar aún, solo anotado") — dejar esta nota para no reabrirlo por error.
 
-**9. Familia / relaciones persona↔persona (padres como nodos del grafo)** — DIFERIDO de la tanda de campos de relación (era el item A4). Hoy NO existe modelo persona↔persona: `relationships` es self↔persona (una fila por contacto) y el grafo es una estrella desde el self. Ponerlo bien requiere un **sub-proyecto**:
+**9. Familia / relaciones persona↔persona (padres como nodos del grafo)** — ✅ **HECHO (verificado 2026-07-19, corrige drift con la reconciliación 14/07 de arriba, que este ítem suelto contradecía).** Texto original abajo quedó desactualizado: decía "Hoy NO existe modelo persona↔persona", pero el modelo propuesto (tabla `person_links`) YA está construido y ampliado bastante más allá del alcance original — migraciones `0035_person_links.sql`, `0052_person_links_realtime.sql`, `0058_person_links_self_sentinel.sql`, `0106_brain_edge_weights.sql`, `0107_person_links_metadata.sql`, `0128_person_links_category.sql`; UI en `FamiliaPanel.tsx` (self↔persona con parentesco, autocompletar, bidireccional, sugerencias transitivas); aristas persona↔persona en el grafo (`src/lib/graph/builder.ts`) + `NetworkPathsCard`/`NetworkIntrosPanel`/`MencionadasPanel`/`InfluenceMapCard`. Este ítem suelto quedó desactualizado — dejar esta nota para no reabrirlo por error. Texto histórico original conservado abajo:
 - **Modelo:** nueva tabla `person_links` (`person_a_id`, `person_b_id`, `kind` ∈ parent/sibling/partner/…, `user_id`) + RLS. Migración aditiva.
 - **Grafo:** el builder debe dibujar aristas persona↔persona (no solo self→persona) — cambia el layout de fuerza (hoy el self está fijo al centro); riesgo de desestabilizar el grafo recién rediseñado, por eso se hace aislado.
 - **UI:** mini-sección "Familia" en la ficha: agregar padre/madre → crea la persona-nodo mínima (relationship='family') + el link. 
-- **Por qué se difirió:** alcance/riesgo propio; no mezclarlo con cambios de campos simples. Candidato a su propia sesión.
+- **Por qué se difirió (histórico, ya no aplica):** alcance/riesgo propio; no mezclarlo con cambios de campos simples. Candidato a su propia sesión.
 
 ### ⚠️ Guardrail a respetar (cuando se active la búsqueda semántica, Fase 3b)
 Asegurar que **personas con poca o ninguna interacción NO desaparezcan de los resultados**. Es una **falla conocida de Clay** (los contactos "fríos" se vuelven invisibles). SIR **ya la esquiva en el grafo** (commit del 31/05: el grafo dejó de ocultar nodos sin `history`/actividad). Replicar ese criterio en `/buscar` y en cualquier ranking: el embedding/score puede **ordenar**, nunca **excluir** silenciosamente a un contacto existente.
