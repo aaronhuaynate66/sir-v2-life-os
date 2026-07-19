@@ -35,7 +35,7 @@ export default function ScoresPage() {
 
         <header className="space-y-1">
           <div className="flex items-center gap-2">
-            <Calculator size={20} className="text-[#14b8a6]" />
+            <Calculator size={20} className="text-brand" />
             <h1 className="text-2xl font-semibold tracking-tight">Cómo se calcula</h1>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -48,7 +48,7 @@ export default function ScoresPage() {
         <Card>
           <CardContent className="p-4 sm:p-6 space-y-5">
             <div className="flex items-center gap-2">
-              <Heart size={16} className="text-[#14b8a6]" />
+              <Heart size={16} className="text-brand" />
               <h2 className="text-lg font-semibold">Salud del vínculo (relacional)</h2>
             </div>
             <p className="text-[14px] leading-relaxed text-foreground/85">
@@ -56,7 +56,7 @@ export default function ScoresPage() {
               van de 0 a 100.
             </p>
 
-            <Section title="Fuerza" accent="#14b8a6">
+            <Section title="Fuerza" accent="#6e56cf">
               Cuánto pesa la persona en tu vida, ajustado por qué tan reciente fue el último contacto.
               <Formula>{`Fuerza = importancia (1-10) × 10
         + 10  si el último contacto fue hace < 14 días
@@ -65,7 +65,7 @@ export default function ScoresPage() {
 (recortado a 0–100)`}</Formula>
             </Section>
 
-            <Section title="Reciprocidad" accent="#14b8a6">
+            <Section title="Reciprocidad" accent="#6e56cf">
               El tono acumulado de tus interacciones. Arranca neutra (50) y se mueve con cada interacción que
               registras (a mano o que SIR infiere de una captura). Si nunca registraste ninguna, queda
               <em> sin dato</em> (no inventa un número).
@@ -78,12 +78,12 @@ Cada paso se suma como round(delta × 0.6) sobre 50 (recortado 0–100).`}</Form
               buena sube.
             </Section>
 
-            <Section title="Confianza" accent="#14b8a6">
+            <Section title="Confianza" accent="#6e56cf">
               Cuánto confías en la persona. Es directo, sin ajustes.
               <Formula>{`Confianza = confianza (1-10) × 10`}</Formula>
             </Section>
 
-            <Section title="Global" accent="#14b8a6">
+            <Section title="Global" accent="#6e56cf">
               <Formula>{`Global = promedio de (Fuerza, Confianza, y Reciprocidad si tiene dato)`}</Formula>
               Si la Reciprocidad está sin dato, el Global promedia solo Fuerza y Confianza.
             </Section>
@@ -102,7 +102,7 @@ Cada paso se suma como round(delta × 0.6) sobre 50 (recortado 0–100).`}</Form
         <Card>
           <CardContent className="p-4 sm:p-6 space-y-5">
             <div className="flex items-center gap-2">
-              <Activity size={16} className="text-[#14b8a6]" />
+              <Activity size={16} className="text-brand" />
               <h2 className="text-lg font-semibold">Recuperación (biológico)</h2>
             </div>
 

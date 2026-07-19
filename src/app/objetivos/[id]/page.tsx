@@ -77,7 +77,7 @@ export default function ObjetivoDetailPage() {
           <>
             <header className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <Target size={20} className="text-[#14b8a6]" />
+                <Target size={20} className="text-brand" />
                 <h1 className="text-2xl font-semibold tracking-tight">{goal.title}</h1>
                 {goal.isAnchor && <Badge variant="outline" className="text-[10px] border-brand/30 bg-brand-soft text-brand-soft-foreground gap-1"><Anchor size={10} /> Norte del año</Badge>}
               </div>

@@ -19,7 +19,7 @@ import { categoryLabelEs } from '@/lib/self/trajectoryArc'
 import { summarizeSeasonSubstrate } from '@/lib/self/seasonSubstrate'
 import { computeNarrativeCoherence } from '@/lib/self/narrativeCoherence'
 
-const CURRENT_COLOR = '#14b8a6'
+const CURRENT_COLOR = '#6e56cf'
 const PAST_COLOR = '#8a8f98'
 
 export function LifeSeasonsPanel() {
@@ -141,7 +141,7 @@ export function LifeSeasonsPanel() {
 
         <Link
           href="/objetivos"
-          className="mt-4 inline-flex items-center gap-1 text-[13px] text-[#14b8a6] hover:underline"
+          className="mt-4 inline-flex items-center gap-1 text-[13px] text-brand hover:underline"
         >
           Ver tus objetivos <ArrowRight size={13} />
         </Link>

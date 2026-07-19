@@ -313,8 +313,8 @@ function DealForm({ draft, setDraft, onSave, onCancel, saving, people }: {
           {saving && <Loader2 className="h-4 w-4 animate-spin" />} Guardar
         </button>
         <button type="button" onClick={onCancel} disabled={saving} className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground">Cancelar</button>
-        {draft.clientOrgSlug && <Link href={`/empresas/${draft.clientOrgSlug}`} className="ml-auto inline-flex items-center gap-1 text-xs text-[#14b8a6] hover:underline"><Building2 size={12} /> ver empresa</Link>}
-        {draft.contactPersonId && <Link href={`/relaciones`} className="inline-flex items-center gap-1 text-xs text-[#14b8a6] hover:underline"><User size={12} /> contacto</Link>}
+        {draft.clientOrgSlug && <Link href={`/empresas/${draft.clientOrgSlug}`} className="ml-auto inline-flex items-center gap-1 text-xs text-brand hover:underline"><Building2 size={12} /> ver empresa</Link>}
+        {draft.contactPersonId && <Link href={`/relaciones`} className="inline-flex items-center gap-1 text-xs text-brand hover:underline"><User size={12} /> contacto</Link>}
       </div>
     </div>
   )
