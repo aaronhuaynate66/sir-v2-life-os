@@ -66,3 +66,14 @@ describe('analyzeContactRhythm — ritmo circadiano por-persona', () => {
     expect(r.nextWindowText).toBeTruthy()
   })
 })
+
+describe('analyzeContactRhythm — la matemática corre sobre actividad de IG (no solo WhatsApp)', () => {
+  it('eventos de actividad IG (fromUser:false) producen un ritmo igual que los de chat', () => {
+    // Simula 16 capturas de story a local 20–21 (UTC 01–02) — como si fueran de IG.
+    const igActivity = [...theirsAt(1, 8, 4), ...theirsAt(2, 8, 12)]
+    const r = analyzeContactRhythm(igActivity, NOW)
+    expect(r.sampleSize).toBeGreaterThanOrEqual(8)
+    expect(['good', 'now', 'ok']).toContain(r.level) // NOW=21h local cae en su ventana
+    expect(r.activeWindows.length).toBeGreaterThan(0)
+  })
+})

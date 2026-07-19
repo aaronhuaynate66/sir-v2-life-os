@@ -3,7 +3,7 @@
   "name": "SIR Reader",
   "version": "0.5.0",
   "description": "Lee pasivamente tus conversaciones (Teams, WhatsApp Web) y tu correo (Outlook Web) y los manda a tu SIR. Solo lo que ya se ve en pantalla; sin auto-scroll ni requests de fondo.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": [
     "https://teams.microsoft.com/*",
     "https://*.teams.microsoft.com/*",

@@ -126,3 +126,49 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   if (msg && msg.type === 'sir-ping') { sendResponse({ ok: true }); return true; }
 });
+
+// ── Refresco periódico del tray de Instagram (PROACTIVO, bajo riesgo) ─────────
+// Aaron deja su IG abierto en la PC; cada ~2.5h (con jitter) refrescamos una
+// pestaña de instagram.com que NO esté enfocada, para que el interceptor capture
+// el TRAY (quién tiene story activa + cuándo posteó) de TODOS sus follows de una.
+// NO abrimos stories individuales (dejaría "visto" + es el patrón que banea):
+// solo recargamos la home, que es lo que el propio IG hace al navegar.
+// Se puede apagar con enabled.igRefresh=false (chrome.storage).
+const IG_ALARM = 'sir-ig-tray-refresh';
+const IG_BASE_MIN = 150; // ~2.5h
+
+async function igRefreshEnabled() {
+  try {
+    const { enabled } = await chrome.storage.local.get('enabled');
+    return !enabled || enabled.igRefresh !== false; // default ON
+  } catch (_) { return true; }
+}
+
+async function scheduleIgRefresh() {
+  // Jitter ±40 min para no golpear a intervalos exactos (más humano).
+  const jitter = (Math.floor((Date.now() / 60000) % 80)) - 40;
+  const when = Date.now() + (IG_BASE_MIN + jitter) * 60000;
+  try { await chrome.alarms.create(IG_ALARM, { when }); } catch (_) {}
+}
+
+async function refreshIgTray() {
+  if (!(await igRefreshEnabled())) return;
+  try {
+    const tabs = await chrome.tabs.query({ url: 'https://www.instagram.com/*' });
+    // Solo una pestaña que NO esté activa (para no interrumpirte si la usás).
+    const target = tabs.find((t) => !t.active);
+    if (target && target.id != null) {
+      // Recargar la home refresca el tray; el interceptor MAIN-world lo capta.
+      await chrome.tabs.update(target.id, { url: 'https://www.instagram.com/' });
+    }
+  } catch (_) { /* sin pestaña / sin permiso → nada */ }
+}
+
+try {
+  chrome.alarms.onAlarm.addListener((a) => {
+    if (a && a.name === IG_ALARM) { refreshIgTray().finally(scheduleIgRefresh); }
+  });
+  chrome.runtime.onInstalled.addListener(scheduleIgRefresh);
+  chrome.runtime.onStartup.addListener(scheduleIgRefresh);
+  scheduleIgRefresh();
+} catch (_) { /* entorno sin alarms */ }

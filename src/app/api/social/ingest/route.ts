@@ -56,6 +56,9 @@ interface SocialItem {
   text?: string
   hasActiveStory?: boolean
   headline?: string
+  /** ISO del momento REAL de la actividad (ej. cuándo posteó la story), si el
+   *  interceptor lo pudo leer. Si no, se usa now() al insertar. */
+  activityAt?: string
 }
 
 // Dedup: no insertamos la MISMA señal (persona+kind) más de una vez cada 6h.
@@ -132,9 +135,17 @@ export async function POST(req: NextRequest) {
         .limit(1)
       if (recent && recent.length > 0) { skipped++; continue }
 
+      // observed_at = el momento REAL de la actividad (cuándo posteó) si vino y es
+      // razonable (no futuro, ≤14 días atrás); si no, ahora. Esto hace que el
+      // ritmo refleje SUS horas de actividad, no cuándo la extensión capturó.
+      let observedAt = nowIso
+      if (it.activityAt) {
+        const t = Date.parse(it.activityAt)
+        if (Number.isFinite(t) && t <= Date.now() + 60_000 && t > Date.now() - 14 * 86_400_000) observedAt = new Date(t).toISOString()
+      }
       const { error: insErr } = await admin.from('contact_activity').insert({
         user_id: userId, person_id: person.id, kind: signal.kind, detail: signal.detail,
-        source: platform, observed_at: nowIso,
+        source: platform, observed_at: observedAt,
       })
       if (insErr) { skipped++; continue }
       inserted++
