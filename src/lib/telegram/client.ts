@@ -106,6 +106,50 @@ export async function sendTelegramMessage(
 }
 
 /**
+ * Envía un mensaje con teclado inline MULTI-FILA (una fila por sub-array). Para
+ * el check-in de hábitos: un botón por hábito, uno por fila (legible en móvil).
+ * rows=[] → sin teclado. No lanza. Devuelve el message_id para poder editarlo.
+ */
+export async function sendTelegramKeyboard(
+  chatId: number, text: string, rows: InlineButton[][],
+): Promise<{ ok: boolean; messageId?: number }> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return { ok: false }
+  try {
+    const inline_keyboard = rows.map((r) => r.map((b) => ({ text: b.text, callback_data: b.callbackData })))
+    const res = await fetch(`${API}/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId, text: stripMarkdown(text).slice(0, 4096),
+        disable_web_page_preview: true,
+        ...(rows.length ? { reply_markup: { inline_keyboard } } : {}),
+      }),
+    })
+    if (!res.ok) return { ok: false }
+    const j = (await res.json()) as { result?: { message_id?: number } }
+    return { ok: true, messageId: j.result?.message_id }
+  } catch { return { ok: false } }
+}
+
+/** Edita un mensaje reemplazando texto Y teclado (multi-fila). rows=[] → sin
+ *  teclado. Para actualizar el check-in tras marcar un hábito. No lanza. */
+export async function editTelegramKeyboard(
+  chatId: number, messageId: number, text: string, rows: InlineButton[][],
+): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return
+  try {
+    const inline_keyboard = rows.map((r) => r.map((b) => ({ text: b.text, callback_data: b.callbackData })))
+    await fetch(`${API}/bot${token}/editMessageText`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: stripMarkdown(text).slice(0, 4096), reply_markup: { inline_keyboard } }),
+    })
+  } catch { /* no-op */ }
+}
+
+/**
  * Responde un callback_query (tap de botón inline). Telegram lo exige para que
  * el spinner del botón pare; opcionalmente muestra un toast. No lanza.
  */

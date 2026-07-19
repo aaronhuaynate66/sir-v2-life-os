@@ -20,8 +20,10 @@ import { createClient as createServiceClient, type SupabaseClient } from '@supab
 import { parseTelegramUpdate, parseTelegramCallback } from '@/lib/telegram/inbound'
 import {
   isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage, downloadTelegramFile,
-  answerCallbackQuery, editTelegramMessageText,
+  answerCallbackQuery, editTelegramMessageText, sendTelegramKeyboard, editTelegramKeyboard,
 } from '@/lib/telegram/client'
+import { pendingDailyHabits, habitCallbackData, parseHabitCallback } from '@/lib/habits/checkinButtons'
+import { limaDayString } from '@/lib/habits/streak'
 import { toPlainText } from '@/lib/telegram/format'
 import { transcribeAudio } from '@/lib/ai/transcribeAudio'
 import { askSir, AskSirConfigError } from '@/lib/sir/askSir'
@@ -103,6 +105,62 @@ async function handleSocialPhoto(
   await trackServer('social_story_captured', { platform: vis.platform, kind: signal.kind }, ownerId)
 }
 
+/** Hábitos diarios activos + los que faltan marcar hoy. Reusa la lógica pura. */
+async function loadPendingHabits(supabase: SupabaseClient, userId: string, now: Date) {
+  const { data: habitRows } = await supabase
+    .from('habits').select('id, title, cadence').eq('user_id', userId).eq('active', true).limit(50)
+  const habitList = (habitRows ?? []) as Array<{ id: string; title: string; cadence: string }>
+  if (habitList.length === 0) return []
+  const since = new Date(now.getTime() - 40 * 86_400_000).toISOString().slice(0, 10)
+  const { data: ckRows } = await supabase
+    .from('habit_checkins').select('habit_id, date').eq('user_id', userId).gte('date', since).limit(2000)
+  const byHabit = new Map<string, string[]>()
+  for (const c of (ckRows ?? []) as Array<{ habit_id: string; date: string }>) {
+    const arr = byHabit.get(c.habit_id) ?? []; arr.push(c.date); byHabit.set(c.habit_id, arr)
+  }
+  return pendingDailyHabits(
+    habitList.map((h) => ({ id: h.id, title: h.title, cadence: h.cadence, checkinDates: byHabit.get(h.id) ?? [] })),
+    limaDayString(now),
+  )
+}
+
+/** Envía el check-in de hábitos por botones (un botón por hábito pendiente hoy).
+ *  Reusado por el tap y por el comando on-demand. Devuelve cuántos mandó. */
+async function sendHabitCheckin(supabase: SupabaseClient, userId: string, chatId: number, now: Date): Promise<number> {
+  const pending = await loadPendingHabits(supabase, userId, now)
+  if (pending.length === 0) return 0
+  const rows = pending.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
+  await sendTelegramKeyboard(chatId, '¿Cuáles de tus hábitos hiciste hoy? Toca los que sí 👇', rows)
+  return pending.length
+}
+
+/** Tap de un hábito: lo marca hecho hoy (idempotente) y actualiza el mensaje con
+ *  los que quedan (o cierra si ya no queda ninguno). */
+async function handleHabitTap(
+  supabase: SupabaseClient, userId: string, chatId: number, messageId: number, callbackId: string, habitId: string,
+): Promise<void> {
+  const now = new Date()
+  const today = limaDayString(now)
+  const { data: habit } = await supabase.from('habits').select('id, title').eq('user_id', userId).eq('id', habitId).maybeSingle()
+  const title = (habit as { title?: string } | null)?.title ?? 'hábito'
+  // Idempotente: si ya está marcado hoy, no duplicamos.
+  const { data: exists } = await supabase
+    .from('habit_checkins').select('id').eq('user_id', userId).eq('habit_id', habitId).eq('date', today).maybeSingle()
+  if (!exists) {
+    await supabase.from('habit_checkins').insert({ user_id: userId, habit_id: habitId, date: today })
+    await trackServer('habit_marked', { channel: 'telegram', via: 'button' }, userId)
+  }
+  await answerCallbackQuery(callbackId, `✓ ${title}`)
+  // Rearmar el mensaje con los que faltan.
+  const pending = await loadPendingHabits(supabase, userId, now)
+  if (pending.length === 0) {
+    await editTelegramKeyboard(chatId, messageId, `✅ Listo — marqué todos tus hábitos de hoy. Bien ahí, Aaron 🙌`, [])
+  } else {
+    const rows = pending.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
+    await editTelegramKeyboard(chatId, messageId, `✓ ${title} marcado. ¿Cuáles más hiciste hoy? 👇`, rows)
+  }
+}
+
 /** user_id dueño de la data: env explícito o único profile (patrón reader). */
 async function resolveOwnerId(admin: SupabaseClient): Promise<string | null> {
   const explicit = process.env.TELEGRAM_OWNER_USER_ID?.trim()
@@ -142,6 +200,13 @@ export async function POST(req: NextRequest) {
       const supabase = createServiceClient(svcUrl, svcKey, { auth: { persistSession: false } })
       const ownerId = await resolveOwnerId(supabase)
       if (!ownerId) { await answerCallbackQuery(cb.callbackId); return }
+
+      // Tap de un hábito (check-in por botones): "hb|<habitId>" → marcar hecho hoy.
+      const habitId = parseHabitCallback(cb.data)
+      if (habitId) {
+        await handleHabitTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, habitId)
+        return
+      }
 
       const parts = cb.data.split('|')
       if (parts[0] !== 'sv' || parts.length < 3) { await answerCallbackQuery(cb.callbackId); return }
@@ -228,6 +293,14 @@ export async function POST(req: NextRequest) {
         return
       }
       // Comando desconocido → sigue como pregunta normal (no cortamos).
+    }
+
+    // Check-in de hábitos a pedido: "hábitos" / "/habitos" → botones para marcar.
+    const norm = text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/^\//, '').trim()
+    if (norm === 'habitos' || norm === 'habito' || norm === 'mis habitos') {
+      const n = await sendHabitCheckin(supabase, ownerId, msg.chatId, new Date())
+      if (n === 0) await sendTelegramMessage(msg.chatId, '✅ Ya marcaste todos tus hábitos de hoy. Bien ahí.')
+      return
     }
 
     try {

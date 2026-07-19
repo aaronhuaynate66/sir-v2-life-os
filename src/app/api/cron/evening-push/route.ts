@@ -7,8 +7,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
 import { buildEveningHabitsPush, type EveningHabit } from '@/lib/habits/eveningPush'
-import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
+import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard } from '@/lib/telegram/client'
 import { formatEveningBriefForChat } from '@/lib/telegram/eveningBrief'
+import { pendingDailyHabits, habitCallbackData } from '@/lib/habits/checkinButtons'
+import { limaDayString } from '@/lib/habits/streak'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -56,6 +58,7 @@ export async function GET(req: NextRequest) {
       const habitList = (habitRows ?? []) as Array<{ id: string; title: string; cadence: string }>
 
       let push: { title: string; body: string } | null = null
+      let pendingHabits: { id: string; title: string }[] = []
       if (habitList.length > 0) {
         const since = new Date(now.getTime() - 40 * 86_400_000).toISOString().slice(0, 10)
         const { data: ckRows } = await admin
@@ -76,6 +79,11 @@ export async function GET(req: NextRequest) {
           checkinDates: byHabit.get(h.id) ?? [],
         }))
         push = buildEveningHabitsPush(habits, now)
+        // Hábitos diarios que faltan marcar hoy → botones (un toque, sin escribir).
+        pendingHabits = pendingDailyHabits(
+          habitList.map((h) => ({ id: h.id, title: h.title, cadence: h.cadence, checkinDates: byHabit.get(h.id) ?? [] })),
+          limaDayString(now),
+        )
       }
 
       // Web Push: solo si hay pendientes (comportamiento original).
@@ -95,6 +103,13 @@ export async function GET(req: NextRequest) {
           try {
             await admin.from('sir_messages').insert({ user_id: uid, role: 'sir', content: chatText.slice(0, 4000), channel: 'telegram' })
           } catch { /* fail-open */ }
+        }
+        // Check-in de hábitos por BOTONES (Aaron: más UX-friendly que escribir "ya
+        // medité"). Un botón por hábito diario pendiente; el tap lo marca (callback
+        // "hb|<id>" → webhook). Solo si quedan pendientes.
+        if (pendingHabits.length > 0) {
+          const rows = pendingHabits.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
+          await sendTelegramKeyboard(Number(tgChat), '¿Cuáles de tus hábitos hiciste hoy? Toca los que sí 👇', rows)
         }
       }
       results.push({ user: uid.slice(0, 8), sent: push ? 1 : 0 })
