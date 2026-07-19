@@ -314,11 +314,11 @@ function GoalsContent() {
   }
   function handlePause(g: Goal) {
     pauseGoal(g.id)
+    toast.success('Objetivo pausado', { description: g.title })
   }
   function handleDelete(g: Goal) {
     removeGoal(g.id)
     toast.success('Objetivo eliminado', { description: g.title })
-    toast.success('Objetivo pausado', { description: g.title })
   }
   function handleReactivate(g: Goal) {
     updateGoal(g.id, { status: 'active' })

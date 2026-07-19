@@ -360,7 +360,7 @@ export function PersonDetail({
       const sb = createClient()
       const { data: authData, error: authError } = await sb.auth.getUser()
       if (authError || !authData?.user?.id) {
-        throw new Error('Sesión expirada. Recargá la página.')
+        throw new Error('Sesión expirada. Recarga la página.')
       }
       const userId = authData.user.id
       // Si el slug cambió, validar uniqueness contra otros rows del mismo user.
