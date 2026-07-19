@@ -5,6 +5,8 @@
 // cliente relacional a propósito (Aaron pidió no mezclar canales). El token nunca
 // se loguea.
 
+import { stripMarkdown } from './plainText'
+
 const API = 'https://api.telegram.org'
 
 export function isDevBotConfigured(): boolean {
@@ -33,7 +35,9 @@ export async function sendDevMessage(chatId: number, text: string): Promise<{ ok
     const res = await fetch(`${API}/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: text.slice(0, 4096), disable_web_page_preview: true }),
+      // Telegram no renderiza markdown sin parse_mode → los ** salían crudos y se
+      // veía roto. Lo limpiamos a texto plano (el modelo igual los mete a veces).
+      body: JSON.stringify({ chat_id: chatId, text: stripMarkdown(text).slice(0, 4096), disable_web_page_preview: true }),
     })
     return { ok: res.ok }
   } catch {
