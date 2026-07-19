@@ -7,7 +7,7 @@ describe('parseTelegramUpdate', () => {
       update_id: 1,
       message: { message_id: 10, chat: { id: 12345 }, text: '  ¿cómo viene Diana?  ', from: { first_name: 'Aaron', last_name: 'H' } },
     })
-    expect(r).toEqual({ chatId: 12345, messageId: 10, text: '¿cómo viene Diana?', isVoice: false, voiceFileId: null, fromName: 'Aaron H' })
+    expect(r).toEqual({ chatId: 12345, messageId: 10, text: '¿cómo viene Diana?', isVoice: false, voiceFileId: null, photoFileId: null, caption: '', fromName: 'Aaron H' })
   })
 
   it('detecta voz y captura el file_id', () => {
@@ -16,6 +16,24 @@ describe('parseTelegramUpdate', () => {
     expect(r?.voiceFileId).toBe('abc')
     expect(r?.text).toBe('')
     expect(r?.chatId).toBe(9)
+  })
+
+  it('captura una FOTO (array photo → la más grande) + caption', () => {
+    const r = parseTelegramUpdate({ message: {
+      message_id: 4, chat: { id: 9 }, caption: 'mira la story',
+      photo: [{ file_id: 'small' }, { file_id: 'big' }],
+    } })
+    expect(r?.photoFileId).toBe('big')
+    expect(r?.caption).toBe('mira la story')
+  })
+
+  it('captura un document con mime image/* como foto', () => {
+    const r = parseTelegramUpdate({ message: { message_id: 5, chat: { id: 9 }, document: { file_id: 'doc1', mime_type: 'image/png' } } })
+    expect(r?.photoFileId).toBe('doc1')
+  })
+
+  it('un document NO imagen no cuenta como foto', () => {
+    expect(parseTelegramUpdate({ message: { message_id: 6, chat: { id: 9 }, document: { file_id: 'd', mime_type: 'application/pdf' } } })).toBeNull()
   })
 
   it('trata edited_message como mensaje nuevo', () => {

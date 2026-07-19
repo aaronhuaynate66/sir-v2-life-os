@@ -30,10 +30,78 @@ import { executeProposedAction, isExecutableByChat } from '@/lib/sir/executeActi
 import { savePendingAction, loadPendingAction, deletePendingAction } from '@/lib/sir/pendingActions'
 import { summarizeActionForConfirm } from '@/lib/sir/actionSummary'
 import { trackServer } from '@/lib/analytics/serverTrack'
+import { extractStoryVision } from '@/lib/social-reader/storyVision'
+import { deriveSocialSignal } from '@/lib/social-reader/derive'
+import { buildPersonIndex, matchPerson, type PersonLite } from '@/lib/social-reader/match'
+import type { LlmImageMediaType } from '@/lib/llm/types'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
+
+const IMG_TYPES: ReadonlySet<string> = new Set(['image/webp', 'image/png', 'image/jpeg', 'image/gif'])
+function normalizeImageMediaType(mime: string): LlmImageMediaType {
+  return (IMG_TYPES.has(mime) ? mime : 'image/jpeg') as LlmImageMediaType
+}
+
+/**
+ * Screenshot social (story de IG / perfil) → señal de TIMING. El camino
+ * mobile-native: Aaron ve la story en el celular y le manda la captura a SIR.
+ * Visión saca de quién es (handle/nombre) y qué dice; se deriva la señal y se
+ * inserta en contact_activity. Responde en Telegram con lo que anotó. No lanza.
+ */
+async function handleSocialPhoto(
+  supabase: SupabaseClient, ownerId: string, chatId: number, photoFileId: string, caption: string,
+): Promise<void> {
+  const media = await downloadTelegramFile(photoFileId)
+  if (!media) { await sendTelegramMessage(chatId, 'No pude bajar la imagen 😕. Reintentá.'); return }
+  const base64 = Buffer.from(media.bytes).toString('base64')
+  let vis
+  try { vis = await extractStoryVision({ supabase, userId: ownerId }, base64, normalizeImageMediaType(media.mimeType)) } catch { vis = null }
+  if (!vis || !vis.isSocial) {
+    await sendTelegramMessage(chatId, 'Vi la imagen, pero no parece una story/perfil de Instagram o LinkedIn de alguien. Si es de un contacto, decime de quién y lo anoto.')
+    return
+  }
+
+  const text = [vis.text, caption].filter((s) => s && s.trim()).join(' · ') || null
+  const signal = deriveSocialSignal({ platform: vis.platform, text, hasActiveStory: vis.platform === 'instagram' })
+
+  const { data: peopleRows } = await supabase
+    .from('people').select('id, name, instagram_handle, linkedin_url, title').eq('user_id', ownerId).limit(2000)
+  const people: PersonLite[] = (peopleRows ?? []).map((r) => ({
+    id: String(r.id), name: String(r.name ?? ''),
+    instagramHandle: (r.instagram_handle as string | null) ?? null,
+    linkedinUrl: (r.linkedin_url as string | null) ?? null,
+    title: (r.title as string | null) ?? null,
+  }))
+  const m = matchPerson(buildPersonIndex(people), { platform: vis.platform, handle: vis.handle ?? undefined, name: vis.name ?? undefined })
+
+  if (!m) {
+    const who = vis.handle ? `@${vis.handle}` : (vis.name || 'esa cuenta')
+    await sendTelegramMessage(chatId, `Es de ${who}, pero no la tengo con ese ${vis.handle ? 'handle' : 'nombre'}. Setéale el ${vis.handle ? 'instagram_handle' : 'nombre/LinkedIn'} en su ficha y la próxima la anoto sola.`)
+    return
+  }
+  if (!signal) {
+    await sendTelegramMessage(chatId, `Vi la story de ${m.person.name}, pero no saqué una señal de timing clara. Si querés, marcá "de viaje"/"a full" en su ficha.`)
+    return
+  }
+
+  const sinceIso = new Date(Date.now() - 6 * 3_600_000).toISOString()
+  const { data: recent } = await supabase
+    .from('contact_activity').select('id')
+    .eq('user_id', ownerId).eq('person_id', m.person.id).eq('kind', signal.kind).gte('observed_at', sinceIso).limit(1)
+  if (!recent || recent.length === 0) {
+    await supabase.from('contact_activity').insert({
+      user_id: ownerId, person_id: m.person.id, kind: signal.kind, detail: signal.detail, source: vis.platform,
+    })
+  }
+  const verbo = signal.kind === 'traveling' ? 'está de viaje'
+    : signal.kind === 'available' ? 'está por acá/activa'
+    : signal.kind === 'job_change' ? 'cambió de trabajo'
+    : 'tiene una novedad'
+  await sendTelegramMessage(chatId, `📸 Anotado: ${m.person.name} ${verbo}${signal.detail ? ` — "${signal.detail}"` : ''}. Te aviso antes de contactarla si es mal momento.`)
+  await trackServer('social_story_captured', { platform: vis.platform, kind: signal.kind }, ownerId)
+}
 
 /** user_id dueño de la data: env explícito o único profile (patrón reader). */
 async function resolveOwnerId(admin: SupabaseClient): Promise<string | null> {
@@ -122,6 +190,13 @@ export async function POST(req: NextRequest) {
     const ownerId = await resolveOwnerId(supabase)
     if (!ownerId) {
       await sendTelegramMessage(msg.chatId, 'Falta configurar TELEGRAM_OWNER_USER_ID en el server 🙏.')
+      return
+    }
+
+    // FOTO: screenshot social (story de IG / perfil) → señal de timing. Camino
+    // mobile-native (Aaron usa IG en el celu). Se procesa aparte del cerebro Q&A.
+    if (msg.photoFileId) {
+      await handleSocialPhoto(supabase, ownerId, msg.chatId, msg.photoFileId, msg.caption)
       return
     }
 

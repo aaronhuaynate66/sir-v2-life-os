@@ -14,6 +14,11 @@ export interface TelegramInbound {
   isVoice: boolean
   /** file_id del audio/voz para descargarlo (null si no es voz). */
   voiceFileId: string | null
+  /** file_id de una FOTO (screenshot que Aaron comparte, ej. una story de IG),
+   *  o null. La más grande del array photo, o un document con mime image/*. */
+  photoFileId: string | null
+  /** Texto que acompaña a la foto (message.caption), si hay. */
+  caption: string
   /** Nombre visible del remitente, best-effort (para logs/bootstrap). */
   fromName: string | null
 }
@@ -70,13 +75,28 @@ export function parseTelegramUpdate(payload: unknown): TelegramInbound | null {
   const voiceFileId = voice && typeof voice.file_id === 'string' ? voice.file_id : null
   const isVoice = !!voiceFileId
 
+  // Foto: array `photo` (varios tamaños; el último es el más grande) o un
+  // document con mime image/* (screenshot mandado como archivo).
+  let photoFileId: string | null = null
+  const photos = Array.isArray(message.photo) ? (message.photo as unknown[]) : []
+  if (photos.length > 0) {
+    const largest = asRecord(photos[photos.length - 1])
+    if (largest && typeof largest.file_id === 'string') photoFileId = largest.file_id
+  }
+  if (!photoFileId) {
+    const doc = asRecord(message.document)
+    const mime = doc && typeof doc.mime_type === 'string' ? doc.mime_type : ''
+    if (doc && typeof doc.file_id === 'string' && /^image\//.test(mime)) photoFileId = doc.file_id
+  }
+  const caption = typeof message.caption === 'string' ? message.caption.trim() : ''
+
   const from = asRecord(message.from)
   const fromName = from
     ? [from.first_name, from.last_name].filter((s): s is string => typeof s === 'string' && s.length > 0).join(' ') || null
     : null
 
-  // Solo nos sirve si hay texto o es voz. Otro tipo → ignorar.
-  if (!text && !isVoice) return null
+  // Nos sirve si hay texto, voz o foto. Otro tipo → ignorar.
+  if (!text && !isVoice && !photoFileId) return null
 
-  return { chatId, messageId, text, isVoice, voiceFileId, fromName }
+  return { chatId, messageId, text, isVoice, voiceFileId, photoFileId, caption, fromName }
 }
