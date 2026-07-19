@@ -2,7 +2,7 @@
 // SIR V2 — /salud: estado biológico, métricas, tendencias y captura de datos de salud.
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Activity, Plus, Moon, Heart, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Activity, Plus, Moon, Heart, Clock, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -93,6 +93,7 @@ export default function SaludPage() {
 function SaludContent() {
   const { selfMetrics, sleepRecords, healthMetrics, addSelfMetric, addSleepRecord, addHealthMetric } = useSelfStore()
   const { addMemory } = useMemoryStore()
+  const [logOpen, setLogOpen] = useState(false)
   const [mCat, setMCat] = useState<MetricCategory>('energy')
   const [mVal, setMVal] = useState('')
   const [mNote, setMNote] = useState('')
@@ -224,6 +225,82 @@ function SaludContent() {
         </CardContent>
       </Card>
 
+      {/* Registrar de hoy — la acción MÁS frecuente, arriba y a un toque (antes
+          vivía al fondo tras ~15 paneles de análisis; UX audit hallazgo A).
+          Colapsado por defecto para no tapar la tendencia. */}
+      <div className="mb-6">
+        <button
+          type="button"
+          onClick={() => setLogOpen((v) => !v)}
+          aria-expanded={logOpen}
+          className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-left transition-colors hover:border-brand/40"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Plus size={15} strokeWidth={2} className="text-brand" /> Registrar de hoy
+            <span className="text-[11px] font-normal text-muted-foreground">energía · ánimo · métrica · sueño</span>
+          </span>
+          <ChevronDown size={16} strokeWidth={1.75} className={cn('shrink-0 text-muted-foreground/70 transition-transform', logOpen && 'rotate-180')} aria-hidden="true" />
+        </button>
+        {logOpen && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+            <Card className={cardClass}>
+              <CardContent className="p-4 sm:p-6">
+                <SectionTitle icon={Plus} label="Registrar métrica" />
+                <div className="space-y-2">
+                  <Select value={mCat} onValueChange={(v) => setMCat(v as MetricCategory)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {METRIC_CATS.map(c => <SelectItem key={c} value={c}>{CAT_LABEL[c]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <MetricScale category={mCat} value={mVal} onChange={setMVal} />
+                  {mCat === 'mood' && mVal !== '' && !isNaN(parseFloat(mVal)) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="text-[10px] text-text-tertiary self-center mr-0.5">nómbralo mejor:</span>
+                      {proposeEmotionLabels(parseFloat(mVal)).map((label) => (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setMNote((n) => (n.toLowerCase().includes(label) ? n : `${n ? n.trim() + ' · ' : ''}${label}`))}
+                          className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:border-brand hover:text-foreground"
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <Input type="text" aria-label="Nota de la métrica" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
+                  <Button onClick={addMetric} variant="outline" className="w-full">+ Registrar</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className={cardClass}>
+              <CardContent className="p-4 sm:p-6">
+                <SectionTitle icon={Moon} label="Registrar sueño" />
+                <div className="space-y-2">
+                  <Input type="number" aria-label="Horas dormidas" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono tabular-nums" />
+                  <div className="flex gap-2">
+                    <Input type="time" aria-label="Hora de dormir" value={sBed} onChange={e => setSBed(e.target.value)} className="font-mono" />
+                    <Input type="time" aria-label="Hora de despertar" value={sWake} onChange={e => setSWake(e.target.value)} className="font-mono" />
+                  </div>
+                  <Input type="number" aria-label="Calidad del sueño de 1 a 10" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono tabular-nums" />
+                  <textarea
+                    aria-label="Sueños recordados"
+                    value={sDreams}
+                    onChange={e => setSDreams(e.target.value)}
+                    rows={2}
+                    placeholder="¿Soñaste algo? (opcional) — lo que recuerdes, aparece en tu línea de tiempo y es buscable"
+                    className="w-full resize-y rounded-md border border-border bg-background p-2.5 text-sm leading-relaxed outline-none focus:border-foreground/30"
+                  />
+                  <Button onClick={addSleep} variant="outline" className="w-full">+ Registrar sueño</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+
       {/* Feature 3: tendencias de energía y sueño en el tiempo. */}
       <div className="grid gap-3 sm:grid-cols-2 mb-6">
         <TrendChart
@@ -297,65 +374,6 @@ function SaludContent() {
         <HeartRateAlertsPanel metrics={healthMetrics} />
       </div>
 
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <Card className={cardClass}>
-          <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Plus} label="Registrar metrica" />
-            <div className="space-y-2">
-              <Select value={mCat} onValueChange={(v) => setMCat(v as MetricCategory)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {METRIC_CATS.map(c => <SelectItem key={c} value={c}>{CAT_LABEL[c]}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <MetricScale category={mCat} value={mVal} onChange={setMVal} />
-              {/* 13·M3 — granularidad emocional: al registrar ánimo, proponer
-                  etiquetas finas (editable, nunca impuesta). Suma a la nota. */}
-              {mCat === 'mood' && mVal !== '' && !isNaN(parseFloat(mVal)) && (
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[10px] text-text-tertiary self-center mr-0.5">nómbralo mejor:</span>
-                  {proposeEmotionLabels(parseFloat(mVal)).map((label) => (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => setMNote((n) => (n.toLowerCase().includes(label) ? n : `${n ? n.trim() + ' · ' : ''}${label}`))}
-                      className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:border-brand hover:text-foreground"
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <Input type="text" aria-label="Nota de la métrica" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
-              <Button onClick={addMetric} variant="outline" className="w-full">+ Registrar</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={cardClass}>
-          <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Moon} label="Registrar sueño" />
-            <div className="space-y-2">
-              <Input type="number" aria-label="Horas dormidas" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono tabular-nums" />
-              <div className="flex gap-2">
-                <Input type="time" aria-label="Hora de dormir" value={sBed} onChange={e => setSBed(e.target.value)} className="font-mono" />
-                <Input type="time" aria-label="Hora de despertar" value={sWake} onChange={e => setSWake(e.target.value)} className="font-mono" />
-              </div>
-              <Input type="number" aria-label="Calidad del sueño de 1 a 10" min="1" max="10" placeholder="Calidad (1-10)" value={sQual} onChange={e => setSQual(e.target.value)} className="font-mono tabular-nums" />
-              <textarea
-                aria-label="Sueños recordados"
-                value={sDreams}
-                onChange={e => setSDreams(e.target.value)}
-                rows={2}
-                placeholder="¿Soñaste algo? (opcional) — lo que recuerdes, aparece en tu línea de tiempo y es buscable"
-                className="w-full resize-y rounded-md border border-border bg-background p-2.5 text-sm leading-relaxed outline-none focus:border-foreground/30"
-              />
-              <Button onClick={addSleep} variant="outline" className="w-full">+ Registrar sueño</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-4 sm:p-6">
