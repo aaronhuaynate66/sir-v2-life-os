@@ -31,6 +31,7 @@ import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
 import { assessContactTiming, timingPushLine } from '@/lib/contact-timing/assess'
+import { pickTopSignal } from '@/lib/signals/freshness'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -281,14 +282,17 @@ export async function GET(req: NextRequest) {
       // Una señal sin resolver (la primera de mayor urgencia).
       const { data: sigRows } = await admin
         .from('signals')
-        .select('content, urgency, resolved')
+        .select('content, urgency, resolved, created_at')
         .eq('user_id', uid)
         .eq('resolved', false)
         .limit(20)
-      const sigs = (sigRows ?? []) as Array<{ content: string; urgency: string }>
-      const rank: Record<string, number> = { critical: 3, high: 2, medium: 1, low: 0 }
-      sigs.sort((a, b) => (rank[b.urgency] ?? 0) - (rank[a.urgency] ?? 0))
-      const topSignal = sigs[0]?.content
+      // pickTopSignal descarta las señales RANCIAS (no-críticas de >21d): una
+      // señal abierta hace semanas que la data ya desmiente no es "atención de
+      // hoy" (bug FC 1-jun). Las críticas persisten hasta resolverse.
+      const topSignal = pickTopSignal(
+        (sigRows ?? []).map((s) => ({ content: (s as { content: string }).content, urgency: (s as { urgency: string }).urgency, createdAt: (s as { created_at?: string }).created_at ?? null })),
+        now.getTime(),
+      ) ?? undefined
 
       // Hábito a retomar: solo si una racha se cortó (tone 'recover'); a las
       // 6am los pendientes del día son obvios y serían ruido.
