@@ -73,7 +73,7 @@ export function NorteDriftPanel() {
           </div>
         )}
 
-        <Link href="/objetivos" className="mt-3 inline-flex items-center gap-1 text-[13px] text-[#14b8a6] hover:underline">
+        <Link href="/objetivos" className="mt-3 inline-flex items-center gap-1 text-[13px] text-brand hover:underline">
           {drift.state === 'sin_norte' ? 'Fijar tu norte' : 'Ver tus objetivos'} <ArrowRight size={13} />
         </Link>
       </CardContent>

@@ -512,7 +512,7 @@ export default function SirChatPage() {
 
         <header className="space-y-1">
           <div className="flex items-center gap-2">
-            <Sparkles size={20} className="text-[#14b8a6]" />
+            <Sparkles size={20} className="text-brand" />
             <h1 className="text-2xl font-semibold tracking-tight">Pregunta a SIR</h1>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -550,7 +550,7 @@ export default function SirChatPage() {
               <button
                 key={s}
                 onClick={() => ask(s)}
-                className="rounded-full border border-border bg-card px-3 py-1.5 text-sm text-foreground/90 hover:border-[#14b8a6]/60"
+                className="rounded-full border border-border bg-card px-3 py-1.5 text-sm text-foreground/90 hover:border-brand/60"
               >
                 {s}
               </button>
@@ -578,12 +578,12 @@ export default function SirChatPage() {
               <div
                 className={
                   t.role === 'user'
-                    ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-[#14b8a6]/15 px-4 py-2.5 text-[15px] text-foreground'
+                    ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-brand/15 px-4 py-2.5 text-[15px] text-foreground'
                     : 'max-w-[90%] rounded-2xl rounded-bl-sm border border-border bg-card px-4 py-3 text-[15px] text-foreground/90'
                 }
               >
                 {t.role === 'sir' && (
-                  <div className="mb-1 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
+                  <div className="mb-1 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-brand">
                     <Sparkles size={11} /> SIR
                   </div>
                 )}
@@ -598,12 +598,12 @@ export default function SirChatPage() {
                   <SirReceipts receipts={t.sources.receipts} />
                 )}
                 {t.clarifying && (
-                  <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
-                    <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
+                  <div className="mt-3 rounded-xl border border-brand/40 bg-brand/5 p-3">
+                    <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-brand">
                       <Sparkles size={12} /> {t.clarifying.ephemeral ? 'SIR necesita contexto' : 'SIR necesita un dato'}
                     </div>
                     {t.clarifyState === 'answered' ? (
-                      <div className="flex items-center gap-1 text-[12px] text-[#14b8a6]"><Check size={13} /> {t.clarifying.ephemeral ? 'Gracias — con eso te respondo' : 'Anotado — sigo con eso'}</div>
+                      <div className="flex items-center gap-1 text-[12px] text-brand"><Check size={13} /> {t.clarifying.ephemeral ? 'Gracias — con eso te respondo' : 'Anotado — sigo con eso'}</div>
                     ) : t.clarifyState === 'dismissed' ? (
                       <div className="text-[12px] text-muted-foreground">Sin ese dato — te respondo con lo que tengo</div>
                     ) : (
@@ -618,7 +618,7 @@ export default function SirChatPage() {
                           onKeyDown={(e) => { if (e.key === 'Enter') answerClarifying(i) }}
                         />
                         <button onClick={() => answerClarifying(i)} disabled={!(clarifyDraft[i] ?? '').trim()}
-                          className="inline-flex items-center gap-1 rounded-lg bg-[#14b8a6] px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50">
+                          className="inline-flex items-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-50">
                           <Check size={13} /> Guardar
                         </button>
                         <button onClick={() => dismissClarifying(i)}
@@ -630,8 +630,8 @@ export default function SirChatPage() {
                   </div>
                 )}
                 {t.action && (
-                  <div className="mt-3 rounded-xl border border-[#14b8a6]/40 bg-[#14b8a6]/5 p-3">
-                    <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[#14b8a6]">
+                  <div className="mt-3 rounded-xl border border-brand/40 bg-brand/5 p-3">
+                    <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-brand">
                       <CalendarCheck size={12} />
                       {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'crear_plan' ? 'Agendar plan' : 'Cerrar vínculo'}
                     </div>
@@ -689,7 +689,7 @@ export default function SirChatPage() {
                                     checked={checked}
                                     disabled={t.actionState === 'done' || t.actionState === 'discarded'}
                                     onChange={(e) => setGoalSel((prev) => ({ ...prev, [key]: e.target.checked }))}
-                                    className="accent-[#14b8a6]"
+                                    className="accent-brand"
                                   />
                                   {g.title}
                                 </label>
@@ -701,12 +701,12 @@ export default function SirChatPage() {
                       </div>
                     )}
                     {t.actionState === 'done' ? (
-                      <div className="mt-2 flex items-center gap-1 text-[12px] text-[#14b8a6]"><Check size={13} /> Hecho</div>
+                      <div className="mt-2 flex items-center gap-1 text-[12px] text-brand"><Check size={13} /> Hecho</div>
                     ) : t.actionState === 'discarded' ? (
                       <div className="mt-2 text-[12px] text-muted-foreground">Descartado</div>
                     ) : (
                       <div className="mt-2.5 flex gap-2">
-                        <button onClick={() => confirmAction(i, t.action!)} className="inline-flex items-center gap-1 rounded-lg bg-[#14b8a6] px-3 py-1.5 text-[13px] font-medium text-white">
+                        <button onClick={() => confirmAction(i, t.action!)} className="inline-flex items-center gap-1 rounded-lg bg-brand px-3 py-1.5 text-[13px] font-medium text-white">
                           <Check size={13} /> Confirmar
                         </button>
                         <button onClick={() => setTurnState(i, 'discarded')} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-[13px] text-muted-foreground hover:text-foreground">
@@ -778,7 +778,7 @@ export default function SirChatPage() {
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="rounded-xl bg-[#14b8a6] p-2 text-white disabled:opacity-40"
+            className="rounded-xl bg-brand p-2 text-white disabled:opacity-40"
             aria-label="Enviar"
           >
             <Send size={18} />
@@ -811,7 +811,7 @@ function SirReceipts({ receipts }: { receipts: SirReceipt[] }) {
             const p = memoryProvenance(r.source)
             const tone =
               p.confidence === 'certain' ? 'text-ok/80'
-                : p.confidence === 'high' ? 'text-[#14b8a6]'
+                : p.confidence === 'high' ? 'text-brand'
                   : p.confidence === 'medium' ? 'text-muted-foreground'
                     : 'text-amber-400/80'
             return (

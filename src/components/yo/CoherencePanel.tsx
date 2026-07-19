@@ -160,7 +160,7 @@ export function CoherencePanel() {
 
         <Link
           href="/objetivos"
-          className="mt-4 inline-flex items-center gap-1 text-[13px] text-[#14b8a6] hover:underline"
+          className="mt-4 inline-flex items-center gap-1 text-[13px] text-brand hover:underline"
         >
           Ver tus objetivos <ArrowRight size={13} />
         </Link>

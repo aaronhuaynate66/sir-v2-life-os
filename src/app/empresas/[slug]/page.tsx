@@ -117,7 +117,7 @@ export default async function EmpresaPage({ params }: PageProps) {
         {hub.parentGroup && (
           <p className="text-sm text-muted-foreground">
             Parte de{' '}
-            <Link href={`/empresas/${hub.parentGroup.slug}`} className="text-[#14b8a6] hover:underline">
+            <Link href={`/empresas/${hub.parentGroup.slug}`} className="text-brand hover:underline">
               {hub.parentGroup.label}
             </Link>
           </p>
@@ -130,7 +130,7 @@ export default async function EmpresaPage({ params }: PageProps) {
           <p className="text-[14px] leading-relaxed text-foreground/90 whitespace-pre-wrap">{profile.description}</p>
         )}
         {profile?.website && (
-          <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-[#14b8a6] hover:underline">
+          <a href={profile.website} target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-brand hover:underline">
             {profile.website}
           </a>
         )}
@@ -165,7 +165,7 @@ export default async function EmpresaPage({ params }: PageProps) {
               <Link
                 key={c.slug}
                 href={`/empresas/${c.slug}`}
-                className="rounded-full border border-[#14b8a6]/40 px-3 py-1 text-sm text-foreground hover:border-[#14b8a6]"
+                className="rounded-full border border-brand/40 px-3 py-1 text-sm text-foreground hover:border-brand"
               >
                 {c.label}
                 {typeof c.count === 'number' && (
