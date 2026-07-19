@@ -46,14 +46,18 @@ export async function GET(req: NextRequest) {
     // Solo devolvemos las activas a la UI (las viejas ya no pesan).
     const active = signals.filter((s) => isSignalActive(s, now))
     // PROACTIVO (Frente B): "mejor momento" desde los timestamps del historial.
-    // Fail-soft: sin sustrato → ritmo 'unknown'.
+    // La MISMA matemática corre sobre WhatsApp Y sobre la actividad de IG (cada
+    // señal capturada es un evento de "cuándo estuvo activa"). Fail-soft.
     let rhythm = NEUTRAL_RHYTHM as ReturnType<typeof analyzeContactRhythm>
     try {
       const rows = await fetchChatMessages(supabase, auth.user.id, personId, 600)
       const events: ChatEvent[] = rows
         .map((r) => ({ fromUser: r.sender === 'user', at: r.sent_at ?? '' }))
         .filter((e) => e.at)
-      rhythm = analyzeContactRhythm(events, now)
+      // Actividad de IG/LinkedIn (contact_activity) → eventos "de ella" (fromUser
+      // false), con su observed_at real → el ritmo ahora también refleja Instagram.
+      for (const s of signals) events.push({ fromUser: false, at: s.observedAt })
+      rhythm = analyzeContactRhythm(events.filter((e) => e.at), now)
     } catch { /* sin sustrato → unknown */ }
     return NextResponse.json({ verdict, signals: active, rhythm })
   } catch {

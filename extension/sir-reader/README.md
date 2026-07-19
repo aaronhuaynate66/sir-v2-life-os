@@ -54,6 +54,10 @@ Para que SIR no te deje pedirle algo a alguien en **mal momento** (caso: contact
 - **Instagram:** la persona debe tener seteado su **`instagram_handle`** (sin @); si no, la señal llega pero queda `unmatched`.
 - **LinkedIn: auto-bootstrap.** No necesitás cargar la URL a mano — la primera vez que ves el perfil de un contacto, SIR lo matchea por **nombre** y le **rellena `linkedin_url` solo**. (Si dos personas tienen el mismo nombre exacto, ese queda ambiguo y no se auto-setea: ahí sí cargá la URL a mano.)
 
+**Refresco PROACTIVO (dejá IG abierto):** si dejás una pestaña de **instagram.com** abierta en la PC, la extensión cada ~2.5h (con jitter) **refresca el tray** de una pestaña de IG que no estés usando → capta quién tiene **story activa y de cuándo** para TODOS tus follows de una, y de ahí SIR arma el ritmo ("suele postear/estar activa de noche → buen momento a esa hora"). Se apaga con `enabled.igRefresh=false`.
+
+**La línea que NO cruzamos:** solo leemos el **tray** (existencia + timestamp de la story) y perfiles — **nunca abrimos las stories automáticamente**. Abrirlas dejaría el "visto" (la persona vería que la miraste, y a horas raras) y es el patrón que IG más castiga. Riesgo: bajo (es tu sesión real, baja frecuencia), no cero — es tu cuenta, tu decisión.
+
 **Guardrail:** solo contactos con los que ya tenés relación, solo lo que ellos difunden, y solo para cuidar el timing — no vigilancia. No se guarda contenido crudo: solo la señal + un detalle corto.
 
 ## Si no captura (ajuste de selectores)

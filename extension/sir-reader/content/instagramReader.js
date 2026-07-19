@@ -52,7 +52,12 @@
       if (hasStory || Array.isArray(node.items)) {
         const textOut = [];
         collectText(node.items || node.reel || node, textOut, 0);
-        acc.push({ platform: 'instagram', handle: username, hasActiveStory: !!hasStory, text: textOut.join(' · ').slice(0, 300) || undefined });
+        // Timestamp REAL de la última story (cuándo POSTEÓ, no cuándo capturamos)
+        // → alimenta el ritmo. latest_reel_media suele ser unix segundos.
+        let activityAt;
+        const lrm = node.latest_reel_media;
+        if (typeof lrm === 'number' && lrm > 1e9 && lrm < 1e11) activityAt = new Date(lrm * 1000).toISOString();
+        acc.push({ platform: 'instagram', handle: username, hasActiveStory: !!hasStory, text: textOut.join(' · ').slice(0, 300) || undefined, activityAt });
       }
     }
     for (const k in node) { const v = node[k]; if (v && typeof v === 'object') scan(v, depth + 1, acc); }
