@@ -9,7 +9,7 @@
 
 /** Mensaje único para el banner y los errores de endpoints. */
 export const AI_CREDIT_BANNER =
-  'Sin créditos de IA. Las funciones con IA (capturas, briefings, intake, síntesis) están pausadas. Recargá créditos en Anthropic → Plans & Billing.'
+  'Sin créditos de IA. Las funciones con IA (capturas, briefings, intake, síntesis) están pausadas. Recarga créditos en Anthropic → Plans & Billing.'
 
 /** Señales textuales del error de Anthropic cuando se agotan los créditos. */
 const CREDIT_SIGNALS = [

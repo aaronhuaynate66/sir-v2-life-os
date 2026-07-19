@@ -110,7 +110,7 @@ export function NotificationsCard() {
 
         {state === 'unsupported' && (
           <p className="text-sm text-muted-foreground py-1">
-            Este navegador no soporta notificaciones push. En iPhone: agregá SIR a la pantalla de inicio y abrilo desde el ícono.
+            Este navegador no soporta notificaciones push. En iPhone: agrega SIR a la pantalla de inicio y ábrelo desde el ícono.
           </p>
         )}
 

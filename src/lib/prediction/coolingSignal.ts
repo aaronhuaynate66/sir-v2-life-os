@@ -109,7 +109,7 @@ export function assessCooling(
   }
   // 3. Vos cargás más la conversación.
   if (recent.myShare - baseline.myShare >= SHARE_RISE) {
-    reasons.push('estás iniciando/escribiendo vos más que antes')
+    reasons.push('estás iniciando/escribiendo tú más que antes')
   }
 
   return { status: reasons.length > 0 ? 'enfriándose' : 'estable', reasons, recent, baseline }
