@@ -9,6 +9,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { rowToContactSignal, type ContactSignalKind, type ContactSignalSource } from '@/lib/contact-timing/types'
 import { assessContactTiming, isSignalActive } from '@/lib/contact-timing/assess'
+import { analyzeContactRhythm, type ChatEvent } from '@/lib/contact-timing/bestTime'
+import { fetchChatMessages } from '@/lib/chat-messages/read'
+
+const NEUTRAL_RHYTHM = { level: 'unknown', score: 0, reason: '', activeWindows: [], nextWindowText: null, recencyHours: null, inBurst: false, sampleSize: 0 }
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -41,10 +45,20 @@ export async function GET(req: NextRequest) {
     const verdict = assessContactTiming(signals, now)
     // Solo devolvemos las activas a la UI (las viejas ya no pesan).
     const active = signals.filter((s) => isSignalActive(s, now))
-    return NextResponse.json({ verdict, signals: active })
+    // PROACTIVO (Frente B): "mejor momento" desde los timestamps del historial.
+    // Fail-soft: sin sustrato → ritmo 'unknown'.
+    let rhythm = NEUTRAL_RHYTHM as ReturnType<typeof analyzeContactRhythm>
+    try {
+      const rows = await fetchChatMessages(supabase, auth.user.id, personId, 600)
+      const events: ChatEvent[] = rows
+        .map((r) => ({ fromUser: r.sender === 'user', at: r.sent_at ?? '' }))
+        .filter((e) => e.at)
+      rhythm = analyzeContactRhythm(events, now)
+    } catch { /* sin sustrato → unknown */ }
+    return NextResponse.json({ verdict, signals: active, rhythm })
   } catch {
     // Tabla 0150 aún no propagada → sin veredicto (no rompe la ficha).
-    return NextResponse.json({ verdict: { level: 'neutral', reason: '', drivingKind: null, until: null }, signals: [] })
+    return NextResponse.json({ verdict: { level: 'neutral', reason: '', drivingKind: null, until: null }, signals: [], rhythm: NEUTRAL_RHYTHM })
   }
 }
 
