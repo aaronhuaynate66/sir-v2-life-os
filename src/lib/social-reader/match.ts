@@ -42,13 +42,25 @@ export function linkedinSlug(v: string): string | null {
 
 /** Nombre normalizado para match: minúsculas, sin tildes, espacios colapsados. */
 export function normName(s: string): string {
-  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '') // tildes/diacríticos
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ') // emojis, puntuación, símbolos → espacio
+    .replace(/\s+/g, ' ').trim()
+}
+
+/** Tokens significativos (≥3 letras) de un nombre normalizado. Descarta partículas
+ *  cortas (de/la/el/y) para que "Diana Diaz" ⊆ "Diana Carolina Diaz". */
+function nameTokens(s: string): Set<string> {
+  return new Set(normName(s).split(' ').filter((t) => t.length >= 3))
 }
 
 export interface PersonIndex {
   ig: Map<string, PersonLite>
   liSlug: Map<string, PersonLite>
   name: Map<string, PersonLite>
+  /** Tokens por persona, para el match TOLERANTE (el full_name de IG casi nunca
+   *  calza exacto: emojis, un apellido de más, apodo). */
+  tokens: Array<{ set: Set<string>; person: PersonLite }>
 }
 
 /** Indexa las personas para matcheo O(1). Si un nombre se repite, se ignora en el
@@ -58,15 +70,37 @@ export function buildPersonIndex(people: PersonLite[]): PersonIndex {
   const liSlug = new Map<string, PersonLite>()
   const nameCount = new Map<string, number>()
   const name = new Map<string, PersonLite>()
+  const tokens: Array<{ set: Set<string>; person: PersonLite }> = []
   for (const p of people) {
     if (p.instagramHandle) ig.set(canonHandle(p.instagramHandle), p)
     if (p.linkedinUrl) { const s = linkedinSlug(p.linkedinUrl); if (s) liSlug.set(s, p) }
     const n = normName(p.name)
     if (n) { nameCount.set(n, (nameCount.get(n) ?? 0) + 1); name.set(n, p) }
+    const set = nameTokens(p.name)
+    if (set.size >= 2) tokens.push({ set, person: p })
   }
   // Sacamos del índice de nombres los ambiguos (mismo nombre en ≥2 personas).
   for (const [n, c] of nameCount) if (c > 1) name.delete(n)
-  return { ig, liSlug, name }
+  return { ig, liSlug, name, tokens }
+}
+
+/** Match por nombre TOLERANTE: los tokens del nombre más corto están TODOS en el
+ *  más largo (ej. IG "Diana Díaz 🌸" ↔ "Diana Carolina Díaz Sánchez"). Exige ≥2
+ *  tokens compartidos y un ÚNICO ganador — si hay ambigüedad, no arriesga. PURO. */
+function matchByNameLoose(index: PersonIndex, rawName: string): PersonLite | null {
+  const q = nameTokens(rawName)
+  if (q.size < 2) return null // muy poco para arriesgar (evita match por 1er nombre)
+  const hits = index.tokens.filter(({ set }) => {
+    const [small, big] = q.size <= set.size ? [q, set] : [set, q]
+    for (const t of small) if (!big.has(t)) return false
+    return small.size >= 2
+  })
+  return hits.length === 1 ? hits[0].person : null // único ganador o nada
+}
+
+/** Resuelve por nombre: exacto primero, luego tolerante por tokens. PURO. */
+function resolveByName(index: PersonIndex, rawName: string): PersonLite | null {
+  return index.name.get(normName(rawName)) ?? matchByNameLoose(index, rawName)
 }
 
 /** Resuelve una captura a una persona. Orden: handle IG / slug LinkedIn exactos;
@@ -76,13 +110,13 @@ export function matchPerson(index: PersonIndex, item: SocialMatchItem): PersonMa
     // Handle exacto primero; si no, por NOMBRE (para el bootstrap del handle: el
     // tray de IG trae el full_name de cada cuenta que sigues → "quién es quién").
     if (item.handle) { const p = index.ig.get(canonHandle(item.handle)); if (p) return { person: p, matchedBy: 'ig_handle' } }
-    if (item.name) { const p = index.name.get(normName(item.name)); if (p) return { person: p, matchedBy: 'name' } }
+    if (item.name) { const p = resolveByName(index, item.name); if (p) return { person: p, matchedBy: 'name' } }
     return null
   }
   if (item.platform === 'linkedin') {
     const slug = item.linkedinUrl ? linkedinSlug(item.linkedinUrl) : null
     if (slug) { const p = index.liSlug.get(slug); if (p) return { person: p, matchedBy: 'li_slug' } }
-    if (item.name) { const p = index.name.get(normName(item.name)); if (p) return { person: p, matchedBy: 'name' } }
+    if (item.name) { const p = resolveByName(index, item.name); if (p) return { person: p, matchedBy: 'name' } }
   }
   return null
 }
