@@ -62,6 +62,7 @@ import { LastInteractionPanel } from './LastInteractionPanel'
 import { AntesDeContactar } from './AntesDeContactar'
 import { ContactReminders } from './ContactReminders'
 import { ContactTiming } from './ContactTiming'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { PendientesConPersona } from './PendientesConPersona'
 import { EstadoConPersona } from './EstadoConPersona'
 import { RecomendacionesSemanales } from './RecomendacionesSemanales'
@@ -998,6 +999,10 @@ export function PersonDetail({
         </Card>
       )}
 
+      {/* DENSIDAD (UX audit #5): la tab "Perfil" apilaba ~15 paneles seguidos.
+          Agrupados en secciones; "Su mundo" visible, el resto colapsado (no
+          montan hasta abrir). */}
+      <CollapsibleSection title="Su mundo" hint="profesional, social, lo personal, fechas" defaultOpen className="mb-4">
       {/* ─── Fechas importantes (#9): lista con countdown, añadibles ──── */}
       <FechasImportantes person={live} />
 
@@ -1029,6 +1034,9 @@ export function PersonDetail({
       />
 
 
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Qué le importa y patrones" hint="temas, reflexiones, tensiones, contradicciones" className="mb-4">
       {/* 15·8 — qué le importa: temas recurrentes de sus memorias (client-side). */}
       <WhatMattersChips memories={memories} tags={live.tags ?? []} name={live.name} />
 
@@ -1045,6 +1053,9 @@ export function PersonDetail({
           efímero, NUNCA pisa la nota. */}
       <ContradiceNotaCard personId={live.id} personName={live.name} />
 
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Perfil psicológico (hipótesis)" hint="cómo vincularte, Big Five, hipótesis" className="mb-4">
       {/* 19·M1 — perfil relacional (cómo vincularte), on-demand + cache diaria. */}
       <RelationalProfileCard personId={live.id} personName={live.name} />
 
@@ -1054,6 +1065,9 @@ export function PersonDetail({
       {/* 19·M2 — explorar hipótesis (colapsado, sensible): hipótesis que compiten. */}
       <HypothesesExplorer personId={live.id} personName={live.name} />
 
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Memorias y ensayos" hint="memorias asociadas, ensayos previos" className="mb-4">
       {/* Memorias asociadas — server-fetched (PR-B Sesion 4) + boton de
           backfill idempotente desde relationships.history. */}
       <MemoriasAsociadasPanel
@@ -1069,6 +1083,7 @@ export function PersonDetail({
 
       {/* Ensayos anteriores CON esta persona (se auto-oculta si no hay). */}
       <RehearsalHistoryPanel personId={live.id} />
+      </CollapsibleSection>
 
       {live.notes && (
         <Card className="shadow-none mb-4">
