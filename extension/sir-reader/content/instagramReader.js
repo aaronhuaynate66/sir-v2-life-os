@@ -43,6 +43,9 @@
     // Nodo de tray/reel: { user:{username}, items:[...] } o { username, latest_reel_media }.
     const user = node.user && typeof node.user === 'object' ? node.user : node;
     const username = typeof user.username === 'string' ? user.username : null;
+    // full_name → el server matchea por NOMBRE y auto-rellena instagram_handle la
+    // 1ª vez ("quién es quién" sin carga manual). Igual que el bootstrap de LinkedIn.
+    const fullName = typeof user.full_name === 'string' && user.full_name.trim() ? user.full_name.trim() : undefined;
     if (username) {
       const hasStory =
         (Array.isArray(node.items) && node.items.length > 0) ||
@@ -57,7 +60,7 @@
         let activityAt;
         const lrm = node.latest_reel_media;
         if (typeof lrm === 'number' && lrm > 1e9 && lrm < 1e11) activityAt = new Date(lrm * 1000).toISOString();
-        acc.push({ platform: 'instagram', handle: username, hasActiveStory: !!hasStory, text: textOut.join(' · ').slice(0, 300) || undefined, activityAt });
+        acc.push({ platform: 'instagram', handle: username, name: fullName, hasActiveStory: !!hasStory, text: textOut.join(' · ').slice(0, 300) || undefined, activityAt });
       }
     }
     for (const k in node) { const v = node[k]; if (v && typeof v === 'object') scan(v, depth + 1, acc); }

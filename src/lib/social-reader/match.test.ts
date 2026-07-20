@@ -32,6 +32,15 @@ describe('buildPersonIndex + matchPerson', () => {
   it('matchea IG por handle', () => {
     expect(matchPerson(idx, { platform: 'instagram', handle: '@dayrrit' })?.person.id).toBe('day')
   })
+  it('matchea IG por NOMBRE cuando el handle no está seteado (bootstrap del handle)', () => {
+    // Alex no tiene instagram_handle; el tray trae su full_name → match por nombre.
+    const m = matchPerson(idx, { platform: 'instagram', handle: 'alexh_ig', name: 'Alex Heilbrunn' })
+    expect(m?.person.id).toBe('alex'); expect(m?.matchedBy).toBe('name')
+  })
+  it('IG prioriza el handle exacto sobre el nombre', () => {
+    const m = matchPerson(idx, { platform: 'instagram', handle: '@dayrrit', name: 'Otro Nombre' })
+    expect(m?.person.id).toBe('day'); expect(m?.matchedBy).toBe('ig_handle')
+  })
   it('matchea LinkedIn por slug', () => {
     const m = matchPerson(idx, { platform: 'linkedin', linkedinUrl: 'https://www.linkedin.com/in/alex-h/' })
     expect(m?.person.id).toBe('alex'); expect(m?.matchedBy).toBe('li_slug')
