@@ -66,6 +66,7 @@ const YearCompass = dynamic(
 )
 import { createSleepMemory, createSelfMetricMemory, createFinancialMovementMemory, createSignalAddedMemory } from '@/engines/memory'
 import { AppShell } from '@/components/layout/AppShell'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { useSnapshotCapture } from '@/hooks/useSnapshotCapture'
 import { formatPEN, formatCurrencyCompact } from '@/lib/format/currency'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -449,14 +450,17 @@ function DashboardContent() {
         </div>
       )}
 
-      <AnduveHoyCard now={now} />
-
-      {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
-      <DailyBriefingCard />
-
-      {/* SIR quiere saber (Knowledge Gap Engine): SIR te pregunta lo que le falta
-          —a vos, nunca a terceros—, aprende y no repite. */}
-      <KnowledgeGapPanel />
+      {/* DENSIDAD (UX audit #5): el trío reflexivo del medio va colapsado — no es
+          "de un vistazo" como el mission-control de arriba, y colapsar el Briefing
+          DIFIERE su llamada de IA hasta que lo abras. */}
+      <CollapsibleSection title="Repaso de hoy" hint="anduve hoy, briefing del día, SIR quiere saber" className="mb-4">
+        <AnduveHoyCard now={now} />
+        {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
+        <DailyBriefingCard />
+        {/* SIR quiere saber (Knowledge Gap Engine): SIR te pregunta lo que le falta
+            —a vos, nunca a terceros—, aprende y no repite. */}
+        <KnowledgeGapPanel />
+      </CollapsibleSection>
 
       {/* Estado propio (Etapa 3): quick-log de ánimo/energía de un tap, para que
           el analytics tenga datos sin fricción. */}
