@@ -5,10 +5,30 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 18/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 20/07/2026 (reconciliación automática — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-20
+
+Pase de mantenimiento contra el código real (agente automático). Esta vez el drift estaba repartido en varios lados — cosas marcadas "pendiente"/"no encontrado" en pases anteriores que ya se construyeron (algunas después del pase 07-18, otras que el pase 07-17 simplemente no encontró):
+
+- ✅ **Mobile QA estructurado** — ya HECHO (no pendiente). PR #819/#820 (`d4a5218`, 18/07/2026): harness Playwright en `e2e/` con proyectos exactamente en los viewports pedidos — `mobile-se` (375), `mobile-390` (390), `mobile-xl` (414), `tablet` (768) + `desktop` (`playwright.config.ts` líneas 47-51) — specs `overflow.spec.ts`, `tap-targets.spec.ts`, `smoke.spec.ts`, `nav.spec.ts`. Corre aislado del CI principal en `.github/workflows/e2e.yml` (manual + nightly). El pase 07-18 quedó desactualizado porque este PR mergeó ese mismo día.
+- ✅ **Iteraciones futuras LinkedIn schema** (`certifications[]`, `volunteerWork[]`, `languages[]`, `organizations[]`, followers count, `isVerified`) — ya HECHO. PR #816 (`771d58f`, 18/07/2026): los 6 campos existen en `src/lib/capture/linkedin/types.ts` (líneas 59-77), el prompt los pide explícitamente (`prompt.ts` líneas 92-97, 186-206) y `validate.ts` (líneas 179-184) los sanitiza. El pase 07-17 (que declaraba esto "genuinamente pendiente") quedó desactualizado por el mismo motivo.
+- ✅ **Narrative Intelligence** — ya HECHO, contra lo que decían los pases 07-17/07-14 arriba ("sin rastro en el código — no encontrado"). Carpeta completa `src/app/api/self/`: `rumbo`, `coherencia`, `arquetipo`, `retrato`, `premortem`(s), `espejo-snapshot`, `espejo-relacional`, `espejo-lectura`, `relational-daily` + `src/lib/self/rumboPrompt.ts`/`coherencePrompt.ts` + `LifeThreadPanel.tsx` ("Tu rumbo" en `/yo`). Esto además coincide con `docs/STRATEGIC_ROADMAP.md` (línea 110), que YA lo documentaba como "CONSTRUIDO" desde antes del pase 07-17 — ese pase no cruzó el roadmap y declaró "no encontrado" por error. Corregido en las 2 menciones de más abajo (línea de Etapa 4 follow-ups y el resumen del pase 07-17).
+- 🟡 **Etapas 5–6** — la línea "no iniciadas" (más abajo, sección PRÓXIMAS SESIONES) estaba desactualizada: `STRATEGIC_ROADMAP.md` (línea 32) marca **E5 Dirección de vida** como "🟢 en marcha (artefacto real)" — el núcleo es justamente Narrative Intelligence de arriba. Solo **E6 (AI-Native Human OS)** sigue genuinamente en "⬜ visión norte", sin alcance concreto. Corregido para no decir "ninguna de las 2 empezó".
+- 🟡 **Clay #8 (cross-referencing por ubicación) y #9 (Familia persona↔persona)** — los párrafos de esos ítems en la sección "BACKLOG inspirado en Clay" (más abajo) seguían redactados como "no implementar aún" / "DIFERIDO... hoy NO existe modelo persona↔persona", pero **ambos ya están hechos** y la reconciliación 07-14 (arriba) ya lo decía. Confirmado de nuevo en código: `lib/agenda/build.ts` (`buildProximity`, comentario explícito "Cross-referencing por UBICACIÓN (Clay #8)") + `ProximoPanel.tsx`; y `person_links` (migraciones 0035/0052/0058/0107/0128) + `FamiliaPanel.tsx` + `buildGraphData` con soporte de aristas `personLinks` (`src/lib/graph/builder.ts` + tests). Se dejó nota en los párrafos para no reabrirlos por error — el texto original queda como registro histórico del planteo.
+
+**Verificado y quedó IGUAL (sin drift):**
+- **Inferencia LLM de dominio para objetivos de texto libre** — sigue en el mismo estado incierto ("revisar"). `src/lib/objectives/smartPrompt.ts`: el schema de salida del helper SMART (`ProposedSmart`) NO incluye `category`/dominio — `category` es un INPUT que ya trae el usuario, no algo que el modelo infiera del párrafo dictado. No se encontró código que infiera el dominio desde texto libre. Se mantiene la nota "revisar" sin marcarlo hecho.
+- **Auto-import desde calendario (Clay #6)** — sigue genuinamente pendiente, sin rastro en código (`grep` de "auto.import"/contexto-pre-reunión sin resultados).
+- **Gantt fix del MASTER_PLAN** — no verificable en este repo: no hay componente "Gantt" ni referencias a `MASTER_PLAN` en `src/`; `MASTER_PLAN.md` es regenerado por un bot externo (sir-bot), fuera del alcance de este grep. Se deja como estaba.
+- **Re-validar Captura WhatsApp con fecha explícita** y **Ajuste prompt Vision user/other (re-validación)** — son tareas de validación manual (subir un screenshot de prueba), no features de código; no verificables por grep. Sin cambios.
+
+**No re-verificado este pase** (fuera de alcance): todo lo demás, incluyendo lo ya marcado ✅/🟡 con evidencia en pases anteriores.
 
 ---
 
@@ -40,7 +60,7 @@ Pase de mantenimiento contra el código real (agente automático). Ítems marcad
 - ✅ **Etapa 4 follow-ups**: Human OKRs estructurados (migraciones 0040/0041), delta de relationship score (snapshots + `BondEvolutionPanel`), tono de interacción desde `person_logs` en el engine — los 3 ya estaban hechos y listados como pendientes.
 - ✅ **Checklist "Portar detail page V2" (ítems 6-13, 15-17)** — el encabezado de la sección ya decía "✅ COMPLETADO" pero el checklist interno no tenía los checkmarks individuales; agregados con evidencia de componente para cada uno.
 
-**Quedan genuinamente pendientes** (no tocados): Narrative Intelligence (sin rastro en código), inferencia LLM de dominio para objetivos de texto libre (incierto — marcado "revisar"), re-verificar drift de migraciones `0046`-`0050` contra prod (requiere acceso a prod, no verificable por grep), y todo lo demás que ya estaba correctamente marcado como pendiente antes de este pase.
+**Quedan genuinamente pendientes** (no tocados): inferencia LLM de dominio para objetivos de texto libre (incierto — marcado "revisar"), re-verificar drift de migraciones `0046`-`0050` contra prod (requiere acceso a prod, no verificable por grep), y todo lo demás que ya estaba correctamente marcado como pendiente antes de este pase. ~~Narrative Intelligence (sin rastro en código)~~ ✅ **corregido en la reconciliación 2026-07-20** (arriba): sí está en el código (`src/app/api/self/*`) — este pase no lo encontró por error.
 
 ---
 
@@ -144,8 +164,8 @@ Verificado contra el código en vivo. Varios ítems listados abajo como "grandes
 **Pendiente real (lo que NO está hecho):**
 - ~~**Activar Fase 3b (búsqueda semántica)**~~ ✅ **HECHO (2026-06-08):** `OPENAI_API_KEY` cargada en Vercel (Production), 23 memorias indexadas (`/api/memories/embed`), `/buscar` validado. **Cobertura cerrada** con el botón "Actualizar índice completo" (PR #100): deriva todas las personas + indexa en un click. **Decisión:** NO embeddear `observations` crudas (ruido/duplicación; contradice la vista curada) — la cobertura se logra derivando.
 - **Fase 3d** — memoria que aprende (RAG cross-session).
-- **Etapa 4 follow-ups:** ~~Human OKRs estructurados~~ ✅ **HECHO** (migraciones `0040_objective_steps.sql`/`0041_objective_steps_okr.sql`: modelo KR→tarea de 2 niveles, `ObjectiveSteps.tsx`); ~~delta de relationship score (necesita snapshots históricos)~~ ✅ **HECHO** (`/api/person-score/snapshot` + cron `score-snapshots` + `BondEvolutionPanel.tsx`/`src/lib/people/bondEvolution.ts`); ~~tono de interacción desde `person_logs` en el engine~~ ✅ **HECHO** (`src/engines/alignment/index.ts` y `src/engines/relational-flags/index.ts` ya leen `person_logs`). Verificado 2026-07-17. **Siguen pendientes de verdad:** Narrative Intelligence (sin rastro en el código — no encontrado), inferencia LLM de dominio para objetivos de texto libre (hay inferencia SMART vía `SmartAssist.tsx`/`/api/objectives/smart`, pero no confirmé que infiera el DOMINIO desde texto libre — marcar "revisar" antes de darlo por hecho).
-- **Etapas 5–6** (Life Direction System / AI-Native Human OS): no iniciadas.
+- **Etapa 4 follow-ups:** ~~Human OKRs estructurados~~ ✅ **HECHO** (migraciones `0040_objective_steps.sql`/`0041_objective_steps_okr.sql`: modelo KR→tarea de 2 niveles, `ObjectiveSteps.tsx`); ~~delta de relationship score (necesita snapshots históricos)~~ ✅ **HECHO** (`/api/person-score/snapshot` + cron `score-snapshots` + `BondEvolutionPanel.tsx`/`src/lib/people/bondEvolution.ts`); ~~tono de interacción desde `person_logs` en el engine~~ ✅ **HECHO** (`src/engines/alignment/index.ts` y `src/engines/relational-flags/index.ts` ya leen `person_logs`). Verificado 2026-07-17. **Siguen pendientes de verdad:** inferencia LLM de dominio para objetivos de texto libre (hay inferencia SMART vía `SmartAssist.tsx`/`/api/objectives/smart`, pero no confirmé que infiera el DOMINIO desde texto libre — marcar "revisar" antes de darlo por hecho; re-verificado 2026-07-20, `smartPrompt.ts` sigue sin inferir `category`). ~~Narrative Intelligence (sin rastro en el código — no encontrado)~~ ✅ **corregido 2026-07-20:** SÍ existe — carpeta `src/app/api/self/` completa (rumbo/coherencia/arquetipo/retrato/premortem/espejo-*) + `src/lib/self/rumboPrompt.ts` — este pase 07-17 no lo encontró por error (ya lo documentaba `docs/STRATEGIC_ROADMAP.md` como CONSTRUIDO).
+- **Etapas 5–6** (Life Direction System / AI-Native Human OS): 🟡 **corregido 2026-07-20** — E5 (Life Direction System) YA está "en marcha (artefacto real)" según `docs/STRATEGIC_ROADMAP.md` (línea 32): su núcleo es Narrative Intelligence (`src/app/api/self/*`, "Tu rumbo" en `/yo`). Solo **E6 (AI-Native Human OS)** sigue genuinamente sin iniciar ("⬜ visión norte", sin alcance concreto).
 - **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
 - ~~**Refactor split-brain → Supabase única fuente**~~ ✅ RESUELTO (verificado 07-07; ver deuda arquitectónica más abajo). Único residual menor: last-write-wins por fila.
 
@@ -236,7 +256,7 @@ Cerrada el 30/05/2026 con dos PRs:
 
 Las 4 features del backlog item ⭐ (Score relacional / Cumpleaños / Última interacción / ruta detalle) entregadas en su versión base. El arco completo del detail page V1→V2 sigue como **próxima sesión 0** (ver más abajo) con foco en componentes #15 (memorias asociadas), #6-8 (vida prof/social/personal), #2 (ciclo).
 
-### Iteraciones futuras LinkedIn schema [P2]
+### Iteraciones futuras LinkedIn schema [P2] ✅ HECHO (verificado 2026-07-20)
 Agregar campos al schema B.4:
 - `certifications[]`
 - `volunteerWork[]`
@@ -246,6 +266,8 @@ Agregar campos al schema B.4:
 - `isVerified`
 - `hasBannerImage` (ya está)
 - `isOpenToWork` (ya está)
+
+**Evidencia:** PR #816 (`771d58f`, 18/07/2026) — los 6 campos que faltaban existen en `src/lib/capture/linkedin/types.ts` (líneas 59-77: `followersCount`, `isVerified`, `certifications`, `languages`, `organizations`, `volunteerWork`), el prompt los pide explícitamente (`prompt.ts` líneas 92-97 y 186-206) y `validate.ts` (líneas 179-184) los sanitiza. Los pases 07-17/07-18 lo daban por pendiente porque el PR mergeó ese mismo rango de fechas.
 
 ### Nuevo capture_type whatsapp_web [P2] ✅ HECHO (verificado 2026-07-17)
 Detector debe distinguir `whatsapp_chat` móvil (bubbles columna) vs `whatsapp_web` (3 paneles: lista chats + conversación + info contacto).
@@ -383,15 +405,16 @@ Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lóg
 
 **7. Q&A por persona** — ✅ **CERRADO** (`0a106c2`). Ask-box `PreguntarSobrePersona` en la ficha: reusa `/api/sir/ask` (grounding + RAG, ya hechos) con un `personId` nuevo que pre-scopea el contexto ANTES del cap, así responde aterrizado en esa persona aunque no la nombres. Sugerencias rápidas + `skipInlineGaps`. El backend (name-resolution + memorias semánticas + recall C3) ya existía; esto agregó el scope explícito + la UI. **Pendiente futuro:** verificar en vivo (LLM); multi-turno dentro de la ficha (hoy una pregunta por vez).
 
-**8. Cross-referencing por ubicación** — que la capa de memoria/engines interprete el campo `location` (ya existe en `people`; ahora editable a nivel distrito/ciudad) y lo cruce.
+**8. Cross-referencing por ubicación** — ✅ **HECHO** (ya lo decía la reconciliación 07-14 arriba; re-verificado 2026-07-20). que la capa de memoria/engines interprete el campo `location` (ya existe en `people`; ahora editable a nivel distrito/ciudad) y lo cruce.
 - **Qué es:** sugerencias contextuales por cercanía — "Diana vive en Barranco → visitala", o "X y vos están cerca" cuando Aaron está en la zona. Aparece en la **Agenda / Próximo**.
-- **Conecta con:** `timing` + `recommendation` engines y la vista Agenda. Requiere normalizar `location` (distrito/ciudad) y, para "estás cerca", una fuente de ubicación de Aaron (manual o futura). Esfuerzo medio; no implementar aún, solo anotado.
+- **Conecta con:** `timing` + `recommendation` engines y la vista Agenda. Requiere normalizar `location` (distrito/ciudad) y, para "estás cerca", una fuente de ubicación de Aaron (manual o futura). Esfuerzo medio; ~~no implementar aún, solo anotado~~.
+- **Evidencia:** `src/lib/agenda/build.ts` función `buildProximity` (comentario explícito "Cross-referencing por UBICACIÓN (Clay #8)") + `ProximoPanel.tsx`. Este párrafo había quedado desactualizado frente a la reconciliación 07-14 — dejar esta nota para no reabrirlo por error.
 
-**9. Familia / relaciones persona↔persona (padres como nodos del grafo)** — DIFERIDO de la tanda de campos de relación (era el item A4). Hoy NO existe modelo persona↔persona: `relationships` es self↔persona (una fila por contacto) y el grafo es una estrella desde el self. Ponerlo bien requiere un **sub-proyecto**:
-- **Modelo:** nueva tabla `person_links` (`person_a_id`, `person_b_id`, `kind` ∈ parent/sibling/partner/…, `user_id`) + RLS. Migración aditiva.
-- **Grafo:** el builder debe dibujar aristas persona↔persona (no solo self→persona) — cambia el layout de fuerza (hoy el self está fijo al centro); riesgo de desestabilizar el grafo recién rediseñado, por eso se hace aislado.
-- **UI:** mini-sección "Familia" en la ficha: agregar padre/madre → crea la persona-nodo mínima (relationship='family') + el link. 
-- **Por qué se difirió:** alcance/riesgo propio; no mezclarlo con cambios de campos simples. Candidato a su propia sesión.
+**9. Familia / relaciones persona↔persona (padres como nodos del grafo)** — ✅ **HECHO** (ya lo decía la reconciliación 07-14 arriba; re-verificado 2026-07-20). Texto original (histórico, ya no vigente): ~~DIFERIDO de la tanda de campos de relación (era el item A4). Hoy NO existe modelo persona↔persona: `relationships` es self↔persona (una fila por contacto) y el grafo es una estrella desde el self.~~ Ponerlo bien requirió un **sub-proyecto**:
+- **Modelo:** nueva tabla `person_links` (`person_a_id`, `person_b_id`, `kind` ∈ parent/sibling/partner/…, `user_id`) + RLS. Migración aditiva. → **hecho**: migraciones `0035_person_links.sql`, `0052_person_links_realtime.sql`, `0058_person_links_self_sentinel.sql`, `0107_person_links_metadata.sql`, `0128_person_links_category.sql`.
+- **Grafo:** el builder debe dibujar aristas persona↔persona (no solo self→persona). → **hecho**: `src/lib/graph/builder.ts` acepta `personLinks` y dibuja aristas persona↔persona y self↔persona (ver `builder.test.ts`), wired en `GraphView.tsx`.
+- **UI:** mini-sección "Familia" en la ficha. → **hecho**: `FamiliaPanel.tsx`.
+- **Por qué se difirió (histórico):** alcance/riesgo propio; no mezclarlo con cambios de campos simples. Este párrafo había quedado desactualizado frente a la reconciliación 07-14 — dejar esta nota para no reabrirlo por error.
 
 ### ⚠️ Guardrail a respetar (cuando se active la búsqueda semántica, Fase 3b)
 Asegurar que **personas con poca o ninguna interacción NO desaparezcan de los resultados**. Es una **falla conocida de Clay** (los contactos "fríos" se vuelven invisibles). SIR **ya la esquiva en el grafo** (commit del 31/05: el grafo dejó de ocultar nodos sin `history`/actividad). Replicar ese criterio en `/buscar` y en cualquier ranking: el embedding/score puede **ordenar**, nunca **excluir** silenciosamente a un contacto existente.
@@ -476,7 +499,7 @@ Mejoras incrementales. Hacer cuando aporte valor concreto.
 
 - ~~**Sentry + Vercel Analytics**~~ ✅ INSTALADO: `@sentry/nextjs` + `@vercel/analytics` cableados (`instrumentation.ts`/`instrumentation-client.ts`, `onRequestError`; no-op sin DSN). Falta solo cargar el DSN en prod para que capture.
 
-- **Mobile QA estructurado**: validar flujos críticos en 375px / 390px / 414px / 768px. Esfuerzo: 1h. _(Pendiente — sin evidencia de pase formal. Verificado 2026-07-18: no hay test con estos viewports ni doc de auditoría formal.)_
+- ~~**Mobile QA estructurado**: validar flujos críticos en 375px / 390px / 414px / 768px.~~ ✅ **HECHO (verificado 2026-07-20):** PR #819/#820 (`d4a5218`, 18/07/2026) — harness Playwright en `e2e/` (`overflow.spec.ts`, `tap-targets.spec.ts`, `smoke.spec.ts`, `nav.spec.ts`) corriendo sobre proyectos `mobile-se` (375), `mobile-390` (390), `mobile-xl` (414), `tablet` (768) + `desktop` (`playwright.config.ts` líneas 42-51). CI dedicado `.github/workflows/e2e.yml` (manual + nightly, aislado de `validate`). El pase 07-18 quedó desactualizado porque este PR mergeó ese mismo día.
 
 - ~~**Estados vacíos pedagógicos**~~ ✅ **HECHO (verificado 2026-07-18):** componente compartido `src/components/ui/empty-state.tsx` con prop `hint` (siguiente paso accionable), usado en ≥9 rutas (`salud`, `finanzas`, `objetivos`, `seguimiento`, `senales`, `relaciones`, `panel`, `linea`, `eventos`, `explorar`); `/memoria` tiene su propio empty state hand-rolled (`0de0114`) aún más detallado. No quedaba "resto pendiente".
 
