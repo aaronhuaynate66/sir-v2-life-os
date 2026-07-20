@@ -557,7 +557,8 @@ export function PersonDetail({
               className={cn(
                 // Activo marcado por PESO + borde inferior (no solo color), para
                 // que se distinga sin depender de percibir el matiz.
-                'shrink-0 rounded-md px-3 py-1.5 text-xs transition-colors border-b-2',
+                // min-h-[44px] = tap target usable en móvil (HIG); antes ~30px.
+                'inline-flex min-h-[44px] shrink-0 items-center rounded-md px-3 py-1.5 text-xs transition-colors border-b-2',
                 active
                   ? 'bg-secondary text-foreground font-semibold border-foreground'
                   : 'text-muted-foreground font-medium border-transparent hover:text-foreground',

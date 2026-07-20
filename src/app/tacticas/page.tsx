@@ -8,13 +8,15 @@
 // cuándo rebotaría. Es más quirúrgico y rápido que la Sala de ensayo.
 // Llama a /api/influence/tactics (capable).
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { Swords, Loader2, Sparkles, Quote, AlertTriangle, ArrowRight, Ban } from 'lucide-react'
+import { Swords, Loader2, Sparkles, Quote, AlertTriangle, ArrowRight, Ban, Users } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRelationshipStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -100,6 +102,15 @@ function TacticasContent() {
         </p>
       </div>
 
+      {sorted.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Aún no tienes personas en tu red."
+          hint="Agrega a alguien en Relaciones y vuelve para que SIR lea su estilo y te recomiende una táctica."
+          action={<Link href="/relaciones" className={buttonVariants({ size: 'sm' })}>Ir a Relaciones</Link>}
+        />
+      ) : (
+      <>
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-5 space-y-3">
           <div>
@@ -161,6 +172,8 @@ function TacticasContent() {
       )}
 
       {rec && <RecommendationView rec={rec} ethics={ethics} forName={forName} hadContext={hadContext} />}
+      </>
+      )}
     </AppShell>
   )
 }

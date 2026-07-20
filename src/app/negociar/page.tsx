@@ -7,12 +7,14 @@
 // leyendo lo que el otro dijo. Presión y apalancamiento sí; coacción no.
 // Llama a /api/influence/negotiation (capable).
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { Handshake, Loader2, Sparkles, Quote, Anchor, ArrowRight, ShieldAlert, DoorOpen, Scale } from 'lucide-react'
+import { Handshake, Loader2, Sparkles, Quote, Anchor, ArrowRight, ShieldAlert, DoorOpen, Scale, Users } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRelationshipStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -97,6 +99,15 @@ function NegociarContent() {
         </p>
       </div>
 
+      {sorted.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Aún no tienes personas en tu red."
+          hint="Agrega a la contraparte en Relaciones y vuelve para armar el marco de la negociación."
+          action={<Link href="/relaciones" className={buttonVariants({ size: 'sm' })}>Ir a Relaciones</Link>}
+        />
+      ) : (
+      <>
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-5 space-y-3">
           <div>
@@ -159,6 +170,8 @@ function NegociarContent() {
       )}
 
       {prep && <PrepView prep={prep} ethics={ethics} forName={forName} hadContext={hadContext} />}
+      </>
+      )}
     </AppShell>
   )
 }
