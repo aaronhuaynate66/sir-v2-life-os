@@ -17,7 +17,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
-import { buildPersonIndex, matchPerson, linkedinSlug, type PersonLite } from '@/lib/social-reader/match'
+import { buildPersonIndex, matchPerson, linkedinSlug, canonHandle, type PersonLite } from '@/lib/social-reader/match'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -115,6 +115,16 @@ export async function POST(req: NextRequest) {
           const canonUrl = `https://linkedin.com/in/${slug}`
           const { error: upErr } = await admin.from('people').update({ linkedin_url: canonUrl }).eq('user_id', userId).eq('id', person.id)
           if (!upErr) { person.linkedinUrl = canonUrl; backfilled++ }
+        }
+      }
+      // Auto-bootstrap IG (idea de Aaron, "quién es quién" por NOMBRE, no por foto):
+      // si matcheó por nombre una persona sin instagram_handle, lo rellenamos con el
+      // handle del tray. Así, con solo cargar tu feed, los handles se llenan solos.
+      if (platform === 'instagram' && m.matchedBy === 'name' && !person.instagramHandle && it.handle) {
+        const canon = canonHandle(it.handle)
+        if (canon) {
+          const { error: upErr } = await admin.from('people').update({ instagram_handle: canon }).eq('user_id', userId).eq('id', person.id)
+          if (!upErr) { person.instagramHandle = canon; backfilled++ }
         }
       }
 

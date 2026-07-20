@@ -72,9 +72,12 @@ export function buildPersonIndex(people: PersonLite[]): PersonIndex {
 /** Resuelve una captura a una persona. Orden: handle IG / slug LinkedIn exactos;
  *  si no, por nombre (para el bootstrap de LinkedIn sin URL). null si no matchea. */
 export function matchPerson(index: PersonIndex, item: SocialMatchItem): PersonMatch | null {
-  if (item.platform === 'instagram' && item.handle) {
-    const p = index.ig.get(canonHandle(item.handle))
-    return p ? { person: p, matchedBy: 'ig_handle' } : null
+  if (item.platform === 'instagram') {
+    // Handle exacto primero; si no, por NOMBRE (para el bootstrap del handle: el
+    // tray de IG trae el full_name de cada cuenta que sigues → "quién es quién").
+    if (item.handle) { const p = index.ig.get(canonHandle(item.handle)); if (p) return { person: p, matchedBy: 'ig_handle' } }
+    if (item.name) { const p = index.name.get(normName(item.name)); if (p) return { person: p, matchedBy: 'name' } }
+    return null
   }
   if (item.platform === 'linkedin') {
     const slug = item.linkedinUrl ? linkedinSlug(item.linkedinUrl) : null
