@@ -169,3 +169,22 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ log }, { status: 201 })
 }
+
+// DELETE /api/person-logs?id=<logId> — usado por el "Deshacer" del registro de
+// interacción de 1 toque. Borra el log del usuario (ownership por user_id) y su
+// memoria materializada asociada (id = mem_log:<logId>), fail-soft. NUNCA cross-user.
+export async function DELETE(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError || !authData?.user) return errorJson(401, 'No autenticado', 'Inicia sesión y reinténtalo.')
+  const userId = authData.user.id
+
+  const id = req.nextUrl.searchParams.get('id')
+  if (!id) return errorJson(400, 'id requerido')
+
+  const { error } = await supabase.from('person_logs').delete().eq('user_id', userId).eq('id', id)
+  if (error) return errorJson(500, 'No se pudo deshacer', error.message)
+  // Limpia la memoria materializada (si existía). Fail-soft.
+  try { await supabase.from('memories').delete().eq('user_id', userId).eq('id', `mem_log:${id}`) } catch { /* extra */ }
+  return NextResponse.json({ ok: true })
+}

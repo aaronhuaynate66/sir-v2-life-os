@@ -34,3 +34,9 @@ export async function createPersonLog(
   const json = (await res.json()) as { log: PersonLog }
   return json.log
 }
+
+/** Borra un person-log (para el "Deshacer" del registro de 1 toque). */
+export async function deletePersonLog(id: string): Promise<void> {
+  const res = await fetch(`/api/person-logs?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+  if (!res.ok) throw await parseErrorResponse(res)
+}
