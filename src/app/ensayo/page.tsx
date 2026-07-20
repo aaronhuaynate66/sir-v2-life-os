@@ -8,13 +8,15 @@
 // vínculo (afectivo → cuidado; profesional → estrategia con objetivos alineados).
 // Llama a /api/influence/rehearse (Sonnet).
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { Drama, Loader2, Sparkles, ShieldAlert, Lightbulb, ArrowRight, MessageCircleQuestion, Scale } from 'lucide-react'
+import { Drama, Loader2, Sparkles, ShieldAlert, Lightbulb, ArrowRight, MessageCircleQuestion, Scale, Users } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRelationshipStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
@@ -109,6 +111,15 @@ function EnsayoContent() {
         </p>
       </div>
 
+      {sorted.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Aún no tienes personas en tu red."
+          hint="Agrega a alguien en Relaciones y vuelve para ensayar la conversación con esa persona."
+          action={<Link href="/relaciones" className={buttonVariants({ size: 'sm' })}>Ir a Relaciones</Link>}
+        />
+      ) : (
+      <>
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-5 space-y-3">
           <div>
@@ -159,6 +170,8 @@ function EnsayoContent() {
       {result && <RehearseView result={result} ethics={ethics} forName={forName} hadContext={hadContext} objective={objective} />}
 
       <RehearsalHistoryPanel personId={personId || undefined} reloadKey={reloadKey} />
+      </>
+      )}
     </AppShell>
   )
 }

@@ -7,18 +7,21 @@
 // guardrail anti-manipulación). Caso motor: pedir el aumento a los ejecutivos
 // de HNG. Llama a /api/influence/frame (Sonnet).
 
+import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { MessagesSquare, Loader2, Sparkles, ShieldAlert, ArrowRight, Lightbulb } from 'lucide-react'
+import { MessagesSquare, Loader2, Sparkles, ShieldAlert, ArrowRight, Lightbulb, Users } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRelationshipStore } from '@/stores'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { StrategicRiskMeter } from '@/components/influence/StrategicRiskMeter'
+import { trackAiError } from '@/lib/analytics/track'
 import type { FrameResult } from '@/lib/influence/framePrompt'
 import type { EthicsCheck } from '@/engines/ethics'
 
@@ -52,10 +55,26 @@ function PlantearContent() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personId, objective }),
       })
-      const j = (await res.json()) as { result?: FrameResult; person?: { name: string; hadContext: boolean }; ethics?: EthicsCheck; error?: string; detail?: string }
-      if (!res.ok || !j.result) { setError(j.error ? `${j.error}${j.detail ? ` — ${j.detail}` : ''}` : 'No pude preparar el planteo.'); return }
+      // El body puede NO ser JSON si el modelo se pasó de tiempo (504) o cayó el
+      // gateway (5xx): parseamos con red de seguridad para no reventar con el
+      // críptico "The string did not match the expected pattern" de Safari.
+      const text = await res.text()
+      let j: { result?: FrameResult; person?: { name: string; hadContext: boolean }; ethics?: EthicsCheck; error?: string; detail?: string } = {}
+      try { j = text ? JSON.parse(text) : {} } catch { /* respuesta no-JSON (timeout/gateway) */ }
+      if (!res.ok || !j.result) {
+        trackAiError('frame', { status: res.status, message: j.error, detail: j.detail })
+        setError(
+          j.error
+            ? `${j.error}${j.detail ? ` — ${j.detail}` : ''}`
+            : res.status === 504 || res.status === 502
+              ? 'El planteo tardó demasiado y el servidor cortó. Prueba de nuevo, o con algo más corto.'
+              : `No pude preparar el planteo (código ${res.status || '—'}). Reintenta.`,
+        )
+        return
+      }
       setResult(j.result); setEthics(j.ethics ?? null); setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
     } catch (e) {
+      trackAiError('frame', { status: 0, message: e instanceof Error ? e.message : String(e) })
       setError(e instanceof Error ? e.message : String(e))
     } finally { setBusy(false) }
   }
@@ -74,6 +93,15 @@ function PlantearContent() {
         </p>
       </div>
 
+      {sorted.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Aún no tienes personas en tu red."
+          hint="Agrega a alguien en Relaciones y vuelve para preparar cómo plantearle las cosas."
+          action={<Link href="/relaciones" className={buttonVariants({ size: 'sm' })}>Ir a Relaciones</Link>}
+        />
+      ) : (
+      <>
       <Card className="shadow-none mb-4">
         <CardContent className="p-4 sm:p-5 space-y-3">
           <div>
@@ -112,6 +140,8 @@ function PlantearContent() {
       </Card>
 
       {result && <FrameView result={result} ethics={ethics} forName={forName} hadContext={hadContext} />}
+      </>
+      )}
     </AppShell>
   )
 }

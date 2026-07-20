@@ -72,14 +72,16 @@ export function QuickStateLog() {
                   <Check className="h-4 w-4 text-[#22c55e]" /> Registrado · {current}/10
                 </span>
               ) : (
-                <div className="flex gap-1.5">
+                <div className="flex flex-1 gap-1.5">
                   {LEVELS.map((lvl) => (
                     <button
                       key={lvl}
                       type="button"
                       onClick={() => log(category, lvl)}
                       className={cn(
-                        'h-8 w-8 rounded-md border border-border text-sm text-foreground/80',
+                        // Tap target ≥44px de alto (HIG) para el registro de un toque
+                        // en móvil; el ancho se reparte (flex-1) para no desbordar.
+                        'h-11 flex-1 rounded-md border border-border text-sm text-foreground/80',
                         'hover:border-foreground/40 hover:bg-foreground/5 transition-colors',
                       )}
                       aria-label={`${label} nivel ${lvl} de 5`}
