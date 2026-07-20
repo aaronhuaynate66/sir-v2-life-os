@@ -207,8 +207,17 @@ function GoalsContent() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
       })
-      const data = await res.json()
-      if (!res.ok) { setAiError(data?.error ?? 'No se pudo armar el objetivo'); return }
+      // Body no-JSON en 504/gateway → parseo defensivo (este endpoint ya tuvo
+      // timeouts, #787): evita el críptico error de Safari y da mensaje claro.
+      const raw = await res.text()
+      let data: { suggestion?: unknown; error?: string } = {}
+      try { data = raw ? JSON.parse(raw) : {} } catch { /* no-JSON (timeout/gateway) */ }
+      if (!res.ok || !data.suggestion) {
+        setAiError(data?.error ?? (res.status === 504 || res.status === 502
+          ? 'Tardó demasiado y el servidor cortó. Reinténtalo.'
+          : `No se pudo armar el objetivo (código ${res.status || '—'}).`))
+        return
+      }
       const sug = data.suggestion as {
         title: string; description: string; category: GoalCategory; priority: GoalPriority
         peaceImpact: number; nextAction: string; targetDate: string | null
@@ -229,8 +238,8 @@ function GoalsContent() {
       setRelatedPersons(matched); setAiUnmatched(unmatched); setAiReason(sug.reasoning)
       track(EVENTS.goalSuggested, { matched_people: matched.length, unmatched_people: unmatched.length })
       setAiOpen(false); setAiText(''); setAdding(true)
-    } catch (e) {
-      setAiError(e instanceof Error ? e.message : 'Error de red')
+    } catch {
+      setAiError('Error de red. Reintenta.')
     } finally {
       setAiLoading(false)
     }
