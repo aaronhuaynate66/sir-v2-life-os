@@ -21,6 +21,10 @@ export interface MorningInput {
    *  razón, ya formado). SIR sabe a quién estás descuidando; esto lo dice sin
    *  que abras la app. Texto corto ya armado. */
   relationshipNudge?: string
+  /** Cruce chat → tema abierto: un "momento/decisión" abierto que el chat
+   *  reciente ya parece haber resuelto (el cron `moment-scan` lo precomputa).
+   *  SIR sugiere cerrarlo; no cierra solo. Texto ya formado. */
+  momentResolution?: string
   /** Títulos de tareas que vencen hoy (no hechas). */
   dueTasks?: string[]
   /** El foco del día (ancla del año o próximo paso de un objetivo clave). */
@@ -88,6 +92,13 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //     un vínculo que se enfría es el corazón relacional de SIR, no un pendiente.
   if (input.relationshipNudge && parts.length < MAX_PARTS) {
     parts.push(input.relationshipNudge)
+  }
+
+  // 1.6 Cerrar un lazo: un tema abierto que el chat ya resolvió. Va junto a lo
+  //     relacional (es cuidar el vínculo cerrando algo que quedó colgado), antes
+  //     que tareas/foco. Es el "SIR no cruza bien la info" hecho proactivo.
+  if (input.momentResolution && parts.length < MAX_PARTS) {
+    parts.push(input.momentResolution)
   }
 
   // 2. Tareas que vencen hoy.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildResolutionInput, parseResolutionVerdicts, suggestedResolutions } from './resolutionCheck'
+import { buildResolutionInput, parseResolutionVerdicts, suggestedResolutions, momentResolutionPushLine } from './resolutionCheck'
 
 describe('buildResolutionInput', () => {
   it('lista los temas con su id y el chat cronológico', () => {
@@ -39,5 +39,27 @@ describe('suggestedResolutions', () => {
       { momentId: 'd', resolved: true, evidence: '', confidence: 'high' },        // sin evidencia → fuera
     ])
     expect(s.map((v) => v.momentId)).toEqual(['a'])
+  })
+})
+
+describe('momentResolutionPushLine', () => {
+  it('elige la de mayor confianza (high antes que medium) y la dice corto', () => {
+    const line = momentResolutionPushLine([
+      { personName: 'Marta', title: 'Cotización', confidence: 'medium' },
+      { personName: 'Diana', title: 'Examen del seguro', confidence: 'high' },
+    ])
+    expect(line).toBe('Con Diana: "Examen del seguro" ya parece resuelto — ¿lo cierras? (+1 más)')
+  })
+  it('una sola sugerencia → sin el sufijo "+N más"', () => {
+    expect(momentResolutionPushLine([{ personName: 'Diana', title: 'Examen del seguro', confidence: 'high' }]))
+      .toBe('Con Diana: "Examen del seguro" ya parece resuelto — ¿lo cierras?')
+  })
+  it('descarta confianza baja, sin nombre o sin título', () => {
+    expect(momentResolutionPushLine([{ personName: 'Diana', title: 'X', confidence: 'low' }])).toBeNull()
+    expect(momentResolutionPushLine([{ personName: '', title: 'X', confidence: 'high' }])).toBeNull()
+    expect(momentResolutionPushLine([{ personName: 'Diana', title: '  ', confidence: 'high' }])).toBeNull()
+  })
+  it('lista vacía → null', () => {
+    expect(momentResolutionPushLine([])).toBeNull()
   })
 })

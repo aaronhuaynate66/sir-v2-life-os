@@ -66,6 +66,23 @@ describe('buildMorningPush — a quién cuidar hoy (nudge relacional)', () => {
   })
 })
 
+describe('buildMorningPush — cerrar un lazo (cruce chat→tema)', () => {
+  it('incluye la sugerencia de cerrar un tema resuelto', () => {
+    const p = buildMorningPush({ momentResolution: 'Con Diana: "Examen del seguro" ya parece resuelto — ¿lo cierras?' })
+    expect(p.body).toContain('Examen del seguro')
+    expect(p.body).toContain('¿lo cierras?')
+  })
+  it('va junto a lo relacional: después del nudge, antes de las tareas', () => {
+    const p = buildMorningPush({
+      relationshipNudge: 'Sasa — Relación dormida',
+      momentResolution: 'Con Diana: "Examen" ya parece resuelto — ¿lo cierras?',
+      dueTasks: ['Cerrar reporte'],
+    })
+    expect(p.body.indexOf('Sasa')).toBeLessThan(p.body.indexOf('Examen'))
+    expect(p.body.indexOf('Examen')).toBeLessThan(p.body.indexOf('Cerrar reporte'))
+  })
+})
+
 describe('buildMorningPush — vigilancia de laboratorio', () => {
   it('incluye el healthWatch cuando viene', () => {
     const p = buildMorningPush({ healthWatch: 'Chequeo · Glucosa viene subiendo 3 exámenes seguidos y salió de rango — conviene revisarlo' })
