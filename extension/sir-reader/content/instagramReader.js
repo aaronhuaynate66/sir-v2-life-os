@@ -52,7 +52,7 @@
         node.latest_reel_media > 0 ||
         !!node.has_besties_media ||
         (Array.isArray(node.reel) && node.reel.length > 0);
-      if (hasStory || Array.isArray(node.items)) {
+      if (hasStory) {
         const textOut = [];
         collectText(node.items || node.reel || node, textOut, 0);
         // Timestamp REAL de la última story (cuándo POSTEÓ, no cuándo capturamos)
@@ -68,10 +68,21 @@
 
   function handle(url, json) {
     if (!json || typeof json !== 'object') return;
-    // Solo endpoints con stories/reels (evita procesar JSON irrelevante).
-    if (!/reels_tray|reels_media|feed\/reels|\/stories\/|clips|story/i.test(url) && !json.tray && !json.reels && !json.reels_media) return;
+    // ¿Trae el tray de historias? IG web migró de REST a GraphQL, así que NO
+    // dependemos del endpoint exacto (cambia seguido): aceptamos por URL conocida,
+    // por keys de nivel superior, o —para GraphQL— por SNIFF ACOTADO del contenido
+    // (field names que IG usa en ambos: reels_tray/latest_reel_media/reels_media).
+    let looksTray =
+      /reels_tray|reels_media|feed\/reels|\/stories\/|clips|story/i.test(url) ||
+      !!json.tray || !!json.reels || !!json.reels_media;
+    if (!looksTray && /graphql/i.test(url)) {
+      try { looksTray = /reels_tray|latest_reel_media|reels_media/.test(JSON.stringify(json).slice(0, 60000)); } catch (_) {}
+    }
+    if (!looksTray) return;
     const acc = [];
-    try { scan(json.tray || json.reels_media || json.reels || json, 0, acc); } catch (_) {}
+    // Scan del objeto ENTERO: el deep-scan tolerante encuentra los nodos de usuario
+    // con story donde sea que IG los anide (REST plano o GraphQL profundo).
+    try { scan(json, 0, acc); } catch (_) {}
     // Dedup por handle dentro del batch (quedate con el que trae texto).
     const byHandle = new Map();
     for (const it of acc) {
