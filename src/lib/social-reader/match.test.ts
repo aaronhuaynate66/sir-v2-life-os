@@ -18,6 +18,38 @@ describe('helpers', () => {
     expect(normName('  Dayana   Yrribarren  ')).toBe('dayana yrribarren')
     expect(normName('José Ñández')).toBe('jose nandez')
   })
+  it('normName limpia emojis y puntuación (full_name de IG)', () => {
+    expect(normName('Dayana Yrribarren 🌸')).toBe('dayana yrribarren')
+    expect(normName('Diana C. Díaz | coach')).toBe('diana c diaz coach')
+  })
+})
+
+describe('matchPerson — nombre TOLERANTE (full_name de IG casi nunca calza exacto)', () => {
+  const people: PersonLite[] = [
+    P({ id: 'alex', name: 'Alex Heilbrunn' }),
+    P({ id: 'dcds', name: 'Diana Carolina Diaz Sanchez' }),
+    P({ id: 'dcdl', name: 'Diana Carolina Diaz Lopez' }), // comparte tokens con dcds
+    P({ id: 'walter', name: 'Walter Heilbrunn' }),        // comparte "heilbrunn" con alex
+  ]
+  const idx = buildPersonIndex(people)
+
+  it('emoji/símbolos en el full_name no rompen el match', () => {
+    const m = matchPerson(idx, { platform: 'instagram', handle: 'alexh_ig', name: 'Alex Heilbrunn 🔥' })
+    expect(m?.person.id).toBe('alex'); expect(m?.matchedBy).toBe('name')
+  })
+  it('tokens subconjunto: "Diana Diaz Sanchez" ⊆ "Diana Carolina Diaz Sanchez"', () => {
+    const m = matchPerson(idx, { platform: 'instagram', handle: 'x', name: 'Diana Diaz Sanchez' })
+    expect(m?.person.id).toBe('dcds')
+  })
+  it('ambiguo (dos Diana Carolina Diaz) → NO matchea', () => {
+    expect(matchPerson(idx, { platform: 'instagram', handle: 'x', name: 'Diana Carolina Diaz' })).toBeNull()
+  })
+  it('un solo token → NO matchea (evita match por primer nombre)', () => {
+    expect(matchPerson(idx, { platform: 'instagram', handle: 'x', name: 'Diana' })).toBeNull()
+  })
+  it('un solo apellido compartido → NO matchea (Heilbrunn en 2 personas)', () => {
+    expect(matchPerson(idx, { platform: 'instagram', handle: 'x', name: 'Heilbrunn' })).toBeNull()
+  })
 })
 
 describe('buildPersonIndex + matchPerson', () => {
