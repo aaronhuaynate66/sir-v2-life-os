@@ -7,6 +7,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { BigFiveCard } from '@/components/profiling/BigFiveCard'
 import { RetratoPanel } from '@/components/yo/RetratoPanel'
@@ -66,32 +67,46 @@ export default function SelfPage() {
         </CardContent>
       </Card>
 
+      {/* DENSIDAD (UX audit #5): antes 21 paneles planos mezclando identidad,
+          rumbo, herramientas de reflexión y AJUSTES. Ahora agrupados; lo primario
+          (identidad) visible, el resto colapsado (arranca liviano + los paneles
+          pesados de IA no montan hasta abrir su sección). */}
       <div className="mt-6 space-y-4">
+        {/* Quién eres — lo primario, siempre visible. */}
         <RetratoPanel />
         <IdentityProfilePanel />
         {/* 19·M5 — autoperfil de Aaron (Big Five, consentido por definición). */}
         <BigFiveCard subject="self" title="Tu perfil Big Five" whoAnswers="Responde tú" />
-        <EspejoSemanalPanel />
-        <LearningsPanel />
-        <ExperimentosLoopPanel />
-        <PreMortemPanel />
-        {/* E5 — la síntesis del rumbo (pasado→presente→futuro) encabeza el bloque
-            de dirección de vida; abajo, el detalle de cada motor. */}
-        <LifeDirectionPanel />
-        <NorteDriftPanel />
-        <TrajectoryArcPanel />
-        <LifeSeasonsPanel />
-        <CoherencePanel />
-        <LifeThreadPanel />
-        <ArquetipoPanel />
-        <NotificationsCard />
-        {/* Fase 2 del roadmap de ingesta: conectar correo M365 (Microsoft Graph). */}
-        <EmailConnectionPanel />
-        <SelfDiagnosisPanel />
-        <PersonalTokensPanel />
-        <RecalibrarTonoPanel />
-        <PushNotificationsPanel />
-        <ExportAllPanel />
+
+        <CollapsibleSection title="Tu rumbo" hint="dirección de vida, norte, trayectoria, arquetipo">
+          {/* E5 — síntesis del rumbo (pasado→presente→futuro) encabeza; abajo el
+              detalle de cada motor. */}
+          <LifeDirectionPanel />
+          <NorteDriftPanel />
+          <TrajectoryArcPanel />
+          <LifeSeasonsPanel />
+          <CoherencePanel />
+          <LifeThreadPanel />
+          <ArquetipoPanel />
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Espejo y crecimiento" hint="reflexión semanal, aprendizajes, experimentos, pre-mortem">
+          <EspejoSemanalPanel />
+          <LearningsPanel />
+          <ExperimentosLoopPanel />
+          <PreMortemPanel />
+          <SelfDiagnosisPanel />
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Ajustes" hint="notificaciones, correo, tono, datos, exportar">
+          <NotificationsCard />
+          {/* Fase 2 del roadmap de ingesta: conectar correo M365 (Microsoft Graph). */}
+          <EmailConnectionPanel />
+          <RecalibrarTonoPanel />
+          <PushNotificationsPanel />
+          <PersonalTokensPanel />
+          <ExportAllPanel />
+        </CollapsibleSection>
       </div>
     </AppShell>
   )
