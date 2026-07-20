@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Users, UserPlus, AlertCircle, Edit, X, ArrowRight, Upload, Search } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -394,26 +395,34 @@ function RelationshipsContent() {
         </div>
       )}
 
-      {people.length > 0 && <RelationshipThermometer />}
-
-      {people.length > 0 && <PartnerEffectBoard />}
-
-      {/* C2 — capa forecast: vínculos que se van a quedar dormidos si sigue el silencio. */}
-      {people.length > 0 && <TrajectoryForecastCard />}
-
-      {people.length > 0 && <CommercialPipelinePanel people={people} />}
-
+      {/* "A quién cuidar hoy" — accionable, se queda visible sobre la lista. */}
       {people.length > 0 && (
         <div className="mb-6">
           <DailyActionsPanel variant="compact" />
         </div>
       )}
 
-      {people.length > 0 && <DunbarMap />}
-      {/* 15·7 — presentaciones de valor entre gente tuya del mismo org, no conectada. */}
-      {people.length > 0 && <NetworkIntrosPanel />}
-      {people.length > 0 && <PosiblesDuplicados />}
-      {people.length >= 3 && <ComparativaPersonasCard />}
+      {/* DENSIDAD (UX audit #5): antes 9 paneles analíticos empujaban la LISTA
+          —lo que vienes a buscar— muy abajo. Ahora el panorama va colapsado; la
+          lista queda a un toque. Los paneles no montan hasta abrir. */}
+      {people.length > 0 && (
+        <CollapsibleSection
+          title="Panorama de tu red"
+          hint="termómetro, pipeline, Dunbar, forecast, intros, duplicados"
+          className="mb-6"
+        >
+          <RelationshipThermometer />
+          <PartnerEffectBoard />
+          {/* C2 — forecast: vínculos que se van a quedar dormidos si sigue el silencio. */}
+          <TrajectoryForecastCard />
+          <CommercialPipelinePanel people={people} />
+          <DunbarMap />
+          {/* 15·7 — presentaciones de valor entre gente tuya del mismo org, no conectada. */}
+          <NetworkIntrosPanel />
+          <PosiblesDuplicados />
+          {people.length >= 3 && <ComparativaPersonasCard />}
+        </CollapsibleSection>
+      )}
 
       <Sheet open={showForm} onOpenChange={(o) => { if (!o) handleCancel() }}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
