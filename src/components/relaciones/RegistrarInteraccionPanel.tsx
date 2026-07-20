@@ -26,7 +26,13 @@ import type { PersonLog } from '@/lib/person-logs/types'
 
 export interface RegistrarInteraccionPanelProps {
   personId: string
-  recentLogs: PersonLog[]
+  /** Interacciones recientes para la lista. Opcional en modo compacto (la lista
+   *  no se muestra). */
+  recentLogs?: PersonLog[]
+  /** Compacto: solo el registro de 1 toque (nota + rostros), sin la lista de
+   *  "Interacciones registradas". Para exponerlo en el tab "Hoy" sin duplicar el
+   *  historial que ya vive en "Registro" (UX audit hallazgo #6-resto). */
+  compact?: boolean
 }
 
 interface EmoState {
@@ -46,7 +52,8 @@ const EMO_STATES: ReadonlyArray<EmoState> = [
 
 export function RegistrarInteraccionPanel({
   personId,
-  recentLogs,
+  recentLogs = [],
+  compact = false,
 }: RegistrarInteraccionPanelProps) {
   const router = useRouter()
   const [note, setNote] = useState('')
@@ -136,17 +143,21 @@ export function RegistrarInteraccionPanel({
 
         {error && <ApiErrorNotice error={error} className="p-2 mt-3" />}
 
-        <div className="mt-4">
-          <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">
-            Interacciones registradas
+        {/* La lista de interacciones vive solo en el tab "Registro" (la ficha).
+            En compacto ("Hoy") la omitimos para no duplicar el historial. */}
+        {!compact && (
+          <div className="mt-4">
+            <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary mb-2">
+              Interacciones registradas
+            </div>
+            <PersonLogsList
+              logs={recentLogs}
+              kinds={['interaction']}
+              max={5}
+              emptyMessage="Aún no registraste ninguna interacción."
+            />
           </div>
-          <PersonLogsList
-            logs={recentLogs}
-            kinds={['interaction']}
-            max={5}
-            emptyMessage="Aún no registraste ninguna interacción."
-          />
-        </div>
+        )}
       </CardContent>
     </Card>
   )

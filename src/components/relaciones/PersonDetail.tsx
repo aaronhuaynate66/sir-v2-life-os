@@ -571,6 +571,12 @@ export function PersonDetail({
       </div>
 
       {tab === 'hoy' && (<>
+      {/* Registrar interacción a 1 TOQUE, en "Hoy" (UX audit hallazgo #6-resto):
+          antes solo vivía en "Registro", pero la ficha aterriza en "Hoy" — si
+          acabas de ver a la persona, el tono se marca acá mismo. Compacto (sin la
+          lista de historial, que sigue en "Registro" para no duplicar). */}
+      <RegistrarInteraccionPanel personId={live.id} compact />
+
       {/* Pendientes: open loops sin resolver con esta persona (una pelea, una
           promesa, un follow-up médico). Es lo más accionable de "Hoy", así que
           va primero — se auto-oculta si no hay nada, así que no empuja al resto
