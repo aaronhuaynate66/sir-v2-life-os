@@ -47,6 +47,16 @@ export function MomentosPanel({ personId }: { personId: string }) {
       if (!res.ok) throw new Error('load')
       const j = (await res.json()) as { moments: RelationshipMoment[] }
       setMoments(j.moments)
+      // Seed INSTANTÁNEO desde lo que el cron `moment-scan` (#845) precomputó a
+      // diario → la sugerencia aparece al toque, sin esperar el LLM on-demand (que
+      // igual corre abajo y refresca con lo más fresco). Fail-soft si no hay columnas.
+      const seed: Record<string, { evidence: string }> = {}
+      for (const m of j.moments) {
+        if (m.status === 'abierto' && m.resolutionSuggested && m.resolutionEvidence) {
+          seed[m.id] = { evidence: m.resolutionEvidence }
+        }
+      }
+      if (Object.keys(seed).length) setSuggestions((prev) => ({ ...seed, ...prev }))
     } catch { setMoments([]) }
   }, [personId])
   useEffect(() => { void load() }, [load])

@@ -15,7 +15,7 @@ import { mapMomentRow, type RelationshipMoment } from '@/lib/moments/types'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const SELECT = 'id, person_id, title, detail, status, occurred_on, follow_up_on, resolution, created_at, updated_at'
+const SELECT = 'id, person_id, title, detail, status, occurred_on, follow_up_on, resolution, created_at, updated_at, resolution_suggested, resolution_evidence, resolution_confidence'
 
 type SB = Awaited<ReturnType<typeof createClient>>
 interface MomentRowShape { id: string; person_id: string }
