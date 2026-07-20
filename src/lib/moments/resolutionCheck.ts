@@ -79,3 +79,26 @@ export function parseResolutionVerdicts(raw: string, validIds: readonly string[]
 export function suggestedResolutions(verdicts: ResolutionVerdict[]): ResolutionVerdict[] {
   return verdicts.filter((v) => v.resolved && (v.confidence === 'high' || v.confidence === 'medium') && v.evidence.trim().length > 0)
 }
+
+export interface MomentResolutionSuggestion {
+  personName: string
+  title: string
+  confidence: 'high' | 'medium' | 'low'
+}
+
+/**
+ * Línea del push matutino: el tema abierto que el chat ya parece haber resuelto,
+ * para que Aaron lo cierre (o lo ignore). El cron `moment-scan` precomputa las
+ * sugerencias; el push solo elige la mejor (high antes que medium) y la dice
+ * corto. SIR SUGIERE cerrar, NUNCA cierra solo. null si no hay ninguna. PURO.
+ */
+export function momentResolutionPushLine(items: MomentResolutionSuggestion[]): string | null {
+  const ranked = items
+    .filter((i) => i.personName.trim() && i.title.trim() && (i.confidence === 'high' || i.confidence === 'medium'))
+    .sort((a, b) => (a.confidence === b.confidence ? 0 : a.confidence === 'high' ? -1 : 1))
+  const top = ranked[0]
+  if (!top) return null
+  const extra = ranked.length - 1
+  const tail = extra > 0 ? ` (+${extra} más)` : ''
+  return `Con ${top.personName}: "${top.title}" ya parece resuelto — ¿lo cierras?${tail}`
+}

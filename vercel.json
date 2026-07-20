@@ -14,6 +14,10 @@
       "schedule": "25 11 * * *"
     },
     {
+      "path": "/api/cron/moment-scan",
+      "schedule": "40 10 * * *"
+    },
+    {
       "path": "/api/cron/morning-push",
       "schedule": "0 11 * * *"
     },

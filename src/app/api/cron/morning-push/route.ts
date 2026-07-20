@@ -31,6 +31,7 @@ import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
 import { assessContactTiming, timingPushLine } from '@/lib/contact-timing/assess'
+import { momentResolutionPushLine, type MomentResolutionSuggestion } from '@/lib/moments/resolutionCheck'
 import { pickTopSignal } from '@/lib/signals/freshness'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -416,7 +417,36 @@ export async function GET(req: NextRequest) {
         /* fail-soft: el nudge relacional es un extra, no rompe el push */
       }
 
-      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
+      // CERRAR UN LAZO: un tema abierto (relationship_moment) que el chat ya
+      // resolvió. El cron `moment-scan` (LLM, antes de este) lo precomputa y deja
+      // la sugerencia en la fila → acá solo LEEMOS (determinístico, sin LLM). Es
+      // la fricción "SIR no cruza bien la info" hecha proactiva. Fail-soft si la
+      // columna 0151 no propagó.
+      let momentResolutionText: string | undefined
+      try {
+        const { data: mrRows } = await admin
+          .from('relationship_moments')
+          .select('person_id, title, resolution_confidence')
+          .eq('user_id', uid).eq('status', 'abierto').eq('resolution_suggested', true)
+          .order('resolution_checked_at', { ascending: false })
+          .limit(10)
+        const rows = (mrRows ?? []) as Array<{ person_id: string; title: string; resolution_confidence: string | null }>
+        if (rows.length > 0) {
+          const ids = [...new Set(rows.map((r) => r.person_id).filter(Boolean))]
+          const { data: nameRows } = await admin
+            .from('people').select('id, name').eq('user_id', uid).in('id', ids)
+          const nameById = new Map((nameRows ?? []).map((r) => [(r as { id: string }).id, (r as { name: string }).name]))
+          const suggestions: MomentResolutionSuggestion[] = rows.map((r) => ({
+            personName: nameById.get(r.person_id) || '',
+            title: r.title,
+            confidence: r.resolution_confidence === 'high' || r.resolution_confidence === 'medium' ? r.resolution_confidence : 'low',
+          }))
+          const line = momentResolutionPushLine(suggestions)
+          if (line) momentResolutionText = line
+        }
+      } catch { /* columna 0151 sin propagar → sin sugerencia */ }
+
+      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
