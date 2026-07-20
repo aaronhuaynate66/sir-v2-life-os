@@ -34,7 +34,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowLeft, Edit2, Check, X as XIcon, MessageSquareHeart, Printer, History, Activity } from 'lucide-react'
+import { ArrowLeft, Edit2, Check, X as XIcon, MessageSquareHeart, Printer, History, Activity, NotebookPen, ChevronDown } from 'lucide-react'
 import { SectionTitle } from '@/components/ui/section-title'
 
 import { AppShell } from '@/components/layout/AppShell'
@@ -313,6 +313,7 @@ export function PersonDetail({
   // resto de los paneles se agrupan por tab (Hoy · Conversación · Perfil y
   // memoria · Registro · Red).
   const [tab, setTab] = useState<PersonTab>('hoy')
+  const [noteOpen, setNoteOpen] = useState(false)
 
   // Ficha adaptativa por tipo de vínculo: el Cuidado (Horizonte del ciclo +
   // intimidad) es SOLO afectivo; lo comercial, solo colega/lead. Ver fichaProfile.
@@ -438,7 +439,6 @@ export function PersonDetail({
         personName={live.name}
       />
       <HistorialSearch personId={live.id} />
-      <AnotarAhora personId={live.id} />
       <Bitacora personLogs={personLogs} observations={curatedObservations} notesHistory={notesHistory} moments={moments} money={money} />
       {/* 19·M3 — red flags de auto-protección sobre tus notas (foco en tu cuidado). */}
       <RelationalFlagsCard personName={live.name} personLogs={personLogs} />
@@ -513,6 +513,25 @@ export function PersonDetail({
         lastManualInteractionAt={lastManualInteractionAt}
         lastContactAt={lastContactAt}
       />
+
+      {/* Anotar rápido, ARRIBA y a un toque (antes vivía en el rail → en móvil
+          caía al fondo tras ~20 paneles; UX audit hallazgo A). Colapsado por
+          defecto para no empujar el vistazo. */}
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => setNoteOpen((v) => !v)}
+          aria-expanded={noteOpen}
+          className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-left transition-colors hover:border-brand/40"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <NotebookPen size={15} strokeWidth={1.75} className="text-brand" /> Anotar sobre {live.name.split(' ')[0]}
+            <span className="text-[11px] font-normal text-muted-foreground">nota con hora, va a la Bitácora</span>
+          </span>
+          <ChevronDown size={16} strokeWidth={1.75} className={cn('shrink-0 text-muted-foreground/70 transition-transform', noteOpen && 'rotate-180')} aria-hidden="true" />
+        </button>
+        {noteOpen && <div className="mt-3"><AnotarAhora personId={live.id} /></div>}
+      </div>
 
       {/* Q&A por persona: preguntá a SIR sobre esta persona, aterrizado en su
           contexto (reusa /api/sir/ask con personId). */}
