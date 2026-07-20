@@ -212,11 +212,20 @@ function PremortemSection({ result, description }: { result: DecisionAssessment;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision }),
       })
-      const j = (await res.json()) as { premortem?: string; error?: string }
-      if (!res.ok || !j.premortem) { setAiErr(j.error ?? 'No se pudo correr el pre-mortem'); return }
+      // El body puede NO ser JSON en 504/gateway → parseo con red de seguridad
+      // para no filtrar el críptico "The string did not match the expected pattern".
+      const raw = await res.text()
+      let j: { premortem?: string; error?: string } = {}
+      try { j = raw ? JSON.parse(raw) : {} } catch { /* no-JSON (timeout/gateway) */ }
+      if (!res.ok || !j.premortem) {
+        setAiErr(j.error ?? (res.status === 504 || res.status === 502
+          ? 'Tardó demasiado y el servidor cortó. Reinténtalo.'
+          : `No se pudo correr el pre-mortem (código ${res.status || '—'}).`))
+        return
+      }
       setAiText(j.premortem)
-    } catch (e) {
-      setAiErr(e instanceof Error ? e.message : 'No se pudo correr el pre-mortem')
+    } catch {
+      setAiErr('No se pudo correr el pre-mortem. Revisa tu conexión.')
     } finally {
       setAiLoading(false)
     }
@@ -303,10 +312,17 @@ function StructuredPremortem({ title, description }: { title: string; descriptio
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description }),
       })
-      const j = (await res.json()) as { premortem?: Premortem; error?: string }
-      if (!res.ok || !j.premortem) { setErr(j.error ?? 'No pude armar el premortem'); return }
+      const raw = await res.text()
+      let j: { premortem?: Premortem; error?: string } = {}
+      try { j = raw ? JSON.parse(raw) : {} } catch { /* no-JSON (timeout/gateway) */ }
+      if (!res.ok || !j.premortem) {
+        setErr(j.error ?? (res.status === 504 || res.status === 502
+          ? 'Tardó demasiado y el servidor cortó. Reinténtalo.'
+          : 'No pude armar el premortem.'))
+        return
+      }
       setData(j.premortem)
-    } catch { setErr('No pude armar el premortem') } finally { setLoading(false) }
+    } catch { setErr('No pude armar el premortem.') } finally { setLoading(false) }
   }, [title, description, loading])
 
   return (
