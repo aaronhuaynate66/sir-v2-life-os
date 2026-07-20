@@ -6,10 +6,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Target, Anchor, Users, ExternalLink } from 'lucide-react'
+import { toast } from 'sonner'
+import { ArrowLeft, Target, Anchor, Users, ExternalLink, Pencil, Check, X as XIcon } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import dynamic from 'next/dynamic'
@@ -29,13 +32,44 @@ function firstName(n: string): string { return (n || '').trim().split(/\s+/)[0] 
 export default function ObjetivoDetailPage() {
   const params = useParams()
   const id = typeof params.id === 'string' ? params.id : Array.isArray(params.id) ? params.id[0] : ''
-  const { goals } = useGoalStore()
+  const { goals, updateGoal } = useGoalStore()
   const { people } = useRelationshipStore()
   const goal = goals.find((g) => g.id === id)
 
   const [milestones, setMilestones] = useState<string[]>([])
   const [episodes, setEpisodes] = useState<EpisodeLite[]>([])
   const [conflicts, setConflicts] = useState<{ personId: string; value: number; note: string; date: string }[]>([])
+
+  // Edición inline de la IDENTIDAD del objetivo (título · meta · baseline · por
+  // qué · fecha). Antes esto forzaba un viaje a /objetivos aunque la página se
+  // vende como "centro de mando" (UX audit). Los pasos siguen en su panel.
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({ title: '', target: '', baseline: '', why: '', targetDate: '' })
+  function startEdit() {
+    if (!goal) return
+    setForm({
+      title: goal.title,
+      target: goal.target ?? '',
+      baseline: goal.baseline ?? '',
+      why: goal.why ?? '',
+      targetDate: goal.targetDate ? goal.targetDate.slice(0, 10) : '',
+    })
+    setEditing(true)
+  }
+  function saveEdit() {
+    if (!goal) return
+    const title = form.title.trim()
+    if (!title) { toast.error('El título no puede quedar vacío'); return }
+    updateGoal(goal.id, {
+      title,
+      target: form.target.trim() || undefined,
+      baseline: form.baseline.trim() || undefined,
+      why: form.why.trim() || undefined,
+      targetDate: form.targetDate || undefined,
+    })
+    setEditing(false)
+    toast.success('Objetivo actualizado')
+  }
 
   useEffect(() => {
     if (!goal) return
@@ -77,11 +111,61 @@ export default function ObjetivoDetailPage() {
           <>
             <header className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <Target size={20} className="text-brand" />
-                <h1 className="text-2xl font-semibold tracking-tight">{goal.title}</h1>
+                <Target size={20} className="text-brand shrink-0" />
+                {editing ? (
+                  <Input
+                    value={form.title}
+                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                    className="flex-1 min-w-[12rem] text-lg font-semibold"
+                    placeholder="Título del objetivo"
+                    aria-label="Título del objetivo"
+                  />
+                ) : (
+                  <h1 className="text-2xl font-semibold tracking-tight">{goal.title}</h1>
+                )}
                 {goal.isAnchor && <Badge variant="outline" className="text-[10px] border-brand/30 bg-brand-soft text-brand-soft-foreground gap-1"><Anchor size={10} /> Norte del año</Badge>}
+                {!editing && (
+                  <button type="button" onClick={startEdit} className="ml-auto inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground" aria-label="Editar objetivo">
+                    <Pencil size={13} /> Editar
+                  </button>
+                )}
               </div>
-              {goal.target && <div className="text-sm text-foreground/90"><span className="font-medium">Meta:</span> {goal.target}{goal.baseline ? ` · hoy: ${goal.baseline}` : ''}</div>}
+
+              {editing ? (
+                <div className="space-y-3 rounded-lg border border-border bg-card p-4">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="block text-sm">
+                      <span className="text-[11px] uppercase tracking-[0.06em] text-text-tertiary">Meta</span>
+                      <Input value={form.target} onChange={(e) => setForm((f) => ({ ...f, target: e.target.value }))} placeholder="Ej: Pesar 75 kg" className="mt-1" />
+                    </label>
+                    <label className="block text-sm">
+                      <span className="text-[11px] uppercase tracking-[0.06em] text-text-tertiary">Hoy (baseline)</span>
+                      <Input value={form.baseline} onChange={(e) => setForm((f) => ({ ...f, baseline: e.target.value }))} placeholder="Ej: 82 kg" className="mt-1" />
+                    </label>
+                  </div>
+                  <label className="block text-sm">
+                    <span className="text-[11px] uppercase tracking-[0.06em] text-text-tertiary">Por qué importa</span>
+                    <textarea
+                      value={form.why}
+                      onChange={(e) => setForm((f) => ({ ...f, why: e.target.value }))}
+                      rows={2}
+                      placeholder="Qué cambia en tu vida si lo logras."
+                      className="mt-1 w-full rounded-md border border-input bg-secondary px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="text-[11px] uppercase tracking-[0.06em] text-text-tertiary">Fecha objetivo</span>
+                    <Input type="date" value={form.targetDate} onChange={(e) => setForm((f) => ({ ...f, targetDate: e.target.value }))} className="mt-1 w-full sm:w-48" />
+                  </label>
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button size="sm" onClick={saveEdit}><Check size={14} className="mr-1" /> Guardar</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditing(false)}><XIcon size={14} className="mr-1" /> Cancelar</Button>
+                  </div>
+                </div>
+              ) : (
+                goal.target && <div className="text-sm text-foreground/90"><span className="font-medium">Meta:</span> {goal.target}{goal.baseline ? ` · hoy: ${goal.baseline}` : ''}</div>
+              )}
+
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 bg-secondary rounded-full"><div className="h-1.5 rounded-full bg-brand" style={{ width: `${Math.min(100, Math.max(0, goal.progress))}%` }} /></div>
                 <span className="text-xs font-mono tabular-nums text-muted-foreground w-9">{Math.round(goal.progress)}%</span>
@@ -108,7 +192,7 @@ export default function ObjetivoDetailPage() {
 
             <GoalConflictFriction goal={{ title: goal.title, description: goal.description, relatedPersons: goal.relatedPersons }} conflicts={conflicts} people={people} isNorte={goal.isAnchor === true} />
 
-            <Link href="/objetivos" className="block text-center text-[12px] text-muted-foreground hover:text-foreground">Editar pasos y detalles en Objetivos →</Link>
+            <Link href="/objetivos" className="block text-center text-[12px] text-muted-foreground hover:text-foreground">Ver todos los objetivos →</Link>
           </>
         )}
       </main>
