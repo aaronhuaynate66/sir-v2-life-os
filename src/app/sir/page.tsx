@@ -6,7 +6,7 @@
 // v1 NO ejecuta acciones — solo lee y responde/sugiere (POST /api/sir/ask).
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Sparkles, Send, Loader2, ArrowLeft, ArrowDown, User, Check, X, CalendarCheck, Mic, MicOff } from 'lucide-react'
+import { Sparkles, Send, Loader2, ArrowLeft, ArrowDown, User, Check, X, CalendarCheck, Mic, MicOff, ThumbsUp, ThumbsDown } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
@@ -62,6 +62,11 @@ interface Turn {
   /** Canal que originó el turno. 'telegram' se marca en la UI ("vía Telegram")
    *  para que el hilo unificado muestre de dónde vino cada mensaje. */
   channel?: 'web' | 'telegram'
+  /** Id de la sugerencia registrada en el ledger (si SIR propuso una acción) —
+   *  para cerrar el loop al confirmar/descartar/valorar. */
+  suggestionId?: string
+  /** Feedback explícito del usuario sobre la respuesta (👍/👎), persistido. */
+  feedback?: 'up' | 'down'
   sources?: { people: string[]; memories: number; receipts?: SirReceipt[] }
   action?: ProposedAction
   actionState?: 'pending' | 'done' | 'discarded'
@@ -304,7 +309,39 @@ export default function SirChatPage() {
   }
 
   function setTurnState(idx: number, state: 'done' | 'discarded') {
+    const sid = turns[idx]?.suggestionId
     setTurns((t) => t.map((tu, i) => (i === idx ? { ...tu, actionState: state } : tu)))
+    // Cierra el loop en el ledger (antes esto era solo estado de React). Fail-open.
+    if (sid) {
+      void fetch(`/api/suggestions/${sid}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: state === 'done' ? 'done' : 'dismissed' }),
+      }).catch(() => {})
+    }
+  }
+
+  // 👍/👎 sobre una respuesta de SIR → feedback explícito persistido en el ledger.
+  // Si el turno ya tiene una sugerencia (acción propuesta), la actualiza; si no,
+  // crea una fila 'answer' con el pulgar. La señal más barata y de más volumen.
+  function rateTurn(idx: number, feedback: 'up' | 'down') {
+    const tu = turns[idx]
+    if (!tu) return
+    const next = tu.feedback === feedback ? undefined : feedback // toggle
+    setTurns((t) => t.map((x, i) => (i === idx ? { ...x, feedback: next } : x)))
+    track(EVENTS.brainFeedbackGiven, { source: 'sir_chat', value: next ?? 'cleared' })
+    if (tu.suggestionId) {
+      void fetch(`/api/suggestions/${tu.suggestionId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: next ?? null }),
+      }).catch(() => {})
+    } else if (next) {
+      void fetch('/api/suggestions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ surface: 'chat', kind: 'answer', title: tu.text.slice(0, 120), feedback: next }),
+      }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (d?.id) setTurns((t) => t.map((x, i) => (i === idx ? { ...x, suggestionId: d.id as string } : x)))
+      }).catch(() => {})
+    }
   }
 
   async function confirmAction(idx: number, a: ProposedAction) {
@@ -518,7 +555,7 @@ export default function SirChatPage() {
       }
       const action = data.proposedAction as ProposedAction | null
       if (action) track(EVENTS.sirActionProposed, { type: action.kind })
-      setTurns((t) => [...t, { role: 'sir', text: data.answer ?? '', sources: data.sources, action: action ?? undefined, actionState: action ? 'pending' : undefined, at: new Date().toISOString() }])
+      setTurns((t) => [...t, { role: 'sir', text: data.answer ?? '', sources: data.sources, action: action ?? undefined, actionState: action ? 'pending' : undefined, suggestionId: typeof data.suggestionId === 'string' ? data.suggestionId : undefined, at: new Date().toISOString() }])
     } catch {
       trackAiError('sir_ask', { status: 0, message: 'Error de red' }) // GA4
       setError('Error de red')
@@ -801,6 +838,24 @@ export default function SirChatPage() {
                         </button>
                       </div>
                     )}
+                  </div>
+                )}
+                {t.role === 'sir' && t.text && !t.clarifying && (
+                  <div className="mt-2 flex items-center gap-1">
+                    <button
+                      onClick={() => rateTurn(i, 'up')}
+                      aria-label="Me sirve"
+                      className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'up' ? 'text-ok' : 'text-muted-foreground/50 hover:text-foreground'}`}
+                    >
+                      <ThumbsUp size={13} />
+                    </button>
+                    <button
+                      onClick={() => rateTurn(i, 'down')}
+                      aria-label="No me sirve"
+                      className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'down' ? 'text-bad' : 'text-muted-foreground/50 hover:text-foreground'}`}
+                    >
+                      <ThumbsDown size={13} />
+                    </button>
                   </div>
                 )}
                 {t.at && (
