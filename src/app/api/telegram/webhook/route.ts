@@ -35,6 +35,7 @@ import { trackServer } from '@/lib/analytics/serverTrack'
 import { extractStoryVision } from '@/lib/social-reader/storyVision'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, type PersonLite } from '@/lib/social-reader/match'
+import { parseWhoIsWhoReply } from '@/lib/social-reader/whoIsWho'
 import type { LlmImageMediaType } from '@/lib/llm/types'
 
 export const runtime = 'nodejs'
@@ -172,6 +173,71 @@ async function resolveOwnerId(admin: SupabaseClient): Promise<string | null> {
   } catch { return null }
 }
 
+/**
+ * "¿Quién es quién?" — procesa una respuesta de Aaron a la pregunta del reader.
+ * Detección conservadora: solo actúa si el texto trae @handles que EXISTEN como
+ * pendientes en unmatched_social_activity (si no, no era una respuesta whois →
+ * sigue como chat normal). Por cada handle: nombre → matchea a una persona, le
+ * setea el instagram_handle, promueve las señales guardadas a contact_activity y
+ * lo saca de la bandeja; "no" → descarta. Devuelve un resumen para responder.
+ */
+async function resolveWhoIsWho(
+  supabase: SupabaseClient, ownerId: string, text: string,
+): Promise<{ handled: boolean; reply: string }> {
+  const parsed = parseWhoIsWhoReply(text)
+  if (parsed.length === 0) return { handled: false, reply: '' }
+  const handles = parsed.map((p) => p.handle)
+  const { data: pend } = await supabase
+    .from('unmatched_social_activity')
+    .select('id, handle, kind, detail, observed_at')
+    .eq('user_id', ownerId).in('handle', handles)
+  const pending = (pend ?? []) as Array<{ id: string; handle: string; kind: string; detail: string | null; observed_at: string }>
+  if (pending.length === 0) return { handled: false, reply: '' } // no era whois → chat normal
+
+  const { data: peopleRows } = await supabase
+    .from('people').select('id, name, instagram_handle, linkedin_url, title').eq('user_id', ownerId).limit(2000)
+  const people: PersonLite[] = (peopleRows ?? []).map((r) => ({
+    id: String(r.id), name: String(r.name ?? ''),
+    instagramHandle: (r.instagram_handle as string | null) ?? null,
+    linkedinUrl: (r.linkedin_url as string | null) ?? null,
+    title: (r.title as string | null) ?? null,
+  }))
+  const index = buildPersonIndex(people)
+  const byHandle = new Map<string, typeof pending>()
+  for (const p of pending) { const a = byHandle.get(p.handle) ?? []; a.push(p); byHandle.set(p.handle, a) }
+
+  const assigned: string[] = []; const dismissed: string[] = []; const notFound: string[] = []
+  const sinceIso = new Date(Date.now() - 6 * 3_600_000).toISOString()
+  for (const { handle, name } of parsed) {
+    const rows = byHandle.get(handle)
+    if (!rows || rows.length === 0) continue
+    if (name === null) {
+      await supabase.from('unmatched_social_activity').delete().eq('user_id', ownerId).eq('handle', handle)
+      dismissed.push(`@${handle}`)
+      continue
+    }
+    const m = matchPerson(index, { platform: 'instagram', name })
+    if (!m) { notFound.push(`${name} (@${handle})`); continue }
+    await supabase.from('people').update({ instagram_handle: handle }).eq('id', m.person.id)
+    for (const r of rows) {
+      const { data: rec } = await supabase.from('contact_activity').select('id')
+        .eq('user_id', ownerId).eq('person_id', m.person.id).eq('kind', r.kind).gte('observed_at', sinceIso).limit(1)
+      if (!rec || rec.length === 0) {
+        await supabase.from('contact_activity').insert({ user_id: ownerId, person_id: m.person.id, kind: r.kind, detail: r.detail, source: 'instagram', observed_at: r.observed_at })
+      }
+    }
+    await supabase.from('unmatched_social_activity').delete().eq('user_id', ownerId).eq('handle', handle)
+    assigned.push(`@${handle} → ${m.person.name}`)
+  }
+
+  const parts: string[] = []
+  if (assigned.length) parts.push(`✅ Asignados:\n${assigned.map((a) => `· ${a}`).join('\n')}`)
+  if (dismissed.length) parts.push(`🗑️ Descartados: ${dismissed.join(', ')}`)
+  if (notFound.length) parts.push(`🤔 No encontré en tu red: ${notFound.join(', ')}. Si querés, agregalos primero y te lo anoto.`)
+  const reply = parts.length ? `${parts.join('\n\n')}\n\nDe ahora en más los reconozco solos en Instagram.` : 'Anotado.'
+  return { handled: true, reply }
+}
+
 export async function POST(req: NextRequest) {
   // Sin config → inerte (200 para que Telegram no reintente durante el setup).
   if (!isTelegramConfigured()) return NextResponse.json({ ok: true, inert: true })
@@ -302,6 +368,14 @@ export async function POST(req: NextRequest) {
       if (n === 0) await sendTelegramMessage(msg.chatId, '✅ Ya marcaste todos tus hábitos de hoy. Bien ahí.')
       return
     }
+
+    // "¿Quién es quién?": si este texto responde la pregunta del reader (trae
+    // @handles que están pendientes), lo procesamos acá y NO lo mandamos al chat.
+    // Conservador: si no hay handles pendientes, sigue como pregunta normal.
+    try {
+      const whois = await resolveWhoIsWho(supabase, ownerId, text)
+      if (whois.handled) { await sendTelegramMessage(msg.chatId, whois.reply); return }
+    } catch { /* fail-open: si algo falla, cae al chat normal */ }
 
     try {
       // Hilo unificado (Fase 2): traigo el historial cross-canal para continuidad
