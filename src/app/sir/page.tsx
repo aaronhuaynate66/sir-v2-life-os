@@ -6,7 +6,7 @@
 // v1 NO ejecuta acciones — solo lee y responde/sugiere (POST /api/sir/ask).
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Sparkles, Send, Loader2, ArrowLeft, ArrowDown, User, Check, X, CalendarCheck, Mic, MicOff } from 'lucide-react'
+import { Sparkles, Send, Loader2, ArrowLeft, ArrowDown, User, Check, X, CalendarCheck, Mic, MicOff, ThumbsUp, ThumbsDown } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
@@ -21,7 +21,7 @@ import type { SirReceipt } from '@/lib/sir/ask'
 import { memoryProvenance } from '@/lib/memories/provenance'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'crear_plan'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'crear_plan' | 'crear_recordatorio'
   persona?: string
   habito?: string
   tarea?: string
@@ -38,6 +38,8 @@ interface ProposedAction {
   nombre?: string
   relacion?: RelationshipType
   motivo?: string
+  texto?: string
+  cuando?: string
   linkedGoals?: { id: string; title: string }[]
 }
 
@@ -62,6 +64,11 @@ interface Turn {
   /** Canal que originó el turno. 'telegram' se marca en la UI ("vía Telegram")
    *  para que el hilo unificado muestre de dónde vino cada mensaje. */
   channel?: 'web' | 'telegram'
+  /** Id de la sugerencia registrada en el ledger (si SIR propuso una acción) —
+   *  para cerrar el loop al confirmar/descartar/valorar. */
+  suggestionId?: string
+  /** Feedback explícito del usuario sobre la respuesta (👍/👎), persistido. */
+  feedback?: 'up' | 'down'
   sources?: { people: string[]; memories: number; receipts?: SirReceipt[] }
   action?: ProposedAction
   actionState?: 'pending' | 'done' | 'discarded'
@@ -304,7 +311,39 @@ export default function SirChatPage() {
   }
 
   function setTurnState(idx: number, state: 'done' | 'discarded') {
+    const sid = turns[idx]?.suggestionId
     setTurns((t) => t.map((tu, i) => (i === idx ? { ...tu, actionState: state } : tu)))
+    // Cierra el loop en el ledger (antes esto era solo estado de React). Fail-open.
+    if (sid) {
+      void fetch(`/api/suggestions/${sid}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: state === 'done' ? 'done' : 'dismissed' }),
+      }).catch(() => {})
+    }
+  }
+
+  // 👍/👎 sobre una respuesta de SIR → feedback explícito persistido en el ledger.
+  // Si el turno ya tiene una sugerencia (acción propuesta), la actualiza; si no,
+  // crea una fila 'answer' con el pulgar. La señal más barata y de más volumen.
+  function rateTurn(idx: number, feedback: 'up' | 'down') {
+    const tu = turns[idx]
+    if (!tu) return
+    const next = tu.feedback === feedback ? undefined : feedback // toggle
+    setTurns((t) => t.map((x, i) => (i === idx ? { ...x, feedback: next } : x)))
+    track(EVENTS.brainFeedbackGiven, { source: 'sir_chat', value: next ?? 'cleared' })
+    if (tu.suggestionId) {
+      void fetch(`/api/suggestions/${tu.suggestionId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: next ?? null }),
+      }).catch(() => {})
+    } else if (next) {
+      void fetch('/api/suggestions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ surface: 'chat', kind: 'answer', title: tu.text.slice(0, 120), feedback: next }),
+      }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (d?.id) setTurns((t) => t.map((x, i) => (i === idx ? { ...x, suggestionId: d.id as string } : x)))
+      }).catch(() => {})
+    }
   }
 
   async function confirmAction(idx: number, a: ProposedAction) {
@@ -419,6 +458,19 @@ export default function SirChatPage() {
         if (!res.ok) { toast.error('No se pudo agendar el plan'); return }
         toast.success('Plan agendado', { description: `${titulo}${a.persona ? ` con ${a.persona}` : ''} · ${a.fecha}` })
         setTurnState(idx, 'done')
+      } else if (a.kind === 'crear_recordatorio') {
+        const texto = (a.texto ?? '').trim()
+        const t = Date.parse(a.cuando ?? '')
+        if (texto.length < 2) { toast.error('Falta qué recordar'); return }
+        if (!Number.isFinite(t)) { toast.error('No entendí la fecha/hora'); return }
+        const res = await fetch('/api/reminders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: texto, due_at: new Date(t).toISOString() }),
+        })
+        if (!res.ok) { toast.error('No se pudo agendar el recordatorio'); return }
+        toast.success('Recordatorio agendado', { description: texto })
+        setTurnState(idx, 'done')
       } else if (a.kind === 'cerrar_relacion') {
         if (!a.personId) {
           toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Cierra el vínculo desde su ficha.' })
@@ -518,7 +570,7 @@ export default function SirChatPage() {
       }
       const action = data.proposedAction as ProposedAction | null
       if (action) track(EVENTS.sirActionProposed, { type: action.kind })
-      setTurns((t) => [...t, { role: 'sir', text: data.answer ?? '', sources: data.sources, action: action ?? undefined, actionState: action ? 'pending' : undefined, at: new Date().toISOString() }])
+      setTurns((t) => [...t, { role: 'sir', text: data.answer ?? '', sources: data.sources, action: action ?? undefined, actionState: action ? 'pending' : undefined, suggestionId: typeof data.suggestionId === 'string' ? data.suggestionId : undefined, at: new Date().toISOString() }])
     } catch {
       trackAiError('sir_ask', { status: 0, message: 'Error de red' }) // GA4
       setError('Error de red')
@@ -715,7 +767,7 @@ export default function SirChatPage() {
                   <div className="mt-3 rounded-xl border border-brand/40 bg-brand/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-brand">
                       <CalendarCheck size={12} />
-                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'marcar_tarea' ? 'Marcar tarea' : t.action.kind === 'crear_plan' ? 'Agendar plan' : 'Cerrar vínculo'}
+                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'marcar_tarea' ? 'Marcar tarea' : t.action.kind === 'crear_plan' ? 'Agendar plan' : t.action.kind === 'crear_recordatorio' ? 'Agendar recordatorio' : 'Cerrar vínculo'}
                     </div>
                     {t.action.kind === 'registrar_interaccion' ? (
                       <div className="text-[13px] text-foreground/90">
@@ -755,6 +807,13 @@ export default function SirChatPage() {
                           {t.action.fecha}{t.action.persona ? ` · con ${t.action.persona}` : ''}
                         </div>
                         {t.action.nota && <div className="mt-0.5 text-muted-foreground">{t.action.nota}</div>}
+                      </div>
+                    ) : t.action.kind === 'crear_recordatorio' ? (
+                      <div className="text-[13px] text-foreground/90">
+                        <span className="font-medium">{t.action.texto}</span>
+                        <div className="mt-0.5 text-muted-foreground">
+                          {(() => { const c = t.action.cuando ?? ''; const d = Date.parse(c); return Number.isFinite(d) ? TIME_FMT.format(new Date(d)) + ' · ' + DAY_FMT.format(new Date(d)) : c })()}
+                        </div>
                       </div>
                     ) : (
                       <div className="text-[13px] text-foreground/90">
@@ -801,6 +860,24 @@ export default function SirChatPage() {
                         </button>
                       </div>
                     )}
+                  </div>
+                )}
+                {t.role === 'sir' && t.text && !t.clarifying && (
+                  <div className="mt-2 flex items-center gap-1">
+                    <button
+                      onClick={() => rateTurn(i, 'up')}
+                      aria-label="Me sirve"
+                      className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'up' ? 'text-ok' : 'text-muted-foreground/50 hover:text-foreground'}`}
+                    >
+                      <ThumbsUp size={13} />
+                    </button>
+                    <button
+                      onClick={() => rateTurn(i, 'down')}
+                      aria-label="No me sirve"
+                      className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'down' ? 'text-bad' : 'text-muted-foreground/50 hover:text-foreground'}`}
+                    >
+                      <ThumbsDown size={13} />
+                    </button>
                   </div>
                 )}
                 {t.at && (

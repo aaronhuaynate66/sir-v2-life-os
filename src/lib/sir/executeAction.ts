@@ -34,9 +34,15 @@ export function isExecutableByChat(kind: string): boolean {
     kind === 'cerrar_relacion' ||
     kind === 'marcar_habito' ||
     kind === 'marcar_tarea' ||
-    kind === 'crear_plan'
+    kind === 'crear_plan' ||
+    kind === 'crear_recordatorio'
   )
 }
+
+/** Fecha+hora legible en zona de Lima (ej. "mar 22 jul, 9:00 a. m."). */
+const LIMA_DT = new Intl.DateTimeFormat('es-PE', {
+  weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/Lima',
+})
 
 function normText(s: string): string {
   return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
@@ -291,6 +297,19 @@ export async function executeProposedAction(
     if (error) return { ok: false, message: 'Uf, no pude agendar el plan. Reinténtalo en un momento.' }
     const withWho = action.personId && action.persona ? ` con ${action.persona}` : ''
     return { ok: true, message: `📆 Agendé "${titulo.slice(0, 80)}"${withWho} para el ${action.fecha}.` }
+  }
+
+  if (action.kind === 'crear_recordatorio') {
+    const texto = (action.texto || '').trim()
+    if (texto.length < 2) return { ok: false, message: 'Faltó qué recordar, no agendé nada.' }
+    const t = Date.parse(action.cuando)
+    if (!Number.isFinite(t)) return { ok: false, message: 'No me quedó clara la fecha/hora. Dímela (ej. mañana 9am) y lo agendo.' }
+    if (t < Date.now() - 60_000) return { ok: false, message: 'Esa hora ya pasó. Dame una futura y te lo agendo.' }
+    const { error } = await supabase.from('reminders').insert({
+      user_id: userId, text: texto.slice(0, 500), due_at: new Date(t).toISOString(),
+    })
+    if (error) return { ok: false, message: 'Uf, no pude agendar el recordatorio. Reinténtalo en un momento.' }
+    return { ok: true, message: `⏰ Listo, te recuerdo "${texto.slice(0, 80)}" el ${LIMA_DT.format(new Date(t))}.` }
   }
 
   return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hazlo desde la web.' }

@@ -8,6 +8,7 @@
 // Body JSON: { question, history?, personId?, dismissedGaps?, skipInlineGaps?, mode?, userContext? }
 // Response 200: { answer, proposedAction, sources } | { answer, clarifying, proposedAction:null, sources }
 
+import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -59,7 +60,22 @@ export async function POST(req: NextRequest) {
     // persistidos vuelven al cliente para que el polling no re-agregue estos
     // mismos turnos (dedup del hilo unificado).
     const persisted = await appendSirThread(supabase, userId, 'web', body.question as string, result.answer)
-    return NextResponse.json({ ...result, thread: persisted }, { status: 200 })
+
+    // Ledger (cerebro): si SIR propuso una ACCIÓN, la registramos como sugerencia
+    // 'pending'. El chat persiste luego si se confirmó/descartó (cierra el loop
+    // que antes era estado efímero de React). Fail-open: no rompe la respuesta.
+    let suggestionId: string | null = null
+    const proposed = (result as { proposedAction?: { kind?: unknown } | null }).proposedAction
+    if (proposed && typeof proposed.kind === 'string') {
+      const sid = `sug_${createHash('sha1').update(`${userId}|${Date.now()}|${Math.random()}`).digest('hex').slice(0, 24)}`
+      const { error: sErr } = await supabase.from('suggestions').insert({
+        id: sid, user_id: userId, surface: 'chat', kind: proposed.kind,
+        title: typeof body.question === 'string' ? (body.question as string).slice(0, 120) : null,
+        payload: proposed, status: 'pending',
+      })
+      if (!sErr) suggestionId = sid
+    }
+    return NextResponse.json({ ...result, thread: persisted, suggestionId }, { status: 200 })
   } catch (e) {
     if (e instanceof AskSirConfigError) {
       return errorJson(500, e.message, e.detail)

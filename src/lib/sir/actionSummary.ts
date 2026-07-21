@@ -23,6 +23,13 @@ export function summarizeActionForConfirm(a: ProposedActionResolved): string {
       return `✅ Marcar la tarea "${(a.tarea || '').slice(0, 120)}" como hecha.\n\n¿La marco?`
     case 'crear_plan':
       return `🗓️ Agendar "${(a.titulo || '').slice(0, 120)}"${a.fecha ? ` para el ${a.fecha}` : ''}.\n\n¿Lo agendo?`
+    case 'crear_recordatorio': {
+      const t = Date.parse(a.cuando)
+      const when = Number.isFinite(t)
+        ? new Intl.DateTimeFormat('es-PE', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'America/Lima' }).format(new Date(t))
+        : 'esa hora'
+      return `⏰ Recordarte "${(a.texto || '').slice(0, 120)}" el ${when}.\n\n¿Lo agendo?`
+    }
     default:
       return '¿Lo guardo?'
   }

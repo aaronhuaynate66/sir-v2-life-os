@@ -9,6 +9,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
+import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -42,6 +43,12 @@ export async function GET(req: NextRequest) {
     for (const p of ((peopleRaw ?? []) as Array<{ id: string; slug: string | null }>)) slugById.set(p.id, p.slug)
   }
 
+  // Entrega TAMBIÉN por Telegram al dueño (el Web Push depende de VAPID, que
+  // puede no estar configurado; Telegram está vivo). Mismo patrón que morning-push.
+  const tgReady = isTelegramConfigured()
+  const tgOwnerId = process.env.TELEGRAM_OWNER_USER_ID?.trim() || null
+  const tgChat = process.env.TELEGRAM_ALLOWED_CHAT_ID?.trim() || null
+
   let notified = 0
   for (const r of rows) {
     const slug = r.related_person_id ? slugById.get(r.related_person_id) : null
@@ -52,6 +59,10 @@ export async function GET(req: NextRequest) {
       tag: `reminder-${r.id}`,
       requireInteraction: false,
     })
+    // Telegram al dueño (fail-open: no rompe el cron si falla el envío).
+    if (tgReady && tgChat && tgOwnerId && r.user_id === tgOwnerId) {
+      try { await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${r.text}`) } catch { /* fail-open */ }
+    }
     // Marcar como notificado inmediatamente para no re-disparar aunque el push falle.
     await supabase.from('reminders').update({ notified_at: new Date().toISOString() }).eq('id', r.id)
     notified++
