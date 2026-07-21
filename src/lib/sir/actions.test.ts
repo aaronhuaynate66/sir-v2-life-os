@@ -46,6 +46,17 @@ describe('parseProposedAction', () => {
     expect(parseProposedAction('proponer_crear_plan', { fecha: '2026-07-19' })).toBeNull()
   })
 
+  it('crear_recordatorio: exige texto y normaliza `cuando` a ISO', () => {
+    const r = parseProposedAction('proponer_crear_recordatorio', { texto: 'pedir pastillas', cuando: '2026-07-22T09:00:00-05:00' })
+    expect(r).toMatchObject({ kind: 'crear_recordatorio', texto: 'pedir pastillas' })
+    expect((r as { cuando: string }).cuando).toBe('2026-07-22T14:00:00.000Z') // -05:00 → UTC
+    // cuando inválido → queda '' (el flujo pide aclarar)
+    expect(parseProposedAction('proponer_crear_recordatorio', { texto: 'algo', cuando: 'mañana' }))
+      .toMatchObject({ kind: 'crear_recordatorio', cuando: '' })
+    // sin texto → null
+    expect(parseProposedAction('proponer_crear_recordatorio', { cuando: '2026-07-22T09:00:00-05:00' })).toBeNull()
+  })
+
   it('toolName desconocido → null', () => {
     expect(parseProposedAction('otra_cosa', {})).toBeNull()
   })

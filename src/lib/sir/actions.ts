@@ -100,6 +100,19 @@ export const SIR_ACTION_TOOLS = [
     },
   },
   {
+    name: 'proponer_crear_recordatorio',
+    description:
+      'Propón AGENDAR un RECORDATORIO con FECHA Y HORA (NO lo agendes tú, solo propónlo para que Aaron confirme). Úsalo cuando Aaron pida que le recuerdes algo a una hora concreta: "recuérdame mañana 9am pedir mis pastillas", "avísame el viernes a las 3pm llamar al banco". `cuando` DEBE ser ISO 8601 CON hora y zona de Lima (-05:00), calculado desde "Hoy es ..." del contexto (ej. mañana 9am → "2026-07-22T09:00:00-05:00"). NUNCA digas que ya lo agendaste sin llamar a esta tool. SÍ puedes agendar recordatorios por hora — no digas que no puedes.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        texto: { type: 'string', description: 'Qué recordar (ej. "pedir tus pastillas para la cabeza").' },
+        cuando: { type: 'string', description: 'Fecha y hora en ISO 8601 con zona de Lima -05:00 (ej. "2026-07-22T09:00:00-05:00"), calculada desde la fecha/hora de hoy del contexto.' },
+      },
+      required: ['texto', 'cuando'],
+    },
+  },
+  {
     name: 'proponer_cerrar_relacion',
     description:
       'Propón CERRAR un vínculo (NO lo cierres tú, solo propónlo para que Aaron confirme). Usa esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
@@ -157,7 +170,13 @@ export interface ProposedPlan {
   persona: string | null
   nota: string
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan
+export interface ProposedRecordatorio {
+  kind: 'crear_recordatorio'
+  texto: string
+  /** ISO 8601 con hora (UTC normalizado), o '' si el modelo no dio uno válido. */
+  cuando: string
+}
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -237,6 +256,14 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
     const fecha = /^\d{4}-\d{2}-\d{2}$/.test(rawFecha) ? rawFecha : ''
     const persona = str(o.persona, 120)
     return { kind: 'crear_plan', titulo, fecha, persona: persona || null, nota: str(o.nota, 500) }
+  }
+  if (toolName === 'proponer_crear_recordatorio') {
+    const texto = str(o.texto, 500)
+    if (!texto) return null
+    const raw = str(o.cuando, 40)
+    const t = Date.parse(raw)
+    const cuando = Number.isFinite(t) ? new Date(t).toISOString() : ''
+    return { kind: 'crear_recordatorio', texto, cuando }
   }
   return null
 }

@@ -21,7 +21,7 @@ import type { SirReceipt } from '@/lib/sir/ask'
 import { memoryProvenance } from '@/lib/memories/provenance'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'crear_plan'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'crear_plan' | 'crear_recordatorio'
   persona?: string
   habito?: string
   tarea?: string
@@ -38,6 +38,8 @@ interface ProposedAction {
   nombre?: string
   relacion?: RelationshipType
   motivo?: string
+  texto?: string
+  cuando?: string
   linkedGoals?: { id: string; title: string }[]
 }
 
@@ -456,6 +458,19 @@ export default function SirChatPage() {
         if (!res.ok) { toast.error('No se pudo agendar el plan'); return }
         toast.success('Plan agendado', { description: `${titulo}${a.persona ? ` con ${a.persona}` : ''} · ${a.fecha}` })
         setTurnState(idx, 'done')
+      } else if (a.kind === 'crear_recordatorio') {
+        const texto = (a.texto ?? '').trim()
+        const t = Date.parse(a.cuando ?? '')
+        if (texto.length < 2) { toast.error('Falta qué recordar'); return }
+        if (!Number.isFinite(t)) { toast.error('No entendí la fecha/hora'); return }
+        const res = await fetch('/api/reminders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: texto, due_at: new Date(t).toISOString() }),
+        })
+        if (!res.ok) { toast.error('No se pudo agendar el recordatorio'); return }
+        toast.success('Recordatorio agendado', { description: texto })
+        setTurnState(idx, 'done')
       } else if (a.kind === 'cerrar_relacion') {
         if (!a.personId) {
           toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Cierra el vínculo desde su ficha.' })
@@ -752,7 +767,7 @@ export default function SirChatPage() {
                   <div className="mt-3 rounded-xl border border-brand/40 bg-brand/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-brand">
                       <CalendarCheck size={12} />
-                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'marcar_tarea' ? 'Marcar tarea' : t.action.kind === 'crear_plan' ? 'Agendar plan' : 'Cerrar vínculo'}
+                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'marcar_tarea' ? 'Marcar tarea' : t.action.kind === 'crear_plan' ? 'Agendar plan' : t.action.kind === 'crear_recordatorio' ? 'Agendar recordatorio' : 'Cerrar vínculo'}
                     </div>
                     {t.action.kind === 'registrar_interaccion' ? (
                       <div className="text-[13px] text-foreground/90">
@@ -792,6 +807,13 @@ export default function SirChatPage() {
                           {t.action.fecha}{t.action.persona ? ` · con ${t.action.persona}` : ''}
                         </div>
                         {t.action.nota && <div className="mt-0.5 text-muted-foreground">{t.action.nota}</div>}
+                      </div>
+                    ) : t.action.kind === 'crear_recordatorio' ? (
+                      <div className="text-[13px] text-foreground/90">
+                        <span className="font-medium">{t.action.texto}</span>
+                        <div className="mt-0.5 text-muted-foreground">
+                          {(() => { const c = t.action.cuando ?? ''; const d = Date.parse(c); return Number.isFinite(d) ? TIME_FMT.format(new Date(d)) + ' · ' + DAY_FMT.format(new Date(d)) : c })()}
+                        </div>
                       </div>
                     ) : (
                       <div className="text-[13px] text-foreground/90">
