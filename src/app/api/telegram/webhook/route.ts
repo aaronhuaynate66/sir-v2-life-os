@@ -148,7 +148,7 @@ async function handleHabitTap(
     .from('habit_checkins').select('id').eq('user_id', userId).eq('habit_id', habitId).eq('date', today).maybeSingle()
   if (!exists) {
     await supabase.from('habit_checkins').insert({ user_id: userId, habit_id: habitId, date: today })
-    await trackServer('habit_marked', { channel: 'telegram', via: 'button' }, userId)
+    await trackServer('habit_checked', { channel: 'telegram', via: 'button' }, userId)
   }
   await answerCallbackQuery(callbackId, `✓ ${title}`)
   // Rearmar el mensaje con los que faltan.
