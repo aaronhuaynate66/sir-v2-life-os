@@ -7,6 +7,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SectionTitle } from '@/components/ui/section-title'
@@ -333,34 +334,37 @@ function SaludContent() {
         <BodyMetricsTrend metrics={healthMetrics} range={chartRange} offset={chartOffset} />
       </div>
 
-      {/* 11·M1 — deuda de sueño acumulada real (no promedio). */}
-      <SleepDebtCard />
+      {/* DENSIDAD (#11): las 10 tarjetas de análisis profundo se agrupan en 2
+          secciones colapsables (antes eran un muro plano). Lo secundario arranca
+          cerrado; el resumen ya vive arriba (stats + tendencias). Mismo patrón
+          que /yo, /relaciones, ficha y /panel. */}
+      <div className="space-y-4 mb-6">
+        <CollapsibleSection title="Sueño y ritmo circadiano" hint="deuda · calidad · pronóstico · cronotipo" count={6}>
+          {/* 11·M1 — deuda de sueño acumulada real (no promedio). */}
+          <SleepDebtCard />
+          {/* SF·F2 — calidad/continuidad del sueño (no solo horas). */}
+          <SleepQualityCard />
+          {/* C1 — capa PREDICTIVA: pronóstico de la próxima noche (idiográfico). */}
+          <SleepForecastCard />
+          {/* SF·F3 — cruce sueño → día siguiente (estrés/energía/ánimo/FC). */}
+          <SleepAftermathCard />
+          {/* 11·M2+M4 — cronotipo + jet-lag social. */}
+          <ChronotypeCard />
+          {/* 11·M6 — modelo de fase acoplado S×C (experimental; solo si el backtest valida). */}
+          <TwoProcessCard />
+        </CollapsibleSection>
 
-      {/* SF·F2 — calidad/continuidad del sueño (no solo horas). */}
-      <SleepQualityCard />
-
-      {/* C1 — capa PREDICTIVA: pronóstico de la próxima noche (idiográfico). */}
-      <SleepForecastCard />
-
-      {/* SF·F3 — cruce sueño → día siguiente (estrés/energía/ánimo/FC). */}
-      <SleepAftermathCard />
-
-      {/* 13·M1+M2 — ventana de tolerancia + estrategia de regulación (Gross). */}
-      <EmotionWindowCard />
-
-      {/* 11·M2+M4 — cronotipo + jet-lag social. */}
-      <ChronotypeCard />
-
-      {/* 11·M3 — curva de energía por hora del día. */}
-      <EnergyCurveCard />
-      {/* 18·M2 — clima gris de Lima × tu energía; invisible salvo señal real */}
-      <WeatherMoodCard />
-
-      {/* 11·M5 — ventana óptima de foco (cruza cronotipo + curva de energía). */}
-      <FocusWindowCard />
-
-      {/* 11·M6 — modelo de fase acoplado S×C (experimental; solo si el backtest valida). */}
-      <TwoProcessCard />
+        <CollapsibleSection title="Energía, ánimo y foco" hint="ventana emocional · curva de energía · clima · foco" count={4}>
+          {/* 13·M1+M2 — ventana de tolerancia + estrategia de regulación (Gross). */}
+          <EmotionWindowCard />
+          {/* 11·M3 — curva de energía por hora del día. */}
+          <EnergyCurveCard />
+          {/* 18·M2 — clima gris de Lima × tu energía; invisible salvo señal real */}
+          <WeatherMoodCard />
+          {/* 11·M5 — ventana óptima de foco (cruza cronotipo + curva de energía). */}
+          <FocusWindowCard />
+        </CollapsibleSection>
+      </div>
 
       <div className="mb-6">
         <PatronesPanel />
