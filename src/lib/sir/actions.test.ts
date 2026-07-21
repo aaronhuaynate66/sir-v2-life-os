@@ -30,6 +30,12 @@ describe('parseProposedAction', () => {
     expect(parseProposedAction('proponer_marcar_habito', { habito: '  ' })).toBeNull()
   })
 
+  it('marcar_tarea: exige el nombre de la tarea', () => {
+    expect(parseProposedAction('proponer_marcar_tarea', { tarea: 'sacar la visa' })).toEqual({ kind: 'marcar_tarea', tarea: 'sacar la visa' })
+    expect(parseProposedAction('proponer_marcar_tarea', {})).toBeNull()
+    expect(parseProposedAction('proponer_marcar_tarea', { tarea: '  ' })).toBeNull()
+  })
+
   it('crear_plan: exige título y fecha ISO', () => {
     expect(parseProposedAction('proponer_crear_plan', { titulo: 'Ver depa', fecha: '2026-07-19', persona: 'Diana', nota: '14:00' }))
       .toEqual({ kind: 'crear_plan', titulo: 'Ver depa', fecha: '2026-07-19', persona: 'Diana', nota: '14:00' })

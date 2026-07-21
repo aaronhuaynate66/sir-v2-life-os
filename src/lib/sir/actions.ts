@@ -73,6 +73,18 @@ export const SIR_ACTION_TOOLS = [
     },
   },
   {
+    name: 'proponer_marcar_tarea',
+    description:
+      'Propón marcar una TAREA o paso de un objetivo como HECHO (NO la marques tú, solo propónla para que Aaron confirme). Usa esto cuando Aaron dice que terminó/completó una tarea concreta ("ya saqué la visa", "terminé el informe", "mandé la cotización"). El nombre debe ser el de la tarea tal como Aaron la nombró.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        tarea: { type: 'string', description: 'Nombre de la tarea/paso tal como Aaron la nombró (ej. "sacar la visa", "informe trimestral").' },
+      },
+      required: ['tarea'],
+    },
+  },
+  {
     name: 'proponer_crear_plan',
     description:
       'Propón AGENDAR un plan/cita/evento (NO lo agendes tú, solo propónlo para que Aaron confirme). Usa esto SIEMPRE que Aaron pida agendar/anotar una cita, salida, visita o plan a futuro (ej. "agéndame ver el depa con Diana el sábado", "anota que voy al matrimonio de Laura"). NUNCA digas que ya lo agendaste sin llamar a esta tool. `fecha` DEBE ser YYYY-MM-DD — calcúlala a partir de "Hoy es ..." del contexto (ej. "el sábado" → la fecha real). `persona` = con quién va, si Aaron la nombró.',
@@ -132,6 +144,10 @@ export interface ProposedHabito {
   kind: 'marcar_habito'
   habito: string
 }
+export interface ProposedTarea {
+  kind: 'marcar_tarea'
+  tarea: string
+}
 export interface ProposedPlan {
   kind: 'crear_plan'
   titulo: string
@@ -141,7 +157,7 @@ export interface ProposedPlan {
   persona: string | null
   nota: string
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedPlan
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -208,6 +224,11 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
     const habito = str(o.habito, 120)
     if (!habito) return null
     return { kind: 'marcar_habito', habito }
+  }
+  if (toolName === 'proponer_marcar_tarea') {
+    const tarea = str(o.tarea, 200)
+    if (!tarea) return null
+    return { kind: 'marcar_tarea', tarea }
   }
   if (toolName === 'proponer_crear_plan') {
     const titulo = str(o.titulo, 200)
