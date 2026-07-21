@@ -12,12 +12,29 @@
 // Auth: TOKEN (no sesión), MISMO esquema que /api/reader/ingest:
 //   x-reader-token | Authorization: Bearer  ==  READER_INGEST_TOKEN
 
+import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
-import { buildPersonIndex, matchPerson, linkedinSlug, canonHandle, type PersonLite } from '@/lib/social-reader/match'
+import { buildPersonIndex, matchPerson, linkedinSlug, canonHandle, identityKey, type PersonLite } from '@/lib/social-reader/match'
+
+/** Id determinístico de una señal no-asignada → una fila por (identidad, kind).
+ *  Re-ver la misma cuenta actualiza la fila (upsert), no la duplica. */
+function unmatchedId(userId: string, key: string, kind: string): string {
+  return `usa_${createHash('sha1').update(`${userId}|${key}|${kind}`).digest('hex')}`
+}
+
+/** observed_at = el momento REAL de la actividad si vino y es razonable (no futuro,
+ *  ≤14 días atrás); si no, ahora. Refleja SUS horas de actividad, no la captura. */
+function resolveObservedAt(activityAt: string | undefined, nowIso: string): string {
+  if (activityAt) {
+    const t = Date.parse(activityAt)
+    if (Number.isFinite(t) && t <= Date.now() + 60_000 && t > Date.now() - 14 * 86_400_000) return new Date(t).toISOString()
+  }
+  return nowIso
+}
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -81,11 +98,11 @@ export async function POST(req: NextRequest) {
   let body: { items?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
   const items = Array.isArray(body.items) ? (body.items as SocialItem[]).slice(0, 100) : []
-  if (items.length === 0) return NextResponse.json({ inserted: 0, matched: 0, unmatched: 0, skipped: 0, backfilled: 0 })
+  if (items.length === 0) return NextResponse.json({ inserted: 0, matched: 0, unmatched: 0, skipped: 0, backfilled: 0, promoted: 0 })
 
   const nowIso = new Date().toISOString()
   const sinceIso = new Date(Date.now() - DEDUP_HOURS * 3_600_000).toISOString()
-  let inserted = 0, matched = 0, unmatched = 0, skipped = 0, backfilled = 0
+  let inserted = 0, matched = 0, unmatched = 0, skipped = 0, backfilled = 0, promoted = 0
 
   try {
     // Personas una sola vez → índice para matcheo por handle/slug/nombre.
@@ -99,12 +116,56 @@ export async function POST(req: NextRequest) {
     }))
     const index = buildPersonIndex(people)
 
+    // AUTO-PROMOCIÓN: señales que se guardaron sin asignar y que AHORA matchean
+    // (se les seteó el handle / se cargó la persona) → a contact_activity + borrar
+    // de la bandeja. matchPerson es puro/en-memoria → barato aunque haya muchas.
+    try {
+      const { data: pend } = await admin
+        .from('unmatched_social_activity')
+        .select('id, platform, handle, name, kind, detail, observed_at')
+        .eq('user_id', userId).limit(2000)
+      const doneIds: string[] = []
+      for (const u of (pend ?? []) as Array<{ id: string; platform: string; handle: string | null; name: string | null; kind: string; detail: string | null; observed_at: string }>) {
+        const pm = matchPerson(index, { platform: u.platform, handle: u.handle ?? undefined, name: u.name ?? undefined })
+        if (!pm) continue
+        const { data: rec } = await admin
+          .from('contact_activity').select('id')
+          .eq('user_id', userId).eq('person_id', pm.person.id).eq('kind', u.kind)
+          .gte('observed_at', sinceIso).limit(1)
+        if (!rec || rec.length === 0) {
+          const { error } = await admin.from('contact_activity').insert({
+            user_id: userId, person_id: pm.person.id, kind: u.kind, detail: u.detail, source: u.platform, observed_at: u.observed_at,
+          })
+          if (!error) promoted++
+        }
+        doneIds.push(u.id)
+      }
+      if (doneIds.length > 0) await admin.from('unmatched_social_activity').delete().in('id', doneIds)
+    } catch { /* fail-open: la tabla 0152 puede no haber propagado aún */ }
+
     for (const it of items) {
       const platform = typeof it.platform === 'string' ? it.platform : ''
       if (platform !== 'instagram' && platform !== 'linkedin') { skipped++; continue }
 
       const m = matchPerson(index, { platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: it.name })
-      if (!m) { unmatched++; continue }
+      if (!m) {
+        unmatched++
+        // NO se pierde: si la señal tiene identidad (handle/nombre) y deriva algo,
+        // la retenemos deduplicada en la bandeja "¿quién es quién?" para asignarla
+        // luego (asignar setea el handle → matchea y se auto-promueve). Fail-soft.
+        try {
+          const sig = deriveSocialSignal({ platform, text: it.text ?? null, hasActiveStory: it.hasActiveStory === true, headline: it.headline ?? null, priorHeadline: null })
+          const key = identityKey({ platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: it.name })
+          if (sig && key) {
+            await admin.from('unmatched_social_activity').upsert({
+              id: unmatchedId(userId, key, sig.kind), user_id: userId, platform,
+              handle: it.handle ? canonHandle(it.handle) : null, name: it.name ?? null,
+              kind: sig.kind, detail: sig.detail, observed_at: resolveObservedAt(it.activityAt, nowIso),
+            }, { onConflict: 'id' })
+          }
+        } catch { /* fail-soft: tabla 0152 sin propagar */ }
+        continue
+      }
       matched++
       const person = m.person
 
@@ -145,14 +206,7 @@ export async function POST(req: NextRequest) {
         .limit(1)
       if (recent && recent.length > 0) { skipped++; continue }
 
-      // observed_at = el momento REAL de la actividad (cuándo posteó) si vino y es
-      // razonable (no futuro, ≤14 días atrás); si no, ahora. Esto hace que el
-      // ritmo refleje SUS horas de actividad, no cuándo la extensión capturó.
-      let observedAt = nowIso
-      if (it.activityAt) {
-        const t = Date.parse(it.activityAt)
-        if (Number.isFinite(t) && t <= Date.now() + 60_000 && t > Date.now() - 14 * 86_400_000) observedAt = new Date(t).toISOString()
-      }
+      const observedAt = resolveObservedAt(it.activityAt, nowIso)
       const { error: insErr } = await admin.from('contact_activity').insert({
         user_id: userId, person_id: person.id, kind: signal.kind, detail: signal.detail,
         source: platform, observed_at: observedAt,
@@ -165,5 +219,5 @@ export async function POST(req: NextRequest) {
     return errorJson(500, 'Fallo procesando la ingesta', e instanceof Error ? e.message : String(e))
   }
 
-  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled })
+  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted })
 }

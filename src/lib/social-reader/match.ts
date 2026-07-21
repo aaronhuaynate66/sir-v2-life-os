@@ -103,6 +103,19 @@ function resolveByName(index: PersonIndex, rawName: string): PersonLite | null {
   return index.name.get(normName(rawName)) ?? matchByNameLoose(index, rawName)
 }
 
+/** Clave de identidad estable de una captura social, para deduplicar señales NO
+ *  asignadas (unmatched_social_activity): handle IG / slug LinkedIn si los hay,
+ *  si no el nombre normalizado. null si no hay nada con qué identificar. PURO. */
+export function identityKey(item: SocialMatchItem): string | null {
+  if (item.platform === 'instagram' && item.handle) return `ig:${canonHandle(item.handle)}`
+  if (item.platform === 'linkedin' && item.linkedinUrl) {
+    const s = linkedinSlug(item.linkedinUrl)
+    if (s) return `li:${s}`
+  }
+  const n = item.name ? normName(item.name) : ''
+  return n ? `nm:${n}` : null
+}
+
 /** Resuelve una captura a una persona. Orden: handle IG / slug LinkedIn exactos;
  *  si no, por nombre (para el bootstrap de LinkedIn sin URL). null si no matchea. */
 export function matchPerson(index: PersonIndex, item: SocialMatchItem): PersonMatch | null {
