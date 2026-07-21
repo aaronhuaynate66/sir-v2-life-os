@@ -55,9 +55,11 @@ export async function POST(req: NextRequest) {
       userContext: typeof body.userContext === 'string' ? body.userContext : undefined,
     })
     // Hilo unificado (Fase 2): persisto el intercambio al hilo canónico para que
-    // Telegram (y otros dispositivos) vean lo hablado acá. Fail-open.
-    await appendSirThread(supabase, userId, 'web', body.question as string, result.answer)
-    return NextResponse.json(result, { status: 200 })
+    // Telegram (y otros dispositivos) vean lo hablado acá. Fail-open. Los `at`
+    // persistidos vuelven al cliente para que el polling no re-agregue estos
+    // mismos turnos (dedup del hilo unificado).
+    const persisted = await appendSirThread(supabase, userId, 'web', body.question as string, result.answer)
+    return NextResponse.json({ ...result, thread: persisted }, { status: 200 })
   } catch (e) {
     if (e instanceof AskSirConfigError) {
       return errorJson(500, e.message, e.detail)
