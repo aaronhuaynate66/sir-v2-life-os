@@ -53,6 +53,16 @@ export async function getSelfBioState(
   return { window, sleepDebtHours, block }
 }
 
+/** Aviso corto para MOSTRARLE a Aaron (banner "¿estás para esto?"), o null si su
+ *  ventana está bien / sin data. Distinto del `block` (que va al prompt del LLM).
+ *  El gate ético del deber: su ESTADO propio, para su beneficio — no la biología
+ *  del otro. PURO. */
+export function selfStateGate(s: SelfBioState): string | null {
+  if (s.window.state === 'narrow') return 'Hoy estás fuera de tu ventana (estrés / sueño / HRV). Regula antes de una conversación dura — no negocies en caliente.'
+  if (s.window.state === 'watch') return 'Tu ventana está tensionada hoy. Puedes, pero ve con calma y sé breve — no fuerces la jugada.'
+  return null
+}
+
 function avgRecent(metrics: Array<{ category: string; value: number; timestamp: string }>, cat: string, sinceMs: number): number | null {
   const vals = metrics.filter((m) => m.category === cat && Date.parse(m.timestamp) >= sinceMs).map((m) => m.value)
   return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null

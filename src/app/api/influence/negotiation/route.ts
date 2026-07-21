@@ -14,6 +14,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { logEvent } from '@/lib/observability/logEvent'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
+import { getSelfBioState, selfStateGate } from '@/lib/people/selfState'
 import { checkEthics } from '@/engines/ethics'
 import {
   NEGOTIATION_SYSTEM_PROMPT, buildNegotiationUserContent, parseNegotiationJson,
@@ -85,15 +86,22 @@ export async function POST(req: NextRequest) {
   }
   const userContent = buildNegotiationUserContent(ctx)
 
+  // Gate "¿estás para esto?" (F1): el ESTADO propio de Aaron (ventana de
+  // tolerancia) calibra el consejo — si está fuera de su ventana, la ciencia dice
+  // regular antes de negociar en caliente. Es su data, para su beneficio (ético).
+  const selfState = await getSelfBioState(supabase, userId, Date.now())
+  const selfWarning = selfStateGate(selfState)
+
   const ethicsExtra = ethics.verdict === 'caution' || ethics.verdict === 'high_risk'
     ? `TERMÓMETRO DE JUGADA (16.M5): ${ethics.message} Reformula hacia la versión honesta y sostenible: ${ethics.safeAggressiveReframe}`
     : ''
+  const systemExtras = [ethicsExtra, selfState.block].filter(Boolean).join('\n\n')
 
   async function call(): Promise<string> {
     const res = await complete(
       {
         task: 'influence_negotiation', tier: 'capable', sensitivity: 'third_party', maxTokens: 1500,
-        system: ethicsExtra ? `${NEGOTIATION_SYSTEM_PROMPT}\n\n${ethicsExtra}` : NEGOTIATION_SYSTEM_PROMPT,
+        system: systemExtras ? `${NEGOTIATION_SYSTEM_PROMPT}\n\n${systemExtras}` : NEGOTIATION_SYSTEM_PROMPT,
         messages: [
           { role: 'user', content: userContent },
           { role: 'assistant', content: '{' },
@@ -128,5 +136,6 @@ export async function POST(req: NextRequest) {
     prep,
     person: { name: personName, hadContext: memories.length > 0 || !!conversation },
     ethics,
+    selfWarning,
   })
 }
