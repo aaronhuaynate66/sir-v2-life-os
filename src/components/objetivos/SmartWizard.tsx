@@ -56,7 +56,7 @@ import { useSelfStore } from '@/stores/useSelfStore'
 import { useSignalStore } from '@/stores/useSignalStore'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { cn } from '@/lib/utils'
-import type { Goal } from '@/types'
+import type { Goal, GoalCategory } from '@/types'
 
 type StepKey = 'specific' | 'measurable' | 'baseline' | 'timeBound' | 'relevant'
 
@@ -82,6 +82,9 @@ function todayIso(): string {
 
 export function SmartWizard({ goal, onClose }: { goal: Goal; onClose: () => void }) {
   const updateGoal = useGoalStore((s) => s.updateGoal)
+  // Dominio inferido del texto DICTADO (el usuario no lo eligió). Se persiste al
+  // guardar, junto a los campos SMART (review-before-save). #10.
+  const [inferredCategory, setInferredCategory] = useState<GoalCategory | undefined>(undefined)
 
   // Grounding: data real para auto-proponer el baseline (y aterrizar el resto).
   const financialMovements = useFinanceStore((s) => s.financialMovements)
@@ -162,6 +165,7 @@ export function SmartWizard({ goal, onClose }: { goal: Goal; onClose: () => void
         if (s.why && (force || !why.trim())) setWhy(s.why)
         if (s.suggestedTargetDate && (force || !targetDate)) setTargetDate(s.suggestedTargetDate)
         if (dict) {
+          if (s.category) setInferredCategory(s.category) // dominio inferido del dictado
           setShowDictation(false)
           setStep(0)
           toast.success('Borrador extraído', { description: 'Revisa cada paso y ajusta lo que haga falta.' })
@@ -197,6 +201,7 @@ export function SmartWizard({ goal, onClose }: { goal: Goal; onClose: () => void
       baseline: baseline.trim(),
       targetDate: targetDate || undefined,
       why: why.trim(),
+      ...(inferredCategory ? { category: inferredCategory } : {}),
     })
     toast.success('Objetivo definido', { description: 'Ahora puedes generar un plan aterrizado.' })
     onClose()
