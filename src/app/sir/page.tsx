@@ -59,6 +59,9 @@ interface Turn {
   /** ISO del momento del turno (para timestamp + separador de día). Los turnos
    *  legados / cargados de la DB pueden no tenerlo → se degrada sin romper. */
   at?: string
+  /** Canal que originó el turno. 'telegram' se marca en la UI ("vía Telegram")
+   *  para que el hilo unificado muestre de dónde vino cada mensaje. */
+  channel?: 'web' | 'telegram'
   sources?: { people: string[]; memories: number; receipts?: SirReceipt[] }
   action?: ProposedAction
   actionState?: 'pending' | 'done' | 'discarded'
@@ -109,6 +112,13 @@ interface SpeechLike {
 
 export default function SirChatPage() {
   const [turns, setTurns] = useState<Turn[]>([])
+  // Sincronización viva del hilo unificado: `seenAtsRef` = timestamps (created_at)
+  // ya mostrados → el polling solo agrega turnos NUEVOS (de Telegram o de un cron
+  // proactivo) sin re-agregar los propios. `hydratedRef` gatea el polling hasta
+  // que terminó la carga inicial (evita duplicar contra el fetch de montaje).
+  const seenAtsRef = useRef<Set<string>>(new Set())
+  const hydratedRef = useRef(false)
+  const loadingRef = useRef(false)
   const [input, setInput] = useState('')
   // Dictado por voz (#86): Web Speech API nativa. Feature-detect; si no hay, no
   // se muestra el botón. Reemplaza el input con la transcripción (es-PE).
@@ -184,14 +194,59 @@ export default function SirChatPage() {
     fetch('/api/sir/thread')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (cancelled || !d || !Array.isArray(d.turns) || d.turns.length === 0) return
-        const dbTurns = (d.turns as Array<{ role?: unknown; text?: unknown }>)
-          .filter((t) => (t.role === 'user' || t.role === 'sir') && typeof t.text === 'string')
-          .map((t) => ({ role: t.role as 'user' | 'sir', text: t.text as string }))
-        if (dbTurns.length > 0) setTurns(dbTurns)
+        if (cancelled) return
+        if (d && Array.isArray(d.turns) && d.turns.length > 0) {
+          const dbTurns = (d.turns as Array<{ role?: unknown; text?: unknown; at?: unknown; channel?: unknown }>)
+            .filter((t) => (t.role === 'user' || t.role === 'sir') && typeof t.text === 'string')
+            .map((t) => ({
+              role: t.role as 'user' | 'sir',
+              text: t.text as string,
+              at: typeof t.at === 'string' ? t.at : undefined,
+              channel: t.channel === 'telegram' ? ('telegram' as const) : ('web' as const),
+            }))
+          // Preserva metadatos (at/channel) → separadores de día, hora y marca
+          // "vía Telegram". Y registra los `at` para que el polling no re-agregue.
+          for (const t of dbTurns) if (t.at) seenAtsRef.current.add(t.at)
+          if (dbTurns.length > 0) setTurns(dbTurns)
+        }
       })
       .catch(() => {})
+      .finally(() => { if (!cancelled) hydratedRef.current = true })
     return () => { cancelled = true }
+  }, [])
+
+  // Mantener `loadingRef` en sync (el polling lo lee sin re-crear el intervalo).
+  useEffect(() => { loadingRef.current = loading }, [loading])
+
+  // SINCRONIZACIÓN VIVA (hilo unificado): cada ~6s, si la pestaña está visible y
+  // no hay un envío en curso, trae el hilo y agrega SOLO los turnos nuevos (de
+  // Telegram o de un push proactivo) que aún no se mostraron. Dedup por `at`
+  // (created_at del server); los turnos propios ya quedaron registrados en `ask`.
+  useEffect(() => {
+    const POLL_MS = 6000
+    const poll = async () => {
+      if (!hydratedRef.current || loadingRef.current) return
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return
+      try {
+        const r = await fetch('/api/sir/thread')
+        if (!r.ok) return
+        const d = await r.json()
+        if (!Array.isArray(d?.turns)) return
+        const fresh = (d.turns as Array<{ role?: unknown; text?: unknown; at?: unknown; channel?: unknown }>)
+          .filter((t) => (t.role === 'user' || t.role === 'sir') && typeof t.text === 'string' && typeof t.at === 'string' && !seenAtsRef.current.has(t.at as string))
+          .map((t) => ({
+            role: t.role as 'user' | 'sir',
+            text: t.text as string,
+            at: t.at as string,
+            channel: t.channel === 'telegram' ? ('telegram' as const) : ('web' as const),
+          }))
+        if (fresh.length === 0) return
+        for (const t of fresh) seenAtsRef.current.add(t.at)
+        setTurns((prev) => [...prev, ...fresh])
+      } catch { /* fail-open: sin red, seguimos con lo local */ }
+    }
+    const timer = setInterval(poll, POLL_MS)
+    return () => clearInterval(timer)
   }, [])
   // Guardar el hilo (acotado a los últimos 40 turnos) cuando cambia.
   useEffect(() => {
@@ -445,6 +500,12 @@ export default function SirChatPage() {
         setError(data?.error ?? 'No se pudo responder')
         return
       }
+      // Hilo unificado: registro los `at` persistidos de ESTE intercambio para
+      // que el polling no re-agregue mis propios turnos como si vinieran de otro
+      // canal. Fail-open: si no vinieron, no pasa nada (no se persistió nada).
+      const th = data.thread as { userAt?: string; sirAt?: string } | null | undefined
+      if (th?.userAt) seenAtsRef.current.add(th.userAt)
+      if (th?.sirAt) seenAtsRef.current.add(th.sirAt)
       // Gap-engine inline: SIR pide UNA pieza antes de responder.
       const clarifying = data.clarifying as ClarifyingGap | null
       if (clarifying) {
@@ -743,8 +804,9 @@ export default function SirChatPage() {
                   </div>
                 )}
                 {t.at && (
-                  <div className={`mt-1.5 text-[10px] tabular-nums text-muted-foreground/50 ${t.role === 'user' ? 'text-right' : 'text-left'}`}>
+                  <div className={`mt-1.5 flex items-center gap-1 text-[10px] tabular-nums text-muted-foreground/50 ${t.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {TIME_FMT.format(new Date(t.at))}
+                    {t.channel === 'telegram' && <span className="opacity-80">· vía Telegram</span>}
                   </div>
                 )}
               </div>
