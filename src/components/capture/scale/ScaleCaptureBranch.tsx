@@ -23,7 +23,7 @@ import { ScaleCaptureProcessing } from './ScaleCaptureProcessing'
 import { ScaleCapturePreview } from './ScaleCapturePreview'
 import { ScaleCaptureSuccess } from './ScaleCaptureSuccess'
 
-import { trackAiError } from '@/lib/analytics/track'
+import { trackAiError, track, EVENTS } from '@/lib/analytics/track'
 import { compressImage } from '@/lib/capture/scale/compress'
 import { extractScaleCapture, persistScaleCapture } from '@/lib/capture/scale/client'
 import type { ScaleCaptureExtracted, ScaleMetric } from '@/lib/capture/scale/types'
@@ -115,6 +115,7 @@ export function ScaleCaptureBranch({ file, onReset }: ScaleCaptureBranchProps) {
           toast.success(`${result.insertedCount} métricas guardadas`)
         }
         setStep({ kind: 'success', insertedCount: result.insertedCount })
+        track(EVENTS.captureSaved, { type: 'scale', count: result.insertedCount }) // éxito (antes solo se trackeaba el fallo)
       } catch (e) {
         const message = e instanceof Error ? e.message : 'Falló al guardar.'
         toast.error('No se pudo guardar', { description: message })

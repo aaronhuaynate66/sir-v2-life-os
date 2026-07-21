@@ -22,7 +22,7 @@ import { SleepCaptureProcessing } from './SleepCaptureProcessing'
 import { SleepCapturePreview } from './SleepCapturePreview'
 import { SleepCaptureSuccess } from './SleepCaptureSuccess'
 
-import { trackAiError } from '@/lib/analytics/track'
+import { trackAiError, track, EVENTS } from '@/lib/analytics/track'
 import { compressImage } from '@/lib/capture/scale/compress'
 import {
   extractSleepPanel,
@@ -92,6 +92,7 @@ export function SleepCaptureBranch({ file, onReset }: SleepCaptureBranchProps) {
       const result = persistSleepCapture(final)
       toast.success(result.replaced ? 'Noche actualizada' : 'Sueño guardado')
       setStep({ kind: 'success', result })
+      track(EVENTS.captureSaved, { type: 'sleep', replaced: result.replaced }) // éxito (antes solo el fallo)
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Falló al guardar.'
       toast.error('No se pudo guardar', { description: message })

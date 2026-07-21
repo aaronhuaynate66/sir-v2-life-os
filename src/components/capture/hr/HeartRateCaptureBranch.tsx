@@ -23,7 +23,7 @@ import { HeartRateCaptureProcessing } from './HeartRateCaptureProcessing'
 import { HeartRateCapturePreview } from './HeartRateCapturePreview'
 import { HeartRateCaptureSuccess } from './HeartRateCaptureSuccess'
 
-import { trackAiError } from '@/lib/analytics/track'
+import { trackAiError, track, EVENTS } from '@/lib/analytics/track'
 import { compressImage } from '@/lib/capture/scale/compress'
 import {
   extractHeartRatePanel,
@@ -93,6 +93,7 @@ export function HeartRateCaptureBranch({ file, onReset }: HeartRateCaptureBranch
       const result = persistHeartRateCapture(final)
       toast.success(result.replaced ? 'FC actualizada' : 'FC guardada')
       setStep({ kind: 'success', result })
+      track(EVENTS.captureSaved, { type: 'hr', replaced: result.replaced }) // éxito (antes solo el fallo)
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Falló al guardar.'
       toast.error('No se pudo guardar', { description: message })
