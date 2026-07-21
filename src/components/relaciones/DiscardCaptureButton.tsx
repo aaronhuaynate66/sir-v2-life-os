@@ -80,7 +80,7 @@ export function DiscardCaptureButton({
           <AlertDialogDescription>
             {what ? `${what}. ` : ''}Dejará de aparecer en la ficha y en las vistas
             (Vida social / profesional, Bitácora). Si era una extracción mala, esto la saca de circulación.
-            Podés volver a capturar cuando quieras.
+            Puedes volver a capturar cuando quieras.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

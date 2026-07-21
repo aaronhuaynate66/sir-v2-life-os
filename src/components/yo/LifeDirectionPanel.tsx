@@ -64,7 +64,7 @@ export function LifeDirectionPanel() {
           <Header />
           <p className="text-sm text-muted-foreground py-1 leading-relaxed">
             Tu rumbo se dibuja con tus objetivos. Cuando te propongas metas y las vayas cerrando o
-            soltando, acá vas a ver de dónde vienes, dónde estás y hacia dónde vas —en un solo hilo. 🧭
+            soltando, aquí vas a ver de dónde vienes, dónde estás y hacia dónde vas —en un solo hilo. 🧭
           </p>
         </CardContent>
       </Card>

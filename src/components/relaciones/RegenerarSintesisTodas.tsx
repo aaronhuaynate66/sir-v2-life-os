@@ -41,7 +41,7 @@ export function RegenerarSintesisTodas() {
       if (!r.ok) { toast.error(j.error ?? 'No se pudo leer la lista'); setPhase('idle'); return }
       eligible = j.people ?? []
     } catch {
-      toast.error('No se pudo leer la lista (revisá tu conexión)'); setPhase('idle'); return
+      toast.error('No se pudo leer la lista (revisa tu conexión)'); setPhase('idle'); return
     }
 
     if (eligible.length === 0) {

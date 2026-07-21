@@ -94,7 +94,7 @@ export function ResumenClient({ initialSummaries }: { initialSummaries: Longitud
         <Card className="shadow-none border-dashed">
           <CardContent className="p-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Todavía no generaste ningún resumen. Tocá <span className="font-medium text-foreground">Generar resumen de la semana</span> para analizar tus últimos 7 días.
+              Todavía no generaste ningún resumen. Toca <span className="font-medium text-foreground">Generar resumen de la semana</span> para analizar tus últimos 7 días.
             </p>
           </CardContent>
         </Card>

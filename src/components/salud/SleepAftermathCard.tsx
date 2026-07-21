@@ -53,7 +53,7 @@ export function SleepAftermathCard() {
           <p className="text-[12px] text-muted-foreground leading-relaxed">
             Todavía no tengo suficientes noches con calidad clara (~3 buenas y 3 malas) junto a tus métricas del día
             siguiente para cruzar. Sigue capturando el panel de sueño y registrando energía/estrés: cuando haya patrón,
-            aparece acá. ({result.goodNights} buenas · {result.poorNights} malas hasta ahora.)
+            aparece aquí. ({result.goodNights} buenas · {result.poorNights} malas hasta ahora.)
           </p>
         )}
       </CardContent>

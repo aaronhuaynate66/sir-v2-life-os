@@ -51,7 +51,7 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
 
   async function assign(item: UnmatchedItem) {
     const personId = pick[item.id]
-    if (!personId) { toast.error('Elegí a quién asignar'); return }
+    if (!personId) { toast.error('Elige a quién asignar'); return }
     setBusy(item.id)
     try {
       const r = await fetch('/api/social/unmatched', {

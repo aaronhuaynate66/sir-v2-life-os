@@ -341,7 +341,7 @@ export async function POST(req: NextRequest) {
       }
     } catch (e) {
       if (e instanceof AskSirConfigError) {
-        await sendTelegramMessage(msg.chatId, 'Me falta una API key en el server para pensar 🤔. Avisale a Aaron.')
+        await sendTelegramMessage(msg.chatId, 'Me falta una API key en el server para pensar 🤔. Avísale a Aaron.')
       } else {
         // eslint-disable-next-line no-console
         console.warn('[telegram] askSir falló:', e instanceof Error ? e.message : e)

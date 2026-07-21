@@ -175,7 +175,7 @@ export function LifeThreadPanel() {
 
         {!hydrated ? null : shown.length === 0 ? (
           <p className="text-sm text-muted-foreground py-1">
-            Cuando pongas y muevas objetivos, acá se va a ir tejiendo tu hilo: lo que te propusiste, lograste o dejaste ir. 🧭
+            Cuando pongas y muevas objetivos, aquí se va a ir tejiendo tu hilo: lo que te propusiste, lograste o dejaste ir. 🧭
           </p>
         ) : (
           <ul className="space-y-3">

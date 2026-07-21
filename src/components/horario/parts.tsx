@@ -338,7 +338,7 @@ export function CalendarHint({ compact = false }: { compact?: boolean }) {
         <Link href="/agenda" className="text-primary hover:underline">
           /agenda
         </Link>{' '}
-        para ver tus eventos acá.
+        para ver tus eventos aquí.
       </div>
     )
   }
