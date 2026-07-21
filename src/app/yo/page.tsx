@@ -23,6 +23,7 @@ const dynSkeleton = () => <div className="h-32 rounded-lg border border-border a
 const EspejoSemanalPanel = dynamic(() => import('@/components/yo/EspejoSemanalPanel').then((m) => ({ default: m.EspejoSemanalPanel })), { ssr: false, loading: dynSkeleton })
 const ExperimentosLoopPanel = dynamic(() => import('@/components/yo/ExperimentosLoopPanel').then((m) => ({ default: m.ExperimentosLoopPanel })), { ssr: false, loading: dynSkeleton })
 const LearningsPanel = dynamic(() => import('@/components/yo/LearningsPanel').then((m) => ({ default: m.LearningsPanel })), { ssr: false, loading: dynSkeleton })
+const QueAprendeSirPanel = dynamic(() => import('@/components/yo/QueAprendeSirPanel').then((m) => ({ default: m.QueAprendeSirPanel })), { ssr: false, loading: () => null })
 const PreMortemPanel = dynamic(() => import('@/components/yo/PreMortemPanel').then((m) => ({ default: m.PreMortemPanel })), { ssr: false, loading: dynSkeleton })
 const LifeDirectionPanel = dynamic(() => import('@/components/yo/LifeDirectionPanel').then((m) => ({ default: m.LifeDirectionPanel })), { ssr: false, loading: dynSkeleton })
 const NorteDriftPanel = dynamic(() => import('@/components/yo/NorteDriftPanel').then((m) => ({ default: m.NorteDriftPanel })), { ssr: false, loading: dynSkeleton })
@@ -90,7 +91,8 @@ export default function SelfPage() {
           <ArquetipoPanel />
         </CollapsibleSection>
 
-        <CollapsibleSection title="Espejo y crecimiento" hint="reflexión semanal, aprendizajes, experimentos, pre-mortem">
+        <CollapsibleSection title="Espejo y crecimiento" hint="qué aprende SIR, reflexión semanal, aprendizajes, experimentos, pre-mortem">
+          <QueAprendeSirPanel />
           <EspejoSemanalPanel />
           <LearningsPanel />
           <ExperimentosLoopPanel />
