@@ -9,6 +9,7 @@
 //
 // Filtro rector: no volcar; elegir pocas señales y decirlas corto.
 
+import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
@@ -18,6 +19,7 @@ import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
+import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
 import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDates'
 import type { SpecialDate } from '@/types'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
@@ -430,10 +432,47 @@ export async function GET(req: NextRequest) {
             const line = timingPushLine(verdict)
             if (line) relationshipNudgeText += ` · ⏳ ${line}`
           } catch { /* tabla 0150 sin propagar → sin aviso de timing */ }
+          // P3 (cerebro): registrar la sugerencia de contacto de HOY en el ledger
+          // → luego se cierra sola si Aaron efectivamente le escribe. 1/persona/día.
+          try {
+            const sid = `sug_${createHash('sha1').update(contactSuggestionSeed(uid, top.personId, today)).digest('hex').slice(0, 24)}`
+            await admin.from('suggestions').upsert({
+              id: sid, user_id: uid, surface: 'momentos', kind: 'contact',
+              title: `Escríbele a ${top.personName}`, payload: { personId: top.personId, personName: top.personName },
+              status: 'pending',
+            }, { onConflict: 'id', ignoreDuplicates: true })
+          } catch { /* fail-soft: tabla 0153 sin propagar */ }
         }
       } catch {
         /* fail-soft: el nudge relacional es un extra, no rompe el push */
       }
+
+      // P3 (cerebro) — CIERRE AUTOMÁTICO del loop: las sugerencias de contacto
+      // pendientes que YA se cumplieron (Aaron registró una interacción o le
+      // escribió por WhatsApp después de la sugerencia) → 'worked'/'done', sin que
+      // confirme nada. El import de WhatsApp se vuelve señal de outcome. Fail-soft.
+      try {
+        const { data: pend } = await admin
+          .from('suggestions')
+          .select('id, payload, created_at')
+          .eq('user_id', uid).eq('kind', 'contact').eq('status', 'pending')
+          .limit(50)
+        for (const s of (pend ?? []) as Array<{ id: string; payload: { personId?: string } | null; created_at: string }>) {
+          const pid = s.payload?.personId
+          if (!pid) continue
+          const [{ data: logs }, { data: msgs }] = await Promise.all([
+            admin.from('person_logs').select('logged_at').eq('user_id', uid).eq('person_id', pid).eq('kind', 'interaction').gte('logged_at', s.created_at).limit(1),
+            admin.from('chat_messages').select('sent_at').eq('user_id', uid).eq('person_id', pid).eq('sender', 'user').gte('sent_at', s.created_at).limit(1),
+          ])
+          const times = [
+            ...((logs ?? []) as Array<{ logged_at?: string }>).map((r) => r.logged_at),
+            ...((msgs ?? []) as Array<{ sent_at?: string }>).map((r) => r.sent_at),
+          ]
+          if (contactWasFollowed(s.created_at, times)) {
+            await admin.from('suggestions').update({ status: 'done', outcome: 'worked', resolved_at: new Date().toISOString() }).eq('id', s.id)
+          }
+        }
+      } catch { /* fail-soft: tabla 0153 sin propagar */ }
 
       // CERRAR UN LAZO: un tema abierto (relationship_moment) que el chat ya
       // resolvió. El cron `moment-scan` (LLM, antes de este) lo precomputa y deja
