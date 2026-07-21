@@ -9,7 +9,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { Handshake, Loader2, Sparkles, Quote, Anchor, ArrowRight, ShieldAlert, DoorOpen, Scale, Users } from 'lucide-react'
+import { Handshake, Loader2, Sparkles, Quote, Anchor, ArrowRight, ShieldAlert, DoorOpen, Scale, Users, Activity } from 'lucide-react'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
@@ -47,12 +47,13 @@ function NegociarContent() {
   const [blocked, setBlocked] = useState<string | null>(null)
   const [prep, setPrep] = useState<NegotiationPrep | null>(null)
   const [ethics, setEthics] = useState<EthicsCheck | null>(null)
+  const [selfWarning, setSelfWarning] = useState<string | null>(null)
   const [forName, setForName] = useState('')
   const [hadContext, setHadContext] = useState(true)
 
   async function run() {
     if (!personId || !subject.trim()) return
-    setBusy(true); setError(null); setBlocked(null); setPrep(null); setEthics(null)
+    setBusy(true); setError(null); setBlocked(null); setPrep(null); setEthics(null); setSelfWarning(null)
     try {
       const res = await fetch('/api/influence/negotiation', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -62,6 +63,7 @@ function NegociarContent() {
       let j: {
         prep?: NegotiationPrep; person?: { name: string; hadContext: boolean }
         ethics?: EthicsCheck; blocked?: boolean; message?: string; error?: string; detail?: string
+        selfWarning?: string | null
       } = {}
       try { j = text ? JSON.parse(text) : {} } catch { /* no-JSON */ }
 
@@ -76,7 +78,7 @@ function NegociarContent() {
         )
         return
       }
-      setPrep(j.prep); setEthics(j.ethics ?? null)
+      setPrep(j.prep); setEthics(j.ethics ?? null); setSelfWarning(j.selfWarning ?? null)
       setForName(j.person?.name ?? ''); setHadContext(j.person?.hadContext ?? true)
     } catch (e) {
       trackAiError('negotiation', { status: 0, message: e instanceof Error ? e.message : String(e) })
@@ -163,6 +165,20 @@ function NegociarContent() {
               <div>
                 <div className="text-sm font-semibold text-warn">Un alto aquí</div>
                 <p className="text-sm text-foreground/90 leading-relaxed mt-1">{blocked}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selfWarning && (
+        <Card className="shadow-none border-warn/40 mb-4">
+          <CardContent className="p-4 sm:p-5 bg-warn-soft">
+            <div className="flex items-start gap-3">
+              <Activity size={20} strokeWidth={1.75} className="text-warn mt-0.5 flex-shrink-0" aria-hidden="true" />
+              <div>
+                <div className="text-sm font-semibold text-warn">¿Estás para esto?</div>
+                <p className="text-sm text-foreground/90 leading-relaxed mt-1">{selfWarning}</p>
               </div>
             </div>
           </CardContent>
