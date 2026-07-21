@@ -580,8 +580,8 @@ export default function SirChatPage() {
               onClick={() => {
                 const prev = turns
                 setTurns([]); setError(null)
-                toast('Conversación vaciada', {
-                  description: 'El historial se limpió (incluye lo hablado por Telegram).',
+                toast('Conversación nueva', {
+                  description: 'Vista limpia para empezar de cero. Tu historial sigue guardado (y en Telegram).',
                   action: { label: 'Deshacer', onClick: () => setTurns(prev) },
                 })
               }}
