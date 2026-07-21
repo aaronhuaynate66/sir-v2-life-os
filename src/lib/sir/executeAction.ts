@@ -33,6 +33,7 @@ export function isExecutableByChat(kind: string): boolean {
     kind === 'crear_persona' ||
     kind === 'cerrar_relacion' ||
     kind === 'marcar_habito' ||
+    kind === 'marcar_tarea' ||
     kind === 'crear_plan'
   )
 }
@@ -244,6 +245,30 @@ export async function executeProposedAction(
       .from('habit_checkins').insert({ user_id: userId, habit_id: hit.id, date: target })
     if (error) return { ok: false, message: 'Uf, no pude marcar el hábito. Reinténtalo en un momento.' }
     return { ok: true, message: `✅ Marqué "${hit.title}" como hecho hoy.` }
+  }
+
+  if (action.kind === 'marcar_tarea') {
+    const query = (action.tarea || '').trim()
+    if (!query) return { ok: false, message: 'No entendí qué tarea marcar.' }
+    // Solo TAREAS (kind='task'), no KRs (esos se completan por métrica, no por status).
+    const { data: rawSteps } = await supabase
+      .from('objective_steps').select('id, title, status').eq('user_id', userId).eq('kind', 'task').limit(300)
+    const steps = ((rawSteps as Array<{ id: string; title: string; status: string }>) ?? [])
+    if (steps.length === 0) return { ok: false, message: 'No tienes tareas cargadas en tus objetivos.' }
+    const hit = matchHabit(steps, query) // matcher genérico por título (exacto → inclusión, null si ambiguo)
+    if (!hit) {
+      const pend = steps.filter((s) => s.status !== 'hecho').slice(0, 6).map((s) => s.title)
+      return { ok: false, message: `No encontré una tarea que matchee "${query.slice(0, 60)}".` + (pend.length ? ` Pendientes: ${pend.join(', ')}.` : '') }
+    }
+    const full = steps.find((s) => s.id === hit.id)
+    if (full?.status === 'hecho') return { ok: true, message: `✅ "${hit.title}" ya estaba marcada como hecha. Listo.` }
+    // Los 3 campos se mueven juntos (status legado + task_status workflow + stamp).
+    const { error } = await supabase
+      .from('objective_steps')
+      .update({ status: 'hecho', task_status: 'done', completed_at: new Date().toISOString() })
+      .eq('id', hit.id).eq('user_id', userId)
+    if (error) return { ok: false, message: 'Uf, no pude marcar la tarea. Reinténtalo en un momento.' }
+    return { ok: true, message: `✅ Marqué "${hit.title}" como hecha.` }
   }
 
   if (action.kind === 'crear_plan') {

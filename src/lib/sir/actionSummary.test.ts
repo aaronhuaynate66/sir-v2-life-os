@@ -13,6 +13,18 @@ describe('summarizeActionForConfirm', () => {
     expect(s).toMatch(/¿lo registro\?/i)
   })
 
+  it('marcar_tarea: nombra la tarea y pregunta', () => {
+    const s = summarizeActionForConfirm({ kind: 'marcar_tarea', tarea: 'sacar la visa' } as ProposedActionResolved)
+    expect(s).toContain('sacar la visa')
+    expect(s).toMatch(/¿la marco\?/i)
+  })
+
+  it('crear_plan: nombra el plan y la fecha', () => {
+    const s = summarizeActionForConfirm({ kind: 'crear_plan', titulo: 'Ver depa', fecha: '2026-07-19', persona: null, nota: '' } as ProposedActionResolved)
+    expect(s).toContain('Ver depa')
+    expect(s).toContain('2026-07-19')
+  })
+
   it('no usa markdown (Telegram lo muestra crudo)', () => {
     const s = summarizeActionForConfirm({
       kind: 'registrar_interaccion', persona: 'Ana', calidad: 3, nota: '', personId: 'p2',

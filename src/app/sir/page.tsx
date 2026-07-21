@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
 import { track, trackAiError, EVENTS } from '@/lib/analytics/track'
 import { useGoalStore } from '@/stores/useGoalStore'
+import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 import { useRelationshipStore } from '@/stores'
 import { generateSlug } from '@/lib/people/slug'
 import type { Goal, GoalCategory, Person, RelationshipType, PersonCategory } from '@/types'
@@ -20,9 +21,10 @@ import type { SirReceipt } from '@/lib/sir/ask'
 import { memoryProvenance } from '@/lib/memories/provenance'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'crear_plan'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'crear_plan'
   persona?: string
   habito?: string
+  tarea?: string
   fecha?: string
   calidad?: number
   nota?: string
@@ -152,6 +154,8 @@ export default function SirChatPage() {
   }, [])
   const addGoal = useGoalStore((st) => st.addGoal)
   const updateGoal = useGoalStore((st) => st.updateGoal)
+  const objectiveSteps = useObjectiveStepStore((st) => st.steps)
+  const setTaskStatus = useObjectiveStepStore((st) => st.setTaskStatus)
   const pauseGoal = useGoalStore((st) => st.pauseGoal)
   const addPerson = useRelationshipStore((st) => st.addPerson)
   const people = useRelationshipStore((st) => st.people)
@@ -330,6 +334,23 @@ export default function SirChatPage() {
         const res = await fetch('/api/habits/checkin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ habit_id: hit.id }) })
         if (!res.ok) { toast.error('No se pudo marcar el hábito'); return }
         toast.success(`✅ Marqué "${hit.title}" como hecho hoy`)
+        setTurnState(idx, 'done')
+      } else if (a.kind === 'marcar_tarea') {
+        const query = (a.tarea ?? '').trim()
+        if (!query) { toast.error('No entendí qué tarea'); return }
+        const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+        const tasks = objectiveSteps.filter((s) => s.kind === 'task') // pasos del cliente (store)
+        const q = norm(query)
+        const hit = tasks.find((s) => norm(s.title) === q)
+          ?? tasks.filter((s) => norm(s.title).includes(q) || q.includes(norm(s.title)))[0]
+        if (!hit) {
+          const pend = tasks.filter((s) => s.status !== 'hecho').slice(0, 6).map((s) => s.title)
+          toast.error(`No encontré la tarea "${query}"`, { description: pend.length ? `Pendientes: ${pend.join(', ')}` : 'No tienes tareas cargadas.' })
+          return
+        }
+        if (hit.status === 'hecho') { toast.success(`"${hit.title}" ya estaba hecha`); setTurnState(idx, 'done'); return }
+        setTaskStatus(hit.id, 'done')
+        toast.success(`✅ Marqué "${hit.title}" como hecha`)
         setTurnState(idx, 'done')
       } else if (a.kind === 'crear_plan') {
         const titulo = (a.titulo ?? '').trim()
@@ -633,7 +654,7 @@ export default function SirChatPage() {
                   <div className="mt-3 rounded-xl border border-brand/40 bg-brand/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-brand">
                       <CalendarCheck size={12} />
-                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'crear_plan' ? 'Agendar plan' : 'Cerrar vínculo'}
+                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'marcar_tarea' ? 'Marcar tarea' : t.action.kind === 'crear_plan' ? 'Agendar plan' : 'Cerrar vínculo'}
                     </div>
                     {t.action.kind === 'registrar_interaccion' ? (
                       <div className="text-[13px] text-foreground/90">
@@ -660,6 +681,11 @@ export default function SirChatPage() {
                       <div className="text-[13px] text-foreground/90">
                         <span className="font-medium">{t.action.habito}</span>
                         <div className="mt-0.5 text-muted-foreground">Marcar como hecho hoy</div>
+                      </div>
+                    ) : t.action.kind === 'marcar_tarea' ? (
+                      <div className="text-[13px] text-foreground/90">
+                        <span className="font-medium">{t.action.tarea}</span>
+                        <div className="mt-0.5 text-muted-foreground">Marcar la tarea como hecha</div>
                       </div>
                     ) : t.action.kind === 'crear_plan' ? (
                       <div className="text-[13px] text-foreground/90">

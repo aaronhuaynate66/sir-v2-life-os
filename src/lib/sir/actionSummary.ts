@@ -19,6 +19,10 @@ export function summarizeActionForConfirm(a: ProposedActionResolved): string {
       return `🔚 Cerrar el vínculo con ${a.persona || 'esa persona'}.\n\n¿Lo cierro?`
     case 'marcar_habito':
       return `✅ Marcar el hábito "${(a.habito || '').slice(0, 80)}" como hecho hoy.\n\n¿Lo marco?`
+    case 'marcar_tarea':
+      return `✅ Marcar la tarea "${(a.tarea || '').slice(0, 120)}" como hecha.\n\n¿La marco?`
+    case 'crear_plan':
+      return `🗓️ Agendar "${(a.titulo || '').slice(0, 120)}"${a.fecha ? ` para el ${a.fecha}` : ''}.\n\n¿Lo agendo?`
     default:
       return '¿Lo guardo?'
   }
