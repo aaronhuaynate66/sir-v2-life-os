@@ -46,6 +46,7 @@ export default function DecidirPage() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [result, setResult] = useState<DecisionAssessment | null>(null)
+  const [selfWarning, setSelfWarning] = useState<string | null>(null)
   // 14·M5 — decisiones pasadas (para el outside view).
   const [past, setPast] = useState<PastDecision[]>([])
 
@@ -63,7 +64,7 @@ export default function DecidirPage() {
 
   async function evaluate() {
     if (busy || (!title.trim() && !description.trim())) return
-    setBusy(true); setErr(null)
+    setBusy(true); setErr(null); setSelfWarning(null)
     try {
       const res = await fetch('/api/decision', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -73,6 +74,7 @@ export default function DecidirPage() {
       if (!res.ok) { setErr(j.error ?? 'No pude evaluar'); return }
       const assessment = j.assessment as DecisionAssessment
       setResult(assessment)
+      setSelfWarning(typeof j.selfWarning === 'string' ? j.selfWarning : null)
       // 14·M5 — persistir la decisión (dedupe por título) para el outside view futuro.
       void fetch('/api/decisions', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -138,6 +140,20 @@ export default function DecidirPage() {
               ))}
             </ul>
             <p className="text-[10px] text-muted-foreground/70 leading-relaxed">Es una luz, no un veredicto — a veces la urgencia es real. Solo te lo dejo a la vista antes de decidir.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {selfWarning && (
+        <Card className="mb-4 border-warn/40">
+          <CardContent className="p-4 sm:p-5 bg-warn-soft">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={20} strokeWidth={1.75} className="text-warn mt-0.5 flex-shrink-0" aria-hidden="true" />
+              <div>
+                <div className="text-sm font-semibold text-warn">¿Estás para decidir esto hoy?</div>
+                <p className="text-sm text-foreground/90 leading-relaxed mt-1">{selfWarning}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
