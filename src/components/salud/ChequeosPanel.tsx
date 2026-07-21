@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils'
 import { outOfRangeCount, type HealthExam, type ExamValue } from '@/lib/health-exams/types'
 import { buildLabTrends } from '@/lib/health-exams/trend'
 import { labPatterns } from '@/lib/health-exams/patterns'
+import { crossLabPattern, formatCrossLine, type DailyPoint } from '@/lib/health-exams/crossHealth'
+import type { HealthMetric } from '@/types'
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 function fmtDate(iso: string): string {
@@ -22,7 +24,7 @@ function fmtDate(iso: string): string {
   return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1] ?? ''} ${m[1]}`
 }
 
-export function ChequeosPanel() {
+export function ChequeosPanel({ metrics = [] }: { metrics?: HealthMetric[] }) {
   const [exams, setExams] = useState<HealthExam[] | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [view, setView] = useState<'exams' | 'trend'>('exams')
@@ -50,6 +52,8 @@ export function ChequeosPanel() {
   // Pre-carga o sin chequeos → no metemos un cascarón vacío en /salud.
   if (!exams || exams.length === 0) return null
   const patterns = labPatterns(exams)
+  // Salud diaria para cruzar con cada patrón de lab (#7, "el integrador").
+  const daily: DailyPoint[] = metrics.map((m) => ({ type: m.type, value: m.value, date: (m.timestamp || '').slice(0, 10) }))
 
   return (
     <Card className="shadow-none">
@@ -76,7 +80,13 @@ export function ChequeosPanel() {
                 {p.direction === 'down'
                   ? <TrendingDown size={13} strokeWidth={1.75} className={cn('mt-0.5 shrink-0', p.severity === 'alert' ? 'text-warn' : 'text-accent')} aria-hidden="true" />
                   : <TrendingUp size={13} strokeWidth={1.75} className={cn('mt-0.5 shrink-0', p.severity === 'alert' ? 'text-warn' : 'text-accent')} aria-hidden="true" />}
-                <span>{p.message}</span>
+                <div className="min-w-0">
+                  <span>{p.message}</span>
+                  {(() => {
+                    const line = formatCrossLine(crossLabPattern({ from: p.from, to: p.to }, daily))
+                    return line ? <span className="mt-1 block text-[11px] text-muted-foreground/70 italic">{line}</span> : null
+                  })()}
+                </div>
               </div>
             ))}
           </div>
