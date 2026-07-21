@@ -66,6 +66,11 @@ const SocialUnmatchedInbox = dynamic(
   () => import('@/components/relaciones/SocialUnmatchedInbox').then((m) => ({ default: m.SocialUnmatchedInbox })),
   { ssr: false, loading: () => null },
 )
+// Vista general de enlaces sociales (IG/LinkedIn por contacto).
+const SocialLinksOverview = dynamic(
+  () => import('@/components/relaciones/SocialLinksOverview').then((m) => ({ default: m.SocialLinksOverview })),
+  { ssr: false, loading: () => null },
+)
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
 import {
@@ -429,6 +434,7 @@ function RelationshipsContent() {
           {/* C2 — forecast: vínculos que se van a quedar dormidos si sigue el silencio. */}
           <TrajectoryForecastCard />
           <CommercialPipelinePanel people={people} />
+          <SocialLinksOverview />
           <DunbarMap />
           {/* 15·7 — presentaciones de valor entre gente tuya del mismo org, no conectada. */}
           <NetworkIntrosPanel />
