@@ -26,6 +26,7 @@ import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { AlignmentPanel } from '@/components/objetivos/AlignmentPanel'
 import { GoalInferLinks } from '@/components/objetivos/GoalInferLinks'
 import { NextStepCard } from '@/components/objetivos/NextStepCard'
+import { StalledGoalsNudge } from '@/components/objetivos/StalledGoalsNudge'
 import { ObjectiveSteps } from '@/components/objetivos/ObjectiveSteps'
 import { TrackerStrip } from '@/components/trackers/TrackerStrip'
 import dynamic from 'next/dynamic'
@@ -389,6 +390,10 @@ function GoalsContent() {
 
       {/* 12·M2+M3 — tu próximo paso, dimensionado por energía/esfuerzo. */}
       <NextStepCard />
+
+      {/* Loop del objetivo estancado: SIR no solo observa que quedó quieto — te
+          deja decidir (retomar / repriorizar / soltar). Se auto-oculta si no hay. */}
+      <StalledGoalsNudge goals={goals} onUpdate={updateGoal} onPause={pauseGoal} />
 
       {aiOpen && (
         <Card className={cn('mb-4', cardClass)}>
