@@ -92,6 +92,35 @@
     emit(Array.from(byHandle.values()));
   }
 
+  // Fallback pasivo: IG a veces ya renderiza la barra de historias en DOM pero
+  // no expone `reels_tray/latest_reel_media` en las respuestas interceptadas.
+  // Leemos SOLO labels visibles tipo "Story by foo, not seen"; no abrimos stories.
+  const domSeen = new Set();
+  let domTimer = null;
+  function scanStoryDom() {
+    domTimer = null;
+    const items = [];
+    try {
+      const nodes = document.querySelectorAll('[aria-label]');
+      for (const el of nodes) {
+        const label = (el.getAttribute('aria-label') || '').trim();
+        const m = label.match(/^(?:Story by|Historia de)\s+([^,]+),\s*(?:not seen|no vista|no visto)/i);
+        if (!m) continue;
+        const handle = m[1].trim();
+        if (!handle || domSeen.has(handle)) continue;
+        domSeen.add(handle);
+        items.push({ platform: 'instagram', handle, hasActiveStory: true });
+        if (items.length >= 40) break;
+      }
+    } catch (_) {}
+    emit(items);
+  }
+
+  function scheduleDomScan() {
+    if (domTimer) return;
+    domTimer = setTimeout(scanStoryDom, 1200);
+  }
+
   // ── Patch fetch ──────────────────────────────────────────────────────────
   const origFetch = window.fetch;
   window.fetch = function (...args) {
@@ -125,6 +154,14 @@
     });
     return origSend.apply(this, arguments);
   };
+
+  try {
+    scheduleDomScan();
+    const mo = new MutationObserver(scheduleDomScan);
+    mo.observe(document.documentElement || document, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label'] });
+    setTimeout(scheduleDomScan, 4000);
+    setTimeout(scheduleDomScan, 10000);
+  } catch (_) {}
 
   try { console.debug('[SIR Reader] instagram reader activo (pasivo)'); } catch (_) {}
 })();
