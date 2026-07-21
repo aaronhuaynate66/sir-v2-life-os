@@ -47,7 +47,12 @@ export interface MorningInput {
 
 export interface MorningPush {
   title: string
+  /** Cuerpo para la NOTIFICACIÓN del navegador: capado a MAX_BODY (un push
+   *  calmo, no un volcado; el OS lo trunca visualmente de todas formas). */
   body: string
+  /** Cuerpo COMPLETO, sin capar. Para canales que no necesitan el corte (brief
+   *  de Telegram, límite 4096) → ahí se lee todo sin "…" a mitad de línea. */
+  bodyFull: string
 }
 
 const MAX_PARTS = 3
@@ -137,13 +142,11 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   }
 
   if (parts.length === 0) {
-    return {
-      title: 'Buenos días',
-      body: 'Hoy no hay nada urgente. Espacio para lo que elijas.',
-    }
+    const calm = 'Hoy no hay nada urgente. Espacio para lo que elijas.'
+    return { title: 'Buenos días', body: calm, bodyFull: calm }
   }
 
-  let body = parts.join(' · ')
-  if (body.length > MAX_BODY) body = body.slice(0, MAX_BODY - 1).trimEnd() + '…'
-  return { title: 'Tu día en SIR', body }
+  const bodyFull = parts.join(' · ')
+  const body = bodyFull.length > MAX_BODY ? bodyFull.slice(0, MAX_BODY - 1).trimEnd() + '…' : bodyFull
+  return { title: 'Tu día en SIR', body, bodyFull }
 }

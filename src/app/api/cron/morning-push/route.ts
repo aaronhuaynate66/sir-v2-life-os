@@ -381,8 +381,11 @@ export async function GET(req: NextRequest) {
         const { actions } = await assembleDailyActions(admin as unknown as SupabaseClient, uid, now, { focus: 'reconnect', limit: 1 })
         const top = actions[0]
         if (top && (top.urgency === 'high' || top.urgency === 'medium')) {
-          const who = top.kinLabel ? `${top.personName} (${top.kinLabel})` : top.personName
-          relationshipNudgeText = `${who} — ${top.headline}`
+          // El `headline` YA nombra a la persona ("Hace 3 semanas sin hablar con
+          // X"). Antes prefijábamos `${nombre} — ${headline}` → el nombre salía
+          // DOS veces. Ahora usamos el headline (nombre una vez) y adjuntamos el
+          // parentesco como nota al final, que sí aporta ("— tu media hermana").
+          relationshipNudgeText = top.kinLabel ? `${top.headline} — ${top.kinLabel}` : top.headline
           // Si hay un recordatorio "antes de contactar" para ESTA persona, este es
           // EL momento de surgirlo: el push ya te empuja a escribirle. Es el punto
           // de los contact_reminders (#801) — que aparezcan, no que se olviden. Fail-soft.
