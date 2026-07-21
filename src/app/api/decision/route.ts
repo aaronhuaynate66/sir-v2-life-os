@@ -9,6 +9,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 import { createClient } from '@/lib/supabase/server'
+import { getSelfBioState, selfStateGate } from '@/lib/people/selfState'
 import { enforceRateLimit } from '@/lib/ratelimit'
 import { evaluateDecision, DECISION_DIMENSIONS, type DecisionDimension, type DecisionInput } from '@/engines/decision'
 import { readDailyCache, writeDailyCache, decisionCacheKey } from '@/lib/ai-cache/dailyCache'
@@ -70,6 +71,12 @@ export async function POST(req: NextRequest) {
   if (!title && !description) return errorJson(400, 'Cuéntame qué estás por decidir')
   const force = body.force === true
 
+  // Gate "¿estás para esto?" (F1): el estado propio de Aaron calibra la lectura de
+  // la decisión. Se computa FRESCO (fuera del cache) → el banner refleja HOY aunque
+  // la evaluación venga cacheada. Fail-soft.
+  let selfWarning: string | null = null
+  try { selfWarning = selfStateGate(await getSelfBioState(supabase, auth.user.id, Date.now())) } catch { /* fail-soft */ }
+
   // V2 — cache por (día + hash del texto): evaluar la MISMA decisión el mismo día
   // devuelve lo cacheado (fail-open). Chequeo antes del rate-limit para no gastar
   // cuota en un hit. Decisiones distintas → cache_key distinta, no colisionan.
@@ -78,7 +85,7 @@ export async function POST(req: NextRequest) {
     const cached = await readDailyCache<{ assessment: ReturnType<typeof evaluateDecision> }>(
       supabase, auth.user.id, 'decision', cacheKey,
     )
-    if (cached) return NextResponse.json({ ...cached, cached: true })
+    if (cached) return NextResponse.json({ ...cached, cached: true, selfWarning })
   }
 
   const rl = await enforceRateLimit(supabase, auth.user.id, 'generation')
@@ -121,5 +128,5 @@ export async function POST(req: NextRequest) {
 
   // Cachear (idempotente por user+día+hash). Fail-open.
   await writeDailyCache(supabase, auth.user.id, 'decision', cacheKey, { assessment })
-  return NextResponse.json({ assessment, cached: false })
+  return NextResponse.json({ assessment, cached: false, selfWarning })
 }
