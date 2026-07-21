@@ -23,6 +23,11 @@ export interface ProviderConfig {
    *  modelo del tier (no uno fijo), así `cheap`→Haiku y `capable`→Sonnet se
    *  preservan. Anthropic: todos sus tiers son multimodales. */
   visionCapable?: boolean
+  /** Modelo(s) SÓLO para visión, por tier. Cuando el proveedor tiene modelos de
+   *  texto distintos de los de visión (ej. OpenRouter: texto=deepseek/llama que NO
+   *  ven, visión=qwen-VL), el router usa ESTE en requests con imagen. Si falta,
+   *  cae a models[tier]. */
+  visionModels?: Partial<Record<LlmTier, string>>
   /** Orden de costo (menor = más barato). Ordena el fallback por costo. */
   costRank: number
   /** ¿Entrena con el input? Documentado (ADR 0011 no lo usa para excluir). */
@@ -67,6 +72,11 @@ export const PROVIDERS: Record<LlmProvider, ProviderConfig> = {
     // balanced usa deepseek-chat (rápido, barato, fiable con JSON) en vez del
     // qwen-2.5-72b, que daba timeout >30s en rutas interactivas (bug 2026-07-16).
     models: { cheap: 'meta-llama/llama-3.3-70b-instruct', balanced: 'deepseek/deepseek-chat', capable: 'deepseek/deepseek-r1' },
+    // Visión por Qwen-VL (barato) — los modelos de texto de arriba NO ven. En
+    // cheap/balanced esto le gana por costo a Anthropic; si el id de OpenRouter
+    // cambiara, la cadena cae a Anthropic (que sigue en la chain) → degrada, no rompe.
+    visionCapable: true,
+    visionModels: { cheap: 'qwen/qwen-2.5-vl-7b-instruct', balanced: 'qwen/qwen-2.5-vl-72b-instruct', capable: 'qwen/qwen-2.5-vl-72b-instruct' },
     costRank: 30, trainsOnInput: false, price: { in: 0.5, out: 1.5 },
   },
 }

@@ -95,16 +95,33 @@ describe('planChain', () => {
     expect(chain.length).toBe(2)
   })
 
-  it('visión → solo proveedores multimodales (hoy solo Anthropic)', () => {
-    const chain = planChain({ task: 'extract', messages: [IMG_MSG] }, ALL)
-    expect(chain.map((c) => c.provider)).toEqual(['anthropic'])
+  it('visión cheap/balanced → OpenRouter Qwen-VL primero (barato), Anthropic fallback', () => {
+    const cheap = planChain({ task: 'extract', messages: [IMG_MSG] }, ALL) // extract = cheap
+    expect(cheap[0].provider).toBe('openrouter')
+    expect(cheap[0].model).toBe('qwen/qwen-2.5-vl-7b-instruct')
+    expect(cheap.map((c) => c.provider)).toContain('anthropic') // sigue en la chain como fallback
+    const balanced = planChain({ task: 'extract', tier: 'balanced', messages: [IMG_MSG] }, ALL)
+    expect(balanced[0].provider).toBe('openrouter')
+    expect(balanced[0].model).toBe('qwen/qwen-2.5-vl-72b-instruct')
   })
 
-  it('visión respeta el tier: cheap→Haiku, capable→Sonnet (ambos multimodales)', () => {
-    const cheap = planChain({ task: 'extract', tier: 'cheap', messages: [IMG_MSG] }, ALL)
-    expect(cheap[0].model).toBe('claude-haiku-4-5-20251001')
-    const capable = planChain({ task: 'extract', tier: 'capable', messages: [IMG_MSG] }, ALL)
-    expect(capable[0].model).toBe('claude-sonnet-4-5-20250929')
+  it('visión capable → Anthropic Sonnet primero (calidad, ej. documentos)', () => {
+    const chain = planChain({ task: 'extract', tier: 'capable', messages: [IMG_MSG] }, ALL)
+    expect(chain[0].provider).toBe('anthropic')
+    expect(chain[0].model).toBe('claude-sonnet-4-5-20250929')
+  })
+
+  it('visión: los proveedores de solo-texto (deepseek/qwen/zhipu) quedan fuera', () => {
+    const providers = planChain({ task: 'extract', messages: [IMG_MSG] }, ALL).map((c) => c.provider)
+    expect(providers).not.toContain('deepseek')
+    expect(providers).not.toContain('qwen')
+    expect(providers.sort()).toEqual(['anthropic', 'openrouter'])
+  })
+
+  it('visión solo con Anthropic → usa su modelo del tier (Haiku en cheap)', () => {
+    const chain = planChain({ task: 'extract', messages: [IMG_MSG] }, ['anthropic'])
+    expect(chain[0].provider).toBe('anthropic')
+    expect(chain[0].model).toBe('claude-haiku-4-5-20251001')
   })
 
   it('visión sin proveedor multimodal disponible → chain vacía', () => {

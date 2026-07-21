@@ -32,11 +32,14 @@ export function tierFor(task: string, explicit?: LlmTier): LlmTier {
   return explicit ?? TASK_TIER[task] ?? 'balanced'
 }
 
-function toCall(provider: LlmProvider, tier: LlmTier, forcedModel?: string): PlannedCall {
+function toCall(provider: LlmProvider, tier: LlmTier, opts?: { forcedModel?: string; needsVision?: boolean }): PlannedCall {
   const cfg = PROVIDERS[provider]
-  // Visión y texto usan el modelo del tier: Anthropic es multimodal en todos sus
-  // tiers, así que cheap→Haiku / capable→Sonnet se preservan también con imágenes.
-  return { provider, model: forcedModel ?? cfg.models[tier], kind: cfg.kind }
+  // Con imagen, si el proveedor declara un modelo de visión aparte (ej. OpenRouter:
+  // texto=deepseek/llama que NO ven, visión=Qwen-VL), se usa ese. Si no, cae a
+  // models[tier] (Anthropic es multimodal en todos sus tiers → Haiku/Sonnet se
+  // preservan). El modelId forzado siempre gana.
+  const visionModel = opts?.needsVision ? cfg.visionModels?.[tier] : undefined
+  return { provider, model: opts?.forcedModel ?? visionModel ?? cfg.models[tier], kind: cfg.kind }
 }
 
 /** ¿La request lleva alguna imagen? (algún mensaje con bloques y ≥1 de tipo 'image'). */
@@ -75,13 +78,14 @@ export function planChain(
   const byCost = [...candidates].sort((a, b) => PROVIDERS[a].costRank - PROVIDERS[b].costRank)
 
   // Orden por tier (el "sistema que decide" qué proveedor usar):
-  //  - `capable` / visión: CALIDAD primero → Anthropic al frente (fallback a los baratos).
+  //  - `capable` (incluida visión capable, ej. documentos): CALIDAD primero →
+  //    Anthropic al frente (fallback a los baratos).
   //  - `balanced` / `cheap`: el más barato disponible primero, con Anthropic al final
-  //    como fallback automático (si el barato falla/erra, complete() reintenta con él).
-  //    balanced en OpenRouter usa deepseek-chat (rápido + fiable con JSON); cheap usa
-  //    llama-3.3-70b. Ahí vive el ahorro. En visión, `candidates` ya quedó a Anthropic.
+  //    como fallback automático. En VISIÓN cheap/balanced, OpenRouter Qwen-VL (costRank
+  //    30) le gana a Anthropic (100) → ahí vive el ahorro de visión; si el VL falla,
+  //    la chain cae a Anthropic. balanced texto usa deepseek-chat; cheap usa llama-3.3.
   let ordered: LlmProvider[]
-  if ((tier === 'capable' || needsVision) && has.has('anthropic')) {
+  if (tier === 'capable' && has.has('anthropic')) {
     ordered = ['anthropic', ...byCost.filter((p) => p !== 'anthropic')]
   } else {
     ordered = byCost
@@ -102,6 +106,6 @@ export function planChain(
 
   return ordered.map((p, i) =>
     // El modelId forzado solo aplica al primer intento del proveedor forzado.
-    toCall(p, tier, i === 0 && req.provider === p ? req.model : undefined),
+    toCall(p, tier, { forcedModel: i === 0 && req.provider === p ? req.model : undefined, needsVision }),
   )
 }
