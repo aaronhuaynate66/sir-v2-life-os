@@ -29,6 +29,10 @@ export interface MorningInput {
   dueTasks?: string[]
   /** El foco del día (ancla del año o próximo paso de un objetivo clave). */
   focus?: string
+  /** Nudge de OBJETIVO que necesita atención (norte estancado / meta en riesgo).
+   *  Accionable; tiene prioridad sobre el `focus` genérico (que solo nombra el
+   *  ancla). Texto ya formado (ver lib/push/goalNudge). */
+  goalNudge?: string
   /** Una señal que merece atención hoy (texto corto). */
   topSignal?: string
   /** Nudge de hábito (ej. racha rota que vale recuperar). Texto ya formado. */
@@ -131,8 +135,16 @@ export function buildMorningPush(input: MorningInput): MorningPush {
     parts.push(input.healthWatch)
   }
 
-  // 3. Foco del día.
-  if (input.focus && parts.length < MAX_PARTS) {
+  // 2.8 OBJETIVO que necesita atención (norte estancado / meta en riesgo). SIR lo
+  //     COMPUTA pero lo dejaba en un panel; acá lo AVISA. Es accionable, así que
+  //     va antes del foco genérico (que solo nombra el ancla).
+  if (input.goalNudge && parts.length < MAX_PARTS) {
+    parts.push(input.goalNudge)
+  }
+
+  // 3. Foco del día. Se omite si ya hubo un nudge de objetivo (evita 2 líneas de
+  //    meta en el mismo push — el nudge accionable ya cubrió el frente objetivos).
+  if (input.focus && !input.goalNudge && parts.length < MAX_PARTS) {
     parts.push(`Foco: ${input.focus}`)
   }
 

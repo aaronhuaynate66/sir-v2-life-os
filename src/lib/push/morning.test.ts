@@ -129,6 +129,18 @@ describe('buildMorningPush — body (push, capado) vs bodyFull (chat, completo)'
   })
 })
 
+describe('buildMorningPush — nudge de objetivo', () => {
+  it('incluye el goalNudge y suprime el foco genérico (no 2 líneas de meta)', () => {
+    const p = buildMorningPush({ goalNudge: 'Tu norte ("X") lleva 20 días sin moverse — dale un paso hoy', focus: 'X' })
+    expect(p.body).toContain('20 días sin moverse')
+    expect(p.body).not.toContain('Foco:') // el foco genérico se omite
+  })
+  it('sin goalNudge, el foco genérico sigue apareciendo', () => {
+    const p = buildMorningPush({ focus: 'Cerrar el trato' })
+    expect(p.body).toContain('Foco: Cerrar el trato')
+  })
+})
+
 describe('buildMorningPush — fechas especiales / aniversarios', () => {
   it('incluye el aniversario mensual (mesario) en el brief', () => {
     const p = buildMorningPush({ importantDates: ['Aniversario mensual relación (13) · ¡Hoy!'] })
