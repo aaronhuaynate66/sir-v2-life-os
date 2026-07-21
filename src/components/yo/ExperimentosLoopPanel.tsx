@@ -211,7 +211,7 @@ export function ExperimentosLoopPanel() {
                   )
                 })}
                 <p className="pt-1 text-[11px] text-muted-foreground/70">
-                  Lo que te funcionó, repetilo. Lo que no, no lo vuelvas a intentar igual.
+                  Lo que te funcionó, repítelo. Lo que no, no lo vuelvas a intentar igual.
                 </p>
               </div>
             )}

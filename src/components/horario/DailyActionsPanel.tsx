@@ -208,10 +208,10 @@ function ActionRow({ action, variant }: { action: DailyAction; variant: 'full' |
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
-      toast.success('Mensaje copiado', { description: 'Pegalo donde quieras enviarlo.' })
+      toast.success('Mensaje copiado', { description: 'Pégalo donde quieras enviarlo.' })
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error('No pude copiar', { description: 'Copialo manualmente.' })
+      toast.error('No pude copiar', { description: 'Cópialo manualmente.' })
     }
   }, [])
 

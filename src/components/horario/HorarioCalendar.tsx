@@ -253,7 +253,7 @@ function Detail({ ev, onClose, onAssignTime }: { ev: Ev | null; onClose: () => v
         {ev.note && <div style={{ fontSize: 13.5, color: 'var(--fg2)', lineHeight: 1.55, background: 'var(--s2)', border: '.5px solid var(--border)', borderRadius: 9, padding: '11px 13px', marginBottom: 18 }}>{ev.note}</div>}
         {canAssign && (
           <div style={{ marginBottom: 14 }}>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Ponela en tu día</div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>Ponla en tu día</div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input key={ev.id} ref={timeRef} type="time" defaultValue="09:00"
                 style={{ height: 38, flex: '0 0 auto', background: 'var(--s2)', border: '.5px solid var(--border)', borderRadius: 'var(--r-ctrl)', color: 'var(--fg1)', fontFamily: 'var(--mono)', fontSize: 14, padding: '0 10px', colorScheme: 'dark' }} />

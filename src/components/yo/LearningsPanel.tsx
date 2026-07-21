@@ -93,7 +93,7 @@ export function LearningsPanel() {
         </div>
         <p className="text-[12px] text-muted-foreground leading-relaxed mb-3">
           Lecciones durables sobre ti (preferencias, patrones, principios) que SIR tiene presentes al aconsejar.
-          Las captura de lo que le cuentas — acá las ves y decides cuáles valen.
+          Las captura de lo que le cuentas — aquí las ves y decides cuáles valen.
         </p>
 
         {adding && (
@@ -122,7 +122,7 @@ export function LearningsPanel() {
         ) : active.length === 0 && !adding ? (
           <p className="text-sm text-muted-foreground italic leading-relaxed">
             SIR todavía no aprendió nada durable de ti. Cuéntale por chat o WhatsApp algo estable —
-            «prefiero X», «me pasa que Y», «este año priorizo Z» — y aparece acá.
+            «prefiero X», «me pasa que Y», «este año priorizo Z» — y aparece aquí.
           </p>
         ) : (
           <ul className="space-y-1.5">

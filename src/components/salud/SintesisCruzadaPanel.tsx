@@ -39,7 +39,7 @@ export function SintesisCruzadaPanel() {
         {obs.length === 0 ? (
           <p className="mt-2 text-[13px] text-muted-foreground">
             Todavía no hay muestra suficiente para cruzar tu sueño/FC con el tono de tus charlas y tus conflictos.
-            Se llena solo a medida que registrás sueño y vas teniendo interacciones. No inventamos patrones sobre poca data.
+            Se llena solo a medida que registras sueño y vas teniendo interacciones. No inventamos patrones sobre poca data.
           </p>
         ) : (
           <ul className="mt-3 space-y-2.5">

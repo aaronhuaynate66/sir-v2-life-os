@@ -52,7 +52,7 @@ export function UpcomingCarePanel() {
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center gap-2 mb-3">
           <HeartHandshake size={14} strokeWidth={1.75} className="text-brand-soft-foreground" aria-hidden="true" />
-          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-brand-soft-foreground">Se viene · cuidá a tu gente</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-brand-soft-foreground">Se viene · cuida a tu gente</span>
         </div>
         <ul className="space-y-3">
           {items.slice(0, 4).map((it) => {

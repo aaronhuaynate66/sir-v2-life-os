@@ -199,7 +199,7 @@ function IdentityHint() {
     >
       <UserCircle size={13} strokeWidth={1.75} className="mt-[1px] shrink-0" aria-hidden="true" />
       <span>
-        Completá tu identidad en <span className="underline underline-offset-2">/yo</span> —
+        Completa tu identidad en <span className="underline underline-offset-2">/yo</span> —
         con tu fecha de nacimiento y tu rol activamos recordatorios de tus
         propias fechas y del calendario de tu rubro (comercial, mundial…).
       </span>
@@ -237,7 +237,7 @@ function NothingUpcoming() {
         <p className="text-xs leading-relaxed text-muted-foreground max-w-md">
           Esta vista agrega lo accionable de tu red: cumpleaños y fechas
           especiales próximas, objetivos por vencer, señales sin resolver y
-          contactos que hace tiempo no tocás. Va a poblarse sola a medida que
+          contactos que hace tiempo no ves. Va a poblarse sola a medida que
           registres{' '}
           <Link href="/relaciones" className="underline underline-offset-2 hover:text-foreground">
             fechas de tus personas

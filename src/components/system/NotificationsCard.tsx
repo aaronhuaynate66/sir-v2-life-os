@@ -116,7 +116,7 @@ export function NotificationsCard() {
 
         {state === 'no-vapid' && (
           <p className="text-sm text-muted-foreground py-1">
-            Falta configurar las claves del servidor (VAPID). Una vez seteadas, vas a poder activar las notificaciones acá.
+            Falta configurar las claves del servidor (VAPID). Una vez seteadas, vas a poder activar las notificaciones aquí.
           </p>
         )}
 

@@ -92,13 +92,13 @@ export function SIRPulseWidget({ peaceScore, peaceLevel }: Props) {
 
   const urgentCell = topPersona
     ? {
-        label: 'Atendé primero',
+        label: 'Atiende primero',
         value: topPersona.personName.split(' ')[0],
         sub: topPersona.mostUrgentTitle ?? (topPersona.reason === 'low_tone' ? 'tono bajo' : 'pendiente'),
         href: topPersona.personSlug ? `/relaciones/${topPersona.personSlug}` : '/relaciones',
         class: topPersona.overdueCount > 0 ? LEVEL_CLASS.bad : LEVEL_CLASS.warn,
       }
-    : { label: 'Atendé primero', value: 'Todo tranquilo', sub: 'ningún pendiente urgente', href: '/relaciones', class: 'text-muted-foreground border-border bg-muted/30' }
+    : { label: 'Atiende primero', value: 'Todo tranquilo', sub: 'ningún pendiente urgente', href: '/relaciones', class: 'text-muted-foreground border-border bg-muted/30' }
 
   const flashCell = newAlert
     ? {
@@ -107,7 +107,7 @@ export function SIRPulseWidget({ peaceScore, peaceLevel }: Props) {
         sub: `${newAlert.from_label} → ${newAlert.to_label}`,
         // Antes: '/panel' (la misma página → el clic no hacía nada visible).
         // Ahora navega a la ficha de la persona con el cambio de estado, igual
-        // que 'Atendé primero'. Fallback al listado si falta el slug.
+        // que 'Atiende primero'. Fallback al listado si falta el slug.
         href: newAlert.person_slug ? `/relaciones/${newAlert.person_slug}` : '/relaciones',
         class: LEVEL_CLASS.warn,
       }

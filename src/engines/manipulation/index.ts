@@ -168,14 +168,14 @@ function adviceFor(risk: ManipulationRisk, combo: boolean): string {
   switch (risk) {
     case 'high':
       return combo
-        ? 'Frená. Esta es la firma clásica de un ataque: te apuran con autoridad + urgencia + miedo. No respondas ni hagas nada ahora. Verificá por OTRO canal (llamá vos a un número que YA tengas, no al del mensaje).'
-        : 'Frená. Hay varias señales de presión juntas. No actúes en caliente: verificá por otro canal antes de responder, hacer clic o dar datos.'
+        ? 'Frena. Esta es la firma clásica de un ataque: te apuran con autoridad + urgencia + miedo. No respondas ni hagas nada ahora. Verifica por OTRO canal (llama tú a un número que YA tengas, no al del mensaje).'
+        : 'Frena. Hay varias señales de presión juntas. No actúes en caliente: verifica por otro canal antes de responder, hacer clic o dar datos.'
     case 'medium':
-      return 'Ojo: hay señales de presión. Tomate un momento antes de responder y fijate si algo no cierra (quién lo manda, por qué la prisa).'
+      return 'Ojo: hay señales de presión. Tómate un momento antes de responder y fíjate si algo no cierra (quién lo manda, por qué la prisa).'
     case 'low':
-      return 'Una señal suelta — probablemente nada, pero teníala presente. Si aparece prisa o miedo encima, desconfiá.'
+      return 'Una señal suelta — probablemente nada, pero tenla presente. Si aparece prisa o miedo encima, desconfía.'
     case 'none':
-      return 'No detecté gatillos de manipulación. Ojo: la ausencia de señales NO garantiza que sea legítimo — verificá igual si te piden plata, datos o acceso.'
+      return 'No detecté gatillos de manipulación. Ojo: la ausencia de señales NO garantiza que sea legítimo — verifica igual si te piden plata, datos o acceso.'
   }
 }
 

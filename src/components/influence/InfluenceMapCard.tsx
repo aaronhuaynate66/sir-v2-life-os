@@ -33,7 +33,7 @@ export function InfluenceMapCard({ targetId }: { targetId: string }) {
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-center gap-2 mb-1">
           <Network size={15} strokeWidth={1.75} className="text-muted-foreground/70" aria-hidden="true" />
-          <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Quién más pesa acá</h2>
+          <h2 className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Quién más pesa aquí</h2>
         </div>
         <p className="text-[11px] text-muted-foreground mb-3 leading-snug">
           El organigrama miente — la influencia real pasa por otros. Esto es el mapa alrededor de {name}.

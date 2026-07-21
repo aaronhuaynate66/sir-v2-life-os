@@ -115,7 +115,7 @@ export function SleepQualityCard() {
           </>
         ) : (
           <p className="text-[12px] text-muted-foreground leading-relaxed mt-2">
-            De esta noche solo tengo las horas. Capturá el panel de tu app de sueño (Huawei/Apple/Samsung Health)
+            De esta noche solo tengo las horas. Captura el panel de tu app de sueño (Huawei/Apple/Samsung Health)
             desde <span className="text-foreground">Mis capturas</span> para leer eficiencia, despertares y fases —
             no solo cuánto dormiste.
           </p>

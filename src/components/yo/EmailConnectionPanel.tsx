@@ -75,7 +75,7 @@ export function EmailConnectionPanel() {
           </div>
         ) : !status.connected ? (
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Conectá tu correo M365 para que SIR lea, incremental, los correos nuevos y los cruce con tu gente.</p>
+            <p className="text-sm text-muted-foreground">Conecta tu correo M365 para que SIR lea, incremental, los correos nuevos y los cruce con tu gente.</p>
             <Button size="sm" asChild>
               <a href="/api/email/connect"><Mail size={14} strokeWidth={1.75} className="mr-1.5" /> Conectar con Microsoft</a>
             </Button>

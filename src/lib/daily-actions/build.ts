@@ -197,7 +197,7 @@ export function buildDailyActions(
       urgency: u.urgency,
       score: boosted * factor,
       headline: u.reason,
-      action: 'Escribile para retomar el contacto',
+      action: 'Escríbele para retomar el contacto',
       reciprocidad: i.reciprocidad,
       fuerza: i.fuerza,
       daysSinceContact: i.daysSinceContact,

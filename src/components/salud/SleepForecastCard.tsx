@@ -54,7 +54,7 @@ export function SleepForecastCard() {
         </p>
 
         <p className="text-[10px] text-muted-foreground/70 leading-snug">
-          Orientativo, no diagnóstico: proyecta tu tendencia, pero lo que dormís depende sobre todo de lo que hagas hoy.
+          Orientativo, no diagnóstico: proyecta tu tendencia, pero lo que duermes depende sobre todo de lo que hagas hoy.
           {' '}Sobre {c1.n} noches.
         </p>
       </CardContent>

@@ -161,7 +161,7 @@ function NegociarContent() {
             <div className="flex items-start gap-3">
               <ShieldAlert size={20} strokeWidth={1.75} className="text-warn mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div>
-                <div className="text-sm font-semibold text-warn">Un alto acá</div>
+                <div className="text-sm font-semibold text-warn">Un alto aquí</div>
                 <p className="text-sm text-foreground/90 leading-relaxed mt-1">{blocked}</p>
               </div>
             </div>
@@ -187,7 +187,7 @@ function PrepView({ prep, ethics, forName, hadContext }: { prep: NegotiationPrep
             <div className="flex items-start gap-3">
               <ShieldAlert size={20} strokeWidth={1.75} className="text-warn mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div>
-                <div className="text-sm font-semibold text-warn">Un alto acá</div>
+                <div className="text-sm font-semibold text-warn">Un alto aquí</div>
                 <p className="text-sm text-foreground/90 leading-relaxed mt-1">{prep.ethicalNote}</p>
               </div>
             </div>

@@ -60,7 +60,7 @@ export function EditOrgProfile({ slug, label, initial }: Props) {
       if (data.website) setWebsite((w) => w || data.website!)
       if (data.description) setDescription(data.description)
       if (data.notes) setNotes((n) => (n ? `${n}\n${data.notes}` : data.notes!))
-      setAutoMsg('Listo — revisá los campos abajo y guardá.')
+      setAutoMsg('Listo — revisa los campos abajo y guarda.')
     } catch {
       setAutoMsg('No se pudo autocompletar')
     } finally {
@@ -125,7 +125,7 @@ export function EditOrgProfile({ slug, label, initial }: Props) {
           value={autoText}
           onChange={(e) => setAutoText(e.target.value)}
           rows={3}
-          placeholder="…o pegá acá el texto de la web/LinkedIn (Quiénes somos, portafolio) y la IA lo estructura. Más confiable que la URL en sitios modernos."
+          placeholder="…o pega aquí el texto de la web/LinkedIn (Quiénes somos, portafolio) y la IA lo estructura. Más confiable que la URL en sitios modernos."
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
         />
         <div className="flex items-center gap-3">

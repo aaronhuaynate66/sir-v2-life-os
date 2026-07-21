@@ -86,7 +86,7 @@ function ritualsForPerson(input: RitualPersonInput, now: Date): Ritual[] {
         weeks <= 8
           ? `Hace ${weeks} semana${weeks === 1 ? '' : 's'} sin hablar con ${person.name}`
           : `Hace ${days} días sin hablar con ${person.name}`,
-      action: 'Escribile o llamalo para retomar el contacto',
+      action: 'Escríbele o llámalo para retomar el contacto',
       priority: days >= 60 ? 9 : days >= 45 ? 8 : 7,
     })
   }
@@ -131,7 +131,7 @@ function ritualsForPerson(input: RitualPersonInput, now: Date): Ritual[] {
           ? 'Confirmá tu plan'
           : 'Planeá algo especial'
         : isSaint
-          ? 'Mandale un saludo'
+          ? 'Mándale un saludo'
           : 'Tenelo presente con un gesto',
       priority: cd.daysUntil <= 1 ? 9 : cd.daysUntil <= 7 ? 7 : 6,
       daysUntil: cd.daysUntil,
@@ -146,7 +146,7 @@ function ritualsForPerson(input: RitualPersonInput, now: Date): Ritual[] {
       ...base,
       type: 'cooling',
       message: `Tu relación con ${person.name} está tensa`,
-      action: 'Buscá un momento para destensar con un gesto concreto',
+      action: 'Busca un momento para destensar con un gesto concreto',
       priority: 6,
     })
   } else if (fuerza > 10 && fuerza < 40 && hasActivity) {
@@ -154,7 +154,7 @@ function ritualsForPerson(input: RitualPersonInput, now: Date): Ritual[] {
       ...base,
       type: 'cooling',
       message: `Tu vínculo con ${person.name} se está enfriando (fuerza ${Math.round(fuerza)}/100)`,
-      action: 'Retomá el contacto con una acción concreta',
+      action: 'Retoma el contacto con una acción concreta',
       priority: 6,
     })
   }
@@ -170,7 +170,7 @@ function ritualsForPerson(input: RitualPersonInput, now: Date): Ritual[] {
       ...base,
       type: 'acknowledge',
       message: `${person.name} tuvo una novedad que aún no reconociste`,
-      action: 'Mandale un mensaje mostrando interés genuino',
+      action: 'Mándale un mensaje mostrando interés genuino',
       priority: 7,
     })
   }

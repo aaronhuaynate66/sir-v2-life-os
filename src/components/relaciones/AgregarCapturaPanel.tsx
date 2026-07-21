@@ -1322,7 +1322,7 @@ export function AgregarCapturaPanel({ personId, personName, defaultMode, initial
             ) : (
               <>
                 <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
-                  Podés subir <span className="font-medium text-foreground">varias capturas del mismo perfil</span>{' '}
+                  Puedes subir <span className="font-medium text-foreground">varias capturas del mismo perfil</span>{' '}
                   a la vez (distintas secciones de un LinkedIn/Instagram) — o un <span className="font-medium text-foreground">PDF</span> del
                   perfil impreso: cada página cuenta como una imagen. Se combinan en un solo perfil.
                 </p>

@@ -97,8 +97,8 @@ export function CalendarConnections({ onChange }: { onChange?: () => void }) {
         </div>
 
         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-          Conectá con Google (OAuth) o pegá la URL <span className="font-mono text-foreground/80">.ics</span>{' '}
-          de otro calendario (Outlook, iCloud…). Podés tener varios — se muestran unificados y con su color.
+          Conecta con Google (OAuth) o pega la URL <span className="font-mono text-foreground/80">.ics</span>{' '}
+          de otro calendario (Outlook, iCloud…). Puedes tener varios — se muestran unificados y con su color.
           Tus tokens quedan cifrados en el servidor.
         </p>
 
@@ -250,7 +250,7 @@ function NewGoogleEventForm() {
       toast.success('Evento creado en Google Calendar')
       setTitle(''); setDate(''); setTime(''); setOpen(false)
     } catch {
-      toast.error('No se pudo crear el evento (revisá tu conexión).')
+      toast.error('No se pudo crear el evento (revisa tu conexión).')
     } finally {
       setSubmitting(false)
     }
@@ -364,8 +364,8 @@ function ConnectionRow({
         aria-label={isPersonal ? 'Marcar como laboral' : 'Marcar como personal'}
         title={
           isPersonal
-            ? 'Personal · alimenta la línea del ciclo. Tocá para marcar laboral.'
-            : 'Laboral · no toca la línea del ciclo. Tocá para marcar personal.'
+            ? 'Personal · alimenta la línea del ciclo. Toca para marcar laboral.'
+            : 'Laboral · no toca la línea del ciclo. Toca para marcar personal.'
         }
       >
         {isPersonal ? <Heart size={11} strokeWidth={2} aria-hidden="true" /> : <Briefcase size={11} strokeWidth={2} aria-hidden="true" />}

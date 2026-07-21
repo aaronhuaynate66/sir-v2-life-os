@@ -35,7 +35,7 @@ const TIER_PHRASE: Record<WeeklyTier, string> = {
   A: 'Muy buena semana.',
   B: 'Semana sólida.',
   C: 'Semana floja — hay margen.',
-  D: 'Semana dura. Cuidate.',
+  D: 'Semana dura. Cuídate.',
 }
 
 function barColor(score: number): string {
@@ -121,7 +121,7 @@ export function WeeklyScoreCard({ data, delta }: { data: WeeklyScore; delta?: We
 
         {status === 'scored' && !confident && (
           <p className="text-[10px] text-muted-foreground/60 mt-3 pt-3 border-t border-border/40">
-            Solo {daysWithData} día{daysWithData === 1 ? '' : 's'} con registro — el score se afina a medida que cargás más.
+            Solo {daysWithData} día{daysWithData === 1 ? '' : 's'} con registro — el score se afina a medida que cargas más.
           </p>
         )}
       </CardContent>
