@@ -1,5 +1,24 @@
 import { describe, it, expect } from 'vitest'
-import { canonHandle, linkedinSlug, normName, buildPersonIndex, matchPerson, type PersonLite } from './match'
+import { canonHandle, linkedinSlug, normName, buildPersonIndex, matchPerson, identityKey, type PersonLite } from './match'
+
+describe('identityKey', () => {
+  it('IG por handle canónico', () => {
+    expect(identityKey({ platform: 'instagram', handle: '@Dayrrit' })).toBe('ig:dayrrit')
+  })
+  it('LinkedIn por slug de la URL', () => {
+    expect(identityKey({ platform: 'linkedin', linkedinUrl: 'https://www.linkedin.com/in/Alex-H/' })).toBe('li:alex-h')
+  })
+  it('cae al nombre normalizado si no hay handle/slug', () => {
+    expect(identityKey({ platform: 'instagram', name: 'Diana Díaz 🌸' })).toBe('nm:diana diaz')
+  })
+  it('null si no hay nada con qué identificar', () => {
+    expect(identityKey({ platform: 'instagram' })).toBeNull()
+  })
+  it('la misma cuenta con o sin @ da la MISMA clave (dedup estable)', () => {
+    expect(identityKey({ platform: 'instagram', handle: 'melanievalientee' }))
+      .toBe(identityKey({ platform: 'instagram', handle: '@melanievalientee' }))
+  })
+})
 
 const P = (over: Partial<PersonLite> & { id: string; name: string }): PersonLite => ({
   instagramHandle: null, linkedinUrl: null, title: null, ...over,
