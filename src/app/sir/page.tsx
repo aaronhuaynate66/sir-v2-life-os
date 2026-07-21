@@ -721,7 +721,7 @@ export default function SirChatPage() {
                     <Sparkles size={11} /> SIR
                   </div>
                 )}
-                <div className="whitespace-pre-wrap leading-relaxed">{t.text}</div>
+                <div className="whitespace-pre-wrap break-words leading-relaxed">{t.text}</div>
                 {t.sources && t.sources.people.length > 0 && (
                   <div className="mt-2 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
                     <User size={11} />
