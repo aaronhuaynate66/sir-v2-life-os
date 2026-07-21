@@ -23,6 +23,11 @@
 //   - `why` es la relevancia concreta para la persona, no relleno motivacional.
 //   - Devuelve SOLO JSON; el parser es tolerante a ruido/markdown.
 
+import type { GoalCategory } from '@/types'
+
+/** Dominios válidos de un objetivo (espeja el enum GoalCategory). */
+const CATEGORIES: GoalCategory[] = ['financial', 'personal', 'relational', 'health', 'career', 'spiritual', 'creative']
+
 export interface SmartPromptInput {
   title: string
   description?: string
@@ -49,6 +54,9 @@ export interface ProposedSmart {
   why: string
   /** Fecha sugerida date-only ISO (solo si el objetivo no traía una). */
   suggestedTargetDate?: string
+  /** Dominio inferido del texto (útil en modo dictado, donde el usuario no lo
+   *  eligió). undefined si el modelo no devolvió uno válido. */
+  category?: GoalCategory
 }
 
 export const OBJECTIVE_SMART_SYSTEM_PROMPT = `Eres el módulo de Planificación de SIR, un sistema operativo personal centrado en el bienestar y la acción.
@@ -56,9 +64,10 @@ export const OBJECTIVE_SMART_SYSTEM_PROMPT = `Eres el módulo de Planificación 
 Recibes un objetivo (a veces redactado en bruto: título, descripción, dominio y fecha; a veces como un párrafo libre que dictó el usuario). Tu tarea: convertirlo en un objetivo SMART, definiendo lo que falta para que sea específico, medible, relevante y con plazo.
 
 Devuelve EXCLUSIVAMENTE un objeto JSON (sin texto adicional, sin markdown, sin comentarios):
-{ "specific": "...", "target": "...", "baseline": "...", "why": "...", "suggestedTargetDate": "YYYY-MM-DD" }
+{ "specific": "...", "target": "...", "baseline": "...", "why": "...", "suggestedTargetDate": "YYYY-MM-DD", "category": "..." }
 
 REGLAS:
+- "category" (dominio): infiere el dominio del objetivo desde el texto. UNA de exactamente estas: financial (dinero/finanzas), personal (hábitos/crecimiento propio), relational (vínculos/familia/pareja), health (salud/cuerpo/deporte), career (trabajo/negocio/carrera), spiritual (fe/propósito/interior), creative (arte/proyectos creativos). Si no es claro, usa "personal".
 - "specific" (Specific): el QUÉ quieres lograr, en una frase nítida y breve (sirve como título afinado). Quita lo ambiguo. Si el título ya es claro, puedes devolverlo casi igual. Máx ~80 caracteres.
 - "target" (Measurable): el RESULTADO MEDIBLE que define "logrado". Un número, umbral o estado verificable. Ej.: "Pesar 75 kg", "Ahorrar S/5000", "Correr 10 km sin parar", "Cerrar 3 clientes nuevos". PROHIBIDO lo vago ("estar en forma", "mejorar mis finanzas"): conviértelo en algo que se pueda tachar como hecho o no.
 - "baseline": el PUNTO DE PARTIDA actual respecto del target. Si te dan "DATOS REALES DEL USUARIO", infiere el baseline DE AHÍ (ej. peso actual de la báscula, ahorro/balance del mes, nivel de una métrica) — es lo que SIR ya sabe, no se lo vuelvas a preguntar. Si no, usa lo que dijo el usuario. Si no hay forma de saberlo, déjalo en "" (string vacío). NUNCA inventes un número.
@@ -124,5 +133,7 @@ export function parseSmart(raw: string): ProposedSmart | null {
   const why = cleanString(obj.why)
   const std = cleanString(obj.suggestedTargetDate)
   const suggestedTargetDate = ISO_DATE.test(std) ? std : undefined
-  return { specific, target, baseline, why, suggestedTargetDate }
+  const catRaw = cleanString(obj.category).toLowerCase()
+  const category = (CATEGORIES as string[]).includes(catRaw) ? (catRaw as GoalCategory) : undefined
+  return { specific, target, baseline, why, suggestedTargetDate, category }
 }

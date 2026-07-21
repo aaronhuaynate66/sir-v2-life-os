@@ -86,6 +86,16 @@ describe('parseSmart', () => {
     expect(parseSmart(raw)!.suggestedTargetDate).toBeUndefined()
   })
 
+  it('infiere category válida del enum (case-insensitive)', () => {
+    expect(parseSmart(JSON.stringify({ target: 'X', why: 'Y', category: 'health' }))!.category).toBe('health')
+    expect(parseSmart(JSON.stringify({ target: 'X', why: 'Y', category: 'FINANCIAL' }))!.category).toBe('financial')
+  })
+
+  it('category inválida o ausente → undefined (no pisa el dominio elegido)', () => {
+    expect(parseSmart(JSON.stringify({ target: 'X', why: 'Y', category: 'trabajo' }))!.category).toBeUndefined()
+    expect(parseSmart(JSON.stringify({ target: 'X', why: 'Y' }))!.category).toBeUndefined()
+  })
+
   it('sin target usable → null', () => {
     expect(parseSmart(JSON.stringify({ baseline: '1', why: 'z' }))).toBeNull()
     expect(parseSmart(JSON.stringify({ target: '   ' }))).toBeNull()
