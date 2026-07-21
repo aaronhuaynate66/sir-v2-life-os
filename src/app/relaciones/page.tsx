@@ -61,6 +61,11 @@ const NetworkIntrosPanel = dynamic(
   () => import('@/components/relaciones/NetworkIntrosPanel').then((m) => ({ default: m.NetworkIntrosPanel })),
   { ssr: false, loading: () => null },
 )
+// Bandeja "¿quién es quién?" — se auto-oculta si no hay señales sin asignar.
+const SocialUnmatchedInbox = dynamic(
+  () => import('@/components/relaciones/SocialUnmatchedInbox').then((m) => ({ default: m.SocialUnmatchedInbox })),
+  { ssr: false, loading: () => null },
+)
 import { createClient } from '@/lib/supabase/client'
 import { generateSlug, ensureUniqueSlug } from '@/lib/people/slug'
 import {
@@ -399,6 +404,14 @@ function RelationshipsContent() {
       {people.length > 0 && (
         <div className="mb-6">
           <DailyActionsPanel variant="compact" />
+        </div>
+      )}
+
+      {/* Bandeja "¿quién es quién?" — actividad social sin asignar (reader IG/LI).
+          Accionable y se auto-oculta si está vacía. */}
+      {people.length > 0 && (
+        <div className="mb-6">
+          <SocialUnmatchedInbox people={people} />
         </div>
       )}
 
