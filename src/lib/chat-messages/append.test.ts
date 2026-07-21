@@ -1,6 +1,22 @@
 import { describe, it, expect } from 'vitest'
 
-import { chatMessageId, toChatRows, type ChatMessageInput } from './append'
+import { chatMessageId, minuteKey, toChatRows, type ChatMessageInput } from './append'
+
+describe('minuteKey', () => {
+  it('trunca a minuto en UTC', () => {
+    expect(minuteKey('2026-07-01T10:23:45.678Z')).toBe('2026-07-01T10:23')
+  })
+  it('colapsa segundos distintos al mismo minuto', () => {
+    expect(minuteKey('2026-07-01T10:23:45Z')).toBe(minuteKey('2026-07-01T10:23:00Z'))
+  })
+  it('normaliza la zona horaria a UTC (misma hora de pared → mismo minuto)', () => {
+    expect(minuteKey('2026-07-09T09:23:45-05:00')).toBe('2026-07-09T14:23')
+  })
+  it('null / vacío → cadena vacía', () => {
+    expect(minuteKey(null)).toBe('')
+    expect(minuteKey('')).toBe('')
+  })
+})
 
 describe('chatMessageId', () => {
   it('es determinístico: mismos campos → mismo id', () => {
@@ -23,6 +39,18 @@ describe('chatMessageId', () => {
     const a = chatMessageId('u1', 'p1', 'whatsapp', null, 'other', 'hola')
     const b = chatMessageId('u1', 'p1', 'whatsapp', null, 'other', 'hola')
     expect(a).toBe(b)
+  })
+
+  it('MISMO minuto, segundos distintos → MISMO id (fix de los 148k dups)', () => {
+    const conSegundos = chatMessageId('u1', 'p1', 'whatsapp', '2026-07-09T14:23:45Z', 'other', 'hola')
+    const truncado = chatMessageId('u1', 'p1', 'whatsapp', '2026-07-09T14:23:00Z', 'other', 'hola')
+    expect(conSegundos).toBe(truncado)
+  })
+
+  it('minuto distinto → id distinto (no colapsa de más)', () => {
+    const a = chatMessageId('u1', 'p1', 'whatsapp', '2026-07-09T14:23:00Z', 'other', 'hola')
+    const b = chatMessageId('u1', 'p1', 'whatsapp', '2026-07-09T14:24:00Z', 'other', 'hola')
+    expect(a).not.toBe(b)
   })
 })
 

@@ -43,10 +43,26 @@ const MAX_AUTHOR = 120
 const UPSERT_BATCH = 500
 
 /**
+ * Normaliza un ISO a la MARCA DE MINUTO en UTC ("YYYY-MM-DDTHH:MM"). La
+ * identidad de un mensaje es a nivel MINUTO (no de segundos): dos capturas del
+ * mismo mensaje con precisión distinta —una con ":45", otra truncada a ":00"—
+ * deben colapsar al mismo id. Antes se hasheaba el `iso` CRUDO, así que las dos
+ * corridas de import (09/07 con segundos, 12/07 truncada) generaron ids
+ * distintos para el mismo mensaje → 148k duplicados (limpiados el 20/07). En UTC
+ * para que sea estable ante representaciones de zona horaria. null → ''.
+ */
+export function minuteKey(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 16)
+  return iso.slice(0, 16) // fallback: iso no parseable → recorte textual a minuto
+}
+
+/**
  * Id determinístico del mensaje → dedupe idempotente. sha1 de los campos que
- * definen "el mismo mensaje". Nota: dos mensajes con idéntico (fecha, emisor,
- * texto) colapsan a uno — aceptable para un sustrato de texto (mismo minuto +
- * mismo emisor + mismo contenido ≈ el mismo mensaje para análisis).
+ * definen "el mismo mensaje". Nota: dos mensajes con idéntico (fecha a MINUTO,
+ * emisor, texto) colapsan a uno — aceptable para un sustrato de texto (mismo
+ * minuto + mismo emisor + mismo contenido ≈ el mismo mensaje para análisis).
  */
 export function chatMessageId(
   userId: string,
@@ -56,7 +72,7 @@ export function chatMessageId(
   sender: ChatSender,
   content: string,
 ): string {
-  const s = `${userId}|${personId}|${source}|${iso ?? ''}|${sender}|${content}`
+  const s = `${userId}|${personId}|${source}|${minuteKey(iso)}|${sender}|${content}`
   return `cm_${createHash('sha1').update(s).digest('hex')}`
 }
 
