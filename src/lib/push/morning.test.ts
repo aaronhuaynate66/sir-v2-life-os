@@ -101,6 +101,34 @@ describe('buildMorningPush — vigilancia de laboratorio', () => {
   })
 })
 
+describe('buildMorningPush — body (push, capado) vs bodyFull (chat, completo)', () => {
+  it('el mensaje amable expone bodyFull igual al body', () => {
+    const p = buildMorningPush({})
+    expect(p.bodyFull).toBe(p.body)
+  })
+  it('cuando cabe, body y bodyFull son idénticos', () => {
+    const p = buildMorningPush({ birthdays: [{ name: 'Ana', days: 2 }] })
+    expect(p.body).toBe(p.bodyFull)
+    expect(p.body).not.toContain('…')
+  })
+  it('cuando excede 220, body se corta con … pero bodyFull queda ENTERO', () => {
+    // Reproduce el bug real de Aaron: nudge relacional largo + tema resuelto +
+    // tarea → el body capado partía "Hoy vence:" a la mitad.
+    const p = buildMorningPush({
+      relationshipNudge: 'Hace 3 semanas sin hablar con Maria Fernanda Brañez — tu media hermana',
+      momentResolution: 'Con Maria Isabel Espinoza Vidaurre: "Conflicto por el Mundial de Bomberos" ya parece resuelto — ¿lo cierras?',
+      dueTasks: ['Pedir las pastillas para la cabeza'],
+    })
+    // El push (navegador) sí se capa.
+    expect(p.body.length).toBeLessThanOrEqual(220)
+    expect(p.body.endsWith('…')).toBe(true)
+    // El brief (Telegram) NO: la tarea que vence se lee completa, sin "…" colgado.
+    expect(p.bodyFull.length).toBeGreaterThan(220)
+    expect(p.bodyFull).toContain('Hoy vence: Pedir las pastillas para la cabeza')
+    expect(p.bodyFull.endsWith('…')).toBe(false)
+  })
+})
+
 describe('buildMorningPush — fechas especiales / aniversarios', () => {
   it('incluye el aniversario mensual (mesario) en el brief', () => {
     const p = buildMorningPush({ importantDates: ['Aniversario mensual relación (13) · ¡Hoy!'] })

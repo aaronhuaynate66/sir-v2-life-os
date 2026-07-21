@@ -20,4 +20,19 @@ describe('formatMorningBriefForChat', () => {
     const s = formatMorningBriefForChat({ title: 'x', body: 'algo importante' })
     expect(s).not.toMatch(/[*_#]/)
   })
+
+  it('prefiere bodyFull (completo) sobre body (capado) cuando viene', () => {
+    const s = formatMorningBriefForChat({
+      title: 'Tu día en SIR',
+      body: 'Nudge largo… ', // capado, con el "…" del push
+      bodyFull: 'Nudge largo · Hoy vence: Pedir las pastillas para la cabeza',
+    })
+    expect(s).toContain('Hoy vence: Pedir las pastillas para la cabeza')
+    expect(s).not.toContain('…')
+  })
+
+  it('cae al body si no hay bodyFull (retrocompat)', () => {
+    const s = formatMorningBriefForChat({ title: 'x', body: 'solo body' })
+    expect(s).toContain('solo body')
+  })
 })

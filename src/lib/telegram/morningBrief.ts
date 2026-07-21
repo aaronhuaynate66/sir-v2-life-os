@@ -8,10 +8,13 @@
 export interface BriefSource {
   title: string
   body: string
+  /** Cuerpo COMPLETO (sin el cap de la notificación push). Telegram admite 4096
+   *  → mostramos todo; si no viene, caemos al `body` capado. */
+  bodyFull?: string
 }
 
 export function formatMorningBriefForChat(push: BriefSource): string {
-  const body = (push.body || '').trim()
+  const body = ((push.bodyFull ?? push.body) || '').trim()
   const lines: string[] = ['🌿 Buen día.']
   if (body) lines.push(body)
   lines.push('Si quieres que profundice en algo (tu gente, tus objetivos, tu día), escríbeme 💬')
