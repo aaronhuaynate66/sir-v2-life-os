@@ -17,6 +17,7 @@ import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client
 import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
+import { goalNudgeLine } from '@/lib/push/goalNudge'
 import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDates'
 import type { SpecialDate } from '@/types'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
@@ -161,7 +162,7 @@ export async function GET(req: NextRequest) {
       // Foco: ancla del año, o el próximo paso de un objetivo activo.
       const { data: goalRows } = await admin
         .from('goals')
-        .select('title, next_action, is_anchor, status, target_date, target, anchor_subtitle, description')
+        .select('title, next_action, is_anchor, status, target_date, target, anchor_subtitle, description, progress, updated_at')
         .eq('user_id', uid)
         .eq('status', 'active')
         .limit(50)
@@ -169,10 +170,24 @@ export async function GET(req: NextRequest) {
         title: string; next_action: string; is_anchor: boolean | null;
         target_date: string | null; target: string | null;
         anchor_subtitle: string | null; description: string | null;
+        progress: number | null; updated_at: string | null;
       }>
       const anchor = goals.find((g) => g.is_anchor)
       const withNext = goals.find((g) => g.next_action && g.next_action.trim().length > 0)
       const focus = anchor?.title || (withNext ? withNext.next_action : undefined)
+
+      // NUDGE DE OBJETIVO: norte estancado o meta en riesgo. SIR ya lo computa
+      // (norteDrift / goal engine) pero vivía en un panel; acá lo saca al push.
+      const goalNudgeText = goalNudgeLine(
+        goals.map((g) => ({
+          title: g.title,
+          isAnchor: g.is_anchor === true,
+          progress: typeof g.progress === 'number' ? g.progress : 0,
+          targetDate: g.target_date,
+          updatedAt: g.updated_at ?? new Date(0).toISOString(),
+        })),
+        now,
+      ) ?? undefined
 
       // SEMANA EN FOCO: goal con target_date ≤7d → texto listo para el push.
       let weekFocusText: string | undefined
@@ -449,7 +464,7 @@ export async function GET(req: NextRequest) {
         }
       } catch { /* columna 0151 sin propagar → sin sugerencia */ }
 
-      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, dueTasks, focus, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
+      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
