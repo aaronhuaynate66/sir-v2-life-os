@@ -366,7 +366,7 @@ function SaludContent() {
         <PatronesPanel />
         <LearningCard />
         <SintesisCruzadaPanel />
-        <div className="mt-4"><ChequeosPanel /></div>
+        <div className="mt-4"><ChequeosPanel metrics={healthMetrics} /></div>
       </div>
 
       {/* Días con alertas de FC elevada (señal episódica de activación). */}

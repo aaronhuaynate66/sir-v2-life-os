@@ -19,6 +19,10 @@ export interface LabPattern {
   severity: PatternSeverity
   /** Frase lista para mostrar. */
   message: string
+  /** Ventana temporal del patrón (fecha del 1er y último examen medido) — para
+   *  cruzarlo con la salud diaria en ese período (crossHealth, #7). YYYY-MM-DD. */
+  from: string
+  to: string
 }
 
 function cleanNum(v: string): number | null {
@@ -52,6 +56,7 @@ export function labPatterns(exams: HealthExam[]): LabPattern[] {
     out.push({
       name: t.name, unit: t.unit, range: t.range, direction: t.direction, values, severity,
       message: `${t.name} viene ${dirWord} ${nums.length} exámenes seguidos (${values.join(' → ')}${t.unit ? ' ' + t.unit : ''}) ${tail}.`,
+      from: pts[0].date, to: last.date,
     })
   }
   // alerts primero, luego watch
