@@ -5,10 +5,27 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 20/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 21/07/2026 (reconciliación automática — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-21
+
+Pase de mantenimiento contra el código real (agente automático). Poco drift nuevo desde el pase 07-20 (solo 4 commits en el medio: matcheo de nombre del reader IG, tray de historias IG vía GraphQL, refactor de `evalReference` en salud, sugerencia de cierre instantánea en Momentos — ninguno tocaba un ítem pendiente del backlog). El único drift real encontrado fue en un ítem que el propio pase 07-20 no re-tocó:
+
+- ✅ **Clay #7 — Q&A por persona, sub-punto "multi-turno"** — ya HECHO, contra la nota "pendiente futuro… hoy una pregunta por vez" que quedaba en la sección Clay (más abajo). `src/components/relaciones/PreguntarSobrePersona.tsx` mantiene un `thread` de turnos y lo manda como `history` a `/api/sir/ask` (placeholder "Sigue preguntando…" tras la primera pregunta); el backend `src/lib/sir/askSir.ts` arma `chatHistory` real (líneas ~116-121 y 542-550) que pasa a `chatProvider.ts`, o sea el LLM sí recibe el hilo — no es solo UI. Corregido in situ, dejando como pendiente real solo la validación en vivo (no verificable por grep).
+
+**Verificado y quedó IGUAL (sin drift), re-chequeado este pase:**
+- **Inferencia LLM de dominio para objetivos de texto libre** — sigue igual: `category` en `smartPrompt.ts`/`/api/objectives/smart` sigue siendo un INPUT, no algo inferido del párrafo libre.
+- **Auto-import desde calendario (Clay #6)** — sigue sin rastro en código (`grep` de "auto.import"/"autoImport" sin resultados).
+- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte", sin alcance concreto.
+- **Gantt fix del MASTER_PLAN** — sigue no verificable en este repo (sin componente "Gantt" ni referencias a `MASTER_PLAN` en `src/`).
+- **Split-brain / last-write-wins por fila** — sigue igual: `engine.ts` sigue haciendo `upsert(..., { onConflict: 'id' })` (pisa la fila entera, no merge por campo).
+
+**No re-verificado este pase** (fuera de alcance): todo lo demás, incluyendo lo ya marcado ✅/🟡 con evidencia en pases anteriores.
 
 ---
 
@@ -403,7 +420,7 @@ Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lóg
 **6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**.
 - **Esfuerzo: ALTO.** Integración externa (OAuth calendario, sync, matching a `people`). Backlog lejano.
 
-**7. Q&A por persona** — ✅ **CERRADO** (`0a106c2`). Ask-box `PreguntarSobrePersona` en la ficha: reusa `/api/sir/ask` (grounding + RAG, ya hechos) con un `personId` nuevo que pre-scopea el contexto ANTES del cap, así responde aterrizado en esa persona aunque no la nombres. Sugerencias rápidas + `skipInlineGaps`. El backend (name-resolution + memorias semánticas + recall C3) ya existía; esto agregó el scope explícito + la UI. **Pendiente futuro:** verificar en vivo (LLM); multi-turno dentro de la ficha (hoy una pregunta por vez).
+**7. Q&A por persona** — ✅ **CERRADO** (`0a106c2`). Ask-box `PreguntarSobrePersona` en la ficha: reusa `/api/sir/ask` (grounding + RAG, ya hechos) con un `personId` nuevo que pre-scopea el contexto ANTES del cap, así responde aterrizado en esa persona aunque no la nombres. Sugerencias rápidas + `skipInlineGaps`. El backend (name-resolution + memorias semánticas + recall C3) ya existía; esto agregó el scope explícito + la UI. ✅ **Multi-turno YA HECHO (verificado 2026-07-21):** `PreguntarSobrePersona.tsx` mantiene `thread`/historial de turnos y lo manda como `history` a `/api/sir/ask` ("Sigue preguntando…"); el backend (`src/lib/sir/askSir.ts` líneas ~116-121, 542-550 + `chatProvider.ts`) arma `chatHistory` real para el LLM, no lo ignora. La nota anterior ("hoy una pregunta por vez") quedó desactualizada. **Sigue pendiente (no verificable por grep):** validar en vivo con LLM real que las respuestas de seguimiento usan bien el hilo.
 
 **8. Cross-referencing por ubicación** — ✅ **HECHO** (ya lo decía la reconciliación 07-14 arriba; re-verificado 2026-07-20). que la capa de memoria/engines interprete el campo `location` (ya existe en `people`; ahora editable a nivel distrito/ciudad) y lo cruce.
 - **Qué es:** sugerencias contextuales por cercanía — "Diana vive en Barranco → visitala", o "X y vos están cerca" cuando Aaron está en la zona. Aparece en la **Agenda / Próximo**.
