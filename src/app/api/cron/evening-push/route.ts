@@ -10,6 +10,7 @@ import { buildEveningHabitsPush, type EveningHabit } from '@/lib/habits/eveningP
 import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard } from '@/lib/telegram/client'
 import { formatEveningBriefForChat } from '@/lib/telegram/eveningBrief'
 import { pendingDailyHabits, habitCallbackData } from '@/lib/habits/checkinButtons'
+import { buildWhoIsWhoQuestion } from '@/lib/social-reader/whoIsWho'
 import { limaDayString } from '@/lib/habits/streak'
 
 export const runtime = 'nodejs'
@@ -111,6 +112,24 @@ export async function GET(req: NextRequest) {
           const rows = pendingHabits.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
           await sendTelegramKeyboard(Number(tgChat), '¿Cuáles de tus hábitos hiciste hoy? Toca los que sí 👇', rows)
         }
+
+        // "¿QUIÉN ES QUIÉN?": handles de IG que el reader vio pero no están
+        // asignados a un contacto. SIR pregunta acá (Aaron responde "@handle
+        // Nombre" y el webhook lo matchea). Throttle por asked_at → no re-pregunta
+        // los mismos. Fail-soft si la tabla 0152/0154 no propagó.
+        try {
+          const { data: un } = await admin
+            .from('unmatched_social_activity')
+            .select('id, handle')
+            .eq('user_id', uid).eq('platform', 'instagram').eq('kind', 'available')
+            .is('asked_at', null).not('handle', 'is', null)
+            .order('observed_at', { ascending: false }).limit(8)
+          const rows = (un ?? []) as Array<{ id: string; handle: string }>
+          if (rows.length > 0) {
+            const tg = await sendTelegramMessage(Number(tgChat), buildWhoIsWhoQuestion(rows.map((r) => r.handle)))
+            if (tg.ok) await admin.from('unmatched_social_activity').update({ asked_at: new Date().toISOString() }).in('id', rows.map((r) => r.id))
+          }
+        } catch { /* fail-soft */ }
       }
       results.push({ user: uid.slice(0, 8), sent: push ? 1 : 0 })
     } catch {
