@@ -21,7 +21,7 @@ export function streakAtRisk(current: number, doneToday: boolean): StreakRisk {
   if (!doneToday && current >= MIN_STREAK_AT_RISK) {
     return {
       atRisk: true,
-      message: `Racha de ${current} en juego hoy — un check la mantiene. Tenés hasta esta noche, sin apuro.`,
+      message: `Racha de ${current} en juego hoy — un check la mantiene. Tienes hasta esta noche, sin apuro.`,
     }
   }
   return { atRisk: false, message: null }

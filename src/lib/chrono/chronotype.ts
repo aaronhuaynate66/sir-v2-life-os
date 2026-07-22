@@ -117,7 +117,7 @@ export function computeSocialJetlag(rows: NightRow[]): SocialJetlag {
   const offset = Math.abs(f - w)
   const significant = offset > JETLAG_THRESHOLD
   const message = significant
-    ? `Tu centro de sueño se corre ~${Math.round(offset / 60 * 10) / 10}h del finde (${toHHMM(f)}) a la semana (${toHHMM(w)}). Ese "jet-lag social" suele coincidir con el bajón del lunes — no es causa probada, pero mirá de acercar los horarios.`
+    ? `Tu centro de sueño se corre ~${Math.round(offset / 60 * 10) / 10}h del finde (${toHHMM(f)}) a la semana (${toHHMM(w)}). Ese "jet-lag social" suele coincidir con el bajón del lunes — no es causa probada, pero trata de acercar los horarios.`
     : null
   return { workMidLabel: toHHMM(w), freeMidLabel: toHHMM(f), offsetMinutes: offset, significant, message, sufficient: true }
 }

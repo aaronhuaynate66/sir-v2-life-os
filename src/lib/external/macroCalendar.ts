@@ -146,7 +146,7 @@ export function buildMacroCalendar(input: MacroCalendarInput, now: Date = new Da
   const holidays = input.holidays.filter((h) => parseDay(h.date))
 
   const goal = input.personalGoals?.[0]
-  const goalHint = goal ? `"${goal}"` : 'vos, tu gente o un pendiente tuyo'
+  const goalHint = goal ? `"${goal}"` : 'ti, tu gente o un pendiente tuyo'
 
   const hits = findLongWeekends(holidays, today, leadDays, goalHint)
   const payday = findPayday(today, leadDays)
