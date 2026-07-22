@@ -26,6 +26,8 @@ import { LIMA_TZ_LABEL } from '@/lib/calendar/tz'
 import type { CalendarEvent, CalendarFeedResult } from '@/lib/calendar/types'
 import { buildCockpit } from '@/lib/horario/cockpit'
 import { buildBoardEvents } from '@/lib/horario/calendarBoard'
+import { buildWeekBriefSignals, hasWeekContent, weekSummaryLine } from '@/lib/horario/briefPeriod'
+import { BriefPanel } from '@/components/horario/BriefPanel'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
@@ -172,6 +174,21 @@ function HorarioContent() {
     [now, cockpit, events, completedSteps, goalMilestones],
   )
 
+  // Señales del "Brief de la semana" desde el cockpit YA computado (builder puro,
+  // sin fetch). Alimenta el BriefPanel: baseline determinístico siempre visible +
+  // narrativa IA on-demand. weekStart/weekEnd salen de los días del cockpit
+  // (offset 0 = hoy … +6); si aún no hay días, no hay brief.
+  const weekBrief = useMemo(() => {
+    if (!cockpit || cockpit.weekDays.length === 0) return null
+    return buildWeekBriefSignals({
+      weekStart: cockpit.weekDays[0].dateKey,
+      weekEnd: cockpit.weekDays[cockpit.weekDays.length - 1].dateKey,
+      weekDays: cockpit.weekDays,
+      focus: cockpit.focus,
+      contactDates: cockpit.contactDates,
+    })
+  }, [cockpit])
+
   const calendarLoading = calendar.kind === 'loading'
 
   return (
@@ -202,6 +219,21 @@ function HorarioContent() {
         <CalendarLoadingState />
       ) : (
         <HorarioCalendar events={boardEvents} onAssignTime={handleAssignTime} />
+      )}
+
+      {/* Brief de la semana: resumen del horizonte (baseline determinístico
+          siempre visible + narrativa IA on-demand). Debajo del calendario para
+          no empujarlo. Invisible si la semana está vacía. */}
+      {weekBrief && (
+        <div className="mt-6">
+          <BriefPanel
+            scope="week"
+            bucket={weekBrief.weekStart}
+            summary={weekSummaryLine(weekBrief)}
+            empty={!hasWeekContent(weekBrief)}
+            signals={weekBrief as unknown as Record<string, unknown>}
+          />
+        </div>
       )}
 
       {/* 11·M5 — cronotipo aplicado al día: en qué franja agendar trabajo profundo
