@@ -24,6 +24,18 @@ describe('parseProposedAction', () => {
     expect(parseProposedAction('proponer_crear_persona', { relacion: 'friend' })).toBeNull()
   })
 
+  it('registrar_estado: mapea estado, valida fecha, exige persona', () => {
+    const a = parseProposedAction('proponer_registrar_estado', { persona: 'Diana Cencaro', estado: 'animo_bajo', fecha: '2026-07-22', nota: 'renegando todo el día' })
+    expect(a).toEqual({ kind: 'registrar_estado', persona: 'Diana Cencaro', estado: 'animo_bajo', fecha: '2026-07-22', nota: 'renegando todo el día' })
+    // estado desconocido → animo_bajo; fecha inválida → '' (executeAction usa hoy)
+    const b = parseProposedAction('proponer_registrar_estado', { persona: 'X', estado: 'raro', fecha: 'ayer' })
+    expect(b).toMatchObject({ kind: 'registrar_estado', estado: 'animo_bajo', fecha: '' })
+    // "regla" se conserva
+    expect(parseProposedAction('proponer_registrar_estado', { persona: 'X', estado: 'regla' })).toMatchObject({ estado: 'regla' })
+    // sin persona → null
+    expect(parseProposedAction('proponer_registrar_estado', { estado: 'regla' })).toBeNull()
+  })
+
   it('marcar_habito: exige el nombre del hábito', () => {
     expect(parseProposedAction('proponer_marcar_habito', { habito: 'meditar' })).toEqual({ kind: 'marcar_habito', habito: 'meditar' })
     expect(parseProposedAction('proponer_marcar_habito', {})).toBeNull()

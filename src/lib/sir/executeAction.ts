@@ -35,7 +35,8 @@ export function isExecutableByChat(kind: string): boolean {
     kind === 'marcar_habito' ||
     kind === 'marcar_tarea' ||
     kind === 'crear_plan' ||
-    kind === 'crear_recordatorio'
+    kind === 'crear_recordatorio' ||
+    kind === 'registrar_estado'
   )
 }
 
@@ -310,6 +311,29 @@ export async function executeProposedAction(
     })
     if (error) return { ok: false, message: 'Uf, no pude agendar el recordatorio. Reinténtalo en un momento.' }
     return { ok: true, message: `⏰ Listo, te recuerdo "${texto.slice(0, 80)}" el ${LIMA_DT.format(new Date(t))}.` }
+  }
+
+  if (action.kind === 'registrar_estado') {
+    const personId = action.personId
+    if (!personId) {
+      return { ok: false, message: `No encontré a ${action.persona || 'esa persona'} en tu red, así que no marqué nada. Nómbrala distinto o créala primero.` }
+    }
+    const { data: person } = await supabase
+      .from('people').select('id, name').eq('user_id', userId).eq('id', personId).maybeSingle()
+    if (!person) return { ok: false, message: 'No encontré esa persona (o no es tuya), no marqué nada.' }
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(action.fecha) ? action.fecha : limaDayString(new Date())
+    // mal humor/tensa → 'pms' (marca de ventana sensible, ancla del forecast);
+    // regla → 'bleeding' (ancla fuerte de inicio de período).
+    const phase = action.estado === 'regla' ? 'bleeding' : 'pms'
+    const { error } = await supabase.from('person_cycles').insert({
+      user_id: userId, person_id: personId, date, phase,
+      confidence: 'medium', source: 'aaron',
+      note: (action.nota || '').trim().slice(0, 300) || null,
+    })
+    if (error) return { ok: false, message: 'Uf, no pude guardar la marca de estado. Reinténtalo en un momento.' }
+    const first = ((person.name as string) || action.persona || 'ella').split(' ')[0]
+    const label = action.estado === 'regla' ? 'período' : 'ánimo bajo/tensa'
+    return { ok: true, message: `📔 Anotado: ${first} — ${label} el ${date}. Con cada marca detecto mejor si hay un patrón que se repite; cuando haya varias, te aviso si es cíclico y cuándo podría volver.` }
   }
 
   return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hazlo desde la web.' }

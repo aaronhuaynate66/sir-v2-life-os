@@ -21,8 +21,9 @@ import type { SirReceipt } from '@/lib/sir/ask'
 import { memoryProvenance } from '@/lib/memories/provenance'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'crear_plan' | 'crear_recordatorio'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'crear_plan' | 'crear_recordatorio' | 'registrar_estado'
   persona?: string
+  estado?: 'regla' | 'animo_bajo'
   habito?: string
   tarea?: string
   fecha?: string
@@ -470,6 +471,18 @@ export default function SirChatPage() {
         })
         if (!res.ok) { toast.error('No se pudo agendar el recordatorio'); return }
         toast.success('Recordatorio agendado', { description: texto })
+        setTurnState(idx, 'done')
+      } else if (a.kind === 'registrar_estado') {
+        if (!a.personId) { toast.error(`No encontré a ${a.persona ?? 'esa persona'}`, { description: 'Créala o nómbrala distinto.' }); return }
+        const phase = a.estado === 'regla' ? 'bleeding' : 'pms'
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(a.fecha ?? '') ? a.fecha : new Date().toLocaleDateString('en-CA')
+        const res = await fetch('/api/people/cycle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ person_id: a.personId, date, phase, note: a.nota || undefined }),
+        })
+        if (!res.ok) { toast.error('No se pudo guardar el estado'); return }
+        toast.success('Estado anotado', { description: `${a.persona ?? ''} · ${a.estado === 'regla' ? 'período' : 'ánimo bajo'} · ${date}` })
         setTurnState(idx, 'done')
       } else if (a.kind === 'cerrar_relacion') {
         if (!a.personId) {
