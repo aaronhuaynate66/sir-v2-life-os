@@ -97,6 +97,58 @@
   // Leemos SOLO labels visibles tipo "Story by foo, not seen"; no abrimos stories.
   const domSeen = new Set();
   let domTimer = null;
+  function cleanText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+  function comparableName(value) {
+    return cleanText(value).toLowerCase().replace(/[^a-z0-9]+/g, '');
+  }
+  function isHandleLike(value) {
+    return /^[a-z0-9._]{2,30}$/i.test(cleanText(value));
+  }
+  function distinctDisplayName(value, handle) {
+    const name = cleanText(value);
+    if (!name || name.length > 80) return undefined;
+    if (comparableName(name) === comparableName(handle)) return undefined;
+    if (isHandleLike(name) && comparableName(name) === comparableName(handle.replace(/^@/, ''))) return undefined;
+    return name;
+  }
+  function displayNameFromAlt(alt, handle) {
+    const text = cleanText(alt);
+    if (!text) return undefined;
+    const patterns = [
+      /^Foto de perfil de\s+(.+)$/i,
+      /^Foto del perfil de\s+(.+)$/i,
+      /^Profile picture of\s+(.+)$/i,
+      /^(.+?)'s profile picture$/i
+    ];
+    for (const pattern of patterns) {
+      const m = text.match(pattern);
+      const name = m && distinctDisplayName(m[1], handle);
+      if (name) return name;
+    }
+    return undefined;
+  }
+  function displayNameFromText(root, handle) {
+    const seen = new Set();
+    const nodes = root ? root.querySelectorAll('[dir="auto"], span, div') : [];
+    for (const node of nodes) {
+      const text = cleanText(node.textContent);
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      if (text.includes('\n') || text.length > 80) continue;
+      const name = distinctDisplayName(text, handle);
+      if (name && !isHandleLike(name)) return name;
+    }
+    return undefined;
+  }
+  function storyDomMeta(el, handle) {
+    const root = el.closest('li') || el.closest('div[role="button"], a, button') || el;
+    const img = (root && root.querySelector('img')) || el.querySelector('img');
+    const avatarUrl = img && img.src ? img.src : undefined;
+    const name = displayNameFromAlt(img && img.getAttribute('alt'), handle) || displayNameFromText(root, handle);
+    return { name, avatarUrl };
+  }
   function scanStoryDom() {
     domTimer = null;
     const items = [];
@@ -109,7 +161,11 @@
         const handle = m[1].trim();
         if (!handle || domSeen.has(handle)) continue;
         domSeen.add(handle);
-        items.push({ platform: 'instagram', handle, hasActiveStory: true });
+        const meta = storyDomMeta(el, handle);
+        const item = { platform: 'instagram', handle, hasActiveStory: true };
+        if (meta.name) item.name = meta.name;
+        if (meta.avatarUrl) item.avatarUrl = meta.avatarUrl;
+        items.push(item);
         if (items.length >= 40) break;
       }
     } catch (_) {}

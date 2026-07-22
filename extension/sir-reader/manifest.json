@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SIR Reader",
-  "version": "0.6.0",
+  "version": "0.6.3",
   "description": "Lee pasivamente tus conversaciones (Teams, WhatsApp Web) y tu correo (Outlook Web) y los manda a tu SIR. Solo lo que ya se ve en pantalla; sin auto-scroll ni requests de fondo.",
   "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": [
