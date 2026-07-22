@@ -19,6 +19,9 @@ import { resolveKinshipMentions } from '@/lib/people/kinship'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
 import { getYearNorte } from '@/lib/year-compass/norte'
 import { cyclePhase } from '@/lib/ciclo/phase'
+import { buildDailySignals } from '@/lib/forecast-conductual/dailySignals'
+import { runForecast } from '@/lib/forecast-conductual/engine'
+import { fetchChatMessages } from '@/lib/chat-messages/read'
 import { embedText, toPgVector } from '@/lib/embeddings/client'
 import {
   SIR_ASK_SYSTEM_PROMPT,
@@ -359,6 +362,40 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
         }
       }
 
+      // Sin fecha exacta de ciclo pero PREGUNTARON por ella (targetIds) y es
+      // mujer → estimamos la ventana conductual desde PATRONES de WhatsApp
+      // (forecast-conductual, exploratorio, sin fecha manual). Solo para la
+      // persona preguntada (cara: lee su hilo) → 0-1 por turno. Fail-open.
+      let behaviorWindow: AskPersonCtx['behaviorWindow'] = null
+      if (!cycle && targetIds.has(pid) && (row.gender as string | null) === 'female') {
+        try {
+          const subRows = await fetchChatMessages(supabase, userId, pid, 50_000)
+          const subMsgs = subRows
+            .filter((r) => typeof r.sent_at === 'string' && r.sent_at.length >= 10)
+            .map((r) => ({ at: r.sent_at as string, author: r.sender === 'user' ? 'user' as const : 'other' as const, text: r.content ?? '', kind: r.is_media ? 'media' as const : 'text' as const }))
+          const signals = buildDailySignals(subMsgs)
+          if (signals.length >= 8) {
+            const fc = runForecast({ signals, anchors: [], now: nowDate })
+            if (fc && fc.mainWindow) {
+              const todayKey = nowDate.toISOString().slice(0, 10)
+              const ext = fc.extendedWindow
+              const inNow = !!ext && todayKey >= ext.start && todayKey <= ext.end
+              const daysTo = fc.mainWindow.start
+                ? Math.round((Date.parse(fc.mainWindow.start) - Date.parse(todayKey)) / 86_400_000)
+                : null
+              behaviorWindow = {
+                periodDays: fc.periodDays,
+                mainStart: fc.mainWindow.start,
+                mainEnd: fc.mainWindow.end,
+                confidenceLabel: fc.confidence.label,
+                inWindowNow: inNow,
+                daysToWindow: daysTo,
+              }
+            }
+          }
+        } catch { /* fail-open: sin ventana estimada */ }
+      }
+
       const personCtx: AskPersonCtx = {
         name: (row.name as string) ?? 'alguien',
         relationship: (row.relationship as string | null) ?? null,
@@ -372,6 +409,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
         activeGoal: goalByPerson[pid] ?? null,
         conversation,
         cycle,
+        behaviorWindow,
       }
       return { ctxSignal, personCtx, receiptMems: memsWithSource }
     }),

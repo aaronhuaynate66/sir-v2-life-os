@@ -29,7 +29,8 @@ CICLO MENSTRUAL (cuando el CONTEXTO trae la fase del ciclo de una persona — da
 - Úsala SOLO para sintonizarte y cuidar mejor: timing, suavidad, presencia, anticipación amable. Puedes decir en qué fase está y qué tiende a pasar en esa fase, siempre como CUIDADO.
 - NUNCA la uses para descalificar ("está hormonal"), invalidar lo que siente, ni predecir su conducta como si fuera un mecanismo. El ciclo MODULA, no dicta: una emoción real es real, tenga la fase que tenga; es contexto, jamás la explicación única.
 - Es tendencia poblacional, no ley individual. Habla de posibilidades de cuidado, no de certezas conductuales. Si te piden "probabilidades de comportamiento" por la fase, reencuádralo hacia cómo acompañar mejor, sin reducir a la persona a su biología.
-- SI TE PREGUNTAN POR EL CICLO/LA REGLA DE UNA PERSONA Y EL CONTEXTO NO TRAE SU FASE (no está registrada su fecha de inicio de ciclo): dilo con honestidad — no tienes ese dato para ELLA, así que no puedes calcularlo. NO inventes la fase, NO la deduzcas, y JAMÁS uses el ciclo de otra persona con nombre parecido (ej. otra "Diana"). Explica que para calcularlo hay que registrar la fecha de su última regla en su ficha (Relaciones → la persona → ciclo). Ofrece que, apenas esté cargada, se lo dices.
+- Si NO hay fecha exacta de ciclo pero el CONTEXTO trae una "ventana conductual ESTIMADA de patrones de WhatsApp": úsala como TENDENCIA exploratoria (no período confirmado, no diagnóstico). Puedes decir si HOY cae dentro/cerca de una ventana de mayor sensibilidad o no, y aconsejar timing/cuidado en base a eso. SIEMPRE aclara que es una estimación de patrón de sus chats, no la regla confirmada. Si HOY NO cae en la ventana, dilo con honestidad: probablemente lo que Aaron observa no es cíclico (puede ser situacional) — no fuerces la explicación biológica.
+- SI TE PREGUNTAN POR EL CICLO/LA REGLA DE UNA PERSONA Y NO HAY NI FECHA EXACTA NI VENTANA CONDUCTUAL ESTIMADA en el contexto: dilo con honestidad — no tienes ese dato para ELLA, no puedes calcularlo. NO inventes la fase, NO la deduzcas, y JAMÁS uses el ciclo de otra persona con nombre parecido (ej. otra "Diana"). Explica que hace falta o registrar la fecha de su última regla en su ficha, o tener suficientes conversaciones de WhatsApp suyas para estimar el patrón.
 
 PERSPECTIVA / ÁNIMO (solo cuando Aaron habla de cómo está, de un momento difícil, o te pide perspectiva, espejo o una idea creativa sobre su situación):
 - Aquí SÍ puedes salir del modo dato seco: responde como un asesor que lo conoce y lo apoya, breve y humano.
@@ -63,6 +64,18 @@ export interface AskPersonCtx {
     isPmsWindow: boolean
     isFertileWindow: boolean
     note: string
+  } | null
+  /** Ventana conductual estimada de PATRONES de WhatsApp (forecast-conductual,
+   *  exploratorio, SIN fecha manual). Es TENDENCIA — no período confirmado ni
+   *  diagnóstico. Se usa cuando no hay `cycle` (fecha exacta). null si no hay
+   *  data/forecast. Ver src/lib/forecast-conductual. */
+  behaviorWindow?: {
+    periodDays: number | null
+    mainStart: string | null
+    mainEnd: string | null
+    confidenceLabel: string
+    inWindowNow: boolean
+    daysToWindow: number | null
   } | null
 }
 
@@ -131,6 +144,17 @@ export function buildAskContext(input: AskContextInput): string {
         if (c.isPmsWindow) lines.push('   - ventana premenstrual: puede haber más sensibilidad — presencia y suavidad suman')
         if (c.isFertileWindow) lines.push('   - ventana fértil (orientativa, NO método anticonceptivo)')
         lines.push(`   - tendencia típica de la fase: ${c.note} (tendencia poblacional, NO certeza; estimado desde la última fecha de período, asume ciclo regular)`)
+      } else if (p.behaviorWindow) {
+        const b = p.behaviorWindow
+        lines.push('  ventana conductual ESTIMADA de patrones de WhatsApp (dato SENSIBLE — TENDENCIA exploratoria, NO período confirmado ni diagnóstico; jamás para descalificar):')
+        if (b.inWindowNow) {
+          lines.push(`   - HOY cae dentro de una ventana estimada de mayor sensibilidad/fricción (ritmo ~${b.periodDays}d, confianza ${b.confidenceLabel})`)
+        } else if (b.daysToWindow != null && b.daysToWindow >= 0) {
+          lines.push(`   - HOY NO está en la ventana estimada; la próxima ventana sensible sería en ~${b.daysToWindow} día(s) (${b.mainStart} → ${b.mainEnd}, ritmo ~${b.periodDays}d, confianza ${b.confidenceLabel})`)
+        } else {
+          lines.push(`   - ventana estimada: ${b.mainStart} → ${b.mainEnd} (ritmo ~${b.periodDays}d, confianza ${b.confidenceLabel})`)
+        }
+        lines.push('   - úsalo SOLO para timing/cuidado (cuándo encarar un tema, cuándo dar aire). Aclara que es estimación de PATRÓN de sus chats, NO la regla confirmada; se afina registrando qué pasa. Si HOY no cae en la ventana, dilo: probablemente lo que ves no es cíclico.')
       }
       lines.push('')
     }
