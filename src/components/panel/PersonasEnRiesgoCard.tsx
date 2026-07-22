@@ -11,6 +11,8 @@ import { motion } from 'framer-motion'
 import { AlertCircle, Users, ChevronRight, Loader2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { parseErrorResponse, toApiError, type ApiError } from '@/lib/api/errors'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -46,16 +48,17 @@ function urgentText(p: Persona): string | null {
 export function PersonasEnRiesgoCard() {
   const [personas, setPersonas] = useState<Persona[] | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<ApiError | null>(null)
 
   const load = useCallback(async () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     try {
       const res = await fetch('/api/panel/personas-en-riesgo', { cache: 'no-store' })
-      if (!res.ok) { setPersonas([]); return }
+      if (!res.ok) { setError(await parseErrorResponse(res)); setPersonas([]); return }
       const j = (await res.json()) as { personas?: Persona[] }
       setPersonas(j.personas ?? [])
-    } catch {
-      setPersonas([])
+    } catch (e) {
+      setError(toApiError(e)); setPersonas([])
     } finally { setLoading(false) }
   }, [])
 
@@ -77,6 +80,15 @@ export function PersonasEnRiesgoCard() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="mb-4">
+        <ApiErrorNotice error={error} className="p-3">
+          <button onClick={() => void load()} className="mt-1 text-xs underline underline-offset-2 hover:text-foreground">Reintentar</button>
+        </ApiErrorNotice>
+      </div>
+    )
+  }
   if (!personas || personas.length === 0) return null
 
   return (
