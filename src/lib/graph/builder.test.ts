@@ -1,7 +1,27 @@
 import { describe, it, expect } from 'vitest'
 
-import { categoryForPerson, firstName, initialsFromName, buildGraphData } from './builder'
+import { categoryForPerson, firstName, initialsFromName, buildGraphData, coMemberEdges } from './builder'
 import type { Person, RelationshipType, PersonCategory, PersonLink } from '@/types'
+
+describe('coMemberEdges (mesh "se conocen entre sí")', () => {
+  it('conecta a los miembros de un grupo chico entre sí (full mesh)', () => {
+    const e = coMemberEdges([{ label: 'CGBVP', nodeIds: ['a', 'b', 'c'] }])
+    expect(e).toHaveLength(3) // a-b, a-c, b-c
+    expect(e.every((x) => x.category === 'organizacion' && x.label === 'CGBVP')).toBe(true)
+  })
+  it('grupos > cap (6) NO reciben mesh (evita el ovillo N²)', () => {
+    const big = { label: 'Grupo HNG', nodeIds: ['1', '2', '3', '4', '5', '6', '7'] }
+    expect(coMemberEdges([big])).toHaveLength(0)
+  })
+  it('grupos de 1 no generan nada; dedup por par entre grupos', () => {
+    expect(coMemberEdges([{ label: 'X', nodeIds: ['solo'] }])).toHaveLength(0)
+    const seen = new Set<string>()
+    const g1 = coMemberEdges([{ label: 'A', nodeIds: ['x', 'y'] }], seen)
+    const g2 = coMemberEdges([{ label: 'B', nodeIds: ['y', 'x'] }], seen)
+    expect(g1).toHaveLength(1)
+    expect(g2).toHaveLength(0) // el par x-y ya salió
+  })
+})
 
 function person(over: Partial<Person> & Pick<Person, 'relationship' | 'category'>): Person {
   return {
@@ -138,19 +158,18 @@ describe('buildGraphData — aristas self↔persona (0058, sentinel "self")', ()
 })
 
 describe('nodo-empresa HUB (escalón 2)', () => {
-  it('≥2 personas del mismo grupo → 1 nodo-empresa + aristas persona→empresa (no N²)', () => {
+  it('≥2 personas del mismo grupo → 1 nodo-empresa + spokes + mesh en grupo chico', () => {
     const alex = person({ id: 'alex', name: 'Alex', relationship: 'professional', category: 'close', organization: 'Grupo HNG Corporación' })
     const fran = person({ id: 'fran', name: 'Francisco', relationship: 'professional', category: 'network', organization: 'K2 Seguridad y Resguardo' })
     const g = buildGraphData({ people: [alex, fran], relationships: [], selfFullName: 'A', selfEmail: 'a@x.com' })
     const orgNode = g.nodes.find((n) => n.category === 'organizacion')
     expect(orgNode).toBeTruthy()
-    expect(orgNode!.shortName).toBe('Grupo HNG') // resuelto vía registro
-    // aristas persona→empresa (no persona↔persona)
-    const toOrg = g.edges.filter((e) => e.category === 'organizacion')
-    expect(toOrg.length).toBe(2)
-    expect(toOrg.every((e) => e.target === orgNode!.id)).toBe(true)
-    // no hay arista directa alex↔fran
-    expect(g.edges.some((e) => (e.source === 'alex' && e.target === 'fran') || (e.source === 'fran' && e.target === 'alex'))).toBe(false)
+    expect(orgNode!.shortName).toBe('Grupo HNG') // resuelto + normalizado (merge "Corporación")
+    // spokes persona→empresa (siguen: no N² para grupos grandes)
+    const spokes = g.edges.filter((e) => e.category === 'organizacion' && e.target === orgNode!.id)
+    expect(spokes.length).toBe(2)
+    // grupo CHICO (≤6) → AHORA sí hay mesh directo alex↔fran ("se conocen entre sí")
+    expect(g.edges.some((e) => (e.source === 'alex' && e.target === 'fran') || (e.source === 'fran' && e.target === 'alex'))).toBe(true)
   })
 
   it('1 sola persona con empresa → NO crea hub', () => {
