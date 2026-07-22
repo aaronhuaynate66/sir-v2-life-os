@@ -70,6 +70,7 @@ interface SocialItem {
   handle?: string
   linkedinUrl?: string
   name?: string
+  avatarUrl?: string
   text?: string
   hasActiveStory?: boolean
   headline?: string
@@ -160,6 +161,7 @@ export async function POST(req: NextRequest) {
             await admin.from('unmatched_social_activity').upsert({
               id: unmatchedId(userId, key, sig.kind), user_id: userId, platform,
               handle: it.handle ? canonHandle(it.handle) : null, name: it.name ?? null,
+              avatar_url: it.avatarUrl ?? null,
               kind: sig.kind, detail: sig.detail, observed_at: resolveObservedAt(it.activityAt, nowIso),
             }, { onConflict: 'id' })
           }
