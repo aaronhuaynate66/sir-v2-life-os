@@ -366,16 +366,17 @@ function SaludContent() {
         </CollapsibleSection>
       </div>
 
+      {/* Densidad: lo ANALÍTICO/secundario (patrones, aprendizajes, síntesis,
+          chequeos, alertas de FC) arranca colapsado — el resumen y las tendencias
+          ya viven arriba. Mismo patrón que las 2 secciones de arriba (#861). */}
       <div className="mb-6">
-        <PatronesPanel />
-        <LearningCard />
-        <SintesisCruzadaPanel />
-        <div className="mt-4"><ChequeosPanel metrics={healthMetrics} /></div>
-      </div>
-
-      {/* Días con alertas de FC elevada (señal episódica de activación). */}
-      <div className="mb-6">
-        <HeartRateAlertsPanel metrics={healthMetrics} />
+        <CollapsibleSection title="Análisis, patrones y chequeos" hint="patrones de lab · aprendizajes · síntesis cruzada · historial de chequeos · alertas de FC">
+          <PatronesPanel />
+          <LearningCard />
+          <SintesisCruzadaPanel />
+          <div className="mt-4"><ChequeosPanel metrics={healthMetrics} /></div>
+          <div className="mt-4"><HeartRateAlertsPanel metrics={healthMetrics} /></div>
+        </CollapsibleSection>
       </div>
 
 
