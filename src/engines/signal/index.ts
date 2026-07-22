@@ -23,17 +23,3 @@ export function buildSignalContext(signals: Signal[]): SignalContext {
     hasImmediateAlert: active.some(s => s.urgency === 'immediate'),
   }
 }
-
-export function extractSignalMeaning(signal: Signal): string {
-  const meanings: Record<string, string> = {
-    opportunity: 'Hay una oportunidad que evaluar',
-    warning: 'Algo requiere atencion pronto',
-    pattern: 'Patron repetido detectado',
-    timing: 'El timing puede ser relevante ahora',
-    emotional: 'Carga emocional significativa',
-    relational: 'Cambio en relacion importante',
-    biological: 'Tu cuerpo esta enviando una senal',
-    financial: 'Movimiento financiero relevante',
-  }
-  return signal.meaning || meanings[signal.type] || 'Senal detectada'
-}
