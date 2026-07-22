@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { suggestPersonForHandle } from '@/lib/social-reader/suggestMatch'
+import { looksLikeBusiness } from '@/lib/social-reader/looksLikeBusiness'
 import type { Person } from '@/types'
 
 interface UnmatchedItem {
@@ -67,11 +68,42 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
     return map
   }, [items, people])
 
-  // Sugeridos primero: los contactos reales suben, el ruido (empresas/desconocidos) baja.
+  // "Probable negocio": pista para triage. NO se marca si ya hay sugerencia de
+  // contacto (eso significa que matchea a una persona real).
+  const bizFlags = useMemo(() => {
+    const map: Record<string, boolean> = {}
+    for (const it of items) map[it.id] = !suggestions[it.id] && looksLikeBusiness({ handle: it.handle, name: it.name })
+    return map
+  }, [items, suggestions])
+  const bizCount = useMemo(() => Object.values(bizFlags).filter(Boolean).length, [bizFlags])
+
+  // Orden: sugeridos primero (contactos reales), luego el resto, y los probables
+  // negocios al fondo (ruido a descartar).
   const ordered = useMemo(
-    () => [...items].sort((a, b) => (suggestions[a.id] ? 0 : 1) - (suggestions[b.id] ? 0 : 1)),
-    [items, suggestions],
+    () => [...items].sort((a, b) => {
+      const rank = (it: UnmatchedItem) => (suggestions[it.id] ? 0 : bizFlags[it.id] ? 2 : 1)
+      return rank(a) - rank(b)
+    }),
+    [items, suggestions, bizFlags],
   )
+
+  async function dismissBusinesses() {
+    const ids = items.filter((it) => bizFlags[it.id]).map((it) => it.id)
+    if (ids.length === 0) return
+    if (!window.confirm(`¿Descartar ${ids.length} cuenta(s) que parecen negocios? Si alguna era una persona, reaparece sola en su próxima historia.`)) return
+    setBusy('__bulk__')
+    try {
+      await Promise.all(ids.map((id) =>
+        fetch('/api/social/unmatched', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {}),
+      ))
+      setItems((prev) => prev.filter((i) => !ids.includes(i.id)))
+      toast.success(`Descarté ${ids.length} probable(s) negocio(s)`)
+    } catch {
+      toast.error('Error de red')
+    } finally {
+      setBusy(null)
+    }
+  }
 
   async function assignTo(item: UnmatchedItem, personId: string, personName: string) {
     setBusy(item.id)
@@ -163,6 +195,16 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
           SIR vio actividad de estas cuentas que sigues pero no las tiene asignadas. Cuando puede,
           te sugiere quién es (1 toque). Asigna la que sea un contacto, créala si no existe, o descarta el resto.
         </p>
+        {bizCount > 0 && (
+          <button
+            type="button"
+            onClick={dismissBusinesses}
+            disabled={busy === '__bulk__'}
+            className="mb-3 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
+          >
+            <X size={12} /> Descartar {bizCount} probable(s) negocio(s)
+          </button>
+        )}
         <div className="space-y-2">
           {ordered.map((it) => {
             const sug = suggestions[it.id]
@@ -173,6 +215,7 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
                 <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                   <span className="truncate">{it.handle ? `@${it.handle}` : (it.name || 'sin nombre')}</span>
                   <Badge variant="outline" className="shrink-0 text-[10px]">{KIND_LABEL[it.kind] ?? it.kind}</Badge>
+                  {bizFlags[it.id] && <Badge variant="outline" className="shrink-0 text-[10px] text-muted-foreground/70">¿negocio?</Badge>}
                 </div>
                 {it.detail && <div className="mb-2 truncate text-xs text-muted-foreground">{it.detail}</div>}
 
