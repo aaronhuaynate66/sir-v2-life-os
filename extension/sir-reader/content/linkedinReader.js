@@ -58,17 +58,36 @@
   function cleanText(value) {
     return String(value || '').replace(/\s+/g, ' ').trim();
   }
+  function visibleLines(root) {
+    return String((root && root.innerText) || '')
+      .split(/\n+/)
+      .map(cleanText)
+      .filter(Boolean);
+  }
   function currentProfileUrl() {
     const m = location.pathname.match(/^\/in\/([^/]+)/i);
     return m ? `https://linkedin.com/in/${m[1]}` : '';
   }
   function visibleProfileName() {
     const h1 = document.querySelector('h1');
-    return cleanText(h1 && h1.innerText);
+    const h1Name = cleanText(h1 && h1.innerText);
+    if (h1Name) return h1Name;
+
+    const titleName = cleanText(document.title.replace(/\s*\|\s*LinkedIn.*$/i, ''));
+    if (titleName && !/^(Feed|LinkedIn|Inicio)$/i.test(titleName)) return titleName;
+
+    const main = document.querySelector('main') || document.body;
+    return visibleLines(main).find((line, index, lines) =>
+      index > 0 &&
+      line.length > 2 &&
+      line.length < 90 &&
+      lines[index + 1] &&
+      !/^(Inicio|Mi red|Empleos|Mensajes|Notificaciones|Yo|Para negocios|Publicidad|Recursos)$/i.test(line)
+    ) || '';
   }
   function visibleProfileHeadline(name) {
     const main = document.querySelector('main') || document.body;
-    const lines = cleanText(main && main.innerText).split(/\n+/).map(cleanText).filter(Boolean);
+    const lines = visibleLines(main);
     const nameIndex = lines.findIndex((line) => line === name);
     const candidates = lines.slice(Math.max(0, nameIndex + 1), nameIndex > -1 ? nameIndex + 8 : 10);
     return candidates.find((line) =>
