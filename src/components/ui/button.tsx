@@ -25,10 +25,12 @@ const buttonVariants = cva(
         link: "text-brand underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
+        // Tap-targets accesibles en móvil (HIG/Material ~44px). default/icon a
+        // 44px; sm sube de 36→40 (más tocable sin desbordar en filas compactas).
+        default: "h-11 px-4 py-2",
+        sm: "h-10 rounded-md px-3",
         lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {
