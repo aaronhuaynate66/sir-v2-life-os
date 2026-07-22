@@ -360,54 +360,51 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
   )
 
   // Label del edge: SÓLO cuando toca al nodo enfocado (sin hover no hay labels).
-  const renderLinkLabel = useCallback(
+  // Fase 2: link pintado con GRADIENTE del color del dominio ORIGEN al DESTINO
+  // → el vínculo ES la conexión entre dos áreas de la vida de Aaron (familia↔
+  // trabajo, etc.). En reposo, telaraña tenue; al hover, se enciende el subgrafo
+  // y se atenúa el resto. El label del edge sale solo al hover.
+  const paintLink = useCallback(
     (rawLink: unknown, ctx: CanvasRenderingContext2D, globalScale: number) => {
       if (!theme) return
       const link = rawLink as LinkLike
-      if (!link.label || !edgeTouchesHover(link)) return
-      const source = typeof link.source === 'object' ? link.source : null
-      const target = typeof link.target === 'object' ? link.target : null
-      if (!source || !target) return
-      const mx = ((source.x ?? 0) + (target.x ?? 0)) / 2
-      const my = ((source.y ?? 0) + (target.y ?? 0)) / 2
+      const s = typeof link.source === 'object' ? link.source : null
+      const t = typeof link.target === 'object' ? link.target : null
+      if (!s || s.x == null || s.y == null || !t || t.x == null || t.y == null) return
+      const touches = edgeTouchesHover(link)
+      const dim = hovered != null && !touches
+      const catOf = (n: NodeLike): GraphCategory => (n.isSelf ? 'self' : (n.category ?? 'networking'))
+      const grad = ctx.createLinearGradient(s.x, s.y, t.x, t.y)
+      grad.addColorStop(0, theme.cat[catOf(s)])
+      grad.addColorStop(1, theme.cat[catOf(t)])
 
-      const fontSize = Math.max(8, 10 / Math.max(0.85, globalScale))
-      ctx.font = `600 ${fontSize}px ${FONT}`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      const text = link.label
-      const metrics = ctx.measureText(text)
-      const padding = 4
-      const w = metrics.width + padding * 2
-      const h = fontSize + padding
-      ctx.fillStyle = hsl(theme.fgTriplet, 0.1)
-      roundRect(ctx, mx - w / 2, my - h / 2, w, h, 4)
-      ctx.fill()
-      ctx.fillStyle = theme.fg
-      ctx.fillText(text, mx, my)
-    },
-    [theme, edgeTouchesHover],
-  )
+      ctx.save()
+      ctx.globalAlpha = hovered == null ? 0.24 : touches ? 0.95 : 0.05
+      ctx.strokeStyle = grad
+      ctx.lineWidth = (touches ? 2.4 : dim ? 0.5 : 0.9) / Math.max(0.7, globalScale)
+      ctx.beginPath()
+      ctx.moveTo(s.x, s.y)
+      ctx.lineTo(t.x, t.y)
+      ctx.stroke()
+      ctx.globalAlpha = 1
 
-  const linkColor = useCallback(
-    (rawLink: unknown) => {
-      if (!theme) return 'rgba(120,130,150,0.12)'
-      const link = rawLink as LinkLike
-      const cat = (link.category ?? 'networking') as GraphCategory
-      const base = theme.cat[cat] ?? hsl(theme.muted, 0.35)
-      if (hovered == null) return hsl(theme.muted, 0.14) // reposo: telaraña tenue
-      return edgeTouchesHover(link) ? base : hsl(theme.muted, 0.05)
+      if (link.label && touches) {
+        const mx = (s.x + t.x) / 2, my = (s.y + t.y) / 2
+        const fontSize = Math.max(8, 10 / Math.max(0.85, globalScale))
+        ctx.font = `600 ${fontSize}px ${FONT}`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        const w = ctx.measureText(link.label).width + 8
+        const h = fontSize + 4
+        ctx.fillStyle = hsl(theme.fgTriplet, 0.1)
+        roundRect(ctx, mx - w / 2, my - h / 2, w, h, 4)
+        ctx.fill()
+        ctx.fillStyle = theme.fg
+        ctx.fillText(link.label, mx, my)
+      }
+      ctx.restore()
     },
     [theme, hovered, edgeTouchesHover],
-  )
-
-  const linkWidth = useCallback(
-    (rawLink: unknown) => {
-      const link = rawLink as LinkLike
-      if (hovered == null) return 0.7
-      return edgeTouchesHover(link) ? 2.5 : 0.5
-    },
-    [hovered, edgeTouchesHover],
   )
 
   const particleCount = useCallback(
@@ -448,9 +445,7 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
           graphData={fgData}
           backgroundColor={theme.bg}
           autoPauseRedraw={false}
-          linkColor={linkColor}
-          linkWidth={linkWidth}
-          linkCurvature={0.18}
+          linkCurvature={0}
           linkDirectionalArrowLength={0}
           linkDirectionalParticles={particleCount}
           linkDirectionalParticleSpeed={0.004}
@@ -470,8 +465,8 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
           onNodeClick={(node: NodeLike) => {
             if (node?.id) onNavigate?.(node.id, !!node.isSelf)
           }}
-          linkCanvasObjectMode={() => 'after'}
-          linkCanvasObject={renderLinkLabel}
+          linkCanvasObjectMode={() => 'replace'}
+          linkCanvasObject={paintLink}
         />
       )}
       {/* Vignette sutil: remata el look en oscuro, casi invisible en claro. */}
