@@ -401,15 +401,15 @@ function DashboardContent() {
           hay uno en la ventana, no renderiza nada. Ver src/lib/panel/weekInFocus.ts. */}
       <WeekInFocusCard now={now} />
 
-      {/* Targets at a Glance: cross-check ingresos vs S/15k y peso vs categoría
-          Mundial. Sin gráficos — un chip y un número por row. Fail-safe si no
-          hay goals declarados con métrica dura. Ver src/engines/targets. */}
-      <TargetsAtGlanceCard now={now} />
-
-      {/* Observación conductual (E3 hueco #4): cuando estrés + sueño + gasto
-          no-esencial se alinean, sale una sugerencia concreta y no-clínica.
-          Fail-safe: si no hay patrón claro, no renderiza. Ver src/engines/behavioral. */}
-      <BehavioralSuggestionCard now={now} />
+      {/* DENSIDAD (elección de Aaron): lo analítico/secundario del tope va
+          colapsado — el foco (TU AÑO, objetivo inminente, Foco ahora, acción del
+          día) queda arriba. Targets (ingresos/peso Mundial) y la observación
+          conductual se abren a un toque. Fail-safe: cada uno ya no renderiza si
+          no hay data, así que la sección puede quedar vacía. */}
+      <CollapsibleSection title="Métricas y observación del día" hint="ingresos vs meta · peso Mundial · patrón estrés/gasto" className="mb-4">
+        <TargetsAtGlanceCard now={now} />
+        <BehavioralSuggestionCard now={now} />
+      </CollapsibleSection>
 
       {/* Anduve hoy: timeline compacto de eventos registrados hoy — hábitos,
           self-metrics, sueño, gastos, KRs/tareas cerradas, memorias. Refleja,
@@ -488,8 +488,11 @@ function DashboardContent() {
         </CardContent>
       </Card>
 
-      {/* Weekly score (P2): score semanal compuesto con tier S/A/B/C/D. */}
-      <WeeklyScoreCard data={weekly} delta={weeklyDelta} />
+      {/* Weekly score (P2): analítico → colapsado (elección de Aaron). Recovery
+          NO se colapsa: cuando hay sobrecarga, sus prioridades importan. */}
+      <CollapsibleSection title="Score semanal" hint="tier S/A/B/C/D · componentes · vs semana anterior" className="mb-4">
+        <WeeklyScoreCard data={weekly} delta={weeklyDelta} />
+      </CollapsibleSection>
 
       {/* Recovery Mode dinámico (P4): prioridades de recuperación cuando hay sobrecarga. */}
       <RecoveryPanel data={recoveryAssessment} />
