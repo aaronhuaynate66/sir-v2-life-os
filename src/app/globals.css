@@ -37,6 +37,16 @@
     --warning: 38 75% 55%;
     --warning-foreground: 0 0% 9%;
     --border: 0 0% 90%;
+    /* Grafo de relaciones — dominios (deep para contraste sobre fondo claro) */
+    --graph-familia:      4 72% 50%;
+    --graph-personal:     142 62% 38%;
+    --graph-profesional:  217 79% 52%;
+    --graph-networking:   215 16% 47%;
+    --graph-estrategico:  270 65% 55%;
+    --graph-desarrollo:   32 90% 46%;
+    --graph-organizacion: 172 70% 36%;
+    --graph-episodio:     24 90% 52%;
+    --graph-self:         252 56% 57%;
     --border-strong: 0 0% 82%;
     --input: 0 0% 90%;
     --ring: 252 56% 57%;
@@ -90,6 +100,16 @@
     /* Bordes (HSL solido afinado al equivalente de blanco translucido
        .08 / .14 sobre el bg). Mantiene los modificadores /40, /60. */
     --border: 0 0% 12%;                  /* ≈ rgba(255,255,255,.08) sobre bg */
+    /* Grafo de relaciones — dominios (luminosos para brillar sobre #0a0a0a) */
+    --graph-familia:      4 84% 64%;
+    --graph-personal:     142 64% 55%;
+    --graph-profesional:  213 90% 66%;
+    --graph-networking:   215 20% 62%;
+    --graph-estrategico:  270 78% 70%;
+    --graph-desarrollo:   36 92% 60%;
+    --graph-organizacion: 170 72% 52%;
+    --graph-episodio:     26 92% 64%;
+    --graph-self:         252 70% 72%;
     --border-strong: 0 0% 17%;           /* ≈ rgba(255,255,255,.14) — borde fuerte */
     --input: 0 0% 12%;
     --ring: 252 56% 57%;                 /* foco = marca (violeta) */

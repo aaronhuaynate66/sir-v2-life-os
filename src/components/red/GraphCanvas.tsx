@@ -1,21 +1,22 @@
 'use client'
-// SIR V2 — Wrapper de react-force-graph-2d con render custom (rediseño UX).
+// SIR V2 — Grafo de relaciones estilo Obsidian / red neuronal.
 //
-// Mejoras de legibilidad (Aaron, captura mobile):
-//  - Nodos MÁS GRANDES y dimensionados por importanceScore (jerarquía).
-//  - Nombres CORTOS (primer nombre) en una "pill" con fondo, sin desbordar.
-//  - SIN labels de edge fijos (se pisaban con los nombres): la categoría se lee
-//    por color + leyenda; el label del edge aparece SÓLO al hover/tap del nodo.
-//  - Hover/tap: resalta el nodo + sus edges y atenúa el resto.
-//  - Más separación (charge/linkDistance) + zoomToFit para usar el canvas.
-//
-// 100% client-side (depende de <canvas>); se carga via dynamic import con
-// ssr:false desde GraphView.
+// Look "que piensa y hace conexiones", sobre react-force-graph-2d:
+//  - Nodos con GLOW radial que RESPIRA (sin shadowBlur) y tamaño por CONEXIONES
+//    (grado) + importancia → los hubs destacan, como en Obsidian.
+//  - Links = telaraña tenue en reposo; al hover se enciende el subgrafo (nodo +
+//    vecinos) y se atenúa el resto.
+//  - Partículas-sinapsis que viajan por las aristas del 1er grado y del hover
+//    (el cue de "está conectando").
+//  - Físicas con anti-solape (collide) para clusters legibles.
+//  - 100% theme-aware: colores vía tokens hsl(var(--...)), re-leídos al togglear
+//    el tema. Se carga client-side (dynamic ssr:false) desde GraphView.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
-import type { GraphData } from '@/lib/graph/types'
-import { CATEGORY_COLOR } from '@/lib/graph/colors'
+import { forceCollide } from 'd3-force-3d'
+import type { GraphData, GraphCategory } from '@/lib/graph/types'
+import { CATEGORY_TOKEN } from '@/lib/graph/colors'
 import { hoverToHtml, type NodeHover } from '@/lib/graph/hover'
 
 export type RiskLevel = 'overdue' | 'multiple' | 'due_soon' | 'low_tone'
@@ -25,23 +26,57 @@ interface GraphCanvasProps {
   /** Clic en un nodo → navegar. isSelf=true para el nodo central. */
   onNavigate?: (nodeId: string, isSelf: boolean) => void
   /** Nivel de riesgo por personId (viene de /api/panel/personas-en-riesgo).
-   *  Cuando existe, se pinta un ring de color alrededor del nodo. */
+   *  Cuando existe, se pinta un aro de color alrededor del nodo. */
   riskById?: Record<string, RiskLevel>
 }
 
-const RISK_RING_COLOR: Record<RiskLevel, string> = {
-  overdue: 'rgba(239, 68, 68, 0.85)',   // bad (rojo)
-  multiple: 'rgba(239, 68, 68, 0.85)',  // bad
-  due_soon: 'rgba(245, 158, 11, 0.85)', // warn (ámbar)
-  low_tone: 'rgba(245, 158, 11, 0.85)', // warn
+// '0 0% 93%' -> 'hsl(0 0% 93%)' ; con alfa -> 'hsl(0 0% 93% / .4)'
+const hsl = (triplet: string, a = 1) => (a >= 1 ? `hsl(${triplet})` : `hsl(${triplet} / ${a})`)
+
+type ThemeColors = {
+  bg: string
+  fg: string
+  fgTriplet: string
+  muted: string
+  bad: string
+  warn: string
+  cat: Record<GraphCategory, string>
+  catTriplet: Record<GraphCategory, string>
+}
+
+function readThemeColors(): ThemeColors {
+  const cs = getComputedStyle(document.documentElement)
+  const t = (name: string) => cs.getPropertyValue(name).trim() || '0 0% 50%'
+  const cat = {} as Record<GraphCategory, string>
+  const catTriplet = {} as Record<GraphCategory, string>
+  for (const [k, tok] of Object.entries(CATEGORY_TOKEN)) {
+    const tri = t(tok)
+    catTriplet[k as GraphCategory] = tri
+    cat[k as GraphCategory] = hsl(tri)
+  }
+  return {
+    bg: hsl(t('--background')),
+    fg: hsl(t('--foreground')),
+    fgTriplet: t('--foreground'),
+    muted: t('--muted-foreground'),
+    bad: hsl(t('--destructive')),
+    warn: hsl(t('--warning')),
+    cat,
+    catTriplet,
+  }
+}
+
+const FONT = 'ui-sans-serif, system-ui'
+
+/** id -> fase de respiración (0..2π), estable por nodo. */
+function phaseOf(id: string): number {
+  const sum = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  return ((sum % 100) / 100) * Math.PI * 2
 }
 
 function toForceGraphData(data: GraphData) {
   // Layout inicial determinístico: "yo" anclado al centro (fx/fy=0) y los
-  // contactos sembrados en un círculo, AGRUPADOS por categoría. Sin esto la
-  // simulación arranca amontonada en el origen (frame inicial "roto") y cae en
-  // mínimos con cruces innecesarios. Sembrar posiciones + anclar el centro la
-  // hace converger limpia y estable. (vx/vy quedan en 0 por defecto.)
+  // contactos sembrados en un círculo, AGRUPADOS por categoría → converge limpio.
   const others = data.nodes.filter((n) => !n.isSelf)
   const ordered = [...others].sort((a, b) =>
     String((a as { category?: string }).category ?? '').localeCompare(
@@ -54,32 +89,42 @@ function toForceGraphData(data: GraphData) {
     const angle = (2 * Math.PI * i) / Math.max(1, ordered.length) - Math.PI / 2
     pos.set((n as { id: string }).id, { x: Math.cos(angle) * R, y: Math.sin(angle) * R })
   })
+
+  // Grado (nº de conexiones) por nodo → alimenta el radio y el collide.
+  const degree = new Map<string, number>()
+  for (const e of data.edges) {
+    degree.set(e.source, (degree.get(e.source) ?? 0) + 1)
+    degree.set(e.target, (degree.get(e.target) ?? 0) + 1)
+  }
+
   return {
-    nodes: data.nodes.map((n) =>
-      n.isSelf
-        ? { ...n, fx: 0, fy: 0 }
-        : { ...n, ...(pos.get((n as { id: string }).id) ?? {}) },
-    ),
+    nodes: data.nodes.map((n) => {
+      const id = (n as { id: string }).id
+      const extra = { degree: degree.get(id) ?? 0, phase: phaseOf(id) }
+      return n.isSelf
+        ? { ...n, ...extra, fx: 0, fy: 0 }
+        : { ...n, ...extra, ...(pos.get(id) ?? {}) }
+    }),
     links: data.edges.map((e) => ({
       source: e.source,
       target: e.target,
       color: e.color,
       label: e.label,
+      category: e.category,
     })),
   }
 }
 
 const SELF_RADIUS = 15
-const LABEL_OFFSET = 5 // px entre el bottom del circulo y el top de la pill
+const LABEL_OFFSET = 5
 
-/** Radio del nodo por importanceScore (1-10) → 8..14 px. self = 15. Los de
- *  2º grado (familiares de un contacto, sin tu interacción directa) van más
- *  chicos (5..6.5) para que se lea que NO son tu red directa. */
-function radiusFor(node: { isSelf?: boolean; score?: number; secondDegree?: boolean }): number {
+/** Radio por importancia (score 1-10) + grado (√ para que un hub no explote). */
+function radiusFor(node: { isSelf?: boolean; score?: number; secondDegree?: boolean; degree?: number }): number {
   if (node.isSelf) return SELF_RADIUS
   const s = Math.min(10, Math.max(1, node.score ?? 5))
+  const deg = node.degree ?? 0
   if (node.secondDegree) return 5 + ((s - 1) / 9) * 1.5
-  return 8 + ((s - 1) / 9) * 6
+  return 8 + ((s - 1) / 9) * 6 + Math.sqrt(deg) * 0.9
 }
 
 function idOf(x: unknown): string | undefined {
@@ -88,21 +133,17 @@ function idOf(x: unknown): string | undefined {
   return undefined
 }
 
-function nodeColor(node: { isSelf?: boolean; category?: keyof typeof CATEGORY_COLOR }): string {
-  if (node.isSelf) return CATEGORY_COLOR.self
-  const cat = node.category && CATEGORY_COLOR[node.category] ? node.category : 'networking'
-  return CATEGORY_COLOR[cat]
-}
-
 type NodeLike = {
   id?: string
   label?: string
   shortName?: string
   fullName?: string
-  category?: keyof typeof CATEGORY_COLOR
+  category?: GraphCategory
   isSelf?: boolean
   score?: number
   secondDegree?: boolean
+  degree?: number
+  phase?: number
   hover?: NodeHover
   x?: number
   y?: number
@@ -113,6 +154,7 @@ type LinkLike = {
   target?: string | NodeLike
   label?: string
   color?: string
+  category?: GraphCategory
 }
 
 export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProps) {
@@ -120,9 +162,18 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
   const wrapRef = useRef<HTMLDivElement>(null)
   const fgData = useMemo(() => toForceGraphData(data), [data])
   const [hovered, setHovered] = useState<string | null>(null)
-  // react-force-graph-2d no mide su contenedor: sin width/height explícitos
-  // cae a window.innerWidth/Height y el canvas desborda la card en mobile.
-  // Medimos el wrapper con ResizeObserver y le pasamos px reales.
+
+  // Colores del tema, re-leídos al togglear .dark (el canvas no lee CSS solo).
+  const [theme, setTheme] = useState<ThemeColors | null>(null)
+  useEffect(() => {
+    const apply = () => setTheme(readThemeColors())
+    apply()
+    const mo = new MutationObserver(apply)
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => mo.disconnect()
+  }, [])
+
+  // Medir el wrapper (react-force-graph no mide su contenedor).
   const [size, setSize] = useState<{ w: number; h: number } | null>(null)
   useEffect(() => {
     const el = wrapRef.current
@@ -134,14 +185,40 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
     return () => ro.disconnect()
   }, [])
 
-  // Reencuadrar al cambiar el tamaño del canvas (rotación / resize).
+  // Reencuadrar al cambiar el tamaño (rotación / resize).
   useEffect(() => {
     if (!size) return
     const fg = fgRef.current as { zoomToFit?: (ms: number, padding: number) => void } | null
     try { fg?.zoomToFit?.(400, 70) } catch { /* layout aún no listo */ }
   }, [size])
 
-  // Adyacencia para resaltar el nodo + sus vecinos al hover/tap.
+  // Fuerzas d3: separación + anti-solape (collide con el radio real que dibujamos).
+  useEffect(() => {
+    const fg = fgRef.current as {
+      d3Force?: (name: string, f?: unknown) => { strength?: (v: number) => unknown; distance?: (v: number) => unknown; distanceMax?: (v: number) => unknown } | undefined
+      d3ReheatSimulation?: () => void
+    } | null
+    if (!fg?.d3Force) return
+    try {
+      fg.d3Force('charge')?.strength?.(-320)
+      fg.d3Force('charge')?.distanceMax?.(500)
+      fg.d3Force('link')?.distance?.(90)
+      fg.d3Force('link')?.strength?.(0.6)
+      fg.d3Force('center')?.strength?.(0.04)
+      fg.d3Force('collide', forceCollide((n: NodeLike) => radiusFor(n) + 5).strength(0.9))
+      fg.d3ReheatSimulation?.()
+    } catch { /* aún no listo */ }
+  }, [fgData])
+
+  // Fit inicial animado, una sola vez.
+  const didFit = useRef(false)
+  const handleEngineStop = useCallback(() => {
+    const fg = fgRef.current as { zoomToFit?: (ms: number, p: number) => void } | null
+    if (!fg || didFit.current) return
+    try { fg.zoomToFit?.(700, 60); didFit.current = true } catch { /* no listo */ }
+  }, [])
+
+  // Adyacencia para resaltar nodo + vecinos al hover/tap.
   const neighbors = useMemo(() => {
     const m = new Map<string, Set<string>>()
     for (const e of data.edges) {
@@ -170,115 +247,102 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
     [hovered],
   )
 
-  type ForceGraphRef = {
-    zoomToFit?: (ms: number, padding: number) => void
-    d3Force?: (name: string) => { strength?: (v: number) => void; distance?: (v: number) => void } | undefined
-    __sirForcesConfigured?: boolean
-  }
-
-  const handleEngineStop = useCallback(() => {
-    const fg = fgRef.current as ForceGraphRef | null
-    if (!fg) return
-    try {
-      fg.zoomToFit?.(500, 70)
-    } catch {
-      /* primer mount puede no estar listo */
-    }
-  }, [])
-
-  const handleEngineTick = useCallback(() => {
-    const fg = fgRef.current as ForceGraphRef | null
-    if (!fg || fg.__sirForcesConfigured) return
-    try {
-      // Más separación entre nodos para aprovechar el canvas y no apretar.
-      fg.d3Force?.('charge')?.strength?.(-520)
-      fg.d3Force?.('link')?.distance?.(150)
-      fg.__sirForcesConfigured = true
-    } catch {
-      /* reintenta en el próximo tick */
-    }
-  }, [])
-
   const renderNode = useCallback(
     (rawNode: unknown, ctx: CanvasRenderingContext2D, globalScale: number) => {
+      if (!theme) return
       const node = rawNode as NodeLike
       const x = node.x ?? 0
       const y = node.y ?? 0
       const radius = radiusFor(node)
+      const isHover = hovered != null && node.id === hovered
       const active = nodeActive(node.id)
-      const fill = nodeColor(node)
+      const cat = (node.isSelf ? 'self' : node.category ?? 'networking') as GraphCategory
+      const fill = theme.cat[cat]
+      const triplet = theme.catTriplet[cat]
+      const baseAlpha = active ? (node.secondDegree ? 0.85 : 1) : 0.18
 
       ctx.save()
-      // Activo: 2º grado un poco atenuado (0.78) vs directo (1). Inactivo: 0.2.
-      ctx.globalAlpha = active ? (node.secondDegree ? 0.78 : 1) : 0.2
 
-      // Glow del nodo enfocado (hover/tap).
-      if (hovered && node.id === hovered) {
-        ctx.beginPath()
-        ctx.arc(x, y, radius + 5, 0, 2 * Math.PI)
-        ctx.fillStyle = fill
-        ctx.globalAlpha = 0.18
-        ctx.fill()
-        ctx.globalAlpha = 1
-      }
+      // Halo/glow radial que respira (sin shadowBlur → gradiente radial).
+      const time = performance.now() / 1000
+      const speed = node.isSelf ? 1.0 : 0.55
+      const breath = 0.5 + 0.5 * Math.sin(time * speed + (node.phase ?? 0))
+      const glowR = radius * (isHover ? 3.2 : active ? 2.3 : 1.9) + breath * (node.isSelf ? 5 : 2.5)
+      const glowA = (isHover ? 0.5 : active ? 0.24 : 0.1) * (0.55 + 0.45 * breath)
+      const grad = ctx.createRadialGradient(x, y, radius * 0.2, x, y, glowR)
+      grad.addColorStop(0, hsl(triplet, glowA))
+      grad.addColorStop(1, hsl(triplet, 0))
+      ctx.fillStyle = grad
+      ctx.beginPath()
+      ctx.arc(x, y, glowR, 0, 2 * Math.PI)
+      ctx.fill()
 
-      // Ring del self.
+      ctx.globalAlpha = baseAlpha
+
+      // Aro de marca del self.
       if (node.isSelf) {
         ctx.beginPath()
-        ctx.arc(x, y, radius + 3, 0, 2 * Math.PI)
-        ctx.fillStyle = 'rgba(245, 245, 245, 0.18)'
-        ctx.fill()
+        ctx.arc(x, y, radius + 3.5, 0, 2 * Math.PI)
+        ctx.strokeStyle = hsl(triplet, 0.45)
+        ctx.lineWidth = 2
+        ctx.stroke()
       }
 
-      // Ring de RIESGO: si la persona está en /api/panel/personas-en-riesgo,
-      // pintamos un aro rojo (overdue/multiple) o ámbar (due_soon/low_tone)
-      // afuera. Va ANTES del círculo para que el fill lo cubra en el borde.
+      // Aro de RIESGO (stroke, no disco → no se confunde con el color de dominio).
       const risk = !node.isSelf ? riskById[String(node.id)] : undefined
       if (risk) {
+        const rc = risk === 'overdue' || risk === 'multiple' ? theme.bad : theme.warn
         ctx.beginPath()
-        ctx.arc(x, y, radius + 3.5, 0, 2 * Math.PI)
-        ctx.fillStyle = RISK_RING_COLOR[risk]
-        ctx.fill()
+        ctx.arc(x, y, radius + 2.5, 0, 2 * Math.PI)
+        ctx.strokeStyle = rc
+        ctx.lineWidth = 2.5
+        ctx.stroke()
       }
 
-      // Círculo.
+      // Núcleo sólido + anillo fino de acento.
       ctx.beginPath()
       ctx.arc(x, y, radius, 0, 2 * Math.PI)
       ctx.fillStyle = fill
       ctx.fill()
-      ctx.strokeStyle = node.isSelf ? '#f5f5f5' : 'rgba(255,255,255,0.45)'
-      ctx.lineWidth = node.isSelf ? 2 : 1.25
+      ctx.lineWidth = (isHover ? 1.6 : 0.7) / Math.max(0.5, globalScale)
+      ctx.strokeStyle = hsl(triplet, 0.9)
       ctx.stroke()
 
-      // Iniciales dentro (texto oscuro sobre colores saturados claros).
-      const initialsSize = Math.max(8, Math.min(13, radius * 0.85))
-      ctx.font = `700 ${initialsSize}px ui-sans-serif, system-ui`
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillStyle = '#0a0a0a'
-      ctx.fillText(node.label ?? '?', x, y)
+      // Iniciales: blanco (todos los hues son mid/dark → contrasta en ambos temas).
+      if (radius >= 7) {
+        const initialsSize = Math.max(8, Math.min(13, radius * 0.85))
+        ctx.font = `700 ${initialsSize}px ${FONT}`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillStyle = 'rgba(255,255,255,0.96)'
+        ctx.fillText(node.label ?? '?', x, y)
+      }
 
-      // Nombre corto debajo, en pill con fondo (legibilidad sobre el canvas).
+      // Nombre: LOD por zoom, o forzado si es el nodo/vecino en hover.
       const name = node.shortName || node.fullName
-      if (name && globalScale > 0.4) {
+      const forced = hovered != null && active
+      const show = name && (globalScale > 1.15 || forced)
+      if (show) {
         const nameSize = Math.max(9, Math.min(12, 11 / Math.max(0.7, globalScale) + 1))
-        ctx.font = `600 ${nameSize}px ui-sans-serif, system-ui`
-        const metrics = ctx.measureText(name)
+        ctx.font = `600 ${nameSize}px ${FONT}`
+        const fade = forced ? 1 : Math.min(1, (globalScale - 1.15) / 0.5)
+        ctx.globalAlpha = baseAlpha * fade
+        const m = ctx.measureText(name!)
         const padX = 5
         const padY = 2.5
-        const w = metrics.width + padX * 2
+        const w = m.width + padX * 2
         const h = nameSize + padY * 2
         const pillY = y + radius + LABEL_OFFSET + h / 2
-        ctx.fillStyle = 'rgba(10, 10, 10, 0.78)'
+        ctx.fillStyle = hsl(theme.fgTriplet, 0.08)
         roundRect(ctx, x - w / 2, pillY - h / 2, w, h, 4)
         ctx.fill()
-        ctx.fillStyle = node.id === hovered ? '#ffffff' : '#e5e7eb'
-        ctx.fillText(name, x, pillY)
+        ctx.fillStyle = isHover ? theme.fg : hsl(theme.fgTriplet, 0.75)
+        ctx.fillText(name!, x, pillY)
       }
 
       ctx.restore()
     },
-    [hovered, nodeActive, riskById],
+    [theme, hovered, nodeActive, riskById],
   )
 
   const paintNodePointerArea = useCallback(
@@ -295,10 +359,10 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
     [],
   )
 
-  // Label del edge: SÓLO cuando el edge toca al nodo enfocado (evita el
-  // pisado con los nombres). Sin hover, no se dibujan labels de edge.
+  // Label del edge: SÓLO cuando toca al nodo enfocado (sin hover no hay labels).
   const renderLinkLabel = useCallback(
     (rawLink: unknown, ctx: CanvasRenderingContext2D, globalScale: number) => {
+      if (!theme) return
       const link = rawLink as LinkLike
       if (!link.label || !edgeTouchesHover(link)) return
       const source = typeof link.source === 'object' ? link.source : null
@@ -308,7 +372,7 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
       const my = ((source.y ?? 0) + (target.y ?? 0)) / 2
 
       const fontSize = Math.max(8, 10 / Math.max(0.85, globalScale))
-      ctx.font = `600 ${fontSize}px ui-sans-serif, system-ui`
+      ctx.font = `600 ${fontSize}px ${FONT}`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       const text = link.label
@@ -316,79 +380,108 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
       const padding = 4
       const w = metrics.width + padding * 2
       const h = fontSize + padding
-      ctx.fillStyle = 'rgba(10, 10, 10, 0.9)'
+      ctx.fillStyle = hsl(theme.fgTriplet, 0.1)
       roundRect(ctx, mx - w / 2, my - h / 2, w, h, 4)
       ctx.fill()
-      ctx.fillStyle = link.color ?? '#cbd5e1'
+      ctx.fillStyle = theme.fg
       ctx.fillText(text, mx, my)
     },
-    [edgeTouchesHover],
+    [theme, edgeTouchesHover],
   )
 
   const linkColor = useCallback(
     (rawLink: unknown) => {
+      if (!theme) return 'rgba(120,130,150,0.12)'
       const link = rawLink as LinkLike
-      const base = link.color ?? '#64748b'
-      if (hovered == null) return base
-      return edgeTouchesHover(link) ? base : 'rgba(100,116,139,0.12)'
+      const cat = (link.category ?? 'networking') as GraphCategory
+      const base = theme.cat[cat] ?? hsl(theme.muted, 0.35)
+      if (hovered == null) return hsl(theme.muted, 0.14) // reposo: telaraña tenue
+      return edgeTouchesHover(link) ? base : hsl(theme.muted, 0.05)
     },
-    [hovered, edgeTouchesHover],
+    [theme, hovered, edgeTouchesHover],
   )
 
   const linkWidth = useCallback(
     (rawLink: unknown) => {
       const link = rawLink as LinkLike
-      if (hovered == null) return 2
-      return edgeTouchesHover(link) ? 3.25 : 1
+      if (hovered == null) return 0.7
+      return edgeTouchesHover(link) ? 2.5 : 0.5
     },
     [hovered, edgeTouchesHover],
   )
 
+  const particleCount = useCallback(
+    (rawLink: unknown) => {
+      const link = rawLink as LinkLike
+      if (edgeTouchesHover(link)) return 3
+      const s = idOf(link.source)
+      const t = idOf(link.target)
+      return s === 'self' || t === 'self' ? 1 : 0
+    },
+    [edgeTouchesHover],
+  )
+
+  const particleColor = useCallback(
+    (rawLink: unknown) => {
+      const link = rawLink as LinkLike
+      if (!theme) return 'rgba(150,150,150,0.6)'
+      if (hovered != null && !edgeTouchesHover(link)) return hsl(theme.muted, 0.08)
+      const tgt = typeof link.target === 'object' ? (link.target as NodeLike) : null
+      const cat = (tgt?.category ?? link.category ?? 'networking') as GraphCategory
+      return theme.cat[cat]
+    },
+    [theme, hovered, edgeTouchesHover],
+  )
+
+  const particleWidth = useCallback(
+    (rawLink: unknown) => (edgeTouchesHover(rawLink as LinkLike) ? 2.4 : 1.4),
+    [edgeTouchesHover],
+  )
+
   return (
-    <div ref={wrapRef} className="relative w-full h-[60vh] sm:h-[70vh] min-h-[420px] rounded-lg border border-border bg-muted/10 overflow-hidden">
-      {size && (
-      <ForceGraph2D
-        ref={fgRef as React.MutableRefObject<undefined>}
-        width={size.w}
-        height={size.h}
-        graphData={fgData}
-        backgroundColor="transparent"
-        linkColor={linkColor}
-        linkWidth={linkWidth}
-        linkCurvature={0.18}
-        linkDirectionalArrowLength={0}
-        warmupTicks={150}
-        cooldownTicks={140}
-        d3AlphaDecay={0.03}
-        d3VelocityDecay={0.42}
-        onEngineStop={handleEngineStop}
-        onEngineTick={handleEngineTick}
-        nodeLabel={(node: NodeLike) => hoverToHtml(node.fullName ?? '', node.hover)}
-        nodeRelSize={SELF_RADIUS}
-        nodeCanvasObjectMode={() => 'replace'}
-        nodeCanvasObject={renderNode}
-        nodePointerAreaPaint={paintNodePointerArea}
-        onNodeHover={(node: NodeLike | null) => setHovered(node?.id ?? null)}
-        onNodeClick={(node: NodeLike) => {
-          if (node?.id) onNavigate?.(node.id, !!node.isSelf)
-        }}
-        linkCanvasObjectMode={() => 'after'}
-        linkCanvasObject={renderLinkLabel}
-      />
+    <div ref={wrapRef} className="relative w-full h-[60vh] sm:h-[70vh] min-h-[420px] rounded-lg border border-border overflow-hidden">
+      {size && theme && (
+        <ForceGraph2D
+          ref={fgRef as React.MutableRefObject<undefined>}
+          width={size.w}
+          height={size.h}
+          graphData={fgData}
+          backgroundColor={theme.bg}
+          autoPauseRedraw={false}
+          linkColor={linkColor}
+          linkWidth={linkWidth}
+          linkCurvature={0.18}
+          linkDirectionalArrowLength={0}
+          linkDirectionalParticles={particleCount}
+          linkDirectionalParticleSpeed={0.004}
+          linkDirectionalParticleWidth={particleWidth}
+          linkDirectionalParticleColor={particleColor}
+          warmupTicks={60}
+          cooldownTicks={200}
+          d3AlphaDecay={0.02}
+          d3VelocityDecay={0.32}
+          onEngineStop={handleEngineStop}
+          nodeLabel={(node: NodeLike) => hoverToHtml(node.fullName ?? '', node.hover)}
+          nodeRelSize={SELF_RADIUS}
+          nodeCanvasObjectMode={() => 'replace'}
+          nodeCanvasObject={renderNode}
+          nodePointerAreaPaint={paintNodePointerArea}
+          onNodeHover={(node: NodeLike | null) => setHovered(node?.id ?? null)}
+          onNodeClick={(node: NodeLike) => {
+            if (node?.id) onNavigate?.(node.id, !!node.isSelf)
+          }}
+          linkCanvasObjectMode={() => 'after'}
+          linkCanvasObject={renderLinkLabel}
+        />
       )}
+      {/* Vignette sutil: remata el look en oscuro, casi invisible en claro. */}
+      <div className="pointer-events-none absolute inset-0" style={{ boxShadow: 'inset 0 0 160px hsl(var(--background) / 0.7)' }} />
     </div>
   )
 }
 
 /** Rectángulo redondeado (path). El caller hace fill()/stroke(). */
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-) {
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const radius = Math.min(r, w / 2, h / 2)
   ctx.beginPath()
   ctx.moveTo(x + radius, y)

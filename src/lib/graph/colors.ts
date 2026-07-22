@@ -2,6 +2,22 @@
 
 import type { GraphCategory } from './types'
 
+// Nombre del CSS var por categoría. El canvas los resuelve a color concreto
+// (theme-aware) vía getComputedStyle; ver GraphCanvas.readThemeColors.
+export const CATEGORY_TOKEN: Record<GraphCategory, string> = {
+  familia:      '--graph-familia',
+  personal:     '--graph-personal',
+  profesional:  '--graph-profesional',
+  networking:   '--graph-networking',
+  estrategico:  '--graph-estrategico',
+  desarrollo:   '--graph-desarrollo',
+  organizacion: '--graph-organizacion',
+  episodio:     '--graph-episodio',
+  self:         '--graph-self',
+}
+
+// Fallback en hex (SSR / primer paint / consumidores que no leen el canvas:
+// GraphLegend, builder.edge.color). El canvas usa los tokens directamente.
 export const CATEGORY_COLOR: Record<GraphCategory, string> = {
   familia:     '#ef4444', // rojo
   personal:    '#22c55e', // verde
