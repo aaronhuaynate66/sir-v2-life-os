@@ -32,6 +32,40 @@ describe('buildMorningPush', () => {
   })
 })
 
+describe('buildMorningPush — prioridad máxima (semana en foco / métrica dura)', () => {
+  it('weekFocus va al frente, antes que un cumpleaños', () => {
+    const p = buildMorningPush({ weekFocus: 'Mudanza en 3 días', birthdays: [{ name: 'A', days: 2 }] })
+    const parts = p.body.split(' · ')
+    expect(parts[0]).toContain('Mudanza en 3 días')
+    expect(p.body).toContain('A cumple')
+  })
+  it('metricAlert va antes que un cumpleaños', () => {
+    const p = buildMorningPush({ metricAlert: 'Peso 3kg sobre categoría Mundial', birthdays: [{ name: 'A', days: 2 }] })
+    const parts = p.body.split(' · ')
+    expect(parts[0]).toContain('Peso 3kg sobre categoría Mundial')
+  })
+  it('weekFocus + metricAlert toman los 2 primeros slots; la tarea queda fuera del cap', () => {
+    const p = buildMorningPush({
+      weekFocus: 'Mudanza en 3 días',
+      metricAlert: 'Peso sobre categoría',
+      birthdays: [{ name: 'A', days: 1 }],
+      dueTasks: ['T1'],
+    })
+    const parts = p.body.split(' · ')
+    expect(parts.length).toBe(3)
+    expect(parts[0]).toContain('Mudanza')
+    expect(parts[1]).toContain('Peso sobre categoría')
+    expect(parts[2]).toContain('A cumple') // el cumple entra en el 3er slot
+    expect(p.body).not.toContain('T1') // la tarea quedó fuera del cap
+  })
+  it('bodyFull no trunca aunque body sí (Telegram recibe el completo)', () => {
+    const largo = 'X'.repeat(400)
+    const p = buildMorningPush({ weekFocus: largo })
+    expect(p.body.length).toBeLessThanOrEqual(220)
+    expect(p.bodyFull).toContain(largo)
+  })
+})
+
 describe('buildMorningPush — hábito a retomar', () => {
   it('incluye el nudge de hábito cuando viene', () => {
     const p = buildMorningPush({ habitNudge: 'Se cortó tu racha de "Meditar". Retomala hoy.' })
