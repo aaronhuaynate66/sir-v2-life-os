@@ -16,7 +16,17 @@ import { resolveOrgGroup } from './orgRegistry'
 
 export function normalizeOrgKey(value: string | null | undefined): string {
   if (typeof value !== 'string') return ''
-  return value.trim().toLowerCase().replace(/\s+/g, ' ')
+  // Merge de variantes de la MISMA empresa que hoy fragmentan el cluster:
+  // "Grupo HNG" / "GRUPO HNG" / "Grupo HNG Corporación" / "Silver X (… S.A.C.)"
+  // → una sola clave. Quita paréntesis + formas legales (corporación/S.A.C./
+  // E.I.R.L./S.R.L.). NO toca "Inc" (evita over-merge en nombres en inglés).
+  return value
+    .replace(/\([^)]*\)/g, ' ')
+    .toLowerCase()
+    .replace(/\bcorporaci[oó]n\b/g, ' ')
+    .replace(/\b(s\.?a\.?c\.?|e\.?i\.?r\.?l\.?|s\.?r\.?l\.?)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export interface OrgBearer {

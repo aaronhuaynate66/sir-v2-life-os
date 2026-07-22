@@ -7,6 +7,41 @@ import { CATEGORY_COLOR, CATEGORY_LABEL } from './colors'
 import { orgJoinKey, orgGroupLabel, transversalUnitSlugs, prettyUnitLabel } from '@/lib/people/professionalNetwork'
 import type { GraphCategory, GraphData, GraphEdge, GraphNode } from './types'
 
+/** Grupos ≤ este tamaño reciben mesh persona↔persona ("se conocen entre sí");
+ *  los más grandes se quedan solo con el hub para no volverse un ovillo (N²). */
+const CO_MEMBER_CAP = 6
+
+/**
+ * Aristas persona↔persona dentro de un grupo CHICO (org/unidad): colegas o
+ * bomberos que evidentemente se conocen entre sí. Full mesh acotado por
+ * CO_MEMBER_CAP (los grandes van solo con hub). Dedup global por par. PURO.
+ */
+export function coMemberEdges(
+  groups: Array<{ label: string; nodeIds: string[] }>,
+  seen: Set<string> = new Set(),
+): GraphEdge[] {
+  const out: GraphEdge[] = []
+  for (const g of groups) {
+    const ids = Array.from(new Set(g.nodeIds))
+    if (ids.length < 2 || ids.length > CO_MEMBER_CAP) continue
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const key = [ids[i], ids[j]].sort().join('|')
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push({
+          source: ids[i],
+          target: ids[j],
+          category: 'organizacion',
+          label: g.label,
+          color: CATEGORY_COLOR.organizacion,
+        })
+      }
+    }
+  }
+  return out
+}
+
 /**
  * Extrae 2 iniciales de un nombre. "Diana Carolina" -> "DC".
  * "Aarón Huaynate Espinoza" -> "AH". Fallback: primeros 2 chars.
@@ -329,6 +364,21 @@ export function buildGraphData({
       })
     }
   }
+
+  // Mesh "se conocen entre sí" (Aaron: que se vea vivo): en grupos CHICOS
+  // (org/unidad ≤ CO_MEMBER_CAP) conectamos a los miembros entre ellos, no solo
+  // colgando del hub → colegas y bomberos forman una malla real. Los grupos
+  // grandes (Grupo HNG ~30) se quedan solo con el hub para no ser un ovillo.
+  const coGroups: Array<{ label: string; nodeIds: string[] }> = []
+  for (const hub of orgHubs.values()) {
+    const ids = hub.personIds.map((pid) => nodeIdByPersonId.get(pid)).filter((x): x is string => !!x)
+    coGroups.push({ label: hub.label || 'Colegas', nodeIds: ids })
+  }
+  for (const [slug, ids] of unitHubs) {
+    const nodeIds = ids.map((pid) => nodeIdByPersonId.get(pid)).filter((x): x is string => !!x)
+    coGroups.push({ label: prettyUnitLabel(slug), nodeIds })
+  }
+  for (const e of coMemberEdges(coGroups)) edges.push(e)
 
   // Aristas de EPISODIO (Paso 2): conectan a los participantes de cada episodio
   // abierto en estrella desde el primero. Color naranja, label = título. Dedup.

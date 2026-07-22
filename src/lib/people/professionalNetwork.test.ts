@@ -13,6 +13,15 @@ describe('normalizeOrgKey / orgJoinKey', () => {
     expect(orgJoinKey({ organization: 'Acme Inc' })).toBe('acme inc')
     expect(orgJoinKey({})).toBe('')
   })
+  it('fusiona variantes de la misma empresa (corporación / S.A.C. / paréntesis)', () => {
+    // El split real de la data de Aaron: estas tres eran hubs separados.
+    expect(normalizeOrgKey('Grupo HNG')).toBe('grupo hng')
+    expect(normalizeOrgKey('GRUPO HNG')).toBe('grupo hng')
+    expect(normalizeOrgKey('Grupo HNG Corporación')).toBe('grupo hng')
+    expect(normalizeOrgKey('Silver X Mining (RECUPERADA S.A.C.)')).toBe('silver x mining')
+    // no toca "Inc" (evita over-merge)
+    expect(normalizeOrgKey('Acme Inc')).toBe('acme inc')
+  })
 })
 
 describe('sharesProfessionalOrg', () => {
