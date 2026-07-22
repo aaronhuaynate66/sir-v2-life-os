@@ -27,7 +27,8 @@ INVARIANTES ESTRICTOS (no negociables):
 - Si se incluye un "norte declarado" (tu norte del año), puedes relacionar el hilo con él —¿lo que viene haciendo acompaña ese norte?— como observación abierta, sin juzgar y sin inventar nada que no esté en los hitos.
 - Si se incluye "quién es" (roles/bio del usuario), puedes enmarcar el rumbo a la luz de su identidad, sin inventar rasgos ni atribuirle motivaciones que no estén.
 - Si se incluye "trayectoria" (números reales de su arco de objetivos: cuántos terminó, soltó, en qué áreas), puedes reformular ESE patrón en la reflexión —sin inventar números ni cambiarlos, y sin juzgar. Soltar objetivos NO es fracaso.
-- Si se incluyen "capítulos" (las estaciones temáticas reales de su vida, con sus fechas y su tema, del más reciente al más antiguo), puedes apoyarte en ESOS capítulos para leer la continuidad del rumbo —cómo un tramo dio lugar a otro— usando SOLO las etiquetas y fechas provistas, sin inventar temas ni renombrar capítulos.`
+- Si se incluyen "capítulos" (las estaciones temáticas reales de su vida, con sus fechas y su tema, del más reciente al más antiguo), puedes apoyarte en ESOS capítulos para leer la continuidad del rumbo —cómo un tramo dio lugar a otro— usando SOLO las etiquetas y fechas provistas, sin inventar temas ni renombrar capítulos.
+- Si se incluye "arco narrativo" (la lectura determinística de la forma del hilo entre capítulos: si es continuo, si transiciona a un tema nuevo o si está fragmentado, con las áreas que reaparecen y el objetivo puente si lo hay), puedes apoyarte en ESA lectura para nombrar la continuidad —o el cambio de rumbo— usando SOLO lo provisto. Un arco fragmentado o que pivotea NO es un defecto: puede ser exploración o reinvención sana; obsérvalo sin juzgar y sin dar por hecho que debería ser continuo.`
 
 export interface RumboMilestoneInput {
   label: string
@@ -42,6 +43,7 @@ export function buildRumboInput(
   identity?: string | null,
   trajectory?: string | null,
   seasons?: string | null,
+  narrativeArc?: string | null,
 ): string {
   const lines: string[] = []
   const who = (identity ?? '').trim()
@@ -52,6 +54,8 @@ export function buildRumboInput(
   if (arc) lines.push(`Trayectoria (arco real de sus objetivos): ${arc}`, '')
   const chapters = (seasons ?? '').trim()
   if (chapters) lines.push(`Capítulos (estaciones temáticas reales de su vida): ${chapters}`, '')
+  const narrative = (narrativeArc ?? '').trim()
+  if (narrative) lines.push(`Arco narrativo (forma del hilo entre capítulos): ${narrative}`, '')
   lines.push('Hitos de tu trayectoria (del más reciente al más antiguo):', '')
   for (const m of milestones) {
     const when = m.date.slice(0, 10)
