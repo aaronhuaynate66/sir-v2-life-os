@@ -104,28 +104,31 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
         </p>
         <div className="space-y-2">
           {items.map((it) => (
-            <div key={it.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-border p-2.5">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <span className="truncate">{it.handle ? `@${it.handle}` : (it.name || 'sin nombre')}</span>
-                  <Badge variant="outline" className="shrink-0 text-[10px]">{KIND_LABEL[it.kind] ?? it.kind}</Badge>
-                </div>
-                {it.detail && <div className="truncate text-xs text-muted-foreground">{it.detail}</div>}
+            <div key={it.id} className="rounded-lg border border-border p-2.5">
+              {/* Identificador: SU PROPIA LÍNEA, ancho completo (antes se aplastaba
+                  a "tie…" en móvil porque competía con el Select + botones). */}
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                <span className="truncate">{it.handle ? `@${it.handle}` : (it.name || 'sin nombre')}</span>
+                <Badge variant="outline" className="shrink-0 text-[10px]">{KIND_LABEL[it.kind] ?? it.kind}</Badge>
               </div>
-              <Select value={pick[it.id] ?? ''} onValueChange={(v) => setPick((p) => ({ ...p, [it.id]: v }))}>
-                <SelectTrigger className="h-9 w-[160px] text-xs"><SelectValue placeholder="Asignar a…" /></SelectTrigger>
-                <SelectContent>
-                  {sortedPeople.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button size="sm" className="h-9" disabled={busy === it.id || !pick[it.id]} onClick={() => assign(it)}>
-                Asignar
-              </Button>
-              <Button size="sm" variant="ghost" className="h-9 w-9 p-0" disabled={busy === it.id} onClick={() => dismiss(it)} aria-label="Descartar">
-                <X size={15} />
-              </Button>
+              {it.detail && <div className="mb-2 truncate text-xs text-muted-foreground">{it.detail}</div>}
+              {/* Controles abajo: el Select toma el ancho, Asignar/X no lo aplastan. */}
+              <div className="flex items-center gap-2">
+                <Select value={pick[it.id] ?? ''} onValueChange={(v) => setPick((p) => ({ ...p, [it.id]: v }))}>
+                  <SelectTrigger className="h-10 min-w-0 flex-1 text-xs"><SelectValue placeholder="Asignar a…" /></SelectTrigger>
+                  <SelectContent>
+                    {sortedPeople.map((p) => (
+                      <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" className="h-10 shrink-0" disabled={busy === it.id || !pick[it.id]} onClick={() => assign(it)}>
+                  Asignar
+                </Button>
+                <Button size="sm" variant="ghost" className="h-10 w-10 shrink-0 p-0" disabled={busy === it.id} onClick={() => dismiss(it)} aria-label="Descartar">
+                  <X size={16} />
+                </Button>
+              </div>
             </div>
           ))}
         </div>
