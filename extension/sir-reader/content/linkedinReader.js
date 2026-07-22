@@ -51,6 +51,59 @@
     emit(Array.from(byUrl.values()));
   }
 
+  // Fallback pasivo: si LinkedIn renderiza un perfil sin disparar JSON voyager
+  // visible para el interceptor, lee SOLO el perfil actualmente abierto en DOM.
+  const domSeen = new Set();
+  let domTimer = null;
+  function cleanText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+  function currentProfileUrl() {
+    const m = location.pathname.match(/^\/in\/([^/]+)/i);
+    return m ? `https://linkedin.com/in/${m[1]}` : '';
+  }
+  function visibleProfileName() {
+    const h1 = document.querySelector('h1');
+    return cleanText(h1 && h1.innerText);
+  }
+  function visibleProfileHeadline(name) {
+    const main = document.querySelector('main') || document.body;
+    const lines = cleanText(main && main.innerText).split(/\n+/).map(cleanText).filter(Boolean);
+    const nameIndex = lines.findIndex((line) => line === name);
+    const candidates = lines.slice(Math.max(0, nameIndex + 1), nameIndex > -1 ? nameIndex + 8 : 10);
+    return candidates.find((line) =>
+      line &&
+      line !== name &&
+      line.length > 8 &&
+      line.length < 220 &&
+      !/^(Más|Enviar mensaje|Conectar|Seguir|Mensaje|Contacto|Acerca de|Actividad)$/i.test(line)
+    );
+  }
+  function scanProfileDom() {
+    domTimer = null;
+    try {
+      const linkedinUrl = currentProfileUrl();
+      if (!linkedinUrl || domSeen.has(linkedinUrl)) return;
+      const name = visibleProfileName();
+      const headline = visibleProfileHeadline(name);
+      if (!name && !headline) return;
+      domSeen.add(linkedinUrl);
+      emit([{ platform: 'linkedin', linkedinUrl, name: name || undefined, headline: headline || undefined }]);
+    } catch (_) {}
+  }
+  function scheduleDomScan() {
+    if (domTimer) return;
+    domTimer = setTimeout(scanProfileDom, 1500);
+  }
+  function patchHistoryMethod(method) {
+    const orig = history[method];
+    history[method] = function () {
+      const out = orig.apply(this, arguments);
+      scheduleDomScan();
+      return out;
+    };
+  }
+
   const origFetch = window.fetch;
   window.fetch = function (...args) {
     const p = origFetch.apply(this, args);
@@ -84,6 +137,16 @@
     });
     return origSend.apply(this, arguments);
   };
+
+  try {
+    patchHistoryMethod('pushState');
+    patchHistoryMethod('replaceState');
+    addEventListener('popstate', scheduleDomScan);
+    const mo = new MutationObserver(scheduleDomScan);
+    mo.observe(document.documentElement || document, { childList: true, subtree: true });
+    scheduleDomScan();
+    setTimeout(scheduleDomScan, 5000);
+  } catch (_) {}
 
   try { console.debug('[SIR Reader] linkedin reader activo (pasivo)'); } catch (_) {}
 })();
