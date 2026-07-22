@@ -103,11 +103,11 @@ function suggestionsFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean,
     if (low) {
       const s = [
         'Un detalle que no le pida nada: flores, algo rico, un mensaje lindo antes — cuidado que no espera nada a cambio.',
-        'Presencia y paciencia antes que exigencia: si está callada o baja, no es contra vos.',
-        'Prevé lo práctico: puede venirle la regla por estos días — que esté cómoda suma; si suele tener migraña o cólicos, llevá su medicación.',
-        'Intimidad como ternura, no como demanda: cercanía, mimos, contacto tranquilo; seguí su ritmo.',
+        'Presencia y paciencia antes que exigencia: si está callada o baja, no es contra ti.',
+        'Prevé lo práctico: puede venirle la regla por estos días — que esté cómoda suma; si suele tener migraña o cólicos, lleva su medicación.',
+        'Intimidad como ternura, no como demanda: cercanía, mimos, contacto tranquilo; sigue su ritmo.',
       ]
-      s.unshift(bigSocial ? 'No sobrecargar el día: llegá sin apuro, con margen para descansar, y tené un plan de salida por si se cansa.' : 'Plan suave e íntimo mejor que una maratón: bajá el ritmo.')
+      s.unshift(bigSocial ? 'No sobrecargar el día: llega sin apuro, con margen para descansar, y ten un plan de salida por si se cansa.' : 'Plan suave e íntimo mejor que una maratón: baja el ritmo.')
       return s
     }
     if (high) return ['Es SU mejor momento: si querías proponer algo especial —una cita, una sorpresa—, es ahora.', 'Flores o un detalle romántico brillan más que nunca.', 'Buen momento para una charla importante o para reconectar.', 'Intimidad en su punto más alto de sintonía.']
@@ -115,13 +115,13 @@ function suggestionsFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean,
   }
   if (bond === 'family' || bond === 'friend') {
     const who = bond === 'family' ? 'familiar' : 'amiga'
-    if (low) return [`Puede estar más sensible o con menos energía — más paciencia y un gesto simple; no cargues temas pesados esos días.`, 'Si venía algo tenso, no es el mejor momento para encararlo — dejalo pasar unos días.', `Un mensaje cálido o un pequeño detalle acompaña sin invadir.`, `Presencia, no exigencia (${who}).`]
+    if (low) return [`Puede estar más sensible o con menos energía — más paciencia y un gesto simple; no cargues temas pesados esos días.`, 'Si venía algo tenso, no es el mejor momento para encararlo — déjalo pasar unos días.', `Un mensaje cálido o un pequeño detalle acompaña sin invadir.`, `Presencia, no exigencia (${who}).`]
     if (high) return ['Buen tramo de energía — buen momento para juntarse, retomar algo pendiente o una charla que venías postergando.', 'Si había un tema para hablar, ahora fluye mejor.']
     return ['Ritmo tranquilo — un gesto de presencia simple está bien.', 'Buen momento para una charla con calma.']
   }
   // colleague / lead — SOLO respeto y timing profesional. Nada íntimo.
-  if (low) return ['Puede llegar con menos resto — si puedes, evitá reuniones pesadas, feedback difícil o pedirle un esfuerzo extra ese día.', 'Dale aire: más margen, menos presión; no lo tomes personal si está más seca.', 'Timing: dejá los temas espinosos para unos días después.']
-  if (high) return ['Buen tramo de energía — buen momento para lo que requiera empuje, una reunión importante o cerrar algo.', 'Suele estar más receptiva y comunicativa; aprovechá para alinear.']
+  if (low) return ['Puede llegar con menos resto — si puedes, evita reuniones pesadas, feedback difícil o pedirle un esfuerzo extra ese día.', 'Dale aire: más margen, menos presión; no lo tomes personal si está más seca.', 'Timing: deja los temas espinosos para unos días después.']
+  if (high) return ['Buen tramo de energía — buen momento para lo que requiera empuje, una reunión importante o cerrar algo.', 'Suele estar más receptiva y comunicativa; aprovecha para alinear.']
   return ['Ritmo normal — sin necesidad de ajustar nada especial.', 'Trato considerado de siempre.']
 }
 

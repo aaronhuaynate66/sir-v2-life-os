@@ -43,5 +43,5 @@ export function healthDataGap(
   if (!lastLoadIso) return null // sin historial no arrancamos a molestar
   const gap = daysBetween(lastLoadIso, todayIso)
   if (gap === null || gap < thresholdDays) return null
-  return `Hace ${gap} días que no cargás datos de salud (última vez: ${fechaCorta(lastLoadIso)}). Cuando puedas, mandame las capturas de la báscula y el sueño para seguir monitoreándote.`
+  return `Hace ${gap} días que no cargas datos de salud (última vez: ${fechaCorta(lastLoadIso)}). Cuando puedas, mándame las capturas de la báscula y el sueño para seguir monitoreándote.`
 }

@@ -93,7 +93,7 @@ export function vitalsAnomaly(recent: DailyVitals[], ranges: VitalsRanges = DEFA
     : `${signals.slice(0, -1).join(', ')} y ${signals[signals.length - 1]}`
 
   const cierre = severity === 'alert'
-    ? 'Tu cuerpo parece estar bajo carga (incubando algo, fiebre o mucho estrés). Priorizá descanso e hidratación hoy; si aparece malestar o fiebre, anotalo.'
+    ? 'Tu cuerpo parece estar bajo carga (incubando algo, fiebre o mucho estrés). Prioriza descanso e hidratación hoy; si aparece malestar o fiebre, anótalo.'
     : 'Puede ser una noche floja o el cuerpo empezando a pedir pausa. Ojo con el ritmo de hoy.'
 
   return { severity, signals, text: `Señales del cuerpo desviadas juntas: ${lista}. ${cierre}` }

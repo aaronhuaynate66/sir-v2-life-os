@@ -28,7 +28,7 @@ describe('buildMacroCalendar — feriado largo', () => {
     const hits = buildMacroCalendar({ holidays }, now)
     const lw = hits.find((h) => h.kind === 'long_weekend')
     expect(lw).toBeDefined()
-    expect(lw!.hint).toMatch(/vos, tu gente o un pendiente tuyo/)
+    expect(lw!.hint).toMatch(/ti, tu gente o un pendiente tuyo/)
   })
 
   it('no muestra el puente si su inicio queda fuera del lead', () => {

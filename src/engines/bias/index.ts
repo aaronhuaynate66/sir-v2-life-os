@@ -63,7 +63,7 @@ const BIASES: Record<Bias, BiasDef> = {
   },
   wishful_thinking: {
     label: 'Ilusión (wishful thinking)',
-    question: '¿Eso es lo que SABÉS, o lo que QUERÉS que pase?',
+    question: '¿Eso es lo que SABES, o lo que QUIERES que pase?',
     patterns: [
       /\bseguro que s[ií]\b/g, /\bva a salir bien\b/g, /\bno puede (fallar|salir mal)\b/g,
       /\bobvio que (s[ií]|va|me)\b/g, /\bseguro (me|nos) (dice|da|dan) que s[ií]\b/g,

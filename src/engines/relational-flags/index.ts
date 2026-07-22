@@ -42,18 +42,18 @@ export interface RelationalFlagsResult {
 const LABELS: Record<RelationalFlag, string> = {
   control: 'Control',
   isolation: 'Aislamiento',
-  gaslighting: 'Te hacen dudar de vos',
+  gaslighting: 'Te hacen dudar de ti',
   devaluation: 'Devaluación',
   blame_shift: 'Todo es tu culpa',
   intermittent: 'Frío y cariño intermitente',
 }
 
 const CARE: Record<RelationalFlag, string> = {
-  control: 'Mantené decisiones y espacios propios. El control no es cuidado.',
-  isolation: 'Cuidá tus vínculos: mantené cerca a amigos y familia. El aislamiento te deja sin red.',
-  gaslighting: 'Confiá en tu memoria — anotá los hechos cuando pasan. Que dudes de vos mismo ES la señal.',
+  control: 'Mantén decisiones y espacios propios. El control no es cuidado.',
+  isolation: 'Cuida tus vínculos: mantén cerca a amigos y familia. El aislamiento te deja sin red.',
+  gaslighting: 'Confía en tu memoria — anota los hechos cuando pasan. Que dudes de ti mismo ES la señal.',
   devaluation: 'Cómo te hablan importa. Sentirte menos de forma repetida no es tu valor real.',
-  blame_shift: 'Fíjate si SIEMPRE terminás siendo el culpable. La responsabilidad se reparte.',
+  blame_shift: 'Fíjate si SIEMPRE terminas siendo el culpable. La responsabilidad se reparte.',
   intermittent: 'El ciclo de frío y cariño engancha. Buscas consistencia, no migajas.',
 }
 
