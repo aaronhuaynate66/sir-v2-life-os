@@ -68,7 +68,9 @@ function avgRecent(metrics: Array<{ category: string; value: number; timestamp: 
   return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10 : null
 }
 
-function buildBlock(window: EmotionWindow, sleepDebt: number | null, energy: number | null, mood: number | null): string | null {
+/** Arma el bloque que se inyecta al PROMPT del LLM (decidir/negociar/rehearse).
+ *  PURO. Exportado para test. null si no hay data suficiente para decir nada. */
+export function buildBlock(window: EmotionWindow, sleepDebt: number | null, energy: number | null, mood: number | null): string | null {
   const bits: string[] = []
   if (window.state !== 'insufficient') {
     bits.push(`ventana de tolerancia: ${window.state === 'narrow' ? 'ANGOSTA (fuera de la ventana)' : window.state === 'watch' ? 'tensionada' : 'abierta'}`)
@@ -82,7 +84,7 @@ function buildBlock(window: EmotionWindow, sleepDebt: number | null, energy: num
 
   const lines = [`Estado bio de Aaron AHORA (para calibrar el consejo — la ventana de tolerancia manda): ${bits.join(' · ')}.`]
   if (window.state === 'narrow') {
-    lines.push('IMPORTANTE: Aaron está FUERA de su ventana. La ciencia (Gross) dice que acá el consejo correcto NO es una estrategia de conversación — es REGULAR PRIMERO (bajar activación: respirar, moverse, dormir) y recién después hablar. Priorizá eso en "read" y en la primera acción; no lo empujes a una conversación difícil en caliente.')
+    lines.push('IMPORTANTE: Aaron está FUERA de su ventana. La ciencia (Gross) dice que acá el consejo correcto NO es una estrategia de conversación — es REGULAR PRIMERO (bajar activación: respirar, moverse, dormir) y recién después hablar. Prioriza eso en "read" y en la primera acción; no lo empujes a una conversación difícil en caliente.')
   } else if (window.state === 'watch') {
     lines.push('Está tensionado pero dentro de la ventana: sirve un reencuadre antes de actuar, y cuidar de no descargar el propio estado en la conversación.')
   }
