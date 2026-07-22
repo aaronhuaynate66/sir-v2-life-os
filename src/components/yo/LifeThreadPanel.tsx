@@ -19,6 +19,7 @@ import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { buildLifeThread, relationshipMilestones, memoryMilestones, mergeLifeThread, type LifeMilestoneKind, type LifeMilestone } from '@/lib/self/lifeThread'
 import { buildTrajectoryArc, trajectorySummaryLine } from '@/lib/self/trajectoryArc'
 import { buildLifeSeasons, seasonsSummaryLine } from '@/lib/self/lifeSeasons'
+import { computeNarrativeCoherence, narrativeCoherenceSummaryLine } from '@/lib/self/narrativeCoherence'
 import { buildBondEvolution } from '@/lib/people/bondEvolution'
 import type { ScoreSnapshot } from '@/lib/people/scoreTrend'
 
@@ -107,6 +108,14 @@ export function LifeThreadPanel() {
   // Capítulos (E5): las estaciones temáticas reales, con fechas y tema, para que
   // la reflexión IA lea la CONTINUIDAD del rumbo sin inventar. Determinístico.
   const seasonsSummary = useMemo(() => seasonsSummaryLine(buildLifeSeasons(goals)), [goals])
+  // Arco narrativo (E5): la forma del hilo entre capítulos (continuo/transiciona/
+  // fragmentado, hilos recurrentes, objetivo puente). Se computaba y moría; ahora
+  // alimenta la reflexión IA del rumbo, que antes ignoraba si la vida tiene un
+  // hilo o pivotea. Determinístico, mismo cómputo que LifeSeasonsPanel.
+  const narrativeArcSummary = useMemo(() => {
+    const anchorCategory = goals.find((g) => g.isAnchor && g.status === 'active')?.category ?? null
+    return narrativeCoherenceSummaryLine(computeNarrativeCoherence(buildLifeSeasons(goals).seasons, anchorCategory))
+  }, [goals])
   const [refl, setRefl] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; text?: string }>({ status: 'idle' })
   // La reflexión anterior persistida (día distinto, texto distinto): para ver cómo
   // cambió tu rumbo con el tiempo.
@@ -145,7 +154,7 @@ export function LifeThreadPanel() {
       const res = await fetch('/api/self/rumbo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText, identity: identitySummary, trajectory: trajectorySummary, seasons: seasonsSummary }),
+        body: JSON.stringify({ milestones: shown.map((m) => ({ label: m.label, date: m.date, kind: m.kind })), anchor: anchorText, identity: identitySummary, trajectory: trajectorySummary, seasons: seasonsSummary, narrativeArc: narrativeArcSummary }),
       })
       const data = (await res.json()) as { insight?: string; detail?: string; error?: string }
       if (!res.ok || !data.insight) {
@@ -156,7 +165,7 @@ export function LifeThreadPanel() {
     } catch {
       setRefl({ status: 'error', text: 'No se pudo generar la reflexión.' })
     }
-  }, [shown, anchorText, identitySummary, trajectorySummary, seasonsSummary])
+  }, [shown, anchorText, identitySummary, trajectorySummary, seasonsSummary, narrativeArcSummary])
 
   return (
     <Card className="shadow-none">

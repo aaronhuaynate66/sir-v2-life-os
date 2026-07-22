@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
   const identity = typeof body.identity === 'string' ? body.identity.trim().slice(0, 300) : null
   const trajectory = typeof body.trajectory === 'string' ? body.trajectory.trim().slice(0, 400) : null
   const seasons = typeof body.seasons === 'string' ? body.seasons.trim().slice(0, 500) : null
+  const narrativeArc = typeof body.narrativeArc === 'string' ? body.narrativeArc.trim().slice(0, 400) : null
   if (milestones.length < 2) {
     return errorJson(
       422,
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
     const res = await complete({
       task: 'synthesis', sensitivity: 'self',
       system: RUMBO_NARRATIVE_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildRumboInput(milestones, anchor, identity, trajectory, seasons) }],
+      messages: [{ role: 'user', content: buildRumboInput(milestones, anchor, identity, trajectory, seasons, narrativeArc) }],
       maxTokens: 400,
     }, { supabase, userId: authData.user.id })
     const insight = parseRumboNarrative(res.text)

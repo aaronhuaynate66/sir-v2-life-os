@@ -27,6 +27,25 @@ describe('rumboPrompt', () => {
     expect(msg).not.toContain('Trayectoria')
   })
 
+  it('buildRumboInput incluye el arco narrativo cuando se pasa', () => {
+    const msg = buildRumboInput(
+      [{ label: 'Lograste “X”', date: '2026-06-05T00:00:00Z', kind: 'done' }],
+      null, null, null, null,
+      'arco narrativo: continuous (3 capítulos); hilos: Negocio en 3; el capítulo actual continúa el anterior',
+    )
+    expect(msg).toContain('Arco narrativo (forma del hilo entre capítulos): arco narrativo: continuous (3 capítulos)')
+    expect(msg).toContain('el capítulo actual continúa el anterior')
+  })
+
+  it('buildRumboInput omite el arco narrativo si es null (insufficient)', () => {
+    const msg = buildRumboInput(
+      [{ label: 'Lograste “X”', date: '2026-06-05T00:00:00Z', kind: 'done' }],
+      null, null, null, 'Capítulo único',
+      null,
+    )
+    expect(msg).not.toContain('Arco narrativo')
+  })
+
   it('parseRumboNarrative extrae el insight del JSON', () => {
     expect(parseRumboNarrative('{"insight":"Venís sosteniendo un rumbo."}')).toBe('Venís sosteniendo un rumbo.')
   })
