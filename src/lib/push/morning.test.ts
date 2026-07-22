@@ -66,6 +66,22 @@ describe('buildMorningPush — prioridad máxima (semana en foco / métrica dura
   })
 })
 
+describe('buildMorningPush — buen momento × objetivo', () => {
+  it('incluye el goalContactTiming cuando viene', () => {
+    const p = buildMorningPush({ goalContactTiming: '⏳ Buen momento con Dayana: anda activa hoy. Tienes pendiente «pedirle el contacto» (Marlab).' })
+    expect(p.body).toContain('Buen momento con Dayana')
+  })
+  it('va antes que las tareas (junto a lo relacional)', () => {
+    const p = buildMorningPush({
+      goalContactTiming: '⏳ Buen momento con Dayana: anda activa hoy.',
+      dueTasks: ['Cerrar reporte'],
+    })
+    const parts = p.body.split(' · ')
+    expect(parts[0]).toContain('Buen momento con Dayana')
+    expect(parts.some((x) => x.includes('Cerrar reporte'))).toBe(true)
+  })
+})
+
 describe('buildMorningPush — hábito a retomar', () => {
   it('incluye el nudge de hábito cuando viene', () => {
     const p = buildMorningPush({ habitNudge: 'Se cortó tu racha de "Meditar". Retomala hoy.' })
