@@ -51,6 +51,78 @@
     emit(Array.from(byUrl.values()));
   }
 
+  // Fallback pasivo: si LinkedIn renderiza un perfil sin disparar JSON voyager
+  // visible para el interceptor, lee SOLO el perfil actualmente abierto en DOM.
+  const domSeen = new Set();
+  let domTimer = null;
+  function cleanText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+  function visibleLines(root) {
+    return String((root && root.innerText) || '')
+      .split(/\n+/)
+      .map(cleanText)
+      .filter(Boolean);
+  }
+  function currentProfileUrl() {
+    const m = location.pathname.match(/^\/in\/([^/]+)/i);
+    return m ? `https://linkedin.com/in/${m[1]}` : '';
+  }
+  function visibleProfileName() {
+    const h1 = document.querySelector('h1');
+    const h1Name = cleanText(h1 && h1.innerText);
+    if (h1Name) return h1Name;
+
+    const titleName = cleanText(document.title.replace(/\s*\|\s*LinkedIn.*$/i, ''));
+    if (titleName && !/^(Feed|LinkedIn|Inicio)$/i.test(titleName)) return titleName;
+
+    const main = document.querySelector('main') || document.body;
+    return visibleLines(main).find((line, index, lines) =>
+      index > 0 &&
+      line.length > 2 &&
+      line.length < 90 &&
+      lines[index + 1] &&
+      !/^(Inicio|Mi red|Empleos|Mensajes|Notificaciones|Yo|Para negocios|Publicidad|Recursos)$/i.test(line)
+    ) || '';
+  }
+  function visibleProfileHeadline(name) {
+    const main = document.querySelector('main') || document.body;
+    const lines = visibleLines(main);
+    const nameIndex = lines.findIndex((line) => line === name);
+    const candidates = lines.slice(Math.max(0, nameIndex + 1), nameIndex > -1 ? nameIndex + 8 : 10);
+    return candidates.find((line) =>
+      line &&
+      line !== name &&
+      line.length > 8 &&
+      line.length < 220 &&
+      !/^(Más|Enviar mensaje|Conectar|Seguir|Mensaje|Contacto|Acerca de|Actividad)$/i.test(line)
+    );
+  }
+  function scanProfileDom() {
+    domTimer = null;
+    try {
+      const linkedinUrl = currentProfileUrl();
+      if (!linkedinUrl || domSeen.has(linkedinUrl)) return;
+      const name = visibleProfileName();
+      const headline = visibleProfileHeadline(name);
+      if (!name && !headline) return;
+      domSeen.add(linkedinUrl);
+      emit([{ platform: 'linkedin', linkedinUrl, name: name || undefined, headline: headline || undefined }]);
+    } catch (_) {}
+  }
+  function scheduleDomScan() {
+    if (domTimer) return;
+    domTimer = setTimeout(scanProfileDom, 1500);
+  }
+  function patchHistoryMethod(method) {
+    const orig = history[method];
+    history[method] = function () {
+      const out = orig.apply(this, arguments);
+      scheduleDomScan();
+      return out;
+    };
+  }
+
   const origFetch = window.fetch;
   window.fetch = function (...args) {
     const p = origFetch.apply(this, args);
@@ -84,6 +156,16 @@
     });
     return origSend.apply(this, arguments);
   };
+
+  try {
+    patchHistoryMethod('pushState');
+    patchHistoryMethod('replaceState');
+    addEventListener('popstate', scheduleDomScan);
+    const mo = new MutationObserver(scheduleDomScan);
+    mo.observe(document.documentElement || document, { childList: true, subtree: true });
+    scheduleDomScan();
+    setTimeout(scheduleDomScan, 5000);
+  } catch (_) {}
 
   try { console.debug('[SIR Reader] linkedin reader activo (pasivo)'); } catch (_) {}
 })();
