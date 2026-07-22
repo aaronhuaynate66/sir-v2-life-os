@@ -30,6 +30,14 @@ export function summarizeActionForConfirm(a: ProposedActionResolved): string {
         : 'esa hora'
       return `⏰ Recordarte "${(a.texto || '').slice(0, 120)}" el ${when}.\n\n¿Lo agendo?`
     }
+    case 'registrar_estado': {
+      const label = a.estado === 'regla' ? 'período/regla' : 'ánimo bajo / tensa'
+      const cuando = a.fecha ? `el ${a.fecha}` : 'hoy'
+      const nota = (a.nota || '').trim()
+      return `📔 Marcar que ${a.persona || 'esa persona'} estuvo con ${label} ${cuando}` +
+        (nota ? ` ("${nota.slice(0, 120)}")` : '') +
+        '.\nCon esto voy detectando si se repite en un patrón.\n\n¿Lo anoto?'
+    }
     default:
       return '¿Lo guardo?'
   }

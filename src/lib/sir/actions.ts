@@ -113,6 +113,21 @@ export const SIR_ACTION_TOOLS = [
     },
   },
   {
+    name: 'proponer_registrar_estado',
+    description:
+      'Propón MARCAR el estado de ánimo/biológico de una persona en un día (NO lo guardes tú, solo propónlo para que Aaron confirme). Úsalo cuando Aaron dice cómo estuvo alguien un día: "Diana estuvo de mal humor hoy", "hoy anduvo tensa/renegando", "le vino la regla ayer". Esto se guarda como una MARCA CON FECHA que alimenta la detección de patrones (si se repite cada X → se puede predecir). `estado`: usa "regla" si Aaron dice que le vino el período/regla/sangrado; "animo_bajo" para mal humor / tensa / sensible / bajón / renegando. `fecha` = YYYY-MM-DD calculada desde "Hoy es ..." del contexto (default: hoy). NUNCA digas que ya lo guardaste sin llamar a esta tool.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        persona: { type: 'string', description: 'Nombre de la persona tal como Aaron la nombró.' },
+        estado: { type: 'string', enum: ['regla', 'animo_bajo'], description: '"regla" = le vino el período; "animo_bajo" = mal humor/tensa/sensible/bajón.' },
+        fecha: { type: 'string', description: 'Fecha del estado en YYYY-MM-DD (default hoy), calculada desde la fecha de hoy del contexto.' },
+        nota: { type: 'string', description: 'Opcional: cómo estuvo, breve (ej. "renegando, jodiendo todo el día, tensa").' },
+      },
+      required: ['persona', 'estado'],
+    },
+  },
+  {
     name: 'proponer_cerrar_relacion',
     description:
       'Propón CERRAR un vínculo (NO lo cierres tú, solo propónlo para que Aaron confirme). Usa esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
@@ -176,7 +191,16 @@ export interface ProposedRecordatorio {
   /** ISO 8601 con hora (UTC normalizado), o '' si el modelo no dio uno válido. */
   cuando: string
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio
+export interface ProposedEstado {
+  kind: 'registrar_estado'
+  persona: string
+  /** 'regla' → person_cycles.bleeding (ancla fuerte); 'animo_bajo' → pms (ventana sensible). */
+  estado: 'regla' | 'animo_bajo'
+  /** YYYY-MM-DD, o '' si el modelo no dio una fecha válida (executeAction usa hoy). */
+  fecha: string
+  nota: string
+}
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio | ProposedEstado
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -233,6 +257,14 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
       ? (o.categoria as PersonCategory)
       : 'network'
     return { kind: 'crear_persona', nombre, relacion, categoria }
+  }
+  if (toolName === 'proponer_registrar_estado') {
+    const persona = str(o.persona, 120)
+    if (!persona) return null
+    const estado = o.estado === 'regla' ? 'regla' : 'animo_bajo'
+    const rawFecha = str(o.fecha, 10)
+    const fecha = /^\d{4}-\d{2}-\d{2}$/.test(rawFecha) ? rawFecha : ''
+    return { kind: 'registrar_estado', persona, estado, fecha, nota: str(o.nota, 300) }
   }
   if (toolName === 'proponer_cerrar_relacion') {
     const persona = str(o.persona, 120)
