@@ -19,6 +19,7 @@ import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
+import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
 import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
 import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDates'
 import type { SpecialDate } from '@/types'
@@ -165,7 +166,7 @@ export async function GET(req: NextRequest) {
       // Foco: ancla del año, o el próximo paso de un objetivo activo.
       const { data: goalRows } = await admin
         .from('goals')
-        .select('title, next_action, is_anchor, status, target_date, target, anchor_subtitle, description, progress, updated_at')
+        .select('title, next_action, is_anchor, status, target_date, target, anchor_subtitle, description, progress, updated_at, related_persons')
         .eq('user_id', uid)
         .eq('status', 'active')
         .limit(50)
@@ -174,6 +175,7 @@ export async function GET(req: NextRequest) {
         target_date: string | null; target: string | null;
         anchor_subtitle: string | null; description: string | null;
         progress: number | null; updated_at: string | null;
+        related_persons: string[] | null;
       }>
       const anchor = goals.find((g) => g.is_anchor)
       const withNext = goals.find((g) => g.next_action && g.next_action.trim().length > 0)
@@ -191,6 +193,47 @@ export async function GET(req: NextRequest) {
         })),
         now,
       ) ?? undefined
+
+      // BUEN MOMENTO × OBJETIVO (el loop original del reader, caso Dayana/Marlab):
+      // una persona ligada a un objetivo activo CON acción pendiente que HOY
+      // muestra buen timing (historia activa) → SIR avisa para aprovechar la
+      // ventana. Cruza goal.related_persons × contact_activity (kind=available).
+      let goalTimingText: string | undefined
+      try {
+        const goalByPerson = new Map<string, { goalTitle: string; pendingAction: string }>()
+        for (const g of goals) {
+          const action = (g.next_action ?? '').trim()
+          if (!action) continue
+          for (const pid of g.related_persons ?? []) {
+            if (typeof pid === 'string' && pid && !goalByPerson.has(pid)) {
+              goalByPerson.set(pid, { goalTitle: g.title, pendingAction: action })
+            }
+          }
+        }
+        if (goalByPerson.size > 0) {
+          const sinceIso = new Date(now.getTime() - 36 * 3_600_000).toISOString()
+          const { data: sig } = await admin
+            .from('contact_activity')
+            .select('person_id, observed_at')
+            .eq('user_id', uid).eq('kind', 'available').gte('observed_at', sinceIso)
+            .in('person_id', Array.from(goalByPerson.keys()))
+            .order('observed_at', { ascending: false }).limit(20)
+          const rows = (sig ?? []) as Array<{ person_id: string; observed_at: string }>
+          if (rows.length > 0) {
+            const pids = Array.from(new Set(rows.map((r) => r.person_id)))
+            const { data: pplRows } = await admin.from('people').select('id, name').eq('user_id', uid).in('id', pids)
+            const nameById = new Map((pplRows ?? []).map((p) => [p.id as string, p.name as string]))
+            const cands = rows.flatMap((r) => {
+              const g = goalByPerson.get(r.person_id)
+              const name = nameById.get(r.person_id)
+              return g && name
+                ? [{ personName: name, goalTitle: g.goalTitle, pendingAction: g.pendingAction, signalDetail: 'anda activa hoy', observedAt: r.observed_at }]
+                : []
+            })
+            goalTimingText = buildGoalTimingNudge(cands) ?? undefined
+          }
+        }
+      } catch { /* fail-soft: el brief va sin este nudge */ }
 
       // SEMANA EN FOCO: goal con target_date ≤7d → texto listo para el push.
       let weekFocusText: string | undefined
@@ -504,7 +547,7 @@ export async function GET(req: NextRequest) {
         }
       } catch { /* columna 0151 sin propagar → sin sugerencia */ }
 
-      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
+      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent

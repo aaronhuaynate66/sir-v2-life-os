@@ -25,6 +25,11 @@ export interface MorningInput {
    *  reciente ya parece haber resuelto (el cron `moment-scan` lo precomputa).
    *  SIR sugiere cerrarlo; no cierra solo. Texto ya formado. */
   momentResolution?: string
+  /** Buen momento para AVANZAR un objetivo con una persona: alguien ligado a un
+   *  objetivo activo (con acción pendiente) muestra buen timing hoy (historia
+   *  activa). El loop original del reader (Dayana/Marlab). Texto ya formado
+   *  (ver lib/goals/timingNudge). */
+  goalContactTiming?: string
   /** Títulos de tareas que vencen hoy (no hechas). */
   dueTasks?: string[]
   /** El foco del día (ancla del año o próximo paso de un objetivo clave). */
@@ -108,6 +113,14 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //     que tareas/foco. Es el "SIR no cruza bien la info" hecho proactivo.
   if (input.momentResolution && parts.length < MAX_PARTS) {
     parts.push(input.momentResolution)
+  }
+
+  // 1.7 Buen momento con una persona para AVANZAR un objetivo. Es el loop que
+  //     originó el reader (Dayana/Marlab): cruza el timing social con un objetivo
+  //     ligado a esa persona. Muy accionable y con ventana que se cierra → alto,
+  //     junto a lo relacional, antes de tareas/foco.
+  if (input.goalContactTiming && parts.length < MAX_PARTS) {
+    parts.push(input.goalContactTiming)
   }
 
   // 2. Tareas que vencen hoy.
