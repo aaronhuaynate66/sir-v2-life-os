@@ -14,6 +14,8 @@ import { AlertTriangle, X, ChevronRight } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { parseErrorResponse, toApiError, type ApiError } from '@/lib/api/errors'
 import { cn } from '@/lib/utils'
 
 interface Alert {
@@ -38,14 +40,16 @@ const LABEL_CLASS: Record<string, string> = {
 
 export function StatusAlertsCard() {
   const [alerts, setAlerts] = useState<Alert[] | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
 
   const load = useCallback(async () => {
+    setError(null)
     try {
       const r = await fetch('/api/person-status-alerts', { cache: 'no-store' })
-      if (!r.ok) { setAlerts([]); return }
+      if (!r.ok) { setError(await parseErrorResponse(r)); setAlerts([]); return }
       const j = (await r.json()) as { alerts?: Alert[] }
       setAlerts(j.alerts ?? [])
-    } catch { setAlerts([]) }
+    } catch (e) { setError(toApiError(e)); setAlerts([]) }
   }, [])
 
   useEffect(() => { void load() }, [load])
@@ -66,6 +70,17 @@ export function StatusAlertsCard() {
     } catch { /* toast could go here */ }
   }
 
+  // Si el fetch falló, mostramos el error (antes se tragaba → parecía "sin
+  // alertas" cuando en realidad se rompió). Vacío real → seguimos ocultando.
+  if (error) {
+    return (
+      <div className="mb-4">
+        <ApiErrorNotice error={error} className="p-3">
+          <button onClick={() => void load()} className="mt-1 text-xs underline underline-offset-2 hover:text-foreground">Reintentar</button>
+        </ApiErrorNotice>
+      </div>
+    )
+  }
   if (!alerts || alerts.length === 0) return null
 
   return (

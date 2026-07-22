@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AlarmClock, Circle, CheckCircle2 } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { ApiErrorNotice } from '@/components/ui/api-error-notice'
+import { parseErrorResponse, toApiError, type ApiError } from '@/lib/api/errors'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -45,15 +47,17 @@ function formatWhen(iso: string): { label: string; overdue: boolean; today: bool
 
 export function RemindersCard() {
   const [reminders, setReminders] = useState<Reminder[] | null>(null)
+  const [error, setError] = useState<ApiError | null>(null)
 
   const load = useCallback(async () => {
+    setError(null)
     try {
       const r = await fetch('/api/reminders?scope=pending', { cache: 'no-store' })
-      if (!r.ok) { setReminders([]); return }
+      if (!r.ok) { setError(await parseErrorResponse(r)); setReminders([]); return }
       const j = (await r.json()) as { reminders?: Reminder[] }
       const cutoff = new Date(Date.now() + 3 * 86_400_000).toISOString()
       setReminders((j.reminders ?? []).filter((rem) => rem.due_at <= cutoff))
-    } catch { setReminders([]) }
+    } catch (e) { setError(toApiError(e)); setReminders([]) }
   }, [])
 
   useEffect(() => { void load() }, [load])
@@ -68,6 +72,15 @@ export function RemindersCard() {
     } catch { /* silent */ }
   }
 
+  if (error) {
+    return (
+      <div className="mb-4">
+        <ApiErrorNotice error={error} className="p-3">
+          <button onClick={() => void load()} className="mt-1 text-xs underline underline-offset-2 hover:text-foreground">Reintentar</button>
+        </ApiErrorNotice>
+      </div>
+    )
+  }
   if (!reminders || reminders.length === 0) return null
 
   return (
