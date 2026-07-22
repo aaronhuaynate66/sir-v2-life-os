@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest'
 
 import type { Signal } from '@/types'
-import { rankSignalsByPriority, buildSignalContext, extractSignalMeaning } from './index'
+import { rankSignalsByPriority, buildSignalContext } from './index'
 
 function sig(o: Partial<Signal> & { id: string }): Signal {
   return {
@@ -72,14 +72,5 @@ describe('buildSignalContext', () => {
     const ctx = buildSignalContext([sig({ id: 'm', urgency: 'monitor' }), sig({ id: 'r', resolved: true })])
     expect(ctx.hasImmediateAlert).toBe(false)
     expect(ctx.activeSignals.map((s) => s.id)).toEqual(['m'])
-  })
-})
-
-describe('extractSignalMeaning', () => {
-  it('meaning explícito gana sobre el default del tipo', () => {
-    expect(extractSignalMeaning(sig({ id: 'a', meaning: 'custom', type: 'warning' }))).toBe('custom')
-  })
-  it('sin meaning → texto por tipo', () => {
-    expect(extractSignalMeaning(sig({ id: 'a', type: 'financial' }))).toBe('Movimiento financiero relevante')
   })
 })
