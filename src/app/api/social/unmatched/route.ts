@@ -37,11 +37,19 @@ export async function POST(req: NextRequest) {
   if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   const userId = auth.user.id
 
-  let body: { id?: unknown; personId?: unknown }
+  let body: { id?: unknown; personId?: unknown; newPerson?: unknown }
   try { body = (await req.json()) as typeof body } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
   const id = typeof body.id === 'string' ? body.id : ''
-  const personId = typeof body.personId === 'string' ? body.personId : ''
-  if (!id || !personId) return NextResponse.json({ error: 'id y personId requeridos' }, { status: 400 })
+  let personId = typeof body.personId === 'string' ? body.personId : ''
+  // Crear una persona nueva desde la bandeja (Aaron: "crear a esa persona si no
+  // existe"). El cliente manda id+slug generados para que su store y esta fila
+  // converjan en el MISMO id (upsert idempotente, sin duplicar). El insert va
+  // ANTES de promover → la FK contact_activity.person_id nunca falla.
+  const np = body.newPerson as { id?: unknown; name?: unknown; slug?: unknown } | undefined
+  const newPerson = np && typeof np.id === 'string' && typeof np.name === 'string' && np.name.trim().length >= 2
+    ? { id: np.id, name: np.name.trim().slice(0, 120), slug: typeof np.slug === 'string' ? np.slug : null }
+    : null
+  if (!id || (!personId && !newPerson)) return NextResponse.json({ error: 'id y (personId o newPerson) requeridos' }, { status: 400 })
 
   // La fila que Aaron está asignando (RLS ya la limita a su dueño).
   const { data: row } = await supabase
@@ -50,8 +58,22 @@ export async function POST(req: NextRequest) {
     .eq('id', id).limit(1).maybeSingle()
   if (!row) return NextResponse.json({ error: 'Señal no encontrada' }, { status: 404 })
 
-  // 1. Setear el identificador en la persona → futuras capturas matchean solas.
   const canon = row.handle ? canonHandle(row.handle) : null
+
+  // 0. Si es persona nueva: crearla en people ANTES de promover (defaults
+  //    conservadores; el store del cliente hará upsert del MISMO id con el resto).
+  if (newPerson) {
+    personId = newPerson.id
+    await supabase.from('people').insert({
+      id: newPerson.id, user_id: userId, name: newPerson.name, slug: newPerson.slug,
+      relationship: 'acquaintance', category: 'network',
+      importance_score: 5, energy_impact: 'neutral', trust_level: 5,
+      instagram_handle: row.platform === 'instagram' && canon ? canon : null,
+      notes: 'Creado desde ¿quién es quién?',
+    })
+  }
+
+  // 1. Setear el identificador en la persona → futuras capturas matchean solas.
   if (row.platform === 'instagram' && canon) {
     await supabase.from('people').update({ instagram_handle: canon }).eq('id', personId)
   }
@@ -79,7 +101,7 @@ export async function POST(req: NextRequest) {
   }
   if (doneIds.length > 0) await supabase.from('unmatched_social_activity').delete().in('id', doneIds)
 
-  return NextResponse.json({ ok: true, promoted, handleSet: canon }, { status: 200 })
+  return NextResponse.json({ ok: true, promoted, handleSet: canon, created: !!newPerson }, { status: 200 })
 }
 
 export async function DELETE(req: NextRequest) {
