@@ -36,6 +36,7 @@ import { rowToContactSignal } from '@/lib/contact-timing/types'
 import { assessContactTiming, timingPushLine } from '@/lib/contact-timing/assess'
 import { momentResolutionPushLine, type MomentResolutionSuggestion } from '@/lib/moments/resolutionCheck'
 import { pickTopSignal } from '@/lib/signals/freshness'
+import { reportApiError } from '@/lib/observability/reportApiError'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
@@ -522,7 +523,13 @@ export async function GET(req: NextRequest) {
           } catch { /* fail-open: el hilo es un extra */ }
         }
       }
-    } catch {
+    } catch (e) {
+      // Antes se tragaba en silencio: si un bug lógico (no una tabla sin
+      // propagar) rompía el armado del brief, el push degradaba a vacío sin
+      // dejar traza y no había forma de saber por qué no llegó. Ahora deja
+      // rastro en Sentry con el usuario afectado. Sigue fail-soft: el cron no
+      // se cae, el resto de usuarios se procesa igual.
+      reportApiError(e, { route: 'cron/morning-push', user: uid.slice(0, 8) })
       results.push({ user: uid.slice(0, 8), sent: 0 })
     }
   }
