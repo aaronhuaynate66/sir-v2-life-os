@@ -63,7 +63,7 @@ export function renderLearningsBlock(learnings: Learning[], limit = 20): string 
   if (usable.length === 0) return ''
   const lines = usable.map((l) => `- [${KIND_LABEL[l.kind]}] ${l.text}`)
   return [
-    'LO QUE APRENDISTE DE AARON (tenelo presente al aconsejar; es memoria durable, no la repitas porque sí):',
+    'LO QUE APRENDISTE DE AARON (tenlo presente al aconsejar; es memoria durable, no la repitas porque sí):',
     ...lines,
   ].join('\n')
 }
