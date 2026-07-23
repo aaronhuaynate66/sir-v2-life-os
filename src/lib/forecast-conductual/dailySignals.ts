@@ -4,6 +4,7 @@
 // señales 0..1 (somático/fricción/retiro/sensibilidad/acciones + compuesto). Es
 // la serie temporal que alimenta el motor probabilístico. Barato y privado.
 
+import { affectionForTexts } from './affection'
 import { categoryHits, type SignalCategory } from './lexicon'
 import type { ChatMessage, DailySignal } from './types'
 
@@ -57,7 +58,8 @@ export function buildDailySignals(messages: ChatMessage[]): DailySignal[] {
       COMPOSITE_WEIGHTS.sensitivity * sensitivity +
       COMPOSITE_WEIGHTS.actions * actions
     const avgLen = texts.length > 0 ? texts.reduce((s, t) => s + t.length, 0) / texts.length : 0
-    out.push({ date, messageCount: texts.length, avgLen, somatic, friction, withdrawal, sensitivity, actions, composite })
+    const { affection, positivityRatio } = affectionForTexts(texts)
+    out.push({ date, messageCount: texts.length, avgLen, somatic, friction, withdrawal, sensitivity, actions, composite, affection, positivityRatio })
   }
   out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
   return out

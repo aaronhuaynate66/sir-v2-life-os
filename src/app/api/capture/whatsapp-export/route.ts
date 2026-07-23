@@ -278,6 +278,8 @@ export async function POST(req: NextRequest) {
           avg_len: typeof o.avgLen === 'number' ? o.avgLen : 0,
           somatic: clamp(o.somatic), friction: clamp(o.friction), withdrawal: clamp(o.withdrawal),
           sensitivity: clamp(o.sensitivity), actions: clamp(o.actions), composite: clamp(o.composite),
+          affection: clamp(o.affection),
+          positivity_ratio: typeof o.positivityRatio === 'number' ? o.positivityRatio : 1,
           updated_at: new Date().toISOString(),
         }
       }).filter((r): r is NonNullable<typeof r> => r !== null)

@@ -14,7 +14,7 @@ function dayIso(startIso: string, i: number): string {
 }
 function sig(date: string, peak: boolean): DailySignal {
   const v = peak ? 0.85 : 0.04
-  return { date, messageCount: peak ? 20 : 6, avgLen: 40, somatic: peak ? 0.8 : 0.03, friction: peak ? 0.9 : 0.05, withdrawal: peak ? 0.6 : 0.05, sensitivity: peak ? 0.7 : 0.05, actions: 0.1, composite: v }
+  return { date, messageCount: peak ? 20 : 6, avgLen: 40, somatic: peak ? 0.8 : 0.03, friction: peak ? 0.9 : 0.05, withdrawal: peak ? 0.6 : 0.05, sensitivity: peak ? 0.7 : 0.05, actions: 0.1, composite: v, affection: 0, positivityRatio: 1 }
 }
 
 /** 90 días desde start, picos en 0,28,56,84. */
