@@ -41,7 +41,13 @@ export async function POST(req: NextRequest) {
   if (!path.startsWith(`${auth.user.id}/`)) return NextResponse.json({ error: 'path fuera de tu carpeta' }, { status: 403 })
   const { data: prow } = await supabase.from('people').select('id').eq('user_id', auth.user.id).eq('id', personId).maybeSingle()
   if (!prow) return NextResponse.json({ error: 'Persona no encontrada' }, { status: 404 })
-  try { await supabase.from('person_avatars').upsert({ user_id: auth.user.id, person_id: personId, storage_path: path, updated_at: new Date().toISOString() }, { onConflict: 'user_id,person_id' }) } catch (e) {
+  // PostgREST devuelve el fallo en `.error` (no lanza), así que el try/catch solo
+  // no bastaba: hay que chequear `.error` explícitamente o un guardado fallido
+  // (ej. tipo de person_id incompatible) respondía ok:true sin persistir.
+  try {
+    const { error } = await supabase.from('person_avatars').upsert({ user_id: auth.user.id, person_id: personId, storage_path: path, updated_at: new Date().toISOString() }, { onConflict: 'user_id,person_id' })
+    if (error) return NextResponse.json({ error: 'No se pudo guardar', detail: error.message.slice(0, 160) }, { status: 500 })
+  } catch (e) {
     return NextResponse.json({ error: 'No se pudo guardar', detail: String(e).slice(0, 120) }, { status: 500 })
   }
   try {

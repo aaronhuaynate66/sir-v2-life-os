@@ -108,10 +108,21 @@ export async function POST(req: NextRequest) {
       const up = await supabase.storage.from(AVATAR_BUCKET).upload(avatarPath, cropped, { contentType: 'image/jpeg', upsert: true })
       if (up.error) continue
 
-      await supabase.from('person_avatars').upsert(
+      // El .upsert() de PostgREST NO lanza: devuelve el error en `.error`. Si no
+      // lo chequeamos, un fallo de guardado (ej. el bug histórico de tipo de
+      // person_id) pasaba desapercibido y respondíamos ok:true con la cara subida
+      // al storage pero SIN la fila que la mapea → el avatar nunca se mostraba.
+      const ins = await supabase.from('person_avatars').upsert(
         { user_id: userId, person_id: personId, storage_path: avatarPath, updated_at: new Date().toISOString() },
         { onConflict: 'user_id,person_id' },
       )
+      if (ins.error) {
+        reportApiError(ins.error, { route: 'avatars/auto', step: 'persist', personId })
+        return NextResponse.json(
+          { error: 'No se pudo guardar el avatar', detail: ins.error.message.slice(0, 160) },
+          { status: 500 },
+        )
+      }
       const { data: signed } = await supabase.storage.from(AVATAR_BUCKET).createSignedUrl(avatarPath, 3600)
       return NextResponse.json({ ok: true, url: signed?.signedUrl ?? null, source: cand.captureType })
     } catch (e) {
