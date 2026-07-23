@@ -33,6 +33,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { parseErrorResponse, postJson, toApiError, type ApiError } from '@/lib/api/errors'
+import { fetchAvatars } from '@/lib/avatars/client'
 import { trackAiError } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 import type { DailyAction, DailyActionKind } from '@/lib/daily-actions/build'
@@ -99,6 +100,15 @@ export function DailyActionsPanel({
     | { kind: 'error'; error: ApiError }
     | { kind: 'ready'; data: DailyActionsResponse }
   >({ kind: 'loading' })
+
+  // Caras de la gente (un solo fetch de todos los avatares → mapa por personId).
+  // Sin foto → el Avatar cae a iniciales. Fail-soft: si falla, nadie ve la cara.
+  const [avatars, setAvatars] = useState<Record<string, string>>({})
+  useEffect(() => {
+    let alive = true
+    void fetchAvatars().then((m) => { if (alive) setAvatars(m) })
+    return () => { alive = false }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -167,7 +177,7 @@ export function DailyActionsPanel({
               <ul className="space-y-2">
                 {shown.map((a) => (
                   <li key={`${a.personId}_${a.kind}`}>
-                    <ActionRow action={a} variant={variant} />
+                    <ActionRow action={a} variant={variant} avatarUrl={avatars[a.personId]} />
                   </li>
                 ))}
               </ul>
@@ -179,7 +189,7 @@ export function DailyActionsPanel({
   )
 }
 
-function ActionRow({ action, variant }: { action: DailyAction; variant: 'full' | 'compact' }) {
+function ActionRow({ action, variant, avatarUrl }: { action: DailyAction; variant: 'full' | 'compact'; avatarUrl?: string }) {
   const [msg, setMsg] = useState<MsgState>({ status: 'idle' })
   const [copied, setCopied] = useState(false)
 
@@ -218,7 +228,7 @@ function ActionRow({ action, variant }: { action: DailyAction; variant: 'full' |
   return (
     <div className="rounded-md border border-border bg-secondary/40 p-3">
       <div className="flex items-start gap-3">
-        <Avatar name={action.personName} size="sm" />
+        <Avatar name={action.personName} size="sm" src={avatarUrl} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             {action.personSlug ? (
