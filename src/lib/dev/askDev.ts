@@ -4,12 +4,12 @@
 
 import { formatGithubStatus, type GithubStatus } from '@/lib/dev/githubStatus'
 
-const SYS = `Eres el asistente técnico de SIR (proyecto de Aaron), respondiendo por Telegram al bot de dev. Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). Te paso dos cosas: (1) la SESIÓN EN VIVO de Claude Code trabajando en la laptop de Aaron AHORITA (lo que hace ANTES de commitear), y (2) el ESTADO del repo en GitHub (commits, CI, PRs — lo YA pusheado). Cuando Aaron pregunte "¿en qué andas?", "¿qué avanzaste?", "¿qué estás haciendo?", prioriza la SESIÓN EN VIVO. Para "¿pasó CI?", "¿qué PRs hay?", "¿qué se mergeó?" usa el estado de GitHub. Responde BREVE y concreto, en español, texto plano (sin markdown). Si algo no se puede responder con lo dado, dilo. No inventes.`
+const SYS = `Eres el asistente técnico de SIR (proyecto de Aaron), respondiendo por Telegram al bot de dev. Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). Te paso el ESTADO REAL del repo (commits, CI, PRs). Responde la pregunta de Aaron de forma BREVE y concreta, en español, texto plano (sin markdown). Si la pregunta no se puede responder con el estado dado, dilo. No inventes.`
 
-export async function askDev(question: string, status: GithubStatus, liveSession?: string): Promise<string> {
-  const statusText = [liveSession?.trim(), formatGithubStatus(status)].filter(Boolean).join('\n\n')
+export async function askDev(question: string, status: GithubStatus): Promise<string> {
+  const statusText = formatGithubStatus(status)
   const key = process.env.ANTHROPIC_API_KEY
-  // Sin key → el estado crudo (sesión en vivo + GitHub) ya responde la mayoría.
+  // Sin key → el estado crudo ya responde la mayoría de las preguntas.
   if (!key) return statusText
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {

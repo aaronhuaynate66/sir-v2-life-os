@@ -14,7 +14,6 @@ import { NextResponse, type NextRequest, after } from 'next/server'
 import { parseTelegramUpdate } from '@/lib/telegram/inbound'
 import { isDevBotConfigured, verifyDevSecret, sendDevMessage } from '@/lib/telegram/devClient'
 import { fetchGithubStatus } from '@/lib/dev/githubStatus'
-import { fetchLatestSession, formatSessionStatus } from '@/lib/dev/sessionStatus'
 import { askDev } from '@/lib/dev/askDev'
 import { classifyDevMessage } from '@/lib/dev/classifyDevMessage'
 import { createGithubIssue } from '@/lib/dev/githubIssue'
@@ -52,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (text.startsWith('/')) {
       const cmd = text.slice(1).split(/\s+/)[0].toLowerCase()
       if (cmd === 'start' || cmd === 'help') {
-        await sendDevMessage(msg.chatId, '🛠️ Soy el bot de dev de SIR.\n\n• PREGÚNTAME EN QUÉ ANDA CLAUDE AHORITA: "¿en qué andas?", "¿qué avanzaste?", "¿qué estás haciendo?" — leo la sesión EN VIVO de Claude Code en la laptop (lo que hace antes de commitear).\n• PREGÚNTAME por el estado técnico: "¿pasó CI?", "¿qué PRs hay?", "¿qué se mergeó hoy?" — cruzo la GitHub API en vivo.\n• DIME un pedido de dev (bug, mejora, cambio): "el botón X no anda", "arregla Y", "estaría bueno Z" — lo anoto como issue en el repo para que se agarre y se arregle.')
+        await sendDevMessage(msg.chatId, '🛠️ Soy el bot de dev de SIR.\n\n• PREGÚNTAME por el estado técnico: "¿pasó CI?", "¿qué PRs hay?", "¿qué se mergeó hoy?" — cruzo la GitHub API en vivo.\n• DIME un pedido de dev (bug, mejora, cambio): "el botón X no anda", "arregla Y", "estaría bueno Z" — lo anoto como issue en el repo para que se agarre y se arregle.')
         return
       }
     }
@@ -78,11 +77,8 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const [status, session] = await Promise.all([
-        fetchGithubStatus(REPO, process.env.GITHUB_TOKEN),
-        fetchLatestSession(),
-      ])
-      const answer = await askDev(text, status, formatSessionStatus(session))
+      const status = await fetchGithubStatus(REPO, process.env.GITHUB_TOKEN)
+      const answer = await askDev(text, status)
       await sendDevMessage(msg.chatId, answer)
     } catch {
       await sendDevMessage(msg.chatId, 'No pude leer el estado ahora. Reintenta en un momento.')
