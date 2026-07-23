@@ -1,7 +1,10 @@
 // SIR V2 — GET /api/cron/reminders-due
 //
-// Corre cada 15 minutos. Busca reminders con due_at <= now, done_at IS NULL,
-// notified_at IS NULL. Por cada uno:
+// Respaldo diario (vercel.json: 0 11 * * * ≈ 6am Lima) para app CERRADA. El
+// camino primario es el watcher client-side /api/reminders/fire-due (app abierta).
+// LIMITACIÓN (plan Hobby): con la app cerrada, un recordatorio con hora solo se
+// pushea en el próximo tick diario, no a su hora exacta. Busca reminders con
+// due_at <= now, done_at IS NULL, notified_at IS NULL. Por cada uno:
 //   1. Dispara push notification al user (best-effort).
 //   2. Marca notified_at para no re-disparar.
 // Auth: CRON_SECRET.
