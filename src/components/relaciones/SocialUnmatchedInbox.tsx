@@ -31,6 +31,7 @@ interface UnmatchedItem {
   kind: string
   detail: string | null
   observed_at: string
+  avatar: string | null
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -211,9 +212,22 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
             const isCreating = creatingFor === it.id
             return (
               <div key={it.id} className="rounded-lg border border-border p-2.5">
-                {/* Identificador: su propia línea, ancho completo. */}
+                {/* Identificador: la cara (para reconocer al toque) + handle. */}
                 <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                  <span className="truncate">{it.handle ? `@${it.handle}` : (it.name || 'sin nombre')}</span>
+                  {it.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={it.avatar}
+                      alt={it.handle ? `@${it.handle}` : (it.name || 'cuenta')}
+                      loading="lazy"
+                      className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-border"
+                    />
+                  ) : (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] text-muted-foreground">
+                      {(it.handle || it.name || '?').slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 truncate">{it.handle ? `@${it.handle}` : (it.name || 'sin nombre')}</span>
                   <Badge variant="outline" className="shrink-0 text-[10px]">{KIND_LABEL[it.kind] ?? it.kind}</Badge>
                   {bizFlags[it.id] && <Badge variant="outline" className="shrink-0 text-[10px] text-muted-foreground/70">¿negocio?</Badge>}
                 </div>
