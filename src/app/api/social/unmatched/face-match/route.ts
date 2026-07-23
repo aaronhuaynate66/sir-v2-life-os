@@ -125,8 +125,11 @@ export async function POST() {
             ...galleryBlocks,
             { type: 'text', text: promptText },
           ]
+          // Verificación facial estricta → modelo CAPAZ (Anthropic). El barato
+          // (Qwen-VL) daba falsos positivos "alta" contra referencias que son
+          // capturas de perfil. Es on-demand + cacheado → el costo es acotado.
           const res = await complete(
-            { task: 'face_match', tier: 'cheap', sensitivity: 'third_party', maxTokens: 60, messages: [{ role: 'user', content }] },
+            { task: 'face_match', tier: 'capable', sensitivity: 'third_party', maxTokens: 60, messages: [{ role: 'user', content }] },
             { supabase, userId },
           )
           const parsed = parseFaceMatchResponse(res.text, gallery.length)
