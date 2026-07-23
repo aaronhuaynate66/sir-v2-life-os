@@ -9,4 +9,11 @@ declare module 'd3-force-3d' {
   export function forceCollide<T = unknown>(
     radius?: number | ((node: T) => number),
   ): CollideForce<T>
+  interface PositionForce<T> {
+    strength(s: number | ((node: T) => number)): PositionForce<T>
+    x(x: number | ((node: T) => number)): PositionForce<T>
+    y(y: number | ((node: T) => number)): PositionForce<T>
+  }
+  export function forceX<T = unknown>(x?: number | ((node: T) => number)): PositionForce<T>
+  export function forceY<T = unknown>(y?: number | ((node: T) => number)): PositionForce<T>
 }
