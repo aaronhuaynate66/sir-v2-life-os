@@ -192,7 +192,11 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       })
     }
   } catch (e) {
-    reportApiError(e)
+    // Recall degradado: si esto falla, SIR queda CIEGO a su memoria larga (le
+    // pasó jul/26 con la cuota de OpenAI agotada y nadie se enteró en semanas).
+    // Tag distintivo para alertar/filtrar en Sentry. El chat sigue (fail-open)
+    // pero con menos contexto — el prompt ya lo obliga a decir "no tengo".
+    reportApiError(e, { route: 'askSir:recall', signal: 'RECALL_DEGRADED' })
   }
 
   // 3b. C3 — RAG cross-session: intercambios PASADOS con SIR parecidos a esta
