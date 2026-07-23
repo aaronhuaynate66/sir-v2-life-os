@@ -178,9 +178,11 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     const { data: matches } = await supabase.rpc('match_memories', {
       query_embedding: toPgVector(questionEmbedding),
       match_count: 10,
-      // 0.15 era casi ruido (traía memorias semi-random + personas irrelevantes).
-      // 0.35 sube la SEÑAL del contexto: solo lo de verdad parecido a la pregunta.
-      similarity_threshold: 0.35,
+      // Umbral afinado con MEDICIÓN real: las memorias claramente relevantes
+      // (ej. sobre Diana) puntúan 0.34–0.52 con text-embedding-3-small. 0.15 (el
+      // viejo) era casi ruido; 0.35 cortaba relevantes de borde (0.34); 0.30 es
+      // el punto justo: retiene lo relevante y descarta lo semi-random.
+      similarity_threshold: 0.3,
     })
     for (const r of ((matches as Record<string, unknown>[]) ?? [])) {
       const pid = (r.person_id as string | null) ?? null
