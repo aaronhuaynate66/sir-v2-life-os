@@ -163,6 +163,8 @@
         domSeen.add(handle);
         const meta = storyDomMeta(el, handle);
         const item = { platform: 'instagram', handle, hasActiveStory: true };
+        // IG ya no expone un display name útil en la story bar; el avatar sí
+        // permite identificar visualmente contactos sin abrir la historia.
         if (meta.name) item.name = meta.name;
         if (meta.avatarUrl) item.avatarUrl = meta.avatarUrl;
         items.push(item);

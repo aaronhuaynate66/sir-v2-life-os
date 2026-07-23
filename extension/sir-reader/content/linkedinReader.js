@@ -105,7 +105,9 @@
       if (!linkedinUrl || domSeen.has(linkedinUrl)) return;
       const name = visibleProfileName();
       const headline = visibleProfileHeadline(name);
-      if (!name && !headline) return;
+      // LinkedIn pinta el shell antes que el top-card. Si marcamos el perfil
+      // como visto con solo el title/nombre, perdemos la señal profesional real.
+      if (!headline) return;
       domSeen.add(linkedinUrl);
       emit([{ platform: 'linkedin', linkedinUrl, name: name || undefined, headline: headline || undefined }]);
     } catch (_) {}
@@ -119,6 +121,8 @@
     history[method] = function () {
       const out = orig.apply(this, arguments);
       scheduleDomScan();
+      setTimeout(scheduleDomScan, 3500);
+      setTimeout(scheduleDomScan, 8000);
       return out;
     };
   }
@@ -165,6 +169,10 @@
     mo.observe(document.documentElement || document, { childList: true, subtree: true });
     scheduleDomScan();
     setTimeout(scheduleDomScan, 5000);
+    setTimeout(scheduleDomScan, 10000);
+    setInterval(() => {
+      if (/^\/in\//i.test(location.pathname)) scheduleDomScan();
+    }, 7000);
   } catch (_) {}
 
   try { console.debug('[SIR Reader] linkedin reader activo (pasivo)'); } catch (_) {}
