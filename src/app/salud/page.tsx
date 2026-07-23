@@ -60,7 +60,7 @@ import { EnergyCurveCard } from '@/components/salud/EnergyCurveCard'
 import { FocusWindowCard } from '@/components/salud/FocusWindowCard'
 import { TwoProcessCard } from '@/components/salud/TwoProcessCard'
 import { WeatherMoodCard } from '@/components/system/WeatherMoodCard'
-import { proposeEmotionLabels } from '@/lib/emotion/granularity'
+import { proposeEmotionLabels, emotionalDiversity } from '@/lib/emotion/granularity'
 import { MisCapturas } from '@/components/yo/MisCapturas'
 import { track, EVENTS } from '@/lib/analytics/track'
 
@@ -116,6 +116,14 @@ function SaludContent() {
   // Feature 3: series de evolución (energía + duración de sueño).
   const energySeries = useMemo(() => selfMetricSeries(selfMetrics, 'energy'), [selfMetrics])
   const sleepSeries = useMemo(() => sleepDurationSeries(sleepRecords), [sleepRecords])
+  // Granularidad emocional (Barrett, 13·M3): cuántas emociones finas DISTINTAS
+  // nombró en las notas de ánimo de los últimos ~60 días. Nombrar fino = mejor
+  // regulación. Refuerza la práctica que ya proponen los chips de proposeEmotionLabels.
+  const emotionGranularity = useMemo(() => {
+    const cutoff = new Date(Date.now() - 60 * 86_400_000).toISOString()
+    const notes = selfMetrics.filter((m) => m.category === 'mood' && m.timestamp >= cutoff).map((m) => m.note)
+    return emotionalDiversity(notes)
+  }, [selfMetrics])
 
   // Toggle GLOBAL de ventana temporal para TODOS los charts de la página
   // (Energía + Sueño + Tendencia corporal). Aaron: "en una card por semana y
@@ -277,6 +285,12 @@ function SaludContent() {
                   )}
                   <Input type="text" aria-label="Nota de la métrica" placeholder="Nota opcional" value={mNote} onChange={e => setMNote(e.target.value)} />
                   <Button onClick={addMetric} variant="outline" className="w-full">+ Registrar</Button>
+                  {emotionGranularity.distinct > 0 && (
+                    <p className="text-[11px] text-text-tertiary leading-relaxed">
+                      Últimamente nombraste <span className="text-foreground/80 font-medium">{emotionGranularity.distinct}</span>{' '}
+                      {emotionGranularity.distinct === 1 ? 'emoción distinta' : 'emociones distintas'}. Ponerle nombre fino a lo que sientes ayuda a regularlo.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
