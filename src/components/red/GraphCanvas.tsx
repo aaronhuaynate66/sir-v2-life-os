@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
-import { forceCollide } from 'd3-force-3d'
+import { forceCollide, forceX, forceY } from 'd3-force-3d'
 import type { GraphData, GraphCategory } from '@/lib/graph/types'
 import { CATEGORY_TOKEN } from '@/lib/graph/colors'
 import { hoverToHtml, type NodeHover } from '@/lib/graph/hover'
@@ -67,6 +67,26 @@ function readThemeColors(): ThemeColors {
 }
 
 const FONT = 'ui-sans-serif, system-ui'
+
+// "Anillo de barrios": cada dominio tiene su ángulo → el layout empuja a sus
+// miembros a esa zona (familia arriba, trabajo a un lado, etc.) para que emerjan
+// clusters legibles en vez de un revoltijo. Ver forceX/forceY.
+const DOMAIN_ANGLE: Record<string, number> = {
+  familia: -Math.PI / 2,
+  personal: -Math.PI / 6,
+  profesional: Math.PI / 6,
+  networking: Math.PI / 2,
+  estrategico: (5 * Math.PI) / 6,
+  desarrollo: (7 * Math.PI) / 6,
+  organizacion: (3 * Math.PI) / 2,
+  episodio: (11 * Math.PI) / 6,
+}
+const ZONE_R = 280
+function zoneTarget(n: { isSelf?: boolean; category?: GraphCategory }): { x: number; y: number } {
+  if (n.isSelf) return { x: 0, y: 0 }
+  const a = DOMAIN_ANGLE[n.category ?? 'networking'] ?? 0
+  return { x: Math.cos(a) * ZONE_R, y: Math.sin(a) * ZONE_R }
+}
 
 /** id -> fase de respiración (0..2π), estable por nodo. */
 function phaseOf(id: string): number {
@@ -204,18 +224,27 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
       fg.d3Force('charge')?.distanceMax?.(500)
       fg.d3Force('link')?.distance?.(90)
       fg.d3Force('link')?.strength?.(0.6)
-      fg.d3Force('center')?.strength?.(0.04)
+      // Center casi apagado: las fuerzas por dominio (abajo) ubican los barrios;
+      // un center fuerte los volvería a amontonar en el medio.
+      fg.d3Force('center')?.strength?.(0.01)
       fg.d3Force('collide', forceCollide((n: NodeLike) => radiusFor(n) + 5).strength(0.9))
+      // "BARRIOS": empujar cada persona hacia la zona de su dominio (familia a un
+      // lado, trabajo a otro, bomberos a otro) → emergen clusters legibles en vez
+      // del revoltijo. El self queda anclado al centro (fx/fy=0, sin empuje).
+      const strength = (n: NodeLike) => (n.isSelf ? 0 : 0.13)
+      fg.d3Force('x', forceX<NodeLike>((n) => zoneTarget(n).x).strength(strength))
+      fg.d3Force('y', forceY<NodeLike>((n) => zoneTarget(n).y).strength(strength))
       fg.d3ReheatSimulation?.()
     } catch { /* aún no listo */ }
   }, [fgData])
 
   // Fit inicial animado, una sola vez.
-  const didFit = useRef(false)
   const handleEngineStop = useCallback(() => {
+    // Encuadrar CADA vez que el layout converge (no una sola, que quedaba pegado
+    // a medio dibujar mostrando ~30 de 79). Padding generoso para no cortar
+    // nodos/etiquetas del borde.
     const fg = fgRef.current as { zoomToFit?: (ms: number, p: number) => void } | null
-    if (!fg || didFit.current) return
-    try { fg.zoomToFit?.(700, 60); didFit.current = true } catch { /* no listo */ }
+    try { fg?.zoomToFit?.(600, 80) } catch { /* layout aún no listo */ }
   }, [])
 
   // Adyacencia para resaltar nodo + vecinos al hover/tap.
@@ -371,6 +400,10 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
       const s = typeof link.source === 'object' ? link.source : null
       const t = typeof link.target === 'object' ? link.target : null
       if (!s || s.x == null || s.y == null || !t || t.x == null || t.y == null) return
+      // Aristas EGO (yo→cada contacto): ruido puro — es obvio que conoces a toda
+      // tu red. Eso era el "sol de rayos". NO se dibujan en reposo; solo aparecen
+      // al hover del nodo (focus+context). Lo valioso es persona↔persona.
+      if ((s.isSelf || t.isSelf) && !edgeTouchesHover(link)) return
       const touches = edgeTouchesHover(link)
       const dim = hovered != null && !touches
       const catOf = (n: NodeLike): GraphCategory => (n.isSelf ? 'self' : (n.category ?? 'networking'))
@@ -452,7 +485,7 @@ export function GraphCanvas({ data, onNavigate, riskById = {} }: GraphCanvasProp
           linkDirectionalParticleWidth={particleWidth}
           linkDirectionalParticleColor={particleColor}
           warmupTicks={60}
-          cooldownTicks={200}
+          cooldownTicks={350}
           d3AlphaDecay={0.02}
           d3VelocityDecay={0.32}
           onEngineStop={handleEngineStop}
