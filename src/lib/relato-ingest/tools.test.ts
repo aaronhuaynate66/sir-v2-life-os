@@ -152,6 +152,41 @@ describe('parseToolUse registrar_ciclo', () => {
   })
 })
 
+describe('parseToolUse avanzar_objetivo', () => {
+  it('parsea avance con done por defecto true', () => {
+    const r = parseToolUse({ name: 'avanzar_objetivo', input: { goal_title: 'Mundial de Bomberos', step_title: 'Examen médico programado' } })
+    expect(r).toEqual({ kind: 'avanzar_objetivo', goalTitle: 'Mundial de Bomberos', stepTitle: 'Examen médico programado', done: true })
+  })
+  it('respeta done=false', () => {
+    const r = parseToolUse({ name: 'avanzar_objetivo', input: { goal_title: 'X Y', step_title: 'paso', done: false } })
+    expect(r).toMatchObject({ done: false })
+  })
+  it('rechaza sin goal o sin step', () => {
+    expect(parseToolUse({ name: 'avanzar_objetivo', input: { goal_title: 'X' } })).toBe(null)
+    expect(parseToolUse({ name: 'avanzar_objetivo', input: { step_title: 'Y' } })).toBe(null)
+  })
+})
+
+describe('parseToolUse crear_evento_calendario', () => {
+  it('parsea evento cronometrado ISO', () => {
+    const r = parseToolUse({ name: 'crear_evento_calendario', input: { title: 'Examen médico', start: '2026-08-15T09:00:00-05:00', location: 'Clínica' } })
+    expect(r?.kind).toBe('crear_evento_calendario')
+    if (r?.kind === 'crear_evento_calendario') {
+      expect(r.allDay).toBe(false)
+      expect(r.start).toBe('2026-08-15T09:00:00-05:00')
+      expect(r.location).toBe('Clínica')
+    }
+  })
+  it('YYYY-MM-DD → all_day true', () => {
+    const r = parseToolUse({ name: 'crear_evento_calendario', input: { title: 'Viaje', start: '2026-11-01' } })
+    if (r?.kind === 'crear_evento_calendario') expect(r.allDay).toBe(true)
+  })
+  it('rechaza start inválido o sin título', () => {
+    expect(parseToolUse({ name: 'crear_evento_calendario', input: { title: 'X', start: 'cuando sea' } })).toBe(null)
+    expect(parseToolUse({ name: 'crear_evento_calendario', input: { start: '2026-08-15' } })).toBe(null)
+  })
+})
+
 describe('parseToolUse tool desconocida', () => {
   it('devuelve null', () => {
     expect(parseToolUse({ name: 'no_existe', input: {} })).toBe(null)

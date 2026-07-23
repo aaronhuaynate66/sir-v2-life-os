@@ -186,6 +186,45 @@ export const INGEST_TOOLS = [
     },
   },
   {
+    name: 'avanzar_objetivo',
+    description:
+      'Avanzar/completar un PASO de una meta u objetivo EXISTENTE de Aaron cuando el relato ' +
+      'muestra que un hito se cumplió o quedó agendado (ej: "ya salió la programación de mi ' +
+      'examen médico para el mundial" → avanza el paso "examen médico" de la meta al mundial). ' +
+      'Identifica la meta por su TÍTULO (match aproximado sobre las metas de Aaron). Si el paso ' +
+      'no existe todavía, se crea ya marcado como hecho. NO uses esto para crear una meta nueva ' +
+      '(eso es crear_objetivo).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        goal_title: { type: 'string', description: 'Título (o parte clara) de la meta existente, ej. "Mundial de Bomberos".' },
+        step_title: { type: 'string', description: 'El paso/hito a avanzar, en pocas palabras, ej. "Examen médico programado".' },
+        done: { type: 'boolean', description: 'true si el paso quedó CUMPLIDO; false si solo avanzó pero sigue en progreso. Default true.' },
+      },
+      required: ['goal_title', 'step_title'],
+    },
+  },
+  {
+    name: 'crear_evento_calendario',
+    description:
+      'Crear un evento REAL en el Google Calendar de Aaron cuando el relato trae una cita/fecha ' +
+      'concreta con hora (examen médico, reunión, viaje, cita). Distinto de crear_recordatorio ' +
+      '(que es un aviso interno): esto agenda en su calendario de Google. Usa hora exacta si la ' +
+      'hay; si solo hay día, marca all_day=true. Zona horaria Lima (-05:00).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        title: { type: 'string', description: 'Título del evento (≤120 chars).' },
+        start: { type: 'string', description: 'Inicio: ISO 8601 con TZ (ej. 2026-08-15T09:00:00-05:00) si hay hora, o YYYY-MM-DD si es todo el día.' },
+        end: { type: 'string', description: 'Fin opcional (mismo formato que start). Si falta y hay hora, se asume +1h; si es all-day, ese día.' },
+        all_day: { type: 'boolean', description: 'true si es de día completo (sin hora).' },
+        location: { type: 'string', description: 'Lugar opcional.' },
+        description: { type: 'string', description: 'Detalle/nota opcional del evento.' },
+      },
+      required: ['title', 'start'],
+    },
+  },
+  {
     name: 'flag_ambiguo',
     description:
       'Cuando Aaron menciona SOLO el primer nombre y hay ambigüedad (o no sabes el apellido), ' +
@@ -223,6 +262,8 @@ export type IngestAction =
   | { kind: 'crear_persona'; fullName: string; relationship: PersonRelationshipEnum; category: PersonCategoryEnum; notes?: string }
   | { kind: 'crear_recordatorio'; text: string; dueAt: string; personFullName?: string }
   | { kind: 'registrar_aprendizaje'; text: string; learningKind: LearningKind; confidence: CycleConfidence }
+  | { kind: 'avanzar_objetivo'; goalTitle: string; stepTitle: string; done: boolean }
+  | { kind: 'crear_evento_calendario'; title: string; start: string; end?: string; allDay: boolean; location?: string; description?: string }
   | { kind: 'flag_ambiguo'; shortName: string; contextHint?: string; optionsSeen?: string[] }
 
 export type LearningKind = 'preference' | 'pattern' | 'principle' | 'fact'
@@ -342,6 +383,27 @@ export function parseToolUse(raw: RawToolUse): IngestAction | null {
       if (!text || !learningKind) return null
       const confidence: CycleConfidence = i.confidence === 'high' || i.confidence === 'low' ? i.confidence : 'medium'
       return { kind: 'registrar_aprendizaje', text, learningKind, confidence }
+    }
+    case 'avanzar_objetivo': {
+      const goalTitle = str(i.goal_title, 200)
+      const stepTitle = str(i.step_title, 200)
+      if (!goalTitle || !stepTitle) return null
+      const done = i.done === false ? false : true // default true
+      return { kind: 'avanzar_objetivo', goalTitle, stepTitle, done }
+    }
+    case 'crear_evento_calendario': {
+      const title = str(i.title, 200)
+      const start = str(i.start, 40)
+      // start válido: YYYY-MM-DD (all-day) o ISO parseable (cronometrado).
+      const startOk = start && (/^\d{4}-\d{2}-\d{2}$/.test(start) || !Number.isNaN(new Date(start).getTime()))
+      if (!title || !start || !startOk) return null
+      const allDay = i.all_day === true || /^\d{4}-\d{2}-\d{2}$/.test(start)
+      const end = str(i.end, 40) ?? undefined
+      return {
+        kind: 'crear_evento_calendario', title, start, end, allDay,
+        location: str(i.location, 200) ?? undefined,
+        description: str(i.description, 1000) ?? undefined,
+      }
     }
     case 'flag_ambiguo': {
       const short = str(i.short_name, 100)

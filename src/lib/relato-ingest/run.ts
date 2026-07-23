@@ -59,6 +59,8 @@ Reglas obligatorias:
    - Un "registrar_ciclo" por CADA día que Aaron mencione la fase menstrual de una persona ("estaba con la regla", "tenía un resto de regla", "sangrando", "PMS"). Un día = una acción. Phase "bleeding" para sangrado, "pms" para síntomas premenstruales. Confidence "medium" por default; "high" si Aaron confirma que ella lo dijo.
 4. Fechas: siempre YYYY-MM-DD. Timestamps siempre con TZ (-05:00 para Lima). Si Aaron dice "viernes 26", usa el año actual.
 5. Efectúa ediciones pequeñas y precisas. NO inventes detalles que Aaron no dio.
+6. Cuando el relato muestra que un HITO de una meta existente se cumplió o quedó agendado ("ya salió mi programación de examen médico para el mundial", "confirmé el vuelo", "terminé el trámite"), usa "avanzar_objetivo": goal_title = la meta (ej. "Mundial de Bomberos"), step_title = el hito ("Examen médico programado"), done=true si se completó. NO crees una meta nueva si ya existe.
+7. Cuando el relato trae una CITA/FECHA CONCRETA que debe ir al calendario real de Aaron (examen médico el día X a tal hora, reunión, viaje, cita), usa "crear_evento_calendario" con start en ISO -05:00 (o YYYY-MM-DD + all_day si no hay hora). Esto agenda en su Google Calendar de verdad (distinto de crear_recordatorio, que es un aviso interno). Si hay hora, úsala.
 
 Personas ya en la red (para desambiguar):
 ${peopleNames.length > 0 ? peopleNames.slice(0, 200).map((n) => `- ${n}`).join('\n') : '(vacía)'}
