@@ -206,7 +206,7 @@ async function resolveWhoIsWho(
   const byHandle = new Map<string, typeof pending>()
   for (const p of pending) { const a = byHandle.get(p.handle) ?? []; a.push(p); byHandle.set(p.handle, a) }
 
-  const assigned: string[] = []; const dismissed: string[] = []; const notFound: string[] = []
+  const assigned: string[] = []; const created: string[] = []; const dismissed: string[] = []; const failed: string[] = []
   const sinceIso = new Date(Date.now() - 6 * 3_600_000).toISOString()
   for (const { handle, name } of parsed) {
     const rows = byHandle.get(handle)
@@ -216,24 +216,47 @@ async function resolveWhoIsWho(
       dismissed.push(`@${handle}`)
       continue
     }
+    // Matchear un contacto existente por nombre, o CREARLO si no está (Aaron:
+    // "los que no hay hay que crearlos"). En ambos casos queda con el handle.
     const m = matchPerson(index, { platform: 'instagram', name })
-    if (!m) { notFound.push(`${name} (@${handle})`); continue }
-    await supabase.from('people').update({ instagram_handle: handle }).eq('id', m.person.id)
+    let personId: string
+    let personName: string
+    if (m) {
+      personId = m.person.id
+      personName = m.person.name
+      await supabase.from('people').update({ instagram_handle: handle }).eq('id', personId)
+      assigned.push(`@${handle} → ${personName}`)
+    } else {
+      const pid = crypto.randomUUID()
+      const slug = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || null
+      const { error: insErr } = await supabase.from('people').insert({
+        id: pid, user_id: ownerId, name: name.slice(0, 120), slug,
+        relationship: 'acquaintance', category: 'network',
+        importance_score: 5, energy_impact: 'neutral', trust_level: 5,
+        instagram_handle: handle, notes: 'Creado desde ¿quién es quién? (Telegram)',
+      })
+      if (insErr) { failed.push(`${name} (@${handle})`); continue }
+      personId = pid
+      personName = name.slice(0, 120)
+      created.push(`@${handle} → ${personName}`)
+    }
+    // Promover las señales guardadas de ese handle a contact_activity (dedup 6h).
     for (const r of rows) {
       const { data: rec } = await supabase.from('contact_activity').select('id')
-        .eq('user_id', ownerId).eq('person_id', m.person.id).eq('kind', r.kind).gte('observed_at', sinceIso).limit(1)
+        .eq('user_id', ownerId).eq('person_id', personId).eq('kind', r.kind).gte('observed_at', sinceIso).limit(1)
       if (!rec || rec.length === 0) {
-        await supabase.from('contact_activity').insert({ user_id: ownerId, person_id: m.person.id, kind: r.kind, detail: r.detail, source: 'instagram', observed_at: r.observed_at })
+        await supabase.from('contact_activity').insert({ user_id: ownerId, person_id: personId, kind: r.kind, detail: r.detail, source: 'instagram', observed_at: r.observed_at })
       }
     }
     await supabase.from('unmatched_social_activity').delete().eq('user_id', ownerId).eq('handle', handle)
-    assigned.push(`@${handle} → ${m.person.name}`)
   }
 
   const parts: string[] = []
-  if (assigned.length) parts.push(`✅ Asignados:\n${assigned.map((a) => `· ${a}`).join('\n')}`)
+  if (assigned.length) parts.push(`✅ Enlazados:\n${assigned.map((a) => `· ${a}`).join('\n')}`)
+  if (created.length) parts.push(`🆕 Creados y enlazados:\n${created.map((a) => `· ${a}`).join('\n')}`)
   if (dismissed.length) parts.push(`🗑️ Descartados: ${dismissed.join(', ')}`)
-  if (notFound.length) parts.push(`🤔 No encontré en tu red: ${notFound.join(', ')}. Si querés, agregalos primero y te lo anoto.`)
+  if (failed.length) parts.push(`⚠️ No pude guardar: ${failed.join(', ')}. Reinténtalo en un momento.`)
   const reply = parts.length ? `${parts.join('\n\n')}\n\nDe ahora en más los reconozco solos en Instagram.` : 'Anotado.'
   return { handled: true, reply }
 }
