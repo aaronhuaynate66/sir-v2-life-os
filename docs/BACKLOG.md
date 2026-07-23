@@ -5,10 +5,26 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 21/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 23/07/2026 (reconciliación automática — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-23
+
+Pase de mantenimiento contra el código real (agente automático). 46 commits desde el pase 07-21 (`7936106`), la mayoría feature nueva no listada en este backlog (bandeja "¿quién es quién?", grafo estilo Obsidian, gates de decisión/negociación, feedback loop del cerebro, etc. — fuera de alcance de esta reconciliación, que solo cubre ítems ya marcados pendientes/inciertos acá). Un ítem de drift real, arrastrado como "revisar" desde el pase 07-17:
+
+- ✅ **Inferencia LLM de dominio para objetivos de texto libre** — ya HECHO, contra la nota "revisar"/pendiente que se repetía en las secciones Etapa 4 follow-ups y en los resúmenes de los pases 07-17/07-18/07-20/07-21 (más abajo y arriba). PR #859 (`07c9136`, 20/07/2026): `src/lib/objectives/smartPrompt.ts` — `ProposedSmart.category` ahora es un campo de SALIDA opcional (línea 59), el prompt le pide al LLM inferir el dominio del párrafo libre (línea 70, enum `GoalCategory` con fallback a `"personal"` si no es claro), y `parseSmart` valida contra el enum case-insensitive (líneas 136-138). Cableado en `SmartWizard.tsx` (modo "dictado" aplica la category inferida al guardar, review-before-save). 4 tests nuevos del parser. Corregido in situ en las 2 menciones de abajo (Etapa 4 follow-ups + tabla de reconciliaciones anteriores) para no seguir arrastrando la nota "revisar".
+
+**Verificado y quedó IGUAL (sin drift):**
+- **Auto-import desde calendario (Clay #6)** — sigue sin rastro en código (`grep` de "auto.import" sin resultados en `src/`).
+- **Gantt fix del MASTER_PLAN** — sigue no verificable en este repo (sin componente "Gantt" ni referencias a `MASTER_PLAN` en `src/`).
+- **Split-brain / last-write-wins por fila** — sigue igual: `src/lib/supabase/sync/engine.ts` línea 296 sigue haciendo `upsert(rows, { onConflict: 'id' })` (pisa la fila entera, no merge por campo).
+- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte", sin alcance concreto.
+
+**No re-verificado este pase** (fuera de alcance): todo lo demás, incluyendo lo ya marcado ✅/🟡 con evidencia en pases anteriores, y las features nuevas de los 46 commits que no correspondían a ningún ítem pendiente de este doc.
 
 ---
 
@@ -181,7 +197,7 @@ Verificado contra el código en vivo. Varios ítems listados abajo como "grandes
 **Pendiente real (lo que NO está hecho):**
 - ~~**Activar Fase 3b (búsqueda semántica)**~~ ✅ **HECHO (2026-06-08):** `OPENAI_API_KEY` cargada en Vercel (Production), 23 memorias indexadas (`/api/memories/embed`), `/buscar` validado. **Cobertura cerrada** con el botón "Actualizar índice completo" (PR #100): deriva todas las personas + indexa en un click. **Decisión:** NO embeddear `observations` crudas (ruido/duplicación; contradice la vista curada) — la cobertura se logra derivando.
 - **Fase 3d** — memoria que aprende (RAG cross-session).
-- **Etapa 4 follow-ups:** ~~Human OKRs estructurados~~ ✅ **HECHO** (migraciones `0040_objective_steps.sql`/`0041_objective_steps_okr.sql`: modelo KR→tarea de 2 niveles, `ObjectiveSteps.tsx`); ~~delta de relationship score (necesita snapshots históricos)~~ ✅ **HECHO** (`/api/person-score/snapshot` + cron `score-snapshots` + `BondEvolutionPanel.tsx`/`src/lib/people/bondEvolution.ts`); ~~tono de interacción desde `person_logs` en el engine~~ ✅ **HECHO** (`src/engines/alignment/index.ts` y `src/engines/relational-flags/index.ts` ya leen `person_logs`). Verificado 2026-07-17. **Siguen pendientes de verdad:** inferencia LLM de dominio para objetivos de texto libre (hay inferencia SMART vía `SmartAssist.tsx`/`/api/objectives/smart`, pero no confirmé que infiera el DOMINIO desde texto libre — marcar "revisar" antes de darlo por hecho; re-verificado 2026-07-20, `smartPrompt.ts` sigue sin inferir `category`). ~~Narrative Intelligence (sin rastro en el código — no encontrado)~~ ✅ **corregido 2026-07-20:** SÍ existe — carpeta `src/app/api/self/` completa (rumbo/coherencia/arquetipo/retrato/premortem/espejo-*) + `src/lib/self/rumboPrompt.ts` — este pase 07-17 no lo encontró por error (ya lo documentaba `docs/STRATEGIC_ROADMAP.md` como CONSTRUIDO).
+- **Etapa 4 follow-ups:** ~~Human OKRs estructurados~~ ✅ **HECHO** (migraciones `0040_objective_steps.sql`/`0041_objective_steps_okr.sql`: modelo KR→tarea de 2 niveles, `ObjectiveSteps.tsx`); ~~delta de relationship score (necesita snapshots históricos)~~ ✅ **HECHO** (`/api/person-score/snapshot` + cron `score-snapshots` + `BondEvolutionPanel.tsx`/`src/lib/people/bondEvolution.ts`); ~~tono de interacción desde `person_logs` en el engine~~ ✅ **HECHO** (`src/engines/alignment/index.ts` y `src/engines/relational-flags/index.ts` ya leen `person_logs`). Verificado 2026-07-17. ~~inferencia LLM de dominio para objetivos de texto libre (revisar)~~ ✅ **HECHO (verificado 2026-07-23):** PR #859 (`07c9136`) — `smartPrompt.ts` ahora infiere `category` (enum `GoalCategory`) del párrafo libre en modo dictado, cableado en `SmartWizard.tsx`. Ya no es "revisar". ~~Narrative Intelligence (sin rastro en el código — no encontrado)~~ ✅ **corregido 2026-07-20:** SÍ existe — carpeta `src/app/api/self/` completa (rumbo/coherencia/arquetipo/retrato/premortem/espejo-*) + `src/lib/self/rumboPrompt.ts` — este pase 07-17 no lo encontró por error (ya lo documentaba `docs/STRATEGIC_ROADMAP.md` como CONSTRUIDO).
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): 🟡 **corregido 2026-07-20** — E5 (Life Direction System) YA está "en marcha (artefacto real)" según `docs/STRATEGIC_ROADMAP.md` (línea 32): su núcleo es Narrative Intelligence (`src/app/api/self/*`, "Tu rumbo" en `/yo`). Solo **E6 (AI-Native Human OS)** sigue genuinamente sin iniciar ("⬜ visión norte", sin alcance concreto).
 - **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
 - ~~**Refactor split-brain → Supabase única fuente**~~ ✅ RESUELTO (verificado 07-07; ver deuda arquitectónica más abajo). Único residual menor: last-write-wins por fila.
