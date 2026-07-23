@@ -16,14 +16,17 @@ export interface FaceMatchParsed {
   confidence: FaceConfidence | null
 }
 
-/** Instrucción para el modelo de visión. Los candidatos van numerados 1..N. */
+/** Instrucción para el modelo de visión. Los candidatos van numerados 1..N.
+ *  Fuertemente sesgada a null: en verificación facial un falso positivo (decir
+ *  que es alguien que no es) es peor que no sugerir nada. */
 export function buildFaceMatchPrompt(candidateCount: number): string {
   return [
-    `Arriba está la FOTO OBJETIVO (una persona a identificar) seguida de ${candidateCount} foto(s) de CANDIDATOS conocidos, numeradas del 1 al ${candidateCount} en el orden en que aparecen.`,
-    'Decide si la FOTO OBJETIVO es LA MISMA PERSONA que alguno de los candidatos.',
-    'Sé CONSERVADOR: un simple parecido no basta, tiene que ser la misma cara. Otra persona del mismo género, edad o estilo parecido NO es match. Ante la duda, responde null.',
+    `Arriba está la FOTO OBJETIVO (una cara a identificar) seguida de ${candidateCount} foto(s) de CANDIDATOS conocidos, numeradas del 1 al ${candidateCount} en el orden en que aparecen.`,
+    'OJO: algunas fotos pueden ser capturas de un perfil (con texto, varias imágenes o caras pequeñas de seguidores) o paisajes donde la persona sale lejos/borrosa. Fíjate SOLO en la cara principal y clara de cada foto.',
+    'Tu tarea es verificación facial ESTRICTA: decir si la FOTO OBJETIVO y algún candidato son INEQUÍVOCAMENTE la misma persona (mismos rasgos faciales).',
+    'REGLAS: (1) Si en la foto objetivo o en el candidato no hay una cara nítida y visible, NO es match. (2) Dos personas distintas del mismo sexo, edad, etnia o estilo NO son match — el parecido general no cuenta. (3) Ante CUALQUIER duda, responde null. Es mucho mejor no sugerir que sugerir mal.',
     `Responde SOLO con este JSON, sin texto extra: {"match": <número 1..${candidateCount} o null>, "confidence": "alta"|"media"|"baja"}.`,
-    'Usa "alta" solo si estás muy seguro de que es la misma persona; "media" si es probable; "baja" (o match null) si no lo es o no puedes distinguir.',
+    'Usa "alta" solo si no tienes ninguna duda de que es la misma persona; "media" si es muy probable pero no seguro; en cualquier otro caso match:null.',
   ].join(' ')
 }
 
