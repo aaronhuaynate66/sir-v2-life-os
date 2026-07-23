@@ -653,6 +653,11 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     } else if (parsed?.kind === 'registrar_estado') {
       const r = resolvePersonId(parsed.persona)
       proposedAction = { ...parsed, persona: r.name, personId: r.id }
+    } else if (parsed?.kind === 'crear_recordatorio') {
+      // Sin persona: solo texto + cuándo. Faltaba esta rama → toda la feature de
+      // recordatorios por chat (tool + ejecutor + cron reminders-due) quedaba
+      // inerte: el modelo llamaba la tool pero proposedAction salía null.
+      proposedAction = { ...parsed }
     }
   }
 

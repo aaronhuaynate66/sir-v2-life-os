@@ -12,6 +12,7 @@ import { formatEveningBriefForChat } from '@/lib/telegram/eveningBrief'
 import { pendingDailyHabits, habitCallbackData } from '@/lib/habits/checkinButtons'
 import { buildWhoIsWhoQuestion } from '@/lib/social-reader/whoIsWho'
 import { limaDayString } from '@/lib/habits/streak'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -132,7 +133,11 @@ export async function GET(req: NextRequest) {
         } catch { /* fail-soft */ }
       }
       results.push({ user: uid.slice(0, 8), sent: push ? 1 : 0 })
-    } catch {
+    } catch (e) {
+      // Antes se tragaba en silencio: un bug lógico rompía el brief nocturno y el
+      // push degradaba a vacío sin traza (mismo fix que morning-push). Fail-soft
+      // por-usuario, pero AHORA con telemetría.
+      reportApiError(e, { route: 'cron/evening-push', user: uid.slice(0, 8) })
       results.push({ user: uid.slice(0, 8), sent: 0 })
     }
   }
