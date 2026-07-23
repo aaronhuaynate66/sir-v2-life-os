@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { computeMissingHealthData, SLEEP_TYPE, type Reading } from './missingData'
+import { computeMissingHealthData, relativeDayLabel, renderMissingDataBlock, SLEEP_TYPE, type Reading } from './missingData'
 
 /** Helper: arma lecturas de un día para varios tipos. */
 function day(d: string, types: string[]): Reading[] {
@@ -67,6 +67,21 @@ describe('computeMissingHealthData', () => {
     const r = computeMissingHealthData(readings, '2026-07-23')
     // vo2_max no está en ningún bundle igual, pero validamos que no rompe nada
     expect(r.missing).toEqual([])
+  })
+
+  it('relativeDayLabel: hoy / ayer / hace N días / sin registro', () => {
+    expect(relativeDayLabel(null, '2026-07-23')).toBe('sin registro')
+    expect(relativeDayLabel('2026-07-23', '2026-07-23')).toBe('hoy')
+    expect(relativeDayLabel('2026-07-22', '2026-07-23')).toBe('ayer')
+    expect(relativeDayLabel('2026-07-20', '2026-07-23')).toBe('hace 3 días')
+  })
+
+  it('renderMissingDataBlock: vacío si no falta nada; con contenido lista los bundles', () => {
+    expect(renderMissingDataBlock([], '2026-07-23')).toBe('')
+    const block = renderMissingDataBlock([{ key: 'bascula', label: 'Báscula (peso y composición)', lastSeen: '2026-07-22' }], '2026-07-23')
+    expect(block).toContain('Báscula (peso y composición)')
+    expect(block).toContain('ayer')
+    expect(block.toLowerCase()).toContain('captura')
   })
 
   it('ignora lecturas fuera de la ventana', () => {
