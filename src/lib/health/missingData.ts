@@ -72,6 +72,32 @@ export const HEALTH_BUNDLES: BundleDef[] = [
   },
 ]
 
+/** "hoy" / "ayer" / "hace N días" / "sin registro" entre dos YYYY-MM-DD. */
+export function relativeDayLabel(day: string | null, today: string): string {
+  if (!day) return 'sin registro'
+  if (day === today) return 'hoy'
+  const [ay, am, ad] = day.split('-').map(Number)
+  const [ty, tm, td] = today.split('-').map(Number)
+  const diff = Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(ay, am - 1, ad)) / 86_400_000)
+  if (diff === 1) return 'ayer'
+  if (diff < 1) return 'hoy'
+  return `hace ${diff} días`
+}
+
+/**
+ * Bloque para el prompt de SIR: qué data habitual falta. '' si está al día.
+ * Instruye a mencionarlo con naturalidad, sin convertirlo en spam.
+ */
+export function renderMissingDataBlock(missing: MissingBundle[], today: string): string {
+  if (missing.length === 0) return ''
+  const items = missing.map((m) => `${m.label} (última vez: ${relativeDayLabel(m.lastSeen, today)})`).join('; ')
+  return [
+    'DATA DE SALUD QUE AARON SUELE REGISTRAR Y AÚN NO ESTÁ EN SU ÚLTIMA SUBIDA:',
+    items + '.',
+    'Si viene al caso —te saluda, pregunta por su salud/energía/día, o no hay algo más urgente— recuérdaselo en UNA línea, casual, y dile que te mande la captura para procesarla. No insistas ni lo repitas si ya se lo dijiste en este chat, y no lo metas a la fuerza si está en otro tema.',
+  ].join('\n')
+}
+
 /** Resta `days` días a un YYYY-MM-DD (aritmética de calendario, sin tz). */
 function minusDays(day: string, days: number): string {
   const [y, m, d] = day.split('-').map(Number)

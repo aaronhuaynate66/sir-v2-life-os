@@ -40,7 +40,8 @@ import { resolveModel } from '@/lib/sir/model'
 import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
 import { renderRecallBlock, shouldPersistExchange, type RecallHit } from '@/lib/sir/recall'
 import { renderLearningsBlock, rowToLearning, type LearningRow } from '@/lib/learnings/recall'
-import { todayLimaKey } from '@/lib/dates/limaDay'
+import { todayLimaKey, limaDayKey } from '@/lib/dates/limaDay'
+import { computeMissingHealthData, renderMissingDataBlock, SLEEP_TYPE, type Reading } from '@/lib/health/missingData'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
@@ -233,6 +234,27 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       learningsBlock = renderLearningsBlock((lrows as LearningRow[]).map(rowToLearning))
     }
   } catch { /* tabla 0140 no aplicada → sin lecciones */ }
+
+  // 3d. Recordatorio de data faltante: de lo que Aaron sube siempre (báscula,
+  //     sueño, FC/VFC del día), ¿qué faltó en su última subida? Para que SIR se lo
+  //     recuerde proactivo en el chat, no solo en la tarjeta de /salud. Fail-open.
+  let missingDataBlock = ''
+  try {
+    const todayLima = todayLimaKey()
+    const cutoffISO = new Date(Date.now() - 20 * 86_400_000).toISOString()
+    const [{ data: hmRows }, { data: slRows }] = await Promise.all([
+      supabase.from('health_metrics').select('type, measured_at').eq('user_id', userId).gte('measured_at', cutoffISO).limit(2000),
+      supabase.from('sleep_records').select('date').eq('user_id', userId).gte('date', cutoffISO.slice(0, 10)).limit(60),
+    ])
+    const readings: Reading[] = [
+      ...((hmRows as Array<{ type: string; measured_at: string }> | null) ?? [])
+        .map((r) => ({ type: r.type, day: limaDayKey(r.measured_at) }))
+        .filter((r): r is Reading => !!r.day),
+      ...((slRows as Array<{ date: string }> | null) ?? []).map((r) => ({ type: SLEEP_TYPE, day: r.date })),
+    ]
+    const { missing } = computeMissingHealthData(readings, todayLima)
+    missingDataBlock = renderMissingDataBlock(missing, todayLima)
+  } catch { /* sin data / tabla ausente → sin recordatorio */ }
 
   // 4. Objetivos activos → mapa personId → título.
   const { data: goalRows } = await supabase
@@ -567,6 +589,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     dayBlock +
     (learningsBlock ? `\n\n${learningsBlock}` : '') +
     (recallBlock ? `\n\n${recallBlock}` : '') +
+    (missingDataBlock ? `\n\n${missingDataBlock}` : '') +
     (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 
   // Resolver el nombre que proponga una acción → personId.

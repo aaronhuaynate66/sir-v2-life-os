@@ -12,18 +12,7 @@ import { ClipboardList } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { todayLimaKey, limaDayKey } from '@/lib/dates/limaDay'
-import { computeMissingHealthData, SLEEP_TYPE, type Reading } from '@/lib/health/missingData'
-
-/** "hoy" / "ayer" / "hace N días" entre dos YYYY-MM-DD. */
-function agoLabel(day: string | null, today: string): string {
-  if (!day) return 'sin registro'
-  if (day === today) return 'hoy'
-  const [ay, am, ad] = day.split('-').map(Number)
-  const [ty, tm, td] = today.split('-').map(Number)
-  const diff = Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(ay, am - 1, ad)) / 86_400_000)
-  if (diff === 1) return 'ayer'
-  return `hace ${diff} días`
-}
+import { computeMissingHealthData, relativeDayLabel, SLEEP_TYPE, type Reading } from '@/lib/health/missingData'
 
 export function MissingDataCard() {
   const healthMetrics = useSelfStore((s) => s.healthMetrics)
@@ -54,7 +43,7 @@ export function MissingDataCard() {
             <li key={m.key} className="flex items-baseline justify-between gap-3 text-sm">
               <span className="font-medium">{m.label}</span>
               <span className="shrink-0 text-[12px] text-muted-foreground tabular-nums">
-                última vez: {agoLabel(m.lastSeen, today)}
+                última vez: {relativeDayLabel(m.lastSeen, today)}
               </span>
             </li>
           ))}
