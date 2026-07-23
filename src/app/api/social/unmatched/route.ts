@@ -25,12 +25,22 @@ export async function GET() {
   const supabase = await createClient()
   const { data: auth } = await supabase.auth.getUser()
   if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  const { data } = await supabase
+  // Incluye las columnas del match por cara (mig 0160). Resiliente a la ventana
+  // de deploy: si el código llega a Vercel antes que la migración, el select con
+  // las columnas nuevas fallaría y vaciaría la bandeja → caemos al select base.
+  const withFace = await supabase
     .from('unmatched_social_activity')
-    .select('id, platform, handle, name, kind, detail, observed_at, avatar_path, avatar_url')
+    .select('id, platform, handle, name, kind, detail, observed_at, avatar_path, avatar_url, face_person_id, face_confidence')
     .order('observed_at', { ascending: false })
     .limit(200)
-  const rows = (data ?? []) as Array<{ id: string; avatar_path: string | null; avatar_url: string | null; [k: string]: unknown }>
+  const data = withFace.error
+    ? (await supabase
+        .from('unmatched_social_activity')
+        .select('id, platform, handle, name, kind, detail, observed_at, avatar_path, avatar_url')
+        .order('observed_at', { ascending: false })
+        .limit(200)).data
+    : withFace.data
+  const rows = (data ?? []) as Array<{ id: string; avatar_path: string | null; avatar_url: string | null; face_person_id?: string | null; face_confidence?: string | null; [k: string]: unknown }>
 
   // Cara visible: signed URL del snapshot permanente (1 sola llamada batch). Si
   // aún no se snapshoteó, cae a la URL cruda de IG (fresca funciona; vieja no).
@@ -45,6 +55,9 @@ export async function GET() {
   const items = rows.map((r) => ({
     id: r.id, platform: r.platform, handle: r.handle, name: r.name, kind: r.kind, detail: r.detail, observed_at: r.observed_at,
     avatar: (r.avatar_path && signedByPath[r.avatar_path]) || r.avatar_url || null,
+    // Match por cara (capa 2, cacheado): contacto sugerido por foto + confianza.
+    facePersonId: r.face_person_id ?? null,
+    faceConfidence: r.face_confidence ?? null,
   }))
   return NextResponse.json({ items }, { status: 200 })
 }

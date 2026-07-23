@@ -10,9 +10,9 @@
 // saca (negocio/desconocido). Los sugeridos van primero; el ruido cae al fondo.
 // Se oculta si no hay nada. Ver /api/social/unmatched.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { UserSearch, X, Sparkles, UserPlus } from 'lucide-react'
+import { UserSearch, X, Sparkles, UserPlus, ScanFace, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +32,9 @@ interface UnmatchedItem {
   detail: string | null
   observed_at: string
   avatar: string | null
+  /** Match por cara (capa 2, cacheado server-side). */
+  facePersonId?: string | null
+  faceConfidence?: string | null
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -48,6 +51,15 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
   const [pick, setPick] = useState<Record<string, string>>({})
   const [creatingFor, setCreatingFor] = useState<string | null>(null)
   const [newName, setNewName] = useState<Record<string, string>>({})
+  const [scanning, setScanning] = useState(false)
+
+  const reload = useCallback(async () => {
+    try {
+      const r = await fetch('/api/social/unmatched')
+      const d = r.ok ? await r.json() : null
+      if (d && Array.isArray(d.items)) setItems(d.items as UnmatchedItem[])
+    } catch { /* */ }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -59,13 +71,52 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
     return () => { cancelled = true }
   }, [])
 
+  // Match por cara (capa 2): corre la visión sobre las caras aún no revisadas,
+  // el server cachea el veredicto → recargamos para pintar las sugerencias.
+  async function scanFaces() {
+    if (scanning) return
+    setScanning(true)
+    try {
+      const r = await fetch('/api/social/unmatched/face-match', { method: 'POST' })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) { toast.error(d?.error || 'No pude reconocer caras'); return }
+      if (d?.gallery === 0) { toast.message(d?.message || 'Aún no hay contactos con foto para comparar'); return }
+      await reload()
+      const hits = Array.isArray(d?.suggestions) ? d.suggestions.length : 0
+      const parts = [`Revisé ${d?.checked ?? 0} cara(s)`]
+      if (hits > 0) parts.push(`${hits} posible(s) match`)
+      if (d?.remaining > 0) parts.push(`quedan ${d.remaining}`)
+      toast.success(parts.join(' · '))
+    } catch {
+      toast.error('Error de red')
+    } finally {
+      setScanning(false)
+    }
+  }
+
   const sortedPeople = useMemo(() => [...people].sort((a, b) => a.name.localeCompare(b.name)), [people])
 
-  // Sugerencia de contacto por item (nombre pegado en el handle / nombre capturado).
+  // Sugerencia de contacto por item. Primero por HANDLE (nombre pegado, muy
+  // fiable); si no hay, por CARA (capa 2, match por visión cacheado server-side).
+  type Suggestion = { personId: string; personName: string; confidence: 'alta' | 'media'; source: 'handle' | 'cara' }
   const suggestions = useMemo(() => {
     const lite = people.map((p) => ({ id: p.id, name: p.name, instagramHandle: p.instagramHandle }))
-    const map: Record<string, ReturnType<typeof suggestPersonForHandle>> = {}
-    for (const it of items) map[it.id] = suggestPersonForHandle({ handle: it.handle, name: it.name }, lite)
+    const nameById = new Map(people.map((p) => [p.id, p.name] as const))
+    const map: Record<string, Suggestion | null> = {}
+    for (const it of items) {
+      const byHandle = suggestPersonForHandle({ handle: it.handle, name: it.name }, lite)
+      if (byHandle) { map[it.id] = { ...byHandle, source: 'handle' }; continue }
+      if (it.facePersonId && nameById.has(it.facePersonId)) {
+        map[it.id] = {
+          personId: it.facePersonId,
+          personName: nameById.get(it.facePersonId)!,
+          confidence: it.faceConfidence === 'media' ? 'media' : 'alta',
+          source: 'cara',
+        }
+        continue
+      }
+      map[it.id] = null
+    }
     return map
   }, [items, people])
 
@@ -77,6 +128,13 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
     return map
   }, [items, suggestions])
   const bizCount = useMemo(() => Object.values(bizFlags).filter(Boolean).length, [bizFlags])
+
+  // Cuántas caras hay para que SIR intente reconocer (con foto y sin sugerencia
+  // de handle todavía). Si 0, no mostramos el botón de reconocer caras.
+  const scannableCount = useMemo(
+    () => items.filter((it) => it.avatar && !suggestions[it.id]).length,
+    [items, suggestions],
+  )
 
   // Orden: sugeridos primero (contactos reales), luego el resto, y los probables
   // negocios al fondo (ruido a descartar).
@@ -196,16 +254,30 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
           SIR vio actividad de estas cuentas que sigues pero no las tiene asignadas. Cuando puede,
           te sugiere quién es (1 toque). Asigna la que sea un contacto, créala si no existe, o descarta el resto.
         </p>
-        {bizCount > 0 && (
-          <button
-            type="button"
-            onClick={dismissBusinesses}
-            disabled={busy === '__bulk__'}
-            className="mb-3 inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
-          >
-            <X size={12} /> Descartar {bizCount} probable(s) negocio(s)
-          </button>
-        )}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {scannableCount > 0 && (
+            <button
+              type="button"
+              onClick={() => void scanFaces()}
+              disabled={scanning}
+              title="SIR compara las caras con las fotos de tus contactos y sugiere quién es"
+              className="inline-flex items-center gap-1 rounded-md border border-brand/30 bg-brand-soft/40 px-2 py-1 text-[11px] text-brand-soft-foreground hover:bg-brand/20 disabled:opacity-50"
+            >
+              {scanning ? <Loader2 size={12} className="animate-spin" /> : <ScanFace size={12} />}
+              {scanning ? 'Reconociendo caras…' : 'Reconocer caras'}
+            </button>
+          )}
+          {bizCount > 0 && (
+            <button
+              type="button"
+              onClick={dismissBusinesses}
+              disabled={busy === '__bulk__'}
+              className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50"
+            >
+              <X size={12} /> Descartar {bizCount} probable(s) negocio(s)
+            </button>
+          )}
+        </div>
         <div className="space-y-2">
           {ordered.map((it) => {
             const sug = suggestions[it.id]
@@ -239,7 +311,8 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
                     <Sparkles size={13} className="shrink-0 text-brand" />
                     <span className="min-w-0 flex-1 truncate text-xs">
                       ¿Es <span className="font-medium">{sug.personName}</span>?
-                      {sug.confidence === 'media' && <span className="text-muted-foreground"> (probable)</span>}
+                      {sug.source === 'cara' && <span className="text-muted-foreground"> (por foto{sug.confidence === 'media' ? ', probable' : ''})</span>}
+                      {sug.source === 'handle' && sug.confidence === 'media' && <span className="text-muted-foreground"> (probable)</span>}
                     </span>
                     <Button size="sm" className="h-8 shrink-0" disabled={busy === it.id} onClick={() => assignTo(it, sug.personId, sug.personName)}>
                       Sí, asignar
