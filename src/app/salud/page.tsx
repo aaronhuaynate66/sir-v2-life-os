@@ -49,6 +49,7 @@ import { rangeWindowLabel, type ChartRange } from '@/lib/charts/series'
 import { cn } from '@/lib/utils'
 import type { MetricCategory, HealthMetricType } from '@/types'
 import { MetricScale } from '@/components/yo/MetricScale'
+import { MissingDataCard } from '@/components/salud/MissingDataCard'
 import { SleepDebtCard } from '@/components/salud/SleepDebtCard'
 import { SleepQualityCard } from '@/components/salud/SleepQualityCard'
 import { SleepForecastCard } from '@/components/salud/SleepForecastCard'
@@ -185,6 +186,10 @@ function SaludContent() {
           </Card>
         ))}
       </div>
+
+      {/* Recordatorio de data faltante — "que me diga falta el peso". Se auto-oculta
+          si Aaron está al día. Arriba porque es accionable (mandar la captura). */}
+      <MissingDataCard />
 
       {/* Control GLOBAL de ventana temporal — aplica a Energía + Sueño +
           Tendencia corporal. Un solo toggle Semana/Mes + un solo par de chevrons. */}
