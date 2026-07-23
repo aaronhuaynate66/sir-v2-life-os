@@ -28,6 +28,11 @@ export interface DailySignal {
   actions: number
   /** Compuesto ponderado (0..1). Es la serie que alimenta el motor. */
   composite: number
+  /** Afecto expresado por la persona ese día: densidad 0..1 (IAE). Aditivo, NO
+   *  entra al compuesto del forecast conductual (es otra dimensión). */
+  affection: number
+  /** Ratio de positividad estilo Gottman (A+1)/(N+1). Contexto, ≥0. */
+  positivityRatio: number
 }
 
 /** Ancla confirmada (mapea a person_cycles: bleeding/pms → period_start/pms). */
