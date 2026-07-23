@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { cyclePhase } from '@/lib/ciclo/phase'
 import { crossHorizons } from '@/lib/ciclo/horizonCross'
 import { describeUsualPattern } from '@/lib/forecast-conductual/describe'
+import { describeAffection, type AffectionSummary } from '@/lib/forecast-conductual/affectionSummary'
 
 interface ForecastRow {
   id: string
@@ -33,6 +34,7 @@ interface ForecastRow {
     usualPattern?: { friction: number; withdrawal: number; sensitivity: number; somatic: number }
     coverage?: { activeDays: number; spanDays: number; peaks: number; anchors: number }
     recalibration?: { hitRate: number | null; evaluated: number; validated: boolean }
+    affection?: AffectionSummary
   }
 }
 
@@ -106,6 +108,11 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
   // Patrón usual en prosa cualitativa (reemplaza los chips con "+74%").
   const patternProse = useMemo(() => describeUsualPattern(forecast?.result?.usualPattern), [forecast])
 
+  // Afecto expresado (IAE): dimensión aparte del patrón conductual. Disparador de
+  // conversación, no veredicto.
+  const affection = forecast?.result?.affection ?? null
+  const affectionProse = useMemo(() => describeAffection(affection), [affection])
+
   return (
     <Card className="shadow-none mb-4 border-dashed border-border">
       <CardContent className="p-4 sm:p-5 space-y-3">
@@ -154,6 +161,18 @@ export function BehaviorHorizonCard({ personId, personName, cycleStartDate, cycl
                   {cross.overlap
                     ? 'Las dos ventanas se solapan — dos señales independientes apuntan a lo mismo. Más razón para acompañar con cuidado.'
                     : `Separadas ~${cross.gapDays}d — trata cada una como estimación aparte y registra qué pasa (recalibra el modelo).`}
+                </span>
+              </div>
+            )}
+
+            {/* Afecto expresado (IAE) — señal de cariño en el chat, aparte del
+                patrón. Tono de cuidado: disparador de conversación, no veredicto. */}
+            {affectionProse && affection && (
+              <div className="rounded-md border border-border/50 bg-secondary/20 px-3 py-2 text-[12px] leading-relaxed">
+                <span className="text-text-tertiary">Afecto expresado · </span>
+                Con {firstName}, {affectionProse}.
+                <span className="block mt-0.5 text-[11px] text-muted-foreground">
+                  Es lo que se <span className="italic">dice</span> en el chat (no lo que se siente) — una señal para conversar, no un veredicto.
                 </span>
               </div>
             )}

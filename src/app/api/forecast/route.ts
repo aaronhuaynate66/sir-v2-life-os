@@ -12,6 +12,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { buildDailySignals } from '@/lib/forecast-conductual/dailySignals'
 import { fetchChatMessages } from '@/lib/chat-messages/read'
 import { runForecast } from '@/lib/forecast-conductual/engine'
+import { summarizeAffection } from '@/lib/forecast-conductual/affectionSummary'
 import { recalibrate, modelWeights, type FeedbackLabel } from '@/lib/forecast-conductual/recalibrate'
 import type { ChatMessage, CycleAnchor, DailySignal } from '@/lib/forecast-conductual/types'
 
@@ -76,6 +77,30 @@ export async function POST(req: NextRequest) {
         sensitivity: Number(r.sensitivity) || 0, actions: Number(r.actions) || 0, composite: Number(r.composite) || 0,
         affection: Number(r.affection) || 0, positivityRatio: r.positivity_ratio == null ? 1 : Number(r.positivity_ratio) || 1,
       }))
+
+      // BACKFILL auto-sanable del afecto (IAE): las señales guardadas ANTES de que
+      // existiera la columna `affection` la tienen en null → el resumen saldría en
+      // 0. Si TODAS vienen sin afecto, lo recomputamos del sustrato (léxico puro,
+      // sin LLM) por día, lo mergeamos y lo persistimos (solo esas columnas) — una
+      // sola vez por persona; en adelante ya viene poblado.
+      const affectionStale = (sigRows as { affection: unknown }[]).every((r) => r.affection == null)
+      if (affectionStale) {
+        const subRows = await fetchChatMessages(supabase, userId, personId, 50_000)
+        const subMessages: ChatMessage[] = subRows
+          .filter((r) => typeof r.sent_at === 'string' && r.sent_at.length >= 10)
+          .map((r) => ({ at: r.sent_at as string, author: r.sender === 'user' ? 'user' : 'other', text: r.content ?? '', kind: r.is_media ? 'media' : 'text' }))
+        if (subMessages.length > 0) {
+          const affByDate = new Map(buildDailySignals(subMessages).map((s) => [s.date, s]))
+          signals = signals.map((s) => {
+            const a = affByDate.get(s.date)
+            return a ? { ...s, affection: a.affection, positivityRatio: a.positivityRatio } : s
+          })
+          const upd = signals
+            .filter((s) => affByDate.has(s.date))
+            .map((s) => ({ id: `sig:${personId}:${s.date}`, user_id: userId, person_id: personId, date: s.date, affection: s.affection, positivity_ratio: s.positivityRatio, updated_at: new Date().toISOString() }))
+          if (upd.length > 0) await supabase.from('person_daily_signals').upsert(upd, { onConflict: 'id' })
+        }
+      }
     } else {
       // b) Sustrato: el hilo textual completo de la persona (léxico → señales).
       const subRows = await fetchChatMessages(supabase, userId, personId, 50_000)
@@ -151,6 +176,12 @@ export async function POST(req: NextRequest) {
       if (recal.confidenceDelta !== 0) forecast.confidence.score = Math.round(Math.max(0, Math.min(1, forecast.confidence.score + recal.confidenceDelta)) * 100) / 100
       ;(forecast as unknown as Record<string, unknown>).recalibration = recal
     }
+
+    // Afecto expresado (IAE): dimensión APARTE del compuesto conductual. Se computa
+    // y persiste por día pero el motor la ignora → sin esto no llegaba al usuario.
+    // Viaja en `result` para que GET/POST la devuelvan. Disparador, no veredicto.
+    const affection = summarizeAffection(signals)
+    if (affection) (forecast as unknown as Record<string, unknown>).affection = affection
 
     // 5) Persistir el resultado.
     const mw = forecast.mainWindow, ew = forecast.extendedWindow
