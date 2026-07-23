@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     let signals: DailySignal[] = []
     const { data: sigRows } = await supabase
       .from('person_daily_signals')
-      .select('date, message_count, avg_len, somatic, friction, withdrawal, sensitivity, actions, composite')
+      .select('date, message_count, avg_len, somatic, friction, withdrawal, sensitivity, actions, composite, affection, positivity_ratio')
       .eq('user_id', userId).eq('person_id', personId)
       .order('date', { ascending: true }).limit(2000)
     if (sigRows && sigRows.length >= 10) {
@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
         date: r.date as string, messageCount: Number(r.message_count) || 0, avgLen: Number(r.avg_len) || 0,
         somatic: Number(r.somatic) || 0, friction: Number(r.friction) || 0, withdrawal: Number(r.withdrawal) || 0,
         sensitivity: Number(r.sensitivity) || 0, actions: Number(r.actions) || 0, composite: Number(r.composite) || 0,
+        affection: Number(r.affection) || 0, positivityRatio: r.positivity_ratio == null ? 1 : Number(r.positivity_ratio) || 1,
       }))
     } else {
       // b) Sustrato: el hilo textual completo de la persona (léxico → señales).
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
           id: `sig:${personId}:${s.date}`, user_id: userId, person_id: personId, date: s.date,
           message_count: s.messageCount, avg_len: s.avgLen, somatic: s.somatic, friction: s.friction,
           withdrawal: s.withdrawal, sensitivity: s.sensitivity, actions: s.actions, composite: s.composite,
+          affection: s.affection, positivity_ratio: s.positivityRatio,
           updated_at: new Date().toISOString(),
         }))
         await supabase.from('person_daily_signals').upsert(rows, { onConflict: 'id' })
