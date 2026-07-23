@@ -70,9 +70,19 @@ export default function DecidirPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description }),
       })
-      const j = await res.json()
-      if (!res.ok) { setErr(j.error ?? 'No pude evaluar'); return }
-      const assessment = j.assessment as DecisionAssessment
+      // Blindaje igual que PremortemSection/StructuredPremortem: en 502/504 el
+      // body es HTML → res.json() lanzaba y caía al catch genérico. Con text()+
+      // parse damos el mensaje real de timeout.
+      const raw = await res.text()
+      let j: { assessment?: DecisionAssessment; selfWarning?: string; error?: string } = {}
+      try { j = raw ? JSON.parse(raw) : {} } catch { /* no-JSON (timeout/gateway) */ }
+      if (!res.ok || !j.assessment) {
+        setErr(j.error ?? (res.status === 504 || res.status === 502
+          ? 'Tardó demasiado y el servidor cortó. Reinténtalo.'
+          : 'No pude evaluar.'))
+        return
+      }
+      const assessment = j.assessment
       setResult(assessment)
       setSelfWarning(typeof j.selfWarning === 'string' ? j.selfWarning : null)
       // 14·M5 — persistir la decisión (dedupe por título) para el outside view futuro.
