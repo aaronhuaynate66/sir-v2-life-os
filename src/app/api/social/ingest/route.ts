@@ -19,6 +19,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, linkedinSlug, canonHandle, identityKey, type PersonLite } from '@/lib/social-reader/match'
+import { snapshotUnmatchedAvatar } from '@/lib/social-reader/avatarSnapshot'
 
 /** Id determinístico de una señal no-asignada → una fila por (identidad, kind).
  *  Re-ver la misma cuenta actualiza la fila (upsert), no la duplica. */
@@ -81,6 +82,9 @@ interface SocialItem {
 
 // Dedup: no insertamos la MISMA señal (persona+kind) más de una vez cada 6h.
 const DEDUP_HOURS = 6
+// Tope de snapshots de avatar por request: bajar+subir imágenes es I/O; los que
+// no entren se snapshotean en el próximo ingest (el reader corre seguido).
+const AVATAR_SNAPSHOT_CAP = 40
 
 export async function POST(req: NextRequest) {
   const token = readToken(req)
@@ -99,11 +103,12 @@ export async function POST(req: NextRequest) {
   let body: { items?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
   const items = Array.isArray(body.items) ? (body.items as SocialItem[]).slice(0, 100) : []
-  if (items.length === 0) return NextResponse.json({ inserted: 0, matched: 0, unmatched: 0, skipped: 0, backfilled: 0, promoted: 0 })
+  if (items.length === 0) return NextResponse.json({ inserted: 0, matched: 0, unmatched: 0, skipped: 0, backfilled: 0, promoted: 0, snapped: 0 })
 
   const nowIso = new Date().toISOString()
   const sinceIso = new Date(Date.now() - DEDUP_HOURS * 3_600_000).toISOString()
   let inserted = 0, matched = 0, unmatched = 0, skipped = 0, backfilled = 0, promoted = 0
+  let snapped = 0
 
   try {
     // Personas una sola vez → índice para matcheo por handle/slug/nombre.
@@ -158,12 +163,23 @@ export async function POST(req: NextRequest) {
           const sig = deriveSocialSignal({ platform, text: it.text ?? null, hasActiveStory: it.hasActiveStory === true, headline: it.headline ?? null, priorHeadline: null })
           const key = identityKey({ platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: it.name })
           if (sig && key) {
+            const uid = unmatchedId(userId, key, sig.kind)
             await admin.from('unmatched_social_activity').upsert({
-              id: unmatchedId(userId, key, sig.kind), user_id: userId, platform,
+              id: uid, user_id: userId, platform,
               handle: it.handle ? canonHandle(it.handle) : null, name: it.name ?? null,
               avatar_url: it.avatarUrl ?? null,
               kind: sig.kind, detail: sig.detail, observed_at: resolveObservedAt(it.activityAt, nowIso),
             }, { onConflict: 'id' })
+            // Snapshot permanente de la cara (la URL de IG caduca). Solo si aún no
+            // lo tiene y no pasamos el tope del request. Fail-soft.
+            if (it.avatarUrl && snapped < AVATAR_SNAPSHOT_CAP) {
+              const { data: cur } = await admin
+                .from('unmatched_social_activity').select('avatar_path').eq('id', uid).maybeSingle()
+              if (!(cur as { avatar_path?: string | null } | null)?.avatar_path) {
+                const path = await snapshotUnmatchedAvatar(admin, userId, uid, it.avatarUrl)
+                if (path) { await admin.from('unmatched_social_activity').update({ avatar_path: path }).eq('id', uid); snapped++ }
+              }
+            }
           }
         } catch { /* fail-soft: tabla 0152 sin propagar */ }
         continue
@@ -221,5 +237,5 @@ export async function POST(req: NextRequest) {
     return errorJson(500, 'Fallo procesando la ingesta', e instanceof Error ? e.message : String(e))
   }
 
-  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted })
+  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted, snapped })
 }
