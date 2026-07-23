@@ -178,7 +178,9 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     const { data: matches } = await supabase.rpc('match_memories', {
       query_embedding: toPgVector(questionEmbedding),
       match_count: 10,
-      similarity_threshold: 0.15,
+      // 0.15 era casi ruido (traía memorias semi-random + personas irrelevantes).
+      // 0.35 sube la SEÑAL del contexto: solo lo de verdad parecido a la pregunta.
+      similarity_threshold: 0.35,
     })
     for (const r of ((matches as Record<string, unknown>[]) ?? [])) {
       const pid = (r.person_id as string | null) ?? null
@@ -625,14 +627,18 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     }
   }
 
-  // C3 — persistir el intercambio como memoria recuperable (fail-open).
-  if (questionEmbedding && shouldPersistExchange(question, answer)) {
+  // C3 — persistir el intercambio como memoria recuperable. Se guarda SIEMPRE,
+  // AUNQUE el embedding esté caído (OpenAI 429): el registro histórico NO debe
+  // depender de OpenAI. Sin embedding → va null y un backfill lo llena cuando el
+  // recall vuelva. Antes esto estaba pegado al embedding → todas las charlas
+  // desde el 13/07 se perdieron por la cuota agotada. Nunca más.
+  if (shouldPersistExchange(question, answer)) {
     try {
       await supabase.from('sir_conversations').insert({
         user_id: userId,
         question: question.slice(0, 2000),
         answer: answer.slice(0, 4000),
-        embedding: toPgVector(questionEmbedding),
+        embedding: questionEmbedding ? toPgVector(questionEmbedding) : null,
         embedding_model: 'text-embedding-3-small',
       })
     } catch { /* tabla 0121 no aplicada → seguimos sin persistir */ }
