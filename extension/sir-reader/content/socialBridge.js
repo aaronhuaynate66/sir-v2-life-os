@@ -11,7 +11,7 @@
   let timer = null;
 
   function key(it) {
-    return `${it.platform}|${it.handle || it.linkedinUrl || ''}|${it.kind || ''}|${(it.text || it.headline || '').slice(0, 60)}`;
+    return `${it.platform}|${it.handle || it.linkedinUrl || ''}|${it.kind || ''}|${(it.text || it.headline || it.avatarUrl || '').slice(0, 120)}`;
   }
 
   function flush() {
