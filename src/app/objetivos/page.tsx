@@ -4,7 +4,7 @@ import { track, trackCreated, EVENTS } from '@/lib/analytics/track'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Target, Plus, Archive, ListChecks, ChevronRight, Sparkles, Anchor, MoreHorizontal } from 'lucide-react'
+import { Target, Plus, Archive, ListChecks, ChevronRight, Sparkles, Anchor, MoreHorizontal, AlertTriangle } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -122,6 +122,11 @@ function GoalsContent() {
     return () => { cancelled = true }
   }, [])
   const dash = useMemo(() => buildGoalDashboard(goals), [goals])
+  // "En riesgo por deadline": el dashboard ya lo computaba (detectGoalsAtRisk:
+  // deadline <30d con progreso <50%, o crítico sin fecha con <20%) pero la página
+  // no lo mostraba. Set para marcar la card en O(1). Distinto del nudge de
+  // estancamiento (StalledGoalsNudge mira inactividad, esto mira la FECHA límite).
+  const atRiskIds = useMemo(() => new Set(dash.atRisk.map((g) => g.id)), [dash])
 
   // Pasos por objetivo (para rollup y para el toggle de la lista).
   const stepsByGoal = useMemo(() => {
@@ -365,6 +370,7 @@ function GoalsContent() {
   const stats = [
     { label: 'Activos', value: String(dash.activeGoals.length) },
     { label: 'Criticos', value: String(dash.criticalGoals.length) },
+    ...(dash.atRisk.length > 0 ? [{ label: 'En riesgo', value: String(dash.atRisk.length) }] : []),
     { label: 'Completados', value: String(goals.filter(g => g.status === 'completed').length) },
     { label: 'Progreso prom.', value: activeGoals.length ? Math.round(activeGoals.reduce((s, g) => s + g.progress, 0) / activeGoals.length) + '%' : '—' },
   ]
@@ -639,6 +645,11 @@ function GoalsContent() {
                         </Badge>
                       )}
                       <Badge variant="outline" className={cn('text-[10px] font-normal', PRIO_CLASS[g.priority])}>{PRIO_LABEL[g.priority]}</Badge>
+                      {atRiskIds.has(g.id) && (
+                        <Badge variant="outline" className="text-[10px] font-normal border-warn/40 bg-warn-soft text-warn gap-1" title="Fecha límite cerca y el progreso va corto — conviene darle un paso.">
+                          <AlertTriangle size={10} strokeWidth={2} /> En riesgo
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="text-[10px] font-normal">{CAT_LABEL[g.category]}</Badge>
                     </div>
                     {g.description && <p className="text-xs text-muted-foreground mb-2 line-clamp-3">{g.description}</p>}
