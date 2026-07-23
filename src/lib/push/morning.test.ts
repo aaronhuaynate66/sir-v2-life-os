@@ -105,14 +105,23 @@ describe('buildMorningPush — a quién cuidar hoy (nudge relacional)', () => {
     expect(p.body).toContain('Diana (tu pareja)')
     expect(p.body).toContain('Sin hablar hace 12 días')
   })
-  it('va después de las fechas pero antes de las tareas', () => {
+  it('el nudge relacional va ANTES que los cumpleaños (prioridad 2026-07-23) y antes de tareas', () => {
     const p = buildMorningPush({
       birthdays: [{ name: 'Pedro', days: 2 }],
       relationshipNudge: 'Sasa — Relación dormida',
       dueTasks: ['Cerrar reporte'],
     })
-    expect(p.body.indexOf('Pedro')).toBeLessThan(p.body.indexOf('Sasa'))
-    expect(p.body.indexOf('Sasa')).toBeLessThan(p.body.indexOf('Cerrar reporte'))
+    // Subir "a quién cuidar" sobre los cumpleaños: un cumple en N días no debe
+    // tapar el cuidado de un vínculo que se enfría hoy.
+    expect(p.body.indexOf('Sasa')).toBeLessThan(p.body.indexOf('Pedro'))
+    expect(p.body.indexOf('Pedro')).toBeLessThan(p.body.indexOf('Cerrar reporte'))
+  })
+  it('pero un aniversario del día (importantDates) sigue sobre el nudge relacional', () => {
+    const p = buildMorningPush({
+      importantDates: ['Aniversario con Diana · ¡Hoy!'],
+      relationshipNudge: 'Sasa — Relación dormida',
+    })
+    expect(p.body.indexOf('Aniversario con Diana')).toBeLessThan(p.body.indexOf('Sasa'))
   })
 })
 
@@ -160,6 +169,23 @@ describe('buildMorningPush — body (push, capado) vs bodyFull (chat, completo)'
     const p = buildMorningPush({ birthdays: [{ name: 'Ana', days: 2 }] })
     expect(p.body).toBe(p.bodyFull)
     expect(p.body).not.toContain('…')
+  })
+  it('Telegram (bodyFull) muestra MÁS señales que el push del navegador (body, top 3)', () => {
+    // Decisión 2026-07-23: el navegador queda calmo en 3, pero el chat (4096
+    // chars) aprovecha más de las señales que igual ya se computaron.
+    const p = buildMorningPush({
+      weekFocus: 'Mudanza en 2 días',
+      metricAlert: 'Peso alto',
+      relationshipNudge: 'Cuidar a Diana',
+      momentResolution: 'Cerrar tema con X',
+      dueTasks: ['Tarea 1'],
+      habitNudge: 'Racha rota',
+      bodySignal: 'Deuda de sueño',
+    })
+    expect(p.body.split(' · ').length).toBe(3)
+    expect(p.bodyFull.split(' · ').length).toBeGreaterThan(3)
+    expect(p.bodyFull).toContain('Deuda de sueño') // señal que el push del navegador omite
+    expect(p.body).not.toContain('Deuda de sueño')
   })
   it('cuando excede 220, body se corta con … pero bodyFull queda ENTERO', () => {
     // Reproduce el bug real de Aaron: nudge relacional largo + tema resuelto +
