@@ -24,6 +24,10 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['quedás', 'quedas'], ['tratás', 'tratas'], ['entendés', 'entiendes'], ['respondés', 'respondes'],
   ['elegís', 'eliges'], ['seguís', 'sigues'], ['pedís', 'pides'], ['preferís', 'prefieres'],
   ['recibís', 'recibes'], ['conseguís', 'consigues'], ['escribís', 'escribes'],
+  // Más -ís (el harness cazó "te referís"). Inequívocas, sin choque con nombres.
+  ['referís', 'refieres'], ['sugerís', 'sugieres'], ['corregís', 'corriges'],
+  ['repetís', 'repites'], ['servís', 'sirves'], ['medís', 'mides'], ['subís', 'subes'],
+  ['definís', 'defines'], ['decidís', 'decides'], ['cumplís', 'cumples'], ['exigís', 'exiges'],
   // Ser
   ['sos', 'eres'],
   // Imperativos rioplatenses → tuteo peruano
