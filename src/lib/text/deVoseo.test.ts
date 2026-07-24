@@ -13,6 +13,14 @@ describe('deVoseo', () => {
     expect(deVoseo('vos sos el que decide')).toBe('tú eres el que decide')
   })
 
+  it('reemplaza más presentes -és/-ás (debés y cía.)', () => {
+    expect(deVoseo('debés descansar')).toBe('debes descansar')
+    expect(deVoseo('necesitás enfocarte y elegís uno')).toBe('necesitas enfocarte y eliges uno')
+    expect(deVoseo('¿qué pensás?')).toBe('¿qué piensas?')
+    // NO toca el nombre propio "Tomás" (no está en la lista a propósito)
+    expect(deVoseo('habla con Tomás mañana')).toBe('habla con Tomás mañana')
+  })
+
   it('reemplaza imperativos rioplatenses', () => {
     expect(deVoseo('decime cuándo')).toBe('dime cuándo')
     expect(deVoseo('mirá esto y ponete las pilas')).toBe('mira esto y ponte las pilas')
