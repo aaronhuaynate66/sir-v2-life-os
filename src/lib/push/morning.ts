@@ -25,6 +25,12 @@ export interface MorningInput {
    *  reciente ya parece haber resuelto (el cron `moment-scan` lo precomputa).
    *  SIR sugiere cerrarlo; no cierra solo. Texto ya formado. */
   momentResolution?: string
+  /** SEMANA CON CARGA AFECTIVA (anticipación de cuidado): ventanas sensibles del
+   *  ciclo (premenstrual/menstrual) de las mujeres del círculo que intersecan la
+   *  semana, con sincronía si coinciden. Tono de CUIDADO, marca estimación —
+   *  NUNCA descalifica ni "gestiona" (doc 17). Texto ya formado
+   *  (ver lib/ciclo/weekAhead). */
+  cycleWeekAhead?: string
   /** Buen momento para AVANZAR un objetivo con una persona: alguien ligado a un
    *  objetivo activo (con acción pendiente) muestra buen timing hoy (historia
    *  activa). El loop original del reader (Dayana/Marlab). Texto ya formado
@@ -105,6 +111,9 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   add(input.relationshipNudge)
   add(input.momentResolution)
   add(input.goalContactTiming)
+  // Anticipación de cuidado: semana con carga afectiva (ventanas sensibles del
+  // ciclo). Va con lo relacional; es un nudge de CUIDADO, no una tarea.
+  add(input.cycleWeekAhead)
 
   // 1.8 Cumpleaños próximos (después de lo relacional urgente).
   for (const b of (input.birthdays ?? []).slice(0, 2)) add(birthdayPhrase(b))
