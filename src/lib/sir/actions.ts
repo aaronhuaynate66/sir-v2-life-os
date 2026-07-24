@@ -130,7 +130,7 @@ export const SIR_ACTION_TOOLS = [
   {
     name: 'proponer_agregar_hito',
     description:
-      'Propón AGREGAR un sub-paso/hito a un objetivo que YA existe (NO lo agregues tú, solo propónlo para que Aaron confirme). Úsalo cuando Aaron menciona algo que es un PASO hacia una meta suya que hoy no lo tiene desglosada (ej. "el examen médico me acerca al Mundial" → propón agregar "Pasar examen médico" como hito del objetivo Mundial). Si Aaron NO nombra el objetivo, se asume su NORTE (el objetivo-ancla del año). NO inventes fecha. PROHIBIDO decir que ya lo agregaste sin llamar a esta tool.',
+      'Propón AGREGAR un sub-paso/hito a un objetivo que YA existe (NO lo agregues tú, solo propónlo para que Aaron confirme). Úsalo SIEMPRE que algo que Aaron menciona (o que aparece en el contexto) sea un PASO que AVANZA un objetivo suyo —sobre todo su NORTE, el objetivo-ancla del año— y ese objetivo hoy no lo tiene desglosado como sub-paso. No esperes a que Aaron pida "agrégalo"; si un compromiso/hecho empuja un objetivo existente, propón colgarlo de ese objetivo para cerrar el loop del norte (ej. "el examen médico me acerca al Mundial" → propón agregar "Pasar examen médico" como hito del objetivo Mundial). Si Aaron NO nombra el objetivo, se asume su NORTE (el objetivo-ancla del año). NO inventes objetivos: si ningún objetivo existente encaja de verdad, no uses esta tool. NO inventes fecha. PROHIBIDO decir que ya lo agregaste sin llamar a esta tool.',
     input_schema: {
       type: 'object' as const,
       properties: {

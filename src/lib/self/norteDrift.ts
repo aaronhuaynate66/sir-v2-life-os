@@ -117,3 +117,43 @@ export function computeNorteDrift(goals: Goal[], now: Date = new Date(), related
     message,
   }
 }
+
+/** Persona mínima que el helper necesita (subconjunto de `Person`). */
+export interface AnchorRelatedPerson {
+  id: string
+  lastContact?: string | null
+}
+
+/**
+ * Calcula la actividad LIGADA al norte más reciente disponible client-side:
+ * el `lastContact` MÁS reciente entre las personas ligadas al objetivo-ancla
+ * (`anchor.relatedPersons`). Es el `relatedActivityISO` que espera
+ * computeNorteDrift → tener contacto reciente con gente del norte des-estanca
+ * el panel, igual que completar un hito.
+ *
+ * PURO. `null` si no hay norte, si el norte no tiene personas ligadas, o si
+ * ninguna tiene contacto registrado. Solo mira `lastContact` (dato ya presente
+ * en el store de personas del cliente) — NO dispara ningún fetch nuevo.
+ *
+ * LIMITACIÓN CONOCIDA (mínimo viable): "actividad ligada" hoy = solo el último
+ * contacto con personas del ancla. Eventos/recordatorios ligados al objetivo
+ * NO se consideran acá (no están indexados por objetivo en el cliente sin un
+ * fetch extra); los hitos completados ya los computa computeNorteDrift desde
+ * el propio Goal. Ampliar requeriría cablear esas fuentes cuando estén
+ * disponibles sin costo.
+ */
+export function relatedActivityISOForAnchor(
+  goals: Goal[],
+  people: AnchorRelatedPerson[],
+  now: Date = new Date(),
+): string | null {
+  const active = goals.filter((g) => g.status === 'active')
+  const anchor = resolveAnchorGoal(active, now)
+  if (!anchor) return null
+  const linkedIds = new Set(anchor.relatedPersons ?? [])
+  if (linkedIds.size === 0) return null
+  const contacts = people
+    .filter((p) => linkedIds.has(p.id))
+    .map((p) => p.lastContact)
+  return mostRecentISO(contacts)
+}

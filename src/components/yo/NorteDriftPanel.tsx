@@ -8,7 +8,8 @@ import { Compass, ArrowRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { SectionTitle } from '@/components/ui/section-title'
 import { useGoalStore } from '@/stores/useGoalStore'
-import { computeNorteDrift, type NorteDriftState } from '@/lib/self/norteDrift'
+import { useRelationshipStore } from '@/stores/useRelationshipStore'
+import { computeNorteDrift, relatedActivityISOForAnchor, type NorteDriftState } from '@/lib/self/norteDrift'
 import { computeNorteMomentum } from '@/lib/self/norteMomentum'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
 
@@ -23,7 +24,12 @@ const STATE_META: Record<NorteDriftState, { label: string; color: string }> = {
 export function NorteDriftPanel() {
   const goals = useGoalStore((s) => s.goals)
   const steps = useObjectiveStepStore((s) => s.steps)
-  const drift = useMemo(() => computeNorteDrift(goals), [goals])
+  const people = useRelationshipStore((s) => s.people)
+  // Contacto reciente con gente del norte cuenta como avance (des-estanca).
+  const drift = useMemo(
+    () => computeNorteDrift(goals, new Date(), relatedActivityISOForAnchor(goals, people)),
+    [goals, people],
+  )
   const momentum = useMemo(() => computeNorteMomentum(goals, steps), [goals, steps])
   const meta = STATE_META[drift.state]
 
