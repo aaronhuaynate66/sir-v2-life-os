@@ -21,11 +21,14 @@ import type { SirReceipt } from '@/lib/sir/ask'
 import { memoryProvenance } from '@/lib/memories/provenance'
 
 interface ProposedAction {
-  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'crear_plan' | 'crear_recordatorio' | 'registrar_estado'
+  kind: 'registrar_interaccion' | 'crear_objetivo' | 'crear_persona' | 'cerrar_relacion' | 'marcar_habito' | 'marcar_tarea' | 'agregar_hito' | 'crear_plan' | 'crear_recordatorio' | 'registrar_estado'
   persona?: string
   estado?: 'regla' | 'animo_bajo'
   habito?: string
   tarea?: string
+  hito?: string
+  objetivo?: string
+  objetivoId?: string | null
   fecha?: string
   calidad?: number
   nota?: string
@@ -175,6 +178,7 @@ export default function SirChatPage() {
   }, [])
   const addGoal = useGoalStore((st) => st.addGoal)
   const updateGoal = useGoalStore((st) => st.updateGoal)
+  const goals = useGoalStore((st) => st.goals)
   const objectiveSteps = useObjectiveStepStore((st) => st.steps)
   const setTaskStatus = useObjectiveStepStore((st) => st.setTaskStatus)
   const pauseGoal = useGoalStore((st) => st.pauseGoal)
@@ -489,6 +493,17 @@ export default function SirChatPage() {
         if (hit.status === 'hecho') { toast.success(`"${hit.title}" ya estaba hecha`); setTurnState(idx, 'done'); return }
         setTaskStatus(hit.id, 'done')
         toast.success(`✅ Marqué "${hit.title}" como hecha`)
+        setTurnState(idx, 'done')
+      } else if (a.kind === 'agregar_hito') {
+        const hito = (a.hito ?? '').trim()
+        if (hito.length < 2) { toast.error('No entendí qué paso agregar'); return }
+        // askSir ya resolvió el objetivo (por título o el ancla) → objetivoId.
+        const goal = goals.find((g) => g.id === a.objetivoId)
+        if (!goal) { toast.error(`No encontré el objetivo${a.objetivo ? ` "${a.objetivo}"` : ''}`, { description: 'Agrégalo desde el objetivo en la app.' }); return }
+        const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(a.fecha ?? '') ? a.fecha : undefined
+        const milestone = { id: `m_${Date.now()}_${randSuffix(4)}`, title: hito, completed: false, dueDate }
+        updateGoal(goal.id, { milestones: [...goal.milestones, milestone] })
+        toast.success(`✅ Agregué "${hito}" a "${goal.title}"`)
         setTurnState(idx, 'done')
       } else if (a.kind === 'crear_plan') {
         const titulo = (a.titulo ?? '').trim()
@@ -823,7 +838,7 @@ export default function SirChatPage() {
                   <div className="mt-3 rounded-xl border border-brand/40 bg-brand/5 p-3">
                     <div className="mb-1.5 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-brand">
                       <CalendarCheck size={12} />
-                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'marcar_tarea' ? 'Marcar tarea' : t.action.kind === 'crear_plan' ? 'Agendar plan' : t.action.kind === 'crear_recordatorio' ? 'Agendar recordatorio' : 'Cerrar vínculo'}
+                      {t.action.kind === 'registrar_interaccion' ? 'Registrar interacción' : t.action.kind === 'crear_objetivo' ? 'Crear objetivo' : t.action.kind === 'crear_persona' ? 'Crear persona' : t.action.kind === 'marcar_habito' ? 'Marcar hábito' : t.action.kind === 'marcar_tarea' ? 'Marcar tarea' : t.action.kind === 'agregar_hito' ? 'Agregar paso' : t.action.kind === 'crear_plan' ? 'Agendar plan' : t.action.kind === 'crear_recordatorio' ? 'Agendar recordatorio' : 'Cerrar vínculo'}
                     </div>
                     {t.action.kind === 'registrar_interaccion' ? (
                       <div className="text-[13px] text-foreground/90">
@@ -855,6 +870,13 @@ export default function SirChatPage() {
                       <div className="text-[13px] text-foreground/90">
                         <span className="font-medium">{t.action.tarea}</span>
                         <div className="mt-0.5 text-muted-foreground">Marcar la tarea como hecha</div>
+                      </div>
+                    ) : t.action.kind === 'agregar_hito' ? (
+                      <div className="text-[13px] text-foreground/90">
+                        <span className="font-medium">{t.action.hito}</span>
+                        <div className="mt-0.5 text-muted-foreground">
+                          Paso de {t.action.objetivo}{t.action.fecha ? ` · para el ${t.action.fecha}` : ''}
+                        </div>
                       </div>
                     ) : t.action.kind === 'crear_plan' ? (
                       <div className="text-[13px] text-foreground/90">

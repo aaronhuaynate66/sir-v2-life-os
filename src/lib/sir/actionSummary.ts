@@ -21,6 +21,9 @@ export function summarizeActionForConfirm(a: ProposedActionResolved): string {
       return `✅ Marcar el hábito "${(a.habito || '').slice(0, 80)}" como hecho hoy.\n\n¿Lo marco?`
     case 'marcar_tarea':
       return `✅ Marcar la tarea "${(a.tarea || '').slice(0, 120)}" como hecha.\n\n¿La marco?`
+    case 'agregar_hito':
+      return `🎯 Agregar el paso "${(a.hito || '').slice(0, 120)}" a tu objetivo "${(a.objetivo || '').slice(0, 80)}"` +
+        (a.fecha ? ` (para el ${a.fecha})` : '') + '.\n\n¿Lo agrego?'
     case 'crear_plan':
       return `🗓️ Agendar "${(a.titulo || '').slice(0, 120)}"${a.fecha ? ` para el ${a.fecha}` : ''}.\n\n¿Lo agendo?`
     case 'crear_recordatorio': {

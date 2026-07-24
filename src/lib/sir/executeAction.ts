@@ -34,6 +34,7 @@ export function isExecutableByChat(kind: string): boolean {
     kind === 'cerrar_relacion' ||
     kind === 'marcar_habito' ||
     kind === 'marcar_tarea' ||
+    kind === 'agregar_hito' ||
     kind === 'crear_plan' ||
     kind === 'crear_recordatorio' ||
     kind === 'registrar_estado'
@@ -276,6 +277,36 @@ export async function executeProposedAction(
       .eq('id', hit.id).eq('user_id', userId)
     if (error) return { ok: false, message: 'Uf, no pude marcar la tarea. Reinténtalo en un momento.' }
     return { ok: true, message: `✅ Marqué "${hit.title}" como hecha.` }
+  }
+
+  if (action.kind === 'agregar_hito') {
+    const hito = (action.hito || '').trim()
+    if (hito.length < 2) return { ok: false, message: 'Faltó el nombre del paso, no agregué nada.' }
+    const goalId = action.objetivoId
+    if (!goalId) {
+      return { ok: false, message: `No encontré el objetivo${action.objetivo ? ` "${action.objetivo}"` : ''}, así que no agregué el paso.` }
+    }
+    // Ownership explícito + leemos los milestones actuales para appendear (no pisar).
+    const { data: goal } = await supabase
+      .from('goals').select('id, title, milestones').eq('user_id', userId).eq('id', goalId).maybeSingle()
+    if (!goal) return { ok: false, message: 'No encontré ese objetivo (o no es tuyo), no agregué nada.' }
+    const g = goal as { title?: string; milestones?: unknown }
+    const current = Array.isArray(g.milestones) ? (g.milestones as unknown[]) : []
+    const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(action.fecha) ? action.fecha : null
+    const milestone = {
+      id: `m_${Date.now()}_${randSuffix(4)}`,
+      title: hito.slice(0, 200),
+      completed: false,
+      dueDate,
+    }
+    // El update naturalmente toca updated_at (lo seteamos explícito, como el resto)
+    // → el panel deja de marcar el objetivo "sin avance/estancado".
+    const { error } = await supabase.from('goals')
+      .update({ milestones: [...current, milestone], updated_at: new Date().toISOString() })
+      .eq('id', goalId).eq('user_id', userId)
+    if (error) return { ok: false, message: 'Uf, no pude agregar el paso. Reinténtalo en un momento.' }
+    const goalTitle = (g.title || action.objetivo || 'tu objetivo').slice(0, 60)
+    return { ok: true, message: `🎯 Agregué "${hito.slice(0, 90)}" como paso de "${goalTitle}".` }
   }
 
   if (action.kind === 'crear_plan') {

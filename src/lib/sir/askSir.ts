@@ -64,6 +64,8 @@ export class AskSirConfigError extends Error {
 export type ProposedActionResolved = ProposedAction & {
   personId?: string | null
   linkedGoals?: { id: string; title: string }[]
+  /** agregar_hito: id del objetivo resuelto (por título o el ancla). */
+  objetivoId?: string | null
 }
 
 export interface AskSirClarifying {
@@ -629,7 +631,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   const SOCRATIC_RULE =
     '\n\nMODO SOCRÁTICO: en vez de darle la respuesta cómoda, devuélvele la PREGUNTA dura y precisa que lo obligue a pensar, aterrizada en SUS hechos (cita el dato, la persona o el patrón concreto del contexto). Máximo una o dos preguntas, directas, sin rodeos ni adulación. La pregunta debe abrir una grieta real en su razonamiento, no interrogar por interrogar. Si pide HACER algo concreto, igual propón la acción con la tool.'
   const ACTION_RULE =
-    '\n\nSi Aaron pide HACER algo (registrar/anotar una interacción, crear/fijar un objetivo, agregar una persona, cerrar un vínculo, MARCAR UN HÁBITO como hecho — "ya medité", "hice la cama" —, MARCAR UNA TAREA/paso de un objetivo como hecho — "ya saqué la visa", "terminé el informe" —, AGENDAR un plan/cita/salida a futuro — "agéndame ver el depa con Diana el sábado", "anota que voy al matrimonio de Laura" —, o AGENDAR un RECORDATORIO con fecha/hora — "recuérdame mañana 9am pedir mis pastillas", "avísame el viernes 3pm llamar al banco" (SÍ puedes: usa proponer_crear_recordatorio; NO digas que no puedes programar recordatorios por hora), o MARCAR EL ESTADO de ánimo/biológico de una persona en un día — "Diana estuvo de mal humor hoy", "anduvo tensa/renegando", "le vino la regla ayer" (SÍ puedes: usa proponer_registrar_estado; esa marca con fecha alimenta la detección de patrones)), NO lo hagas ni digas que está hecho: llama a la tool correspondiente para PROPONERLO. Aaron lo confirma aparte. PROHIBIDO decir "listo", "te lo marco", "ya lo agendé/anoté" o similar SIN haber llamado a la tool: si no existe una tool para eso, dilo con honestidad ("todavía no puedo agendar/guardar eso solo") en vez de fingir que lo hiciste. Si solo pregunta, responde en texto sin tools.'
+    '\n\nSi Aaron pide HACER algo (registrar/anotar una interacción, crear/fijar un objetivo, agregar una persona, cerrar un vínculo, MARCAR UN HÁBITO como hecho — "ya medité", "hice la cama" —, MARCAR UNA TAREA/paso de un objetivo como hecho — "ya saqué la visa", "terminé el informe" —, AGREGAR un sub-paso/hito a un objetivo existente — "el examen médico me acerca al Mundial", "anota que rendir el TOEFL es un paso para mi maestría" (usa proponer_agregar_hito; si no nombra el objetivo, se asume su norte) —, AGENDAR un plan/cita/salida a futuro — "agéndame ver el depa con Diana el sábado", "anota que voy al matrimonio de Laura" —, o AGENDAR un RECORDATORIO con fecha/hora — "recuérdame mañana 9am pedir mis pastillas", "avísame el viernes 3pm llamar al banco" (SÍ puedes: usa proponer_crear_recordatorio; NO digas que no puedes programar recordatorios por hora), o MARCAR EL ESTADO de ánimo/biológico de una persona en un día — "Diana estuvo de mal humor hoy", "anduvo tensa/renegando", "le vino la regla ayer" (SÍ puedes: usa proponer_registrar_estado; esa marca con fecha alimenta la detección de patrones)), NO lo hagas ni digas que está hecho: llama a la tool correspondiente para PROPONERLO. Aaron lo confirma aparte. PROHIBIDO decir "listo", "te lo marco", "ya lo agendé/anoté" o similar SIN haber llamado a la tool: si no existe una tool para eso, dilo con honestidad ("todavía no puedo agendar/guardar eso solo") en vez de fingir que lo hiciste. Si solo pregunta, responde en texto sin tools.'
   const CHAT_STYLE_RULE =
     '\n\nESTILO CHAT (mensajería tipo Telegram/WhatsApp): estás en un chat, no en una app con formato. Sé BREVE y conversacional — 1 a 3 párrafos cortos, como un mensaje de un amigo que te conoce. PROHIBIDO el markdown: NADA de **negritas**, ni ## títulos, ni listas con - o números, ni tablas. Texto corrido, cálido, directo. Si necesitas enumerar, hazlo dentro de una frase. Da lo esencial primero; si hay más, ofrece seguir en vez de volcarlo todo.'
 
@@ -667,6 +669,27 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       proposedAction = { ...parsed }
     } else if (parsed?.kind === 'marcar_tarea') {
       proposedAction = { ...parsed } // match por título al ejecutar (como hábitos)
+    } else if (parsed?.kind === 'agregar_hito') {
+      // Resolvemos el objetivo por TÍTULO (tolerante: exacto normalizado → inclusión)
+      // o, si Aaron no nombró uno, al NORTE (objetivo-ancla). Fail-safe: si no hay
+      // objetivo que resolver, NO proponemos (el hito no tendría dónde vivir).
+      const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+      const q = norm(parsed.objetivo)
+      let match: { id: string; title: string } | null = null
+      if (q) {
+        const exact = goals.find((g) => norm(g.title) === q)
+        match = exact
+          ? { id: exact.id, title: exact.title }
+          : (() => {
+              const inc = goals.filter((g) => { const t = norm(g.title); return t.includes(q) || q.includes(t) })
+              return inc.length >= 1 ? { id: inc[0].id, title: inc[0].title } : null
+            })()
+      }
+      if (!match && anchorGoalId) {
+        const anchor = goals.find((g) => g.id === anchorGoalId)
+        if (anchor) match = { id: anchor.id, title: anchor.title }
+      }
+      if (match) proposedAction = { ...parsed, objetivo: match.title, objetivoId: match.id }
     } else if (parsed?.kind === 'crear_plan') {
       const r = parsed.persona ? resolvePersonId(parsed.persona) : { id: null, name: null }
       proposedAction = { ...parsed, persona: r.name, personId: r.id }
