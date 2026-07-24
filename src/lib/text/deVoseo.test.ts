@@ -17,6 +17,8 @@ describe('deVoseo', () => {
     expect(deVoseo('debés descansar')).toBe('debes descansar')
     expect(deVoseo('necesitás enfocarte y elegís uno')).toBe('necesitas enfocarte y eliges uno')
     expect(deVoseo('¿qué pensás?')).toBe('¿qué piensas?')
+    expect(deVoseo('¿a qué te referís?')).toBe('¿a qué te refieres?')
+    expect(deVoseo('si me sugerís algo y lo repetís')).toBe('si me sugieres algo y lo repites')
     // NO toca el nombre propio "Tomás" (no está en la lista a propósito)
     expect(deVoseo('habla con Tomás mañana')).toBe('habla con Tomás mañana')
   })
