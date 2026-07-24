@@ -25,6 +25,23 @@ describe('computeNorteDrift', () => {
     const r = computeNorteDrift([goal({ id: 'n', isAnchor: true, updatedAt: '2026-04-01T00:00:00Z' })], NOW)
     expect(r.state).toBe('estancado')
   })
+  it('un HITO completado reciente cuenta como avance (no estancado aunque el objetivo no se edite)', () => {
+    const r = computeNorteDrift([goal({
+      id: 'n', isAnchor: true, updatedAt: '2026-04-01T00:00:00Z',
+      milestones: [{ id: 'm', title: 'pasar examen', completed: true, completedAt: '2026-06-13T00:00:00Z' }],
+    })], NOW)
+    expect(r.state).not.toBe('estancado')
+    expect(r.daysSinceTouch).toBeLessThanOrEqual(3)
+  })
+  it('actividad LIGADA reciente (param del caller) cuenta como avance', () => {
+    // Ej: contacto con una persona ligada al objetivo, o un evento agendado.
+    const r = computeNorteDrift(
+      [goal({ id: 'n', isAnchor: true, updatedAt: '2026-04-01T00:00:00Z' })],
+      NOW, '2026-06-14T00:00:00Z',
+    )
+    expect(r.state).not.toBe('estancado')
+    expect(r.daysSinceTouch).toBeLessThanOrEqual(1)
+  })
   it('disperso: muchos frentes recientes + norte atrasado', () => {
     const others = ['a', 'b', 'c'].map((id) => goal({ id, updatedAt: '2026-06-12T00:00:00Z' }))
     const anchor = goal({ id: 'n', isAnchor: true, updatedAt: '2026-05-20T00:00:00Z' })

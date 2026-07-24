@@ -37,7 +37,26 @@ function daysBetween(now: Date, iso: string): number | null {
   return Math.floor((now.getTime() - t) / DAY)
 }
 
-export function computeNorteDrift(goals: Goal[], now: Date = new Date()): NorteDrift {
+/** ISO más reciente de una lista (ignora inválidos/null). null si no hay ninguno. */
+function mostRecentISO(isos: Array<string | null | undefined>): string | null {
+  let best: string | null = null
+  let bestT = -Infinity
+  for (const iso of isos) {
+    if (!iso) continue
+    const t = Date.parse(iso)
+    if (Number.isFinite(t) && t > bestT) { bestT = t; best = iso }
+  }
+  return best
+}
+
+/**
+ * @param relatedActivityISO Actividad LIGADA al norte más reciente que el caller
+ *   pueda conocer (contacto con personas del objetivo, eventos/recordatorios
+ *   ligados). El cómputo de sub-pasos (milestones) se hace acá desde el Goal.
+ *   Sin esto el "último avance" ignoraba todo salvo la edición del objetivo →
+ *   marcaba "estancado" con movimiento real (mismo bug que la recencia de #941).
+ */
+export function computeNorteDrift(goals: Goal[], now: Date = new Date(), relatedActivityISO: string | null = null): NorteDrift {
   const active = goals.filter((g) => g.status === 'active')
   // El norte REAL es el que ve el usuario en /panel: ancla explícita si la marcó,
   // si no la INFERIDA (buildYearCompass). No usar isAnchor suelto → "sin norte" falso.
@@ -59,7 +78,12 @@ export function computeNorteDrift(goals: Goal[], now: Date = new Date()): NorteD
     }
   }
 
-  const daysSinceTouch = daysBetween(now, anchor.updatedAt) ?? 999
+  // "Último avance" = lo MÁS RECIENTE entre: edición del objetivo, un hito COMPLETADO,
+  // y actividad ligada que el caller conozca (contacto con gente del objetivo, eventos).
+  // Antes solo miraba anchor.updatedAt → "estancado" falso aunque hubiera movimiento.
+  const milestoneDates = (anchor.milestones ?? []).map((m) => m.completedAt)
+  const lastAdvanceISO = mostRecentISO([anchor.updatedAt, ...milestoneDates, relatedActivityISO]) ?? anchor.updatedAt
+  const daysSinceTouch = daysBetween(now, lastAdvanceISO) ?? 999
   const othersMovedRecently = others.filter((g) => {
     const d = daysBetween(now, g.updatedAt)
     return d !== null && d <= RECENT_DAYS
