@@ -70,6 +70,9 @@ interface Turn {
   suggestionId?: string
   /** Feedback explícito del usuario sobre la respuesta (👍/👎), persistido. */
   feedback?: 'up' | 'down'
+  /** Id de la fila en chat_feedback (Ola 2): el turno completo + rating, para
+   *  atar luego la corrección del 👎 a la misma respuesta. */
+  feedbackId?: string
   sources?: { people: string[]; memories: number; receipts?: SirReceipt[] }
   action?: ProposedAction
   actionState?: 'pending' | 'done' | 'discarded'
@@ -340,6 +343,12 @@ export default function SirChatPage() {
       if (!res.ok) { toast.error('No se pudo guardar la preferencia'); return }
       toast.success('Anotado como preferencia', { description: 'Lo tendré presente de ahora en más.' })
       track(EVENTS.brainFeedbackGiven, { source: 'sir_chat', value: 'correction' })
+      // Ola 2: atar la corrección a la fila de chat_feedback del 👎 (misma respuesta).
+      const fbId = turns[idx]?.feedbackId
+      if (fbId) void fetch('/api/chat-feedback', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: fbId, correction: text }),
+      }).catch(() => {})
       setCorrectingIdx(null); setCorrectionDraft('')
     } catch { toast.error('Error de red') }
   }
@@ -353,6 +362,17 @@ export default function SirChatPage() {
     const next = tu.feedback === feedback ? undefined : feedback // toggle
     setTurns((t) => t.map((x, i) => (i === idx ? { ...x, feedback: next } : x)))
     track(EVENTS.brainFeedbackGiven, { source: 'sir_chat', value: next ?? 'cleared' })
+    // Ola 2: captura ATRIBUIBLE del turno (pregunta + respuesta + contexto usado)
+    // en chat_feedback → sustrato del harness de eval y del loop de aprendizaje.
+    if (next) {
+      const q = idx > 0 && turns[idx - 1]?.role === 'user' ? turns[idx - 1].text : undefined
+      void fetch('/api/chat-feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, answer: tu.text, rating: next, context: tu.sources ?? null }),
+      }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (d?.id) setTurns((t) => t.map((x, i) => (i === idx ? { ...x, feedbackId: d.id as string } : x)))
+      }).catch(() => {})
+    }
     if (next === 'down') { setCorrectingIdx(idx); setCorrectionDraft('') }
     else if (correctingIdx === idx) setCorrectingIdx(null)
     if (tu.suggestionId) {
