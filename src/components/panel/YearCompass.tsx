@@ -23,8 +23,9 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { useGoalStore } from '@/stores/useGoalStore'
+import { useRelationshipStore } from '@/stores/useRelationshipStore'
 import { buildYearCompass, type YearCompass } from '@/lib/year-compass/build'
-import { computeNorteDrift, type NorteDrift } from '@/lib/self/norteDrift'
+import { computeNorteDrift, relatedActivityISOForAnchor, type NorteDrift } from '@/lib/self/norteDrift'
 import { track, EVENTS } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 
@@ -37,6 +38,7 @@ const UPCOMING_COLORS = ['#8A8A8E', '#6E6E72', '#56565A']
 
 export function YearCompass() {
   const goals = useGoalStore((s) => s.goals)
+  const people = useRelationshipStore((s) => s.people)
 
   // Mount-safe: buildYearCompass depende de Date.now().
   const [now, setNow] = useState<Date | null>(null)
@@ -45,7 +47,10 @@ export function YearCompass() {
   }, [])
 
   const compass: YearCompass | null = now ? buildYearCompass(goals, now) : null
-  const drift: NorteDrift | null = now ? computeNorteDrift(goals, now) : null
+  // Avance por actividad LIGADA: el último contacto con gente del norte
+  // des-estanca el panel igual que editar el objetivo o cerrar un hito.
+  const relatedActivityISO = now ? relatedActivityISOForAnchor(goals, people, now) : null
+  const drift: NorteDrift | null = now ? computeNorteDrift(goals, now, relatedActivityISO) : null
 
   return (
     <section
