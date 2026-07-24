@@ -26,6 +26,9 @@ export interface ReaderBatch {
   threadId: string
   /** Nombre visible del hilo (persona o canal) — para atribuir a la persona. */
   threadName: string
+  /** Email del remitente si la plataforma lo expone (correo/Teams). Llave estable
+   *  para atribuir a la persona ANTES del match por nombre. Opcional. */
+  senderEmail?: string
   messages: ReaderMessage[]
 }
 

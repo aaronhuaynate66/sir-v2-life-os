@@ -54,10 +54,14 @@ export async function ingestEmailMessages(
 
   let ingested = 0
   for (const [key, g] of bySender) {
+    // Email del remitente para atribuir a la persona ANTES que por nombre. El
+    // primero que exista en el grupo (todos comparten remitente por senderKey).
+    const senderEmail = g.msgs.find((m) => m.fromEmail)?.fromEmail || ''
     const batch: ReaderBatch = {
       platform: 'email',
       threadId: `email:${key}`,
       threadName: g.name,
+      senderEmail,
       messages: g.msgs.map((m) => ({ author: m.from || g.name, text: messageText(m), ts: m.receivedAt })),
     }
     try {
