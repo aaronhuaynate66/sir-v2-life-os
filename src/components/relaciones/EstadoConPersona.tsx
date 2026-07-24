@@ -29,6 +29,9 @@ interface Props {
   moments: RelationshipMoment[]
   personCycles: PersonCycleEntry[]
   memories: Memory[]
+  /** ISO del último contacto real del sustrato (chat_messages) — para que la
+   *  recencia no salga solo de los person_logs (que quedan viejos entre imports). */
+  lastContactAt?: string | null
 }
 
 interface BriefingCache {
@@ -70,10 +73,10 @@ function overdueUrgencyText(insights: EstadoInsights): string | null {
   return title
 }
 
-export function EstadoConPersona({ personId, personName, personLogs, moments, personCycles, memories, embedded = false }: Props & { embedded?: boolean }) {
+export function EstadoConPersona({ personId, personName, personLogs, moments, personCycles, memories, lastContactAt = null, embedded = false }: Props & { embedded?: boolean }) {
   const insights = useMemo(
-    () => buildEstadoInsights({ personLogs, moments, personCycles, memories, now: new Date() }),
-    [personLogs, moments, personCycles, memories],
+    () => buildEstadoInsights({ personLogs, moments, personCycles, memories, now: new Date(), lastContactAt }),
+    [personLogs, moments, personCycles, memories, lastContactAt],
   )
 
   const [briefing, setBriefing] = useState<BriefingCache | null>(null)

@@ -7,7 +7,7 @@ import { Handshake, Plus, Loader2, Building2, User } from 'lucide-react'
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
 import type { Deal, DealStage, DealStatus, DealTier, DealImpactType } from '@/types'
-import { groupByStage, STAGE_LABEL, STAGE_ORDER, daysSinceUpdate } from '@/lib/deals/pipeline'
+import { groupByStage, STAGE_LABEL, STAGE_ORDER, daysSinceUpdate, isOpenDeal } from '@/lib/deals/pipeline'
 import { useRelationshipStore } from '@/stores'
 import { track, EVENTS } from '@/lib/analytics/track'
 
@@ -82,7 +82,9 @@ export default function OportunidadesPage() {
   }
 
   const groups = groupByStage(deals)
-  const open = deals.filter((d) => d.stage !== 'ganado' && d.stage !== 'perdido').length
+  // isOpenDeal excluye también status won/lost (stage y status son 2 selects
+  // independientes): un deal 'lost' en stage 'propuesta' ya no cuenta como abierto.
+  const open = deals.filter(isOpenDeal).length
 
   return (
     <AppShell>

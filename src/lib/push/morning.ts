@@ -56,15 +56,21 @@ export interface MorningInput {
 
 export interface MorningPush {
   title: string
-  /** Cuerpo para la NOTIFICACIÓN del navegador: capado a MAX_BODY (un push
-   *  calmo, no un volcado; el OS lo trunca visualmente de todas formas). */
+  /** Cuerpo para la NOTIFICACIÓN del navegador: las TOP MAX_PARTS_WEB señales,
+   *  capado a MAX_BODY chars (un push calmo, no un volcado; el OS lo trunca
+   *  visualmente de todas formas). */
   body: string
-  /** Cuerpo COMPLETO, sin capar. Para canales que no necesitan el corte (brief
-   *  de Telegram, límite 4096) → ahí se lee todo sin "…" a mitad de línea. */
+  /** Cuerpo para el CHAT (Telegram, límite 4096): hasta MAX_PARTS_FULL señales,
+   *  sin cortar a mitad de línea. El coach computa ~14 señales; el push del
+   *  navegador se queda calmo en pocas, pero en el chat se aprovechan más de las
+   *  que igual ya se calcularon (decisión de Aaron 2026-07-23). */
   bodyFull: string
 }
 
-const MAX_PARTS = 3
+/** Notificación del navegador: pocas, calmas. */
+const MAX_PARTS_WEB = 3
+/** Chat (Telegram): más señales, sin volcar TODO (el detalle vive en /panel). */
+const MAX_PARTS_FULL = 8
 const MAX_BODY = 220
 
 function birthdayPhrase(b: MorningBirthday): string {
@@ -73,98 +79,55 @@ function birthdayPhrase(b: MorningBirthday): string {
 }
 
 /** Arma el push de la mañana. Siempre devuelve algo (mensaje amable si no hay
- *  nada urgente) — el usuario eligió recibirlo a diario. */
+ *  nada urgente) — el usuario eligió recibirlo a diario.
+ *
+ *  El ORDEN de acumulación = prioridad. `body` toma las top MAX_PARTS_WEB;
+ *  `bodyFull` (chat) toma hasta MAX_PARTS_FULL. */
 export function buildMorningPush(input: MorningInput): MorningPush {
   const parts: string[] = []
-
-  // 0. SEMANA EN FOCO (mudanza / hitos ≤7d): al frente, es lo que importa esta
-  //    semana. Prioridad sobre cumpleaños porque el countdown se vive en tiempo real.
-  if (input.weekFocus) {
-    parts.push(input.weekFocus)
+  const add = (s: string | undefined | null) => {
+    if (s && parts.length < MAX_PARTS_FULL) parts.push(s)
   }
 
-  // 0.5. ALERTA DE METRICA DURA (peso Mundial, etc.): si esta fuera de rango
-  //    hoy, importa para el dia. Antes que cumpleanos porque es accionable.
-  if (input.metricAlert && parts.length < MAX_PARTS) {
-    parts.push(input.metricAlert)
-  }
+  // 0. SEMANA EN FOCO (mudanza / hitos ≤7d) y 0.5 MÉTRICA DURA fuera de rango:
+  //    lo urgente/time-sensitive del día, al frente.
+  add(input.weekFocus)
+  add(input.metricAlert)
 
-  // 1. Gente y fechas (lo más humano primero). Los aniversarios/fechas
-  //    especiales van ANTES que los cumpleaños: un aniversario HOY pesa más que
-  //    un cumple en 5 días (ya vienen filtrados a la ventana + ordenados).
-  for (const d of (input.importantDates ?? []).slice(0, 2)) {
-    if (parts.length >= MAX_PARTS) break
-    parts.push(d)
-  }
-  for (const b of (input.birthdays ?? []).slice(0, 2)) {
-    if (parts.length >= MAX_PARTS) break
-    parts.push(birthdayPhrase(b))
-  }
+  // 1. Aniversarios/fechas especiales: un aniversario HOY es time-critical (no se
+  //    puede celebrar tarde) → se mantiene sobre lo relacional-no-urgente.
+  for (const d of (input.importantDates ?? []).slice(0, 2)) add(d)
 
-  // 1.5 A quién cuidar hoy (vínculo más urgente de "Reconectar"). Va después de
-  //     las fechas (un cumple HOY es puntual) pero antes de tareas/foco: cuidar
-  //     un vínculo que se enfría es el corazón relacional de SIR, no un pendiente.
-  if (input.relationshipNudge && parts.length < MAX_PARTS) {
-    parts.push(input.relationshipNudge)
-  }
+  // 1.5 EL CORAZÓN RELACIONAL, subido de prioridad (decisión de Aaron 2026-07-23):
+  //     "a quién cuidar hoy" + "cerrar un lazo" + "buen momento × objetivo" ahora
+  //     van ANTES que los cumpleaños (un cumple en N días no debe tapar el cuidado
+  //     de un vínculo que se enfría hoy) → casi siempre entran al push.
+  add(input.relationshipNudge)
+  add(input.momentResolution)
+  add(input.goalContactTiming)
 
-  // 1.6 Cerrar un lazo: un tema abierto que el chat ya resolvió. Va junto a lo
-  //     relacional (es cuidar el vínculo cerrando algo que quedó colgado), antes
-  //     que tareas/foco. Es el "SIR no cruza bien la info" hecho proactivo.
-  if (input.momentResolution && parts.length < MAX_PARTS) {
-    parts.push(input.momentResolution)
-  }
-
-  // 1.7 Buen momento con una persona para AVANZAR un objetivo. Es el loop que
-  //     originó el reader (Dayana/Marlab): cruza el timing social con un objetivo
-  //     ligado a esa persona. Muy accionable y con ventana que se cierra → alto,
-  //     junto a lo relacional, antes de tareas/foco.
-  if (input.goalContactTiming && parts.length < MAX_PARTS) {
-    parts.push(input.goalContactTiming)
-  }
+  // 1.8 Cumpleaños próximos (después de lo relacional urgente).
+  for (const b of (input.birthdays ?? []).slice(0, 2)) add(birthdayPhrase(b))
 
   // 2. Tareas que vencen hoy.
   const due = input.dueTasks ?? []
-  if (due.length > 0 && parts.length < MAX_PARTS) {
-    if (due.length === 1) parts.push(`Hoy vence: ${due[0]}`)
-    else parts.push(`${due.length} tareas para hoy (${due[0]}…)`)
-  }
+  if (due.length === 1) add(`Hoy vence: ${due[0]}`)
+  else if (due.length > 1) add(`${due.length} tareas para hoy (${due[0]}…)`)
 
-  // 2.5 Hábito a retomar (solo cosas notables, ej. racha rota — el cron ya
-  //     filtra; a las 6am "te faltan hábitos" sería ruido obvio).
-  if (input.habitNudge && parts.length < MAX_PARTS) {
-    parts.push(input.habitNudge)
-  }
+  // 2.5 Hábito a retomar · 2.6 señal del cuerpo · 2.7 vigilancia de laboratorio.
+  add(input.habitNudge)
+  add(input.bodySignal)
+  add(input.healthWatch)
 
-  // 2.6 Señal del cuerpo (deuda de sueño) — cuidado, no reproche.
-  if (input.bodySignal && parts.length < MAX_PARTS) {
-    parts.push(input.bodySignal)
-  }
-
-  // 2.7 Vigilancia de laboratorio: un patrón de chequeos que YA se salió de rango
-  //     (el cron lo manda solo semanal). No es agudo, por eso va bajo — después
-  //     del cuerpo y antes del foco. Es "que no se quede al baúl", no una alarma.
-  if (input.healthWatch && parts.length < MAX_PARTS) {
-    parts.push(input.healthWatch)
-  }
-
-  // 2.8 OBJETIVO que necesita atención (norte estancado / meta en riesgo). SIR lo
-  //     COMPUTA pero lo dejaba en un panel; acá lo AVISA. Es accionable, así que
-  //     va antes del foco genérico (que solo nombra el ancla).
-  if (input.goalNudge && parts.length < MAX_PARTS) {
-    parts.push(input.goalNudge)
-  }
+  // 2.8 OBJETIVO que necesita atención (accionable, antes del foco genérico).
+  add(input.goalNudge)
 
   // 3. Foco del día. Se omite si ya hubo un nudge de objetivo (evita 2 líneas de
-  //    meta en el mismo push — el nudge accionable ya cubrió el frente objetivos).
-  if (input.focus && !input.goalNudge && parts.length < MAX_PARTS) {
-    parts.push(`Foco: ${input.focus}`)
-  }
+  //    meta en el mismo push).
+  if (input.focus && !input.goalNudge) add(`Foco: ${input.focus}`)
 
-  // 4. Una señal, solo si todavía hay espacio.
-  if (input.topSignal && parts.length < MAX_PARTS) {
-    parts.push(`Atención: ${input.topSignal}`)
-  }
+  // 4. Una señal más.
+  if (input.topSignal) add(`Atención: ${input.topSignal}`)
 
   if (parts.length === 0) {
     const calm = 'Hoy no hay nada urgente. Espacio para lo que elijas.'
@@ -172,6 +135,7 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   }
 
   const bodyFull = parts.join(' · ')
-  const body = bodyFull.length > MAX_BODY ? bodyFull.slice(0, MAX_BODY - 1).trimEnd() + '…' : bodyFull
+  const bodyShort = parts.slice(0, MAX_PARTS_WEB).join(' · ')
+  const body = bodyShort.length > MAX_BODY ? bodyShort.slice(0, MAX_BODY - 1).trimEnd() + '…' : bodyShort
   return { title: 'Tu día en SIR', body, bodyFull }
 }

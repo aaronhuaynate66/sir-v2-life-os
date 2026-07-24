@@ -36,6 +36,7 @@ interface DataBundle {
   moments: RelationshipMoment[]
   personCycles: PersonCycleEntry[]
   memories: Memory[]
+  lastContactAt: string | null
 }
 
 function err(status: number, error: string, detail?: string) {
@@ -49,7 +50,7 @@ async function loadBundle(supabase: Supabase, userId: string, personId: string):
 
   // Logs recientes: últimos 60 días alcanza para la síntesis.
   const cutoff = new Date(Date.now() - 60 * 86_400_000).toISOString()
-  const [logsRes, momentsRes, cyclesRes, memoriesRes] = await Promise.all([
+  const [logsRes, momentsRes, cyclesRes, memoriesRes, chatRes] = await Promise.all([
     supabase.from('person_logs').select('id, user_id, person_id, kind, value, note, logged_at, created_at')
       .eq('user_id', userId).eq('person_id', personId).gte('logged_at', cutoff)
       .order('logged_at', { ascending: false }).limit(50),
@@ -64,7 +65,12 @@ async function loadBundle(supabase: Supabase, userId: string, personId: string):
       .eq('user_id', userId).eq('person_id', personId)
       .eq('is_private', false)
       .order('occurred_at', { ascending: false }).limit(20),
+    // Contacto real más reciente del sustrato → recencia correcta (ver insights.ts).
+    supabase.from('chat_messages').select('sent_at')
+      .eq('user_id', userId).eq('person_id', personId)
+      .order('sent_at', { ascending: false }).limit(1),
   ])
+  const lastContactAt = ((chatRes.data ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null
 
   const personLogs = ((logsRes.data ?? []) as Array<{ id: string; user_id: string; person_id: string; kind: string; value: number; note: string | null; logged_at: string; created_at: string }>)
     .map((r) => ({
@@ -81,7 +87,7 @@ async function loadBundle(supabase: Supabase, userId: string, personId: string):
       importance: 5, emotionalContext: 'neutral',
     })) as unknown as Memory[]
 
-  return { personName: person.name, personLogs, moments, personCycles, memories }
+  return { personName: person.name, personLogs, moments, personCycles, memories, lastContactAt }
 }
 
 function computeInputHash(bundle: DataBundle): string {
@@ -228,7 +234,7 @@ export async function POST(req: NextRequest) {
   const insights = buildEstadoInsights({
     personLogs: bundle.personLogs, moments: bundle.moments,
     personCycles: bundle.personCycles, memories: bundle.memories,
-    now: new Date(),
+    now: new Date(), lastContactAt: bundle.lastContactAt,
   })
   const inputHash = computeInputHash(bundle)
 

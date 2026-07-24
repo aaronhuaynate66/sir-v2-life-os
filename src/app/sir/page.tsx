@@ -70,6 +70,9 @@ interface Turn {
   suggestionId?: string
   /** Feedback explícito del usuario sobre la respuesta (👍/👎), persistido. */
   feedback?: 'up' | 'down'
+  /** Id de la fila en chat_feedback (Ola 2): el turno completo + rating, para
+   *  atar luego la corrección del 👎 a la misma respuesta. */
+  feedbackId?: string
   sources?: { people: string[]; memories: number; receipts?: SirReceipt[] }
   action?: ProposedAction
   actionState?: 'pending' | 'done' | 'discarded'
@@ -323,6 +326,33 @@ export default function SirChatPage() {
     }
   }
 
+  // Ola 2 — aprender de tus correcciones: al dar 👎, SIR pide "¿qué esperabas?"
+  // y guarda tu respuesta como una PREFERENCIA (learnings kind='preference') que
+  // se inyecta en el contexto de todas las próximas charlas. Es el "premio por
+  // respuesta acertada" al revés: le enseñas qué NO hacer / qué preferís.
+  const [correctingIdx, setCorrectingIdx] = useState<number | null>(null)
+  const [correctionDraft, setCorrectionDraft] = useState('')
+  async function saveCorrection(idx: number) {
+    const text = correctionDraft.trim()
+    if (text.length < 3) { toast.error('Escribe qué esperabas'); return }
+    try {
+      const res = await fetch('/api/learnings', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, kind: 'preference', confidence: 'high' }),
+      })
+      if (!res.ok) { toast.error('No se pudo guardar la preferencia'); return }
+      toast.success('Anotado como preferencia', { description: 'Lo tendré presente de ahora en más.' })
+      track(EVENTS.brainFeedbackGiven, { source: 'sir_chat', value: 'correction' })
+      // Ola 2: atar la corrección a la fila de chat_feedback del 👎 (misma respuesta).
+      const fbId = turns[idx]?.feedbackId
+      if (fbId) void fetch('/api/chat-feedback', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: fbId, correction: text }),
+      }).catch(() => {})
+      setCorrectingIdx(null); setCorrectionDraft('')
+    } catch { toast.error('Error de red') }
+  }
+
   // 👍/👎 sobre una respuesta de SIR → feedback explícito persistido en el ledger.
   // Si el turno ya tiene una sugerencia (acción propuesta), la actualiza; si no,
   // crea una fila 'answer' con el pulgar. La señal más barata y de más volumen.
@@ -332,6 +362,19 @@ export default function SirChatPage() {
     const next = tu.feedback === feedback ? undefined : feedback // toggle
     setTurns((t) => t.map((x, i) => (i === idx ? { ...x, feedback: next } : x)))
     track(EVENTS.brainFeedbackGiven, { source: 'sir_chat', value: next ?? 'cleared' })
+    // Ola 2: captura ATRIBUIBLE del turno (pregunta + respuesta + contexto usado)
+    // en chat_feedback → sustrato del harness de eval y del loop de aprendizaje.
+    if (next) {
+      const q = idx > 0 && turns[idx - 1]?.role === 'user' ? turns[idx - 1].text : undefined
+      void fetch('/api/chat-feedback', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, answer: tu.text, rating: next, context: tu.sources ?? null }),
+      }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+        if (d?.id) setTurns((t) => t.map((x, i) => (i === idx ? { ...x, feedbackId: d.id as string } : x)))
+      }).catch(() => {})
+    }
+    if (next === 'down') { setCorrectingIdx(idx); setCorrectionDraft('') }
+    else if (correctingIdx === idx) setCorrectingIdx(null)
     if (tu.suggestionId) {
       void fetch(`/api/suggestions/${tu.suggestionId}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -876,22 +919,38 @@ export default function SirChatPage() {
                   </div>
                 )}
                 {t.role === 'sir' && t.text && !t.clarifying && (
-                  <div className="mt-2 flex items-center gap-1">
-                    <button
-                      onClick={() => rateTurn(i, 'up')}
-                      aria-label="Me sirve"
-                      className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'up' ? 'text-ok' : 'text-muted-foreground/50 hover:text-foreground'}`}
-                    >
-                      <ThumbsUp size={13} />
-                    </button>
-                    <button
-                      onClick={() => rateTurn(i, 'down')}
-                      aria-label="No me sirve"
-                      className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'down' ? 'text-bad' : 'text-muted-foreground/50 hover:text-foreground'}`}
-                    >
-                      <ThumbsDown size={13} />
-                    </button>
-                  </div>
+                  <>
+                    <div className="mt-2 flex items-center gap-1">
+                      <button
+                        onClick={() => rateTurn(i, 'up')}
+                        aria-label="Me sirve"
+                        className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'up' ? 'text-ok' : 'text-muted-foreground/50 hover:text-foreground'}`}
+                      >
+                        <ThumbsUp size={13} />
+                      </button>
+                      <button
+                        onClick={() => rateTurn(i, 'down')}
+                        aria-label="No me sirve"
+                        className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'down' ? 'text-bad' : 'text-muted-foreground/50 hover:text-foreground'}`}
+                      >
+                        <ThumbsDown size={13} />
+                      </button>
+                    </div>
+                    {correctingIdx === i && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          autoFocus
+                          value={correctionDraft}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCorrectionDraft(e.target.value)}
+                          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === 'Enter') void saveCorrection(i) }}
+                          placeholder="¿Qué esperabas? Lo aprendo como preferencia"
+                          className="h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        <button type="button" onClick={() => saveCorrection(i)} className="h-9 shrink-0 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90">Enseñar</button>
+                        <button type="button" onClick={() => setCorrectingIdx(null)} aria-label="Cerrar" className="h-9 shrink-0 rounded-md px-2 text-xs text-muted-foreground/60 hover:text-foreground">✕</button>
+                      </div>
+                    )}
+                  </>
                 )}
                 {t.at && (
                   <div className={`mt-1.5 flex items-center gap-1 text-[10px] tabular-nums text-muted-foreground/50 ${t.role === 'user' ? 'justify-end' : 'justify-start'}`}>

@@ -10,8 +10,10 @@ import { buildEveningHabitsPush, type EveningHabit } from '@/lib/habits/eveningP
 import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard } from '@/lib/telegram/client'
 import { formatEveningBriefForChat } from '@/lib/telegram/eveningBrief'
 import { pendingDailyHabits, habitCallbackData } from '@/lib/habits/checkinButtons'
-import { buildWhoIsWhoQuestion } from '@/lib/social-reader/whoIsWho'
+import { buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
+import { relacionesUrl } from '@/lib/app-url'
 import { limaDayString } from '@/lib/habits/streak'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -120,19 +122,26 @@ export async function GET(req: NextRequest) {
         try {
           const { data: un } = await admin
             .from('unmatched_social_activity')
-            .select('id, handle')
+            .select('id, handle, name')
             .eq('user_id', uid).eq('platform', 'instagram').eq('kind', 'available')
             .is('asked_at', null).not('handle', 'is', null)
-            .order('observed_at', { ascending: false }).limit(8)
-          const rows = (un ?? []) as Array<{ id: string; handle: string }>
+            .order('observed_at', { ascending: false }).limit(10)
+          const rows = (un ?? []) as Array<{ id: string; handle: string; name: string | null }>
           if (rows.length > 0) {
-            const tg = await sendTelegramMessage(Number(tgChat), buildWhoIsWhoQuestion(rows.map((r) => r.handle)))
+            // Teclado: [✕ @handle] por cuenta (descartar, seguro) + "abrir en la app"
+            // para nombrar viendo la cara. Reemplaza el protocolo de texto confuso.
+            const { text, keyboard } = buildWhoIsWhoKeyboard(rows, relacionesUrl())
+            const tg = await sendTelegramKeyboard(Number(tgChat), text, keyboard)
             if (tg.ok) await admin.from('unmatched_social_activity').update({ asked_at: new Date().toISOString() }).in('id', rows.map((r) => r.id))
           }
         } catch { /* fail-soft */ }
       }
       results.push({ user: uid.slice(0, 8), sent: push ? 1 : 0 })
-    } catch {
+    } catch (e) {
+      // Antes se tragaba en silencio: un bug lógico rompía el brief nocturno y el
+      // push degradaba a vacío sin traza (mismo fix que morning-push). Fail-soft
+      // por-usuario, pero AHORA con telemetría.
+      reportApiError(e, { route: 'cron/evening-push', user: uid.slice(0, 8) })
       results.push({ user: uid.slice(0, 8), sent: 0 })
     }
   }

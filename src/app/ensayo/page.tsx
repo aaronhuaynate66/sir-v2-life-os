@@ -188,9 +188,15 @@ function RehearseView({ result, ethics, forName, hadContext, objective }: { resu
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ personName: forName, objective, read: result.read, opener: result.opener, actions: result.actions }),
       })
-      const j = (await r.json()) as { critique?: RehearseCritique; detail?: string; error?: string }
+      // En 502/504 el body es HTML → r.json() lanzaba y mostraba "Red caída"
+      // aunque fuera un timeout del modelo. text()+parse da el mensaje real.
+      const raw = await r.text()
+      let j: { critique?: RehearseCritique; detail?: string; error?: string } = {}
+      try { j = raw ? JSON.parse(raw) : {} } catch { /* no-JSON (timeout/gateway) */ }
       if (r.ok && j.critique) setCritique(j.critique)
-      else setCritErr(j.detail || j.error || 'No se pudo generar la crítica')
+      else setCritErr(j.detail || j.error || (r.status === 504 || r.status === 502
+        ? 'Tardó demasiado y el servidor cortó. Reinténtalo.'
+        : 'No se pudo generar la crítica'))
     } catch { setCritErr('Red caída, reinténtalo') } finally { setCritBusy(false) }
   }
   return (

@@ -57,6 +57,15 @@ const config: Config = {
           soft: 'rgba(45, 212, 167, 0.12)',
           foreground: '#7fe9cf',
         },
+        // Alias de `ok` (mismo verde de éxito). ~19 usos (bg-good/text-good/
+        // good-soft en capturas, reader, momentos, etc.) apuntaban a una clave
+        // inexistente → salían SIN color (verde de éxito invisible). Aliasar acá
+        // los revive sin tocar 9 archivos.
+        good: {
+          DEFAULT: '#2dd4a7',
+          soft: 'rgba(45, 212, 167, 0.12)',
+          foreground: '#7fe9cf',
+        },
         warn: {
           DEFAULT: '#e0a93b',
           soft: 'rgba(224, 169, 59, 0.12)',

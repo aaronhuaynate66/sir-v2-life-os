@@ -16,7 +16,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { complete } from '@/lib/llm'
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { avatarCropRect, type DetectBox } from '@/lib/avatars/cropRect'
+import { avatarCropRect } from '@/lib/avatars/cropRect'
+import { parseFaceAssessment, scoreFaceCandidate, MIN_FACE_SCORE, type FaceAssessment } from '@/lib/avatars/faceScore'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -26,8 +27,17 @@ const AVATAR_BUCKET = 'person-avatars'
 const OUT = 400
 const MAX_CANDIDATES = 5
 
+// Pide una CARA (no un recuadro de "foto de perfil"), y que la evalúe: de frente,
+// nítida y de UNA sola persona. Así el auto-avatar prioriza caras reconocibles y
+// descarta paisajes/cuerpos enteros donde la cara sale diminuta.
 const DETECT_PROMPT =
-  'Esta es una captura de un perfil (Instagram/LinkedIn) o una foto. Ubica EXCLUSIVAMENTE la FOTO DE PERFIL o la CARA principal de la persona dueña del perfil: el avatar circular/cuadrado junto al nombre/@handle, o el rostro más prominente. NO elijas caras del feed, de historias, de fotos sugeridas ni de otras personas. Devuelve SOLO este JSON con la caja normalizada 0..1 (origen arriba-izquierda), un poco amplia para incluir toda la cabeza: {"found": true|false, "x": <izq>, "y": <arriba>, "w": <ancho>, "h": <alto>}. Si no ves una cara/foto de perfil clara, found:false.'
+  'Esta imagen es una captura de un perfil (Instagram/LinkedIn) o una foto. Ubica la CARA de la persona dueña del perfil (la foto de perfil junto al nombre/@handle, o el rostro principal). Ignora caras del feed, de historias, de fotos sugeridas o de otras personas. ' +
+  'Devuelve SOLO este JSON, sin texto extra: {"found": true|false, "x": <izq>, "y": <arriba>, "w": <ancho>, "h": <alto>, "frontal": true|false, "clarity": "clear"|"partial"|"none", "faceCount": <entero>}. ' +
+  'La caja (x,y,w,h) está normalizada 0..1 (origen arriba-izquierda) y encierra la CABEZA. ' +
+  '"frontal": true si la cara mira aprox. a la cámara (no de perfil ni de espaldas). ' +
+  '"clarity": "clear" si la cara es grande y nítida (reconocible); "partial" si es chica, lejana, borrosa o tapada; "none" si no hay cara humana clara (paisaje, cuerpo entero lejano, logo, texto). ' +
+  '"faceCount": cuántas caras humanas se ven en total. ' +
+  'Si no hay una cara humana clara, found:false y clarity:"none".'
 
 // El mediaType DEBE salir de los bytes reales (sharp), no de la extensión: en el
 // storage hay archivos .webp que en verdad son PNG — un mediaType que no coincide
@@ -84,6 +94,11 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // Evaluamos TODAS las candidatas y nos quedamos con la MEJOR cara de frente
+  // (antes: la primera que diera cualquier caja → salían paisajes/cuerpos
+  // enteros). Si ninguna llega al mínimo, NO recortamos: mejor sin avatar que
+  // una referencia sin cara (rompe el match por cara).
+  let best: { buf: Buffer; W: number; H: number; box: NonNullable<FaceAssessment['box']>; score: number; source: string } | null = null
   for (const cand of candidates) {
     try {
       const { data: blob, error: dlErr } = await supabase.storage.from(cand.bucket).download(cand.path)
@@ -94,36 +109,56 @@ export async function POST(req: NextRequest) {
       const H = meta.height ?? 0
       if (!W || !H) continue
 
-      const box = await detectBox(buf, mediaTypeFromFormat(meta.format), supabase, userId)
-      if (!box) continue
-
-      const { left, top, side } = avatarCropRect(box, W, H)
-      const cropped = await sharp(buf)
-        .extract({ left, top, width: side, height: side })
-        .resize(OUT, OUT, { fit: 'cover' })
-        .jpeg({ quality: 88 })
-        .toBuffer()
-
-      const avatarPath = `${userId}/${personId}.jpg`
-      const up = await supabase.storage.from(AVATAR_BUCKET).upload(avatarPath, cropped, { contentType: 'image/jpeg', upsert: true })
-      if (up.error) continue
-
-      await supabase.from('person_avatars').upsert(
-        { user_id: userId, person_id: personId, storage_path: avatarPath, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id,person_id' },
-      )
-      const { data: signed } = await supabase.storage.from(AVATAR_BUCKET).createSignedUrl(avatarPath, 3600)
-      return NextResponse.json({ ok: true, url: signed?.signedUrl ?? null, source: cand.captureType })
+      const assess = await detectFace(buf, mediaTypeFromFormat(meta.format), supabase, userId)
+      const score = scoreFaceCandidate(assess)
+      if (score >= MIN_FACE_SCORE && assess.box && (!best || score > best.score)) {
+        best = { buf, W, H, box: assess.box, score, source: cand.captureType }
+      }
     } catch (e) {
       reportApiError(e, { route: 'avatars/auto', bucket: cand.bucket })
       // seguimos con la siguiente candidata
     }
   }
 
-  return NextResponse.json(
-    { error: 'No detecté una cara', detail: 'Probé tus capturas pero no pude ubicar una foto de perfil clara. Sube una foto desde el botón de cámara.' },
-    { status: 422 },
-  )
+  if (!best) {
+    return NextResponse.json(
+      { error: 'No encontré una cara clara', detail: 'Tus capturas de esta persona no tienen una foto de frente reconocible (salen de lejos, de perfil o sin cara). Sube una foto desde el botón de cámara.' },
+      { status: 422 },
+    )
+  }
+
+  try {
+    const { left, top, side } = avatarCropRect(best.box, best.W, best.H)
+    const cropped = await sharp(best.buf)
+      .extract({ left, top, width: side, height: side })
+      .resize(OUT, OUT, { fit: 'cover' })
+      .jpeg({ quality: 88 })
+      .toBuffer()
+
+    const avatarPath = `${userId}/${personId}.jpg`
+    const up = await supabase.storage.from(AVATAR_BUCKET).upload(avatarPath, cropped, { contentType: 'image/jpeg', upsert: true })
+    if (up.error) {
+      return NextResponse.json({ error: 'No se pudo subir el avatar', detail: up.error.message.slice(0, 160) }, { status: 500 })
+    }
+
+    // El .upsert() de PostgREST NO lanza: devuelve el error en `.error`. Si no
+    // lo chequeamos, un fallo de guardado (ej. el bug histórico de tipo de
+    // person_id) pasaba desapercibido y respondíamos ok:true con la cara subida
+    // al storage pero SIN la fila que la mapea → el avatar nunca se mostraba.
+    const ins = await supabase.from('person_avatars').upsert(
+      { user_id: userId, person_id: personId, storage_path: avatarPath, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,person_id' },
+    )
+    if (ins.error) {
+      reportApiError(ins.error, { route: 'avatars/auto', step: 'persist', personId })
+      return NextResponse.json({ error: 'No se pudo guardar el avatar', detail: ins.error.message.slice(0, 160) }, { status: 500 })
+    }
+    const { data: signed } = await supabase.storage.from(AVATAR_BUCKET).createSignedUrl(avatarPath, 3600)
+    return NextResponse.json({ ok: true, url: signed?.signedUrl ?? null, source: best.source }, { status: 200 })
+  } catch (e) {
+    reportApiError(e, { route: 'avatars/auto', step: 'crop' })
+    return NextResponse.json({ error: 'No se pudo generar el avatar' }, { status: 500 })
+  }
 }
 
 /** Prioridad de captura: instagram (foto de perfil nítida) > linkedin > resto. */
@@ -133,19 +168,22 @@ function rank(captureType: string): number {
   return 2
 }
 
-/** Visión: ubica la caja de la foto de perfil/cara. null si no hay o falla. */
-async function detectBox(
+/** Visión: ubica la cara y evalúa su calidad (de frente, nítida, una persona).
+ *  Tier CAPAZ: juzgar frontalidad/nitidez es lo que decide la calidad del avatar
+ *  y el barato no distingue bien. Evaluación "sin cara" si no hay o falla. */
+async function detectFace(
   buf: Buffer,
   mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
-): Promise<DetectBox | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null
+): Promise<FaceAssessment> {
+  const none: FaceAssessment = { found: false, box: null, frontal: false, clarity: 'none', faceCount: 0 }
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.OPENROUTER_API_KEY) return none
   try {
     const res = await complete(
       {
-        task: 'avatars_detect', tier: 'cheap', sensitivity: 'third_party', maxTokens: 150,
-        system: 'Eres un detector de fotos de perfil. Devuelve SOLO JSON, sin texto extra.',
+        task: 'avatars_detect', tier: 'capable', sensitivity: 'third_party', maxTokens: 150,
+        system: 'Eres un detector de caras para avatares. Devuelve SOLO JSON, sin texto extra.',
         messages: [{
           role: 'user',
           content: [
@@ -156,14 +194,8 @@ async function detectBox(
       },
       { supabase, userId },
     )
-    const raw = res.text
-    const s = raw.indexOf('{'); const e = raw.lastIndexOf('}')
-    if (s < 0 || e <= s) return null
-    const p = JSON.parse(raw.slice(s, e + 1)) as { found?: boolean; x?: number; y?: number; w?: number; h?: number }
-    if (!p.found || typeof p.x !== 'number' || typeof p.y !== 'number' || typeof p.w !== 'number' || typeof p.h !== 'number') return null
-    const cl = (n: number) => Math.max(0, Math.min(1, n))
-    return { x: cl(p.x), y: cl(p.y), w: cl(p.w), h: cl(p.h) }
+    return parseFaceAssessment(res.text)
   } catch {
-    return null
+    return none
   }
 }

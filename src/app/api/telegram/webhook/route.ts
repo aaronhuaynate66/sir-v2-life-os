@@ -35,7 +35,8 @@ import { trackServer } from '@/lib/analytics/serverTrack'
 import { extractStoryVision } from '@/lib/social-reader/storyVision'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, type PersonLite } from '@/lib/social-reader/match'
-import { parseWhoIsWhoReply } from '@/lib/social-reader/whoIsWho'
+import { parseWhoIsWhoReply, buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
+import { relacionesUrl } from '@/lib/app-url'
 import type { LlmImageMediaType } from '@/lib/llm/types'
 
 export const runtime = 'nodejs'
@@ -162,6 +163,30 @@ async function handleHabitTap(
   }
 }
 
+/** Tap "✕ No es contacto" del ¿quién es quién?: descarta la cuenta (reversible)
+ *  y rearma el mensaje con las que quedan de la tanda. */
+async function handleWhoIsWhoDismiss(
+  supabase: SupabaseClient, userId: string, chatId: number, messageId: number, callbackId: string, unmatchedId: string,
+): Promise<void> {
+  await supabase.from('unmatched_social_activity').delete().eq('user_id', userId).eq('id', unmatchedId)
+  await answerCallbackQuery(callbackId, 'Descartado ✕')
+  // Las que quedan de esta tanda (preguntadas hace poco, aún presentes).
+  const since = new Date(Date.now() - 26 * 3_600_000).toISOString()
+  const { data } = await supabase
+    .from('unmatched_social_activity')
+    .select('id, handle, name')
+    .eq('user_id', userId).eq('platform', 'instagram').eq('kind', 'available')
+    .not('handle', 'is', null).gte('asked_at', since)
+    .order('observed_at', { ascending: false }).limit(10)
+  const rows = ((data ?? []) as Array<{ id: string; handle: string; name: string | null }>)
+  if (rows.length === 0) {
+    await editTelegramKeyboard(chatId, messageId, '✓ Listo. Para nombrar a las que sí son tu gente, ábrelas en la app (ahí ves su cara).', [])
+    return
+  }
+  const { text, keyboard } = buildWhoIsWhoKeyboard(rows, relacionesUrl())
+  await editTelegramKeyboard(chatId, messageId, text, keyboard)
+}
+
 /** user_id dueño de la data: env explícito o único profile (patrón reader). */
 async function resolveOwnerId(admin: SupabaseClient): Promise<string | null> {
   const explicit = process.env.TELEGRAM_OWNER_USER_ID?.trim()
@@ -206,7 +231,7 @@ async function resolveWhoIsWho(
   const byHandle = new Map<string, typeof pending>()
   for (const p of pending) { const a = byHandle.get(p.handle) ?? []; a.push(p); byHandle.set(p.handle, a) }
 
-  const assigned: string[] = []; const dismissed: string[] = []; const notFound: string[] = []
+  const assigned: string[] = []; const created: string[] = []; const dismissed: string[] = []; const failed: string[] = []
   const sinceIso = new Date(Date.now() - 6 * 3_600_000).toISOString()
   for (const { handle, name } of parsed) {
     const rows = byHandle.get(handle)
@@ -216,24 +241,47 @@ async function resolveWhoIsWho(
       dismissed.push(`@${handle}`)
       continue
     }
+    // Matchear un contacto existente por nombre, o CREARLO si no está (Aaron:
+    // "los que no hay hay que crearlos"). En ambos casos queda con el handle.
     const m = matchPerson(index, { platform: 'instagram', name })
-    if (!m) { notFound.push(`${name} (@${handle})`); continue }
-    await supabase.from('people').update({ instagram_handle: handle }).eq('id', m.person.id)
+    let personId: string
+    let personName: string
+    if (m) {
+      personId = m.person.id
+      personName = m.person.name
+      await supabase.from('people').update({ instagram_handle: handle }).eq('id', personId)
+      assigned.push(`@${handle} → ${personName}`)
+    } else {
+      const pid = crypto.randomUUID()
+      const slug = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || null
+      const { error: insErr } = await supabase.from('people').insert({
+        id: pid, user_id: ownerId, name: name.slice(0, 120), slug,
+        relationship: 'acquaintance', category: 'network',
+        importance_score: 5, energy_impact: 'neutral', trust_level: 5,
+        instagram_handle: handle, notes: 'Creado desde ¿quién es quién? (Telegram)',
+      })
+      if (insErr) { failed.push(`${name} (@${handle})`); continue }
+      personId = pid
+      personName = name.slice(0, 120)
+      created.push(`@${handle} → ${personName}`)
+    }
+    // Promover las señales guardadas de ese handle a contact_activity (dedup 6h).
     for (const r of rows) {
       const { data: rec } = await supabase.from('contact_activity').select('id')
-        .eq('user_id', ownerId).eq('person_id', m.person.id).eq('kind', r.kind).gte('observed_at', sinceIso).limit(1)
+        .eq('user_id', ownerId).eq('person_id', personId).eq('kind', r.kind).gte('observed_at', sinceIso).limit(1)
       if (!rec || rec.length === 0) {
-        await supabase.from('contact_activity').insert({ user_id: ownerId, person_id: m.person.id, kind: r.kind, detail: r.detail, source: 'instagram', observed_at: r.observed_at })
+        await supabase.from('contact_activity').insert({ user_id: ownerId, person_id: personId, kind: r.kind, detail: r.detail, source: 'instagram', observed_at: r.observed_at })
       }
     }
     await supabase.from('unmatched_social_activity').delete().eq('user_id', ownerId).eq('handle', handle)
-    assigned.push(`@${handle} → ${m.person.name}`)
   }
 
   const parts: string[] = []
-  if (assigned.length) parts.push(`✅ Asignados:\n${assigned.map((a) => `· ${a}`).join('\n')}`)
+  if (assigned.length) parts.push(`✅ Enlazados:\n${assigned.map((a) => `· ${a}`).join('\n')}`)
+  if (created.length) parts.push(`🆕 Creados y enlazados:\n${created.map((a) => `· ${a}`).join('\n')}`)
   if (dismissed.length) parts.push(`🗑️ Descartados: ${dismissed.join(', ')}`)
-  if (notFound.length) parts.push(`🤔 No encontré en tu red: ${notFound.join(', ')}. Si querés, agregalos primero y te lo anoto.`)
+  if (failed.length) parts.push(`⚠️ No pude guardar: ${failed.join(', ')}. Reinténtalo en un momento.`)
   const reply = parts.length ? `${parts.join('\n\n')}\n\nDe ahora en más los reconozco solos en Instagram.` : 'Anotado.'
   return { handled: true, reply }
 }
@@ -271,6 +319,15 @@ export async function POST(req: NextRequest) {
       const habitId = parseHabitCallback(cb.data)
       if (habitId) {
         await handleHabitTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, habitId)
+        return
+      }
+
+      // Tap "✕ No es contacto" del ¿quién es quién?: "wq|<unmatchedId>" → descartar
+      // (seguro/reversible). Nombrar-con-cara se hace en la app (botón url).
+      if (cb.data.startsWith('wq|')) {
+        const unmatchedId = cb.data.slice(3)
+        if (unmatchedId) { await handleWhoIsWhoDismiss(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, unmatchedId) }
+        else await answerCallbackQuery(cb.callbackId)
         return
       }
 

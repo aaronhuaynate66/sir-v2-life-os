@@ -29,6 +29,14 @@ describe('buildDailySignals', () => {
     const [d] = buildDailySignals([M('2026-07-12T09:00:00Z', 'other', 'estoy harta, déjame en paz')])
     expect(d.friction).toBeGreaterThan(0)
   })
+  it('calcula afecto expresado en el día de la persona', () => {
+    const [d] = buildDailySignals([
+      M('2026-07-14T09:00:00Z', 'other', 'te amo mi amor ❤️'),
+      M('2026-07-14T09:05:00Z', 'other', 'te extraño, cuídate'),
+    ])
+    expect(d.affection).toBeGreaterThan(0)
+    expect(d.positivityRatio).toBeGreaterThan(1)
+  })
   it('ordena por fecha y separa por día', () => {
     const out = buildDailySignals([
       M('2026-07-13T09:00:00Z', 'other', 'hola'),

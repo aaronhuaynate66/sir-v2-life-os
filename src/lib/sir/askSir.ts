@@ -40,11 +40,13 @@ import { resolveModel } from '@/lib/sir/model'
 import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
 import { renderRecallBlock, shouldPersistExchange, type RecallHit } from '@/lib/sir/recall'
 import { renderLearningsBlock, rowToLearning, type LearningRow } from '@/lib/learnings/recall'
-import { todayLimaKey } from '@/lib/dates/limaDay'
+import { todayLimaKey, limaDayKey } from '@/lib/dates/limaDay'
+import { computeMissingHealthData, renderMissingDataBlock, SLEEP_TYPE, type Reading } from '@/lib/health/missingData'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
 import type { Person, Goal, Memory } from '@/types'
+import { deVoseo } from '@/lib/text/deVoseo'
 
 const MAX_PEOPLE = 5
 const MAX_MEM_PER_PERSON = 12
@@ -178,7 +180,14 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     const { data: matches } = await supabase.rpc('match_memories', {
       query_embedding: toPgVector(questionEmbedding),
       match_count: 10,
-      similarity_threshold: 0.15,
+      // Umbral afinado con MEDICIÓN real: las memorias claramente relevantes
+      // (ej. sobre Diana) puntúan 0.34–0.52 con text-embedding-3-small. 0.15 (el
+      // viejo) era casi ruido; 0.35 cortaba relevantes de borde (0.34); 0.30 es
+      // el punto justo: retiene lo relevante y descarta lo semi-random.
+      similarity_threshold: 0.3,
+      // Explícito (mig 0162): el RPC filtraba por auth.uid(), null bajo
+      // service-role → recall CIEGO por Telegram/crons. Pasar el userId lo arregla.
+      p_user_id: userId,
     })
     for (const r of ((matches as Record<string, unknown>[]) ?? [])) {
       const pid = (r.person_id as string | null) ?? null
@@ -190,7 +199,11 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       })
     }
   } catch (e) {
-    reportApiError(e)
+    // Recall degradado: si esto falla, SIR queda CIEGO a su memoria larga (le
+    // pasó jul/26 con la cuota de OpenAI agotada y nadie se enteró en semanas).
+    // Tag distintivo para alertar/filtrar en Sentry. El chat sigue (fail-open)
+    // pero con menos contexto — el prompt ya lo obliga a decir "no tengo".
+    reportApiError(e, { route: 'askSir:recall', signal: 'RECALL_DEGRADED' })
   }
 
   // 3b. C3 — RAG cross-session: intercambios PASADOS con SIR parecidos a esta
@@ -202,6 +215,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
         query_embedding: toPgVector(questionEmbedding),
         match_count: 5,
         similarity_threshold: 0.2,
+        p_user_id: userId, // mig 0162: funciona bajo service-role (Telegram/crons)
       })
       const hits: RecallHit[] = ((convs as Record<string, unknown>[]) ?? []).map((c) => ({
         question: (c.question as string) ?? '',
@@ -225,6 +239,27 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       learningsBlock = renderLearningsBlock((lrows as LearningRow[]).map(rowToLearning))
     }
   } catch { /* tabla 0140 no aplicada → sin lecciones */ }
+
+  // 3d. Recordatorio de data faltante: de lo que Aaron sube siempre (báscula,
+  //     sueño, FC/VFC del día), ¿qué faltó en su última subida? Para que SIR se lo
+  //     recuerde proactivo en el chat, no solo en la tarjeta de /salud. Fail-open.
+  let missingDataBlock = ''
+  try {
+    const todayLima = todayLimaKey()
+    const cutoffISO = new Date(Date.now() - 20 * 86_400_000).toISOString()
+    const [{ data: hmRows }, { data: slRows }] = await Promise.all([
+      supabase.from('health_metrics').select('type, measured_at').eq('user_id', userId).gte('measured_at', cutoffISO).limit(2000),
+      supabase.from('sleep_records').select('date').eq('user_id', userId).gte('date', cutoffISO.slice(0, 10)).limit(60),
+    ])
+    const readings: Reading[] = [
+      ...((hmRows as Array<{ type: string; measured_at: string }> | null) ?? [])
+        .map((r) => ({ type: r.type, day: limaDayKey(r.measured_at) }))
+        .filter((r): r is Reading => !!r.day),
+      ...((slRows as Array<{ date: string }> | null) ?? []).map((r) => ({ type: SLEEP_TYPE, day: r.date })),
+    ]
+    const { missing } = computeMissingHealthData(readings, todayLima)
+    missingDataBlock = renderMissingDataBlock(missing, todayLima)
+  } catch { /* sin data / tabla ausente → sin recordatorio */ }
 
   // 4. Objetivos activos → mapa personId → título.
   const { data: goalRows } = await supabase
@@ -559,6 +594,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     dayBlock +
     (learningsBlock ? `\n\n${learningsBlock}` : '') +
     (recallBlock ? `\n\n${recallBlock}` : '') +
+    (missingDataBlock ? `\n\n${missingDataBlock}` : '') +
     (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 
   // Resolver el nombre que proponga una acción → personId.
@@ -582,7 +618,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     content: h.text,
   }))
 
-  const { answer, tool } = await runSirChat({
+  const { answer: rawAnswer, tool } = await runSirChat({
     model,
     system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE + (socratic ? SOCRATIC_RULE : '') + (chatStyle ? CHAT_STYLE_RULE : ''),
     history: chatHistory,
@@ -590,6 +626,9 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     anthropicKey: model.provider === 'anthropic' ? providerKey : undefined,
     openrouterKey: model.provider === 'openrouter' ? providerKey : undefined,
   })
+  // Scrub DETERMINÍSTICO de voseo: el prompt lo prohíbe pero el modelo se resbala
+  // (el harness cazó "querés"). Esto garantiza tuteo peruano en la salida.
+  let answer = deVoseo(rawAnswer)
 
   // ¿El modelo propuso una acción? La normalizamos y resolvemos la persona. NO se
   // ejecuta acá: el cliente la confirma.
@@ -622,17 +661,36 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     } else if (parsed?.kind === 'registrar_estado') {
       const r = resolvePersonId(parsed.persona)
       proposedAction = { ...parsed, persona: r.name, personId: r.id }
+    } else if (parsed?.kind === 'crear_recordatorio') {
+      // Sin persona: solo texto + cuándo. Faltaba esta rama → toda la feature de
+      // recordatorios por chat (tool + ejecutor + cron reminders-due) quedaba
+      // inerte: el modelo llamaba la tool pero proposedAction salía null.
+      proposedAction = { ...parsed }
     }
   }
 
-  // C3 — persistir el intercambio como memoria recuperable (fail-open).
-  if (questionEmbedding && shouldPersistExchange(question, answer)) {
+  // Cuando SIR PROPONE una acción (Aaron aún debe confirmar), el texto no debe
+  // sonar a "ya está hecho" — el harness cazó "¡Listo! Te lo propongo:". Si abre
+  // con una afirmación de hecho, o quedó muy corto, lo reemplazamos por una línea
+  // honesta (la propuesta se confirma en la tarjeta/botones aparte).
+  if (proposedAction) {
+    const t = answer.trim()
+    const soundsDone = /^[¡!\s]*(listo|hecho|ya\s+(lo|la|te|est)|agendad|anotad|guardad|marcad|cread)/i.test(t)
+    if (soundsDone || t.length < 12) answer = 'Te propongo esto — revísalo y confírmalo. 👇'
+  }
+
+  // C3 — persistir el intercambio como memoria recuperable. Se guarda SIEMPRE,
+  // AUNQUE el embedding esté caído (OpenAI 429): el registro histórico NO debe
+  // depender de OpenAI. Sin embedding → va null y un backfill lo llena cuando el
+  // recall vuelva. Antes esto estaba pegado al embedding → todas las charlas
+  // desde el 13/07 se perdieron por la cuota agotada. Nunca más.
+  if (shouldPersistExchange(question, answer)) {
     try {
       await supabase.from('sir_conversations').insert({
         user_id: userId,
         question: question.slice(0, 2000),
         answer: answer.slice(0, 4000),
-        embedding: toPgVector(questionEmbedding),
+        embedding: questionEmbedding ? toPgVector(questionEmbedding) : null,
         embedding_model: 'text-embedding-3-small',
       })
     } catch { /* tabla 0121 no aplicada → seguimos sin persistir */ }

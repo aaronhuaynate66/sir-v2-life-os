@@ -58,8 +58,15 @@ export async function downloadTelegramFile(fileId: string): Promise<{ bytes: Arr
   }
 }
 
-/** Un botón inline (subconjunto de la Telegram Bot API que usamos). */
-export interface InlineButton { text: string; callbackData: string }
+/** Un botón inline (subconjunto de la Telegram Bot API que usamos). Es de
+ *  callback (`callbackData`) O de link (`url`) — un botón url abre una web sin
+ *  disparar callback (para "Abrir en la app"). */
+export interface InlineButton { text: string; callbackData?: string; url?: string }
+
+/** Traduce un InlineButton al shape de la Bot API (url-button o callback-button). */
+function toApiButton(b: InlineButton): Record<string, string> {
+  return b.url ? { text: b.text, url: b.url } : { text: b.text, callback_data: b.callbackData ?? '' }
+}
 
 /**
  * Envía un mensaje de texto a un chat. No lanza: un fallo de envío no debe
@@ -82,9 +89,7 @@ export async function sendTelegramMessage(
       disable_web_page_preview: true,
     }
     if (buttons && buttons.length > 0) {
-      body.reply_markup = {
-        inline_keyboard: [buttons.map((b) => ({ text: b.text, callback_data: b.callbackData }))],
-      }
+      body.reply_markup = { inline_keyboard: [buttons.map(toApiButton)] }
     }
     const res = await fetch(`${API}/bot${token}/sendMessage`, {
       method: 'POST',
@@ -116,7 +121,7 @@ export async function sendTelegramKeyboard(
   const token = process.env.TELEGRAM_BOT_TOKEN
   if (!token) return { ok: false }
   try {
-    const inline_keyboard = rows.map((r) => r.map((b) => ({ text: b.text, callback_data: b.callbackData })))
+    const inline_keyboard = rows.map((r) => r.map(toApiButton))
     const res = await fetch(`${API}/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -140,7 +145,7 @@ export async function editTelegramKeyboard(
   const token = process.env.TELEGRAM_BOT_TOKEN
   if (!token) return
   try {
-    const inline_keyboard = rows.map((r) => r.map((b) => ({ text: b.text, callback_data: b.callbackData })))
+    const inline_keyboard = rows.map((r) => r.map(toApiButton))
     await fetch(`${API}/bot${token}/editMessageText`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

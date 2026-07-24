@@ -5,10 +5,40 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 23/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 24/07/2026 (reconciliación automática — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+
+---
+
+## 📋 PENDIENTES ACTUALES — reconciliado 2026-07-24 (LEER PRIMERO)
+
+Vista usable (lo de abajo es histórico pesado). Reconciliado tras la sesión de ~16 PRs (#927–#942).
+Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/artifact/045fea0b-7b02-4a33-a013-7d394d9d85f6
+
+**🟢 Listo para construir (autónomo, sin bloqueo):**
+- **[alta] Fuga de voseo en el chat** — el harness de eval cazó "querés" en una respuesta real (contra [[idioma-espanol-peru]]). Reforzar la regla anti-voseo del prompt + re-medir. Bug real.
+- **[media] Copy del recordatorio "¡Listo!"** — al agendar, la respuesta a veces sobre-afirma ("¡Listo! Te lo propongo:") o saluda genérico en vez de acompañar la propuesta.
+- **[baja] Verborrea a "consejo corto"** — el harness marcó respuestas largas a pedidos breves.
+- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — few-shot dinámico desde correcciones (👎) + subir prioridad de `preference` fresca sobre patrones auto-derivados en `sortLearnings` (hoy van 3ras). El "que SIR aprenda" de verdad.
+
+**🟡 Necesita input/decisión de Aaron:**
+- **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` O usar SIR con 👍/👎+corrección (ya se capturan en chat_feedback) → `npm run eval:sir --from-feedback 20`. Agranda la vara del Plan A y del loop.
+
+**🔴 Bloqueado (data / otra PC) — construir a ciegas = fantasma:**
+- **[media] Match por cara capa 2** — construido; galería de referencia en 0 caras limpias (capturas son screenshots escénicos). Se enciende con fotos-cara reales (asignar en la app, o el reader mandando la foto de perfil real de IG).
+- **[media] Reader LinkedIn (otra PC)** — inyectado pero en login; loguear una vez.
+- **[baja] Teams** — login manual con ahuaynate@grupohng.com.
+- **[baja] Ingesta de DMs de IG** — idea a futuro, vía la extensión de la otra PC.
+
+**🌱 Latente (se enciende con uso, nada que hacer):** diversidad emocional en /salud (usar los chips de ánimo); recordatorios por chat (ya andan).
+
+**👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
+
+**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (solo si el quick-win no basta); Ola 3 — memoria que consolida (hybrid search vector+BM25, re-ranking, Mem0-style extract→merge→olvido), después de rodar la Ola 2.
+
+**NO incluye lo ya hecho+verificado esta sesión:** bug avatares `per_`, caras en la lista, match por cara capa 1-2, auto-avatar prioriza caras, IAE afecto surfaceado, recordatorios por chat revividos, push Telegram/nudge, harness de eval, recall ciego en Telegram, señal 👍👎 atribuible, bug "distante" (33 alertas), ¿quién es quién? con botones.
 
 ---
 

@@ -36,32 +36,39 @@ export async function embedBatch(inputs: string[]): Promise<number[][]> {
     throw new EmbeddingError('OPENAI_API_KEY no configurada en el server')
   }
 
-  const res = await fetch(OPENAI_EMBEDDINGS_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: EMBEDDING_MODEL,
-      input: inputs,
-    }),
-  })
-
-  if (!res.ok) {
+  // Reintentos con backoff para blips transitorios (429 de rate-limit, 5xx, red).
+  // Un 429 de CUOTA agotada no se recupera reintentando, pero el costo es bajo y
+  // el caller igual reporta la degradación. 4xx no-429 (auth/bad-request) no se
+  // reintenta. Antes NO había retry → un blip dejaba a SIR ciego de una.
+  let lastErr: EmbeddingError | null = null
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 400 * attempt * attempt))
+    let res: Response
+    try {
+      res = await fetch(OPENAI_EMBEDDINGS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ model: EMBEDDING_MODEL, input: inputs }),
+      })
+    } catch (e) {
+      lastErr = new EmbeddingError(`Red falló hacia embeddings: ${e instanceof Error ? e.message : String(e)}`)
+      continue
+    }
+    if (res.ok) {
+      const json = (await res.json()) as OpenAIEmbeddingResponse
+      if (!json.data || json.data.length !== inputs.length) {
+        throw new EmbeddingError('Respuesta de embeddings con cantidad inesperada')
+      }
+      return [...json.data].sort((a, b) => a.index - b.index).map((d) => d.embedding)
+    }
     const detail = await res.text().catch(() => '')
-    throw new EmbeddingError(
+    lastErr = new EmbeddingError(
       `Falló la API de embeddings (HTTP ${res.status}): ${detail.slice(0, 200)}`,
       res.status,
     )
+    if (res.status !== 429 && res.status < 500) break // 4xx no-429 → no reintentar
   }
-
-  const json = (await res.json()) as OpenAIEmbeddingResponse
-  if (!json.data || json.data.length !== inputs.length) {
-    throw new EmbeddingError('Respuesta de embeddings con cantidad inesperada')
-  }
-  const ordered = [...json.data].sort((a, b) => a.index - b.index)
-  return ordered.map((d) => d.embedding)
+  throw lastErr ?? new EmbeddingError('Embeddings: fallo desconocido')
 }
 
 /** Embeddea un solo texto. */
