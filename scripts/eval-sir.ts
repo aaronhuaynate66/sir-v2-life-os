@@ -18,7 +18,7 @@
 
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
-import { buildJudgePrompt, parseJudgeVerdict, feedbackToCase, type EvalCase, type JudgeVerdict } from '../src/lib/eval/judge.ts'
+import { buildJudgePrompt, parseJudgeVerdict, aggregateVerdicts, feedbackToCase, type EvalCase, type JudgeVerdict } from '../src/lib/eval/judge.ts'
 
 // ── env ──────────────────────────────────────────────────────────────
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
@@ -34,6 +34,9 @@ const getArg = (name: string) => { const i = args.indexOf(name); return i >= 0 ?
 const BASE = getArg('--base') || 'http://localhost:3000'
 const FROM_FEEDBACK = Number(getArg('--from-feedback') || 0)
 const ONLY_TAG = getArg('--only')
+// N corridas por caso: se agregan por MEDIANA para amortiguar el ruido del modelo
+// y del juez. Default 3 (fiabilidad); --runs 1 para un smoke rápido.
+const RUNS = Math.max(1, Number(getArg('--runs') || 3))
 
 async function login(): Promise<string> {
   const res = await fetch(`${BASE}/api/dev-login?next=/panel`, { redirect: 'manual' })
@@ -46,7 +49,10 @@ async function askSir(cookie: string, c: EvalCase): Promise<string> {
   const res = await fetch(`${BASE}/api/sir/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
-    body: JSON.stringify({ question: c.question, userContext: c.context }),
+    // persist:false → el eval NO ensucia la data real (recall/hilo/ledger). Corre
+    // contra la data REAL de Aaron; sin esto inyectaba sus preguntas sintéticas y
+    // SIR las resurfaceaba como pendientes fantasma (ej. "llamar al contador").
+    body: JSON.stringify({ question: c.question, userContext: c.context, persist: false }),
   })
   const j = (await res.json().catch(() => ({}))) as { answer?: string; error?: string }
   return j.answer ?? `(sin respuesta: ${j.error ?? res.status})`
@@ -58,7 +64,9 @@ async function judge(c: EvalCase, answer: string): Promise<JudgeVerdict> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: JUDGE_MODEL, max_tokens: 400, messages: [{ role: 'user', content: buildJudgePrompt(c, answer) }] }),
+    // temperature 0: el juez debe ser lo más determinista posible (era la causa #1
+    // del ruido — calificaba respuestas casi idénticas 92 vs 35).
+    body: JSON.stringify({ model: JUDGE_MODEL, max_tokens: 400, temperature: 0, messages: [{ role: 'user', content: buildJudgePrompt(c, answer) }] }),
   })
   const j = (await res.json().catch(() => ({}))) as { content?: { text?: string }[] }
   return parseJudgeVerdict(j.content?.[0]?.text ?? '')
@@ -91,19 +99,31 @@ async function main() {
   if (ONLY_TAG) cases = cases.filter((c) => (c.tags ?? []).includes(ONLY_TAG))
   if (cases.length === 0) { console.log('No hay casos. Agrega a eval/golden.jsonl o usa --from-feedback N.'); return }
 
-  console.log(`\n🧪 Eval SIR — ${cases.length} caso(s) · base ${BASE} · juez ${JUDGE_MODEL}\n`)
+  console.log(`\n🧪 Eval SIR — ${cases.length} caso(s) × ${RUNS} corrida(s) · base ${BASE} · juez ${JUDGE_MODEL} (temp 0)\n`)
   const cookie = await login()
   let passed = 0, sum = 0
+  let noisy = 0
   for (const c of cases) {
-    const answer = await askSir(cookie, c)
-    const v = await judge(c, answer)
+    // N corridas: cada una es ask + judge (captura ruido de modelo Y de juez).
+    const verdicts: JudgeVerdict[] = []
+    let lastAnswer = ''
+    for (let i = 0; i < RUNS; i++) {
+      lastAnswer = await askSir(cookie, c)
+      verdicts.push(await judge(c, lastAnswer))
+    }
+    const v = aggregateVerdicts(verdicts)
     passed += v.pass ? 1 : 0; sum += v.score
     const mark = v.pass ? '✅' : '❌'
-    console.log(`${mark} ${bar(v.score)} ${String(v.score).padStart(3)}  ${c.id}`)
+    // spread alto = caso INESTABLE (el veredicto no es de fiar; recalibrar el caso).
+    const unstable = RUNS > 1 && v.spread >= 25
+    if (unstable) noisy++
+    const spreadTag = RUNS > 1 ? ` · corridas [${v.scores.join(',')}] spread ${v.spread}${unstable ? ' ⚠️inestable' : ''}` : ''
+    console.log(`${mark} ${bar(v.score)} ${String(v.score).padStart(3)}  ${c.id}${spreadTag}`)
     console.log(`     g${v.dims.grounding} h${v.dims.honesty} l${v.dims.language} u${v.dims.usefulness} t${v.dims.tone} · ${v.reasons}`)
-    console.log(`     R: ${answer.replace(/\s+/g, ' ').slice(0, 140)}\n`)
+    console.log(`     R: ${lastAnswer.replace(/\s+/g, ' ').slice(0, 140)}\n`)
   }
-  console.log(`── ${passed}/${cases.length} pasaron · score promedio ${Math.round(sum / cases.length)} ──\n`)
+  const noisyTag = RUNS > 1 && noisy > 0 ? ` · ${noisy} caso(s) inestable(s) ⚠️` : ''
+  console.log(`── ${passed}/${cases.length} pasaron · score mediano promedio ${Math.round(sum / cases.length)}${noisyTag} ──\n`)
 }
 
 main().catch((e) => { console.error('eval falló:', e instanceof Error ? e.message : e); process.exit(1) })

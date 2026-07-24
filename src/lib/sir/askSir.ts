@@ -101,6 +101,10 @@ export interface AskSirParams {
   chatStyle?: boolean
   /** Contexto efímero que Aaron agregó al responder un hueco (no se persiste). */
   userContext?: string
+  /** false = NO persistir el intercambio en sir_conversations (para el harness de
+   *  eval: corre contra la data REAL de Aaron y sin esto inyectaba sus preguntas
+   *  sintéticas en el recall → SIR resurfaceaba "recordatorios" fantasma). Default true. */
+  persist?: boolean
   /** Inyectable para tests/determinismo. Default: ahora. */
   nowISO?: string
 }
@@ -700,7 +704,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   // depender de OpenAI. Sin embedding → va null y un backfill lo llena cuando el
   // recall vuelva. Antes esto estaba pegado al embedding → todas las charlas
   // desde el 13/07 se perdieron por la cuota agotada. Nunca más.
-  if (shouldPersistExchange(question, answer)) {
+  if (params.persist !== false && shouldPersistExchange(question, answer)) {
     try {
       await supabase.from('sir_conversations').insert({
         user_id: userId,
