@@ -98,6 +98,13 @@ export interface BuildInsightsInput {
   personCycles: PersonCycleEntry[]
   memories: Memory[]
   now: Date
+  /** ISO del contacto REAL más reciente en el sustrato (chat_messages) — la
+   *  conversación de verdad, que NO siempre queda como person_log (los logs de
+   *  interacción se pueblan sobre todo al importar). Sin esto, `daysSinceLast`
+   *  salía del último import y marcaba "distante" a gente con la que se acaba de
+   *  hablar (bug de los 33 cambios falsos). Opcional: si no viene, comportamiento
+   *  previo (solo person_logs). */
+  lastContactAt?: string | null
 }
 
 /**
@@ -122,7 +129,16 @@ export function buildEstadoInsights(input: BuildInsightsInput): EstadoInsights {
   const last = interactions[0] ?? null
   const lastInteractionAt = last?.loggedAt ?? null
   const lastInteractionValue = last?.value ?? null
-  const daysSinceLast = last ? daysBetweenIsos(last.loggedAt, nowMs) : null
+  // Recencia = el contacto REAL más reciente: la última interacción logueada O el
+  // último mensaje del sustrato (chat_messages), lo que sea más nuevo. Así hablar
+  // por WhatsApp cuenta aunque no genere un person_log (arregla el "distante"
+  // falso). El tono/promedio sigue saliendo solo de las interacciones (los
+  // mensajes crudos no tienen valor de tono).
+  const recencyCandidates = [lastInteractionAt, input.lastContactAt ?? null].filter((x): x is string => !!x)
+  const effectiveLastAt = recencyCandidates.length > 0
+    ? recencyCandidates.sort((a, b) => b.localeCompare(a))[0]
+    : null
+  const daysSinceLast = effectiveLastAt ? daysBetweenIsos(effectiveLastAt, nowMs) : null
 
   const recent = interactions.slice(0, RECENT_WINDOW).map((l) => l.value)
   const previous = interactions.slice(RECENT_WINDOW, RECENT_WINDOW * 2).map((l) => l.value)
