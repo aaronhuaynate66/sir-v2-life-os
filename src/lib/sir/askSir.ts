@@ -183,19 +183,18 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     // embedding difumina (nombres propios, montos, jerga: "Marlab", "RIT"). El FTS
     // las rescata; RRF combina ambos rangos sin re-tunear thresholds entre escalas.
     let matches: Record<string, unknown>[] | null = null
-    try {
-      const { data } = await supabase.rpc('match_memories_hybrid', {
-        query_embedding: toPgVector(questionEmbedding),
-        query_text: buildMemoryFtsQuery(retrievalText),
-        match_count: 10,
-        // p_user_id explícito (heredado de 0162): sin él, recall CIEGO bajo
-        // service-role (Telegram/crons) porque auth.uid() es null ahí.
-        p_user_id: userId,
-      })
-      matches = (data as Record<string, unknown>[]) ?? []
-    } catch {
+    // p_user_id explícito (heredado de 0162): sin él, recall CIEGO bajo service-role
+    // (Telegram/crons) porque auth.uid() es null ahí.
+    const hybrid = await supabase.rpc('match_memories_hybrid', {
+      query_embedding: toPgVector(questionEmbedding),
+      query_text: buildMemoryFtsQuery(retrievalText),
+      match_count: 10,
+      p_user_id: userId,
+    })
+    if (hybrid.error) {
       // Ventana de deploy: si el RPC nuevo aún no está en prod, NO apagar el recall.
-      // Fallback al vector puro (match_memories, mig 0162, umbral medido 0.30).
+      // OJO: supabase-js NO lanza ante error de PostgREST (lo deja en .error), por eso
+      // se chequea explícito y se cae al vector puro (match_memories, mig 0162, 0.30).
       const { data } = await supabase.rpc('match_memories', {
         query_embedding: toPgVector(questionEmbedding),
         match_count: 10,
@@ -203,6 +202,8 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
         p_user_id: userId,
       })
       matches = (data as Record<string, unknown>[]) ?? []
+    } else {
+      matches = (hybrid.data as Record<string, unknown>[]) ?? []
     }
     for (const r of (matches ?? [])) {
       const pid = (r.person_id as string | null) ?? null
