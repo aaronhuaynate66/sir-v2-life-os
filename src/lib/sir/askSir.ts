@@ -184,6 +184,9 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       // viejo) era casi ruido; 0.35 cortaba relevantes de borde (0.34); 0.30 es
       // el punto justo: retiene lo relevante y descarta lo semi-random.
       similarity_threshold: 0.3,
+      // Explícito (mig 0162): el RPC filtraba por auth.uid(), null bajo
+      // service-role → recall CIEGO por Telegram/crons. Pasar el userId lo arregla.
+      p_user_id: userId,
     })
     for (const r of ((matches as Record<string, unknown>[]) ?? [])) {
       const pid = (r.person_id as string | null) ?? null
@@ -211,6 +214,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
         query_embedding: toPgVector(questionEmbedding),
         match_count: 5,
         similarity_threshold: 0.2,
+        p_user_id: userId, // mig 0162: funciona bajo service-role (Telegram/crons)
       })
       const hits: RecallHit[] = ((convs as Record<string, unknown>[]) ?? []).map((c) => ({
         question: (c.question as string) ?? '',
