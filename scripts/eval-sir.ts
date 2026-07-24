@@ -54,8 +54,18 @@ async function askSir(cookie: string, c: EvalCase): Promise<string> {
     // SIR las resurfaceaba como pendientes fantasma (ej. "llamar al contador").
     body: JSON.stringify({ question: c.question, userContext: c.context, persist: false }),
   })
-  const j = (await res.json().catch(() => ({}))) as { answer?: string; error?: string }
-  return j.answer ?? `(sin respuesta: ${j.error ?? res.status})`
+  const j = (await res.json().catch(() => ({}))) as {
+    answer?: string; error?: string; proposedAction?: Record<string, unknown> | null
+  }
+  let answer = j.answer ?? `(sin respuesta: ${j.error ?? res.status})`
+  // Cuando SIR propone una ACCIÓN, el detalle (fecha/hora/tarea del recordatorio,
+  // etc.) vive en proposedAction — que el usuario VE como tarjeta (web) o mensaje
+  // con botón "¿Lo agendo?" (Telegram), NO repetido en el texto. Sin mostrárselo al
+  // juez, castiga como "incompleto" algo que el usuario sí ve completo. Se lo damos.
+  if (j.proposedAction && typeof j.proposedAction === 'object') {
+    answer += `\n\n[Además SIR mostró al usuario esta ACCIÓN PROPUESTA como tarjeta/botón de confirmar (no repetida en el texto): ${JSON.stringify(j.proposedAction)}]`
+  }
+  return answer
 }
 
 async function judge(c: EvalCase, answer: string): Promise<JudgeVerdict> {
