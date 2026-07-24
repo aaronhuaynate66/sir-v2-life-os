@@ -125,6 +125,7 @@ import { CADENCE_PRESETS, storedToPreset, presetToStored, parseCustomDays } from
 import { IdentidadesPanel } from './IdentidadesPanel'
 import { FamiliaPanel } from './FamiliaPanel'
 import { ProfessionalLinksPanel } from './ProfessionalLinksPanel'
+import { RelationshipGraph } from './RelationshipGraph'
 import { NetworkPathsCard } from './NetworkPathsCard'
 import { InformacionSensible } from './InformacionSensible'
 import type { Observation } from '@/lib/capture/observations/types'
@@ -1168,6 +1169,12 @@ export function PersonDetail({
       </>)}
 
       {tab === 'red' && (<>
+      {/* Ego-graph radial de ESTA persona: al centro la ficha, sus person_links
+          radiando como nodos (SVG puro, sin librerías de grafo). Debajo, el
+          bloque "Estructura" agrupa los vínculos por dominio. Click en un nodo
+          → deep-link a la ficha de esa persona. */}
+      <RelationshipGraph person={live} />
+
       {/* Familia (A.4): vincular padre/madre/etc. como nodos de familia en el
           grafo (person_links, 0035). Crea el nodo-persona mínimo + la arista. */}
       <FamiliaPanel person={live} />
