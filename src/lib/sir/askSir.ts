@@ -46,6 +46,7 @@ import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
 import type { Person, Goal, Memory } from '@/types'
+import { deVoseo } from '@/lib/text/deVoseo'
 
 const MAX_PEOPLE = 5
 const MAX_MEM_PER_PERSON = 12
@@ -617,7 +618,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     content: h.text,
   }))
 
-  const { answer, tool } = await runSirChat({
+  const { answer: rawAnswer, tool } = await runSirChat({
     model,
     system: SIR_ASK_SYSTEM_PROMPT + ACTION_RULE + (socratic ? SOCRATIC_RULE : '') + (chatStyle ? CHAT_STYLE_RULE : ''),
     history: chatHistory,
@@ -625,6 +626,9 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     anthropicKey: model.provider === 'anthropic' ? providerKey : undefined,
     openrouterKey: model.provider === 'openrouter' ? providerKey : undefined,
   })
+  // Scrub DETERMINÍSTICO de voseo: el prompt lo prohíbe pero el modelo se resbala
+  // (el harness cazó "querés"). Esto garantiza tuteo peruano en la salida.
+  let answer = deVoseo(rawAnswer)
 
   // ¿El modelo propuso una acción? La normalizamos y resolvemos la persona. NO se
   // ejecuta acá: el cliente la confirma.
@@ -663,6 +667,16 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       // inerte: el modelo llamaba la tool pero proposedAction salía null.
       proposedAction = { ...parsed }
     }
+  }
+
+  // Cuando SIR PROPONE una acción (Aaron aún debe confirmar), el texto no debe
+  // sonar a "ya está hecho" — el harness cazó "¡Listo! Te lo propongo:". Si abre
+  // con una afirmación de hecho, o quedó muy corto, lo reemplazamos por una línea
+  // honesta (la propuesta se confirma en la tarjeta/botones aparte).
+  if (proposedAction) {
+    const t = answer.trim()
+    const soundsDone = /^[¡!\s]*(listo|hecho|ya\s+(lo|la|te|est)|agendad|anotad|guardad|marcad|cread)/i.test(t)
+    if (soundsDone || t.length < 12) answer = 'Te propongo esto — revísalo y confírmalo. 👇'
   }
 
   // C3 — persistir el intercambio como memoria recuperable. Se guarda SIEMPRE,
