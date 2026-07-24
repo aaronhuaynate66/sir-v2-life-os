@@ -18,6 +18,7 @@ import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client
 import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
+import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
 import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
@@ -547,7 +548,56 @@ export async function GET(req: NextRequest) {
         }
       } catch { /* columna 0151 sin propagar → sin sugerencia */ }
 
-      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
+      // SEMANA CON CARGA AFECTIVA (anticipación de cuidado): proyecta las ventanas
+      // sensibles del ciclo (premenstrual/menstrual) de las mujeres del círculo con
+      // ciclo cargado y/o anclas, y avisa si intersecan la semana (marca sincronía).
+      // Tono de CUIDADO, marca estimación — NUNCA descalifica ni "gestiona" (doc 17).
+      // Fail-soft: un fallo (o tabla sin propagar) no rompe el brief.
+      let cycleWeekAheadText: string | undefined
+      try {
+        const { data: womenRows } = await admin
+          .from('people')
+          .select('id, name, gender, cycle_start_date, cycle_length_days')
+          .eq('user_id', uid)
+          .or('gender.eq.female,cycle_start_date.not.is.null')
+          .limit(500)
+        const womenPeople = (womenRows ?? []) as Array<{
+          id: string; name: string; gender: string | null
+          cycle_start_date: string | null; cycle_length_days: number | null
+        }>
+        if (womenPeople.length > 0) {
+          const wIds = womenPeople.map((p) => p.id)
+          const cyclesByPerson = new Map<string, Array<{ date: string; phase: string }>>()
+          try {
+            const since = new Date(now.getTime() - 60 * 86_400_000).toISOString().slice(0, 10)
+            const { data: cyc } = await admin
+              .from('person_cycles')
+              .select('person_id, date, phase')
+              .eq('user_id', uid)
+              .in('person_id', wIds)
+              .gte('date', since)
+              .limit(1000)
+            for (const c of (cyc ?? []) as Array<{ person_id: string; date: string; phase: string }>) {
+              const arr = cyclesByPerson.get(c.person_id) ?? []
+              arr.push({ date: c.date, phase: c.phase })
+              cyclesByPerson.set(c.person_id, arr)
+            }
+          } catch { /* sin anclas → proyección solo por calendario */ }
+          const womenInput: WomanCycleInput[] = womenPeople
+            .map((p) => ({
+              personId: p.id, name: p.name,
+              cycleStartDate: p.cycle_start_date ? p.cycle_start_date.slice(0, 10) : null,
+              cycleLengthDays: p.cycle_length_days ?? null,
+              anchors: cyclesByPerson.get(p.id) ?? [],
+            }))
+            .filter((w) => w.cycleStartDate || (w.anchors && w.anchors.length > 0))
+          cycleWeekAheadText = buildCycleWeekAheadLine(buildCycleWeekAhead(womenInput, now, 7)) ?? undefined
+        }
+      } catch {
+        /* fail-soft: la anticipación de cuidado es un extra, no rompe el push */
+      }
+
+      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
