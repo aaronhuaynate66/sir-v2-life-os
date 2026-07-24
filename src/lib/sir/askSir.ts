@@ -39,6 +39,7 @@ import { parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
 import { resolveModel } from '@/lib/sir/model'
 import { runSirChat, type ChatTurn } from '@/lib/sir/chatProvider'
 import { renderRecallBlock, shouldPersistExchange, type RecallHit } from '@/lib/sir/recall'
+import { buildMemoryFtsQuery } from '@/lib/sir/hybridRecall'
 import { renderLearningsBlock, rowToLearning, type LearningRow } from '@/lib/learnings/recall'
 import { todayLimaKey, limaDayKey } from '@/lib/dates/limaDay'
 import { computeMissingHealthData, renderMissingDataBlock, SLEEP_TYPE, type Reading } from '@/lib/health/missingData'
@@ -177,19 +178,33 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   let questionEmbedding: number[] | null = null
   try {
     questionEmbedding = await embedText(retrievalText)
-    const { data: matches } = await supabase.rpc('match_memories', {
-      query_embedding: toPgVector(questionEmbedding),
-      match_count: 10,
-      // Umbral afinado con MEDICIÓN real: las memorias claramente relevantes
-      // (ej. sobre Diana) puntúan 0.34–0.52 con text-embedding-3-small. 0.15 (el
-      // viejo) era casi ruido; 0.35 cortaba relevantes de borde (0.34); 0.30 es
-      // el punto justo: retiene lo relevante y descarta lo semi-random.
-      similarity_threshold: 0.3,
-      // Explícito (mig 0162): el RPC filtraba por auth.uid(), null bajo
-      // service-role → recall CIEGO por Telegram/crons. Pasar el userId lo arregla.
-      p_user_id: userId,
-    })
-    for (const r of ((matches as Record<string, unknown>[]) ?? [])) {
+    // RECALL HÍBRIDO (Ola 3, mig 0164): vector (cosine) + full-text (español)
+    // fusionados con RRF. El vector puro perdía coincidencias LÉXICAS exactas que el
+    // embedding difumina (nombres propios, montos, jerga: "Marlab", "RIT"). El FTS
+    // las rescata; RRF combina ambos rangos sin re-tunear thresholds entre escalas.
+    let matches: Record<string, unknown>[] | null = null
+    try {
+      const { data } = await supabase.rpc('match_memories_hybrid', {
+        query_embedding: toPgVector(questionEmbedding),
+        query_text: buildMemoryFtsQuery(retrievalText),
+        match_count: 10,
+        // p_user_id explícito (heredado de 0162): sin él, recall CIEGO bajo
+        // service-role (Telegram/crons) porque auth.uid() es null ahí.
+        p_user_id: userId,
+      })
+      matches = (data as Record<string, unknown>[]) ?? []
+    } catch {
+      // Ventana de deploy: si el RPC nuevo aún no está en prod, NO apagar el recall.
+      // Fallback al vector puro (match_memories, mig 0162, umbral medido 0.30).
+      const { data } = await supabase.rpc('match_memories', {
+        query_embedding: toPgVector(questionEmbedding),
+        match_count: 10,
+        similarity_threshold: 0.3,
+        p_user_id: userId,
+      })
+      matches = (data as Record<string, unknown>[]) ?? []
+    }
+    for (const r of (matches ?? [])) {
       const pid = (r.person_id as string | null) ?? null
       if (pid && targetIds.size < MAX_PEOPLE) targetIds.add(pid)
       memoryHits.push({
