@@ -639,6 +639,7 @@ export function PersonDetail({
           moments={moments}
           personCycles={personCycles}
           memories={memories}
+          lastContactAt={lastChat?.observedAt ?? null}
           embedded
         />
         <RelationalHealthCard person={live} personLogs={personLogs} embedded />

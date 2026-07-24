@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
   for (const person of people) {
     processed++
     // 3. Cargar contexto para calcular label.
-    const [logsRes, momentsRes, cyclesRes, memoriesRes] = await Promise.all([
+    const [logsRes, momentsRes, cyclesRes, memoriesRes, chatRes] = await Promise.all([
       supabase.from('person_logs').select('id, user_id, person_id, kind, value, note, logged_at, created_at')
         .eq('user_id', person.user_id).eq('person_id', person.id).gte('logged_at', cutoff30).limit(50),
       supabase.from('relationship_moments').select('id, person_id, title, detail, status, occurred_on, follow_up_on, resolution, created_at, updated_at')
@@ -91,6 +91,12 @@ export async function GET(req: NextRequest) {
         .eq('user_id', person.user_id).eq('person_id', person.id).limit(30),
       supabase.from('memories').select('id, person_id, title, content, type, timestamp, tags, importance, is_private')
         .eq('user_id', person.user_id).eq('person_id', person.id).eq('is_private', false).limit(10),
+      // Contacto REAL más reciente del sustrato: sin esto, daysSinceLast salía del
+      // último import y marcaba "distante" falso a gente con la que se acaba de
+      // hablar (los 33 cambios falsos que reportó Aaron).
+      supabase.from('chat_messages').select('sent_at')
+        .eq('user_id', person.user_id).eq('person_id', person.id)
+        .order('sent_at', { ascending: false }).limit(1),
     ])
 
     const personLogs = ((logsRes.data ?? []) as Array<{ id: string; user_id: string; person_id: string; kind: string; value: number; note: string | null; logged_at: string; created_at: string }>)
@@ -99,7 +105,8 @@ export async function GET(req: NextRequest) {
     const personCycles = ((cyclesRes.data ?? []) as Parameters<typeof mapPersonCycleRow>[0][]).map(mapPersonCycleRow)
     const memories = ((memoriesRes.data ?? []) as unknown as Memory[])
 
-    const insights = buildEstadoInsights({ personLogs, moments, personCycles, memories, now: new Date() })
+    const lastContactAt = ((chatRes.data ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null
+    const insights = buildEstadoInsights({ personLogs, moments, personCycles, memories, now: new Date(), lastContactAt })
 
     // 4. Comparar con snapshot anterior.
     const key = `${person.user_id}:${person.id}`

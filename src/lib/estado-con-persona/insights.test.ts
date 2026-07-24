@@ -97,6 +97,17 @@ describe('buildEstadoInsights', () => {
     expect(r.overallLabel).toBe('distante')
   })
 
+  it('NO es "distante" si hubo contacto reciente en el sustrato (lastContactAt), aunque los person_logs estén viejos', () => {
+    // Mismos logs viejos que el caso "distante" (~48d), pero habló hace 1 día por
+    // chat → la recencia real manda. Arregla el bug de los 33 "distante" falsos.
+    const r = buildEstadoInsights({
+      personLogs: [log(4, '2026-05-15T20:00:00-05:00')],
+      moments: NO_MOMENTS, personCycles: NO_CYCLES, memories: NO_MEMORIES, now: NOW,
+      lastContactAt: '2026-07-01T10:00:00-05:00',
+    })
+    expect(r.overallLabel).not.toBe('distante')
+  })
+
   it('label "cerca" con tono alto y delta positivo', () => {
     // Recientes: 5, 5, 4 → 4.7
     // Anteriores: 3, 3, 3 → 3.0
