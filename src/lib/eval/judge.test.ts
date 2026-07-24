@@ -1,7 +1,44 @@
 import { describe, it, expect } from 'vitest'
-import { buildJudgePrompt, parseJudgeVerdict, feedbackToCase, PASS_THRESHOLD, type EvalCase } from './judge'
+import { buildJudgePrompt, parseJudgeVerdict, aggregateVerdicts, feedbackToCase, PASS_THRESHOLD, type EvalCase, type JudgeVerdict } from './judge'
+
+function verdict(score: number, dims?: Partial<Record<'grounding'|'honesty'|'language'|'usefulness'|'tone', number>>, reasons = ''): JudgeVerdict {
+  return {
+    score, pass: score >= PASS_THRESHOLD, reasons,
+    dims: { grounding: score, honesty: score, language: score, usefulness: score, tone: score, ...dims },
+  }
+}
 
 const caso: EvalCase = { id: 'c1', question: '¿Qué sé de Diana?', expect: 'Menciona que es su pareja', mustNotDo: 'inventar fechas' }
+
+describe('aggregateVerdicts', () => {
+  it('usa MEDIANA, no promedio — un outlier del juez no arrastra el resultado', () => {
+    // 92, 35, 90 → promedio 72 (pasaría), mediana 90. El 35 outlier no manda.
+    const a = aggregateVerdicts([verdict(92), verdict(35), verdict(90)])
+    expect(a.score).toBe(90)
+    expect(a.pass).toBe(true)
+    expect(a.runs).toBe(3)
+    expect(a.scores).toEqual([92, 35, 90])
+    expect(a.spread).toBe(57) // 92 - 35 → delata que el caso es inestable
+  })
+
+  it('mediana par = redondeo del promedio de los dos centrales', () => {
+    expect(aggregateVerdicts([verdict(40), verdict(80)]).score).toBe(60)
+  })
+
+  it('agrega dimensiones por mediana y toma reasons del run más cercano a la mediana', () => {
+    const a = aggregateVerdicts([verdict(20, { grounding: 10 }, 'malo'), verdict(90, {}, 'bueno'), verdict(88, {}, 'medio')])
+    expect(a.score).toBe(88)
+    expect(a.reasons).toBe('medio') // 88 es la mediana → su reasons
+    expect(a.dims.grounding).toBe(88) // mediana de [10,90,88]
+  })
+
+  it('sin corridas → veredicto vacío seguro', () => {
+    const a = aggregateVerdicts([])
+    expect(a.score).toBe(0)
+    expect(a.pass).toBe(false)
+    expect(a.runs).toBe(0)
+  })
+})
 
 describe('buildJudgePrompt', () => {
   it('incluye pregunta, expect, mustNotDo, y pide JSON con las 5 dimensiones', () => {

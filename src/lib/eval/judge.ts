@@ -111,6 +111,56 @@ export function parseJudgeVerdict(raw: string, passThreshold = PASS_THRESHOLD): 
   }
 }
 
+/** Mediana entera de una lista (robusta a outliers, a diferencia del promedio). */
+function median(nums: number[]): number {
+  if (nums.length === 0) return 0
+  const s = [...nums].sort((a, b) => a - b)
+  const mid = Math.floor(s.length / 2)
+  return s.length % 2 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2)
+}
+
+export interface AggregatedVerdict {
+  /** Mediana de los overall de las corridas. */
+  score: number
+  /** score (mediana) >= umbral. */
+  pass: boolean
+  /** Mediana por dimensión. */
+  dims: Record<EvalDimension, number>
+  /** Razones de la corrida más cercana a la mediana (veredicto típico). */
+  reasons: string
+  /** Cuántas corridas se agregaron. */
+  runs: number
+  /** Overall de cada corrida (para ver la dispersión). */
+  scores: number[]
+  /** max - min de los overall: alto = caso INESTABLE (el juez/modelo no es fiable ahí). */
+  spread: number
+}
+
+/**
+ * Agrega N veredictos del MISMO caso (correr varias veces amortigua el ruido del
+ * modelo y del juez). Usa MEDIANA, no promedio, para que un outlier del juez (ej.
+ * 92 vs 35 en respuestas casi iguales) no arrastre el resultado. PURO.
+ */
+export function aggregateVerdicts(verdicts: JudgeVerdict[], passThreshold = PASS_THRESHOLD): AggregatedVerdict {
+  if (verdicts.length === 0) {
+    return {
+      score: 0, pass: false,
+      dims: { grounding: 0, honesty: 0, language: 0, usefulness: 0, tone: 0 },
+      reasons: 'sin corridas', runs: 0, scores: [], spread: 0,
+    }
+  }
+  const scores = verdicts.map((v) => v.score)
+  const med = median(scores)
+  const dims = {} as Record<EvalDimension, number>
+  for (const d of DIMENSIONS) dims[d] = median(verdicts.map((v) => v.dims[d]))
+  // Razones de la corrida cuyo overall está más cerca de la mediana (representativa).
+  const rep = verdicts.reduce((best, v) => (Math.abs(v.score - med) < Math.abs(best.score - med) ? v : best), verdicts[0])
+  return {
+    score: med, pass: med >= passThreshold, dims, reasons: rep.reasons,
+    runs: verdicts.length, scores, spread: Math.max(...scores) - Math.min(...scores),
+  }
+}
+
 /** Convierte una fila de chat_feedback en un caso de eval. El 👎+corrección se
  *  vuelve un caso donde "lo esperado" es la corrección; el 👍 un caso positivo. */
 export function feedbackToCase(row: {
