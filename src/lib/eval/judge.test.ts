@@ -49,6 +49,24 @@ describe('buildJudgePrompt', () => {
     expect(p).toContain('Diana es tu pareja.')
     for (const d of ['grounding', 'honesty', 'language', 'usefulness', 'tone']) expect(p).toContain(d)
   })
+
+  it('sin contexto recuperado → no menciona el bloque (comportamiento igual que antes)', () => {
+    const p = buildJudgePrompt(caso, 'Diana es tu pareja.')
+    expect(p).not.toContain('CONTEXTO QUE SIR RECUPERÓ')
+    // también con string vacío/whitespace: no inyecta el bloque
+    expect(buildJudgePrompt(caso, 'r', '   ')).not.toContain('CONTEXTO QUE SIR RECUPERÓ')
+  })
+
+  it('con contexto recuperado → aparece en el prompt + la instrucción de no tratarlo como inventado', () => {
+    const retrieved = 'Personas traídas al contexto: Diana\nMemorias semánticas recuperadas: 3'
+    const p = buildJudgePrompt(caso, 'Diana es tu pareja desde 2019.', retrieved)
+    expect(p).toContain('CONTEXTO QUE SIR RECUPERÓ')
+    expect(p).toContain('Personas traídas al contexto: Diana')
+    expect(p).toContain('Memorias semánticas recuperadas: 3')
+    // la instrucción clave para el juez: no penalizar como inventado lo recuperado
+    expect(p).toContain('NO los trates como inventados')
+    expect(p).toContain('grounding')
+  })
 })
 
 describe('parseJudgeVerdict', () => {
