@@ -128,6 +128,20 @@ export const SIR_ACTION_TOOLS = [
     },
   },
   {
+    name: 'proponer_agregar_hito',
+    description:
+      'Propón AGREGAR un sub-paso/hito a un objetivo que YA existe (NO lo agregues tú, solo propónlo para que Aaron confirme). Úsalo cuando Aaron menciona algo que es un PASO hacia una meta suya que hoy no lo tiene desglosada (ej. "el examen médico me acerca al Mundial" → propón agregar "Pasar examen médico" como hito del objetivo Mundial). Si Aaron NO nombra el objetivo, se asume su NORTE (el objetivo-ancla del año). NO inventes fecha. PROHIBIDO decir que ya lo agregaste sin llamar a esta tool.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        objetivo: { type: 'string', description: 'Título del objetivo al que se agrega el paso, tal como Aaron lo nombró. Opcional: si no lo nombra, se usa su norte (objetivo-ancla).' },
+        hito: { type: 'string', description: 'Título del sub-paso/hito a agregar (ej. "Pasar examen médico IPD").' },
+        fecha: { type: 'string', description: 'Opcional: fecha límite del paso en formato YYYY-MM-DD (calculada desde la fecha de hoy del contexto). NO la inventes.' },
+      },
+      required: ['hito'],
+    },
+  },
+  {
     name: 'proponer_cerrar_relacion',
     description:
       'Propón CERRAR un vínculo (NO lo cierres tú, solo propónlo para que Aaron confirme). Usa esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
@@ -191,6 +205,14 @@ export interface ProposedRecordatorio {
   /** ISO 8601 con hora (UTC normalizado), o '' si el modelo no dio uno válido. */
   cuando: string
 }
+export interface ProposedAgregarHito {
+  kind: 'agregar_hito'
+  /** Título del objetivo tal como el modelo lo nombró; '' si no nombró uno (→ norte al resolver). */
+  objetivo: string
+  hito: string
+  /** YYYY-MM-DD, o '' si el modelo no dio una fecha válida (dueDate opcional). */
+  fecha: string
+}
 export interface ProposedEstado {
   kind: 'registrar_estado'
   persona: string
@@ -200,7 +222,7 @@ export interface ProposedEstado {
   fecha: string
   nota: string
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio | ProposedEstado
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio | ProposedEstado | ProposedAgregarHito
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -280,6 +302,14 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
     const tarea = str(o.tarea, 200)
     if (!tarea) return null
     return { kind: 'marcar_tarea', tarea }
+  }
+  if (toolName === 'proponer_agregar_hito') {
+    const hito = str(o.hito, 200)
+    if (!hito) return null
+    const objetivo = str(o.objetivo, 200)
+    const rawFecha = str(o.fecha, 10)
+    const fecha = /^\d{4}-\d{2}-\d{2}$/.test(rawFecha) ? rawFecha : ''
+    return { kind: 'agregar_hito', objetivo, hito, fecha }
   }
   if (toolName === 'proponer_crear_plan') {
     const titulo = str(o.titulo, 200)

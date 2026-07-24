@@ -19,6 +19,16 @@ describe('summarizeActionForConfirm', () => {
     expect(s).toMatch(/¿la marco\?/i)
   })
 
+  it('agregar_hito: nombra el paso, el objetivo y la fecha opcional', () => {
+    const s = summarizeActionForConfirm({
+      kind: 'agregar_hito', objetivo: 'Mundial de Bomberos', hito: 'Pasar examen médico IPD', fecha: '2026-08-15', objetivoId: 'g1',
+    } as ProposedActionResolved)
+    expect(s).toContain('Pasar examen médico IPD')
+    expect(s).toContain('Mundial de Bomberos')
+    expect(s).toContain('2026-08-15')
+    expect(s).toMatch(/¿lo agrego\?/i)
+  })
+
   it('crear_plan: nombra el plan y la fecha', () => {
     const s = summarizeActionForConfirm({ kind: 'crear_plan', titulo: 'Ver depa', fecha: '2026-07-19', persona: null, nota: '' } as ProposedActionResolved)
     expect(s).toContain('Ver depa')

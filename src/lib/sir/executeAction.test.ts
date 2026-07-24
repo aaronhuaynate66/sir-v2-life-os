@@ -11,12 +11,14 @@ function mockSb(opts: {
   existingRel?: { id: string } | null
   linkedGoals?: Array<{ id: string }>
   relInsertError?: unknown
+  goal?: { id: string; title: string; milestones?: unknown } | null
 } = {}) {
   const person = opts.person === undefined ? { id: 'p1', name: 'Pablo', notes: null, relationship: 'friend' } : opts.person
   const slugs = opts.slugs ?? []
   const existingRel = opts.existingRel ?? null
   const linkedGoals = opts.linkedGoals ?? []
   const relInsertError = opts.relInsertError ?? null
+  const goal = opts.goal ?? null
   const calls: Record<string, unknown> = {}
   const thenable = (result: unknown) => ({ then: (res: (v: unknown) => void) => res(result) })
 
@@ -46,9 +48,13 @@ function mockSb(opts: {
       if (table === 'goals') {
         const chain: Record<string, unknown> = {
           select: () => chain, eq: () => chain, contains: () => chain,
+          maybeSingle: async () => ({ data: goal }),
           then: (res: (v: unknown) => void) => res({ data: linkedGoals, error: null }),
           insert: (row: Record<string, unknown>) => { calls.goalInsert = row; return thenable({ error: null }) },
-          update: (row: Record<string, unknown>) => { calls.goalUpdate = row; return { in: () => thenable({ error: null }) } },
+          update: (row: Record<string, unknown>) => {
+            calls.goalUpdate = row
+            return { in: () => thenable({ error: null }), eq: () => ({ eq: () => thenable({ error: null }) }) }
+          },
         }
         return chain
       }
@@ -210,12 +216,57 @@ describe('executeProposedAction — cerrar_relacion', () => {
   })
 })
 
+describe('executeProposedAction — agregar_hito', () => {
+  const hito: ProposedActionResolved = {
+    kind: 'agregar_hito', objetivo: 'Mundial de Bomberos', hito: 'Pasar examen médico IPD', fecha: '2026-08-15', objetivoId: 'g1',
+  } as ProposedActionResolved
+
+  it('appendea el milestone al array existente y toca updated_at', async () => {
+    const { sb, calls } = mockSb({ goal: { id: 'g1', title: 'Mundial de Bomberos', milestones: [{ id: 'm0', title: 'previo', completed: true }] } })
+    const r = await executeProposedAction(sb, 'u1', hito)
+    expect(r.ok).toBe(true)
+    expect(r.message).toContain('Pasar examen médico IPD')
+    expect(r.message).toContain('Mundial de Bomberos')
+    const upd = calls.goalUpdate as { milestones: Array<Record<string, unknown>>; updated_at: string }
+    expect(upd.milestones).toHaveLength(2) // no pisa el previo
+    expect(upd.milestones[0]).toMatchObject({ id: 'm0' })
+    expect(upd.milestones[1]).toMatchObject({ title: 'Pasar examen médico IPD', completed: false, dueDate: '2026-08-15' })
+    expect(String(upd.milestones[1].id)).toMatch(/^m_/)
+    expect(typeof upd.updated_at).toBe('string')
+  })
+
+  it('dueDate null si la fecha no es ISO; arranca array vacío', async () => {
+    const { sb, calls } = mockSb({ goal: { id: 'g1', title: 'Norte', milestones: null } })
+    const r = await executeProposedAction(sb, 'u1', { ...hito, fecha: 'en agosto' } as ProposedActionResolved)
+    expect(r.ok).toBe(true)
+    const upd = calls.goalUpdate as { milestones: Array<Record<string, unknown>> }
+    expect(upd.milestones).toHaveLength(1)
+    expect(upd.milestones[0]).toMatchObject({ dueDate: null })
+  })
+
+  it('falla sin objetivoId resuelto (no escribe)', async () => {
+    const { sb, calls } = mockSb({ goal: { id: 'g1', title: 'X' } })
+    const r = await executeProposedAction(sb, 'u1', { ...hito, objetivoId: null } as ProposedActionResolved)
+    expect(r.ok).toBe(false)
+    expect(r.message).toMatch(/no encontré/i)
+    expect(calls.goalUpdate).toBeUndefined()
+  })
+
+  it('falla si el objetivo no existe / es ajeno', async () => {
+    const { sb } = mockSb({ goal: null })
+    const r = await executeProposedAction(sb, 'u1', hito)
+    expect(r.ok).toBe(false)
+    expect(r.message).toMatch(/no encontré/i)
+  })
+})
+
 describe('isExecutableByChat', () => {
-  it('las cuatro acciones están habilitadas por chat', () => {
+  it('las acciones habilitadas por chat', () => {
     expect(isExecutableByChat('registrar_interaccion')).toBe(true)
     expect(isExecutableByChat('crear_objetivo')).toBe(true)
     expect(isExecutableByChat('crear_persona')).toBe(true)
     expect(isExecutableByChat('cerrar_relacion')).toBe(true)
+    expect(isExecutableByChat('agregar_hito')).toBe(true)
     expect(isExecutableByChat('otra_cosa')).toBe(false)
   })
 })
