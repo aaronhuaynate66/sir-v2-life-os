@@ -18,10 +18,10 @@ Vista usable (lo de abajo es histórico pesado). Reconciliado tras la sesión de
 Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/artifact/045fea0b-7b02-4a33-a013-7d394d9d85f6
 
 **🟢 Listo para construir (autónomo, sin bloqueo):**
-- **[alta] Fuga de voseo en el chat** — el harness de eval cazó "querés" en una respuesta real (contra [[idioma-espanol-peru]]). Reforzar la regla anti-voseo del prompt + re-medir. Bug real.
-- **[media] Copy del recordatorio "¡Listo!"** — al agendar, la respuesta a veces sobre-afirma ("¡Listo! Te lo propongo:") o saluda genérico en vez de acompañar la propuesta.
-- **[baja] Verborrea a "consejo corto"** — el harness marcó respuestas largas a pedidos breves.
-- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — few-shot dinámico desde correcciones (👎) + subir prioridad de `preference` fresca sobre patrones auto-derivados en `sortLearnings` (hoy van 3ras). El "que SIR aprenda" de verdad.
+- ✅ **[alta] Fuga de voseo en el chat** — **HECHO** (commit `f01c19d`/#944, un commit después de esta reconciliación). Fix determinístico `src/lib/text/deVoseo.ts` (PURO, 8 tests) scrubbea voseo/rioplatense→tuteo peruano; cableado en `src/lib/sir/askSir.ts:631` (`deVoseo(rawAnswer)`) antes de devolver/persistir la respuesta — cubre chat web y Telegram. Harness: caso honesty-unknown 15→95. Nota del propio commit: el caso `language-peru` del golden-set queda bajo por límite del JUEZ (no re-mide bien), no porque el bug siga vivo — no reabrir por eso.
+- ✅ **[media] Copy del recordatorio "¡Listo!"** — **HECHO** (mismo commit `f01c19d`/#944). `src/lib/sir/askSir.ts:679` reemplaza el copy que sobre-afirma por "Te propongo esto — revísalo y confírmalo. 👇" cuando el texto abre con afirmación de "hecho" o queda muy corto. Harness: caso action-honesty 30→95.
+- 🟡 **[baja] Verborrea a "consejo corto"** — **PARCIAL** (mismo commit `f01c19d`/#944). Se agregó línea BREVEDAD al prompt (`src/lib/sir/ask.ts:19`: "si Aaron pide algo CORTO... responde en 1-3 frases"), pero el propio commit lo marca de "efecto marginal" (es guía de prompt, no un scrub determinístico como el voseo) — falta re-medir con el harness antes de dar por cerrado.
+- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — sigue pendiente (re-verificado 2026-07-24): `src/lib/learnings/recall.ts` (`sortLearnings`, línea 48) sigue con `kindRank` `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` — `preference` sigue 3ra, sin boost de frescura. Sin rastro de few-shot dinámico desde correcciones (👎) en el prompt de `askSir.ts`. El "que SIR aprenda" de verdad.
 
 **🟡 Necesita input/decisión de Aaron:**
 - **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` O usar SIR con 👍/👎+corrección (ya se capturan en chat_feedback) → `npm run eval:sir --from-feedback 20`. Agranda la vara del Plan A y del loop.
