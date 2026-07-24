@@ -49,7 +49,10 @@ async function askSir(cookie: string, c: EvalCase): Promise<string> {
   const res = await fetch(`${BASE}/api/sir/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
-    body: JSON.stringify({ question: c.question, userContext: c.context }),
+    // persist:false → el eval NO ensucia la data real (recall/hilo/ledger). Corre
+    // contra la data REAL de Aaron; sin esto inyectaba sus preguntas sintéticas y
+    // SIR las resurfaceaba como pendientes fantasma (ej. "llamar al contador").
+    body: JSON.stringify({ question: c.question, userContext: c.context, persist: false }),
   })
   const j = (await res.json().catch(() => ({}))) as { answer?: string; error?: string }
   return j.answer ?? `(sin respuesta: ${j.error ?? res.status})`

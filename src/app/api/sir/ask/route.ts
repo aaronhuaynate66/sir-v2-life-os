@@ -40,6 +40,10 @@ export async function POST(req: NextRequest) {
   if (typeof body.question !== 'string' || body.question.trim().length === 0) {
     return errorJson(400, 'question requerido (string no vacio)')
   }
+  // persist:false → NO tocar la data real (recall, hilo, ledger). Lo usa el harness
+  // de eval, que corre contra la data REAL de Aaron: sin esto inyectaba sus preguntas
+  // sintéticas y SIR las resurfaceaba como pendientes/recordatorios fantasma.
+  const persist = body.persist !== false
 
   try {
     const result = await askSir({
@@ -54,19 +58,20 @@ export async function POST(req: NextRequest) {
       skipInlineGaps: body.skipInlineGaps === true,
       mode: body.mode === 'socratic' ? 'socratic' : null,
       userContext: typeof body.userContext === 'string' ? body.userContext : undefined,
+      persist,
     })
     // Hilo unificado (Fase 2): persisto el intercambio al hilo canónico para que
     // Telegram (y otros dispositivos) vean lo hablado acá. Fail-open. Los `at`
     // persistidos vuelven al cliente para que el polling no re-agregue estos
-    // mismos turnos (dedup del hilo unificado).
-    const persisted = await appendSirThread(supabase, userId, 'web', body.question as string, result.answer)
+    // mismos turnos (dedup del hilo unificado). Se salta si persist=false (eval).
+    const persisted = persist ? await appendSirThread(supabase, userId, 'web', body.question as string, result.answer) : null
 
     // Ledger (cerebro): si SIR propuso una ACCIÓN, la registramos como sugerencia
     // 'pending'. El chat persiste luego si se confirmó/descartó (cierra el loop
     // que antes era estado efímero de React). Fail-open: no rompe la respuesta.
     let suggestionId: string | null = null
     const proposed = (result as { proposedAction?: { kind?: unknown } | null }).proposedAction
-    if (proposed && typeof proposed.kind === 'string') {
+    if (persist && proposed && typeof proposed.kind === 'string') {
       const sid = `sug_${createHash('sha1').update(`${userId}|${Date.now()}|${Math.random()}`).digest('hex').slice(0, 24)}`
       const { error: sErr } = await supabase.from('suggestions').insert({
         id: sid, user_id: userId, surface: 'chat', kind: proposed.kind,
