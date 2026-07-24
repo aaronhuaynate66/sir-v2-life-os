@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseWhoIsWhoReply, handlesInReply, buildWhoIsWhoQuestion, handleToProbableName } from './whoIsWho'
+import { parseWhoIsWhoReply, handlesInReply, buildWhoIsWhoQuestion, handleToProbableName, buildWhoIsWhoKeyboard } from './whoIsWho'
 
 describe('handleToProbableName', () => {
   it('separa por _ . - y quita dígitos', () => {
@@ -56,5 +56,31 @@ describe('buildWhoIsWhoQuestion', () => {
   it('cap a 8 handles', () => {
     const q = buildWhoIsWhoQuestion(Array.from({ length: 12 }, (_, i) => `h${i}`))
     expect((q.match(/· @/g) ?? []).length).toBe(8)
+  })
+})
+
+describe('buildWhoIsWhoKeyboard', () => {
+  const rows = [{ id: 'a', handle: 'renzo' }, { id: 'b', handle: 'club' }]
+  it('una fila por cuenta con botón de descartar (wq|<id>) + fila de link a la app', () => {
+    const { keyboard } = buildWhoIsWhoKeyboard(rows, 'https://app.test/relaciones')
+    expect(keyboard.length).toBe(3) // 2 cuentas + 1 fila de link
+    expect(keyboard[0][0].callbackData).toBe('wq|a')
+    expect(keyboard[0][0].text).toContain('@renzo')
+    expect(keyboard[1][0].callbackData).toBe('wq|b')
+    // última fila = botón url a la app (sin callbackData)
+    expect(keyboard[2][0].url).toBe('https://app.test/relaciones')
+    expect(keyboard[2][0].callbackData).toBeUndefined()
+  })
+  it('el texto EXPLICA la acción (descartar / nombrar en la app)', () => {
+    const { text } = buildWhoIsWhoKeyboard(rows, 'x')
+    expect(text.toLowerCase()).toContain('descart')
+    expect(text.toLowerCase()).toContain('app')
+    expect(text).toContain('2 cuenta')
+  })
+  it('capea a 10 filas de cuentas y avisa cuántas quedan en la app', () => {
+    const many = Array.from({ length: 14 }, (_, i) => ({ id: String(i), handle: `h${i}` }))
+    const { keyboard, text } = buildWhoIsWhoKeyboard(many, 'x')
+    expect(keyboard.length).toBe(11) // 10 cuentas + link
+    expect(text).toContain('4') // "otras 4 están en la app"
   })
 })

@@ -35,7 +35,8 @@ import { trackServer } from '@/lib/analytics/serverTrack'
 import { extractStoryVision } from '@/lib/social-reader/storyVision'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, type PersonLite } from '@/lib/social-reader/match'
-import { parseWhoIsWhoReply } from '@/lib/social-reader/whoIsWho'
+import { parseWhoIsWhoReply, buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
+import { relacionesUrl } from '@/lib/app-url'
 import type { LlmImageMediaType } from '@/lib/llm/types'
 
 export const runtime = 'nodejs'
@@ -160,6 +161,30 @@ async function handleHabitTap(
     const rows = pending.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
     await editTelegramKeyboard(chatId, messageId, `✓ ${title} marcado. ¿Cuáles más hiciste hoy? 👇`, rows)
   }
+}
+
+/** Tap "✕ No es contacto" del ¿quién es quién?: descarta la cuenta (reversible)
+ *  y rearma el mensaje con las que quedan de la tanda. */
+async function handleWhoIsWhoDismiss(
+  supabase: SupabaseClient, userId: string, chatId: number, messageId: number, callbackId: string, unmatchedId: string,
+): Promise<void> {
+  await supabase.from('unmatched_social_activity').delete().eq('user_id', userId).eq('id', unmatchedId)
+  await answerCallbackQuery(callbackId, 'Descartado ✕')
+  // Las que quedan de esta tanda (preguntadas hace poco, aún presentes).
+  const since = new Date(Date.now() - 26 * 3_600_000).toISOString()
+  const { data } = await supabase
+    .from('unmatched_social_activity')
+    .select('id, handle, name')
+    .eq('user_id', userId).eq('platform', 'instagram').eq('kind', 'available')
+    .not('handle', 'is', null).gte('asked_at', since)
+    .order('observed_at', { ascending: false }).limit(10)
+  const rows = ((data ?? []) as Array<{ id: string; handle: string; name: string | null }>)
+  if (rows.length === 0) {
+    await editTelegramKeyboard(chatId, messageId, '✓ Listo. Para nombrar a las que sí son tu gente, ábrelas en la app (ahí ves su cara).', [])
+    return
+  }
+  const { text, keyboard } = buildWhoIsWhoKeyboard(rows, relacionesUrl())
+  await editTelegramKeyboard(chatId, messageId, text, keyboard)
 }
 
 /** user_id dueño de la data: env explícito o único profile (patrón reader). */
@@ -294,6 +319,15 @@ export async function POST(req: NextRequest) {
       const habitId = parseHabitCallback(cb.data)
       if (habitId) {
         await handleHabitTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, habitId)
+        return
+      }
+
+      // Tap "✕ No es contacto" del ¿quién es quién?: "wq|<unmatchedId>" → descartar
+      // (seguro/reversible). Nombrar-con-cara se hace en la app (botón url).
+      if (cb.data.startsWith('wq|')) {
+        const unmatchedId = cb.data.slice(3)
+        if (unmatchedId) { await handleWhoIsWhoDismiss(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, unmatchedId) }
+        else await answerCallbackQuery(cb.callbackId)
         return
       }
 

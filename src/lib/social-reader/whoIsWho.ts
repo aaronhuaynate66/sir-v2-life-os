@@ -9,6 +9,7 @@
 
 import { canonHandle } from './match'
 import { looksLikeBusiness } from './looksLikeBusiness'
+import type { InlineButton } from '@/lib/telegram/client'
 
 export interface WhoIsWhoAssignment {
   handle: string
@@ -86,3 +87,34 @@ export function buildWhoIsWhoQuestion(handles: string[]): string {
     '• "@handle no" → no es un contacto',
   ].join('\n')
 }
+
+/** Máximo de cuentas por mensaje (teclado legible en móvil; el resto, en la app). */
+const MAX_KEYBOARD_ROWS = 10
+
+export interface WhoIsWhoRow { id: string; handle: string; name?: string | null }
+
+/**
+ * Teclado inline del "¿quién es quién?" (reemplaza el protocolo de texto confuso).
+ * Una fila por cuenta con UN botón seguro: [✕ @handle] = descartar (reversible,
+ * reaparece en su próxima historia). NO expone "confirmar/nombrar" acá: Telegram
+ * no puede mostrar la CARA y el pálpito del handle es basura la mayoría de las
+ * veces → confirmar crearía un contacto mal nombrado (caro y poco reversible). El
+ * nombrar-viendo-la-cara vive en la app (SocialUnmatchedInbox), enlazada por el
+ * botón url. PURO (el appUrl se inyecta). El texto EXPLICA la acción claramente.
+ */
+export function buildWhoIsWhoKeyboard(rows: WhoIsWhoRow[], appUrl: string): { text: string; keyboard: InlineButton[][] } {
+  const shown = rows.slice(0, MAX_KEYBOARD_ROWS)
+  const extra = rows.length - shown.length
+  const text = [
+    `👀 Vi historias de ${rows.length} cuenta(s) que sigues y aún no tengo asignadas a un contacto.`,
+    'Toca ✕ en las que NO son un contacto (negocios, desconocidos): las descarto — y si me equivoco, reaparecen solas en su próxima historia.',
+    'Para NOMBRAR a las que sí son tu gente, ábrelas en la app: ahí ves su cara y eliges o escribes quién es (más certero que adivinar por el @).',
+    extra > 0 ? `(Te muestro ${shown.length}; las otras ${extra} están en la app.)` : '',
+  ].filter(Boolean).join('\n\n')
+  const keyboard: InlineButton[][] = shown.map((r) => [
+    { text: `✕  @${r.handle}`, callbackData: `wq|${r.id}` },
+  ])
+  keyboard.push([{ text: '📇 Nombrar en la app (ver la cara)', url: appUrl }])
+  return { text, keyboard }
+}
+
