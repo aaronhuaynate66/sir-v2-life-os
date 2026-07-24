@@ -16,6 +16,14 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['hacés', 'haces'], ['decís', 'dices'], ['venís', 'vienes'], ['sentís', 'sientes'],
   ['vivís', 'vives'], ['ponés', 'pones'], ['salís', 'sales'], ['tenés que', 'tienes que'],
   ['creés', 'crees'], ['leés', 'lees'], ['vés', 'ves'], ['andás', 'andas'], ['estás vos', 'estás tú'],
+  // Más presentes -és/-ás (el harness cazó "debés"). NO incluir "tomás" (choca con
+  // el nombre Tomás); el imperativo "tomá" ya está cubierto más abajo.
+  ['debés', 'debes'], ['necesitás', 'necesitas'], ['pensás', 'piensas'], ['hablás', 'hablas'],
+  ['buscás', 'buscas'], ['llamás', 'llamas'], ['usás', 'usas'], ['trabajás', 'trabajas'],
+  ['dejás', 'dejas'], ['mandás', 'mandas'], ['mirás', 'miras'], ['pasás', 'pasas'],
+  ['quedás', 'quedas'], ['tratás', 'tratas'], ['entendés', 'entiendes'], ['respondés', 'respondes'],
+  ['elegís', 'eliges'], ['seguís', 'sigues'], ['pedís', 'pides'], ['preferís', 'prefieres'],
+  ['recibís', 'recibes'], ['conseguís', 'consigues'], ['escribís', 'escribes'],
   // Ser
   ['sos', 'eres'],
   // Imperativos rioplatenses → tuteo peruano
