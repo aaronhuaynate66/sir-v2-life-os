@@ -229,8 +229,12 @@ export function detectDealGap(
     const titleTokens = norm(d.title).split(/\s+/).filter((t) => t.length >= 4)
     const byTitle = titleTokens.some((t) => q.includes(t))
     const byContact = !!d.contactFirst && norm(d.contactFirst).length >= 3 && q.includes(norm(d.contactFirst))
-    const byGeneric = DEAL_WORDS.some((k) => q.includes(k))
-    if (!(byTitle || byContact || byGeneric)) continue
+    // Un nudge de deal estancado SOLO debe salir si la consulta menciona ESE deal
+    // (por título o por su contacto). Antes bastaba una palabra genérica ("cliente",
+    // "negocio"…) → un deal vencido SECUESTRABA preguntas de otro tema: p.ej. "¿con
+    // qué CLIENTE tengo el tema de las cámaras Hikvision?" disparaba el deal de
+    // seguridad Sienna (no relacionado) en vez de responder por Miluska/Hikvision.
+    if (!(byTitle || byContact)) continue
 
     const noNext = !(d.nextAction ?? '').trim()
     const overdue = !!d.nextActionDate && d.nextActionDate < todayISO

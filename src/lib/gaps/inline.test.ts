@@ -168,6 +168,12 @@ describe('detectDealGap — deal estancado', () => {
   it('respeta el descarte', () => {
     expect(detectDealGap('¿cómo voy con Sienna?', [deal()], new Set(['ctx_dealstalled:d1']), NOW)).toBeNull()
   })
+  it('NO secuestra una pregunta de OTRO tema por una palabra genérica ("cliente")', () => {
+    // Regresión: "cliente" es DEAL_WORD, pero la pregunta no menciona ESTE deal
+    // (ni "Sienna/Minerals/seguridad" ni "Ivis") → no debe disparar el deal vencido.
+    // Bug real: disparaba el deal de Sienna al preguntar por cámaras Hikvision.
+    expect(detectDealGap('¿Con qué cliente tengo el tema de las cámaras Hikvision?', [deal()], new Set(), NOW)).toBeNull()
+  })
 })
 
 
