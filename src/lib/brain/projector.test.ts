@@ -38,6 +38,50 @@ describe('brain/projector · nodos', () => {
   })
 })
 
+describe('brain/projector · sigue la página (interés en común)', () => {
+  const base = {
+    people: [
+      { id: 'fabiola', name: 'Fabiola' },
+      { id: 'renzo', name: 'Renzo' },
+    ],
+    orgs: [{ slug: 'cgbvp', name: 'CGBVP' }],
+  }
+
+  it('emite person → org con el peso base de follows_org', () => {
+    const g = projectGraph({ ...base, pageFollows: [{ person_id: 'fabiola', org_slug: 'cgbvp' }] })
+    const e = g.edges.find((x) => x.kind === 'follows_org')
+    expect(e?.key).toBe(edgeKey('person', 'fabiola', 'org', 'cgbvp', 'follows_org'))
+    expect(e?.derivedWeight).toBe(BASE_WEIGHT.follows_org)
+  })
+
+  it('dos personas en la misma página quedan colgadas del mismo nodo — eso ES el interés en común', () => {
+    const g = projectGraph({
+      ...base,
+      pageFollows: [
+        { person_id: 'fabiola', org_slug: 'cgbvp' },
+        { person_id: 'renzo', org_slug: 'cgbvp' },
+      ],
+    })
+    const followers = g.edges.filter((x) => x.kind === 'follows_org' && x.dstId === 'cgbvp').map((x) => x.srcId)
+    expect(followers.sort()).toEqual(['fabiola', 'renzo'])
+  })
+
+  it('ignora filas cuyo extremo no existe (persona sin cargar u org desconocida)', () => {
+    const g = projectGraph({
+      ...base,
+      pageFollows: [
+        { person_id: 'nadie', org_slug: 'cgbvp' },
+        { person_id: 'fabiola', org_slug: 'inexistente' },
+      ],
+    })
+    expect(g.edges.filter((x) => x.kind === 'follows_org')).toHaveLength(0)
+  })
+
+  it('sin pageFollows no cambia nada', () => {
+    expect(projectGraph(base).edges.filter((x) => x.kind === 'follows_org')).toHaveLength(0)
+  })
+})
+
 describe('brain/projector · aristas', () => {
   it('emite arista family desde person_links con peso base', () => {
     const g = projectGraph({

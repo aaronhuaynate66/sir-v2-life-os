@@ -58,11 +58,12 @@ export async function loadBrainGraphForUser(
     trackers,
     personMoney,
     goalCosts,
+    pageFollowersRaw,
     learnedWeights,
   ] = await Promise.all([
     S<NonNullable<ProjectorInput['people']>[number]>('people', 'id, name'),
     S<NonNullable<ProjectorInput['goals']>[number]>('goals', 'id, title, related_goals, related_persons'),
-    S<{ org_slug: string; name: string | null }>('org_profiles', 'org_slug, name'),
+    S<{ org_slug: string; name: string | null; instagram_handle: string | null }>('org_profiles', 'org_slug, name, instagram_handle'),
     S<NonNullable<ProjectorInput['steps']>[number]>('objective_steps', 'id, objective_id, title'),
     S<NonNullable<ProjectorInput['moments']>[number]>('relationship_moments', 'id, person_id, title'),
     S<NonNullable<ProjectorInput['deals']>[number]>('deals', 'id, title, contact_person_id, client_org_slug, related_persons'),
@@ -85,11 +86,26 @@ export async function loadBrainGraphForUser(
     S<{ id: string; objective_id: string | null; objective_step_id: string | null; label: string | null }>('trackers', 'id, objective_id, objective_step_id, label'),
     S<NonNullable<ProjectorInput['personMoney']>[number]>('person_money', 'id, person_id'),
     S<NonNullable<ProjectorInput['goalCosts']>[number]>('goal_costs', 'id, goal_id, label'),
+    S<{ person_id: string | null; page_handle: string }>('social_page_followers', 'person_id, page_handle'),
     fetchLearnedWeights(supabase, userId),
   ])
 
   // org_profiles usa `org_slug`; el projector espera `slug`. Mapeamos.
   const orgs: OrgRow[] = orgsRaw.map((o) => ({ slug: o.org_slug, name: o.name }))
+
+  // "Fulano sigue esta página" → arista person→org. El puente es el handle de
+  // IG de la organización (0167): sin él la fila no se puede atribuir a nadie.
+  const orgSlugByHandle = new Map<string, string>()
+  for (const o of orgsRaw) {
+    const h = (o.instagram_handle ?? '').trim().toLowerCase().replace(/^@/, '')
+    if (h) orgSlugByHandle.set(h, o.org_slug)
+  }
+  const pageFollows = pageFollowersRaw
+    .map((f) => {
+      const slug = orgSlugByHandle.get((f.page_handle ?? '').trim().toLowerCase().replace(/^@/, ''))
+      return f.person_id && slug ? { person_id: f.person_id, org_slug: slug } : null
+    })
+    .filter((f): f is { person_id: string; org_slug: string } => !!f)
   // trackers rotula con `label`; el projector usa `title`. Mapeamos.
   const trackersMapped: NonNullable<ProjectorInput['trackers']> = trackers.map((t) => ({
     id: t.id,
@@ -113,6 +129,7 @@ export async function loadBrainGraphForUser(
     trackers: trackersMapped,
     personMoney,
     goalCosts,
+    pageFollows,
     learnedWeights,
   }
   return projectGraph(input)

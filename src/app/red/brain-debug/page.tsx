@@ -36,6 +36,7 @@ const KIND_LABEL: Record<EdgeKind, string> = {
   tracker_step: 'tracker · tarea',
   money_person: 'plata',
   goal_cost: 'costo',
+  follows_org: 'sigue la página',
 }
 
 const TYPE_LABEL: Record<NodeType, string> = {

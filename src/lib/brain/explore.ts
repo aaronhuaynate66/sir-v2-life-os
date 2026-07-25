@@ -27,6 +27,7 @@ export const EDGE_REASON_LABEL: Record<EdgeKind, string> = {
   tracker_step: 'seguimiento de un paso',
   money_person: 'registro de plata',
   goal_cost: 'costo de un objetivo',
+  follows_org: 'sigue su página (interés en común)',
 }
 
 export const NODE_TYPE_LABEL: Record<NodeType, string> = {

@@ -78,6 +78,54 @@ interface SocialItem {
   /** ISO del momento REAL de la actividad (ej. cuándo posteó la story), si el
    *  interceptor lo pudo leer. Si no, se usa now() al insertar. */
   activityAt?: string
+  /** Gente que Aaron SIGUE y que también sigue esta cuenta — el renglón
+   *  "Seguido por fulano, mengano y N más que sigues" del perfil de Instagram.
+   *  Es el único lugar donde ese dato existe (ninguna API lo expone) y es lo que
+   *  permite ver INTERESES EN COMÚN en el grafo. Opcional: el reader lo manda
+   *  cuando visita el perfil de una página. */
+  followedBy?: Array<{ handle?: string; name?: string }>
+}
+
+/**
+ * Guarda "estas personas de tu círculo también siguen esta página". Resuelve
+ * cada seguidor contra los contactos ya cargados (mismo matcher que la bandeja);
+ * si todavía no es un contacto, se guarda el handle/nombre crudo y `person_id`
+ * queda null — se resolverá cuando esa persona exista. Idempotente por
+ * (usuario, página, seguidor). Fail-soft: devuelve cuántas filas escribió.
+ */
+async function recordPageFollowers(
+  admin: SupabaseClient,
+  userId: string,
+  pageHandle: string,
+  followers: Array<{ handle?: string; name?: string }>,
+  index: ReturnType<typeof buildPersonIndex>,
+  nowIso: string,
+): Promise<number> {
+  const rows: Array<Record<string, unknown>> = []
+  const seen = new Set<string>()
+  for (const f of followers.slice(0, 60)) {
+    const handle = f.handle ? canonHandle(f.handle) : null
+    const name = typeof f.name === 'string' ? f.name.trim().slice(0, 120) : null
+    if (!handle && !name) continue
+    const key = handle || (name as string).toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    const pm = matchPerson(index, { platform: 'instagram', handle: handle ?? undefined, name: name ?? undefined })
+    rows.push({
+      id: `spf_${createHash('sha1').update(`${userId}|${pageHandle}|${key}`).digest('hex').slice(0, 32)}`,
+      user_id: userId, page_handle: pageHandle,
+      follower_handle: handle, follower_name: name,
+      person_id: pm?.person.id ?? null,
+      source: 'instagram', observed_at: nowIso,
+    })
+  }
+  if (rows.length === 0) return 0
+  try {
+    const { error } = await admin.from('social_page_followers').upsert(rows, { onConflict: 'id' })
+    return error ? 0 : rows.length
+  } catch {
+    return 0 // tabla 0167 sin propagar
+  }
 }
 
 // Dedup: no insertamos la MISMA señal (persona+kind) más de una vez cada 6h.
@@ -109,6 +157,7 @@ export async function POST(req: NextRequest) {
   const sinceIso = new Date(Date.now() - DEDUP_HOURS * 3_600_000).toISOString()
   let inserted = 0, matched = 0, unmatched = 0, skipped = 0, backfilled = 0, promoted = 0
   let snapped = 0
+  let followerRows = 0
 
   try {
     // Personas una sola vez → índice para matcheo por handle/slug/nombre.
@@ -121,6 +170,20 @@ export async function POST(req: NextRequest) {
       title: (r.title as string | null) ?? null,
     }))
     const index = buildPersonIndex(people)
+
+    // PÁGINAS YA CONOCIDAS: cuentas de IG que Aaron asignó a una organización
+    // (empresa o unidad: CGBVP, RIT…). No son contactos → no vuelven a la
+    // bandeja "¿quién es quién?". Fail-soft si 0167 no propagó.
+    const orgByHandle = new Map<string, string>()
+    try {
+      const { data: orgRows } = await admin
+        .from('org_profiles').select('org_slug, instagram_handle')
+        .eq('user_id', userId).not('instagram_handle', 'is', null).limit(500)
+      for (const o of (orgRows ?? []) as Array<{ org_slug: string; instagram_handle: string }>) {
+        const c = canonHandle(o.instagram_handle)
+        if (c) orgByHandle.set(c, o.org_slug)
+      }
+    } catch { /* columna 0167 sin propagar */ }
 
     // AUTO-PROMOCIÓN: señales que se guardaron sin asignar y que AHORA matchean
     // (se les seteó el handle / se cargó la persona) → a contact_activity + borrar
@@ -152,6 +215,18 @@ export async function POST(req: NextRequest) {
     for (const it of items) {
       const platform = typeof it.platform === 'string' ? it.platform : ''
       if (platform !== 'instagram' && platform !== 'linkedin') { skipped++; continue }
+
+      // Seguidores en común de una PÁGINA ("Seguido por X, Y y N más que
+      // sigues"): el dato que hace visible el interés compartido. Se registra
+      // aunque la cuenta no sea de una org todavía. Fail-soft.
+      const canonSelf = it.handle ? canonHandle(it.handle) : null
+      if (canonSelf && Array.isArray(it.followedBy) && it.followedBy.length > 0) {
+        followerRows += await recordPageFollowers(admin, userId, canonSelf, it.followedBy, index, nowIso)
+      }
+
+      // Página ya asignada a una organización → no es un contacto, no va a la
+      // bandeja. La señal de su historia no aporta timing relacional.
+      if (platform === 'instagram' && canonSelf && orgByHandle.has(canonSelf)) { skipped++; continue }
 
       const m = matchPerson(index, { platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: it.name })
       if (!m) {
@@ -237,5 +312,5 @@ export async function POST(req: NextRequest) {
     return errorJson(500, 'Fallo procesando la ingesta', e instanceof Error ? e.message : String(e))
   }
 
-  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted, snapped })
+  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted, snapped, followerRows })
 }

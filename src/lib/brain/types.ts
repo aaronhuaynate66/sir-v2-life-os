@@ -43,6 +43,7 @@ export type EdgeKind =
   | 'tracker_step'        // tracker → step
   | 'money_person'        // person_money → person (registro de plata)
   | 'goal_cost'           // goal_cost → goal (costo material/esfuerzo)
+  | 'follows_org'         // person → org (sigue su página en IG) = interés compartido
 
 export interface TypedEdge {
   /** Llave determinística que el store de pesos aprendidos usa como PK.
@@ -84,6 +85,10 @@ export const BASE_WEIGHT: Record<EdgeKind, number> = {
   tracker_step: 5,
   money_person: 4,
   goal_cost: 3,
+  // Seguir una página no es un vínculo fuerte por sí solo — el valor aparece en
+  // la COINCIDENCIA (varias personas siguiendo lo mismo = interés compartido),
+  // no en la arista suelta. Peso bajo a propósito.
+  follows_org: 2,
 }
 
 /** Construye la llave deterministica de una arista.
