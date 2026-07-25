@@ -61,6 +61,8 @@ import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
 import { isReaderQuery, renderReaderStatusBlock } from '@/lib/social-reader/readerStatus'
+import { loadBrainGraphForUser } from '@/lib/brain/scopedLoader'
+import { isNetworkQuery, resolveNetworkSeeds, buildNetworkConnections, renderNetworkBlock } from '@/lib/brain/network'
 import type { Person, Goal, Memory } from '@/types'
 import { deVoseo } from '@/lib/text/deVoseo'
 
@@ -753,6 +755,22 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     } catch { /* tabla 0113 ausente / sin data → sin bloque */ }
   }
 
+  // RED / CONEXIONES: SIR era CIEGO al grafo tipado del cerebro (src/lib/brain/*).
+  // Solo cuando la pregunta es de RED/CAMINOS ("quién conoce a / me presenta a /
+  // está cerca de un objetivo") cargamos el grafo (SCOPEADO por user_id — seguro
+  // bajo service-role/Telegram) y difundimos desde las personas/orgs/objetivos
+  // que la pregunta nombra. OJO COSTO: gated por intención + acotado a semillas +
+  // top-N; no corre el grafo completo en cada turno. Fail-soft.
+  let networkBlock = ''
+  if (isNetworkQuery(`${question} ${recentUserText}`)) {
+    try {
+      const graph = await loadBrainGraphForUser(supabase, userId)
+      const seeds = resolveNetworkSeeds(`${question} ${recentUserText}`, graph, [...targetIds])
+      const connections = buildNetworkConnections(graph, seeds, 12)
+      networkBlock = renderNetworkBlock(seeds, connections)
+    } catch { /* fail-soft: sin grafo → el prompt ya sabe no negar la capacidad */ }
+  }
+
   const socratic = params.mode === 'socratic'
   const chatStyle = params.chatStyle === true
   const userContext = typeof params.userContext === 'string' ? params.userContext.trim().slice(0, 500) : ''
@@ -767,6 +785,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     (dealsBlock ? `\n\n${dealsBlock}` : '') +
     (tensionBlock ? `\n\n${tensionBlock}` : '') +
     (readerBlock ? `\n\n${readerBlock}` : '') +
+    (networkBlock ? `\n\n${networkBlock}` : '') +
     (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 
   // Resolver el nombre que proponga una acción → personId.
