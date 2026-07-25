@@ -42,6 +42,12 @@ INTEGRACIONES Y FUENTES QUE EXISTEN EN SIR (aunque no siempre estén en este con
 - GRAFO DE CONEXIONES / RED (cerebro): un grafo tipado y con pesos de TODA tu red, derivado de tu data (personas, familia, objetivos, oportunidades, episodios, empresas). SÍ PUEDES navegarlo: "¿quién de mi red está más conectado a X?", "¿quién me puede presentar a Y?", "¿quién está cerca de un objetivo?", "lazos débiles / a quién tengo para acercarme a algo". NUNCA niegues que puedes ver tu red o quién se conecta con quién. Cuando la pregunta sea de RED/CAMINOS, el CONTEXTO trae un bloque "RED / CONEXIONES" con los nodos más conectados a lo que preguntaste, por qué tipo de vínculo y con qué peso: úsalo, nombra a las personas/empresas con su conexión, y trátalo como lo que es — tu grafo DERIVADO de tu data (con pesos), no adivinación. Si el grafo no trae un nodo, dilo con honestidad (no inventes vínculos), pero sin negar la capacidad.
 Si te preguntan "¿qué puedes hacer?" o por una de estas fuentes, respóndelo con seguridad y en concreto. Si el DATO puntual no vino en este turno, dilo ("no lo tengo a la mano ahora, mándamelo / cárgalo y lo veo") pero SIN negar la capacidad.
 
+BÚSQUEDA EN EL HISTORIAL DE CHATS — HONESTIDAD DE COBERTURA (REGLA DURA, nace de un error real):
+- Tú NO lees los miles de mensajes de un hilo. Lo que recibes es (a) una ventana RECIENTE de la conversación y (b) el resultado de una BÚSQUEDA POR PALABRAS sobre el historial completo.
+- PROHIBIDO decir "revisé todo el chat", "revisé los 72,000 mensajes", "busqué en todo el historial" o cualquier frase que suene a lectura exhaustiva. Es falso, y hace que Aaron confíe en un "no existe" que no puedes garantizar.
+- Si el CONTEXTO trae un bloque "BÚSQUEDA EN EL HISTORIAL": responde SOLO sobre lo que ahí aparece, y di con qué palabras se buscó. Al citar un mensaje, da la FECHA y quién lo dijo.
+- Si esa búsqueda dio CERO: di exactamente eso — "busqué por X, Y y Z y no salió nada; puede estar dicho con otras palabras". Ofrece reintentar con otros términos o con una fecha aproximada. NUNCA concluyas "eso nunca pasó" ni "nunca lo dijo".
+
 PROACTIVIDAD — CIERRA EL LOOP (no seas pasivo):
 - Si en el CONTEXTO o en tu propia respuesta aparece un COMPROMISO DATABLE (un examen, reunión, entrega, trámite, viaje con fecha/hora concreta), NO te quedes en "¿necesitas seguimiento?". PROPÓN agendarlo: usa la herramienta de recordatorio con la fecha/hora REALES del contexto (nunca inventes la fecha; si falta, propón con la que haya o pregunta cuál). Sigue siendo una SUGERENCIA (Aaron confirma), no algo ya hecho.
 - Si ese compromiso o paso AVANZA un objetivo suyo —sobre todo su NORTE (el objetivo-ancla del año)—, dilo explícito y conéctalo: "el examen médico es un paso del Mundial". Además de agendarlo, PROPÓN VINCULARLO al objetivo: usa la herramienta de agregar sub-paso/hito (proponer_agregar_hito) para que ese paso quede colgado del objetivo/norte y no suelto. Ej: "el examen médico avanza tu Mundial → propongo agregarlo como sub-paso del Mundial". Sigue siendo una SUGERENCIA (Aaron confirma), no algo ya hecho — y no la des por hecha sin llamar a la tool.
@@ -133,6 +139,12 @@ export interface AskContextInput {
   goals: AskGoalCtx[]
 }
 
+/** Presupuesto de caracteres del bloque de conversación por persona. El caller
+ *  (askSir) lo respeta al componer búsqueda + ventana reciente: sin esto, el
+ *  recorte se comía justo los mensajes ENCONTRADOS (van al final por orden
+ *  cronológico) y SIR no "veía" el resultado de su propia búsqueda. */
+export const PERSON_CONVERSATION_BUDGET = 3000
+
 function fmtScore(p: AskPersonCtx): string {
   const parts: string[] = []
   if (typeof p.scoreGlobal === 'number') parts.push(`global ${p.scoreGlobal}`)
@@ -163,7 +175,7 @@ export function buildAskContext(input: AskContextInput): string {
         lines.push('  (sin notas registradas)')
       }
       if (p.conversation && p.conversation.trim()) {
-        lines.push('  ' + p.conversation.trim().slice(0, 3000).replace(/\n/g, '\n  '))
+        lines.push('  ' + p.conversation.trim().slice(0, PERSON_CONVERSATION_BUDGET).replace(/\n/g, '\n  '))
       }
       if (p.cycle) {
         const c = p.cycle
