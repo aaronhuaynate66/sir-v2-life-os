@@ -31,6 +31,10 @@ export interface MorningInput {
    *  NUNCA descalifica ni "gestiona" (doc 17). Texto ya formado
    *  (ver lib/ciclo/weekAhead). */
   cycleWeekAhead?: string
+  /** Un PLAN AGENDADO que cae dentro de la ventana sensible de esa persona
+   *  (ver lib/ciclo/agendaCross). Más accionable que la línea general de la
+   *  semana: habla de algo concreto que ya está en el calendario. */
+  cycleAgenda?: string
   /** Buen momento para AVANZAR un objetivo con una persona: alguien ligado a un
    *  objetivo activo (con acción pendiente) muestra buen timing hoy (historia
    *  activa). El loop original del reader (Dayana/Marlab). Texto ya formado
@@ -235,6 +239,9 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   add(input.goalContactTiming, 'goalContactTiming', 'gente')
   // Anticipación de cuidado: semana con carga afectiva (ventanas sensibles del
   // ciclo). Va con lo relacional; es un nudge de CUIDADO, no una tarea.
+  // Un plan concreto en ventana sensible va ANTES que la línea general de la
+  // semana: es accionable hoy (mover, dar margen), no solo anticipación.
+  add(input.cycleAgenda, 'cycleAgenda', 'gente')
   add(input.cycleWeekAhead, 'cycleWeekAhead', 'gente')
 
   // 1.8 Cumpleaños próximos (después de lo relacional urgente).
