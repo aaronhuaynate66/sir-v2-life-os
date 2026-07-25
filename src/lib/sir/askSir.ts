@@ -46,6 +46,7 @@ import { computeMissingHealthData, renderMissingDataBlock, SLEEP_TYPE, type Read
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
+import { isReaderQuery, renderReaderStatusBlock } from '@/lib/social-reader/readerStatus'
 import type { Person, Goal, Memory } from '@/types'
 import { deVoseo } from '@/lib/text/deVoseo'
 
@@ -282,6 +283,45 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     const { missing } = computeMissingHealthData(readings, todayLima)
     missingDataBlock = renderMissingDataBlock(missing, todayLima)
   } catch { /* sin data / tabla ausente → sin recordatorio */ }
+
+  // 3e. ESTADO DEL READER SOCIAL: si la pregunta toca Instagram/historias/reader/
+  //     redes, inyectamos un bloque con el estado REAL (conteos + última señal) de
+  //     unmatched_social_activity y contact_activity. Antes SIR era CIEGO a estas
+  //     tablas y NEGABA que Instagram existiera ("nunca se integró") — falso, el
+  //     reader las alimenta. Barato: 2 queries de conteo+max, solo cuando aplica.
+  //     Fail-soft: si algo revienta, el bloque sale igual afirmando que existe.
+  let readerBlock = ''
+  if (isReaderQuery(`${question} ${recentUserText}`)) {
+    let unmatchedCount = 0
+    let contactActivityCount = 0
+    let lastSignalISO: string | null = null
+    const takeLatest = (row: { observed_at?: string | null; created_at?: string | null } | null | undefined) => {
+      for (const iso of [row?.observed_at, row?.created_at]) {
+        if (typeof iso === 'string' && (!lastSignalISO || iso > lastSignalISO)) lastSignalISO = iso
+      }
+    }
+    try {
+      const [unmatched, contactAct] = await Promise.all([
+        supabase
+          .from('unmatched_social_activity')
+          .select('observed_at, created_at', { count: 'exact' })
+          .eq('user_id', userId)
+          .order('observed_at', { ascending: false })
+          .limit(1),
+        supabase
+          .from('contact_activity')
+          .select('observed_at, created_at', { count: 'exact' })
+          .eq('user_id', userId)
+          .order('observed_at', { ascending: false })
+          .limit(1),
+      ])
+      unmatchedCount = unmatched.count ?? 0
+      contactActivityCount = contactAct.count ?? 0
+      takeLatest((unmatched.data as Array<{ observed_at?: string; created_at?: string }> | null)?.[0])
+      takeLatest((contactAct.data as Array<{ observed_at?: string; created_at?: string }> | null)?.[0])
+    } catch { /* fail-soft: tablas 0150/0152 sin propagar → estado sin cifras */ }
+    readerBlock = renderReaderStatusBlock({ unmatchedCount, contactActivityCount, lastSignalISO }, nowISO)
+  }
 
   // 4. Objetivos activos → mapa personId → título.
   const { data: goalRows } = await supabase
@@ -617,6 +657,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     (learningsBlock ? `\n\n${learningsBlock}` : '') +
     (recallBlock ? `\n\n${recallBlock}` : '') +
     (missingDataBlock ? `\n\n${missingDataBlock}` : '') +
+    (readerBlock ? `\n\n${readerBlock}` : '') +
     (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 
   // Resolver el nombre que proponga una acción → personId.
