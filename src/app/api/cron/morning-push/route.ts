@@ -16,6 +16,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
 import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
 import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
+import { buildBriefThread } from '@/lib/telegram/briefThread'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
@@ -607,14 +608,22 @@ export async function GET(req: NextRequest) {
       // mismo determinístico; lo persistimos al hilo unificado para que aparezca
       // también en /sir (web). Fail-open: un fallo no rompe el cron.
       if (briefEnabled && tgOwnerId && tgChat && uid === tgOwnerId) {
-        const chatText = formatMorningBriefForChat(push)
-        const tg = await sendTelegramMessage(Number(tgChat), chatText)
-        if (tg.ok) {
-          telegramBriefs++
+        // HILO POR SECCIONES (elección de Aaron 2026-07-25): un mensaje corto por
+        // tema —⚡ hoy / 💚 tu gente / 🎯 tus metas— en vez de un párrafo con todo
+        // pegado, para poder responderle a UNO. Si no hay señales, cae al mensaje
+        // único calmo de siempre.
+        const thread = buildBriefThread(push.signals)
+        const chatTexts = thread.length > 0 ? thread.map((m) => m.text) : [formatMorningBriefForChat(push)]
+        let anySent = false
+        for (const chatText of chatTexts) {
+          const tg = await sendTelegramMessage(Number(tgChat), chatText)
+          if (!tg.ok) continue
+          anySent = true
           try {
             await admin.from('sir_messages').insert({ user_id: uid, role: 'sir', content: chatText.slice(0, 4000), channel: 'telegram' })
           } catch { /* fail-open: el hilo es un extra */ }
         }
+        if (anySent) telegramBriefs++
       }
     } catch (e) {
       // Antes se tragaba en silencio: si un bug lógico (no una tabla sin

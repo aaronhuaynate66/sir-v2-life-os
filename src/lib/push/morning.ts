@@ -60,6 +60,22 @@ export interface MorningInput {
   healthWatch?: string
 }
 
+/** Sección del brief conversacional (Telegram). El chat manda UN mensaje por
+ *  sección en vez de un párrafo con todo pegado: cada tema queda respondible
+ *  por separado (decisión de Aaron 2026-07-25 — "así todo junto no me ayuda"). */
+export type BriefSection = 'hoy' | 'gente' | 'metas'
+
+/** Una señal del brief con su procedencia. Antes eran strings anónimos que se
+ *  fundían con `join(' · ')`: ahí se perdía de qué slot venía, a qué tema
+ *  apuntaba y qué acción admitía — por eso el mensaje no se podía trocear ni
+ *  accionar. */
+export interface MorningSignal {
+  /** Slot de origen (dueTasks, relationshipNudge, goalNudge…). */
+  slot: string
+  section: BriefSection
+  text: string
+}
+
 export interface MorningPush {
   title: string
   /** Cuerpo para la NOTIFICACIÓN del navegador: las TOP MAX_PARTS_WEB señales,
@@ -71,6 +87,9 @@ export interface MorningPush {
    *  navegador se queda calmo en pocas, pero en el chat se aprovechan más de las
    *  que igual ya se calcularon (decisión de Aaron 2026-07-23). */
   bodyFull: string
+  /** Las mismas señales de `bodyFull`, tipadas y ya deduplicadas. Es lo que usa
+   *  el hilo de Telegram (ver lib/telegram/briefThread). */
+  signals: MorningSignal[]
 }
 
 /** Notificación del navegador: pocas, calmas. */
@@ -78,6 +97,57 @@ const MAX_PARTS_WEB = 3
 /** Chat (Telegram): más señales, sin volcar TODO (el detalle vive en /panel). */
 const MAX_PARTS_FULL = 8
 const MAX_BODY = 220
+
+// Palabras que no identifican un TEMA (aparecen en cualquier señal) — se
+// ignoran al comparar si dos señales hablan de lo mismo.
+const TOPIC_STOP = new Set([
+  'para', 'como', 'con', 'que', 'del', 'las', 'los', 'una', 'unos', 'unas',
+  'por', 'sin', 'sobre', 'este', 'esta', 'hoy', 'dias', 'dia', 'vence', 'hace',
+  'ya', 'mas', 'menos', 'tu', 'tus', 'mi', 'mis', 'el', 'la', 'de', 'en', 'y',
+  'conviene', 'parece', 'sigue', 'esta', 'estan', 'vas', 'semana', 'semanas',
+])
+
+/** Tokens que identifican el TEMA de una señal (sin tildes, sin ruido). PURO. */
+export function topicTokens(text: string): Set<string> {
+  const words = (text || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9ñ\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !TOPIC_STOP.has(w))
+  return new Set(words)
+}
+
+/** Solape de temas entre dos textos: |A∩B| / |el más chico|. PURO. */
+export function topicOverlap(a: string, b: string): number {
+  const ta = topicTokens(a); const tb = topicTokens(b)
+  const min = Math.min(ta.size, tb.size)
+  if (min === 0) return 0
+  let hits = 0
+  for (const t of ta) if (tb.has(t)) hits++
+  return hits / min
+}
+
+/** Umbral de "es el mismo tema". Alto a propósito: preferimos repetir antes que
+ *  tragarnos una señal distinta que solo comparte el nombre de una persona (dos
+ *  señales sobre la mamá de Aaron —"3 semanas sin hablar" y "el conflicto parece
+ *  resuelto"— dan 0.67 y deben sobrevivir las dos). */
+const SAME_TOPIC = 0.8
+
+/**
+ * Quita señales que dicen LO MISMO con otras palabras. Se conserva la posición
+ * de la primera (la prioridad manda) pero el TEXTO de la más informativa —la
+ * variante larga suele traer el porqué ("y vas 0% — conviene un empujón"). PURO.
+ */
+export function dedupeSignals(signals: MorningSignal[]): MorningSignal[] {
+  const out: MorningSignal[] = []
+  for (const s of signals) {
+    const dup = out.findIndex((o) => topicOverlap(o.text, s.text) >= SAME_TOPIC)
+    if (dup === -1) { out.push(s); continue }
+    if (s.text.length > out[dup].text.length) out[dup] = { ...out[dup], text: s.text }
+  }
+  return out
+}
 
 function birthdayPhrase(b: MorningBirthday): string {
   const when = b.days === 0 ? 'cumple hoy' : b.days === 1 ? 'cumple mañana' : `cumple en ${b.days} días`
@@ -90,61 +160,68 @@ function birthdayPhrase(b: MorningBirthday): string {
  *  El ORDEN de acumulación = prioridad. `body` toma las top MAX_PARTS_WEB;
  *  `bodyFull` (chat) toma hasta MAX_PARTS_FULL. */
 export function buildMorningPush(input: MorningInput): MorningPush {
-  const parts: string[] = []
-  const add = (s: string | undefined | null) => {
-    if (s && parts.length < MAX_PARTS_FULL) parts.push(s)
+  const collected: MorningSignal[] = []
+  const add = (s: string | undefined | null, slot: string, section: BriefSection) => {
+    if (s) collected.push({ slot, section, text: s })
   }
 
   // 0. SEMANA EN FOCO (mudanza / hitos ≤7d) y 0.5 MÉTRICA DURA fuera de rango:
   //    lo urgente/time-sensitive del día, al frente.
-  add(input.weekFocus)
-  add(input.metricAlert)
+  add(input.weekFocus, 'weekFocus', 'metas')
+  add(input.metricAlert, 'metricAlert', 'hoy')
 
   // 1. Aniversarios/fechas especiales: un aniversario HOY es time-critical (no se
   //    puede celebrar tarde) → se mantiene sobre lo relacional-no-urgente.
-  for (const d of (input.importantDates ?? []).slice(0, 2)) add(d)
+  for (const d of (input.importantDates ?? []).slice(0, 2)) add(d, 'importantDate', 'gente')
 
   // 1.5 EL CORAZÓN RELACIONAL, subido de prioridad (decisión de Aaron 2026-07-23):
   //     "a quién cuidar hoy" + "cerrar un lazo" + "buen momento × objetivo" ahora
   //     van ANTES que los cumpleaños (un cumple en N días no debe tapar el cuidado
   //     de un vínculo que se enfría hoy) → casi siempre entran al push.
-  add(input.relationshipNudge)
-  add(input.momentResolution)
-  add(input.goalContactTiming)
+  add(input.relationshipNudge, 'relationshipNudge', 'gente')
+  add(input.momentResolution, 'momentResolution', 'gente')
+  add(input.goalContactTiming, 'goalContactTiming', 'gente')
   // Anticipación de cuidado: semana con carga afectiva (ventanas sensibles del
   // ciclo). Va con lo relacional; es un nudge de CUIDADO, no una tarea.
-  add(input.cycleWeekAhead)
+  add(input.cycleWeekAhead, 'cycleWeekAhead', 'gente')
 
   // 1.8 Cumpleaños próximos (después de lo relacional urgente).
-  for (const b of (input.birthdays ?? []).slice(0, 2)) add(birthdayPhrase(b))
+  for (const b of (input.birthdays ?? []).slice(0, 2)) add(birthdayPhrase(b), 'birthday', 'gente')
 
   // 2. Tareas que vencen hoy.
   const due = input.dueTasks ?? []
-  if (due.length === 1) add(`Hoy vence: ${due[0]}`)
-  else if (due.length > 1) add(`${due.length} tareas para hoy (${due[0]}…)`)
+  if (due.length === 1) add(`Hoy vence: ${due[0]}`, 'dueTask', 'hoy')
+  else if (due.length > 1) add(`${due.length} tareas para hoy (${due[0]}…)`, 'dueTask', 'hoy')
 
   // 2.5 Hábito a retomar · 2.6 señal del cuerpo · 2.7 vigilancia de laboratorio.
-  add(input.habitNudge)
-  add(input.bodySignal)
-  add(input.healthWatch)
+  add(input.habitNudge, 'habitNudge', 'hoy')
+  add(input.bodySignal, 'bodySignal', 'hoy')
+  add(input.healthWatch, 'healthWatch', 'hoy')
 
   // 2.8 OBJETIVO que necesita atención (accionable, antes del foco genérico).
-  add(input.goalNudge)
+  add(input.goalNudge, 'goalNudge', 'metas')
 
   // 3. Foco del día. Se omite si ya hubo un nudge de objetivo (evita 2 líneas de
   //    meta en el mismo push).
-  if (input.focus && !input.goalNudge) add(`Foco: ${input.focus}`)
+  if (input.focus && !input.goalNudge) add(`Foco: ${input.focus}`, 'focus', 'metas')
 
   // 4. Una señal más.
-  if (input.topSignal) add(`Atención: ${input.topSignal}`)
+  if (input.topSignal) add(`Atención: ${input.topSignal}`, 'topSignal', 'hoy')
+
+  // DEDUPE por tema antes de cortar: dos builders distintos describían la MISMA
+  // cosa con otras palabras y el brief lo decía dos veces ("Cerrar Boticas
+  // Jhodaal · EN 6 DÍAS" al inicio y «"Cerrar Boticas Jhodaal" vence en 6 días y
+  // vas 0%» al final). Se queda la más informativa, en la posición de la primera.
+  const signals = dedupeSignals(collected).slice(0, MAX_PARTS_FULL)
+  const parts = signals.map((s) => s.text)
 
   if (parts.length === 0) {
     const calm = 'Hoy no hay nada urgente. Espacio para lo que elijas.'
-    return { title: 'Buenos días', body: calm, bodyFull: calm }
+    return { title: 'Buenos días', body: calm, bodyFull: calm, signals: [] }
   }
 
   const bodyFull = parts.join(' · ')
   const bodyShort = parts.slice(0, MAX_PARTS_WEB).join(' · ')
   const body = bodyShort.length > MAX_BODY ? bodyShort.slice(0, MAX_BODY - 1).trimEnd() + '…' : bodyShort
-  return { title: 'Tu día en SIR', body, bodyFull }
+  return { title: 'Tu día en SIR', body, bodyFull, signals }
 }
