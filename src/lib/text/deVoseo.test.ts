@@ -51,6 +51,14 @@ describe('deVoseo', () => {
     expect(deVoseo('Cuidá esa relación')).toBe('Cuida esa relación')
   })
 
+  it('imperativo + enclítico lleva su tilde peruana', () => {
+    expect(deVoseo('si quieres mandame la captura')).toBe('si quieres mándame la captura')
+    expect(deVoseo('dejame ver y avisame')).toBe('déjame ver y avísame')
+    expect(deVoseo('cuidate mucho')).toBe('cuídate mucho')
+    // Palabras legítimas con la misma forma: intactas.
+    expect(deVoseo('dame el tomate y que llame luego')).toBe('dame el tomate y que llame luego')
+  })
+
   it('barrido generativo: irregulares que diptongan NO quedan a medias', () => {
     expect(deVoseo('contás con eso')).toBe('cuentas con eso')
     expect(deVoseo('si te acordás, me dices')).toBe('si te acuerdas, me dices')

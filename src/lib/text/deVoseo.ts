@@ -36,6 +36,17 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['andá', 'anda'], ['dejá', 'deja'], ['tomá', 'toma'], ['esperá', 'espera'], ['pará', 'para'],
   ['vení', 'ven'], ['acordate', 'acuérdate'], ['quedate', 'quédate'], ['calmate', 'cálmate'],
   ['fijáte', 'fíjate'], ['dale que', 'vamos que'],
+  // Imperativo + enclítico: en tuteo peruano SIEMPRE llevan tilde esdrújula
+  // ("mandame"→"mándame"). Cazado en vivo el 25-jul. Lista fija a propósito:
+  // hay palabras legítimas con esa forma (tomate, dame, llame) que no se tocan.
+  ['mandame', 'mándame'], ['avisame', 'avísame'], ['llamame', 'llámame'],
+  ['escribime', 'escríbeme'], ['dejame', 'déjame'], ['pasame', 'pásame'],
+  ['mostrame', 'muéstrame'], ['traeme', 'tráeme'], ['ayudame', 'ayúdame'],
+  ['esperame', 'espérame'], ['preguntame', 'pregúntame'], ['explicame', 'explícame'],
+  ['contale', 'cuéntale'], ['decile', 'dile'], ['avisale', 'avísale'],
+  ['cuidate', 'cuídate'], ['sentate', 'siéntate'], ['levantate', 'levántate'],
+  ['acercate', 'acércate'], ['relajate', 'relájate'], ['olvidate', 'olvídate'],
+  ['preparate', 'prepárate'], ['enfocate', 'enfócate'], ['concentrate', 'concéntrate'],
   // Presentes -ás de verbos que DIPTONGAN (recordás→recuerdas, no "recordas"):
   // el barrido generativo de abajo solo quita la tilde, así que los irregulares
   // tienen que resolverse acá ANTES. Cazados en respuestas reales de SIR.
