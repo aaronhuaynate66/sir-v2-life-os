@@ -59,6 +59,9 @@ export async function POST(req: NextRequest) {
       mode: body.mode === 'socratic' ? 'socratic' : null,
       userContext: typeof body.userContext === 'string' ? body.userContext : undefined,
       persist,
+      // Sesión web con cliente RLS: seguro leer el feed de calendario (Google/
+      // Outlook) para la agenda. El webhook de Telegram (service-role) NO lo pasa.
+      readCalendarFeed: true,
     })
     // Hilo unificado (Fase 2): persisto el intercambio al hilo canónico para que
     // Telegram (y otros dispositivos) vean lo hablado acá. Fail-open. Los `at`

@@ -34,11 +34,17 @@ import {
   isReminderQuery,
   isDealQuery,
   isTensionQuery,
+  isCircleCycleQuery,
+  isAffectionClimateQuery,
+  isAgendaQuery,
   selectRecentHealth,
   renderHealthBlock,
   renderRemindersBlock,
   renderDealsBlock,
   renderTensionAlertsBlock,
+  renderCircleCycleBlock,
+  renderAffectionClimateBlock,
+  renderAgendaBlock,
   type AskPersonCtx,
   type AskMemoryHit,
   type AskGoalCtx,
@@ -48,6 +54,8 @@ import {
   type ReminderRow,
   type DealRow,
   type TensionAlertRow,
+  type AffectionClimateEntry,
+  type AgendaItem,
 } from '@/lib/sir/ask'
 import { parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
 import { resolveModel } from '@/lib/sir/model'
@@ -61,6 +69,9 @@ import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
 import { isReaderQuery, renderReaderStatusBlock } from '@/lib/social-reader/readerStatus'
+import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
+import { summarizeAffection, describeAffection } from '@/lib/forecast-conductual/affectionSummary'
+import { fetchCalendarEvents } from '@/lib/calendar/feed'
 import type { Person, Goal, Memory } from '@/types'
 import { deVoseo } from '@/lib/text/deVoseo'
 
@@ -122,6 +133,11 @@ export interface AskSirParams {
    *  eval: corre contra la data REAL de Aaron y sin esto inyectaba sus preguntas
    *  sintéticas en el recall → SIR resurfaceaba "recordatorios" fantasma). Default true. */
   persist?: boolean
+  /** Habilita leer el feed de calendario (Google/Outlook) para la agenda. SOLO
+   *  cuando el `supabase` es un cliente de SESIÓN con RLS (route web): el feed no
+   *  filtra por user_id, así que bajo service-role (Telegram/crons) leería
+   *  conexiones de OTROS usuarios. Default false → agenda solo desde personal_events. */
+  readCalendarFeed?: boolean
   /** Inyectable para tests/determinismo. Default: ahora. */
   nowISO?: string
 }
@@ -753,6 +769,121 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     } catch { /* tabla 0113 ausente / sin data → sin bloque */ }
   }
 
+  // SEMANA / CICLO DEL CÍRCULO: askSir solo miraba el ciclo de la persona
+  // PREGUNTADA (cycle_start_date / patrones live). Nunca corría el detector de la
+  // SEMANA (buildCycleWeekAhead) ni leía las anclas manuales de person_cycles. Este
+  // bloque replica la query del cron morning-push (mujeres + anclas), corre el
+  // detector puro y surfacea la línea de CUIDADO. Fail-soft.
+  let circleCycleBlock = ''
+  if (isCircleCycleQuery(`${question} ${recentUserText}`)) {
+    try {
+      const { data: womenRows } = await supabase
+        .from('people')
+        .select('id, name, gender, cycle_start_date, cycle_length_days')
+        .eq('user_id', userId)
+        .or('gender.eq.female,cycle_start_date.not.is.null')
+        .limit(500)
+      const womenPeople = ((womenRows as Array<{ id: string; name: string; gender: string | null; cycle_start_date: string | null; cycle_length_days: number | null }>) ?? [])
+      if (womenPeople.length > 0) {
+        const wIds = womenPeople.map((p) => p.id)
+        const cyclesByPerson = new Map<string, Array<{ date: string; phase: string }>>()
+        try {
+          const since = new Date(nowDate.getTime() - 60 * 86_400_000).toISOString().slice(0, 10)
+          const { data: cyc } = await supabase
+            .from('person_cycles')
+            .select('person_id, date, phase')
+            .eq('user_id', userId)
+            .in('person_id', wIds)
+            .gte('date', since)
+            .limit(1000)
+          for (const c of ((cyc as Array<{ person_id: string; date: string; phase: string }>) ?? [])) {
+            const arr = cyclesByPerson.get(c.person_id) ?? []
+            arr.push({ date: c.date, phase: c.phase })
+            cyclesByPerson.set(c.person_id, arr)
+          }
+        } catch { /* sin anclas → proyección solo por calendario */ }
+        const womenInput: WomanCycleInput[] = womenPeople
+          .map((p) => ({
+            personId: p.id, name: p.name,
+            cycleStartDate: p.cycle_start_date ? p.cycle_start_date.slice(0, 10) : null,
+            cycleLengthDays: p.cycle_length_days ?? null,
+            anchors: cyclesByPerson.get(p.id) ?? [],
+          }))
+          .filter((w) => w.cycleStartDate || (w.anchors && w.anchors.length > 0))
+        const line = buildCycleWeekAheadLine(buildCycleWeekAhead(womenInput, nowDate, 7))
+        circleCycleBlock = renderCircleCycleBlock(line)
+      }
+    } catch { /* fail-soft: tabla person_cycles sin propagar → sin bloque */ }
+  }
+
+  // CLIMA AFECTIVO (IAE): densidad de afecto + ratio de positividad recientes de
+  // la(s) persona(s) preguntada(s), desde person_daily_signals (mig 0158). askSir
+  // nunca leía estas columnas. Marco de CUIDADO: disparador de conversación, no
+  // veredicto (afecto expresado ≠ sentido). Solo con persona en foco. Fail-soft.
+  let affectionBlock = ''
+  if (isAffectionClimateQuery(`${question} ${recentUserText}`) && targetIds.size > 0) {
+    try {
+      const pids = [...targetIds].slice(0, 3)
+      const entries: AffectionClimateEntry[] = []
+      for (const pid of pids) {
+        const { data: sigRows } = await supabase
+          .from('person_daily_signals')
+          .select('date, message_count, affection, positivity_ratio')
+          .eq('user_id', userId).eq('person_id', pid)
+          .order('date', { ascending: true }).limit(400)
+        const signals = ((sigRows as Array<{ date: string; message_count: number | null; affection: number | null; positivity_ratio: number | null }>) ?? [])
+          .map((r) => ({
+            date: r.date,
+            messageCount: Number(r.message_count) || 0,
+            affection: Number(r.affection) || 0,
+            positivityRatio: Number(r.positivity_ratio) || 0,
+            avgLen: 0, somatic: 0, friction: 0, withdrawal: 0, sensitivity: 0, actions: 0, composite: 0,
+          }))
+        const desc = describeAffection(summarizeAffection(signals))
+        if (desc) entries.push({ name: namesById.get(pid) ?? 'esa persona', description: desc })
+      }
+      affectionBlock = renderAffectionClimateBlock(entries)
+    } catch { /* fail-soft: columna 0158 sin propagar → sin bloque */ }
+  }
+
+  // AGENDA / EVENTOS PRÓXIMOS: personal_events por rango (mig 0133) + —solo en
+  // sesión web (readCalendarFeed)— el feed de calendario (Google personal +
+  // Outlook laboral). askSir no veía ninguno de los dos. Fail-soft.
+  let agendaBlock = ''
+  if (isAgendaQuery(`${question} ${recentUserText}`)) {
+    const today = todayLimaKey()
+    const horizonEndISO = limaDayKey(new Date(nowDate.getTime() + 30 * 86_400_000).toISOString()) ?? today
+    const items: AgendaItem[] = []
+    try {
+      const { data: peRows } = await supabase.from('personal_events')
+        .select('title, event_date, person_id')
+        .eq('user_id', userId)
+        .gte('event_date', today).lte('event_date', horizonEndISO)
+        .order('event_date', { ascending: true }).limit(50)
+      for (const r of ((peRows as Array<{ title: string; event_date: string; person_id: string | null }>) ?? [])) {
+        const pid = (r.person_id as string | null) ?? null
+        const title = (r.title ?? '').trim()
+        if (!title) continue
+        items.push({ date: (r.event_date ?? '').slice(0, 10), title, personName: pid ? namesById.get(pid) ?? null : null, sourceLabel: 'plan' })
+      }
+    } catch { /* tabla 0133 ausente → sin planes */ }
+    if (params.readCalendarFeed === true) {
+      try {
+        const feed = await fetchCalendarEvents({
+          supabase: supabase as unknown as NonNullable<Parameters<typeof fetchCalendarEvents>[0]>['supabase'],
+          horizonDays: 30, limit: 80, nowMs: nowDate.getTime(),
+        })
+        for (const ev of feed.events ?? []) {
+          const day = (ev.start ?? '').slice(0, 10)
+          if (!day || day < today || day > horizonEndISO) continue
+          items.push({ date: day, title: (ev.title ?? '').slice(0, 120) || 'evento', sourceLabel: ev.calendarLabel ?? 'calendario' })
+        }
+      } catch { /* fail-soft: feed caído → solo planes */ }
+    }
+    items.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
+    agendaBlock = renderAgendaBlock(items, today)
+  }
+
   const socratic = params.mode === 'socratic'
   const chatStyle = params.chatStyle === true
   const userContext = typeof params.userContext === 'string' ? params.userContext.trim().slice(0, 500) : ''
@@ -767,6 +898,9 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     (dealsBlock ? `\n\n${dealsBlock}` : '') +
     (tensionBlock ? `\n\n${tensionBlock}` : '') +
     (readerBlock ? `\n\n${readerBlock}` : '') +
+    (circleCycleBlock ? `\n\n${circleCycleBlock}` : '') +
+    (affectionBlock ? `\n\n${affectionBlock}` : '') +
+    (agendaBlock ? `\n\n${agendaBlock}` : '') +
     (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 
   // Resolver el nombre que proponga una acción → personId.
