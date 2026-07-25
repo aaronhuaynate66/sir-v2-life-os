@@ -474,6 +474,12 @@ export async function POST(req: NextRequest) {
         skipInlineGaps: true,
         // Telegram es un chat: breve, conversacional, sin markdown (el ** se veía crudo).
         chatStyle: true,
+        // RESPONDER CITANDO: si Aaron citó un mensaje de SIR (el brief llega en
+        // 3 mensajes — ⚡ hoy / 💚 tu gente / 🎯 tus metas), ese texto ES el
+        // referente de "ciérralo" / "escríbele". Sin esto, contestarle a un
+        // mensaje viejo se leía como una pregunta suelta y SIR no sabía de qué
+        // se hablaba. Solo cuenta lo citado del BOT; citarse a sí mismo no aporta.
+        ...(msg.replyTo?.fromBot ? { quotedMessage: msg.replyTo.text } : {}),
       })
       // toPlainText garantiza que no viajen ** ## --- crudos a Telegram (el
       // chatStyle del prompt ayuda, esto lo asegura aunque el modelo desobedezca).

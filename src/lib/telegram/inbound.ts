@@ -21,6 +21,10 @@ export interface TelegramInbound {
   caption: string
   /** Nombre visible del remitente, best-effort (para logs/bootstrap). */
   fromName: string | null
+  /** Mensaje al que Aaron está RESPONDIENDO (Telegram: reply_to_message). Es lo
+   *  que convierte el brief en conversación: si cita el mensaje de "💚 TU GENTE"
+   *  y escribe "ciérralo", SIR sabe de qué habla. null si no citó nada. */
+  replyTo: { messageId: number; text: string; fromBot: boolean } | null
 }
 
 /** Tap de un botón inline (callback_query). Ver captura de notas por chat. */
@@ -99,8 +103,24 @@ export function parseTelegramUpdate(payload: unknown): TelegramInbound | null {
     ? [from.first_name, from.last_name].filter((s): s is string => typeof s === 'string' && s.length > 0).join(' ') || null
     : null
 
+  // Mensaje citado: Telegram lo manda entero en reply_to_message. Nos importa el
+  // TEXTO (para saber de qué se está hablando) y si era del bot — responderle a
+  // SIR es continuar SU hilo; citar un mensaje propio no aporta contexto nuevo.
+  const replied = asRecord(message.reply_to_message)
+  const repliedText = replied && typeof replied.text === 'string'
+    ? replied.text.trim()
+    : (replied && typeof replied.caption === 'string' ? replied.caption.trim() : '')
+  const repliedFrom = replied ? asRecord(replied.from) : null
+  const replyTo = replied && repliedText
+    ? {
+        messageId: typeof replied.message_id === 'number' ? replied.message_id : 0,
+        text: repliedText,
+        fromBot: repliedFrom?.is_bot === true,
+      }
+    : null
+
   // Nos sirve si hay texto, voz o foto. Otro tipo → ignorar.
   if (!text && !isVoice && !photoFileId) return null
 
-  return { chatId, messageId, text, isVoice, voiceFileId, photoFileId, caption, fromName }
+  return { chatId, messageId, text, isVoice, voiceFileId, photoFileId, caption, fromName, replyTo }
 }
