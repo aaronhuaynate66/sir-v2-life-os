@@ -50,9 +50,9 @@ export async function loadBrainInput(
     goalCosts,
     learnedWeights,
   ] = await Promise.all([
-    safe(supabase.from('people').select('id, name, full_name')),
-    safe(supabase.from('goals').select('id, title, name, related_goals, related_persons')),
-    safe(supabase.from('org_profiles').select('slug, name')),
+    safe(supabase.from('people').select('id, name')),
+    safe(supabase.from('goals').select('id, title, related_goals, related_persons')),
+    safe(supabase.from('org_profiles').select('org_slug, name')),
     safe(supabase.from('objective_steps').select('id, objective_id, title')),
     safe(supabase.from('relationship_moments').select('id, person_id, title')),
     safe(
@@ -73,17 +73,28 @@ export async function loadBrainInput(
     safe(
       supabase
         .from('trackers')
-        .select('id, objective_id, objective_step_id, title, name'),
+        .select('id, objective_id, objective_step_id, label'),
     ),
     safe(supabase.from('person_money').select('id, person_id')),
     safe(supabase.from('goal_costs').select('id, goal_id, label')),
     fetchLearnedWeights(supabase, userId),
   ])
 
+  // org_profiles usa `org_slug`; el projector espera `slug`. trackers rotula con
+  // `label`; el projector usa `title`. (Antes se pedían columnas inexistentes —
+  // people.full_name / goals.name / org_profiles.slug / trackers.title,name — y
+  // PostgREST fallaba en silencio → esas fuentes caían a [] → el grafo quedaba casi
+  // sin nodos/aristas en prod. Con las columnas reales + este mapeo, /red y
+  // /api/brain/glow por fin proyectan la red completa.)
+  const orgsMapped = (orgs as Array<{ org_slug?: string; slug?: string; name: string | null }>)
+    .map((o) => ({ slug: o.org_slug ?? o.slug, name: o.name }))
+  const trackersMapped = (trackers as Array<{ id: string; objective_id: string | null; objective_step_id: string | null; label?: string | null; title?: string | null }>)
+    .map((t) => ({ id: t.id, objective_id: t.objective_id ?? undefined, objective_step_id: t.objective_step_id ?? undefined, title: t.label ?? t.title ?? undefined }))
+
   return {
     people,
     goals,
-    orgs,
+    orgs: orgsMapped,
     steps,
     moments,
     deals,
@@ -92,7 +103,7 @@ export async function loadBrainInput(
     momentReferences,
     memories,
     observations,
-    trackers,
+    trackers: trackersMapped,
     personMoney,
     goalCosts,
     learnedWeights,
