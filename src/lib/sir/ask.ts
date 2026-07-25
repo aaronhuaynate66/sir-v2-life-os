@@ -21,11 +21,25 @@ IDIOMA (REGLA INQUEBRANTABLE — SIEMPRE, sin excepción):
 REGLAS DURAS:
 - Responde EXACTAMENTE lo que Aaron preguntó. Si algo es ambiguo (a qué se refiere con "esas personas", "eso", "esto"), y el CONTEXTO no lo aclara, PREGÚNTALE en una línea en vez de asumir o irte por las ramas hacia otro tema. Mejor una repregunta corta que una respuesta segura sobre algo que no preguntó.
 - Usa ÚNICAMENTE la data del bloque CONTEXTO. No inventes hechos, fechas, nombres ni números.
-- Si la respuesta no está en el contexto, dilo sin rodeos ("No tengo registro de eso") y, si quieres, sugiere cómo cargarlo. NUNCA rellenes con suposiciones disfrazadas de hechos.
+- Si un DATO puntual no está en el CONTEXTO de este turno, dilo sin rodeos ("no tengo ese dato a la mano ahora") y, si quieres, sugiere cómo cargarlo o pídelo. Pero DISTINGUE dos cosas muy distintas: (a) "esa INTEGRACIÓN/capacidad no existe" — JAMÁS lo digas de ninguna fuente listada en INTEGRACIONES Y FUENTES (más abajo): esas SÍ existen aunque su data no siempre venga en este turno; y (b) "ese dato puntual no me lo pasaron en este turno" — eso sí puedes y debes decirlo. Si te preguntan por una de esas fuentes, confírmala y di qué haría falta para traer el dato; NUNCA la niegues. NUNCA rellenes con suposiciones disfrazadas de hechos.
 - Cuando afirmes algo, que se note de dónde sale (la persona, una memoria, un objetivo).
 - Puedes proponer accionables concretos, pero márcalos como SUGERENCIA, no como algo ya hecho. v1 no ejecuta acciones.
 - No moralices ni adornes. Pocas palabras, alto valor.
 - Si la pregunta es sobre cómo acercarte a alguien, básate en su último contacto, su score y lo que sabes de la relación; sé específico y realista.
+
+INTEGRACIONES Y FUENTES QUE EXISTEN EN SIR (aunque no siempre estén en este contexto — NUNCA niegues tenerlas):
+- Reader social propio de Instagram y LinkedIn (posts, historias/stories y close-friends de las cuentas de Aaron) → sobre todo para TIMING (ej. "le vi una historia hoy, buen momento para escribirle").
+- WhatsApp importado y consolidado (chats, notas de voz transcritas) → las conversaciones reales con su gente.
+- Salud y báscula: peso y composición corporal, sueño (duración, score, fases, despertares), frecuencia cardíaca (FC), variabilidad (VFC/HRV), saturación (SpO₂) y frecuencia respiratoria.
+- Calendario: Google (personal) + Outlook (laboral).
+- Forecast conductual: patrones de WhatsApp → ventanas estimadas de mayor sensibilidad/fricción.
+- Ciclo menstrual (cuando hay fecha registrada de una persona).
+- Recordatorios: los agendas Y los lees (pendientes con fecha/hora).
+- Objetivos, hitos y el NORTE del año.
+- Deals / oportunidades del pipeline comercial (etapa, monto, próxima acción, cliente).
+- Índice de Afecto Expresado (cariño en los chats).
+- Alertas de tensión relacional (cuando un vínculo se enfría o se tensa).
+Si te preguntan "¿qué puedes hacer?" o por una de estas fuentes, respóndelo con seguridad y en concreto. Si el DATO puntual no vino en este turno, dilo ("no lo tengo a la mano ahora, mándamelo / cárgalo y lo veo") pero SIN negar la capacidad.
 
 PROACTIVIDAD — CIERRA EL LOOP (no seas pasivo):
 - Si en el CONTEXTO o en tu propia respuesta aparece un COMPROMISO DATABLE (un examen, reunión, entrega, trámite, viaje con fecha/hora concreta), NO te quedes en "¿necesitas seguimiento?". PROPÓN agendarlo: usa la herramienta de recordatorio con la fecha/hora REALES del contexto (nunca inventes la fecha; si falta, propón con la que haya o pregunta cuál). Sigue siendo una SUGERENCIA (Aaron confirma), no algo ya hecho.
@@ -339,4 +353,225 @@ export function selectStrengthMemories(
   }
   out.sort((a, b) => (b.at || '').localeCompare(a.at || ''))
   return out.slice(0, limit).map((x) => x.content)
+}
+
+// ─── DETECCIÓN DE INTENCIÓN (gating de bloques nuevos) ───────────────────────
+// Normaliza (minúsculas, sin tildes) y busca cualquier keyword como substring.
+// Las keywords se eligen distintivas (evitamos 2-letras ambiguas como "fc").
+function matchesAny(question: string, keywords: readonly string[]): boolean {
+  const q = (question || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  return keywords.some((k) => q.includes(k))
+}
+
+const HEALTH_KW = [
+  'salud', 'como dormi', 'dormi', 'sueno', 'descans', 'peso', 'bascula',
+  'composicion corporal', 'vfc', 'hrv', 'spo2', 'saturacion', 'oxigeno',
+  'energia', 'cansad', 'agotad', 'pulso', 'cardiac', 'frecuencia cardi',
+  'ritmo cardi', 'despertares', 'grasa corporal', 'masa muscular',
+] as const
+/** ¿La pregunta es sobre salud/sueño/peso/FC/VFC/SpO₂? */
+export function isHealthQuery(question: string): boolean {
+  return matchesAny(question, HEALTH_KW)
+}
+
+const REMINDER_KW = [
+  'recordatorio', 'recuerdame', 'recuerda me', 'recordar', 'me recuerdas',
+  'pendiente', 'pendientes', 'agenda', 'agendado', 'por hacer', 'que tengo que hacer',
+  'que debo hacer', 'me falta hacer', 'tengo que hacer', 'tareas pendientes',
+] as const
+/** ¿La pregunta es sobre recordatorios/pendientes/agenda? */
+export function isReminderQuery(question: string): boolean {
+  return matchesAny(question, REMINDER_KW)
+}
+
+const DEAL_KW = [
+  'deal', 'deals', 'oportunidad', 'oportunidades', 'pipeline', 'venta', 'ventas',
+  'vender', 'cliente', 'clientes', 'negocio', 'negocios', 'licitacion',
+  'propuesta comercial', 'cotizacion', 'cierre', 'prospecto', 'prospectos',
+] as const
+/** ¿La pregunta es sobre deals/oportunidades/pipeline/venta/cliente? */
+export function isDealQuery(question: string): boolean {
+  return matchesAny(question, DEAL_KW)
+}
+
+const TENSION_KW = [
+  'tension', 'tenso', 'tensa', 'distante', 'distanciad', 'alejad', 'enfriad',
+  'frio con', 'fria con', 'mal con', 'pelead', 'conflicto', 'alerta de relacion',
+  'relacion tensa', 'quien esta mal', 'como estan mis', 'vinculos tensos',
+] as const
+/** ¿La pregunta es sobre tensión/distancia relacional? */
+export function isTensionQuery(question: string): boolean {
+  return matchesAny(question, TENSION_KW)
+}
+
+// ─── SALUD RECIENTE (valores reales) ─────────────────────────────────────────
+/** Etiquetas legibles + orden de display para las métricas de health_metrics que
+ *  surfaceamos (peso, FC/VFC/SpO₂ del día y del sueño). El resto no se muestra. */
+const HEALTH_METRIC_LABELS: Array<{ type: string; label: string }> = [
+  { type: 'weight', label: 'Peso' },
+  { type: 'heart_rate_min', label: 'FC mínima' },
+  { type: 'heart_rate_max', label: 'FC máxima' },
+  { type: 'sleeping_heart_rate', label: 'FC en reposo (sueño)' },
+  { type: 'hrv_avg', label: 'VFC promedio (HRV)' },
+  { type: 'hrv_min', label: 'VFC mínima' },
+  { type: 'hrv_max', label: 'VFC máxima' },
+  { type: 'blood_oxygen', label: 'SpO₂' },
+  { type: 'respiratory_rate', label: 'Frec. respiratoria' },
+]
+
+export interface HealthMetricReading {
+  type: string
+  value: number
+  unit?: string | null
+  measuredAt: string
+}
+export interface SleepReading {
+  date: string
+  duration: number
+  quality?: number | null
+  score?: number | null
+  awakenings?: number | null
+}
+export interface HealthSnapshot {
+  sleep: SleepReading | null
+  metrics: Array<{ label: string; value: number; unit: string; day: string }>
+}
+
+/** Duración en horas decimales → "7h15" / "8h" (formato humano). */
+function fmtSleepDuration(hours: number): string {
+  if (!Number.isFinite(hours) || hours <= 0) return '—'
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  return m > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`
+}
+
+/**
+ * Selecciona las últimas lecturas de salud para el prompt: la última noche de
+ * sueño + la lectura más reciente de cada métrica curada (peso, FC/VFC/SpO₂).
+ * PURO. Asume que las filas de métricas vienen ordenadas por fecha DESC (toma la
+ * primera coincidencia de cada tipo); las de sueño, la más reciente. */
+export function selectRecentHealth(
+  metricRows: HealthMetricReading[],
+  sleepRows: SleepReading[],
+): HealthSnapshot {
+  const sleep = sleepRows.length > 0
+    ? [...sleepRows].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0]
+    : null
+
+  const sortedMetrics = [...metricRows].sort((a, b) => (b.measuredAt || '').localeCompare(a.measuredAt || ''))
+  const metrics: HealthSnapshot['metrics'] = []
+  for (const { type, label } of HEALTH_METRIC_LABELS) {
+    const hit = sortedMetrics.find((r) => r.type === type && Number.isFinite(Number(r.value)))
+    if (!hit) continue
+    metrics.push({
+      label,
+      value: Number(hit.value),
+      unit: (hit.unit ?? '').trim(),
+      day: (hit.measuredAt || '').slice(0, 10),
+    })
+  }
+  return { sleep, metrics }
+}
+
+/** Bloque "== SALUD RECIENTE ==" con valores reales. '' si no hay data. */
+export function renderHealthBlock(snap: HealthSnapshot): string {
+  if (!snap.sleep && snap.metrics.length === 0) return ''
+  const lines: string[] = ['== SALUD RECIENTE (valores reales; cítalos, no digas que no tienes salud) ==']
+  if (snap.sleep) {
+    const s = snap.sleep
+    const parts = [`duró ${fmtSleepDuration(s.duration)}`]
+    if (typeof s.score === 'number') parts.push(`score ${s.score}/100`)
+    else if (typeof s.quality === 'number') parts.push(`calidad ${s.quality}/10`)
+    if (typeof s.awakenings === 'number') parts.push(`${s.awakenings} despertar${s.awakenings === 1 ? '' : 'es'}`)
+    lines.push(`- Sueño (${s.date}): ${parts.join(' · ')}`)
+  }
+  for (const m of snap.metrics) {
+    const unit = m.unit ? ` ${m.unit}` : ''
+    lines.push(`- ${m.label}: ${m.value}${unit} (${m.day})`)
+  }
+  return lines.join('\n')
+}
+
+// ─── RECORDATORIOS PENDIENTES ────────────────────────────────────────────────
+export interface ReminderRow {
+  text: string
+  dueAt: string
+  personName?: string | null
+}
+/** Bloque "== RECORDATORIOS PENDIENTES ==". '' si no hay. `today` = YYYY-MM-DD. */
+export function renderRemindersBlock(reminders: ReminderRow[], today: string): string {
+  if (reminders.length === 0) return ''
+  const lines: string[] = ['== RECORDATORIOS PENDIENTES (los tienes agendados; puedes listarlos) ==']
+  for (const r of reminders.slice(0, 15)) {
+    const day = (r.dueAt || '').slice(0, 10)
+    const rel = day ? ` (${relativeDueLabel(day, today)})` : ''
+    const who = r.personName ? ` · ${r.personName}` : ''
+    lines.push(`- ${r.text}${who} — vence ${day}${rel}`)
+  }
+  return lines.join('\n')
+}
+
+/** Etiqueta relativa de vencimiento entre dos YYYY-MM-DD ("hoy"/"vencido…"/"en N días"). */
+function relativeDueLabel(day: string, today: string): string {
+  const [ay, am, ad] = day.split('-').map(Number)
+  const [ty, tm, td] = today.split('-').map(Number)
+  if (![ay, am, ad, ty, tm, td].every(Number.isFinite)) return day
+  const diff = Math.round((Date.UTC(ay, am - 1, ad) - Date.UTC(ty, tm - 1, td)) / 86_400_000)
+  if (diff === 0) return 'hoy'
+  if (diff === 1) return 'mañana'
+  if (diff < 0) return `vencido hace ${Math.abs(diff)} día${diff === -1 ? '' : 's'}`
+  return `en ${diff} días`
+}
+
+// ─── OPORTUNIDADES / DEALS ───────────────────────────────────────────────────
+export interface DealRow {
+  title: string
+  stage?: string | null
+  amount?: number | null
+  currency?: string | null
+  nextAction?: string | null
+  nextActionDate?: string | null
+  closeWindow?: string | null
+  contactName?: string | null
+}
+/** Bloque "== OPORTUNIDADES ==" con deals abiertos. '' si no hay. */
+export function renderDealsBlock(deals: DealRow[]): string {
+  if (deals.length === 0) return ''
+  const lines: string[] = ['== OPORTUNIDADES ABIERTAS (pipeline comercial; puedes listarlas) ==']
+  for (const d of deals.slice(0, 15)) {
+    const bits: string[] = []
+    if (d.stage) bits.push(`etapa ${d.stage}`)
+    if (typeof d.amount === 'number' && Number.isFinite(d.amount)) {
+      bits.push(`${d.currency ?? ''} ${d.amount}`.trim())
+    }
+    if (d.contactName) bits.push(`contacto ${d.contactName}`)
+    if (d.nextAction) {
+      const when = d.nextActionDate ? ` (${d.nextActionDate.slice(0, 10)})` : ''
+      bits.push(`próxima acción: ${d.nextAction}${when}`)
+    } else if (d.closeWindow) {
+      bits.push(`cierre: ${d.closeWindow}`)
+    }
+    lines.push(`- ${d.title}${bits.length ? ' · ' + bits.join(' · ') : ''}`)
+  }
+  return lines.join('\n')
+}
+
+// ─── ALERTAS DE TENSIÓN RELACIONAL ───────────────────────────────────────────
+export interface TensionAlertRow {
+  personName?: string | null
+  fromLabel?: string | null
+  toLabel?: string | null
+  message: string
+  createdAt?: string | null
+}
+/** Bloque "== ALERTAS DE TENSIÓN ==". '' si no hay. */
+export function renderTensionAlertsBlock(alerts: TensionAlertRow[]): string {
+  if (alerts.length === 0) return ''
+  const lines: string[] = ['== ALERTAS DE TENSIÓN RELACIONAL (vínculos que se enfriaron o tensaron) ==']
+  for (const a of alerts.slice(0, 12)) {
+    const who = a.personName ? `${a.personName}: ` : ''
+    const when = a.createdAt ? ` (${a.createdAt.slice(0, 10)})` : ''
+    lines.push(`- ${who}${a.message}${when}`)
+  }
+  return lines.join('\n')
 }

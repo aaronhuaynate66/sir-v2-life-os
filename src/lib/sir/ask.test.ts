@@ -91,6 +91,120 @@ describe('buildAskContext', () => {
   })
 })
 
+import {
+  SIR_ASK_SYSTEM_PROMPT,
+  isHealthQuery, isReminderQuery, isDealQuery, isTensionQuery,
+  selectRecentHealth, renderHealthBlock,
+  renderRemindersBlock, renderDealsBlock, renderTensionAlertsBlock,
+} from './ask'
+
+describe('capability map en el prompt', () => {
+  it('lista las integraciones y prohíbe negarlas', () => {
+    expect(SIR_ASK_SYSTEM_PROMPT).toContain('INTEGRACIONES Y FUENTES QUE EXISTEN EN SIR')
+    expect(SIR_ASK_SYSTEM_PROMPT).toContain('Reader social')
+    expect(SIR_ASK_SYSTEM_PROMPT).toContain('Deals / oportunidades')
+    expect(SIR_ASK_SYSTEM_PROMPT).toContain('Recordatorios')
+    // La regla dura distingue "no existe la integración" de "no me lo pasaron este turno".
+    expect(SIR_ASK_SYSTEM_PROMPT).toContain('JAMÁS lo digas de ninguna fuente listada')
+  })
+})
+
+describe('detección de intención (gating de bloques)', () => {
+  it('salud/sueño/peso/FC', () => {
+    expect(isHealthQuery('¿cómo dormí anoche?')).toBe(true)
+    expect(isHealthQuery('cuánto peso tengo')).toBe(true)
+    expect(isHealthQuery('mi VFC de hoy')).toBe(true)
+    expect(isHealthQuery('¿qué oportunidades tengo?')).toBe(false)
+  })
+  it('recordatorios/pendientes', () => {
+    expect(isReminderQuery('¿qué recordatorios tengo pendientes?')).toBe(true)
+    expect(isReminderQuery('recuérdame llamar al banco')).toBe(true)
+    expect(isReminderQuery('cómo está Diana')).toBe(false)
+  })
+  it('deals/oportunidades/pipeline', () => {
+    expect(isDealQuery('¿qué oportunidades abiertas tengo?')).toBe(true)
+    expect(isDealQuery('cómo va el pipeline')).toBe(true)
+    expect(isDealQuery('mi cliente Sienna')).toBe(true)
+    expect(isDealQuery('¿cómo dormí?')).toBe(false)
+  })
+  it('tensión relacional', () => {
+    expect(isTensionQuery('¿con quién estoy distante?')).toBe(true)
+    expect(isTensionQuery('alguna relación tensa')).toBe(true)
+    expect(isTensionQuery('cuánto peso')).toBe(false)
+  })
+})
+
+describe('selectRecentHealth + renderHealthBlock', () => {
+  it('toma la última noche y la lectura más reciente de cada métrica', () => {
+    const snap = selectRecentHealth(
+      [
+        { type: 'weight', value: 78.4, unit: 'kg', measuredAt: '2026-07-23T12:00:00Z' },
+        { type: 'weight', value: 79.0, unit: 'kg', measuredAt: '2026-07-20T12:00:00Z' },
+        { type: 'sleeping_heart_rate', value: 52, unit: 'bpm', measuredAt: '2026-07-24T06:00:00Z' },
+        { type: 'blood_oxygen', value: 97, unit: '%', measuredAt: '2026-07-24T06:00:00Z' },
+      ],
+      [
+        { date: '2026-07-24', duration: 7.25, quality: 8, score: 86, awakenings: 1 },
+        { date: '2026-07-23', duration: 6.0, quality: 6, score: 70, awakenings: 3 },
+      ],
+    )
+    expect(snap.sleep?.date).toBe('2026-07-24')
+    // La lectura de peso más reciente (23-jul), no la vieja.
+    expect(snap.metrics.find((m) => m.label === 'Peso')?.value).toBe(78.4)
+    const block = renderHealthBlock(snap)
+    expect(block).toContain('== SALUD RECIENTE')
+    expect(block).toContain('Sueño (2026-07-24): duró 7h15 · score 86/100 · 1 despertar')
+    expect(block).toContain('Peso: 78.4 kg')
+    expect(block).toContain('SpO₂: 97 %')
+  })
+  it('cae a calidad 1-10 si no hay score, y vacío si no hay data', () => {
+    const b = renderHealthBlock(selectRecentHealth([], [{ date: '2026-07-24', duration: 8, quality: 7, score: null, awakenings: null }]))
+    expect(b).toContain('duró 8h · calidad 7/10')
+    expect(renderHealthBlock(selectRecentHealth([], []))).toBe('')
+  })
+})
+
+describe('renderRemindersBlock', () => {
+  it('lista pendientes con vencimiento relativo', () => {
+    const b = renderRemindersBlock([
+      { text: 'Examen médico', dueAt: '2026-08-07T14:00:00Z', personName: null },
+      { text: 'Llamar al banco', dueAt: '2026-07-24T09:00:00Z', personName: 'Papá' },
+    ], '2026-07-24')
+    expect(b).toContain('== RECORDATORIOS PENDIENTES')
+    expect(b).toContain('Examen médico — vence 2026-08-07 (en 14 días)')
+    expect(b).toContain('Llamar al banco · Papá — vence 2026-07-24 (hoy)')
+  })
+  it('vacío si no hay', () => {
+    expect(renderRemindersBlock([], '2026-07-24')).toBe('')
+  })
+})
+
+describe('renderDealsBlock', () => {
+  it('lista deals abiertos con etapa, monto y próxima acción', () => {
+    const b = renderDealsBlock([
+      { title: 'Sienna Minerals', stage: 'propuesta', amount: 120000, currency: 'PEN', nextAction: 'Enviar cotización', nextActionDate: '2026-07-28', contactName: 'Ivis' },
+    ])
+    expect(b).toContain('== OPORTUNIDADES ABIERTAS')
+    expect(b).toContain('Sienna Minerals · etapa propuesta · PEN 120000 · contacto Ivis · próxima acción: Enviar cotización (2026-07-28)')
+  })
+  it('vacío si no hay', () => {
+    expect(renderDealsBlock([])).toBe('')
+  })
+})
+
+describe('renderTensionAlertsBlock', () => {
+  it('lista alertas activas con persona', () => {
+    const b = renderTensionAlertsBlock([
+      { personName: 'Diana', fromLabel: 'estable', toLabel: 'en_tension', message: 'pasó de estable a en_tensión', createdAt: '2026-07-22T00:00:00Z' },
+    ])
+    expect(b).toContain('== ALERTAS DE TENSIÓN')
+    expect(b).toContain('Diana: pasó de estable a en_tensión (2026-07-22)')
+  })
+  it('vacío si no hay', () => {
+    expect(renderTensionAlertsBlock([])).toBe('')
+  })
+})
+
 import { isPerspectiveQuery, selectStrengthMemories } from './ask'
 
 describe('isPerspectiveQuery', () => {

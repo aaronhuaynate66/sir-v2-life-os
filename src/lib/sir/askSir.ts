@@ -30,10 +30,24 @@ import {
   isPerspectiveQuery,
   selectStrengthMemories,
   extractCandidateNames,
+  isHealthQuery,
+  isReminderQuery,
+  isDealQuery,
+  isTensionQuery,
+  selectRecentHealth,
+  renderHealthBlock,
+  renderRemindersBlock,
+  renderDealsBlock,
+  renderTensionAlertsBlock,
   type AskPersonCtx,
   type AskMemoryHit,
   type AskGoalCtx,
   type SirReceipt,
+  type HealthMetricReading,
+  type SleepReading,
+  type ReminderRow,
+  type DealRow,
+  type TensionAlertRow,
 } from '@/lib/sir/ask'
 import { parseProposedAction, type ProposedAction } from '@/lib/sir/actions'
 import { resolveModel } from '@/lib/sir/model'
@@ -608,6 +622,97 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     }
   } catch { /* best-effort: el día no debe romper la respuesta */ }
 
+  // PUNTOS CIEGOS (PR feat/sir-menos-ciego): SIR computa/guarda estas fuentes pero
+  // el chat nunca las SURFACEA → negaba features reales. Cada bloque se trae SOLO si
+  // la pregunta lo pide (gating por intención, evita inflar el prompt) y es fail-soft.
+
+  // SALUD RECIENTE: valores reales (peso, sueño de anoche, FC/VFC/SpO₂). Distinto de
+  // missingDataBlock, que solo dice qué FALTA — este trae los números.
+  let healthBlock = ''
+  if (isHealthQuery(question)) {
+    try {
+      const cutoffISO = new Date(nowDate.getTime() - 30 * 86_400_000).toISOString()
+      const [{ data: hmRows }, { data: slRows }] = await Promise.all([
+        supabase.from('health_metrics')
+          .select('type, value, unit, measured_at')
+          .eq('user_id', userId).gte('measured_at', cutoffISO)
+          .order('measured_at', { ascending: false }).limit(600),
+        supabase.from('sleep_records')
+          .select('date, duration, quality, score, awakenings')
+          .eq('user_id', userId)
+          .order('date', { ascending: false }).limit(5),
+      ])
+      const metricRows: HealthMetricReading[] = ((hmRows as Array<Record<string, unknown>>) ?? [])
+        .map((r) => ({ type: r.type as string, value: Number(r.value), unit: (r.unit as string | null) ?? null, measuredAt: (r.measured_at as string) ?? '' }))
+      const sleepRows: SleepReading[] = ((slRows as Array<Record<string, unknown>>) ?? [])
+        .map((r) => ({ date: (r.date as string) ?? '', duration: Number(r.duration), quality: r.quality != null ? Number(r.quality) : null, score: r.score != null ? Number(r.score) : null, awakenings: r.awakenings != null ? Number(r.awakenings) : null }))
+      healthBlock = renderHealthBlock(selectRecentHealth(metricRows, sleepRows))
+    } catch { /* fail-soft: sin salud → el prompt ya sabe no negar la capacidad */ }
+  }
+
+  // RECORDATORIOS PENDIENTES: askSir los CREA pero nunca los leía. Ahora los lista.
+  let remindersBlock = ''
+  if (isReminderQuery(question)) {
+    try {
+      const { data: remRows } = await supabase.from('reminders')
+        .select('text, due_at, related_person_id')
+        .eq('user_id', userId).is('done_at', null)
+        .order('due_at', { ascending: true }).limit(20)
+      const reminders: ReminderRow[] = ((remRows as Array<Record<string, unknown>>) ?? []).map((r) => {
+        const pid = (r.related_person_id as string | null) ?? null
+        return { text: (r.text as string) ?? '', dueAt: (r.due_at as string) ?? '', personName: pid ? namesById.get(pid) ?? null : null }
+      })
+      remindersBlock = renderRemindersBlock(reminders, todayLimaKey())
+    } catch { /* tabla 0115 ausente / sin data → sin bloque */ }
+  }
+
+  // OPORTUNIDADES: los deals ya se cargaban para detectDealGap pero se descartaban.
+  let dealsBlock = ''
+  if (isDealQuery(question)) {
+    try {
+      const { data: dRows } = await supabase.from('deals')
+        .select('title, stage, amount, currency, next_action, next_action_date, close_window, contact_person_id')
+        .eq('user_id', userId).eq('status', 'open')
+        .order('updated_at', { ascending: false }).limit(20)
+      const deals: DealRow[] = ((dRows as Array<Record<string, unknown>>) ?? []).map((d) => {
+        const pid = (d.contact_person_id as string | null) ?? null
+        return {
+          title: (d.title as string) ?? '',
+          stage: (d.stage as string | null) ?? null,
+          amount: d.amount != null ? Number(d.amount) : null,
+          currency: (d.currency as string | null) ?? null,
+          nextAction: (d.next_action as string | null) ?? null,
+          nextActionDate: (d.next_action_date as string | null) ?? null,
+          closeWindow: (d.close_window as string | null) ?? null,
+          contactName: pid ? namesById.get(pid) ?? null : null,
+        }
+      })
+      dealsBlock = renderDealsBlock(deals)
+    } catch { /* tabla 0084 ausente / sin data → sin bloque */ }
+  }
+
+  // ALERTAS DE TENSIÓN: person_status_alerts activas (no descartadas).
+  let tensionBlock = ''
+  if (isTensionQuery(question)) {
+    try {
+      const { data: aRows } = await supabase.from('person_status_alerts')
+        .select('person_id, from_label, to_label, message, created_at')
+        .eq('user_id', userId).is('dismissed_at', null)
+        .order('created_at', { ascending: false }).limit(15)
+      const alerts: TensionAlertRow[] = ((aRows as Array<Record<string, unknown>>) ?? []).map((a) => {
+        const pid = (a.person_id as string | null) ?? null
+        return {
+          personName: pid ? namesById.get(pid) ?? null : null,
+          fromLabel: (a.from_label as string | null) ?? null,
+          toLabel: (a.to_label as string | null) ?? null,
+          message: (a.message as string) ?? '',
+          createdAt: (a.created_at as string | null) ?? null,
+        }
+      })
+      tensionBlock = renderTensionAlertsBlock(alerts)
+    } catch { /* tabla 0113 ausente / sin data → sin bloque */ }
+  }
+
   const socratic = params.mode === 'socratic'
   const chatStyle = params.chatStyle === true
   const userContext = typeof params.userContext === 'string' ? params.userContext.trim().slice(0, 500) : ''
@@ -617,6 +722,10 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     (learningsBlock ? `\n\n${learningsBlock}` : '') +
     (recallBlock ? `\n\n${recallBlock}` : '') +
     (missingDataBlock ? `\n\n${missingDataBlock}` : '') +
+    (healthBlock ? `\n\n${healthBlock}` : '') +
+    (remindersBlock ? `\n\n${remindersBlock}` : '') +
+    (dealsBlock ? `\n\n${dealsBlock}` : '') +
+    (tensionBlock ? `\n\n${tensionBlock}` : '') +
     (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
 
   // Resolver el nombre que proponga una acción → personId.
