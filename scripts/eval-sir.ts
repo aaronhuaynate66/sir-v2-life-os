@@ -45,7 +45,40 @@ async function login(): Promise<string> {
   return set.map((c) => c.split(';')[0]).join('; ')
 }
 
-async function askSir(cookie: string, c: EvalCase): Promise<string> {
+/** El grounding que SIR recuperó de su memoria para una respuesta. */
+type Sources = {
+  people?: string[]
+  memories?: number
+  receipts?: { person?: string; text?: string; source?: string }[]
+}
+/** Lo que devuelve askSir para el eval: el texto (con la acción propuesta anexada)
+ *  + un resumen legible de lo que SIR RECUPERÓ, para dárselo al juez. */
+type AskResult = { answer: string; retrieved: string }
+
+/** Arma un resumen legible de lo que SIR RECUPERÓ (personas citadas + nº de
+ *  memorias + recibos/citas). Se lo pasamos al juez para que no castigue como
+ *  "inventado" data que SIR sí recordó. Vacío si no recuperó nada. */
+function summarizeRetrieved(sources: Sources | undefined): string {
+  if (!sources) return ''
+  const lines: string[] = []
+  const people = (sources.people ?? []).filter((p) => typeof p === 'string' && p.trim())
+  if (people.length > 0) lines.push(`Personas traídas al contexto: ${people.join(', ')}`)
+  if (typeof sources.memories === 'number' && sources.memories > 0) {
+    lines.push(`Memorias semánticas recuperadas: ${sources.memories}`)
+  }
+  const receipts = (sources.receipts ?? []).filter((r) => r && typeof r.text === 'string' && r.text.trim())
+  if (receipts.length > 0) {
+    lines.push('Recibos (memorias REALES que aterrizaron la respuesta, no generadas por el modelo):')
+    for (const r of receipts) {
+      const who = r.person ? `${r.person}: ` : ''
+      const src = r.source ? ` [origen: ${r.source}]` : ''
+      lines.push(`  - ${who}${r.text}${src}`)
+    }
+  }
+  return lines.join('\n')
+}
+
+async function askSir(cookie: string, c: EvalCase): Promise<AskResult> {
   const res = await fetch(`${BASE}/api/sir/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
@@ -55,7 +88,7 @@ async function askSir(cookie: string, c: EvalCase): Promise<string> {
     body: JSON.stringify({ question: c.question, userContext: c.context, persist: false }),
   })
   const j = (await res.json().catch(() => ({}))) as {
-    answer?: string; error?: string; proposedAction?: Record<string, unknown> | null
+    answer?: string; error?: string; proposedAction?: Record<string, unknown> | null; sources?: Sources
   }
   let answer = j.answer ?? `(sin respuesta: ${j.error ?? res.status})`
   // Cuando SIR propone una ACCIÓN, el detalle (fecha/hora/tarea del recordatorio,
@@ -65,10 +98,13 @@ async function askSir(cookie: string, c: EvalCase): Promise<string> {
   if (j.proposedAction && typeof j.proposedAction === 'object') {
     answer += `\n\n[Además SIR mostró al usuario esta ACCIÓN PROPUESTA como tarjeta/botón de confirmar (no repetida en el texto): ${JSON.stringify(j.proposedAction)}]`
   }
-  return answer
+  // El grounding que SIR recuperó (personas + memorias + recibos): sin esto el juez
+  // solo veía pregunta + respuesta y castigaba como "inventado" lo que SIR SÍ
+  // recordó. Se lo pasamos para que evalúe grounding contra la data REAL.
+  return { answer, retrieved: summarizeRetrieved(j.sources) }
 }
 
-async function judge(c: EvalCase, answer: string): Promise<JudgeVerdict> {
+async function judge(c: EvalCase, answer: string, retrieved: string): Promise<JudgeVerdict> {
   const key = process.env.ANTHROPIC_API_KEY
   if (!key) return parseJudgeVerdict('') // sin llave → veredicto vacío
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -76,7 +112,7 @@ async function judge(c: EvalCase, answer: string): Promise<JudgeVerdict> {
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
     // temperature 0: el juez debe ser lo más determinista posible (era la causa #1
     // del ruido — calificaba respuestas casi idénticas 92 vs 35).
-    body: JSON.stringify({ model: JUDGE_MODEL, max_tokens: 400, temperature: 0, messages: [{ role: 'user', content: buildJudgePrompt(c, answer) }] }),
+    body: JSON.stringify({ model: JUDGE_MODEL, max_tokens: 400, temperature: 0, messages: [{ role: 'user', content: buildJudgePrompt(c, answer, retrieved) }] }),
   })
   const j = (await res.json().catch(() => ({}))) as { content?: { text?: string }[] }
   return parseJudgeVerdict(j.content?.[0]?.text ?? '')
@@ -118,8 +154,9 @@ async function main() {
     const verdicts: JudgeVerdict[] = []
     let lastAnswer = ''
     for (let i = 0; i < RUNS; i++) {
-      lastAnswer = await askSir(cookie, c)
-      verdicts.push(await judge(c, lastAnswer))
+      const r = await askSir(cookie, c)
+      lastAnswer = r.answer
+      verdicts.push(await judge(c, r.answer, r.retrieved))
     }
     const v = aggregateVerdicts(verdicts)
     passed += v.pass ? 1 : 0; sum += v.score

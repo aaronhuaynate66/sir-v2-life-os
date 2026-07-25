@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeNorteDrift } from './norteDrift'
+import { computeNorteDrift, relatedActivityISOForAnchor } from './norteDrift'
 import type { Goal } from '@/types'
 
 const NOW = new Date('2026-06-15T12:00:00Z')
@@ -65,5 +65,35 @@ describe('computeNorteDrift', () => {
     ], NOW)
     expect(r.activeOthers).toBe(2)
     expect(r.othersMovedRecently).toBe(1)
+  })
+})
+
+describe('relatedActivityISOForAnchor', () => {
+  const anchor = goal({ id: 'n', isAnchor: true, relatedPersons: ['p1', 'p2'], updatedAt: '2026-04-01T00:00:00Z' })
+  const people = [
+    { id: 'p1', lastContact: '2026-06-10T00:00:00Z' },
+    { id: 'p2', lastContact: '2026-06-14T00:00:00Z' },
+    { id: 'p3', lastContact: '2026-06-15T00:00:00Z' }, // no ligada al ancla → se ignora
+  ]
+
+  it('devuelve el lastContact MÁS reciente entre las personas ligadas al ancla', () => {
+    expect(relatedActivityISOForAnchor([anchor], people, NOW)).toBe('2026-06-14T00:00:00Z')
+  })
+  it('null si el ancla no tiene personas ligadas', () => {
+    const solo = goal({ id: 'n', isAnchor: true, relatedPersons: [], updatedAt: '2026-06-01T00:00:00Z' })
+    expect(relatedActivityISOForAnchor([solo], people, NOW)).toBeNull()
+  })
+  it('null si no hay norte', () => {
+    expect(relatedActivityISOForAnchor([goal({ id: 'x' })], people, NOW)).toBeNull()
+  })
+  it('ignora personas sin contacto registrado', () => {
+    const gente = [{ id: 'p1', lastContact: null }, { id: 'p2' }]
+    expect(relatedActivityISOForAnchor([anchor], gente, NOW)).toBeNull()
+  })
+  it('des-estanca computeNorteDrift cuando el contacto ligado es reciente', () => {
+    // El ancla no se edita hace >45d, pero hubo contacto reciente con su gente.
+    const rel = relatedActivityISOForAnchor([anchor], people, NOW)
+    const drift = computeNorteDrift([anchor], NOW, rel)
+    expect(drift.state).not.toBe('estancado')
   })
 })

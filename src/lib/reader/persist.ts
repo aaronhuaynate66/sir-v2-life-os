@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { planIngest, type ReaderBatch } from './ingest'
 import { namesLooselyMatch } from '@/lib/people/nameMatch'
+import { resolvePersonId, type PersonMatchRow } from '@/lib/people/emailMatch'
 import { appendChatMessages } from '@/lib/chat-messages/append'
 
 const HASH_WINDOW = 400
@@ -21,15 +22,18 @@ export interface IngestResult {
   reason?: string
 }
 
-/** Atribuye la persona por el nombre del hilo (match laxo). Solo si hay UNA. */
-async function matchPersonId(client: SupabaseClient, userId: string, threadName: string): Promise<string | null> {
-  if (!threadName) return null
+/**
+ * Atribuye la persona del remitente. PRIORIZA el email exacto (llave estable) y
+ * cae al nombre del hilo (match laxo). Solo atribuye si hay UNA sola persona
+ * (guarda anti-ambigüedad). La lógica pura vive en resolvePersonId.
+ */
+async function matchPersonId(
+  client: SupabaseClient, userId: string, threadName: string, senderEmail?: string,
+): Promise<string | null> {
+  if (!threadName && !senderEmail) return null
   try {
-    const { data } = await client.from('people').select('id, name, alias').eq('user_id', userId).limit(2000)
-    const hits = ((data ?? []) as Array<{ id: string; name: string; alias: string | null }>).filter(
-      (p) => namesLooselyMatch(threadName, p.name) || (p.alias ? namesLooselyMatch(threadName, p.alias) : false),
-    )
-    return hits.length === 1 ? hits[0].id : null
+    const { data } = await client.from('people').select('id, name, alias, email').eq('user_id', userId).limit(2000)
+    return resolvePersonId((data ?? []) as PersonMatchRow[], { threadName, fromEmail: senderEmail })
   } catch { return null }
 }
 
@@ -50,7 +54,7 @@ export async function ingestReaderBatch(client: SupabaseClient, userId: string, 
   const plan = planIngest(batch, seen, lastTs)
   if (plan.fresh.length === 0) return { ingested: 0, reason: 'nada nuevo' }
 
-  const personId = await matchPersonId(client, userId, batch.threadName)
+  const personId = await matchPersonId(client, userId, batch.threadName, batch.senderEmail)
   const observedAt = plan.latestTs ?? new Date().toISOString()
   const obsId = `obs_reader_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
   const summary = `Conversación de ${batch.platform} con ${batch.threadName || 'alguien'} · ${plan.fresh.length} mensaje(s) nuevos`

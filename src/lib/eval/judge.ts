@@ -55,9 +55,15 @@ export const RUBRIC: Record<EvalDimension, string> = {
 
 const DIMENSIONS: EvalDimension[] = ['grounding', 'honesty', 'language', 'usefulness', 'tone']
 
-/** Arma el prompt del LLM-juez para un caso + la respuesta que dio SIR. */
-export function buildJudgePrompt(c: EvalCase, answer: string): string {
+/** Arma el prompt del LLM-juez para un caso + la respuesta que dio SIR.
+ *  `retrievedContext` (opcional): resumen de lo que SIR RECUPERÓ de su memoria
+ *  (personas citadas, nº de memorias, recibos). Sin él, el juez solo ve pregunta +
+ *  respuesta y castiga como "inventado" data que SIR en realidad recordó bien
+ *  (grounding real marcado como invención). Pasándolo, el juez evalúa grounding
+ *  contra ESTO, no solo contra la pregunta. Opcional → sin él, igual que antes. */
+export function buildJudgePrompt(c: EvalCase, answer: string, retrievedContext?: string): string {
   const rubricLines = DIMENSIONS.map((d) => `- ${d}: ${RUBRIC[d]}`).join('\n')
+  const retrieved = typeof retrievedContext === 'string' ? retrievedContext.trim() : ''
   const parts = [
     'Eres un juez de calidad de las respuestas de SIR (un asistente personal relacional peruano). Evalúa la RESPUESTA a la PREGUNTA según la rúbrica. Sé estricto y específico.',
     '',
@@ -65,6 +71,9 @@ export function buildJudgePrompt(c: EvalCase, answer: string): string {
     c.context ? `\nCONTEXTO dado:\n${c.context}` : '',
     c.expect ? `\nQUÉ DEBERÍA LOGRAR una buena respuesta:\n${c.expect}` : '',
     c.mustNotDo ? `\nQUÉ NO DEBE HACER:\n${c.mustNotDo}` : '',
+    retrieved
+      ? `\nCONTEXTO QUE SIR RECUPERÓ de su memoria (personas, memorias, recibos que aterrizaron la respuesta):\n${retrieved}\nEstos son los datos que SIR RECUPERÓ de su memoria; NO los trates como inventados. Evalúa el grounding contra ESTO, no solo contra la pregunta: si la respuesta afirma algo que aparece aquí, está aterrizado (NO es invención). Solo penaliza como inventado lo que NO se sostenga ni con la pregunta ni con este contexto recuperado.`
+      : '',
     `\nRESPUESTA DE SIR a evaluar:\n${answer}`,
     '',
     'RÚBRICA (puntúa cada dimensión 0..100):',
