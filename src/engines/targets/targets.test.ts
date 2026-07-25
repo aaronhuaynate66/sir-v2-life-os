@@ -103,14 +103,17 @@ describe('computeIncomeTargetProgress', () => {
 })
 
 describe('parseWeightCategory', () => {
-  it('parsea "+80 kg" → {80, 87}', () => {
-    expect(parseWeightCategory('+80 kg')).toEqual({ min: 80, max: 87 })
+  // "+80" es la división ABIERTA: no hay techo. Antes se asumía max = min+7 y
+  // eso inventaba un "cerca del techo" a los 86 kg que no existe — en esa
+  // categoría pesar de más nunca te saca; el borde real es el piso.
+  it('parsea "+80 kg" → piso 80, SIN techo', () => {
+    expect(parseWeightCategory('+80 kg')).toEqual({ min: 80, max: null })
   })
-  it('parsea "80-87 kg"', () => {
+  it('parsea "80-87 kg" (categoría cerrada, sí tiene techo)', () => {
     expect(parseWeightCategory('80-87 kg')).toEqual({ min: 80, max: 87 })
   })
   it('parsea "categoría +80"', () => {
-    expect(parseWeightCategory('categoría +80')).toEqual({ min: 80, max: 87 })
+    expect(parseWeightCategory('categoría +80')).toEqual({ min: 80, max: null })
   })
   it('null cuando no puede parsear', () => {
     expect(parseWeightCategory('sin peso mencionado')).toBeNull()
@@ -143,7 +146,7 @@ describe('computeMundialWeightAlert', () => {
     expect(r.status).toBe('in_range')
     expect(r.currentKg).toBe(81.8)
     expect(r.categoryMinKg).toBe(80)
-    expect(r.categoryMaxKg).toBe(87)
+    expect(r.categoryMaxKg).toBeNull() // división abierta
     expect(r.daysToEvent).toBe(129)
   })
 
@@ -163,9 +166,17 @@ describe('computeMundialWeightAlert', () => {
     expect(r.status).toBe('close_to_edge')
   })
 
-  it('above_max si peso > categoría', () => {
+  it('en división ABIERTA (+80) pesar de más NO te saca de categoría', () => {
     const goals = [
       makeGoal({ id: 'm', title: 'Mundial', target: '+80 kg' }),
+    ]
+    expect(computeMundialWeightAlert(goals, [weight(88, 0)], NOW).status).toBe('in_range')
+    expect(computeMundialWeightAlert(goals, [weight(105, 0)], NOW).status).toBe('in_range')
+  })
+
+  it('above_max solo con categoría CERRADA', () => {
+    const goals = [
+      makeGoal({ id: 'm', title: 'Mundial', target: 'categoría 80-87 kg' }),
     ]
     const r = computeMundialWeightAlert(goals, [weight(88, 0)], NOW)
     expect(r.status).toBe('above_max')

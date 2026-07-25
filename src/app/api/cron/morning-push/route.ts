@@ -35,6 +35,7 @@ import { vitalsAnomaly, type DailyVitals } from '@/lib/health/vitalsAnomaly'
 import { calibrateRanges, type VitalsHistory } from '@/lib/health/calibrate'
 import { healthDataGap } from '@/lib/health/dataGap'
 import { parseWeightCategory } from '@/engines/targets'
+import { assessWeightTrend, renderWeightTrendLine } from '@/lib/targets/weightTrend'
 import { assembleDailyActions } from '@/lib/daily-actions/assemble'
 import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
 import { rowToHealthExam } from '@/lib/health-exams/types'
@@ -283,21 +284,35 @@ export async function GET(req: NextRequest) {
             ?? parseWeightCategory(mundialGoal.anchor_subtitle ?? undefined)
             ?? parseWeightCategory(mundialGoal.description ?? undefined)
           if (range) {
+            // La SERIE, no solo la última lectura: el aviso estático no ve venir
+            // el problema. Aaron estaba "dentro de rango" con 81.4 kg mientras la
+            // tendencia lo llevaba al piso de su categoría antes del Mundial.
             const { data: weightRows } = await admin
               .from('health_metrics')
               .select('value, measured_at')
               .eq('user_id', uid)
               .eq('type', 'weight')
               .order('measured_at', { ascending: false })
-              .limit(1)
-            const w = (weightRows ?? [])[0] as { value: number } | undefined
-            if (w && Number.isFinite(w.value)) {
-              const kg = w.value
-              const CLOSE = 1
-              if (kg < range.min) metricAlertText = `Peso ${kg} kg — fuera de categoría`
-              else if (kg > range.max) metricAlertText = `Peso ${kg} kg — sobre la categoría`
-              else if (kg - range.min < CLOSE) metricAlertText = `Peso ${kg} kg — cerca del piso ${range.min} kg`
-              else if (range.max - kg < CLOSE) metricAlertText = `Peso ${kg} kg — cerca del techo ${range.max} kg`
+              .limit(60)
+            const serie = ((weightRows ?? []) as Array<{ value: number; measured_at: string }>)
+              .filter((r) => Number.isFinite(Number(r.value)))
+              .map((r) => ({ at: r.measured_at, kg: Number(r.value) }))
+            const kg = serie[0]?.kg
+            if (Number.isFinite(kg)) {
+              const cat = { minKg: range.min, maxKg: range.max }
+              const daysToEvent = mundialGoal.target_date
+                ? Math.round((Date.parse(`${mundialGoal.target_date}T12:00:00Z`) - now.getTime()) / 86_400_000)
+                : null
+              const trend = assessWeightTrend(serie, cat, now, daysToEvent)
+              // La tendencia manda cuando hay riesgo; si no, el estado de hoy.
+              metricAlertText = renderWeightTrendLine(trend, cat, kg) ?? undefined
+              if (!metricAlertText) {
+                const CLOSE = 1
+                if (kg < range.min) metricAlertText = `Peso ${kg} kg — fuera de categoría (piso ${range.min} kg)`
+                else if (range.max !== null && kg > range.max) metricAlertText = `Peso ${kg} kg — sobre la categoría`
+                else if (kg - range.min < CLOSE) metricAlertText = `Peso ${kg} kg — cerca del piso ${range.min} kg`
+                else if (range.max !== null && range.max - kg < CLOSE) metricAlertText = `Peso ${kg} kg — cerca del techo ${range.max} kg`
+              }
             }
           }
         }

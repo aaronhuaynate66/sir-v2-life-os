@@ -181,13 +181,15 @@ export function findMundialGoal(goals: Goal[]): Goal | null {
 
 /** Parsea la CATEGORÍA de peso del target/anchorSubtitle ("+80 kg", "80-87 kg",
  *  "categoría +80 kg", etc.) — devuelve {min, max}. Fail-safe. */
-export function parseWeightCategory(text: string | undefined): { min: number; max: number } | null {
+export function parseWeightCategory(text: string | undefined): { min: number; max: number | null } | null {
   if (!text) return null
-  // "+80 kg" o "+80" → min=80, max=87 (categoría abierta hasta el siguiente umbral)
+  // "+80 kg" o "+80" → categoría ABIERTA: min=80, SIN techo. Antes se asumía
+  // max = min+7, y eso inventaba un "cerca del techo" a los 86 kg que no existe:
+  // en la división abierta pesar de más nunca te saca. El borde real es el PISO.
   const plusMatch = text.match(/\+\s*(\d{2,3})\s*(?:kg)?/i)
   if (plusMatch) {
     const min = parseInt(plusMatch[1], 10)
-    if (Number.isFinite(min)) return { min, max: min + 7 }
+    if (Number.isFinite(min)) return { min, max: null }
   }
   // "80-87 kg" → min=80, max=87
   const rangeMatch = text.match(/(\d{2,3})\s*[-–]\s*(\d{2,3})\s*(?:kg)?/i)
@@ -238,8 +240,11 @@ export function computeMundialWeightAlert(
   const CLOSE_BUFFER = 1
   let status: WeightStatus
   if (currentKg < range.min) status = 'below_min'
-  else if (currentKg > range.max) status = 'above_max'
-  else if (currentKg - range.min < CLOSE_BUFFER || range.max - currentKg < CLOSE_BUFFER) status = 'close_to_edge'
+  else if (range.max !== null && currentKg > range.max) status = 'above_max'
+  else if (
+    currentKg - range.min < CLOSE_BUFFER
+    || (range.max !== null && range.max - currentKg < CLOSE_BUFFER)
+  ) status = 'close_to_edge'
   else status = 'in_range'
 
   const daysToEvent = goal.targetDate ? daysBetween(now, goal.targetDate) : null
