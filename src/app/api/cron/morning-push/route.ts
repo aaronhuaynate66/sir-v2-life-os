@@ -17,7 +17,9 @@ import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
 import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard } from '@/lib/telegram/client'
 import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { buildBriefThread, muteRef } from '@/lib/telegram/briefThread'
-import { applyAutoSnooze, type BriefSignalHistory } from '@/lib/brief/autoSnooze'
+import { applyAutoSnooze, previousDay, type BriefSignalHistory } from '@/lib/brief/autoSnooze'
+import { assessCapacity, explainCapacity, applyEnergyGate } from '@/lib/brief/energyGate'
+import { getSelfBioState } from '@/lib/people/selfState'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, topicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
@@ -117,6 +119,8 @@ export async function GET(req: NextRequest) {
   let telegramBriefs = 0
   /** Señales que el auto-snooze calló hoy (observabilidad del cron). */
   let autoSnoozed = 0
+  /** Señales pospuestas por el gate de energía (cuerpo bajo). */
+  let energyDeferred = 0
 
   const now = new Date()
   const today = limaToday(now)
@@ -670,6 +674,42 @@ export async function GET(req: NextRequest) {
         }
       } catch { /* columnas 0168 sin propagar → brief completo, como antes */ }
 
+      // GATE DE ENERGÍA (docs/CABLEADO.md, cruce #1): el brief mira el CUERPO
+      // antes de empujar. La ventana de tolerancia ya calibraba /negociar y
+      // /decidir, pero acá —donde Aaron realmente lee— salía el mismo "escríbele
+      // a tu mamá para cerrar el conflicto" con 9h de sueño que con 4. Cuando el
+      // cuerpo viene bajo, lo que pide combustible emocional se pospone Y SE
+      // DICE; lo que vence hoy no se toca. Fail-soft: sin data, brief normal.
+      try {
+        const bio = await getSelfBioState(admin as unknown as SupabaseClient, uid, now.getTime())
+        const { data: lastSleep } = await admin
+          .from('sleep_records').select('date, duration, score, awakenings')
+          .eq('user_id', uid).lte('date', today)
+          .order('date', { ascending: false }).limit(1)
+        const ls = (lastSleep ?? [])[0] as { date: string; duration: number | null; score: number | null; awakenings: number | null } | undefined
+        // Solo cuenta si es de anoche: un sueño de hace una semana no dice nada de hoy.
+        const anoche = ls && ls.date >= previousDay(today)
+          ? { durationH: ls.duration, score: ls.score, awakenings: ls.awakenings }
+          : null
+        const gateInput = {
+          windowState: bio.window.state as 'open' | 'watch' | 'narrow' | 'insufficient',
+          sleepDebtHours: bio.sleepDebtHours,
+          lastNight: anoche,
+        }
+        const capacity = assessCapacity(gateInput)
+        if (capacity !== 'ok') {
+          const gate = applyEnergyGate(push.signals, capacity, explainCapacity(gateInput))
+          if (gate.note || gate.deferred.length > 0) {
+            push = buildMorningPush({
+              ...briefInput,
+              energyNote: gate.note || undefined,
+              mutedTopics: [...mutedTopics, ...gate.deferred.map((s) => topicKey(s.text))],
+            })
+            energyDeferred += gate.deferred.length
+          }
+        }
+      } catch { /* sin estado bio → el brief va como siempre */ }
+
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
@@ -744,5 +784,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, users: userIds.length, sent, telegramBriefs, autoSnoozed, results }, { status: 200 })
+  return NextResponse.json({ ok: true, users: userIds.length, sent, telegramBriefs, autoSnoozed, energyDeferred, results }, { status: 200 })
 }

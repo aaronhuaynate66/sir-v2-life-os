@@ -58,6 +58,10 @@ export interface MorningInput {
    *  rango (idea de Aaron: no dejarlo "al baúl"). NO es agudo → prioridad baja y
    *  el cron lo manda throttled (semanal). Texto ya formado. */
   healthWatch?: string
+  /** Nota del gate de energía: por qué hoy se pospuso lo que pide combustible
+   *  emocional (ver lib/brief/energyGate). Va PRIMERA — es el marco con el que
+   *  hay que leer el resto del brief. */
+  energyNote?: string
   /** Ids de las entidades detrás de las señales (habilitan los botones del hilo). */
   entities?: MorningEntities
   /** Temas ya silenciados por Aaron (botón 🔕). Se filtran ANTES de armar el
@@ -208,6 +212,10 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   ) => {
     if (s) collected.push({ slot, section, text: s, ...(entity ? { entity } : {}) })
   }
+
+  // 0-. CÓMO VIENE EL CUERPO. Va primero porque enmarca todo lo demás: si hoy se
+  //     pospuso algo por falta de combustible, hay que decirlo ANTES de la lista.
+  add(input.energyNote, 'energyNote', 'hoy')
 
   // 0. SEMANA EN FOCO (mudanza / hitos ≤7d) y 0.5 MÉTRICA DURA fuera de rango:
   //    lo urgente/time-sensitive del día, al frente.
