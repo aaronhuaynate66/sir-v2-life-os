@@ -113,6 +113,12 @@ export interface ContextualSignal {
   latestInteractionAt: string | null
   /** Importancia del vínculo (1-10). Para gatear 'conocimiento viejo'. */
   importance?: number
+  /** ISO del último mensaje REAL del sustrato (chat_messages) con esa persona.
+   *  Las interacciones logueadas (person_logs) se pueblan a mano y quedan viejas:
+   *  sin esto SIR preguntaba "no sé nada de Diana hace 866 días" teniendo 72k
+   *  mensajes suyos y conversación de ayer. Mismo patrón que el falso "distante"
+   *  del panel (#941): el sustrato manda sobre el log. */
+  lastChatAt?: string | null
 }
 
 const CONTACT_INTENT = [
@@ -155,17 +161,29 @@ export function detectContextualGap(
   if (!hasAdviceIntent) return null
 
   for (const s of signals) {
-    const first = norm((s.name || '').split(/\s+/)[0] || '')
+    const rawFirst = (s.name || '').split(/\s+/)[0] || ''
+    const first = norm(rawFirst)
     if (!(first.length >= 3 && q.includes(first))) continue
+    // Para el TEXTO usamos el nombre como está escrito ("Diana"), no el
+    // normalizado que se usa para matchear ("diana" en minúscula quedaba feo).
+    const label = rawFirst
 
-    // (1) Post-conflicto: intención de CONTACTO + última interacción tensa.
-    if (hasContactIntent && s.latestInteractionQuality != null && s.latestInteractionQuality <= 2) {
+    // ¿Hubo conversación REAL después de la última interacción logueada? El
+    // sustrato (chat_messages) es la verdad de contacto; los logs se pueblan a
+    // mano y se quedan viejos.
+    const chatAfterLog =
+      !!s.lastChatAt && (!s.latestInteractionAt || s.lastChatAt > s.latestInteractionAt)
+
+    // (1) Post-conflicto: intención de CONTACTO + última interacción tensa. Si
+    //     el sustrato muestra charla POSTERIOR, ya sabemos que hablaron: no
+    //     preguntes lo que la data contesta sola.
+    if (!chatAfterLog && hasContactIntent && s.latestInteractionQuality != null && s.latestInteractionQuality <= 2) {
       const key = `ctx_postconflict:${s.id}`
       if (!dismissed.has(key)) {
         return {
           key, kind: 'post_conflict_contact', entity: 'person', entityId: s.id,
           entityName: s.name,
-          question: `Lo último que tengo con ${first} fue una interacción tensa. ¿Hablaron después de eso?`,
+          question: `Lo último que tengo con ${label} fue una interacción tensa. ¿Hablaron después de eso?`,
           inputType: 'text', ephemeral: true,
         }
       }
@@ -174,15 +192,20 @@ export function detectContextualGap(
     // (2) Conocimiento viejo: vínculo importante (>=6) del que no sé nada hace
     //     >30 días → puede haber pasado algo que cambia el consejo.
     const imp = Number(s.importance) || 0
-    if (imp >= 6 && s.latestInteractionAt) {
-      const d = daysBetween(s.latestInteractionAt, now)
+    // Recencia = lo más nuevo entre la interacción logueada y el contacto REAL.
+    const lastKnownAt = [s.latestInteractionAt, s.lastChatAt]
+      .filter((v): v is string => !!v)
+      .sort()
+      .pop() ?? null
+    if (imp >= 6 && lastKnownAt) {
+      const d = daysBetween(lastKnownAt, now)
       if (Number.isFinite(d) && d >= STALE_DAYS) {
         const key = `ctx_stale:${s.id}`
         if (!dismissed.has(key)) {
           return {
             key, kind: 'stale_knowledge', entity: 'person', entityId: s.id,
             entityName: s.name,
-            question: `Lo último que tengo de ${first} es de hace ${d} días. ¿Pasó algo nuevo con ${first} desde entonces?`,
+            question: `Lo último que tengo de ${label} es de hace ${d} días. ¿Pasó algo nuevo con ${label} desde entonces?`,
             inputType: 'text', ephemeral: true,
           }
         }

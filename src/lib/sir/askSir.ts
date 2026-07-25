@@ -454,11 +454,19 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
         .filter((l) => Number.isFinite(Number(l.value)))
         .map((l) => ({ quality: Number(l.value), at: l.logged_at }))
       const latestEv = interactionEvents.length ? interactionEvents[interactionEvents.length - 1] : null
+      // Contacto REAL del sustrato: el último mensaje de la ventana reciente que
+      // ya trajo getPersonConversation (sin query extra). Sin esto el gap-engine
+      // solo miraba person_logs/last_contact y cortaba la respuesta con "no sé
+      // nada de Diana hace 866 días" teniendo 72k mensajes suyos.
+      const lastChatAt = conv?.recentMessages?.length
+        ? conv.recentMessages[conv.recentMessages.length - 1]?.timestamp ?? null
+        : null
       const ctxSignal: ContextualSignal = {
         id: pid, name: (row.name as string) ?? '',
         latestInteractionQuality: latestEv ? latestEv.quality : null,
         latestInteractionAt: latestEv ? latestEv.at : (row.last_contact as string | null) ?? null,
         importance: Number(row.importance_score) || 0,
+        lastChatAt,
       }
 
       const score = computeRelationalScore({
