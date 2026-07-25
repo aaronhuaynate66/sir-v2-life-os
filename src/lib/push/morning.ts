@@ -179,6 +179,10 @@ export function dedupeSignals(signals: MorningSignal[]): MorningSignal[] {
     const dup = out.findIndex((o) => topicOverlap(o.text, s.text) >= SAME_TOPIC)
     if (dup === -1) { out.push(s); continue }
     if (s.text.length > out[dup].text.length) out[dup] = { ...out[dup], text: s.text }
+    // Si la que se queda no traía entidad y la descartada sí, hereda la entidad:
+    // si no, deduplicar MATA el botón (pasó de verdad — "Boticas Jhodaal" se
+    // quedó con la versión weekFocus sin id y perdió "🚀 Dame el próximo paso").
+    if (!out[dup].entity && s.entity) out[dup] = { ...out[dup], entity: s.entity }
   }
   return out
 }
