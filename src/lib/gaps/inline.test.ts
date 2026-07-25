@@ -78,7 +78,7 @@ describe('gapMatchesIntent — gate determinístico', () => {
 })
 
 
-import { detectContextualGap } from './inline'
+import { detectContextualGap, type ContextualSignal } from './inline'
 
 describe('detectContextualGap — post-conflicto', () => {
   const sig = (over: Partial<{ id: string; name: string; latestInteractionQuality: number | null; latestInteractionAt: string | null }> = {}) => ({
@@ -110,7 +110,7 @@ describe('detectContextualGap — post-conflicto', () => {
 
 describe('detectContextualGap — conocimiento viejo (stale)', () => {
   const NOW = new Date('2026-06-20T12:00:00Z')
-  const sig = (over: Partial<{ id: string; name: string; latestInteractionQuality: number | null; latestInteractionAt: string | null; importance: number }> = {}) => ({
+  const sig = (over: Partial<ContextualSignal> = {}): ContextualSignal => ({
     id: 'p9', name: 'Alvaro Gabriel', latestInteractionQuality: 4, latestInteractionAt: '2026-01-10', importance: 8, ...over,
   })
 
@@ -129,6 +129,41 @@ describe('detectContextualGap — conocimiento viejo (stale)', () => {
 
   it('NO pregunta sin intención de consejo/estado', () => {
     expect(detectContextualGap('¿cuál es el RUC de Alvaro?', [sig()], new Set(), NOW)).toBeNull()
+  })
+
+  it('el SUSTRATO manda: con chat reciente NO pregunta aunque el log esté viejo', () => {
+    // El caso real: person_logs de hace años, pero 72k mensajes y charla de ayer.
+    const g = detectContextualGap(
+      '¿cómo está Alvaro?',
+      [sig({ latestInteractionAt: '2024-01-10', lastChatAt: '2026-06-19T22:00:00Z' })],
+      new Set(), NOW,
+    )
+    expect(g).toBeNull()
+  })
+
+  it('con chat también viejo SÍ pregunta, y cuenta desde el contacto más reciente', () => {
+    const g = detectContextualGap(
+      '¿cómo está Alvaro?',
+      [sig({ latestInteractionAt: '2024-01-10', lastChatAt: '2026-05-01T10:00:00Z' })],
+      new Set(), NOW,
+    )
+    expect(g?.kind).toBe('stale_knowledge')
+    expect(g?.question).toContain('hace 50 días') // desde el chat, no desde 2024
+  })
+
+  it('usa el nombre tal cual está escrito (no en minúscula)', () => {
+    const g = detectContextualGap('¿cómo está Alvaro?', [sig()], new Set(), NOW)
+    expect(g?.question).toContain('Alvaro')
+    expect(g?.question).not.toContain('alvaro')
+  })
+
+  it('post-conflicto: si hubo charla DESPUÉS del log tenso, no pregunta si hablaron', () => {
+    const g = detectContextualGap(
+      '¿le escribo a Alvaro?',
+      [sig({ latestInteractionQuality: 2, latestInteractionAt: '2026-06-01', lastChatAt: '2026-06-19T20:00:00Z' })],
+      new Set(), NOW,
+    )
+    expect(g).toBeNull()
   })
 
   it('post-conflicto gana sobre stale cuando ambos aplican', () => {
