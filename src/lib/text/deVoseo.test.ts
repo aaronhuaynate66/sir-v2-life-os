@@ -42,6 +42,42 @@ describe('deVoseo', () => {
     expect(deVoseo('nosotros')).toBe('nosotros')
   })
 
+  it('barrido generativo: caza la cola larga de imperativos/presentes regulares', () => {
+    // Deslices REALES de SIR (25-jul) que la lista blanca no cubría.
+    expect(deVoseo('revisá tus apuntes de préstamos')).toBe('revisa tus apuntes de préstamos')
+    expect(deVoseo('¿recordás cuándo fue?')).toBe('¿recuerdas cuándo fue?')
+    expect(deVoseo('agendá el examen y avisá a tu mamá')).toBe('agenda el examen y avisa a tu mamá')
+    expect(deVoseo('si lo revisás hoy, lo cierras')).toBe('si lo revisas hoy, lo cierras')
+    expect(deVoseo('Cuidá esa relación')).toBe('Cuida esa relación')
+  })
+
+  it('imperativo + enclítico lleva su tilde peruana', () => {
+    expect(deVoseo('si quieres mandame la captura')).toBe('si quieres mándame la captura')
+    expect(deVoseo('dejame ver y avisame')).toBe('déjame ver y avísame')
+    expect(deVoseo('cuidate mucho')).toBe('cuídate mucho')
+    // Palabras legítimas con la misma forma: intactas.
+    expect(deVoseo('dame el tomate y que llame luego')).toBe('dame el tomate y que llame luego')
+  })
+
+  it('barrido generativo: irregulares que diptongan NO quedan a medias', () => {
+    expect(deVoseo('contás con eso')).toBe('cuentas con eso')
+    expect(deVoseo('si te acordás, me dices')).toBe('si te acuerdas, me dices')
+    expect(deVoseo('encontrás el mensaje ahí')).toBe('encuentras el mensaje ahí')
+  })
+
+  it('barrido generativo: NO toca futuros, deícticos ni nombres propios', () => {
+    const safe = [
+      'ella te pagará mañana y verás que sí',
+      'el examen será el 7 y tendrás tiempo',
+      'está acá, allá con mamá y papá',
+      'estás en el sofá, quizás demás, jamás atrás',
+      'ojalá que sí, además el compás',
+      'habla con Nicolás en Bogotá y Panamá',
+      'lo dejará listo y te lo mandará',
+    ]
+    for (const s of safe) expect(deVoseo(s)).toBe(s)
+  })
+
   it('es idempotente', () => {
     const once = deVoseo('tenés que venir, sos clave')
     expect(deVoseo(once)).toBe(once)

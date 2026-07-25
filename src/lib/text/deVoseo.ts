@@ -36,9 +36,62 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['andá', 'anda'], ['dejá', 'deja'], ['tomá', 'toma'], ['esperá', 'espera'], ['pará', 'para'],
   ['vení', 'ven'], ['acordate', 'acuérdate'], ['quedate', 'quédate'], ['calmate', 'cálmate'],
   ['fijáte', 'fíjate'], ['dale que', 'vamos que'],
+  // Imperativo + enclítico: en tuteo peruano SIEMPRE llevan tilde esdrújula
+  // ("mandame"→"mándame"). Cazado en vivo el 25-jul. Lista fija a propósito:
+  // hay palabras legítimas con esa forma (tomate, dame, llame) que no se tocan.
+  ['mandame', 'mándame'], ['avisame', 'avísame'], ['llamame', 'llámame'],
+  ['escribime', 'escríbeme'], ['dejame', 'déjame'], ['pasame', 'pásame'],
+  ['mostrame', 'muéstrame'], ['traeme', 'tráeme'], ['ayudame', 'ayúdame'],
+  ['esperame', 'espérame'], ['preguntame', 'pregúntame'], ['explicame', 'explícame'],
+  ['contale', 'cuéntale'], ['decile', 'dile'], ['avisale', 'avísale'],
+  ['cuidate', 'cuídate'], ['sentate', 'siéntate'], ['levantate', 'levántate'],
+  ['acercate', 'acércate'], ['relajate', 'relájate'], ['olvidate', 'olvídate'],
+  ['preparate', 'prepárate'], ['enfocate', 'enfócate'], ['concentrate', 'concéntrate'],
+  // Presentes -ás de verbos que DIPTONGAN (recordás→recuerdas, no "recordas"):
+  // el barrido generativo de abajo solo quita la tilde, así que los irregulares
+  // tienen que resolverse acá ANTES. Cazados en respuestas reales de SIR.
+  ['recordás', 'recuerdas'], ['acordás', 'acuerdas'], ['contás', 'cuentas'],
+  ['encontrás', 'encuentras'], ['mostrás', 'muestras'], ['probás', 'pruebas'],
+  ['empezás', 'empiezas'], ['comenzás', 'comienzas'], ['cerrás', 'cierras'],
+  ['despertás', 'despiertas'], ['jugás', 'juegas'], ['soñás', 'sueñas'],
+  ['volás', 'vuelas'], ['colgás', 'cuelgas'], ['perdés', 'pierdes'],
+  ['volvés', 'vuelves'], ['movés', 'mueves'], ['dormís', 'duermes'],
   // Pronombre
   ['vos', 'tú'],
 ]
+
+// —— Barrido GENERATIVO de imperativos/presentes voseo ——————————————————
+//
+// La lista de arriba es una lista blanca: cada sesión se escapa un verbo nuevo
+// ("revisá", "agendá"). Para los REGULARES la corrección es mecánica —quitar la
+// tilde final: "revisá"→"revisa", "revisás"→"revisas"— así que se hace por regla
+// y no por enumeración. Solo aplica donde es INEQUÍVOCO:
+//   - termina en "á"/"ás" y la penúltima letra NO es "r" → deja fuera todos los
+//     futuros ("pagará", "pagarás", "será", "verás"), que son legítimos.
+//   - largo mínimo → deja fuera "está", "acá", "allá", "mamá", "papá", "sofá",
+//     "estás", "demás", "atrás", "jamás", "quizás".
+//   - lista corta de excepciones para lo que sobrevive (topónimos, "ojalá").
+// Los irregulares que diptongan ya fueron reemplazados arriba.
+const ACCENT_EXCEPTIONS = new Set([
+  // Palabras y nombres largos que legítimamente llevan tilde final.
+  'ojalá', 'quizá', 'panamá', 'bogotá', 'canadá', 'paraná', 'maracaná',
+  'nicolás', 'quizás', 'además', 'compás', 'detrás',
+])
+const GENERATIVE_VOSEO = /(?<![a-záéíóúüñ])([a-záéíóúüñ]{2,})(á|Á)(s?)(?![a-záéíóúüñ])/gi
+
+/** Quita la tilde final del voseo REGULAR (-á/-ás) cuando es inequívoco. PURO. */
+function scrubGenerativeVoseo(text: string): string {
+  return text.replace(GENERATIVE_VOSEO, (match, stem: string, tilde: string, s: string) => {
+    const lower = match.toLowerCase()
+    // Largo mínimo: 5 con -á (deja fuera "está", "acá", "allá", "mamá", "papá",
+    // "sofá") y 7 con -ás (deja fuera "estás", "demás", "atrás", "jamás").
+    if (lower.length < (s ? 7 : 5)) return match
+    if (ACCENT_EXCEPTIONS.has(lower)) return match
+    // Futuro: la sílaba tónica cae sobre "rá" ("pagará", "tendrás", "verás").
+    if (stem.toLowerCase().endsWith('r')) return match
+    return `${stem}${tilde === 'Á' ? 'A' : 'a'}${s}`
+  })
+}
 
 /** Aplica la misma capitalización del original (primera letra) al reemplazo. */
 function matchCase(original: string, replacement: string): string {
@@ -66,5 +119,7 @@ export function deVoseo(text: string): string {
   for (const [re, to] of COMPILED) {
     out = out.replace(re, (m) => matchCase(m, to))
   }
-  return out
+  // Después de la lista blanca (que ya resolvió los irregulares que diptongan),
+  // el barrido mecánico caza la cola larga: "revisá", "agendá", "revisás"…
+  return scrubGenerativeVoseo(out)
 }
