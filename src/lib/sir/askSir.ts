@@ -69,6 +69,8 @@ import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
 import { isReaderQuery, renderReaderStatusBlock } from '@/lib/social-reader/readerStatus'
+import { loadBrainGraphForUser } from '@/lib/brain/scopedLoader'
+import { isNetworkQuery, resolveNetworkSeeds, buildNetworkConnections, renderNetworkBlock } from '@/lib/brain/network'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
 import { summarizeAffection, describeAffection } from '@/lib/forecast-conductual/affectionSummary'
 import { fetchCalendarEvents } from '@/lib/calendar/feed'
@@ -769,6 +771,22 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     } catch { /* tabla 0113 ausente / sin data → sin bloque */ }
   }
 
+  // RED / CONEXIONES: SIR era CIEGO al grafo tipado del cerebro (src/lib/brain/*).
+  // Solo cuando la pregunta es de RED/CAMINOS ("quién conoce a / me presenta a /
+  // está cerca de un objetivo") cargamos el grafo (SCOPEADO por user_id — seguro
+  // bajo service-role/Telegram) y difundimos desde las personas/orgs/objetivos
+  // que la pregunta nombra. OJO COSTO: gated por intención + acotado a semillas +
+  // top-N; no corre el grafo completo en cada turno. Fail-soft.
+  let networkBlock = ''
+  if (isNetworkQuery(`${question} ${recentUserText}`)) {
+    try {
+      const graph = await loadBrainGraphForUser(supabase, userId)
+      const seeds = resolveNetworkSeeds(`${question} ${recentUserText}`, graph, [...targetIds])
+      const connections = buildNetworkConnections(graph, seeds, 12)
+      networkBlock = renderNetworkBlock(seeds, connections)
+    } catch { /* fail-soft: sin grafo → el prompt ya sabe no negar la capacidad */ }
+  }
+
   // SEMANA / CICLO DEL CÍRCULO: askSir solo miraba el ciclo de la persona
   // PREGUNTADA (cycle_start_date / patrones live). Nunca corría el detector de la
   // SEMANA (buildCycleWeekAhead) ni leía las anclas manuales de person_cycles. Este
@@ -898,6 +916,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     (dealsBlock ? `\n\n${dealsBlock}` : '') +
     (tensionBlock ? `\n\n${tensionBlock}` : '') +
     (readerBlock ? `\n\n${readerBlock}` : '') +
+    (networkBlock ? `\n\n${networkBlock}` : '') +
     (circleCycleBlock ? `\n\n${circleCycleBlock}` : '') +
     (affectionBlock ? `\n\n${affectionBlock}` : '') +
     (agendaBlock ? `\n\n${agendaBlock}` : '') +
