@@ -158,9 +158,12 @@ export function renderWeightTrendLine(
   const borde = t.edge === 'piso' ? `el piso de tu categoría (${category.minKg} kg)` : `el techo (${category.maxKg} kg)`
   const peso = currentKg !== null ? `${currentKg} kg` : 'tu peso'
 
+  // Cruzar un borde no te deja SIN categoría: te mueve a la de al lado. Decirlo
+  // así importa — el problema no es quedarse afuera, es llegar a competir en una
+  // categoría que no elegiste, y encima siendo de los más livianos de la tuya.
   if (t.daysToEdge <= 0) {
-    return `Estás en ${peso} y ya cruzaste ${borde}. Si vas a competir en esa categoría, hay que corregir ahora.`
+    return `Estás en ${peso} y ya cruzaste ${borde}: hoy competirías en la categoría de al lado. Si esa no es la que quieres, hay que corregir ahora.`
   }
   const cuando = t.edgeEtaDay ? fechaSuave(t.edgeEtaDay) : `${t.daysToEdge} días`
-  return `Vienes ${verbo} ${ritmo} kg/mes y te quedan ${t.marginKg} kg hasta ${borde}: a este ritmo lo tocas a ${cuando}, ${antesDe}. Bajar grasa y quedarte en categoría tiran para lados distintos — decide cuál manda.`
+  return `Vienes ${verbo} ${ritmo} kg/mes y te quedan ${t.marginKg} kg hasta ${borde}: a este ritmo lo cruzas a ${cuando}, ${antesDe}, y pasas a la categoría de al lado. Decídelo tú — que no lo decida la balanza.`
 }
