@@ -36,6 +36,8 @@ import { extractStoryVision } from '@/lib/social-reader/storyVision'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, type PersonLite } from '@/lib/social-reader/match'
 import { parseWhoIsWhoReply, buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
+import { parseBriefCallback } from '@/lib/telegram/briefThread'
+import { runBriefAction } from '@/lib/telegram/briefActions'
 import { relacionesUrl } from '@/lib/app-url'
 import type { LlmImageMediaType } from '@/lib/llm/types'
 
@@ -328,6 +330,31 @@ export async function POST(req: NextRequest) {
         const unmatchedId = cb.data.slice(3)
         if (unmatchedId) { await handleWhoIsWhoDismiss(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, unmatchedId) }
         else await answerCallbackQuery(cb.callbackId)
+        return
+      }
+
+      // Botón del BRIEF de la mañana: "br|<accion>|<ref>". El brief pasó de
+      // párrafo a hilo accionable (elección de Aaron 2026-07-25) — cada sección
+      // trae los botones de lo que esa señal SÍ permite hacer.
+      const brief = parseBriefCallback(cb.data)
+      if (brief) {
+        const res = await runBriefAction(supabase, ownerId, brief.kind, brief.ref, {
+          askSirText: async (question) => {
+            const r = await askSir({ supabase, userId: ownerId, question, chatStyle: true, skipInlineGaps: true })
+            return r.answer
+          },
+        })
+        await answerCallbackQuery(cb.callbackId, res.toast)
+        // El resultado queda DONDE estaba el botón: se reemplaza el teclado por
+        // el desenlace, así el hilo no acumula botones ya usados.
+        await editTelegramKeyboard(cb.chatId, cb.messageId, `${cb.messageText ?? ''}\n\n${res.toast}`.trim().slice(0, 4000), [])
+        if (res.reply) {
+          await sendTelegramMessage(cb.chatId, res.reply)
+          try {
+            await supabase.from('sir_messages').insert({ user_id: ownerId, role: 'sir', content: res.reply.slice(0, 4000), channel: 'telegram' })
+          } catch { /* fail-open: el hilo unificado es un extra */ }
+        }
+        await trackServer('brief_action', { channel: 'telegram', kind: brief.kind }, ownerId)
         return
       }
 

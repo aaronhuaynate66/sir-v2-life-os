@@ -14,11 +14,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
-import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
+import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard } from '@/lib/telegram/client'
 import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
-import { buildBriefThread } from '@/lib/telegram/briefThread'
+import { buildBriefThread, muteRef } from '@/lib/telegram/briefThread'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
-import { buildMorningPush, type MorningBirthday } from '@/lib/push/morning'
+import { buildMorningPush, topicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
@@ -158,22 +158,28 @@ export async function GET(req: NextRequest) {
       // Tareas que vencen hoy (no hechas).
       const { data: stepRows } = await admin
         .from('objective_steps')
-        .select('title, target_date, status')
+        .select('id, title, target_date, status')
         .eq('user_id', uid)
         .eq('target_date', today)
         .neq('status', 'hecho')
         .limit(50)
-      const dueTasks = (stepRows ?? []).map((s) => (s as { title: string }).title).filter(Boolean)
+      const dueStepRows = (stepRows ?? []) as Array<{ id: string; title: string }>
+      const dueTasks = dueStepRows.map((s) => s.title).filter(Boolean)
+      // Ids de las entidades detrás de las señales → habilitan los botones del
+      // hilo de Telegram ("✅ Ya lo hice" necesita saber QUÉ tarea marcar). Con
+      // más de una tarea el botón sería ambiguo, así que solo va con exactamente una.
+      const briefEntities: MorningEntities = {}
+      if (dueStepRows.length === 1) briefEntities.dueTask = { id: dueStepRows[0].id, name: dueStepRows[0].title }
 
       // Foco: ancla del año, o el próximo paso de un objetivo activo.
       const { data: goalRows } = await admin
         .from('goals')
-        .select('title, next_action, is_anchor, status, target_date, target, anchor_subtitle, description, progress, updated_at, related_persons')
+        .select('id, title, next_action, is_anchor, status, target_date, target, anchor_subtitle, description, progress, updated_at, related_persons')
         .eq('user_id', uid)
         .eq('status', 'active')
         .limit(50)
       const goals = (goalRows ?? []) as Array<{
-        title: string; next_action: string; is_anchor: boolean | null;
+        id: string; title: string; next_action: string; is_anchor: boolean | null;
         target_date: string | null; target: string | null;
         anchor_subtitle: string | null; description: string | null;
         progress: number | null; updated_at: string | null;
@@ -195,6 +201,12 @@ export async function GET(req: NextRequest) {
         })),
         now,
       ) ?? undefined
+      // El nudge nombra el objetivo en su texto → así sabemos cuál es para el
+      // botón "🚀 Dame el próximo paso".
+      if (goalNudgeText) {
+        const hit = goals.find((g) => g.title && goalNudgeText!.includes(g.title))
+        if (hit) briefEntities.goalNudgeGoal = { id: hit.id, name: hit.title }
+      }
 
       // BUEN MOMENTO × OBJETIVO (el loop original del reader, caso Dayana/Marlab):
       // una persona ligada a un objetivo activo CON acción pendiente que HOY
@@ -247,6 +259,7 @@ export async function GET(req: NextRequest) {
         if (days < 0 || days > 7) continue
         const when = days === 0 ? 'HOY' : days === 1 ? 'MAÑANA' : `EN ${days} DÍAS`
         weekFocusText = `${g.title} · ${when}`
+        if (g.id) briefEntities.weekFocusGoal = { id: g.id, name: g.title }
         break
       }
 
@@ -449,6 +462,7 @@ export async function GET(req: NextRequest) {
           // DOS veces. Ahora usamos el headline (nombre una vez) y adjuntamos el
           // parentesco como nota al final, que sí aporta ("— tu media hermana").
           relationshipNudgeText = top.kinLabel ? `${top.headline} — ${top.kinLabel}` : top.headline
+          briefEntities.relationshipPerson = { id: top.personId, name: top.personName }
           // Si hay un recordatorio "antes de contactar" para ESTA persona, este es
           // EL momento de surgirlo: el push ya te empuja a escribirle. Es el punto
           // de los contact_reminders (#801) — que aparezcan, no que se olviden. Fail-soft.
@@ -529,11 +543,11 @@ export async function GET(req: NextRequest) {
       try {
         const { data: mrRows } = await admin
           .from('relationship_moments')
-          .select('person_id, title, resolution_confidence')
+          .select('id, person_id, title, resolution_confidence')
           .eq('user_id', uid).eq('status', 'abierto').eq('resolution_suggested', true)
           .order('resolution_checked_at', { ascending: false })
           .limit(10)
-        const rows = (mrRows ?? []) as Array<{ person_id: string; title: string; resolution_confidence: string | null }>
+        const rows = (mrRows ?? []) as Array<{ id: string; person_id: string; title: string; resolution_confidence: string | null }>
         if (rows.length > 0) {
           const ids = [...new Set(rows.map((r) => r.person_id).filter(Boolean))]
           const { data: nameRows } = await admin
@@ -545,7 +559,12 @@ export async function GET(req: NextRequest) {
             confidence: r.resolution_confidence === 'high' || r.resolution_confidence === 'medium' ? r.resolution_confidence : 'low',
           }))
           const line = momentResolutionPushLine(suggestions)
-          if (line) momentResolutionText = line
+          if (line) {
+            momentResolutionText = line
+            // El botón "✅ Dar por cerrado" cierra ESTE momento (el primero, que
+            // es el que la línea nombra).
+            briefEntities.moment = { id: rows[0].id, name: rows[0].title }
+          }
         }
       } catch { /* columna 0151 sin propagar → sin sugerencia */ }
 
@@ -598,7 +617,17 @@ export async function GET(req: NextRequest) {
         /* fail-soft: la anticipación de cuidado es un extra, no rompe el push */
       }
 
-      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText })
+      // SILENCIADOS (🔕): temas que Aaron mandó a callar. Se filtran dentro de
+      // buildMorningPush, antes del cap, así no le roban el cupo a otra señal.
+      // Fail-soft: sin la tabla (0166 sin propagar) el brief va completo.
+      let mutedTopics: string[] = []
+      try {
+        const { data: muteRows } = await admin
+          .from('brief_mutes').select('topic_key').eq('user_id', uid).limit(200)
+        mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
+      } catch { /* tabla 0166 sin propagar */ }
+
+      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, entities: briefEntities, mutedTopics })
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
@@ -613,17 +642,32 @@ export async function GET(req: NextRequest) {
         // pegado, para poder responderle a UNO. Si no hay señales, cae al mensaje
         // único calmo de siempre.
         const thread = buildBriefThread(push.signals)
-        const chatTexts = thread.length > 0 ? thread.map((m) => m.text) : [formatMorningBriefForChat(push)]
+        const messages = thread.length > 0
+          ? thread
+          : [{ section: 'hoy' as const, text: formatMorningBriefForChat(push), buttons: [] }]
         let anySent = false
-        for (const chatText of chatTexts) {
-          const tg = await sendTelegramMessage(Number(tgChat), chatText)
+        for (const m of messages) {
+          const tg = m.buttons.length > 0
+            ? await sendTelegramKeyboard(Number(tgChat), m.text, m.buttons)
+            : await sendTelegramMessage(Number(tgChat), m.text)
           if (!tg.ok) continue
           anySent = true
           try {
-            await admin.from('sir_messages').insert({ user_id: uid, role: 'sir', content: chatText.slice(0, 4000), channel: 'telegram' })
+            await admin.from('sir_messages').insert({ user_id: uid, role: 'sir', content: m.text.slice(0, 4000), channel: 'telegram' })
           } catch { /* fail-open: el hilo es un extra */ }
         }
         if (anySent) telegramBriefs++
+
+        // Log de lo mostrado: resuelve el tap de 🔕 (el callback lleva una ref
+        // corta) y es la base para dejar de repetir lo que no cambió. Fail-soft.
+        try {
+          const rows = push.signals.map((s) => ({
+            user_id: uid, ref: muteRef(s.text), topic_key: topicKey(s.text),
+            sample_text: s.text.slice(0, 500), section: s.section, slot: s.slot,
+            sent_at: new Date().toISOString(),
+          }))
+          if (rows.length) await admin.from('brief_sent_signals').upsert(rows, { onConflict: 'user_id,ref' })
+        } catch { /* tabla 0166 sin propagar → los botones de acción siguen andando */ }
       }
     } catch (e) {
       // Antes se tragaba en silencio: si un bug lógico (no una tabla sin

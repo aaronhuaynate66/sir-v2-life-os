@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildMorningPush, dedupeSignals, topicOverlap } from './morning'
+import { buildMorningPush, dedupeSignals, topicOverlap, topicKey } from './morning'
 
 // Textos REALES del brief que Aaron recibió el 25-jul-2026.
 const BOTICAS_CORTO = 'Cerrar Boticas Jhodaal como cliente de Marlab · EN 6 DÍAS'
@@ -36,6 +36,72 @@ describe('dedupe de temas repetidos', () => {
     })
     expect(p.signals.filter((s) => s.text.includes('Boticas'))).toHaveLength(1)
     expect(p.signals.filter((s) => s.text.includes('Maria Isabel'))).toHaveLength(2)
+  })
+})
+
+describe('🔕 señales silenciadas', () => {
+  it('un tema silenciado no vuelve a aparecer', () => {
+    const conMute = buildMorningPush({
+      relationshipNudge: MAMA_SILENCIO,
+      momentResolution: MAMA_CONFLICTO,
+      mutedTopics: [topicKey(MAMA_CONFLICTO)],
+    })
+    expect(conMute.signals.map((s) => s.text)).toEqual([MAMA_SILENCIO])
+  })
+
+  it('el silencio sobrevive a que el texto se reformule (el número cambia)', () => {
+    const enUnMes = 'Hace 7 semanas sin hablar con Maria Isabel Espinoza Vidaurre — tu mamá'
+    const p = buildMorningPush({ relationshipNudge: enUnMes, mutedTopics: [topicKey(MAMA_SILENCIO)] })
+    expect(p.signals).toHaveLength(0)
+  })
+
+  it('silenciar no le roba el cupo a otra señal', () => {
+    const otras = Array.from({ length: 8 }, (_, i) => `Cumple de persona ${i}`)
+    const p = buildMorningPush({
+      relationshipNudge: MAMA_CONFLICTO,
+      importantDates: otras.slice(0, 2),
+      birthdays: [{ name: 'Ana', days: 1 }],
+      dueTasks: ['Cerrar reporte'],
+      mutedTopics: [topicKey(MAMA_CONFLICTO)],
+    })
+    expect(p.signals.some((s) => s.text === MAMA_CONFLICTO)).toBe(false)
+    expect(p.signals.length).toBeGreaterThan(0)
+  })
+
+  it('sin silenciados, todo pasa igual', () => {
+    const p = buildMorningPush({ relationshipNudge: MAMA_SILENCIO, mutedTopics: [] })
+    expect(p.signals).toHaveLength(1)
+  })
+})
+
+describe('entidades que habilitan los botones', () => {
+  it('la señal lleva el id de la tarea cuando hay UNA sola', () => {
+    const p = buildMorningPush({
+      dueTasks: ['UAT con Dayana'],
+      entities: { dueTask: { id: 'step_1', name: 'UAT con Dayana' } },
+    })
+    expect(p.signals.find((s) => s.slot === 'dueTask')?.entity).toEqual({ kind: 'task', id: 'step_1', name: 'UAT con Dayana' })
+  })
+
+  it('sin entidad, la señal existe igual (solo que sin acción)', () => {
+    const p = buildMorningPush({ dueTasks: ['UAT con Dayana'] })
+    expect(p.signals.find((s) => s.slot === 'dueTask')?.entity).toBeUndefined()
+  })
+
+  it('persona, momento y objetivo viajan con su tipo', () => {
+    const p = buildMorningPush({
+      relationshipNudge: 'Hace 3 semanas sin hablar con tu mamá',
+      momentResolution: 'El conflicto parece resuelto',
+      goalNudge: 'Boticas Jhodaal vence en 6 días',
+      entities: {
+        relationshipPerson: { id: 'per_1', name: 'Maria' },
+        moment: { id: 'mom_1' },
+        goalNudgeGoal: { id: 'g_1' },
+      },
+    })
+    expect(p.signals.find((s) => s.slot === 'relationshipNudge')?.entity?.kind).toBe('person')
+    expect(p.signals.find((s) => s.slot === 'momentResolution')?.entity?.kind).toBe('moment')
+    expect(p.signals.find((s) => s.slot === 'goalNudge')?.entity?.kind).toBe('goal')
   })
 })
 

@@ -58,6 +58,11 @@ export interface MorningInput {
    *  rango (idea de Aaron: no dejarlo "al baúl"). NO es agudo → prioridad baja y
    *  el cron lo manda throttled (semanal). Texto ya formado. */
   healthWatch?: string
+  /** Ids de las entidades detrás de las señales (habilitan los botones del hilo). */
+  entities?: MorningEntities
+  /** Temas ya silenciados por Aaron (botón 🔕). Se filtran ANTES de armar el
+   *  brief: no vuelven a aparecer hasta que él los reactive. Ver `topicKey`. */
+  mutedTopics?: string[]
 }
 
 /** Sección del brief conversacional (Telegram). El chat manda UN mensaje por
@@ -74,6 +79,20 @@ export interface MorningSignal {
   slot: string
   section: BriefSection
   text: string
+  /** Entidad concreta detrás de la señal, cuando el caller la conoce. Es lo que
+   *  habilita los botones del hilo ("✅ Ya lo hice" necesita el id de la tarea).
+   *  Sin ella la señal se muestra igual, solo que sin acción. */
+  entity?: { kind: 'task' | 'person' | 'moment' | 'goal'; id: string; name?: string }
+}
+
+/** Ids de las entidades detrás de las señales. Opcionales: el brief funciona
+ *  igual sin ellos (solo que sin botones). */
+export interface MorningEntities {
+  dueTask?: { id: string; name?: string }
+  relationshipPerson?: { id: string; name?: string }
+  moment?: { id: string; name?: string }
+  goalNudgeGoal?: { id: string; name?: string }
+  weekFocusGoal?: { id: string; name?: string }
 }
 
 export interface MorningPush {
@@ -128,6 +147,21 @@ export function topicOverlap(a: string, b: string): number {
   return hits / min
 }
 
+/**
+ * Clave ESTABLE del tema de una señal — los tokens significativos ordenados.
+ * Estable = sobrevive a que el builder reformule ("hace 3 semanas" → "hace 4"),
+ * porque los números y las palabras de relleno no entran. Es lo que se guarda al
+ * silenciar (🔕): si la clave dependiera del texto exacto, habría que callar lo
+ * mismo cada semana. PURA.
+ */
+export function topicKey(text: string): string {
+  return [...topicTokens(text)]
+    .filter((t) => !/^\d+$/.test(t))
+    .sort()
+    .join('-')
+    .slice(0, 120)
+}
+
 /** Umbral de "es el mismo tema". Alto a propósito: preferimos repetir antes que
  *  tragarnos una señal distinta que solo comparte el nombre de una persona (dos
  *  señales sobre la mamá de Aaron —"3 semanas sin hablar" y "el conflicto parece
@@ -161,13 +195,19 @@ function birthdayPhrase(b: MorningBirthday): string {
  *  `bodyFull` (chat) toma hasta MAX_PARTS_FULL. */
 export function buildMorningPush(input: MorningInput): MorningPush {
   const collected: MorningSignal[] = []
-  const add = (s: string | undefined | null, slot: string, section: BriefSection) => {
-    if (s) collected.push({ slot, section, text: s })
+  const ent = input.entities ?? {}
+  const add = (
+    s: string | undefined | null,
+    slot: string,
+    section: BriefSection,
+    entity?: MorningSignal['entity'],
+  ) => {
+    if (s) collected.push({ slot, section, text: s, ...(entity ? { entity } : {}) })
   }
 
   // 0. SEMANA EN FOCO (mudanza / hitos ≤7d) y 0.5 MÉTRICA DURA fuera de rango:
   //    lo urgente/time-sensitive del día, al frente.
-  add(input.weekFocus, 'weekFocus', 'metas')
+  add(input.weekFocus, 'weekFocus', 'metas', ent.weekFocusGoal ? { kind: 'goal', ...ent.weekFocusGoal } : undefined)
   add(input.metricAlert, 'metricAlert', 'hoy')
 
   // 1. Aniversarios/fechas especiales: un aniversario HOY es time-critical (no se
@@ -178,8 +218,8 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //     "a quién cuidar hoy" + "cerrar un lazo" + "buen momento × objetivo" ahora
   //     van ANTES que los cumpleaños (un cumple en N días no debe tapar el cuidado
   //     de un vínculo que se enfría hoy) → casi siempre entran al push.
-  add(input.relationshipNudge, 'relationshipNudge', 'gente')
-  add(input.momentResolution, 'momentResolution', 'gente')
+  add(input.relationshipNudge, 'relationshipNudge', 'gente', ent.relationshipPerson ? { kind: 'person', ...ent.relationshipPerson } : undefined)
+  add(input.momentResolution, 'momentResolution', 'gente', ent.moment ? { kind: 'moment', ...ent.moment } : undefined)
   add(input.goalContactTiming, 'goalContactTiming', 'gente')
   // Anticipación de cuidado: semana con carga afectiva (ventanas sensibles del
   // ciclo). Va con lo relacional; es un nudge de CUIDADO, no una tarea.
@@ -190,7 +230,9 @@ export function buildMorningPush(input: MorningInput): MorningPush {
 
   // 2. Tareas que vencen hoy.
   const due = input.dueTasks ?? []
-  if (due.length === 1) add(`Hoy vence: ${due[0]}`, 'dueTask', 'hoy')
+  // Con UNA sola tarea sabemos exactamente cuál es → la señal lleva su id y el
+  // hilo puede ofrecer "✅ Ya lo hice". Con varias, el botón sería ambiguo.
+  if (due.length === 1) add(`Hoy vence: ${due[0]}`, 'dueTask', 'hoy', ent.dueTask ? { kind: 'task', ...ent.dueTask } : undefined)
   else if (due.length > 1) add(`${due.length} tareas para hoy (${due[0]}…)`, 'dueTask', 'hoy')
 
   // 2.5 Hábito a retomar · 2.6 señal del cuerpo · 2.7 vigilancia de laboratorio.
@@ -199,7 +241,7 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   add(input.healthWatch, 'healthWatch', 'hoy')
 
   // 2.8 OBJETIVO que necesita atención (accionable, antes del foco genérico).
-  add(input.goalNudge, 'goalNudge', 'metas')
+  add(input.goalNudge, 'goalNudge', 'metas', ent.goalNudgeGoal ? { kind: 'goal', ...ent.goalNudgeGoal } : undefined)
 
   // 3. Foco del día. Se omite si ya hubo un nudge de objetivo (evita 2 líneas de
   //    meta en el mismo push).
@@ -212,7 +254,12 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // cosa con otras palabras y el brief lo decía dos veces ("Cerrar Boticas
   // Jhodaal · EN 6 DÍAS" al inicio y «"Cerrar Boticas Jhodaal" vence en 6 días y
   // vas 0%» al final). Se queda la más informativa, en la posición de la primera.
-  const signals = dedupeSignals(collected).slice(0, MAX_PARTS_FULL)
+  // SILENCIADAS (🔕): un tema que Aaron mandó a callar no vuelve. Se filtra
+  // ANTES del dedupe y del cap, así una señal muteada no le roba el cupo a otra.
+  const muted = new Set(input.mutedTopics ?? [])
+  const audible = muted.size === 0 ? collected : collected.filter((s) => !muted.has(topicKey(s.text)))
+
+  const signals = dedupeSignals(audible).slice(0, MAX_PARTS_FULL)
   const parts = signals.map((s) => s.text)
 
   if (parts.length === 0) {
