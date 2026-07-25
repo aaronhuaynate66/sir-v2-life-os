@@ -94,8 +94,10 @@ describe('buildAskContext', () => {
 import {
   SIR_ASK_SYSTEM_PROMPT,
   isHealthQuery, isReminderQuery, isDealQuery, isTensionQuery,
+  isCircleCycleQuery, isAffectionClimateQuery, isAgendaQuery,
   selectRecentHealth, renderHealthBlock,
   renderRemindersBlock, renderDealsBlock, renderTensionAlertsBlock,
+  renderCircleCycleBlock, renderAffectionClimateBlock, renderAgendaBlock,
 } from './ask'
 
 describe('capability map en el prompt', () => {
@@ -131,6 +133,67 @@ describe('detección de intención (gating de bloques)', () => {
     expect(isTensionQuery('¿con quién estoy distante?')).toBe(true)
     expect(isTensionQuery('alguna relación tensa')).toBe(true)
     expect(isTensionQuery('cuánto peso')).toBe(false)
+  })
+  it('semana / ciclo del círculo', () => {
+    expect(isCircleCycleQuery('¿Cómo viene la semana con las mujeres de mi círculo?')).toBe(true)
+    expect(isCircleCycleQuery('¿quién está sensible esta semana?')).toBe(true)
+    expect(isCircleCycleQuery('¿cómo viene el ciclo del círculo?')).toBe(true)
+    expect(isCircleCycleQuery('¿cuánto peso tengo?')).toBe(false)
+  })
+  it('clima afectivo / cariño (IAE)', () => {
+    expect(isAffectionClimateQuery('¿Cómo viene el clima afectivo con Diana?')).toBe(true)
+    expect(isAffectionClimateQuery('¿estamos más secos o cariñosos?')).toBe(true)
+    expect(isAffectionClimateQuery('¿cómo venimos con Diana?')).toBe(true)
+    expect(isAffectionClimateQuery('¿qué oportunidades tengo?')).toBe(false)
+  })
+  it('agenda / eventos próximos', () => {
+    expect(isAgendaQuery('¿Qué tengo agendado los próximos días?')).toBe(true)
+    expect(isAgendaQuery('¿qué hay el sábado?')).toBe(true)
+    expect(isAgendaQuery('mi calendario de la semana')).toBe(true)
+    expect(isAgendaQuery('cómo dormí anoche')).toBe(false)
+  })
+})
+
+describe('renderCircleCycleBlock', () => {
+  it('envuelve la línea de cuidado con encabezado de tendencia', () => {
+    const b = renderCircleCycleBlock('Semana con carga afectiva: coinciden Amira y Aeylin en una ventana sensible del ciclo.')
+    expect(b).toContain('== SEMANA / CICLO DEL CÍRCULO')
+    expect(b).toContain('tendencia, NO veredicto')
+    expect(b).toContain('coinciden Amira y Aeylin')
+  })
+  it('vacío si no hay línea', () => {
+    expect(renderCircleCycleBlock(null)).toBe('')
+    expect(renderCircleCycleBlock('')).toBe('')
+  })
+})
+
+describe('renderAffectionClimateBlock', () => {
+  it('lista el afecto por persona con marco de cuidado', () => {
+    const b = renderAffectionClimateBlock([
+      { name: 'Diana Carolina', description: 'el afecto expresado viene subiendo; el balance reciente está bastante más positivo que negativo' },
+    ])
+    expect(b).toContain('== CLIMA AFECTIVO')
+    expect(b).toContain('afecto EXPRESADO ≠ afecto SENTIDO')
+    expect(b).toContain('- Diana Carolina: el afecto expresado viene subiendo')
+  })
+  it('vacío si no hay entradas con dato', () => {
+    expect(renderAffectionClimateBlock([])).toBe('')
+    expect(renderAffectionClimateBlock([{ name: 'X', description: '' }])).toBe('')
+  })
+})
+
+describe('renderAgendaBlock', () => {
+  it('lista eventos ordenables con vencimiento relativo y origen', () => {
+    const b = renderAgendaBlock([
+      { date: '2026-08-07', title: 'Examen médico', sourceLabel: 'Google' },
+      { date: '2026-07-26', title: 'Ver depa', personName: 'Diana', sourceLabel: 'plan' },
+    ], '2026-07-24')
+    expect(b).toContain('== AGENDA / EVENTOS PRÓXIMOS')
+    expect(b).toContain('2026-08-07 (en 14 días): Examen médico [Google]')
+    expect(b).toContain('2026-07-26 (en 2 días): Ver depa · con Diana [plan]')
+  })
+  it('vacío si no hay eventos', () => {
+    expect(renderAgendaBlock([], '2026-07-24')).toBe('')
   })
 })
 
