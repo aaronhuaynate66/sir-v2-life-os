@@ -412,6 +412,94 @@ export function isTensionQuery(question: string): boolean {
   return matchesAny(question, TENSION_KW)
 }
 
+const CIRCLE_CYCLE_KW = [
+  'mujeres de mi circulo', 'mujeres del circulo', 'las mujeres de mi',
+  'semana con las mujeres', 'semana de las mujeres', 'mujeres del entorno',
+  'quien esta sensible', 'quienes estan sensibles', 'quien anda sensible',
+  'como viene el ciclo', 'como vienen los ciclos', 'los ciclos de',
+  'carga afectiva', 'semana cargada', 'ventana sensible', 'ventanas sensibles',
+  'quien esta en su regla', 'quien esta premenstrual', 'quien tiene la regla',
+  'sensibilidad del circulo', 'como viene la semana',
+] as const
+/** ¿La pregunta es sobre la semana/el ciclo del círculo (quién está sensible)? */
+export function isCircleCycleQuery(question: string): boolean {
+  return matchesAny(question, CIRCLE_CYCLE_KW)
+}
+
+const AFFECTION_KW = [
+  'clima afectivo', 'afecto', 'afectiv', 'carino', 'carinos',
+  'mas seco', 'mas seca', 'mas secos', 'mas frio', 'mas fria', 'mas frios',
+  'como venimos con', 'como vamos con', 'que tan carinos', 'positividad',
+  'nos queremos', 'expresa afecto', 'me demuestra', 'ratio de positividad',
+] as const
+/** ¿La pregunta es sobre el clima afectivo/cariño (IAE) con alguien? */
+export function isAffectionClimateQuery(question: string): boolean {
+  return matchesAny(question, AFFECTION_KW)
+}
+
+const AGENDA_KW = [
+  'agenda', 'agendado', 'que tengo', 'proximos dias', 'proxima semana',
+  'mis planes', 'que planes', 'mis eventos', 'cuando es', 'calendario',
+  'que hay el', 'este sabado', 'el sabado', 'el domingo', 'el lunes',
+  'el martes', 'el miercoles', 'el jueves', 'el viernes', 'este finde',
+  'fin de semana', 'que viene esta semana',
+] as const
+/** ¿La pregunta es sobre la agenda/eventos próximos (calendario)? */
+export function isAgendaQuery(question: string): boolean {
+  return matchesAny(question, AGENDA_KW)
+}
+
+// ─── SEMANA / CICLO DEL CÍRCULO ──────────────────────────────────────────────
+/** Bloque "== SEMANA / CICLO DEL CÍRCULO ==". '' si no hay ventana. La `line`
+ *  la produce buildCycleWeekAheadLine (tono de cuidado ya incorporado). */
+export function renderCircleCycleBlock(line: string | null | undefined): string {
+  if (!line) return ''
+  return `== SEMANA / CICLO DEL CÍRCULO (anticipación de CUIDADO — tendencia, NO veredicto; JAMÁS para descalificar ni "gestionar" a nadie) ==\n${line}`
+}
+
+// ─── CLIMA AFECTIVO (Índice de Afecto Expresado) ─────────────────────────────
+export interface AffectionClimateEntry {
+  name: string
+  /** Frase de cuidado ya redactada (describeAffection). */
+  description: string
+}
+/** Bloque "== CLIMA AFECTIVO ==". '' si no hay entradas con dato. */
+export function renderAffectionClimateBlock(entries: AffectionClimateEntry[]): string {
+  const valid = entries.filter((e) => e.name && e.description)
+  if (valid.length === 0) return ''
+  const lines: string[] = [
+    '== CLIMA AFECTIVO (Índice de Afecto Expresado en los chats — DISPARADOR de conversación, NO veredicto; afecto EXPRESADO ≠ afecto SENTIDO, tono de cuidado) ==',
+  ]
+  for (const e of valid) lines.push(`- ${e.name}: ${e.description}`)
+  return lines.join('\n')
+}
+
+// ─── AGENDA / EVENTOS PRÓXIMOS ───────────────────────────────────────────────
+export interface AgendaItem {
+  /** YYYY-MM-DD. */
+  date: string
+  title: string
+  /** Persona ligada al plan (si aplica). */
+  personName?: string | null
+  /** Origen: "plan" (personal_events) o el label del calendario. */
+  sourceLabel?: string | null
+}
+/** Bloque "== AGENDA / EVENTOS PRÓXIMOS ==". '' si no hay. `today` = YYYY-MM-DD. */
+export function renderAgendaBlock(items: AgendaItem[], today: string): string {
+  if (items.length === 0) return ''
+  const lines: string[] = [
+    '== AGENDA / EVENTOS PRÓXIMOS (los tienes; puedes listarlos — NO niegues que ves tu agenda) ==',
+  ]
+  for (const it of items.slice(0, 30)) {
+    const day = (it.date || '').slice(0, 10)
+    const rel = day ? ` (${relativeDueLabel(day, today)})` : ''
+    const who = it.personName ? ` · con ${it.personName}` : ''
+    const src = it.sourceLabel ? ` [${it.sourceLabel}]` : ''
+    lines.push(`- ${day}${rel}: ${it.title}${who}${src}`)
+  }
+  return lines.join('\n')
+}
+
 // ─── SALUD RECIENTE (valores reales) ─────────────────────────────────────────
 /** Etiquetas legibles + orden de display para las métricas de health_metrics que
  *  surfaceamos (peso, FC/VFC/SpO₂ del día y del sueño). El resto no se muestra. */
