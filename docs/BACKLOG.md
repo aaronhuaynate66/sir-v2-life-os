@@ -5,7 +5,7 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 21/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 25/07/2026 (reconciliación automática — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
@@ -18,10 +18,10 @@ Vista usable (lo de abajo es histórico pesado). Reconciliado tras la sesión de
 Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/artifact/045fea0b-7b02-4a33-a013-7d394d9d85f6
 
 **🟢 Listo para construir (autónomo, sin bloqueo):**
-- **[alta] Fuga de voseo en el chat** — el harness de eval cazó "querés" en una respuesta real (contra [[idioma-espanol-peru]]). Reforzar la regla anti-voseo del prompt + re-medir. Bug real.
-- **[media] Copy del recordatorio "¡Listo!"** — al agendar, la respuesta a veces sobre-afirma ("¡Listo! Te lo propongo:") o saluda genérico en vez de acompañar la propuesta.
-- **[baja] Verborrea a "consejo corto"** — el harness marcó respuestas largas a pedidos breves.
-- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — few-shot dinámico desde correcciones (👎) + subir prioridad de `preference` fresca sobre patrones auto-derivados en `sortLearnings` (hoy van 3ras). El "que SIR aprenda" de verdad.
+- **[alta] Fuga de voseo en el chat** — ✅ **HECHO (reconciliado 2026-07-25).** `src/lib/text/deVoseo.ts` (PURO, +tests) scrubbea voseo/rioplatense→tuteo peruano, cableado en `askSir.ts` antes de devolver/persistir (commit `f01c19d` #944: harness "querés" pasó de 15→95). Extendido con más formas -és/-ás (`d1ea435` #948) y -ís (`bf00100` #957). Reforzar la regla anti-voseo del prompt + re-medir → hecho y remedido.
+- **[media] Copy del recordatorio "¡Listo!"** — ✅ **HECHO (reconciliado 2026-07-25).** Mismo commit `f01c19d` (#944): si la propuesta abre afirmando "hecho" o queda muy corta, se reemplaza por "Te propongo esto — revísalo y confírmalo 👇". Caso `action-honesty` del harness pasó de 30→95.
+- **[baja] Verborrea a "consejo corto"** — 🟡 **PARCIAL (reconciliado 2026-07-25).** Regla BREVEDAD agregada al prompt (`src/lib/sir/ask.ts` línea 19: "si Aaron pide algo CORTO... responde en 1-3 frases"), parte del mismo commit `f01c19d`. El propio commit lo marca "efecto marginal" — el caso `language-peru` del golden-set sigue midiendo bajo, pero por límite del JUEZ (no ve el grounding real), no por bug de SIR, según la nota del commit. No cerrar como ✅ sin re-medir con el harness endurecido (`35dbb1d` #949).
+- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — re-verificado 2026-07-25, **sigue pendiente sin cambios**: `sortLearnings` (`src/lib/learnings/recall.ts` líneas 47-54) sigue ordenando `principle→pattern→preference→fact` (preference 3ra), sin boost por frescura; no se encontró código de few-shot dinámico desde correcciones (`grep -i "few-shot|fewShot"` sin resultados) pese a que el sustrato ya existe (`chat_feedback` desde #939, harness desde #940). El "que SIR aprenda" de verdad sigue por construir.
 
 **🟡 Necesita input/decisión de Aaron:**
 - **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` O usar SIR con 👍/👎+corrección (ya se capturan en chat_feedback) → `npm run eval:sir --from-feedback 20`. Agranda la vara del Plan A y del loop.
@@ -36,9 +36,28 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
-**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (solo si el quick-win no basta); Ola 3 — memoria que consolida (hybrid search vector+BM25, re-ranking, Mem0-style extract→merge→olvido), después de rodar la Ola 2.
+**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (solo si el quick-win no basta); Ola 3 — memoria que consolida (hybrid search vector+BM25, re-ranking, Mem0-style extract→merge→olvido), después de rodar la Ola 2. 🟡 **Adelantado sin esperar la Ola 2 (reconciliado 2026-07-25):** el hybrid search YA está — mig `0164_memories_hybrid_recall.sql` + RPC `match_memories_hybrid` (vector + FTS con RRF) + `src/lib/sir/hybridRecall.ts`, cableado en `askSir.ts` con fallback a `match_memories` (commit `c34ed7e` #946). **Siguen pendientes:** re-ranking (el propio commit dice "PR siguiente") y la consolidación Mem0-style extract→merge→olvido (sin rastro en código, `grep` de "rerank|Mem0" sin resultados).
 
 **NO incluye lo ya hecho+verificado esta sesión:** bug avatares `per_`, caras en la lista, match por cara capa 1-2, auto-avatar prioriza caras, IAE afecto surfaceado, recordatorios por chat revividos, push Telegram/nudge, harness de eval, recall ciego en Telegram, señal 👍👎 atribuible, bug "distante" (33 alertas), ¿quién es quién? con botones.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-25
+
+Pase de mantenimiento contra el código real (agente automático). La reconciliación anterior (PR #943, 23/07) quedó desactualizada el mismo día: ~20 commits más (#944–#965, todos 23-24/07) mergearon después de esa foto y varios resuelven ítems que la vista "PENDIENTES ACTUALES" (arriba) seguía listando como abiertos. Corregido in situ arriba; resumen de evidencia:
+
+- ✅ **Fuga de voseo en el chat** — ya HECHO. `src/lib/text/deVoseo.ts` (scrub determinístico, PURO, +tests) cableado en `askSir.ts`; commit `f01c19d` (#944) remidió el harness (caso "querés" 15→95), extendido después con más formas verbales (`d1ea435` #948, `bf00100` #957).
+- ✅ **Copy del recordatorio "¡Listo!"** — ya HECHO, mismo commit `f01c19d` (#944): reemplazo de copy cuando la respuesta sobre-afirma. Caso `action-honesty` del harness 30→95.
+- 🟡 **Verborrea a "consejo corto"** — parcialmente atacado (regla BREVEDAD en `src/lib/sir/ask.ts`), pero el propio commit lo califica de efecto marginal; no cerrar sin re-medir.
+- **Ola 2 · slice 4 (loop de aprendizaje)** — re-verificado, sigue genuinamente pendiente: `sortLearnings` no prioriza `preference` fresca y no hay código de few-shot dinámico. El backlog no estaba desactualizado en este punto.
+- 🟡 **Ola 3 (fondo/roadmap) — hybrid search** — parte de lo que el backlog daba por "después de rodar la Ola 2" YA está: `match_memories_hybrid` (vector+FTS con RRF, mig `0164`, commit `c34ed7e` #946) cableado en `askSir.ts`. Re-ranking y la consolidación Mem0-style siguen sin construir.
+
+**Verificado y quedó IGUAL (sin drift):**
+- **Golden-set del harness** — sigue como decisión pendiente de Aaron. El archivo `eval/golden.jsonl` creció orgánicamente de 4→8 casos (como subproducto de otros PRs, no de una corrida deliberada), y el flag `--from-feedback` ya existe (`scripts/eval-sir.ts`, desde #940) — pero no hay evidencia de que se haya corrido a escala ni de que Aaron haya decidido el volumen. Se mantiene la nota "necesita input".
+- Ítems 🔴 bloqueados (match por cara capa 2, reader LinkedIn, Teams, ingesta DMs IG) y 🌱 latentes: no verificables por grep (dependen de data/hardware fuera de este repo o de simplemente usarse) — no re-tocados.
+- Ítem 👁 "verificar (Aaron)": subjetivo por diseño, no verificable por grep.
+
+**No re-verificado este pase** (fuera de alcance): todo lo que ya estaba correctamente marcado ✅/🟡 con evidencia en pases anteriores (secciones históricas más abajo).
 
 ---
 
