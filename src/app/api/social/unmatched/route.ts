@@ -13,6 +13,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 import { canonHandle } from '@/lib/social-reader/match'
+import { orgSlugFromName } from '@/lib/social-reader/orgSlug'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -59,7 +60,73 @@ export async function GET() {
     facePersonId: r.face_person_id ?? null,
     faceConfidence: r.face_confidence ?? null,
   }))
-  return NextResponse.json({ items }, { status: 200 })
+
+  // Organizaciones para el selector de "es una página" (empresas y unidades:
+  // CGBVP, RIT, FEDEPOL…). Fail-soft: sin la columna 0167 el selector va vacío
+  // y solo se puede crear org nueva.
+  let orgs: Array<{ slug: string; name: string; instagramHandle: string | null }> = []
+  try {
+    const { data: orgRows } = await supabase
+      .from('org_profiles').select('org_slug, name, instagram_handle').order('name')
+    orgs = ((orgRows ?? []) as Array<{ org_slug: string; name: string | null; instagram_handle: string | null }>)
+      .map((o) => ({ slug: o.org_slug, name: o.name || o.org_slug, instagramHandle: o.instagram_handle ?? null }))
+  } catch { /* fail-soft */ }
+
+  return NextResponse.json({ items, orgs }, { status: 200 })
+}
+
+/**
+ * Asigna una cuenta de la bandeja a una ORGANIZACIÓN: le pega el instagram_handle
+ * (creando el perfil de org si hace falta) y saca de la bandeja todas las señales
+ * de esa identidad. No promueve nada a contact_activity — una página no es un
+ * contacto, y su historia no es un momento de relación.
+ */
+async function assignToOrg(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  id: string,
+  orgSlug: string,
+  newOrgName: string | null,
+) {
+  const { data: row } = await supabase
+    .from('unmatched_social_activity')
+    .select('id, platform, handle, name')
+    .eq('id', id).limit(1).maybeSingle()
+  if (!row) return NextResponse.json({ error: 'Señal no encontrada' }, { status: 404 })
+  const canon = row.handle ? canonHandle(row.handle) : null
+  if (row.platform !== 'instagram' || !canon) {
+    return NextResponse.json({ error: 'Por ahora solo cuentas de Instagram con handle' }, { status: 400 })
+  }
+
+  const { data: existing } = await supabase
+    .from('org_profiles').select('id, org_slug, name, instagram_handle')
+    .eq('user_id', userId).eq('org_slug', orgSlug).maybeSingle()
+
+  if (existing) {
+    const { error } = await supabase
+      .from('org_profiles')
+      .update({ instagram_handle: canon, updated_at: new Date().toISOString() })
+      .eq('id', (existing as { id: string }).id)
+    if (error) return NextResponse.json({ error: 'No se pudo guardar el handle en la organización', detail: error.message }, { status: 500 })
+  } else {
+    const { error } = await supabase.from('org_profiles').insert({
+      user_id: userId, org_slug: orgSlug,
+      name: newOrgName ?? row.name ?? orgSlug,
+      instagram_handle: canon,
+      source: 'quien-es-quien',
+    })
+    if (error) return NextResponse.json({ error: 'No se pudo crear la organización', detail: error.message }, { status: 500 })
+  }
+
+  // Fuera de la bandeja TODAS las señales de esa cuenta (no solo la tapeada).
+  const { data: same } = await supabase
+    .from('unmatched_social_activity').select('id').eq('user_id', userId).eq('handle', canon)
+  const ids = ((same ?? []) as Array<{ id: string }>).map((r) => r.id)
+  if (ids.length > 0) await supabase.from('unmatched_social_activity').delete().in('id', ids)
+
+  return NextResponse.json({
+    ok: true, org: orgSlug, handleSet: canon, removed: ids.length, createdOrg: !existing,
+  }, { status: 200 })
 }
 
 export async function POST(req: NextRequest) {
@@ -68,9 +135,23 @@ export async function POST(req: NextRequest) {
   if (!auth?.user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
   const userId = auth.user.id
 
-  let body: { id?: unknown; personId?: unknown; newPerson?: unknown }
+  let body: { id?: unknown; personId?: unknown; newPerson?: unknown; orgSlug?: unknown; newOrg?: unknown }
   try { body = (await req.json()) as typeof body } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }) }
   const id = typeof body.id === 'string' ? body.id : ''
+
+  // ── CAMINO ORG: la cuenta es una PÁGINA (empresa, unidad: CGBVP, RIT…), no un
+  //    contacto. Antes la única salida era descartarla y perder la señal. Ahora
+  //    se le pega el handle a la organización → el nodo `org` del grafo queda
+  //    con cuenta de IG, y el ingest deja de mandarla a la bandeja.
+  const orgSlugRaw = typeof body.orgSlug === 'string' ? body.orgSlug.trim() : ''
+  const no = body.newOrg as { slug?: unknown; name?: unknown } | undefined
+  const newOrg = no && typeof no.name === 'string' && no.name.trim().length >= 2
+    ? { name: no.name.trim().slice(0, 120), slug: typeof no.slug === 'string' && no.slug.trim() ? no.slug.trim() : orgSlugFromName(no.name) }
+    : null
+  if (id && (orgSlugRaw || newOrg)) {
+    return assignToOrg(supabase, userId, id, orgSlugRaw || newOrg!.slug, newOrg?.name ?? null)
+  }
+
   let personId = typeof body.personId === 'string' ? body.personId : ''
   // Crear una persona nueva desde la bandeja (Aaron: "crear a esa persona si no
   // existe"). El cliente manda id+slug generados para que su store y esta fila

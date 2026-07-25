@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { UserSearch, X, Sparkles, UserPlus, ScanFace, Loader2 } from 'lucide-react'
+import { UserSearch, X, Sparkles, UserPlus, ScanFace, Loader2, Building2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -37,6 +37,13 @@ interface UnmatchedItem {
   faceConfidence?: string | null
 }
 
+/** Organización (empresa o unidad) a la que se puede colgar una página. */
+interface OrgOption {
+  slug: string
+  name: string
+  instagramHandle: string | null
+}
+
 const KIND_LABEL: Record<string, string> = {
   available: 'tiene historia',
   traveling: 'de viaje',
@@ -52,12 +59,19 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
   const [creatingFor, setCreatingFor] = useState<string | null>(null)
   const [newName, setNewName] = useState<Record<string, string>>({})
   const [scanning, setScanning] = useState(false)
+  // Camino PÁGINA: la cuenta es una empresa o unidad (CGBVP, RIT…), no una
+  // persona. Antes solo se podía descartar y se perdía la señal.
+  const [orgs, setOrgs] = useState<OrgOption[]>([])
+  const [orgMode, setOrgMode] = useState<string | null>(null)
+  const [orgPick, setOrgPick] = useState<Record<string, string>>({})
+  const [newOrgName, setNewOrgName] = useState<Record<string, string>>({})
 
   const reload = useCallback(async () => {
     try {
       const r = await fetch('/api/social/unmatched')
       const d = r.ok ? await r.json() : null
       if (d && Array.isArray(d.items)) setItems(d.items as UnmatchedItem[])
+      if (d && Array.isArray(d.orgs)) setOrgs(d.orgs as OrgOption[])
     } catch { /* */ }
   }, [])
 
@@ -65,7 +79,11 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
     let cancelled = false
     fetch('/api/social/unmatched')
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled && d && Array.isArray(d.items)) setItems(d.items as UnmatchedItem[]) })
+      .then((d) => {
+        if (cancelled || !d) return
+        if (Array.isArray(d.items)) setItems(d.items as UnmatchedItem[])
+        if (Array.isArray(d.orgs)) setOrgs(d.orgs as OrgOption[])
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoaded(true) })
     return () => { cancelled = true }
@@ -157,6 +175,37 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
       ))
       setItems((prev) => prev.filter((i) => !ids.includes(i.id)))
       toast.success(`Descarté ${ids.length} probable(s) negocio(s)`)
+    } catch {
+      toast.error('Error de red')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /**
+   * La cuenta es una PÁGINA: se cuelga de una organización (existente o nueva).
+   * No es descartar — la organización se queda con el handle, el nodo del grafo
+   * la reconoce y el reader deja de mandarla a la bandeja.
+   */
+  async function assignToOrg(item: UnmatchedItem, org: { slug?: string; newName?: string }) {
+    setBusy(item.id)
+    try {
+      const r = await fetch('/api/social/unmatched', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          org.slug
+            ? { id: item.id, orgSlug: org.slug }
+            : { id: item.id, newOrg: { name: org.newName } },
+        ),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok) { toast.error(d?.error || 'No pude asignarla'); return }
+      const label = org.newName ?? orgs.find((o) => o.slug === org.slug)?.name ?? d?.org ?? 'la organización'
+      setItems((prev) => prev.filter((i) => i.handle !== item.handle))
+      setOrgMode(null)
+      toast.success(`@${item.handle} quedó como página de ${label}`)
+      void reload()
     } catch {
       toast.error('Error de red')
     } finally {
@@ -353,13 +402,70 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
                     <Button size="sm" variant="ghost" className="h-9 shrink-0" onClick={() => setCreatingFor(null)}>Cancelar</Button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    className="mt-2 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-                    onClick={() => { setCreatingFor(it.id); setNewName((n) => ({ ...n, [it.id]: n[it.id] ?? it.name ?? '' })) }}
-                  >
-                    <UserPlus size={12} /> Crear contacto nuevo
-                  </button>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                      onClick={() => { setCreatingFor(it.id); setNewName((n) => ({ ...n, [it.id]: n[it.id] ?? it.name ?? '' })) }}
+                    >
+                      <UserPlus size={12} /> Crear contacto nuevo
+                    </button>
+                    {/* Camino PÁGINA: no es una persona, es una empresa o unidad. */}
+                    {it.platform === 'instagram' && it.handle && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                        onClick={() => { setOrgMode(it.id); setNewOrgName((n) => ({ ...n, [it.id]: n[it.id] ?? it.name ?? '' })) }}
+                      >
+                        <Building2 size={12} /> Es una página (empresa / unidad)
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Colgar la página de una organización: existente o nueva. */}
+                {orgMode === it.id && (
+                  <div className="mt-2 space-y-2 rounded-lg border border-border/60 bg-muted/30 p-2">
+                    <p className="text-[11px] text-muted-foreground">
+                      ¿De quién es esta página? Queda como cuenta de esa organización y deja de aparecer acá.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Select value={orgPick[it.id] ?? ''} onValueChange={(v) => setOrgPick((p) => ({ ...p, [it.id]: v }))}>
+                        <SelectTrigger className="h-9 min-w-0 flex-1 text-xs"><SelectValue placeholder="Elegir organización…" /></SelectTrigger>
+                        <SelectContent>
+                          {orgs.map((o) => (
+                            <SelectItem key={o.slug} value={o.slug} className="text-xs">
+                              {o.name}{o.instagramHandle ? ` · @${o.instagramHandle}` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm" className="h-9 shrink-0"
+                        disabled={busy === it.id || !orgPick[it.id]}
+                        onClick={() => assignToOrg(it, { slug: orgPick[it.id] })}
+                      >
+                        Asignar
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={newOrgName[it.id] ?? ''}
+                        onChange={(e) => setNewOrgName((n) => ({ ...n, [it.id]: e.target.value }))}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && (newOrgName[it.id] ?? '').trim().length >= 2) void assignToOrg(it, { newName: newOrgName[it.id].trim() }) }}
+                        placeholder="…o crear una nueva (ej. USAR Perú)"
+                        className="h-9 min-w-0 flex-1 text-xs"
+                      />
+                      <Button
+                        size="sm" variant="secondary" className="h-9 shrink-0"
+                        disabled={busy === it.id || (newOrgName[it.id] ?? '').trim().length < 2}
+                        onClick={() => assignToOrg(it, { newName: (newOrgName[it.id] ?? '').trim() })}
+                      >
+                        Crear
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-9 shrink-0" onClick={() => setOrgMode(null)}>Cancelar</Button>
+                    </div>
+                  </div>
                 )}
               </div>
             )

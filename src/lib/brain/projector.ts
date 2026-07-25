@@ -93,10 +93,19 @@ export interface GoalCostRow {
   label?: string | null
 }
 
+/** "Esta persona sigue la página de esta organización en IG" — el dato que hace
+ *  visible el INTERÉS COMPARTIDO (social_page_followers, mig 0167). Llega ya
+ *  resuelto a person_id + org_slug; las filas sin resolver no se proyectan. */
+export interface PageFollowRow {
+  person_id: string
+  org_slug: string
+}
+
 export interface ProjectorInput {
   people?: PersonRow[]
   goals?: GoalRow[]
   orgs?: OrgRow[]
+  pageFollows?: PageFollowRow[]
   steps?: StepRow[]
   moments?: MomentRow[]
   deals?: DealRow[]
@@ -229,6 +238,15 @@ export function projectGraph(input: ProjectorInput): Graph {
   for (const mr of input.momentReferences ?? []) {
     if (personLabelById.has(mr.person_id)) {
       pushEdge(edges, learned, 'moment', mr.moment_id, 'person', mr.person_id, 'moment_reference')
+    }
+  }
+
+  // SIGUE LA PÁGINA: person → org. Dos personas colgadas de la misma página son
+  // dos personas con un interés en común — es lo que vuelve el grafo un mapa de
+  // afinidades y no solo de trato. Solo si ambos extremos existen.
+  for (const f of input.pageFollows ?? []) {
+    if (personLabelById.has(f.person_id) && orgLabelBySlug.has(f.org_slug)) {
+      pushEdge(edges, learned, 'person', f.person_id, 'org', f.org_slug, 'follows_org')
     }
   }
 
