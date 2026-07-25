@@ -32,6 +32,9 @@ export interface TelegramCallback {
   messageId: number
   /** callback_data del botón tapeado. */
   data: string
+  /** Texto del mensaje que tenía los botones. Sirve para editarlo CONSERVANDO lo
+   *  que decía y anexando el desenlace (el brief de la mañana lo usa). */
+  messageText?: string
 }
 
 function asRecord(x: unknown): Record<string, unknown> | null {
@@ -55,7 +58,8 @@ export function parseTelegramCallback(payload: unknown): TelegramCallback | null
   const chatId = chat && typeof chat.id === 'number' ? chat.id : null
   const messageId = message && typeof message.message_id === 'number' ? message.message_id : 0
   if (!callbackId || !data || chatId === null) return null
-  return { callbackId, chatId, messageId, data }
+  const messageText = message && typeof message.text === 'string' ? message.text : undefined
+  return { callbackId, chatId, messageId, data, ...(messageText ? { messageText } : {}) }
 }
 
 export function parseTelegramUpdate(payload: unknown): TelegramInbound | null {
