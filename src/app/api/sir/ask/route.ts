@@ -58,6 +58,10 @@ export async function POST(req: NextRequest) {
       skipInlineGaps: body.skipInlineGaps === true,
       mode: body.mode === 'socratic' ? 'socratic' : null,
       userContext: typeof body.userContext === 'string' ? body.userContext : undefined,
+      // El harness de eval lo pide para dárselo al JUEZ (que si no, castiga como
+      // inventado lo que SIR sí tenía en el contexto). Va de la mano de
+      // persist:false — nunca es una respuesta normal del chat.
+      includeContext: body.includeContext === true && !persist,
       persist,
       // Sesión web con cliente RLS: seguro leer el feed de calendario (Google/
       // Outlook) para la agenda. El webhook de Telegram (service-role) NO lo pasa.

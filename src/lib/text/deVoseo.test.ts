@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deVoseo } from './deVoseo'
+import { deVoseo, detectVoseo } from './deVoseo'
 
 describe('deVoseo', () => {
   it('reemplaza conjugaciones voseo comunes', () => {
@@ -59,6 +59,14 @@ describe('deVoseo', () => {
     expect(deVoseo('dame el tomate y que llame luego')).toBe('dame el tomate y que llame luego')
   })
 
+  it('imperativo + objeto directo (lo cazó el eval)', () => {
+    expect(deVoseo('bajalo de tu lista y cerralo hoy')).toBe('bájalo de tu lista y ciérralo hoy')
+    expect(deVoseo('revisalo y anotalo')).toBe('revísalo y anótalo')
+    expect(deVoseo('hacelo simple, decilo claro')).toBe('hazlo simple, dilo claro')
+    // Palabras legítimas con la misma terminación: intactas.
+    expect(deVoseo('el regalo malo del palo')).toBe('el regalo malo del palo')
+  })
+
   it('barrido generativo: irregulares que diptongan NO quedan a medias', () => {
     expect(deVoseo('contás con eso')).toBe('cuentas con eso')
     expect(deVoseo('si te acordás, me dices')).toBe('si te acuerdas, me dices')
@@ -91,5 +99,30 @@ describe('deVoseo', () => {
 
   it('vacío / no-string seguro', () => {
     expect(deVoseo('')).toBe('')
+  })
+})
+
+describe('detectVoseo — medir en vez de opinar', () => {
+  it('texto limpio: cero fugas', () => {
+    expect(detectVoseo('Tú puedes hacerlo hoy. Dime si necesitas algo, y revísalo mañana.')).toEqual([])
+    expect(detectVoseo('')).toEqual([])
+  })
+
+  it('caza lo mismo que el scrub corrige', () => {
+    expect(detectVoseo('podés hacerlo')).toContain('podés')
+    expect(detectVoseo('vos sos el que decide')).toEqual(expect.arrayContaining(['vos', 'sos']))
+    expect(detectVoseo('mandame la captura')).toContain('mandame')
+    expect(detectVoseo('revisá tus apuntes')).toContain('revisá')
+  })
+
+  it('lo que el scrub deja pasar, tampoco se reporta (mismo criterio)', () => {
+    for (const limpio of ['ella te pagará mañana', 'está acá con mamá', 'habla con Nicolás en Bogotá']) {
+      expect(detectVoseo(limpio)).toEqual([])
+    }
+  })
+
+  it('una respuesta ya scrubbeada NUNCA reporta fugas (invariante del harness)', () => {
+    const sucio = 'Podés mandame eso y revisá si querés; después contame y bajalo.'
+    expect(detectVoseo(deVoseo(sucio))).toEqual([])
   })
 })

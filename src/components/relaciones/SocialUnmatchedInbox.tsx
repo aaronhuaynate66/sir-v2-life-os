@@ -167,7 +167,15 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
   async function dismissBusinesses() {
     const ids = items.filter((it) => bizFlags[it.id]).map((it) => it.id)
     if (ids.length === 0) return
-    if (!window.confirm(`¿Descartar ${ids.length} cuenta(s) que parecen negocios? Si alguna era una persona, reaparece sola en su próxima historia.`)) return
+    // Desde que existe el camino "es una página" (org), descartar en lote PIERDE
+    // valor: una página de tu mundo (CGBVP, RIT, un proveedor) colgada de su
+    // organización alimenta el grafo y revela intereses en común.
+    if (!window.confirm(
+      `¿Descartar ${ids.length} cuenta(s) que parecen negocios?\n\n`
+      + 'Ojo: si alguna es de tu mundo (una unidad, un proveedor, una marca que te importa), '
+      + 'conviene colgarla de su organización con "Es una página" — así SIR ve quién más la sigue.\n\n'
+      + 'Si era una persona, reaparece sola en su próxima historia.',
+    )) return
     setBusy('__bulk__')
     try {
       await Promise.all(ids.map((id) =>
@@ -353,6 +361,18 @@ export function SocialUnmatchedInbox({ people }: { people: Person[] }) {
                   {bizFlags[it.id] && <Badge variant="outline" className="shrink-0 text-[10px] text-muted-foreground/70">¿negocio?</Badge>}
                 </div>
                 {it.detail && <div className="mb-2 truncate text-xs text-muted-foreground">{it.detail}</div>}
+
+                {/* Si parece página, el camino de ORG es la acción principal: es
+                    lo que la aprovecha en vez de borrarla. */}
+                {bizFlags[it.id] && orgMode !== it.id && it.platform === 'instagram' && it.handle && (
+                  <button
+                    type="button"
+                    onClick={() => { setOrgMode(it.id); setNewOrgName((n) => ({ ...n, [it.id]: n[it.id] ?? it.name ?? '' })) }}
+                    className="mb-2 inline-flex items-center gap-1 rounded-md border border-brand/30 bg-brand-soft/40 px-2 py-1 text-[11px] text-brand-soft-foreground hover:bg-brand/20"
+                  >
+                    <Building2 size={12} /> Colgarla de una organización
+                  </button>
+                )}
 
                 {/* Sugerencia de SIR: 1 toque para confirmar. */}
                 {sug && (

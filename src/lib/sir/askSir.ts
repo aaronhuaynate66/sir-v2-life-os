@@ -121,6 +121,12 @@ export interface AskSirResult {
   clarifying?: AskSirClarifying
   proposedAction: ProposedActionResolved | null
   sources: { people: string[]; memories: number; receipts?: SirReceipt[] }
+  /** El bloque CONTEXTO exacto con el que respondió, cuando el caller lo pide
+   *  (`includeContext`). Es para el HARNESS DE EVAL: el juez castigaba como
+   *  "inventado" data que SIR sí tenía —el cumpleaños de la ficha, el reembolso
+   *  de una memoria— porque solo veía un resumen. Viendo lo mismo que vio SIR,
+   *  el veredicto de grounding deja de mentir. */
+  contextUsed?: string
 }
 
 export interface AskSirParams {
@@ -139,6 +145,12 @@ export interface AskSirParams {
   chatStyle?: boolean
   /** Contexto efímero que Aaron agregó al responder un hueco (no se persiste). */
   userContext?: string
+  /** Mensaje de SIR que Aaron CITÓ al responder (Telegram reply_to_message). Es
+   *  el referente de un "ciérralo" / "escríbele" suelto: sin esto, responderle a
+   *  un mensaje del brief se leía como una pregunta nueva y sin tema. Entra al
+   *  contexto Y al retrieval (el recall tiene que buscar sobre ESE tema, no
+   *  sobre la palabra "ciérralo"). */
+  quotedMessage?: string
   /** false = NO persistir el intercambio en sir_conversations (para el harness de
    *  eval: corre contra la data REAL de Aaron y sin esto inyectaba sus preguntas
    *  sintéticas en el recall → SIR resurfaceaba "recordatorios" fantasma). Default true. */
@@ -148,6 +160,10 @@ export interface AskSirParams {
    *  filtra por user_id, así que bajo service-role (Telegram/crons) leería
    *  conexiones de OTROS usuarios. Default false → agenda solo desde personal_events. */
   readCalendarFeed?: boolean
+  /** Devuelve además el CONTEXTO con el que respondió (`contextUsed`). Solo para
+   *  el harness de eval — el juez necesita ver lo mismo que vio SIR para no
+   *  marcar como inventado lo que estaba en la ficha o en una memoria. */
+  includeContext?: boolean
   /** Inyectable para tests/determinismo. Default: ahora. */
   nowISO?: string
 }
@@ -172,7 +188,10 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     .map((h) => ({ role: h.role as 'user' | 'sir', text: (h.text as string).slice(0, 2000) }))
 
   const recentUserText = history.filter((h) => h.role === 'user').slice(-2).map((h) => h.text).join(' ')
-  const retrievalText = `${recentUserText} ${question}`.trim().slice(0, 1500)
+  // El mensaje citado entra al RETRIEVAL: si Aaron responde "ciérralo" al bloque
+  // de su mamá, hay que recuperar sobre su mamá — no sobre la palabra "ciérralo".
+  const quotedMessage = typeof params.quotedMessage === 'string' ? params.quotedMessage.trim().slice(0, 1500) : ''
+  const retrievalText = `${recentUserText} ${quotedMessage} ${question}`.trim().slice(0, 2000)
 
   // 1. Todas las personas (para resolver nombres + traer su contexto).
   const { data: peopleRows } = await supabase
@@ -973,7 +992,10 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     (circleCycleBlock ? `\n\n${circleCycleBlock}` : '') +
     (affectionBlock ? `\n\n${affectionBlock}` : '') +
     (agendaBlock ? `\n\n${agendaBlock}` : '') +
-    (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '')
+    (userContext ? `\n\nContexto que Aaron agregó ahora: ${userContext}` : '') +
+    (quotedMessage
+      ? `\n\nAaron está RESPONDIENDO a este mensaje tuyo (lo citó en el chat):\n"""\n${quotedMessage}\n"""\nSu mensaje se refiere a ESO. Resuélvelo sobre ese contenido —"ciérralo", "hazlo", "sí" apuntan a lo que dice ahí— y no cambies de tema.`
+      : '')
 
   // Resolver el nombre que proponga una acción → personId.
   function resolvePersonId(name: string): { id: string | null; name: string } {
@@ -1105,5 +1127,6 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       // Se muestran en el chat para que Aaron verifique, no confíe a ciegas.
       receipts: buildReceipts(receiptPeople),
     },
+    ...(params.includeContext ? { contextUsed: groundedContext } : {}),
   }
 }

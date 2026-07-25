@@ -7,7 +7,52 @@ describe('parseTelegramUpdate', () => {
       update_id: 1,
       message: { message_id: 10, chat: { id: 12345 }, text: '  ¿cómo viene Diana?  ', from: { first_name: 'Aaron', last_name: 'H' } },
     })
-    expect(r).toEqual({ chatId: 12345, messageId: 10, text: '¿cómo viene Diana?', isVoice: false, voiceFileId: null, photoFileId: null, caption: '', fromName: 'Aaron H' })
+    expect(r).toEqual({ chatId: 12345, messageId: 10, text: '¿cómo viene Diana?', isVoice: false, voiceFileId: null, photoFileId: null, caption: '', fromName: 'Aaron H', replyTo: null })
+  })
+
+  it('captura el mensaje CITADO cuando Aaron responde al brief', () => {
+    const r = parseTelegramUpdate({
+      message: {
+        message_id: 20, chat: { id: 1 }, text: 'ciérralo',
+        reply_to_message: {
+          message_id: 19,
+          text: '💚 TU GENTE\n\nHace 3 semanas sin hablar con Maria Isabel — tu mamá',
+          from: { is_bot: true, first_name: 'SIR' },
+        },
+      },
+    })
+    expect(r?.replyTo).toEqual({
+      messageId: 19,
+      text: '💚 TU GENTE\n\nHace 3 semanas sin hablar con Maria Isabel — tu mamá',
+      fromBot: true,
+    })
+  })
+
+  it('marca fromBot=false si se cita un mensaje propio (no aporta contexto)', () => {
+    const r = parseTelegramUpdate({
+      message: {
+        message_id: 21, chat: { id: 1 }, text: 'esto',
+        reply_to_message: { message_id: 5, text: 'algo que escribí yo', from: { is_bot: false } },
+      },
+    })
+    expect(r?.replyTo?.fromBot).toBe(false)
+  })
+
+  it('usa el caption si el mensaje citado era una foto', () => {
+    const r = parseTelegramUpdate({
+      message: {
+        message_id: 22, chat: { id: 1 }, text: 'sí',
+        reply_to_message: { message_id: 6, caption: 'la story de Dayana', from: { is_bot: true } },
+      },
+    })
+    expect(r?.replyTo?.text).toBe('la story de Dayana')
+  })
+
+  it('sin cita, replyTo es null (y una cita sin texto tampoco cuenta)', () => {
+    expect(parseTelegramUpdate({ message: { message_id: 1, chat: { id: 1 }, text: 'hola' } })?.replyTo).toBeNull()
+    expect(parseTelegramUpdate({
+      message: { message_id: 2, chat: { id: 1 }, text: 'hola', reply_to_message: { message_id: 1, from: { is_bot: true } } },
+    })?.replyTo).toBeNull()
   })
 
   it('detecta voz y captura el file_id', () => {

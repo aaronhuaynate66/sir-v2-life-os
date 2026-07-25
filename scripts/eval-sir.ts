@@ -18,7 +18,8 @@
 
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
-import { buildJudgePrompt, parseJudgeVerdict, aggregateVerdicts, feedbackToCase, type EvalCase, type JudgeVerdict } from '../src/lib/eval/judge.ts'
+import { buildJudgePrompt, parseJudgeVerdict, aggregateVerdicts, feedbackToCase, PASS_THRESHOLD, type EvalCase, type JudgeVerdict } from '../src/lib/eval/judge.ts'
+import { detectVoseo } from '../src/lib/text/deVoseo.ts'
 
 // ── env ──────────────────────────────────────────────────────────────
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
@@ -85,10 +86,12 @@ async function askSir(cookie: string, c: EvalCase): Promise<AskResult> {
     // persist:false → el eval NO ensucia la data real (recall/hilo/ledger). Corre
     // contra la data REAL de Aaron; sin esto inyectaba sus preguntas sintéticas y
     // SIR las resurfaceaba como pendientes fantasma (ej. "llamar al contador").
-    body: JSON.stringify({ question: c.question, userContext: c.context, persist: false }),
+    // includeContext → el juez ve EL MISMO contexto que vio SIR (ver abajo).
+    body: JSON.stringify({ question: c.question, userContext: c.context, persist: false, includeContext: true }),
   })
   const j = (await res.json().catch(() => ({}))) as {
     answer?: string; error?: string; proposedAction?: Record<string, unknown> | null; sources?: Sources
+    contextUsed?: string
   }
   let answer = j.answer ?? `(sin respuesta: ${j.error ?? res.status})`
   // Cuando SIR propone una ACCIÓN, el detalle (fecha/hora/tarea del recordatorio,
@@ -98,10 +101,15 @@ async function askSir(cookie: string, c: EvalCase): Promise<AskResult> {
   if (j.proposedAction && typeof j.proposedAction === 'object') {
     answer += `\n\n[Además SIR mostró al usuario esta ACCIÓN PROPUESTA como tarjeta/botón de confirmar (no repetida en el texto): ${JSON.stringify(j.proposedAction)}]`
   }
-  // El grounding que SIR recuperó (personas + memorias + recibos): sin esto el juez
-  // solo veía pregunta + respuesta y castigaba como "inventado" lo que SIR SÍ
-  // recordó. Se lo pasamos para que evalúe grounding contra la data REAL.
-  return { answer, retrieved: summarizeRetrieved(j.sources) }
+  // El juez ve EL CONTEXTO COMPLETO con el que respondió SIR. El resumen
+  // (personas + nº de memorias + recibos) NO alcanzaba: el 25-jul el juez marcó
+  // como "invención masiva" el cumpleaños de Diana (que está en su ficha), el
+  // reembolso de S/793.90 (2 memorias), Coolbox (9 memorias) y Jorge Castillo
+  // (8 memorias) — todo REAL, pero fuera del resumen. Un eval que castiga
+  // grounding legítimo hace daño: empuja a "arreglar" lo que no está roto.
+  // Fallback al resumen si la ruta no devolvió el contexto.
+  const retrieved = (j.contextUsed ?? '').trim() || summarizeRetrieved(j.sources)
+  return { answer, retrieved }
 }
 
 async function judge(c: EvalCase, answer: string, retrieved: string): Promise<JudgeVerdict> {
@@ -115,7 +123,24 @@ async function judge(c: EvalCase, answer: string, retrieved: string): Promise<Ju
     body: JSON.stringify({ model: JUDGE_MODEL, max_tokens: 400, temperature: 0, messages: [{ role: 'user', content: buildJudgePrompt(c, answer, retrieved) }] }),
   })
   const j = (await res.json().catch(() => ({}))) as { content?: { text?: string }[] }
-  return parseJudgeVerdict(j.content?.[0]?.text ?? '')
+  const verdict = parseJudgeVerdict(j.content?.[0]?.text ?? '')
+
+  // IDIOMA: se MIDE, no se opina. El 25-jul el juez acusó voseo inexistente
+  // ("podés", "tenés", "llegás") en respuestas que el scrub determinístico ya
+  // había limpiado — verificado con regex sobre la respuesta real: cero formas.
+  // Eso hundía casos perfectos a 0 y mandaba a "arreglar" lo que no está roto.
+  // El detector es el mismo criterio del scrub, así que su veredicto es exacto.
+  const fugas = detectVoseo(answer)
+  const language = fugas.length === 0 ? 100 : Math.max(0, 100 - fugas.length * 25)
+  const dims = { ...verdict.dims, language }
+  const score = Math.round(Object.values(dims).reduce((a, b) => a + b, 0) / Object.values(dims).length)
+  return {
+    ...verdict,
+    dims,
+    score,
+    pass: score >= PASS_THRESHOLD,
+    reasons: fugas.length > 0 ? `${verdict.reasons} [voseo medido: ${fugas.join(', ')}]` : verdict.reasons,
+  }
 }
 
 function loadGolden(): EvalCase[] {
