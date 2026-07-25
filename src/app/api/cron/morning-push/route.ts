@@ -17,6 +17,7 @@ import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
 import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard } from '@/lib/telegram/client'
 import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { buildBriefThread, muteRef } from '@/lib/telegram/briefThread'
+import { applyAutoSnooze, type BriefSignalHistory } from '@/lib/brief/autoSnooze'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, topicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
@@ -114,6 +115,8 @@ export async function GET(req: NextRequest) {
   const tgChat = process.env.TELEGRAM_ALLOWED_CHAT_ID?.trim() || null
   if (briefEnabled && tgOwnerId && tgChat && !userIds.includes(tgOwnerId)) userIds.push(tgOwnerId)
   let telegramBriefs = 0
+  /** Señales que el auto-snooze calló hoy (observabilidad del cron). */
+  let autoSnoozed = 0
 
   const now = new Date()
   const today = limaToday(now)
@@ -627,7 +630,46 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const push = buildMorningPush({ birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, entities: briefEntities, mutedTopics })
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, entities: briefEntities }
+      let push = buildMorningPush({ ...briefInput, mutedTopics })
+
+      // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla
+      // solo (y vuelve en 2 semanas). Es la fricción de fondo de Aaron — el 🔕
+      // manual lo resuelve a mano, esto es el piloto automático. Las dormidas se
+      // suman a `mutedTopics` y el brief se REARMA: así una señal callada no le
+      // roba el cupo a otra, y el push del navegador queda igual que el chat.
+      let snoozeUpdates: BriefSignalHistory[] = []
+      let snoozedNow = 0
+      try {
+        const { data: sentRows } = await admin
+          .from('brief_sent_signals')
+          .select('ref, topic_key, streak_days, last_sent_day, auto_snoozed_at')
+          .eq('user_id', uid).limit(500)
+        const history: BriefSignalHistory[] = ((sentRows ?? []) as Array<Record<string, unknown>>).map((r) => ({
+          ref: String(r.ref ?? ''),
+          topicKey: String(r.topic_key ?? ''),
+          streakDays: Number(r.streak_days) || 1,
+          lastSentDay: (r.last_sent_day as string | null) ?? null,
+          autoSnoozedAt: (r.auto_snoozed_at as string | null) ?? null,
+        }))
+        const decision = applyAutoSnooze(push.signals, history, today, muteRef)
+        snoozeUpdates = decision.updates
+        snoozedNow = decision.silenced.length
+        autoSnoozed += snoozedNow
+        if (snoozedNow > 0) {
+          push = buildMorningPush({
+            ...briefInput,
+            mutedTopics: [...mutedTopics, ...decision.silenced.map((s) => s.topicKey)],
+          })
+          // Al rearmar entran señales que antes no cabían bajo el cap: se
+          // re-evalúan con el MISMO historial para que su racha sea la real (no
+          // un 1 inventado). Las ya dormidas no vuelven: están en mutedTopics.
+          const second = applyAutoSnooze(push.signals, history, today, muteRef)
+          const dormidas = decision.updates.filter((u) => u.autoSnoozedAt === today)
+          snoozeUpdates = [...second.updates, ...dormidas]
+        }
+      } catch { /* columnas 0168 sin propagar → brief completo, como antes */ }
+
       const payload: PushPayload = { title: push.title, body: push.body, url: '/panel', tag: 'morning' }
       const r = await sendPushToUser(sendClient, uid, payload)
       sent += r.sent
@@ -658,17 +700,39 @@ export async function GET(req: NextRequest) {
         }
         if (anySent) telegramBriefs++
 
-        // Log de lo mostrado: resuelve el tap de 🔕 (el callback lleva una ref
-        // corta) y es la base para dejar de repetir lo que no cambió. Fail-soft.
-        try {
-          const rows = push.signals.map((s) => ({
-            user_id: uid, ref: muteRef(s.text), topic_key: topicKey(s.text),
-            sample_text: s.text.slice(0, 500), section: s.section, slot: s.slot,
-            sent_at: new Date().toISOString(),
-          }))
-          if (rows.length) await admin.from('brief_sent_signals').upsert(rows, { onConflict: 'user_id,ref' })
-        } catch { /* tabla 0166 sin propagar → los botones de acción siguen andando */ }
       }
+
+      // Log de lo mostrado: resuelve el tap de 🔕 (el callback lleva una ref
+      // corta) y lleva la racha del auto-snooze. Se escribe SIEMPRE (no solo en
+      // la rama de Telegram): el push del navegador también "dijo" esas señales.
+      // Fail-soft.
+      try {
+        const streakByRef = new Map(snoozeUpdates.map((u) => [u.ref, u]))
+        const nowIso = new Date().toISOString()
+        const rows = [...push.signals.map((s) => {
+          const ref = muteRef(s.text)
+          const st = streakByRef.get(ref)
+          streakByRef.delete(ref)
+          return {
+            user_id: uid, ref, topic_key: topicKey(s.text),
+            sample_text: s.text.slice(0, 500), section: s.section, slot: s.slot,
+            sent_at: nowIso,
+            streak_days: st?.streakDays ?? 1,
+            last_sent_day: st?.lastSentDay ?? today,
+            auto_snoozed_at: st?.autoSnoozedAt ?? null,
+          }
+        })]
+        if (rows.length) await admin.from('brief_sent_signals').upsert(rows, { onConflict: 'user_id,ref' })
+        // Las que se durmieron HOY no están en push.signals (se filtraron), pero
+        // su estado hay que guardarlo igual o despiertan mañana. Va por UPDATE,
+        // no upsert: la fila ya existe y su `sample_text` es lo que el 🔕 usa
+        // para saber qué se calló — no hay que pisarlo con vacío.
+        for (const u of streakByRef.values()) {
+          await admin.from('brief_sent_signals')
+            .update({ streak_days: u.streakDays, last_sent_day: u.lastSentDay, auto_snoozed_at: u.autoSnoozedAt })
+            .eq('user_id', uid).eq('ref', u.ref)
+        }
+      } catch { /* tablas 0166/0168 sin propagar → los botones siguen andando */ }
     } catch (e) {
       // Antes se tragaba en silencio: si un bug lógico (no una tabla sin
       // propagar) rompía el armado del brief, el push degradaba a vacío sin
@@ -680,5 +744,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, users: userIds.length, sent, telegramBriefs, results }, { status: 200 })
+  return NextResponse.json({ ok: true, users: userIds.length, sent, telegramBriefs, autoSnoozed, results }, { status: 200 })
 }
