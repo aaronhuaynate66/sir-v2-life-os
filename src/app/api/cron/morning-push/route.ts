@@ -23,6 +23,7 @@ import { getSelfBioState } from '@/lib/people/selfState'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, topicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
+import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agendaCross'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
 import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
@@ -581,6 +582,8 @@ export async function GET(req: NextRequest) {
       // Tono de CUIDADO, marca estimación — NUNCA descalifica ni "gestiona" (doc 17).
       // Fail-soft: un fallo (o tabla sin propagar) no rompe el brief.
       let cycleWeekAheadText: string | undefined
+      /** Un plan agendado que cae dentro de la ventana sensible de esa persona. */
+      let cycleAgendaText: string | undefined
       try {
         const { data: womenRows } = await admin
           .from('people')
@@ -618,7 +621,27 @@ export async function GET(req: NextRequest) {
               anchors: cyclesByPerson.get(p.id) ?? [],
             }))
             .filter((w) => w.cycleStartDate || (w.anchors && w.anchors.length > 0))
-          cycleWeekAheadText = buildCycleWeekAheadLine(buildCycleWeekAhead(womenInput, now, 7)) ?? undefined
+          const weekAhead = buildCycleWeekAhead(womenInput, now, 7)
+          cycleWeekAheadText = buildCycleWeekAheadLine(weekAhead) ?? undefined
+
+          // CRUCE VENTANA × AGENDA (docs/CABLEADO.md #3): SIR sabía quién está en
+          // ventana sensible y sabía qué hay agendado, pero nadie miraba si LA
+          // REUNIÓN CON ELLA cae justo ahí. Es timing y cuidado —"date margen",
+          // nunca "aprovecha"— sobre planes que YA existen. Fail-soft.
+          try {
+            const { data: evRows } = await admin
+              .from('personal_events')
+              .select('title, event_date, person_id')
+              .eq('user_id', uid)
+              .gte('event_date', weekAhead.from)
+              .lte('event_date', weekAhead.to)
+              .not('person_id', 'is', null)
+              .limit(100)
+            const eventos = ((evRows ?? []) as Array<{ title: string; event_date: string; person_id: string }>)
+              .map((e) => ({ date: (e.event_date ?? '').slice(0, 10), title: e.title, personId: e.person_id }))
+            const hits = crossAgendaWithCycles(eventos, weekAhead.women, { from: weekAhead.from, to: weekAhead.to })
+            cycleAgendaText = renderCycleAgendaLine(hits, today) ?? undefined
+          } catch { /* sin agenda → solo la línea general de la semana */ }
         }
       } catch {
         /* fail-soft: la anticipación de cuidado es un extra, no rompe el push */
@@ -634,7 +657,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla
