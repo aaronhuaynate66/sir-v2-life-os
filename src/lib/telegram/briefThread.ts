@@ -57,6 +57,10 @@ export function muteRef(text: string): string {
   return (h >>> 0).toString(36)
 }
 
+/** Slots cuyo contenido puede repetirse mañana tras mañana sin cambiar (por
+ *  prioridad de "qué es lo que más cansa oír"). Solo estos ofrecen 🔕. */
+const MUTABLE_SLOTS = ['momentResolution', 'relationshipNudge', 'cycleWeekAhead', 'goalNudge', 'weekFocus', 'healthWatch', 'habitNudge'] as const
+
 /**
  * Botones de una sección, derivados de lo que las señales SABEN. Una señal sin
  * entidad no genera botón de acción (nada de botones que no hacen nada), pero
@@ -87,11 +91,10 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
     }
   }
 
-  // 🔕 para la señal más "repetible" de la sección: la que Aaron ya sabe y no
-  // necesita cada mañana. Una sola por mensaje — más botones = más ruido.
-  const mutable = signals.find((s) => s.slot === 'momentResolution')
-    ?? signals.find((s) => s.slot === 'relationshipNudge')
-    ?? signals[0]
+  // 🔕 solo para señales REPETIBLES: las que describen un estado que puede durar
+  // semanas y volver cada mañana. Una tarea con fecha o un cumpleaños se resuelven
+  // solos — ofrecer callarlos sería ruido. Uno por mensaje: más botones, más ruido.
+  const mutable = MUTABLE_SLOTS.map((slot) => signals.find((s) => s.slot === slot)).find(Boolean)
   if (mutable) push(btn('🔕 No me lo repitas', 'mute', muteRef(mutable.text)))
   return rows
 }

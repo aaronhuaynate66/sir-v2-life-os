@@ -26,6 +26,25 @@ describe('dedupe de temas repetidos', () => {
     expect(out[0].slot).toBe('weekFocus') // conserva la posición/prioridad de la primera
   })
 
+  it('deduplicar NO mata el botón: la señal que se queda hereda la entidad', () => {
+    // Caso real: weekFocus (sin id en el turno) le ganaba a goalNudge (con id) y
+    // el mensaje de metas se quedaba sin "🚀 Dame el próximo paso".
+    const out = dedupeSignals([
+      { slot: 'weekFocus', section: 'metas', text: BOTICAS_CORTO },
+      { slot: 'goalNudge', section: 'metas', text: BOTICAS_LARGO, entity: { kind: 'goal', id: 'g_1', name: 'Boticas' } },
+    ])
+    expect(out).toHaveLength(1)
+    expect(out[0].entity).toEqual({ kind: 'goal', id: 'g_1', name: 'Boticas' })
+  })
+
+  it('la entidad de la primera manda si ambas la tienen', () => {
+    const out = dedupeSignals([
+      { slot: 'weekFocus', section: 'metas', text: BOTICAS_CORTO, entity: { kind: 'goal', id: 'primero' } },
+      { slot: 'goalNudge', section: 'metas', text: BOTICAS_LARGO, entity: { kind: 'goal', id: 'segundo' } },
+    ])
+    expect(out[0].entity?.id).toBe('primero')
+  })
+
   it('el brief real de Aaron pierde el duplicado pero conserva las dos de su mamá', () => {
     const p = buildMorningPush({
       weekFocus: BOTICAS_CORTO,

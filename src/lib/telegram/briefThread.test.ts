@@ -97,6 +97,10 @@ describe('botones del hilo', () => {
     expect(mutes[0].callbackData).toBe(`br|mute|${muteRef(momento.text)}`)
   })
 
+  it('una tarea con fecha NO ofrece 🔕 (se resuelve sola, callarla es ruido)', () => {
+    expect(labels(buildSectionButtons([tarea])).some((t) => t.startsWith('🔕'))).toBe(false)
+  })
+
   it('una señal SIN entidad no inventa botones de acción', () => {
     const rows = buildSectionButtons([s('gente', 'Semana con carga afectiva: coinciden 6 personas', 'cycleWeekAhead')])
     const acciones = rows.flat().filter((b) => !b.text.startsWith('🔕'))
