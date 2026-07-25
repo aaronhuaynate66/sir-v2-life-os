@@ -121,6 +121,12 @@ export interface AskSirResult {
   clarifying?: AskSirClarifying
   proposedAction: ProposedActionResolved | null
   sources: { people: string[]; memories: number; receipts?: SirReceipt[] }
+  /** El bloque CONTEXTO exacto con el que respondió, cuando el caller lo pide
+   *  (`includeContext`). Es para el HARNESS DE EVAL: el juez castigaba como
+   *  "inventado" data que SIR sí tenía —el cumpleaños de la ficha, el reembolso
+   *  de una memoria— porque solo veía un resumen. Viendo lo mismo que vio SIR,
+   *  el veredicto de grounding deja de mentir. */
+  contextUsed?: string
 }
 
 export interface AskSirParams {
@@ -154,6 +160,10 @@ export interface AskSirParams {
    *  filtra por user_id, así que bajo service-role (Telegram/crons) leería
    *  conexiones de OTROS usuarios. Default false → agenda solo desde personal_events. */
   readCalendarFeed?: boolean
+  /** Devuelve además el CONTEXTO con el que respondió (`contextUsed`). Solo para
+   *  el harness de eval — el juez necesita ver lo mismo que vio SIR para no
+   *  marcar como inventado lo que estaba en la ficha o en una memoria. */
+  includeContext?: boolean
   /** Inyectable para tests/determinismo. Default: ahora. */
   nowISO?: string
 }
@@ -1117,5 +1127,6 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       // Se muestran en el chat para que Aaron verifique, no confíe a ciegas.
       receipts: buildReceipts(receiptPeople),
     },
+    ...(params.includeContext ? { contextUsed: groundedContext } : {}),
   }
 }

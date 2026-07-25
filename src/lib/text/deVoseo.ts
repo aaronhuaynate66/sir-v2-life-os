@@ -47,6 +47,18 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['cuidate', 'cuídate'], ['sentate', 'siéntate'], ['levantate', 'levántate'],
   ['acercate', 'acércate'], ['relajate', 'relájate'], ['olvidate', 'olvídate'],
   ['preparate', 'prepárate'], ['enfocate', 'enfócate'], ['concentrate', 'concéntrate'],
+  // Imperativo + objeto directo ("bajalo" lo cazó el eval del 25-jul). También
+  // lista fija: hay palabras legítimas con esa forma (regalo, palo, halo, malo).
+  ['bajalo', 'bájalo'], ['bajala', 'bájala'], ['subilo', 'súbelo'], ['subila', 'súbela'],
+  ['mandalo', 'mándalo'], ['mandala', 'mándala'], ['hacelo', 'hazlo'], ['hacela', 'hazla'],
+  ['decilo', 'dilo'], ['decila', 'dila'], ['ponelo', 'ponlo'], ['ponela', 'ponla'],
+  ['dejalo', 'déjalo'], ['dejala', 'déjala'], ['tomalo', 'tómalo'], ['tomala', 'tómala'],
+  ['buscalo', 'búscalo'], ['buscala', 'búscala'], ['escribilo', 'escríbelo'],
+  ['contalo', 'cuéntalo'], ['cerralo', 'ciérralo'], ['cerrala', 'ciérrala'],
+  ['revisalo', 'revísalo'], ['revisala', 'revísala'], ['agendalo', 'agéndalo'],
+  ['marcalo', 'márcalo'], ['anotalo', 'anótalo'], ['guardalo', 'guárdalo'],
+  ['mandaselo', 'mándaselo'], ['pedile', 'pídele'], ['preguntale', 'pregúntale'],
+  ['respondele', 'respóndele'], ['llamalo', 'llámalo'], ['llamala', 'llámala'],
   // Presentes -ás de verbos que DIPTONGAN (recordás→recuerdas, no "recordas"):
   // el barrido generativo de abajo solo quita la tilde, así que los irregulares
   // tienen que resolverse acá ANTES. Cazados en respuestas reales de SIR.
@@ -108,6 +120,33 @@ const LETTER = 'a-záéíóúüñ'
 const COMPILED = REPLACEMENTS.map(([from, to]) =>
   [new RegExp(`(?<![${LETTER}])(?:${from.replace(/\s+/g, '\\s+')})(?![${LETTER}])`, 'gi'), to] as const,
 )
+
+/**
+ * Formas de voseo que quedan en un texto, sin corregirlo. PURA.
+ *
+ * Es el MISMO criterio que usa el scrub, así que si esto devuelve [] el texto ya
+ * está limpio. Existe para MEDIR: el LLM-juez del harness de eval acusaba voseo
+ * inexistente ("podés", "tenés") en respuestas que el scrub ya había limpiado —
+ * y bajaba el score de un caso perfecto a 0. El idioma es verificable, no
+ * opinable: se mide, no se le pregunta a un modelo.
+ */
+export function detectVoseo(text: string): string[] {
+  if (!text) return []
+  const found = new Set<string>()
+  for (const [re] of COMPILED) {
+    for (const m of text.matchAll(new RegExp(re.source, 'gi'))) found.add(m[0].toLowerCase())
+  }
+  // El barrido generativo: si cambia algo, había voseo regular (-á/-ás).
+  const scrubbed = scrubGenerativeVoseo(text)
+  if (scrubbed !== text) {
+    const orig = text.split(/\s+/)
+    const fixed = scrubbed.split(/\s+/)
+    for (let i = 0; i < orig.length && i < fixed.length; i++) {
+      if (orig[i] !== fixed[i]) found.add(orig[i].toLowerCase().replace(/[^a-záéíóúüñ]/g, ''))
+    }
+  }
+  return [...found].filter(Boolean)
+}
 
 /**
  * Reemplaza voseo/rioplatense por tuteo peruano en un texto. PURO. Preserva
