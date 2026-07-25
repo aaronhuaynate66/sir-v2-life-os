@@ -14,7 +14,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { getMemoriesForPerson } from '@/lib/memories/fetch'
 import { getPersonConversation, renderConversationForPrompt } from '@/lib/people/conversation'
-import { searchChatMessages, renderChatSearchBlock, searchChatMessagesGlobal, dateMentionQuery } from '@/lib/chat-messages/search'
+import { searchChatMessages, renderChatSearchBlock, searchChatMessagesGlobal, dateMentionQuery, extractSearchTerms } from '@/lib/chat-messages/search'
+import {
+  looksLikeArchiveQuery,
+  expandSearchQueries,
+  searchChatMessagesDeep,
+  mergeSearchHits,
+  renderDeepSearchBlock,
+} from '@/lib/chat-messages/deepSearch'
 import { resolveKinshipMentions } from '@/lib/people/kinship'
 import { computeRelationalScore } from '@/lib/people/relationalScore'
 import { getYearNorte } from '@/lib/year-compass/norte'
@@ -25,6 +32,7 @@ import { fetchChatMessages } from '@/lib/chat-messages/read'
 import { embedText, toPgVector } from '@/lib/embeddings/client'
 import {
   SIR_ASK_SYSTEM_PROMPT,
+  PERSON_CONVERSATION_BUDGET,
   buildAskContext,
   buildReceipts,
   isPerspectiveQuery,
@@ -428,6 +436,18 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   const peopleCtx: AskPersonCtx[] = []
   const ctxSignals: ContextualSignal[] = []
   const pids = [...targetIds].slice(0, MAX_PEOPLE)
+
+  // 5-bis. BÚSQUEDA PROFUNDA (deepSearch): si la pregunta es de ARCHIVO ("¿qué
+  //   me dijo?", "¿en qué quedamos?"), la búsqueda literal de la pregunta no
+  //   basta — Aaron dice "abonar" y ella escribió "te deposito lo que te debo".
+  //   Expandimos la consulta a variantes léxicas reales de WhatsApp (LLM barato,
+  //   UNA vez por turno, en paralelo con las lecturas de personas) y buscamos
+  //   cada una en el hilo completo. Fail-open: si falla, camino de siempre.
+  const archiveMode = looksLikeArchiveQuery(retrievalText)
+  const expansionP: Promise<string[]> = archiveMode
+    ? expandSearchQueries(question, namesById.get(pids[0] ?? '') ?? 'esa persona', { supabase, userId })
+    : Promise.resolve([])
+
   const built = await Promise.all(
     pids.map(async (pid) => {
       const row = byId.get(pid)
@@ -448,7 +468,16 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       const memsP = getMemoriesForPerson(supabase, userId, pid, { limit: MAX_MEM_PER_PERSON }).catch(() => [])
       const convP = getPersonConversation(supabase, userId, pid).catch(() => null)
       const hitsP = searchChatMessages(supabase, userId, pid, retrievalText, 6).catch(() => [])
-      const [logs, mems, conv, hits] = await Promise.all([logsP, memsP, convP, hitsP])
+      // Modo archivo: variantes léxicas (ya en vuelo) × hilo completo de ESTA persona.
+      const deepP: Promise<{ hits: Awaited<typeof hitsP>; queries: string[] } | null> = archiveMode
+        ? (async () => {
+            const expanded = await expansionP
+            const queries = [...new Set([...expanded, ...extractSearchTerms(retrievalText, 2)])]
+            if (queries.length === 0) return null
+            return { hits: await searchChatMessagesDeep(supabase, userId, pid, queries), queries }
+          })().catch(() => null)
+        : Promise.resolve(null)
+      const [logs, mems, conv, hits, deep] = await Promise.all([logsP, memsP, convP, hitsP, deepP])
 
       const interactionEvents = logs
         .filter((l) => Number.isFinite(Number(l.value)))
@@ -476,8 +505,24 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       // Conversación (ventana reciente del sustrato + observación) + búsqueda FTS
       // en el historial completo, anexada.
       let conversation: string | null = conv ? renderConversationForPrompt(conv, name) : null
-      const block = renderChatSearchBlock(hits, name)
-      if (block) conversation = conversation ? `${conversation}\n\n${block}` : block
+      // En modo archivo el bloque PROFUNDO reemplaza al simple: dice con qué
+      // palabras se buscó y prohíbe afirmar que se leyó el hilo completo.
+      const block = deep
+        ? renderDeepSearchBlock(mergeSearchHits([deep.hits, hits]), name, deep.queries)
+        : renderChatSearchBlock(hits, name)
+      // En modo archivo el bloque va PRIMERO y con presupuesto: buildAskContext
+      // recorta la conversación a PERSON_CONVERSATION_BUDGET y la ventana
+      // reciente se comía justo los mensajes ENCONTRADOS (van al final por orden
+      // cronológico) → SIR no "veía" el resultado de su propia búsqueda.
+      if (block) {
+        if (deep) {
+          const room = PERSON_CONVERSATION_BUDGET - block.length - 2
+          const tail = room > 200 && conversation ? `\n\n${conversation.slice(0, room)}` : ''
+          conversation = `${block}${tail}`
+        } else {
+          conversation = conversation ? `${conversation}\n\n${block}` : block
+        }
+      }
 
       // Ciclo menstrual: si tiene fecha de período, fase actual (dato sensible).
       let cycle: AskPersonCtx['cycle'] = null
