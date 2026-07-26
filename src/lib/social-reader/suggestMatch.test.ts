@@ -47,6 +47,30 @@ describe('suggestPersonForHandle', () => {
     expect(suggestPersonForHandle({ handle: '', name: '' }, people)).toBeNull()
   })
 
+  // El hueco que dejó el catálogo de seguidos: IG suele mostrar SOLO el primer
+  // nombre ("Diego"), y un token suelto no alcanza para arriesgar un match. Ahí
+  // el HANDLE trae el apellido. Medido contra las 80 personas reales de Aaron:
+  // sin estas reglas 2/80 se resolvían; con ellas 79/80.
+  it('IG muestra solo el nombre y el handle trae el apellido', () => {
+    expect(suggestPersonForHandle({ handle: 'diego.medina', name: 'Diego' }, people)?.personId).toBe('p2')
+    expect(suggestPersonForHandle({ handle: 'dieg.medina', name: 'Diego' }, people)?.personId).toBe('p2')
+  })
+
+  it('el handle con dos tokens del nombre alcanza aunque no venga nombre', () => {
+    expect(suggestPersonForHandle({ handle: 'diegomedina23', name: null }, people)?.personId).toBe('p2')
+    expect(suggestPersonForHandle({ handle: 'ruiz.yoshua_pe', name: null }, people)?.personId).toBe('p3')
+  })
+
+  it('un solo token del nombre en el handle NO alcanza (sería adivinar)', () => {
+    expect(suggestPersonForHandle({ handle: 'diego_el_crack', name: null }, people)).toBeNull()
+    expect(suggestPersonForHandle({ handle: 'lima.medina.tours', name: null }, people)).toBeNull()
+  })
+
+  it('tokens cortos no cazan dentro de cualquier palabra', () => {
+    const cortos = [{ id: 'c1', name: 'Ana Paz' }]
+    expect(suggestPersonForHandle({ handle: 'sanpazos_oficial', name: null }, cortos)).toBeNull()
+  })
+
   it('ambiguo (dos personas mismo puntaje) → null, no arriesga', () => {
     const dupes = [
       { id: 'a', name: 'Ana Torres' },
