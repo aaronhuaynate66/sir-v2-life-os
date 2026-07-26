@@ -94,7 +94,7 @@ describe('botones del hilo', () => {
     const rows = buildSectionButtons([mama, momento])
     const mutes = rows.flat().filter((b) => b.text.startsWith('🔕'))
     expect(mutes).toHaveLength(1)
-    expect(mutes[0].callbackData).toBe(`br|mute|${muteRef(momento.text)}`)
+    expect(mutes[0].callbackData).toBe(`br|mute|${muteRef(momento.text, momento.slot)}`)
   })
 
   it('una tarea con fecha NO ofrece 🔕 (se resuelve sola, callarla es ruido)', () => {
@@ -150,5 +150,13 @@ describe('muteRef', () => {
 
   it('cabe en el callback', () => {
     expect(muteRef('x'.repeat(500)).length).toBeLessThanOrEqual(8)
+  })
+
+  it('con slot agregado, el texto deja de importar (la lista del ciclo cambia a diario)', () => {
+    const a = 'Semana afectiva cargada: coinciden Diana, Aeylin y Amira'
+    const b = 'Semana afectiva cargada: coinciden Dayana, Nicolle y Carolina'
+    expect(muteRef(a, 'cycleWeekAhead')).toBe(muteRef(b, 'cycleWeekAhead'))
+    // Sin slot agregado, el tema sigue mandando: dos personas ≠ una señal.
+    expect(muteRef(a, 'relationshipNudge')).not.toBe(muteRef(b, 'relationshipNudge'))
   })
 })

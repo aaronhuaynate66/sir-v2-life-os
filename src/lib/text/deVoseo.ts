@@ -59,6 +59,12 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['marcalo', 'márcalo'], ['anotalo', 'anótalo'], ['guardalo', 'guárdalo'],
   ['mandaselo', 'mándaselo'], ['pedile', 'pídele'], ['preguntale', 'pregúntale'],
   ['respondele', 'respóndele'], ['llamalo', 'llámalo'], ['llamala', 'llámala'],
+  ['registralo', 'regístralo'], ['registrala', 'regístrala'], ['apuntalo', 'apúntalo'],
+  // Imperativos -á cuya raíz TERMINA EN R: el barrido generativo los excluye a
+  // propósito (ahí viven los futuros: "pagará", "tendrás"), así que van a mano.
+  // "Cerrá el día" se coló al evening-push justo por este hueco.
+  ['cerrá', 'cierra'], ['esperá', 'espera'], ['mejorá', 'mejora'], ['recordá', 'recuerda'],
+  ['entrá', 'entra'], ['mostrá', 'muestra'], ['comprá', 'compra'], ['guardá', 'guarda'],
   // Presentes -ás de verbos que DIPTONGAN (recordás→recuerdas, no "recordas"):
   // el barrido generativo de abajo solo quita la tilde, así que los irregulares
   // tienen que resolverse acá ANTES. Cazados en respuestas reales de SIR.

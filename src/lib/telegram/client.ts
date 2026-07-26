@@ -7,6 +7,7 @@
 // El token NUNCA se loguea.
 
 import { stripMarkdown } from './plainText'
+import { deVoseo } from '@/lib/text/deVoseo'
 
 const API = 'https://api.telegram.org'
 
@@ -85,7 +86,11 @@ export async function sendTelegramMessage(
     const body: Record<string, unknown> = {
       chat_id: chatId,
       // Sin parse_mode → limpiamos markdown para que no salgan **, `, ## crudos.
-      text: stripMarkdown(text).slice(0, 4096),
+      // + scrub de voseo: el chat ya lo hacía sobre la salida del LLM, pero la
+      // PROSA ESCRITA A MANO no pasaba por ningún filtro y se coló al push de la
+      // noche ("Cerrá el día", "descansá", "registralo"). Acá pasa TODO lo que
+      // sale por Telegram, venga de donde venga. [[idioma-espanol-peru]]
+      text: deVoseo(stripMarkdown(text)).slice(0, 4096),
       disable_web_page_preview: true,
     }
     if (buttons && buttons.length > 0) {
@@ -126,7 +131,7 @@ export async function sendTelegramKeyboard(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: chatId, text: stripMarkdown(text).slice(0, 4096),
+        chat_id: chatId, text: deVoseo(stripMarkdown(text)).slice(0, 4096),
         disable_web_page_preview: true,
         ...(rows.length ? { reply_markup: { inline_keyboard } } : {}),
       }),
@@ -149,7 +154,7 @@ export async function editTelegramKeyboard(
     await fetch(`${API}/bot${token}/editMessageText`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: stripMarkdown(text).slice(0, 4096), reply_markup: { inline_keyboard } }),
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: deVoseo(stripMarkdown(text)).slice(0, 4096), reply_markup: { inline_keyboard } }),
     })
   } catch { /* no-op */ }
 }

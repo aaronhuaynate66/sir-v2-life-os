@@ -25,7 +25,7 @@ export function buildEveningHabitsPush(habits: EveningHabit[], today: Date = new
   let list = shown.join(', ')
   if (pending.length > shown.length) list += ` +${pending.length - shown.length}`
   const body = pending.length === 1
-    ? `Te falta marcar: ${list}. Si lo hiciste, registralo antes de dormir.`
-    : `Te faltan ${pending.length}: ${list}. Cerrá el día marcando lo que hiciste.`
+    ? `Te falta marcar: ${list}. Si lo hiciste, regístralo antes de dormir.`
+    : `Te faltan ${pending.length}: ${list}. Cierra el día marcando lo que hiciste.`
   return { title: 'Antes de cerrar el día', body }
 }

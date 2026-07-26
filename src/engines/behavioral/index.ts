@@ -198,7 +198,7 @@ export function detectBehavioralPattern(
       priority: 'critical',
       title: 'El bucle del estrés se te está pagando',
       observation: `En los últimos ${w.daysCovered} días: estrés promedio ${avgStress.toFixed(1)}/10, sueño promedio ${avgSleep.toFixed(1)}h, gasto no-esencial S/${totalSpend.toFixed(0)}. Los 3 suben al mismo tiempo — es un patrón, no una casualidad.`,
-      suggestion: 'Cocina hoy en vez de mirar Rappi. Cerrá pantallas 30min antes de dormir. Un cambio chico corta la cadena — no todo a la vez.',
+      suggestion: 'Cocina hoy en vez de mirar Rappi. Cierra pantallas 30min antes de dormir. Un cambio chico corta la cadena — no todo a la vez.',
       evidence: {
         avgStress: Math.round(avgStress * 10) / 10,
         avgSleepHours: Math.round(avgSleep * 10) / 10,
@@ -232,7 +232,7 @@ export function detectBehavioralPattern(
       priority: 'medium',
       title: `Deuda de sueño acumulada`,
       observation: `Llevas ${sleepDebtStreak} días durmiendo menos de ${SLEEP_DEBT_HOURS}h. Se paga en la próxima decisión difícil.`,
-      suggestion: 'Cerrá pantallas 30 min antes de la hora que quieras dormir. Sin heroísmo — que se te haga fácil.',
+      suggestion: 'Cierra pantallas 30 min antes de la hora que quieras dormir. Sin heroísmo — que se te haga fácil.',
       evidence: {
         avgSleepHours: avgSleep != null ? Math.round(avgSleep * 10) / 10 : undefined,
         daysCovered: w.daysCovered,

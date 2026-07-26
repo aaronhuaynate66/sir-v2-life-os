@@ -59,6 +59,16 @@ describe('deVoseo', () => {
     expect(deVoseo('dame el tomate y que llame luego')).toBe('dame el tomate y que llame luego')
   })
 
+  it('imperativos con raíz en -r, que el barrido generativo no puede tocar', () => {
+    // Se colaron al push de la noche del 26-jul: el generativo los excluye
+    // porque ahí viven los futuros ("pagará", "tendrás").
+    expect(deVoseo('Cerrá el día marcando lo que hiciste')).toBe('Cierra el día marcando lo que hiciste')
+    expect(deVoseo('Si lo hiciste, registralo antes de dormir')).toBe('Si lo hiciste, regístralo antes de dormir')
+    expect(deVoseo('esperá y comprá mañana')).toBe('espera y compra mañana')
+    // Los futuros de verdad, intactos.
+    expect(deVoseo('ella te pagará y él tendrá que esperar')).toBe('ella te pagará y él tendrá que esperar')
+  })
+
   it('imperativo + objeto directo (lo cazó el eval)', () => {
     expect(deVoseo('bajalo de tu lista y cerralo hoy')).toBe('bájalo de tu lista y ciérralo hoy')
     expect(deVoseo('revisalo y anotalo')).toBe('revísalo y anótalo')
