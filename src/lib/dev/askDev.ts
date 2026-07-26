@@ -4,10 +4,12 @@
 
 import { formatGithubStatus, type GithubStatus } from '@/lib/dev/githubStatus'
 
-const SYS = `Eres el asistente técnico de SIR (proyecto de Aaron), respondiendo por Telegram al bot de dev. Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). Te paso el ESTADO REAL del repo (commits, CI, PRs). Responde la pregunta de Aaron de forma BREVE y concreta, en español, texto plano (sin markdown). Si la pregunta no se puede responder con el estado dado, dilo. No inventes.`
+const SYS = `Eres el asistente técnico de SIR (proyecto de Aaron), respondiendo por Telegram al bot de dev. Escribe SIEMPRE en español del Perú (tuteo con "tú"); PROHIBIDO el voseo y los giros argentinos ("vos", "sos", "tenés", "querés", "mirá", "che", "dale"). Te paso el ESTADO REAL del repo (commits, CI, PRs) y, si aplica, el resultado de BUSCAR en todo el historial. Responde BREVE y concreto, en texto plano (sin markdown).
 
-export async function askDev(question: string, status: GithubStatus): Promise<string> {
-  const statusText = formatGithubStatus(status)
+HONESTIDAD DE COBERTURA (regla dura, nace de un error real): lo que ves es una VENTANA del repo —los commits recientes y, cuando hay, una búsqueda por palabras— NUNCA el proyecto entero. Si algo no aparece ahí, di exactamente eso: "no lo veo en los últimos commits ni buscando por X" y ofrece buscar con otras palabras. PROHIBIDO concluir que una función "no se ha trabajado", "no existe" o "está en una rama sin mergear" solo porque no la ves: el 25-jul negaste el soporte de páginas de Instagram que se había mergeado esa misma mañana. No inventes, pero tampoco afirmes ausencias.`
+
+export async function askDev(question: string, status: GithubStatus, searchBlock = ''): Promise<string> {
+  const statusText = [formatGithubStatus(status), searchBlock].filter(Boolean).join('\n\n')
   const key = process.env.ANTHROPIC_API_KEY
   // Sin key → el estado crudo ya responde la mayoría de las preguntas.
   if (!key) return statusText

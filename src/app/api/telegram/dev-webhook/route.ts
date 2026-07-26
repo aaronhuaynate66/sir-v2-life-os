@@ -13,7 +13,7 @@ import { NextResponse, type NextRequest, after } from 'next/server'
 
 import { parseTelegramUpdate } from '@/lib/telegram/inbound'
 import { isDevBotConfigured, verifyDevSecret, sendDevMessage } from '@/lib/telegram/devClient'
-import { fetchGithubStatus } from '@/lib/dev/githubStatus'
+import { fetchGithubStatus, devSearchTerms, searchCommits, formatCommitSearch } from '@/lib/dev/githubStatus'
 import { askDev } from '@/lib/dev/askDev'
 import { classifyDevMessage } from '@/lib/dev/classifyDevMessage'
 import { createGithubIssue } from '@/lib/dev/githubIssue'
@@ -77,8 +77,15 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const status = await fetchGithubStatus(REPO, process.env.GITHUB_TOKEN)
-      const answer = await askDev(text, status)
+      // La ventana de commits recientes NO alcanza para "¿ya hiciste X?": lo que
+      // se mergeó ayer ya salió de ella. Se busca en TODO el historial por las
+      // palabras de la pregunta, y el bloque le dice al modelo qué se buscó.
+      const terms = devSearchTerms(text)
+      const [status, hits] = await Promise.all([
+        fetchGithubStatus(REPO, process.env.GITHUB_TOKEN),
+        searchCommits(REPO, process.env.GITHUB_TOKEN, terms),
+      ])
+      const answer = await askDev(text, status, formatCommitSearch(terms, hits))
       await sendDevMessage(msg.chatId, answer)
     } catch {
       await sendDevMessage(msg.chatId, 'No pude leer el estado ahora. Reintenta en un momento.')
