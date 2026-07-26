@@ -10,7 +10,7 @@
 // NO usa el núcleo de chat (common.js CORE) porque el correo no es "un hilo": es
 // una lista de correos sueltos + un panel de lectura. Corre su propio scanner
 // liviano y manda { messages: [...] }. El DOM de OWA cambia seguido → parseo
-// DEFENSIVO con fallbacks; nunca tira (mirá la consola: [SIR Reader]).
+// DEFENSIVO con fallbacks; nunca tira (mira la consola: [SIR Reader]).
 //
 // Diagnóstico: expone window.__SIR_EMAIL.diagnose() y common.js lo delega cuando
 // el popup pide 'sir-diagnose' en una pestaña de OWA.

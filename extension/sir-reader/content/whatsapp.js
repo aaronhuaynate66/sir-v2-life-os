@@ -4,7 +4,7 @@
 // `data-pre-plain-text` que WhatsApp pone en cada burbuja copiable — trae
 // "[HH:MM, D/M/AAAA] Autor: " — la fuente más estable para autor + timestamp.
 // Los selectores de WhatsApp cambian seguido: si deja de capturar, hay que
-// ajustar acá (mirá la consola: [SIR Reader]).
+// ajustar acá (mira la consola: [SIR Reader]).
 
 (() => {
   function text(el) { return el ? (el.innerText || el.textContent || '').trim() : ''; }

@@ -54,7 +54,7 @@
     // NO tienen ese wrapper y solo matchean por `[data-tid="chat-pane-message"]` /
     // `[role="listitem"]`). Para no duplicar (el padre `.fui-ChatMessage` y su hijo
     // `[data-tid="chat-pane-message"]` son el MISMO mensaje) deduplicamos por el id
-    // estable del mensaje, quedándonos con la variante más rica (con autor + hora).
+    // estable del mensaje, quedandonos con la variante más rica (con autor + hora).
     const rows = container.querySelectorAll(
       '[data-tid="chat-pane-message"], .fui-ChatMessage, [data-tid="messageBodyContainer"], [role="listitem"]'
     );

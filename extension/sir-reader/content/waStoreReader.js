@@ -109,9 +109,9 @@
       .filter((x) => x.t * 1000 >= cutoff)     // solo activos en el último mes
       .sort((a, b) => b.t - a.t);               // más recientes primero
     const active = activeAll.slice(0, MAX_CHATS).map((x) => x.c);
-    log(`backfill: ${all.length} totales · ${activeAll.length} activos en el último mes · procesando ${active.length}${activeAll.length > active.length ? ' (CAP — subir MAX_CHATS si querés todos)' : ''}`);
+    log(`backfill: ${all.length} totales · ${activeAll.length} activos en el último mes · procesando ${active.length}${activeAll.length > active.length ? ' (CAP — subir MAX_CHATS si quieres todos)' : ''}`);
     if (!active.length && all.length) {
-      warn('0 activos por recencia (¿chat.t vacío?). No fuerzo — revisá si falta data de fecha.');
+      warn('0 activos por recencia (¿chat.t vacío?). No fuerzo — revisa si falta data de fecha.');
     }
     let total = 0;
     for (const chat of active) {
