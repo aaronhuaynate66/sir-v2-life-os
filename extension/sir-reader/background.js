@@ -87,14 +87,14 @@ async function ingestEmail(messages) {
 
 // Señales sociales (IG/LinkedIn) leídas pasivamente → POST /api/social/ingest.
 // El server resuelve handle→persona y deriva la señal de timing (Parte A/B).
-async function ingestSocial(items) {
+async function ingestSocial(items, following) {
   const { sirUrl, token } = await getConfig();
   if (!token) { await setStatus({ lastError: 'Falta el token — configuralo en el popup' }); return { ok: false, error: 'no-token' }; }
   try {
     const res = await fetch(`${sirUrl}/api/social/ingest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-reader-token': token },
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ items, following }),
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
@@ -103,8 +103,11 @@ async function ingestSocial(items) {
     }
     const j = await res.json().catch(() => ({}));
     if (j && typeof j.inserted === 'number') await bump('sent', j.inserted);
-    await setStatus({ lastError: null, lastThread: `social: ${items.length} señal(es)`, lastPlatform: (items[0] && items[0].platform) || 'social' });
-    return { ok: true };
+    const followingSaved = j && typeof j.followingSaved === 'number' ? j.followingSaved : 0;
+    const namesFilled = j && typeof j.namesFilled === 'number' ? j.namesFilled : 0;
+    const suffix = following && following.length ? `, following: ${followingSaved}/${namesFilled}` : '';
+    await setStatus({ lastError: null, lastThread: `social: ${items.length} señal(es)${suffix}`, lastPlatform: (items[0] && items[0].platform) || (following && following.length ? 'instagram' : 'social') });
+    return { ok: true, ...j };
   } catch (e) {
     await setStatus({ lastError: String(e).slice(0, 140) });
     return { ok: false, error: String(e) };
@@ -116,8 +119,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     ingest(msg.batch).then(sendResponse);
     return true; // respuesta async
   }
-  if (msg && msg.type === 'sir-social-batch' && Array.isArray(msg.items)) {
-    ingestSocial(msg.items).then(sendResponse);
+  if (msg && msg.type === 'sir-social-batch' && (Array.isArray(msg.items) || Array.isArray(msg.following))) {
+    ingestSocial(Array.isArray(msg.items) ? msg.items : [], Array.isArray(msg.following) ? msg.following : []).then(sendResponse);
     return true; // respuesta async
   }
   if (msg && msg.type === 'sir-email-batch' && Array.isArray(msg.messages)) {

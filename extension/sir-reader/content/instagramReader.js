@@ -21,6 +21,11 @@
     try { window.postMessage({ __sirSocial: true, items }, '*'); } catch (_) {}
   }
 
+  function emitFollowing(following) {
+    if (!following || !following.length) return;
+    try { window.postMessage({ __sirSocial: true, following }, '*'); } catch (_) {}
+  }
+
   // Junta texto legible (captions, overlays) de un nodo de story, poco profundo.
   function collectText(node, out, depth) {
     if (!node || depth > 4 || out.length > 6) return;
@@ -179,6 +184,138 @@
     domTimer = setTimeout(scanStoryDom, 1200);
   }
 
+  // Catálogo de "Siguiendo": SOLO cuando Aaron ya abrió el diálogo/pantalla.
+  // Acá sí se permite bajar el scroll del diálogo, despacio, porque esa vista se
+  // abrió a propósito para resolver handles -> nombres reales.
+  const followingSeen = new Set();
+  let followingTimer = null;
+  let followingRun = null;
+  let followingStopped = false;
+
+  function handleFromProfileHref(href) {
+    try {
+      const url = new URL(href, location.origin);
+      if (url.origin !== location.origin) return null;
+      const parts = url.pathname.split('/').filter(Boolean);
+      if (parts.length !== 1) return null;
+      const handle = parts[0];
+      if (/^(accounts|explore|p|reels?|stories|direct|followers|following)$/i.test(handle)) return null;
+      return isHandleLike(handle) ? handle : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function looksLikeLimitText(text) {
+    return /intenta(?:r)?\s+m[aá]s\s+tarde|try\s+again\s+later|limitamos|we\s+limit|temporarily\s+blocked/i.test(text || '');
+  }
+
+  function findFollowingDialog() {
+    const dialogs = Array.from(document.querySelectorAll('[role="dialog"]'));
+    for (const dialog of dialogs) {
+      const text = cleanText(dialog.textContent).slice(0, 1200);
+      const hasProfileLinks = dialog.querySelectorAll('a[href^="/"]').length >= 3;
+      const titleLooksFollowing = Array.from(dialog.querySelectorAll('h1, h2, [role="heading"]'))
+        .some((node) => /^(siguiendo|following)$/i.test(cleanText(node.textContent)));
+      const urlLooksFollowing = /\/following\/?$/i.test(location.pathname);
+      if (hasProfileLinks && (titleLooksFollowing || urlLooksFollowing)) return dialog;
+    }
+    return null;
+  }
+
+  function findScrollBox(dialog) {
+    const nodes = [dialog, ...Array.from(dialog.querySelectorAll('div'))];
+    let best = null;
+    for (const node of nodes) {
+      const overflowY = getComputedStyle(node).overflowY;
+      const scrollable = node.scrollHeight > node.clientHeight + 80;
+      if (!scrollable || !/(auto|scroll)/i.test(overflowY)) continue;
+      if (!best || node.scrollHeight > best.scrollHeight) best = node;
+    }
+    return best || dialog;
+  }
+
+  function nameFromFollowingRow(anchor, handle) {
+    let row = anchor.parentElement || anchor;
+    for (let hops = 0, node = anchor.parentElement; node && hops < 6; hops += 1, node = node.parentElement) {
+      const text = cleanText(node.textContent);
+      if (node.querySelector(`a[href="/${handle}/"]`) && text.length > handle.length && text.length < 260) {
+        row = node;
+      }
+    }
+    const texts = [];
+    const nodes = row.querySelectorAll('span, div[dir="auto"], span[dir="auto"]');
+    for (const node of nodes) {
+      const text = cleanText(node.textContent);
+      if (!text || text.length > 90 || texts.includes(text)) continue;
+      texts.push(text);
+    }
+    for (const text of texts) {
+      const name = distinctDisplayName(text, handle);
+      if (name && !isHandleLike(name)) return name;
+    }
+    return undefined;
+  }
+
+  function collectFollowingVisible(dialog) {
+    const out = [];
+    const anchors = dialog.querySelectorAll('a[href^="/"]');
+    for (const anchor of anchors) {
+      const handle = handleFromProfileHref(anchor.getAttribute('href'));
+      if (!handle || followingSeen.has(handle)) continue;
+      followingSeen.add(handle);
+      const item = { handle };
+      const name = nameFromFollowingRow(anchor, handle);
+      if (name) item.name = name;
+      out.push(item);
+    }
+    return out;
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function runFollowingCapture(dialog) {
+    const scrollBox = findScrollBox(dialog);
+    let stableRounds = 0;
+    let lastSeenCount = followingSeen.size;
+    let lastScrollTop = -1;
+
+    for (let round = 0; round < 120; round += 1) {
+      if (!document.documentElement.contains(dialog)) break;
+      const text = cleanText(dialog.textContent);
+      if (looksLikeLimitText(text)) {
+        followingStopped = true;
+        break;
+      }
+
+      const batch = collectFollowingVisible(dialog);
+      for (let i = 0; i < batch.length; i += 500) emitFollowing(batch.slice(i, i + 500));
+
+      const seenCount = followingSeen.size;
+      if (seenCount === lastSeenCount && scrollBox.scrollTop === lastScrollTop) stableRounds += 1;
+      else stableRounds = 0;
+      if (stableRounds >= 4) break;
+
+      lastSeenCount = seenCount;
+      lastScrollTop = scrollBox.scrollTop;
+      const step = Math.max(260, Math.min(700, Math.floor(scrollBox.clientHeight * 0.75)));
+      scrollBox.scrollTop = Math.min(scrollBox.scrollTop + step, scrollBox.scrollHeight);
+      await sleep(1050 + Math.floor(Math.random() * 350));
+    }
+  }
+
+  function scheduleFollowingScan() {
+    if (followingStopped || followingTimer || followingRun) return;
+    followingTimer = setTimeout(() => {
+      followingTimer = null;
+      const dialog = findFollowingDialog();
+      if (!dialog) return;
+      followingRun = runFollowingCapture(dialog).catch(() => {}).finally(() => { followingRun = null; });
+    }, 1800);
+  }
+
   // ── Patch fetch ──────────────────────────────────────────────────────────
   const origFetch = window.fetch;
   window.fetch = function (...args) {
@@ -219,6 +356,13 @@
     mo.observe(document.documentElement || document, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label'] });
     setTimeout(scheduleDomScan, 4000);
     setTimeout(scheduleDomScan, 10000);
+  } catch (_) {}
+
+  try {
+    scheduleFollowingScan();
+    const followingMo = new MutationObserver(scheduleFollowingScan);
+    followingMo.observe(document.documentElement || document, { childList: true, subtree: true });
+    setTimeout(scheduleFollowingScan, 4000);
   } catch (_) {}
 
   try { console.debug('[SIR Reader] instagram reader activo (pasivo)'); } catch (_) {}
