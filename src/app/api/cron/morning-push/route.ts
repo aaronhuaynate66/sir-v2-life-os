@@ -19,6 +19,7 @@ import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { buildBriefThread, muteRef } from '@/lib/telegram/briefThread'
 import { applyAutoSnooze, previousDay, type BriefSignalHistory } from '@/lib/brief/autoSnooze'
 import { assessCapacity, explainCapacity, applyEnergyGate } from '@/lib/brief/energyGate'
+import { weeklyAdherence, adherenceLine, weekStartOf, type TrainingKind } from '@/lib/entrenamiento/adherencia'
 import { getSelfBioState } from '@/lib/people/selfState'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, topicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
@@ -662,6 +663,26 @@ export async function GET(req: NextRequest) {
         /* fail-soft: la anticipación de cuidado es un extra, no rompe el push */
       }
 
+      // ADHERENCIA AL PLAN DE ENTRENAMIENTO: el plan del Mundial pide 4 sesiones
+      // por semana, 3 de ellas de FUERZA (es donde gana el músculo que necesita
+      // para no caerse de categoría). Sin esto, el plan es una intención.
+      // Fail-soft: sin la tabla 0169 o sin sesiones, no hay línea.
+      let trainingAdherenceText: string | undefined
+      try {
+        const monday = weekStartOf(today)
+        const { data: tsRows } = await admin
+          .from('training_sessions').select('date, kind, duration_min')
+          .eq('user_id', uid).gte('date', monday).lte('date', today).limit(30)
+        const sessions = ((tsRows ?? []) as Array<{ date: string; kind: string; duration_min: number | null }>)
+          .map((r) => ({ date: r.date, kind: r.kind as TrainingKind, durationMin: r.duration_min }))
+        // Solo tiene sentido si hay un plan al que adherir (goal del Mundial).
+        const hayPlan = goals.some((g) => /mundial|taekwondo|wfg/i.test(`${g.title} ${g.description ?? ''}`))
+        if (hayPlan) {
+          const a = weeklyAdherence(sessions, { total: 4, ofKind: { kind: 'fuerza', count: 3 } }, today)
+          trainingAdherenceText = adherenceLine(a) ?? undefined
+        }
+      } catch { /* tabla 0169 sin propagar → sin línea */ }
+
       // SILENCIADOS (🔕): temas que Aaron mandó a callar. Se filtran dentro de
       // buildMorningPush, antes del cap, así no le roban el cupo a otra señal.
       // Fail-soft: sin la tabla (0166 sin propagar) el brief va completo.
@@ -672,7 +693,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

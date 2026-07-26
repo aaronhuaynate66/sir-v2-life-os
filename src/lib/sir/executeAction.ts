@@ -37,7 +37,8 @@ export function isExecutableByChat(kind: string): boolean {
     kind === 'agregar_hito' ||
     kind === 'crear_plan' ||
     kind === 'crear_recordatorio' ||
-    kind === 'registrar_estado'
+    kind === 'registrar_estado' ||
+    kind === 'registrar_entrenamiento'
   )
 }
 
@@ -367,7 +368,61 @@ export async function executeProposedAction(
     return { ok: true, message: `📔 Anotado: ${first} — ${label} el ${date}. Con cada marca detecto mejor si hay un patrón que se repite; cuando haya varias, te aviso si es cíclico y cuándo podría volver.` }
   }
 
+  if (action.kind === 'registrar_entrenamiento') {
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(action.fecha) ? action.fecha : limaDayString(new Date())
+    // El objetivo del Mundial, si existe: la sesión cuelga de él para que la
+    // adherencia del plan (bloques de 15 semanas) la cuente.
+    let objectiveId: string | null = null
+    try {
+      const { data: g } = await supabase
+        .from('goals').select('id, title, description')
+        .eq('user_id', userId).eq('status', 'active').limit(50)
+      const hit = ((g as Array<Record<string, unknown>>) ?? [])
+        .find((x) => /mundial|taekwondo|wfg/i.test(`${x.title ?? ''} ${x.description ?? ''}`))
+      objectiveId = (hit?.id as string) ?? null
+    } catch { /* sesión suelta, sin objetivo */ }
+
+    const { error } = await supabase.from('training_sessions').insert({
+      user_id: userId,
+      date,
+      kind: action.tipo,
+      duration_min: action.minutos,
+      intensity: action.intensidad,
+      notes: (action.nota || '').trim().slice(0, 500) || null,
+      objective_id: objectiveId,
+      source: 'chat',
+    })
+    if (error) return { ok: false, message: 'Uf, no pude guardar el entrenamiento. Reinténtalo en un momento.' }
+
+    // Cuántas van esta semana (y de fuerza, que es lo que pide el bloque base).
+    let extra = ''
+    try {
+      const monday = weekStartISO(date)
+      const { data: wk } = await supabase
+        .from('training_sessions').select('kind')
+        .eq('user_id', userId).gte('date', monday).lte('date', date)
+      const rows = (wk ?? []) as Array<{ kind: string }>
+      const fuerza = rows.filter((r) => r.kind === 'fuerza').length
+      extra = ` Van ${rows.length} esta semana${fuerza > 0 ? ` (${fuerza} de fuerza)` : ''}.`
+    } catch { /* el conteo es un plus */ }
+
+    const LABEL: Record<string, string> = {
+      fuerza: 'fuerza', tecnica: 'técnica', sparring: 'sparring',
+      acondicionamiento: 'acondicionamiento', competencia: 'competencia', otro: 'entrenamiento',
+    }
+    const dur = action.minutos ? ` (${action.minutos} min)` : ''
+    return { ok: true, message: `🥋 Anotado: ${LABEL[action.tipo] ?? action.tipo}${dur} el ${date}.${extra}` }
+  }
+
   return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hazlo desde la web.' }
+}
+
+/** Lunes (YYYY-MM-DD) de la semana de `day`. La semana de entrenamiento es local. */
+function weekStartISO(day: string): string {
+  const t = Date.parse(`${day}T12:00:00Z`)
+  if (!Number.isFinite(t)) return day
+  const dow = (new Date(t).getUTCDay() + 6) % 7
+  return new Date(t - dow * 86_400_000).toISOString().slice(0, 10)
 }
 
 /** Marca el vínculo con una persona como 'ended'. Si ya hay fila → update; si no

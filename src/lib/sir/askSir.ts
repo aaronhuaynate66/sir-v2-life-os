@@ -1166,6 +1166,11 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     } else if (parsed?.kind === 'registrar_estado') {
       const r = resolvePersonId(parsed.persona)
       proposedAction = { ...parsed, persona: r.name, personId: r.id }
+    } else if (parsed?.kind === 'registrar_entrenamiento') {
+      // Sin persona: tipo + fecha. Sin esta rama la tool quedaría inerte (el
+      // modelo la llamaría y proposedAction saldría null) — el mismo bug que
+      // tuvo crear_recordatorio.
+      proposedAction = { ...parsed }
     } else if (parsed?.kind === 'crear_recordatorio') {
       // Sin persona: solo texto + cuándo. Faltaba esta rama → toda la feature de
       // recordatorios por chat (tool + ejecutor + cron reminders-due) quedaba

@@ -128,6 +128,26 @@ export const SIR_ACTION_TOOLS = [
     },
   },
   {
+    name: 'proponer_registrar_entrenamiento',
+    description:
+      'Propón registrar una SESIÓN DE ENTRENAMIENTO (NO la registres tú, solo propónla para que Aaron confirme). Úsalo cuando Aaron cuenta que entrenó: "hice pesas", "entrené técnica", "hoy hubo sparring", "fui al gym", "corrí". El plan del Mundial distingue FUERZA de técnica y sparring, así que clasifica bien: pesas/gimnasio/fuerza → "fuerza"; patadas/pao/formas/técnica → "tecnica"; combate/sparring → "sparring"; correr/bici/cardio → "acondicionamiento"; un torneo o competencia real → "competencia". Si no queda claro, usa "otro".',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        tipo: {
+          type: 'string',
+          enum: ['fuerza', 'tecnica', 'sparring', 'acondicionamiento', 'competencia', 'otro'],
+          description: 'Tipo de sesión.',
+        },
+        fecha: { type: 'string', description: 'YYYY-MM-DD (default hoy), calculada desde la fecha de hoy del contexto.' },
+        minutos: { type: 'integer', description: 'Duración en minutos, si Aaron la dijo.' },
+        intensidad: { type: 'string', enum: ['baja', 'media', 'alta'], description: 'Si Aaron la mencionó ("suave", "pesado", "al tope").' },
+        nota: { type: 'string', description: 'Qué hizo, breve y en sus palabras.' },
+      },
+      required: ['tipo'],
+    },
+  },
+  {
     name: 'proponer_agregar_hito',
     description:
       'Propón AGREGAR un sub-paso/hito a un objetivo que YA existe (NO lo agregues tú, solo propónlo para que Aaron confirme). Úsalo SIEMPRE que algo que Aaron menciona (o que aparece en el contexto) sea un PASO que AVANZA un objetivo suyo —sobre todo su NORTE, el objetivo-ancla del año— y ese objetivo hoy no lo tiene desglosado como sub-paso. No esperes a que Aaron pida "agrégalo"; si un compromiso/hecho empuja un objetivo existente, propón colgarlo de ese objetivo para cerrar el loop del norte (ej. "el examen médico me acerca al Mundial" → propón agregar "Pasar examen médico" como hito del objetivo Mundial). Si Aaron NO nombra el objetivo, se asume su NORTE (el objetivo-ancla del año). NO inventes objetivos: si ningún objetivo existente encaja de verdad, no uses esta tool. NO inventes fecha. PROHIBIDO decir que ya lo agregaste sin llamar a esta tool.',
@@ -222,7 +242,17 @@ export interface ProposedEstado {
   fecha: string
   nota: string
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio | ProposedEstado | ProposedAgregarHito
+export interface ProposedEntrenamiento {
+  kind: 'registrar_entrenamiento'
+  /** El plan del Mundial distingue fuerza de lo demás: el tipo NO es decorativo. */
+  tipo: 'fuerza' | 'tecnica' | 'sparring' | 'acondicionamiento' | 'competencia' | 'otro'
+  /** YYYY-MM-DD, o '' si el modelo no dio una válida (executeAction usa hoy). */
+  fecha: string
+  minutos: number | null
+  intensidad: 'baja' | 'media' | 'alta' | null
+  nota: string
+}
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio | ProposedEstado | ProposedAgregarHito | ProposedEntrenamiento
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -287,6 +317,20 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
     const rawFecha = str(o.fecha, 10)
     const fecha = /^\d{4}-\d{2}-\d{2}$/.test(rawFecha) ? rawFecha : ''
     return { kind: 'registrar_estado', persona, estado, fecha, nota: str(o.nota, 300) }
+  }
+  if (toolName === 'proponer_registrar_entrenamiento') {
+    const TIPOS = ['fuerza', 'tecnica', 'sparring', 'acondicionamiento', 'competencia', 'otro'] as const
+    const tipo = (TIPOS as readonly string[]).includes(String(o.tipo))
+      ? (o.tipo as ProposedEntrenamiento['tipo'])
+      : 'otro'
+    const rawFecha = str(o.fecha, 10)
+    const fecha = /^\d{4}-\d{2}-\d{2}$/.test(rawFecha) ? rawFecha : ''
+    const min = typeof o.minutos === 'number' ? Math.round(o.minutos) : parseInt(String(o.minutos ?? ''), 10)
+    const minutos = Number.isFinite(min) && min > 0 && min <= 600 ? min : null
+    const intensidad = ['baja', 'media', 'alta'].includes(String(o.intensidad))
+      ? (o.intensidad as 'baja' | 'media' | 'alta')
+      : null
+    return { kind: 'registrar_entrenamiento', tipo, fecha, minutos, intensidad, nota: str(o.nota, 300) }
   }
   if (toolName === 'proponer_cerrar_relacion') {
     const persona = str(o.persona, 120)

@@ -62,6 +62,9 @@ export interface MorningInput {
    *  rango (idea de Aaron: no dejarlo "al baúl"). NO es agudo → prioridad baja y
    *  el cron lo manda throttled (semanal). Texto ya formado. */
   healthWatch?: string
+  /** Adherencia al plan de entrenamiento de la semana (ver lib/entrenamiento).
+   *  Un plan que no se mide es una intención. Texto ya formado. */
+  trainingAdherence?: string
   /** Nota del gate de energía: por qué hoy se pospuso lo que pide combustible
    *  emocional (ver lib/brief/energyGate). Va PRIMERA — es el marco con el que
    *  hay que leer el resto del brief. */
@@ -261,6 +264,9 @@ export function buildMorningPush(input: MorningInput): MorningPush {
 
   // 2.8 OBJETIVO que necesita atención (accionable, antes del foco genérico).
   add(input.goalNudge, 'goalNudge', 'metas', ent.goalNudgeGoal ? { kind: 'goal', ...ent.goalNudgeGoal } : undefined)
+
+  // 2.9 ¿Se está cumpliendo el plan de entrenamiento de la semana?
+  add(input.trainingAdherence, 'trainingAdherence', 'metas')
 
   // 3. Foco del día. Se omite si ya hubo un nudge de objetivo (evita 2 líneas de
   //    meta en el mismo push).
