@@ -84,6 +84,10 @@ import { summarizeAffection, describeAffection } from '@/lib/forecast-conductual
 import { fetchCalendarEvents } from '@/lib/calendar/feed'
 import type { Person, Goal, Memory } from '@/types'
 import { deVoseo } from '@/lib/text/deVoseo'
+import { labPatterns } from '@/lib/health-exams/patterns'
+import { rowToHealthExam } from '@/lib/health-exams/types'
+import { computeRecomp, explainRecomp } from '@/lib/salud/recomposicion'
+import { parseWeightCategory } from '@/engines/targets'
 
 const MAX_PEOPLE = 5
 const MAX_MEM_PER_PERSON = 12
@@ -777,6 +781,66 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       const sleepRows: SleepReading[] = ((slRows as Array<Record<string, unknown>>) ?? [])
         .map((r) => ({ date: (r.date as string) ?? '', duration: Number(r.duration), quality: r.quality != null ? Number(r.quality) : null, score: r.score != null ? Number(r.score) : null, awakenings: r.awakenings != null ? Number(r.awakenings) : null }))
       healthBlock = renderHealthBlock(selectRecentHealth(metricRows, sleepRows))
+
+      // CRUCE MÉDICO-DEPORTIVO (Aaron 25-jul: «¿por qué no me dice cómo subir
+      // masa muscular si la balanza marca alto en grasa y los exámenes dicen lo
+      // mismo?»). Dos piezas que el chat NUNCA veía:
+      //
+      //  a) LABORATORIOS. `labPatterns` ya detectaba analitos con tendencia
+      //     consistente aunque cada valor esté "en rango" —lo que ningún examen
+      //     aislado marca— pero solo salía en el brief de los LUNES. En su data:
+      //     hemoglobina 16.8→14.5→13.9, hematocrito 52→44→41 y glóbulos rojos
+      //     5.72→4.84→4.64, los tres bajando a la vez.
+      //  b) RECOMPOSICIÓN. La aritmética de composición contra su categoría de
+      //     peso: por qué "bajar grasa" y "no bajar de 80 kg" solo son
+      //     compatibles ganando músculo, y cuánto.
+      try {
+        const { data: exRows } = await supabase
+          .from('health_exams')
+          .select('id, exam_date, provider, title, summary, findings, values, recommendations, storage_path')
+          .eq('user_id', userId).order('exam_date', { ascending: true }).limit(50)
+        const exams = ((exRows as Array<Record<string, unknown>>) ?? [])
+          .map((r) => ({ ...rowToHealthExam(r), pdfUrl: null }))
+        if (exams.length >= 2) {
+          const pats = labPatterns(exams).slice(0, 4)
+          if (pats.length > 0) {
+            healthBlock += `\n\nPATRONES DE LABORATORIO (cruce de ${exams.length} exámenes; cada valor puede estar "en rango" y aun así la TENDENCIA importa — esto NO es diagnóstico, es para que lo lleve a su médico):\n`
+              + pats.map((p) => `  - [${p.severity}] ${p.message}`).join('\n')
+          }
+        }
+      } catch { /* sin exámenes → sin bloque */ }
+
+      try {
+        const peso = metricRows.find((m) => m.type === 'weight')?.value
+        const grasa = metricRows.find((m) => m.type === 'body_fat_percent')?.value
+        const magro = metricRows.find((m) => m.type === 'muscle_mass_kg')?.value
+        const tmb = metricRows.find((m) => m.type === 'metabolic_rate_kcal')?.value
+        // El goal con categoría de peso, con sus campos completos (el array
+        // `goals` de arriba solo trae id/title/next_action para el gap-engine).
+        const { data: catRows } = await supabase
+          .from('goals').select('title, description, target, target_date')
+          .eq('user_id', userId).eq('status', 'active').limit(50)
+        const catGoal = ((catRows as Array<Record<string, unknown>>) ?? [])
+          .find((g) => /mundial|taekwondo|wfg/i.test(`${g.title ?? ''} ${g.description ?? ''}`))
+        const cat = catGoal
+          ? parseWeightCategory((catGoal.target as string | null) ?? undefined)
+            ?? parseWeightCategory((catGoal.description as string | null) ?? undefined)
+          : null
+        if (peso && grasa && cat) {
+          const targetDate = (catGoal?.target_date as string | null) ?? null
+          const semanas = targetDate
+            ? Math.max(1, Math.round((Date.parse(`${targetDate}T12:00:00Z`) - nowDate.getTime()) / (7 * 86_400_000)))
+            : 12
+          const target = { minWeightKg: cat.min + 1, targetFatPercent: 20, weeksAvailable: semanas }
+          const plan = computeRecomp(
+            { weightKg: peso, bodyFatPercent: grasa, leanMassKg: magro ?? null, bmrKcal: tmb ?? null },
+            target,
+          )
+          healthBlock += `\n\nRECOMPOSICIÓN vs SU CATEGORÍA (${cat.min} kg+, ${semanas} semanas al evento) — aritmética sobre su propia báscula:\n`
+            + explainRecomp(plan, target, grasa).map((l) => `  - ${l}`).join('\n')
+            + '\n  Usa esto si pregunta por grasa, músculo, peso o cómo entrenar para el Mundial: el conflicto entre "bajar de peso" (lo que dice su chequeo) y "no bajar de categoría" se resuelve por COMPOSICIÓN, no por dieta agresiva.'
+        }
+      } catch { /* sin composición → sin bloque */ }
     } catch { /* fail-soft: sin salud → el prompt ya sabe no negar la capacidad */ }
   }
 
