@@ -25,10 +25,12 @@ export function NorteDriftPanel() {
   const goals = useGoalStore((s) => s.goals)
   const steps = useObjectiveStepStore((s) => s.steps)
   const people = useRelationshipStore((s) => s.people)
-  // Contacto reciente con gente del norte cuenta como avance (des-estanca).
+  // Cuentan como avance (des-estancan): el contacto reciente con gente del norte
+  // y CERRAR un paso del norte. Lo segundo faltaba: los "hitos" del Goal nunca se
+  // completan en este código, así que el norte se veía estancado siempre.
   const drift = useMemo(
-    () => computeNorteDrift(goals, new Date(), relatedActivityISOForAnchor(goals, people)),
-    [goals, people],
+    () => computeNorteDrift(goals, new Date(), relatedActivityISOForAnchor(goals, people, new Date(), steps)),
+    [goals, people, steps],
   )
   const momentum = useMemo(() => computeNorteMomentum(goals, steps), [goals, steps])
   const meta = STATE_META[drift.state]
