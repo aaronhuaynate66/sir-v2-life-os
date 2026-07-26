@@ -41,6 +41,19 @@ export function summarizeActionForConfirm(a: ProposedActionResolved): string {
         (nota ? ` ("${nota.slice(0, 120)}")` : '') +
         '.\nCon esto voy detectando si se repite en un patrón.\n\n¿Lo anoto?'
     }
+    case 'registrar_entrenamiento': {
+      const LABEL: Record<string, string> = {
+        fuerza: 'fuerza', tecnica: 'técnica', sparring: 'sparring',
+        acondicionamiento: 'acondicionamiento', competencia: 'competencia', otro: 'entrenamiento',
+      }
+      const dur = a.minutos ? `, ${a.minutos} min` : ''
+      const inten = a.intensidad ? `, intensidad ${a.intensidad}` : ''
+      const cuando = a.fecha ? `el ${a.fecha}` : 'hoy'
+      const nota = (a.nota || '').trim()
+      return `🥋 Anotar sesión de ${LABEL[a.tipo] ?? a.tipo}${dur}${inten} ${cuando}` +
+        (nota ? ` ("${nota.slice(0, 120)}")` : '') +
+        '.\nCuenta para el plan del Mundial.\n\n¿La anoto?'
+    }
     default:
       return '¿Lo guardo?'
   }
