@@ -17,7 +17,7 @@
 // El 🔕 manual (0166) es distinto y más fuerte: calla para siempre hasta que
 // Aaron lo revierta. Esto es el piloto automático.
 
-import { topicKey, type MorningSignal } from '@/lib/push/morning'
+import { signalTopicKey, type MorningSignal } from '@/lib/push/morning'
 
 /** Mañanas seguidas que una señal puede aparecer antes de dormirse. */
 export const MAX_STREAK = 3
@@ -73,13 +73,16 @@ export function daysBetweenKeys(a: string, b: string): number {
  * @param signals   las del brief de hoy, ya deduplicadas
  * @param history   estado previo por `ref` (de brief_sent_signals)
  * @param todayKey  día de Lima YYYY-MM-DD
- * @param refOf     cómo obtener la ref corta de una señal (muteRef del hilo)
+ * @param refOf     cómo obtener la ref corta de una señal (muteRef del hilo).
+ *                  Recibe TEXTO y SLOT: hay señales agregadas (carga afectiva,
+ *                  alertas de métrica) cuyo texto cambia cada día sin cambiar de
+ *                  tema — sin el slot su ref bailaba y la racha nunca llegaba a 3.
  */
 export function applyAutoSnooze(
   signals: MorningSignal[],
   history: BriefSignalHistory[],
   todayKey: string,
-  refOf: (text: string) => string,
+  refOf: (text: string, slot: string) => string,
   opts: { maxStreak?: number; snoozeDays?: number } = {},
 ): AutoSnoozeResult {
   const maxStreak = opts.maxStreak ?? MAX_STREAK
@@ -92,8 +95,8 @@ export function applyAutoSnooze(
   const updates: BriefSignalHistory[] = []
 
   for (const s of signals) {
-    const ref = refOf(s.text)
-    const key = topicKey(s.text)
+    const ref = refOf(s.text, s.slot)
+    const key = signalTopicKey(s.slot, s.text)
     const h = byRef.get(ref)
 
     // ¿Sigue durmiendo? Se despierta cuando pasaron snoozeDays.

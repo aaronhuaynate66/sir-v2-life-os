@@ -173,6 +173,31 @@ export function topicKey(text: string): string {
     .slice(0, 120)
 }
 
+/** Slots cuya señal es un RESUMEN AGREGADO: hay una sola por día y su texto
+ *  cambia solo porque cambia el grupo que resume. Su identidad es el slot, no
+ *  las palabras. */
+const AGGREGATE_SLOTS = new Set([
+  'cycleWeekAhead',      // "coinciden Diana, Aeylin, Nicolle…" — la lista varía a diario
+  'metricAlert', 'bodySignal', 'healthWatch',
+  'trainingAdherence',   // "2 de 3 de fuerza" cambia con cada sesión
+  'energyNote',
+])
+
+/**
+ * Identidad de una señal PARA EL SILENCIO. PURA.
+ *
+ * `topicKey(texto)` sola no alcanza: la señal de carga afectiva incluye los
+ * nombres de quienes están en ventana, esa lista cambia cada día, y con ella
+ * cambiaba la clave → la racha se reiniciaba sola y el auto-snooze NUNCA se
+ * disparaba justo en la señal más repetitiva (verificado el 26-jul).
+ *
+ * Para esos resúmenes la identidad es el SLOT. Para el resto, slot + tema, que
+ * mantiene separadas dos señales del mismo tipo sobre personas distintas.
+ */
+export function signalTopicKey(slot: string, text: string): string {
+  return AGGREGATE_SLOTS.has(slot) ? `slot:${slot}` : `${slot}|${topicKey(text)}`
+}
+
 /** Umbral de "es el mismo tema". Alto a propósito: preferimos repetir antes que
  *  tragarnos una señal distinta que solo comparte el nombre de una persona (dos
  *  señales sobre la mamá de Aaron —"3 semanas sin hablar" y "el conflicto parece
@@ -281,8 +306,12 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // vas 0%» al final). Se queda la más informativa, en la posición de la primera.
   // SILENCIADAS (🔕): un tema que Aaron mandó a callar no vuelve. Se filtra
   // ANTES del dedupe y del cap, así una señal muteada no le roba el cupo a otra.
+  // Se compara contra la clave NUEVA y la vieja: los silencios ya guardados se
+  // hicieron con `topicKey(texto)` y deben seguir valiendo tras el cambio.
   const muted = new Set(input.mutedTopics ?? [])
-  const audible = muted.size === 0 ? collected : collected.filter((s) => !muted.has(topicKey(s.text)))
+  const audible = muted.size === 0
+    ? collected
+    : collected.filter((s) => !muted.has(signalTopicKey(s.slot, s.text)) && !muted.has(topicKey(s.text)))
 
   const signals = dedupeSignals(audible).slice(0, MAX_PARTS_FULL)
   const parts = signals.map((s) => s.text)

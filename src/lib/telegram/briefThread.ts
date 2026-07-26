@@ -9,7 +9,7 @@
 // Reemplaza a formatMorningBriefForChat (un solo bloque) en el canal Telegram.
 // El push del navegador NO cambia: sigue usando push.body.
 
-import { topicKey, type MorningSignal, type BriefSection } from '@/lib/push/morning'
+import { signalTopicKey, type MorningSignal, type BriefSection } from '@/lib/push/morning'
 
 /** Un botón del hilo. Mismo shape que InlineButton del cliente de Telegram. */
 export interface BriefButton { text: string; callbackData: string }
@@ -48,10 +48,14 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   return { kind, ref }
 }
 
-/** Referencia corta y estable de un tema, para el 🔕 (el topicKey completo no
- *  entra en 64 bytes). PURA y determinística. */
-export function muteRef(text: string): string {
-  const key = topicKey(text)
+/** Referencia corta y estable de una señal, para el 🔕 (la clave completa no
+ *  entra en los 64 bytes del callback). PURA y determinística.
+ *
+ *  Toma el SLOT además del texto: sin él, la señal de carga afectiva cambiaba de
+ *  ref cada día (su lista de nombres varía) y la racha del auto-snooze se
+ *  reiniciaba sola. `slot` es opcional por compatibilidad con los tests viejos. */
+export function muteRef(text: string, slot = ''): string {
+  const key = slot ? signalTopicKey(slot, text) : signalTopicKey('', text)
   let h = 0
   for (let i = 0; i < key.length; i++) h = (Math.imul(31, h) + key.charCodeAt(i)) | 0
   return (h >>> 0).toString(36)
@@ -95,7 +99,7 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
   // semanas y volver cada mañana. Una tarea con fecha o un cumpleaños se resuelven
   // solos — ofrecer callarlos sería ruido. Uno por mensaje: más botones, más ruido.
   const mutable = MUTABLE_SLOTS.map((slot) => signals.find((s) => s.slot === slot)).find(Boolean)
-  if (mutable) push(btn('🔕 No me lo repitas', 'mute', muteRef(mutable.text)))
+  if (mutable) push(btn('🔕 No me lo repitas', 'mute', muteRef(mutable.text, mutable.slot)))
   return rows
 }
 

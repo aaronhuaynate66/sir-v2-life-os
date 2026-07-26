@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { applyAutoSnooze, previousDay, daysBetweenKeys, type BriefSignalHistory } from './autoSnooze'
-import { topicKey, type MorningSignal } from '@/lib/push/morning'
+import { signalTopicKey, type MorningSignal } from '@/lib/push/morning'
 import { muteRef } from '@/lib/telegram/briefThread'
 
 const MAMA = 'Con Maria Isabel Espinoza Vidaurre: "Conflicto por el Mundial de Bomberos" ya parece resuelto — ¿lo cierras?'
 const TAREA = 'Hoy vence: Hacer UAT con Dayana'
 
 const sig = (text: string, slot = 'momentResolution'): MorningSignal => ({ slot, section: 'gente', text })
-const hist = (text: string, over: Partial<BriefSignalHistory> = {}): BriefSignalHistory => ({
-  ref: muteRef(text), topicKey: topicKey(text), streakDays: 1, lastSentDay: null, autoSnoozedAt: null, ...over,
+const hist = (text: string, over: Partial<BriefSignalHistory> = {}, slot = 'momentResolution'): BriefSignalHistory => ({
+  ref: muteRef(text, slot), topicKey: signalTopicKey(slot, text), streakDays: 1, lastSentDay: null, autoSnoozedAt: null, ...over,
 })
 
 const run = (signals: MorningSignal[], history: BriefSignalHistory[], today: string) =>
@@ -88,10 +88,18 @@ describe('applyAutoSnooze — qué NO calla', () => {
     const cuatroSemanas = 'Hace 4 semanas sin hablar con Maria Isabel Espinoza Vidaurre — tu mamá'
     const r = run(
       [sig(cuatroSemanas, 'relationshipNudge')],
-      [hist(tresSemanas, { streakDays: 3, lastSentDay: '2026-07-26' })],
+      [hist(tresSemanas, { streakDays: 3, lastSentDay: '2026-07-26' }, 'relationshipNudge')],
       '2026-07-27',
     )
     expect(r.visible).toHaveLength(0) // sigue siendo la misma señal → se calla
+  })
+
+  it('dos nudges sobre personas DISTINTAS no se pisan (el slot no aplasta el tema)', () => {
+    const mama = sig('Hace 3 semanas sin hablar con Maria Isabel — tu mamá', 'relationshipNudge')
+    const guillermo = sig('Hace 5 semanas sin hablar con Guillermo Castro', 'relationshipNudge')
+    const r = run([mama, guillermo], [hist(mama.text, { streakDays: 3, lastSentDay: '2026-07-26' }, 'relationshipNudge')], '2026-07-27')
+    expect(r.visible.map((s) => s.text)).toEqual([guillermo.text])
+    expect(r.silenced.map((s) => s.text)).toEqual([mama.text])
   })
 
   it('cada señal lleva su propia cuenta', () => {
@@ -107,6 +115,28 @@ describe('applyAutoSnooze — qué NO calla', () => {
   it('sin señales no hace nada', () => {
     const r = run([], [hist(MAMA)], '2026-07-27')
     expect(r).toMatchObject({ visible: [], silenced: [], updates: [] })
+  })
+})
+
+describe('applyAutoSnooze — señales agregadas (bug del 26-jul)', () => {
+  // La señal del ciclo lista a quienes están en ventana; esa lista cambia todos
+  // los días. Con la clave vieja (solo texto) su ref bailaba cada mañana, la
+  // racha se reiniciaba sola y JAMÁS llegaba a 3: la señal más repetitiva del
+  // brief era justo la única que no se podía callar.
+  const dia1 = 'Semana afectiva cargada: coinciden Diana, Aeylin, Amira y Carolina en fase alta'
+  const dia2 = 'Semana afectiva cargada: coinciden Diana, Dayana, Nicolle y Carolina en fase alta'
+  const ciclo = (text: string) => ({ slot: 'cycleWeekAhead', section: 'gente' as const, text })
+
+  it('el texto cambia pero la señal es la misma → la racha avanza', () => {
+    expect(muteRef(dia1, 'cycleWeekAhead')).toBe(muteRef(dia2, 'cycleWeekAhead'))
+    const r = run([ciclo(dia2)], [hist(dia1, { streakDays: 2, lastSentDay: '2026-07-25' }, 'cycleWeekAhead')], '2026-07-26')
+    expect(r.updates[0].streakDays).toBe(3)
+  })
+
+  it('a la cuarta mañana se duerme, aunque nunca haya repetido el texto', () => {
+    const r = run([ciclo(dia2)], [hist(dia1, { streakDays: 3, lastSentDay: '2026-07-25' }, 'cycleWeekAhead')], '2026-07-26')
+    expect(r.visible).toHaveLength(0)
+    expect(r.silenced[0].reason).toBe('racha')
   })
 })
 

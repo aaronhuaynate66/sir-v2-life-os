@@ -10,7 +10,7 @@ export function formatEveningBriefForChat(pendingHabitsLine?: string): string {
   const h = (pendingHabitsLine || '').trim()
   if (h) lines.push(h)
   lines.push(
-    'Si hablaste con alguien que valga registrar, o pasó algo que quieras que recuerde, dictámelo (texto o audio) y lo anoto. Si no, descansá 💙',
+    'Si hablaste con alguien que valga registrar, o pasó algo que quieras que recuerde, dictámelo (texto o audio) y lo anoto. Si no, descansa 💙',
   )
   return lines.join('\n\n')
 }

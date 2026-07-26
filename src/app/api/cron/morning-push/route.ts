@@ -22,7 +22,7 @@ import { assessCapacity, explainCapacity, applyEnergyGate } from '@/lib/brief/en
 import { weeklyAdherence, adherenceLine, weekStartOf, type TrainingKind } from '@/lib/entrenamiento/adherencia'
 import { getSelfBioState } from '@/lib/people/selfState'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
-import { buildMorningPush, topicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
+import { buildMorningPush, signalTopicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
 import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agendaCross'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
@@ -762,7 +762,7 @@ export async function GET(req: NextRequest) {
             push = buildMorningPush({
               ...briefInput,
               energyNote: gate.note || undefined,
-              mutedTopics: [...mutedTopics, ...gate.deferred.map((s) => topicKey(s.text))],
+              mutedTopics: [...mutedTopics, ...gate.deferred.map((s) => signalTopicKey(s.slot, s.text))],
             })
             energyDeferred += gate.deferred.length
           }
@@ -809,11 +809,11 @@ export async function GET(req: NextRequest) {
         const streakByRef = new Map(snoozeUpdates.map((u) => [u.ref, u]))
         const nowIso = new Date().toISOString()
         const rows = [...push.signals.map((s) => {
-          const ref = muteRef(s.text)
+          const ref = muteRef(s.text, s.slot)
           const st = streakByRef.get(ref)
           streakByRef.delete(ref)
           return {
-            user_id: uid, ref, topic_key: topicKey(s.text),
+            user_id: uid, ref, topic_key: signalTopicKey(s.slot, s.text),
             sample_text: s.text.slice(0, 500), section: s.section, slot: s.slot,
             sent_at: nowIso,
             streak_days: st?.streakDays ?? 1,
