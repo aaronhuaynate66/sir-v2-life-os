@@ -45,7 +45,10 @@ export async function fetchGithubStatus(repo: string, token: string | undefined)
   if (!token) return { ...empty, note: 'Falta GITHUB_TOKEN en el server para leer el repo (privado).' }
   if (!repo || !repo.includes('/')) return { ...empty, note: 'Repo mal configurado.' }
 
-  const commits = (await gh(`/repos/${repo}/commits?per_page=5`, token)) as Array<Record<string, unknown>> | null
+  // 30 y no 5: con 5 commits el bot respondía "no se ha trabajado todavía" sobre
+  // cosas mergeadas horas antes (25-jul: negó el soporte de páginas de Instagram
+  // —#972— porque ya había salido de la ventana). Una jornada activa mueve 20+.
+  const commits = (await gh(`/repos/${repo}/commits?per_page=30`, token)) as Array<Record<string, unknown>> | null
   const recentCommits: CommitLite[] = (commits ?? []).map((c) => {
     const commit = (c.commit ?? {}) as Record<string, unknown>
     const author = (commit.author ?? {}) as Record<string, unknown>
@@ -72,16 +75,91 @@ export async function fetchGithubStatus(repo: string, token: string | undefined)
     author: String(((p.user ?? {}) as Record<string, unknown>).login ?? '—'), draft: !!p.draft,
   }))
 
-  const merged = (await gh(`/repos/${repo}/pulls?state=closed&per_page=10&sort=updated&direction=desc`, token)) as Array<Record<string, unknown>> | null
+  const merged = (await gh(`/repos/${repo}/pulls?state=closed&per_page=30&sort=updated&direction=desc`, token)) as Array<Record<string, unknown>> | null
   const recentMerged: PrLite[] = (merged ?? [])
     .filter((p) => !!p.merged_at)
-    .slice(0, 5)
+    .slice(0, 20)
     .map((p) => ({
       number: Number(p.number), title: String(p.title ?? '').slice(0, 100),
       author: String(((p.user ?? {}) as Record<string, unknown>).login ?? '—'), draft: false,
     }))
 
   return { ok: true, defaultBranch: 'main', latestCommit, latestCi, openPrs, recentMerged, recentCommits }
+}
+
+// Palabras que no sirven para buscar en el historial del repo.
+const STOP_DEV = new Set([
+  'que', 'como', 'cual', 'cuando', 'donde', 'quien', 'para', 'por', 'con', 'sin',
+  'los', 'las', 'una', 'unos', 'unas', 'del', 'este', 'esta', 'esto', 'eso',
+  'esta', 'estan', 'ya', 'esta', 'hay', 'sir', 'repo', 'codigo', 'commit',
+  'commits', 'merge', 'quedaron', 'quedo', 'dentro', 'sus', 'mis', 'tus',
+  'saber', 'quiero', 'puedes', 'revisa', 'reviso', 'hiciste', 'esta',
+])
+
+/**
+ * Términos de búsqueda salientes de una pregunta técnica. PURO.
+ * "¿lo de las historias de Instagram de empresas ya quedaron asociadas?" →
+ * ["instagram", "historias", "empresas", "asociadas"].
+ */
+export function devSearchTerms(question: string, max = 4): string[] {
+  const words = (question || '')
+    .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9ñ\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length >= 4 && !STOP_DEV.has(w))
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const w of words.sort((a, b) => b.length - a.length)) {
+    if (seen.has(w)) continue
+    seen.add(w)
+    out.push(w)
+    if (out.length >= max) break
+  }
+  return out
+}
+
+/**
+ * Busca en TODO el historial de commits (Search API), no solo en la ventana
+ * reciente. Es lo que evita el "no se ha trabajado todavía" sobre algo mergeado
+ * hace una semana. Fail-open → []. Una llamada por término, en paralelo.
+ */
+export async function searchCommits(
+  repo: string, token: string | undefined, terms: string[], perTerm = 5,
+): Promise<CommitLite[]> {
+  if (!token || terms.length === 0) return []
+  const results = await Promise.all(terms.slice(0, 4).map(async (t) => {
+    const q = encodeURIComponent(`repo:${repo} ${t}`)
+    const r = (await gh(`/search/commits?q=${q}&per_page=${perTerm}&sort=committer-date&order=desc`, token)) as Record<string, unknown> | null
+    const items = (r?.items as Array<Record<string, unknown>>) ?? []
+    return items.map((c) => {
+      const commit = (c.commit ?? {}) as Record<string, unknown>
+      const author = (commit.author ?? {}) as Record<string, unknown>
+      return {
+        sha: String(c.sha ?? '').slice(0, 7),
+        message: String(commit.message ?? '').split('\n')[0].slice(0, 120),
+        author: String(author.name ?? '—'),
+        date: (author.date as string) ?? null,
+      }
+    })
+  }))
+  const seen = new Set<string>()
+  const out: CommitLite[] = []
+  for (const c of results.flat()) {
+    if (seen.has(c.sha)) continue
+    seen.add(c.sha)
+    out.push(c)
+  }
+  return out.sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? ''))).slice(0, 12)
+}
+
+/** Los commits encontrados, como bloque para el prompt. PURO. */
+export function formatCommitSearch(terms: string[], hits: CommitLite[]): string {
+  if (terms.length === 0) return ''
+  const cabeza = `BÚSQUEDA EN TODO EL HISTORIAL por: ${terms.map((t) => `"${t}"`).join(', ')}.`
+  if (hits.length === 0) {
+    return `${cabeza}\nSin coincidencias con esas palabras. Eso NO prueba que no exista: puede llamarse distinto. Dilo así — con las palabras que se buscaron — y ofrece buscar con otras. NO concluyas que no se hizo.`
+  }
+  return `${cabeza}\n${hits.map((c) => `  - ${c.sha} ${c.message} (${(c.date ?? '').slice(0, 10)})`).join('\n')}`
 }
 
 /** Estado como texto plano para el prompt del LLM / respuesta directa. PURO. */
