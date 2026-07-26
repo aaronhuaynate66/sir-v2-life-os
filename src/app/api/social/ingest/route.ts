@@ -148,16 +148,22 @@ export async function POST(req: NextRequest) {
   const userId = await resolveUserId(admin)
   if (!userId) return errorJson(500, 'No pude resolver el user id — seteá READER_INGEST_USER_ID')
 
-  let body: { items?: unknown }
+  let body: { items?: unknown; following?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }
   const items = Array.isArray(body.items) ? (body.items as SocialItem[]).slice(0, 100) : []
-  if (items.length === 0) return NextResponse.json({ inserted: 0, matched: 0, unmatched: 0, skipped: 0, backfilled: 0, promoted: 0, snapped: 0 })
+  const following = Array.isArray(body.following)
+    ? (body.following as Array<{ handle?: string; name?: string }>).slice(0, 3000)
+    : []
+  if (items.length === 0 && following.length === 0) {
+    return NextResponse.json({ inserted: 0, matched: 0, unmatched: 0, skipped: 0, backfilled: 0, promoted: 0, snapped: 0, followingSaved: 0, namesFilled: 0 })
+  }
 
   const nowIso = new Date().toISOString()
   const sinceIso = new Date(Date.now() - DEDUP_HOURS * 3_600_000).toISOString()
   let inserted = 0, matched = 0, unmatched = 0, skipped = 0, backfilled = 0, promoted = 0
   let snapped = 0
   let followerRows = 0
+  let followingSaved = 0, namesFilled = 0
 
   try {
     // Personas una sola vez → índice para matcheo por handle/slug/nombre.
@@ -184,6 +190,47 @@ export async function POST(req: NextRequest) {
         if (c) orgByHandle.set(c, o.org_slug)
       }
     } catch { /* columna 0167 sin propagar */ }
+
+    // CATÁLOGO DE SEGUIDOS (handle → NOMBRE). Es la pieza que destraba la bandeja:
+    // las 111 cuentas sin asignar no tenían nombre —IG no lo expone en la barra de
+    // historias— y por eso el matcher daba 0 sugerencias sobre 111 (medido). Con la
+    // lista de "Siguiendo", cada handle recupera su nombre real y el match pasa a
+    // ser nombre↔nombre. Se guarda el catálogo Y se rellenan las filas de la
+    // bandeja: la auto-promoción de abajo hace el resto en la misma pasada.
+    if (following.length > 0) {
+      try {
+        const rows = following
+          .map((f) => ({ handle: canonHandle(String(f?.handle ?? '')), name: String(f?.name ?? '').trim().slice(0, 120) }))
+          .filter((f) => f.handle)
+          .map((f) => ({
+            id: `sf_${createHash('sha1').update(`${userId}|instagram|${f.handle}`).digest('hex').slice(0, 32)}`,
+            user_id: userId, platform: 'instagram', handle: f.handle,
+            display_name: f.name || null,
+            person_id: matchPerson(index, { platform: 'instagram', handle: f.handle, name: f.name || undefined })?.person.id ?? null,
+            observed_at: nowIso,
+          }))
+        if (rows.length) {
+          const { error } = await admin.from('social_following').upsert(rows, { onConflict: 'id' })
+          if (!error) followingSaved = rows.length
+        }
+
+        // Rellenar el nombre de lo que ya está en la bandeja sin él.
+        const nameByHandle = new Map(rows.filter((r) => r.display_name).map((r) => [r.handle, r.display_name as string]))
+        if (nameByHandle.size > 0) {
+          const { data: sinNombre } = await admin
+            .from('unmatched_social_activity')
+            .select('id, handle')
+            .eq('user_id', userId).eq('platform', 'instagram').is('name', null).limit(2000)
+          for (const u of ((sinNombre ?? []) as Array<{ id: string; handle: string | null }>)) {
+            const h = u.handle ? canonHandle(u.handle) : null
+            const nombre = h ? nameByHandle.get(h) : null
+            if (!nombre) continue
+            const { error } = await admin.from('unmatched_social_activity').update({ name: nombre }).eq('id', u.id)
+            if (!error) namesFilled++
+          }
+        }
+      } catch { /* tabla 0170 sin propagar → el resto del ingest sigue igual */ }
+    }
 
     // AUTO-PROMOCIÓN: señales que se guardaron sin asignar y que AHORA matchean
     // (se les seteó el handle / se cargó la persona) → a contact_activity + borrar
@@ -312,5 +359,5 @@ export async function POST(req: NextRequest) {
     return errorJson(500, 'Fallo procesando la ingesta', e instanceof Error ? e.message : String(e))
   }
 
-  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted, snapped, followerRows })
+  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted, snapped, followerRows, followingSaved, namesFilled })
 }
