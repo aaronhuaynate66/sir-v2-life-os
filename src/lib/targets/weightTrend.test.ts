@@ -106,14 +106,23 @@ describe('renderWeightTrendLine', () => {
     expect(line).toMatch(/septiembre|octubre|agosto/)
     expect(line).toContain('antes del Mundial')
     expect(line).not.toContain('de el')
-    expect(line.toLowerCase()).toContain('decíd')
   })
 
-  it('dice que se CAMBIA de categoría, no que se queda sin ninguna', () => {
+  it('la categoría del goal NO se pone en duda: avisa, no propone cambiarse', () => {
     const t = assessWeightTrend(serie(82.1, -0.7), MAS_DE_80, NOW, 105)
-    expect(renderWeightTrendLine(t, MAS_DE_80, 81.4)).toContain('categoría de al lado')
-    const cruzado = assessWeightTrend(serie(80.1, -1.5), MAS_DE_80, NOW, 100)
-    expect(renderWeightTrendLine(cruzado, MAS_DE_80, 79.5)).toContain('categoría de al lado')
+    const line = renderWeightTrendLine(t, MAS_DE_80, 81.4)!
+    expect(line).toContain('Frena la bajada')
+    expect(line).toContain('recomponiendo')
+    // Nada de sugerirle que compita en otra división.
+    expect(line).not.toContain('categoría de al lado')
+    expect(line.toLowerCase()).not.toContain('decide cuál')
+  })
+
+  it('si ya cruzó habla de RECUPERAR el peso, no de mudarse de categoría', () => {
+    const t = assessWeightTrend(serie(80.1, -1.5), MAS_DE_80, NOW, 100)
+    const line = renderWeightTrendLine(t, MAS_DE_80, 79.5)!
+    expect(line).toContain('no das el peso de tu categoría')
+    expect(line).toContain('recuperarlo')
   })
 
   it('concuerda con otros nombres de evento', () => {
