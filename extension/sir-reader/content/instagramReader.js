@@ -2,7 +2,7 @@
 //
 // Enfoque recomendado por el research: NO hace requests propios ni "ve" stories
 // por su cuenta (eso IG lo detecta y banea). Solo lee el JSON que IG YA le manda
-// a tu navegador mientras VOS navegás normal (tray de stories, story abierta),
+// a tu navegador mientras VOS navegas normal (tray de stories, story abierta),
 // extrae señales de timing (handle + ¿tiene story activa? + texto visible) y las
 // manda al bridge (socialBridge.js) por window.postMessage → /api/social/ingest.
 //

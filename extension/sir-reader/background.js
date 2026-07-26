@@ -2,7 +2,7 @@
 //
 // Recibe lotes de los content scripts y los postea a TU SIR
 // (POST <sirUrl>/api/reader/ingest, header x-reader-token). El token y la URL
-// viven en chrome.storage.local (los seteás en el popup). El token NUNCA está en
+// viven en chrome.storage.local (los configuras en el popup). El token NUNCA está en
 // la página: solo acá. Mantiene un estado simple (último envío, contador, error)
 // para mostrar en el popup.
 
@@ -158,7 +158,7 @@ async function refreshIgTray() {
   if (!(await igRefreshEnabled())) return;
   try {
     const tabs = await chrome.tabs.query({ url: 'https://www.instagram.com/*' });
-    // Solo una pestaña que NO esté activa (para no interrumpirte si la usás).
+    // Solo una pestaña que NO esté activa (para no interrumpirte si la usas).
     const target = tabs.find((t) => !t.active);
     if (target && target.id != null) {
       // Recargar la home refresca el tray; el interceptor MAIN-world lo capta.
