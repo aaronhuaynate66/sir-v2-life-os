@@ -86,7 +86,7 @@ import type { Person, Goal, Memory } from '@/types'
 import { deVoseo } from '@/lib/text/deVoseo'
 import { labPatterns } from '@/lib/health-exams/patterns'
 import { rowToHealthExam } from '@/lib/health-exams/types'
-import { computeRecomp, explainRecomp } from '@/lib/salud/recomposicion'
+import { computeRecomp, explainRecomp, partitionChange, explainComposition } from '@/lib/salud/recomposicion'
 import { parseWeightCategory } from '@/engines/targets'
 
 const MAX_PEOPLE = 5
@@ -839,6 +839,26 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
           healthBlock += `\n\nRECOMPOSICIÓN vs SU CATEGORÍA (${cat.min} kg+, ${semanas} semanas al evento) — aritmética sobre su propia báscula:\n`
             + explainRecomp(plan, target, grasa).map((l) => `  - ${l}`).join('\n')
             + '\n  Usa esto si pregunta por grasa, músculo, peso o cómo entrenar para el Mundial: el conflicto entre "bajar de peso" (lo que dice su chequeo) y "no bajar de categoría" se resuelve por COMPOSICIÓN, no por dieta agresiva.'
+
+          // ¿Y lo que YA viene pasando es grasa o músculo? Bajar de peso no dice
+          // nada solo: importa qué se está yendo. Se parte con peso + %grasa de
+          // la misma báscula, sobre las lecturas de los últimos 2 meses.
+          const puntos = metricRows
+            .filter((m) => m.type === 'weight' || m.type === 'body_fat_percent')
+            .reduce((acc, m) => {
+              const day = (m.measuredAt ?? '').slice(0, 10)
+              if (!day) return acc
+              const cur = acc.get(day) ?? {}
+              if (m.type === 'weight') cur.weightKg = m.value
+              else cur.bodyFatPercent = m.value
+              acc.set(day, cur)
+              return acc
+            }, new Map<string, { weightKg?: number; bodyFatPercent?: number }>())
+          const serieComp = [...puntos.entries()]
+            .filter(([, v]) => v.weightKg != null && v.bodyFatPercent != null)
+            .map(([day, v]) => ({ day, weightKg: v.weightKg as number, bodyFatPercent: v.bodyFatPercent as number }))
+          const cambio = explainComposition(partitionChange(serieComp, 60, nowDate))
+          if (cambio) healthBlock += `\n  - QUÉ VIENE PASANDO (grasa vs músculo): ${cambio}`
         }
       } catch { /* sin composición → sin bloque */ }
     } catch { /* fail-soft: sin salud → el prompt ya sabe no negar la capacidad */ }

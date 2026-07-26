@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { computeRecomp, explainRecomp, recompBriefLine, REALISTIC_MUSCLE_GAIN_PER_MONTH } from './recomposicion'
+import {
+  computeRecomp, explainRecomp, recompBriefLine, REALISTIC_MUSCLE_GAIN_PER_MONTH,
+  partitionChange, explainComposition, type CompositionPoint,
+} from './recomposicion'
 
 // El caso real de Aaron al 25-jul-2026 (báscula) contra su categoría 80+.
 const AARON = { weightKg: 81.4, bodyFatPercent: 25.2, leanMassKg: 60.9, bmrKcal: 1739 }
@@ -83,6 +86,72 @@ describe('explainRecomp', () => {
   it('da proteína y calorías concretas', () => {
     expect(lines.join(' ')).toContain('122 g de proteína')
     expect(lines.join(' ')).toContain('2956 kcal')
+  })
+})
+
+describe('partitionChange — ¿grasa o músculo?', () => {
+  const NOW = new Date('2026-07-25T12:00:00Z')
+  const p = (day: string, weightKg: number, bodyFatPercent: number): CompositionPoint => ({ day, weightKg, bodyFatPercent })
+
+  it('el caso REAL de Aaron: baja 0.8 kg y casi la mitad es magro', () => {
+    // Primeras y últimas lecturas reales del período (18-may → 25-jul).
+    const c = partitionChange([p('2026-05-18', 82.2, 25.5), p('2026-07-25', 81.4, 25.2)], 90, NOW)!
+    expect(c.deltaWeightKg).toBeCloseTo(-0.8, 1)
+    expect(c.deltaLeanKg).toBeLessThan(0)
+    expect(c.verdict).toBe('perdiendo_musculo')
+    expect(c.fatShare).toBeLessThan(0.7) // buena parte NO fue grasa
+  })
+
+  it('recomposición de libro: mismo peso, menos grasa, más músculo', () => {
+    const c = partitionChange([p('2026-06-01', 81, 26), p('2026-07-25', 81, 23)], 90, NOW)!
+    expect(c.verdict).toBe('recomponiendo')
+    expect(c.deltaLeanKg).toBeGreaterThan(0)
+    expect(c.deltaFatKg).toBeLessThan(0)
+  })
+
+  it('subir peso ganando magro no es lo mismo que engordar', () => {
+    expect(partitionChange([p('2026-06-01', 80, 25), p('2026-07-25', 82, 24)], 90, NOW)!.verdict).toBe('recomponiendo')
+    // Sube 2.5 kg con el magro clavado en 60.8 → todo fue grasa.
+    expect(partitionChange([p('2026-06-01', 80, 24), p('2026-07-25', 82.5, 26.3)], 90, NOW)!.verdict).toBe('ganando_grasa')
+  })
+
+  it('perder magro manda sobre todo lo demás, aunque además engorde', () => {
+    // Sube peso, sube grasa Y baja el magro: lo grave es lo último.
+    const c = partitionChange([p('2026-06-01', 80, 24), p('2026-07-25', 82.5, 27)], 90, NOW)!
+    expect(c.deltaFatKg).toBeGreaterThan(0)
+    expect(c.deltaLeanKg).toBeLessThan(0)
+    expect(c.verdict).toBe('perdiendo_musculo')
+  })
+
+  it('no confunde el ruido de la bioimpedancia con una señal', () => {
+    expect(partitionChange([p('2026-07-01', 81.4, 25.2), p('2026-07-25', 81.5, 25.1)], 90, NOW)!.verdict).toBe('estable')
+  })
+
+  it('respeta la ventana y necesita dos lecturas', () => {
+    expect(partitionChange([p('2024-01-01', 90, 30), p('2024-02-01', 85, 25)], 60, NOW)).toBeNull()
+    expect(partitionChange([p('2026-07-25', 81.4, 25.2)], 90, NOW)).toBeNull()
+  })
+})
+
+describe('explainComposition', () => {
+  const NOW = new Date('2026-07-25T12:00:00Z')
+  const p = (day: string, w: number, f: number): CompositionPoint => ({ day, weightKg: w, bodyFatPercent: f })
+
+  it('cuando pierde músculo lo dice y da la salida', () => {
+    const line = explainComposition(partitionChange([p('2026-05-18', 82.2, 25.5), p('2026-07-25', 81.4, 25.2)], 90, NOW))!
+    expect(line).toContain('Estás perdiendo músculo')
+    expect(line).toContain('proteína')
+    expect(line).toContain('fuerza pesada')
+  })
+
+  it('cuando recompone, lo reconoce', () => {
+    const line = explainComposition(partitionChange([p('2026-06-01', 81, 26), p('2026-07-25', 81, 23)], 90, NOW))!
+    expect(line).toContain('recomponiendo')
+  })
+
+  it('si no se movió nada, no dice nada', () => {
+    expect(explainComposition(partitionChange([p('2026-07-01', 81.4, 25.2), p('2026-07-25', 81.5, 25.1)], 90, NOW))).toBeNull()
+    expect(explainComposition(null)).toBeNull()
   })
 })
 

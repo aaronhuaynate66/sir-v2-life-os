@@ -138,6 +138,100 @@ export function explainRecomp(plan: RecompPlan, target: RecompTarget, currentFat
   return out
 }
 
+// ─── ¿Qué estás perdiendo (o ganando)? ──────────────────────────────────────
+//
+// Bajar de peso no dice nada por sí solo: importa SI ES GRASA O MÚSCULO. Con
+// peso + %grasa de la misma báscula se separan las dos cosas. En el caso de
+// Aaron, de los 800 g que bajó en 68 días, 350 g fueron masa magra (44%) — para
+// alguien que necesita sostener categoría y ganar músculo, eso va al revés.
+
+/** Lectura mínima para partir el cambio: día, peso y % de grasa. */
+export interface CompositionPoint {
+  day: string
+  weightKg: number
+  bodyFatPercent: number
+}
+
+export type CompositionVerdict =
+  | 'recomponiendo'      // grasa abajo, magro arriba (o estable): lo ideal
+  | 'perdiendo_musculo'  // el peso baja y buena parte es magro
+  | 'ganando_magro'      // magro arriba
+  | 'ganando_grasa'      // peso arriba y casi todo grasa
+  | 'estable'            // nada se movió más que el ruido de la báscula
+
+export interface CompositionChange {
+  fromDay: string
+  toDay: string
+  days: number
+  deltaWeightKg: number
+  deltaFatKg: number
+  deltaLeanKg: number
+  /** Proporción del cambio total que fue grasa (0..1). null si no hubo cambio. */
+  fatShare: number | null
+  verdict: CompositionVerdict
+}
+
+/** Bajo esto es ruido de bioimpedancia, no una señal (±0.3 kg). */
+const NOISE_KG = 0.3
+
+/**
+ * Parte el cambio de peso en grasa vs magro sobre la ventana pedida. PURA.
+ * null si no hay al menos dos lecturas con ambos valores.
+ */
+export function partitionChange(points: CompositionPoint[], windowDays = 60, now?: Date): CompositionChange | null {
+  const cutoff = (now ? now.getTime() : Date.now()) - windowDays * 86_400_000
+  const pts = points
+    .filter((p) => p && Number.isFinite(p.weightKg) && Number.isFinite(p.bodyFatPercent))
+    .filter((p) => Date.parse(`${p.day}T12:00:00Z`) >= cutoff)
+    .sort((a, b) => a.day.localeCompare(b.day))
+  if (pts.length < 2) return null
+
+  const calc = (p: CompositionPoint) => {
+    const fat = p.weightKg * (p.bodyFatPercent / 100)
+    return { fat, lean: p.weightKg - fat }
+  }
+  const a = pts[0], b = pts[pts.length - 1]
+  const ca = calc(a), cb = calc(b)
+  const deltaWeightKg = r1(b.weightKg - a.weightKg)
+  const deltaFatKg = r1(cb.fat - ca.fat)
+  const deltaLeanKg = r1(cb.lean - ca.lean)
+  const magnitud = Math.abs(deltaFatKg) + Math.abs(deltaLeanKg)
+  const fatShare = magnitud > 0 ? Math.round((Math.abs(deltaFatKg) / magnitud) * 100) / 100 : null
+
+  let verdict: CompositionVerdict = 'estable'
+  if (Math.abs(deltaFatKg) < NOISE_KG && Math.abs(deltaLeanKg) < NOISE_KG) verdict = 'estable'
+  else if (deltaLeanKg <= -NOISE_KG) verdict = 'perdiendo_musculo'
+  else if (deltaLeanKg >= NOISE_KG) verdict = deltaFatKg <= 0 ? 'recomponiendo' : 'ganando_magro'
+  else verdict = deltaFatKg <= -NOISE_KG ? 'recomponiendo' : 'ganando_grasa'
+
+  return {
+    fromDay: a.day, toDay: b.day,
+    days: Math.round((Date.parse(`${b.day}T12:00:00Z`) - Date.parse(`${a.day}T12:00:00Z`)) / 86_400_000),
+    deltaWeightKg, deltaFatKg, deltaLeanKg, fatShare, verdict,
+  }
+}
+
+/** Lo que ese cambio significa, en una línea. PURA. null si no hay nada que decir. */
+export function explainComposition(c: CompositionChange | null): string | null {
+  if (!c || c.verdict === 'estable') return null
+  const signo = (n: number) => `${n > 0 ? '+' : ''}${n} kg`
+  const base = `En ${c.days} días: peso ${signo(c.deltaWeightKg)}, grasa ${signo(c.deltaFatKg)}, músculo ${signo(c.deltaLeanKg)}.`
+  switch (c.verdict) {
+    case 'perdiendo_musculo': {
+      const pct = c.fatShare !== null ? ` — el ${Math.round((1 - c.fatShare) * 100)}% de lo que bajaste fue magro` : ''
+      return `${base}${pct}. Estás perdiendo músculo, no solo grasa: sube la proteína y mete fuerza pesada antes de recortar más comida.`
+    }
+    case 'recomponiendo':
+      return `${base} Vas recomponiendo — grasa abajo y músculo firme. Es exactamente lo que buscas: sostenlo.`
+    case 'ganando_magro':
+      return `${base} Ganaste magro; parte del peso subió por eso, no todo es grasa.`
+    case 'ganando_grasa':
+      return `${base} La subida es casi toda grasa: revisa el superávit.`
+    default:
+      return base
+  }
+}
+
 /** Una línea para el brief. PURA. */
 export function recompBriefLine(plan: RecompPlan, target: RecompTarget): string {
   if (plan.muscleGapKg <= 0) {
