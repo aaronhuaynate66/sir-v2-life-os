@@ -65,6 +65,25 @@ function scorePerson(hSquash: string, nameSquash: string, nameTokens: string[], 
     if (shared >= 2) return { score: 2, confidence: 'media' }
   }
 
+  // 5) El HANDLE lleva varios tokens del nombre, pegados o con separadores
+  //    ("dayana.ruiz23" → Dayana Ruiz Pérez). Cubre el hueco medido: cuando IG
+  //    muestra SOLO el primer nombre, las reglas 1-4 no alcanzan (2/80) porque
+  //    un token suelto no basta para arriesgar — pero el handle suele traer el
+  //    apellido. Tokens de ≥4 letras para no cazar "ana"/"luis" dentro de
+  //    cualquier palabra, y ≥2 distintos para que no sea casualidad.
+  const fuertes = pTokens.filter((t) => t.length >= 4)
+  if (hSquash.length >= 8 && fuertes.length >= 2) {
+    const enHandle = fuertes.filter((t) => hSquash.includes(t)).length
+    if (enHandle >= 2) return { score: 3, confidence: 'media' }
+  }
+
+  // 6) Nombre capturado de UN solo token que es el primer nombre de la persona,
+  //    y el handle trae además un apellido suyo ("Dayana" + @dayi.ruiz).
+  if (nameTokens.length === 1 && nameTokens[0].length >= 4 && pTokens[0] === nameTokens[0]) {
+    const apellidos = pTokens.slice(1).filter((t) => t.length >= 4)
+    if (hSquash && apellidos.some((t) => hSquash.includes(t))) return { score: 3, confidence: 'media' }
+  }
+
   return { score: 0, confidence: 'media' }
 }
 
