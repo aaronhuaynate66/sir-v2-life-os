@@ -14,7 +14,14 @@
 
   function key(it) {
     const mutual = Array.isArray(it.followedBy) ? it.followedBy.map((f) => f && (f.handle || f.name)).filter(Boolean).join(',').slice(0, 160) : '';
-    return `${it.platform}|${it.handle || it.linkedinUrl || ''}|${it.kind || ''}|${(it.text || it.headline || it.avatarUrl || mutual || '').slice(0, 160)}`;
+    // Firma del perfil (#994): sin esto, un item de PERFIL y uno de HISTORIA del
+    // mismo handle colapsan a la misma clave (ambos sin text/avatar) y el segundo
+    // se descarta — se perdería justo el que trae nombre y contadores. Además
+    // deja pasar la re-captura cuando los contadores cambian.
+    const prof = it.profile
+      ? `p:${it.profile.followersCount || ''}/${it.profile.followingCount || ''}/${it.profile.postsCount || ''}/${it.profile.fullName || ''}`.slice(0, 160)
+      : '';
+    return `${it.platform}|${it.handle || it.linkedinUrl || ''}|${it.kind || ''}|${(it.text || it.headline || it.avatarUrl || mutual || prof || '').slice(0, 160)}`;
   }
 
   function flush() {

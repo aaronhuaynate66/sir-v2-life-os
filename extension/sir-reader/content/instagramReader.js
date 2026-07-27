@@ -71,8 +71,109 @@
     for (const k in node) { const v = node[k]; if (v && typeof v === 'object') scan(v, depth + 1, acc); }
   }
 
+  // ── Perfil: seguidores, publicaciones, bio, nombre (issue #994) ───────────
+  //
+  // Aaron preguntó por qué, si el reader ya saca el user de las historias, no
+  // saca de una vez los seguidores y las publicaciones. La respuesta es que sí
+  // puede y sin pedirle NADA nuevo a Instagram: cuando él entra a un perfil, IG
+  // ya le manda todo eso en la respuesta que carga la página. Lo que pasaba es
+  // que `handle()` filtraba con `looksTray` y tiraba el payload entero.
+  //
+  // Esto sigue siendo PASIVO: no abrimos perfiles ni pedimos nada: leemos lo que
+  // ya pasó por el navegador porque Aaron entró ahí él mismo.
+  //
+  // Vale doble porque el nombre real casi solo existe acá: la barra de historias
+  // da el handle pelado (130 cuentas en la bandeja, 0 con nombre al 27-jul).
+
+  function num(v) {
+    if (typeof v === 'number' && isFinite(v) && v >= 0) return v;
+    if (v && typeof v === 'object' && typeof v.count === 'number') return v.count;
+    if (typeof v === 'string' && v.trim()) return v.trim(); // el server expande "1.2k"
+    return undefined;
+  }
+
+  function firstDefined() {
+    for (let i = 0; i < arguments.length; i++) {
+      if (arguments[i] !== undefined && arguments[i] !== null) return arguments[i];
+    }
+    return undefined;
+  }
+
+  // Los shapes de IG conviven: REST viejo (edge_followed_by.count),
+  // REST nuevo (follower_count) y GraphQL. Aceptamos cualquiera.
+  function profileFromUserNode(u) {
+    if (!u || typeof u !== 'object') return null;
+    const username = typeof u.username === 'string' ? u.username.trim() : '';
+    if (!username) return null;
+
+    const followers = firstDefined(num(u.edge_followed_by), num(u.follower_count));
+    const following = firstDefined(num(u.edge_follow), num(u.following_count));
+    const posts = firstDefined(num(u.edge_owner_to_timeline_media), num(u.media_count));
+
+    // Sin ningún contador esto no es un nodo de perfil (es el user de una story).
+    if (followers === undefined && following === undefined && posts === undefined) return null;
+
+    const profile = { handle: username };
+    if (typeof u.full_name === 'string' && u.full_name.trim()) profile.fullName = u.full_name.trim();
+    if (typeof u.biography === 'string' && u.biography.trim()) profile.biography = u.biography.trim();
+    if (typeof u.external_url === 'string' && u.external_url.trim()) profile.externalLink = u.external_url.trim();
+    const cat = firstDefined(u.category_name, u.business_category_name, u.category);
+    if (typeof cat === 'string' && cat.trim()) profile.category = cat.trim();
+    if (followers !== undefined) profile.followersCount = followers;
+    if (following !== undefined) profile.followingCount = following;
+    if (posts !== undefined) profile.postsCount = posts;
+    if (typeof u.is_verified === 'boolean') profile.isVerified = u.is_verified;
+    const biz = firstDefined(u.is_business_account, u.is_business, u.is_professional_account);
+    if (typeof biz === 'boolean') profile.isBusiness = biz;
+    return profile;
+  }
+
+  function findProfile(node, depth) {
+    if (!node || depth > MAX_DEPTH || typeof node !== 'object') return null;
+    if (Array.isArray(node)) {
+      for (const x of node) { const hit = findProfile(x, depth + 1); if (hit) return hit; }
+      return null;
+    }
+    const direct = profileFromUserNode(node.user) || profileFromUserNode(node);
+    if (direct) return direct;
+    for (const k in node) {
+      const v = node[k];
+      if (v && typeof v === 'object') { const hit = findProfile(v, depth + 1); if (hit) return hit; }
+    }
+    return null;
+  }
+
+  const profileSeen = new Map(); // handle -> firma, para no re-mandar lo mismo
+
+  function handleProfile(url, json) {
+    // Gate barato antes del scan: perfiles llegan por endpoints reconocibles.
+    const looksProfile =
+      /web_profile_info|users\/\d+\/info|ProfilePage|profile_page|PolarisProfile/i.test(url) ||
+      (json && typeof json === 'object' && json.data && json.data.user && typeof json.data.user === 'object');
+    if (!looksProfile) return false;
+
+    let p = null;
+    try { p = findProfile(json, 0); } catch (_) {}
+    if (!p) return false;
+
+    // Dedup: solo re-emitimos si algo cambió (los contadores se mueven).
+    const firma = [p.followersCount, p.followingCount, p.postsCount, p.fullName].join('|');
+    if (profileSeen.get(p.handle) === firma) return true;
+    profileSeen.set(p.handle, firma);
+
+    // Va como item normal: el server ya sabe matchear por handle/nombre. El
+    // `name` de primer nivel es lo que rellena la bandeja "¿quién es quién?".
+    const item = { platform: 'instagram', handle: p.handle, profile: p };
+    if (p.fullName) item.name = p.fullName;
+    emit([item]);
+    return true;
+  }
+
   function handle(url, json) {
     if (!json || typeof json !== 'object') return;
+    // El perfil se mira PRIMERO y no corta el flujo: una misma respuesta puede
+    // traer perfil y tray a la vez.
+    try { handleProfile(url, json); } catch (_) {}
     // ¿Trae el tray de historias? IG web migró de REST a GraphQL, así que NO
     // dependemos del endpoint exacto (cambia seguido): aceptamos por URL conocida,
     // por keys de nivel superior, o —para GraphQL— por SNIFF ACOTADO del contenido

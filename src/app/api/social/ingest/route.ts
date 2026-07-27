@@ -20,6 +20,7 @@ import { reportApiError } from '@/lib/observability/reportApiError'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, linkedinSlug, canonHandle, identityKey, type PersonLite } from '@/lib/social-reader/match'
 import { snapshotUnmatchedAvatar } from '@/lib/social-reader/avatarSnapshot'
+import { normalizeReaderProfile, type RawReaderProfile, type ReaderProfile } from '@/lib/social-reader/igProfile'
 
 /** Id determinístico de una señal no-asignada → una fila por (identidad, kind).
  *  Re-ver la misma cuenta actualiza la fila (upsert), no la duplica. */
@@ -84,6 +85,53 @@ interface SocialItem {
    *  permite ver INTERESES EN COMÚN en el grafo. Opcional: el reader lo manda
    *  cuando visita el perfil de una página. */
   followedBy?: Array<{ handle?: string; name?: string }>
+  /** Datos del PERFIL (nombre, bio, seguidores, publicaciones, categoría) que el
+   *  reader levanta cuando Aaron ENTRA a un perfil de Instagram. Issue #994.
+   *
+   *  No implica request extra: IG ya manda todo eso en la respuesta que carga la
+   *  página; el interceptor antes la descartaba por no ser la barra de historias.
+   *  Se normaliza con `normalizeReaderProfile` porque llega crudo del navegador
+   *  (contadores como "1.2k", campos ausentes, shapes que IG cambia sin avisar). */
+  profile?: RawReaderProfile
+}
+
+/**
+ * Guarda/actualiza el perfil de una cuenta en `social_profiles` (mig 0171).
+ *
+ * Vive en tabla propia y no como columnas de `unmatched_social_activity` porque
+ * esa fila se BORRA al resolver la cuenta a un contacto; el perfil tiene que
+ * sobrevivir a eso (sirve igual en la ficha de la persona y para decidir si una
+ * cuenta es persona u organización). Idempotente por (usuario, plataforma,
+ * handle). Fail-soft: devuelve si escribió o no, sin tumbar la ingesta.
+ */
+async function saveReaderProfile(
+  admin: SupabaseClient,
+  userId: string,
+  platform: string,
+  raw: RawReaderProfile,
+  personId: string | null,
+  nowIso: string,
+): Promise<ReaderProfile | null> {
+  const p = normalizeReaderProfile(raw)
+  if (!p) return null
+  try {
+    const id = createHash('sha1').update(`${userId}|${platform}|${p.handle}`).digest('hex')
+    const { error } = await admin.from('social_profiles').upsert({
+      id, user_id: userId, platform, handle: p.handle,
+      full_name: p.displayName, biography: p.bio, category: p.category,
+      external_url: p.externalLink,
+      followers_count: p.followersCount, following_count: p.followingCount,
+      posts_count: p.postsCount,
+      is_verified: p.isVerified, is_business: p.isBusiness,
+      person_id: personId,
+      captured_at: nowIso,
+    }, { onConflict: 'id' })
+    // PostgREST no lanza: el error viene en `.error` (trampa de #947).
+    if (error) return null
+    return p
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -163,7 +211,7 @@ export async function POST(req: NextRequest) {
   let inserted = 0, matched = 0, unmatched = 0, skipped = 0, backfilled = 0, promoted = 0
   let snapped = 0
   let followerRows = 0
-  let followingSaved = 0, namesFilled = 0
+  let followingSaved = 0, namesFilled = 0, profilesSaved = 0
 
   try {
     // Personas una sola vez → índice para matcheo por handle/slug/nombre.
@@ -275,7 +323,20 @@ export async function POST(req: NextRequest) {
       // bandeja. La señal de su historia no aporta timing relacional.
       if (platform === 'instagram' && canonSelf && orgByHandle.has(canonSelf)) { skipped++; continue }
 
-      const m = matchPerson(index, { platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: it.name })
+      // DATOS DE PERFIL (#994). Se normalizan ANTES de matchear porque el
+      // `full_name` que trae el perfil suele ser el ÚNICO nombre disponible: la
+      // barra de historias solo da el handle (medido 27-jul: 130 cuentas en la
+      // bandeja, 0 con nombre). Con el nombre, `matchPerson` puede resolver por
+      // nombre en vez de fallar contra un handle no parlante.
+      const perfil = it.profile ? normalizeReaderProfile(it.profile) : null
+      const nombreEfectivo = it.name ?? perfil?.displayName ?? undefined
+
+      const m = matchPerson(index, { platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: nombreEfectivo })
+
+      if (it.profile) {
+        const guardado = await saveReaderProfile(admin, userId, platform, it.profile, m?.person.id ?? null, nowIso)
+        if (guardado) profilesSaved++
+      }
       if (!m) {
         unmatched++
         // NO se pierde: si la señal tiene identidad (handle/nombre) y deriva algo,
@@ -283,12 +344,13 @@ export async function POST(req: NextRequest) {
         // luego (asignar setea el handle → matchea y se auto-promueve). Fail-soft.
         try {
           const sig = deriveSocialSignal({ platform, text: it.text ?? null, hasActiveStory: it.hasActiveStory === true, headline: it.headline ?? null, priorHeadline: null })
-          const key = identityKey({ platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: it.name })
+          const key = identityKey({ platform, handle: it.handle, linkedinUrl: it.linkedinUrl, name: nombreEfectivo })
           if (sig && key) {
             const uid = unmatchedId(userId, key, sig.kind)
             await admin.from('unmatched_social_activity').upsert({
               id: uid, user_id: userId, platform,
-              handle: it.handle ? canonHandle(it.handle) : null, name: it.name ?? null,
+              // El nombre del perfil es la munición que le faltaba a la bandeja.
+              handle: it.handle ? canonHandle(it.handle) : null, name: nombreEfectivo ?? null,
               avatar_url: it.avatarUrl ?? null,
               kind: sig.kind, detail: sig.detail, observed_at: resolveObservedAt(it.activityAt, nowIso),
             }, { onConflict: 'id' })
@@ -359,5 +421,5 @@ export async function POST(req: NextRequest) {
     return errorJson(500, 'Fallo procesando la ingesta', e instanceof Error ? e.message : String(e))
   }
 
-  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted, snapped, followerRows, followingSaved, namesFilled })
+  return NextResponse.json({ inserted, matched, unmatched, skipped, backfilled, promoted, snapped, followerRows, followingSaved, namesFilled, profilesSaved })
 }
