@@ -5,22 +5,22 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 21/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 27/07/2026 (reconciliación automática — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
 
 ---
 
-## 📋 PENDIENTES ACTUALES — reconciliado 2026-07-24 (LEER PRIMERO)
+## 📋 PENDIENTES ACTUALES — reconciliado 2026-07-24, correcciones 2026-07-27 (LEER PRIMERO)
 
 Vista usable (lo de abajo es histórico pesado). Reconciliado tras la sesión de ~16 PRs (#927–#942).
 Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/artifact/045fea0b-7b02-4a33-a013-7d394d9d85f6
 
 **🟢 Listo para construir (autónomo, sin bloqueo):**
-- **[alta] Fuga de voseo en el chat** — el harness de eval cazó "querés" en una respuesta real (contra [[idioma-espanol-peru]]). Reforzar la regla anti-voseo del prompt + re-medir. Bug real.
-- **[media] Copy del recordatorio "¡Listo!"** — al agendar, la respuesta a veces sobre-afirma ("¡Listo! Te lo propongo:") o saluda genérico en vez de acompañar la propuesta.
-- **[baja] Verborrea a "consejo corto"** — el harness marcó respuestas largas a pedidos breves.
+- **[alta] Fuga de voseo en el chat** — el harness de eval cazó "querés" en una respuesta real (contra [[idioma-espanol-peru]]). Reforzar la regla anti-voseo del prompt + re-medir. Bug real. **Sigue genuinamente abierto (verificado 2026-07-27):** es whack-a-mole activo, no una sola pasada — `deVoseo` sigue sumando formas nuevas cazadas en producción hasta el 26/07 (PRs #948, #957, #968, #990: presente -és/-ís, imperativos con enclítico, barrido genérico por regla, y el leak específico del push de Telegram). No marcar hecho; el scrub es determinístico pero el modelo sigue resbalando con formas nuevas cada tanto.
+- ~~**[media] Copy del recordatorio "¡Listo!"**~~ ✅ **HECHO (verificado 2026-07-27):** `src/lib/sir/askSir.ts` líneas 1182-1190 — cuando SIR propone una acción, si el texto abre con afirmación de "hecho" (el "¡Listo! Te lo propongo:" que cazó el harness) o queda muy corto, se reemplaza por "Te propongo esto — revísalo y confírmalo. 👇". Entregado en PR #944 (`f01c19d`, 23/07/2026, caso action-honesty 30→95), ya en prod antes de este pase y sin cambios desde entonces. Este ítem había quedado desactualizado en el pase 07-24.
+- **[baja] Verborrea a "consejo corto"** — el harness marcó respuestas largas a pedidos breves. **Sigue pendiente (verificado 2026-07-27):** PR #944 agregó una línea al prompt para pedidos cortos pero el propio commit lo describe como "efecto marginal" — no da para marcarlo hecho.
 - **[alta] Ola 2 · slice 4 — loop de aprendizaje** — few-shot dinámico desde correcciones (👎) + subir prioridad de `preference` fresca sobre patrones auto-derivados en `sortLearnings` (hoy van 3ras). El "que SIR aprenda" de verdad.
 
 **🟡 Necesita input/decisión de Aaron:**
@@ -36,9 +36,30 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
-**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (solo si el quick-win no basta); Ola 3 — memoria que consolida (hybrid search vector+BM25, re-ranking, Mem0-style extract→merge→olvido), después de rodar la Ola 2.
+**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (solo si el quick-win no basta); Ola 3 — memoria que consolida (~~hybrid search vector+BM25~~ ✅ **HECHO, verificado 2026-07-27:** RPC `match_memories_hybrid` fusiona vector+FTS con RRF, mig 0164, PR #946 `c34ed7e` 24/07/2026, cableado en `askSir.ts` con fallback a `match_memories`; re-ranking, Mem0-style extract→merge→olvido) — **re-ranking y el ciclo extract→merge→olvido siguen sin empezar**, eso sí sigue pendiente de verdad.
 
 **NO incluye lo ya hecho+verificado esta sesión:** bug avatares `per_`, caras en la lista, match por cara capa 1-2, auto-avatar prioriza caras, IAE afecto surfaceado, recordatorios por chat revividos, push Telegram/nudge, harness de eval, recall ciego en Telegram, señal 👍👎 atribuible, bug "distante" (33 alertas), ¿quién es quién? con botones.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-27
+
+Pase de mantenimiento contra el código real (agente automático). Mucho volumen de commits desde el pase 07-24 (harness de eval slice 3, Ola 3 recall híbrido, reader IG catálogo de seguidos, brief en hilo, entre otros — #940 a #992). Drift encontrado en 3 ítems:
+
+- ✅ **Copy del recordatorio "¡Listo!"** (sección PENDIENTES ACTUALES arriba) — ya HECHO, corregido in situ arriba. `askSir.ts` líneas 1182-1190 (PR #944, `f01c19d`, 23/07/2026). Ya estaba en prod desde ANTES del pase 07-24 que lo siguió listando como pendiente — ese pase no lo cruzó contra el código.
+- ✅ **Inferencia LLM de dominio para objetivos de texto libre** — ya HECHO, contra lo que decían los pases 07-17/07-18/07-20/07-21 (más abajo, corregidos in situ con nota). `src/lib/objectives/smartPrompt.ts`: el prompt (línea 70) instruye explícitamente inferir `category` del texto ("infiere el dominio del objetivo desde el texto... Si no es claro, usa 'personal'"), `ProposedSmart.category` es ahora un campo de SALIDA (línea 59: "Dominio inferido del texto"), `parseSmart` lo parsea (línea 136-138) y `SmartWizard.tsx` (línea 168) lo lee como `inferredCategory` y lo usa para pre-llenar el wizard cuando el usuario dictó el objetivo en párrafo libre. Entregado en PR #940 (`9b8cccc`, 23/07/2026, el mismo PR del harness de eval), también ya en prod antes del pase 07-24.
+- 🟡 **Ola 3 — hybrid search** (sección "Fondo / roadmap grande", corregido in situ arriba) — la primera pieza (vector+FTS con RRF) ya está HECHA (PR #946, `c34ed7e`, 24/07/2026: mig `0164`, RPC `match_memories_hybrid`, cableado en `askSir.ts` con fallback). Re-ranking y el ciclo Mem0-style extract→merge→olvido siguen genuinamente sin empezar (`git log --grep` sin resultados para "rerank"/"olvido"/"consolida").
+
+**Verificado y quedó IGUAL (sin drift), re-chequeado este pase:**
+- **Fuga de voseo en el chat** — sigue genuinamente abierto (nota agregada in situ arriba); es un problema generativo recurrente, no un bug cerrado con un solo fix.
+- **Verborrea a "consejo corto"** — sigue pendiente (nota agregada in situ arriba); el propio PR #944 califica su fix de "efecto marginal".
+- **Ola 2 · slice 4 — loop de aprendizaje** — sigue sin empezar: `sortLearnings` (`src/lib/learnings/recall.ts` línea 48) sigue rankeando `preference` en 3er lugar (`kindRank: { principle: 0, pattern: 1, preference: 2, fact: 3 }`); sin rastro de few-shot dinámico desde `chat_feedback` en el prompt de `askSir.ts`.
+- **Match por cara capa 2** — sigue bloqueado por falta de fotos-cara reales; los PRs recientes del reader IG (#986, #989, #992) agregan catálogo de "Siguiendo" (handle↔nombre), no fotos de perfil.
+- **Auto-import desde calendario (Clay #6)** — sigue sin rastro en código.
+- **Gantt fix del MASTER_PLAN** — sigue no verificable (sin componente "Gantt" en `src/`).
+- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte".
+
+**No re-verificado este pase** (fuera de alcance): todo lo demás, incluyendo lo ya marcado ✅/🟡 con evidencia en pases anteriores.
 
 ---
 
@@ -49,7 +70,7 @@ Pase de mantenimiento contra el código real (agente automático). Poco drift nu
 - ✅ **Clay #7 — Q&A por persona, sub-punto "multi-turno"** — ya HECHO, contra la nota "pendiente futuro… hoy una pregunta por vez" que quedaba en la sección Clay (más abajo). `src/components/relaciones/PreguntarSobrePersona.tsx` mantiene un `thread` de turnos y lo manda como `history` a `/api/sir/ask` (placeholder "Sigue preguntando…" tras la primera pregunta); el backend `src/lib/sir/askSir.ts` arma `chatHistory` real (líneas ~116-121 y 542-550) que pasa a `chatProvider.ts`, o sea el LLM sí recibe el hilo — no es solo UI. Corregido in situ, dejando como pendiente real solo la validación en vivo (no verificable por grep).
 
 **Verificado y quedó IGUAL (sin drift), re-chequeado este pase:**
-- **Inferencia LLM de dominio para objetivos de texto libre** — sigue igual: `category` en `smartPrompt.ts`/`/api/objectives/smart` sigue siendo un INPUT, no algo inferido del párrafo libre.
+- ~~**Inferencia LLM de dominio para objetivos de texto libre** — sigue igual: `category` en `smartPrompt.ts`/`/api/objectives/smart` sigue siendo un INPUT, no algo inferido del párrafo libre.~~ ✅ **corregido en la reconciliación 2026-07-27** (arriba): era correcto en su momento (07-21); PR #940 (23/07/2026, dos días después de este pase) convirtió `category` en un campo inferido por el LLM, dejando esta nota desactualizada.
 - **Auto-import desde calendario (Clay #6)** — sigue sin rastro en código (`grep` de "auto.import"/"autoImport" sin resultados).
 - **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte", sin alcance concreto.
 - **Gantt fix del MASTER_PLAN** — sigue no verificable en este repo (sin componente "Gantt" ni referencias a `MASTER_PLAN` en `src/`).
@@ -70,7 +91,7 @@ Pase de mantenimiento contra el código real (agente automático). Esta vez el d
 - 🟡 **Clay #8 (cross-referencing por ubicación) y #9 (Familia persona↔persona)** — los párrafos de esos ítems en la sección "BACKLOG inspirado en Clay" (más abajo) seguían redactados como "no implementar aún" / "DIFERIDO... hoy NO existe modelo persona↔persona", pero **ambos ya están hechos** y la reconciliación 07-14 (arriba) ya lo decía. Confirmado de nuevo en código: `lib/agenda/build.ts` (`buildProximity`, comentario explícito "Cross-referencing por UBICACIÓN (Clay #8)") + `ProximoPanel.tsx`; y `person_links` (migraciones 0035/0052/0058/0107/0128) + `FamiliaPanel.tsx` + `buildGraphData` con soporte de aristas `personLinks` (`src/lib/graph/builder.ts` + tests). Se dejó nota en los párrafos para no reabrirlos por error — el texto original queda como registro histórico del planteo.
 
 **Verificado y quedó IGUAL (sin drift):**
-- **Inferencia LLM de dominio para objetivos de texto libre** — sigue en el mismo estado incierto ("revisar"). `src/lib/objectives/smartPrompt.ts`: el schema de salida del helper SMART (`ProposedSmart`) NO incluye `category`/dominio — `category` es un INPUT que ya trae el usuario, no algo que el modelo infiera del párrafo dictado. No se encontró código que infiera el dominio desde texto libre. Se mantiene la nota "revisar" sin marcarlo hecho.
+- ~~**Inferencia LLM de dominio para objetivos de texto libre** — sigue en el mismo estado incierto ("revisar"). `src/lib/objectives/smartPrompt.ts`: el schema de salida del helper SMART (`ProposedSmart`) NO incluye `category`/dominio — `category` es un INPUT que ya trae el usuario, no algo que el modelo infiera del párrafo dictado. No se encontró código que infiera el dominio desde texto libre. Se mantiene la nota "revisar" sin marcarlo hecho.~~ ✅ **corregido en la reconciliación 2026-07-27** (arriba): era correcto en su momento (07-20); PR #940 (23/07/2026) agregó `category` como campo de SALIDA inferido por el LLM 3 días después, dejando esta nota desactualizada.
 - **Auto-import desde calendario (Clay #6)** — sigue genuinamente pendiente, sin rastro en código (`grep` de "auto.import"/contexto-pre-reunión sin resultados).
 - **Gantt fix del MASTER_PLAN** — no verificable en este repo: no hay componente "Gantt" ni referencias a `MASTER_PLAN` en `src/`; `MASTER_PLAN.md` es regenerado por un bot externo (sir-bot), fuera del alcance de este grep. Se deja como estaba.
 - **Re-validar Captura WhatsApp con fecha explícita** y **Ajuste prompt Vision user/other (re-validación)** — son tareas de validación manual (subir un screenshot de prueba), no features de código; no verificables por grep. Sin cambios.
@@ -211,7 +232,7 @@ Verificado contra el código en vivo. Varios ítems listados abajo como "grandes
 **Pendiente real (lo que NO está hecho):**
 - ~~**Activar Fase 3b (búsqueda semántica)**~~ ✅ **HECHO (2026-06-08):** `OPENAI_API_KEY` cargada en Vercel (Production), 23 memorias indexadas (`/api/memories/embed`), `/buscar` validado. **Cobertura cerrada** con el botón "Actualizar índice completo" (PR #100): deriva todas las personas + indexa en un click. **Decisión:** NO embeddear `observations` crudas (ruido/duplicación; contradice la vista curada) — la cobertura se logra derivando.
 - **Fase 3d** — memoria que aprende (RAG cross-session).
-- **Etapa 4 follow-ups:** ~~Human OKRs estructurados~~ ✅ **HECHO** (migraciones `0040_objective_steps.sql`/`0041_objective_steps_okr.sql`: modelo KR→tarea de 2 niveles, `ObjectiveSteps.tsx`); ~~delta de relationship score (necesita snapshots históricos)~~ ✅ **HECHO** (`/api/person-score/snapshot` + cron `score-snapshots` + `BondEvolutionPanel.tsx`/`src/lib/people/bondEvolution.ts`); ~~tono de interacción desde `person_logs` en el engine~~ ✅ **HECHO** (`src/engines/alignment/index.ts` y `src/engines/relational-flags/index.ts` ya leen `person_logs`). Verificado 2026-07-17. **Siguen pendientes de verdad:** inferencia LLM de dominio para objetivos de texto libre (hay inferencia SMART vía `SmartAssist.tsx`/`/api/objectives/smart`, pero no confirmé que infiera el DOMINIO desde texto libre — marcar "revisar" antes de darlo por hecho; re-verificado 2026-07-20, `smartPrompt.ts` sigue sin inferir `category`). ~~Narrative Intelligence (sin rastro en el código — no encontrado)~~ ✅ **corregido 2026-07-20:** SÍ existe — carpeta `src/app/api/self/` completa (rumbo/coherencia/arquetipo/retrato/premortem/espejo-*) + `src/lib/self/rumboPrompt.ts` — este pase 07-17 no lo encontró por error (ya lo documentaba `docs/STRATEGIC_ROADMAP.md` como CONSTRUIDO).
+- **Etapa 4 follow-ups:** ~~Human OKRs estructurados~~ ✅ **HECHO** (migraciones `0040_objective_steps.sql`/`0041_objective_steps_okr.sql`: modelo KR→tarea de 2 niveles, `ObjectiveSteps.tsx`); ~~delta de relationship score (necesita snapshots históricos)~~ ✅ **HECHO** (`/api/person-score/snapshot` + cron `score-snapshots` + `BondEvolutionPanel.tsx`/`src/lib/people/bondEvolution.ts`); ~~tono de interacción desde `person_logs` en el engine~~ ✅ **HECHO** (`src/engines/alignment/index.ts` y `src/engines/relational-flags/index.ts` ya leen `person_logs`). Verificado 2026-07-17. ~~**Siguen pendientes de verdad:** inferencia LLM de dominio para objetivos de texto libre (hay inferencia SMART vía `SmartAssist.tsx`/`/api/objectives/smart`, pero no confirmé que infiera el DOMINIO desde texto libre — marcar "revisar" antes de darlo por hecho; re-verificado 2026-07-20, `smartPrompt.ts` sigue sin inferir `category`).~~ ✅ **corregido 2026-07-27:** ya HECHO — PR #940 (23/07/2026) agregó `category` como salida inferida del prompt SMART (ver reconciliación 2026-07-27 arriba). ~~Narrative Intelligence (sin rastro en el código — no encontrado)~~ ✅ **corregido 2026-07-20:** SÍ existe — carpeta `src/app/api/self/` completa (rumbo/coherencia/arquetipo/retrato/premortem/espejo-*) + `src/lib/self/rumboPrompt.ts` — este pase 07-17 no lo encontró por error (ya lo documentaba `docs/STRATEGIC_ROADMAP.md` como CONSTRUIDO).
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): 🟡 **corregido 2026-07-20** — E5 (Life Direction System) YA está "en marcha (artefacto real)" según `docs/STRATEGIC_ROADMAP.md` (línea 32): su núcleo es Narrative Intelligence (`src/app/api/self/*`, "Tu rumbo" en `/yo`). Solo **E6 (AI-Native Human OS)** sigue genuinamente sin iniciar ("⬜ visión norte", sin alcance concreto).
 - **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
 - ~~**Refactor split-brain → Supabase única fuente**~~ ✅ RESUELTO (verificado 07-07; ver deuda arquitectónica más abajo). Único residual menor: last-write-wins por fila.
