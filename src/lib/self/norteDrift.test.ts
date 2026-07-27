@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { computeNorteDrift, relatedActivityISOForAnchor } from './norteDrift'
-import type { Goal } from '@/types'
+import type { Goal, ObjectiveStep } from '@/types'
 
 const NOW = new Date('2026-06-15T12:00:00Z')
 function goal(over: Partial<Goal>): Goal {
@@ -95,5 +95,46 @@ describe('relatedActivityISOForAnchor', () => {
     const rel = relatedActivityISOForAnchor([anchor], people, NOW)
     const drift = computeNorteDrift([anchor], NOW, rel)
     expect(drift.state).not.toBe('estancado')
+  })
+
+  // ── Pasos cerrados = avance real (26-jul-2026) ─────────────────────────────
+  // Los "hitos" de Goal.milestones nunca se completan en este código, así que
+  // sin mirar objective_steps el norte quedaba estancado por construcción.
+  const step = (over: Partial<ObjectiveStep>): ObjectiveStep => ({
+    id: 's1', objectiveId: 'n', kind: 'key_result', title: 'Paso',
+    status: 'pendiente', order: 0, createdAt: '2026-01-01T00:00:00Z', ...over,
+  })
+
+  it('CERRAR un paso del norte cuenta como avance aunque no haya gente ligada', () => {
+    const solo = goal({ id: 'n', isAnchor: true, relatedPersons: [], updatedAt: '2026-04-01T00:00:00Z' })
+    const steps = [step({ status: 'hecho', completedAt: '2026-06-12T00:00:00Z' })]
+    expect(relatedActivityISOForAnchor([solo], [], NOW, steps)).toBe('2026-06-12T00:00:00Z')
+  })
+
+  it('des-estanca el norte: 10 pasos cerrados esta semana ya no es "estancado"', () => {
+    const solo = goal({ id: 'n', isAnchor: true, relatedPersons: [], updatedAt: '2026-03-01T00:00:00Z' })
+    const steps = [step({ status: 'hecho', completedAt: '2026-06-13T00:00:00Z' })]
+    expect(computeNorteDrift([solo], NOW, relatedActivityISOForAnchor([solo], [], NOW, steps)).state)
+      .not.toBe('estancado')
+    // Sin los pasos seguía diciendo "estancado" — este es el bug que cierra.
+    expect(computeNorteDrift([solo], NOW, relatedActivityISOForAnchor([solo], [], NOW)).state)
+      .toBe('estancado')
+  })
+
+  it('gana lo más reciente entre contacto y paso cerrado', () => {
+    const steps = [step({ status: 'hecho', completedAt: '2026-06-01T00:00:00Z' })]
+    // El contacto de p2 (14-jun) es posterior al paso (1-jun).
+    expect(relatedActivityISOForAnchor([anchor], people, NOW, steps)).toBe('2026-06-14T00:00:00Z')
+  })
+
+  it('los pasos PENDIENTES no cuentan como avance', () => {
+    const solo = goal({ id: 'n', isAnchor: true, relatedPersons: [], updatedAt: '2026-04-01T00:00:00Z' })
+    expect(relatedActivityISOForAnchor([solo], [], NOW, [step({})])).toBeNull()
+  })
+
+  it('ignora pasos de OTRO objetivo', () => {
+    const solo = goal({ id: 'n', isAnchor: true, relatedPersons: [], updatedAt: '2026-04-01T00:00:00Z' })
+    const ajeno = [step({ objectiveId: 'otro', status: 'hecho', completedAt: '2026-06-14T00:00:00Z' })]
+    expect(relatedActivityISOForAnchor([solo], [], NOW, ajeno)).toBeNull()
   })
 })

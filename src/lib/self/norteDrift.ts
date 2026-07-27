@@ -9,8 +9,9 @@
 //   - cuántos OTROS objetivos activos se movieron hace poco (≤14d)
 // Umbrales = heurística declarada (tweakable), NO ciencia.
 
-import type { Goal } from '@/types'
+import type { Goal, ObjectiveStep } from '@/types'
 import { resolveAnchorGoal } from '@/lib/year-compass/build'
+import { computeGoalAdvance } from '@/lib/goals/advance'
 
 export type NorteDriftState = 'sin_norte' | 'enfocado' | 'a_medias' | 'disperso' | 'estancado'
 
@@ -81,6 +82,13 @@ export function computeNorteDrift(goals: Goal[], now: Date = new Date(), related
   // "Último avance" = lo MÁS RECIENTE entre: edición del objetivo, un hito COMPLETADO,
   // y actividad ligada que el caller conozca (contacto con gente del objetivo, eventos).
   // Antes solo miraba anchor.updatedAt → "estancado" falso aunque hubiera movimiento.
+  //
+  // OJO (26-jul-2026): `milestones` se conserva por compatibilidad pero NO aporta
+  // nada en la práctica — nadie marca un hito como completado en todo el código
+  // (`Milestone.completedAt` no se setea en ningún sitio fuera de fixtures y no
+  // hay UI para cerrarlo). El avance REAL viaja por `relatedActivityISO`, que los
+  // callers arman con `relatedActivityISOForAnchor` incluyendo los pasos cerrados
+  // de `objective_steps`. Sin eso el norte se veía estancado hicieras lo que hicieras.
   const milestoneDates = (anchor.milestones ?? []).map((m) => m.completedAt)
   const lastAdvanceISO = mostRecentISO([anchor.updatedAt, ...milestoneDates, relatedActivityISO]) ?? anchor.updatedAt
   const daysSinceTouch = daysBetween(now, lastAdvanceISO) ?? 999
@@ -135,25 +143,37 @@ export interface AnchorRelatedPerson {
  * ninguna tiene contacto registrado. Solo mira `lastContact` (dato ya presente
  * en el store de personas del cliente) — NO dispara ningún fetch nuevo.
  *
- * LIMITACIÓN CONOCIDA (mínimo viable): "actividad ligada" hoy = solo el último
- * contacto con personas del ancla. Eventos/recordatorios ligados al objetivo
- * NO se consideran acá (no están indexados por objetivo en el cliente sin un
- * fetch extra); los hitos completados ya los computa computeNorteDrift desde
- * el propio Goal. Ampliar requeriría cablear esas fuentes cuando estén
+ * Si el caller pasa `steps` (el store de `objective_steps`), también cuenta el
+ * ÚLTIMO PASO CERRADO del ancla — que es el avance real y el que faltaba: los
+ * "hitos" de `Goal.milestones` nunca se completan en este código, así que sin
+ * los pasos el norte quedaba estancado por construcción.
+ *
+ * LIMITACIÓN CONOCIDA (mínimo viable): "actividad ligada" hoy = último contacto
+ * con personas del ancla + último paso cerrado. Eventos/recordatorios ligados al
+ * objetivo NO se consideran acá (no están indexados por objetivo en el cliente
+ * sin un fetch extra). Ampliar requeriría cablear esas fuentes cuando estén
  * disponibles sin costo.
  */
 export function relatedActivityISOForAnchor(
   goals: Goal[],
   people: AnchorRelatedPerson[],
   now: Date = new Date(),
+  steps: ObjectiveStep[] = [],
 ): string | null {
   const active = goals.filter((g) => g.status === 'active')
   const anchor = resolveAnchorGoal(active, now)
   if (!anchor) return null
+
+  // Último paso cerrado del ancla (avance REAL). Independiente de que el
+  // objetivo tenga o no personas ligadas.
+  const stepISO = steps.length > 0
+    ? computeGoalAdvance(steps, anchor.id, now.toISOString().slice(0, 10)).lastAdvanceISO
+    : null
+
   const linkedIds = new Set(anchor.relatedPersons ?? [])
-  if (linkedIds.size === 0) return null
-  const contacts = people
-    .filter((p) => linkedIds.has(p.id))
-    .map((p) => p.lastContact)
-  return mostRecentISO(contacts)
+  const contacts = linkedIds.size > 0
+    ? people.filter((p) => linkedIds.has(p.id)).map((p) => p.lastContact)
+    : []
+
+  return mostRecentISO([...contacts, stepISO])
 }

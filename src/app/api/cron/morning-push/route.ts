@@ -26,6 +26,8 @@ import { buildMorningPush, signalTopicKey, type MorningBirthday, type MorningEnt
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
 import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agendaCross'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
+import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
+import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
 import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
 import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDates'
@@ -199,16 +201,46 @@ export async function GET(req: NextRequest) {
       const withNext = goals.find((g) => g.next_action && g.next_action.trim().length > 0)
       const focus = anchor?.title || (withNext ? withNext.next_action : undefined)
 
+      // AVANCE REAL de cada objetivo, desde `objective_steps`.
+      // Antes el nudge usaba `goals.progress` a secas — un escalar que SOLO se
+      // recalcula cuando /objetivos está montada en el navegador, así que en el
+      // cron llegaba congelado en 0 y el brief anunciaba "vas 0%" sobre
+      // objetivos con veinte pasos reales debajo. Mismo patrón que el "distante"
+      // falso de #941: medir con la tabla equivocada.
+      let advances = new Map<string, GoalAdvance>()
+      try {
+        const { data: allStepRows, error: stepsErr } = await admin
+          .from('objective_steps')
+          .select('*')
+          .eq('user_id', uid)
+          .limit(1000)
+        // PostgREST no lanza: el error viene en `.error` (misma trampa que #947).
+        if (stepsErr) throw new Error(stepsErr.message)
+        const steps = ((allStepRows ?? []) as Array<Record<string, unknown>>).map((r) =>
+          objectiveStepAdapter.fromRow(r),
+        )
+        advances = goalAdvanceMap(steps, goals.map((g) => g.id), today)
+      } catch (e) {
+        // Fail-soft: sin pasos el nudge cae al progreso manual, como antes.
+        reportApiError(e, { route: 'cron/morning-push', step: 'goalAdvance', user: uid.slice(0, 8) })
+      }
+
       // NUDGE DE OBJETIVO: norte estancado o meta en riesgo. SIR ya lo computa
       // (norteDrift / goal engine) pero vivía en un panel; acá lo saca al push.
       const goalNudgeText = goalNudgeLine(
-        goals.map((g) => ({
-          title: g.title,
-          isAnchor: g.is_anchor === true,
-          progress: typeof g.progress === 'number' ? g.progress : 0,
-          targetDate: g.target_date,
-          updatedAt: g.updated_at ?? new Date(0).toISOString(),
-        })),
+        goals.map((g) => {
+          const adv = advances.get(g.id)
+          return {
+            title: g.title,
+            isAnchor: g.is_anchor === true,
+            progress: effectiveGoalProgress(adv, g.progress),
+            targetDate: g.target_date,
+            // Cerrar un paso ES mover el objetivo. Sin esto, el detector de
+            // "estancado" solo veía ediciones del objetivo y marcaba parado
+            // un norte en el que se avanzó toda la semana.
+            updatedAt: lastMovementISO(adv, g.updated_at) ?? new Date(0).toISOString(),
+          }
+        }),
         now,
       ) ?? undefined
       // El nudge nombra el objetivo en su texto → así sabemos cuál es para el
