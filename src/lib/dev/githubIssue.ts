@@ -42,8 +42,41 @@ export async function createGithubIssue(
     return typeof j?.number === 'number' ? { number: j.number, url: j.html_url as string } : null
   }
   try {
-    return (await post(true)) ?? (await post(false))
+    const issue = (await post(true)) ?? (await post(false))
+    if (issue) await ensureLabelApplied(repo, token, issue.number)
+    return issue
   } catch {
     return null
+  }
+}
+
+/**
+ * Aplica 'dev-inbox' al issue YA creado y avisa si no se pudo.
+ *
+ * Por qué hace falta un segundo POST: al CREAR un issue, GitHub **descarta en
+ * silencio** el campo `labels` si el token no tiene push access — responde 201,
+ * el issue queda sin label y no hay error en ningún lado. Pasó de verdad: #826,
+ * #993 y #994 se crearon sin label y quedaron invisibles para la consulta de
+ * arranque de la sesión (`gh issue list --label dev-inbox`), que es justo la
+ * cola que CLAUDE.md manda vaciar. Tres pedidos de Aaron esperando en una cola
+ * que nadie miraba.
+ *
+ * El endpoint dedicado sí devuelve error si falta permiso → dejamos traza en vez
+ * de degradar callados. El issue ya existe igual; esto solo lo hace ENCONTRABLE.
+ */
+async function ensureLabelApplied(repo: string, token: string, issueNumber: number): Promise<void> {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}/issues/${issueNumber}/labels`, {
+      method: 'POST',
+      headers: GH_HEADERS(token),
+      body: JSON.stringify({ labels: ['dev-inbox'] }),
+    })
+    if (!res.ok) {
+      // eslint-disable-next-line no-console
+      console.warn(`[dev-inbox] no se pudo etiquetar el issue #${issueNumber} (${res.status}) — quedará fuera de la cola filtrada por label`)
+    }
+  } catch {
+    // eslint-disable-next-line no-console
+    console.warn(`[dev-inbox] no se pudo etiquetar el issue #${issueNumber} (red)`)
   }
 }

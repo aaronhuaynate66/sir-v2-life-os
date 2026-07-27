@@ -6,11 +6,21 @@ Aaron le manda pedidos al bot de dev (@sir_aaron_dev_bot) desde el celular. Esos
 pedidos **ya se convierten solos en issues de GitHub** con la label `dev-inbox`
 (el webhook los clasifica: pregunta de estado → responde; pedido de dev → issue).
 
-Lo primero de cada sesión, sin que lo pida:
+Lo primero de cada sesión, sin que lo pida — **listar TODOS los issues abiertos,
+no filtrar por label**:
 
 ```bash
-gh issue list --label dev-inbox --state open --json number,title,body,createdAt
+gh issue list --state open --limit 30 --json number,title,body,labels,createdAt
 ```
+
+**No filtrar por `--label dev-inbox`.** Al crear un issue, GitHub **descarta en
+silencio** el campo `labels` si el token no tiene push access: responde 201, el
+issue queda sin label y no hay error en ningún lado. Pasó de verdad — #826, #993
+y #994 se crearon sin label y la consulta filtrada devolvió `[]` con tres pedidos
+esperando. Es la misma regla de honestidad de cobertura de más abajo aplicada a
+esta bandeja: **no concluir "no hay pedidos" desde una vista filtrada.** Son
+pocos issues; listarlos todos y mirar cuáles vienen del bot (el cuerpo termina en
+_"Reportado por Aaron vía el bot de dev de Telegram"_).
 
 Si hay algo, decírselo antes de proponer otra cosa — eso es lo que él pidió
 mientras no estabas. Al terminar un pedido, cerrar el issue citando el PR:
