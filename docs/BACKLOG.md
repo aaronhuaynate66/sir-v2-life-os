@@ -5,7 +5,7 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 21/07/2026 (reconciliación automática — ver bloque abajo).
+> **Última actualización:** 28/07/2026 (consolida los pases 25, 26, 27 y 28/07 — ver bloque abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
@@ -18,13 +18,18 @@ Vista usable (lo de abajo es histórico pesado). Reconciliado tras la sesión de
 Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/artifact/045fea0b-7b02-4a33-a013-7d394d9d85f6
 
 **🟢 Listo para construir (autónomo, sin bloqueo):**
-- **[alta] Fuga de voseo en el chat** — el harness de eval cazó "querés" en una respuesta real (contra [[idioma-espanol-peru]]). Reforzar la regla anti-voseo del prompt + re-medir. Bug real.
-- **[media] Copy del recordatorio "¡Listo!"** — al agendar, la respuesta a veces sobre-afirma ("¡Listo! Te lo propongo:") o saluda genérico en vez de acompañar la propuesta.
-- **[baja] Verborrea a "consejo corto"** — el harness marcó respuestas largas a pedidos breves.
-- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — few-shot dinámico desde correcciones (👎) + subir prioridad de `preference` fresca sobre patrones auto-derivados en `sortLearnings` (hoy van 3ras). El "que SIR aprenda" de verdad.
+- ~~**[alta] Fuga de voseo en el chat**~~ ✅ **CERRADO POR MEDICIÓN (28/07/2026).** Tres pases anteriores se contradijeron sobre esto (25/07 y 28/07 lo marcaron hecho; 27/07 dijo "sigue genuinamente abierto, es whack-a-mole"). **Se zanjó midiendo la salida real, no opinando** — la lección de #975: el idioma se mide con `detectVoseo`, no se juzga con un LLM. Corrida sobre los 12 mensajes que SIR le mandó a Aaron entre el 26 y el 28/07: **1 con voseo, 11 limpios**. El único sucio es el push de las 02:01 del 26/07 (`cerrá`, `descansá`), emitido ANTES de que mergeara #990. Los de 02:58 del 27 y 02:20 del 28 dicen "Cierra el día". **Lo que cerró el canal fue #990**: `deVoseo(stripMarkdown(...))` en los 3 puntos de envío de `lib/telegram/client.ts`, así que ahora pasa también el TEXTO FIJO escrito a mano —que era el que se escapaba— y no solo la salida del LLM. Sigue siendo una carrera detector-vs-modelo: **re-medir, no dar por eterno.**
+- ~~**[media] Copy del recordatorio "¡Listo!"**~~ ✅ **HECHO** (los 4 pases coinciden). `src/lib/sir/askSir.ts` ~1182-1190: si la respuesta abre afirmando "hecho" o queda muy corta, se reemplaza por "Te propongo esto — revísalo y confírmalo. 👇". PR #944 (`f01c19d`, 23/07); caso `action-honesty` del harness 30→95. Estaba en prod ANTES del pase 07-24 que lo siguió listando.
+- **[baja] Verborrea a "consejo corto"** — 🟡 **PARCIAL** (los 4 pases coinciden). Hay una línea de BREVEDAD en el prompt (`src/lib/sir/ask.ts`, mismo `f01c19d`) pero el propio commit la califica de "efecto marginal". No hay scrub determinístico como en voseo. **No cerrar sin re-medir con el harness.**
+- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — **sigue pendiente** (re-verificado en los 4 pases y otra vez el 28/07): `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` y no hay rastro de few-shot dinámico. **Bloqueado por combustible, no por código:** `chat_feedback` = **0 filas** al 28/07 — Aaron nunca calificó una respuesta. Construir el mecanismo hoy = mecanismo vacío.
+- **[media] Que `askSir` VEA los sub-pasos de los objetivos** — nuevo (28/07). `askSir.ts:390-396` pide `id, title, related_persons, status, next_action, is_anchor` — **ni `milestones` ni `objective_steps`**. Hay 151 pasos reales en la base y el chat es ciego a todos: no puede responder "¿cómo voy con Boticas?". Es el que más rinde de los tres pendientes de objetivos.
 
 **🟡 Necesita input/decisión de Aaron:**
-- **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` O usar SIR con 👍/👎+corrección (ya se capturan en chat_feedback) → `npm run eval:sir --from-feedback 20`. Agranda la vara del Plan A y del loop.
+- **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` O usar SIR con 👍/👎+corrección → `npm run eval:sir --from-feedback 20`. Mismo combustible que el slice 4, y sigue en 0.
+- **[alta] Consolidar las 3 estructuras de sub-pasos** — nuevo (28/07). Los sub-pasos de un objetivo viven en TRES lugares: `goals.milestones` (JSON), `objective_steps` (151 filas, la viva) y `objective_blockers` (11 filas, todas del Mundial). El Mundial tiene los mismos ítems escritos en los tres. Consolidar toca data de Aaron → requiere su OK.
+- **[media] Purgar los planes de junio** — nuevo (28/07). De 151 pasos, **150 pendientes y 50 vencidos**, casi todos de planes cargados el 2-3/06 que nunca se tocaron. No es bug de cómputo: el plan es papel muerto. Decidir qué sigue vivo es de Aaron.
+- **[media] Activar `looksLikeOrg`** — nuevo (28/07). `src/lib/social-reader/igProfile.ts` ya detecta persona-vs-fanpage (profesional con rubro / ≥10k seguidores / verificada con volumen) pero **no clasifica solo**. Puede despejar buena parte de las 141 cuentas de la bandeja en lote. Falta decidir: ¿sugiere o descarta?
+- **[media] Log de entrenamiento por ejercicio** — nuevo (28/07, salió del research de #993). `training_sessions` (mig 0169) guarda `kind`/`duration_min`/`intensity`/`notes` pero **no series, reps ni carga**. Sin peso levantado no se puede medir si Aaron gana masa (que es su estrategia decidida para pelear en 80+). Bloque 1 del Mundial arrancó el 28/07. Esfuerzo medio: tabla `training_exercises` + parser en `executeAction.ts` para "banca 3x12 con 80".
 
 **🔴 Bloqueado (data / otra PC) — construir a ciegas = fantasma:**
 - **[media] Match por cara capa 2** — construido; galería de referencia en 0 caras limpias (capturas son screenshots escénicos). Se enciende con fotos-cara reales (asignar en la app, o el reader mandando la foto de perfil real de IG).
@@ -36,7 +41,29 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
-**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (solo si el quick-win no basta); Ola 3 — memoria que consolida (hybrid search vector+BM25, re-ranking, Mem0-style extract→merge→olvido), después de rodar la Ola 2.
+**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — **re-ranking y el ciclo Mem0-style extract→merge→olvido siguen sin empezar** (los 4 pases coinciden).
+
+---
+
+## 🔁 RECONCILIACIÓN CONSOLIDADA 2026-07-28 (reemplaza 4 pases sueltos)
+
+Había **cuatro PRs de reconciliación abiertos sin mergear** (#966 del 25/07, #988 del 26/07, #996 del 27/07, #999 del 28/07). Los cuatro partían del mismo `main` y reescribían las mismas líneas, así que eran **paralelos, no acumulativos**: mergearlos en orden habría dado conflictos, y mergearlos a ciegas habría dejado un documento que **se contradice consigo mismo**. Se consolidaron acá y los cuatro se cerraron.
+
+**La contradicción, y cómo se resolvió.** Sobre "fuga de voseo": #966 (25/07) y #999 (28/07) lo marcaban ✅ HECHO; #996 (27/07) decía **"sigue genuinamente abierto — es whack-a-mole activo, el modelo sigue resbalando"**. Los tres argumentaban desde el código (qué commits agregaron qué formas al scrub), y por eso ninguno podía ganar: el código no dice si el voseo LLEGA a Aaron.
+
+Se zanjó **midiendo la salida real** — que es la lección de #975 (*el idioma se mide con `detectVoseo`, no se opina; el juez del eval alucinaba voseo inexistente*). Corrida sobre los 12 mensajes que SIR le mandó entre el 26 y el 28/07: **1 con voseo, 11 limpios**, y el sucio es anterior al fix. Detalle arriba. **Regla que queda:** una afirmación sobre el idioma se cierra con una medición sobre `sir_messages`, no con un `git log`.
+
+**Aportes únicos de cada pase, ya incorporados arriba:**
+- **#966 (25/07)** — primera detección de que "copy ¡Listo!" y "voseo" ya estaban atendidos por `f01c19d` (23/07), un commit **anterior** al pase 07-24 que los listó como pendientes.
+- **#988 (26/07)** — el único que cazó un drift viejo distinto: **"inferencia LLM de dominio para objetivos"** ya estaba hecha desde el 20/07 (`07c9136`, `smartPrompt.ts` infiere `category` y `SmartWizard.tsx` la aplica en modo dictado) y **cuatro pases seguidos (07-17, 07-18, 07-20, 07-21) la dieron por pendiente**. Corregido en sus menciones históricas.
+- **#996 (27/07)** — el escéptico del voseo. Se equivocaba en el veredicto pero acertaba en el diagnóstico: es un problema generativo recurrente, no un bug de una sola pasada. De ahí el "re-medir, no dar por eterno".
+- **#999 (28/07)** — confirmó el estado de Ola 3 (hybrid search hecho, re-ranking y Mem0 no) y re-verificó el slice 4.
+
+**Patrón de fondo, dicho para que se corte:** el drift de este archivo **no viene del código avanzando rápido, viene de listar sin cruzar**. Los cuatro pases encontraron lo mismo — ítems marcados pendientes que ya estaban hechos días antes. La cabecera del doc ya lo ordena ("reconciliar primero, listar después"), y aun así el pase 07-24 listó 3 ítems sin verificar ninguno. Vale más un pase que mide que cuatro que opinan.
+
+**Nuevo en este pase** (de las sesiones del 27-28/07): los 3 pendientes de estructura de objetivos, `looksLikeOrg` sin activar, el log de entrenamiento por ejercicio, y que `askSir` es ciego a los 151 sub-pasos. Todos arriba con su evidencia.
+
+**No re-verificado** (fuera de alcance): los bloqueados por data/otra PC y todo el histórico ya reconciliado en pases anteriores.
 
 **NO incluye lo ya hecho+verificado esta sesión:** bug avatares `per_`, caras en la lista, match por cara capa 1-2, auto-avatar prioriza caras, IAE afecto surfaceado, recordatorios por chat revividos, push Telegram/nudge, harness de eval, recall ciego en Telegram, señal 👍👎 atribuible, bug "distante" (33 alertas), ¿quién es quién? con botones.
 
