@@ -142,6 +142,41 @@ export async function sendTelegramKeyboard(
   } catch { return { ok: false } }
 }
 
+/**
+ * Envía una FOTO con pie y teclado inline. No lanza; devuelve el message_id.
+ *
+ * POR QUÉ HACÍA FALTA: el "¿quién es quién?" por Telegram solo ofrecía descartar,
+ * y el motivo escrito en #942 era *"Telegram no puede mostrar la CARA"*. Sí puede
+ * — solo que no teníamos con qué mandarla. Con la foto en el mensaje, Aaron puede
+ * decir de quién es sin adivinar por el @, que es exactamente lo que pidió cuando
+ * se aburrió del Excel.
+ *
+ * El pie pasa por el mismo `deVoseo(stripMarkdown(...))` que los otros puntos de
+ * envío: todo lo que sale por Telegram se scrubbea, venga de donde venga (#990).
+ * El límite del caption son 1024 chars, no 4096.
+ */
+export async function sendTelegramPhoto(
+  chatId: number, photoUrl: string, caption: string, rows: InlineButton[][] = [],
+): Promise<{ ok: boolean; messageId?: number }> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) return { ok: false }
+  try {
+    const inline_keyboard = rows.map((r) => r.map(toApiButton))
+    const res = await fetch(`${API}/bot${token}/sendPhoto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId, photo: photoUrl,
+        caption: deVoseo(stripMarkdown(caption)).slice(0, 1024),
+        ...(rows.length ? { reply_markup: { inline_keyboard } } : {}),
+      }),
+    })
+    if (!res.ok) return { ok: false }
+    const j = (await res.json()) as { result?: { message_id?: number } }
+    return { ok: true, messageId: j.result?.message_id }
+  } catch { return { ok: false } }
+}
+
 /** Edita un mensaje reemplazando texto Y teclado (multi-fila). rows=[] → sin
  *  teclado. Para actualizar el check-in tras marcar un hábito. No lanza. */
 export async function editTelegramKeyboard(

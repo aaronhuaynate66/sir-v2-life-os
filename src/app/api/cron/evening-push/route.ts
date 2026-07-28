@@ -7,10 +7,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendPushToUser, vapidReady, type PushPayload } from '@/lib/push/send'
 import { buildEveningHabitsPush, type EveningHabit } from '@/lib/habits/eveningPush'
-import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard } from '@/lib/telegram/client'
+import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard, sendTelegramPhoto } from '@/lib/telegram/client'
 import { formatEveningBriefForChat } from '@/lib/telegram/eveningBrief'
 import { pendingDailyHabits, habitCallbackData } from '@/lib/habits/checkinButtons'
 import { buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
+import { buildIdentityCard } from '@/lib/social-reader/askIdentity'
 import { relacionesUrl } from '@/lib/app-url'
 import { limaDayString } from '@/lib/habits/streak'
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -122,19 +123,44 @@ export async function GET(req: NextRequest) {
         try {
           const { data: un } = await admin
             .from('unmatched_social_activity')
-            .select('id, handle, name')
+            .select('id, handle, name, avatar_url, detail')
             .eq('user_id', uid).eq('platform', 'instagram').eq('kind', 'available')
             .is('asked_at', null).not('handle', 'is', null)
             .order('observed_at', { ascending: false }).limit(10)
-          const rows = (un ?? []) as Array<{ id: string; handle: string; name: string | null }>
-          if (rows.length > 0) {
-            // Teclado: [✕ @handle] por cuenta (descartar, seguro) + "abrir en la app"
-            // para nombrar viendo la cara. Reemplaza el protocolo de texto confuso.
+          const rows = (un ?? []) as Array<{ id: string; handle: string; name: string | null; avatar_url: string | null; detail: string | null }>
+
+          // TARJETA CON LA CARA, de a UNA (Aaron 28-jul: "ya me aburrí del excel,
+          // que SIR me pregunte pasivamente si es tal persona o si es una empresa").
+          // Se prefiere ESTO sobre la lista de ✕ cuando hay foto: la razón por la
+          // que #942 no dejaba nombrar desde Telegram era que "no puede mostrar la
+          // CARA" — con la foto adentro, sí puede, y de paso se pregunta lo que
+          // faltaba en todas las superficies: persona o empresa.
+          const conFoto = rows.find((r) => r.avatar_url)
+          if (conFoto) {
+            const perfil = await admin
+              .from('social_profiles')
+              .select('full_name, category, followers_count')
+              .eq('user_id', uid).eq('handle', conFoto.handle).maybeSingle()
+            const p = perfil.data as { full_name: string | null; category: string | null; followers_count: number | null } | null
+            const pistas = [conFoto.name, p?.full_name, p?.category, conFoto.detail].filter(Boolean).join(' · ')
+            const { caption, keyboard } = buildIdentityCard({
+              id: conFoto.id, handle: conFoto.handle,
+              hint: pistas || null,
+              followers: p?.followers_count ?? null,
+            })
+            const tg = await sendTelegramPhoto(Number(tgChat), conFoto.avatar_url as string, caption, keyboard)
+            if (tg.ok) await admin.from('unmatched_social_activity').update({ asked_at: new Date().toISOString() }).eq('id', conFoto.id)
+          } else if (rows.length > 0) {
+            // Sin foto no hay nada que mirar → se mantiene la lista de ✕ (descartar
+            // es la única acción segura cuando solo se ve el @).
             const { text, keyboard } = buildWhoIsWhoKeyboard(rows, relacionesUrl())
             const tg = await sendTelegramKeyboard(Number(tgChat), text, keyboard)
             if (tg.ok) await admin.from('unmatched_social_activity').update({ asked_at: new Date().toISOString() }).in('id', rows.map((r) => r.id))
           }
-        } catch { /* fail-soft */ }
+        } catch (e) {
+          // Fail-soft, pero con traza: antes un error acá no dejaba rastro.
+          reportApiError(e, { route: 'cron/evening-push', step: 'askIdentity', user: uid.slice(0, 8) })
+        }
       }
       results.push({ user: uid.slice(0, 8), sent: push ? 1 : 0 })
     } catch (e) {
