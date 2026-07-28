@@ -36,6 +36,8 @@ import { extractStoryVision } from '@/lib/social-reader/storyVision'
 import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, type PersonLite } from '@/lib/social-reader/match'
 import { parseWhoIsWhoReply, buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
+import { parseIdentityCallback, handleFromCaption, orgNameFromHandle } from '@/lib/social-reader/askIdentity'
+import { orgSlug, inferParentOrg } from '@/lib/social-reader/entityKind'
 import { parseBriefCallback } from '@/lib/telegram/briefThread'
 import { runBriefAction } from '@/lib/telegram/briefActions'
 import { relacionesUrl } from '@/lib/app-url'
@@ -189,6 +191,75 @@ async function handleWhoIsWhoDismiss(
   await editTelegramKeyboard(chatId, messageId, text, keyboard)
 }
 
+/**
+ * Responde los 3 botones de la tarjeta de identidad (foto + persona/empresa/no).
+ *
+ * Nació del pedido de Aaron del 28-jul ("ya me aburrí del excel, que SIR me
+ * pregunte pasivamente si es tal persona o si es una empresa"). Cada rama cierra
+ * el loop sola:
+ *   · persona → le pide el nombre; él responde AL MENSAJE y `resolveWhoIsWho`
+ *               (que ya existía) crea la ficha y promueve la actividad.
+ *   · empresa → crea la organización YA, con un nombre derivado del handle y
+ *               ofreciendo corregirlo. No la deja pendiente ni la borra: una página
+ *               es data del grafo (quién de su gente la sigue), no basura.
+ *   · no      → la descarta.
+ */
+async function handleIdentityAnswer(
+  supabase: SupabaseClient, userId: string, chatId: number, callbackId: string,
+  action: 'person' | 'org' | 'dismiss', unmatchedId: string,
+): Promise<void> {
+  const { data } = await supabase
+    .from('unmatched_social_activity')
+    .select('id, handle, detail')
+    .eq('user_id', userId).eq('id', unmatchedId).maybeSingle()
+  const row = data as { id: string; handle: string | null; detail: string | null } | null
+  if (!row?.handle) { await answerCallbackQuery(callbackId, 'Ya no la tengo pendiente.'); return }
+  const handle = row.handle
+
+  if (action === 'dismiss') {
+    await supabase.from('unmatched_social_activity').delete().eq('user_id', userId).eq('handle', handle)
+    await answerCallbackQuery(callbackId, 'Descartada ✕')
+    return
+  }
+
+  if (action === 'person') {
+    // No se crea nada todavía: sin nombre, crear la ficha sería inventarla. Se le
+    // pide, y su respuesta cae en `resolveWhoIsWho`, que ya sabe asignar o crear.
+    await answerCallbackQuery(callbackId, 'Dale, ¿cómo se llama?')
+    await sendTelegramMessage(
+      chatId,
+      `Perfecto, @${handle} es una persona. Respóndeme a este mensaje con su nombre completo y le creo la ficha (o la enlazo si ya la tengo).`,
+    )
+    return
+  }
+
+  // ORGANIZACIÓN.
+  const nombre = orgNameFromHandle(handle)
+  const slug = orgSlug(nombre)
+  const { data: existentes } = await supabase.from('org_profiles').select('org_slug').eq('user_id', userId).limit(500)
+  const slugs = ((existentes ?? []) as Array<{ org_slug: string }>).map((o) => o.org_slug)
+  const padre = inferParentOrg(nombre, slugs)
+
+  const { error } = await supabase.from('org_profiles').upsert({
+    id: `org_${slug}`.slice(0, 60), user_id: userId,
+    org_slug: slug, name: nombre, instagram_handle: handle,
+    parent_org: padre,
+    notes: row.detail ?? null,
+    source: 'Telegram — ¿persona o empresa?',
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'id' })
+  // PostgREST no lanza: el error viene en `.error` (trampa de #947).
+  if (error) { await answerCallbackQuery(callbackId, 'No pude crearla, reintenta.'); return }
+
+  await supabase.from('unmatched_social_activity').delete().eq('user_id', userId).eq('handle', handle)
+  await answerCallbackQuery(callbackId, `Creada: ${nombre}`)
+  await sendTelegramMessage(
+    chatId,
+    `🏢 Anoté @${handle} como organización: "${nombre}"${padre ? ` (colgada de ${padre.toUpperCase()})` : ''}.\n\n`
+    + 'Si el nombre no es ese, respóndeme a este mensaje con el correcto. Y cuando el reader vea quién de tu gente la sigue, te digo qué contactos tienes ahí.',
+  )
+}
+
 /** user_id dueño de la data: env explícito o único profile (patrón reader). */
 async function resolveOwnerId(admin: SupabaseClient): Promise<string | null> {
   const explicit = process.env.TELEGRAM_OWNER_USER_ID?.trim()
@@ -321,6 +392,15 @@ export async function POST(req: NextRequest) {
       const habitId = parseHabitCallback(cb.data)
       if (habitId) {
         await handleHabitTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, habitId)
+        return
+      }
+
+      // TARJETA DE IDENTIDAD (foto + 3 botones): "wi|<p|o|x>|<unmatchedId>".
+      // Aaron pidió que SIR pregunte pasivamente "¿es persona o es empresa?" en vez
+      // de llenar un Excel. Las tres salidas son de un toque.
+      const ident = parseIdentityCallback(cb.data)
+      if (ident) {
+        await handleIdentityAnswer(supabase, ownerId, cb.chatId, cb.callbackId, ident.action, ident.id)
         return
       }
 
@@ -457,7 +537,13 @@ export async function POST(req: NextRequest) {
     // @handles que están pendientes), lo procesamos acá y NO lo mandamos al chat.
     // Conservador: si no hay handles pendientes, sigue como pregunta normal.
     try {
-      const whois = await resolveWhoIsWho(supabase, ownerId, text)
+      // Si RESPONDIÓ a una tarjeta de identidad (foto + "¿persona o empresa?"), el
+      // @handle está en el pie citado → alcanza con que escriba el nombre pelado.
+      // Así no hace falta guardar "cuál fue la última pregunta": el mensaje citado
+      // lleva el dato, y no hay estado que se pueda desincronizar.
+      const citado = msg.replyTo?.fromBot ? handleFromCaption(msg.replyTo.text) : null
+      const textoWhois = citado && !/@[a-zA-Z0-9._]{2,30}/.test(text) ? `@${citado} ${text}` : text
+      const whois = await resolveWhoIsWho(supabase, ownerId, textoWhois)
       if (whois.handled) { await sendTelegramMessage(msg.chatId, whois.reply); return }
     } catch { /* fail-open: si algo falla, cae al chat normal */ }
 
