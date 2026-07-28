@@ -23,7 +23,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -43,7 +43,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }
@@ -92,6 +92,11 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
       push(btn('✅ Dar por cerrado', 'moment_close', e.id))
     } else if (e?.kind === 'goal') {
       push(btn('🚀 Dame el próximo paso', 'goal_next', e.id))
+    } else if (e?.kind === 'opportunity') {
+      // Las DOS salidas del loop, ambas de un toque. El "no es negocio" importa
+      // tanto como el sí: sin él la señal volvería mañana y el detector se
+      // convertiría en el muro del que Aaron se quejó.
+      push(btn('💼 Registrar oportunidad', 'opp_reg', e.id), btn('✕ No es negocio', 'opp_no', e.id))
     }
   }
 

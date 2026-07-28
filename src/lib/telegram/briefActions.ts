@@ -34,6 +34,63 @@ async function taskDone(supabase: SupabaseClient, userId: string, taskId: string
   return { toast: `✅ ${(data as { title: string }).title}` }
 }
 
+/**
+ * "💼 Registrar oportunidad" → crea el DEAL que faltaba y marca la señal.
+ *
+ * Es el cierre del loop que Aaron reclamó el 28-jul: SIR detectaba la ventana con
+ * Miluska y no pasaba nada. Ahora, de un toque, la oportunidad entra al pipeline
+ * con la cita textual como respaldo de por qué existe.
+ */
+async function opportunityRegister(
+  supabase: SupabaseClient, userId: string, signalId: string, now: Date,
+): Promise<BriefActionResult> {
+  const { data: sig } = await supabase
+    .from('opportunity_signals')
+    .select('id, person_id, person_name, what, quote, quote_at, state, deal_id')
+    .eq('user_id', userId).eq('id', signalId).maybeSingle()
+  const s = sig as {
+    person_id: string; person_name: string; what: string; quote: string
+    quote_at: string; state: string; deal_id: string | null
+  } | null
+  if (!s) return { toast: 'No encontré esa señal.' }
+  // Idempotente: si ya se registró, no crea un deal duplicado.
+  if (s.state === 'registered' && s.deal_id) return { toast: `Ya estaba registrada como oportunidad.` }
+
+  const dealId = `deal_opp_${signalId.replace(/^opp_/, '').slice(0, 24)}`
+  const { error: dealErr } = await supabase.from('deals').upsert({
+    id: dealId,
+    user_id: userId,
+    title: `${s.what} — ${s.person_name}`,
+    stage: 'lead',
+    status: 'open',
+    currency: 'PEN',
+    contact_person_id: s.person_id,
+    source: 'Detectado en conversación (SIR)',
+    next_action: `Responderle a ${s.person_name.split(/\s+/)[0]} sobre ${s.what}`,
+    why_matters: `Lo pidió ella/él mismo el ${s.quote_at.slice(0, 10)}: «${s.quote.slice(0, 300)}»`,
+    updated_at: now.toISOString(),
+  }, { onConflict: 'id' })
+  // PostgREST no lanza: el error viene en `.error` (trampa de #947).
+  if (dealErr) return { toast: 'No pude crear la oportunidad, inténtalo desde la app.' }
+
+  await supabase.from('opportunity_signals')
+    .update({ state: 'registered', deal_id: dealId, resolved_at: now.toISOString() })
+    .eq('user_id', userId).eq('id', signalId)
+  return { toast: `💼 Registrada: ${s.what.slice(0, 60)}` }
+}
+
+/** "✕ No es negocio" → la señal no vuelve. Tan importante como el sí: sin esto el
+ *  detector repetiría lo descartado y se volvería ruido. */
+async function opportunityDismiss(
+  supabase: SupabaseClient, userId: string, signalId: string, now: Date,
+): Promise<BriefActionResult> {
+  const { error } = await supabase.from('opportunity_signals')
+    .update({ state: 'dismissed', resolved_at: now.toISOString() })
+    .eq('user_id', userId).eq('id', signalId)
+  if (error) return { toast: 'No pude descartarla.' }
+  return { toast: '✕ Listo, no te la vuelvo a mostrar.' }
+}
+
 async function taskRemind(
   supabase: SupabaseClient, userId: string, taskId: string, now: Date,
 ): Promise<BriefActionResult> {
@@ -120,6 +177,8 @@ export async function runBriefAction(
         )
         return { toast: '🚀 Ahí va el próximo paso', reply }
       }
+      case 'opp_reg': return await opportunityRegister(supabase, userId, ref, now)
+      case 'opp_no': return await opportunityDismiss(supabase, userId, ref, now)
       default: return { toast: 'No sé hacer eso todavía.' }
     }
   } catch {
