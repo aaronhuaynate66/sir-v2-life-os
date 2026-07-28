@@ -17,6 +17,7 @@ import { fetchGithubStatus, devSearchTerms, searchCommits, formatCommitSearch } 
 import { askDev } from '@/lib/dev/askDev'
 import { classifyDevMessage } from '@/lib/dev/classifyDevMessage'
 import { createGithubIssue } from '@/lib/dev/githubIssue'
+import { logDevInbound, resolveDevInbound } from '@/lib/dev/inboxLog'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -56,24 +57,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // RED DE SEGURIDAD: se guarda el mensaje ANTES de clasificarlo. Si algo falla
+    // más abajo, el pedido no se pierde. Nació de que Aaron preguntara "¿no hay
+    // nada que yo haya enviado?" y no se pudiera responder (mig 0172).
+    const logId = await logDevInbound(msg.chatId, msg.messageId, text)
+
     // ¿Es un PEDIDO de dev (bug/feature/cambio) o una PREGUNTA de estado?
     // Request → lo capturamos como issue de GitHub (cola accionable 'dev-inbox').
     // Status → cae al Q&A de siempre. Ante la duda el clasificador elige 'status'.
     const intent = await classifyDevMessage(text)
+
     if (intent.kind === 'request') {
       const ghToken = process.env.GITHUB_TOKEN
       if (!ghToken) {
-        await sendDevMessage(msg.chatId, 'Te leí el pedido pero falta GITHUB_TOKEN en el server para anotarlo como issue 🙏.')
+        await resolveDevInbound(logId, 'request', null)
+        await sendDevMessage(msg.chatId, 'Te leí el pedido pero falta GITHUB_TOKEN en el server para anotarlo como issue 🙏. Lo guardé de todas formas: no se pierde.')
         return
       }
       const body = `${text}\n\n---\n_Reportado por Aaron vía el bot de dev de Telegram (@sir_aaron_dev_bot)._`
       const issue = await createGithubIssue(REPO, ghToken, intent.title, body)
+      await resolveDevInbound(logId, 'request', issue?.number ?? null)
       if (issue) {
-        await sendDevMessage(msg.chatId, `📌 Anotado como issue #${issue.number}: ${intent.title}\n${issue.url}\n\nQueda en la cola de dev (label dev-inbox). Lo agarro cuando trabajemos.`)
+        await sendDevMessage(msg.chatId, `📌 Anotado como issue #${issue.number}: ${intent.title}\n${issue.url}\n\nQueda en la cola de dev. Lo agarro cuando trabajemos.`)
       } else {
-        await sendDevMessage(msg.chatId, 'Te leí el pedido pero no pude crear el issue (¿permisos del GITHUB_TOKEN para issues?). Reintenta o avísame por aquí.')
+        await sendDevMessage(msg.chatId, 'Te leí el pedido pero no pude crear el issue (¿permisos del GITHUB_TOKEN?). Lo guardé igual, así que no se pierde — lo rescato en la próxima sesión.')
       }
       return
+    }
+
+    // 'unknown' = el clasificador NO PUDO juzgar (sin API key, API caída, JSON
+    // malo). Antes esto se hacía pasar por 'status' y un pedido se contestaba
+    // como pregunta y desaparecía. Ahora se dice, y la fila queda marcada para
+    // revisar. Igual seguimos al Q&A: si era una pregunta, se responde.
+    await resolveDevInbound(logId, intent.kind === 'unknown' ? 'unknown' : 'status')
+    if (intent.kind === 'unknown') {
+      await sendDevMessage(msg.chatId, '⚠️ No pude clasificar tu mensaje (el clasificador está caído), así que lo guardé para revisarlo a mano — si era un pedido, no se pierde. Te contesto igual con lo que tengo:')
     }
 
     try {
