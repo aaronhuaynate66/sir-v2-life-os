@@ -21,6 +21,8 @@
 
 import { readFileSync } from 'node:fs'
 import ExcelJS from 'exceljs'
+// Node 24 hace type-stripping de .ts; el módulo es autocontenido (cero imports).
+import { classifyEntity, orgSlug, inferParentOrg } from '../src/lib/social-reader/entityKind.ts'
 
 function loadEnv(path) {
   const out = {}
@@ -80,22 +82,61 @@ const handleOwner = new Map()
 for (const p of people) if (p.instagram_handle) handleOwner.set(canonHandle(p.instagram_handle), p)
 
 const cel = (row, n) => {
+  if (!n) return ''
   const v = row.getCell(n).value
   if (v == null) return ''
   if (typeof v === 'object' && 'text' in v) return String(v.text).trim()
   return String(v).trim()
 }
 
-const plan = { asignar: [], crear: [], descartar: [], identidad: [], saltadas: [] }
+/**
+ * Mapa "cabecera → número de columna". Se lee POR NOMBRE y no por índice fijo.
+ *
+ * POR QUÉ (bug real del 28-jul, cazado por el dry-run): el exportador ganó dos
+ * columnas ("Mi sugerencia", "¿Parece negocio?") y todo se corrió dos lugares. El
+ * importador seguía con los índices viejos, así que leía la columna "Foto" como si
+ * fuera "Crear nuevo contacto" → **iba a crear 127 contactos llamados "ver foto"**,
+ * y las x de Aaron caían fuera de rango (0 descartes). Con el mapa por nombre,
+ * agregar o mover columnas no vuelve a romper nada.
+ */
+function headerMap(sheet) {
+  const map = new Map()
+  const fila = sheet.getRow(1)
+  fila.eachCell((cell, n) => {
+    const txt = String(cell.value ?? '').replace(/\s+/g, ' ').trim().toLowerCase()
+    if (txt) map.set(txt, n)
+  })
+  return map
+}
+/** Número de columna por cabecera; lanza si falta (mejor romper que escribir mal). */
+function col(map, ...alternativas) {
+  for (const a of alternativas) {
+    const n = map.get(a.toLowerCase())
+    if (n) return n
+  }
+  throw new Error(`El archivo no tiene la columna "${alternativas[0]}" — ¿se editaron las cabeceras?`)
+}
+
+const plan = { asignar: [], crear: [], orgs: [], descartar: [], identidad: [], saltadas: [] }
 
 // ── Hoja "Asignar IG" ───────────────────────────────────────────────────────
+const A = headerMap(hojaA)
+const cA = {
+  id: col(A, 'id (no tocar)', 'id'),
+  handle: col(A, '@handle'),
+  asignar: col(A, 'es esta persona'),
+  nuevo: col(A, 'crear nuevo contacto'),
+  descartar: col(A, 'no es un contacto'),
+  nota: col(A, '¿parece negocio?', 'parece negocio?'),
+}
+
 hojaA.eachRow((row, i) => {
   if (i === 1) return
-  const id = cel(row, 1)
-  const handle = canonHandle(cel(row, 2))
-  const asignar = cel(row, 6)
-  const nuevo = cel(row, 7)
-  const descartar = cel(row, 8).toLowerCase()
+  const id = cel(row, cA.id)
+  const handle = canonHandle(cel(row, cA.handle))
+  const asignar = cel(row, cA.asignar)
+  const nuevo = cel(row, cA.nuevo)
+  const descartar = cel(row, cA.descartar).toLowerCase()
   if (!id) return
 
   const llenas = [asignar && 'asignar', nuevo && 'crear', descartar === 'x' && 'descartar'].filter(Boolean)
@@ -122,20 +163,35 @@ hojaA.eachRow((row, i) => {
 
   if (nuevo) {
     if (byLabel.has(nuevo)) { plan.saltadas.push(`fila ${i} (@${handle}): "${nuevo}" YA existe — elígelo del desplegable`); return }
-    plan.crear.push({ id, handle, name: nuevo })
+    // ¿Persona, organización, o no es un nombre usable? Aaron avisó del riesgo:
+    // importar "Bomberos Salamanca 127" como contacto sería un dato FALSO, no
+    // incompleto — y tiraría la estructura real (unidad → CGBVP).
+    const nota = cel(row, cA.nota)
+    const v = classifyEntity(nuevo, handle, nota)
+    if (v.kind === 'invalid') {
+      plan.saltadas.push(`fila ${i} (@${handle}): "${nuevo}" — ${v.reason}`)
+      return
+    }
+    if (v.kind === 'org') {
+      plan.orgs.push({ id, handle, name: nuevo, nota, reason: v.reason })
+      return
+    }
+    plan.crear.push({ id, handle, name: nuevo, nota })
   }
 })
 
 // ── Hoja "Personas": identidades editadas a mano ────────────────────────────
+const P = headerMap(hojaP)
 const CAMPOS = [
-  { col: 3, key: 'instagram_handle', norm: canonHandle },
-  { col: 4, key: 'linkedin_url', norm: (v) => String(v).trim() },
-  { col: 5, key: 'phone_number', norm: (v) => String(v).trim() },
-  { col: 6, key: 'email', norm: (v) => String(v).trim().toLowerCase() },
+  { col: col(P, 'instagram'), key: 'instagram_handle', norm: canonHandle },
+  { col: col(P, 'linkedin'), key: 'linkedin_url', norm: (v) => String(v).trim() },
+  { col: col(P, 'teléfono', 'telefono'), key: 'phone_number', norm: (v) => String(v).trim() },
+  { col: col(P, 'email'), key: 'email', norm: (v) => String(v).trim().toLowerCase() },
 ]
+const cPid = col(P, 'id')
 hojaP.eachRow((row, i) => {
   if (i === 1) return
-  const id = cel(row, 1)
+  const id = cel(row, cPid)
   const p = byId.get(id)
   if (!p) return
   const cambios = {}
@@ -156,6 +212,9 @@ console.log(`\nCrear contacto nuevo         : ${plan.crear.length}`)
 for (const c of plan.crear.slice(0, 12)) console.log(`   @${c.handle} → ${c.name} (nuevo)`)
 if (plan.crear.length > 12) console.log(`   … y ${plan.crear.length - 12} más`)
 
+console.log(`\nCrear ORGANIZACIÓN (no persona): ${plan.orgs.length}`)
+for (const o of plan.orgs) console.log(`   @${o.handle} → ${o.name}   [${o.reason}]`)
+
 console.log(`\nDescartar (no es contacto)   : ${plan.descartar.length}`)
 console.log(`Identidades a actualizar     : ${plan.identidad.length}`)
 for (const u of plan.identidad.slice(0, 12)) console.log(`   ${u.name}: ${Object.entries(u.cambios).map(([k, v]) => `${k}=${v}`).join(', ')}`)
@@ -166,7 +225,7 @@ if (plan.saltadas.length) {
   for (const s of plan.saltadas) console.log(`   · ${s}`)
 }
 
-const total = plan.asignar.length + plan.crear.length + plan.descartar.length + plan.identidad.length
+const total = plan.asignar.length + plan.crear.length + plan.orgs.length + plan.descartar.length + plan.identidad.length
 if (!APPLY || total === 0) {
   console.log(!APPLY
     ? `\n${total} cambios listos. Para aplicarlos:\n   node scripts/identidades-import.mjs ${FILE} --apply`
@@ -235,11 +294,46 @@ for (const c of plan.crear) {
       relationship: 'acquaintance', category: 'network',
       importance_score: 5, energy_impact: 'neutral', trust_level: 5,
       instagram_handle: c.handle,
-      notes: 'Creado desde el Excel de identidades',
+      notes: [c.nota && !c.nota.startsWith('el handle dice') ? c.nota : null, 'Creado desde el Excel de identidades (28-jul)'].filter(Boolean).join(' — '),
     })
     await promover(id, c.handle, c.id)
     console.log(`✓ creado ${c.name} ← @${c.handle}`); ok++
   } catch (e) { console.error(`✗ ${c.name}: ${e.message}`); fail++ }
+}
+
+// ── ORGANIZACIONES ──────────────────────────────────────────────────────────
+// Van a `org_profiles`, no a `people`. La tabla ya tenía `parent_org` desde antes
+// y nadie la había poblado: la jerarquía que describió Aaron (su compañía de
+// bomberos responde al CGBVP) se puede modelar tal cual.
+if (plan.orgs.length) {
+  const existentes = await get('org_profiles?select=org_slug,name,instagram_handle')
+  const slugs = existentes.map((o) => o.org_slug)
+  const porHandle = new Map(existentes.filter((o) => o.instagram_handle).map((o) => [canonHandle(o.instagram_handle), o]))
+  for (const o of plan.orgs) {
+    try {
+      const yaEs = porHandle.get(o.handle)
+      if (yaEs) {
+        console.log(`· @${o.handle} ya era la org "${yaEs.name}" — solo limpio la bandeja`)
+      } else {
+        const slug = orgSlug(o.name)
+        const padre = inferParentOrg(o.name, slugs)
+        await api('POST', 'org_profiles', {
+          id: `org_${slug}`.slice(0, 60), user_id: UID,
+          org_slug: slug, name: o.name,
+          instagram_handle: o.handle,
+          parent_org: padre,
+          notes: o.nota && !o.nota.startsWith('el handle dice') ? o.nota : null,
+          source: 'Excel de identidades (Aaron, 28-jul)',
+          updated_at: nowIso,
+        }, { Prefer: 'resolution=merge-duplicates' })
+        slugs.push(slug)
+        console.log(`✓ org ${o.name}${padre ? ` (cuelga de ${padre})` : ''} ← @${o.handle}`)
+      }
+      // La cuenta ya tiene dueño (una org): sale de la bandeja para no repreguntar.
+      await api('DELETE', `unmatched_social_activity?handle=eq.${o.handle}`)
+      ok++
+    } catch (e) { console.error(`✗ org ${o.name}: ${e.message}`); fail++ }
+  }
 }
 
 for (const d of plan.descartar) {
