@@ -22,6 +22,9 @@
 
 import { readFileSync } from 'node:fs'
 import ExcelJS from 'exceljs'
+// Node 24 hace type-stripping de .ts. El módulo es autocontenido (cero imports),
+// así que se puede usar tal cual desde acá sin build ni alias `@/`.
+import { suggestForHandle, looksLikeBusinessHandle } from '../src/lib/social-reader/handleSuggest.ts'
 
 function loadEnv(path) {
   const out = {}
@@ -112,6 +115,16 @@ const lineas = [
   ['  · Deja la fila vacía si no sabes: no pasa nada, vuelve a salir la próxima vez.', false],
   ['  · Usa UNA sola de las tres columnas por fila.', false],
   ['', false],
+  ['CELDAS VERDES: ya vienen pre-llenadas. Son los handles que contienen el nombre Y el', true],
+  ['apellido de un contacto tuyo (ej. @miluskacastillo). REVÍSALAS: si alguna está mal,', false],
+  ['bórrala o cámbiala. Nada se escribe hasta que yo corra el importador.', false],
+  ['', false],
+  ['COLUMNA "Mi sugerencia": mi mejor apuesta con puntaje y motivo, cuando no alcanzó', true],
+  ['para pre-llenar. Es una pista, no una respuesta — el que decide eres tú.', false],
+  ['', false],
+  ['COLUMNA "¿Parece negocio?": pista por el propio handle (dice "peru", "grupo",', true],
+  ['"inmobiliaria"…). Sirve para descartar en lote con la x, sin abrir la foto.', false],
+  ['', false],
   ['HOJA "Personas" — tus contactos y qué identidad tiene cada uno.', true],
   ['  · Sirve para ver huecos: a quién le falta Instagram, LinkedIn, teléfono o correo.', false],
   ['  · Puedes escribir directo en esas celdas y se guardan igual que la otra hoja.', false],
@@ -162,15 +175,24 @@ const hojaA = wb.addWorksheet('Asignar IG')
 hojaA.columns = [
   { header: 'id (no tocar)', key: 'id', width: 34 },
   { header: '@handle', key: 'handle', width: 24 },
-  { header: 'Lo que ya sé', key: 'pista', width: 40 },
-  { header: 'Seguidores', key: 'followers', width: 12 },
-  { header: 'Foto', key: 'foto', width: 12 },
+  { header: 'Lo que ya sé', key: 'pista', width: 38 },
+  { header: 'Mi sugerencia', key: 'sugerencia', width: 40 },
+  { header: '¿Parece negocio?', key: 'negocio', width: 22 },
+  { header: 'Seguidores', key: 'followers', width: 11 },
+  { header: 'Foto', key: 'foto', width: 10 },
   { header: 'Es esta persona', key: 'asignar', width: 34 },
   { header: 'Crear nuevo contacto', key: 'nuevo', width: 28 },
   { header: 'No es un contacto', key: 'descartar', width: 18 },
 ]
 hojaA.getRow(1).font = { bold: true }
 hojaA.views = [{ state: 'frozen', ySplit: 1, xSplit: 2 }]
+
+// Candidatos para sugerir: se compara contra el nombre REAL, pero se escribe la
+// etiqueta del desplegable (que puede llevar "(org)" si hay homónimos).
+const personasParaSugerir = people
+  .filter((p) => (p.name ?? '').trim())
+  .map((p) => ({ id: p.id, name: p.name, label: labelFor(p) }))
+let preLlenadas = 0
 
 const ordenados = [...unmatched].sort((a, b) => String(b.observed_at ?? '').localeCompare(String(a.observed_at ?? '')))
 for (const u of ordenados) {
@@ -183,14 +205,30 @@ for (const u of ordenados) {
   if (prof?.category) pistas.push(`rubro: ${prof.category}`)
   if (prof?.is_business === true) pistas.push('cuenta de negocio')
 
+  // Cruce del handle contra los contactos que YA existen. No adivina nombres:
+  // busca a quién de su red le calza. Con score ≥95 (nombre Y apellido dentro del
+  // handle) se PRE-LLENA el desplegable y la fila va en verde — solo hay que
+  // revisarla. Por debajo va como sugerencia para que él decida.
+  const sug = suggestForHandle(String(u.handle ?? ''), personasParaSugerir)
+  const negocio = looksLikeBusinessHandle(String(u.handle ?? ''))
+  const preLlenar = sug && sug.score >= 95
+
   const row = hojaA.addRow({
     id: u.id,
     handle: `@${u.handle ?? ''}`,
     pista: pistas.join(' · ') || '—',
+    sugerencia: sug ? `${sug.candidate.label} (${sug.score}: ${sug.reason})` : '',
+    negocio: negocio ?? '',
     followers: prof?.followers_count ?? '',
     foto: u.avatar_url ? 'ver foto' : '',
-    asignar: '', nuevo: '', descartar: '',
+    asignar: preLlenar ? sug.candidate.label : '',
+    nuevo: '', descartar: '',
   })
+  if (preLlenar) {
+    row.getCell('asignar').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1F2D9' } }
+    preLlenadas++
+  }
+  if (negocio) row.getCell('negocio').font = { color: { argb: 'FF9C6500' } }
   if (u.avatar_url) {
     const c = row.getCell('foto')
     c.value = { text: 'ver foto', hyperlink: u.avatar_url }
@@ -205,14 +243,14 @@ for (const u of ordenados) {
 // El desplegable: referencia la columna B de "Personas".
 const ultimaP = Math.max(2, hojaP.rowCount)
 for (let i = 2; i <= hojaA.rowCount; i++) {
-  hojaA.getCell(i, 6).dataValidation = {
+  hojaA.getCell(i, 8).dataValidation = {
     type: 'list', allowBlank: true,
     formulae: [`=Personas!$B$2:$B$${ultimaP}`],
     showErrorMessage: true,
     errorTitle: 'Elige del desplegable',
     error: 'Si la persona no está en la lista, escribe su nombre en "Crear nuevo contacto".',
   }
-  hojaA.getCell(i, 8).dataValidation = {
+  hojaA.getCell(i, 10).dataValidation = {
     type: 'list', allowBlank: true, formulae: ['"x"'],
   }
 }
@@ -220,6 +258,9 @@ for (let i = 2; i <= hojaA.rowCount; i++) {
 await wb.xlsx.writeFile(OUT)
 console.log(`\n✅ ${OUT}`)
 console.log(`   Asignar IG: ${ordenados.length} cuentas · Personas: ${people.length} contactos`)
-console.log(`   Con pista de nombre: ${ordenados.filter((u) => u.name || nameByHandle.get(String(u.handle).toLowerCase()) || profByHandle.get(String(u.handle).toLowerCase())?.full_name).length}`)
+console.log(`   Con pista de nombre desde el reader: ${ordenados.filter((u) => u.name || nameByHandle.get(String(u.handle).toLowerCase()) || profByHandle.get(String(u.handle).toLowerCase())?.full_name).length}`)
 console.log(`   Con foto: ${ordenados.filter((u) => u.avatar_url).length}`)
+console.log(`   PRE-LLENADAS (verdes, solo revisar): ${preLlenadas}`)
+console.log(`   Con sugerencia para decidir: ${ordenados.filter((u) => suggestForHandle(String(u.handle ?? ''), personasParaSugerir)).length - preLlenadas}`)
+console.log(`   Marcadas como posible negocio: ${ordenados.filter((u) => looksLikeBusinessHandle(String(u.handle ?? ''))).length}`)
 console.log(`\nLlénalo y luego: node scripts/identidades-import.mjs ${OUT}   (dry-run; --apply para escribir)`)
