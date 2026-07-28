@@ -11,7 +11,7 @@ import { isTelegramConfigured, sendTelegramMessage, sendTelegramKeyboard, sendTe
 import { formatEveningBriefForChat } from '@/lib/telegram/eveningBrief'
 import { pendingDailyHabits, habitCallbackData } from '@/lib/habits/checkinButtons'
 import { buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
-import { buildIdentityCard } from '@/lib/social-reader/askIdentity'
+import { buildIdentityCard, pickPhoto } from '@/lib/social-reader/askIdentity'
 import { relacionesUrl } from '@/lib/app-url'
 import { limaDayString } from '@/lib/habits/streak'
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -123,11 +123,11 @@ export async function GET(req: NextRequest) {
         try {
           const { data: un } = await admin
             .from('unmatched_social_activity')
-            .select('id, handle, name, avatar_url, detail')
+            .select('id, handle, name, avatar_url, avatar_path, detail')
             .eq('user_id', uid).eq('platform', 'instagram').eq('kind', 'available')
             .is('asked_at', null).not('handle', 'is', null)
             .order('observed_at', { ascending: false }).limit(10)
-          const rows = (un ?? []) as Array<{ id: string; handle: string; name: string | null; avatar_url: string | null; detail: string | null }>
+          const rows = (un ?? []) as Array<{ id: string; handle: string; name: string | null; avatar_url: string | null; avatar_path: string | null; detail: string | null }>
 
           // TARJETA CON LA CARA, de a UNA (Aaron 28-jul: "ya me aburrí del excel,
           // que SIR me pregunte pasivamente si es tal persona o si es una empresa").
@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
           // que #942 no dejaba nombrar desde Telegram era que "no puede mostrar la
           // CARA" — con la foto adentro, sí puede, y de paso se pregunta lo que
           // faltaba en todas las superficies: persona o empresa.
-          const conFoto = rows.find((r) => r.avatar_url)
+          const conFoto = rows.find((r) => r.avatar_url || r.avatar_path)
           if (conFoto) {
             const perfil = await admin
               .from('social_profiles')
@@ -148,8 +148,19 @@ export async function GET(req: NextRequest) {
               hint: pistas || null,
               followers: p?.followers_count ?? null,
             })
-            const tg = await sendTelegramPhoto(Number(tgChat), conFoto.avatar_url as string, caption, keyboard)
+            // La URL de IG CADUCA (medido: hoy 200, mañana no). El snapshot en
+            // Storage no expira pero el bucket es privado → hay que firmarlo.
+            let firmada: string | null = null
+            if (conFoto.avatar_path) {
+              const { data: signed } = await admin.storage
+                .from('person-avatars')
+                .createSignedUrl(conFoto.avatar_path, 60 * 60 * 24 * 7)
+              firmada = signed?.signedUrl ?? null
+            }
+            const foto = pickPhoto({ signedSnapshotUrl: firmada, avatarUrl: conFoto.avatar_url })
+            const tg = foto ? await sendTelegramPhoto(Number(tgChat), foto, caption, keyboard) : { ok: false }
             if (tg.ok) await admin.from('unmatched_social_activity').update({ asked_at: new Date().toISOString() }).eq('id', conFoto.id)
+            else reportApiError(new Error('sendPhoto falló en la tarjeta de identidad'), { route: 'cron/evening-push', handle: conFoto.handle, teniaFirmada: !!firmada, teniaUrl: !!conFoto.avatar_url })
           } else if (rows.length > 0) {
             // Sin foto no hay nada que mirar → se mantiene la lista de ✕ (descartar
             // es la única acción segura cuando solo se ve el @).

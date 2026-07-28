@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildIdentityCard, identityCallback, parseIdentityCallback,
-  handleFromCaption, orgNameFromHandle,
+  handleFromCaption, orgNameFromHandle, pickPhoto,
 } from './askIdentity'
 
 describe('buildIdentityCard', () => {
@@ -84,5 +84,21 @@ describe('orgNameFromHandle', () => {
   })
   it('no explota con vacío', () => {
     expect(orgNameFromHandle('')).toBe('')
+  })
+})
+
+describe('pickPhoto', () => {
+  // La URL de IG caduca (medido 28-jul: hoy 200, mañana no). El snapshot en
+  // Storage no expira → cuando está, gana.
+  it('prefiere el snapshot firmado, que no expira', () => {
+    expect(pickPhoto({ signedSnapshotUrl: 'https://storage/firmada.jpg', avatarUrl: 'https://ig/caduca.jpg' }))
+      .toBe('https://storage/firmada.jpg')
+  })
+  it('cae a la URL de IG si no hay snapshot', () => {
+    expect(pickPhoto({ signedSnapshotUrl: null, avatarUrl: 'https://ig/x.jpg' })).toBe('https://ig/x.jpg')
+  })
+  it('null si no hay ninguna — el caller no manda tarjeta sin cara', () => {
+    expect(pickPhoto({})).toBeNull()
+    expect(pickPhoto({ signedSnapshotUrl: '', avatarUrl: '' })).toBeNull()
   })
 })
