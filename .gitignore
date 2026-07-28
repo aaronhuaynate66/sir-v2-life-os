@@ -38,3 +38,6 @@ __pycache__/
 /blob-report/
 /playwright/.cache/
 e2e/.auth/
+# Excel de identidades: contiene nombres, teléfonos y correos reales de la red
+# de Aaron. Se genera con scripts/identidades-export.mjs y NO se versiona.
+identidades*.xlsx
