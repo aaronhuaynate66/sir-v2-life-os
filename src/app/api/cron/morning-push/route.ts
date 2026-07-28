@@ -225,6 +225,37 @@ export async function GET(req: NextRequest) {
         reportApiError(e, { route: 'cron/morning-push', step: 'goalAdvance', user: uid.slice(0, 8) })
       }
 
+      // OPORTUNIDAD / ENFRIAMIENTO detectado en las conversaciones. Acá solo se
+      // LEE lo que el cron de oportunidades ya detectó y juzgó (corre 09:40 UTC,
+      // 20 min antes): el brief no puede depender de una llamada LLM para salir.
+      // Solo las 'pending' — lo que Aaron registró o descartó no vuelve.
+      let opportunityText: string | undefined
+      try {
+        const { data: oppRows, error: oppErr } = await admin
+          .from('opportunity_signals')
+          .select('id, person_name, what, kind, quote, quote_at, days_since_quote, days_since_last')
+          .eq('user_id', uid).eq('state', 'pending')
+          .order('detected_at', { ascending: false })
+          .limit(3)
+        if (oppErr) throw new Error(oppErr.message)
+        const opps = (oppRows ?? []) as Array<{
+          id: string; person_name: string; what: string; kind: string
+          quote: string; quote_at: string; days_since_quote: number | null; days_since_last: number | null
+        }>
+        if (opps.length > 0) {
+          const o = opps[0]
+          const fecha = o.quote_at.slice(0, 10)
+          const cola = opps.length > 1 ? ` (+${opps.length - 1} señal(es) comercial(es) más)` : ''
+          opportunityText = o.kind === 'oportunidad_sin_registrar'
+            ? `💼 ${o.person_name} te pidió ${o.what} y no está como oportunidad — «${o.quote}» (${fecha}). ¿La registro?${cola}`
+            : `🧊 Se está enfriando con ${o.person_name}: te pidió ${o.what} y hace ${o.days_since_last} días que no se escriben — «${o.quote}» (${fecha}).${cola}`
+          briefEntities.opportunity = { id: o.id, name: o.person_name }
+        }
+      } catch (e) {
+        // Fail-soft: sin esto el brief sale igual, solo sin la señal comercial.
+        reportApiError(e, { route: 'cron/morning-push', step: 'opportunities', user: uid.slice(0, 8) })
+      }
+
       // NUDGE DE OBJETIVO: norte estancado o meta en riesgo. SIR ya lo computa
       // (norteDrift / goal engine) pero vivía en un panel; acá lo saca al push.
       const goalNudgeText = goalNudgeLine(
@@ -725,7 +756,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

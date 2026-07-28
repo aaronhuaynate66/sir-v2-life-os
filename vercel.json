@@ -40,6 +40,10 @@
     {
       "path": "/api/cron/derive-learnings",
       "schedule": "0 5 * * 1"
+    },
+    {
+      "path": "/api/cron/opportunities",
+      "schedule": "40 9 * * *"
     }
   ]
 }

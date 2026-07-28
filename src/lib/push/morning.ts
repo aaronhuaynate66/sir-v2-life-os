@@ -65,6 +65,10 @@ export interface MorningInput {
   /** Adherencia al plan de entrenamiento de la semana (ver lib/entrenamiento).
    *  Un plan que no se mide es una intención. Texto ya formado. */
   trainingAdherence?: string
+  /** Oportunidad comercial o enfriamiento detectado en las conversaciones y ya
+   *  confirmado por el juez (ver lib/opportunities + cron/opportunities). Texto
+   *  ya formado, con la cita textual adentro para que sea verificable. */
+  opportunity?: string
   /** Nota del gate de energía: por qué hoy se pospuso lo que pide combustible
    *  emocional (ver lib/brief/energyGate). Va PRIMERA — es el marco con el que
    *  hay que leer el resto del brief. */
@@ -93,7 +97,7 @@ export interface MorningSignal {
   /** Entidad concreta detrás de la señal, cuando el caller la conoce. Es lo que
    *  habilita los botones del hilo ("✅ Ya lo hice" necesita el id de la tarea).
    *  Sin ella la señal se muestra igual, solo que sin acción. */
-  entity?: { kind: 'task' | 'person' | 'moment' | 'goal'; id: string; name?: string }
+  entity?: { kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity'; id: string; name?: string }
 }
 
 /** Ids de las entidades detrás de las señales. Opcionales: el brief funciona
@@ -104,6 +108,9 @@ export interface MorningEntities {
   moment?: { id: string; name?: string }
   goalNudgeGoal?: { id: string; name?: string }
   weekFocusGoal?: { id: string; name?: string }
+  /** Señal de `opportunity_signals` detrás del slot `opportunity` → habilita los
+   *  botones "registrar como oportunidad" / "no es negocio". */
+  opportunity?: { id: string; name?: string }
 }
 
 export interface MorningPush {
@@ -286,6 +293,13 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   add(input.habitNudge, 'habitNudge', 'hoy')
   add(input.bodySignal, 'bodySignal', 'hoy')
   add(input.healthWatch, 'healthWatch', 'hoy')
+
+  // 2.75 OPORTUNIDAD detectada en las conversaciones (lib/opportunities).
+  //      Va ANTES del nudge de objetivo: un lead sin registrar o un trabajo que
+  //      se enfría tiene ventana que se cierra, mientras que "tu objetivo va 0%"
+  //      sigue ahí mañana. Nació del reclamo de Aaron del 28-jul: se le abrió una
+  //      ventana con Miluska y "ni siquiera apareció como oportunidad, lead".
+  add(input.opportunity, 'opportunity', 'metas', ent.opportunity ? { kind: 'opportunity', ...ent.opportunity } : undefined)
 
   // 2.8 OBJETIVO que necesita atención (accionable, antes del foco genérico).
   add(input.goalNudge, 'goalNudge', 'metas', ent.goalNudgeGoal ? { kind: 'goal', ...ent.goalNudgeGoal } : undefined)
