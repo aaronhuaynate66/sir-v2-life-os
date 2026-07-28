@@ -93,6 +93,24 @@ export function handleFromCaption(caption: string): string | null {
 }
 
 /**
+ * Elige con qué foto mandar la tarjeta, en orden de preferencia.
+ *
+ * POR QUÉ IMPORTA (medido el 28-jul): `avatar_url` apunta al CDN de Instagram y
+ * **caduca**. Hoy responde 200 porque el reader corrió hace horas, pero las filas
+ * viejas se van a quedar sin foto — y sin foto la tarjeta pierde justo lo que la
+ * hace funcionar (que Aaron vea la cara en vez de adivinar por el @).
+ *
+ * Por eso existe el snapshot en Storage (`avatar_path`, #927). El bucket NO es
+ * público —da 400— así que hay que FIRMAR la URL; el caller lo hace y la pasa acá.
+ *
+ * PURO: recibe las dos opciones ya resueltas y decide. Prefiere el snapshot cuando
+ * está, porque es el que no expira.
+ */
+export function pickPhoto(opts: { signedSnapshotUrl?: string | null; avatarUrl?: string | null }): string | null {
+  return opts.signedSnapshotUrl || opts.avatarUrl || null
+}
+
+/**
  * Nombre presentable de una organización a partir del handle:
  * "bomberos.salamanca127" → "Bomberos Salamanca 127".
  *
