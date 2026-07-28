@@ -88,6 +88,9 @@ import { labPatterns } from '@/lib/health-exams/patterns'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { computeRecomp, explainRecomp, partitionChange, explainComposition } from '@/lib/salud/recomposicion'
 import { parseWeightCategory } from '@/engines/targets'
+import { computeGoalAdvance, type GoalAdvance } from '@/lib/goals/advance'
+import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
+import { nextPendingLeaf, stepsForObjective } from '@/lib/objectives/steps'
 
 const MAX_PEOPLE = 5
 const MAX_MEM_PER_PERSON = 12
@@ -672,10 +675,41 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   }
 
   // 6. Objetivos para el contexto (todos los activos, acotado).
-  const goalsCtx: AskGoalCtx[] = goals.slice(0, 20).map((g) => ({
-    title: g.title, status: 'active', nextAction: g.next_action ?? null,
-    isAnchor: g.id === anchorGoalId,
-  }))
+  //
+  // SUB-PASOS: hasta el 28-jul el chat era ciego a `objective_steps` — 151 pasos
+  // en la base y no podía responder "¿cómo voy con Boticas?". Se cargan acá y se
+  // resume el avance REAL (rollup de pasos, no el escalar `goals.progress`, que
+  // solo se recalcula si /objetivos está abierta en el navegador — ver #995).
+  // Fail-soft: si la lectura falla, el contexto queda como antes.
+  const advanceByGoal = new Map<string, GoalAdvance>()
+  const nextStepByGoal = new Map<string, { title: string; due: string | null }>()
+  try {
+    const { data: stepRows, error: stepErr } = await supabase
+      .from('objective_steps').select('*').eq('user_id', userId).limit(1000)
+    if (stepErr) throw new Error(stepErr.message) // PostgREST no lanza (#947)
+    const steps = ((stepRows ?? []) as Array<Record<string, unknown>>).map((r) => objectiveStepAdapter.fromRow(r))
+    const hoy = nowISO.slice(0, 10)
+    for (const g of goals) {
+      advanceByGoal.set(g.id, computeGoalAdvance(steps, g.id, hoy))
+      const leaf = nextPendingLeaf(stepsForObjective(steps, g.id))
+      if (leaf) nextStepByGoal.set(g.id, { title: leaf.title, due: leaf.targetDate ?? null })
+    }
+  } catch { /* fail-soft: sin pasos, el contexto de objetivos queda como antes */ }
+
+  const goalsCtx: AskGoalCtx[] = goals.slice(0, 20).map((g) => {
+    const adv = advanceByGoal.get(g.id)
+    const next = nextStepByGoal.get(g.id)
+    return {
+      title: g.title, status: 'active', nextAction: g.next_action ?? null,
+      isAnchor: g.id === anchorGoalId,
+      progress: adv?.percent ?? null,
+      stepsDone: adv?.done ?? null,
+      stepsTotal: adv?.total ?? null,
+      overdue: adv?.overdue ?? null,
+      nextStep: next?.title ?? null,
+      nextStepDue: next?.due ?? null,
+    }
+  })
 
   // 7. Armar prompt + llamar al modelo. Modelo elegido por el usuario (sir_settings).
   let chatModel: unknown = 'sonnet'
