@@ -128,6 +128,49 @@ export interface AskGoalCtx {
   /** El norte del año (goals.is_anchor). Se marca aparte para que el chat
    *  aterrice sus respuestas en la brújula, no en un objetivo cualquiera. */
   isAnchor?: boolean | null
+
+  // ── Sub-pasos reales (objective_steps) ────────────────────────────────────
+  // Hasta el 28-jul-2026 el chat era CIEGO a esto: `askSir` pedía solo
+  // `id, title, related_persons, status, next_action, is_anchor`, así que con 151
+  // pasos cargados en la base no podía responder "¿cómo voy con Boticas?" ni
+  // "¿qué me falta para el Mundial?". Computaba y no surfaceaba, otra vez.
+  /** % derivado de los pasos (no el escalar manual, que vive congelado en 0). */
+  progress?: number | null
+  stepsDone?: number | null
+  stepsTotal?: number | null
+  /** Pasos con fecha pasada sin cerrar. Es la señal más honesta de un plan muerto. */
+  overdue?: number | null
+  /** Próximo paso accionable, con su fecha si tiene. */
+  nextStep?: string | null
+  nextStepDue?: string | null
+}
+
+/**
+ * Renglón de avance de un objetivo, con los SUB-PASOS reales.
+ *
+ * Antes acá solo iba `next_action` (un texto que Aaron escribe a mano y queda
+ * viejo). Ahora va el avance derivado de `objective_steps`: cuántos pasos cerró de
+ * cuántos, cuántos están vencidos, y cuál es el próximo accionable. Es la
+ * diferencia entre que el chat diga "tu objetivo va 0%" y que diga "cerraste 0 de
+ * 20 y tienes 14 vencidos; el próximo es agendar la reunión con Dayana".
+ *
+ * Los vencidos van explícitos porque son la señal más honesta de un plan muerto —
+ * al 28-jul Aaron tenía 151 pasos con 1 cerrado y 50 vencidos, y ninguna superficie
+ * se lo decía. PURO.
+ */
+function renderGoalProgress(g: AskGoalCtx): string {
+  const partes: string[] = []
+  if (typeof g.progress === 'number') {
+    const detalle = typeof g.stepsDone === 'number' && typeof g.stepsTotal === 'number' && g.stepsTotal > 0
+      ? ` (${g.stepsDone}/${g.stepsTotal} pasos)`
+      : ''
+    partes.push(`avance ${g.progress}%${detalle}`)
+  }
+  if (typeof g.overdue === 'number' && g.overdue > 0) partes.push(`${g.overdue} paso(s) VENCIDOS`)
+  if (g.nextStep) partes.push(`próximo paso: ${g.nextStep}${g.nextStepDue ? ` (vence ${g.nextStepDue})` : ''}`)
+  // `next_action` del objetivo solo si no hay un paso concreto que decir.
+  else if (g.nextAction) partes.push(`próximo paso: ${g.nextAction}`)
+  return partes.length ? ` · ${partes.join(' · ')}` : ''
 }
 
 export interface AskContextInput {
@@ -217,16 +260,14 @@ export function buildAskContext(input: AskContextInput): string {
     // objetivo más. Aterrizá las respuestas ahí cuando aplique.
     const anchor = input.goals.find((g) => g.isAnchor)
     if (anchor) {
-      const na = anchor.nextAction ? ` · próximo paso: ${anchor.nextAction}` : ''
       lines.push('== TU NORTE (el ancla del año) ==')
-      lines.push(`- ${anchor.title}${na}`)
+      lines.push(`- ${anchor.title}${renderGoalProgress(anchor)}`)
       lines.push('')
     }
     lines.push('== OBJETIVOS ACTIVOS ==')
     for (const g of input.goals.slice(0, 20)) {
       if (g.isAnchor) continue // ya listado arriba como norte
-      const na = g.nextAction ? ` · próximo paso: ${g.nextAction}` : ''
-      lines.push(`- ${g.title}${na}`)
+      lines.push(`- ${g.title}${renderGoalProgress(g)}`)
     }
     lines.push('')
   }

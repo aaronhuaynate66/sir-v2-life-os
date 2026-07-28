@@ -329,3 +329,63 @@ describe('buildReceipts', () => {
     expect(r[0].source).toBeUndefined()
   })
 })
+
+// Antes del 28-jul-2026 el chat era CIEGO a `objective_steps`: con 151 pasos
+// cargados no podía responder "¿cómo voy con Boticas?". Estos tests fijan que el
+// avance REAL llegue al prompt.
+describe('buildAskContext — sub-pasos de los objetivos', () => {
+  const base = { question: '¿cómo voy con Boticas?', todayISO: '2026-07-28', people: [], memories: [] }
+
+  it('pone el avance con el detalle de pasos', () => {
+    const ctx = buildAskContext({
+      ...base,
+      goals: [{ title: 'Cerrar Boticas Jhodaal', progress: 15, stepsDone: 3, stepsTotal: 20 }],
+    })
+    expect(ctx).toContain('avance 15%')
+    expect(ctx).toContain('3/20 pasos')
+  })
+
+  it('dice los VENCIDOS — es la señal más honesta de un plan muerto', () => {
+    const ctx = buildAskContext({
+      ...base,
+      goals: [{ title: 'Cerrar Boticas Jhodaal', progress: 0, stepsDone: 0, stepsTotal: 20, overdue: 14 }],
+    })
+    expect(ctx).toContain('14 paso(s) VENCIDOS')
+  })
+
+  it('el próximo paso CONCRETO gana sobre el next_action escrito a mano', () => {
+    const ctx = buildAskContext({
+      ...base,
+      goals: [{
+        title: 'Cerrar Boticas Jhodaal',
+        nextAction: 'texto viejo escrito a mano',
+        nextStep: 'Agendar reunión con Dayana', nextStepDue: '2026-08-02',
+      }],
+    })
+    expect(ctx).toContain('Agendar reunión con Dayana')
+    expect(ctx).toContain('vence 2026-08-02')
+    expect(ctx).not.toContain('texto viejo escrito a mano')
+  })
+
+  it('sin pasos cae al next_action de siempre (no rompe lo que ya andaba)', () => {
+    const ctx = buildAskContext({ ...base, goals: [{ title: 'Objetivo suelto', nextAction: 'Hacer algo' }] })
+    expect(ctx).toContain('próximo paso: Hacer algo')
+  })
+
+  it('no inventa cifras cuando no hay pasos', () => {
+    const ctx = buildAskContext({ ...base, goals: [{ title: 'Objetivo sin plan' }] })
+    expect(ctx).toContain('Objetivo sin plan')
+    expect(ctx).not.toMatch(/avance \d/)
+    expect(ctx).not.toMatch(/VENCIDOS/)
+  })
+
+  it('el NORTE también muestra su avance', () => {
+    const ctx = buildAskContext({
+      ...base,
+      goals: [{ title: 'Ganar el Mundial', isAnchor: true, progress: 4, stepsDone: 1, stepsTotal: 25, overdue: 4 }],
+    })
+    const norte = ctx.slice(ctx.indexOf('== TU NORTE'), ctx.indexOf('== OBJETIVOS ACTIVOS'))
+    expect(norte).toContain('avance 4%')
+    expect(norte).toContain('4 paso(s) VENCIDOS')
+  })
+})
