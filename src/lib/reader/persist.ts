@@ -72,7 +72,11 @@ export async function ingestReaderBatch(client: SupabaseClient, userId: string, 
   if (personId) {
     try {
       await appendChatMessages(client, {
-        userId, personId, source: 'reader',
+        // `source` queda como trazabilidad del camino de captura; `platform` es
+        // el canal real y es lo que entra al id. Sin esto, un mensaje de WhatsApp
+        // capturado en vivo y el mismo mensaje traído por el export hasheaban
+        // distinto y quedaban duplicados (29-jul-2026).
+        userId, personId, source: 'reader', platform: batch.platform,
         messages: plan.fresh.map((m) => ({
           iso: m.ts ?? null,
           sender: namesLooselyMatch(m.author, batch.threadName) ? 'other' : 'user',

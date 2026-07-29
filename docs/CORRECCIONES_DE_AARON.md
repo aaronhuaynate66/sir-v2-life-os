@@ -33,6 +33,9 @@ Señales de que hay que anotar algo acá:
 |---|---|---|---|
 | **29-jul-2026** | *"¿Por qué me habla de pasarle cotización de las cámaras?"* — segunda vez que lo pregunta | `goals.next_action` = "Pasarle cotización a Miluska (landing/cámaras)", escrito el **16-jun** y nunca tocado. Es texto libre **sin ciclo de vida**: nadie lo marca hecho, nada lo vence. El brief lo empujaba como pendiente vivo hacía 42 días, y `goalContactTiming` era el único slot repetible **sin botón 🔕**, así que no podía callarlo | Campo limpiado. `buildGoalTimingNudge` ahora dice la EDAD del pendiente pasados 21 días ("lo anotaste hace 42 días, dime si ya no aplica") y a los 60 deja de proponerlo. `goalContactTiming` sumado a `MUTABLE_SLOTS` → ya tiene 🔕 |
 | **24-jul-2026** | *"¿Qué cotización a Miluska me hablas? ¿De landing cámaras?"* | **La misma de arriba.** SIR le DEFENDIÓ el campo ("sí, exacto, el próximo paso que dejaste anotado es…") en vez de leer su duda como evidencia de que el dato estaba viejo | Nada. Por eso volvió el 29. **Esta fila es el ejemplo de qué NO hacer** |
+| **29-jul-2026** | *"Esos 346 yo se los debo a Diana"* — lo había cargado al revés | Leí la dirección de la deuda invertida y la escribí en `person_money` sin que él la confirmara | Corregido (`direction: out`). **La dirección de una deuda se confirma, no se infiere del texto** |
+| **29-jul-2026** | *"¿Por qué mis conversaciones con Diana no están cargadas?"* | Le dije que WhatsApp **no tenía ingesta automática**. Falso: el reader venía trayendo sus mensajes con segundos de latencia y se cortó el **22-jul**. Afirmé una ausencia de arquitectura cuando era una **caída de 7 días** | Latido por canal (`reader_heartbeats`) + aviso en el brief que distingue "no pasó nada" de "el canal está muerto" |
+| **29-jul-2026** | *(lo detecté yo, verificando)* Dupliqué ~71,000 mensajes de Diana al importar | Había **dos copias** de la función que define la identidad de un mensaje: la canónica y una en el script del importador. Se separaron y nadie avisó. Y el script reportaba las filas **intentadas**, no las insertadas, así que el número inflado me hizo creer que había funcionado | Una sola función (el script importa la canónica), migración 0176 que canoniza los ids guardados, y el script ahora reporta "N nuevos, M ya estaban" |
 | **28-jul-2026** | *"Te dije que eso lo haré el 31, estamos 28"* (inscripción al Mundial) | La data estaba bien (`dueDate 2026-07-31`); mi prosa derivó de "vence el 31" a "vence mañana" a "vence hoy" en mensajes sucesivos, sin volver a mirar el dato | Corregido. No repetir la fecha de memoria: leerla |
 | **28-jul-2026** | *"No pierdas mi tiempo preguntándome webadas, decide tú cosas triviales"* | Cerraba los turnos con preguntas que podía resolver solo, y entregué una feature sin probarla | Guardado en memoria (`decidir-solo-no-preguntar`). Decidir lo reversible; **probar antes de decir que algo funciona** |
 | **28-jul-2026** | *"Cuidado, algunos son páginas de branding o empresas — Bomberos Salamanca 127 es mi unidad"* | El importador iba a crear **organizaciones como si fueran contactos**. Dato falso, no incompleto | `entityKind.ts` clasifica persona/org/inválido; `org_profiles.parent_org` puebla la jerarquía (Salamanca 127 → CGBVP) |
@@ -58,3 +61,18 @@ dato.
 **Regla:** todo lo que el brief presente como pendiente tiene que poder (a) decir de
 cuándo es, (b) marcarse como hecho o descartado, y (c) callarse con 🔕. Si un dato no
 cumple las tres, no se presenta como pendiente.
+
+## El segundo patrón: la degradación silenciosa
+
+Las filas del 29-jul son de otra familia. Nada estaba viejo — todo **se rompió sin
+avisar**, y el sistema siguió reportando normalidad:
+
+- GitHub descartaba la label de los issues sin devolver error → la bandeja se veía vacía.
+- El reader de WhatsApp murió el 22-jul y siguió pareciendo sano porque Instagram seguía.
+- El importador reportaba "73,251 mensajes" cuando los 73,251 ya estaban en la base.
+- PostgREST corta en 1000 filas sin decirlo, así que un conteo leía 30k de 145k.
+
+**Regla:** ninguna de esas fallas era detectable desde dentro de su propio reporte.
+Un número que sale de la operación que quiero verificar no la verifica — hay que
+contarlo aparte. Y toda ausencia de datos es ambigua hasta que exista una señal que
+diga "estoy vivo": sin latido, "no llegó nada" y "está caído" se ven idénticos.

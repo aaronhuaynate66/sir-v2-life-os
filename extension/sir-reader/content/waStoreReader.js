@@ -50,11 +50,26 @@
     );
   }
 
+  // El Store trae `m.t` como epoch en segundos = el INSTANTE UTC real. Pero el
+  // sustrato (chat_messages.sent_at) guarda la HORA DE PARED DE LIMA codificada
+  // con 'Z' — así están las 289k filas que vinieron de los exports, que parsean
+  // la hora MOSTRADA en pantalla. Ver la convención completa en
+  // src/lib/chat-messages/append.ts (limaWallClock).
+  //
+  // POR QUÉ IMPORTA (bug real, 29-jul-2026): sin este -5 h, el mismo mensaje
+  // quedaba guardado dos veces con 5 horas de diferencia (el reader en 23:44:31,
+  // el export en 18:44) y ningún hash podía cruzarlos, porque para la base eran
+  // dos instantes distintos. Se duplicaron ~71k mensajes de Diana.
+  //
+  // Perú no usa horario de verano desde 1994 → el desfase es -05:00 SIEMPRE, así
+  // que la constante es segura (no hace falta una tabla de zonas).
+  var LIMA_OFFSET_MS = -5 * 3600 * 1000;
+
   function toIso(t) {
     if (!t && t !== 0) return null;
     const ms = Number(t) * 1000;
     if (!Number.isFinite(ms) || ms <= 0) return null;
-    try { return new Date(ms).toISOString(); } catch (_) { return null; }
+    try { return new Date(ms + LIMA_OFFSET_MS).toISOString(); } catch (_) { return null; }
   }
 
   function senderName(m, fallbackChatName) {
@@ -165,7 +180,7 @@
     const iv = setInterval(() => {
       const ready = WPP.isReady || (WPP.conn && WPP.conn.isMainReady && WPP.conn.isMainReady());
       if (ready) { clearInterval(iv); start(); }
-      else if (++n > 120) { clearInterval(iv); warn('no llegó a ready; probá window.__sirBackfill().'); }
+      else if (++n > 120) { clearInterval(iv); warn('no llegó a ready; prueba window.__sirBackfill().'); }
     }, 500);
   }
 })();

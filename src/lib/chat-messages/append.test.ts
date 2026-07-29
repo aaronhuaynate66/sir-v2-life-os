@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { chatMessageId, minuteKey, toChatRows, type ChatMessageInput } from './append'
+import { canalDe, chatMessageId, limaWallClock, minuteKey, toChatRows, type ChatMessageInput } from './append'
 
 describe('minuteKey', () => {
   it('trunca a minuto en UTC', () => {
@@ -51,6 +51,79 @@ describe('chatMessageId', () => {
     const a = chatMessageId('u1', 'p1', 'whatsapp', '2026-07-09T14:23:00Z', 'other', 'hola')
     const b = chatMessageId('u1', 'p1', 'whatsapp', '2026-07-09T14:24:00Z', 'other', 'hola')
     expect(a).not.toBe(b)
+  })
+})
+
+describe('limaWallClock', () => {
+  it('convierte el instante real a la hora de pared de Lima (-5)', () => {
+    expect(limaWallClock('2026-07-16T23:44:31Z')).toBe('2026-07-16T18:44:31.000Z')
+  })
+
+  it('acepta epoch en milisegundos', () => {
+    expect(limaWallClock(Date.UTC(2026, 6, 16, 23, 44, 31))).toBe('2026-07-16T18:44:31.000Z')
+  })
+
+  it('cruza el día para atrás cuando corresponde', () => {
+    expect(limaWallClock('2026-07-17T02:00:00Z')).toBe('2026-07-16T21:00:00.000Z')
+  })
+
+  it('no fechable → null (nunca inventa una hora)', () => {
+    expect(limaWallClock(null)).toBeNull()
+    expect(limaWallClock('')).toBeNull()
+    expect(limaWallClock('mañana')).toBeNull()
+  })
+})
+
+describe('canalDe', () => {
+  it("'reader' resuelve al canal cuando ese canal tiene doble ingesta", () => {
+    expect(canalDe('reader', 'whatsapp')).toBe('whatsapp')
+    expect(canalDe('channel', 'whatsapp')).toBe('whatsapp')
+  })
+
+  it('un canal SIN segundo camino de ingesta no se normaliza (no le movemos el id)', () => {
+    expect(canalDe('reader', 'teams')).toBe('reader')
+    expect(canalDe('reader', 'email')).toBe('reader')
+  })
+
+  it('sin plataforma se queda con el source (no inventa canal)', () => {
+    expect(canalDe('reader', null)).toBe('reader')
+    expect(canalDe('reader', '')).toBe('reader')
+  })
+
+  it('un source que YA es canal no se toca aunque venga plataforma', () => {
+    expect(canalDe('whatsapp', 'teams')).toBe('whatsapp')
+  })
+
+  it('normaliza mayúsculas y espacios de la plataforma', () => {
+    expect(canalDe('reader', ' WhatsApp ')).toBe('whatsapp')
+  })
+})
+
+describe('identidad entre caminos de captura (el bug de los 71k)', () => {
+  // El mismo mensaje: la extensión lo vio por el Store (instante UTC real, con
+  // segundos) y el export lo trajo con la hora mostrada, truncada al minuto.
+  const DEL_STORE = '2026-07-16T23:44:31Z'   // instante real
+  const DEL_EXPORT = '2026-07-16T18:44:00Z'  // hora de pared, ya en convención
+
+  it('colapsan al MISMO id una vez normalizado el tiempo y el canal', () => {
+    const reader = chatMessageId('u1', 'p1', canalDe('reader', 'whatsapp'), limaWallClock(DEL_STORE), 'user', 'Amor no te olvides enviar las facturas')
+    const importado = chatMessageId('u1', 'p1', canalDe('whatsapp'), DEL_EXPORT, 'user', 'Amor no te olvides enviar las facturas')
+    expect(reader).toBe(importado)
+  })
+
+  it('sin normalizar NO colapsaban (esto es lo que duplicó ~71k)', () => {
+    const reader = chatMessageId('u1', 'p1', 'reader', DEL_STORE, 'user', 'Amor no te olvides enviar las facturas')
+    const importado = chatMessageId('u1', 'p1', 'whatsapp', DEL_EXPORT, 'user', 'Amor no te olvides enviar las facturas')
+    expect(reader).not.toBe(importado)
+  })
+
+  it('toChatRows le pasa la plataforma al id (no el camino de captura)', () => {
+    const [fila] = toChatRows('u1', 'p1', 'reader', [
+      { iso: limaWallClock(DEL_STORE), sender: 'user', content: 'hola' },
+    ], 'whatsapp')
+    expect(fila.id).toBe(chatMessageId('u1', 'p1', 'whatsapp', DEL_EXPORT, 'user', 'hola'))
+    // …pero la fila SIGUE guardando source='reader' como trazabilidad de origen.
+    expect(fila.source).toBe('reader')
   })
 })
 
