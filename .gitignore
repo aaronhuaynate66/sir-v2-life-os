@@ -42,7 +42,11 @@ e2e/.auth/
 # de Aaron. Se genera con scripts/identidades-export.mjs y NO se versiona.
 identidades*.xlsx
 
-# Scripts temporales de verificación (zz-*)
-zz-*.mjs
-zz-*.jpg
-zz-*.xlsx
+# Scratch de verificación (zz*). El patrón era por extensión (.mjs/.jpg/.xlsx) y
+# dejaba pasar todo lo demás: un zz-vec.json y una carpeta zzexport/ con un export
+# real de WhatsApp —mensajes de Aaron y de Diana— aparecieron como archivos sin
+# seguimiento, a un `git add -A` de quedar versionados. Ahora se ignora TODO lo que
+# empiece con zz, que es la regla que uno cree que ya existía.
+zz*
+!zz*.ts
+!zz*.tsx
