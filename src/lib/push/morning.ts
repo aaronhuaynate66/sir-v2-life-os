@@ -69,6 +69,10 @@ export interface MorningInput {
    *  confirmado por el juez (ver lib/opportunities + cron/opportunities). Texto
    *  ya formado, con la cita textual adentro para que sea verificable. */
   opportunity?: string
+  /** Un canal del reader se quedó mudo (ver lib/reader/channelSilence). Va ARRIBA
+   *  porque cambia cómo hay que leer todo lo demás: si WhatsApp está caído, la
+   *  ausencia de señales relacionales no significa que no pasó nada. */
+  readerSilence?: string
   /** Nota del gate de energía: por qué hoy se pospuso lo que pide combustible
    *  emocional (ver lib/brief/energyGate). Va PRIMERA — es el marco con el que
    *  hay que leer el resto del brief. */
@@ -251,6 +255,12 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   ) => {
     if (s) collected.push({ slot, section, text: s, ...(entity ? { entity } : {}) })
   }
+
+  // 0--. UN CANAL DEL READER ESTÁ MUDO. Va antes que TODO porque cambia cómo hay
+  //      que leer el resto del brief: con WhatsApp caído, "no hay señales de tu
+  //      gente" no significa que no pasó nada — significa que SIR no está viendo.
+  //      Nació de los 7 días ciegos del 22→29 jul.
+  add(input.readerSilence, 'readerSilence', 'hoy')
 
   // 0-. CÓMO VIENE EL CUERPO. Va primero porque enmarca todo lo demás: si hoy se
   //     pospuso algo por falta de combustible, hay que decirlo ANTES de la lista.

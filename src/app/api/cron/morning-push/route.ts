@@ -26,6 +26,7 @@ import { buildMorningPush, signalTopicKey, type MorningBirthday, type MorningEnt
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
 import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agendaCross'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
+import { diagnoseChannel, channelSilenceLine } from '@/lib/reader/channelSilence'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
@@ -244,6 +245,39 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         // Fail-soft: sin pasos el nudge cae al progreso manual, como antes.
         reportApiError(e, { route: 'cron/morning-push', step: 'goalAdvance', user: uid.slice(0, 8) })
+      }
+
+      // ¿ALGÚN CANAL DEL READER SE QUEDÓ MUDO? Cruza el latido de la extensión
+      // (reader_heartbeats, mig 0175) con la última vez que cada canal trajo algo.
+      // Nació de los 7 días en que WhatsApp estuvo caído mientras Instagram
+      // seguía andando, así que el reader parecía sano desde afuera.
+      let readerSilenceText: string | undefined
+      try {
+        const { data: hbRows } = await admin
+          .from('reader_heartbeats')
+          .select('channel, last_beat_at, status, last_data_at')
+          .eq('user_id', uid).limit(20)
+        const hbs = (hbRows ?? []) as Array<{ channel: string; last_beat_at: string | null; status: string | null; last_data_at: string | null }>
+        if (hbs.length > 0) {
+          // `last_data_at` de la tabla puede venir vacío (lo llena la ingesta);
+          // para WhatsApp se completa con el último mensaje real, que es la
+          // verdad de campo.
+          const { data: lastMsg } = await admin
+            .from('chat_messages').select('sent_at')
+            .eq('user_id', uid).eq('source', 'reader')
+            .order('sent_at', { ascending: false }).limit(1)
+          const ultimoWa = ((lastMsg ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null
+
+          const verdicts = hbs.map((h) => diagnoseChannel({
+            channel: h.channel,
+            lastHeartbeatAt: h.last_beat_at,
+            lastDataAt: h.last_data_at ?? (h.channel === 'whatsapp' ? ultimoWa : null),
+            status: h.status,
+          }, now))
+          readerSilenceText = channelSilenceLine(verdicts, now) ?? undefined
+        }
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'readerSilence', user: uid.slice(0, 8) })
       }
 
       // OPORTUNIDAD / ENFRIAMIENTO detectado en las conversaciones. Acá solo se
@@ -793,7 +827,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

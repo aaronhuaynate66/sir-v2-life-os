@@ -122,6 +122,37 @@
     return out;
   }
 
+  // ── ¿Hay sesión, o WhatsApp está pidiendo el QR? ───────────────────────────
+  //
+  // POR QUÉ (fallo del 22→29 jul): este canal se cayó y estuvo 7 días sin traer
+  // nada sin que nada lo dijera. El latido del background pregunta acá, porque
+  // "la pestaña existe" NO significa "hay sesión": deslogueado, WA Web sigue
+  // abierto mostrando el QR y desde afuera se ve igual que funcionando.
+  //
+  // Se mira lo POSITIVO (¿está la lista de chats?) antes que lo negativo: los
+  // selectores del QR cambian más seguido que la existencia del panel lateral.
+  function isLoggedIn() {
+    // Panel lateral de chats: solo existe con sesión abierta.
+    if (document.querySelector('#pane-side')) return true;
+    if (document.querySelector('[data-testid="chat-list"], [aria-label="Lista de chats"], [aria-label="Chat list"]')) return true;
+    // Señales explícitas de deslogueo.
+    if (document.querySelector('[data-testid="qrcode"], canvas[aria-label*="QR" i], canvas[aria-label*="código" i]')) return false;
+    const t = (document.body && (document.body.innerText || '')).slice(0, 800);
+    if (/vincula (un|el) dispositivo|link (a )?device|escanea el c[oó]digo|scan the qr/i.test(t)) return false;
+    // Ni una cosa ni la otra (cargando): no se afirma que esté caído.
+    return true;
+  }
+
+  try {
+    chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+      if (msg && msg.type === 'sir-wa-status') {
+        sendResponse({ loggedIn: isLoggedIn(), url: location.href });
+        return true;
+      }
+      return undefined;
+    });
+  } catch (_) { /* sin chrome.runtime (world MAIN) → el background asume ok */ }
+
   window.__SIR_ADAPTER = { platform: 'whatsapp', getThread, getContainer, extractMessages };
   if (window.__SIR_CORE_BOOT) window.__SIR_CORE_BOOT();
 })();
