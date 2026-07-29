@@ -143,6 +143,11 @@ export const SIR_ACTION_TOOLS = [
         minutos: { type: 'integer', description: 'Duración en minutos, si Aaron la dijo.' },
         intensidad: { type: 'string', enum: ['baja', 'media', 'alta'], description: 'Si Aaron la mencionó ("suave", "pesado", "al tope").' },
         nota: { type: 'string', description: 'Qué hizo, breve y en sus palabras.' },
+        ejercicios: {
+          type: 'string',
+          description:
+            'Si Aaron dijo QUÉ ejercicios hizo con series/reps/peso, copia ESA PARTE de su mensaje TAL CUAL, un ejercicio por línea. Ej: "banca 3x12 con 80\\nsentadilla 4x8 con 100\\ndominadas 4x8". NO reformatees los números, NO los conviertas, NO inventes pesos que no dijo — el parseo lo hace código determinístico y si cambias un número queda mal guardado para siempre. Omítelo si solo dijo que entrenó sin detallar.',
+        },
       },
       required: ['tipo'],
     },
@@ -251,6 +256,10 @@ export interface ProposedEntrenamiento {
   minutos: number | null
   intensidad: 'baja' | 'media' | 'alta' | null
   nota: string
+  /** Texto CRUDO de los ejercicios tal como los dictó, un ejercicio por línea.
+   *  El parseo a series/reps/kg lo hace `lib/entrenamiento/ejercicios` con regex:
+   *  si el modelo tocara los números, la serie histórica quedaría envenenada. */
+  ejercicios: string
 }
 export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio | ProposedEstado | ProposedAgregarHito | ProposedEntrenamiento
 
@@ -330,7 +339,7 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
     const intensidad = ['baja', 'media', 'alta'].includes(String(o.intensidad))
       ? (o.intensidad as 'baja' | 'media' | 'alta')
       : null
-    return { kind: 'registrar_entrenamiento', tipo, fecha, minutos, intensidad, nota: str(o.nota, 300) }
+    return { kind: 'registrar_entrenamiento', tipo, fecha, minutos, intensidad, nota: str(o.nota, 300), ejercicios: str(o.ejercicios, 1000) }
   }
   if (toolName === 'proponer_cerrar_relacion') {
     const persona = str(o.persona, 120)
