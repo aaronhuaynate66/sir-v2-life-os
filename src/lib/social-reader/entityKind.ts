@@ -23,23 +23,14 @@
 //
 // PURO. Ante la duda devuelve 'person' (el caso mayoritario) o 'invalid' cuando el
 // texto claramente no sirve — nunca inventa una organización.
+//
+// El léxico de organizaciones vive en orgLexicon.ts, compartido con el análisis del
+// handle. Antes había una lista acá y otra allá, y se separaron: la del handle se
+// quedó sin 'airguns', 'uniformes', 'club', 'comunidad' ni 'diario' —palabras que
+// ESTA lista sí tenía— así que @impalaairguns y @clubdecaballeros pasaban como
+// personas. Dos copias de la misma verdad siempre se separan.
 
-/** Palabras que delatan una organización, no una persona. */
-const ORG_LEXICON = [
-  'bomberos', 'bombero', 'compania', 'compañia', 'unidad', 'brigada',
-  'club', 'asociacion', 'comunidad', 'federacion', 'confederacion', 'liga',
-  'juegos', 'campeonato', 'torneo', 'copa',
-  'bazar', 'market', 'tienda', 'store', 'boutique', 'distribuidora', 'importaciones',
-  'grupo', 'corporacion', 'corp', 'sac', 'srl', 'eirl', 'empresa',
-  'centro', 'instituto', 'academia', 'academy', 'escuela', 'colegio', 'universidad',
-  'clinica', 'botica', 'farmacia', 'hospital', 'policlinico',
-  'restaurante', 'restaurant', 'cafe', 'pizzeria', 'delivery',
-  'fuerza aerea', 'ejercito', 'marina', 'policia', 'municipalidad', 'ministerio',
-  'airguns', 'armeria', 'gym', 'fitness', 'crossfit', 'spa', 'salon',
-  'inmobiliaria', 'constructora', 'consultora', 'agencia', 'estudio',
-  'uniformes', 'seguros', 'inversiones', 'servicios', 'soluciones',
-  'oficial', 'peru', 'diario', 'revista', 'radio', 'productora',
-]
+import { pistaEnTexto } from './orgLexicon'
 
 /** Respuestas que NO son un nombre: Aaron contestó la pregunta en vez de nombrar. */
 const NO_ES_NOMBRE = new Set([
@@ -110,13 +101,13 @@ export function classifyEntity(name: string, handle: string, note = ''): EntityV
     // la naturaleza de la cuenta convertía contactos reales en organizaciones.
     if (ES_PERSONA.test(nota)) return { kind: 'person', reason: `tu nota lo describe como persona` }
 
-    const pistaOrg = ORG_LEXICON.find((w) => nota.includes(w))
+    const pistaOrg = pistaEnTexto(note)
       // Frases con las que describió organizaciones en su propio llenado.
       || (/\b(es una pagina|es mi unidad|pagina de|centro de)\b/.test(nota) ? 'su nota la describe como página/unidad' : null)
     if (pistaOrg) return { kind: 'org', reason: `tu nota dice "${note.slice(0, 60)}"` }
   }
 
-  const pista = ORG_LEXICON.find((w) => n.includes(w))
+  const pista = pistaEnTexto(limpio)
   if (pista) return { kind: 'org', reason: `el nombre contiene "${pista}"` }
 
   return { kind: 'person', reason: 'parece nombre de persona' }

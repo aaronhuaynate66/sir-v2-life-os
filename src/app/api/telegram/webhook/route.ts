@@ -39,7 +39,8 @@ import { parseWhoIsWhoReply, buildWhoIsWhoKeyboard } from '@/lib/social-reader/w
 import { parseIdentityCallback, handleFromCaption, orgNameFromHandle } from '@/lib/social-reader/askIdentity'
 import { orgSlug, inferParentOrg } from '@/lib/social-reader/entityKind'
 import { parseBriefCallback } from '@/lib/telegram/briefThread'
-import { runBriefAction } from '@/lib/telegram/briefActions'
+import { orgBatchApply, runBriefAction } from '@/lib/telegram/briefActions'
+import { parseExclusiones, parseOrgBatch } from '@/lib/social-reader/orgBatch'
 import { relacionesUrl } from '@/lib/app-url'
 import type { LlmImageMediaType } from '@/lib/llm/types'
 
@@ -423,6 +424,10 @@ export async function POST(req: NextRequest) {
             const r = await askSir({ supabase, userId: ownerId, question, chatStyle: true, skipInlineGaps: true })
             return r.answer
           },
+          // El lote de organizaciones lleva sus 30 handles en el texto del mensaje:
+          // no caben en los 64 bytes del callback_data, y una tabla de lotes
+          // pendientes sería estado que se puede quedar huérfano.
+          messageText: cb.messageText ?? '',
         })
         await answerCallbackQuery(cb.callbackId, res.toast)
         // El resultado queda DONDE estaba el botón: se reemplaza el teclado por
@@ -541,6 +546,28 @@ export async function POST(req: NextRequest) {
       // @handle está en el pie citado → alcanza con que escriba el nombre pelado.
       // Así no hace falta guardar "cuál fue la última pregunta": el mensaje citado
       // lleva el dato, y no hay estado que se pueda desincronizar.
+      // Si RESPONDIÓ al lote de organizaciones con números ("3, 7"), esos quedan
+      // pendientes y el resto se registra. Va ANTES del who-is-who porque un "3, 7"
+      // pelado no tiene nada que ese flujo pueda interpretar.
+      const textoLote = msg.replyTo?.fromBot ? (msg.replyTo.text ?? '') : ''
+      const handlesLote = parseOrgBatch(textoLote)
+      if (handlesLote.length > 0) {
+        const fuera = parseExclusiones(text, handlesLote.length)
+        if (fuera.length > 0) {
+          const excluidos = fuera.map((i) => handlesLote[i])
+          const aRegistrar = handlesLote.filter((_, i) => !fuera.includes(i))
+          const res = await orgBatchApply(supabase, ownerId, aRegistrar, new Date())
+          if (excluidos.length > 0) {
+            await supabase.from('unmatched_social_activity')
+              .update({ asked_at: new Date().toISOString() })
+              .eq('user_id', ownerId).in('handle', excluidos)
+          }
+          await sendTelegramMessage(msg.chatId,
+            `${res.toast}\nDejé pendientes: ${excluidos.map((h) => `@${h}`).join(', ')}.`)
+          return
+        }
+      }
+
       const citado = msg.replyTo?.fromBot ? handleFromCaption(msg.replyTo.text) : null
       const textoWhois = citado && !/@[a-zA-Z0-9._]{2,30}/.test(text) ? `@${citado} ${text}` : text
       const whois = await resolveWhoIsWho(supabase, ownerId, textoWhois)

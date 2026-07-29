@@ -12,6 +12,10 @@ import { formatEveningBriefForChat } from '@/lib/telegram/eveningBrief'
 import { pendingDailyHabits, habitCallbackData } from '@/lib/habits/checkinButtons'
 import { buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
 import { buildIdentityCard, pickPhoto } from '@/lib/social-reader/askIdentity'
+import { buildOrgBatch } from '@/lib/social-reader/orgBatch'
+import { repartirLote } from '@/lib/social-reader/orgVerdict'
+import { normalizeReaderProfile } from '@/lib/social-reader/igProfile'
+import { briefCallbackData } from '@/lib/telegram/briefThread'
 import { relacionesUrl } from '@/lib/app-url'
 import { limaDayString } from '@/lib/habits/streak'
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -129,13 +133,76 @@ export async function GET(req: NextRequest) {
             .order('observed_at', { ascending: false }).limit(10)
           const rows = (un ?? []) as Array<{ id: string; handle: string; name: string | null; avatar_url: string | null; avatar_path: string | null; detail: string | null }>
 
+          // ── LOTE DE ORGANIZACIONES, antes que la tarjeta de a una ──────────
+          //
+          // A una cuenta por noche, las 103 de la bandeja son 103 noches. Y para
+          // una empresa la foto no aporta: nadie reconoce a @panoramaoutsourcing
+          // por su logo — lo que decide es la palabra que está en el handle, y eso
+          // se lee de 30 de golpe.
+          //
+          // Se piden aparte (sin el filtro de asked_at ni el límite de 10) porque
+          // la cola de la tarjeta y la del lote son colas distintas: 44 de las 103
+          // son clasificables hoy, y no tienen por qué esperar su turno de foto.
+          let loteMandado = false
+          try {
+            const { data: todos } = await admin
+              .from('unmatched_social_activity')
+              .select('handle, name')
+              .eq('user_id', uid).eq('platform', 'instagram').eq('kind', 'available')
+              .is('asked_at', null).not('handle', 'is', null).limit(1000)
+            const candidatas = (todos ?? []) as Array<{ handle: string; name: string | null }>
+
+            // El perfil declarado por IG le gana al handle, así que se trae si está.
+            const { data: perfiles } = await admin
+              .from('social_profiles')
+              .select('handle, full_name, category, followers_count, is_business, is_verified')
+              .eq('user_id', uid).limit(1000)
+            const porHandle = new Map(
+              ((perfiles ?? []) as Array<Record<string, unknown>>).map((p) => [String(p.handle ?? '').toLowerCase(), p]),
+            )
+
+            const { orgs } = repartirLote(candidatas.map((c) => {
+              const p = porHandle.get(c.handle.toLowerCase())
+              return {
+                handle: c.handle,
+                name: c.name,
+                perfil: p ? normalizeReaderProfile(p) : null,
+              }
+            }))
+
+            // Con menos de 3 no vale un lote: eso lo resuelve la tarjeta de a una.
+            if (orgs.length >= 3) {
+              const lote = buildOrgBatch(
+                orgs.map((o) => ({ handle: o.handle, razon: o.veredicto.razon })),
+                briefCallbackData('org_ok', 'lote'),
+                briefCallbackData('org_no', 'lote'),
+              )
+              if (lote) {
+                const tg = await sendTelegramKeyboard(Number(tgChat), lote.text, lote.keyboard)
+                if (tg.ok) {
+                  loteMandado = true
+                  // Se marcan como preguntadas para que el lote no se repita mañana
+                  // si no contesta. Si confirma, la acción las borra de la bandeja.
+                  await admin.from('unmatched_social_activity')
+                    .update({ asked_at: new Date().toISOString() })
+                    .eq('user_id', uid).in('handle', lote.handles)
+                }
+              }
+            }
+          } catch (e) {
+            reportApiError(e, { route: 'cron/evening-push', step: 'loteOrgs', user: uid.slice(0, 8) })
+          }
+
           // TARJETA CON LA CARA, de a UNA (Aaron 28-jul: "ya me aburrí del excel,
           // que SIR me pregunte pasivamente si es tal persona o si es una empresa").
           // Se prefiere ESTO sobre la lista de ✕ cuando hay foto: la razón por la
           // que #942 no dejaba nombrar desde Telegram era que "no puede mostrar la
           // CARA" — con la foto adentro, sí puede, y de paso se pregunta lo que
           // faltaba en todas las superficies: persona o empresa.
-          const conFoto = rows.find((r) => r.avatar_url || r.avatar_path)
+          // Una sola pregunta de identidad por noche: si ya salió el lote, la
+          // tarjeta con la cara espera a mañana. (Guarda, no `return`: acá estamos
+          // dentro del for de usuarios y un return cortaría a los demás.)
+          const conFoto = loteMandado ? undefined : rows.find((r) => r.avatar_url || r.avatar_path)
           if (conFoto) {
             const perfil = await admin
               .from('social_profiles')
@@ -161,7 +228,7 @@ export async function GET(req: NextRequest) {
             const tg = foto ? await sendTelegramPhoto(Number(tgChat), foto, caption, keyboard) : { ok: false }
             if (tg.ok) await admin.from('unmatched_social_activity').update({ asked_at: new Date().toISOString() }).eq('id', conFoto.id)
             else reportApiError(new Error('sendPhoto falló en la tarjeta de identidad'), { route: 'cron/evening-push', handle: conFoto.handle, teniaFirmada: !!firmada, teniaUrl: !!conFoto.avatar_url })
-          } else if (rows.length > 0) {
+          } else if (!loteMandado && rows.length > 0) {
             // Sin foto no hay nada que mirar → se mantiene la lista de ✕ (descartar
             // es la única acción segura cuando solo se ve el @).
             const { text, keyboard } = buildWhoIsWhoKeyboard(rows, relacionesUrl())
