@@ -189,7 +189,9 @@ export async function orgBatchApply(
       .delete().eq('user_id', userId).in('handle', aLimpiar)
   }
 
-  const partes = [creadas > 0 ? `🏢 ${creadas} organización${creadas === 1 ? '' : 'es'} registrada${creadas === 1 ? '' : 's'}` : null]
+  // "organización" pierde el acento en plural: organizaciones, no organizaciónes.
+  const sustantivo = creadas === 1 ? 'organización registrada' : 'organizaciones registradas'
+  const partes = [creadas > 0 ? `🏢 ${creadas} ${sustantivo}` : null]
   if (yaEstaban > 0) partes.push(`${yaEstaban} ya estaban`)
   return { toast: partes.filter(Boolean).join(' · ') || 'No pude registrarlas.' }
 }

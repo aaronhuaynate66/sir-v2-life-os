@@ -106,3 +106,13 @@ describe('nombreDesdeHandle', () => {
     expect(nombreDesdeHandle('pe')).toBe('Pe')
   })
 })
+
+// Copy: el plural de "organización" pierde el acento. Salió mal en la prueba
+// contra la base real ("2 organizaciónes") y es texto que Aaron lee.
+describe('plural de organización', () => {
+  it('no deja "organizaciónes" en ningún lado', () => {
+    const lote = buildOrgBatch([cuenta('a_sac'), cuenta('b_sac')], 'ok', 'no')!
+    expect(lote.text).not.toContain('organizaciónes')
+    expect(lote.text).toContain('organizaciones')
+  })
+})
