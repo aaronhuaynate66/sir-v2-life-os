@@ -18,6 +18,7 @@ import type { ProposedActionResolved } from '@/lib/sir/askSir'
 import { shouldMaterializeInteraction, interactionLogToMemoryRow } from '@/lib/memories/fromInteractionLog'
 import { generateSlug } from '@/lib/people/slug'
 import { limaDayString } from '@/lib/habits/streak'
+import { parseExercises, sessionVolume, progressionFor, type WorkSet } from '@/lib/entrenamiento/ejercicios'
 
 export interface ExecuteResult {
   ok: boolean
@@ -382,7 +383,7 @@ export async function executeProposedAction(
       objectiveId = (hit?.id as string) ?? null
     } catch { /* sesión suelta, sin objetivo */ }
 
-    const { error } = await supabase.from('training_sessions').insert({
+    const { data: sesion, error } = await supabase.from('training_sessions').insert({
       user_id: userId,
       date,
       kind: action.tipo,
@@ -391,8 +392,56 @@ export async function executeProposedAction(
       notes: (action.nota || '').trim().slice(0, 500) || null,
       objective_id: objectiveId,
       source: 'chat',
-    })
+    }).select('id').single()
     if (error) return { ok: false, message: 'Uf, no pude guardar el entrenamiento. Reinténtalo en un momento.' }
+
+    // EJERCICIOS con series/reps/CARGA (mig 0174). Sin la carga no se puede saber
+    // si Aaron está ganando el músculo que su categoría (80 kg+) le pide: se puede
+    // entrenar fuerza tres meses moviendo siempre el mismo peso. El parseo es
+    // determinístico a propósito — al modelo se le pide copiar el texto tal cual.
+    let ejerciciosMsg = ''
+    const sesionId = (sesion as { id?: string } | null)?.id
+    if (sesionId && action.ejercicios?.trim()) {
+      try {
+        const parsed = parseExercises(action.ejercicios)
+        if (parsed.length > 0) {
+          const { error: exErr } = await supabase.from('training_exercises').insert(
+            parsed.map((ex) => ({
+              user_id: userId, session_id: sesionId,
+              name: ex.name, name_key: ex.nameKey,
+              sets: ex.sets, unit: ex.unit, bodyweight: ex.bodyweight,
+            })),
+          )
+          if (!exErr) {
+            const vol = sessionVolume(parsed)
+            ejerciciosMsg = ` Anoté ${parsed.length} ejercicio(s)${vol > 0 ? ` · ${vol.toLocaleString('es-PE')} kg de volumen` : ''}.`
+
+            // PROGRESIÓN del ejercicio principal: es la pregunta que decide la
+            // recomposición, y solo se puede responder con historial.
+            const principal = parsed.find((ex) => !ex.bodyweight) ?? parsed[0]
+            const { data: hist } = await supabase
+              .from('training_exercises')
+              .select('sets, training_sessions!inner(date)')
+              .eq('user_id', userId).eq('name_key', principal.nameKey)
+              .limit(40)
+            // PostgREST tipa la relación embebida como ARRAY aunque en runtime,
+            // siendo to-one con !inner, venga como objeto. Se normalizan las dos.
+            const puntos = ((hist ?? []) as unknown[])
+              .map((raw) => {
+                const h = raw as { sets?: unknown; training_sessions?: unknown }
+                const rel = Array.isArray(h.training_sessions) ? h.training_sessions[0] : h.training_sessions
+                const date = (rel as { date?: string } | null | undefined)?.date ?? ''
+                return { date, sets: (Array.isArray(h.sets) ? h.sets : []) as WorkSet[] }
+              })
+              .filter((h) => h.date)
+            const prog = progressionFor(principal.name, puntos)
+            if (prog.trend !== 'sin_datos') ejerciciosMsg += ` ${prog.message}`
+          }
+        } else {
+          ejerciciosMsg = ' (De los ejercicios no pude sacar series ni peso — si me los pasas como "banca 3x12 con 80" los registro.)'
+        }
+      } catch { /* fail-soft: la sesión ya quedó guardada */ }
+    }
 
     // Cuántas van esta semana (y de fuerza, que es lo que pide el bloque base).
     let extra = ''
@@ -411,7 +460,7 @@ export async function executeProposedAction(
       acondicionamiento: 'acondicionamiento', competencia: 'competencia', otro: 'entrenamiento',
     }
     const dur = action.minutos ? ` (${action.minutos} min)` : ''
-    return { ok: true, message: `🥋 Anotado: ${LABEL[action.tipo] ?? action.tipo}${dur} el ${date}.${extra}` }
+    return { ok: true, message: `🥋 Anotado: ${LABEL[action.tipo] ?? action.tipo}${dur} el ${date}.${extra}${ejerciciosMsg}` }
   }
 
   return { ok: false, message: 'Ese tipo de acción todavía no lo guardo por chat — por ahora hazlo desde la web.' }
