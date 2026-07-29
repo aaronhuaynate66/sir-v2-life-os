@@ -19,7 +19,7 @@ import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { buildBriefThread, muteRef } from '@/lib/telegram/briefThread'
 import { applyAutoSnooze, previousDay, type BriefSignalHistory } from '@/lib/brief/autoSnooze'
 import { assessCapacity, explainCapacity, applyEnergyGate } from '@/lib/brief/energyGate'
-import { weeklyAdherence, adherenceLine, weekStartOf, type TrainingKind } from '@/lib/entrenamiento/adherencia'
+import { weeklyAdherence, adherenceLine, weekStartOf, type TrainingKind, type MedicalRest } from '@/lib/entrenamiento/adherencia'
 import { getSelfBioState } from '@/lib/people/selfState'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, signalTopicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
@@ -762,8 +762,24 @@ export async function GET(req: NextRequest) {
         // Solo tiene sentido si hay un plan al que adherir (goal del Mundial).
         const hayPlan = goals.some((g) => /mundial|taekwondo|wfg/i.test(`${g.title} ${g.description ?? ''}`))
         if (hayPlan) {
+          // REPOSO MÉDICO: si un médico lo mandó a descansar, la adherencia no
+          // reclama. El 29-jul el brief lo apuró a levantar pesas al segundo día
+          // de un descanso de 4 días por traumatismo facial. Un nudge de
+          // rendimiento nunca debe pasar por encima de un reposo indicado.
+          let rest: MedicalRest | null = null
+          const { data: restRows } = await admin
+            .from('personal_events')
+            .select('title, event_date, end_date, note')
+            .eq('user_id', uid)
+            .or('title.ilike.%descanso médico%,title.ilike.%descanso medico%,title.ilike.%reposo%')
+            .gte('end_date', monday)
+            .order('event_date', { ascending: false })
+            .limit(3)
+          const r0 = ((restRows ?? []) as Array<{ title: string; event_date: string; end_date: string | null }>)[0]
+          if (r0?.end_date) rest = { from: r0.event_date, to: r0.end_date, reason: 'indicación médica' }
+
           const a = weeklyAdherence(sessions, { total: 4, ofKind: { kind: 'fuerza', count: 3 } }, today)
-          trainingAdherenceText = adherenceLine(a) ?? undefined
+          trainingAdherenceText = adherenceLine(a, rest, today) ?? undefined
         }
       } catch { /* tabla 0169 sin propagar → sin línea */ }
 

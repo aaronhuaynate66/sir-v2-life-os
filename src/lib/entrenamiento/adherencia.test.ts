@@ -74,3 +74,42 @@ describe('adherenceLine', () => {
     expect(line).not.toContain('fuerza')
   })
 })
+
+// EL PEOR CASO DE LA SEMANA (29-jul-2026). Aaron terminó en Emergencia el lunes 27
+// con traumatismo facial por una agresión, con 4 días de descanso médico (27→30) y
+// tramadol. El bloque 1 del Mundial —fuerza pesada 3×/semana— arrancaba el 28. El
+// brief del 29 le dijo: "Entrenamiento: 0 de 3 de fuerza. Quedan 5 días para
+// cerrarla." Lo apuró a levantar pesas al segundo día de un reposo indicado.
+describe('el reposo médico manda sobre la meta de entrenamiento', () => {
+  const rest = { from: '2026-07-27', to: '2026-07-30', reason: 'indicación médica' }
+  const cero = weeklyAdherence([], { total: 4, ofKind: { kind: 'fuerza' as const, count: 3 } }, '2026-07-29')
+
+  it('NO reclama sesiones mientras el descanso está en curso', () => {
+    const line = adherenceLine(cero, rest, '2026-07-29')!
+    expect(line).toMatch(/en pausa/i)
+    expect(line).toContain('2026-07-30')
+    // Lo que NO debe decir nunca en esa situación:
+    expect(line).not.toMatch(/0 de 3/)
+    expect(line).not.toMatch(/quedan \d+ día/i)
+  })
+
+  it('cuando el reposo ya terminó pero cruzó la semana, tampoco la mide', () => {
+    const line = adherenceLine(cero, { from: '2026-07-27', to: '2026-07-28' }, '2026-07-30')!
+    expect(line).toMatch(/no la mido/i)
+    expect(line).not.toMatch(/0 de 3/)
+  })
+
+  it('sin reposo se comporta EXACTAMENTE como antes', () => {
+    expect(adherenceLine(cero, null, '2026-07-29')).toBe(adherenceLine(cero))
+  })
+
+  it('un reposo de otra semana no silencia la de hoy', () => {
+    const line = adherenceLine(cero, { from: '2026-06-01', to: '2026-06-05' }, '2026-07-29')
+    expect(line).toBe(adherenceLine(cero))
+  })
+
+  it('un reposo que arranca DESPUÉS de hoy todavía no aplica', () => {
+    const line = adherenceLine(cero, { from: '2026-08-10', to: '2026-08-14' }, '2026-07-29')
+    expect(line).toBe(adherenceLine(cero))
+  })
+})
