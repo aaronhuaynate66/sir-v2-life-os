@@ -32,7 +32,7 @@
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 
-import { chatMessageId, limaWallClock, minuteKey } from '../src/lib/chat-messages/append.ts'
+import { chatMessageId, contenidoParaId, limaWallClock, minuteKey } from '../src/lib/chat-messages/append.ts'
 
 for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
   const m = line.match(/^([A-Z_]+)=(.*)$/)
@@ -40,6 +40,7 @@ for (const line of readFileSync('.env.local', 'utf8').split('\n')) {
 }
 
 const APPLY = process.argv.includes('--apply')
+const CANONIZAR = process.argv.includes('--canonizar')
 const SOLO_PERSONA = (() => {
   const i = process.argv.indexOf('--person')
   return i >= 0 ? process.argv[i + 1] : null
@@ -107,7 +108,136 @@ async function plataformaPorPersona() {
   return { claras, ambiguas }
 }
 
+/** TODAS las filas de la tabla, paginando por ID.
+ *
+ *  Por ID y no por `created_at`: los inserts masivos comparten timestamp, el
+ *  cursor se estanca y se pierden filas en silencio (un escaneo anterior leyó
+ *  3,217 de 3,228 sin avisar). El id es la PK, así que es único y el cursor
+ *  siempre avanza. */
+async function todasLasFilas() {
+  const out = []
+  let cursor = ''
+  for (;;) {
+    const { data, error } = await sb.from('chat_messages')
+      .select('id, user_id, person_id, source, sent_at, sender, content')
+      .gt('id', cursor).order('id', { ascending: true }).limit(1000)
+    if (error) throw new Error(error.message)
+    if (!data || data.length === 0) break
+    out.push(...data)
+    cursor = data[data.length - 1].id
+    if (data.length < 1000) break
+  }
+  return out
+}
+
+/**
+ * El CANAL real de una fila. `source` mezcla el canal con el camino de captura, y
+ * la plataforma no está en la tabla — así que para las filas del reader se deduce
+ * del propio id: si su id es el que sale de hashear con canal='whatsapp', entonces
+ * es del canal whatsapp (se lo puso la reparación del corrimiento de hora).
+ *
+ * Se prueba con el contenido CRUDO y con el normalizado porque la reparación corrió
+ * ANTES de que el hash normalizara: una fila reparada cuyo texto tenga espacios al
+ * borde tiene el id de la versión cruda.
+ */
+function canalReal(f) {
+  if (f.source !== 'reader' && f.source !== 'channel') return f.source
+  const comoWa = chatMessageId(f.user_id, f.person_id, 'whatsapp', f.sent_at, f.sender, f.content)
+  if (f.id === comoWa) return 'whatsapp'
+  const crudo = chatMessageId(f.user_id, f.person_id, 'whatsapp', f.sent_at, f.sender, contenidoParaId(f.content))
+  return f.id === crudo ? 'whatsapp' : f.source
+}
+
+/**
+ * Canoniza los ids de TODA la tabla con la función actual, y borra los pares que
+ * al normalizar el espaciado quedan siendo el mismo mensaje.
+ *
+ * POR QUÉ ACÁ Y NO EN LA MIGRACIÓN: la primera 0177 hacía esto en SQL y falló en
+ * prod con una colisión de llave primaria, porque el SQL no puede saber el canal
+ * de una fila del reader y particionaba por `source`. Acá sí se sabe, y además hay
+ * UNA sola implementación de la identidad en vez de dos que se pueden separar —
+ * que es el bug que originó todo esto.
+ */
+async function canonizar() {
+  const filas = await todasLasFilas()
+  console.log(`filas leídas: ${filas.length}`)
+
+  // Paso 1: agrupar por la clave canónica, con el CANAL real (no `source`).
+  const porClave = new Map()
+  for (const f of filas) {
+    const canal = canalReal(f)
+    const clave = `${f.user_id}|${f.person_id}|${canal}|${minuteKey(f.sent_at)}|${f.sender}|${contenidoParaId(f.content)}`
+    if (!porClave.has(clave)) porClave.set(clave, [])
+    porClave.get(clave).push({ ...f, canal })
+  }
+
+  const aBorrar = []
+  const sobreviven = []
+  for (const grupo of porClave.values()) {
+    if (grupo.length === 1) { sobreviven.push(grupo[0]); continue }
+    // Se conserva la del EXPORT: es el registro más completo del chat, y la del
+    // reader es la captura incremental de lo mismo.
+    const ordenado = [...grupo].sort((a, b) => (a.source === 'whatsapp' ? -1 : 1) - (b.source === 'whatsapp' ? -1 : 1))
+    sobreviven.push(ordenado[0])
+    aBorrar.push(...ordenado.slice(1))
+  }
+
+  // Paso 2: reescribir los ids que no son los canónicos.
+  const aMover = []
+  for (const f of sobreviven) {
+    const nuevo = chatMessageId(f.user_id, f.person_id, f.canal, f.sent_at, f.sender, f.content)
+    if (nuevo !== f.id) aMover.push({ ...f, nuevo })
+  }
+
+  console.log(`\n── Duplicados que aparecen al normalizar el espaciado ──`)
+  console.log(`   a borrar: ${aBorrar.length}`)
+  for (const f of aBorrar.slice(0, 6)) {
+    console.log(`     [${f.source}] ${f.sent_at} ${JSON.stringify(f.content.slice(0, 50))}`)
+  }
+  console.log(`\n── Ids a canonizar ──`)
+  console.log(`   a reescribir: ${aMover.length}`)
+  for (const f of aMover.slice(0, 4)) {
+    console.log(`     [${f.source}→${f.canal}] ${JSON.stringify(f.content.slice(0, 50))}`)
+  }
+
+  // Guarda: después de borrar, ningún destino puede estar ocupado. Si lo está,
+  // NO se escribe nada — es la colisión que tumbó la migración en prod.
+  const idsVivos = new Set(sobreviven.map((f) => f.id))
+  const aMoverIds = new Set(aMover.map((f) => f.id))
+  const pisan = aMover.filter((f) => idsVivos.has(f.nuevo) && !aMoverIds.has(f.nuevo))
+  if (pisan.length > 0) {
+    console.log(`\n❌ ${pisan.length} destino(s) ya ocupados por una fila que no se mueve. NO escribo nada.`)
+    for (const f of pisan.slice(0, 5)) console.log(`     ${JSON.stringify(f.content.slice(0, 60))}`)
+    return
+  }
+  console.log(`\n✓ ningún destino ocupado`)
+
+  if (!APPLY) { console.log('\nNada se escribió. Corre con --apply cuando el reporte se vea bien.'); return }
+
+  let borradas = 0
+  for (let i = 0; i < aBorrar.length; i += 100) {
+    const ids = aBorrar.slice(i, i + 100).map((f) => f.id)
+    const { error } = await sb.from('chat_messages').delete().in('id', ids)
+    if (error) throw new Error(`delete: ${error.message}`)
+    borradas += ids.length
+  }
+  let movidas = 0
+  for (const f of aMover) {
+    const { error } = await sb.from('chat_messages').update({ id: f.nuevo }).eq('id', f.id)
+    if (error) throw new Error(`update ${f.id}: ${error.message}`)
+    movidas++
+    if (movidas % 200 === 0) console.log(`   … ${movidas}/${aMover.length}`)
+  }
+  console.log(`\n🔧 borradas ${borradas} · ids reescritos ${movidas}`)
+}
+
 async function main() {
+  if (CANONIZAR) {
+    console.log(APPLY ? '🔧 MODO ESCRITURA' : '👀 DRY-RUN (agrega --apply para escribir)')
+    await canonizar()
+    return
+  }
+
   console.log(APPLY ? '🔧 MODO ESCRITURA' : '👀 DRY-RUN (agrega --apply para escribir)')
 
   const { claras, ambiguas } = await plataformaPorPersona()
