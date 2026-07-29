@@ -145,6 +145,15 @@ async function main() {
     }
 
     for (const fila of reader) {
+      // ¿YA está corregida? Una fila reparada tiene el id calculado con
+      // canal='whatsapp' sobre su sent_at ACTUAL. Una sin reparar lo tiene con
+      // canal='reader'. Este chequeo es lo que hace al script idempotente, y hace
+      // falta porque el corrimiento de hora NO es detectable mirando la hora: un
+      // sent_at de 18:44 puede ser un instante real sin corregir o una hora de
+      // pared ya corregida. Sin esto, correrlo dos veces restaba 5 h dos veces.
+      const idActual = chatMessageId(fila.user_id, fila.person_id, 'whatsapp', fila.sent_at, fila.sender, fila.content)
+      if (idActual === fila.id) { intactas++; continue }
+
       // El reader guardó el instante real; la convención es hora de pared de Lima.
       const isoCorregido = limaWallClock(fila.sent_at)
       if (!isoCorregido) { intactas++; continue }
