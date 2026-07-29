@@ -682,7 +682,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   // solo se recalcula si /objetivos está abierta en el navegador — ver #995).
   // Fail-soft: si la lectura falla, el contexto queda como antes.
   const advanceByGoal = new Map<string, GoalAdvance>()
-  const nextStepByGoal = new Map<string, { title: string; due: string | null }>()
+  const nextStepByGoal = new Map<string, { title: string; due: string | null; detail: string | null; done: string | null }>()
   try {
     const { data: stepRows, error: stepErr } = await supabase
       .from('objective_steps').select('*').eq('user_id', userId).limit(1000)
@@ -692,7 +692,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     for (const g of goals) {
       advanceByGoal.set(g.id, computeGoalAdvance(steps, g.id, hoy))
       const leaf = nextPendingLeaf(stepsForObjective(steps, g.id))
-      if (leaf) nextStepByGoal.set(g.id, { title: leaf.title, due: leaf.targetDate ?? null })
+      if (leaf) nextStepByGoal.set(g.id, { title: leaf.title, due: leaf.targetDate ?? null, detail: leaf.description ?? null, done: leaf.acceptanceCriteria ?? null })
     }
   } catch { /* fail-soft: sin pasos, el contexto de objetivos queda como antes */ }
 
@@ -708,6 +708,8 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       overdue: adv?.overdue ?? null,
       nextStep: next?.title ?? null,
       nextStepDue: next?.due ?? null,
+      nextStepDetail: next?.detail ?? null,
+      nextStepDone: next?.done ?? null,
     }
   })
 

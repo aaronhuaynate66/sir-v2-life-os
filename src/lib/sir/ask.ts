@@ -143,6 +143,22 @@ export interface AskGoalCtx {
   /** Próximo paso accionable, con su fecha si tiene. */
   nextStep?: string | null
   nextStepDue?: string | null
+  /**
+   * DETALLE del próximo paso: descripción y criterio de "hecho".
+   *
+   * POR QUÉ (fricción real, 29-jul-2026). A Aaron le avisó el brief "Hoy vence:
+   * Emitir factura electrónica #1 por fee mensual S/1,500" y respondió: *"ni
+   * siquiera sé de qué o por qué o a quién, y pregunto y no tengo respuesta…
+   * necesito tener claridad sobre lo que me dice, y si me va a notificar algo
+   * tiene que saber sobre qué me notifica"*.
+   *
+   * El paso tenía TODO cargado desde el 3-jun —descripción "usar sistema de
+   * facturación de Marlab; enviar a Dayana por email", criterio "factura emitida y
+   * enviada a Boticas Jhodaal"— y el chat no lo veía. Avisar de algo que después
+   * no se puede explicar es ruido, no asistencia.
+   */
+  nextStepDetail?: string | null
+  nextStepDone?: string | null
 }
 
 /**
@@ -167,7 +183,17 @@ function renderGoalProgress(g: AskGoalCtx): string {
     partes.push(`avance ${g.progress}%${detalle}`)
   }
   if (typeof g.overdue === 'number' && g.overdue > 0) partes.push(`${g.overdue} paso(s) VENCIDOS`)
-  if (g.nextStep) partes.push(`próximo paso: ${g.nextStep}${g.nextStepDue ? ` (vence ${g.nextStepDue})` : ''}`)
+  if (g.nextStep) {
+    // El detalle va junto al paso: es lo que permite responder "¿qué factura?",
+    // "¿a quién?" y "¿cómo sé que está hecha?" sin que Aaron tenga que abrir nada.
+    const detalle = [
+      g.nextStepDetail ? `cómo: ${g.nextStepDetail}` : null,
+      g.nextStepDone ? `queda hecho cuando: ${g.nextStepDone}` : null,
+    ].filter(Boolean).join(' · ')
+    partes.push(
+      `próximo paso: ${g.nextStep}${g.nextStepDue ? ` (vence ${g.nextStepDue})` : ''}${detalle ? ` [${detalle}]` : ''}`,
+    )
+  }
   // `next_action` del objetivo solo si no hay un paso concreto que decir.
   else if (g.nextAction) partes.push(`próximo paso: ${g.nextAction}`)
   return partes.length ? ` · ${partes.join(' · ')}` : ''

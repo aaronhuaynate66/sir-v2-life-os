@@ -167,11 +167,105 @@ async function refreshIgTray() {
   } catch (_) { /* sin pestaña / sin permiso → nada */ }
 }
 
+// ── LATIDO POR CANAL + WhatsApp Web viva ─────────────────────────────────────
+//
+// POR QUÉ (fallo real, 22→29 jul 2026): el reader de WhatsApp Web venía trayendo
+// los mensajes de Aaron con latencia de SEGUNDOS. Se cortó el 22-jul y nadie se
+// enteró hasta que él preguntó el 29 por qué no estaban sus conversaciones con
+// Diana. SIETE DÍAS ciego — y lo que lo volvió invisible es que Instagram siguió
+// andando, así que el reader parecía sano desde afuera.
+//
+// Dos arreglos:
+//   1. LATIDO: cada canal con pestaña abierta reporta "estoy vivo" cada ~10 min.
+//      Sin esto, "no llegaron datos" es ambiguo entre "no pasó nada" y "está
+//      muerto", y esas dos cosas se veían idénticas desde el server.
+//   2. WhatsApp Web VIVA: si no hay pestaña, se abre en segundo plano; si está
+//      deslogueada (pide QR), se reporta en vez de fingir que anda.
+const HB_ALARM = 'sir-heartbeat';
+const HB_MIN = 10;
+
+/** Canales que miramos, con el patrón de URL de su pestaña. */
+const CANALES = [
+  { channel: 'whatsapp', match: 'https://web.whatsapp.com/*' },
+  { channel: 'instagram', match: 'https://www.instagram.com/*' },
+  { channel: 'linkedin', match: 'https://www.linkedin.com/*' },
+  { channel: 'teams', match: 'https://teams.microsoft.com/*' },
+  { channel: 'outlook', match: 'https://outlook.office.com/*' },
+];
+
+async function postHeartbeat(channel, status, detail) {
+  const { sirUrl, token } = await getConfig();
+  if (!token) return;
+  try {
+    await fetch(`${sirUrl}/api/reader/heartbeat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-reader-token': token },
+      body: JSON.stringify({ channel, status, detail }),
+    });
+  } catch (_) { /* si no hay red, el próximo latido lo cubre */ }
+}
+
+/** ¿La pestaña de WhatsApp está pidiendo el QR? Se mira el TÍTULO, que no exige
+ *  inyectar nada: WA Web lo pone en "WhatsApp" pelado y sin contador al estar
+ *  deslogueado, pero lo confiable es preguntarle al content script. */
+async function whatsappStatus(tabId) {
+  try {
+    const r = await chrome.tabs.sendMessage(tabId, { type: 'sir-wa-status' });
+    return r && r.loggedIn === false ? 'logged_out' : 'ok';
+  } catch (_) {
+    // Sin respuesta del content script: la pestaña existe pero no está lista.
+    return 'ok';
+  }
+}
+
+async function beatAll() {
+  for (const c of CANALES) {
+    let tabs = [];
+    try { tabs = await chrome.tabs.query({ url: c.match }); } catch (_) { tabs = []; }
+    if (tabs.length === 0) continue; // sin pestaña no se late: el canal no corre
+    let status = 'ok';
+    if (c.channel === 'whatsapp' && tabs[0] && tabs[0].id != null) {
+      status = await whatsappStatus(tabs[0].id);
+    }
+    await postHeartbeat(c.channel, status, `${tabs.length} pestaña(s)`);
+  }
+}
+
+/** Si no hay pestaña de WhatsApp Web, la abre en segundo plano (sin robar foco).
+ *  Se puede apagar con enabled.waKeepAlive=false. */
+async function keepWhatsappAlive() {
+  try {
+    const { enabled } = await chrome.storage.local.get('enabled');
+    if (enabled && enabled.waKeepAlive === false) return;
+    const tabs = await chrome.tabs.query({ url: 'https://web.whatsapp.com/*' });
+    if (tabs.length === 0) {
+      await chrome.tabs.create({ url: 'https://web.whatsapp.com/', active: false, pinned: true });
+      await setStatus({ lastThread: 'abrí WhatsApp Web (no había pestaña)' });
+      return;
+    }
+    // Pestaña existe pero quedó en error/descargada → recargar.
+    const t = tabs[0];
+    if (t && t.id != null && (t.discarded || t.status === 'unloaded')) {
+      await chrome.tabs.reload(t.id);
+    }
+  } catch (_) { /* sin permiso de tabs → nada */ }
+}
+
+async function scheduleHeartbeat() {
+  try { await chrome.alarms.create(HB_ALARM, { when: Date.now() + HB_MIN * 60000 }); } catch (_) {}
+}
+
 try {
   chrome.alarms.onAlarm.addListener((a) => {
-    if (a && a.name === IG_ALARM) { refreshIgTray().finally(scheduleIgRefresh); }
+    if (!a) return;
+    if (a.name === IG_ALARM) { refreshIgTray().finally(scheduleIgRefresh); }
+    if (a.name === HB_ALARM) {
+      keepWhatsappAlive().then(beatAll).finally(scheduleHeartbeat);
+    }
   });
-  chrome.runtime.onInstalled.addListener(scheduleIgRefresh);
-  chrome.runtime.onStartup.addListener(scheduleIgRefresh);
+  chrome.runtime.onInstalled.addListener(() => { scheduleIgRefresh(); scheduleHeartbeat(); beatAll(); });
+  chrome.runtime.onStartup.addListener(() => { scheduleIgRefresh(); scheduleHeartbeat(); keepWhatsappAlive().then(beatAll); });
   scheduleIgRefresh();
+  scheduleHeartbeat();
+  beatAll();
 } catch (_) { /* entorno sin alarms */ }

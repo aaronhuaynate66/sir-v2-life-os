@@ -41,3 +41,8 @@ e2e/.auth/
 # Excel de identidades: contiene nombres, teléfonos y correos reales de la red
 # de Aaron. Se genera con scripts/identidades-export.mjs y NO se versiona.
 identidades*.xlsx
+
+# Scripts temporales de verificación (zz-*)
+zz-*.mjs
+zz-*.jpg
+zz-*.xlsx

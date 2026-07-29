@@ -19,13 +19,14 @@ import { formatMorningBriefForChat } from '@/lib/telegram/morningBrief'
 import { buildBriefThread, muteRef } from '@/lib/telegram/briefThread'
 import { applyAutoSnooze, previousDay, type BriefSignalHistory } from '@/lib/brief/autoSnooze'
 import { assessCapacity, explainCapacity, applyEnergyGate } from '@/lib/brief/energyGate'
-import { weeklyAdherence, adherenceLine, weekStartOf, type TrainingKind } from '@/lib/entrenamiento/adherencia'
+import { weeklyAdherence, adherenceLine, weekStartOf, type TrainingKind, type MedicalRest } from '@/lib/entrenamiento/adherencia'
 import { getSelfBioState } from '@/lib/people/selfState'
 import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, signalTopicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
 import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agendaCross'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
+import { diagnoseChannel, channelSilenceLine } from '@/lib/reader/channelSilence'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
@@ -168,15 +169,36 @@ export async function GET(req: NextRequest) {
       const importantDates = importantDatesRanked.slice(0, 3).map((d) => d.text)
 
       // Tareas que vencen hoy (no hechas).
+      //
+      // Se trae el OBJETIVO al que cuelgan por dos razones que salieron de una
+      // fricción real (29-jul). Aaron sobre el aviso de la factura de S/1.500:
+      // *"ni siquiera sé de qué o por qué o a quién, y pregunto y no tengo
+      // respuesta… sin que esté amarrado a algún objetivo solo me está haciendo
+      // ruido"*. El paso tenía TODO cargado desde el 3-jun (descripción, criterio,
+      // cliente) y el brief mostraba solo el título.
+      //   1. El objetivo se nombra en la línea → deja de ser un aviso huérfano.
+      //   2. Se descartan los pasos de objetivos PAUSADOS: el de la factura cuelga
+      //      de "Cerrar Boticas Jhodaal", que se pausó el 28-jul, y su tarea
+      //      seguía disparando igual.
       const { data: stepRows } = await admin
         .from('objective_steps')
-        .select('id, title, target_date, status')
+        .select('id, title, target_date, status, description, objective_id, goals!inner(title, status)')
         .eq('user_id', uid)
         .eq('target_date', today)
         .neq('status', 'hecho')
         .limit(50)
-      const dueStepRows = (stepRows ?? []) as Array<{ id: string; title: string }>
-      const dueTasks = dueStepRows.map((s) => s.title).filter(Boolean)
+      const dueStepRows = ((stepRows ?? []) as unknown[])
+        .map((raw) => {
+          const s = raw as { id: string; title: string; description?: string | null; goals?: unknown }
+          const g = Array.isArray(s.goals) ? s.goals[0] : s.goals
+          const meta = (g ?? null) as { title?: string; status?: string } | null
+          return { id: s.id, title: s.title, description: s.description ?? null, goalTitle: meta?.title ?? null, goalStatus: meta?.status ?? null }
+        })
+        // Un objetivo pausado o archivado no genera pendientes del día.
+        .filter((s) => s.goalStatus !== 'paused' && s.goalStatus !== 'archived' && s.goalStatus !== 'completed')
+      const dueTasks = dueStepRows
+        .map((s) => (s.goalTitle ? `${s.title} — de "${s.goalTitle}"` : s.title))
+        .filter(Boolean)
       // Ids de las entidades detrás de las señales → habilitan los botones del
       // hilo de Telegram ("✅ Ya lo hice" necesita saber QUÉ tarea marcar). Con
       // más de una tarea el botón sería ambiguo, así que solo va con exactamente una.
@@ -223,6 +245,39 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         // Fail-soft: sin pasos el nudge cae al progreso manual, como antes.
         reportApiError(e, { route: 'cron/morning-push', step: 'goalAdvance', user: uid.slice(0, 8) })
+      }
+
+      // ¿ALGÚN CANAL DEL READER SE QUEDÓ MUDO? Cruza el latido de la extensión
+      // (reader_heartbeats, mig 0175) con la última vez que cada canal trajo algo.
+      // Nació de los 7 días en que WhatsApp estuvo caído mientras Instagram
+      // seguía andando, así que el reader parecía sano desde afuera.
+      let readerSilenceText: string | undefined
+      try {
+        const { data: hbRows } = await admin
+          .from('reader_heartbeats')
+          .select('channel, last_beat_at, status, last_data_at')
+          .eq('user_id', uid).limit(20)
+        const hbs = (hbRows ?? []) as Array<{ channel: string; last_beat_at: string | null; status: string | null; last_data_at: string | null }>
+        if (hbs.length > 0) {
+          // `last_data_at` de la tabla puede venir vacío (lo llena la ingesta);
+          // para WhatsApp se completa con el último mensaje real, que es la
+          // verdad de campo.
+          const { data: lastMsg } = await admin
+            .from('chat_messages').select('sent_at')
+            .eq('user_id', uid).eq('source', 'reader')
+            .order('sent_at', { ascending: false }).limit(1)
+          const ultimoWa = ((lastMsg ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null
+
+          const verdicts = hbs.map((h) => diagnoseChannel({
+            channel: h.channel,
+            lastHeartbeatAt: h.last_beat_at,
+            lastDataAt: h.last_data_at ?? (h.channel === 'whatsapp' ? ultimoWa : null),
+            status: h.status,
+          }, now))
+          readerSilenceText = channelSilenceLine(verdicts, now) ?? undefined
+        }
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'readerSilence', user: uid.slice(0, 8) })
       }
 
       // OPORTUNIDAD / ENFRIAMIENTO detectado en las conversaciones. Acá solo se
@@ -287,13 +342,13 @@ export async function GET(req: NextRequest) {
       // ventana. Cruza goal.related_persons × contact_activity (kind=available).
       let goalTimingText: string | undefined
       try {
-        const goalByPerson = new Map<string, { goalTitle: string; pendingAction: string }>()
+        const goalByPerson = new Map<string, { goalTitle: string; pendingAction: string; goalUpdatedAt: string | null }>()
         for (const g of goals) {
           const action = (g.next_action ?? '').trim()
           if (!action) continue
           for (const pid of g.related_persons ?? []) {
             if (typeof pid === 'string' && pid && !goalByPerson.has(pid)) {
-              goalByPerson.set(pid, { goalTitle: g.title, pendingAction: action })
+              goalByPerson.set(pid, { goalTitle: g.title, pendingAction: action, goalUpdatedAt: g.updated_at ?? null })
             }
           }
         }
@@ -314,10 +369,10 @@ export async function GET(req: NextRequest) {
               const g = goalByPerson.get(r.person_id)
               const name = nameById.get(r.person_id)
               return g && name
-                ? [{ personName: name, goalTitle: g.goalTitle, pendingAction: g.pendingAction, signalDetail: 'anda activa hoy', observedAt: r.observed_at }]
+                ? [{ personName: name, goalTitle: g.goalTitle, pendingAction: g.pendingAction, signalDetail: 'anda activa hoy', observedAt: r.observed_at, goalUpdatedAt: g.goalUpdatedAt }]
                 : []
             })
-            goalTimingText = buildGoalTimingNudge(cands) ?? undefined
+            goalTimingText = buildGoalTimingNudge(cands, now) ?? undefined
           }
         }
       } catch { /* fail-soft: el brief va sin este nudge */ }
@@ -741,8 +796,24 @@ export async function GET(req: NextRequest) {
         // Solo tiene sentido si hay un plan al que adherir (goal del Mundial).
         const hayPlan = goals.some((g) => /mundial|taekwondo|wfg/i.test(`${g.title} ${g.description ?? ''}`))
         if (hayPlan) {
+          // REPOSO MÉDICO: si un médico lo mandó a descansar, la adherencia no
+          // reclama. El 29-jul el brief lo apuró a levantar pesas al segundo día
+          // de un descanso de 4 días por traumatismo facial. Un nudge de
+          // rendimiento nunca debe pasar por encima de un reposo indicado.
+          let rest: MedicalRest | null = null
+          const { data: restRows } = await admin
+            .from('personal_events')
+            .select('title, event_date, end_date, note')
+            .eq('user_id', uid)
+            .or('title.ilike.%descanso médico%,title.ilike.%descanso medico%,title.ilike.%reposo%')
+            .gte('end_date', monday)
+            .order('event_date', { ascending: false })
+            .limit(3)
+          const r0 = ((restRows ?? []) as Array<{ title: string; event_date: string; end_date: string | null }>)[0]
+          if (r0?.end_date) rest = { from: r0.event_date, to: r0.end_date, reason: 'indicación médica' }
+
           const a = weeklyAdherence(sessions, { total: 4, ofKind: { kind: 'fuerza', count: 3 } }, today)
-          trainingAdherenceText = adherenceLine(a) ?? undefined
+          trainingAdherenceText = adherenceLine(a, rest, today) ?? undefined
         }
       } catch { /* tabla 0169 sin propagar → sin línea */ }
 
@@ -756,7 +827,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

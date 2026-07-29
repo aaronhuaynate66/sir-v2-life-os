@@ -389,3 +389,37 @@ describe('buildAskContext — sub-pasos de los objetivos', () => {
     expect(norte).toContain('4 paso(s) VENCIDOS')
   })
 })
+
+// FRICCIÓN REAL (29-jul-2026). El brief avisó "Hoy vence: Emitir factura
+// electrónica #1 por fee mensual S/1,500" y Aaron respondió: "ni siquiera sé de qué
+// o por qué o a quién, y pregunto y no tengo respuesta". El paso tenía TODO cargado
+// desde el 3-jun y el chat no lo veía. Avisar de algo que después no se puede
+// explicar es ruido, no asistencia.
+describe('buildAskContext — el detalle del paso, para poder RESPONDER', () => {
+  const base = { question: '¿qué factura tengo que emitir?', todayISO: '2026-07-29', people: [], memories: [] }
+
+  it('lleva el cómo y el criterio de hecho junto al paso', () => {
+    const ctx = buildAskContext({
+      ...base,
+      goals: [{
+        title: 'Cerrar Boticas Jhodaal como cliente de Marlab',
+        nextStep: 'Emitir factura electrónica #1 por fee mensual S/1,500 (mes jul-2026)',
+        nextStepDue: '2026-07-29',
+        nextStepDetail: 'Usar sistema de facturación de Marlab; enviar a Dayana por email',
+        nextStepDone: 'Factura electrónica emitida y enviada a Boticas Jhodaal',
+      }],
+    })
+    // Las tres preguntas que hizo: de qué, a quién, y cuándo está lista.
+    expect(ctx).toContain('S/1,500')
+    expect(ctx).toContain('enviar a Dayana por email')
+    expect(ctx).toContain('queda hecho cuando: Factura electrónica emitida')
+    expect(ctx).toContain('Boticas Jhodaal')
+  })
+
+  it('sin detalle no inventa corchetes vacíos', () => {
+    const ctx = buildAskContext({ ...base, goals: [{ title: 'X', nextStep: 'Hacer algo' }] })
+    expect(ctx).toContain('próximo paso: Hacer algo')
+    expect(ctx).not.toContain('[]')
+    expect(ctx).not.toContain('cómo:')
+  })
+})

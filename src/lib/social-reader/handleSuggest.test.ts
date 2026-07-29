@@ -135,3 +135,31 @@ describe('looksLikeBusinessHandle', () => {
     expect(looksLikeBusinessHandle('@limagrupoinmobiliario')).toContain('lima')
   })
 })
+
+// REGRESIÓN: "spa" matcheaba dentro de "fra·spa·ravencedor" y marcaba como negocio
+// una cuenta de frases motivacionales. Mismo error de subcadena que el "carlo"
+// dentro de "giancarlo": tres letras caen dentro de cualquier palabra.
+describe('looksLikeBusinessHandle — pistas cortas solo en borde', () => {
+  it('no marca por una pista de 3 letras metida DENTRO de una palabra', () => {
+    // El caso real: "spa" vive en "fra·SPA·ravencedor" (frases-para-vencedor).
+    expect(looksLikeBusinessHandle('@frasesparavencedor_')).toBeNull()
+    expect(looksLikeBusinessHandle('@lasrespuestas')).toBeNull()
+  })
+
+  it('LÍMITE CONOCIDO: si la palabra ARRANCA con la pista, se marca igual', () => {
+    // "gymnasia" empieza con "gym" y el arranque es un borde legítimo — no hay
+    // regla léxica que lo distinga de "gym_lima". Por eso esto solo PROPONE y
+    // Aaron confirma el lote; no se auto-aplica.
+    expect(looksLikeBusinessHandle('@gymnasiaromantica')).not.toBeNull()
+  })
+  it('sí marca cuando la pista corta está en un borde', () => {
+    expect(looksLikeBusinessHandle('@k9_peru_sac')).not.toBeNull()
+    expect(looksLikeBusinessHandle('@global_plastic_sac')).not.toBeNull()
+    expect(looksLikeBusinessHandle('@spa_lima')).not.toBeNull()
+  })
+  it('las pistas de 4+ siguen valiendo como subcadena', () => {
+    // "peru" al final de "cablemundoperu" es señal real y no hay separador.
+    expect(looksLikeBusinessHandle('@cablemundoperu')).not.toBeNull()
+    expect(looksLikeBusinessHandle('@corporacionaxion')).not.toBeNull()
+  })
+})

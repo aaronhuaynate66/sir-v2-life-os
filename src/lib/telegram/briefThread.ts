@@ -63,7 +63,10 @@ export function muteRef(text: string, slot = ''): string {
 
 /** Slots cuyo contenido puede repetirse mañana tras mañana sin cambiar (por
  *  prioridad de "qué es lo que más cansa oír"). Solo estos ofrecen 🔕. */
-const MUTABLE_SLOTS = ['momentResolution', 'relationshipNudge', 'cycleWeekAhead', 'goalNudge', 'weekFocus', 'healthWatch', 'habitNudge'] as const
+// `goalContactTiming` se sumó el 29-jul: era el ÚNICO slot repetible sin 🔕, y por
+// eso Aaron recibió 43 días una cotización que ya no existía sin poder callarla.
+// Si un slot puede volver mañana igual, tiene que poder silenciarse.
+const MUTABLE_SLOTS = ['momentResolution', 'relationshipNudge', 'cycleWeekAhead', 'goalNudge', 'weekFocus', 'healthWatch', 'habitNudge', 'goalContactTiming'] as const
 
 /**
  * Botones de una sección, derivados de lo que las señales SABEN. Una señal sin
