@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { canalDe, chatMessageId, limaWallClock, minuteKey, toChatRows, type ChatMessageInput } from './append'
+import { canalDe, chatMessageId, contenidoParaId, limaWallClock, minuteKey, toChatRows, type ChatMessageInput } from './append'
 
 describe('minuteKey', () => {
   it('trunca a minuto en UTC', () => {
@@ -51,6 +51,54 @@ describe('chatMessageId', () => {
     const a = chatMessageId('u1', 'p1', 'whatsapp', '2026-07-09T14:23:00Z', 'other', 'hola')
     const b = chatMessageId('u1', 'p1', 'whatsapp', '2026-07-09T14:24:00Z', 'other', 'hola')
     expect(a).not.toBe(b)
+  })
+})
+
+describe('contenidoParaId — la identidad ignora lo que el export no puede llevar', () => {
+  it('recorta los bordes del mensaje entero', () => {
+    expect(contenidoParaId('Recién leí tu mensaje\n')).toBe('Recién leí tu mensaje')
+    expect(contenidoParaId('  hola  ')).toBe('hola')
+  })
+
+  it('recorta los bordes de CADA línea interna', () => {
+    // El caso real: una línea que es solo un espacio, dentro de un menú del día.
+    expect(contenidoParaId('Menu Criollo\n \nEntradas')).toBe('Menu Criollo\n\nEntradas')
+    expect(contenidoParaId('  hola  \n  chau  ')).toBe('hola\nchau')
+  })
+
+  it('conserva los saltos de línea, que sí son parte del mensaje', () => {
+    expect(contenidoParaId('a\nb\nc')).toBe('a\nb\nc')
+    expect(contenidoParaId('a\n\nb')).toBe('a\n\nb')
+  })
+
+  it('no toca un contenido ya limpio', () => {
+    const limpio = 'Amor no te olvides enviar las facturas'
+    expect(contenidoParaId(limpio)).toBe(limpio)
+  })
+})
+
+describe('chatMessageId — el espaciado que el export pierde NO cambia el id', () => {
+  // Esto es el bug medido el 29-jul: importar un export real de 113 mensajes
+  // insertó 2 filas nuevas porque el .txt no puede preservar estos espacios.
+  const id = (c: string) => chatMessageId('u1', 'p1', 'whatsapp', '2026-07-16T18:44:00Z', 'other', c)
+
+  it('salto al final → mismo id', () => {
+    expect(id('Recién leí tu mensaje\n')).toBe(id('Recién leí tu mensaje'))
+  })
+
+  it('línea interna con espacios → mismo id', () => {
+    expect(id('Menu Criollo\n \nEntradas')).toBe(id('Menu Criollo\n\nEntradas'))
+  })
+
+  it('el id de un contenido limpio NO cambió (la 0176 sigue valiendo)', () => {
+    // Si este hash cambiara, la migración 0176 habría dejado 285k ids inválidos.
+    expect(chatMessageId('11111111-1111-1111-1111-111111111111', 'per_test_1', 'whatsapp',
+      '2026-07-16T18:44:00.000Z', 'user', 'Amor no te olvides enviar las facturas'))
+      .toBe('cm_429b2ea7e62749105a804abb28b2ca1fb248b187')
+  })
+
+  it('pero un texto REALMENTE distinto sigue dando id distinto', () => {
+    expect(id('hola\nchau')).not.toBe(id('hola chau'))
   })
 })
 

@@ -124,6 +124,34 @@ export function minuteKey(iso: string | null): string {
 }
 
 /**
+ * Contenido tal como lo puede REPRESENTAR el formato de export de WhatsApp, que
+ * es el mínimo común denominador entre los caminos de ingesta.
+ *
+ * POR QUÉ (medido el 29-jul-2026, corriendo el importador de verdad): el export es
+ * un .txt donde cada línea de un mensaje multilínea es una línea del archivo, y el
+ * parser las recorta al reconstruirlo. O sea: el formato NO PUEDE preservar los
+ * espacios al borde de una línea. Un mensaje guardado como "Recién leí tu mensaje\n"
+ * o "Menu Criollo\n \nEntradas" vuelve del export sin ese espacio, hashea distinto
+ * y se inserta como fila nueva — para siempre, en cada import.
+ *
+ * Son 512 filas de 285,003 (471 multilínea + 41 con espacios alrededor). Poco, pero
+ * es una fuga que COMPONE: cada re-import agrega otras 512.
+ *
+ * La regla que sale de eso: la identidad de un mensaje no puede depender de algo
+ * que el transporte no puede llevar. El contenido se GUARDA tal cual (la fidelidad
+ * no se pierde), solo el hash mira esta forma normalizada.
+ *
+ * El algoritmo es el mismo que el del parser —recortar cada línea— escrito con
+ * regex en vez de split/trim para que el espejo en SQL de la migración 0177 sea
+ * literalmente la misma operación y no dos aproximaciones parecidas.
+ */
+export function contenidoParaId(content: string): string {
+  return content
+    .replace(/[ \t\r]*\n[ \t\r]*/g, '\n')   // bordes de cada línea interna
+    .replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, '') // bordes del mensaje entero
+}
+
+/**
  * Id determinístico del mensaje → dedupe idempotente. sha1 de los campos que
  * definen "el mismo mensaje". Nota: dos mensajes con idéntico (fecha a MINUTO,
  * emisor, texto) colapsan a uno — aceptable para un sustrato de texto (mismo
@@ -137,7 +165,7 @@ export function chatMessageId(
   sender: ChatSender,
   content: string,
 ): string {
-  const s = `${userId}|${personId}|${canal}|${minuteKey(iso)}|${sender}|${content}`
+  const s = `${userId}|${personId}|${canal}|${minuteKey(iso)}|${sender}|${contenidoParaId(content)}`
   return `cm_${createHash('sha1').update(s).digest('hex')}`
 }
 

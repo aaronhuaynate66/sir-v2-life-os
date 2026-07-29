@@ -270,8 +270,34 @@ async function resolvePerson(contact, people) {
 async function main() {
   const { data: peopleRows } = await sb.from('people').select('id, name, alias').eq('user_id', AARON).limit(2000)
   const people = peopleRows || []
-  let files = readdirSync(DIR).filter((f) => /^WhatsApp Chat - .+\.zip$/i.test(f))
+  // WhatsApp nombra el export en el IDIOMA del teléfono. El de Aaron está en
+  // español, así que exporta "Chat de WhatsApp con X.zip" — y este script solo
+  // aceptaba el nombre en inglés, encontraba 0 archivos y decía "procesando 0
+  // chat(s)" sin quejarse. Ese es el mismo fallo silencioso que venimos cazando:
+  // una vista vacía que parece un resultado.
+  const PATRONES = [/^WhatsApp Chat - (.+)\.zip$/i, /^Chat de WhatsApp con (.+)\.zip$/i]
+  const nombreDelContacto = (f) => {
+    for (const p of PATRONES) { const m = p.exec(f); if (m) return m[1] }
+    return null
+  }
+  const todosLosZips = readdirSync(DIR).filter((f) => /\.zip$/i.test(f))
+  let files = todosLosZips.filter((f) => nombreDelContacto(f) !== null)
   if (ONLY) files = files.filter((f) => f.toLowerCase().includes(ONLY.toLowerCase()))
+
+  // Si HAY zips pero ninguno con el nombre esperado, decirlo. Callarse acá es lo
+  // que hace que uno crea que el import corrió cuando no procesó nada.
+  const ignorados = todosLosZips.filter((f) => nombreDelContacto(f) === null)
+  if (ignorados.length > 0) {
+    console.log(`⚠️  ${ignorados.length} .zip en la carpeta con un nombre que no reconozco (los salteo):`)
+    for (const f of ignorados.slice(0, 5)) console.log(`     ${f}`)
+    console.log(`   Espero "WhatsApp Chat - Nombre.zip" o "Chat de WhatsApp con Nombre.zip".`)
+  }
+  if (files.length === 0) {
+    console.log(todosLosZips.length === 0
+      ? `⚠️  No hay ningún .zip en ${DIR}`
+      : `⚠️  Ninguno de los ${todosLosZips.length} .zip tiene un nombre de export de chat. NADA se importó.`)
+    return
+  }
   // más chicos primero (para validar barato)
   const sized = files.map((f) => ({ f, size: statSync(join(DIR, f)).size })).sort((a, b) => a.size - b.size)
   let list = sized.map((s) => s.f)
@@ -279,7 +305,7 @@ async function main() {
 
   console.log(`${DRY ? '[DRY] ' : ''}procesando ${list.length} chat(s)\n`)
   for (const f of list) {
-    const contact = f.replace(/^WhatsApp Chat - /i, '').replace(/\.zip$/i, '')
+    const contact = nombreDelContacto(f) ?? f.replace(/\.zip$/i, '')
     try {
       const txt = await readChatTxt(join(DIR, f))
       const msgs = parseExport(txt)
