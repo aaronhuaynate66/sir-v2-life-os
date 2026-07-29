@@ -147,9 +147,26 @@ const PISTAS_NEGOCIO = [
   'seguros', 'inversiones', 'servicios', 'soluciones', 'tech', 'digital', 'agencia',
 ]
 
+/**
+ * Las pistas CORTAS (≤3 letras: spa, gym, sac, srl) solo valen si caen en un
+ * BORDE del handle — arranque, final, o pegadas a un separador.
+ *
+ * Sin esto, "spa" matcheaba dentro de "fra·spa·ravencedor" (@frasesparavencedor) y
+ * lo marcaba como negocio. Es el mismo error de subcadena que ya había marcado
+ * "@giancarlopostigo" como "Carlo": tres letras aparecen dentro de cualquier
+ * palabra. Las de 4+ ("peru", "corp") sí valen como subcadena, porque "peru" al
+ * final de "cablemundoperu" es una señal real y no hay separador que la anuncie.
+ */
+function pistaEnBorde(handleRaw: string, pista: string): boolean {
+  const partes = String(handleRaw).replace(/^@/, '').toLowerCase().split(/[._\-\s]+/)
+  return partes.some((t) => t.startsWith(pista) || t.endsWith(pista))
+}
+
 export function looksLikeBusinessHandle(handle: string): string | null {
   const h = handleCore(handle)
   if (!h) return null
-  const hit = PISTAS_NEGOCIO.find((p) => h.includes(p))
+  const hit = PISTAS_NEGOCIO.find((p) => (
+    h.includes(p) && (p.length > 3 || pistaEnBorde(handle, p))
+  ))
   return hit ? `el handle dice "${hit}"` : null
 }

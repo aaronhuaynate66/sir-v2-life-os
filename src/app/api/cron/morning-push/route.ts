@@ -168,15 +168,36 @@ export async function GET(req: NextRequest) {
       const importantDates = importantDatesRanked.slice(0, 3).map((d) => d.text)
 
       // Tareas que vencen hoy (no hechas).
+      //
+      // Se trae el OBJETIVO al que cuelgan por dos razones que salieron de una
+      // fricción real (29-jul). Aaron sobre el aviso de la factura de S/1.500:
+      // *"ni siquiera sé de qué o por qué o a quién, y pregunto y no tengo
+      // respuesta… sin que esté amarrado a algún objetivo solo me está haciendo
+      // ruido"*. El paso tenía TODO cargado desde el 3-jun (descripción, criterio,
+      // cliente) y el brief mostraba solo el título.
+      //   1. El objetivo se nombra en la línea → deja de ser un aviso huérfano.
+      //   2. Se descartan los pasos de objetivos PAUSADOS: el de la factura cuelga
+      //      de "Cerrar Boticas Jhodaal", que se pausó el 28-jul, y su tarea
+      //      seguía disparando igual.
       const { data: stepRows } = await admin
         .from('objective_steps')
-        .select('id, title, target_date, status')
+        .select('id, title, target_date, status, description, objective_id, goals!inner(title, status)')
         .eq('user_id', uid)
         .eq('target_date', today)
         .neq('status', 'hecho')
         .limit(50)
-      const dueStepRows = (stepRows ?? []) as Array<{ id: string; title: string }>
-      const dueTasks = dueStepRows.map((s) => s.title).filter(Boolean)
+      const dueStepRows = ((stepRows ?? []) as unknown[])
+        .map((raw) => {
+          const s = raw as { id: string; title: string; description?: string | null; goals?: unknown }
+          const g = Array.isArray(s.goals) ? s.goals[0] : s.goals
+          const meta = (g ?? null) as { title?: string; status?: string } | null
+          return { id: s.id, title: s.title, description: s.description ?? null, goalTitle: meta?.title ?? null, goalStatus: meta?.status ?? null }
+        })
+        // Un objetivo pausado o archivado no genera pendientes del día.
+        .filter((s) => s.goalStatus !== 'paused' && s.goalStatus !== 'archived' && s.goalStatus !== 'completed')
+      const dueTasks = dueStepRows
+        .map((s) => (s.goalTitle ? `${s.title} — de "${s.goalTitle}"` : s.title))
+        .filter(Boolean)
       // Ids de las entidades detrás de las señales → habilitan los botones del
       // hilo de Telegram ("✅ Ya lo hice" necesita saber QUÉ tarea marcar). Con
       // más de una tarea el botón sería ambiguo, así que solo va con exactamente una.
@@ -287,13 +308,13 @@ export async function GET(req: NextRequest) {
       // ventana. Cruza goal.related_persons × contact_activity (kind=available).
       let goalTimingText: string | undefined
       try {
-        const goalByPerson = new Map<string, { goalTitle: string; pendingAction: string }>()
+        const goalByPerson = new Map<string, { goalTitle: string; pendingAction: string; goalUpdatedAt: string | null }>()
         for (const g of goals) {
           const action = (g.next_action ?? '').trim()
           if (!action) continue
           for (const pid of g.related_persons ?? []) {
             if (typeof pid === 'string' && pid && !goalByPerson.has(pid)) {
-              goalByPerson.set(pid, { goalTitle: g.title, pendingAction: action })
+              goalByPerson.set(pid, { goalTitle: g.title, pendingAction: action, goalUpdatedAt: g.updated_at ?? null })
             }
           }
         }
@@ -314,10 +335,10 @@ export async function GET(req: NextRequest) {
               const g = goalByPerson.get(r.person_id)
               const name = nameById.get(r.person_id)
               return g && name
-                ? [{ personName: name, goalTitle: g.goalTitle, pendingAction: g.pendingAction, signalDetail: 'anda activa hoy', observedAt: r.observed_at }]
+                ? [{ personName: name, goalTitle: g.goalTitle, pendingAction: g.pendingAction, signalDetail: 'anda activa hoy', observedAt: r.observed_at, goalUpdatedAt: g.goalUpdatedAt }]
                 : []
             })
-            goalTimingText = buildGoalTimingNudge(cands) ?? undefined
+            goalTimingText = buildGoalTimingNudge(cands, now) ?? undefined
           }
         }
       } catch { /* fail-soft: el brief va sin este nudge */ }
