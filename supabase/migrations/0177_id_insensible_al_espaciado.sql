@@ -84,26 +84,24 @@ begin
   raise notice 'Autotest del hash OK — la normalización SQL coincide con append.ts';
 end $$;
 
--- ── 1) Borrar los pares que ahora colapsan ────────────────────────────────────
--- Antes de reescribir hay que sacar las filas que van a compartir id, o el UPDATE
--- revienta por llave primaria duplicada. Se conserva el ctid más bajo (la más
--- vieja), que es la que tenía el espaciado original.
-with numeradas as (
-  select ctid,
-         row_number() over (
-           partition by user_id, person_id, source,
-                        coalesce(to_char(sent_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI'), ''),
-                        sender, public.sir_contenido_para_id(content)
-           order by ctid
-         ) as rn
-  from chat_messages
-)
-delete from chat_messages
-where ctid in (select ctid from numeradas where rn > 1);
-
--- ── 2) Reescribir los ids que cambian ─────────────────────────────────────────
--- El WHERE acota el UPDATE a las ~512 filas afectadas (para el resto la
--- normalización es identidad) y hace la migración idempotente.
-update chat_messages
-set id = public.sir_chat_message_id(user_id, person_id, source, sent_at, sender, content)
-where id <> public.sir_chat_message_id(user_id, person_id, source, sent_at, sender, content);
+-- ── El trabajo sobre la DATA lo hace el script, no esta migración ────────────
+--
+-- La primera versión de esta migración SÍ borraba y reescribía acá, y FALLÓ en
+-- prod (run 30465455685) con una colisión de llave primaria. La causa es que SQL
+-- no puede saber el CANAL de una fila: chat_messages guarda `source` ('reader'),
+-- no la plataforma ('whatsapp'), así que el DELETE particionaba por source y
+-- dejaba pasar 4 pares como este:
+--
+--     source=whatsapp  2026-06-20T11:02:00  "😂\n"   ← el export, con salto al final
+--     source=reader    2026-06-20T11:02:25  "😂"     ← la extensión, ya reparada a canal=whatsapp
+--
+-- Son el MISMO mensaje por los dos caminos, y solo al normalizar el espaciado se
+-- vuelven reconocibles como duplicados. Para juntarlos hay que saber que la fila
+-- de reader es del canal whatsapp — y eso lo sabe `canalDe` en JS, no el SQL.
+--
+-- Se corre: node scripts/repair-chat-ids.mjs --canonizar        (dry-run)
+--           node scripts/repair-chat-ids.mjs --canonizar --apply
+--
+-- Son ~1,335 filas a reescribir y ~297 a borrar: perfectamente manejable desde el
+-- script, y con UNA sola implementación de la identidad en vez de dos que se
+-- pueden separar. Que es, literalmente, el bug que empezó todo esto.
