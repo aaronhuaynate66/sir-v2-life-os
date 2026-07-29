@@ -10,16 +10,21 @@
 //   node scripts/import-whatsapp.mjs --dir "C:/Users/huayn/Downloads" --only "Janeth"   # 1 chat
 //   node scripts/import-whatsapp.mjs --dir "..." --limit 5                               # los 5 más chicos
 //   node scripts/import-whatsapp.mjs --dir "..."                                         # TODOS
-//   (agregá --dry para no escribir en la base)
+//   (agrega --dry para no escribir en la base)
 //
 // Env (de .env.local): ANTHROPIC_API_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 
 import JSZip from 'jszip'
 import { readFileSync, readdirSync, statSync } from 'fs'
 import { join } from 'path'
-import { randomUUID, createHash } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { createClient } from '@supabase/supabase-js'
+
+// Ruta relativa (no el alias '@/': Node plano no lo resuelve). append.ts es
+// autocontenido —solo node:crypto y un `import type`— así que el type-stripping
+// de Node 24 lo carga sin build.
+import { chatMessageId as canonicalChatMessageId } from '../src/lib/chat-messages/append.ts'
 
 // Zips gigantes (miles de fotos/videos) superan el límite de 2GB de readFileSync
 // de Node. Para esos, extraemos SOLO el _chat.txt por streaming con `unzip -p`
@@ -120,11 +125,18 @@ function tagAuthors(msgs, contact) {
   return msgs.map((m) => ({ ...m, side: m.author === otherAuthor ? 'other' : 'user' }))
 }
 
-// Capa 1 — sustrato canónico chat_messages (mismo id determinístico que
-// lib/chat-messages/append.ts → dedupe idempotente, re-correr es seguro).
+// Capa 1 — sustrato canónico chat_messages. El id sale de la MISMA función que
+// usa el reader: se importa de append.ts (Node 24 hace type-stripping de .ts),
+// NO se reimplementa acá.
+//
+// POR QUÉ IMPORTADA Y NO COPIADA (bug real, dos veces): este archivo tenía su
+// propia copia "igual a append.ts". Después append.ts cambió a hashear el
+// minuto (minuteKey, tras 148k duplicados el 20-jul) y la copia de acá quedó
+// hasheando el iso crudo. Nadie lo notó hasta que el re-import duplicó ~71k
+// mensajes de Diana el 29-jul. Dos copias de una función de identidad SIEMPRE
+// se separan; la única defensa es que haya una sola.
 function chatMessageId(personId, source, iso, sender, content) {
-  const s = `${AARON}|${personId}|${source}|${iso ?? ''}|${sender}|${content}`
-  return 'cm_' + createHash('sha1').update(s).digest('hex')
+  return canonicalChatMessageId(AARON, personId, source, iso, sender, content)
 }
 async function appendMessages(personId, tagged) {
   const source = 'whatsapp'
@@ -159,13 +171,24 @@ async function appendMessages(personId, tagged) {
     seen.add(id)
     rows.push({ id, user_id: AARON, person_id: personId, source, sender: m.side, author_name: (m.author || '').slice(0, 120) || null, sent_at: iso, content, is_media: false })
   }
+  // Contamos las filas REALMENTE insertadas, no las intentadas. Con
+  // ignoreDuplicates el upsert es ON CONFLICT DO NOTHING y `.select()` devuelve
+  // solo lo que entró; sumar `slice.length` reportaba "73,251 mensajes" incluso
+  // cuando los 73,251 ya estaban en la base. Ese número inflado fue lo que me
+  // hizo creer que el import de Diana había funcionado cuando en realidad estaba
+  // duplicando (29-jul-2026).
   let n = 0
+  let yaEstaban = 0
   for (let i = 0; i < rows.length; i += 500) {
     const slice = rows.slice(i, i + 500)
-    const { error } = await sb.from('chat_messages').upsert(slice, { onConflict: 'id', ignoreDuplicates: true })
+    const { data, error } = await sb.from('chat_messages')
+      .upsert(slice, { onConflict: 'id', ignoreDuplicates: true }).select('id')
     if (error) throw new Error(`chat_messages: ${error.message}`)
-    n += slice.length
+    const nuevos = (data ?? []).length
+    n += nuevos
+    yaEstaban += slice.length - nuevos
   }
+  if (yaEstaban > 0) console.log(`      · ${n} nuevos, ${yaEstaban} ya estaban (dedupe por id)`)
   // Mantener people.last_contact al día = fecha del último mensaje (maneja la
   // urgencia de contacto). Solo AVANZA (never backward): si el export trae algo
   // más reciente que el last_contact actual, lo actualiza. Sin esto quedaba stale.
