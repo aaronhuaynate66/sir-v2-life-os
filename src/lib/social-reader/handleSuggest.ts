@@ -19,6 +19,8 @@
 //
 // PURO: cero red, cero IA.
 
+import { pistaDebilEnHandle, pistaFuerteEnHandle } from './orgLexicon'
+
 /** Contacto mínimo contra el que se compara. */
 export interface SuggestCandidate {
   id: string
@@ -137,36 +139,22 @@ export function suggestForHandle(
 // veredicto: `looksLikeOrg` (igProfile.ts) decide con seguidores y categoría, que
 // es evidencia mucho más fuerte — pero eso exige que el reader haya visitado el
 // perfil, y hoy no corrió.
-const PISTAS_NEGOCIO = [
-  'oficial', 'official', 'peru', 'lima', 'grupo', 'corp', 'sac', 'srl', 'eirl',
-  'store', 'shop', 'tienda', 'boutique', 'market', 'distribuidora', 'importaciones',
-  'clinica', 'botica', 'farmacia', 'dental', 'spa', 'salon', 'barber',
-  'inmobiliaria', 'constructora', 'contratistas', 'ingenieria', 'consultora', 'consultoria',
-  'studio', 'estudio', 'academy', 'academia', 'instituto', 'centro',
-  'gym', 'fitness', 'crossfit', 'restaurant', 'cafe', 'pizza', 'delivery',
-  'seguros', 'inversiones', 'servicios', 'soluciones', 'tech', 'digital', 'agencia',
-]
-
-/**
- * Las pistas CORTAS (≤3 letras: spa, gym, sac, srl) solo valen si caen en un
- * BORDE del handle — arranque, final, o pegadas a un separador.
- *
- * Sin esto, "spa" matcheaba dentro de "fra·spa·ravencedor" (@frasesparavencedor) y
- * lo marcaba como negocio. Es el mismo error de subcadena que ya había marcado
- * "@giancarlopostigo" como "Carlo": tres letras aparecen dentro de cualquier
- * palabra. Las de 4+ ("peru", "corp") sí valen como subcadena, porque "peru" al
- * final de "cablemundoperu" es una señal real y no hay separador que la anuncie.
- */
-function pistaEnBorde(handleRaw: string, pista: string): boolean {
-  const partes = String(handleRaw).replace(/^@/, '').toLowerCase().split(/[._\-\s]+/)
-  return partes.some((t) => t.startsWith(pista) || t.endsWith(pista))
-}
+// El léxico ya NO vive acá: está en orgLexicon.ts, uno solo para el nombre y para
+// el handle. Tener dos listas hizo que esta se quedara sin 'airguns', 'uniformes',
+// 'club', 'comunidad' ni 'diario' cuando la otra sí las tenía, y por eso
+// @impalaairguns y @clubdecaballeros pasaban como personas. Medido sobre las 103
+// cuentas reales de la bandeja: de 27 marcadas a 44, sin falsos positivos nuevos.
 
 export function looksLikeBusinessHandle(handle: string): string | null {
-  const h = handleCore(handle)
-  if (!h) return null
-  const hit = PISTAS_NEGOCIO.find((p) => (
-    h.includes(p) && (p.length > 3 || pistaEnBorde(handle, p))
-  ))
+  if (!handleCore(handle)) return null
+  // El léxico vive en orgLexicon.ts, UNO SOLO. Antes había una lista acá y otra en
+  // entityKind.ts, y se separaron: esta nunca recibió 'airguns', 'uniformes',
+  // 'club', 'comunidad' ni 'diario', así que @impalaairguns y @clubdecaballeros
+  // pasaban como personas aunque la otra lista sí tuviera la palabra.
+  // Acá valen las pistas DÉBILES ('oficial') además de las fuertes: esta función
+  // es una PISTA para descartar en lote mirando solo el @, no un veredicto. La
+  // distinción fuerte/débil la usa `clasificarCuenta` (orgVerdict.ts), que sí
+  // decide si algo se puede PROPONER como organización sin preguntar.
+  const hit = pistaFuerteEnHandle(handle) ?? pistaDebilEnHandle(handle)
   return hit ? `el handle dice "${hit}"` : null
 }

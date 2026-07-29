@@ -23,7 +23,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */

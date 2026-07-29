@@ -132,7 +132,10 @@ describe('looksLikeBusinessHandle', () => {
     }
   })
   it('dice QUÉ palabra lo marcó', () => {
-    expect(looksLikeBusinessHandle('@limagrupoinmobiliario')).toContain('lima')
+    // Nombra "grupo" y no "lima": desde que la geo solo vale como SUFIJO,
+    // "lima" al arranque de "limagrupoinmobiliario" ya no cuenta —y no hace
+    // falta, porque la razón social sí está en el handle—.
+    expect(looksLikeBusinessHandle('@limagrupoinmobiliario')).toContain('grupo')
   })
 })
 
@@ -146,11 +149,17 @@ describe('looksLikeBusinessHandle — pistas cortas solo en borde', () => {
     expect(looksLikeBusinessHandle('@lasrespuestas')).toBeNull()
   })
 
-  it('LÍMITE CONOCIDO: si la palabra ARRANCA con la pista, se marca igual', () => {
-    // "gymnasia" empieza con "gym" y el arranque es un borde legítimo — no hay
-    // regla léxica que lo distinga de "gym_lima". Por eso esto solo PROPONE y
-    // Aaron confirma el lote; no se auto-aplica.
-    expect(looksLikeBusinessHandle('@gymnasiaromantica')).not.toBeNull()
+  it('LÍMITE CERRADO: si la palabra solo ARRANCA con la pista, ya NO se marca', () => {
+    // Antes se marcaba y quedó anotado como límite conocido: "gymnasia" empieza
+    // con "gym" y el arranque se contaba como borde. Al unificar el léxico se
+    // dejó de contar el arranque —solo el token entero o su final—, así que
+    // "gymnasia romántica" dejó de ser un gimnasio.
+    //
+    // El costo es simétrico y asumido: @gymtotal tampoco se marca por "gym". No
+    // hay regla léxica que separe "gymnasia" de "gymtotal", y de los dos errores
+    // posibles preferimos NO afirmar: una organización propuesta de más ensucia
+    // el grafo de contactos, una no propuesta solo se queda en la cola.
+    expect(looksLikeBusinessHandle('@gymnasiaromantica')).toBeNull()
   })
   it('sí marca cuando la pista corta está en un borde', () => {
     expect(looksLikeBusinessHandle('@k9_peru_sac')).not.toBeNull()
