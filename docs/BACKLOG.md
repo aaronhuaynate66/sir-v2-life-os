@@ -5,7 +5,8 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 28/07/2026 (consolida los pases 25, 26, 27 y 28/07 — ver bloque abajo).
+> **Última actualización:** 29/07/2026 (agrega el pase de reconciliación automática 29/07 — ver bloque
+> debajo de PENDIENTES ACTUALES; consolida también los pases 25, 26, 27 y 28/07 más abajo).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
@@ -22,13 +23,13 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 - ~~**[media] Copy del recordatorio "¡Listo!"**~~ ✅ **HECHO** (los 4 pases coinciden). `src/lib/sir/askSir.ts` ~1182-1190: si la respuesta abre afirmando "hecho" o queda muy corta, se reemplaza por "Te propongo esto — revísalo y confírmalo. 👇". PR #944 (`f01c19d`, 23/07); caso `action-honesty` del harness 30→95. Estaba en prod ANTES del pase 07-24 que lo siguió listando.
 - **[baja] Verborrea a "consejo corto"** — 🟡 **PARCIAL** (los 4 pases coinciden). Hay una línea de BREVEDAD en el prompt (`src/lib/sir/ask.ts`, mismo `f01c19d`) pero el propio commit la califica de "efecto marginal". No hay scrub determinístico como en voseo. **No cerrar sin re-medir con el harness.**
 - **[alta] Ola 2 · slice 4 — loop de aprendizaje** — **sigue pendiente** (re-verificado en los 4 pases y otra vez el 28/07): `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` y no hay rastro de few-shot dinámico. **Bloqueado por combustible, no por código:** `chat_feedback` = **0 filas** al 28/07 — Aaron nunca calificó una respuesta. Construir el mecanismo hoy = mecanismo vacío.
-- **[media] Que `askSir` VEA los sub-pasos de los objetivos** — nuevo (28/07). `askSir.ts:390-396` pide `id, title, related_persons, status, next_action, is_anchor` — **ni `milestones` ni `objective_steps`**. Hay 151 pasos reales en la base y el chat es ciego a todos: no puede responder "¿cómo voy con Boticas?". Es el que más rinde de los tres pendientes de objetivos.
+- ~~**[media] Que `askSir` VEA los sub-pasos de los objetivos**~~ ✅ **HECHO — corregido por reconciliación automática (29/07/2026).** Se arregló el MISMO día 28/07 que se anotó acá, PR #1007 (`136e144`, ya en `main`/HEAD): `askSir.ts` ahora carga `objective_steps` (hasta 1000 filas) y calcula el avance real con `computeGoalAdvance` (`src/lib/goals/advance.ts:85`); `AskGoalCtx` gana `progress/stepsDone/stepsTotal/overdue/nextStep/nextStepDue`; `renderGoalProgress` (`src/lib/sir/ask.ts:161`) los redacta priorizando el próximo paso concreto sobre el `next_action` manual (vencidos explícitos). Fail-soft si falla la lectura. Verificado contra data real (9 objetivos activos) — destapó que la oportunidad de Miluska sí estaba cargada pero ninguna superficie la mostraba. Texto original abajo, como registro de lo que motivó el fix: `askSir.ts:390-396` pedía `id, title, related_persons, status, next_action, is_anchor` — ni `milestones` ni `objective_steps`. Había 151 pasos reales en la base y el chat era ciego a todos: no podía responder "¿cómo voy con Boticas?".
 
 **🟡 Necesita input/decisión de Aaron:**
 - **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` O usar SIR con 👍/👎+corrección → `npm run eval:sir --from-feedback 20`. Mismo combustible que el slice 4, y sigue en 0.
 - **[alta] Consolidar las 3 estructuras de sub-pasos** — nuevo (28/07). Los sub-pasos de un objetivo viven en TRES lugares: `goals.milestones` (JSON), `objective_steps` (151 filas, la viva) y `objective_blockers` (11 filas, todas del Mundial). El Mundial tiene los mismos ítems escritos en los tres. Consolidar toca data de Aaron → requiere su OK.
 - **[media] Purgar los planes de junio** — nuevo (28/07). De 151 pasos, **150 pendientes y 50 vencidos**, casi todos de planes cargados el 2-3/06 que nunca se tocaron. No es bug de cómputo: el plan es papel muerto. Decidir qué sigue vivo es de Aaron.
-- **[media] Activar `looksLikeOrg`** — nuevo (28/07). `src/lib/social-reader/igProfile.ts` ya detecta persona-vs-fanpage (profesional con rubro / ≥10k seguidores / verificada con volumen) pero **no clasifica solo**. Puede despejar buena parte de las 141 cuentas de la bandeja en lote. Falta decidir: ¿sugiere o descarta?
+- **[media] Activar `looksLikeOrg`** — 🟡 **PARCIAL / revisar — actualizado por reconciliación automática (29/07/2026).** `looksLikeOrg` en sí (`igProfile.ts`) **sigue sin cablearse a una clasificación automática** — lo confirma el propio comentario en `src/lib/social-reader/handleSuggest.ts:137` ("es una PISTA, no un veredicto... eso exige que el reader haya visitado el perfil, y hoy no corrió"). Pero el problema de fondo que motivó el ítem —clasificar en lote persona/org las cuentas de la bandeja— se atacó por una vía DISTINTA, ya en prod: PR #1004 (`45b4fc9`, `entityKind.ts`) clasifica desde las notas de Aaron para el import del Excel, y PR #1005 (`5aebaeb`, `askIdentity.ts`) agrega la tarjeta por Telegram (foto + 3 botones: persona/empresa/descartar) que pregunta pasivamente. Resultado medido en el commit: bandeja 141→83. No se marca ✅ hecho porque literalmente no es `looksLikeOrg` lo que se activó — queda a criterio de Aaron si con esto alcanza o si todavía vale automatizar con datos del reader IG.
 - **[media] Log de entrenamiento por ejercicio** — nuevo (28/07, salió del research de #993). `training_sessions` (mig 0169) guarda `kind`/`duration_min`/`intensity`/`notes` pero **no series, reps ni carga**. Sin peso levantado no se puede medir si Aaron gana masa (que es su estrategia decidida para pelear en 80+). Bloque 1 del Mundial arrancó el 28/07. Esfuerzo medio: tabla `training_exercises` + parser en `executeAction.ts` para "banca 3x12 con 80".
 
 **🔴 Bloqueado (data / otra PC) — construir a ciegas = fantasma:**
@@ -42,6 +43,22 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
 **🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — **re-ranking y el ciclo Mem0-style extract→merge→olvido siguen sin empezar** (los 4 pases coinciden).
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-29
+
+Pase de mantenimiento contra el código real (agente automático, rutina programada). Encontró drift real en dos ítems de "PENDIENTES ACTUALES" (arriba), ambos corregidos in situ con evidencia:
+
+- ✅ **Que `askSir` vea los sub-pasos de los objetivos** — el ítem había quedado pendiente en el doc DESPUÉS de que el commit que lo resuelve (`136e144`, PR #1007) mergeara — mismo día 28/07 en que se anotó como pendiente, y quedó como HEAD de `main` al momento de este pase. Caso clásico: se arregló el mismo día que se detectó, el doc no se enteró.
+- 🟡 **`Activar looksLikeOrg`** — el código de `looksLikeOrg` sigue sin cablearse a una clasificación automática (confirmado con grep + comentario explícito en el código que dice que hoy no corre), pero el problema de fondo que motivaba el ítem (clasificar en lote persona/org las 141 cuentas de la bandeja) se resolvió por otra vía en los PR #1004/#1005 del mismo 28/07 (bandeja bajó a 83). Queda en 🟡 con nota, no cerrado, porque literalmente no es lo que el ítem pedía.
+
+**Verificado y SIN drift (quedó igual, no tocado):**
+- `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con los pesos fijos `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` — sin rastro de few-shot dinámico.
+- `training_exercises` sigue sin existir — `supabase/migrations/` solo tiene `0169_training_sessions.sql` (sin tabla de ejercicios/series/reps/carga).
+- Grafo `/red` → sigma.js sigue sin rastro — `grep` de "sigma" en `src/` solo devuelve la varianza estadística de `partnerEffect.ts`, no una librería de grafos.
+
+**No re-verificado este pase** (fuera de alcance — bloqueados por data/decisión de Aaron, o no verificables por grep): golden-set del harness, consolidar las 3 estructuras de sub-pasos, purgar planes de junio, log de entrenamiento por ejercicio, chat_feedback (requiere consulta a la base, no grep), y todo lo ya marcado ✅/🟡 con evidencia en pases anteriores.
 
 ---
 
