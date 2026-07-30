@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SIR Reader",
-  "version": "0.8.0",
-  "description": "Lee pasivamente tus conversaciones (Teams, WhatsApp Web) y tu correo (Outlook Web) y los manda a tu SIR. Solo lo que ya se ve en pantalla; sin auto-scroll ni requests de fondo.",
+  "version": "0.9.0",
+  "description": "Lee las conversaciones de la sesión ya abierta. En WhatsApp lee el Store interno (wa-js) y hace backfill solo; en el resto, lo renderizado. Nunca envía mensajes ni abre historias.",
   "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": [
     "https://teams.microsoft.com/*",

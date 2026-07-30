@@ -21,6 +21,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
+import { normalizarProbe, elegirParaEntregar, type Comando } from '@/lib/reader/comandos'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -59,7 +60,11 @@ export async function POST(req: NextRequest) {
 
   let body: unknown
   try { body = await req.json() } catch { return NextResponse.json({ error: 'body inválido' }, { status: 400 }) }
-  const b = (body ?? {}) as { channel?: unknown; status?: unknown; detail?: unknown }
+  const b = (body ?? {}) as {
+    channel?: unknown; status?: unknown; detail?: unknown
+    extVersion?: unknown; lastError?: unknown; sentCount?: unknown; probe?: unknown
+    result?: unknown
+  }
 
   const channel = typeof b.channel === 'string' ? b.channel.trim().toLowerCase() : ''
   if (!CANALES.has(channel)) {
@@ -67,6 +72,15 @@ export async function POST(req: NextRequest) {
   }
   const status = typeof b.status === 'string' && b.status.trim() ? b.status.trim().slice(0, 60) : 'ok'
   const detail = typeof b.detail === 'string' ? b.detail.slice(0, 300) : null
+  // Mig 0181 — lo que el latido NUNCA mandaba y por eso el reader pudo estar caído
+  // 4 días diciendo 'ok': la versión de la extensión, su último error, cuánto dice
+  // haber mandado, y el diagnóstico del lector (¿cargó la librería del Store?
+  // ¿cuántos chats ve?). "Pestaña abierta" y "lector leyendo" eran indistinguibles.
+  const extVersion = typeof b.extVersion === 'string' ? b.extVersion.slice(0, 40) : null
+  const lastError = typeof b.lastError === 'string' && b.lastError ? b.lastError.slice(0, 300) : null
+  const sentCount = typeof b.sentCount === 'number' && Number.isFinite(b.sentCount)
+    ? Math.max(0, Math.floor(b.sentCount)) : null
+  const probe = normalizarProbe(b.probe)
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -83,11 +97,60 @@ export async function POST(req: NextRequest) {
     // misma pregunta ("¿está vivo ahora?").
     const { error } = await admin.from('reader_heartbeats').upsert({
       user_id: userId, channel, last_beat_at: now, status, detail, updated_at: now,
+      ...(extVersion !== null ? { ext_version: extVersion } : {}),
+      ...(sentCount !== null ? { sent_count: sentCount } : {}),
+      // `last_error` y `probe` se escriben SIEMPRE, incluso en null: si el error se
+      // resolvió, la fila tiene que dejar de mostrarlo. Un error pegado para siempre
+      // es tan inútil como no tenerlo.
+      last_error: lastError,
+      probe: probe as unknown as Record<string, unknown> | null,
     }, { onConflict: 'user_id,channel' })
     // PostgREST no lanza: el error viene en `.error` (trampa de #947).
     if (error) throw new Error(error.message)
 
-    return NextResponse.json({ ok: true, channel, status })
+    // ── RESULTADO de un comando anterior ─────────────────────────────────────
+    // La extensión reporta acá lo que ejecutó. Se cierra el ciclo del comando:
+    // 'entregado' → 'ok' | 'error'. Sin esto no se puede distinguir "nunca lo
+    // recibió" de "lo recibió y falló", que es la ambigüedad que costó los 4 días.
+    const res = b.result as { id?: unknown; ok?: unknown; detalle?: unknown } | undefined
+    if (res && typeof res.id === 'string' && res.id) {
+      try {
+        await admin.from('reader_commands').update({
+          status: res.ok === true ? 'ok' : 'error',
+          done_at: now,
+          result: typeof res.detalle === 'string' ? res.detalle.slice(0, 500) : null,
+        }).eq('id', res.id).eq('user_id', userId)
+      } catch { /* fail-soft: perder el acuse no puede tumbar el latido */ }
+    }
+
+    // ── COMANDOS PENDIENTES en la RESPUESTA ──────────────────────────────────
+    // Acá vive el "manejo remoto" que pidió Aaron. Esta respuesta se descartaba por
+    // completo en `background.js`; ahora lleva las órdenes. Cero polling, cero
+    // permisos nuevos, cero requests extra: es la misma llamada de siempre.
+    let comandos: Comando[] = []
+    try {
+      const { data: pend } = await admin
+        .from('reader_commands')
+        .select('id, kind, params')
+        .eq('user_id', userId).eq('channel', channel).eq('status', 'pendiente')
+        .order('created_at', { ascending: true })
+        .limit(5)
+      comandos = elegirParaEntregar(((pend ?? []) as Array<Record<string, unknown>>).map((r) => ({
+        id: String(r.id),
+        kind: r.kind as Comando['kind'],
+        params: (r.params ?? {}) as Comando['params'],
+      })))
+      if (comandos.length > 0) {
+        await admin.from('reader_commands')
+          .update({ status: 'entregado', delivered_at: now })
+          .in('id', comandos.map((c) => c.id))
+      }
+    } catch {
+      // Tabla no propagada todavía (ventana de deploy) → el latido sigue sirviendo.
+      comandos = []
+    }
+
+    return NextResponse.json({ ok: true, channel, status, comandos })
   } catch (e) {
     reportApiError(e, { route: 'reader/heartbeat', channel })
     return NextResponse.json({ error: 'no pude registrar el latido' }, { status: 500 })

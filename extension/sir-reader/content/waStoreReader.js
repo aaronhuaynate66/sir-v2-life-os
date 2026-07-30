@@ -115,16 +115,33 @@
 
   // F3 — backfill del último mes: SOLO chats con actividad en el último mes,
   // ordenados por recencia (evita iterar los 1000+ chats históricos).
-  async function backfill() {
+  /**
+   * @param {{dias?:number, chat?:string}} [opts]
+   *
+   * PARAMETRIZADO (30-jul-2026). Antes esto era fijo en 30 días y corría UNA sola vez
+   * por carga de página, y ese era el motivo real de que el historial viejo de un chat
+   * no estuviera: no es que el lector falle, es que nunca se le pedía más. Aaron:
+   * *"quiero tener actualizado el chat de Diana… y solo me quieres mandar a scrolear
+   * despacio, eso no me sirve"*. Ahora la ventana y el chat entran por comando remoto
+   * (ver `lib/reader/comandos.ts`), así que pedir "Diana, 400 días" es una fila en una
+   * tabla y no un pedido de trabajo manual.
+   */
+  async function backfill(opts) {
+    const dias = opts && Number(opts.dias) > 0 ? Number(opts.dias) : 30;
+    const soloChat = opts && typeof opts.chat === 'string' && opts.chat.trim()
+      ? opts.chat.trim().toLowerCase() : null;
     const all = await waitForChats();
-    const cutoff = Date.now() - MONTH_MS;
+    const cutoff = Date.now() - dias * 24 * 3600 * 1000;
     const activeAll = all
       .filter((c) => !isSkippable(c))
+      // Con un chat pedido por nombre, la recencia NO filtra: el punto de pedirlo es
+      // traer su historial viejo, que por definición no está en la ventana.
+      .filter((c) => (soloChat ? String(chatName(c)).toLowerCase().includes(soloChat) : true))
       .map((c) => ({ c, t: Number(c.t) || 0 }))
-      .filter((x) => x.t * 1000 >= cutoff)     // solo activos en el último mes
+      .filter((x) => (soloChat ? true : x.t * 1000 >= cutoff))
       .sort((a, b) => b.t - a.t);               // más recientes primero
     const active = activeAll.slice(0, MAX_CHATS).map((x) => x.c);
-    log(`backfill: ${all.length} totales · ${activeAll.length} activos en el último mes · procesando ${active.length}${activeAll.length > active.length ? ' (CAP — subir MAX_CHATS si quieres todos)' : ''}`);
+    log(`backfill(${dias}d${soloChat ? `, chat~"${soloChat}"` : ''}): ${all.length} totales · ${activeAll.length} candidatos · procesando ${active.length}${activeAll.length > active.length ? ' (CAP)' : ''}`);
     if (!active.length && all.length) {
       warn('0 activos por recencia (¿chat.t vacío?). No fuerzo — revisa si falta data de fecha.');
     }
@@ -141,8 +158,8 @@
       if (mapped.length) { post(cName, mapped); total += mapped.length; }
       await sleep(CHAT_DELAY_MS); // ritmo humano
     }
-    log(`backfill listo: ${total} msgs del último mes (${active.length} chats) enviados al puente.`);
-    return total;
+    log(`backfill listo: ${total} msgs de ${dias}d (${active.length} chats) enviados al puente.`);
+    return { chats: active.length, mensajes: total, dias, chat: soloChat || null };
   }
 
   // F2 — vivo.
@@ -168,10 +185,45 @@
   }
 
   window.__sirBackfill = backfill;
-  window.__sirProbe = async () => {
-    const chats = await listChats();
-    log('probe: chats', chats.length, chats.slice(0, 8).map((c) => `${chatName(c)} [${idStr(c.id)}] t=${c.t}`));
-  };
+
+  /**
+   * Diagnóstico ESTRUCTURADO del lector. Antes esto solo logueaba a consola, así que
+   * para saber si el lector estaba vivo había que pedirle a alguien que abriera F12 en
+   * la otra PC. Devolverlo como objeto es lo que permite que viaje en el latido y que
+   * una caída se note el mismo día en vez de a los cuatro.
+   */
+  async function probe() {
+    const out = { lib: typeof window.WPP, libVersion: null, ready: false, chats: null, error: null };
+    try {
+      out.libVersion = (WPP && WPP.version) ? String(WPP.version) : null;
+      out.ready = !!(WPP.isReady || (WPP.conn && WPP.conn.isMainReady && WPP.conn.isMainReady()));
+      const chats = await listChats();
+      out.chats = chats.length;
+    } catch (e) {
+      out.error = (e && e.message ? e.message : String(e)).slice(0, 300);
+    }
+    return out;
+  }
+  window.__sirProbe = probe;
+
+  // ── PUENTE ISOLATED → MAIN → ISOLATED ─────────────────────────────────────
+  // El puente que ya existía iba en un solo sentido (batches MAIN→ISOLATED). Los
+  // comandos necesitan respuesta, así que acá se escucha el pedido y se contesta con
+  // el mismo `id` para que el otro lado pueda casarlos.
+  window.addEventListener('message', async (ev) => {
+    if (ev.source !== window) return;
+    const d = ev.data;
+    if (!d || d.__sirCmd !== true || !d.id) return;
+    let res;
+    try {
+      if (d.kind === 'probe') res = { ok: true, probe: await probe() };
+      else if (d.kind === 'resync') res = { ok: true, ...(await backfill({ dias: d.dias, chat: d.chat })) };
+      else res = { ok: false, error: `kind desconocido: ${d.kind}` };
+    } catch (e) {
+      res = { ok: false, error: (e && e.message ? e.message : String(e)).slice(0, 300) };
+    }
+    try { window.postMessage({ __sirCmdRes: true, id: d.id, res }, '*'); } catch (_) { /* */ }
+  });
 
   if (WPP.webpack && typeof WPP.webpack.onReady === 'function') {
     WPP.webpack.onReady(start);

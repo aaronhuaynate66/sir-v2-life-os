@@ -193,16 +193,99 @@ const CANALES = [
   { channel: 'outlook', match: 'https://outlook.office.com/*' },
 ];
 
-async function postHeartbeat(channel, status, detail) {
+/** Resultado del último comando ejecutado, para acusarlo en el próximo latido. */
+let comandoPendienteDeAcuse = null;
+
+/**
+ * Latido, ahora de IDA Y VUELTA.
+ *
+ * ANTES: mandaba `{channel, status, detail}` donde detail era literalmente
+ * "1 pestaña(s)", y hacía `await fetch(...)` DESCARTANDO la respuesta. Por eso el
+ * lector de WhatsApp pudo estar caído del 26 al 30 de julio con el latido diciendo
+ * 'ok': contaba PESTAÑAS, no si el lector producía, y las dos cosas se veían
+ * idénticas desde el servidor.
+ *
+ * AHORA manda además la versión de la extensión, su último error, cuánto lleva
+ * enviado y el DIAGNÓSTICO del lector (`probe`), y LEE la respuesta: ahí vienen los
+ * comandos. La vía de vuelta ya existía — solo se tiraba.
+ */
+async function postHeartbeat(channel, status, detail, probe) {
   const { sirUrl, token } = await getConfig();
-  if (!token) return;
+  if (!token) return [];
+  let extVersion = null;
+  try { extVersion = chrome.runtime.getManifest().version; } catch (_) { /* */ }
+  let lastError = null;
+  let sentCount = null;
   try {
-    await fetch(`${sirUrl}/api/reader/heartbeat`, {
+    const { status: st } = await chrome.storage.local.get('status');
+    if (st) { lastError = st.lastError || null; sentCount = typeof st.sent === 'number' ? st.sent : null; }
+  } catch (_) { /* */ }
+
+  const body = { channel, status, detail, extVersion, lastError, sentCount };
+  if (probe) body.probe = probe;
+  // Acuse del comando anterior: cierra el ciclo entregado → ok/error. Sin esto no se
+  // puede distinguir "nunca llegó" de "llegó y falló".
+  if (comandoPendienteDeAcuse) body.result = comandoPendienteDeAcuse;
+
+  try {
+    const r = await fetch(`${sirUrl}/api/reader/heartbeat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-reader-token': token },
-      body: JSON.stringify({ channel, status, detail }),
+      body: JSON.stringify(body),
     });
-  } catch (_) { /* si no hay red, el próximo latido lo cubre */ }
+    comandoPendienteDeAcuse = null; // se entregó el acuse (o no había)
+    const j = await r.json().catch(() => null);
+    return (j && Array.isArray(j.comandos)) ? j.comandos : [];
+  } catch (_) {
+    return []; // si no hay red, el próximo latido lo cubre
+  }
+}
+
+/**
+ * Le pregunta al lector del canal cómo está de VERDAD. Devuelve null si el canal no
+ * expone diagnóstico — y null significa "no sé", no "está bien".
+ */
+async function probeCanal(channel, tabId) {
+  if (channel !== 'whatsapp' || tabId == null) return null;
+  try {
+    return await chrome.tabs.sendMessage(tabId, { type: 'sir-wa-probe' });
+  } catch (_) {
+    return null; // el content script no respondió
+  }
+}
+
+/**
+ * Ejecuta un comando llegado por el latido. Los tipos son un set CERRADO en el
+ * servidor (`resync` | `probe`): un comando de texto libre corriendo en el navegador
+ * de Aaron es una superficie que no se abre por comodidad.
+ */
+async function ejecutarComando(cmd, channel, tabId) {
+  if (!cmd || !cmd.id) return;
+  let ok = false;
+  let detalle = '';
+  try {
+    if (channel !== 'whatsapp' || tabId == null) {
+      detalle = `canal ${channel} sin ejecutor de comandos`;
+    } else if (cmd.kind === 'probe') {
+      const p = await chrome.tabs.sendMessage(tabId, { type: 'sir-wa-probe' });
+      ok = !!p;
+      detalle = JSON.stringify(p || {}).slice(0, 400);
+    } else if (cmd.kind === 'resync') {
+      const r = await chrome.tabs.sendMessage(tabId, {
+        type: 'sir-wa-resync',
+        dias: cmd.params && cmd.params.dias,
+        chat: cmd.params && cmd.params.chat,
+      });
+      ok = !!(r && r.ok);
+      detalle = JSON.stringify(r || {}).slice(0, 400);
+    } else {
+      detalle = `kind desconocido: ${cmd.kind}`;
+    }
+  } catch (e) {
+    detalle = (e && e.message ? e.message : String(e)).slice(0, 400);
+  }
+  comandoPendienteDeAcuse = { id: cmd.id, ok, detalle };
+  setStatus({ lastError: ok ? null : `comando ${cmd.kind}: ${detalle.slice(0, 120)}` });
 }
 
 /** ¿La pestaña de WhatsApp está pidiendo el QR? Se mira el TÍTULO, que no exige
@@ -218,16 +301,44 @@ async function whatsappStatus(tabId) {
   }
 }
 
+/**
+ * Recarga las pestañas de los canales para que Chrome reinyecte los content scripts
+ * de la versión nueva. Se llama al instalar/actualizar/recargar la extensión.
+ *
+ * Es seguro: recargar WhatsApp Web o Instagram no pierde sesión ni datos, y el
+ * ingest es idempotente por hash — si el backfill vuelve a mandar lo mismo, el
+ * servidor lo deduplica. El costo de recargar de más es cero; el de no recargar
+ * fueron cuatro días de silencio.
+ */
+async function reinyectarCanales() {
+  for (const c of CANALES) {
+    try {
+      const tabs = await chrome.tabs.query({ url: c.match });
+      for (const t of tabs) {
+        if (t.id == null) continue;
+        try { await chrome.tabs.reload(t.id, { bypassCache: false }); } catch (_) { /* */ }
+      }
+    } catch (_) { /* */ }
+  }
+}
+
 async function beatAll() {
   for (const c of CANALES) {
     let tabs = [];
     try { tabs = await chrome.tabs.query({ url: c.match }); } catch (_) { tabs = []; }
     if (tabs.length === 0) continue; // sin pestaña no se late: el canal no corre
+    const tabId = tabs[0] && tabs[0].id != null ? tabs[0].id : null;
     let status = 'ok';
-    if (c.channel === 'whatsapp' && tabs[0] && tabs[0].id != null) {
-      status = await whatsappStatus(tabs[0].id);
+    if (c.channel === 'whatsapp' && tabId != null) {
+      status = await whatsappStatus(tabId);
     }
-    await postHeartbeat(c.channel, status, `${tabs.length} pestaña(s)`);
+    // El diagnóstico del lector va EN el latido: es lo que distingue "la pestaña
+    // está abierta" de "el lector está leyendo".
+    const probe = await probeCanal(c.channel, tabId);
+    const comandos = await postHeartbeat(c.channel, status, `${tabs.length} pestaña(s)`, probe);
+    // Uno por latido (el servidor ya lo limita); con 10 min entre latidos, la cola
+    // se drena sola sin necesidad de concurrencia.
+    for (const cmd of comandos) await ejecutarComando(cmd, c.channel, tabId);
   }
 }
 
@@ -263,7 +374,24 @@ try {
       keepWhatsappAlive().then(beatAll).finally(scheduleHeartbeat);
     }
   });
-  chrome.runtime.onInstalled.addListener(() => { scheduleIgRefresh(); scheduleHeartbeat(); beatAll(); });
+  chrome.runtime.onInstalled.addListener(() => {
+    scheduleIgRefresh(); scheduleHeartbeat();
+    // RE-INYECTAR LOS CONTENT SCRIPTS. Esta es la causa del silencio del reader de
+    // WhatsApp del 26 al 30 de julio, y no se me habría ocurrido sin el diagnóstico
+    // de la otra PC: `window.WPP` cargado, `ready: true`, `mainReady: true`,
+    // wa-js 4.4.1... y CERO logs del lector.
+    //
+    // Chrome **no reinyecta los content scripts en las pestañas ya abiertas** cuando
+    // se recarga o actualiza una extensión: los viejos quedan huérfanos (su
+    // `chrome.runtime.sendMessage` empieza a tirar "Extension context invalidated")
+    // y los nuevos no entran hasta que la pestaña se recargue. El service worker sí
+    // es el nuevo, así que **el latido sigue diciendo 'ok'** mientras el lector está
+    // muerto — las dos cosas se veían idénticas desde afuera.
+    //
+    // Recargar las pestañas de los canales es lo único que lo arregla, y depender de
+    // que alguien se acuerde de apretar F5 en la otra PC no es una arquitectura.
+    reinyectarCanales().finally(beatAll);
+  });
   chrome.runtime.onStartup.addListener(() => { scheduleIgRefresh(); scheduleHeartbeat(); keepWhatsappAlive().then(beatAll); });
   scheduleIgRefresh();
   scheduleHeartbeat();
