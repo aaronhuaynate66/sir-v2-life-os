@@ -84,6 +84,7 @@ import { summarizeAffection, describeAffection } from '@/lib/forecast-conductual
 import { fetchCalendarEvents } from '@/lib/calendar/feed'
 import type { Person, Goal, Memory } from '@/types'
 import { deVoseo } from '@/lib/text/deVoseo'
+import { corregirFalsaEscritura } from './falsaEscritura'
 import { labPatterns } from '@/lib/health-exams/patterns'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { computeRecomp, explainRecomp, partitionChange, explainComposition } from '@/lib/salud/recomposicion'
@@ -1149,6 +1150,20 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   // Scrub DETERMINÍSTICO de voseo: el prompt lo prohíbe pero el modelo se resbala
   // (el harness cazó "querés"). Esto garantiza tuteo peruano en la salida.
   let answer = deVoseo(rawAnswer)
+
+  // GUARD DE FALSA ESCRITURA, por el mismo motivo que el scrub de arriba: el
+  // prompt lo prohíbe y el modelo se resbala igual. El 29-jul Aaron avisó que a
+  // Diana Díaz le había venido la regla y SIR contestó "acabo de recalcular su
+  // ciclo" sin llamar a ninguna tool — el dato nunca se guardó y él quedó creyendo
+  // que sí. Si la respuesta afirma haber guardado algo y NO hay tool, se le pega
+  // un aviso que lo desmiente.
+  const guard = corregirFalsaEscritura(answer, { huboTool: !!tool })
+  if (guard.corregida) {
+    answer = guard.respuesta
+    reportApiError(new Error('SIR afirmó una escritura sin llamar a la tool'), {
+      route: 'sir/ask', frase: guard.frase ?? '', pregunta: question.slice(0, 120),
+    })
+  }
 
   // ¿El modelo propuso una acción? La normalizamos y resolvemos la persona. NO se
   // ejecuta acá: el cliente la confirma.

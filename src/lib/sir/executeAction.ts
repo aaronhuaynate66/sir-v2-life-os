@@ -364,6 +364,27 @@ export async function executeProposedAction(
       note: (action.nota || '').trim().slice(0, 300) || null,
     })
     if (error) return { ok: false, message: 'Uf, no pude guardar la marca de estado. Reinténtalo en un momento.' }
+
+    // Un período nuevo también ADELANTA el ancla de `people.cycle_start_date`.
+    //
+    // POR QUÉ (bug real, visto el 29-jul-2026): esta acción solo escribía en
+    // `person_cycles`, pero `people.cycle_start_date` lo leen tres superficies
+    // más —/api/briefing/daily, /api/care/upcoming y /api/ciclo/event-brief—, así
+    // que cada una seguía calculando la fase con el ancla vieja. La de Diana Díaz
+    // llevaba 64 días sin moverse. Marcar el período y que la mitad del sistema
+    // no se enterara es peor que no marcarlo: da una fase con cara de precisa.
+    //
+    // Solo se adelanta (nunca se retrocede): registrar un período viejo que faltaba
+    // no debe pisar un ancla más reciente.
+    if (phase === 'bleeding') {
+      const { data: actual } = await supabase
+        .from('people').select('cycle_start_date').eq('user_id', userId).eq('id', personId).maybeSingle()
+      const previo = (actual as { cycle_start_date?: string | null } | null)?.cycle_start_date ?? null
+      if (!previo || date > previo.slice(0, 10)) {
+        await supabase.from('people').update({ cycle_start_date: date }).eq('user_id', userId).eq('id', personId)
+      }
+    }
+
     const first = ((person.name as string) || action.persona || 'ella').split(' ')[0]
     const label = action.estado === 'regla' ? 'período' : 'ánimo bajo/tensa'
     return { ok: true, message: `📔 Anotado: ${first} — ${label} el ${date}. Con cada marca detecto mejor si hay un patrón que se repite; cuando haya varias, te aviso si es cíclico y cuándo podría volver.` }

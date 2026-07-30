@@ -45,6 +45,9 @@ function mockSb(opts: {
       if (table === 'memories') {
         return { upsert: (rows: unknown[]) => { calls.memUpsert = rows; return Promise.resolve({ error: null }) } }
       }
+      if (table === 'person_cycles') {
+        return { insert: (row: Record<string, unknown>) => { calls.cycleInsert = row; return thenable({ error: null }) } }
+      }
       if (table === 'goals') {
         const chain: Record<string, unknown> = {
           select: () => chain, eq: () => chain, contains: () => chain,
@@ -268,5 +271,43 @@ describe('isExecutableByChat', () => {
     expect(isExecutableByChat('cerrar_relacion')).toBe(true)
     expect(isExecutableByChat('agregar_hito')).toBe(true)
     expect(isExecutableByChat('otra_cosa')).toBe(false)
+  })
+})
+
+// El 29-jul Aaron avisó que a Diana Díaz le vino la regla. La marca iba a
+// `person_cycles`, pero `people.cycle_start_date` —que leen /api/briefing/daily,
+// /api/care/upcoming y /api/ciclo/event-brief— se quedaba con el ancla vieja: la
+// de ella llevaba 64 días sin moverse. Marcar el período y que la mitad del
+// sistema no se enterara es peor que no marcarlo: da una fase con cara de precisa.
+describe('executeProposedAction — registrar_estado y el ancla del ciclo', () => {
+  const marca = (estado: 'regla' | 'animo_bajo', fecha: string): ProposedActionResolved =>
+    ({ kind: 'registrar_estado', persona: 'Diana', personId: 'p1', estado, fecha, nota: '' } as ProposedActionResolved)
+
+  it('un período NUEVO adelanta people.cycle_start_date', async () => {
+    const { sb, calls } = mockSb({ person: { id: 'p1', name: 'Diana Díaz', cycle_start_date: '2026-05-26' } as never })
+    const r = await executeProposedAction(sb as unknown as SupabaseClient, 'u1', marca('regla', '2026-07-28'))
+    expect(r.ok).toBe(true)
+    expect(calls.cycleInsert).toMatchObject({ date: '2026-07-28', phase: 'bleeding' })
+    expect(calls.peopleUpdate).toEqual({ cycle_start_date: '2026-07-28' })
+  })
+
+  it('un período VIEJO que faltaba NO pisa un ancla más reciente', async () => {
+    const { sb, calls } = mockSb({ person: { id: 'p1', name: 'Diana Díaz', cycle_start_date: '2026-07-28' } as never })
+    await executeProposedAction(sb as unknown as SupabaseClient, 'u1', marca('regla', '2026-06-30'))
+    expect(calls.cycleInsert).toMatchObject({ date: '2026-06-30' })   // la marca sí se guarda
+    expect(calls.peopleUpdate).toBeUndefined()                        // el ancla no se mueve
+  })
+
+  it('sin ancla previa, la primera marca la establece', async () => {
+    const { sb, calls } = mockSb({ person: { id: 'p1', name: 'Diana', cycle_start_date: null } as never })
+    await executeProposedAction(sb as unknown as SupabaseClient, 'u1', marca('regla', '2026-07-28'))
+    expect(calls.peopleUpdate).toEqual({ cycle_start_date: '2026-07-28' })
+  })
+
+  it('un ánimo bajo NO toca el ancla del ciclo', async () => {
+    const { sb, calls } = mockSb({ person: { id: 'p1', name: 'Diana', cycle_start_date: '2026-05-26' } as never })
+    await executeProposedAction(sb as unknown as SupabaseClient, 'u1', marca('animo_bajo', '2026-07-28'))
+    expect(calls.cycleInsert).toMatchObject({ phase: 'pms' })
+    expect(calls.peopleUpdate).toBeUndefined()
   })
 })
