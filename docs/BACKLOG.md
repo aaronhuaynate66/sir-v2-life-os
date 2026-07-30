@@ -81,6 +81,61 @@ Lo que sí quedó como conocimiento reusable: `importance` **no sirve** como se�
 ranking en este repo, y `person_id` tampoco — el scope por persona vive en `askSir`
 (`targetIds`/`scopedPersonId`), que es su lugar correcto.
 
+### ❌ Grafo /red → sigma.js — MEDIDO Y DESCARTADO (30/07/2026)
+
+El ítem decía "sin rastro en código, sigue pendiente", y el framing estaba mal: **el
+grafo ya existe y está muy trabajado.** `src/components/red/GraphCanvas.tsx` son 521
+líneas sobre `react-force-graph-2d` con glow radial que respira, tamaño por grado,
+subgrafo encendido al hover, partículas-sinapsis, física anti-solape y colores por
+token (theme-aware, re-leídos al togglear).
+
+Sigma.js es una migración por **rendimiento**: WebGL en vez de canvas 2D. Su ventaja
+aparece pasando los ~10,000 nodos.
+
+**Medido el 30/07:** `people` = **129**, `person_links` = **20**,
+`social_page_followers` = 2 → el grafo tiene del orden de **250 nodos**. Canvas 2D va
+fluido hasta ~2,000.
+
+Migrar sería: reescribir 521 líneas pulidas, rehacer el glow y las partículas en
+shaders (mucho más difícil), sumar una dependencia, y **cero beneficio visible** —
+con riesgo real de regresión en una pantalla que Aaron usa. **No hacer.** Reabrir solo
+si el grafo pasa de ~2,000 nodos; hasta entonces el pendiente correcto no es la
+librería, es qué aristas le faltan al grafo (intereses en común, que está bloqueado
+por `social_profiles` vacía).
+
+### 🆕 Memorias basura: 17% del store son registros de llamadas sin fecha (30/07/2026)
+
+Buscando duplicados para el ciclo Mem0 apareció algo distinto y real. Medido sobre
+1,000 memorias: **141 grupos con contenido EXACTAMENTE idéntico, 169 filas de sobra.**
+El desglose importa:
+
+| tipo | filas de sobra | ejemplo |
+|---|---|---|
+| `episodic` | **154** | `📞 Llamada de voz perdida · 10:09` (×5) |
+| `temporal` | 15 | `Registro de energy con valor 8/10.` (×8) |
+
+**Y no son duplicados: son eventos DISTINTOS cuyo texto omite la fecha.** Cinco
+llamadas perdidas a las 10:09 de cinco días diferentes producen el mismo string.
+Fusionarlas **borraría cuatro llamadas reales** — por eso el ciclo "merge" de Mem0,
+aplicado ingenuamente sobre esto, destruye información en vez de consolidarla.
+
+**Causa raíz localizada:** `callLabel` (`lib/capture/whatsapp/export/calls.ts:50-54`)
+arma `📞 {tipo} perdida` sin fecha, y los dos llamadores le pegan `· {hora}`. La fecha
+**sí se guarda** (`createPersonLog({ loggedAt: c.iso })`), pero se pierde al derivar la
+memoria, que solo mira el texto de la nota.
+
+**Dos decisiones para Aaron, ninguna tomada:**
+1. **Incluir la fecha al derivar** → los 154 quedan distintos y siguen siendo
+   consultables. Arregla lo nuevo; las filas viejas necesitan backfill (toca su data).
+2. **No derivar registros de llamadas a memoria semántica.** Un `📞 Llamada de voz
+   perdida · 10:09` compitiendo en el recall con "Diana depositó 950 soles" es ruido:
+   nadie le pregunta a SIR por una llamada perdida a las 10:09. Los person_logs ya
+   guardan el dato con su fecha para las métricas de contacto.
+
+La recomendación es la **2** (y la 1 para lo que quede): sacar 154 filas de ruido de
+1,295 mejora el recall más que cualquier re-ranking — que es justo lo que la medición
+de arriba mostró que NO se puede mejorar tocando pesos.
+
 ---
 
 ## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-30
