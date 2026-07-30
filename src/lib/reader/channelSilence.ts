@@ -33,7 +33,23 @@ export interface ChannelState {
   status?: string | null
 }
 
-export type SilenceKind = 'caido' | 'deslogueado' | 'sin_datos' | 'ok' | 'nunca_visto'
+export type SilenceKind =
+  | 'caido' | 'deslogueado' | 'sin_datos' | 'ok' | 'nunca_visto'
+  /**
+   * Trae datos FRESCOS pero no reporta latido. No está caído: está corriendo una
+   * versión de la extensión anterior al latido (o el latido se rompió).
+   *
+   * ESTE VEREDICTO EXISTE POR UN FALSO POSITIVO REAL, medido el 30-jul-2026:
+   * `reader_heartbeats` estaba en 0 filas mientras Instagram había traído data
+   * ese mismo día a las 11:42. Sin esta rama, el diagnóstico decía «Instagram
+   * dejó de reportar — probablemente la pestaña está cerrada», que es FALSO y lo
+   * contradice un dato de hace veinte minutos.
+   *
+   * La regla de fondo: **data fresca es prueba positiva de vida, y la ausencia de
+   * latido no puede pisarla.** El latido sirve para desambiguar la AUSENCIA de
+   * datos, no para negar los que están.
+   */
+  | 'sin_latido'
 
 export interface ChannelVerdict {
   channel: string
@@ -50,6 +66,12 @@ export const HEARTBEAT_DEAD_HOURS = 6
 /** Con latido pero sin traer nada por más de esto, vale mencionarlo (puede ser
  *  silencio real, pero en WhatsApp una semana sin un solo mensaje es raro). */
 export const DATA_QUIET_DAYS = 4
+/**
+ * Datos de hace este tiempo o menos = el canal está VIVO, sin importar el latido.
+ * 1 día porque el reader es pasivo: depende de que Aaron abra la app, así que un
+ * hueco de horas es normal, pero si trajo algo ayer u hoy está andando.
+ */
+export const DATOS_FRESCOS_DIAS = 1
 
 const HOUR = 3_600_000
 const DAY = 86_400_000
@@ -79,8 +101,18 @@ export function diagnoseChannel(c: ChannelState, now: Date = new Date()): Channe
 
   // Nunca latió ni trajo nada → no está instalado/activado; no es una caída.
   if (hb === null && dd === null) return { ...base, kind: 'nunca_visto' }
-  // Latió alguna vez y dejó de latir → la extensión no está corriendo ese canal.
-  if (hb === null || hb >= HEARTBEAT_DEAD_HOURS) return { ...base, kind: 'caido' }
+
+  // DATA FRESCA GANA SOBRE LA FALTA DE LATIDO. Va ANTES de la rama de 'caido'
+  // porque si no, un canal que acaba de traer datos se declara muerto — pasó de
+  // verdad: el 30-jul Instagram había traído data a las 11:42 y `reader_heartbeats`
+  // estaba en 0 filas. El latido desambigua la AUSENCIA de datos; no puede negar
+  // los que están ahí.
+  const sinLatido = hb === null || hb >= HEARTBEAT_DEAD_HOURS
+  const datosFrescos = dd !== null && dd <= DATOS_FRESCOS_DIAS
+  if (sinLatido && datosFrescos) return { ...base, kind: 'sin_latido' }
+
+  // Latió alguna vez y dejó de latir, y tampoco trae nada reciente → caído.
+  if (sinLatido) return { ...base, kind: 'caido' }
   // Late pero la sesión se cayó (WhatsApp Web pidiendo QR, por ejemplo).
   if (c.status && /logged_out|desloguead|qr/i.test(c.status)) return { ...base, kind: 'deslogueado' }
   // Vivo y logueado, pero hace días que no trae nada.
@@ -94,6 +126,12 @@ const NOMBRE: Record<string, string> = {
 }
 const label = (c: string) => NOMBRE[c] ?? c
 
+/** "A", "A y B", "A, B y C" — con `join(' y ')` salía "A y B y C". */
+function lista(xs: string[]): string {
+  if (xs.length <= 1) return xs[0] ?? ''
+  return `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`
+}
+
 /**
  * Línea para el brief. Solo habla de lo que está MAL y nombra la acción concreta,
  * porque Aaron no puede arreglar la extensión desde el celular: lo único útil es
@@ -106,7 +144,8 @@ export function channelSilenceLine(verdicts: ChannelVerdict[], now: Date = new D
   const caidos = verdicts.filter((v) => v.kind === 'caido')
   const deslog = verdicts.filter((v) => v.kind === 'deslogueado')
   const mudos = verdicts.filter((v) => v.kind === 'sin_datos')
-  if (caidos.length === 0 && deslog.length === 0 && mudos.length === 0) return null
+  const sinLatido = verdicts.filter((v) => v.kind === 'sin_latido')
+  if (caidos.length === 0 && deslog.length === 0 && mudos.length === 0 && sinLatido.length === 0) return null
 
   const partes: string[] = []
   for (const v of deslog) {
@@ -121,9 +160,15 @@ export function channelSilenceLine(verdicts: ChannelVerdict[], now: Date = new D
   for (const v of mudos) {
     partes.push(`${label(v.channel)} está corriendo pero hace ${v.daysSinceData} día(s) que no trae nada`)
   }
+  // Se dice que TRAE DATOS antes de mencionar el problema: es una versión vieja,
+  // no una caída, y confundirlas es lo que hace que un aviso pierda credibilidad.
+  if (sinLatido.length) {
+    const nombres = lista(sinLatido.map((v) => label(v.channel)))
+    partes.push(`${nombres} ${sinLatido.length > 1 ? 'traen' : 'trae'} datos pero no ${sinLatido.length > 1 ? 'reportan' : 'reporta'} latido — la extensión de esa PC es una versión vieja; hay que recargarla para que se pueda avisar si se cae`)
+  }
   // Se dice qué SÍ funciona: sin eso parece que "el reader está roto" cuando lo
   // que hay es un canal caído entre varios vivos — que fue justo la confusión.
   const vivos = verdicts.filter((v) => v.kind === 'ok').map((v) => label(v.channel))
-  const cola = vivos.length ? ` (${vivos.join(' y ')} sí ${vivos.length > 1 ? 'están' : 'está'} andando)` : ''
+  const cola = vivos.length ? ` (${lista(vivos)} sí ${vivos.length > 1 ? 'están' : 'está'} andando)` : ''
   return `📡 ${partes.join('. ')}${cola}.`
 }

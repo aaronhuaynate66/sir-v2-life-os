@@ -253,29 +253,59 @@ export async function GET(req: NextRequest) {
       // (reader_heartbeats, mig 0175) con la última vez que cada canal trajo algo.
       // Nació de los 7 días en que WhatsApp estuvo caído mientras Instagram
       // seguía andando, así que el reader parecía sano desde afuera.
+      //
+      // AGUJERO DE ARRANQUE ARREGLADO (medido el 30-jul-2026). Antes, TODO este
+      // bloque estaba dentro de `if (hbs.length > 0)`. `reader_heartbeats` tenía
+      // CERO filas, así que la alarma no corría nunca — y estaba en cero justo
+      // porque la extensión de la otra PC es anterior al latido, que es el fallo
+      // que la alarma tiene que detectar. Circular: sin latido no hay diagnóstico,
+      // y sin diagnóstico nadie avisa que falta actualizar para que lata.
+      // Mientras eso pasaba, los datos de WhatsApp llevaban parados desde el
+      // 25-jul y el brief no dijo una palabra.
+      //
+      // La lista de canales sale ahora de los DATOS OBSERVADOS, no de la tabla de
+      // latidos: si un canal trajo algo alguna vez, existe y se puede diagnosticar
+      // aunque nunca haya latido. El latido REFINA el diagnóstico; no es la
+      // condición para tenerlo. (Regla de honestidad de cobertura de CLAUDE.md
+      // aplicada al propio detector: no concluir desde una vista vacía.)
       let readerSilenceText: string | undefined
       try {
-        const { data: hbRows } = await admin
-          .from('reader_heartbeats')
-          .select('channel, last_beat_at, status, last_data_at')
-          .eq('user_id', uid).limit(20)
-        const hbs = (hbRows ?? []) as Array<{ channel: string; last_beat_at: string | null; status: string | null; last_data_at: string | null }>
-        if (hbs.length > 0) {
-          // `last_data_at` de la tabla puede venir vacío (lo llena la ingesta);
-          // para WhatsApp se completa con el último mensaje real, que es la
-          // verdad de campo.
-          const { data: lastMsg } = await admin
-            .from('chat_messages').select('sent_at')
+        const [{ data: hbRows }, { data: lastMsg }, { data: lastIg }] = await Promise.all([
+          admin.from('reader_heartbeats')
+            .select('channel, last_beat_at, status, last_data_at')
+            .eq('user_id', uid).limit(20),
+          admin.from('chat_messages').select('sent_at')
             .eq('user_id', uid).eq('source', 'reader')
-            .order('sent_at', { ascending: false }).limit(1)
-          const ultimoWa = ((lastMsg ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null
+            .not('sent_at', 'is', null)
+            .order('sent_at', { ascending: false }).limit(1),
+          admin.from('unmatched_social_activity').select('observed_at')
+            .eq('user_id', uid).eq('platform', 'instagram')
+            .order('observed_at', { ascending: false }).limit(1),
+        ])
+        const hbs = (hbRows ?? []) as Array<{ channel: string; last_beat_at: string | null; status: string | null; last_data_at: string | null }>
+        // Última data REAL por canal, que es la verdad de campo. `last_data_at`
+        // de la tabla se usa si está, pero no se depende de él: la migración 0175
+        // dice que "lo actualiza el endpoint de ingesta" y hasta hoy nadie lo
+        // escribía (este PR lo arregla; las filas viejas siguen en null).
+        const dataPorCanal: Record<string, string | null> = {
+          whatsapp: ((lastMsg ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null,
+          instagram: ((lastIg ?? []) as Array<{ observed_at: string | null }>)[0]?.observed_at ?? null,
+        }
+        // Canales a diagnosticar = los que latieron ∪ los que trajeron datos.
+        const canales = new Set<string>(hbs.map((h) => h.channel))
+        for (const [c, iso] of Object.entries(dataPorCanal)) if (iso) canales.add(c)
 
-          const verdicts = hbs.map((h) => diagnoseChannel({
-            channel: h.channel,
-            lastHeartbeatAt: h.last_beat_at,
-            lastDataAt: h.last_data_at ?? (h.channel === 'whatsapp' ? ultimoWa : null),
-            status: h.status,
-          }, now))
+        if (canales.size > 0) {
+          const porCanal = new Map(hbs.map((h) => [h.channel, h]))
+          const verdicts = [...canales].map((channel) => {
+            const h = porCanal.get(channel)
+            return diagnoseChannel({
+              channel,
+              lastHeartbeatAt: h?.last_beat_at ?? null,
+              lastDataAt: h?.last_data_at ?? dataPorCanal[channel] ?? null,
+              status: h?.status ?? null,
+            }, now)
+          })
           readerSilenceText = channelSilenceLine(verdicts, now) ?? undefined
         }
       } catch (e) {

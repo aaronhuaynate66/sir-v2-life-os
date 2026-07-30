@@ -94,5 +94,21 @@ export async function ingestReaderBatch(client: SupabaseClient, userId: string, 
     last_ts: plan.latestTs ?? lastTs, recent_hashes: merged, last_ingested_at: new Date().toISOString(),
   }, { onConflict: 'user_id,platform,thread_id' })
 
+  // `reader_heartbeats.last_data_at` — la OTRA MITAD del diagnóstico de silencio.
+  // La migración 0175 la declaró diciendo "la actualiza el endpoint de ingesta" y
+  // hasta el 30-jul-2026 NADIE la escribía: el único lugar del repo que la
+  // mencionaba era el cron que la LEE, así que llegaba siempre en null y el
+  // diagnóstico se quedaba con media señal. Acá se cierra ese contrato.
+  //
+  // Es un UPDATE, no un upsert: si la fila no existe todavía (extensión sin
+  // latido) no hay que inventarla — una fila con latido nulo haría creer que el
+  // canal reportó alguna vez. Best-effort: nunca puede tumbar una ingesta que ya
+  // guardó los mensajes.
+  try {
+    await client.from('reader_heartbeats')
+      .update({ last_data_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('user_id', userId).eq('channel', batch.platform)
+  } catch { /* best-effort */ }
+
   return { ingested: plan.fresh.length, observationId: obsId, personId, personMatched: !!personId }
 }
