@@ -207,6 +207,21 @@ export interface AskContextInput {
   /** Tus propias palabras/momentos de fuerza (modo perspectiva). */
   strengths?: string[]
   goals: AskGoalCtx[]
+  /** Pendientes con fecha cercana, con el objetivo del que cuelgan. */
+  pendingTasks?: AskPendingTask[]
+}
+
+/** Un pendiente con fecha, tal como el brief lo avisa, con TODO su contexto. */
+export interface AskPendingTask {
+  title: string
+  /** 'YYYY-MM-DD' de su fecha objetivo. */
+  due: string | null
+  /** Descripción del paso: es donde suele estar el cliente y el cómo. */
+  detail?: string | null
+  /** Objetivo del que cuelga. */
+  goalTitle?: string | null
+  /** Estado del objetivo padre: si está pausado, el pendiente casi seguro no aplica. */
+  goalStatus?: string | null
 }
 
 /** Presupuesto de caracteres del bloque de conversación por persona. El caller
@@ -281,9 +296,42 @@ export function buildAskContext(input: AskContextInput): string {
     lines.push('')
   }
 
+  // PENDIENTES CON FECHA — lo que el brief le avisa, con su contexto completo.
+  //
+  // POR QUÉ EXISTE (fricción real, 29-jul-2026). El brief le avisó "Hoy vence:
+  // Emitir factura electrónica #1 por fee mensual S/1,500" y él preguntó "¿Qué
+  // factura mensual?". SIR contestó "es tu fee mensual de julio, está en tus
+  // pendientes de hoy" — o sea, le repitió el título. Su reclamo fue exacto: *"si
+  // me va a notificar algo tiene que saber sobre qué me notifica, y cuando yo
+  // pregunte quiero saber todas las respuestas sobre ese algo"*.
+  //
+  // El dato SÍ estaba: la descripción del paso decía "enviar a Dayana por email" y
+  // el objetivo padre era "Cerrar Boticas Jhodaal" — que además estaba PAUSADO
+  // desde que ella se fue con otra gente, así que la factura ya no aplicaba. Lo que
+  // faltaba era que eso llegara al prompt: al chat solo le llegaba UN paso por
+  // objetivo (el siguiente pendiente), y para ese objetivo el siguiente era uno de
+  // junio, no el de la factura.
+  if (input.pendingTasks && input.pendingTasks.length > 0) {
+    lines.push('== PENDIENTES CON FECHA (esto es lo que el brief le avisa) ==')
+    for (const t of input.pendingTasks.slice(0, 10)) {
+      const partes = [
+        t.due ? `vence ${t.due}` : null,
+        t.goalTitle ? `del objetivo "${t.goalTitle}"${t.goalStatus && t.goalStatus !== 'active' ? ` [${t.goalStatus.toUpperCase()}]` : ''}` : null,
+        t.detail ? `cómo: ${t.detail}` : null,
+      ].filter(Boolean)
+      lines.push(`- "${t.title}"${partes.length ? ` · ${partes.join(' · ')}` : ''}`)
+    }
+    lines.push(
+      'Si pregunta por uno de estos, responde con el objetivo del que cuelga, el cliente o persona '
+      + 'involucrada y su estado — no le repitas el título. Si el objetivo está PAUSADO o ARCHIVADO, '
+      + 'dilo PRIMERO: ese pendiente probablemente ya no aplica y avisarlo sin decirlo es hacerle ruido.',
+    )
+    lines.push('')
+  }
+
   if (input.goals.length > 0) {
     // El norte (ancla) va primero y marcado: es la brújula del año, no un
-    // objetivo más. Aterrizá las respuestas ahí cuando aplique.
+    // objetivo más. Aterriza las respuestas ahí cuando aplique.
     const anchor = input.goals.find((g) => g.isAnchor)
     if (anchor) {
       lines.push('== TU NORTE (el ancla del año) ==')
