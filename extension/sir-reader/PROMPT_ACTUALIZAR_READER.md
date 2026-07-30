@@ -1,4 +1,4 @@
-# Tarea para el agente de la otra PC — actualizar el SIR Reader a v0.7.0
+# Tarea para el agente de la otra PC — actualizar el SIR Reader a v0.8.0
 
 Hola. La extensión **SIR Reader** que corre en esa PC se actualizó. Esta tarea es
 corta: traer el código nuevo, recargar la extensión y verificar que captura.
@@ -29,7 +29,7 @@ git diff -- extension/sir-reader/ > /tmp/reader-local.patch
    modificado → **guarda ese diff** (el comando de arriba lo deja en un archivo).
 2. Haz el pull (abajo).
 3. **Re-aplica tu implementación de `followedBy` sobre el código nuevo** y
-   mandanos el diff para commitearlo de una vez y que esto no se repita.
+   mándanos el diff para commitearlo de una vez y que esto no se repita.
 
 Si `git status` sale limpio, no había nada local y puedes seguir tranquilo.
 
@@ -45,7 +45,7 @@ git pull
 Verifica que quedó en la versión nueva:
 
 ```bash
-grep '"version"' extension/sir-reader/manifest.json   # debe decir 0.7.0
+grep '"version"' extension/sir-reader/manifest.json   # debe decir 0.8.0
 ```
 
 > El `config.js` con el token es local y **no** se toca con el pull (no está en
@@ -54,7 +54,23 @@ grep '"version"' extension/sir-reader/manifest.json   # debe decir 0.7.0
 ## Paso 2 — Recargar la extensión
 
 En el Chrome logueado con Instagram: `chrome://extensions` → botón **recargar**
-(⟳) en SIR Reader. Confirma que la tarjeta diga **0.7.0**.
+(⟳) en SIR Reader. Confirma que la tarjeta diga **0.8.0**.
+
+### Verificación que NO se puede saltear: el latido
+
+v0.8.0 agrega un **latido** (`POST /api/reader/heartbeat`, cada ~10 min y por
+canal). Existe por un fallo real: el reader de WhatsApp Web se cortó el 22-jul y
+nadie lo notó hasta el 29 — siete días ciegos — porque Instagram siguió andando y
+desde el server el silencio se veía igual que "no pasó nada".
+
+**Medido el 30-jul: la tabla `reader_heartbeats` tiene 0 filas**, mientras que el
+reader de Instagram sí mandaba data ese mismo día. O sea: en esa PC está
+corriendo la versión VIEJA y este pull es justamente lo que falta.
+
+Después de recargar, deja pasar ~10 minutos y confirma que el popup no muestre
+error de latido. Del lado de SIR se verifica que `reader_heartbeats` tenga filas
+para `whatsapp` **y** para `instagram`. **Si sigue en 0, la extensión recargada no
+es la nueva** — no reportes éxito hasta ver el latido.
 
 ## Paso 3 — Qué cambió (y qué NO hay que hacer)
 

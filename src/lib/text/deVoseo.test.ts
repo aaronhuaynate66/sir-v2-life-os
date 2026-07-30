@@ -55,6 +55,8 @@ describe('deVoseo', () => {
     expect(deVoseo('si quieres mandame la captura')).toBe('si quieres mándame la captura')
     expect(deVoseo('dejame ver y avisame')).toBe('déjame ver y avísame')
     expect(deVoseo('cuidate mucho')).toBe('cuídate mucho')
+    expect(deVoseo('asegurate y avisanos')).toBe('asegúrate y avísanos')
+    expect(deVoseo('mandanos el diff y contanos')).toBe('mándanos el diff y cuéntanos')
     // Palabras legítimas con la misma forma: intactas.
     expect(deVoseo('dame el tomate y que llame luego')).toBe('dame el tomate y que llame luego')
   })

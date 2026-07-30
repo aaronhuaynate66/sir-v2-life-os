@@ -44,6 +44,10 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['mostrame', 'muéstrame'], ['traeme', 'tráeme'], ['ayudame', 'ayúdame'],
   ['esperame', 'espérame'], ['preguntame', 'pregúntame'], ['explicame', 'explícame'],
   ['contale', 'cuéntale'], ['decile', 'dile'], ['avisale', 'avísale'],
+  // Enclítico -nos (mismo criterio: en tuteo peruano llevan tilde esdrújula).
+  ['mandanos', 'mándanos'], ['avisanos', 'avísanos'], ['contanos', 'cuéntanos'],
+  ['pasanos', 'pásanos'], ['dejanos', 'déjanos'], ['mostranos', 'muéstranos'],
+  ['decinos', 'dinos'], ['escribinos', 'escríbenos'],
   ['cuidate', 'cuídate'], ['sentate', 'siéntate'], ['levantate', 'levántate'],
   ['acercate', 'acércate'], ['relajate', 'relájate'], ['olvidate', 'olvídate'],
   ['preparate', 'prepárate'], ['enfocate', 'enfócate'], ['concentrate', 'concéntrate'],
