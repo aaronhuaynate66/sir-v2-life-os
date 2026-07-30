@@ -8,7 +8,7 @@ extensión solo lee lo que ya se ve en pantalla mientras Teams está abierto.
 
 > **También lee el correo** de **Outlook Web** (`outlook.office.com` / `outlook.cloud.microsoft`) con la misma
 > postura pasiva — útil cuando **no** hay acceso admin a Azure/Graph. El correo va
-> a `/api/email/ingest` (mismo token). Si solo te pidieron Teams, dejá el resto en
+> a `/api/email/ingest` (mismo token). Si solo te pidieron Teams, deja el resto en
 > ON igual: no molesta, y captura correo si el humano abre OWA en ese Chrome.
 
 > **Datos que el humano (Aaron) te tiene que pasar aparte** (no están en el repo):
@@ -31,12 +31,12 @@ La carpeta que vas a cargar es **`sir-reader`** (la que tiene `manifest.json`).
 
 ## Paso 2 — Poner el token (sin tocar la UI)
 
-Editá **`config.js`** y pega el token en `token`. Dejá `sirUrl` como está (o la URL que te dieron):
+Edita **`config.js`** y pega el token en `token`. Deja `sirUrl` como está (o la URL que te dieron):
 
 ```js
 self.__SIR_CONFIG = {
   sirUrl: 'https://sir-v2-life-os.vercel.app',
-  token: 'PEGÁ_ACÁ_EL_READER_INGEST_TOKEN',
+  token: 'PEGA_ACÁ_EL_READER_INGEST_TOKEN',
 };
 ```
 
@@ -50,17 +50,17 @@ Tiene que ser el **mismo Chrome/perfil donde Teams está logueado** (no un Chrom
 1. En ese Chrome, abre `chrome://extensions` (en Edge: `edge://extensions`).
 2. Activa **"Modo de desarrollador"** (Developer mode), arriba a la derecha.
 3. Click **"Cargar descomprimida"** (Load unpacked).
-4. En el selector de archivos, elegí la carpeta **`sir-reader`** (la ruta del Paso 1).
-5. Debe aparecer **"SIR Reader"** en la lista, sin errores. Si aparece un error rojo, abrilo y reportalo.
+4. En el selector de archivos, elige la carpeta **`sir-reader`** (la ruta del Paso 1).
+5. Debe aparecer **"SIR Reader"** en la lista, sin errores. Si aparece un error rojo, ábrelo y repórtalo.
 
-*(Alternativa por línea de comandos, solo si puedes cerrar Chrome del todo: cerrá TODO Chrome y relanzalo con `--load-extension="RUTA_ABSOLUTA_A/sir-reader"` apuntando al mismo `--user-data-dir` del perfil logueado. Es más frágil; preferí la vía interfaz.)*
+*(Alternativa por línea de comandos, solo si puedes cerrar Chrome del todo: cierra TODO Chrome y relánzalo con `--load-extension="RUTA_ABSOLUTA_A/sir-reader"` apuntando al mismo `--user-data-dir` del perfil logueado. Es más frágil; prefiere la vía interfaz.)*
 
 ## Paso 4 — Verificar que anda
 
 1. En ese Chrome, anda a **`teams.microsoft.com`** (ya logueado) y **abre un chat con mensajes**.
-2. Scrolleá/mira el chat normal unos segundos (así se renderizan mensajes → la extensión los ve).
+2. Scrollea/mira el chat normal unos segundos (así se renderizan mensajes → la extensión los ve).
 3. Click en el ícono de **SIR Reader** (barra de extensiones). En el popup, mira **"Mensajes enviados"**: debería ser **> 0** y mostrar el último hilo. Si hay error, lo muestra ahí.
-4. Confirmación del otro lado: en SIR (`/relaciones` o "Preguntá a SIR"), esos hilos aparecen como conversaciones a los pocos segundos.
+4. Confirmación del otro lado: en SIR (`/relaciones` o "Pregunta a SIR"), esos hilos aparecen como conversaciones a los pocos segundos.
 
 ## Cómo saber que quedó bien
 

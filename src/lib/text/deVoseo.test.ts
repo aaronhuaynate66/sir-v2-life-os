@@ -96,6 +96,76 @@ describe('deVoseo', () => {
     for (const s of safe) expect(deVoseo(s)).toBe(s)
   })
 
+  it('IMPERATIVOS que diptongan: el barrido los dejaba en español ROTO', () => {
+    // Antes del 30-jul el barrido solo quitaba la tilde y salía "proba"/"empeza"
+    // /"pensa"/"conta" — peor que el voseo, porque esas palabras no existen.
+    expect(deVoseo('probá con 3 series')).toBe('prueba con 3 series')
+    expect(deVoseo('empezá por lo corto')).toBe('empieza por lo corto')
+    expect(deVoseo('pensá qué quieres')).toBe('piensa qué quieres')
+    expect(deVoseo('contá conmigo')).toBe('cuenta conmigo')
+    expect(deVoseo('colgá la llamada')).toBe('cuelga la llamada')
+    expect(deVoseo('jugá tranquilo y soñá en grande')).toBe('juega tranquilo y sueña en grande')
+    expect(deVoseo('despertá temprano')).toBe('despierta temprano')
+    // Raíz en R: el barrido las excluye, así que además FUGABAN enteras.
+    expect(deVoseo('encontrá el mensaje')).toBe('encuentra el mensaje')
+    expect(deVoseo('acordá una fecha')).toBe('acuerda una fecha')
+    expect(deVoseo('demostrá que puedes')).toBe('demuestra que puedes')
+  })
+
+  it('presentes -ás con raíz en R: solo estaba su imperativo', () => {
+    expect(deVoseo('si entrás hoy, mejorás el score')).toBe('si entras hoy, mejoras el score')
+    expect(deVoseo('¿esperás o comprás?')).toBe('¿esperas o compras?')
+  })
+
+  it('presentes -és de verbos -ER: el barrido solo cubre -á/-ás', () => {
+    // "comés" pasaba intacto incluso con "comé" ya en la lista: el barrido
+    // generativo no toca -és, así que el presente necesita su propia entrada.
+    expect(deVoseo('si comés bien, corrés mejor')).toBe('si comes bien, corres mejor')
+    expect(deVoseo('aprendés rápido y no rompés nada')).toBe('aprendes rápido y no rompes nada')
+    // El plural -és NO debe quedar mutilado por la entrada del imperativo: la
+    // lista fija corre en orden y "hacés" se resuelve antes que "hacé" ("hazs"
+    // llegó a quedar escrito en un runbook por este tipo de recorte).
+    expect(deVoseo('el que vos hacés aparecer')).toBe('el que tú haces aparecer')
+    expect(deVoseo('ponés y tenés lo mismo')).toBe('pones y tienes lo mismo')
+  })
+
+  it('imperativos de verbos -ER (terminan en -é)', () => {
+    expect(deVoseo('volvé a intentarlo')).toBe('vuelve a intentarlo')
+    expect(deVoseo('poné el peso y hacé la serie')).toBe('pon el peso y haz la serie')
+    expect(deVoseo('tené paciencia y respondé mañana')).toBe('ten paciencia y responde mañana')
+    expect(deVoseo('comé algo y corré después')).toBe('come algo y corre después')
+    expect(deVoseo('decí lo que sientes')).toBe('di lo que sientes')
+  })
+
+  it('NO toca el pretérito de 1ª persona, que en peruano es correcto', () => {
+    // "-é" es también el pretérito de los verbos -AR, y "-í" el de los -IR. Sin
+    // léxico de verbos no hay regla mecánica: por eso van por lista fija y estas
+    // formas quedan afuera A PROPÓSITO. Corregirlas rompería frases de Aaron.
+    const safe = [
+      'ayer tomé agua y pensé en eso',
+      'ya le llamé y le mandé la propuesta',
+      'cerré el trato y facturé el primer mes',
+      'anoche dormí mal y me sentí cansado',
+      'le pedí la cotización y seguí insistiendo',
+      'ya le escribí y salí temprano',
+      'el bebé lloró y yo creé la cuenta',
+    ]
+    for (const s of safe) expect(deVoseo(s)).toBe(s)
+  })
+
+  it('piso de largo más bajo: caza el voseo corto sin tocar lo legítimo', () => {
+    expect(deVoseo('bajá el ritmo y pasá por la clínica')).toBe('baja el ritmo y pasa por la clínica')
+    expect(deVoseo('tocá el tema con calma')).toBe('toca el tema con calma')
+    expect(deVoseo('si pagás hoy, sacás el descuento')).toBe('si pagas hoy, sacas el descuento')
+    // Lo legítimo de 3-5 letras sigue intacto (ACCENT_EXCEPTIONS + piso de 4).
+    const safe = [
+      'está acá, allá con mamá y papá en el sofá',
+      'estás demás, jamás atrás, quizás',
+      'habla con Tomás mañana',
+    ]
+    for (const s of safe) expect(deVoseo(s)).toBe(s)
+  })
+
   it('es idempotente', () => {
     const once = deVoseo('tenés que venir, sos clave')
     expect(deVoseo(once)).toBe(once)

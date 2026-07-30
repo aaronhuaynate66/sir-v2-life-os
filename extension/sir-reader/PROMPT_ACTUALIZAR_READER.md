@@ -26,12 +26,12 @@ git diff -- extension/sir-reader/ > /tmp/reader-local.patch
 ```
 
 1. Si `git status` muestra `extension/sir-reader/content/instagramReader.js`
-   modificado → **guardá ese diff** (el comando de arriba lo deja en un archivo).
-2. Hacé el pull (abajo).
-3. **Re-aplicá tu implementación de `followedBy` sobre el código nuevo** y
+   modificado → **guarda ese diff** (el comando de arriba lo deja en un archivo).
+2. Haz el pull (abajo).
+3. **Re-aplica tu implementación de `followedBy` sobre el código nuevo** y
    mandanos el diff para commitearlo de una vez y que esto no se repita.
 
-Si `git status` sale limpio, no había nada local y podés seguir tranquilo.
+Si `git status` sale limpio, no había nada local y puedes seguir tranquilo.
 
 ---
 
@@ -42,19 +42,19 @@ cd sir-v2-life-os
 git pull
 ```
 
-Verificá que quedó en la versión nueva:
+Verifica que quedó en la versión nueva:
 
 ```bash
 grep '"version"' extension/sir-reader/manifest.json   # debe decir 0.7.0
 ```
 
 > El `config.js` con el token es local y **no** se toca con el pull (no está en
-> el repo). Si por algo quedó vacío, volvé a pegar el `READER_INGEST_TOKEN`.
+> el repo). Si por algo quedó vacío, vuelve a pegar el `READER_INGEST_TOKEN`.
 
 ## Paso 2 — Recargar la extensión
 
 En el Chrome logueado con Instagram: `chrome://extensions` → botón **recargar**
-(⟳) en SIR Reader. Confirmá que la tarjeta diga **0.7.0**.
+(⟳) en SIR Reader. Confirma que la tarjeta diga **0.7.0**.
 
 ## Paso 3 — Qué cambió (y qué NO hay que hacer)
 
@@ -79,7 +79,7 @@ IG limite o bloquee la cuenta de Aaron.
 
 ## Paso 4 — Verificar que funciona
 
-Abrí la consola de la pestaña de Instagram (F12 → Console) y entrá a **cualquier
+Abre la consola de la pestaña de Instagram (F12 → Console) y entra a **cualquier
 perfil** (el de un amigo, una página, lo que sea). Deberías ver:
 
 ```
@@ -89,7 +89,7 @@ perfil** (el de un amigo, una página, lo que sea). Deberías ver:
 Para confirmar del lado del servidor, la respuesta del POST trae un contador
 nuevo: **`profilesSaved`**. Si es ≥ 1, el perfil se guardó.
 
-Si entrás a 3-4 perfiles y `profilesSaved` sigue en 0, avisá con:
+Si entras a 3-4 perfiles y `profilesSaved` sigue en 0, avisa con:
 - la URL del endpoint que IG usó (pestaña Network, filtrá por `graphql` o
   `web_profile_info`),
 - y un pedazo del JSON de respuesta (sin datos personales de terceros).
@@ -99,7 +99,7 @@ necesitar un ajuste.
 
 ---
 
-## Lo que Aaron tiene que hacer (no vos)
+## Lo que Aaron tiene que hacer (no tú)
 
 Que **navegue Instagram normal** en ese Chrome. Nada especial: entrar a los
 perfiles de la gente que le importa. Cada perfil que abre queda registrado.
@@ -108,7 +108,7 @@ El porqué: hoy hay **130 cuentas en la bandeja "¿quién es quién?" y ninguna 
 nombre**. La barra de historias solo da el handle, y los handles no son parlantes
 (`@yayocastaneda.pe`, `@voxpopuli.consultoria`). El nombre real vive en el perfil.
 
-**Si además querés resolver muchas de golpe:** seguí el runbook
+**Si además quieres resolver muchas de golpe:** sigue el runbook
 `CORRER_LISTA_SEGUIDOS.md` (5 minutos) — captura el catálogo completo de
 "Siguiendo" y rellena nombres en lote. Eso sigue siendo la vía más rápida y no
 cambió con esta actualización.
