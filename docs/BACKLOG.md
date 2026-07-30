@@ -41,7 +41,100 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
-**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — **re-ranking y el ciclo Mem0-style extract→merge→olvido siguen sin empezar** (los 4 pases coinciden).
+**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — ~~**re-ranking**~~ ❌ **CERRADO SIN CONSTRUIR (30/07/2026), ver abajo**; el ciclo Mem0-style extract→merge→olvido sigue sin empezar.
+
+### ❌ Re-ranking del recall — MEDIDO Y DESCARTADO (30/07/2026)
+
+Se construyó dos veces y **se revirtió las dos**, porque medido contra el recall REAL
+de Aaron no tenía valor demostrable. Queda documentado para que nadie lo reintente a
+ciegas: el trabajo perdido fue de una sesión, y repetirlo sería gratis.
+
+**El lote real** (24 candidatos de `match_memories_hybrid` para *"¿Diana quedó en
+abonarme el préstamo?"*, service-role, 30/07):
+
+| señal | medición | conclusión |
+|---|---|---|
+| `rrf_score` | 0.0193 – 0.0318 → **min/max = 0.61** | el rango total del retrieval mide 0.39; cualquier bono ≥0.5 lo atropella |
+| `importance` | 2–10 en **las 24**, media ~6 | no discrimina. La asigna un LLM al derivar → correlaciona con verbosidad, no con la pregunta |
+| `person_id` | **23/24** lo tienen, **18 son la misma persona** | casi constante. Y Aaron tiene 3 personas "Diana" (Carolina, Cencaro, Chiok): un bono por persona mal resuelta promueve lo incorrecto |
+| solape entre pares | **máximo Jaccard 0.230**, y **0 pares ≥0.45** de 276 | **no hay memorias duplicadas** |
+
+**Los dos intentos y por qué fallaron:**
+1. **Bonos por persona + importancia.** Contra data real **empeoró el orden**: para esa
+   pregunta ponía primero *"Diana coordina reuniones (dailies) con el equipo de Aimo"*
+   — irrelevante y de otra Diana. Causa: el bono (0.55) era mayor que todo el rango
+   del retrieval (0.39).
+2. **Dedupe de memorias casi iguales.** La hipótesis era "5 de 24 son el mismo hecho",
+   y **estaba mal**: salió de leer los primeros 60 caracteres de cada memoria, que
+   empiezan parecido ("Diana Carolina y Aaron mantienen una relación de pareja…") y
+   después divergen. Promedian 408 caracteres (hasta 2386) y son distintas. Medido el
+   solape completo: 0 pares por encima de 0.45. **El propio error que CLAUDE.md
+   prohíbe — concluir desde una vista parcial — cometido sobre el recall.**
+
+**Veredicto:** RRF (mig 0164) ordena bien y no hay margen visible con señales
+determinísticas. Si alguna vez se retoma, el único camino con sentido es un
+**cross-encoder** de verdad — y eso mete una llamada de red en el camino crítico del
+chat, que ya sufrió 502 por latencia, así que hay que justificarlo con una mejora
+medida en el harness ANTES de cablearlo. **No reabrir sin una medición nueva.**
+
+Lo que sí quedó como conocimiento reusable: `importance` **no sirve** como señal de
+ranking en este repo, y `person_id` tampoco — el scope por persona vive en `askSir`
+(`targetIds`/`scopedPersonId`), que es su lugar correcto.
+
+### ❌ Grafo /red → sigma.js — MEDIDO Y DESCARTADO (30/07/2026)
+
+El ítem decía "sin rastro en código, sigue pendiente", y el framing estaba mal: **el
+grafo ya existe y está muy trabajado.** `src/components/red/GraphCanvas.tsx` son 521
+líneas sobre `react-force-graph-2d` con glow radial que respira, tamaño por grado,
+subgrafo encendido al hover, partículas-sinapsis, física anti-solape y colores por
+token (theme-aware, re-leídos al togglear).
+
+Sigma.js es una migración por **rendimiento**: WebGL en vez de canvas 2D. Su ventaja
+aparece pasando los ~10,000 nodos.
+
+**Medido el 30/07:** `people` = **129**, `person_links` = **20**,
+`social_page_followers` = 2 → el grafo tiene del orden de **250 nodos**. Canvas 2D va
+fluido hasta ~2,000.
+
+Migrar sería: reescribir 521 líneas pulidas, rehacer el glow y las partículas en
+shaders (mucho más difícil), sumar una dependencia, y **cero beneficio visible** —
+con riesgo real de regresión en una pantalla que Aaron usa. **No hacer.** Reabrir solo
+si el grafo pasa de ~2,000 nodos; hasta entonces el pendiente correcto no es la
+librería, es qué aristas le faltan al grafo (intereses en común, que está bloqueado
+por `social_profiles` vacía).
+
+### 🆕 Memorias basura: 17% del store son registros de llamadas sin fecha (30/07/2026)
+
+Buscando duplicados para el ciclo Mem0 apareció algo distinto y real. Medido sobre
+1,000 memorias: **141 grupos con contenido EXACTAMENTE idéntico, 169 filas de sobra.**
+El desglose importa:
+
+| tipo | filas de sobra | ejemplo |
+|---|---|---|
+| `episodic` | **154** | `📞 Llamada de voz perdida · 10:09` (×5) |
+| `temporal` | 15 | `Registro de energy con valor 8/10.` (×8) |
+
+**Y no son duplicados: son eventos DISTINTOS cuyo texto omite la fecha.** Cinco
+llamadas perdidas a las 10:09 de cinco días diferentes producen el mismo string.
+Fusionarlas **borraría cuatro llamadas reales** — por eso el ciclo "merge" de Mem0,
+aplicado ingenuamente sobre esto, destruye información en vez de consolidarla.
+
+**Causa raíz localizada:** `callLabel` (`lib/capture/whatsapp/export/calls.ts:50-54`)
+arma `📞 {tipo} perdida` sin fecha, y los dos llamadores le pegan `· {hora}`. La fecha
+**sí se guarda** (`createPersonLog({ loggedAt: c.iso })`), pero se pierde al derivar la
+memoria, que solo mira el texto de la nota.
+
+**Dos decisiones para Aaron, ninguna tomada:**
+1. **Incluir la fecha al derivar** → los 154 quedan distintos y siguen siendo
+   consultables. Arregla lo nuevo; las filas viejas necesitan backfill (toca su data).
+2. **No derivar registros de llamadas a memoria semántica.** Un `📞 Llamada de voz
+   perdida · 10:09` compitiendo en el recall con "Diana depositó 950 soles" es ruido:
+   nadie le pregunta a SIR por una llamada perdida a las 10:09. Los person_logs ya
+   guardan el dato con su fecha para las métricas de contacto.
+
+La recomendación es la **2** (y la 1 para lo que quede): sacar 154 filas de ruido de
+1,295 mejora el recall más que cualquier re-ranking — que es justo lo que la medición
+de arriba mostró que NO se puede mejorar tocando pesos.
 
 ---
 
