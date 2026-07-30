@@ -70,7 +70,7 @@ Teams, WhatsApp y Outlook cambian su HTML seguido. Si el contador no sube:
 
 ## Límites honestos
 
-- **Pasivo por diseño:** solo captura lo que tú ves. Si quieres traer historial viejo, scrollea hacia arriba (tú, natural) y lo va leyendo.
+- **WhatsApp: lee el Store interno (wa-js) y hace backfill solo** del último mes al cargar la pestaña — no hay que scrollear. La ventana y un chat puntual se piden por comando remoto (`scripts/reader-comando.mjs`). El resto de canales sí captura lo renderizado.
 - **Teams/WhatsApp/Outlook = tu data, tu sesión → riesgo bajo.**
 - **IG/LinkedIn = pasivo por interceptación de red → el enfoque de MENOR riesgo** (según el research): no hace requests propios, solo lee lo que ya cargaste al navegar. Aun así IG/LinkedIn son sensibles a la automatización; mantenlo pasivo (nada de auto-abrir stories ni polling). FB queda afuera.
 - **Correo, dedup honesto:** el mismo correo se re-scrapea al re-abrir el inbox; se deduplica por `messageId` cuando OWA lo expone, y si no por `remitente+asunto+fecha`. Las horas relativas de OWA ("10:32", "ayer") son un ancla aproximado; el dedup fuerte es el `messageId`. Ver el correo en la lista (preview) y después abierto (cuerpo completo) puede sumar una vez el cuerpo más rico.

@@ -4,10 +4,15 @@
 PC — una donde **WhatsApp Web ya está abierto y logueado** — para ir **jalando los
 chats hacia SIR** (`https://sir-v2-life-os.vercel.app`).
 
-La captura es **PASIVA**: la extensión solo lee lo que **ya está renderizado** en el
-chat que tienes abierto. No scrapea, no auto-scrollea, no manda requests de fondo.
-Para traer un chat, **tú** lo abres y scrolleas hacia arriba; la extensión lee lo
-que va apareciendo y lo manda a SIR.
+La captura **NO necesita que hagas nada**. Al cargar la pestaña, el lector lee el
+**Store interno** de WhatsApp Web con wa-js y trae solo los chats con actividad del
+último mes; después escucha los mensajes nuevos en vivo. Nada de scroll a mano.
+Es READ-ONLY: nunca envía mensajes.
+
+> Si quieres más historial o un chat puntual (ej. todo el de Diana), se pide **por
+> comando remoto** desde el repo — no se hace a mano acá:
+>
+>     node scripts/reader-comando.mjs --resync --chat "Diana" --dias 400
 
 Esta guía la puede seguir un **agente que gestiona esa PC** o una **persona no
 técnica**. Anda paso por paso.
@@ -84,20 +89,22 @@ Solo si NO pusiste el token en `config.js`:
 4. Deja **WhatsApp Web** en **ON**.
 5. Click **Guardar**.
 
-## Paso 5 — Abrir WhatsApp Web y jalar los chats
+## Paso 5 — Abrir WhatsApp Web y dejarlo
 
 1. En ese mismo navegador, anda a **`web.whatsapp.com`** (ya logueado).
-2. **Abre un chat** de la lista (uno con mensajes). La extensión captura lo que
-   está **renderizado en ese hilo abierto**.
-3. Para traer historial, **scrollea hacia arriba** en el chat, despacio: WhatsApp
-   va renderizando mensajes más viejos a medida que subes, y la extensión los va
-   leyendo y mandando a SIR. Si no scrolleas, solo capturas lo que se ve de entrada.
-4. **Conviene ir chat por chat:** abre un chat, scrollea hasta donde quieras traer,
-   espera unos segundos (manda en lotes cada ~4s), y pasa al siguiente. Cambiar de
-   chat rápido sin dejar que renderice = menos mensajes capturados.
+2. **Y listo.** No hay que abrir chats ni scrollear: al cargar la pestaña, el lector
+   lee el Store interno y manda solo los chats con actividad del último mes; después
+   escucha los mensajes nuevos en vivo.
+3. Para confirmarlo, abre **F12 → Console** y filtra por `SIR`. Deberías ver
+   `WhatsApp Web listo → live + backfill` y después
+   `backfill: N totales · M activos · procesando K`.
 
-> **Importante:** es PASIVO. No hay un botón de "importar todo". El historial que
-> entra a SIR es exactamente el que tú haces aparecer en pantalla scrolleando.
+> **⚠️ LO ÚNICO QUE HAY QUE RECORDAR: si recargas o actualizas la extensión, RECARGA
+> TAMBIÉN ESTA PESTAÑA (F5).** Chrome no reinyecta los content scripts en pestañas ya
+> abiertas, así que la extensión nueva late y parece sana mientras el lector viejo
+> quedó huérfano y no lee nada. Eso dejó al reader muerto del 26 al 30 de julio con el
+> latido diciendo "ok". Desde la v0.9.0 la extensión recarga estas pestañas sola al
+> actualizarse, pero si algo queda raro, F5 es la primera cosa a probar.
 
 ## Paso 6 — Verificar que está funcionando
 
