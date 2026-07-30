@@ -29,6 +29,7 @@ import { goalNudgeLine } from '@/lib/push/goalNudge'
 import { diagnoseChannel, channelSilenceLine } from '@/lib/reader/channelSilence'
 import { evaluarCardio } from '@/lib/health/cardioNotify'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
+import { evaluarPrecondiciones, lineaTrabada } from '@/lib/goals/precondicion'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
 import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
@@ -181,6 +182,13 @@ export async function GET(req: NextRequest) {
       //   2. Se descartan los pasos de objetivos PAUSADOS: el de la factura cuelga
       //      de "Cerrar Boticas Jhodaal", que se pausó el 28-jul, y su tarea
       //      seguía disparando igual.
+      //   3. Y falta una tercera, que se agregó el 30-jul: un paso con fecha se
+      //      anunciaba como "vence hoy" SIN MIRAR si lo que va antes ya pasó. Pasó
+      //      de nuevo, y esta vez el aviso falso lo dio la sesión a mano: "facturar
+      //      y cobrar el primer mes de consultoría" vencía el 31-jul mientras
+      //      "cerrar el primer contrato" vencía el 8-jul y seguía pendiente, y los
+      //      3 deals reales estaban en 'lead'. Aaron: "estamos cayendo en el mismo
+      //      error". Ver `lib/goals/precondicion.ts`.
       const { data: stepRows } = await admin
         .from('objective_steps')
         .select('id, title, target_date, status, description, objective_id, goals!inner(title, status)')
@@ -191,15 +199,52 @@ export async function GET(req: NextRequest) {
         .limit(50)
       const dueStepRows = ((stepRows ?? []) as unknown[])
         .map((raw) => {
-          const s = raw as { id: string; title: string; description?: string | null; goals?: unknown }
+          const s = raw as { id: string; title: string; description?: string | null; objective_id?: string | null; goals?: unknown }
           const g = Array.isArray(s.goals) ? s.goals[0] : s.goals
           const meta = (g ?? null) as { title?: string; status?: string } | null
-          return { id: s.id, title: s.title, description: s.description ?? null, goalTitle: meta?.title ?? null, goalStatus: meta?.status ?? null }
+          return { id: s.id, title: s.title, description: s.description ?? null, objectiveId: s.objective_id ?? null, goalTitle: meta?.title ?? null, goalStatus: meta?.status ?? null }
         })
         // Un objetivo pausado o archivado no genera pendientes del día.
         .filter((s) => s.goalStatus !== 'paused' && s.goalStatus !== 'archived' && s.goalStatus !== 'completed')
+      // PRECONDICIONES: para saber si un paso de hoy es de verdad accionable hay que
+      // ver a sus HERMANOS del mismo key result, no solo a él. Se traen los pasos de
+      // los objetivos involucrados y se evalúa el conjunto. Fail-soft: si esto falla,
+      // se cae al comportamiento anterior (anunciar la fecha tal cual).
+      let trabados = new Map<string, ReturnType<typeof evaluarPrecondiciones> extends Map<string, infer V> ? V : never>()
+      try {
+        const objIds = [...new Set(dueStepRows.map((s) => s.objectiveId).filter(Boolean))] as string[]
+        if (objIds.length > 0) {
+          const { data: hermanos } = await admin
+            .from('objective_steps')
+            .select('id, title, status, target_date, sort_order, parent_id, objective_id, blocked_by')
+            .eq('user_id', uid).in('objective_id', objIds).limit(500)
+          trabados = evaluarPrecondiciones(
+            ((hermanos ?? []) as Array<Record<string, unknown>>).map((r) => ({
+              id: String(r.id), title: String(r.title ?? ''),
+              objectiveId: (r.objective_id as string) ?? null,
+              parentId: (r.parent_id as string) ?? null,
+              status: (r.status as string) ?? null,
+              targetDate: (r.target_date as string) ?? null,
+              sortOrder: typeof r.sort_order === 'number' ? r.sort_order : null,
+              blockedBy: (r.blocked_by as string | string[] | null) ?? null,
+            })),
+            today,
+          )
+        }
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'precondiciones', user: uid.slice(0, 8) })
+      }
+
       const dueTasks = dueStepRows
-        .map((s) => (s.goalTitle ? `${s.title} — de "${s.goalTitle}"` : s.title))
+        .map((s) => {
+          const v = trabados.get(s.id)
+          // Trabado → se dice DÓNDE está trabado en vez de callarlo. Un pendiente que
+          // desaparece sin explicación es el mismo problema del aviso huérfano con
+          // otra cara ("no sé de qué ni a quién").
+          const trabada = v ? lineaTrabada(s.title, v) : null
+          if (trabada) return s.goalTitle ? `${trabada} (de "${s.goalTitle}")` : trabada
+          return s.goalTitle ? `${s.title} — de "${s.goalTitle}"` : s.title
+        })
         .filter(Boolean)
       // Ids de las entidades detrás de las señales → habilitan los botones del
       // hilo de Telegram ("✅ Ya lo hice" necesita saber QUÉ tarea marcar). Con
