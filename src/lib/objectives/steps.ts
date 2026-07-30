@@ -137,15 +137,26 @@ export function computeObjectiveProgress(
  * `steps` puede ser todo el store o sólo los nodos del objetivo: filtra por la
  * jerarquía (parentId), no por objectiveId, así que pasar los del objetivo basta.
  */
+/**
+ * ¿El paso sigue ABIERTO? Ni hecho ni descartado.
+ *
+ * Un descartado está cerrado sin haberse hecho: si contara como abierto volvería
+ * como "próximo paso" del objetivo para siempre, que es justo lo que se quiso
+ * sacar de encima al cerrar el trato de Boticas Jhodaal (30-jul-2026).
+ */
+export function estaAbierto(s: ObjectiveStep): boolean {
+  return s.status !== 'hecho' && s.status !== 'descartado'
+}
+
 export function nextPendingLeaf(steps: ObjectiveStep[]): ObjectiveStep | null {
   const krs = sortSteps(steps.filter(isKeyResult))
   for (const kr of krs) {
     const tasks = tasksForKeyResult(steps, kr.id)
     if (tasks.length === 0) {
-      if (kr.status !== 'hecho') return kr // KR sin tareas → es la hoja.
+      if (estaAbierto(kr)) return kr // KR sin tareas → es la hoja.
       continue
     }
-    const pendingTask = tasks.find((t) => t.status !== 'hecho')
+    const pendingTask = tasks.find(estaAbierto)
     if (pendingTask) return pendingTask
     // Todas las tareas del KR hechas → KR completo, seguimos al próximo KR.
   }

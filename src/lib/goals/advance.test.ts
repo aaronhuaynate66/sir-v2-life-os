@@ -139,3 +139,33 @@ describe('lastMovementISO', () => {
     expect(lastMovementISO(undefined, null)).toBeNull()
   })
 })
+
+// Aaron cerró el trato con Boticas Jhodaal el 30-jul-2026 ("ese trato ya no va").
+// Sus 20 pasos fechados había que sacarlos del plan, y los dos estados que existían
+// mentían: 'hecho' dejaría el objetivo en 100% de un proyecto que nunca arrancó, y
+// 'pendiente' lo deja vencido para siempre. Un descartado sale del cálculo entero.
+describe('computeGoalAdvance — pasos descartados', () => {
+  const paso = (id: string, status: ObjectiveStep['status'], targetDate: string | null = '2026-07-01') =>
+    ({ id, objectiveId: 'g1', title: id, kind: 'task', status, targetDate, order: 0 } as ObjectiveStep)
+
+  it('un descartado no cuenta como hecho (no infla el porcentaje)', () => {
+    const a = computeGoalAdvance([paso('a', 'hecho'), paso('b', 'descartado')], 'g1', '2026-07-30')
+    expect(a.done).toBe(1)
+    expect(a.total).toBe(1)      // el descartado sale del denominador
+    expect(a.percent).toBe(100)  // 1 de 1 real, no 1 de 2
+  })
+
+  it('un descartado tampoco cuenta como vencido', () => {
+    const a = computeGoalAdvance([paso('a', 'pendiente'), paso('b', 'descartado')], 'g1', '2026-07-30')
+    expect(a.overdue).toBe(1)
+  })
+
+  it('si TODOS están descartados, el objetivo queda sin nada que medir', () => {
+    // Importa que dé null y no 0%: "vas 0%" sobre un plan cancelado es la misma
+    // mentira que este módulo nació para matar.
+    const a = computeGoalAdvance([paso('a', 'descartado'), paso('b', 'descartado')], 'g1', '2026-07-30')
+    expect(a.percent).toBeNull()
+    expect(a.stepCount).toBe(0)
+    expect(a.overdue).toBe(0)
+  })
+})

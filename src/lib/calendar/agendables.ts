@@ -110,7 +110,7 @@ export function collectTaskAgendables(
   const have = new Set(existingTitles.map(normTitle))
   const out: Agendable[] = []
   for (const s of steps) {
-    if (s.kind !== 'task' || s.status === 'hecho' || s.completedAt || !s.targetDate) continue
+    if (s.kind !== 'task' || s.status === 'hecho' || s.status === 'descartado' || s.completedAt || !s.targetDate) continue
     const daysUntil = daysUntilLocal(s.targetDate, now)
     if (daysUntil == null || daysUntil < 0 || daysUntil > horizonDays) continue
     const title = (s.title || '').trim()

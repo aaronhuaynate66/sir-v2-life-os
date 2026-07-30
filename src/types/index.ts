@@ -454,7 +454,16 @@ export interface Goal {
 }
 
 /** Estado de un paso de objetivo. 'hecho' cuenta como completado en el rollup. */
-export type ObjectiveStepStatus = 'pendiente' | 'en_progreso' | 'hecho'
+/**
+ * Estado de un paso de objetivo.
+ *
+ * 'descartado' existe porque marcar como 'hecho' algo que NO se hizo es mentirle
+ * al progreso. Aaron cerró el trato con Boticas Jhodaal el 30-jul ('ese trato ya
+ * no va') y sus 20 pasos había que sacarlos del plan sin inflar el avance del
+ * objetivo al 100% de un proyecto que nunca arrancó. Un descartado NO cuenta ni
+ * como pendiente ni como hecho: sale del denominador.
+ */
+export type ObjectiveStepStatus = 'pendiente' | 'en_progreso' | 'hecho' | 'descartado'
 
 /**
  * Nivel de un nodo del plan OKR (migración 0041):

@@ -10,6 +10,7 @@ import { Footprints } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
+import { estaAbierto } from '@/lib/objectives/steps'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useSelfStore } from '@/stores/useSelfStore'
 import { sizeNextStep } from '@/lib/habits/nextStep'
@@ -23,7 +24,7 @@ export function NextStepCard() {
   const guidance = useMemo(() => {
     // Próxima TAREA accionable: no hecha, no bloqueada; la de fecha más cercana.
     const actionable = steps
-      .filter((s) => s.kind === 'task' && s.status !== 'hecho' && s.taskStatus !== 'done' && s.taskStatus !== 'blocked')
+      .filter((s) => s.kind === 'task' && estaAbierto(s) && s.taskStatus !== 'done' && s.taskStatus !== 'blocked')
       .sort((a, b) => (a.targetDate ?? '9999').localeCompare(b.targetDate ?? '9999'))
     const next = actionable[0]
     if (!next) return null

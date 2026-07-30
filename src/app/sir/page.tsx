@@ -10,6 +10,7 @@ import { Sparkles, Send, Loader2, ArrowLeft, ArrowDown, User, Check, X, Calendar
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { AppShell } from '@/components/layout/AppShell'
+import { estaAbierto } from '@/lib/objectives/steps'
 import { track, trackAiError, EVENTS } from '@/lib/analytics/track'
 import { useGoalStore } from '@/stores/useGoalStore'
 import { useObjectiveStepStore } from '@/stores/useObjectiveStepStore'
@@ -486,7 +487,7 @@ export default function SirChatPage() {
         const hit = tasks.find((s) => norm(s.title) === q)
           ?? tasks.filter((s) => norm(s.title).includes(q) || q.includes(norm(s.title)))[0]
         if (!hit) {
-          const pend = tasks.filter((s) => s.status !== 'hecho').slice(0, 6).map((s) => s.title)
+          const pend = tasks.filter(estaAbierto).slice(0, 6).map((s) => s.title)
           toast.error(`No encontré la tarea "${query}"`, { description: pend.length ? `Pendientes: ${pend.join(', ')}` : 'No tienes tareas cargadas.' })
           return
         }

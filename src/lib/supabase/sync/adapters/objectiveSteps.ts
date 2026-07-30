@@ -19,7 +19,7 @@ import type {
 } from '@/types'
 import type { TableAdapter } from '../types'
 
-const VALID_STATUS: readonly ObjectiveStepStatus[] = ['pendiente', 'en_progreso', 'hecho']
+const VALID_STATUS: readonly ObjectiveStepStatus[] = ['pendiente', 'en_progreso', 'hecho', 'descartado']
 function coerceNum(raw: unknown): number | undefined {
   if (raw === null || raw === undefined || raw === '') return undefined
   const n = typeof raw === 'number' ? raw : Number(raw)
