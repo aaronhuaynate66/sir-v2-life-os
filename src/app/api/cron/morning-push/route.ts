@@ -185,7 +185,8 @@ export async function GET(req: NextRequest) {
         .select('id, title, target_date, status, description, objective_id, goals!inner(title, status)')
         .eq('user_id', uid)
         .eq('target_date', today)
-        .neq('status', 'hecho')
+        // Ni hechos ni DESCARTADOS: un paso que ya no es del plan no vence.
+        .not('status', 'in', '(hecho,descartado)')
         .limit(50)
       const dueStepRows = ((stepRows ?? []) as unknown[])
         .map((raw) => {

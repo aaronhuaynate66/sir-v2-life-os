@@ -87,15 +87,22 @@ export function computeGoalAdvance(
   goalId: string,
   today: string,
 ): GoalAdvance {
-  const own = stepsForObjective(steps, goalId)
+  // Los DESCARTADOS salen del cálculo entero, no solo del numerador: un paso que
+  // ya no es parte del plan no debe engordar el denominador ni contarse como
+  // vencido. Si contaran, cerrar un trato caído dejaría el objetivo en "0 de 20"
+  // para siempre; si contaran como hechos, lo dejaría en 100% de algo que nunca
+  // pasó. Ninguna de las dos es verdad. Se filtra sobre TODA la lista porque el
+  // rollup OKR vuelve a filtrar por su cuenta más adentro.
+  const vivos = steps.filter((s) => s.status !== 'descartado')
+  const own = stepsForObjective(vivos, goalId)
 
   if (own.length === 0) {
     return { goalId, percent: null, done: 0, total: 0, lastAdvanceISO: null, overdue: 0, stepCount: 0 }
   }
 
   // Rollup OKR si hay KRs; si no, rollup plano sobre todos los pasos.
-  const okr = keyResultsForObjective(steps, goalId).length > 0
-    ? computeObjectiveProgress(steps, goalId)
+  const okr = keyResultsForObjective(vivos, goalId).length > 0
+    ? computeObjectiveProgress(vivos, goalId)
     : null
   const rollup = okr ?? computeStepProgress(own)
 

@@ -92,6 +92,7 @@ const STATUS_META: Record<ObjectiveStepStatus, { icon: typeof Circle; cls: strin
   pendiente: { icon: Circle, cls: 'text-text-tertiary', label: 'pendiente' },
   en_progreso: { icon: CircleDot, cls: 'text-warn', label: 'en progreso' },
   hecho: { icon: Check, cls: 'text-ok', label: 'hecho' },
+  descartado: { icon: X, cls: 'text-muted line-through', label: 'descartado' },
 }
 
 /** Cicla el estado del KR: pendiente → en_progreso → hecho → pendiente. */
