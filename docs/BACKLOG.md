@@ -41,7 +41,45 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
-**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — **re-ranking y el ciclo Mem0-style extract→merge→olvido siguen sin empezar** (los 4 pases coinciden).
+**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — ~~**re-ranking**~~ ❌ **CERRADO SIN CONSTRUIR (30/07/2026), ver abajo**; el ciclo Mem0-style extract→merge→olvido sigue sin empezar.
+
+### ❌ Re-ranking del recall — MEDIDO Y DESCARTADO (30/07/2026)
+
+Se construyó dos veces y **se revirtió las dos**, porque medido contra el recall REAL
+de Aaron no tenía valor demostrable. Queda documentado para que nadie lo reintente a
+ciegas: el trabajo perdido fue de una sesión, y repetirlo sería gratis.
+
+**El lote real** (24 candidatos de `match_memories_hybrid` para *"¿Diana quedó en
+abonarme el préstamo?"*, service-role, 30/07):
+
+| señal | medición | conclusión |
+|---|---|---|
+| `rrf_score` | 0.0193 – 0.0318 → **min/max = 0.61** | el rango total del retrieval mide 0.39; cualquier bono ≥0.5 lo atropella |
+| `importance` | 2–10 en **las 24**, media ~6 | no discrimina. La asigna un LLM al derivar → correlaciona con verbosidad, no con la pregunta |
+| `person_id` | **23/24** lo tienen, **18 son la misma persona** | casi constante. Y Aaron tiene 3 personas "Diana" (Carolina, Cencaro, Chiok): un bono por persona mal resuelta promueve lo incorrecto |
+| solape entre pares | **máximo Jaccard 0.230**, y **0 pares ≥0.45** de 276 | **no hay memorias duplicadas** |
+
+**Los dos intentos y por qué fallaron:**
+1. **Bonos por persona + importancia.** Contra data real **empeoró el orden**: para esa
+   pregunta ponía primero *"Diana coordina reuniones (dailies) con el equipo de Aimo"*
+   — irrelevante y de otra Diana. Causa: el bono (0.55) era mayor que todo el rango
+   del retrieval (0.39).
+2. **Dedupe de memorias casi iguales.** La hipótesis era "5 de 24 son el mismo hecho",
+   y **estaba mal**: salió de leer los primeros 60 caracteres de cada memoria, que
+   empiezan parecido ("Diana Carolina y Aaron mantienen una relación de pareja…") y
+   después divergen. Promedian 408 caracteres (hasta 2386) y son distintas. Medido el
+   solape completo: 0 pares por encima de 0.45. **El propio error que CLAUDE.md
+   prohíbe — concluir desde una vista parcial — cometido sobre el recall.**
+
+**Veredicto:** RRF (mig 0164) ordena bien y no hay margen visible con señales
+determinísticas. Si alguna vez se retoma, el único camino con sentido es un
+**cross-encoder** de verdad — y eso mete una llamada de red en el camino crítico del
+chat, que ya sufrió 502 por latencia, así que hay que justificarlo con una mejora
+medida en el harness ANTES de cablearlo. **No reabrir sin una medición nueva.**
+
+Lo que sí quedó como conocimiento reusable: `importance` **no sirve** como señal de
+ranking en este repo, y `person_id` tampoco — el scope por persona vive en `askSir`
+(`targetIds`/`scopedPersonId`), que es su lugar correcto.
 
 ---
 
