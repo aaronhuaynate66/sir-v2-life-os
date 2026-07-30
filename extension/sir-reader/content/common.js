@@ -213,6 +213,63 @@
     });
   } catch (_) { /* */ }
 
+  // ── PUENTE ISOLATED → MAIN → ISOLATED (comandos con respuesta) ────────────
+  //
+  // El puente de arriba va en un solo sentido: MAIN empuja batches. Los comandos que
+  // llegan por el latido necesitan RESPUESTA, y el background no le puede hablar al
+  // mundo MAIN (ahí no existe `chrome.*`). Así que este lado traduce:
+  //   background --chrome.tabs.sendMessage--> ISOLATED --postMessage--> MAIN
+  //                                        <--postMessage-- MAIN
+  //
+  // Cada pedido lleva un id propio para casar la respuesta: si dos comandos se
+  // solaparan, sin id la primera respuesta resolvería al segundo pedido.
+  const cmdPendientes = new Map();
+  let cmdSeq = 0;
+  try {
+    window.addEventListener('message', (e) => {
+      if (e.source !== window) return;
+      const d = e.data;
+      if (!d || d.__sirCmdRes !== true || !d.id) return;
+      const resolver = cmdPendientes.get(d.id);
+      if (resolver) { cmdPendientes.delete(d.id); resolver(d.res); }
+    });
+  } catch (_) { /* */ }
+
+  /** Manda un comando al lector del mundo MAIN y espera su respuesta. */
+  function pedirAlLectorMain(kind, extra, timeoutMs) {
+    return new Promise((resolve) => {
+      const id = `c${Date.now()}_${++cmdSeq}`;
+      cmdPendientes.set(id, resolve);
+      // Timeout explícito: sin esto, un lector que no cargó dejaría al background
+      // esperando para siempre y el latido siguiente se apilaría encima.
+      setTimeout(() => {
+        if (cmdPendientes.has(id)) {
+          cmdPendientes.delete(id);
+          resolve({ ok: false, error: 'el lector del Store no respondió (¿wa-js no cargó?)' });
+        }
+      }, timeoutMs);
+      try { window.postMessage(Object.assign({ __sirCmd: true, id, kind }, extra || {}), '*'); }
+      catch (err) { cmdPendientes.delete(id); resolve({ ok: false, error: String(err) }); }
+    });
+  }
+
+  try {
+    chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+      if (!msg) return undefined;
+      if (msg.type === 'sir-wa-probe') {
+        // 8 s: el probe solo lee el Store local, no la red.
+        pedirAlLectorMain('probe', null, 8000).then((r) => sendResponse((r && r.probe) || null));
+        return true;
+      }
+      if (msg.type === 'sir-wa-resync') {
+        // 4 min: el resync barre hasta 300 chats con 400 ms entre cada uno.
+        pedirAlLectorMain('resync', { dias: msg.dias, chat: msg.chat }, 240000).then((r) => sendResponse(r));
+        return true;
+      }
+      return undefined;
+    });
+  } catch (_) { /* */ }
+
   window.__SIR_CORE_BOOT = boot;
   // El adaptador llama a __SIR_CORE_BOOT() cuando ya seteó window.__SIR_ADAPTER.
 })();
