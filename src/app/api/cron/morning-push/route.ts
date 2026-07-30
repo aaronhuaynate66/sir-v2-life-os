@@ -35,7 +35,7 @@ import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDate
 import type { SpecialDate } from '@/types'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
 import { bodySignal } from '@/lib/health/bodySignal'
-import { vitalsAnomaly, type DailyVitals } from '@/lib/health/vitalsAnomaly'
+import { vitalsAnomaly, type DailyVitals, type VitalsContext } from '@/lib/health/vitalsAnomaly'
 import { calibrateRanges, type VitalsHistory } from '@/lib/health/calibrate'
 import { healthDataGap } from '@/lib/health/dataGap'
 import { parseWeightCategory } from '@/engines/targets'
@@ -472,7 +472,40 @@ export async function GET(req: NextRequest) {
         // Umbrales personales (percentiles de su propia historia); con poca data
         // caen a los defaults del rango Zepp.
         const { ranges } = calibrateRanges(hist)
-        const anomaly = vitalsAnomaly([...byDate.values()], ranges)
+
+        // CONTEXTO para que la línea no diga "puede ser una noche floja" cuando hay
+        // un evento médico que explica la carga. El 29-jul las señales de Aaron
+        // gritaban (VFC 34 con piso 54, FC en sueño 68 con techo 55, tercer día
+        // cayendo) dos días después de un trauma facial y con tramadol, y el módulo
+        // —que solo contaba señales de UN día— lo llamaba noche floja.
+        // Fail-soft: sin contexto la línea sigue saliendo, solo menos específica.
+        const contexto: VitalsContext = {}
+        try {
+          const corre = (dias: number) => new Date(Date.parse(`${today}T00:00:00Z`) + dias * 86_400_000).toISOString().slice(0, 10)
+          const desde = corre(-10), hasta = corre(7)
+          // OJO con el `select`: `personal_events` NO tiene columna `kind`. Pedirla
+          // hace que PostgREST devuelva error —en `.error`, sin lanzar— y el catch
+          // se lo tragaba dejando el contexto vacío en silencio. Cazado el 29-jul
+          // justamente escribiendo esto.
+          const { data: evSalud, error: evErr } = await admin
+            .from('personal_events')
+            .select('title, event_date, end_date')
+            .eq('user_id', uid)
+            .gte('event_date', desde).lte('event_date', hasta)
+            .limit(50)
+          if (evErr) throw new Error(evErr.message)
+          const evs = ((evSalud ?? []) as Array<{ title: string; event_date: string; end_date: string | null }>)
+            .map((e) => ({ ...e, dia: (e.event_date ?? '').slice(0, 10) }))
+          const pasados = evs.filter((e) => e.dia <= today).sort((a, b) => (a.dia < b.dia ? 1 : -1))
+          const futuros = evs.filter((e) => e.dia > today).sort((a, b) => (a.dia < b.dia ? -1 : 1))
+          const esMedico = (t: string) => /m[eé]dic|cl[ií]nic|cita|control|examen|maxilofacial|dentista|cirug|reposo|golpe|accidente|trauma/i.test(t)
+          const ultimo = pasados.find((e) => esMedico(e.title))
+          const proxima = futuros.find((e) => esMedico(e.title))
+          if (ultimo) contexto.eventoReciente = ultimo.title
+          if (proxima) contexto.citaProxima = proxima.title
+        } catch { /* sin contexto: la línea sale igual */ }
+
+        const anomaly = vitalsAnomaly([...byDate.values()], ranges, contexto)
         if (anomaly) { metricAlertText = anomaly.text; vitalsAlerted = true }
       } catch {
         /* fail-soft */
