@@ -84,10 +84,17 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. RPC de similitud (RLS-scoped por auth.uid()).
+  //
+  // `p_incluir_privadas: true` (mig 0180) porque ESTA es la búsqueda de Aaron en su
+  // propia memoria. "Privada" en este repo significa **fuera de la IA** — no oculta
+  // para él. El default del RPC es `false` para proteger el camino del chat, así que
+  // acá se opta explícitamente. Las obsoletas quedan fuera igual: son ruido de import
+  // declarado (698 registros de llamadas), no contenido suyo.
   const { data, error } = await supabase.rpc('match_memories', {
     query_embedding: toPgVector(queryEmbedding),
     match_count: limit,
     similarity_threshold: threshold,
+    p_incluir_privadas: true,
   })
   if (error) {
     return errorJson(500, 'Falló la búsqueda por similitud', error.message)
