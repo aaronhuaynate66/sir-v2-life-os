@@ -56,6 +56,7 @@ import {
   type AskPersonCtx,
   type AskMemoryHit,
   type AskGoalCtx,
+  type AskPendingTask,
   type SirReceipt,
   type HealthMetricReading,
   type SleepReading,
@@ -684,6 +685,8 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   // Fail-soft: si la lectura falla, el contexto queda como antes.
   const advanceByGoal = new Map<string, GoalAdvance>()
   const nextStepByGoal = new Map<string, { title: string; due: string | null; detail: string | null; done: string | null }>()
+  /** Los pendientes con fecha cercana, que son los que el brief AVISA. */
+  let pendingTasks: AskPendingTask[] = []
   try {
     const { data: stepRows, error: stepErr } = await supabase
       .from('objective_steps').select('*').eq('user_id', userId).limit(1000)
@@ -695,6 +698,50 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       const leaf = nextPendingLeaf(stepsForObjective(steps, g.id))
       if (leaf) nextStepByGoal.set(g.id, { title: leaf.title, due: leaf.targetDate ?? null, detail: leaf.description ?? null, done: leaf.acceptanceCriteria ?? null })
     }
+
+    // Además del siguiente paso por objetivo, se pasan los que TIENEN FECHA en la
+    // ventana que el brief usa para avisar. Sin esto, si él pregunta por algo que
+    // el brief acaba de decirle, el chat no tiene esa fila y solo puede repetirle
+    // el título — que es exactamente lo que pasó con la factura de S/1,500 el
+    // 29-jul. La ventana mira atrás porque un pendiente vencido se sigue avisando.
+    const desde = new Date(Date.parse(`${hoy}T00:00:00Z`) - 7 * 86_400_000).toISOString().slice(0, 10)
+    const hasta = new Date(Date.parse(`${hoy}T00:00:00Z`) + 3 * 86_400_000).toISOString().slice(0, 10)
+    const enVentana = steps
+      .filter((s) => s.status !== 'hecho' && s.targetDate && s.targetDate >= desde && s.targetDate <= hasta)
+      .sort((a, b) => (a.targetDate ?? '').localeCompare(b.targetDate ?? ''))
+
+    // Los objetivos padre se traen APARTE y sin filtrar por estado: el array
+    // `goals` de arriba es solo de ACTIVOS, y el objetivo del que colgaba la
+    // factura estaba PAUSADO — que es justo el dato que había que poder decir.
+    const idsObjetivo = [...new Set(enVentana.map((s) => s.objectiveId).filter(Boolean))]
+    const metaObjetivo = new Map<string, { title: string; status: string | null }>()
+    if (idsObjetivo.length > 0) {
+      const { data: padres } = await supabase
+        .from('goals').select('id, title, status').eq('user_id', userId).in('id', idsObjetivo).limit(50)
+      for (const p of (padres ?? []) as Array<{ id: string; title: string; status: string | null }>) {
+        metaObjetivo.set(p.id, { title: p.title, status: p.status })
+      }
+    }
+
+    // Los de objetivos VIVOS primero. Un objetivo pausado con 20 pasos fechados se
+    // comía el cupo (5 de 10 eran de "Boticas Jhodaal") y tapaba pendientes reales.
+    // No se descartan —hay que poder responder "eso está pausado" si él pregunta—,
+    // solo ceden el lugar.
+    const dormido = (s: { objectiveId: string }) => {
+      const st = metaObjetivo.get(s.objectiveId)?.status
+      return st === 'paused' || st === 'archived' ? 1 : 0
+    }
+    const conFecha = [...enVentana]
+      .sort((a, b) => dormido(a) - dormido(b) || (a.targetDate ?? '').localeCompare(b.targetDate ?? ''))
+      .slice(0, 10)
+
+    pendingTasks = conFecha.map((s) => {
+      const g = metaObjetivo.get(s.objectiveId)
+      return {
+        title: s.title, due: s.targetDate ?? null, detail: s.description ?? null,
+        goalTitle: g?.title ?? null, goalStatus: g?.status ?? null,
+      }
+    })
   } catch { /* fail-soft: sin pasos, el contexto de objetivos queda como antes */ }
 
   const goalsCtx: AskGoalCtx[] = goals.slice(0, 20).map((g) => {
@@ -761,6 +808,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     people: peopleCtx,
     memories: memoryHits,
     goals: goalsCtx,
+    pendingTasks,
     strengths,
   })
 

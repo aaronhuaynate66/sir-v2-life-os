@@ -423,3 +423,52 @@ describe('buildAskContext — el detalle del paso, para poder RESPONDER', () => 
     expect(ctx).not.toContain('cómo:')
   })
 })
+
+// La fricción del 29-jul: el brief avisó "Hoy vence: Emitir factura electrónica #1
+// por fee mensual S/1,500" y Aaron preguntó "¿Qué factura mensual?". SIR le
+// repitió el título. El dato estaba —la descripción del paso decía "enviar a
+// Dayana por email" y el objetivo padre, "Cerrar Boticas Jhodaal", estaba PAUSADO
+// desde que ella se fue con otra gente— pero no llegaba al prompt.
+describe('buildAskContext — pendientes con fecha', () => {
+  const base = { question: 'que factura mensual?', todayISO: '2026-07-29', people: [], memories: [], goals: [] }
+  const factura = {
+    title: 'Emitir factura electrónica #1 por fee mensual S/1,500 (mes jul-2026)',
+    due: '2026-07-29',
+    detail: 'Usar sistema de facturación de Marlab; enviar a Dayana por email',
+    goalTitle: 'Cerrar Boticas Jhodaal como cliente de Marlab',
+    goalStatus: 'paused',
+  }
+
+  it('el pendiente llega con objetivo, detalle y fecha', () => {
+    const out = buildAskContext({ ...base, pendingTasks: [factura] })
+    expect(out).toContain('PENDIENTES CON FECHA')
+    expect(out).toContain('vence 2026-07-29')
+    expect(out).toContain('Cerrar Boticas Jhodaal')
+    expect(out).toContain('Dayana')
+  })
+
+  it('un objetivo PAUSADO se marca, porque el pendiente ya no aplica', () => {
+    const out = buildAskContext({ ...base, pendingTasks: [factura] })
+    expect(out).toContain('[PAUSED]')
+    expect(out).toMatch(/PAUSADO o ARCHIVADO/)
+    expect(out).toMatch(/dilo PRIMERO/)
+  })
+
+  it('un objetivo activo NO se marca (no hay nada que advertir)', () => {
+    const out = buildAskContext({
+      ...base,
+      pendingTasks: [{ ...factura, goalTitle: 'Subir ingresos', goalStatus: 'active' }],
+    })
+    expect(out).not.toContain('[ACTIVE]')
+  })
+
+  it('instruye a NO repetir el título', () => {
+    const out = buildAskContext({ ...base, pendingTasks: [factura] })
+    expect(out).toMatch(/no le repitas el título/i)
+  })
+
+  it('sin pendientes no agrega el bloque', () => {
+    expect(buildAskContext({ ...base, pendingTasks: [] })).not.toContain('PENDIENTES CON FECHA')
+    expect(buildAskContext(base)).not.toContain('PENDIENTES CON FECHA')
+  })
+})
