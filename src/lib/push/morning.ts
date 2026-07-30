@@ -73,6 +73,12 @@ export interface MorningInput {
    *  porque cambia cómo hay que leer todo lo demás: si WhatsApp está caído, la
    *  ausencia de señales relacionales no significa que no pasó nada. */
   readerSilence?: string
+  /**
+   * TENDENCIA cardíaca. Solo el canal 'manana' de `cardioSurface` llega acá: lo
+   * urgente ya se mandó solo, en el momento en que entró la medición, y no pasa
+   * por el brief. Ver `lib/health/cardioSurface.ts`.
+   */
+  cardioTrend?: string
   /** Nota del gate de energía: por qué hoy se pospuso lo que pide combustible
    *  emocional (ver lib/brief/energyGate). Va PRIMERA — es el marco con el que
    *  hay que leer el resto del brief. */
@@ -190,6 +196,7 @@ export function topicKey(text: string): string {
 const AGGREGATE_SLOTS = new Set([
   'cycleWeekAhead',      // "coinciden Diana, Aeylin, Nicolle…" — la lista varía a diario
   'metricAlert', 'bodySignal', 'healthWatch',
+  'cardioTrend',         // hay una sola por día y su texto lleva los valores del día
   'trainingAdherence',   // "2 de 3 de fuerza" cambia con cada sesión
   'energyNote',
 ])
@@ -270,6 +277,10 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //    lo urgente/time-sensitive del día, al frente.
   add(input.weekFocus, 'weekFocus', 'metas', ent.weekFocusGoal ? { kind: 'goal', ...ent.weekFocusGoal } : undefined)
   add(input.metricAlert, 'metricAlert', 'hoy')
+  // 0.6 TENDENCIA CARDÍACA. Va en 'hoy' y cerca del tope porque es del cuerpo,
+  //     pero NO interrumpe: lo que apremia se manda solo al entrar la medición.
+  //     Acá llega lo que no se pierde nada esperando a la mañana.
+  add(input.cardioTrend, 'cardioTrend', 'hoy')
 
   // 1. Aniversarios/fechas especiales: un aniversario HOY es time-critical (no se
   //    puede celebrar tarde) → se mantiene sobre lo relacional-no-urgente.

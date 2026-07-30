@@ -18,6 +18,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { evaluarCardio } from '@/lib/health/cardioNotify'
 import { mapHealthAutoExport } from '@/lib/health/ingest/parse'
 import { looksLikeHae } from '@/lib/health/import/payload'
 import { summarizeMapping } from '@/lib/health/import/summary'
@@ -136,6 +138,23 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // AVISO CARDÍACO "EN EL MOMENTO" (pedido de Aaron, 30-jul-2026): el momento
+    // de verdad no es una hora fija, es cuando aparece la medición.
+    //
+    // OJO CON EL CLIENTE: esta ruta escribe con el cliente de SESIÓN (RLS), pero
+    // `cardio_alerts` (mig 0179) solo tiene policy de SELECT — la escritura la
+    // hace el server. Con el cliente de sesión el upsert del dedupe fallaría en
+    // silencio y el mismo aviso podría sonar todos los días, que es justo lo que
+    // la tabla existe para evitar. Así que para este paso se usa service-role.
+    let cardio: Awaited<ReturnType<typeof evaluarCardio>> | undefined
+    const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const svcUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (healthRows.length > 0 && svcKey && svcUrl) {
+      const admin = createServiceClient(svcUrl, svcKey, { auth: { persistSession: false } })
+      const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID?.trim()
+      cardio = await evaluarCardio(admin, userId, { chatId: chat ? Number(chat) : null })
+    }
+
     return NextResponse.json(
       {
         ok: true,
@@ -145,6 +164,7 @@ export async function POST(req: NextRequest) {
         skipped: mapped.skipped,
         healthRows,
         sleepRows,
+        cardio,
       },
       { status: 200 },
     )

@@ -66,26 +66,30 @@ describe('assessCardio — el caso REAL del 27→30 jul', () => {
     expect(v.text).toMatch(/traumatismo facial/)
   })
 
-  it('el mismo tramo SIN el día de recuperación sí se ve mal, pero explicado', () => {
+  it('el mismo tramo SIN el día de recuperación: racha + día agudo, y el agudo habla', () => {
     const hasta29 = REAL.slice(0, -1)
     const v = assessCardio(hasta29, { eventos: GOLPE })
     expect(v.level).toBe('observar')
+    // La racha se detecta...
     expect(v.findings.map((f) => f.pattern)).toContain('vfc_deprimida_sostenida')
-    // Explicado por el golpe → NO escala, y lo dice.
+    // ...pero el 29 la VFC fue 34 contra una referencia de ~84: eso es un día
+    // AGUDO, y el día agudo habla primero porque es lo único que cambia lo que
+    // Aaron hace HOY. Ese día había que decirle "no entrenes", y no se le dijo.
+    expect(v.findings.map((f) => f.pattern)).toContain('anomalia_aguda')
+    expect(v.text).toMatch(/no cargues/i)
     expect(v.text).toMatch(/traumatismo facial/)
-    expect(v.text).toMatch(/no el corazón/)
+    expect(v.text).toMatch(/casi nunca es del corazón/i)
   })
 
   it('ese mismo tramo SIN evento registrado tampoco escala: 3 días es corto', () => {
-    // Cambia el DISCURSO, no el nivel. Sin evento no se le puede atribuir a nada,
-    // pero 3 días es indistinguible de un virus que no dio la cara: mandar al
-    // cardiólogo acá sería exactamente el falso positivo que hay que evitar.
+    // Sin evento no se le puede atribuir a nada, pero 3 días es indistinguible
+    // de un virus que no dio la cara: mandar al cardiólogo acá sería el falso
+    // positivo que hay que evitar. Cambia el DISCURSO, no el nivel.
     const hasta29 = REAL.slice(0, -1)
     const v = assessCardio(hasta29, { eventos: [] })
     expect(v.level).toBe('observar')
     expect(v.findings.map((f) => f.pattern)).toContain('vfc_deprimida_sostenida')
     expect(v.text).not.toMatch(/traumatismo/)
-    expect(v.text).toMatch(/corto para sacar conclusiones/)
   })
 
   it('el MISMO patrón, 12 días: explicado no escala, sin explicar sí', () => {
@@ -119,12 +123,25 @@ describe('assessCardio — no escalar por ruido', () => {
     expect(v.text).toBeNull()
   })
 
-  it('un solo día fuera de rango NO alcanza', () => {
+  it('un solo día EXTREMO no escala a cardiólogo, pero sí avisa', () => {
     const s = sana(20)
     s[s.length - 1] = { date: s[s.length - 1].date, sleepingHr: 70, hrvAvg: 30 }
     const v = assessCardio(s)
     expect(v.level).not.toBe('consultar')
+    // Nada SOSTENIDO (un día no hace racha)...
+    expect(v.findings.map((f) => f.pattern)).not.toContain('vfc_deprimida_sostenida')
+    // ...pero un día así sí merece un aviso: es el caso del 15-jul.
+    expect(v.findings.map((f) => f.pattern)).toEqual(['anomalia_aguda'])
+  })
+
+  it('un solo día LEVEMENTE fuera no dice nada (el umbral tiene que valer algo)', () => {
+    // Sin este test el umbral de la aguda sería decorativo y volveríamos al muro
+    // de notificaciones. VFC 62 con referencia ~79 es −21%: variación normal.
+    const s = sana(20)
+    s[s.length - 1] = { date: s[s.length - 1].date, sleepingHr: 53, hrvAvg: 62 }
+    const v = assessCardio(s)
     expect(v.findings).toHaveLength(0)
+    expect(v.level).not.toBe('consultar')
   })
 
   it('dos días tampoco (el umbral es 3)', () => {

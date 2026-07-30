@@ -27,6 +27,7 @@ import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } fr
 import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agendaCross'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
 import { diagnoseChannel, channelSilenceLine } from '@/lib/reader/channelSilence'
+import { evaluarCardio } from '@/lib/health/cardioNotify'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
@@ -625,6 +626,19 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // TENDENCIA CARDÍACA. Solo el canal 'manana' llega acá: lo que apremia ya
+      // se mandó solo cuando entró la medición (ver `cardioNotify`, cableado en
+      // los endpoints de ingesta de salud). `soloDiagnosticar` garantiza que este
+      // cron NO manda Telegram por su cuenta — si lo hiciera, el mismo hallazgo
+      // saldría dos veces, una por el aviso inmediato y otra dentro del brief.
+      let cardioTrendText: string | undefined
+      try {
+        const c = await evaluarCardio(admin, uid, { soloDiagnosticar: true })
+        if (c.canal === 'manana' && c.texto) cardioTrendText = c.texto
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'cardioTrend', user: uid.slice(0, 8) })
+      }
+
       // A QUIÉN CUIDAR HOY: el vínculo más urgente de "Reconectar", con el MISMO
       // motor que la app (assembleDailyActions). SIR sabe a quién estás
       // descuidando; esto lo saca de la app y te lo dice en el push/Telegram.
@@ -861,7 +875,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

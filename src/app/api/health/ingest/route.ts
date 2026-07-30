@@ -26,6 +26,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { mapHealthAutoExport } from '@/lib/health/ingest/parse'
 import type { HealthAutoExportPayload } from '@/lib/health/ingest/types'
+import { evaluarCardio } from '@/lib/health/cardioNotify'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -165,12 +166,23 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // AVISO CARDÍACO "EN EL MOMENTO" (pedido de Aaron, 30-jul-2026). El momento
+    // de verdad no es una hora fija: es cuando aparece la medición. Corre DESPUÉS
+    // de que la escritura salió bien y es fail-soft por dentro — un aviso que
+    // falla no puede convertir un guardado bueno en un 500.
+    let cardio: Awaited<ReturnType<typeof evaluarCardio>> | undefined
+    if (healthWritten > 0) {
+      const chat = process.env.TELEGRAM_ALLOWED_CHAT_ID?.trim()
+      cardio = await evaluarCardio(admin, userId, { chatId: chat ? Number(chat) : null })
+    }
+
     return NextResponse.json(
       {
         ok: true,
         healthMetrics: healthWritten,
         sleepRecords: sleepWritten,
         skipped: mapped.skipped,
+        cardio,
       },
       { status: 200 },
     )
