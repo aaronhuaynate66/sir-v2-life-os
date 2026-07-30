@@ -2,13 +2,13 @@
 
 > ⚠️ **ESTE DOC SE MANTIENE A MANO Y DERIVA.** El código avanza más rápido que este
 > archivo, así que acumula ítems "ya hechos pero listados como pendientes". **Antes de
-> tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
+> tratar CUALQUIER cosa de acá como pendiente, verifícala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
 > **Última actualización:** 30/07/2026 (agente automático de reconciliación — 3 ítems cerrados, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-07-30" abajo; antes consolidaba los pases 25, 26, 27 y 28/07).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
-> **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
+> **Cómo usar:** entra acá cuando quieras decidir qué priorizar en la próxima sesión.
 
 ---
 
