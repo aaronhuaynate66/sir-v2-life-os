@@ -22,6 +22,7 @@ import {
   isTelegramConfigured, verifyTelegramSecret, sendTelegramMessage, downloadTelegramFile,
   answerCallbackQuery, editTelegramMessageText, sendTelegramKeyboard, editTelegramKeyboard,
 } from '@/lib/telegram/client'
+import { feedbackButtons, parseFeedbackCallback, handleFeedbackTap } from '@/lib/telegram/feedback'
 import { pendingDailyHabits, habitCallbackData, parseHabitCallback } from '@/lib/habits/checkinButtons'
 import { limaDayString } from '@/lib/habits/streak'
 import { toPlainText } from '@/lib/telegram/format'
@@ -389,6 +390,14 @@ export async function POST(req: NextRequest) {
       const ownerId = await resolveOwnerId(supabase)
       if (!ownerId) { await answerCallbackQuery(cb.callbackId); return }
 
+      // 👍/👎 sobre una respuesta de SIR: "fb|<u|d>|<isoDelTurno>". Va primero
+      // porque es el tap más frecuente que puede llegar y no depende de nada más.
+      const fb = parseFeedbackCallback(cb.data)
+      if (fb) {
+        await handleFeedbackTap(supabase, ownerId, cb.callbackId, fb)
+        return
+      }
+
       // Tap de un hábito (check-in por botones): "hb|<habitId>" → marcar hecho hoy.
       const habitId = parseHabitCallback(cb.data)
       if (habitId) {
@@ -597,9 +606,16 @@ export async function POST(req: NextRequest) {
       // toPlainText garantiza que no viajen ** ## --- crudos a Telegram (el
       // chatStyle del prompt ayuda, esto lo asegura aunque el modelo desobedezca).
       const reply = toPlainText(result.answer)
-      await sendTelegramMessage(msg.chatId, reply)
-      // Persisto ambos turnos al hilo canónico (compartido con la web).
-      await appendSirThread(supabase, ownerId, 'telegram', text, result.answer)
+      // El turno se persiste ANTES de mandar la respuesta, y no después, porque el
+      // timestamp que devuelve es el id que llevan los botones de 👍/👎: sin él no
+      // hay a qué atar el voto. Es fail-open (devuelve null si falla) → en ese caso
+      // la respuesta sale igual, solo sin botones.
+      const persistido = await appendSirThread(supabase, ownerId, 'telegram', text, result.answer)
+      // 👍/👎 EN TELEGRAM. No existían: `chat_feedback` llevaba 0 filas desde que se
+      // construyó y se le venía pidiendo a Aaron que calificara, cuando en su canal
+      // principal no había dónde. La tabla ya aceptaba channel='telegram' desde el
+      // día uno; solo faltaba el botón.
+      await sendTelegramMessage(msg.chatId, reply, feedbackButtons(persistido?.sirAt))
       // GA4 server-side: sin esto el uso por Telegram no aparece en analytics.
       await trackServer('sir_asked', { channel: 'telegram', input_type: msg.isVoice ? 'voice' : 'text' }, ownerId)
 

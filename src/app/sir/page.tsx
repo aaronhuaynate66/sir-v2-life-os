@@ -943,20 +943,39 @@ export default function SirChatPage() {
                 )}
                 {t.role === 'sir' && t.text && !t.clarifying && (
                   <>
-                    <div className="mt-2 flex items-center gap-1">
+                    {/*
+                      Estos botones existían pero eran INVISIBLES: 13 px al 50% de
+                      opacidad. Aaron los buscó el 30-jul y no los encontró ("no veo
+                      en ningún lado dónde marcar like o dislike") — y `chat_feedback`
+                      llevaba 0 filas desde que se construyó, mientras se le pedía en
+                      cada sesión que calificara. Ahora llevan TEXTO, borde y tamaño
+                      de toque real. La señal es el cuello de botella del loop de
+                      aprendizaje: si el control no se ve, no hay señal.
+                    */}
+                    <div className="mt-2.5 flex items-center gap-2">
                       <button
                         onClick={() => rateTurn(i, 'up')}
                         aria-label="Me sirve"
-                        className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'up' ? 'text-ok' : 'text-muted-foreground/50 hover:text-foreground'}`}
+                        aria-pressed={t.feedback === 'up'}
+                        className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors ${
+                          t.feedback === 'up'
+                            ? 'border-ok/40 bg-ok/10 text-ok'
+                            : 'border-border text-muted-foreground hover:border-ok/40 hover:text-ok'
+                        }`}
                       >
-                        <ThumbsUp size={13} />
+                        <ThumbsUp size={15} /> Me sirve
                       </button>
                       <button
                         onClick={() => rateTurn(i, 'down')}
                         aria-label="No me sirve"
-                        className={`inline-flex min-h-8 min-w-8 items-center justify-center rounded-md p-1.5 transition-colors ${t.feedback === 'down' ? 'text-bad' : 'text-muted-foreground/50 hover:text-foreground'}`}
+                        aria-pressed={t.feedback === 'down'}
+                        className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors ${
+                          t.feedback === 'down'
+                            ? 'border-bad/40 bg-bad/10 text-bad'
+                            : 'border-border text-muted-foreground hover:border-bad/40 hover:text-bad'
+                        }`}
                       >
-                        <ThumbsDown size={13} />
+                        <ThumbsDown size={15} /> No
                       </button>
                     </div>
                     {correctingIdx === i && (
