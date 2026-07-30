@@ -70,6 +70,17 @@ export interface Probe {
   libVersion?: string | null
   /** Cualquier error que el lector quiera reportar. */
   error?: string | null
+  /**
+   * Por qué CAMINO logra leer mensajes ('getMessages' | 'chat.msgs.*' | 'ninguno').
+   *
+   * Existe por un fallo real: el 30-jul-2026 `WPP.chat.list()` funcionaba (1123
+   * chats) y `WPP.chat.getMessages()` estaba roto contra la versión de WhatsApp del
+   * día — el reader recorría 196 chats y mandaba **0 mensajes**, y desde el servidor
+   * se veía todo sano. Este campo es el que delata que la API se movió.
+   */
+  lee?: string | null
+  /** Cuántos mensajes trajo la prueba de lectura. 0 con `lee` seteado = API movida. */
+  leeCuantos?: number | null
 }
 
 const esEntero = (v: unknown): v is number =>
@@ -129,6 +140,8 @@ export function normalizarProbe(entrada: unknown): Probe | null {
   if (esEntero(o.chats) && o.chats >= 0) p.chats = Math.min(100_000, o.chats)
   if (typeof o.libVersion === 'string') p.libVersion = o.libVersion.slice(0, 40)
   if (typeof o.error === 'string' && o.error) p.error = o.error.slice(0, 300)
+  if (typeof o.lee === 'string') p.lee = o.lee.slice(0, 40)
+  if (esEntero(o.leeCuantos) && o.leeCuantos >= 0) p.leeCuantos = Math.min(100_000, o.leeCuantos)
   return Object.keys(p).length > 0 ? p : null
 }
 
@@ -143,6 +156,10 @@ export function normalizarProbe(entrada: unknown): Probe | null {
 export function lectorVivo(probe: Probe | null | undefined): boolean | null {
   if (!probe) return null
   if (probe.error) return false
+  // NO PUEDE LEER MENSAJES = no está vivo, aunque liste chats y diga ready.
+  // Es el caso exacto del 30-jul: 196 chats recorridos, 0 mensajes enviados, y todo
+  // lo demás en verde. Ver el comentario de `Probe.lee`.
+  if (probe.lee === 'ninguno') return false
   // La librería no cargó: el lector no puede leer nada, esté la pestaña como esté.
   if (probe.lib !== undefined && probe.lib !== null && probe.lib !== 'object') return false
   if (probe.ready === false) return false
