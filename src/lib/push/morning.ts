@@ -17,6 +17,12 @@ export interface MorningInput {
   /** Fechas especiales próximas (aniversarios, mensario…) ya formateadas y
    *  ordenadas por cercanía. Ej. "Aniversario mensual relación (13) · ¡Hoy!". */
   importantDates?: string[]
+  /**
+   * "Esto se te viene": los `personal_events` de los próximos 7 días. Faltaba el
+   * slot entero — la tabla se leía solo por el cruce del ciclo, así que la boda de
+   * Laura del sábado no aparecía. Ver `lib/push/eventosProximos.ts`.
+   */
+  eventosProximos?: string
   /** A quién cuidar hoy: el vínculo más urgente de "Reconectar" (persona +
    *  razón, ya formado). SIR sabe a quién estás descuidando; esto lo dice sin
    *  que abras la app. Texto corto ya armado. */
@@ -197,6 +203,7 @@ const AGGREGATE_SLOTS = new Set([
   'cycleWeekAhead',      // "coinciden Diana, Aeylin, Nicolle…" — la lista varía a diario
   'metricAlert', 'bodySignal', 'healthWatch',
   'cardioTrend',         // hay una sola por día y su texto lleva los valores del día
+  'eventosProximos',     // "la boda es el sábado" cambia de texto cada día que pasa
   'trainingAdherence',   // "2 de 3 de fuerza" cambia con cada sesión
   'energyNote',
 ])
@@ -281,6 +288,11 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //     pero NO interrumpe: lo que apremia se manda solo al entrar la medición.
   //     Acá llega lo que no se pierde nada esperando a la mañana.
   add(input.cardioTrend, 'cardioTrend', 'hoy')
+  // 0.7 LO QUE SE VIENE. Va temprano y en 'hoy' porque es lo único del brief que
+  //     puede requerir PREPARARSE (un regalo, ropa, mover la agenda). El hueco lo
+  //     encontró Aaron: su boda de Laura del sábado estaba cargada y no aparecía en
+  //     ningún lado, porque `personal_events` solo se leía por el cruce del ciclo.
+  add(input.eventosProximos, 'eventosProximos', 'hoy')
 
   // 1. Aniversarios/fechas especiales: un aniversario HOY es time-critical (no se
   //    puede celebrar tarde) → se mantiene sobre lo relacional-no-urgente.

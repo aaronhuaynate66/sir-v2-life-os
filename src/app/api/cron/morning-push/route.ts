@@ -30,6 +30,7 @@ import { diagnoseChannel, channelSilenceLine } from '@/lib/reader/channelSilence
 import { evaluarCardio } from '@/lib/health/cardioNotify'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
 import { evaluarPrecondiciones, lineaTrabada } from '@/lib/goals/precondicion'
+import { eventosProximosLine } from '@/lib/push/eventosProximos'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
 import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
@@ -169,6 +170,44 @@ export async function GET(req: NextRequest) {
       }
       importantDatesRanked.sort((a, b) => a.days - b.days)
       const importantDates = importantDatesRanked.slice(0, 3).map((d) => d.text)
+
+      // LO QUE SE VIENE: `personal_events` de los próximos 7 días.
+      //
+      // Este bloque nació de una fricción directa (30-jul). Aaron: *"Laura me escribió
+      // diciéndome que este sábado es su matrimonio religioso, y no veo ninguna alerta,
+      // recordatorio o fecha que indique eso"*. Y ESTABA CARGADO: la fila existía con
+      // fecha y con Laura vinculada. El problema era que `personal_events` se leía SOLO
+      // por el cruce del ciclo menstrual (#978), que surfacea un evento únicamente si la
+      // persona está en ventana sensible. Faltaba el recordatorio a secas.
+      let eventosProximosText: string | undefined
+      try {
+        const { data: evRows } = await admin
+          .from('personal_events')
+          .select('title, event_date, person_id')
+          .eq('user_id', uid)
+          .gte('event_date', today)
+          .order('event_date', { ascending: true })
+          .limit(20)
+        const crudos = ((evRows ?? []) as Array<{ title: string | null; event_date: string | null; person_id: string | null }>)
+          .filter((e) => e.title && e.event_date)
+        // El nombre de la persona es lo que hace que el recordatorio importe ("la
+        // boda de LAURA"), así que se resuelve — pero solo para los ids que de
+        // verdad aparecen, no toda la agenda.
+        const pids = [...new Set(crudos.map((e) => e.person_id).filter(Boolean))] as string[]
+        const nombrePorId = new Map<string, string>()
+        if (pids.length > 0) {
+          const { data: pplRows } = await admin.from('people').select('id, name').eq('user_id', uid).in('id', pids)
+          for (const r of (pplRows ?? []) as Array<{ id: string; name: string }>) nombrePorId.set(r.id, r.name)
+        }
+        const evs = crudos.map((e) => ({
+          date: e.event_date!,
+          title: e.title!,
+          personName: e.person_id ? nombrePorId.get(e.person_id) ?? null : null,
+        }))
+        eventosProximosText = eventosProximosLine(evs, today) ?? undefined
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'eventosProximos', user: uid.slice(0, 8) })
+      }
 
       // Tareas que vencen hoy (no hechas).
       //
@@ -950,7 +989,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla
