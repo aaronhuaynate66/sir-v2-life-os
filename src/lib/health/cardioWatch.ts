@@ -95,6 +95,13 @@ export type CardioPattern =
   | 'sin_recuperacion'
   /** SpO₂ baja + respiración alta: eje respiratorio, no cardíaco. Va aparte. */
   | 'senal_respiratoria'
+  /**
+   * UN día muy fuera de lo suyo, sin necesidad de racha. Es el único patrón que
+   * justifica interrumpir a Aaron el mismo día: el 15-jul su VFC fue 18 ms con
+   * una base de 66 (−73%) y su FC en sueño 88 — nadie le dijo nada ese día.
+   * NO significa "algo del corazón": significa "hoy no cargues".
+   */
+  | 'anomalia_aguda'
 
 export type CardioLevel =
   /** Nada que decir. */
@@ -145,6 +152,14 @@ export const DIAS_SIN_RECUPERAR = 10
  * sí solo. Menos que esto es indistinguible de un virus que aún no dio la cara.
  */
 export const DIAS_DESACOPLE_ESCALA = 5
+/**
+ * Caída de VFC respecto de su referencia que califica como anomalía AGUDA de un
+ * solo día. 40% es mucho más que la variación normal noche a noche (que en su
+ * serie ronda el 15-20%) y deja fuera las noches simplemente flojas.
+ */
+export const AGUDA_CAIDA_VFC = 0.4
+/** Exceso de FC en sueño sobre su referencia que califica como agudo. */
+export const AGUDA_EXCESO_FC = 0.25
 /** Cuánto tiene que correrse la mediana entre ventanas para llamarlo deriva. */
 export const DERIVA_BPM = 5
 /** Ventana de cada mitad al comparar derivas. */
@@ -223,6 +238,9 @@ function limites(ds: CardioDay[], range?: CardioRange) {
   const refRest = percentil(rest, 0.25)
   const refHrv = percentil(hrv, 0.75)
   return {
+    // Las referencias crudas salen también: la anomalía AGUDA se mide como
+    // porcentaje contra ellas, no contra el techo.
+    refHr, refHrv,
     // +8 bpm sobre su referencia absorbe la variación normal noche a noche sin
     // tragarse una elevación real.
     sleepingHrMax: range?.sleepingHrMax ?? (refHr !== null ? Math.round(refHr + 8) : null),
@@ -353,6 +371,33 @@ export function assessCardio(
     })
   }
 
+  // —— Anomalía AGUDA de UN día ————————————————————————————————————————————
+  // El único patrón que justifica interrumpirlo el mismo día. No espera racha:
+  // el 15-jul su VFC fue 18 con base 66 y su FC en sueño 88, y nadie le dijo
+  // nada. Se mide como PORCENTAJE contra su referencia, no contra el techo,
+  // porque lo que importa acá es la magnitud, no cruzar un borde.
+  const hoyHrv = num(ultimo.hrvAvg)
+  const hoyHr = num(ultimo.sleepingHr)
+  const caidaVfc = hoyHrv !== null && lim.refHrv !== null && lim.refHrv > 0
+    ? (lim.refHrv - hoyHrv) / lim.refHrv
+    : null
+  const excesoFc = hoyHr !== null && lim.refHr !== null && lim.refHr > 0
+    ? (hoyHr - lim.refHr) / lim.refHr
+    : null
+  const agudoVfc = caidaVfc !== null && caidaVfc >= AGUDA_CAIDA_VFC
+  const agudoFc = excesoFc !== null && excesoFc >= AGUDA_EXCESO_FC
+  if (agudoVfc || agudoFc) {
+    const partes: string[] = []
+    if (agudoVfc) partes.push(`VFC ${hoyHrv} ms cuando lo tuyo es ~${Math.round(lim.refHrv!)} (${Math.round(caidaVfc! * 100)}% abajo)`)
+    if (agudoFc) partes.push(`FC en sueño ${hoyHr} cuando lo tuyo es ~${Math.round(lim.refHr!)}`)
+    findings.push({
+      pattern: 'anomalia_aguda',
+      dias: 1,
+      detalle: partes.join(' y '),
+      explicadoPor: eventoQueExplica(ultimo.date, eventos)?.label,
+    })
+  }
+
   // —— ¿Volvió a la línea base? ————————————————————————————————————————————
   // La pregunta que decide todo. Un episodio que se recuperó solo no manda a
   // nadie al cardiólogo, por fuerte que haya sido el pico.
@@ -378,7 +423,12 @@ export function assessCardio(
   // —— Nivel ————————————————————————————————————————————————————————————————
   // Se escala solo si el patrón NO tiene evento que lo explique y ya lleva más
   // de lo que una causa aguda justifica.
-  const cardiacos = findings.filter((f) => f.pattern !== 'senal_respiratoria')
+  // La anomalía aguda NO cuenta para escalar: es de UN día por definición, y un
+  // día extremo es casi siempre un virus, alcohol o cuatro horas de sueño. Su
+  // urgencia es de OTRO tipo (no cargues hoy) y la resuelve `cardioSurface`.
+  const cardiacos = findings.filter(
+    (f) => f.pattern !== 'senal_respiratoria' && f.pattern !== 'anomalia_aguda',
+  )
   const sinExplicar = cardiacos.filter((f) => !f.explicadoPor)
   const masLargo = Math.max(0, ...cardiacos.map((f) => f.dias))
   // El desacople pesa más que una señal sola, pero NO escala a los 3 días: FC
@@ -389,6 +439,18 @@ export function assessCardio(
     (masLargo >= DIAS_SIN_RECUPERAR ||
       sinExplicar.some((f) => f.pattern === 'desacople_autonomico' && f.dias >= DIAS_DESACOPLE_ESCALA) ||
       sinExplicar.some((f) => f.pattern === 'deriva_de_linea_base'))
+
+  // El día extremo habla PRIMERO, aunque haya otros patrones: es lo único que
+  // cambia lo que Aaron hace hoy.
+  const aguda = findings.find((f) => f.pattern === 'anomalia_aguda')
+  if (aguda && !escalar) {
+    return {
+      level: 'observar',
+      findings,
+      baseline: base,
+      text: `Anoche tu cuerpo quedó bastante fuera de lo tuyo: ${aguda.detalle}. Hoy no cargues${aguda.explicadoPor ? ` — encaja con ${aguda.explicadoPor}` : ''}. Un día así casi nunca es del corazón: suele ser un virus incubando, alcohol, o pocas horas. Si mañana sigue igual te lo vuelvo a decir, y si se repite varios días lo miramos en serio.`,
+    }
+  }
 
   if (escalar) {
     cardiacos.push({
