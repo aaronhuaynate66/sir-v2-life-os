@@ -126,6 +126,55 @@
    * (ver `lib/reader/comandos.ts`), así que pedir "Diana, 400 días" es una fila en una
    * tabla y no un pedido de trabajo manual.
    */
+  /**
+   * Trae los mensajes de un chat, con CAMINO ALTERNATIVO.
+   *
+   * POR QUÉ EXISTE (diagnóstico en vivo, 30-jul-2026). Con wa-js 4.4.1 sobre la
+   * versión actual de WhatsApp Web, `WPP.chat.list()` funciona perfecto (devolvió
+   * 1123 chats, 196 activos) pero `WPP.chat.getMessages()` tira
+   * `Cannot read properties of undefined (reading 'get')` en TODOS los chats —
+   * WhatsApp movió una colección interna que esa versión de wa-js todavía busca. El
+   * resultado era el peor posible: `backfill listo: 0 msgs (196 chats)`. Recorría
+   * todo y no traía nada.
+   *
+   * El plan B no necesita esa API: los modelos de chat que devuelve `list()` YA
+   * traen su colección de mensajes en memoria (`chat.msgs`), que es lo que WhatsApp
+   * Web usa para pintar la conversación. Se lee de ahí.
+   *
+   * Devuelve `{msgs, via}` para que el diagnóstico pueda decir por qué camino salió
+   * — sin eso, un cambio de API vuelve a fallar en silencio.
+   */
+  async function mensajesDe(chat, count) {
+    // 1. La API oficial. Cuando el bundle de wa-js esté al día, este es el camino.
+    try {
+      const r = await WPP.chat.getMessages(chat.id, { count });
+      if (Array.isArray(r) && r.length) return { msgs: r, via: 'getMessages' };
+      if (Array.isArray(r)) return { msgs: r, via: 'getMessages' };
+    } catch (_) { /* sigue al plan B */ }
+
+    // 2. La colección del propio modelo de chat. Distintas versiones la exponen
+    //    distinto, así que se prueban las formas conocidas en orden.
+    try {
+      const col = chat.msgs;
+      if (col) {
+        if (typeof col.getModelsArray === 'function') {
+          const a = col.getModelsArray();
+          if (Array.isArray(a)) return { msgs: a, via: 'chat.msgs.getModelsArray' };
+        }
+        if (Array.isArray(col._models)) return { msgs: col._models, via: 'chat.msgs._models' };
+        if (Array.isArray(col.models)) return { msgs: col.models, via: 'chat.msgs.models' };
+        if (typeof col.toArray === 'function') {
+          const a = col.toArray();
+          if (Array.isArray(a)) return { msgs: a, via: 'chat.msgs.toArray' };
+        }
+      }
+    } catch (_) { /* */ }
+    return { msgs: [], via: 'ninguno' };
+  }
+
+  /** Por qué camino se leyeron los mensajes en el último backfill (para el probe). */
+  let ultimoVia = null;
+
   async function backfill(opts) {
     const dias = opts && Number(opts.dias) > 0 ? Number(opts.dias) : 30;
     const soloChat = opts && typeof opts.chat === 'string' && opts.chat.trim()
@@ -149,7 +198,11 @@
     for (const chat of active) {
       const cName = chatName(chat);
       let msgs = [];
-      try { msgs = (await WPP.chat.getMessages(chat.id, { count: BACKFILL_COUNT })) || []; }
+      try {
+        const r = await mensajesDe(chat, BACKFILL_COUNT);
+        msgs = r.msgs || [];
+        if (r.via !== ultimoVia) { ultimoVia = r.via; log(`leyendo mensajes vía: ${r.via}`); }
+      }
       catch (e) { warn(`getMessages ${cName} falló:`, e && e.message); continue; }
       const mapped = msgs
         .filter((m) => (Number(m.t) * 1000) >= cutoff)
@@ -199,6 +252,18 @@
       out.ready = !!(WPP.isReady || (WPP.conn && WPP.conn.isMainReady && WPP.conn.isMainReady()));
       const chats = await listChats();
       out.chats = chats.length;
+      // POR QUÉ CAMINO SE LEEN LOS MENSAJES. Sin esto, el 30-jul el reader recorrió
+      // 196 chats y mandó 0 mensajes durante días sin que nada lo dijera: `chat.list`
+      // funcionaba y `getMessages` estaba roto, y desde afuera se veía sano. Este
+      // campo es el que delata que la API se movió.
+      if (chats.length) {
+        const r = await mensajesDe(chats[0], 5);
+        out.error = r.via === 'ninguno'
+          ? 'no puedo leer mensajes por ningún camino conocido (¿wa-js desactualizado?)'
+          : null;
+        out.lee = r.via;
+        out.leeCuantos = (r.msgs || []).length;
+      }
     } catch (e) {
       out.error = (e && e.message ? e.message : String(e)).slice(0, 300);
     }

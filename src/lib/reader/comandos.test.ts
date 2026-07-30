@@ -126,6 +126,19 @@ describe('lectorVivo — cierra el hueco de los 4 días', () => {
   it('cargó, listo y con chats → vivo', () => {
     expect(lectorVivo({ lib: 'object', ready: true, chats: 211 })).toBe(true)
   })
+
+  it('EL CASO DEL 30-jul: lista chats pero NO puede leer mensajes → no vivo', () => {
+    // Medido en la otra PC: WPP object, ready true, 1123 chats listados… y
+    // `getMessages` roto contra la versión de WhatsApp de ese día. El reader recorrió
+    // 196 chats y mandó 0 mensajes, con todo lo demás en verde. Sin este campo, el
+    // diagnóstico habría dicho "leyendo (1123 chats)" mientras no traía nada.
+    expect(lectorVivo({ lib: 'object', ready: true, chats: 1123, lee: 'ninguno' })).toBe(false)
+  })
+
+  it('si lee por un camino alternativo, sigue vivo', () => {
+    expect(lectorVivo({ lib: 'object', ready: true, chats: 1123, lee: 'chat.msgs.getModelsArray', leeCuantos: 5 }))
+      .toBe(true)
+  })
 })
 
 describe('probeLine', () => {

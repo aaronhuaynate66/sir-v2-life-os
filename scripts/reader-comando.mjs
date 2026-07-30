@@ -41,10 +41,27 @@ const MAX_DIAS = 400
 
 async function main() {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
-  const { data: prof } = await sb.from('profiles').select('id').limit(2)
-  const userId = process.env.READER_INGEST_USER_ID
-    || ((prof ?? []).length === 1 ? prof[0].id : null)
-  if (!userId) { console.error('No pude resolver el user_id (seteá READER_INGEST_USER_ID).'); process.exit(1) }
+  // Resolución del usuario, en orden de confianza:
+  //   1. `READER_INGEST_USER_ID` si está (es lo que usa el server en prod).
+  //   2. El user_id que YA aparece en `reader_heartbeats` — la fuente más honesta:
+  //      es literalmente el usuario cuyo reader está latiendo.
+  //   3. El único perfil, si hay exactamente uno.
+  // El paso 2 existe porque `profiles` tiene 2 filas en esta base, así que "el único
+  // perfil" no resuelve y el script fallaba con un mensaje que no ayudaba.
+  let userId = process.env.READER_INGEST_USER_ID?.trim() || null
+  if (!userId) {
+    const { data: hb } = await sb.from('reader_heartbeats').select('user_id').limit(1)
+    userId = (hb ?? [])[0]?.user_id ?? null
+  }
+  if (!userId) {
+    const { data: prof } = await sb.from('profiles').select('id').limit(2)
+    if ((prof ?? []).length === 1) userId = prof[0].id
+  }
+  if (!userId) {
+    console.error('No pude resolver el user_id. Opciones: setear READER_INGEST_USER_ID')
+    console.error('en .env.local, o esperar a que la extensión mande su primer latido.')
+    process.exit(1)
+  }
 
   const canal = arg('--canal') || 'whatsapp'
 
