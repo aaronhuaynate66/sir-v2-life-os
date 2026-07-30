@@ -44,9 +44,16 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['mostrame', 'muéstrame'], ['traeme', 'tráeme'], ['ayudame', 'ayúdame'],
   ['esperame', 'espérame'], ['preguntame', 'pregúntame'], ['explicame', 'explícame'],
   ['contale', 'cuéntale'], ['decile', 'dile'], ['avisale', 'avísale'],
+  // Enclítico -nos (mismo criterio: en tuteo peruano llevan tilde esdrújula).
+  ['mandanos', 'mándanos'], ['avisanos', 'avísanos'], ['contanos', 'cuéntanos'],
+  ['pasanos', 'pásanos'], ['dejanos', 'déjanos'], ['mostranos', 'muéstranos'],
+  ['decinos', 'dinos'], ['escribinos', 'escríbenos'],
   ['cuidate', 'cuídate'], ['sentate', 'siéntate'], ['levantate', 'levántate'],
   ['acercate', 'acércate'], ['relajate', 'relájate'], ['olvidate', 'olvídate'],
   ['preparate', 'prepárate'], ['enfocate', 'enfócate'], ['concentrate', 'concéntrate'],
+  ['asegurate', 'asegúrate'], ['apurate', 'apúrate'], ['animate', 'anímate'],
+  ['enterate', 'entérate'], ['organizate', 'organízate'], ['ocupate', 'ocúpate'],
+  ['encargate', 'encárgate'], ['ubicate', 'ubícate'], ['alejate', 'aléjate'],
   // Imperativo + objeto directo ("bajalo" lo cazó el eval del 25-jul). También
   // lista fija: hay palabras legítimas con esa forma (regalo, palo, halo, malo).
   ['bajalo', 'bájalo'], ['bajala', 'bájala'], ['subilo', 'súbelo'], ['subila', 'súbela'],
@@ -60,6 +67,11 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['mandaselo', 'mándaselo'], ['pedile', 'pídele'], ['preguntale', 'pregúntale'],
   ['respondele', 'respóndele'], ['llamalo', 'llámalo'], ['llamala', 'llámala'],
   ['registralo', 'regístralo'], ['registrala', 'regístrala'], ['apuntalo', 'apúntalo'],
+  ['relanzalo', 'relánzalo'], ['activalo', 'actívalo'], ['recargalo', 'recárgalo'],
+  ['actualizalo', 'actualízalo'], ['instalalo', 'instálalo'], ['probalo', 'pruébalo'],
+  ['fijalo', 'fíjalo'], ['fijala', 'fíjala'], ['abrilo', 'ábrelo'], ['abrila', 'ábrela'],
+  ['reportalo', 'repórtalo'], ['mantenelo', 'mantenlo'], ['pasaselo', 'pásaselo'],
+  ['dejaselo', 'déjaselo'], ['mostraselo', 'muéstraselo'], ['contaselo', 'cuéntaselo'],
   // Imperativos -á cuya raíz TERMINA EN R: el barrido generativo los excluye a
   // propósito (ahí viven los futuros: "pagará", "tendrás"), así que van a mano.
   // "Cerrá el día" se coló al evening-push justo por este hueco.
@@ -74,6 +86,53 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['despertás', 'despiertas'], ['jugás', 'juegas'], ['soñás', 'sueñas'],
   ['volás', 'vuelas'], ['colgás', 'cuelgas'], ['perdés', 'pierdes'],
   ['volvés', 'vuelves'], ['movés', 'mueves'], ['dormís', 'duermes'],
+  // IMPERATIVOS de esos mismos verbos que DIPTONGAN. Faltaban, y el hueco no
+  // dejaba pasar voseo: producía ESPAÑOL ROTO. El barrido de abajo solo quita la
+  // tilde, así que "probá" salía "proba" y "empezá" salía "empeza" — peor que el
+  // voseo original, porque no existe. Medido el 30-jul corriendo `detectVoseo`
+  // sobre los .md del repo. Van ANTES del barrido, igual que sus presentes.
+  ['probá', 'prueba'], ['empezá', 'empieza'], ['pensá', 'piensa'],
+  ['contá', 'cuenta'], ['encontrá', 'encuentra'], ['acordá', 'acuerda'],
+  ['comenzá', 'comienza'], ['despertá', 'despierta'], ['calentá', 'calienta'],
+  ['sentá', 'sienta'], ['almorzá', 'almuerza'], ['colgá', 'cuelga'],
+  ['jugá', 'juega'], ['soñá', 'sueña'], ['volá', 'vuela'], ['forzá', 'fuerza'],
+  ['demostrá', 'demuestra'],
+  // Presentes -ás con raíz que TERMINA EN R: el barrido los excluye (ahí viven
+  // los futuros) y solo estaban sus imperativos, así que estos se escapaban.
+  ['entrás', 'entras'], ['esperás', 'esperas'], ['guardás', 'guardas'],
+  ['comprás', 'compras'], ['mejorás', 'mejoras'], ['demostrás', 'demuestras'],
+  ['ahorrás', 'ahorras'], ['cobrás', 'cobras'],
+  // Imperativos -á con raíz en R que faltaban (mismo hueco del barrido).
+  ['ahorrá', 'ahorra'], ['agarrá', 'agarra'], ['borrá', 'borra'],
+  ['cobrá', 'cobra'], ['ignorá', 'ignora'], ['apurá', 'apura'],
+  ['asegurá', 'asegura'], ['considerá', 'considera'], ['generá', 'genera'],
+  ['separá', 'separa'], ['prepará', 'prepara'], ['llorá', 'llora'],
+  // Imperativos de verbos -ER (terminan en -é). El barrido NO puede tocarlos por
+  // regla: "-é" también es el pretérito de 1ª persona de los verbos -AR ("yo
+  // tomé", "yo pensé", "yo cerré"), y sin léxico de verbos no hay forma mecánica
+  // de distinguir "comé" (voseo de comer) de "tomé" (pretérito de tomar). Lista
+  // fija a propósito, solo verbos -ER cuya forma no choca con nada.
+  // EXCLUIDOS por colisión real: "bebé" (= el bebé), "creé" (= yo creé, de crear).
+  ['volvé', 'vuelve'], ['perdé', 'pierde'], ['entendé', 'entiende'],
+  ['atendé', 'atiende'], ['encendé', 'enciende'], ['defendé', 'defiende'],
+  ['queré', 'quiere'], ['mové', 'mueve'], ['tené', 'ten'], ['poné', 'pon'],
+  ['hacé', 'haz'], ['comé', 'come'], ['corré', 'corre'], ['aprendé', 'aprende'],
+  ['respondé', 'responde'], ['vendé', 'vende'], ['prendé', 'prende'],
+  ['meté', 'mete'], ['rompé', 'rompe'], ['escogé', 'escoge'], ['leé', 'lee'],
+  // Sus PRESENTES -és. El barrido solo cubre -á/-ás, así que estos también van a
+  // mano (medido: "comés" pasaba intacto con "comé" ya en la lista).
+  ['comés', 'comes'], ['corrés', 'corres'], ['aprendés', 'aprendes'],
+  ['vendés', 'vendes'], ['prendés', 'prendes'], ['metés', 'metes'],
+  ['rompés', 'rompes'], ['escogés', 'escoges'], ['atendés', 'atiendes'],
+  ['encendés', 'enciendes'], ['defendés', 'defiendes'],
+  // Imperativos -ir: SOLO los que no chocan con el pretérito de 1ª persona.
+  // "vení"→ven vale (el pretérito es "vine"); "decí"→di vale ("dije"). El resto
+  // es intocable de forma determinística: "dormí", "pedí", "seguí", "sentí",
+  // "escribí", "salí", "viví", "decidí" son pretéritos legítimos en peruano
+  // ("ayer dormí mal") y corregirlos rompería frases correctas de Aaron.
+  ['decí', 'di'],
+  // Imperativos/presentes de 3 letras: por debajo del piso de largo del barrido.
+  ['usá', 'usa'], ['usás', 'usas'],
   // Pronombre
   ['vos', 'tú'],
 ]
@@ -94,6 +153,15 @@ const ACCENT_EXCEPTIONS = new Set([
   // Palabras y nombres largos que legítimamente llevan tilde final.
   'ojalá', 'quizá', 'panamá', 'bogotá', 'canadá', 'paraná', 'maracaná',
   'nicolás', 'quizás', 'además', 'compás', 'detrás',
+  // Cortas: antes las cubría el piso de largo (5 con -á, 7 con -ás). El piso se
+  // bajó a 4/5 para alcanzar el voseo corto real ("bajá", "pasá", "tocá",
+  // "pagás", "sacás"), que se escapaba entero, así que ahora se enumeran.
+  'está', 'allá', 'mamá', 'papá', 'sofá', 'maná', 'aupá', 'hurrá',
+  'estás', 'demás', 'atrás', 'jamás',
+  // "tomás": el nombre propio gana sobre el voseo de "tomar" — misma decisión ya
+  // tomada al dejar 'tomás' fuera de la lista de reemplazos ("choca con el
+  // nombre Tomás"). El imperativo "tomá" sí se corrige, ahí no hay choque.
+  'tomás',
 ])
 const GENERATIVE_VOSEO = /(?<![a-záéíóúüñ])([a-záéíóúüñ]{2,})(á|Á)(s?)(?![a-záéíóúüñ])/gi
 
@@ -101,9 +169,11 @@ const GENERATIVE_VOSEO = /(?<![a-záéíóúüñ])([a-záéíóúüñ]{2,})(á|�
 function scrubGenerativeVoseo(text: string): string {
   return text.replace(GENERATIVE_VOSEO, (match, stem: string, tilde: string, s: string) => {
     const lower = match.toLowerCase()
-    // Largo mínimo: 5 con -á (deja fuera "está", "acá", "allá", "mamá", "papá",
-    // "sofá") y 7 con -ás (deja fuera "estás", "demás", "atrás", "jamás").
-    if (lower.length < (s ? 7 : 5)) return match
+    // Largo mínimo: 4 con -á y 5 con -ás. Deja fuera las de 3 letras ("acá",
+    // "ajá", "usá") — ahí la relación señal/ruido no alcanza y el voseo corto
+    // real que importa va en la lista fija. Lo de 4-5 letras que es legítimo
+    // ("está", "mamá", "estás", "jamás"…) se enumera en ACCENT_EXCEPTIONS.
+    if (lower.length < (s ? 5 : 4)) return match
     if (ACCENT_EXCEPTIONS.has(lower)) return match
     // Futuro: la sílaba tónica cae sobre "rá" ("pagará", "tendrás", "verás").
     if (stem.toLowerCase().endsWith('r')) return match

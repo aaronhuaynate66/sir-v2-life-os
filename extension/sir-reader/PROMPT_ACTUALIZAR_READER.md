@@ -1,4 +1,4 @@
-# Tarea para el agente de la otra PC — actualizar el SIR Reader a v0.7.0
+# Tarea para el agente de la otra PC — actualizar el SIR Reader a v0.8.0
 
 Hola. La extensión **SIR Reader** que corre en esa PC se actualizó. Esta tarea es
 corta: traer el código nuevo, recargar la extensión y verificar que captura.
@@ -26,12 +26,12 @@ git diff -- extension/sir-reader/ > /tmp/reader-local.patch
 ```
 
 1. Si `git status` muestra `extension/sir-reader/content/instagramReader.js`
-   modificado → **guardá ese diff** (el comando de arriba lo deja en un archivo).
-2. Hacé el pull (abajo).
-3. **Re-aplicá tu implementación de `followedBy` sobre el código nuevo** y
-   mandanos el diff para commitearlo de una vez y que esto no se repita.
+   modificado → **guarda ese diff** (el comando de arriba lo deja en un archivo).
+2. Haz el pull (abajo).
+3. **Re-aplica tu implementación de `followedBy` sobre el código nuevo** y
+   mándanos el diff para commitearlo de una vez y que esto no se repita.
 
-Si `git status` sale limpio, no había nada local y podés seguir tranquilo.
+Si `git status` sale limpio, no había nada local y puedes seguir tranquilo.
 
 ---
 
@@ -42,19 +42,35 @@ cd sir-v2-life-os
 git pull
 ```
 
-Verificá que quedó en la versión nueva:
+Verifica que quedó en la versión nueva:
 
 ```bash
-grep '"version"' extension/sir-reader/manifest.json   # debe decir 0.7.0
+grep '"version"' extension/sir-reader/manifest.json   # debe decir 0.8.0
 ```
 
 > El `config.js` con el token es local y **no** se toca con el pull (no está en
-> el repo). Si por algo quedó vacío, volvé a pegar el `READER_INGEST_TOKEN`.
+> el repo). Si por algo quedó vacío, vuelve a pegar el `READER_INGEST_TOKEN`.
 
 ## Paso 2 — Recargar la extensión
 
 En el Chrome logueado con Instagram: `chrome://extensions` → botón **recargar**
-(⟳) en SIR Reader. Confirmá que la tarjeta diga **0.7.0**.
+(⟳) en SIR Reader. Confirma que la tarjeta diga **0.8.0**.
+
+### Verificación que NO se puede saltear: el latido
+
+v0.8.0 agrega un **latido** (`POST /api/reader/heartbeat`, cada ~10 min y por
+canal). Existe por un fallo real: el reader de WhatsApp Web se cortó el 22-jul y
+nadie lo notó hasta el 29 — siete días ciegos — porque Instagram siguió andando y
+desde el server el silencio se veía igual que "no pasó nada".
+
+**Medido el 30-jul: la tabla `reader_heartbeats` tiene 0 filas**, mientras que el
+reader de Instagram sí mandaba data ese mismo día. O sea: en esa PC está
+corriendo la versión VIEJA y este pull es justamente lo que falta.
+
+Después de recargar, deja pasar ~10 minutos y confirma que el popup no muestre
+error de latido. Del lado de SIR se verifica que `reader_heartbeats` tenga filas
+para `whatsapp` **y** para `instagram`. **Si sigue en 0, la extensión recargada no
+es la nueva** — no reportes éxito hasta ver el latido.
 
 ## Paso 3 — Qué cambió (y qué NO hay que hacer)
 
@@ -79,7 +95,7 @@ IG limite o bloquee la cuenta de Aaron.
 
 ## Paso 4 — Verificar que funciona
 
-Abrí la consola de la pestaña de Instagram (F12 → Console) y entrá a **cualquier
+Abre la consola de la pestaña de Instagram (F12 → Console) y entra a **cualquier
 perfil** (el de un amigo, una página, lo que sea). Deberías ver:
 
 ```
@@ -89,7 +105,7 @@ perfil** (el de un amigo, una página, lo que sea). Deberías ver:
 Para confirmar del lado del servidor, la respuesta del POST trae un contador
 nuevo: **`profilesSaved`**. Si es ≥ 1, el perfil se guardó.
 
-Si entrás a 3-4 perfiles y `profilesSaved` sigue en 0, avisá con:
+Si entras a 3-4 perfiles y `profilesSaved` sigue en 0, avisa con:
 - la URL del endpoint que IG usó (pestaña Network, filtrá por `graphql` o
   `web_profile_info`),
 - y un pedazo del JSON de respuesta (sin datos personales de terceros).
@@ -99,7 +115,7 @@ necesitar un ajuste.
 
 ---
 
-## Lo que Aaron tiene que hacer (no vos)
+## Lo que Aaron tiene que hacer (no tú)
 
 Que **navegue Instagram normal** en ese Chrome. Nada especial: entrar a los
 perfiles de la gente que le importa. Cada perfil que abre queda registrado.
@@ -108,7 +124,7 @@ El porqué: hoy hay **130 cuentas en la bandeja "¿quién es quién?" y ninguna 
 nombre**. La barra de historias solo da el handle, y los handles no son parlantes
 (`@yayocastaneda.pe`, `@voxpopuli.consultoria`). El nombre real vive en el perfil.
 
-**Si además querés resolver muchas de golpe:** seguí el runbook
+**Si además quieres resolver muchas de golpe:** sigue el runbook
 `CORRER_LISTA_SEGUIDOS.md` (5 minutos) — captura el catálogo completo de
 "Siguiendo" y rellena nombres en lote. Eso sigue siendo la vía más rápida y no
 cambió con esta actualización.
