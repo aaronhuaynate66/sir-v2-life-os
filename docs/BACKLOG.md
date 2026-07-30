@@ -5,7 +5,7 @@
 > tratar CUALQUIER cosa de acá como pendiente, verificala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 28/07/2026 (consolida los pases 25, 26, 27 y 28/07 — ver bloque abajo).
+> **Última actualización:** 30/07/2026 (agente automático de reconciliación — 3 ítems cerrados, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-07-30" abajo; antes consolidaba los pases 25, 26, 27 y 28/07).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entrá acá cuando quieras decidir qué priorizar en la próxima sesión.
@@ -22,14 +22,14 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 - ~~**[media] Copy del recordatorio "¡Listo!"**~~ ✅ **HECHO** (los 4 pases coinciden). `src/lib/sir/askSir.ts` ~1182-1190: si la respuesta abre afirmando "hecho" o queda muy corta, se reemplaza por "Te propongo esto — revísalo y confírmalo. 👇". PR #944 (`f01c19d`, 23/07); caso `action-honesty` del harness 30→95. Estaba en prod ANTES del pase 07-24 que lo siguió listando.
 - **[baja] Verborrea a "consejo corto"** — 🟡 **PARCIAL** (los 4 pases coinciden). Hay una línea de BREVEDAD en el prompt (`src/lib/sir/ask.ts`, mismo `f01c19d`) pero el propio commit la califica de "efecto marginal". No hay scrub determinístico como en voseo. **No cerrar sin re-medir con el harness.**
 - **[alta] Ola 2 · slice 4 — loop de aprendizaje** — **sigue pendiente** (re-verificado en los 4 pases y otra vez el 28/07): `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` y no hay rastro de few-shot dinámico. **Bloqueado por combustible, no por código:** `chat_feedback` = **0 filas** al 28/07 — Aaron nunca calificó una respuesta. Construir el mecanismo hoy = mecanismo vacío.
-- **[media] Que `askSir` VEA los sub-pasos de los objetivos** — nuevo (28/07). `askSir.ts:390-396` pide `id, title, related_persons, status, next_action, is_anchor` — **ni `milestones` ni `objective_steps`**. Hay 151 pasos reales en la base y el chat es ciego a todos: no puede responder "¿cómo voy con Boticas?". Es el que más rinde de los tres pendientes de objetivos.
+- ~~**[media] Que `askSir` VEA los sub-pasos de los objetivos**~~ ✅ **HECHO (reconciliado 30/07/2026).** `src/lib/sir/askSir.ts` líneas 679-762: ahora lee `objective_steps` (línea 692, hasta 1000 filas), computa `advanceByGoal`/`nextStepByGoal` (`computeGoalAdvance`, `nextPendingLeaf`) y arma `goalsCtx` con `progress`/`stepsDone`/`stepsTotal`/`overdue`/`nextStep`/`nextStepDue`/`nextStepDetail` que sí llega al prompt del modelo. Comentario in situ del propio código: "hasta el 28-jul el chat era ciego a `objective_steps` — 151 pasos en la base y no podía responder '¿cómo voy con Boticas?'". Fail-soft si la lectura falla. Sigue sin leer `goals.milestones` (JSON) — ese sub-punto de la consolidación de estructuras (más abajo) sigue abierto.
 
 **🟡 Necesita input/decisión de Aaron:**
 - **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` O usar SIR con 👍/👎+corrección → `npm run eval:sir --from-feedback 20`. Mismo combustible que el slice 4, y sigue en 0.
 - **[alta] Consolidar las 3 estructuras de sub-pasos** — nuevo (28/07). Los sub-pasos de un objetivo viven en TRES lugares: `goals.milestones` (JSON), `objective_steps` (151 filas, la viva) y `objective_blockers` (11 filas, todas del Mundial). El Mundial tiene los mismos ítems escritos en los tres. Consolidar toca data de Aaron → requiere su OK.
 - **[media] Purgar los planes de junio** — nuevo (28/07). De 151 pasos, **150 pendientes y 50 vencidos**, casi todos de planes cargados el 2-3/06 que nunca se tocaron. No es bug de cómputo: el plan es papel muerto. Decidir qué sigue vivo es de Aaron.
-- **[media] Activar `looksLikeOrg`** — nuevo (28/07). `src/lib/social-reader/igProfile.ts` ya detecta persona-vs-fanpage (profesional con rubro / ≥10k seguidores / verificada con volumen) pero **no clasifica solo**. Puede despejar buena parte de las 141 cuentas de la bandeja en lote. Falta decidir: ¿sugiere o descarta?
-- **[media] Log de entrenamiento por ejercicio** — nuevo (28/07, salió del research de #993). `training_sessions` (mig 0169) guarda `kind`/`duration_min`/`intensity`/`notes` pero **no series, reps ni carga**. Sin peso levantado no se puede medir si Aaron gana masa (que es su estrategia decidida para pelear en 80+). Bloque 1 del Mundial arrancó el 28/07. Esfuerzo medio: tabla `training_exercises` + parser en `executeAction.ts` para "banca 3x12 con 80".
+- ~~**[media] Activar `looksLikeOrg`**~~ ✅ **HECHO (reconciliado 30/07/2026).** Nuevo `src/lib/social-reader/orgVerdict.ts` (`clasificarCuenta`/`repartirLote`, PURO, con tests en `orgVerdict.test.ts`) junta `looksLikeOrg` + el nombre escrito por Aaron + el léxico del handle en un solo veredicto, y decide "sugiere, no descarta": confianza 'alta' se propone en lote, 'media' se pregunta de a una — nunca auto-clasifica en silencio. Cableado en vivo en `src/app/api/cron/evening-push/route.ts` (líneas 156-171): trae `social_profiles`, llama `repartirLote` y arma el batch de Telegram. Comentario in situ fecha esto el 29/07/2026 ("`looksLikeOrg` estaba escrita y testeada desde el 28-jul y NADIE la llamaba — quedó a medias dos veces").
+- ~~**[media] Log de entrenamiento por ejercicio**~~ ✅ **HECHO (reconciliado 30/07/2026).** Migración `0174_training_exercises.sql` (tabla `training_exercises`: `name`/`name_key`/`sets` jsonb `[{reps,kg}]`/`unit`/`bodyweight`, RLS, índice de progresión por `user_id, name_key`). Parser determinístico `src/lib/entrenamiento/ejercicios.ts` (`parseExerciseLine`, regex — explícitamente NO vía LLM, "un dato calculado que se persiste es un dato que se desincroniza") entiende "banca 3x12 con 80", "3 series de 10 con 20", etc. Cableado en `src/lib/sir/executeAction.ts` líneas 427-446: inserta en `training_exercises` y calcula histórico de progresión por `name_key` contra `training_sessions.date`.
 
 **🔴 Bloqueado (data / otra PC) — construir a ciegas = fantasma:**
 - **[media] Match por cara capa 2** — construido; galería de referencia en 0 caras limpias (capturas son screenshots escénicos). Se enciende con fotos-cara reales (asignar en la app, o el reader mandando la foto de perfil real de IG).
@@ -42,6 +42,23 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
 **🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — **re-ranking y el ciclo Mem0-style extract→merge→olvido siguen sin empezar** (los 4 pases coinciden).
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-30
+
+Pase de mantenimiento contra el código real (agente automático), sobre la sección "PENDIENTES ACTUALES" de arriba. 3 de los 5 ítems de "Listo para construir" ya estaban construidos — los tres son trabajo posterior al 28/07 que el pase de esa fecha no alcanzó a ver:
+
+- ✅ **`askSir` ya VE los sub-pasos de los objetivos** — `src/lib/sir/askSir.ts` líneas 679-762 lee `objective_steps`, computa avance real (`advanceByGoal`/`nextStepByGoal`) y lo pasa al prompt (`goalsCtx`). El propio código trae fecha in situ ("hasta el 28-jul el chat era ciego a `objective_steps`").
+- ✅ **`looksLikeOrg` ya está activo** — `src/lib/social-reader/orgVerdict.ts` (nuevo) lo junta con nombre/handle en un veredicto único ("sugiere, no descarta": alta confianza → lote, media → uno por uno) y está cableado en vivo en `evening-push/route.ts`. Fechado in situ 29/07/2026.
+- ✅ **Log de entrenamiento por ejercicio ya existe** — migración `0174_training_exercises.sql` + parser determinístico `src/lib/entrenamiento/ejercicios.ts` + inserción/progresión cableada en `executeAction.ts` (líneas 427-446).
+
+**Verificado y quedó IGUAL (sin drift):**
+- **`sortLearnings`** (`src/lib/learnings/recall.ts:48`) sigue con pesos fijos por `kind` — sin few-shot dinámico. Slice 4 sigue bloqueado por combustible (no re-verificable sin consultar `chat_feedback` en vivo).
+- **Grafo /red → sigma.js** — sigue sin rastro: no hay dependencia `sigma` en `package.json` ni en `src/lib/graph/` (el único match de `grep sigma` en `src/` es varianza estadística en `partnerEffect.ts`, no la librería).
+- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte".
+
+**No re-verificado este pase** (requieren decisión de Aaron o dato en vivo, no verificable por grep): golden-set del harness, consolidar las 3 estructuras de sub-pasos, purgar planes de junio, todo lo bloqueado por data/otra PC.
 
 ---
 
