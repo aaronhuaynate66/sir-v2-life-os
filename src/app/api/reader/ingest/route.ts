@@ -68,7 +68,11 @@ function parseBatch(x: unknown): ReaderBatch | null {
       text: typeof m.text === 'string' ? m.text : '',
       ts: typeof m.ts === 'string' ? m.ts : null,
     }))
-  return { platform, threadId, threadName, messages }
+  // `tsKind` dice si los ts vienen como instante REAL o ya en hora de pared de Lima.
+  // Default 'wall' a propósito: es lo que hacen los readers que ya andaban, y
+  // convertir dos veces deja el mensaje 10 h corrido — peor que el bug original.
+  const tsKind = o.tsKind === 'instant' ? 'instant' as const : 'wall' as const
+  return { platform, threadId, threadName, tsKind, messages }
 }
 
 export async function POST(req: NextRequest) {

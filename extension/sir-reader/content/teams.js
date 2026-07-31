@@ -90,6 +90,10 @@
     return [...byId.values()].map((m) => ({ author: m.author || 'yo', text: m.text, ts: m.ts }));
   }
 
-  window.__SIR_ADAPTER = { platform: 'teams', getThread, getContainer, extractMessages };
+  // `tsKind: 'instant'` — los ts salen de `timeEl.getAttribute('datetime')`, que es
+  // UTC REAL, no la hora mostrada. El sustrato guarda hora de pared de Lima, así que
+  // el servidor tiene que convertirlos. Sin declararlo, las filas de Teams quedaban
+  // 5 h corridas contra las 284k de WhatsApp y ningún hash podía cruzarlas.
+  window.__SIR_ADAPTER = { platform: 'teams', tsKind: 'instant', getThread, getContainer, extractMessages };
   if (window.__SIR_CORE_BOOT) window.__SIR_CORE_BOOT();
 })();

@@ -62,7 +62,15 @@
     if (!adapter) return;
     for (const [threadId, bucket] of CORE.pending) {
       if (!bucket.messages.length) continue;
-      const batch = { platform: adapter.platform, threadId, threadName: bucket.threadName, messages: bucket.messages.slice() };
+      // `tsKind` viaja desde el adaptador: dice si sus `ts` son instantes REALES
+      // (Teams lee el atributo `datetime`, que es UTC) o ya están en hora de pared
+      // (el scraper de WhatsApp parsea la hora mostrada). El servidor convierte solo
+      // los primeros. Sin esto el adaptador lo declaraba y se perdía acá.
+      const batch = {
+        platform: adapter.platform,
+        ...(adapter.tsKind ? { tsKind: adapter.tsKind } : {}),
+        threadId, threadName: bucket.threadName, messages: bucket.messages.slice(),
+      };
       bucket.messages.length = 0;
       try {
         const res = await chrome.runtime.sendMessage({ type: 'sir-batch', batch });
