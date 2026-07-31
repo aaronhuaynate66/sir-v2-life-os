@@ -20,7 +20,28 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 **🟢 Listo para construir (autónomo, sin bloqueo):**
 - ~~**[alta] Fuga de voseo en el chat**~~ ✅ **CERRADO POR MEDICIÓN (28/07/2026).** Tres pases anteriores se contradijeron sobre esto (25/07 y 28/07 lo marcaron hecho; 27/07 dijo "sigue genuinamente abierto, es whack-a-mole"). **Se zanjó midiendo la salida real, no opinando** — la lección de #975: el idioma se mide con `detectVoseo`, no se juzga con un LLM. Corrida sobre los 12 mensajes que SIR le mandó a Aaron entre el 26 y el 28/07: **1 con voseo, 11 limpios**. El único sucio es el push de las 02:01 del 26/07 (`cerrá`, `descansá`), emitido ANTES de que mergeara #990. Los de 02:58 del 27 y 02:20 del 28 dicen "Cierra el día". **Lo que cerró el canal fue #990**: `deVoseo(stripMarkdown(...))` en los 3 puntos de envío de `lib/telegram/client.ts`, así que ahora pasa también el TEXTO FIJO escrito a mano —que era el que se escapaba— y no solo la salida del LLM. Sigue siendo una carrera detector-vs-modelo: **re-medir, no dar por eterno.**
 - ~~**[media] Copy del recordatorio "¡Listo!"**~~ ✅ **HECHO** (los 4 pases coinciden). `src/lib/sir/askSir.ts` ~1182-1190: si la respuesta abre afirmando "hecho" o queda muy corta, se reemplaza por "Te propongo esto — revísalo y confírmalo. 👇". PR #944 (`f01c19d`, 23/07); caso `action-honesty` del harness 30→95. Estaba en prod ANTES del pase 07-24 que lo siguió listando.
-- **[baja] Verborrea a "consejo corto"** — 🟡 **PARCIAL** (los 4 pases coinciden). Hay una línea de BREVEDAD en el prompt (`src/lib/sir/ask.ts`, mismo `f01c19d`) pero el propio commit la califica de "efecto marginal". No hay scrub determinístico como en voseo. **No cerrar sin re-medir con el harness.**
+- ~~**[baja] Verborrea a "consejo corto"**~~ ✅ **CERRADO POR MEDICIÓN (30/07/2026).** El ítem pedía explícitamente "no cerrar sin re-medir", así que se midió — no con el harness sino con algo mejor: **las 138 respuestas reales que SIR le mandó a Aaron**, de `sir_messages`.
+
+  | día | mediana (chars) | máx | respuestas >800 |
+  |---|---|---|---|
+  | 22-jul | **1002** | 1008 | 2 de 4 |
+  | 24-jul | **700** | 1122 | 3 de 14 |
+  | 26-jul | 339 | 600 | 0 de 4 |
+  | 28-jul | 255 | 503 | 0 de 4 |
+  | 30-jul | 320 | 834 | 1 de 4 |
+
+  **La mediana cayó de ~1000 a ~300 caracteres entre el 22 y el 26 de julio**, y se
+  mantiene ahí. Hoy son 4 oraciones y 3 párrafos de mediana. La línea de brevedad del
+  prompt (`f01c19d`) SÍ funcionó; lo que estaba mal era la nota que la calificaba de
+  "efecto marginal" — se escribió el mismo día del commit, sin medir la salida.
+
+  **No se construyó un scrub determinístico, a propósito.** El de voseo existe porque
+  la corrección es mecánica (quitar una tilde); acortar un texto no lo es, y un tope
+  duro cortaría a mitad de idea. La respuesta más larga que queda (834 chars) no es un
+  muro. Construir contra un problema resuelto es lo mismo que el re-ranking de arriba.
+
+  **Cómo re-medir si vuelve la sensación** (30 s, sin harness): contar el largo de
+  `sir_messages` con `role='sir'` agrupado por día. Si la mediana sube de ~500, volvió.
 - **[alta] Ola 2 · slice 4 — loop de aprendizaje** — **sigue pendiente** (re-verificado en los 4 pases y otra vez el 28/07): `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` y no hay rastro de few-shot dinámico. **Bloqueado por combustible, no por código:** `chat_feedback` = **0 filas** al 28/07 — Aaron nunca calificó una respuesta. Construir el mecanismo hoy = mecanismo vacío.
 - ~~**[media] Que `askSir` VEA los sub-pasos de los objetivos**~~ ✅ **HECHO (reconciliado 30/07/2026).** `src/lib/sir/askSir.ts` líneas 679-762: ahora lee `objective_steps` (línea 692, hasta 1000 filas), computa `advanceByGoal`/`nextStepByGoal` (`computeGoalAdvance`, `nextPendingLeaf`) y arma `goalsCtx` con `progress`/`stepsDone`/`stepsTotal`/`overdue`/`nextStep`/`nextStepDue`/`nextStepDetail` que sí llega al prompt del modelo. Comentario in situ del propio código: "hasta el 28-jul el chat era ciego a `objective_steps` — 151 pasos en la base y no podía responder '¿cómo voy con Boticas?'". Fail-soft si la lectura falla. Sigue sin leer `goals.milestones` (JSON) — ese sub-punto de la consolidación de estructuras (más abajo) sigue abierto.
 
