@@ -24,7 +24,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { ensureFreshGoogleToken } from './oauth/session'
-import { createGoogleEvent, updateGoogleEvent } from './oauth/google'
+import { createGoogleEvent, updateGoogleEvent, type NewGoogleEvent } from './oauth/google'
+import { rangoHorarioDeNota, tituloCorto } from './horaDeNota'
 
 /** Días hacia atrás que igual se suben (un evento de ayer sigue siendo historia útil). */
 export const VENTANA_PASADA_DIAS = 7
@@ -45,8 +46,10 @@ export interface PersonalEventSyncRow {
 export interface SyncResult {
   /** Eventos creados en Google. */
   creados: number
-  /** Ya tenían `gcal_event_id` → no se tocaron. */
+  /** Ya tenían `gcal_event_id`: se reempujaron para mantener Google al día. */
   yaEstaban: number
+  /** Cuántos de esos se actualizaron OK en Google. */
+  actualizados: number
   /** Fallaron (la razón va en `errores`). */
   fallidos: number
   /** Sin conexión de Google → no se intentó nada. */
@@ -73,6 +76,35 @@ export function descripcionParaGoogle(note: string | null | undefined): string |
 }
 
 /**
+ * Arma el evento de Google desde la fila. PURA salvo el parseo de la nota.
+ *
+ * ═══ LA HORA, QUE ESTABA ENTERRADA EN EL TEXTO ═══════════════════════════════
+ *
+ * Aaron, con una captura de su calendario: *"mira cómo se ve en el calendario la
+ * agenda de la hora, no quiero ni imaginar cómo se ve dentro del calendario de SIR"*.
+ *
+ * Todo subía como **"todo el día"** porque `personal_events.event_date` es un DATE
+ * sin hora — así que su cita del maxilofacial (4:00 pm) y su examen del IPD (8:10 am)
+ * salían como banderitas en la franja de arriba, sin poder ubicarlas en el día. Y de
+ * paso Google le ponía el recordatorio por defecto a las 23:30 del día anterior, que
+ * para un examen con ayuno es inútil. **La hora SÍ estaba: enterrada en la nota.**
+ *
+ * Si la nota trae hora se manda un evento CRONOMETRADO (Google ya lo soportaba con
+ * `dateTime` + `timeZone`, default America/Lima); si no, se queda de día completo,
+ * que es lo honesto. Un rango de varios días (`end_date`) se respeta como all-day.
+ * El título se acorta porque el chip de la vista semanal lo cortaba a la mitad.
+ */
+export function eventoParaGoogle(row: PersonalEventSyncRow): NewGoogleEvent {
+  const fecha = (row.event_date as string).slice(0, 10)
+  const rango = rangoHorarioDeNota(fecha, row.note)
+  const base = { title: tituloCorto(row.title as string), description: descripcionParaGoogle(row.note) }
+  if (rango && !row.end_date) {
+    return { ...base, start: rango.startISO, end: rango.endISO, allDay: false }
+  }
+  return { ...base, start: fecha, end: row.end_date ? row.end_date.slice(0, 10) : undefined, allDay: row.all_day !== false }
+}
+
+/**
  * Sube a Google Calendar todo `personal_events` que aún no esté allá. IDEMPOTENTE:
  * un evento con `gcal_event_id` no se vuelve a crear.
  *
@@ -86,7 +118,7 @@ export async function syncPendingPersonalEvents(
 ): Promise<SyncResult> {
   const nowMs = opts.nowMs ?? Date.now()
   const limit = opts.limit ?? MAX_POR_CORRIDA
-  const out: SyncResult = { creados: 0, yaEstaban: 0, fallidos: 0, sinConexion: false, errores: [] }
+  const out: SyncResult = { creados: 0, yaEstaban: 0, actualizados: 0, fallidos: 0, sinConexion: false, errores: [] }
 
   const { data, error } = await supabase
     .from('personal_events')
@@ -100,21 +132,35 @@ export async function syncPendingPersonalEvents(
 
   const filas = (data ?? []) as PersonalEventSyncRow[]
   const pendientes = filas.filter((r) => r.title && r.event_date && !r.gcal_event_id)
-  out.yaEstaban = filas.filter((r) => r.gcal_event_id).length
-  if (pendientes.length === 0) return out
+  // Los que YA están en Google se REEMPUJAN, no se ignoran. Sin esto, Google se queda
+  // con la versión del día que se creó: corregir una hora, un título o la nota en SIR
+  // no llegaba nunca al calendario que Aaron mira. Pasó en vivo — los 15 eventos se
+  // subieron como "todo el día" y al arreglar el parseo de la hora había que
+  // actualizarlos uno por uno a mano.
+  const yaEnGoogle = filas.filter((r) => r.title && r.event_date && r.gcal_event_id)
+  out.yaEstaban = yaEnGoogle.length
+  if (pendientes.length === 0 && yaEnGoogle.length === 0) return out
 
   // El token se pide UNA vez para todos: pedirlo por evento haría N refreshes.
   const fresh = await ensureFreshGoogleToken(supabase as never, userId)
   if (!fresh) { out.sinConexion = true; return out }
 
+  for (const r of yaEnGoogle) {
+    try {
+      await updateGoogleEvent(fresh.token, r.gcal_event_id as string, eventoParaGoogle(r))
+      out.actualizados++
+    } catch (e) {
+      // Un evento borrado a mano en Google devuelve 404/410. NO se cuenta como fallo
+      // duro ni se limpia el `gcal_event_id`: si Aaron lo borró a propósito, volver a
+      // crearlo sería pelearse con él.
+      out.errores.push(`update ${r.id}: ${e instanceof Error ? e.message.slice(0, 120) : 'error'}`)
+    }
+  }
+
   for (const r of pendientes) {
     try {
       const created = await createGoogleEvent(fresh.token, {
-        title: r.title as string,
-        start: (r.event_date as string).slice(0, 10),
-        end: r.end_date ? r.end_date.slice(0, 10) : undefined,
-        allDay: r.all_day !== false,
-        description: descripcionParaGoogle(r.note),
+        ...eventoParaGoogle(r),
       })
       const { error: upErr } = await supabase
         .from('personal_events')
@@ -148,13 +194,7 @@ export async function pushOnePersonalEvent(
   try {
     const fresh = await ensureFreshGoogleToken(supabase as never, userId)
     if (!fresh) return null
-    const created = await createGoogleEvent(fresh.token, {
-      title: row.title,
-      start: row.event_date.slice(0, 10),
-      end: row.end_date ? row.end_date.slice(0, 10) : undefined,
-      allDay: row.all_day !== false,
-      description: descripcionParaGoogle(row.note),
-    })
+    const created = await createGoogleEvent(fresh.token, eventoParaGoogle(row))
     await supabase.from('personal_events')
       .update({ gcal_event_id: created.id, updated_at: new Date().toISOString() })
       .eq('user_id', userId).eq('id', row.id)
@@ -180,13 +220,7 @@ export async function updateOnePersonalEvent(
   try {
     const fresh = await ensureFreshGoogleToken(supabase as never, userId)
     if (!fresh) return false
-    await updateGoogleEvent(fresh.token, row.gcal_event_id, {
-      title: row.title,
-      start: row.event_date.slice(0, 10),
-      end: row.end_date ? row.end_date.slice(0, 10) : undefined,
-      allDay: row.all_day !== false,
-      description: descripcionParaGoogle(row.note),
-    })
+    await updateGoogleEvent(fresh.token, row.gcal_event_id, eventoParaGoogle(row))
     return true
   } catch {
     return false

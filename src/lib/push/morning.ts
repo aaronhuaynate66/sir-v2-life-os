@@ -9,6 +9,16 @@ export interface MorningBirthday {
   name: string
   /** Días hasta el cumple (0 = hoy). */
   days: number
+  /**
+   * De dónde lo conoce, en una palabra ("de trabajo", "familia", "pareja"…).
+   *
+   * Aaron, 31-jul-2026, sobre el cumpleaños de Alex: *"debió escribírmelo por
+   * Telegram en la mañana para saludarlo, porque **ya sabían que era un tema de
+   * trabajo**"*. Un nombre suelto no dice cómo saludar: "Alex cumple hoy" y "Alex
+   * cumple hoy — es de trabajo" llevan a mensajes distintos, y ese contexto SIR ya
+   * lo tiene guardado en `people.relationship`. Opcional: si no se sabe, se omite.
+   */
+  context?: string | null
 }
 
 export interface MorningInput {
@@ -265,7 +275,9 @@ export function dedupeSignals(signals: MorningSignal[]): MorningSignal[] {
 
 function birthdayPhrase(b: MorningBirthday): string {
   const when = b.days === 0 ? 'cumple hoy' : b.days === 1 ? 'cumple mañana' : `cumple en ${b.days} días`
-  return `${b.name} ${when}`
+  // El contexto va porque un nombre suelto no dice CÓMO saludar (ver `context`).
+  const ctx = b.context?.trim() ? ` — ${b.context.trim()}` : ''
+  return `${b.name} ${when}${ctx}`
 }
 
 /** Arma el push de la mañana. Siempre devuelve algo (mensaje amable si no hay
