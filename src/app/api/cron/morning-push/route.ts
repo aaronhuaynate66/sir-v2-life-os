@@ -31,6 +31,7 @@ import { evaluarCardio } from '@/lib/health/cardioNotify'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
 import { evaluarPrecondiciones, lineaTrabada } from '@/lib/goals/precondicion'
 import { eventosProximosLine } from '@/lib/push/eventosProximos'
+import { detectAffectionDrop, affectionDropLine } from '@/lib/forecast-conductual/affectionDrop'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
 import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
@@ -207,6 +208,51 @@ export async function GET(req: NextRequest) {
         eventosProximosText = eventosProximosLine(evs, today) ?? undefined
       } catch (e) {
         reportApiError(e, { route: 'cron/morning-push', step: 'eventosProximos', user: uid.slice(0, 8) })
+      }
+
+      // ═══ DESPLOME DE AFECTO ═══════════════════════════════════════════════
+      //
+      // Aaron, 31-jul-2026: *"por qué no tengo ninguna alerta de cómo viene mi
+      // relación con Diana si mis últimas conversaciones tan hasta las webas"*.
+      //
+      // El IAE medía el afecto por día desde el 23-jul y NADA de eso llegaba al
+      // brief: vivía en una card de la web y en el contexto del chat. Y el resumen
+      // que sí existía promedia 30 días, así que el 31-jul —un día después de la
+      // pelea— decía "muy positivo, viene subiendo" (medido). Ver `affectionDrop.ts`.
+      //
+      // Se mira solo a la gente importante: el detector necesita una línea base
+      // personal de semanas, y con un conocido no hay nada honesto que decir.
+      let afectoCaidaText: string | undefined
+      try {
+        const { data: pplRows } = await admin
+          .from('people').select('id, name')
+          .eq('user_id', uid).gte('importance_score', 7).limit(20)
+        const gente = (pplRows ?? []) as Array<{ id: string; name: string }>
+        const candidatas: Array<{ nombre: string; drop: ReturnType<typeof detectAffectionDrop> }> = []
+        for (const p of gente) {
+          const { data: sigRows } = await admin
+            .from('person_daily_signals')
+            .select('date, message_count, avg_len, somatic, friction, withdrawal, sensitivity, actions, composite, affection, positivity_ratio')
+            .eq('user_id', uid).eq('person_id', p.id)
+            .order('date', { ascending: true }).limit(400)
+          const serie = ((sigRows ?? []) as Array<Record<string, unknown>>).map((r) => ({
+            date: r.date as string, messageCount: Number(r.message_count) || 0, avgLen: Number(r.avg_len) || 0,
+            somatic: Number(r.somatic) || 0, friction: Number(r.friction) || 0, withdrawal: Number(r.withdrawal) || 0,
+            sensitivity: Number(r.sensitivity) || 0, actions: Number(r.actions) || 0, composite: Number(r.composite) || 0,
+            affection: Number(r.affection) || 0,
+            positivityRatio: r.positivity_ratio == null ? 1 : Number(r.positivity_ratio) || 1,
+          }))
+          const drop = detectAffectionDrop(serie)
+          if (drop && drop.motivos.length > 0) candidatas.push({ nombre: p.name, drop })
+        }
+        // UNA sola línea, la más fuerte. Dos vínculos en tensión el mismo día es
+        // un muro, y el brief ya se quejó de eso antes (#1039).
+        candidatas.sort((a, b) =>
+          (b.drop!.motivos.length - a.drop!.motivos.length) || (a.drop!.ratioReciente - b.drop!.ratioReciente))
+        const top = candidatas[0]
+        if (top) afectoCaidaText = affectionDropLine(top.nombre, top.drop) ?? undefined
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'afectoCaida', user: uid.slice(0, 8) })
       }
 
       // Tareas que vencen hoy (no hechas).
@@ -1019,7 +1065,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

@@ -376,3 +376,33 @@ describe('buildMorningPush — fechas especiales / aniversarios', () => {
     expect(p.body.indexOf('Aniversario con Diana')).toBeLessThan(p.body.indexOf('Pedro'))
   })
 })
+
+describe('💬 desplome de afecto en el brief', () => {
+  // Aaron, 31-jul-2026: "por qué no tengo ninguna alerta de cómo viene mi relación
+  // con Diana si mis últimas conversaciones tan hasta las webas". El IAE medía desde
+  // el 23-jul y nada llegaba al brief. Estos tests fijan que ahora llega.
+  const CAIDA = '💬 el balance del chat con Diana se dio vuelta estos 3 días (de 6 a 0.8 positivo por negativo). Es lo que se ESCRIBE, no lo que se siente — ¿todo bien o solo andan ocupados?'
+
+  it('la línea llega al push, en la sección de gente', () => {
+    const p = buildMorningPush({ afectoCaida: CAIDA })
+    const s = p.signals.find((x) => x.slot === 'afectoCaida')
+    expect(s).toBeDefined()
+    expect(s!.section).toBe('gente')
+    expect(s!.text).toBe(CAIDA)
+  })
+
+  it('va ANTES de "a quién cuidar hoy": ese slot mide descuido y con Diana hablaba 250 msgs/día', () => {
+    const p = buildMorningPush({ afectoCaida: CAIDA, relationshipNudge: 'Escríbele a Leo, hace 20 días' })
+    const slots = p.signals.map((s) => s.slot)
+    expect(slots.indexOf('afectoCaida')).toBeLessThan(slots.indexOf('relationshipNudge'))
+  })
+
+  it('se puede silenciar como cualquier otra señal', () => {
+    const p = buildMorningPush({ afectoCaida: CAIDA, mutedTopics: [topicKey(CAIDA)] })
+    expect(p.signals.some((s) => s.slot === 'afectoCaida')).toBe(false)
+  })
+
+  it('sin caída no agrega nada', () => {
+    expect(buildMorningPush({}).signals.some((s) => s.slot === 'afectoCaida')).toBe(false)
+  })
+})

@@ -27,6 +27,13 @@ export interface MorningInput {
    *  razón, ya formado). SIR sabe a quién estás descuidando; esto lo dice sin
    *  que abras la app. Texto corto ya armado. */
   relationshipNudge?: string
+  /**
+   * "El balance del chat con X se dio vuelta": desplome de afecto expresado,
+   * detectado con mediana/MAD sobre la línea base PERSONAL de esa relación.
+   * Ver `lib/forecast-conductual/affectionDrop.ts` — es un DISPARADOR de
+   * conversación, nunca un veredicto sobre lo que el otro siente.
+   */
+  afectoCaida?: string
   /** Cruce chat → tema abierto: un "momento/decisión" abierto que el chat
    *  reciente ya parece haber resuelto (el cron `moment-scan` lo precomputa).
    *  SIR sugiere cerrarlo; no cierra solo. Texto ya formado. */
@@ -204,6 +211,7 @@ const AGGREGATE_SLOTS = new Set([
   'metricAlert', 'bodySignal', 'healthWatch',
   'cardioTrend',         // hay una sola por día y su texto lleva los valores del día
   'eventosProximos',     // "la boda es el sábado" cambia de texto cada día que pasa
+  'afectoCaida',         // los números del balance se mueven todos los días
   'trainingAdherence',   // "2 de 3 de fuerza" cambia con cada sesión
   'energyNote',
 ])
@@ -302,6 +310,13 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //     "a quién cuidar hoy" + "cerrar un lazo" + "buen momento × objetivo" ahora
   //     van ANTES que los cumpleaños (un cumple en N días no debe tapar el cuidado
   //     de un vínculo que se enfría hoy) → casi siempre entran al push.
+  // DESPLOME DE AFECTO primero dentro de lo relacional. El reclamo que lo puso acá
+  // (Aaron, 31-jul-2026): *"por qué no tengo ninguna alerta de cómo viene mi
+  // relación con Diana si mis últimas conversaciones tan hasta las webas"*. Va antes
+  // que "a quién cuidar hoy" porque ese slot mide DESCUIDO (a quién no le escribes),
+  // y con Diana hablaba 250 mensajes por día: por volumen nunca iba a aparecer ahí.
+  // Un vínculo puede estar rompiéndose con el chat a full.
+  add(input.afectoCaida, 'afectoCaida', 'gente')
   add(input.relationshipNudge, 'relationshipNudge', 'gente', ent.relationshipPerson ? { kind: 'person', ...ent.relationshipPerson } : undefined)
   add(input.momentResolution, 'momentResolution', 'gente', ent.moment ? { kind: 'moment', ...ent.moment } : undefined)
   add(input.goalContactTiming, 'goalContactTiming', 'gente')
