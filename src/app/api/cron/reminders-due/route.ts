@@ -13,6 +13,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
 import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
+import { textoRecordatorio } from '@/lib/push/cuandoVence'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -29,13 +30,35 @@ export async function GET(req: NextRequest) {
   if (!url || !key) return NextResponse.json({ error: 'Supabase envs missing' }, { status: 500 })
 
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-  const now = new Date().toISOString()
+  const nowMs = Date.now()
+
+  // ═══ MIRA HACIA ADELANTE, NO SOLO HACIA ATRÁS ═════════════════════════════
+  //
+  // Antes la consulta era `due_at <= now` y con un cron DIARIO eso llega tarde:
+  // cualquier recordatorio que venza entre dos corridas se avisa hasta 23 h después
+  // de su hora. Para algo con hora fija es fatal.
+  //
+  // Caso REAL, encontrado el 31-jul-2026 y a 7 días de ocurrir: su examen médico del
+  // IPD para el Mundial, el **7-ago a las 8:10 am**, cargado con `due_at` 12:00 UTC
+  // (07:00 Lima). El cron corre 11:00 UTC → ese día `due_at` **todavía no había
+  // vencido** y no disparaba; la corrida siguiente era el **8-ago, un día DESPUÉS
+  // del examen.** Nunca se lo iba a avisar.
+  //
+  // Y el aviso del mismo día ya era inútil: el examen pide **ayuno de 8 h** (empieza
+  // la noche anterior), **Anexo 2 impreso** y un **formulario psicológico previo**.
+  //
+  // 36 h de anticipación: alcanza para que algo de mañana temprano se avise HOY, con
+  // la noche de por medio. Es una sola notificación (`notified_at` la cierra), así
+  // que el texto tiene que decir CUÁNDO es — si no, "recordatorio: examen 8:10am"
+  // leído un día antes se entiende como si fuera hoy.
+  const LOOKAHEAD_HORAS = 36
+  const hasta = new Date(nowMs + LOOKAHEAD_HORAS * 3_600_000).toISOString()
 
   const { data } = await supabase
     .from('reminders')
-    .select('id, user_id, text, related_person_id')
-    .lte('due_at', now).is('done_at', null).is('notified_at', null).limit(50)
-  const rows = (data ?? []) as Array<{ id: string; user_id: string; text: string; related_person_id: string | null }>
+    .select('id, user_id, text, related_person_id, due_at')
+    .lte('due_at', hasta).is('done_at', null).is('notified_at', null).limit(50)
+  const rows = (data ?? []) as Array<{ id: string; user_id: string; text: string; related_person_id: string | null; due_at: string | null }>
   if (rows.length === 0) return NextResponse.json({ processed: 0 })
 
   // Traer person slug para deep-link.
@@ -57,14 +80,14 @@ export async function GET(req: NextRequest) {
     const slug = r.related_person_id ? slugById.get(r.related_person_id) : null
     void pushToUser(r.user_id, {
       title: 'SIR · Recordatorio',
-      body: r.text,
+      body: textoRecordatorio(r.text, r.due_at, nowMs),
       url: slug ? `/relaciones/${slug}` : '/panel',
       tag: `reminder-${r.id}`,
       requireInteraction: false,
     })
     // Telegram al dueño (fail-open: no rompe el cron si falla el envío).
     if (tgReady && tgChat && tgOwnerId && r.user_id === tgOwnerId) {
-      try { await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${r.text}`) } catch { /* fail-open */ }
+      try { await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${textoRecordatorio(r.text, r.due_at, nowMs)}`) } catch { /* fail-open */ }
     }
     // Marcar como notificado inmediatamente para no re-disparar aunque el push falle.
     await supabase.from('reminders').update({ notified_at: new Date().toISOString() }).eq('id', r.id)
