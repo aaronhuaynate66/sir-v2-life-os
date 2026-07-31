@@ -40,12 +40,41 @@ export interface PersonaConFechas {
   fechas: FechaEspecial[]
   /** Para desempatar cuando hay varios el mismo día. */
   importance?: number | null
+  /** `people.relationship` crudo ('professional', 'family'…). */
+  relationship?: string | null
+}
+
+/**
+ * "de trabajo" / "familia" / … a partir de `people.relationship`. PURA.
+ * null si no se sabe: inventar el vínculo es peor que omitirlo.
+ *
+ * Aaron pidió esto explícitamente para el cumpleaños de Alex: *"ya sabían que era un
+ * tema de trabajo"*. Sin el contexto no sabe con qué tono saludar.
+ */
+export function contextoDeRelacion(relationship: string | null | undefined): string | null {
+  const r = (relationship ?? '').trim().toLowerCase()
+  if (!r) return null
+  const mapa: Record<string, string> = {
+    professional: 'es de trabajo',
+    work: 'es de trabajo',
+    colleague: 'es del trabajo',
+    client: 'es cliente',
+    family: 'es familia',
+    romantic: 'es tu pareja',
+    partner: 'es tu pareja',
+    friend: 'es tu amigo/a',
+    mentor: 'es tu mentor/a',
+    acquaintance: 'es un conocido',
+  }
+  return mapa[r] ?? null
 }
 
 export interface CumpleProximo {
   name: string
   /** Días hasta el próximo (0 = hoy). */
   days: number
+  /** "es de trabajo" / "es familia" / null. Ver contextoDeRelacion. */
+  context?: string | null
   /** De dónde salió — sirve para saber si hay que migrar la data. */
   fuente: 'birth_date' | 'special_dates'
 }
@@ -105,6 +134,8 @@ export function cumpleanosProximos(
   ventanaDias: number,
 ): CumpleProximo[] {
   const porNombre = new Map<string, CumpleProximo>()
+  const ctxPorNombre = new Map<string, string | null>(
+    (personas ?? []).map((x) => [x.name, contextoDeRelacion(x.relationship)]))
 
   const considerar = (name: string, fecha: string | null | undefined, fuente: CumpleProximo['fuente']) => {
     const d = diasHastaProximoAniversario(fecha, hoy)
@@ -112,7 +143,7 @@ export function cumpleanosProximos(
     const prev = porNombre.get(name)
     // `birth_date` manda sobre `special_dates`; entre iguales, el más cercano.
     if (prev && !(fuente === 'birth_date' && prev.fuente === 'special_dates') && prev.days <= d) return
-    porNombre.set(name, { name, days: d, fuente })
+    porNombre.set(name, { name, days: d, fuente, context: ctxPorNombre.get(name) ?? null })
   }
 
   for (const p of personas ?? []) {

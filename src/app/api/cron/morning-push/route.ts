@@ -151,10 +151,10 @@ export async function GET(req: NextRequest) {
       // Gente y fechas: cumpleaños + fechas especiales (aniversarios, mensario).
       const { data: peopleRows } = await admin
         .from('people')
-        .select('name, birth_date, special_dates, importance_score')
+        .select('name, birth_date, special_dates, importance_score, relationship')
         .eq('user_id', uid)
         .limit(1000)
-      const people = (peopleRows ?? []) as Array<{ name: string; birth_date: string | null; special_dates: unknown; importance_score: number | null }>
+      const people = (peopleRows ?? []) as Array<{ name: string; birth_date: string | null; special_dates: unknown; importance_score: number | null; relationship: string | null }>
 
       // CUMPLEAÑOS DE LAS DOS FUENTES. Antes salían solo de `birth_date`, y el otro
       // camino (`importantDates`, abajo) descartaba las etiquetas con "cumple"
@@ -171,10 +171,11 @@ export async function GET(req: NextRequest) {
           birth_date: p.birth_date,
           fechas: toSpecialDates(p.special_dates),
           importance: p.importance_score,
+          relationship: p.relationship,
         })),
         today,
         BIRTHDAY_WINDOW_DAYS,
-      ).map((c) => ({ name: c.name, days: c.days }))
+      ).map((c) => ({ name: c.name, days: c.days, context: c.context }))
 
       // Fechas especiales próximas (aniversarios anuales + mensario). Reusa el
       // MISMO motor de countdown que la ficha/agenda (cadencia mensual incluida)
