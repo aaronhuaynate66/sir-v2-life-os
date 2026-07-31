@@ -37,6 +37,39 @@ async function taskDone(supabase: SupabaseClient, userId: string, taskId: string
 }
 
 /**
+ * "✅ Hice: Tender la cama" → marca el check-in del hábito de HOY.
+ *
+ * Aaron, 31-jul-2026: *"antes SIR me mandaba por Telegram una lista de mis pendientes
+ * y ahí podía marcar uno por uno lo que había hecho, como tender la cama; ahora me
+ * mandó todo junto y no puedo marcar que hice una sola cosa"*.
+ *
+ * El nudge del hábito llegaba SIN entidad, así que el único botón disponible era 🔕:
+ * podía callar el recordatorio pero no registrar que lo había hecho. Este es el
+ * camino que faltaba.
+ *
+ * IDEMPOTENTE por (hábito, día): tocar dos veces no suma dos check-ins ni infla la
+ * racha. Si ya estaba marcado lo dice, en vez de fingir que acaba de marcarlo.
+ */
+async function habitDone(
+  supabase: SupabaseClient, userId: string, habitId: string, now: Date,
+): Promise<BriefActionResult> {
+  const hoy = new Date(now.getTime() - 5 * 3_600_000).toISOString().slice(0, 10) // día de Lima
+  const { data: h } = await supabase
+    .from('habits').select('title').eq('user_id', userId).eq('id', habitId).maybeSingle()
+  const titulo = (h as { title?: string } | null)?.title ?? 'el hábito'
+
+  const { data: ya } = await supabase
+    .from('habit_checkins').select('id')
+    .eq('user_id', userId).eq('habit_id', habitId).eq('date', hoy).limit(1)
+  if (((ya ?? []) as unknown[]).length > 0) return { toast: `✅ ${titulo} ya estaba marcado hoy` }
+
+  const { error } = await supabase.from('habit_checkins')
+    .insert({ user_id: userId, habit_id: habitId, date: hoy })
+  if (error) return { toast: 'No pude marcarlo, inténtalo desde la app.' }
+  return { toast: `✅ ${titulo}` }
+}
+
+/**
  * "💼 Registrar oportunidad" → crea el DEAL que faltaba y marca la señal.
  *
  * Es el cierre del loop que Aaron reclamó el 28-jul: SIR detectaba la ventana con
@@ -226,6 +259,7 @@ export async function runBriefAction(
   try {
     switch (kind) {
       case 'task_done': return await taskDone(supabase, userId, ref)
+      case 'habit_done': return await habitDone(supabase, userId, ref, now)
       case 'task_remind': return await taskRemind(supabase, userId, ref, now)
       case 'moment_close': return await momentClose(supabase, userId, ref)
       case 'mute': return await mute(supabase, userId, ref)

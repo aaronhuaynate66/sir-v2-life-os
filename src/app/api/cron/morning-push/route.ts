@@ -848,11 +848,17 @@ export async function GET(req: NextRequest) {
             byHabit.set(c.habit_id, arr)
           }
           const nudgeHabits: NudgeHabit[] = habitList.map((h) => ({
+            id: h.id,
             title: h.title,
             checkinDates: byHabit.get(h.id) ?? [],
           }))
           const n = habitNudge(nudgeHabits, now)
-          if (n && n.tone === 'recover') habitNudgeText = n.text
+          if (n && n.tone === 'recover') {
+            habitNudgeText = n.text
+            // La ENTIDAD es lo que habilita el botón "✅ Hice: …". Sin esto el hábito
+            // solo se podía silenciar, no marcar.
+            if (n.habitId) briefEntities.habit = { id: n.habitId, name: n.habitTitle ?? undefined }
+          }
         }
       } catch {
         /* fail-soft */

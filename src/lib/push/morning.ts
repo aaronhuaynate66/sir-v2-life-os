@@ -141,13 +141,15 @@ export interface MorningSignal {
   /** Entidad concreta detrás de la señal, cuando el caller la conoce. Es lo que
    *  habilita los botones del hilo ("✅ Ya lo hice" necesita el id de la tarea).
    *  Sin ella la señal se muestra igual, solo que sin acción. */
-  entity?: { kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity'; id: string; name?: string }
+  entity?: { kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit'; id: string; name?: string }
 }
 
 /** Ids de las entidades detrás de las señales. Opcionales: el brief funciona
  *  igual sin ellos (solo que sin botones). */
 export interface MorningEntities {
   dueTask?: { id: string; name?: string }
+  /** Hábito al que apunta el nudge, cuando apunta a uno solo. */
+  habit?: { id: string; name?: string }
   relationshipPerson?: { id: string; name?: string }
   moment?: { id: string; name?: string }
   goalNudgeGoal?: { id: string; name?: string }
@@ -366,7 +368,8 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   else if (due.length > 1) add(`${due.length} tareas para hoy (${due[0]}…)`, 'dueTask', 'hoy')
 
   // 2.5 Hábito a retomar · 2.6 señal del cuerpo · 2.7 vigilancia de laboratorio.
-  add(input.habitNudge, 'habitNudge', 'hoy')
+  // Con la entidad del hábito el brief puede ofrecer "✅ ya lo hice" y no solo 🔕.
+  add(input.habitNudge, 'habitNudge', 'hoy', ent.habit ? { kind: 'habit', ...ent.habit } : undefined)
   add(input.bodySignal, 'bodySignal', 'hoy')
   // Un examen recién hecho va ANTES de la tendencia crónica: sus recomendaciones
   // pueden tener ventana de días (el hematoma septal de la tomografía del 27-jul),

@@ -120,10 +120,25 @@ function HorarioContent() {
   }, [])
 
   // Feed del calendario (una vez al montar / al reconectar).
+  //
+  // ANTES de leer, EMPUJA a Google lo que falte. Aaron, 31-jul-2026: *"quiero ver que
+  // de una vez SIR se sincronice con mi calendario de Google los eventos"*.
+  //
+  // El cron `gcal-sync` ya lo hace cada mañana, pero eso obliga a esperar al día
+  // siguiente, y la alternativa era que él pegara un comando en la consola — se lo
+  // pedí tres veces en una tarde. Abrir esta pantalla ES la señal de que quiere ver su
+  // calendario al día, así que se sincroniza acá.
+  //
+  // Es idempotente (no duplica: un evento con `gcal_event_id` se actualiza, no se
+  // recrea) y fail-soft: si Google falla, el calendario se lee igual.
   useEffect(() => {
     let cancelled = false
     void (async () => {
       try {
+        try {
+          await fetch('/api/personal-events/sync-google', { method: 'POST' })
+        } catch { /* fail-soft: leer el calendario no depende de que el push funcione */ }
+        if (cancelled) return
         const res = await fetch('/api/calendar?past=7&limit=120', { cache: 'no-store' })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = (await res.json()) as CalendarFeedResult

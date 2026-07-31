@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildBriefThread, buildSectionButtons, parseBriefCallback, briefCallbackData, muteRef } from './briefThread'
+import { buildBriefThread, buildSectionButtons, parseBriefCallback, briefCallbackData, muteRef, etiquetaCorta } from './briefThread'
 import { topicKey, type MorningSignal } from '@/lib/push/morning'
 
 const s = (section: MorningSignal['section'], text: string, slot = 'x'): MorningSignal => ({ slot, section, text })
@@ -77,7 +77,10 @@ describe('botones del hilo', () => {
 
   it('la tarea ofrece marcarla y posponerla', () => {
     expect(labels(buildSectionButtons([tarea]))).toEqual(
-      expect.arrayContaining(['✅ Ya lo hice', '⏰ Recuérdamelo 6pm']),
+      // CAMBIO DELIBERADO (31-jul-2026): el botón ahora NOMBRA la tarea. Antes decía
+      // '✅ Ya lo hice' a secas y con 5 viñetas en la misma sección era imposible saber
+      // a cuál apuntaba — Aaron: 'no puedo marcar que hice una sola cosa'.
+      expect.arrayContaining(['✅ Hice: UAT con Dayana', '⏰ Recuérdamelo 6pm']),
     )
   })
 
@@ -109,7 +112,8 @@ describe('botones del hilo', () => {
 
   it('el hilo adjunta los botones a su sección', () => {
     const out = buildBriefThread([tarea, mama, meta])
-    expect(labels(out[0].buttons)).toContain('✅ Ya lo hice')
+    // Ver arriba: la etiqueta lleva el nombre de la tarea a propósito.
+    expect(labels(out[0].buttons)).toContain('✅ Hice: UAT con Dayana')
     expect(labels(out[1].buttons)).toContain('✍️ Escríbele a Maria')
     expect(labels(out[2].buttons)).toContain('🚀 Dame el próximo paso')
   })
@@ -158,5 +162,63 @@ describe('muteRef', () => {
     expect(muteRef(a, 'cycleWeekAhead')).toBe(muteRef(b, 'cycleWeekAhead'))
     // Sin slot agregado, el tema sigue mandando: dos personas ≠ una señal.
     expect(muteRef(a, 'relationshipNudge')).not.toBe(muteRef(b, 'relationshipNudge'))
+  })
+})
+
+describe('🎯 botones que DICEN a qué apuntan (la queja del 31-jul)', () => {
+  const labels = (rows: { text: string }[][]) => rows.flat().map((b) => b.text)
+  // Aaron: "antes SIR me mandaba una lista y podía marcar uno por uno lo que había
+  // hecho, como tender la cama; ahora me mandó todo junto y no puedo marcar una sola
+  // cosa". Su ⚡HOY traía 5 viñetas y UN "✅ Ya lo hice" que apuntaba a la tarea con
+  // fecha; el hábito solo ofrecía 🔕.
+  it('el botón de la tarea nombra la tarea', () => {
+    const rows = buildSectionButtons([
+      { slot: 'dueTask', section: 'hoy', text: 'Hoy vence: Pre-registrarme como atleta', entity: { kind: 'task', id: 't1', name: 'Pre-registrarme como atleta' } },
+    ])
+    expect(labels(rows)).toContainEqual(expect.stringContaining('Pre-registrarme'))
+  })
+
+  it('el HÁBITO ahora tiene botón de hecho, no solo 🔕', () => {
+    const rows = buildSectionButtons([
+      { slot: 'habitNudge', section: 'hoy', text: 'Se cortó tu racha de "Tender la cama". Un día no la define — retómala hoy.', entity: { kind: 'habit', id: 'h1', name: 'Tender la cama' } },
+    ])
+    const l = labels(rows)
+    expect(l).toContainEqual(expect.stringContaining('Tender la cama'))
+    expect(l.some((x) => x.startsWith('✅'))).toBe(true)
+  })
+
+  it('con tarea Y hábito juntos hay DOS botones distinguibles', () => {
+    const rows = buildSectionButtons([
+      { slot: 'dueTask', section: 'hoy', text: 'x', entity: { kind: 'task', id: 't1', name: 'Pre-registro del Mundial' } },
+      { slot: 'habitNudge', section: 'hoy', text: 'y', entity: { kind: 'habit', id: 'h1', name: 'Tender la cama' } },
+    ])
+    const hechos = labels(rows).filter((x) => x.startsWith('✅ Hice:'))
+    expect(hechos).toHaveLength(2)
+    expect(hechos.join(' ')).toContain('Tender la cama')
+    expect(hechos.join(' ')).toContain('Pre-registro')
+  })
+
+  it('el hábito sin entidad sigue sin botón de hecho (no inventa uno muerto)', () => {
+    const rows = buildSectionButtons([
+      { slot: 'habitNudge', section: 'hoy', text: 'Te faltan 3 hábitos por marcar hoy.' },
+    ])
+    expect(labels(rows).some((x) => x.startsWith('✅'))).toBe(false)
+  })
+})
+
+describe('etiquetaCorta', () => {
+  it('quita los prefijos del brief: el botón ya dice "Hice:"', () => {
+    expect(etiquetaCorta('Hoy vence: Abrir cuenta bancaria')).toBe('Abrir cuenta bancaria')
+    expect(etiquetaCorta('Se cortó tu racha de "Tender la cama"')).toBe('Tender la cama')
+  })
+  it('corta el contexto que viene después del separador', () => {
+    expect(etiquetaCorta('Cerrar el plan técnico — de "Ganar el Mundial"')).toBe('Cerrar el plan técnico')
+  })
+  it('recorta lo muy largo con puntos suspensivos', () => {
+    const r = etiquetaCorta('Pre-registrarme como atleta y esperar apertura de inscripción oficial')
+    expect(r.length).toBeLessThanOrEqual(26)
+  })
+  it('no revienta con vacío', () => {
+    expect(etiquetaCorta('')).toBe('')
   })
 })
