@@ -12,10 +12,47 @@
 
 ---
 
+## 🏠 CIERRE DE SESIÓN 2026-07-31 — VIVIENDA REORGANIZADA (cambios en la DATA de Aaron)
+
+No es backlog de código: son cambios aplicados a sus objetivos, anotados acá porque el
+pase automático de reconciliación solo mira el repo y **nunca los va a ver**. Si un pase
+futuro dice que el objetivo de mudanza sigue abierto, está leyendo una vista parcial.
+
+- **`Mudarme con mi perro` → `completed`.** Aaron ya se mudó el 4-jul (casa de Marita) y lo
+  zanjó: *"no quiero volver a saber de ese tema"*. El objetivo tenía **dos planes encima del
+  otro**: el real, y uno genérico de junio de 19 pasos hasta may-2027 para **alquilar** un
+  depa pet-friendly. 2 pasos a `hecho`, 22 a `descartado` con motivo (reversible).
+- **Gasto recurrente de S/1,000/mes "vivienda-puente Marita" desactivado** en
+  `finance_movements`. Marita **no cobra renta fija**; él ayuda con gastos sueltos. Ese
+  número fantasma distorsionaba cualquier cálculo de capacidad de ahorro.
+- **Objetivo nuevo `g_depa_propio_2027` — "Comprar departamento propio"** (Q4-2027), con
+  **solo 4 pasos de diagnóstico**; los otros 8 dependen de esas respuestas y fecharlos sería
+  planificar sobre supuestos. Dos hallazgos que mandan: **(a)** S/300,000 es el peor precio
+  posible — el Bono del Buen Pagador cae de S/21,200 a S/7,900 pasando los S/248,300;
+  **(b)** los dos terrenos (S/1,777/mes) **podrían** comerse el 96% de su capacidad de
+  crédito, **o nada**, según si figuran en la central de riesgos de la SBS. Sin ese dato no
+  se puede cerrar el plan.
+- **Objetivo nuevo `g_oms_irmalia` — "Entregar el OMS de Irmalia a Marita"** (28-ago).
+  ⚠️ **Este repo NO lo construye**: Aaron lo lleva con otro agente y lo dijo explícito
+  (*"solo que tú me ayudes a organizar mi vida en sir"*). SIR solo aporta alcance, tope
+  (20 h en 3 semanas) y fecha de cierre. Paso 1 = regla de secuencia: ninguna hora de OMS
+  antes de que salga la cotización de Hikvision.
+- **Vencidos: 5 → 4**, los 4 restantes de Marlab.
+
+**🟡 PENDIENTE DE DECISIÓN — 6 objetivos activos con CERO pasos.** `Cliente recurrente de
+S/5,000/mes` · `Subir ingresos a S/15,000/mes` · `Cerrar clientes para Marlab` · `Que me
+suban el sueldo` · `Ingresar al RIT del CGBVP` · `Mejorar mi relación con Francisco`. Son
+solo títulos: SIR no tiene con qué recordarle nada. Los tres de plata quedaron vacíos al
+purgar los planes de junio (#1031). O se les da plan, o bajan de `active` — mientras sigan
+así, el panel va a decir que todo está estancado. Planteado a Aaron, **sin decidir**.
+
+---
+
 ## 📋 PENDIENTES ACTUALES — reconciliado 2026-07-24 (LEER PRIMERO)
 
 Vista usable (lo de abajo es histórico pesado). Reconciliado tras la sesión de ~16 PRs (#927–#942).
-Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/artifact/045fea0b-7b02-4a33-a013-7d394d9d85f6
+Ordenado por qué BLOQUEA cada cosa. **Artefacto visual (el master vivo, se ACTUALIZA, no se
+reemplaza):** https://claude.ai/code/artifact/c282d44e-4797-41a5-8a73-deef6c8b0363
 
 **🟢 Listo para construir (autónomo, sin bloqueo):**
 - ~~**[alta] Fuga de voseo en el chat**~~ ✅ **CERRADO POR MEDICIÓN (28/07/2026).** Tres pases anteriores se contradijeron sobre esto (25/07 y 28/07 lo marcaron hecho; 27/07 dijo "sigue genuinamente abierto, es whack-a-mole"). **Se zanjó midiendo la salida real, no opinando** — la lección de #975: el idioma se mide con `detectVoseo`, no se juzga con un LLM. Corrida sobre los 12 mensajes que SIR le mandó a Aaron entre el 26 y el 28/07: **1 con voseo, 11 limpios**. El único sucio es el push de las 02:01 del 26/07 (`cerrá`, `descansá`), emitido ANTES de que mergeara #990. Los de 02:58 del 27 y 02:20 del 28 dicen "Cierra el día". **Lo que cerró el canal fue #990**: `deVoseo(stripMarkdown(...))` en los 3 puntos de envío de `lib/telegram/client.ts`, así que ahora pasa también el TEXTO FIJO escrito a mano —que era el que se escapaba— y no solo la salida del LLM. Sigue siendo una carrera detector-vs-modelo: **re-medir, no dar por eterno.**
