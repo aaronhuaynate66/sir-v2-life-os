@@ -21,6 +21,7 @@ import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, linkedinSlug, canonHandle, identityKey, type PersonLite } from '@/lib/social-reader/match'
 import { snapshotUnmatchedAvatar } from '@/lib/social-reader/avatarSnapshot'
 import { normalizeReaderProfile, type RawReaderProfile, type ReaderProfile } from '@/lib/social-reader/igProfile'
+import { stampChannelData } from '@/lib/reader/stampChannelData'
 
 /** Id determinístico de una señal no-asignada → una fila por (identidad, kind).
  *  Re-ver la misma cuenta actualiza la fila (upsert), no la duplica. */
@@ -212,6 +213,10 @@ export async function POST(req: NextRequest) {
   let snapped = 0
   let followerRows = 0
   let followingSaved = 0, namesFilled = 0, profilesSaved = 0
+  // Canales que de verdad ESCRIBIERON algo en esta pasada → los únicos que se
+  // sellan como "trajo data". Un item que se descarta (`skipped`) no cuenta: el
+  // sello tiene que significar data real, si no vuelve a ser una señal que miente.
+  const canalesConData = new Set<string>()
 
   try {
     // Personas una sola vez → índice para matcheo por handle/slug/nombre.
@@ -259,7 +264,7 @@ export async function POST(req: NextRequest) {
           }))
         if (rows.length) {
           const { error } = await admin.from('social_following').upsert(rows, { onConflict: 'id' })
-          if (!error) followingSaved = rows.length
+          if (!error) { followingSaved = rows.length; canalesConData.add('instagram') }
         }
 
         // Rellenar el nombre de lo que ya está en la bandeja sin él.
@@ -316,7 +321,9 @@ export async function POST(req: NextRequest) {
       // aunque la cuenta no sea de una org todavía. Fail-soft.
       const canonSelf = it.handle ? canonHandle(it.handle) : null
       if (canonSelf && Array.isArray(it.followedBy) && it.followedBy.length > 0) {
-        followerRows += await recordPageFollowers(admin, userId, canonSelf, it.followedBy, index, nowIso)
+        const n = await recordPageFollowers(admin, userId, canonSelf, it.followedBy, index, nowIso)
+        followerRows += n
+        if (n > 0) canalesConData.add(platform)
       }
 
       // Página ya asignada a una organización → no es un contacto, no va a la
@@ -335,7 +342,7 @@ export async function POST(req: NextRequest) {
 
       if (it.profile) {
         const guardado = await saveReaderProfile(admin, userId, platform, it.profile, m?.person.id ?? null, nowIso)
-        if (guardado) profilesSaved++
+        if (guardado) { profilesSaved++; canalesConData.add(platform) }
       }
       if (!m) {
         unmatched++
@@ -354,6 +361,9 @@ export async function POST(req: NextRequest) {
               avatar_url: it.avatarUrl ?? null,
               kind: sig.kind, detail: sig.detail, observed_at: resolveObservedAt(it.activityAt, nowIso),
             }, { onConflict: 'id' })
+            // Una cuenta en la bandeja TAMBIÉN es data leída: es la señal que hoy
+            // sostiene sola la frescura de Instagram en el cron.
+            canalesConData.add(platform)
             // Snapshot permanente de la cara (la URL de IG caduca). Solo si aún no
             // lo tiene y no pasamos el tope del request. Fail-soft.
             if (it.avatarUrl && snapped < AVATAR_SNAPSHOT_CAP) {
@@ -415,7 +425,13 @@ export async function POST(req: NextRequest) {
       })
       if (insErr) { skipped++; continue }
       inserted++
+      canalesConData.add(platform)
     }
+
+    // SELLO DE FRESCURA. Va acá, después de todas las escrituras y antes del
+    // catch: si algo revienta a mitad no se sella un canal que no guardó nada.
+    // Ver `lib/reader/stampChannelData.ts` — este camino era el que faltaba.
+    for (const c of canalesConData) await stampChannelData(admin, userId, c)
   } catch (e) {
     reportApiError(e, { route: 'social/ingest' })
     return errorJson(500, 'Fallo procesando la ingesta', e instanceof Error ? e.message : String(e))
