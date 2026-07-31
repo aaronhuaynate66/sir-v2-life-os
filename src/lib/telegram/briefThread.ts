@@ -23,7 +23,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -43,7 +43,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }
@@ -73,6 +73,24 @@ const MUTABLE_SLOTS = ['momentResolution', 'relationshipNudge', 'cycleWeekAhead'
  * entidad no genera botón de acción (nada de botones que no hacen nada), pero
  * las de "tu gente" siempre pueden callarse. PURO.
  */
+/**
+ * Etiqueta corta para el TEXTO de un botón. PURA.
+ *
+ * Telegram acepta textos largos pero los parte en varias líneas y el teclado se vuelve
+ * ilegible. ~26 caracteres es lo que entra cómodo. Si el nombre viene con prefijos del
+ * brief ("Hoy vence: …") se los quita: el botón ya dice "Hice:".
+ */
+export function etiquetaCorta(raw: string, max = 26): string {
+  let t = (raw ?? '').trim()
+    .replace(/^(hoy vence|vence hoy|se cortó tu racha de|pendiente)\s*:?\s*/i, '')
+    .replace(/^["“]|["”]$/g, '')
+  // Corta en el primer separador fuerte: lo de después es contexto, no el nombre.
+  const corte = t.search(/\s[—·(]|\.\s|\sen\s+gms\./)
+  if (corte > 6) t = t.slice(0, corte)
+  t = t.replace(/["“”]/g, '').trim()
+  return t.length <= max ? t : `${t.slice(0, max - 1).trimEnd()}…`
+}
+
 export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
   const rows: BriefButton[][] = []
   const push = (...btns: Array<BriefButton | null>) => {
@@ -87,7 +105,17 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
   for (const s of signals) {
     const e = s.entity
     if (e?.kind === 'task' && s.slot === 'dueTask') {
-      push(btn('✅ Ya lo hice', 'task_done', e.id), btn('⏰ Recuérdamelo 6pm', 'task_remind', e.id))
+      // El botón NOMBRA la tarea. Aaron, 31-jul-2026: *"ahora me mandó todo junto y no
+      // puedo marcar que hice una sola cosa"*. Su sección ⚡HOY traía 5 viñetas y un
+      // solo "✅ Ya lo hice", así que era imposible saber a cuál apuntaba — de hecho
+      // apuntaba a la tarea con fecha, y el hábito ("tender la cama") no tenía botón.
+      // Nombrar el objetivo en el texto resuelve la ambigüedad sin partir el mensaje
+      // en cinco (que sería el muro del que ya se quejó en #1039).
+      push(btn(`✅ Hice: ${etiquetaCorta(e.name ?? s.text)}`, 'task_done', e.id), btn('⏰ Recuérdamelo 6pm', 'task_remind', e.id))
+    } else if (e?.kind === 'habit') {
+      // El caso que lo destapó: "Se cortó tu racha de Tender la cama" solo ofrecía 🔕.
+      // Podía CALLAR el recordatorio pero no marcar el hábito como hecho.
+      push(btn(`✅ Hice: ${etiquetaCorta(e.name ?? s.text)}`, 'habit_done', e.id))
     } else if (e?.kind === 'person' && s.slot === 'relationshipNudge') {
       const first = (e.name ?? '').split(/\s+/)[0]
       push(btn(first ? `✍️ Escríbele a ${first}` : '✍️ Escríbele', 'person_draft', e.id))

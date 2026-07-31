@@ -22,7 +22,7 @@ describe('habitNudge', () => {
       TODAY,
     )
     expect(r?.tone).toBe('nudge')
-    expect(r?.text).toContain('Arrancá')
+    expect(r?.text).toContain('Arranca')
   })
 
   it('algunos pendientes → cuenta los que faltan', () => {
