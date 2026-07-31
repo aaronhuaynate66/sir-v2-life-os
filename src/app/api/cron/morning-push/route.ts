@@ -47,6 +47,7 @@ import { assembleDailyActions } from '@/lib/daily-actions/assemble'
 import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
 import { examenRecienteLine } from '@/lib/health-exams/recentExam'
 import { cumpleanosProximos, esHitoDeAnticipacion } from '@/lib/push/cumpleanos'
+import { encuentrosConDeal, encuentroConDealLine } from '@/lib/crm/dealEnEvento'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -205,6 +206,9 @@ export async function GET(req: NextRequest) {
       // por el cruce del ciclo menstrual (#978), que surfacea un evento únicamente si la
       // persona está en ventana sensible. Faltaba el recordatorio a secas.
       let eventosProximosText: string | undefined
+      // Se guardan para reusarlos en el cruce CRM × agenda × grafo de más abajo, en
+      // vez de volver a pedir la misma tabla.
+      let evRowsParaCrm: Array<{ title: string | null; event_date: string | null; person_id: string | null }> = []
       try {
         const { data: evRows } = await admin
           .from('personal_events')
@@ -213,7 +217,8 @@ export async function GET(req: NextRequest) {
           .gte('event_date', today)
           .order('event_date', { ascending: true })
           .limit(20)
-        const crudos = ((evRows ?? []) as Array<{ title: string | null; event_date: string | null; person_id: string | null }>)
+        evRowsParaCrm = (evRows ?? []) as Array<{ title: string | null; event_date: string | null; person_id: string | null }>
+        const crudos = evRowsParaCrm
           .filter((e) => e.title && e.event_date)
         // El nombre de la persona es lo que hace que el recordatorio importe ("la
         // boda de LAURA"), así que se resuelve — pero solo para los ids que de
@@ -525,6 +530,61 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         // Fail-soft: sin esto el brief sale igual, solo sin la señal comercial.
         reportApiError(e, { route: 'cron/morning-push', step: 'opportunities', user: uid.slice(0, 8) })
+      }
+
+      // ═══ CRM × AGENDA × GRAFO ═════════════════════════════════════════════
+      //
+      // Idea de Aaron (31-jul-2026): *"debemos verlo más como una oportunidad dentro
+      // de un CRM y trabajarla… hay que perseguirla. **Me la voy a encontrar mañana
+      // en el matrimonio de Laura**, es su mejor amiga, **eso debería darnos
+      // información en el grafo**"*.
+      //
+      // Y las tres tablas estaban pobladas: el evento del 1-ago cuelga de Laura, el
+      // `person_links` dice que Miluska es su `mejor_amiga`, y el deal de Hikvision
+      // tiene a Miluska como contacto con la acción vencida hace 2 días. **Nadie las
+      // cruzaba.** Y el slot `opportunity` de más arriba lee `opportunity_signals`,
+      // que estaba VACÍA — así que NADA leía la tabla `deals`.
+      let encuentroConDealText: string | undefined
+      try {
+        const [{ data: dealRows }, { data: linkRows }] = await Promise.all([
+          admin.from('deals')
+            .select('id, title, contact_person_id, next_action, next_action_date, stage, amount, currency')
+            .eq('user_id', uid).eq('status', 'open').limit(50),
+          admin.from('person_links')
+            .select('person_a_id, person_b_id, kind').eq('user_id', uid).limit(500),
+        ])
+        const deals = ((dealRows ?? []) as Array<Record<string, unknown>>).map((d) => ({
+          id: String(d.id), title: String(d.title ?? ''),
+          contactPersonId: (d.contact_person_id as string | null) ?? null,
+          nextAction: (d.next_action as string | null) ?? null,
+          nextActionDate: d.next_action_date ? String(d.next_action_date).slice(0, 10) : null,
+          stage: (d.stage as string | null) ?? null,
+          amount: (d.amount as number | null) ?? null,
+          currency: (d.currency as string | null) ?? null,
+        }))
+        if (deals.length > 0) {
+          const links = ((linkRows ?? []) as Array<{ person_a_id: string; person_b_id: string; kind: string | null }>)
+            .map((l) => ({ personAId: l.person_a_id, personBId: l.person_b_id, kind: l.kind }))
+          // Nombres de todos los involucrados: el del contacto y el del titular del
+          // evento (el texto necesita los dos para explicar el vínculo).
+          const ids = [...new Set([
+            ...deals.map((d) => d.contactPersonId).filter(Boolean) as string[],
+            ...(evRowsParaCrm ?? []).map((e) => e.person_id).filter(Boolean) as string[],
+          ])]
+          const nombrePorId = new Map<string, string>()
+          if (ids.length > 0) {
+            const { data: ppl } = await admin.from('people').select('id, name').eq('user_id', uid).in('id', ids)
+            for (const p of (ppl ?? []) as Array<{ id: string; name: string }>) nombrePorId.set(p.id, p.name)
+          }
+          const eventosLite = (evRowsParaCrm ?? [])
+            .filter((e) => e.title && e.event_date)
+            .map((e) => ({ title: e.title as string, date: String(e.event_date).slice(0, 10), personId: e.person_id }))
+          encuentroConDealText = encuentroConDealLine(
+            encuentrosConDeal(eventosLite, deals, links, nombrePorId, today), today,
+          ) ?? undefined
+        }
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'encuentroConDeal', user: uid.slice(0, 8) })
       }
 
       // NUDGE DE OBJETIVO: norte estancado o meta en riesgo. SIR ya lo computa
@@ -1100,7 +1160,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla
