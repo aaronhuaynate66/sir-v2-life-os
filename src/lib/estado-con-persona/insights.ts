@@ -85,6 +85,17 @@ function deriveLabel(input: {
   // Tensión: hay overdue O tono muy bajo.
   if (input.overdueCount > 0) return 'en_tension'
   if (input.recentAvg != null && input.recentAvg <= 2.3) return 'en_tension'
+  // CAÍDA, no solo nivel bajo. El umbral absoluto de 2.3 es frágil y se demostró en
+  // vivo: el 31-jul-2026 Diana venía de 3.67 y cayó a **2.33** — `toneDelta` −1.33,
+  // un desplome de más de un punto entero — y el label seguía en `estable` porque
+  // fallaba por **0.03**. Aaron ese mismo día: *"por qué no tengo ninguna alerta de
+  // cómo viene mi relación con Diana"*. El delta ya se calculaba y no se usaba.
+  //
+  // Se pide caída fuerte Y que el nivel reciente no sea alto: un 5 → 4 no es tensión
+  // (sigue siendo buen tono), pero un 3.7 → 2.3 sí. Sin la segunda condición, una
+  // relación excelente que baja un punto empezaría a dar alarmas.
+  if (input.toneDelta != null && input.toneDelta <= -1
+    && input.recentAvg != null && input.recentAvg <= 3) return 'en_tension'
   // Distante: mucho tiempo sin contacto Y sin momentos abiertos que fuercen encuentro.
   if (input.daysSinceLast != null && input.daysSinceLast >= 21 && input.openMomentsCount === 0) return 'distante'
   // Cerca: tono alto + delta positivo o estable.

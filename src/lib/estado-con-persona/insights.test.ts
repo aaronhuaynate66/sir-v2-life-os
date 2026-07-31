@@ -146,3 +146,41 @@ describe('buildEstadoInsights', () => {
     expect(r.latestMemoryTitle).toBe('Le gusta el helado')
   })
 })
+
+describe('en_tension por CAÍDA, no solo por nivel bajo', () => {
+  // Caso real medido el 31-jul-2026: Diana venía de 3.67 y cayó a 2.33 (toneDelta
+  // -1.33). El umbral absoluto de 2.3 fallaba por 0.03 y el label quedaba 'estable'
+  // el mismo día que Aaron preguntó por qué SIR no le avisaba nada.
+  const log = (value: number, loggedAt: string) => ({
+    id: `l-${loggedAt}-${value}`, userId: 'u1', personId: 'p1',
+    kind: 'interaction' as const, value, note: null, loggedAt, createdAt: loggedAt,
+  })
+  const base = { moments: [], personCycles: [], memories: [], now: new Date('2026-07-31T20:00:00Z') }
+
+  it('el caso de Diana: 3.67 → 2.33 ahora es en_tension (fallaba por 0.03)', () => {
+    const out = buildEstadoInsights({
+      ...base,
+      personLogs: [
+        log(3, '2026-07-31T16:30:00Z'), log(2, '2026-07-30T22:30:00Z'), log(2, '2026-07-29T12:45:00Z'),
+        log(3, '2026-07-27T23:00:00Z'), log(4, '2026-07-07T01:13:00Z'), log(4, '2026-07-07T00:59:00Z'),
+      ],
+      lastContactAt: '2026-07-31T16:27:00Z',
+    })
+    expect(out.recentAvg).toBeCloseTo(2.3, 1)
+    expect(out.toneDelta).toBeLessThanOrEqual(-1)
+    expect(out.overallLabel).toBe('en_tension')
+  })
+
+  it('una relación excelente que baja un punto NO es tensión (5 → 4 sigue siendo buen tono)', () => {
+    const out = buildEstadoInsights({
+      ...base,
+      personLogs: [
+        log(4, '2026-07-31T10:00:00Z'), log(4, '2026-07-30T10:00:00Z'), log(4, '2026-07-29T10:00:00Z'),
+        log(5, '2026-07-20T10:00:00Z'), log(5, '2026-07-19T10:00:00Z'), log(5, '2026-07-18T10:00:00Z'),
+      ],
+      lastContactAt: '2026-07-31T10:00:00Z',
+    })
+    expect(out.toneDelta).toBeLessThanOrEqual(-1)
+    expect(out.overallLabel).not.toBe('en_tension')
+  })
+})
