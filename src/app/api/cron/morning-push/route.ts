@@ -354,7 +354,7 @@ export async function GET(req: NextRequest) {
       // aplicada al propio detector: no concluir desde una vista vacía.)
       let readerSilenceText: string | undefined
       try {
-        const [{ data: hbRows }, { data: lastMsg }, { data: lastIg }] = await Promise.all([
+        const [{ data: hbRows }, { data: lastMsg }, { data: lastIg }, { data: lastPerfil }, { data: lastSeguidor }] = await Promise.all([
           admin.from('reader_heartbeats')
             .select('channel, last_beat_at, status, last_data_at')
             .eq('user_id', uid).limit(20),
@@ -365,15 +365,45 @@ export async function GET(req: NextRequest) {
           admin.from('unmatched_social_activity').select('observed_at')
             .eq('user_id', uid).eq('platform', 'instagram')
             .order('observed_at', { ascending: false }).limit(1),
+          // `unmatched_social_activity` es una BANDEJA: sus filas se BORRAN al
+          // resolver la cuenta. Apoyar la frescura de Instagram solo en ella la
+          // hacía depender de que quedaran cuentas SIN resolver — y el brief
+          // nocturno le pide a Aaron resolverlas (30 por noche). O sea: mientras
+          // más hacía lo que SIR le pedía, más ciego quedaba este detector, y al
+          // vaciar la bandeja habría dicho "Instagram nunca trajo nada" con 11
+          // perfiles y 17 seguidores ahí al lado. Estas dos tablas SOBREVIVEN a
+          // la resolución, así que son la señal honesta.
+          admin.from('social_profiles').select('captured_at')
+            .eq('user_id', uid).eq('platform', 'instagram')
+            .order('captured_at', { ascending: false }).limit(1),
+          admin.from('social_page_followers').select('observed_at')
+            .eq('user_id', uid).eq('source', 'instagram')
+            .order('observed_at', { ascending: false }).limit(1),
         ])
         const hbs = (hbRows ?? []) as Array<{ channel: string; last_beat_at: string | null; status: string | null; last_data_at: string | null }>
         // Última data REAL por canal, que es la verdad de campo. `last_data_at`
         // de la tabla se usa si está, pero no se depende de él: la migración 0175
         // dice que "lo actualiza el endpoint de ingesta" y hasta hoy nadie lo
         // escribía (este PR lo arregla; las filas viejas siguen en null).
+        // De varias fuentes, la MÁS RECIENTE: cada una ve un pedazo distinto de lo
+        // que trajo el canal, y quedarse con la más vieja subdiagnosticaría.
+        const masReciente = (...isos: Array<string | null | undefined>): string | null => {
+          let mejor: string | null = null
+          for (const iso of isos) {
+            if (!iso) continue
+            const t = Date.parse(iso)
+            if (!Number.isFinite(t)) continue
+            if (mejor === null || t > Date.parse(mejor)) mejor = iso
+          }
+          return mejor
+        }
         const dataPorCanal: Record<string, string | null> = {
           whatsapp: ((lastMsg ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null,
-          instagram: ((lastIg ?? []) as Array<{ observed_at: string | null }>)[0]?.observed_at ?? null,
+          instagram: masReciente(
+            ((lastIg ?? []) as Array<{ observed_at: string | null }>)[0]?.observed_at,
+            ((lastPerfil ?? []) as Array<{ captured_at: string | null }>)[0]?.captured_at,
+            ((lastSeguidor ?? []) as Array<{ observed_at: string | null }>)[0]?.observed_at,
+          ),
         }
         // Canales a diagnosticar = los que latieron ∪ los que trajeron datos.
         const canales = new Set<string>(hbs.map((h) => h.channel))

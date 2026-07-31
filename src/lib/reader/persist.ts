@@ -11,6 +11,7 @@ import { planIngest, type ReaderBatch } from './ingest'
 import { namesLooselyMatch } from '@/lib/people/nameMatch'
 import { resolvePersonId, type PersonMatchRow } from '@/lib/people/emailMatch'
 import { appendChatMessages, limaWallClock } from '@/lib/chat-messages/append'
+import { stampChannelData } from './stampChannelData'
 
 const HASH_WINDOW = 400
 
@@ -108,17 +109,12 @@ export async function ingestReaderBatch(client: SupabaseClient, userId: string, 
   // La migración 0175 la declaró diciendo "la actualiza el endpoint de ingesta" y
   // hasta el 30-jul-2026 NADIE la escribía: el único lugar del repo que la
   // mencionaba era el cron que la LEE, así que llegaba siempre en null y el
-  // diagnóstico se quedaba con media señal. Acá se cierra ese contrato.
+  // diagnóstico se quedaba con media señal.
   //
-  // Es un UPDATE, no un upsert: si la fila no existe todavía (extensión sin
-  // latido) no hay que inventarla — una fila con latido nulo haría creer que el
-  // canal reportó alguna vez. Best-effort: nunca puede tumbar una ingesta que ya
-  // guardó los mensajes.
-  try {
-    await client.from('reader_heartbeats')
-      .update({ last_data_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq('user_id', userId).eq('channel', batch.platform)
-  } catch { /* best-effort */ }
+  // El sello vive en `stampChannelData` porque este camino (MENSAJES) no es el
+  // único: `/api/social/ingest` tampoco lo escribía y por eso Instagram quedó con
+  // `last_data_at` en null teniendo data real. Ver ese archivo.
+  await stampChannelData(client, userId, batch.platform)
 
   return { ingested: plan.fresh.length, observationId: obsId, personId, personMatched: !!personId }
 }
