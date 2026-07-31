@@ -89,7 +89,12 @@ export async function GET(req: NextRequest) {
         .eq('user_id', person.user_id).eq('person_id', person.id).order('occurred_on', { ascending: false }).limit(15),
       supabase.from('person_cycles').select('id, person_id, date, phase, confidence, source, note, created_at')
         .eq('user_id', person.user_id).eq('person_id', person.id).limit(30),
-      supabase.from('memories').select('id, person_id, title, content, type, timestamp, tags, importance, is_private')
+      // `occurred_at` es la columna REAL; `Memory.timestamp` es solo el alias TS
+      // (lo dice `lib/memories/extract.ts`). Pedir `timestamp` devolvía 400 y
+      // PostgREST **no lanza**: el error se iba a `.error`, `.data` quedaba en null
+      // y el cron seguía con `memories = []` para TODAS las personas, sin un log.
+      // Diana tiene 55 memorias y el motor veía cero. Trampa de #947 otra vez.
+      supabase.from('memories').select('id, person_id, title, content, type, occurred_at, tags, importance, is_private')
         .eq('user_id', person.user_id).eq('person_id', person.id).eq('is_private', false).limit(10),
       // Contacto REAL más reciente del sustrato: sin esto, daysSinceLast salía del
       // último import y marcaba "distante" falso a gente con la que se acaba de
@@ -103,7 +108,11 @@ export async function GET(req: NextRequest) {
       .map((r) => ({ id: r.id, userId: r.user_id, personId: r.person_id, kind: r.kind as PersonLog['kind'], value: r.value, note: r.note, loggedAt: r.logged_at, createdAt: r.created_at }))
     const moments = ((momentsRes.data ?? []) as Parameters<typeof mapMomentRow>[0][]).map(mapMomentRow)
     const personCycles = ((cyclesRes.data ?? []) as Parameters<typeof mapPersonCycleRow>[0][]).map(mapPersonCycleRow)
-    const memories = ((memoriesRes.data ?? []) as unknown as Memory[])
+    // El cast crudo tampoco alcanzaba: `buildEstadoInsights` lee `m.timestamp`, y
+    // la fila trae `occurred_at` → `new Date(undefined)` = NaN y la memoria se
+    // descartaba igual. Hay que MAPEAR, no castear (mismo mapeo que `memories/fetch.ts`).
+    const memories = ((memoriesRes.data ?? []) as Array<Record<string, unknown>>)
+      .map((row) => ({ ...row, timestamp: row.occurred_at as string })) as unknown as Memory[]
 
     const lastContactAt = ((chatRes.data ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null
     const insights = buildEstadoInsights({ personLogs, moments, personCycles, memories, now: new Date(), lastContactAt })
