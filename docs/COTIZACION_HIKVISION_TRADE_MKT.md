@@ -1,9 +1,9 @@
 # Cotización — Portal de Trade Marketing + Web multiinformativa · Hikvision Perú
 
-> **Para Aaron, antes de mandarla.** Esto es un borrador listo para enviar, armado con
-> lo que hay en la base al 30-jul-2026. Lo que **necesita tu decisión** está marcado
-> con `⟨…⟩` — son tres cosas: el precio final, tu plazo real, y si incluyes o no el
-> hosting. Todo lo demás sale de la conversación con Miluska.
+> **LISTA PARA ENVIAR.** Aaron confirmó los tres puntos abiertos el 30-jul-2026:
+> **S/ 6,500** el alcance A, **3 semanas** de plazo, **hosting incluido**. Lo único que
+> queda por llenar es su teléfono y el número de cotización, que no están en la base.
+> Todo lo demás sale de la conversación real con Miluska (mensajes del 27-jul).
 >
 > **De dónde sale cada cosa** (para que no haya nada inventado):
 > - El pedido: `deals.next_action` → *"Cotizarle la web tipo hikvision-ec.com/m/Promocion
@@ -28,7 +28,7 @@
 > material listo para vender, y tú publicas en el día sin depender de nadie.
 >
 > Te paso 3 alcances para que elijas por presupuesto. El primero se puede tener
-> andando en ⟨X⟩ semanas. ¿Lo vemos ⟨día⟩?
+> andando en 3 semanas. ¿Lo vemos mañana o el lunes, como te quede mejor?
 
 ---
 
@@ -72,10 +72,9 @@ saber qué está pasando en el canal.
 
 ## 3. Los tres alcances
 
-> Precios en **soles, sin IGV**. ⟨Aaron: los montos de abajo son un punto de partida
-> calculado por esfuerzo, no una tarifa tuya confirmada. Ajústalos antes de mandar.⟩
+> Precios en **soles, sin IGV**. Confirmados por Aaron el 30-jul-2026.
 
-### A · Portal base — ⟨S/ 6,500⟩ · ⟨3⟩ semanas
+### A · Portal base — S/ 6,500 · 3 semanas
 
 Lo mínimo que ya sirve y se puede mantener solo.
 
@@ -86,7 +85,7 @@ Lo mínimo que ya sirve y se puede mantener solo.
 - Responsive, optimizado para celular
 - Capacitación de 1 hora al equipo que va a publicar
 
-### B · Portal de canal — ⟨S/ 11,500⟩ · ⟨5⟩ semanas
+### B · Portal de canal — S/ 11,500 · 5 semanas
 
 Todo lo de A, más lo que convierte el portal en información para Hikvision.
 
@@ -96,11 +95,11 @@ Todo lo de A, más lo que convierte el portal en información para Hikvision.
 - **Stock por zona**, si hay de dónde alimentarlo
 - Formulario de pedido que llega a tu equipo comercial
 
-### C · Portal + operación de contenido — ⟨S/ 11,500 + S/ 2,200/mes⟩
+### C · Portal + operación de contenido — S/ 11,500 + S/ 2,200/mes
 
 Todo lo de B, y yo me encargo de que el portal esté vivo.
 
-- Carga y actualización del contenido (hasta ⟨3⟩ publicaciones por semana)
+- Carga y actualización del contenido (hasta 3 publicaciones por semana)
 - Piezas para el canal (imágenes y textos listos para WhatsApp)
 - Reporte mensual: qué mira el canal, qué se baja, qué promo funcionó
 - Soporte y ajustes menores incluidos
@@ -116,7 +115,7 @@ Corto y concreto, porque de esto depende el plazo:
 1. Catálogo actual en Excel (SKU, línea, precio de canal, foto si existe)
 2. Listado de puntos del canal con un contacto por punto
 3. Logo y manual de marca, o autorización para usar el de Hikvision LATAM
-4. ⟨Definir hosting: lo pongo yo dentro del precio, o va en su infraestructura⟩
+4. Hosting y dominio: **incluidos** en el precio el primer año (los pongo yo). Solo necesito que apunten el dominio si ya tienen uno.
 
 ## 5. Condiciones
 
@@ -129,5 +128,5 @@ Corto y concreto, porque de esto depende el plazo:
 
 ---
 
-**Aaron Huaynate** · ⟨teléfono⟩ · ⟨correo⟩
-Cotización ⟨N°⟩ · 30 de julio de 2026
+**Aaron Huaynate** · ⟨tu teléfono⟩ · ahuaynate@grupohng.com
+Cotización ⟨N°⟩ (poner el consecutivo) · 30 de julio de 2026
