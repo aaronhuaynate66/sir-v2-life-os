@@ -13,6 +13,8 @@ import { buildDailySignals } from '@/lib/forecast-conductual/dailySignals'
 import { fetchChatMessages } from '@/lib/chat-messages/read'
 import { runForecast } from '@/lib/forecast-conductual/engine'
 import { summarizeAffection } from '@/lib/forecast-conductual/affectionSummary'
+import { planTopUpSignals, necesitaTopUp } from '@/lib/forecast-conductual/topUpSignals'
+import { limaDayKey } from '@/lib/dates/limaDay'
 import { recalibrate, modelWeights, type FeedbackLabel } from '@/lib/forecast-conductual/recalibrate'
 import type { ChatMessage, CycleAnchor, DailySignal } from '@/lib/forecast-conductual/types'
 
@@ -46,6 +48,30 @@ export async function GET(req: NextRequest) {
 
 interface RawMsg { iso?: unknown; author?: unknown; content?: unknown }
 
+/**
+ * Día del último mensaje de la persona en el sustrato, o null.
+ *
+ * Barato a propósito (una fila): es el atajo que decide si vale la pena bajar 50k
+ * mensajes para poner la serie al día. `chat_messages.sent_at` guarda hora de PARED
+ * de Lima (documentado en `chat-messages/append`), así que cortar a 10 caracteres ya
+ * da el día en Lima — no hay que convertir nada.
+ */
+async function lastMessageDay(
+  supabase: Awaited<ReturnType<typeof createClient>>, userId: string, personId: string,
+): Promise<string | null> {
+  try {
+    const { data } = await supabase
+      .from('chat_messages').select('sent_at')
+      .eq('user_id', userId).eq('person_id', personId)
+      .not('sent_at', 'is', null)
+      .order('sent_at', { ascending: false }).limit(1)
+    const iso = ((data ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at
+    return typeof iso === 'string' && iso.length >= 10 ? iso.slice(0, 10) : null
+  } catch {
+    return null // fail-soft: sin el atajo, el top-up simplemente no se dispara
+  }
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: auth, error: authErr } = await supabase.auth.getUser()
@@ -78,27 +104,55 @@ export async function POST(req: NextRequest) {
         affection: Number(r.affection) || 0, positivityRatio: r.positivity_ratio == null ? 1 : Number(r.positivity_ratio) || 1,
       }))
 
-      // BACKFILL auto-sanable del afecto (IAE): las señales guardadas ANTES de que
-      // existiera la columna `affection` la tienen en null → el resumen saldría en
-      // 0. Si TODAS vienen sin afecto, lo recomputamos del sustrato (léxico puro,
-      // sin LLM) por día, lo mergeamos y lo persistimos (solo esas columnas) — una
-      // sola vez por persona; en adelante ya viene poblado.
+      // ═══ TOP-UP: la serie guardada NO es la verdad, es un caché ═══════════
+      //
+      // Acá había un candado que costó caro. `sigRows.length >= 10` daba las filas
+      // por completas y no se volvía a mirar el sustrato NUNCA. Y como los únicos
+      // que escriben esta tabla son el import manual del export y esta ruta, la
+      // serie de una persona se congelaba pasado el décimo día.
+      //
+      // Medido el 31-jul-2026: Diana con **820 filas y la más nueva del 8-jul**, 23
+      // días congelada, mientras el reader traía mensajes todos los días. El mes
+      // entero del deterioro que Aaron estaba viviendo —el pico de 252 mensajes del
+      // 24-jul, el incidente del 27, la pelea del 30— NO ESTABA MEDIDO. Y el
+      // backfill de afecto de abajo tampoco lo salvaba: solo salta si TODAS las
+      // filas vienen en null, y ella tenía 624 con valor.
+      //
+      // Ahora se pone al día lo que falta (ver `topUpSignals.ts`). El atajo
+      // `necesitaTopUp` evita bajar 50k mensajes cuando ya está al día.
+      const storedDates = (sigRows as { date: string }[]).map((r) => r.date)
+      let ultimoGuardado: string | null = null
+      for (const d of storedDates) if (ultimoGuardado === null || d > ultimoGuardado) ultimoGuardado = d
+      const ultimaActividad = await lastMessageDay(supabase, userId, personId)
+
+      // El backfill del afecto sigue valiendo aparte: las filas de antes de #924 lo
+      // tienen en null aunque su día esté "cubierto", así que el top-up por fecha no
+      // las alcanza.
       const affectionStale = (sigRows as { affection: unknown }[]).every((r) => r.affection == null)
-      if (affectionStale) {
+
+      if (affectionStale || necesitaTopUp(ultimoGuardado, ultimaActividad)) {
         const subRows = await fetchChatMessages(supabase, userId, personId, 50_000)
         const subMessages: ChatMessage[] = subRows
           .filter((r) => typeof r.sent_at === 'string' && r.sent_at.length >= 10)
           .map((r) => ({ at: r.sent_at as string, author: r.sender === 'user' ? 'user' : 'other', text: r.content ?? '', kind: r.is_media ? 'media' : 'text' }))
         if (subMessages.length > 0) {
-          const affByDate = new Map(buildDailySignals(subMessages).map((s) => [s.date, s]))
-          signals = signals.map((s) => {
-            const a = affByDate.get(s.date)
-            return a ? { ...s, affection: a.affection, positivityRatio: a.positivityRatio } : s
+          const { rows: topUp, serie } = planTopUpSignals({
+            userId, personId, messages: subMessages,
+            // Con el afecto viejo en null hay que reescribir TODOS los días, no solo
+            // los que faltan por fecha: pasar `storedDates` vacío fuerza eso.
+            storedDates: affectionStale ? [] : storedDates,
+            hoy: limaDayKey(new Date().toISOString()) ?? new Date().toISOString().slice(0, 10),
+            nowIso: new Date().toISOString(),
           })
-          const upd = signals
-            .filter((s) => affByDate.has(s.date))
-            .map((s) => ({ id: `sig:${personId}:${s.date}`, user_id: userId, person_id: personId, date: s.date, affection: s.affection, positivity_ratio: s.positivityRatio, updated_at: new Date().toISOString() }))
-          if (upd.length > 0) await supabase.from('person_daily_signals').upsert(upd, { onConflict: 'id' })
+          if (topUp.length > 0) await supabase.from('person_daily_signals').upsert(topUp, { onConflict: 'id' })
+          // La serie recién calculada MANDA sobre la guardada en los días que cubre:
+          // es la que acaba de leer el sustrato. Los días que el sustrato no tiene
+          // (importados de un export viejo y ya purgado) se conservan.
+          const frescaPorDia = new Map(serie.map((s) => [s.date, s]))
+          const cubiertos = new Set(signals.map((s) => s.date))
+          signals = signals.map((s) => frescaPorDia.get(s.date) ?? s)
+          for (const s of serie) if (!cubiertos.has(s.date)) signals.push(s)
+          signals.sort((a, b) => a.date.localeCompare(b.date))
         }
       }
     } else {
