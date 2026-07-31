@@ -39,6 +39,8 @@ import {
   selectStrengthMemories,
   extractCandidateNames,
   isHealthQuery,
+  isExamQuery,
+  renderExamsBlock,
   isReminderQuery,
   isDealQuery,
   isTensionQuery,
@@ -848,6 +850,25 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
   // SALUD RECIENTE: valores reales (peso, sueño de anoche, FC/VFC/SpO₂). Distinto de
   // missingDataBlock, que solo dice qué FALTA — este trae los números.
   let healthBlock = ''
+  // EXÁMENES MÉDICOS, en su propio bloque y con su propio gate. Va SIEMPRE que la
+  // pregunta sea de salud o de exámenes: `health_exams` guardaba `summary`,
+  // `findings` y `recommendations` desde la mig 0149 y NADIE los leía — solo se
+  // consumían los patrones de `values` numéricos. La tomografía del 27-jul entró con
+  // 11 recomendaciones (incluida la bandera del hematoma septal, ventana de DÍAS) y
+  // SIR no podía nombrar ninguna ni preguntándoselo directo.
+  let examsBlock = ''
+  if (isHealthQuery(question) || isExamQuery(question)) {
+    try {
+      const { data: exRows } = await supabase
+        .from('health_exams')
+        .select('exam_date, provider, title, summary, findings, values, recommendations')
+        .eq('user_id', userId).order('exam_date', { ascending: false }).limit(20)
+      const exams = ((exRows as Array<Record<string, unknown>>) ?? [])
+        .map((r) => rowToHealthExam(r))
+      examsBlock = renderExamsBlock(exams)
+    } catch { /* sin exámenes → sin bloque */ }
+  }
+
   if (isHealthQuery(question)) {
     try {
       const cutoffISO = new Date(nowDate.getTime() - 30 * 86_400_000).toISOString()
@@ -1153,6 +1174,9 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     (recallBlock ? `\n\n${recallBlock}` : '') +
     (missingDataBlock ? `\n\n${missingDataBlock}` : '') +
     (healthBlock ? `\n\n${healthBlock}` : '') +
+    // Va DESPUÉS de healthBlock: los números del wearable son el "hoy" y el examen
+    // es el contexto de fondo contra el que se leen.
+    (examsBlock ? `\n\n${examsBlock}` : '') +
     (remindersBlock ? `\n\n${remindersBlock}` : '') +
     (dealsBlock ? `\n\n${dealsBlock}` : '') +
     (tensionBlock ? `\n\n${tensionBlock}` : '') +

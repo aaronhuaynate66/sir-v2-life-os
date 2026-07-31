@@ -93,7 +93,7 @@ describe('buildAskContext', () => {
 
 import {
   SIR_ASK_SYSTEM_PROMPT,
-  isHealthQuery, isReminderQuery, isDealQuery, isTensionQuery,
+  isHealthQuery, isReminderQuery, isDealQuery, isTensionQuery, isExamQuery, renderExamsBlock,
   isCircleCycleQuery, isAffectionClimateQuery, isAgendaQuery,
   selectRecentHealth, renderHealthBlock,
   renderRemindersBlock, renderDealsBlock, renderTensionAlertsBlock,
@@ -470,5 +470,67 @@ describe('buildAskContext — pendientes con fecha', () => {
   it('sin pendientes no agrega el bloque', () => {
     expect(buildAskContext({ ...base, pendingTasks: [] })).not.toContain('PENDIENTES CON FECHA')
     expect(buildAskContext(base)).not.toContain('PENDIENTES CON FECHA')
+  })
+})
+
+describe('🩺 isExamQuery + renderExamsBlock', () => {
+  // `health_exams` guardaba summary/findings/recommendations desde la mig 0149 y
+  // NADIE los leía. La tomografía del 27-jul entró con 11 recomendaciones —incluida
+  // la bandera del hematoma septal, ventana de DÍAS— y SIR no podía nombrar ninguna.
+  const TOMO = {
+    examDate: '2026-07-27',
+    provider: 'SANNA Clínica San Borja',
+    title: 'TEM de emergencia — encéfalo + macizo facial',
+    summary: 'Encéfalo normal. Macizo facial sin trazos de fractura desplazados.',
+    findings: [
+      { code: 'J34.3', label: 'Hipertrofia de cornetes derechos' },
+      { code: 'Z01.6', label: 'TC de encéfalo sin hemorragia' },
+    ],
+    values: [
+      { name: 'Mucosa cornetes derechos', value: '7', unit: ' mm', flag: 'high' as const },
+      { name: 'Algo normal', value: '5', flag: 'normal' as const },
+    ],
+    recommendations: ['Descartar hematoma septal con rinoscopio', 'Pedir SCOAT6'],
+  }
+
+  it('reconoce preguntas por exámenes que isHealthQuery NO cubre', () => {
+    expect(isExamQuery('qué dijo mi tomografía?')).toBe(true)
+    expect(isExamQuery('cómo salió mi hemograma')).toBe(true)
+    expect(isExamQuery('mis resultados de laboratorio')).toBe(true)
+    expect(isExamQuery('qué hallazgos tengo')).toBe(true)
+    // Y no se dispara con cualquier cosa.
+    expect(isExamQuery('cómo va Marlab')).toBe(false)
+  })
+
+  it('rinde resumen, hallazgos y recomendaciones — que es lo que no se leía', () => {
+    const b = renderExamsBlock([TOMO])
+    expect(b).toContain('TEM de emergencia')
+    expect(b).toContain('sin trazos de fractura desplazados')
+    expect(b).toContain('J34.3')
+    expect(b).toContain('hematoma septal')
+    expect(b).toContain('SCOAT6')
+  })
+
+  it('trae los valores FUERA de rango y omite los normales (son cientos)', () => {
+    const b = renderExamsBlock([TOMO])
+    expect(b).toContain('Mucosa cornetes derechos')
+    expect(b).not.toContain('Algo normal')
+  })
+
+  it('prohíbe convertirlo en diagnóstico y prohíbe inventar un examen que no está', () => {
+    const b = renderExamsBlock([TOMO])
+    expect(b.toLowerCase()).toContain('nunca los conviertas en diagnóstico')
+    expect(b.toLowerCase()).toContain('no lo tienes cargado')
+  })
+
+  it('los más recientes primero, aunque lleguen desordenados', () => {
+    const viejo = { ...TOMO, examDate: '2026-05-02', title: 'Preocupacional' }
+    const b = renderExamsBlock([viejo, TOMO])
+    expect(b.indexOf('2026-07-27')).toBeLessThan(b.indexOf('2026-05-02'))
+  })
+
+  it("'' cuando no hay exámenes o vienen inválidos", () => {
+    expect(renderExamsBlock([])).toBe('')
+    expect(renderExamsBlock([{ ...TOMO, title: '' }])).toBe('')
   })
 })
