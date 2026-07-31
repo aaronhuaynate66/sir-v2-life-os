@@ -5,7 +5,7 @@
 > tratar CUALQUIER cosa de acá como pendiente, verifícala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 30/07/2026 (agente automático de reconciliación — 3 ítems cerrados, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-07-30" abajo; antes consolidaba los pases 25, 26, 27 y 28/07).
+> **Última actualización:** 31/07/2026 (agente automático de reconciliación — 1 ítem cerrado + 2 notas de blocker actualizadas, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-07-31" abajo; antes consolidaba los pases 25, 26, 27, 28 y 30/07).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entra acá cuando quieras decidir qué priorizar en la próxima sesión.
@@ -42,13 +42,13 @@ Ordenado por qué BLOQUEA cada cosa. Artefacto visual: https://claude.ai/code/ar
 
   **Cómo re-medir si vuelve la sensación** (30 s, sin harness): contar el largo de
   `sir_messages` con `role='sir'` agrupado por día. Si la mediana sube de ~500, volvió.
-- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — **sigue pendiente** (re-verificado en los 4 pases y otra vez el 28/07): `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` y no hay rastro de few-shot dinámico. **Bloqueado por combustible, no por código:** `chat_feedback` = **0 filas** al 28/07 — Aaron nunca calificó una respuesta. Construir el mecanismo hoy = mecanismo vacío.
+- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — **sigue pendiente** (re-verificado 31/07): `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` y no hay rastro de few-shot dinámico. **El motivo del bloqueo cambió (31/07):** ya NO es que falte dónde calificar — `83947f7` (#1030, 30/07) agregó botones 👍/👎 reales a Telegram (no existían) y los hizo visibles en la web (eran íconos fantasma al 50% opacidad). El bloqueo de código/UI está resuelto. **Lo que sigue sin verificarse (no por grep, requiere consulta en vivo a `chat_feedback`):** si Aaron ya generó filas desde que existen los botones. Re-chequear la tabla antes de dar esto por destrabado.
 - ~~**[media] Que `askSir` VEA los sub-pasos de los objetivos**~~ ✅ **HECHO (reconciliado 30/07/2026).** `src/lib/sir/askSir.ts` líneas 679-762: ahora lee `objective_steps` (línea 692, hasta 1000 filas), computa `advanceByGoal`/`nextStepByGoal` (`computeGoalAdvance`, `nextPendingLeaf`) y arma `goalsCtx` con `progress`/`stepsDone`/`stepsTotal`/`overdue`/`nextStep`/`nextStepDue`/`nextStepDetail` que sí llega al prompt del modelo. Comentario in situ del propio código: "hasta el 28-jul el chat era ciego a `objective_steps` — 151 pasos en la base y no podía responder '¿cómo voy con Boticas?'". Fail-soft si la lectura falla. Sigue sin leer `goals.milestones` (JSON) — ese sub-punto de la consolidación de estructuras (más abajo) sigue abierto.
 
 **🟡 Necesita input/decisión de Aaron:**
-- **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` O usar SIR con 👍/👎+corrección → `npm run eval:sir --from-feedback 20`. Mismo combustible que el slice 4, y sigue en 0.
-- **[alta] Consolidar las 3 estructuras de sub-pasos** — nuevo (28/07). Los sub-pasos de un objetivo viven en TRES lugares: `goals.milestones` (JSON), `objective_steps` (151 filas, la viva) y `objective_blockers` (11 filas, todas del Mundial). El Mundial tiene los mismos ítems escritos en los tres. Consolidar toca data de Aaron → requiere su OK.
-- **[media] Purgar los planes de junio** — nuevo (28/07). De 151 pasos, **150 pendientes y 50 vencidos**, casi todos de planes cargados el 2-3/06 que nunca se tocaron. No es bug de cómputo: el plan es papel muerto. Decidir qué sigue vivo es de Aaron.
+- **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` (**8 líneas**, verificado 31/07 — sigue chico) O usar SIR con 👍/👎+corrección → `npm run eval:sir --from-feedback 20` (script existe, `scripts/eval-sir.ts`). Mismo combustible que el slice 4: el bloqueo de UI ya no existe (`83947f7`, ver slice 4 arriba), pero sigue sin verificarse si ya hay filas en `chat_feedback` para alimentar el `--from-feedback`.
+- **[alta] Consolidar las 3 estructuras de sub-pasos** — nuevo (28/07). Los sub-pasos de un objetivo viven en TRES lugares: `goals.milestones` (JSON), `objective_steps` (la viva) y `objective_blockers` (todas del Mundial). El Mundial tiene los mismos ítems escritos en los tres. Consolidar toca data de Aaron → requiere su OK. **Sigue sin decidirse** (verificado 31/07: las 3 estructuras siguen separadas en el código, sin trabajo de unificación).
+- ~~**[media] Purgar los planes de junio**~~ ✅ **HECHO (30/07/2026).** Aaron decidió y se ejecutó: commit `b11b035` (#1031) — `scripts/descartar-pasos.mjs` purgó completos los planes "Subir ingresos a S/ 15,000/mes" (20 pasos) y "Cliente recurrente de S/ 5,000/mes" (13 pasos) a `descartado` (mig 0178, reversible); el plan del Mundial (vivo) se re-fechó en 2 pasos con `scripts/refechar-pasos.mjs` nuevo, dry-run por default. Resultado medido en el propio commit: `objective_steps` 130→95 pendientes, vencidos 38→17.
 - ~~**[media] Activar `looksLikeOrg`**~~ ✅ **HECHO (reconciliado 30/07/2026).** Nuevo `src/lib/social-reader/orgVerdict.ts` (`clasificarCuenta`/`repartirLote`, PURO, con tests en `orgVerdict.test.ts`) junta `looksLikeOrg` + el nombre escrito por Aaron + el léxico del handle en un solo veredicto, y decide "sugiere, no descarta": confianza 'alta' se propone en lote, 'media' se pregunta de a una — nunca auto-clasifica en silencio. Cableado en vivo en `src/app/api/cron/evening-push/route.ts` (líneas 156-171): trae `social_profiles`, llama `repartirLote` y arma el batch de Telegram. Comentario in situ fecha esto el 29/07/2026 ("`looksLikeOrg` estaba escrita y testeada desde el 28-jul y NADIE la llamaba — quedó a medias dos veces").
 - ~~**[media] Log de entrenamiento por ejercicio**~~ ✅ **HECHO (reconciliado 30/07/2026).** Migración `0174_training_exercises.sql` (tabla `training_exercises`: `name`/`name_key`/`sets` jsonb `[{reps,kg}]`/`unit`/`bodyweight`, RLS, índice de progresión por `user_id, name_key`). Parser determinístico `src/lib/entrenamiento/ejercicios.ts` (`parseExerciseLine`, regex — explícitamente NO vía LLM, "un dato calculado que se persiste es un dato que se desincroniza") entiende "banca 3x12 con 80", "3 series de 10 con 20", etc. Cableado en `src/lib/sir/executeAction.ts` líneas 427-446: inserta en `training_exercises` y calcula histórico de progresión por `name_key` contra `training_sessions.date`.
 
@@ -156,6 +156,24 @@ memoria, que solo mira el texto de la nota.
 La recomendación es la **2** (y la 1 para lo que quede): sacar 154 filas de ruido de
 1,295 mejora el recall más que cualquier re-ranking — que es justo lo que la medición
 de arriba mostró que NO se puede mejorar tocando pesos.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-07-31
+
+Pase de mantenimiento contra el código real (agente automático), sobre la sección "PENDIENTES ACTUALES" de arriba. Ventana revisada: los 19 commits entre `9d77dee` (reconciliación 07-30) y `8cb126c` (último commit al momento de este pase).
+
+- ✅ **Purgar los planes de junio** — YA ESTÁ HECHO. El ítem decía "decidir qué sigue vivo es de Aaron" como si siguiera abierto; Aaron ya decidió y se ejecutó el mismo 30/07 (`b11b035`, #1031): purgó los 2 planes de ingresos completos y re-fechó 2 pasos del Mundial. Corregido arriba con el resultado medido (130→95 pendientes, 38→17 vencidos).
+- 🟡 **Slice 4 / Golden-set del harness** — el diagnóstico de "bloqueado por combustible" seguía citando una causa que ya no es cierta: no había botones 👍/👎 en Telegram y en la web eran invisibles. Eso se arregló el mismo 30/07 (`83947f7`, #1030). El bloqueo de UI/código está resuelto; lo que **no se pudo re-verificar por grep** es si ya hay filas nuevas en `chat_feedback` desde que los botones existen — eso requiere consultar la tabla en vivo, fuera del alcance de este pase (solo código/grep). Dejado con nota, no marcado hecho.
+
+**Verificado y quedó IGUAL (sin drift):**
+- **`sortLearnings`** (`src/lib/learnings/recall.ts:48`) sigue con pesos fijos por `kind` — sin few-shot dinámico.
+- **Grafo /red → sigma.js** — sigue sin rastro: no hay dependencia `sigma` en `package.json`.
+- **Memorias basura (`callLabel`)** — `src/lib/capture/whatsapp/export/calls.ts:50-54` sigue armando el string sin fecha; los 3 call-sites (`runImport.ts`, `AgregarCapturaPanel.tsx`) le pegan la fecha por fuera, pero el texto derivado a memoria sigue siendo el mismo por día. Sigue pendiente la decisión de Aaron (incluir fecha al derivar vs. no derivar llamadas a memoria semántica).
+- **Consolidar las 3 estructuras de sub-pasos** (`goals.milestones`/`objective_steps`/`objective_blockers`) — siguen separadas en el código, sin trabajo de unificación. Sigue requiriendo el OK de Aaron.
+- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte".
+
+**No re-verificado este pase** (requieren decisión de Aaron o dato en vivo, no verificable por grep): consolidación de estructuras, lo bloqueado por data/otra PC, si `chat_feedback` ya tiene filas.
 
 ---
 
