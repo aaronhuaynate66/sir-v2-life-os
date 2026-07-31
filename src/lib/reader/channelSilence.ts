@@ -99,8 +99,15 @@ export function diagnoseChannel(c: ChannelState, now: Date = new Date()): Channe
   const dd = daysSince(c.lastDataAt, now)
   const base = { channel: c.channel, hoursSinceHeartbeat: hb, daysSinceData: dd }
 
-  // Nunca latió ni trajo nada → no está instalado/activado; no es una caída.
-  if (hb === null && dd === null) return { ...base, kind: 'nunca_visto' }
+  // NUNCA TRAJO NADA → no está en uso; no es una caída.
+  //
+  // Antes esta rama exigía `hb === null` además, y por eso LinkedIn y Outlook —que
+  // Aaron no usa— salían como 'caido' con el texto "dejó de reportar, probablemente
+  // la pestaña está cerrada": tienen fila de latido (se creó cuando alguna vez hubo
+  // una pestaña abierta) pero jamás trajeron un dato. Decirle que "dejó de reportar"
+  // algo que nunca funcionó es ruido con forma de alarma. Lo que define si un canal
+  // está EN USO es si alguna vez produjo, no si alguna vez latió.
+  if (dd === null) return { ...base, kind: 'nunca_visto' }
 
   // DATA FRESCA GANA SOBRE LA FALTA DE LATIDO. Va ANTES de la rama de 'caido'
   // porque si no, un canal que acaba de traer datos se declara muerto — pasó de
@@ -163,8 +170,14 @@ export function channelSilenceLine(verdicts: ChannelVerdict[], now: Date = new D
   // Se dice que TRAE DATOS antes de mencionar el problema: es una versión vieja,
   // no una caída, y confundirlas es lo que hace que un aviso pierda credibilidad.
   if (sinLatido.length) {
+    // NO SE AFIRMA LA CAUSA. La versión anterior decía "la extensión de esa PC es una
+    // versión vieja; hay que recargarla", y eso se volvió FALSO en cuanto la extensión
+    // empezó a mandar su versión (v0.9.0): un latido viejo con datos frescos también
+    // pasa cuando esa PC estuvo apagada un rato, que es lo normal de madrugada. Se
+    // describe lo que se ve y se ofrecen las dos causas, sin elegir una.
     const nombres = lista(sinLatido.map((v) => label(v.channel)))
-    partes.push(`${nombres} ${sinLatido.length > 1 ? 'traen' : 'trae'} datos pero no ${sinLatido.length > 1 ? 'reportan' : 'reporta'} latido — la extensión de esa PC es una versión vieja; hay que recargarla para que se pueda avisar si se cae`)
+    const pl = sinLatido.length > 1
+    partes.push(`${nombres} ${pl ? 'traen' : 'trae'} datos pero ahora mismo no ${pl ? 'reportan' : 'reporta'} latido — puede ser que esa PC esté apagada, o que la extensión no esté corriendo`)
   }
   // Se dice qué SÍ funciona: sin eso parece que "el reader está roto" cuando lo
   // que hay es un canal caído entre varios vivos — que fue justo la confusión.
