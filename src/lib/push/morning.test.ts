@@ -406,3 +406,27 @@ describe('💬 desplome de afecto en el brief', () => {
     expect(buildMorningPush({}).signals.some((s) => s.slot === 'afectoCaida')).toBe(false)
   })
 })
+
+describe('🩺 examen reciente en el brief', () => {
+  const LINEA = '🩺 Tu "TEM de emergencia — encéfalo + macizo facial" de hace 4 días tiene 11 recomendaciones (pregúntame por las otras 10). La primera: descartar hematoma septal'
+
+  it('llega al push, en la sección de hoy', () => {
+    const p = buildMorningPush({ examenReciente: LINEA })
+    const s = p.signals.find((x) => x.slot === 'examenReciente')
+    expect(s).toBeDefined()
+    expect(s!.section).toBe('hoy')
+  })
+
+  it('va ANTES de healthWatch: sus recomendaciones pueden tener ventana de días', () => {
+    const p = buildMorningPush({
+      examenReciente: LINEA,
+      healthWatch: 'Chequeo · Hematocrito viene bajando 3 exámenes seguidos',
+    })
+    const slots = p.signals.map((s) => s.slot)
+    expect(slots.indexOf('examenReciente')).toBeLessThan(slots.indexOf('healthWatch'))
+  })
+
+  it('sin examen reciente no agrega nada', () => {
+    expect(buildMorningPush({}).signals.some((s) => s.slot === 'examenReciente')).toBe(false)
+  })
+})

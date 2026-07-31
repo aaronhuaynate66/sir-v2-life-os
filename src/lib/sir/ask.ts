@@ -510,6 +510,90 @@ export function isHealthQuery(question: string): boolean {
   return matchesAny(question, HEALTH_KW)
 }
 
+// ─── EXÁMENES MÉDICOS ────────────────────────────────────────────────────────
+//
+// Gate propio y no una extensión de HEALTH_KW porque son preguntas distintas:
+// "¿cómo dormí?" mira el wearable, "¿qué dijo mi tomografía?" mira `health_exams`.
+// Sin este gate SIR no podía contestar por sus exámenes ni queriendo.
+const EXAM_KW = [
+  'examen', 'examenes', 'exámenes', 'chequeo', 'chequeos', 'analisis', 'análisis',
+  'laboratorio', 'resultado', 'resultados', 'informe', 'tomografia', 'tomografía',
+  'radiografia', 'radiografía', 'ecografia', 'ecografía', 'resonancia', 'placa',
+  'hemograma', 'perfil lipidico', 'perfil lipídico', 'colesterol', 'triglicerid',
+  'hemoglobina', 'hematocrito', 'glucosa', 'transaminasa', 'higado', 'hígado',
+  'ferritina', 'creatinina', 'orina', 'biopsia', 'radiologo', 'radiólogo',
+  'diagnostico', 'diagnóstico', 'hallazgo', 'hallazgos', 'cie10', 'cie-10',
+] as const
+/** ¿La pregunta es sobre sus exámenes médicos / resultados / informes? */
+export function isExamQuery(question: string): boolean {
+  return matchesAny(question, EXAM_KW)
+}
+
+export interface ExamForBlock {
+  examDate: string
+  provider: string | null
+  title: string
+  summary: string | null
+  findings: Array<{ code: string; label: string }>
+  values: Array<{ name: string; value: string; unit?: string; range?: string; flag: 'high' | 'low' | 'normal' }>
+  recommendations: string[]
+}
+
+/** Cuántos exámenes entran al prompt (los más recientes). */
+const EXAMS_EN_PROMPT = 4
+/** Tope del resumen por examen. Un informe entero se come el contexto. */
+const RESUMEN_MAX = 900
+
+/**
+ * Bloque "== HISTORIAL DE EXÁMENES ==". '' si no hay. PURO.
+ *
+ * ═══ POR QUÉ EXISTE ══════════════════════════════════════════════════════════
+ *
+ * `health_exams` guardaba `summary`, `findings` (CIE-10) y `recommendations` desde
+ * la mig 0149 y **NADIE los leía**: ni el brief ni SIR. Lo único que se consumía
+ * eran los patrones derivados de `values` NUMÉRICOS, y en el brief solo los lunes.
+ *
+ * Medido el 31-jul-2026: la tomografía de emergencia del 27-jul entró con 5
+ * hallazgos y 11 recomendaciones —incluida la bandera roja del hematoma septal, que
+ * tiene ventana de DÍAS— y SIR no podía mencionar ninguna ni preguntándoselo
+ * directo. El historial médico era un archivador. Aaron: *"podríamos sacar
+ * información valiosa para entender mi cuerpo en el largo plazo"*.
+ *
+ * Prioriza los valores FUERA de rango y las recomendaciones, que es lo accionable;
+ * los valores en rango no van (son cientos y no aportan al prompt).
+ */
+export function renderExamsBlock(exams: ExamForBlock[]): string {
+  const validos = (exams ?? []).filter((e) => e?.examDate && e?.title)
+  if (validos.length === 0) return ''
+  // Más recientes primero: son los que importan para una pregunta de hoy.
+  const orden = validos.slice().sort((a, b) => b.examDate.localeCompare(a.examDate))
+  const muestra = orden.slice(0, EXAMS_EN_PROMPT)
+
+  const lines: string[] = [
+    `== HISTORIAL DE EXÁMENES (${validos.length} cargados; se muestran los ${muestra.length} más recientes) ==`,
+    'REGLAS: son datos de SUS informes médicos, puedes citarlos y resumirlos. NUNCA los conviertas en diagnóstico ni en pronóstico: son para que los lleve a su médico. Si te pregunta por un examen que NO está acá, di que no lo tienes cargado — no lo inventes ni lo deduzcas de otro.',
+  ]
+  for (const e of muestra) {
+    lines.push(`\n- ${e.examDate} · ${e.provider ?? 'sin proveedor'} · ${e.title}`)
+    if (e.summary) lines.push(`  resumen: ${e.summary.slice(0, RESUMEN_MAX)}`)
+    const fuera = (e.values ?? []).filter((v) => v.flag === 'high' || v.flag === 'low')
+    if (fuera.length > 0) {
+      lines.push(`  fuera de rango (${fuera.length}): ` + fuera.slice(0, 12)
+        .map((v) => `${v.name} ${v.value}${v.unit ?? ''}${v.range ? ` [ref ${v.range}]` : ''} ${v.flag}`).join(' · '))
+    }
+    const hall = (e.findings ?? []).filter((f) => f?.label)
+    if (hall.length > 0) {
+      lines.push(`  hallazgos (${hall.length}): ` + hall.slice(0, 8).map((f) => `[${f.code || '—'}] ${f.label}`).join(' · '))
+    }
+    const recs = (e.recommendations ?? []).filter((r) => typeof r === 'string' && r.trim())
+    if (recs.length > 0) {
+      lines.push(`  recomendaciones (${recs.length}):`)
+      for (const r of recs.slice(0, 12)) lines.push(`    · ${r.slice(0, 400)}`)
+    }
+  }
+  return lines.join('\n')
+}
+
 const REMINDER_KW = [
   'recordatorio', 'recuerdame', 'recuerda me', 'recordar', 'me recuerdas',
   'pendiente', 'pendientes', 'agenda', 'agendado', 'por hacer', 'que tengo que hacer',

@@ -46,6 +46,7 @@ import { parseWeightCategory } from '@/engines/targets'
 import { assessWeightTrend, renderWeightTrendLine } from '@/lib/targets/weightTrend'
 import { assembleDailyActions } from '@/lib/daily-actions/assemble'
 import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
+import { examenRecienteLine } from '@/lib/health-exams/recentExam'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -797,23 +798,34 @@ export async function GET(req: NextRequest) {
       // consistente que YA se salió de rango no debe quedar "al baúl" (idea de
       // Aaron). Solo los lunes → recordatorio periódico, no alarma diaria. Es la
       // capa crónica de salud, aparte de la aguda (anomalía de vitales de arriba).
+      //
+      // EXAMEN RECIENTE, en cambio, NO va gateado por lunes. El gate semanal es
+      // correcto para lo crónico y equivocado para lo agudo: la tomografía del
+      // 27-jul-2026 entró con 11 recomendaciones —una con ventana de 5 a 7 días
+      // (hematoma septal)— y el brief no la iba a nombrar hasta el lunes siguiente,
+      // con la ventana ya cerrada. Y ni entonces: `labAlertPushLine` deriva de
+      // valores NUMÉRICOS y un examen de imagen no tiene ninguno. Era invisible por
+      // dos motivos a la vez. Ver `lib/health-exams/recentExam.ts`.
       let healthWatchText: string | undefined
-      if (isMondayLima) {
-        try {
-          const { data: examRows } = await admin
-            .from('health_exams')
-            .select('id, exam_date, provider, title, summary, findings, values, recommendations, storage_path')
-            .eq('user_id', uid)
-            .order('exam_date', { ascending: true })
-            .limit(50)
-          const exams = (examRows ?? []).map((r) => ({ ...rowToHealthExam(r as Record<string, unknown>), pdfUrl: null }))
-          if (exams.length >= 2) {
-            const line = labAlertPushLine(labPatterns(exams))
-            if (line) healthWatchText = line
-          }
-        } catch {
-          /* fail-soft: la tabla puede no haber propagado aún */
+      let examenRecienteText: string | undefined
+      try {
+        const { data: examRows } = await admin
+          .from('health_exams')
+          .select('id, exam_date, provider, title, summary, findings, values, recommendations, storage_path')
+          .eq('user_id', uid)
+          .order('exam_date', { ascending: true })
+          .limit(50)
+        const exams = (examRows ?? []).map((r) => ({ ...rowToHealthExam(r as Record<string, unknown>), pdfUrl: null }))
+        // Crónico: tendencias entre exámenes. Semanal, y necesita al menos dos.
+        if (isMondayLima && exams.length >= 2) {
+          const line = labAlertPushLine(labPatterns(exams))
+          if (line) healthWatchText = line
         }
+        // Agudo: un examen de los últimos 14 días con recomendaciones. Cualquier día,
+        // y con UNO solo alcanza.
+        examenRecienteText = examenRecienteLine(exams, today) ?? undefined
+      } catch {
+        /* fail-soft: la tabla puede no haber propagado aún */
       }
 
       // TENDENCIA CARDÍACA. Solo el canal 'manana' llega acá: lo que apremia ya
@@ -1065,7 +1077,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

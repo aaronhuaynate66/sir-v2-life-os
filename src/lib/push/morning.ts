@@ -34,6 +34,12 @@ export interface MorningInput {
    * conversación, nunca un veredicto sobre lo que el otro siente.
    */
   afectoCaida?: string
+  /**
+   * "Tu examen de hace 4 días tiene 11 recomendaciones": un examen RECIÉN hecho,
+   * accionable hoy. Distinto de healthWatch, que es la tendencia crónica entre
+   * exámenes y sale solo los lunes. Ver `lib/health-exams/recentExam.ts`.
+   */
+  examenReciente?: string
   /** Cruce chat → tema abierto: un "momento/decisión" abierto que el chat
    *  reciente ya parece haber resuelto (el cron `moment-scan` lo precomputa).
    *  SIR sugiere cerrarlo; no cierra solo. Texto ya formado. */
@@ -212,6 +218,7 @@ const AGGREGATE_SLOTS = new Set([
   'cardioTrend',         // hay una sola por día y su texto lleva los valores del día
   'eventosProximos',     // "la boda es el sábado" cambia de texto cada día que pasa
   'afectoCaida',         // los números del balance se mueven todos los días
+  'examenReciente',      // el "hace N días" cambia cada día que pasa
   'trainingAdherence',   // "2 de 3 de fuerza" cambia con cada sesión
   'energyNote',
 ])
@@ -340,6 +347,10 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // 2.5 Hábito a retomar · 2.6 señal del cuerpo · 2.7 vigilancia de laboratorio.
   add(input.habitNudge, 'habitNudge', 'hoy')
   add(input.bodySignal, 'bodySignal', 'hoy')
+  // Un examen recién hecho va ANTES de la tendencia crónica: sus recomendaciones
+  // pueden tener ventana de días (el hematoma septal de la tomografía del 27-jul),
+  // mientras que un analito que deriva a lo largo de un año aguanta hasta el lunes.
+  add(input.examenReciente, 'examenReciente', 'hoy')
   add(input.healthWatch, 'healthWatch', 'hoy')
 
   // 2.75 OPORTUNIDAD detectada en las conversaciones (lib/opportunities).
