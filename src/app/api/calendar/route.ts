@@ -16,6 +16,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 import { fetchCalendarEvents } from '@/lib/calendar/feed'
+import {
+  personalEventsToCalendar, mergeCalendarEvents,
+  SIR_CALENDAR_ID, SIR_CALENDAR_LABEL, type PersonalEventRow,
+} from '@/lib/calendar/personalEvents'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,7 +44,63 @@ export async function GET(req: NextRequest) {
   // Pasa el cliente autenticado → el reader lee las conexiones del usuario
   // (multi-calendario) y, si no hay, cae al fallback OUTLOOK_ICS_URL.
   const result = await fetchCalendarEvents({ supabase, horizonDays: days, pastDays: past, limit, kinds })
+
+  // ═══ EVENTOS PROPIOS DE SIR ═══════════════════════════════════════════════
+  //
+  // Aaron, 31-jul-2026: *"¿por qué sigo sin ver en mi calendario el matrimonio de
+  // Laura?"*. Porque esta ruta leía **solo feeds .ics externos**. Todo lo cargado
+  // DENTRO de SIR —una boda, una cita médica, un descanso indicado por la clínica—
+  // era invisible acá **por diseño**, no por un retraso de sincronización. La única
+  // vía era `/api/personal-events/[id]/push-to-google`, manual y evento por evento.
+  //
+  // Nota: el 30-jul se arregló que el BRIEF nombrara la boda (#1033) y se dio el
+  // reclamo por cerrado **sin verificar la superficie que él nombró**. Este es el
+  // resto de ese arreglo.
+  //
+  // No se filtra por `kinds`: los eventos propios son personales por definición, y
+  // pedir el calendario de trabajo no debería esconderle su cita médica.
+  try {
+    const { data: peRows } = await supabase
+      .from('personal_events')
+      .select('id, title, event_date, end_date, all_day, note, source, person_id')
+      .gte('event_date', ymdMinusDays(past))
+      .order('event_date', { ascending: true })
+      .limit(200)
+    const rows = (peRows ?? []) as Array<PersonalEventRow & { person_id: string | null }>
+    if (rows.length > 0) {
+      // El nombre de la persona hace al evento ("la boda de LAURA"); se resuelve
+      // solo para los ids que de verdad aparecen.
+      const pids = [...new Set(rows.map((r) => r.person_id).filter(Boolean))] as string[]
+      const nombre = new Map<string, string>()
+      if (pids.length > 0) {
+        const { data: ppl } = await supabase.from('people').select('id, name').in('id', pids)
+        for (const p of (ppl ?? []) as Array<{ id: string; name: string }>) nombre.set(p.id, p.name)
+      }
+      const propios = personalEventsToCalendar(
+        rows.map((r) => ({ ...r, personName: r.person_id ? nombre.get(r.person_id) ?? null : null })),
+      )
+      const merged = mergeCalendarEvents(result.events ?? [], propios, limit)
+      const calendars = [...(result.calendars ?? [])]
+      if (merged.some((e) => e.calendarId === SIR_CALENDAR_ID)) {
+        calendars.push({ id: SIR_CALENDAR_ID, label: SIR_CALENDAR_LABEL })
+      }
+      // `configured` pasa a true si hay eventos propios: la UI no debe decirle "no
+      // tienes calendario configurado" mientras le muestra su boda.
+      return NextResponse.json(
+        { ...result, configured: result.configured || merged.length > 0, events: merged, calendars },
+        { status: 200 },
+      )
+    }
+  } catch {
+    /* fail-soft: si `personal_events` falla, el calendario externo sale igual */
+  }
+
   return NextResponse.json(result, { status: 200 })
+}
+
+/** 'YYYY-MM-DD' de hace N días en Lima (UTC-5), para el borde de la ventana pasada. */
+function ymdMinusDays(days: number): string {
+  return new Date(Date.now() - 5 * 3_600_000 - days * 86_400_000).toISOString().slice(0, 10)
 }
 
 function clampInt(raw: string | null, def: number, min: number, max: number): number {
