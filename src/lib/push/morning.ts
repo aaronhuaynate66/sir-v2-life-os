@@ -50,6 +50,11 @@ export interface MorningInput {
    * exámenes y sale solo los lunes. Ver `lib/health-exams/recentExam.ts`.
    */
   examenReciente?: string
+  /**
+   * "Mañana en la boda de Laura te cruzas con Miluska — le debes la cotización".
+   * Cruce CRM x agenda x grafo. Idea de Aaron. Ver lib/crm/dealEnEvento.ts.
+   */
+  encuentroConDeal?: string
   /** Cruce chat → tema abierto: un "momento/decisión" abierto que el chat
    *  reciente ya parece haber resuelto (el cron `moment-scan` lo precomputa).
    *  SIR sugiere cerrarlo; no cierra solo. Texto ya formado. */
@@ -229,6 +234,7 @@ const AGGREGATE_SLOTS = new Set([
   'eventosProximos',     // "la boda es el sábado" cambia de texto cada día que pasa
   'afectoCaida',         // los números del balance se mueven todos los días
   'examenReciente',      // el "hace N días" cambia cada día que pasa
+  'encuentroConDeal',    // el "mañana/hoy" y los días de atraso cambian a diario
   'trainingAdherence',   // "2 de 3 de fuerza" cambia con cada sesión
   'energyNote',
 ])
@@ -335,6 +341,9 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // que "a quién cuidar hoy" porque ese slot mide DESCUIDO (a quién no le escribes),
   // y con Diana hablaba 250 mensajes por día: por volumen nunca iba a aparecer ahí.
   // Un vínculo puede estar rompiéndose con el chat a full.
+  // Un encuentro con alguien que te debe (o a quien le debes) algo es una VENTANA:
+  // pasa el evento y se cerró. Va primero de lo relacional por eso.
+  add(input.encuentroConDeal, 'encuentroConDeal', 'gente')
   add(input.afectoCaida, 'afectoCaida', 'gente')
   add(input.relationshipNudge, 'relationshipNudge', 'gente', ent.relationshipPerson ? { kind: 'person', ...ent.relationshipPerson } : undefined)
   add(input.momentResolution, 'momentResolution', 'gente', ent.moment ? { kind: 'moment', ...ent.moment } : undefined)
