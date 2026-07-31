@@ -29,6 +29,28 @@ export interface ReaderBatch {
   /** Email del remitente si la plataforma lo expone (correo/Teams). Llave estable
    *  para atribuir a la persona ANTES del match por nombre. Opcional. */
   senderEmail?: string
+  /**
+   * QUÉ SIGNIFICAN LOS `ts` DE ESTE LOTE. Es la pieza que faltaba y que dejó a Teams
+   * corrido 5 horas.
+   *
+   *   · `'wall'` (default) — ya vienen en HORA DE PARED DE LIMA, que es la convención
+   *     del sustrato (`chat_messages.sent_at`, ver `lib/chat-messages/append.ts`).
+   *     Es el caso del scraper DOM de WhatsApp, que parsea la hora MOSTRADA en
+   *     pantalla, y del lector del Store, que ya convierte del lado del cliente.
+   *   · `'instant'` — son instantes reales (UTC / con offset) y hay que convertirlos
+   *     antes de guardar. Es el caso de Teams: `teams.js` lee el atributo `datetime`
+   *     de un `<time>`, que es UTC real.
+   *
+   * POR QUÉ DECLARARLO Y NO ADIVINARLO. `append.ts` ya dice "todo camino que tenga un
+   * epoch o un ISO con offset real DEBE pasar por `limaWallClock`", pero eso quedaba
+   * en manos de cada productor: WhatsApp lo hacía y Teams no, y nadie podía notarlo
+   * mirando el lote. Con el campo explícito, el que agrega un reader nuevo tiene que
+   * decidirlo, y el default ('wall') es el que NO rompe a los que ya andaban.
+   *
+   * El default importa: convertir dos veces deja el mensaje 10 h corrido, que es peor
+   * que el bug original y más difícil de ver.
+   */
+  tsKind?: 'wall' | 'instant'
   messages: ReaderMessage[]
 }
 

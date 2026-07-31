@@ -10,7 +10,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { planIngest, type ReaderBatch } from './ingest'
 import { namesLooselyMatch } from '@/lib/people/nameMatch'
 import { resolvePersonId, type PersonMatchRow } from '@/lib/people/emailMatch'
-import { appendChatMessages } from '@/lib/chat-messages/append'
+import { appendChatMessages, limaWallClock } from '@/lib/chat-messages/append'
 
 const HASH_WINDOW = 400
 
@@ -78,7 +78,17 @@ export async function ingestReaderBatch(client: SupabaseClient, userId: string, 
         // distinto y quedaban duplicados (29-jul-2026).
         userId, personId, source: 'reader', platform: batch.platform,
         messages: plan.fresh.map((m) => ({
-          iso: m.ts ?? null,
+          // HORA DE PARED DE LIMA, que es la convención del sustrato. Los lotes que
+          // traen instantes REALES (Teams: el atributo `datetime` de un <time>) se
+          // convierten acá; los que ya vienen en hora de pared (el scraper DOM de
+          // WhatsApp, que lee la hora mostrada; el lector del Store, que convierte
+          // del lado del cliente) pasan tal cual.
+          //
+          // El bug que cierra: `teams.js` mandaba UTC real y esto lo guardaba sin
+          // tocar, así que sus filas quedaban 5 h corridas contra las 284k de
+          // WhatsApp. Es el tercer eje de identidad rota que quedó anotado en #1011
+          // y que se dejó "para después" porque tocaba los ids.
+          iso: batch.tsKind === 'instant' ? limaWallClock(m.ts ?? null) : (m.ts ?? null),
           sender: namesLooselyMatch(m.author, batch.threadName) ? 'other' : 'user',
           authorName: m.author,
           content: m.text,
