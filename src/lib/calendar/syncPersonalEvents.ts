@@ -24,7 +24,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { ensureFreshGoogleToken } from './oauth/session'
-import { createGoogleEvent, updateGoogleEvent, type NewGoogleEvent } from './oauth/google'
+import { createGoogleEvent, updateGoogleEvent, deleteGoogleEvent, fetchGoogleCalendarEvents, type NewGoogleEvent } from './oauth/google'
+import { huerfanosParaAdoptar, huerfanosParaBorrar } from './huerfanos'
 import { rangoHorarioDeNota, tituloCorto } from './horaDeNota'
 
 /** Días hacia atrás que igual se suben (un evento de ayer sigue siendo historia útil). */
@@ -50,6 +51,10 @@ export interface SyncResult {
   yaEstaban: number
   /** Cuántos de esos se actualizaron OK en Google. */
   actualizados: number
+  /** Filas que recuperaron su gcal_event_id mirando lo que Google ya tenía. */
+  adoptados: number
+  /** Duplicados huérfanos eliminados de Google. */
+  borrados: number
   /** Fallaron (la razón va en `errores`). */
   fallidos: number
   /** Sin conexión de Google → no se intentó nada. */
@@ -118,7 +123,7 @@ export async function syncPendingPersonalEvents(
 ): Promise<SyncResult> {
   const nowMs = opts.nowMs ?? Date.now()
   const limit = opts.limit ?? MAX_POR_CORRIDA
-  const out: SyncResult = { creados: 0, yaEstaban: 0, actualizados: 0, fallidos: 0, sinConexion: false, errores: [] }
+  const out: SyncResult = { creados: 0, yaEstaban: 0, actualizados: 0, adoptados: 0, borrados: 0, fallidos: 0, sinConexion: false, errores: [] }
 
   const { data, error } = await supabase
     .from('personal_events')
@@ -145,6 +150,57 @@ export async function syncPendingPersonalEvents(
   const fresh = await ensureFreshGoogleToken(supabase as never, userId)
   if (!fresh) { out.sinConexion = true; return out }
 
+  // ═══ ANTES DE TOCAR NADA: reconciliar con lo que Google TIENE ══════════════
+  //
+  // Aaron, 31-jul-2026, con captura: el viernes 7 tenía DOS eventos del mismo examen
+  // (la banderita vieja y el cronometrado) con UNA sola fila en `personal_events`.
+  //
+  // El huérfano nace del hueco que este archivo ya documentaba: si el UPDATE del
+  // `gcal_event_id` falla después de crear el evento, SIR pierde la referencia y la
+  // corrida siguiente crea otro. El primero queda huérfano y **ningún update lo va a
+  // corregir nunca** — se queda "todo el día" para siempre.
+  //
+  // Se ADOPTA antes de crear (conserva los recordatorios que él le haya puesto en
+  // Google) y se BORRA solo el duplicado confirmado. Ver `huerfanos.ts` para el
+  // criterio conservador. Fail-soft: si listar Google falla, se sigue sin reconciliar.
+  try {
+    const desde = new Date(Date.parse(`${desdeYmd(VENTANA_PASADA_DIAS, nowMs)}T00:00:00Z`)).toISOString()
+    const hasta = new Date(nowMs + 400 * 86_400_000).toISOString()
+    const enGoogle = (await fetchGoogleCalendarEvents(fresh.token, desde, hasta, 250))
+      .map((e) => ({ id: e.id, title: e.title, start: e.start }))
+    const administrados = filas
+      .filter((r) => r.title && r.event_date)
+      .map((r) => ({ title: r.title as string, date: String(r.event_date).slice(0, 10), gcalEventId: r.gcal_event_id }))
+
+    // 1. ADOPTAR: la fila perdió su referencia pero el evento sí existe allá.
+    for (const a of huerfanosParaAdoptar(enGoogle, administrados)) {
+      const fila = pendientes.find((r) => String(r.event_date).slice(0, 10) === a.date && r.title === a.adminTitle)
+      if (!fila) continue
+      const { error: adErr } = await supabase.from('personal_events')
+        .update({ gcal_event_id: a.gcalEventId }).eq('user_id', userId).eq('id', fila.id)
+      if (adErr) { out.errores.push(`adoptar ${fila.id}: ${adErr.message}`); continue }
+      fila.gcal_event_id = a.gcalEventId // deja de ser pendiente: abajo se actualiza
+      yaEnGoogle.push(fila)
+      out.adoptados++
+    }
+
+    // 2. BORRAR los duplicados confirmados.
+    for (const h of huerfanosParaBorrar(enGoogle, administrados)) {
+      try {
+        await deleteGoogleEvent(fresh.token, h.id)
+        out.borrados++
+        out.errores.push(`borrado duplicado ${h.date} "${h.title.slice(0, 40)}" — ${h.motivo}`)
+      } catch (e) {
+        out.errores.push(`borrar ${h.id}: ${e instanceof Error ? e.message.slice(0, 100) : 'error'}`)
+      }
+    }
+  } catch (e) {
+    out.errores.push(`reconciliar con Google: ${e instanceof Error ? e.message.slice(0, 120) : 'error'}`)
+  }
+
+  // Los adoptados ya no van por el camino de creación.
+  const porCrear = pendientes.filter((r) => !r.gcal_event_id)
+
   for (const r of yaEnGoogle) {
     try {
       await updateGoogleEvent(fresh.token, r.gcal_event_id as string, eventoParaGoogle(r))
@@ -157,7 +213,7 @@ export async function syncPendingPersonalEvents(
     }
   }
 
-  for (const r of pendientes) {
+  for (const r of porCrear) {
     try {
       const created = await createGoogleEvent(fresh.token, {
         ...eventoParaGoogle(r),
