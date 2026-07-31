@@ -168,7 +168,7 @@ Pase de mantenimiento contra el código real (agente automático), sobre la secc
 
 **Verificado y quedó IGUAL (sin drift):**
 - **`sortLearnings`** (`src/lib/learnings/recall.ts:48`) sigue con pesos fijos por `kind` — sin few-shot dinámico.
-- **Grafo /red → sigma.js** — sigue sin rastro: no hay dependencia `sigma` en `package.json`.
+- ~~**Grafo /red → sigma.js**~~ ⚠️ **ESTA LÍNEA ESTÁ MAL — el ítem se cerró el 30/07 (#1028).** El pase automático la reafirmó como pendiente porque su método es grep, y por grep es cierto: no hay dependencia `sigma` en `package.json`. Pero la conclusión no se sigue del grep. **El grafo YA existe y está muy trabajado** (`GraphCanvas.tsx`, 521 líneas sobre react-force-graph-2d), y sigma.js es una migración por rendimiento que rinde pasando los ~10,000 nodos: Aaron tiene **250** (129 personas + 20 vínculos). Ver el bloque "Grafo /red → sigma.js — MEDIDO Y DESCARTADO" más abajo. **Lección para el próximo pase automático: la ausencia de una dependencia no prueba que falte la feature.**
 - **Memorias basura (`callLabel`)** — `src/lib/capture/whatsapp/export/calls.ts:50-54` sigue armando el string sin fecha; los 3 call-sites (`runImport.ts`, `AgregarCapturaPanel.tsx`) le pegan la fecha por fuera, pero el texto derivado a memoria sigue siendo el mismo por día. Sigue pendiente la decisión de Aaron (incluir fecha al derivar vs. no derivar llamadas a memoria semántica).
 - **Consolidar las 3 estructuras de sub-pasos** (`goals.milestones`/`objective_steps`/`objective_blockers`) — siguen separadas en el código, sin trabajo de unificación. Sigue requiriendo el OK de Aaron.
 - **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte".
