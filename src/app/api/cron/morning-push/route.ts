@@ -21,7 +21,6 @@ import { applyAutoSnooze, previousDay, type BriefSignalHistory } from '@/lib/bri
 import { assessCapacity, explainCapacity, applyEnergyGate } from '@/lib/brief/energyGate'
 import { weeklyAdherence, adherenceLine, weekStartOf, type TrainingKind, type MedicalRest } from '@/lib/entrenamiento/adherencia'
 import { getSelfBioState } from '@/lib/people/selfState'
-import { daysUntilNextBirthday } from '@/lib/people/professionalNetwork'
 import { buildMorningPush, signalTopicKey, type MorningBirthday, type MorningEntities } from '@/lib/push/morning'
 import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } from '@/lib/ciclo/weekAhead'
 import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agendaCross'
@@ -47,6 +46,7 @@ import { assessWeightTrend, renderWeightTrendLine } from '@/lib/targets/weightTr
 import { assembleDailyActions } from '@/lib/daily-actions/assemble'
 import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
 import { examenRecienteLine } from '@/lib/health-exams/recentExam'
+import { cumpleanosProximos, esHitoDeAnticipacion } from '@/lib/push/cumpleanos'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -60,10 +60,15 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-const BIRTHDAY_WINDOW_DAYS = 5
+// 7 días: alcanza para conseguir un regalo. Antes 5.
+const BIRTHDAY_WINDOW_DAYS = 7
 /** Ventana para avisar de un aniversario/fecha especial (incluye el mensario).
  *  Corta: un aniversario es puntual, no un evento de agenda semanal. */
-const ANNIVERSARY_WINDOW_DAYS = 2
+// 10 días. Antes eran **2**, y Aaron cargó su aniversario con Diana "con la
+// intención de anticiparme": con 2 días no se reserva ni se compra nada. Para que
+// no sea la misma línea 10 días seguidos, solo se avisa en HITOS (ver
+// ).
+const ANNIVERSARY_WINDOW_DAYS = 10
 
 /** Normaliza el jsonb special_dates a SpecialDate[] tolerando filas viejas. */
 function toSpecialDates(raw: unknown): SpecialDate[] {
@@ -146,16 +151,30 @@ export async function GET(req: NextRequest) {
       // Gente y fechas: cumpleaños + fechas especiales (aniversarios, mensario).
       const { data: peopleRows } = await admin
         .from('people')
-        .select('name, birth_date, special_dates')
+        .select('name, birth_date, special_dates, importance_score')
         .eq('user_id', uid)
         .limit(1000)
-      const people = (peopleRows ?? []) as Array<{ name: string; birth_date: string | null; special_dates: unknown }>
-      const birthdays: MorningBirthday[] = []
-      for (const p of people) {
-        const d = daysUntilNextBirthday(p.birth_date, now)
-        if (d !== null && d <= BIRTHDAY_WINDOW_DAYS) birthdays.push({ name: p.name, days: d })
-      }
-      birthdays.sort((a, b) => a.days - b.days)
+      const people = (peopleRows ?? []) as Array<{ name: string; birth_date: string | null; special_dates: unknown; importance_score: number | null }>
+
+      // CUMPLEAÑOS DE LAS DOS FUENTES. Antes salían solo de `birth_date`, y el otro
+      // camino (`importantDates`, abajo) descartaba las etiquetas con "cumple"
+      // creyendo que este las tomaba. **El dato se caía entre los dos.**
+      //
+      // Aaron, 31-jul-2026: *"hoy es cumpleaños de Alex y SIR brilló por su
+      // ausencia, pero POR QUÉ???"*. Medido ese día sobre su base: **129 personas,
+      // solo 3 con `birth_date`, y 21 cumpleaños viviendo solo en `special_dates`**
+      // — invisibles. Ese día había DOS (Alex Heilbrunn, importancia 9, y Walter, 7)
+      // y el brief no dijo ninguno. No era un borde: era la ruta de casi todos.
+      const birthdays: MorningBirthday[] = cumpleanosProximos(
+        people.map((p) => ({
+          name: p.name,
+          birth_date: p.birth_date,
+          fechas: toSpecialDates(p.special_dates),
+          importance: p.importance_score,
+        })),
+        today,
+        BIRTHDAY_WINDOW_DAYS,
+      ).map((c) => ({ name: c.name, days: c.days }))
 
       // Fechas especiales próximas (aniversarios anuales + mensario). Reusa el
       // MISMO motor de countdown que la ficha/agenda (cadencia mensual incluida)
@@ -167,6 +186,9 @@ export async function GET(req: NextRequest) {
         for (const cd of valid) {
           if (cd.isPast || cd.daysUntil > ANNIVERSARY_WINDOW_DAYS) continue
           if (/cumple|natalicio/i.test(cd.sd.label)) continue // el cumple va en birthdays
+          // Solo en hitos: 10, 7, 3, 2, 1 y 0 días. Ampliar la ventana sin esto
+          // repetiría la misma línea diez días seguidos.
+          if (!esHitoDeAnticipacion(cd.daysUntil)) continue
           importantDatesRanked.push({ text: `${cd.sd.label} · ${formatCountdownPhrase(cd)}`, days: cd.daysUntil })
         }
       }
