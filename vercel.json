@@ -14,6 +14,10 @@
       "schedule": "25 11 * * *"
     },
     {
+      "path": "/api/cron/gcal-sync",
+      "schedule": "5 10 * * *"
+    },
+    {
       "path": "/api/cron/daily-signals",
       "schedule": "20 10 * * *"
     },
