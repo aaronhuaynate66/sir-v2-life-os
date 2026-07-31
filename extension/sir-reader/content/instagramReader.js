@@ -169,6 +169,73 @@
     return true;
   }
 
+  function scanProfileDom() {
+    const handle = profileHandleFromLocation();
+    if (!handle) return;
+    const root = document.querySelector('header') || document.querySelector('main') || document.body;
+    if (!root) return;
+    const text = cleanText(root.innerText || root.textContent || '');
+    if (!text || !new RegExp(`\\b${handle}\\b`, 'i').test(text)) return;
+
+    const lines = String(root.innerText || root.textContent || '')
+      .split(/\r?\n/)
+      .map(cleanText)
+      .filter(Boolean);
+    const handleIdx = lines.findIndex((line) => line.toLowerCase() === handle);
+    const p = { handle };
+
+    if (handleIdx >= 0) {
+      for (let i = handleIdx + 1; i < Math.min(lines.length, handleIdx + 6); i += 1) {
+        const line = lines[i];
+        if (!line || line.toLowerCase() === handle) continue;
+        if (/publicaciones|posts|seguidores|followers|seguidos|following/i.test(line)) continue;
+        if (/^(editar perfil|ver archivo|siguiendo|seguir|mensaje|contactar|edit profile|message)$/i.test(line)) continue;
+        if (distinctDisplayName(line, handle)) {
+          p.fullName = line.slice(0, 120);
+          break;
+        }
+      }
+    }
+
+    const countValue = /([\d.,]+\s*(?:mil|[kKmM])?)/i;
+    const postsText = text.match(new RegExp(`${countValue.source}\\s+(?:publicaciones|posts)\\b`, 'i'));
+    const followersText = text.match(new RegExp(`${countValue.source}\\s+(?:seguidores|followers)\\b`, 'i'));
+    const followingText = text.match(new RegExp(`${countValue.source}\\s+(?:seguidos|following)\\b`, 'i'));
+    if (postsText) p.postsCount = cleanText(postsText[1]);
+    if (followersText) p.followersCount = cleanText(followersText[1]);
+    if (followingText) p.followingCount = cleanText(followingText[1]);
+
+    if (handleIdx >= 0) {
+      const categoryLike = /^(?:artista|atleta|autor|blog(?: personal)?|cient[ií]fico|comercio|comunidad|creador(?:\(a\))? digital|deportista|educaci[oó]n|emprendedor(?:a)?|empresa|entrenador(?:a)?|figura p[uú]blica|fot[oó]grafo(?:a)?|gamer|medio(?: de comunicaci[oó]n)?|m[uú]sico(?:a)?|noticias|podcast|producto\/servicio|restaurante|salud\/belleza|tienda|video creator|writer)$/i;
+      for (let i = handleIdx + 1; i < Math.min(lines.length, handleIdx + 12); i += 1) {
+        const line = lines[i];
+        if (categoryLike.test(line)) {
+          p.category = line.slice(0, 80);
+          break;
+        }
+      }
+
+      const bio = [];
+      for (let i = handleIdx + 1; i < Math.min(lines.length, handleIdx + 18); i += 1) {
+        const line = lines[i];
+        if (!line || line === p.fullName || line.toLowerCase() === handle) continue;
+        if (line === p.category) continue;
+        if (/publicaciones|posts|seguidores|followers|seguidos|following/i.test(line)) continue;
+        if (/^(editar perfil|ver archivo|siguiendo|seguir|mensaje|contactar|edit profile|message|nueva|meta|información|blog|empleo|ayuda|api)$/i.test(line)) break;
+        bio.push(line);
+      }
+      if (bio.length) p.biography = bio.join('\n').slice(0, 500);
+    }
+
+    if (p.followersCount === undefined && p.followingCount === undefined && p.postsCount === undefined) return;
+    const firma = [p.followersCount, p.followingCount, p.postsCount, p.fullName, p.biography].join('|');
+    if (profileSeen.get(p.handle) === firma) return;
+    profileSeen.set(p.handle, firma);
+    const item = { platform: 'instagram', handle: p.handle, profile: p };
+    if (p.fullName) item.name = p.fullName;
+    emit([item]);
+  }
+
   function handle(url, json) {
     if (!json || typeof json !== 'object') return;
     // El perfil se mira PRIMERO y no corta el flujo: una misma respuesta puede
@@ -202,6 +269,7 @@
   // no expone `reels_tray/latest_reel_media` en las respuestas interceptadas.
   // Leemos SOLO labels visibles tipo "Story by foo, not seen"; no abrimos stories.
   const domSeen = new Set();
+  const profileFollowersSeen = new Set();
   let domTimer = null;
   function cleanText(value) {
     return String(value || '').replace(/\s+/g, ' ').trim();
@@ -255,6 +323,149 @@
     const name = displayNameFromAlt(img && img.getAttribute('alt'), handle) || displayNameFromText(root, handle);
     return { name, avatarUrl };
   }
+
+  function profileHandleFromLocation() {
+    try {
+      const m = location.pathname.match(/^\/([A-Za-z0-9._]{1,30})\/?$/);
+      if (!m) return null;
+      const handle = m[1].toLowerCase();
+      if (/^(?:about|accounts|api|challenge|developer|direct|explore|oauth|p|reel|stories|tv)$/i.test(handle)) return null;
+      return handle;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function handleFromHref(href) {
+    try {
+      const url = new URL(href, location.origin);
+      if (url.origin !== location.origin) return null;
+      const m = url.pathname.match(/^\/([A-Za-z0-9._]{1,30})\/?$/);
+      if (!m) return null;
+      const handle = m[1].toLowerCase();
+      if (!isHandleLike(handle)) return null;
+      return handle;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function profileNameFromPage(profileHandle) {
+    try {
+      const og = document.querySelector('meta[property="og:title"]');
+      const content = cleanText(og && og.getAttribute('content'));
+      if (content) {
+        const escaped = profileHandle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const m = content.match(new RegExp(`^(.+?)\\s+\\(@${escaped}\\)`, 'i'));
+        const name = m && distinctDisplayName(m[1], profileHandle);
+        if (name) return name;
+      }
+    } catch (_) {}
+    return undefined;
+  }
+
+  function followerFromLink(a, profileHandle) {
+    const handle = handleFromHref(a && a.getAttribute && a.getAttribute('href'));
+    if (!handle || handle === profileHandle) return null;
+    const text = cleanText(a.textContent);
+    const item = { handle };
+    const name = distinctDisplayName(text, handle);
+    if (name && !isHandleLike(name)) item.name = name;
+    return item;
+  }
+
+  function addFollower(out, follower, limit) {
+    if (!follower || (!follower.handle && !follower.name)) return false;
+    const key = follower.handle || cleanText(follower.name).toLowerCase();
+    if (!key) return false;
+    for (const prev of out) {
+      const prevKey = prev.handle || cleanText(prev.name).toLowerCase();
+      if (prevKey === key) return false;
+    }
+    out.push(follower);
+    return out.length >= limit;
+  }
+
+  function mergeFollowers(out, links, profileHandle, limit) {
+    for (const a of links) {
+      const f = followerFromLink(a, profileHandle);
+      if (!f) continue;
+      if (addFollower(out, f, limit)) break;
+    }
+  }
+
+  function mergeFollowersFromText(out, textValue, profileHandle, limit) {
+    let text = cleanText(textValue);
+    if (!text) return;
+    text = text
+      .replace(/^(?:Seguido por|Followed by)\s+/i, '')
+      .replace(/\s+(?:siguen este perfil|sigue este perfil|follow this profile|follows this profile).*$/i, '')
+      .replace(/\s+(?:y|and)\s+\d+\s+(?:personas?\s+)?(?:más|more|others?).*$/i, '');
+    const pieces = text.split(/\s*,\s*|\s+(?:y|and)\s+/i);
+    for (const piece of pieces) {
+      const handle = cleanText(piece).replace(/^@/, '').toLowerCase();
+      if (!isHandleLike(handle) || handle === profileHandle) continue;
+      if (addFollower(out, { handle }, limit)) break;
+    }
+  }
+
+  function findFollowedByContainer(header) {
+    if (!header) return null;
+    const walker = document.createTreeWalker(header, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const text = cleanText(node.nodeValue);
+      if (!/^(?:Seguido por|Followed by)\b/i.test(text) && !/(?:siguen este perfil|sigue este perfil|follow this profile|follows this profile)/i.test(text)) continue;
+      let el = node.parentElement;
+      for (let i = 0; el && i < 6; i += 1, el = el.parentElement) {
+        const full = cleanText(el.textContent);
+        if (full.length > 280) continue;
+        const hasKnownFollowersText = /^(?:Seguido por|Followed by)\b/i.test(full) || /(?:siguen este perfil|sigue este perfil|follow this profile|follows this profile)/i.test(full);
+        if (hasKnownFollowersText && el.querySelector('a[href^="/"]')) return el;
+      }
+    }
+    return null;
+  }
+
+  function collectVisibleKnownFollowers(profileHandle) {
+    const followers = [];
+    try {
+      const header = document.querySelector('header');
+      for (const a of header ? header.querySelectorAll('a[href*="/followers/mutualOnly"]') : []) {
+        mergeFollowersFromText(followers, a.textContent, profileHandle, 12);
+      }
+      const row = findFollowedByContainer(header);
+      if (row) {
+        mergeFollowers(followers, row.querySelectorAll('a[href^="/"]'), profileHandle, 12);
+        mergeFollowersFromText(followers, row.textContent, profileHandle, 12);
+      }
+
+      // Si Aaron abrió manualmente el modal de "Seguidores que conoces", leerlo
+      // pasivamente también. Nunca lo abrimos ni hacemos scroll desde acá.
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      for (const dialog of dialogs) {
+        const text = cleanText(dialog.textContent);
+        if (!/(?:Seguidores que conoces|Followers you know|Seguido por|Followed by)/i.test(text)) continue;
+        mergeFollowers(followers, dialog.querySelectorAll('a[href^="/"]'), profileHandle, 60);
+      }
+    } catch (_) {}
+    return followers;
+  }
+
+  function scanProfileFollowedBy() {
+    const profileHandle = profileHandleFromLocation();
+    if (!profileHandle) return;
+    const followedBy = collectVisibleKnownFollowers(profileHandle);
+    if (!followedBy.length) return;
+    const signature = `${profileHandle}|${followedBy.map((f) => f.handle || f.name || '').join(',')}`;
+    if (profileFollowersSeen.has(signature)) return;
+    profileFollowersSeen.add(signature);
+    const item = { platform: 'instagram', handle: profileHandle, followedBy };
+    const name = profileNameFromPage(profileHandle);
+    if (name) item.name = name;
+    emit([item]);
+  }
+
   function scanStoryDom() {
     domTimer = null;
     const items = [];
@@ -278,6 +489,8 @@
       }
     } catch (_) {}
     emit(items);
+    try { scanProfileDom(); } catch (_) {}
+    try { scanProfileFollowedBy(); } catch (_) {}
   }
 
   function scheduleDomScan() {
@@ -317,7 +530,7 @@
       const text = cleanText(dialog.textContent).slice(0, 1200);
       const hasProfileLinks = dialog.querySelectorAll('a[href^="/"]').length >= 3;
       const titleLooksFollowing = Array.from(dialog.querySelectorAll('h1, h2, [role="heading"]'))
-        .some((node) => /^(siguiendo|following)$/i.test(cleanText(node.textContent)));
+        .some((node) => /^(siguiendo|seguidos|following)$/i.test(cleanText(node.textContent)));
       const urlLooksFollowing = /\/following\/?$/i.test(location.pathname);
       if (hasProfileLinks && (titleLooksFollowing || urlLooksFollowing)) return dialog;
     }
