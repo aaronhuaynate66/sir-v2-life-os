@@ -13,8 +13,15 @@
 // NO ES UN BARRIDO. Va por lista explícita y verifica el TÍTULO antes de escribir: si
 // el paso ya no existe o cambió de nombre, se salta y se reporta. Nunca a ciegas.
 //
-// Uso:  node scripts/refechar-pasos.mjs            (dry-run)
+// Uso:  node scripts/refechar-pasos.mjs                          (dry-run del PLAN de abajo)
 //       node scripts/refechar-pasos.mjs --apply
+//       node scripts/refechar-pasos.mjs --plan planes/x.json     (plan desde archivo)
+//       node scripts/refechar-pasos.mjs --plan planes/x.json --apply
+//
+// El archivo de plan es un array con la misma forma que `PLAN`: cada entrada lleva
+// `fragmento` (huella del título) y `fecha` o `descartar`+`motivo`, más una `nota` que
+// explica POR QUÉ. La nota no es decoración: es lo que permite auditar meses después
+// por qué una fecha quedó donde quedó.
 
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
@@ -67,12 +74,29 @@ const PLAN = [
   },
 ]
 
+function cargarPlan() {
+  const i = process.argv.indexOf('--plan')
+  if (i < 0) return PLAN
+  const ruta = process.argv[i + 1]
+  if (!ruta) { console.error('--plan necesita la ruta de un .json'); process.exit(1) }
+  const p = JSON.parse(readFileSync(ruta, 'utf8'))
+  if (!Array.isArray(p) || p.length === 0) { console.error('el plan tiene que ser un array no vacío'); process.exit(1) }
+  console.log(`plan: ${ruta} (${p.length} pasos)\n`)
+  return p
+}
+
+/** Objetivo cuyo saldo de vencidos se reporta al final. `--check "<fragmento>"`. */
+function objetivoAChequear() {
+  const i = process.argv.indexOf('--check')
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : 'Mundial'
+}
+
 async function main() {
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
   console.log(APPLY ? '── MODO APLICAR ──\n' : '── DRY-RUN (usa --apply para escribir) ──\n')
 
   let hechos = 0
-  for (const item of PLAN) {
+  for (const item of cargarPlan()) {
     const { data, error } = await sb
       .from('objective_steps')
       .select('id, title, status, target_date')
@@ -101,16 +125,23 @@ async function main() {
     }
   }
 
-  // Control de cobertura: cuántos vencidos quedan en el Mundial después de esto.
+  // CONTROL DE COBERTURA. No alcanza con decir "apliqué N": hay que mirar qué quedó
+  // vencido después, o se cierra el trabajo desde una vista parcial. Es la misma regla
+  // de honestidad de cobertura del repo aplicada a esta herramienta.
   const HOY = new Date().toISOString().slice(0, 10)
-  const { data: g } = await sb.from('goals').select('id').ilike('title', '%Mundial%').maybeSingle()
+  const quien = objetivoAChequear()
+  const { data: g } = await sb.from('goals').select('id,title,status').ilike('title', `%${quien}%`).maybeSingle()
+  console.log(`${APPLY ? 'aplicados' : 'se aplicarían'}: ${hechos}`)
   if (g?.id) {
     const { data: st } = await sb.from('objective_steps')
       .select('title,status,target_date').eq('objective_id', g.id)
     const venc = (st ?? []).filter((s) => s.status === 'pendiente' && s.target_date && s.target_date < HOY)
-    console.log(`${APPLY ? 'aplicados' : 'se aplicarían'}: ${hechos}`)
-    console.log(`vencidos que quedan en el Mundial: ${venc.length}`)
+    console.log(`vencidos que quedan en "${g.title}" [${g.status}]: ${venc.length}`)
     for (const s of venc) console.log(`   ${s.target_date}  ${s.title.slice(0, 60)}`)
+    if (g.status === 'paused') {
+      console.log('   ⚠ el objetivo está PAUSADO: sus pasos NO salen en el brief aunque')
+      console.log('     tengan fecha (mig #1019). Re-fecharlos no los hace visibles.')
+    }
   }
 }
 
