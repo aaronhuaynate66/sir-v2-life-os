@@ -71,5 +71,6 @@
       "sharp": true,
       "unrs-resolver": true
     }
-  }
+  },
+  "packageManager": "pnpm@9.15.4"
 }

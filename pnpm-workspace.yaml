@@ -1,3 +1,10 @@
+# `packages` es OBLIGATORIO cuando este archivo existe (pnpm 9): sin él el
+# install muere con "packages field missing or empty". Faltaba desde siempre y
+# nadie lo veía porque CI corría `npm install` y nunca ejecutaba pnpm.
+# Este repo es un solo paquete: la raíz y nada más.
+packages:
+  - '.'
+
 allowBuilds:
   # @sentry/cli solo construye el binario para subir source maps (no lo
   # usamos: Sentry corre sin withSentryConfig). false = no construir, sin

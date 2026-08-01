@@ -12,16 +12,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      # POR QUÉ pnpm Y NO npm (1-ago-2026):
+      # el repo tiene `pnpm-lock.yaml` (lockfileVersion 9) y `package-lock.json`
+      # está en .gitignore, pero CI corría `npm install` — o sea que **ignoraba el
+      # lockfile por completo** y resolvía versiones frescas del registro en cada
+      # corrida. Dos consecuencias medidas:
+      #   1. CI no era reproducible: un build verde podía ponerse rojo al día
+      #      siguiente sin que nadie tocara código, porque una dependencia
+      #      transitiva publicó una versión nueva.
+      #   2. Local (árbol de pnpm) y CI (resolución fresca de npm) probaban
+      #      árboles distintos, así que "pasa en mi máquina" y "pasa en CI" no
+      #      hablaban del mismo código.
+      # `--frozen-lockfile` además hace que CI FALLE si alguien toca package.json
+      # sin actualizar el lock, en vez de arreglarlo callado.
+      # Sin `version:` acá a propósito: la toma de `packageManager` en
+      # package.json. Declararla en los dos lados es un error duro de pnpm
+      # (ERR_PNPM_BAD_PM_VERSION) y deja UNA sola fuente de verdad.
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v5
         with:
           node-version: '20'
+          cache: 'pnpm'
+
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
+
       - name: Type check
-        run: npm run type-check
+        run: pnpm run type-check
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
       - name: Test
-        run: npm run test
+        run: pnpm run test
       - name: Build
-        run: npm run build
+        run: pnpm run build
