@@ -26,9 +26,10 @@ jobs:
       #      hablaban del mismo código.
       # `--frozen-lockfile` además hace que CI FALLE si alguien toca package.json
       # sin actualizar el lock, en vez de arreglarlo callado.
+      # Sin `version:` acá a propósito: la toma de `packageManager` en
+      # package.json. Declararla en los dos lados es un error duro de pnpm
+      # (ERR_PNPM_BAD_PM_VERSION) y deja UNA sola fuente de verdad.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v5
         with:
