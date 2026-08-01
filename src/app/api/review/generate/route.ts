@@ -13,6 +13,7 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -92,9 +93,15 @@ export async function POST() {
   }
 
   // ─── 3. Identidad propia ──────────────────────────────────────
-  const { data: idRaw } = await supabase.from('identity_profile')
-    .select('name, roles').eq('user_id', userId).maybeSingle()
-  const idp = idRaw as { name?: string; roles?: unknown } | null
+  // Pedía `name`, que NO existe (la columna es `full_name`) y encima no se usaba:
+  // solo se leen los `roles`. PostgREST no lanza, así que la consulta entera fallaba
+  // en silencio, `idRaw` quedaba null y **la tarjeta de roles nunca se generaba**.
+  // Detectado el 1-ago-2026 auditando las 361 referencias a la base contra el
+  // esquema real (`scripts/audit-schema.mjs`). [[postgrest-columna-inexistente]]
+  const { data: idRaw, error: idErr } = await supabase.from('identity_profile')
+    .select('roles').eq('user_id', userId).maybeSingle()
+  if (idErr) reportApiError(new Error(`identity_profile: ${idErr.message}`), { route: 'review/generate' })
+  const idp = idRaw as { roles?: unknown } | null
   if (idp?.roles && Array.isArray(idp.roles) && idp.roles.length > 0 && !existing.has('identity:roles')) {
     toInsert.push({
       user_id: userId,

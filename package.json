@@ -17,7 +17,8 @@
     "e2e:install": "playwright install --with-deps chromium",
     "eval:sir": "node scripts/eval-sir.ts",
     "identidades:export": "node scripts/identidades-export.mjs",
-    "identidades:import": "node scripts/identidades-import.mjs"
+    "identidades:import": "node scripts/identidades-import.mjs",
+    "audit:schema": "node scripts/audit-schema.mjs src"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.99.0",
