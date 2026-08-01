@@ -110,7 +110,7 @@ export function assessEmotionWindow(input: EmotionWindowInput, nowMs: number): E
 
 function buildGuidance(strategy: RegStrategy): string | null {
   if (strategy === 'response_modulation') {
-    return 'Activación alta y ventana angosta. Primero bajá el arousal: respiración lenta, moverte, cortar el estímulo. No es momento de razonar el problema — eso rinde después, no ahora.'
+    return 'Activación alta y ventana angosta. Primero baja el arousal: respiración lenta, moverte, cortar el estímulo. No es momento de razonar el problema — eso rinde después, no ahora.'
   }
   if (strategy === 'reappraisal') {
     return 'Tensionado pero dentro de la ventana. Acá un reencuadre ayuda más que aguantar: ¿qué otra lectura tiene esto? ¿qué le dirías a un amigo en tu lugar?'

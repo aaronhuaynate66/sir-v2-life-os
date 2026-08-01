@@ -78,7 +78,7 @@ export function SpendIntentBreakdown({ data }: { data: SpendingByIntent }) {
             {unclassifiedCount > 0 && (
               <p className="text-[10px] text-muted-foreground/60 mt-2">
                 {unclassifiedCount} salida{unclassifiedCount === 1 ? '' : 's'} sin clasificar ({formatPEN(unclassifiedPEN)}).
-                Asigná intención al registrar para incluirlas.
+                Asigna intención al registrar para incluirlas.
               </p>
             )}
           </>

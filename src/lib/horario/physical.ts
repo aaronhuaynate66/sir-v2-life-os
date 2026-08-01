@@ -1,6 +1,6 @@
 // SIR V2 — Estado físico/energía del día (/horario, vista Día), lógica pura.
 //
-// Resume el ÚLTIMO dato biológico disponible para mostrar "cómo venís hoy"
+// Resume el ÚLTIMO dato biológico disponible para mostrar "cómo vienes hoy"
 // junto al timeline: peso (báscula), frecuencia cardíaca, sueño y energía. Lee
 // la misma data que el grounding de objetivos (health_metrics, sleep_records,
 // self_metrics) pero la enmarca como estado actual, no como contexto de prompt.

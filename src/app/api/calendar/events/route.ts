@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       409,
       'No hay un Google Calendar conectado',
-      'Conectá tu Google Calendar (con permiso de escritura) desde /horario o /agenda y reinténtalo.',
+      'Conecta tu Google Calendar (con permiso de escritura) desde /horario o /agenda y reinténtalo.',
     )
   }
 
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       return errorJson(
         403,
         'Sin permiso de escritura en Google',
-        'Reconectá tu Google Calendar para otorgar permiso de escritura (se pedirá de nuevo).',
+        'Reconecta tu Google Calendar para otorgar permiso de escritura (se pedirá de nuevo).',
       )
     }
     return errorJson(502, 'No se pudo crear el evento en Google', msg.slice(0, 160))

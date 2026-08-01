@@ -1,6 +1,6 @@
 // SIR V2 — Cadencia de contacto por persona (P1 backlog Clay #2). PURO.
 //
-// La cadencia = cada cuánto QUERÉS mantener contacto con alguien. V2 ya guardaba
+// La cadencia = cada cuánto Quieres mantener contacto con alguien. V2 ya guardaba
 // esto como texto libre en `people.contact_frequency`, y el engine de urgencia lo
 // parsea (`lib/people/urgency` → `contactFrequencyDays`) para decir si estás al
 // día o atrasado. Acá NO agregamos un campo nuevo: seguimos escribiendo el mismo

@@ -1,5 +1,5 @@
 'use client'
-// SIR V2 — Intake inteligente: arrastrá VARIOS archivos de una persona (export
+// SIR V2 — Intake inteligente: arrastra VARIOS archivos de una persona (export
 // de WhatsApp + captura de LinkedIn/Instagram) y SIR, en vez de pedirte el
 // nombre, EXTRAE los datos, propone con IA quién es y qué tipo de relación, y te
 // deja confirmar/editar antes de crear (o vincular a alguien existente) y

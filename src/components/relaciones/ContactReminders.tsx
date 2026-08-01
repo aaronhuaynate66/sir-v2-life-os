@@ -1,13 +1,13 @@
 'use client'
 // SIR V2 — "Recordar antes de contactar" (diferenciador #3 · mig 0148).
 //
-// Repetición espaciada RELACIONAL: cosas que querés que SIR te recuerde ANTES de
+// Repetición espaciada RELACIONAL: cosas que quieres que SIR te recuerde ANTES de
 // tu próximo contacto con esta persona (no por fecha — por evento). Dos sabores:
-//   - puntual ("once"): un compromiso que marcás hecho cuando lo usás.
-//   - permanente ("standing"): contexto que querés ver SIEMPRE antes de escribirle
+//   - puntual ("once"): un compromiso que marcas hecho cuando lo usas.
+//   - permanente ("standing"): contexto que quieres ver SIEMPRE antes de escribirle
 //     (ej. "pregúntale por su mamá").
 // Client-side + fail-soft: si la tabla 0148 aún no propagó, la lista queda vacía
-// y podés seguir usando la ficha; el POST fallará suave hasta que exista.
+// y puedes seguir usando la ficha; el POST fallará suave hasta que exista.
 
 import { useCallback, useEffect, useState } from 'react'
 import { BellRing, Repeat, Plus, Check, Trash2, Loader2 } from 'lucide-react'

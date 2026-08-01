@@ -1,6 +1,6 @@
 // SIR V2 — Webhook de Telegram (canal conversacional, MVP Q&A).
 //
-// POST → updates del bot. En el MVP: le PREGUNTÁS a SIR por Telegram y responde
+// POST → updates del bot. En el MVP: le PREGUNTAS a SIR por Telegram y responde
 // cruzando tu data (mismo cerebro askSir() que la web). Solo TU chat (allowlist).
 // La memoria semántica ya es compartida con la web (askSir persiste en
 // sir_conversations por user_id → recall C3 cross-canal). El hilo lineal 100%
@@ -64,12 +64,12 @@ async function handleSocialPhoto(
   supabase: SupabaseClient, ownerId: string, chatId: number, photoFileId: string, caption: string,
 ): Promise<void> {
   const media = await downloadTelegramFile(photoFileId)
-  if (!media) { await sendTelegramMessage(chatId, 'No pude bajar la imagen 😕. Reintentá.'); return }
+  if (!media) { await sendTelegramMessage(chatId, 'No pude bajar la imagen 😕. Reintenta.'); return }
   const base64 = Buffer.from(media.bytes).toString('base64')
   let vis
   try { vis = await extractStoryVision({ supabase, userId: ownerId }, base64, normalizeImageMediaType(media.mimeType)) } catch { vis = null }
   if (!vis || !vis.isSocial) {
-    await sendTelegramMessage(chatId, 'Vi la imagen, pero no parece una story/perfil de Instagram o LinkedIn de alguien. Si es de un contacto, decime de quién y lo anoto.')
+    await sendTelegramMessage(chatId, 'Vi la imagen, pero no parece una story/perfil de Instagram o LinkedIn de alguien. Si es de un contacto, dime de quién y lo anoto.')
     return
   }
 
@@ -92,7 +92,7 @@ async function handleSocialPhoto(
     return
   }
   if (!signal) {
-    await sendTelegramMessage(chatId, `Vi la story de ${m.person.name}, pero no saqué una señal de timing clara. Si querés, marcá "de viaje"/"a full" en su ficha.`)
+    await sendTelegramMessage(chatId, `Vi la story de ${m.person.name}, pero no saqué una señal de timing clara. Si quieres, marca "de viaje"/"a full" en su ficha.`)
     return
   }
 
@@ -487,7 +487,7 @@ export async function POST(req: NextRequest) {
     if (!allowedChat) {
       await sendTelegramMessage(
         msg.chatId,
-        `👋 Soy SIR. Tu chat_id es: ${msg.chatId}\n\nSeteá TELEGRAM_ALLOWED_CHAT_ID=${msg.chatId} en Vercel (Production) y redesplegá para activarme. Hasta entonces no proceso mensajes por seguridad.`,
+        `👋 Soy SIR. Tu chat_id es: ${msg.chatId}\n\nSeteá TELEGRAM_ALLOWED_CHAT_ID=${msg.chatId} en Vercel (Production) y redesplega para activarme. Hasta entonces no proceso mensajes por seguridad.`,
       )
       return
     }
@@ -532,7 +532,7 @@ export async function POST(req: NextRequest) {
       if (cmd === 'start' || cmd === 'help') {
         await sendTelegramMessage(
           msg.chatId,
-          'Soy SIR 🌿. Preguntame lo que quieras sobre tu gente, tus objetivos o tu día — cruzo tu contexto y te respondo con lo que sé de vos. También te leo notas de voz. Escribime nomás.',
+          'Soy SIR 🌿. Pregúntame lo que quieras sobre tu gente, tus objetivos o tu día — cruzo tu contexto y te respondo con lo que sé de ti. También te leo notas de voz. Escríbeme nomas.',
         )
         return
       }

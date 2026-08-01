@@ -14,7 +14,7 @@
 //     Y la capacidad de decisiones financieras (Christensen 2020, etc).
 //
 // DISEÑO — INVARIANTES:
-//   1. NO CLÍNICO. Nada de "podría ser ansiedad" o "consultá a un
+//   1. NO CLÍNICO. Nada de "podría ser ansiedad" o "consulta a un
 //      profesional". La sugerencia es de acción concreta y práctica —
 //      cocinar, caminar, cerrar pantallas, escribirle a alguien.
 //   2. UNA sola sugerencia por vez. Elegimos la más urgente (priority) para
@@ -22,7 +22,7 @@
 //   3. DETERMINÍSTICO Y PURO. Sin red, sin LLM. `now` inyectable para tests.
 //   4. FAIL-SAFE. Si faltan datos (menos de 3 días de metrics o sin stress
 //      logs) → return null. No inventamos brechas.
-//   5. Cero juicio. El copy es reflexivo, no imperativo. "Probá cocinar hoy"
+//   5. Cero juicio. El copy es reflexivo, no imperativo. "Prueba cocinar hoy"
 //      en vez de "no pidas delivery".
 
 import type { FinancialMovement, SelfMetric, SleepRecord } from '@/types'

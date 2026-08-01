@@ -49,7 +49,7 @@ async function resolveUserId(admin: SupabaseClient): Promise<{ userId: string } 
   if (error) return { error: `No pude leer profiles: ${error.message}` }
   const rows = (data ?? []) as Array<{ id: string }>
   if (rows.length === 1) return { userId: rows[0].id }
-  return { error: 'Seteá READER_INGEST_USER_ID con el user id de Aaron.' }
+  return { error: 'Setea READER_INGEST_USER_ID con el user id de Aaron.' }
 }
 
 const VALID_PLATFORMS: ReadonlySet<string> = new Set(['teams', 'slack', 'whatsapp', 'linkedin', 'instagram', 'facebook', 'other'])

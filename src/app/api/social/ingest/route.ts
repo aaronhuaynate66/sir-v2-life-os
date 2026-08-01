@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
 
   const userId = await resolveUserId(admin)
-  if (!userId) return errorJson(500, 'No pude resolver el user id — seteá READER_INGEST_USER_ID')
+  if (!userId) return errorJson(500, 'No pude resolver el user id — setea READER_INGEST_USER_ID')
 
   let body: { items?: unknown; following?: unknown }
   try { body = (await req.json()) as typeof body } catch { return errorJson(400, 'JSON inválido') }

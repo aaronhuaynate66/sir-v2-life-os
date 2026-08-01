@@ -36,7 +36,7 @@ export function EmailConnectionPanel() {
     if (typeof window === 'undefined') return
     const p = new URLSearchParams(window.location.search).get('email')
     if (!p) return
-    if (p === 'connected') toast.success('Correo conectado', { description: 'Sincronizá para traer lo nuevo.' })
+    if (p === 'connected') toast.success('Correo conectado', { description: 'Sincroniza para traer lo nuevo.' })
     else if (p === 'notconfigured') toast.error('Falta registrar la app en Azure', { description: 'Ver docs/EMAIL_GRAPH_OAUTH.md' })
     else if (p.startsWith('err')) toast.error('No se pudo conectar', { description: p })
     window.history.replaceState({}, '', window.location.pathname)

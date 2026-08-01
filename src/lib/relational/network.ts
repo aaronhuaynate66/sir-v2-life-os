@@ -6,7 +6,7 @@
 //   (a) CAMINOS: "quieres llegar a X; conocés a Y que lo conoce" — mutuos que
 //       puentean hacia una persona objetivo, rankeados por qué tan buen puente son.
 //   (b) PRESENTACIONES: dos personas tuyas que NO están conectadas pero comparten
-//       organización → una intro de valor que podrías hacer vos.
+//       organización → una intro de valor que podrías hacer tú.
 // Lazos débiles (Granovetter) para un objetivo: se deja para cuando el rubro del
 // objetivo se cruce con roles — acá el foco es lo que el grafo ya sostiene.
 //
@@ -90,7 +90,7 @@ function normOrg(s: string | null | undefined): string {
 
 /**
  * Presentaciones de valor: pares de personas tuyas que comparten organización
- * pero NO están conectadas por una arista. Una intro que podrías hacer vos.
+ * pero NO están conectadas por una arista. Una intro que podrías hacer tú.
  * PURO. Devuelve como mucho `limit`, priorizando por importancia combinada.
  */
 export function suggestIntroductions(

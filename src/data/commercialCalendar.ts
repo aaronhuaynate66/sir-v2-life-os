@@ -64,7 +64,7 @@ export const PERU_COMMERCIAL_CALENDAR: CommercialEvent[] = [
     label: 'Día de la Madre',
     spec: { type: 'nthWeekday', month: 4, weekday: 0, n: 2 }, // 2° domingo de mayo
     leadDays: 35,
-    hint: 'Campaña fuerte de regalo — empezá temprano',
+    hint: 'Campaña fuerte de regalo — empieza temprano',
   },
   {
     id: 'dia_padre',

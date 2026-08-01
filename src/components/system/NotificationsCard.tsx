@@ -123,7 +123,7 @@ export function NotificationsCard() {
         {state === 'denied' && (
           <p className="text-sm text-muted-foreground py-1 flex items-start gap-2">
             <BellOff size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-            Bloqueaste las notificaciones. Habilitalas en los ajustes del sistema para SIR y volvé.
+            Bloqueaste las notificaciones. Habilitalas en los ajustes del sistema para SIR y vuelve.
           </p>
         )}
 

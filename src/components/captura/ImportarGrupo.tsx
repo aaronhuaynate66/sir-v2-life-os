@@ -1,7 +1,7 @@
 'use client'
 // SIR V2 — ImportarGrupo: importar un chat GRUPAL atribuyendo por autor. Detecta
 // los participantes, resuelve cada uno a una persona (el que no resuelve suele
-// ser "vos" → excluido), confirmás, y procesa atribuyendo a cada miembro sin
+// ser "tú" → excluido), confirmas, y procesa atribuyendo a cada miembro sin
 // contaminar fichas (cada uno recibe SU señal). Reusa runGroupImport.
 
 import { useCallback, useState } from 'react'

@@ -53,7 +53,7 @@ interface Candidate extends HorizonEventInput {
  * - 'upcoming' (default): futuros (date >= todayIso), tope por día + total; los que
  *   mencionan a la persona y los de día completo tienen prioridad ante el tope.
  * - 'curated': día completo/varios días + los que mencionan a la persona.
- * - 'all': todos (pasá `limit`). - 'person': solo los que mencionan a la persona.
+ * - 'all': todos (pasa `limit`). - 'person': solo los que mencionan a la persona.
  */
 export function calendarEventsToHorizon(
   events: CalendarEvent[],

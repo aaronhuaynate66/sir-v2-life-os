@@ -9,7 +9,7 @@
 // person-sensitive), pero no se expone fuera de su sesión (RLS).
 //
 // TOLERANTE: si la tabla aún no existe (migración sin correr), GET devuelve
-// lista vacía en vez de 500 — la UI muestra "conectá tu calendario" y el reader
+// lista vacía en vez de 500 — la UI muestra "conecta tu calendario" y el reader
 // sigue cayendo al fallback OUTLOOK_ICS_URL. No rompe lo actual.
 
 import { NextResponse, type NextRequest } from 'next/server'

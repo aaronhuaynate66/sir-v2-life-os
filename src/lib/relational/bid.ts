@@ -1,8 +1,8 @@
 // SIR V2 — "Bids" y rituales de mantenimiento en el momento correcto (15·5).
 //
 // Un "bid" (Gottman) es un gesto chico de conexión. El doc 15 pide que la acción
-// sugerida sea ESPECÍFICA y humana ("preguntale por el examen de su hija"), no un
-// genérico "escribile a X" — atada a una señal REAL: una fecha próxima o un tema
+// sugerida sea ESPECÍFICA y humana ("pregúntale por el examen de su hija"), no un
+// genérico "escríbele a X" — atada a una señal REAL: una fecha próxima o un tema
 // que le importa. Las cards existentes MUESTRAN la data (countdown, temas); esto
 // la SINTETIZA en un gesto concreto y opcional. Nunca una cuota.
 //

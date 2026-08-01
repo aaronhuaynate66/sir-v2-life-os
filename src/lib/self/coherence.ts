@@ -1,6 +1,6 @@
 // SIR V2 — "Coherencia declarado ↔ hecho" (E5, Life Direction). La SÍNTESIS a
-// escala de VIDA: de todo lo que decís que te importa (tu norte + tus prioridades
-// declaradas), ¿tu actividad REAL lo acompaña, o el grueso de lo que hacés cae en
+// escala de VIDA: de todo lo que dices que te importa (tu norte + tus prioridades
+// declaradas), ¿tu actividad REAL lo acompaña, o el grueso de lo que haces cae en
 // otra parte? Y esa proporción, ¿viene convergiendo hacia tu norte o alejándose?
 //
 // Qué la hace DISTINTA de lo que ya existe (reusa, no reimplementa):
@@ -9,7 +9,7 @@
 //   - trajectoryArc: cuántos objetivos cerrás/soltás (follow-through). Esto no
 //     mira cierres/soltadas, mira DÓNDE cae tu esfuerzo real (pasos completados)
 //     vs lo que declaraste prioritario.
-//   - norteDrift: si le prestás ATENCIÓN al norte AHORA (editaste el objetivo).
+//   - norteDrift: si le prestas ATENCIÓN al norte AHORA (editaste el objetivo).
 //   - norteMomentum: pasos del norte en 30d (eficacia del norte SOLO).
 //   Esto es el reparto del FOCO entre lo declarado y todo lo demás, como
 //   TENDENCIA en el tiempo (ventana reciente vs previa).

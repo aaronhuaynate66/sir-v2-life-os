@@ -1,7 +1,7 @@
 // SIR V2 — Indicador de DERIVA hacia el norte (E5, "Tu rumbo").
 // Determinístico, sin IA: lee tus objetivos y dice si tu energía reciente
 // converge en tu NORTE (el objetivo-ancla) o se dispersa. No moraliza ni
-// diagnostica — describe el patrón con números y deja que vos leas.
+// diagnostica — describe el patrón con números y deja que tú leas.
 //
 // Señales (de Goal[], lo que el panel ya tiene):
 //   - ¿hay norte? (un objetivo activo con isAnchor)

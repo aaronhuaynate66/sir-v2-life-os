@@ -183,7 +183,7 @@ export function Bitacora({ personLogs, observations, notesHistory, moments, mone
 
                 {filtered.length === 0 ? (
                   <p className="text-xs text-muted-foreground italic">
-                    Nada con este filtro. Reactivá alguna fuente arriba.
+                    Nada con este filtro. Reactiva alguna fuente arriba.
                   </p>
                 ) : (
                 <ol className="relative space-y-2.5 border-l border-border/50 pl-4">

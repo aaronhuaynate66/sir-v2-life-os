@@ -155,7 +155,7 @@ export function EspejoSemanalPanel() {
           ) : (
             <Button size="sm" variant="secondary" className="mt-3" disabled={busy} onClick={leer}>
               {busy ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Sparkles size={14} className="mr-1" />}
-              {busy ? 'Leyendo…' : 'Leé la semana'}
+              {busy ? 'Leyendo…' : 'Lee la semana'}
             </Button>
           )
         )}

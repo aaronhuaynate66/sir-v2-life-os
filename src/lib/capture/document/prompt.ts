@@ -17,7 +17,7 @@ Reglas:
 - DNI peruano (RENIEC): documento_tipo = "DNI", documento_numero = el número de 8 dígitos. Si ves la fecha de caducidad del DNI, NO la pongas en pasaporte_vencimiento (ese campo es solo para pasaportes).
 - Carné de Extranjería: documento_tipo = "Carné de extranjería", documento_numero = el número del carné.
 - Pasaporte: documento_tipo = "Pasaporte", pasaporte_numero = el número, pasaporte_vencimiento = la fecha de expiración.
-- FECHAS: normalizá SIEMPRE a YYYY-MM-DD. Convertí formatos como "DD/MM/AAAA", "DD MMM AAAA", "DD.MM.AAAA". Si el año tiene 2 dígitos o la fecha es ambigua/ilegible, poné null.
-- Si un campo no es legible o no aplica, poné null. NO inventes números ni fechas.
+- FECHAS: normaliza SIEMPRE a YYYY-MM-DD. Convertí formatos como "DD/MM/AAAA", "DD MMM AAAA", "DD.MM.AAAA". Si el año tiene 2 dígitos o la fecha es ambigua/ilegible, pon null.
+- Si un campo no es legible o no aplica, pon null. NO inventes números ni fechas.
 - NO incluyas nombres, dirección, ni otros datos — SOLO los 4 campos del schema.
-- Respondé ÚNICAMENTE el JSON. Sin texto adicional, sin explicación, sin markdown fences. Empieza con "{" y termina con "}".`
+- Responde ÚNICAMENTE el JSON. Sin texto adicional, sin explicación, sin markdown fences. Empieza con "{" y termina con "}".`

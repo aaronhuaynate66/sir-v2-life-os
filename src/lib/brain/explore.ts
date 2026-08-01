@@ -2,7 +2,7 @@
 //
 // Capa pura de presentación sobre el cerebro-grafo (F1-F4): traduce las filas de
 // `describeGlow` (difusión desde una semilla) a algo legible — etiqueta humana
-// del "por qué se conecta" y agrupación por tipo de nodo. "Mostrame cómo se
+// del "por qué se conecta" y agrupación por tipo de nodo. "Muéstrame cómo se
 // conecta todo esto" apuntado a TU propia vida (Pathfinder sano). El motor
 // (diffuse/topActivated/describeGlow) ya existe y está testeado; esto es la
 // traducción para la UI.

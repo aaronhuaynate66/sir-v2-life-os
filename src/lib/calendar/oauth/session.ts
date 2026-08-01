@@ -94,7 +94,7 @@ export async function ensureFreshGoogleToken(
       .eq('user_id', userId)
     return { token: tok.access_token, connectionId: conn.id, accountEmail: conn.account_email }
   } catch {
-    // Refresh falló: intentá con el viejo (mejor que nada); si tampoco, null.
+    // Refresh falló: intenta con el viejo (mejor que nada); si tampoco, null.
     return currentPlain ? { token: currentPlain, connectionId: conn.id, accountEmail: conn.account_email } : null
   }
 }

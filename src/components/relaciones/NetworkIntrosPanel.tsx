@@ -2,7 +2,7 @@
 
 // SIR V2 — 15·7: presentaciones de valor. Pares de personas tuyas que comparten
 // organización pero NO están conectadas por una arista del grafo → una intro que
-// podrías hacer vos. Invisible si no hay ninguna. Reusa el motor puro
+// podrías hacer tú. Invisible si no hay ninguna. Reusa el motor puro
 // suggestIntroductions sobre people + person_links del store.
 import { useMemo } from 'react'
 import Link from 'next/link'

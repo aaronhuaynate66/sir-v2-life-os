@@ -27,8 +27,8 @@ Schema EXACTO:
 Reglas estrictas:
 1. value: el NÚMERO PRINCIPAL que se está siguiendo (ej. el precio total del
    vuelo, el saldo, el precio del producto). Si hay una pista de qué métrica
-   seguir, usá ESE número. NUNCA inventes; si no es legible, null.
-2. Normalizá el número a punto decimal sin separadores de miles: "PEN 5,075" →
+   seguir, usa ESE número. NUNCA inventes; si no es legible, null.
+2. Normaliza el número a punto decimal sin separadores de miles: "PEN 5,075" →
    5075 ; "S/ 1.299,90" → 1299.9 ; "$1,299.99" → 1299.99.
 3. unit: el código de moneda (PEN para soles/S/, USD para $/US$, EUR para €) o
    la unidad si es obvia. null si no se distingue.

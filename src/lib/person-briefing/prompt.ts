@@ -3,7 +3,7 @@
 // Genera un briefing contextual y accionable sobre una persona, a partir
 // de sus memorias asociadas + metadata del vínculo + el ESTADO RECIENTE del
 // usuario. A diferencia de "Lo personal" (#8, retrato narrativo cacheado en
-// person_synthesis), el briefing es EFÍMERO (no se persiste): es un "ponete al
+// person_synthesis), el briefing es EFÍMERO (no se persiste): es un "ponte al
 // día antes de hablarle" que el usuario pide en el momento.
 //
 // RAZÓN DE SER (Aaron, 2026-06-13): mejorar las relaciones = la suma de MI

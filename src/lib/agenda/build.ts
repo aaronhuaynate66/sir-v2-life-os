@@ -4,7 +4,7 @@
 // sola lista accionable ordenada por urgencia/cercanía:
 //
 //   - critical_signal : señales sin resolver, accionables, urgentes.
-//   - no_contact      : "no contactás a X hace N días" (umbral según
+//   - no_contact      : "no contactas a X hace N días" (umbral según
 //                       importancia; usa person.lastContact).
 //   - goal_target     : objetivos activos con targetDate cercana (o vencida).
 //   - objective_step  : próximo paso pendiente de cada objetivo activo (el
@@ -74,7 +74,7 @@ export interface AgendaItem {
   personSlug?: string
   /** Ruta sugerida al hacer click. */
   href: string
-  /** Sugerencia accionable opcional, un escalón debajo del detail ("Prepará
+  /** Sugerencia accionable opcional, un escalón debajo del detail ("Prepara
    *  algo con tiempo", "¿Campaña para X?"). La anticipación hecha explícita. */
   actionHint?: string
   /** Rango de grupo para el orden (menor = más arriba). Interno pero
@@ -157,7 +157,7 @@ function leadPhrase(daysUntil: number): string {
 }
 
 /**
- * Anticipación EXPLÍCITA para una fecha próxima: el empujón "preparate" según
+ * Anticipación EXPLÍCITA para una fecha próxima: el empujón "prepárate" según
  * cuánto falta. Devuelve undefined fuera de la ventana de preparación (la fecha
  * sigue listada, pero sin nudge). Una sola escala para cumpleaños, fechas
  * especiales y fechas propias.
@@ -165,7 +165,7 @@ function leadPhrase(daysUntil: number): string {
 function prepHint(daysUntil: number): string | undefined {
   if (daysUntil < 0) return undefined
   if (daysUntil <= 3) return 'Es pronto — no lo dejes pasar'
-  if (daysUntil <= 14) return 'Prepará algo con tiempo'
+  if (daysUntil <= 14) return 'Prepara algo con tiempo'
   return undefined
 }
 
@@ -246,7 +246,7 @@ function buildSpecialDates(
 }
 
 /**
- * "No contactás a X hace N días". El ESFUERZO de relación se pondera por
+ * "No contactas a X hace N días". El ESFUERZO de relación se pondera por
  * parentesco con el "yo" (kinshipMap, de person_links): la familia directa y la
  * pareja pesan más en dos dimensiones —
  *   • umbral: se alerta antes (threshold acortado por el peso del vínculo), y
@@ -283,7 +283,7 @@ function buildNoContact(
     const weight = kin?.weight ?? 1
     const title = kin
       ? `Hace tiempo no hablas con ${kin.label} ${p.name}`
-      : `Hace tiempo no contactás a ${p.name}`
+      : `Hace tiempo no contactas a ${p.name}`
     items.push({
       id: `nocontact_${p.id}`,
       kind: 'no_contact',
@@ -442,7 +442,7 @@ function buildSelfDates(
     )
     if (cd && cd.daysUntil <= horizonDays) {
       const age = ageTurning(identity.birthDate, cd.occurrence)
-      const detail = [age != null ? `cumplís ${age}` : null, futurePhrase(cd.daysUntil)]
+      const detail = [age != null ? `cumples ${age}` : null, futurePhrase(cd.daysUntil)]
         .filter(Boolean)
         .join(' · ')
       items.push({
@@ -519,7 +519,7 @@ function joinNames(names: string[], max = 3): string {
  * (people.location). Es CONTEXTO, no un recordatorio con fecha, así que va al
  * fondo (rank proximity) y es honesto por diseño — afirma sólo el hecho
  * ("estas personas viven en la misma zona") + una sugerencia CONDICIONAL ("si
- * vas para allá, aprovechá"). SIR no sabe dónde está Aaron en vivo, así que
+ * vas para allá, aprovecha"). SIR no sabe dónde está Aaron en vivo, así que
  * nunca dice "estás cerca de X". Vacío si no hay 2+ personas en una misma zona.
  */
 function buildProximity(people: Person[]): AgendaItem[] {
@@ -544,7 +544,7 @@ function buildProximity(people: Person[]): AgendaItem[] {
       detail: names,
       daysUntil: 0,
       href: '/relaciones',
-      actionHint: `Si caés por ${c.zoneLabel}, aprovechá para verlas de una`,
+      actionHint: `Si caés por ${c.zoneLabel}, aprovecha para verlas de una`,
       sortRank: RANK.proximity,
     }
   })

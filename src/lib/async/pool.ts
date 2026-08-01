@@ -1,6 +1,6 @@
 // SIR V2 — mapWithConcurrency: corre `fn` sobre cada item con un tope de N en
 // vuelo a la vez. Preserva el orden de resultados (result[i] ↔ items[i]).
-// Nunca rechaza por un item: capturá el error dentro de `fn` si quieres
+// Nunca rechaza por un item: captura el error dentro de `fn` si quieres
 // tolerancia. PURO respecto del DOM (sirve en cliente y server). Testeable.
 
 /**

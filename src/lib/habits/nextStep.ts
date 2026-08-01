@@ -40,7 +40,7 @@ export function sizeNextStep(input: NextStepInput): NextStepGuidance {
 
   if (lowEnergy && (effort === 'L' || effort === 'M')) {
     return {
-      suggestion: `Hoy tu energía está baja: no vayas por todo. Arrancá con 10 min de ${t} — mantener el ritmo vale más que el tamaño.`,
+      suggestion: `Hoy tu energía está baja: no vayas por todo. Arranca con 10 min de ${t} — mantener el ritmo vale más que el tamaño.`,
       downsized: true,
       reason: 'low_energy',
     }
@@ -53,7 +53,7 @@ export function sizeNextStep(input: NextStepInput): NextStepGuidance {
     }
   }
   return {
-    suggestion: `Tu próximo paso: ${t}. Es abarcable — hacelo y tachalo.`,
+    suggestion: `Tu próximo paso: ${t}. Es abarcable — hazlo y tachalo.`,
     downsized: false,
     reason: null,
   }

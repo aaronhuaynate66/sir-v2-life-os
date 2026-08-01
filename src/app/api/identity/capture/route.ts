@@ -12,7 +12,7 @@
 //
 // Dos fuentes (misma extracción → mismo SelfProfileExtracted):
 //   - { file: Blob }  → Visión sobre el screenshot (rate limit 'vision').
-//   - { text: string }→ relato libre "contale a SIR quién sos" (rate limit
+//   - { text: string }→ relato libre "cuéntale a SIR quién eres" (rate limit
 //                       'generation'; sin OCR, texto fiel).
 // Respuesta 200: { extracted, confidence }. Auth: requiere sesión activa.
 
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
 
   if (isTextMode) {
     if (profileText.length < MIN_TEXT_CHARS) {
-      return errorJson(400, 'Contanos un poco más', `Mín ${MIN_TEXT_CHARS} caracteres.`)
+      return errorJson(400, 'Cuéntanos un poco más', `Mín ${MIN_TEXT_CHARS} caracteres.`)
     }
     if (profileText.length > MAX_TEXT_CHARS) {
       return errorJson(413, 'Texto demasiado largo', `Máx ${MAX_TEXT_CHARS} caracteres.`)

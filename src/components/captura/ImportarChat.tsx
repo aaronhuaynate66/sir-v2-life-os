@@ -3,8 +3,8 @@
 // vincular su contacto EN UN PASO (antes había que crear la persona primero y
 // subir desde su ficha).
 //
-// Portón "¿de quién es?": a medida que escribís, SUGERIMOS personas existentes
-// (searchPeople, matcher difuso server-side). Elegís una para VINCULAR, o creás
+// Portón "¿de quién es?": a medida que escribes, SUGERIMOS personas existentes
+// (searchPeople, matcher difuso server-side). Eliges una para VINCULAR, o creas
 // una nueva EXPLÍCITAMENTE. Antes el match era por nombre EXACTO → un nombre con
 // otra grafía creaba un duplicado (caso Nicolle). Resuelta la persona, se reusa
 // AgregarCapturaPanel en modo 'whatsapp' (pipeline completo + revisión + persist).

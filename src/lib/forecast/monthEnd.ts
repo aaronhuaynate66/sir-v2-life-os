@@ -52,7 +52,7 @@ export interface MonthEndSpendForecast {
   mtdIncomePEN: number
   /** Gasto total del mes ANTERIOR completo (baseline). null si no hubo data. */
   lastMonthOutflowPEN: number | null
-  /** Proyectado vs mes pasado, en %. Positivo = gastás más. null sin baseline. */
+  /** Proyectado vs mes pasado, en %. Positivo = gastas más. null sin baseline. */
   vsLastMonthPct: number | null
   confidence: ForecastConfidence
 }

@@ -43,17 +43,17 @@ export function computeContactWindow(s: ContactSignals): ContactWindow {
     return {
       state: 'con_cuidado',
       reason: s.conflictTitle ? `tienen un tema abierto: «${s.conflictTitle}»` : 'tienen un tema abierto sin cerrar',
-      tone: 'entrá a escuchar, sin reabrir la herida',
+      tone: 'entra a escuchar, sin reabrir la herida',
     }
   }
   if (s.lastTone !== null && s.lastTone <= 2) {
-    return { state: 'con_cuidado', reason: 'la última charla quedó tensa', tone: 'bajá un cambio, sin temas pesados' }
+    return { state: 'con_cuidado', reason: 'la última charla quedó tensa', tone: 'baja un cambio, sin temas pesados' }
   }
   if (s.cycleSensitive) {
     return {
       state: 'con_cuidado',
       reason: 'puede estar en días sensibles del ciclo',
-      tone: 'entrá liviano y con cuidado — es para acompañarla, no para evitarla',
+      tone: 'entra liviano y con cuidado — es para acompañarla, no para evitarla',
     }
   }
   // ── Oportunidades ───────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export function computeContactWindow(s: ContactSignals): ContactWindow {
     return { state: 'buen_momento', reason: `se viene ${lbl} (${when})`, tone: 'un gesto cálido, sin pedir nada' }
   }
   if (s.daysSinceContact !== null && s.daysSinceContact >= driftThreshold(s.importance)) {
-    return { state: 'buen_momento', reason: `hace ${s.daysSinceContact} días sin hablar`, tone: 'retomá liviano, sin agenda' }
+    return { state: 'buen_momento', reason: `hace ${s.daysSinceContact} días sin hablar`, tone: 'retoma liviano, sin agenda' }
   }
   return { state: 'neutral', reason: 'sin señales urgentes', tone: 'cuando quieras' }
 }

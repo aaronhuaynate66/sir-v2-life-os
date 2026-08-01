@@ -9,7 +9,7 @@ import { parseLocalDate } from '@/lib/dates/parseLocalDate'
 
 /** Estado de un tracker frente a su condición. */
 export type TrackerStatus =
-  | 'met' // condición cumplida (¡comprá! / ¡llegó!)
+  | 'met' // condición cumplida (¡compra! / ¡llegó!)
   | 'stale' // la última lectura es más vieja que la cadencia → actualizar
   | 'tracking' // hay datos, condición aún no cumplida
   | 'no_data' // todavía no hay valor

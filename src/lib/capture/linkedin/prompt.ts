@@ -230,7 +230,7 @@ REGLAS DE CONFIANZA:
 
 REGLAS GENERALES:
 
-- Si la imagen NO es un perfil de LinkedIn, igual respondé el JSON, con
+- Si la imagen NO es un perfil de LinkedIn, igual responde el JSON, con
   fullName=null y todos los demas campos en null, confidence='low' y
   explicacion en rawObservations.
 - rawObservations: ambiguedades, campos cortados, etc.

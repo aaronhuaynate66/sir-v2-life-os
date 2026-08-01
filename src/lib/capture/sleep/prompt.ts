@@ -34,7 +34,7 @@ Reglas estrictas:
 
 0. total_minutes es el SUEÑO NOCTURNO. Si el panel separa una SIESTA (ej.
    "Siestas 20:00-20:56 56 min") o muestra un "sueño total" mayor que las horas
-   de la noche, NO sumes la siesta al total_minutes: ponela en nap_minutes.
+   de la noche, NO sumes la siesta al total_minutes: ponla en nap_minutes.
    awakenings = "Veces que te despertaste". respiratory_rate = "Frecuencia
    respiratoria promedio". spo2_avg = "SpO₂ prom". Si alguno no aparece, null.
 
@@ -49,7 +49,7 @@ Reglas estrictas:
    total_minutes es la duración DORMIDA total. Si el panel sólo muestra las
    fases, total_minutes = profundo + liviano + REM (NO sumes la vigilia).
 
-3. FASES (stages): mapeá los nombres de cada app al schema:
+3. FASES (stages): mapea los nombres de cada app al schema:
    - profundo / deep / sueño profundo            -> deep_minutes
    - liviano / ligero / light / core / superficial-> light_minutes
    - REM / sueño REM                              -> rem_minutes
@@ -69,7 +69,7 @@ Reglas estrictas:
    destacado, normalmente con estrellas y/o "mejor que un X% de usuarios"
    (ej. "68 puntos ★★★★", "Puntuación 75", "Sleep score 82").
    CRÍTICO — NO es un sub-puntaje de una dimensión. Estos NO son el score de la
-   noche y debés IGNORARLOS como score:
+   noche y debes IGNORARLOS como score:
      · "Continuidad de sueño profundo, 81 puntos"
      · "Calidad de la respiración, 98 puntos"
      · cualquier "<dimensión>, N puntos" dentro de una lista de métricas.
@@ -88,7 +88,7 @@ Reglas estrictas:
    - medium : la imagen tiene partes borrosas o valores genuinamente ambiguos.
    - low    : imagen borrosa o sólo 1-2 datos legibles.
 
-8. raw_observations: máximo 200 chars en español. Mencioná qué app es, qué
+8. raw_observations: máximo 200 chars en español. Menciona qué app es, qué
    datos no se leyeron y observaciones de calidad de la imagen.
 
 9. Si la imagen NO es de una app de sueño o no contiene datos de sueño,

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const platform = (typeof body.platform === 'string' && VALID_PLATFORMS.has(body.platform) ? body.platform : 'teams') as ReaderPlatform
   const threadName = typeof body.threadName === 'string' ? body.threadName.trim().slice(0, 120) : ''
   const text = typeof body.text === 'string' ? body.text : ''
-  if (!threadName) return errorJson(400, 'Decime con quién es la conversación (nombre).')
+  if (!threadName) return errorJson(400, 'Dime con quién es la conversación (nombre).')
   if (!text.trim()) return errorJson(400, 'Pega la conversación.')
 
   const messages = parsePastedConversation(text)

@@ -1,6 +1,6 @@
 'use client'
 // SIR V2 — Buscar dentro del historial CRUDO archivado de una persona (bitácora).
-// "Buscá en lo que hablaste con X": busca en el texto completo del export.
+// "Busca en lo que hablaste con X": busca en el texto completo del export.
 
 import { useState } from 'react'
 import { Search, Loader2 } from 'lucide-react'

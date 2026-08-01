@@ -1,4 +1,4 @@
-// SIR V2 — Onboarding por TEXTO de identidad ("Cuéntale a SIR quién sos").
+// SIR V2 — Onboarding por TEXTO de identidad ("Cuéntale a SIR quién eres").
 //
 // Sub-panel del panel unificado "Mis capturas". Aaron escribe/dicta un párrafo
 // sobre quién es; la extracción (sin Visión/OCR) arma una PROPUESTA editable que

@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : ''
   const date = typeof body.date === 'string' ? body.date.slice(0, 10) : ''
   if (!title) return errorJson(400, 'Falta el título del plan')
-  if (!ISO_DATE.test(date)) return errorJson(400, 'Fecha inválida (usá YYYY-MM-DD)')
+  if (!ISO_DATE.test(date)) return errorJson(400, 'Fecha inválida (usa YYYY-MM-DD)')
   const endDate = typeof body.endDate === 'string' && ISO_DATE.test(body.endDate.slice(0, 10)) ? body.endDate.slice(0, 10) : null
   const note = typeof body.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 500) : null
   const personId = typeof body.personId === 'string' && body.personId ? body.personId : null

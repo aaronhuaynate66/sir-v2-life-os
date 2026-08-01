@@ -2,7 +2,7 @@
 //
 // Cierra el bucle de la base científica: hasta ahora SIR recomendaba pero no
 // observaba el RESULTADO. Acá aprende qué TIPO de acción efectivamente te sube
-// la paz. Cuando marcás una recomendación como hecha, se registra la paz de ese
+// la paz. Cuando marcas una recomendación como hecha, se registra la paz de ese
 // momento (peaceBefore); N días después miramos tu paz (peaceAfter, de la serie
 // de snapshots) y computamos el delta por tipo. Es "la parte analítica que
 // cierra el loop". Determinístico.

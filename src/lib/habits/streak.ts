@@ -21,7 +21,7 @@ export interface HabitStreak {
 
 const DAY_MS = 86_400_000
 // Perú (Lima) = UTC-5 todo el año (sin horario de verano). Los hábitos se
-// agrupan por DÍA DE LIMA, no UTC: si no, lo que marcás de noche (19:00-23:59
+// agrupan por DÍA DE LIMA, no UTC: si no, lo que marcas de noche (19:00-23:59
 // Lima) cae al día siguiente en UTC y corrompe racha / "hoy" / la hora.
 const LIMA_OFFSET_MS = 5 * 3_600_000
 

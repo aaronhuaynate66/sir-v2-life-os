@@ -19,7 +19,7 @@
 //
 // MOUNT-SAFE (fix #418): la actividad reciente depende de "ahora" (ventana de
 // recencia, tiempo relativo). Render nada en server + primer render cliente; el
-// contenido real se computa tras montar. Degradá con gracia: sin actividad ni
+// contenido real se computa tras montar. Degrada con gracia: sin actividad ni
 // notas, no renderiza nada (no abruma con placeholders vacíos).
 
 import { useEffect, useMemo, useState } from 'react'
@@ -75,7 +75,7 @@ export function AntesDeContactar({ personId, memories }: AntesDeContactarProps) 
   const notes = privateNotes?.trim()
   const hasNotes = !!notes
 
-  // Degradá con gracia: si no hay nada que aportar por encima del strip, no
+  // Degrada con gracia: si no hay nada que aportar por encima del strip, no
   // renderices la sección (evita ruido). Mientras las notas cargan, si tampoco
   // hay actividad, esperamos (no mostramos un cascarón vacío).
   if (!hasActivity && !hasNotes) return null

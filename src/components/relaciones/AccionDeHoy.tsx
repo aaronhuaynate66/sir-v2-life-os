@@ -9,7 +9,7 @@
 //     frío / Sin registro.
 //   - El sustento visible (la línea de próxima acción ya calculada, pura, por
 //     buildPersonSummary — misma fuente que el vistazo, sin re-implementar).
-//   - "Escribile ahora" → wa.me directo (si hay teléfono).
+//   - "Escríbele ahora" → wa.me directo (si hay teléfono).
 //   - "Preparar mensaje" → borrador EDITABLE por IA (reusa
 //     /api/daily-actions/message, Haiku barato). Copiable o enviable por
 //     WhatsApp con el texto ya cargado.

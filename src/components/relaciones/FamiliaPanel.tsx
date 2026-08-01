@@ -5,13 +5,13 @@
 // y no reconciliaba contra la persona que YA existe ("María Isabel Espinoza
 // Vidaurre"). Ahora:
 //
-//   • TU VÍNCULO (self↔persona): "¿Quién es esta persona para vos?" — madre,
+//   • TU VÍNCULO (self↔persona): "¿Quién es esta persona para ti?" — madre,
 //     hermana, etc. Se guarda como arista self→persona (person_links con
 //     person_a_id='self', migration 0058). El dropdown genérico "Relación"
 //     (PersonDetail) sigue intacto; esto es el parentesco específico.
-//   • AUTOCOMPLETAR: al agregar un familiar de ESTA persona buscás entre las
+//   • AUTOCOMPLETAR: al agregar un familiar de ESTA persona buscas entre las
 //     personas que ya tienes (match tolerante a tildes/primer nombre) y eliges
-//     UNA, o creás una nueva. Se guarda la ARISTA, no texto.
+//     UNA, o creas una nueva. Se guarda la ARISTA, no texto.
 //   • BIDIRECCIONAL: una arista dirigida link(A→B, kind) se ve como "B es <kind>
 //     de A" en la ficha de A y como "A es <inverso> de B" en la ficha de B.
 //   • SUGERENCIAS (nunca automáticas): inferencia transitiva — incluyendo con el
@@ -130,7 +130,7 @@ export function FamiliaPanel({ person }: FamiliaPanelProps) {
     [links, person.id],
   )
 
-  // El selector "¿Quién es esta persona para vos?" refleja el vínculo YA guardado
+  // El selector "¿Quién es esta persona para ti?" refleja el vínculo YA guardado
   // (si existe); si no, propone por defecto según la relación (pareja si es
   // romántica) — nunca "madre" para una pareja/ex.
   useEffect(() => {

@@ -1,6 +1,6 @@
 // SIR V2 — Webhook del BOT DE DEV (@sir_aaron_dev_bot). Q&A de estado técnico.
 //
-// Separado del webhook relacional (bot y token propios). Le preguntás por el
+// Separado del webhook relacional (bot y token propios). Le preguntas por el
 // estado del repo ("¿pasó CI?", "¿qué PRs hay?", "¿qué se deployó?") y responde
 // cruzando la GitHub API + un LLM. Solo TU chat (allowlist TELEGRAM_DEV_CHAT_ID).
 //

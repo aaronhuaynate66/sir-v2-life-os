@@ -205,7 +205,7 @@ async function ensureFreshAccessToken(
   const currentPlain = decryptToken(conn.accessToken)
   if (stillValid && currentPlain) return currentPlain
   const refreshPlain = decryptToken(conn.refreshToken)
-  if (!refreshPlain) return currentPlain // sin refresh: usá lo que hay y que Google diga si murió
+  if (!refreshPlain) return currentPlain // sin refresh: usa lo que hay y que Google diga si murió
   try {
     const tok = await refreshAccessToken(refreshPlain)
     const newExpiresAt = new Date(nowMs + Math.max(0, (tok.expires_in ?? 3600) - 30) * 1000).toISOString()
@@ -235,7 +235,7 @@ async function fetchGoogleFeed(
   }
   try {
     const token = await ensureFreshAccessToken(supabase, conn, w.nowMs)
-    if (!token) return { events: [], error: 'sin token válido — reconectá el calendario' }
+    if (!token) return { events: [], error: 'sin token válido — reconecta el calendario' }
     const events = await fetchGoogleCalendarEvents(
       token,
       new Date(w.fromMs).toISOString(),
@@ -312,7 +312,7 @@ export async function fetchCalendarEvents(opts: FetchCalendarOptions = {}): Prom
     events.sort((a, b) => a.start.localeCompare(b.start))
 
     // Si no salió ningún evento pero algún feed falló, exponer el primer error
-    // (la UI muestra "no pude refrescar / revisá la URL").
+    // (la UI muestra "no pude refrescar / revisa la URL").
     const firstError = events.length === 0 ? calendars.find((c) => c.error)?.error : undefined
 
     return {

@@ -88,7 +88,7 @@ export async function sendTelegramMessage(
       // Sin parse_mode → limpiamos markdown para que no salgan **, `, ## crudos.
       // + scrub de voseo: el chat ya lo hacía sobre la salida del LLM, pero la
       // PROSA ESCRITA A MANO no pasaba por ningún filtro y se coló al push de la
-      // noche ("Cerrá el día", "descansá", "registralo"). Acá pasa TODO lo que
+      // noche ("Cierra el día", "descansa", "regístralo"). Acá pasa TODO lo que
       // sale por Telegram, venga de donde venga. [[idioma-espanol-peru]]
       text: deVoseo(stripMarkdown(text)).slice(0, 4096),
       disable_web_page_preview: true,

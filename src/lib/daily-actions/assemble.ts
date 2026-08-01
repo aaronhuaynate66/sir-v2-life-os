@@ -28,7 +28,7 @@ const DAY_MS = 86_400_000
 const SIGNAL_LOOKBACK_DAYS = 30
 const UPCOMING_LEAD_DAYS = 14
 
-// "Reconectá" (serendipia de /panel): sólo acciones PROACTIVAS que nacen de vos
+// "Reconecta" (serendipia de /panel): sólo acciones PROACTIVAS que nacen de ti
 // saliendo a buscar a alguien — silencio/enfriamiento/reconocer una señal. Las
 // de FECHA (cumple/especial) viven en la Agenda "Próximo", no acá.
 export const RECONNECT_KINDS: DailyActionKind[] = ['contact', 'cooling', 'acknowledge']

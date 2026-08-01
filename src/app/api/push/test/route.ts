@@ -22,7 +22,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Push no configurado', detail: 'Faltan las claves VAPID en el server.' }, { status: 503 })
   }
   if (res.sent === 0) {
-    return NextResponse.json({ error: 'Sin dispositivos', detail: 'No hay suscripciones activas. Activá las notificaciones primero.' }, { status: 409 })
+    return NextResponse.json({ error: 'Sin dispositivos', detail: 'No hay suscripciones activas. Activa las notificaciones primero.' }, { status: 409 })
   }
   return NextResponse.json({ sent: res.sent, pruned: res.pruned }, { status: 200 })
 }

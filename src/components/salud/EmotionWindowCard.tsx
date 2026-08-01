@@ -1,8 +1,8 @@
 'use client'
 
 // SIR V2 — EmotionWindowCard (13·M1+M2+M4): ventana + estrategia + aprendizaje.
-// M1/M2: si te salís de la ventana, sugiere la clase de estrategia (Gross).
-// M4: registrás que la probaste y si ayudó → con el tiempo, "para vos X suele
+// M1/M2: si te sales de la ventana, sugiere la clase de estrategia (Gross).
+// M4: registras que la probaste y si ayudó → con el tiempo, "para ti X suele
 // ayudar más que Y" (patrón observado, no ley). NO lee data clínica (13·M5).
 
 import { useCallback, useEffect, useMemo, useState } from 'react'

@@ -2,7 +2,7 @@
 
 // SIR V2 — /explorar (AF·F2): explorador de grafo.
 //
-// "Mostrame cómo se conecta todo esto." Elegís una semilla (una persona o un
+// "Muéstrame cómo se conecta todo esto." Eliges una semilla (una persona o un
 // objetivo) y SIR difunde por el cerebro-grafo (F1-F4) y muestra qué se enciende
 // y POR QUÉ, agrupado por tipo. Pathfinder apuntado a TU propia vida. Reusa
 // /api/brain/glow (motor ya testeado) + el helper puro `lib/brain/explore`.

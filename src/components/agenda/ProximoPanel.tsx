@@ -1,7 +1,7 @@
 ﻿// SIR V2 — ProximoPanel (Feature 1: Agenda "Próximo").
 //
 // Vista accionable que AGREGA data que ya existe en los stores y hoy queda
-// enterrada: señales críticas sin resolver, "no contactás a X hace N días"
+// enterrada: señales críticas sin resolver, "no contactas a X hace N días"
 // (con la familia/pareja ponderadas más por person_links), objetivos con target
 // date cercana, cumpleaños y fechas especiales de TODA la red, TUS propias
 // fechas (identity_profile) y las fechas de tu RUBRO (calendario comercial,

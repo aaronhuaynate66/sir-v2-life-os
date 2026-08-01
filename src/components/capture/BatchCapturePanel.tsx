@@ -232,7 +232,7 @@ export function BatchCapturePanel() {
                   )}
                   {it.status === 'skipped' && (
                     <div className="text-[11px] text-muted-foreground">
-                      Tipo <span className="font-mono">{it.detectedType}</span> no va en lote. Subila de a una arriba.
+                      Tipo <span className="font-mono">{it.detectedType}</span> no va en lote. Súbela de a una arriba.
                     </div>
                   )}
                   {it.status === 'done' && it.result && <BatchResultRow result={it.result} />}

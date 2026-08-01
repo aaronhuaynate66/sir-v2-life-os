@@ -1,6 +1,6 @@
 // SIR V2 — C1 cruzado (N-de-1): el vínculo entre DOS señales tuyas. PURO.
 //
-// La joya idiográfica: en VOS, ¿dormir mejor predice más energía/mejor ánimo al
+// La joya idiográfica: en ti, ¿dormir mejor predice más energía/mejor ánimo al
 // día siguiente? No es la norma poblacional — es tu patrón, medido en tus datos.
 // Empareja sueño (noche d) → energía/ánimo (día d+1) y calcula la correlación de
 // Pearson. Honesto: coincidencia, no causa; `insufficient` con pocos pares; la

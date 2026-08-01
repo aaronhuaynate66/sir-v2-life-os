@@ -2,7 +2,7 @@
 //
 // Verificador de Sentry: dispara un evento de prueba y confirma si el DSN está
 // activo. Pensado para usar UNA vez tras cargar NEXT_PUBLIC_SENTRY_DSN en Vercel
-// — entrás a la URL logueado y ves si capturó, sin esperar a que ocurra un error
+// — entras a la URL logueado y ves si capturó, sin esperar a que ocurra un error
 // real. Detrás de sesión (mono-usuario); no expone secretos (el DSN es público
 // por diseño y ni siquiera se devuelve, solo un booleano).
 //
@@ -34,7 +34,7 @@ export async function GET() {
       dsnConfigured: false,
       captured: false,
       environment,
-      hint: 'Falta el DSN. Carga NEXT_PUBLIC_SENTRY_DSN en Vercel (scope Production) y redesplegá.',
+      hint: 'Falta el DSN. Carga NEXT_PUBLIC_SENTRY_DSN en Vercel (scope Production) y redesplega.',
     })
   }
 
@@ -53,7 +53,7 @@ export async function GET() {
     environment,
     eventId: eventId ?? null,
     hint: captured
-      ? 'Evento enviado. Buscalo en tu dashboard de Sentry (Issues → level=info).'
+      ? 'Evento enviado. Búscalo en tu dashboard de Sentry (Issues → level=info).'
       : 'DSN presente pero el flush no confirmó envío. En prod NODE_ENV debe ser "production" (Sentry init tiene enabled: NODE_ENV === "production").',
   })
 }

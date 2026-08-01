@@ -64,10 +64,10 @@ async function resolveUserId(admin: SupabaseClient): Promise<{ userId: string } 
   const rows = (data ?? []) as Array<{ id: string }>
   if (rows.length === 1) return { userId: rows[0].id }
   if (rows.length === 0) {
-    return { error: 'No hay ningún perfil. Iniciá sesión una vez en la app o seteá HEALTH_INGEST_USER_ID.' }
+    return { error: 'No hay ningún perfil. Inicia sesión una vez en la app o setea HEALTH_INGEST_USER_ID.' }
   }
   return {
-    error: 'Hay más de un perfil; seteá HEALTH_INGEST_USER_ID con el user id de Aaron en Vercel.',
+    error: 'Hay más de un perfil; setea HEALTH_INGEST_USER_ID con el user id de Aaron en Vercel.',
   }
 }
 

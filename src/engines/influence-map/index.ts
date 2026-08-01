@@ -139,7 +139,7 @@ export function buildInfluenceMap({ people, links, targetId }: BuildArgs): Influ
 
 function buildNote(x: { hasLinks: boolean; hasTarget: boolean; hasCohort: boolean; hasConnectors: boolean }): string {
   if (x.hasTarget && !x.hasConnectors && !x.hasCohort && !x.hasLinks) {
-    return 'Todavía no tengo grafo ni entorno cargado de esta persona — cargá con quién se relaciona (vínculos) y su org para trazar el camino real. El organigrama formal no basta.'
+    return 'Todavía no tengo grafo ni entorno cargado de esta persona — carga con quién se relaciona (vínculos) y su org para trazar el camino real. El organigrama formal no basta.'
   }
   const parts: string[] = []
   if (x.hasConnectors) parts.push('quién está conectado con la persona')

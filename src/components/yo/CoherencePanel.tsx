@@ -1,8 +1,8 @@
 'use client'
 // SIR V2 — "Coherencia declarado ↔ hecho" (E5, Life Direction). La SÍNTESIS a
-// escala de vida: de todo lo que decís que te importa (tu norte + tus prioridades),
+// escala de vida: de todo lo que dices que te importa (tu norte + tus prioridades),
 // ¿tu actividad real lo acompaña, o el grueso cae en otra parte? Y como tendencia:
-// ¿convergés hacia tu norte o te alejás? Determinístico (computeLifeCoherence).
+// ¿convergés hacia tu norte o te alejas? Determinístico (computeLifeCoherence).
 // No moraliza: repriorizar es una elección válida, no una incoherencia moral.
 // Invisible sin data (insufficient → nada útil que mostrar acá).
 
@@ -66,7 +66,7 @@ export function CoherencePanel() {
 
   if (!hydrated) return null
   // Invisible sin coherencia legible: sin prioridades declaradas o sin suficiente
-  // actividad, esto no aporta (NorteDrift ya cubre el "fijá tu norte").
+  // actividad, esto no aporta (NorteDrift ya cubre el "fija tu norte").
   if (coherence.state === 'insufficient') return null
 
   const meta = STATE_META[coherence.state]
@@ -77,7 +77,7 @@ export function CoherencePanel() {
       <CardContent className="p-4 sm:p-6">
         <SectionTitle icon={Scale} label="Coherencia declarado ↔ hecho" />
         <p className="mt-1 text-[13px] text-muted-foreground">
-          De todo lo que decís que te importa, cuánto de tu actividad real lo acompaña —y hacia dónde viene yendo tu foco.
+          De todo lo que dices que te importa, cuánto de tu actividad real lo acompaña —y hacia dónde viene yendo tu foco.
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">

@@ -3,7 +3,7 @@
 // Cruza la curva de energía (M3) con el cronotipo (M2) para sugerir en qué franjas
 // agendar trabajo profundo y en cuáles dejar tareas mecánicas / descanso. Solo
 // emite si AMBOS insumos están por encima de su umbral; recomendación BLANDA
-// ("probá foco 9–11"), revisable con más datos. No inventa.
+// ("prueba foco 9–11"), revisable con más datos. No inventa.
 
 import type { EnergyCurve } from './energyCurve'
 import type { Chronotype } from './chronotype'
@@ -43,12 +43,12 @@ export function computeFocusWindow(curve: EnergyCurve, chrono: Chronotype): Focu
     chrono.position === 'búho'
       ? ' Como cronotipo búho, no te fuerces temprano: tu mejor foco llega más tarde.'
       : chrono.position === 'alondra'
-        ? ' Como alondra, aprovechá la mañana antes de que caiga.'
+        ? ' Como alondra, aprovecha la mañana antes de que caiga.'
         : ''
 
   const message =
     `Tu energía pega más alto alrededor de ${fmtHours(focusHours)} — buena franja para trabajo profundo. ` +
-    `Dejá lo mecánico para el bajón (~${fmtHours(restHours)}).${chronoNote} (Blando, se afina con más datos.)`
+    `Deja lo mecánico para el bajón (~${fmtHours(restHours)}).${chronoNote} (Blando, se afina con más datos.)`
 
   return { focusHours, restHours, message, sufficient: true }
 }

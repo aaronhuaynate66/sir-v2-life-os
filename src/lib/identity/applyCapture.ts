@@ -56,7 +56,7 @@ export function buildCaptureProposal(
   const haveInterests = new Set(existing.interests.map((i) => i.toLowerCase()))
 
   const addedRoles = extracted.roles.filter((r) => !haveRoles.has(r.toLowerCase()))
-  // Skills de LinkedIn se pliegan a intereses (señal de "en qué andás").
+  // Skills de LinkedIn se pliegan a intereses (señal de "en qué andas").
   const incomingInterests = [...extracted.interests, ...extracted.skills]
   const addedInterests = cleanTagList(incomingInterests).filter(
     (i) => !haveInterests.has(i.toLowerCase()),

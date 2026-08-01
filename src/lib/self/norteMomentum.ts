@@ -80,7 +80,7 @@ export function computeNorteMomentum(
 
   let message: string
   if (!anchor) {
-    message = 'Sin un norte fijado no puedo medir si avanzás hacia él.'
+    message = 'Sin un norte fijado no puedo medir si avanzas hacia él.'
   } else if (efficacy === 'sin_avances') {
     message = `Tu norte ("${anchor.title}") no tuvo avances reales (pasos completados) en 30 días. Atención no es lo mismo que progreso.`
   } else {

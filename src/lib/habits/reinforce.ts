@@ -45,7 +45,7 @@ export function habitReinforcement(
     if (current >= 3) tail = `Racha de ${current} días — no la sueltes.`
     else if (weekDone >= 4) tail = 'Buen ritmo esta semana.'
     else if (longest >= 3) tail = `Tu mejor racha fue ${longest}. Cada marca vuelve a sumar.`
-    else tail = 'Cada día que marcás suma — retomá cuando puedas, sin drama.'
+    else tail = 'Cada día que marcas suma — retoma cuando puedas, sin drama.'
     message = `${base} ${tail}`
   }
 

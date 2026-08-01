@@ -30,7 +30,7 @@ describe('habitReinforcement', () => {
 
   it('lenguaje SIEMPRE en positivo, nunca de culpa', () => {
     const r = habitReinforcement([ago(20), ago(21)], 0, 2, NOW) // esta semana 0
-    expect(r.message).toMatch(/cada día que marcás suma|cada marca vuelve a sumar/i)
+    expect(r.message).toMatch(/cada día que marcas suma|cada marca vuelve a sumar/i)
     expect(r.message).not.toMatch(/fallaste|fallo|rompiste/i)
   })
 

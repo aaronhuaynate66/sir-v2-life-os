@@ -1,7 +1,7 @@
 // SIR V2 — Deriva el CONTEXTO relacional para el atunamiento de intimidad (17·M6).
 //
 // El motor `intimacyGuidance` ya sabe que el CONTEXTO manda sobre la ventana
-// hormonal (Nagoski: frenos > fase) — pero solo si le pasás ese contexto. Hasta
+// hormonal (Nagoski: frenos > fase) — pero solo si le pasas ese contexto. Hasta
 // hoy la ficha lo llamaba EN SECO (sin contexto), así que los frenos que más
 // pesan (una tensión sin resolver, el vínculo enfriándose, la energía baja) nunca
 // se activaban. Este módulo cierra ese hueco: lee señales REALES de `person_logs`

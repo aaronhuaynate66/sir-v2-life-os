@@ -145,7 +145,7 @@ export function buildRoleDates(
         id: WFG26.id,
         title: WFG26.label,
         daysUntil,
-        hint: `Juegos Mundiales de Bomberos · ${WFG26.rangeLabel} · asegurá visa, inscripción y pasaje`,
+        hint: `Juegos Mundiales de Bomberos · ${WFG26.rangeLabel} · asegura visa, inscripción y pasaje`,
         rubro: rubros.has('athlete') ? 'athlete' : 'firefighter',
       })
     }

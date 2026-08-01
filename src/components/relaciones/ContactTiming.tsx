@@ -3,7 +3,7 @@
 //
 // Muestra el veredicto de TIMING de una persona y deja marcar de un toque lo que
 // ves (de viaje, a full, buen momento, cambió de trabajo). Nace del caso Dayana:
-// ves su story "de viaje" → lo marcás acá → SIR te frena antes de pedirle algo
+// ves su story "de viaje" → lo marcas acá → SIR te frena antes de pedirle algo
 // (en la ficha, el push y —próximamente— el Ensayo/negociar). Después la
 // extensión pasiva lo alimentará sola. Client-side + fail-soft (tabla 0150).
 

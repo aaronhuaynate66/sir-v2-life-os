@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       422,
       'Sin coherencia que reflexionar',
-      'Necesito una síntesis de tu foco declarado ↔ hecho para reflexionar. Se va formando a medida que marcás prioridades y completás pasos.',
+      'Necesito una síntesis de tu foco declarado ↔ hecho para reflexionar. Se va formando a medida que marcas prioridades y completas pasos.',
     )
   }
 

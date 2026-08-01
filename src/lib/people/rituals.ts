@@ -32,7 +32,7 @@ export interface Ritual {
   type: RitualType
   /** Qué pasa ("Hace 3 semanas sin hablar con X"). */
   message: string
-  /** Qué hacer ("Escribile para retomar"). */
+  /** Qué hacer ("Escríbele para retomar"). */
   action: string
   /** 1-10 (10 = hoy/urgente). */
   priority: number
@@ -105,7 +105,7 @@ function ritualsForPerson(input: RitualPersonInput, now: Date): Ritual[] {
           cd.daysUntil === 0
             ? `¡Hoy es el cumpleaños de ${person.name}!`
             : `El cumpleaños de ${person.name} es en ${pluralDias(cd.daysUntil)}`,
-        action: cd.daysUntil === 0 ? 'Saludalo hoy' : 'Prepará un mensaje (o un detalle)',
+        action: cd.daysUntil === 0 ? 'Saludalo hoy' : 'Prepara un mensaje (o un detalle)',
         priority: cd.daysUntil === 0 ? 10 : cd.daysUntil <= 2 ? 9 : 8,
         daysUntil: cd.daysUntil,
       })
@@ -128,8 +128,8 @@ function ritualsForPerson(input: RitualPersonInput, now: Date): Ritual[] {
           : `En ${pluralDias(cd.daysUntil)} — "${sd.label}" con ${person.name}`,
       action: isAnniv
         ? cd.daysUntil <= 1
-          ? 'Confirmá tu plan'
-          : 'Planeá algo especial'
+          ? 'Confirma tu plan'
+          : 'Planea algo especial'
         : isSaint
           ? 'Mándale un saludo'
           : 'Tenelo presente con un gesto',

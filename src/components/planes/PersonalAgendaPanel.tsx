@@ -1,7 +1,7 @@
 'use client'
 // SIR V2 — Agenda personal GLOBAL: todos tus planes, con chip "¿con quién?".
 //
-// Fase 4 del Estudio del ciclo: acá ves TODOS tus eventos personales y marcás
+// Fase 4 del Estudio del ciclo: acá ves TODOS tus eventos personales y marcas
 // cuáles son con qué persona. Al asignar a alguien afectivo con ciclo, el plan
 // cae solo en SU línea del ciclo (la ficha lo filtra por person_id). Un evento
 // sin persona es agenda general. Reusa /api/personal-events (GET all + POST +

@@ -6,7 +6,7 @@
 //
 // FALLBACK dev-friendly: si la env NO está, guardamos en Base64 con prefijo
 // `plain:` y logueamos un warning. Funciona igual — pero al deploy debe
-// setearse la clave. En prod SIN clave: WARNING nomás, no rompe.
+// setearse la clave. En prod SIN clave: WARNING nomas, no rompe.
 //
 // Formato serializado (siempre string ASCII, apto para columna TEXT):
 //   `enc:v1:<iv_b64>:<ciphertext_b64>`   — modo cifrado real

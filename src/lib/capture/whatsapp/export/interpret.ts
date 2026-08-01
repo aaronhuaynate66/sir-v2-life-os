@@ -11,12 +11,12 @@ import type { ChunkInterpretation, ExtractedDate } from './types'
 /** System prompt para interpretar UN bloque. Recibe el nombre del contacto. */
 export function getInterpretSystemPrompt(personName: string): string {
   const contact = personName.trim() || 'la otra persona'
-  return `Eres un analista de conversaciones de WhatsApp. Recibís UN BLOQUE de una
+  return `Eres un analista de conversaciones de WhatsApp. Recibes UN BLOQUE de una
 conversación entre el usuario y su contacto "${contact}" (texto exportado,
 fiel y exacto — NO es OCR, no hay nada que adivinar). Tu única tarea: devolver
 UN JSON ESTRICTO (parseable con JSON.parse(), sin prosa, sin markdown fences).
 
-Cada línea del bloque viene como "[YYYY-MM-DD HH:mm] Autor: contenido". Usá ESA
+Cada línea del bloque viene como "[YYYY-MM-DD HH:mm] Autor: contenido". Usa ESA
 fecha para resolver fechas relativas (ver regla de fechas). "[media]" marca un
 adjunto omitido (foto/audio/sticker/etc.) que NO puedes ver: NO inventes su
 contenido.
@@ -43,23 +43,23 @@ Schema EXACTO:
 }
 
 REGLAS:
-1. ANTI-INVENCIÓN (dura): solo afirmá lo que está EN el texto del bloque. Si un
+1. ANTI-INVENCIÓN (dura): solo afirma lo que está EN el texto del bloque. Si un
    dato no aparece, NO lo pongas. Listas vacías ([]) y null son respuestas
    válidas y preferibles a inventar.
-2. summary: describí QUÉ pasó/se habló, no si estuvo bien o mal. Mencioná a
+2. summary: describí QUÉ pasó/se habló, no si estuvo bien o mal. Menciona a
    ${contact} por su nombre. Máx ~400 caracteres.
 3. topics: 2-6 tags en snake_case, EN ESPAÑOL. Ej: salud, trabajo, plan_finde,
    familia, resolucion_conflicto, saludo_diario, dinero, relacion, mascota, pago.
 4. emotionalUser/emotionalOther: estado del INTERCAMBIO observable en el bloque
    (ej. affectionate_routine, tense_unresolved, seeking_support). null si no se
    puede inferir con base en el texto.
-5. toneScore: leé el tono GENERAL del bloque. Discusión/reproches → 1-2;
+5. toneScore: lee el tono GENERAL del bloque. Discusión/reproches → 1-2;
    logístico/neutro → 3; afecto/risas/apoyo → 4-5.
 6. dates: SOLO fechas/eventos PERSONALES Y DURADEROS de ${contact} con cita textual (rawText).
    La ficha de ${contact} solo debe acumular SUS fechas (su cumpleaños, su aniversario, su viaje,
-   su trámite). Misma regla de protagonista que en facts: si la fecha es de OTRO, marcá su subject
+   su trámite). Misma regla de protagonista que en facts: si la fecha es de OTRO, marca su subject
    y NO la trates como de ${contact}.
-   - ANCLÁ las fechas relativas al día del mensaje (prefijo [YYYY-MM-DD]): "mañana"=día+1;
+   - ANCLA las fechas relativas al día del mensaje (prefijo [YYYY-MM-DD]): "mañana"=día+1;
      "del 1 al 4"/"el sábado" → contra ESE mes/año, nunca enero ni año por defecto. Si no se
      resuelve, dateISO=null + rawText.
    - NO combines fragmentos no relacionados. Una cita, una fecha. NO inventes el TIPO de evento.
@@ -68,7 +68,7 @@ REGLAS:
        "self" = del usuario (ej. SU examen, SU viaje, SU visa, SU competencia, "tu cumpleaños").
        "tercero" = de otra persona nombrada, INCLUIDOS los familiares/hijos de ${contact}
          (ej. "cumpleaños de su hija", "examen de su hijo", "cumple de tata").
-     Cumpleaños/aniversarios → recurring=true. Ante la duda de quién es, marcá self/tercero.
+     Cumpleaños/aniversarios → recurring=true. Ante la duda de quién es, marca self/tercero.
    - DESCARTÁ (no las generes): logística efímera pasada (almuerzos, "salimos 10:50", horarios
      de un día, reuniones puntuales ya ocurridas) y cualquier evento cuyo protagonista no sea ${contact}.
 7. events: HITOS, LOGROS y planes notables mencionados (sin fecha precisa). A diferencia de
@@ -78,7 +78,7 @@ REGLAS:
    Bomberos 2025 en Birmingham", "se prepara para una competencia". NOMBRÁ el evento específico
    (nombre/lugar/año) cuando se diga; no lo aplanes a algo genérico ("un mundial", "un viaje").
 8. facts: hechos ESTABLES y DEFINITORIOS sobre ${contact} afirmados en la charla.
-   PRIORIZÁ lo que define su vida/identidad por encima de la rutina repetida:
+   PRIORIZA lo que define su vida/identidad por encima de la rutina repetida:
    - dónde vive y mudanzas grandes (ciudad/país; ej. "se mudó a Alicante", "vive en X").
    - etapa de vida: estudios (maestría, universidad), trabajo, profesión.
    - VÍNCULO con el usuario si se declara explícito (ej. "eres mi hermana" => es hermana del usuario).
@@ -95,12 +95,12 @@ REGLAS:
      lo alienta y pide fotos → NO generes "viajó al exterior" ni "compite" como fact de ${contact}.
    - Hechos de TERCEROS nombrados (hermana, primos, amigos, abuela) tampoco son de ${contact}.
    - Ante la duda de quién es el protagonista, NO generes el fact. Listas vacías > inventar.
-9. IGNORÁ contenido de DIFUSIÓN (no es del vínculo): noticias reenviadas (🚨,
+9. Ignora contenido de DIFUSIÓN (no es del vínculo): noticias reenviadas (🚨,
    #HASHTAG, titulares, "Gobierno declara…"), flyers/invitaciones masivas a eventos
    (formato afiche con 🗓/🕒), cadenas y publicidad. No generes dates, facts ni
    events a partir de ellos; tampoco cuentan para el tono.
 
-CRÍTICO: empezá con \`{\` y termina con \`}\`. Solo JSON.`
+CRÍTICO: empieza con \`{\` y termina con \`}\`. Solo JSON.`
 }
 
 /** Mensaje de usuario con el bloque a interpretar. */

@@ -3,7 +3,7 @@
 // Agrupa self_metrics (energy/focus) por HORA local de Lima (UTC-5) y arma un
 // perfil promedio: dónde está el pico matinal y dónde el bajón. Puramente
 // observacional. Honesto: una hora con <3 muestras NO se dibuja (queda hueco, no
-// se interpola). Si sólo registrás de noche, lo dice en vez de inventar la mañana.
+// se interpola). Si sólo registras de noche, lo dice en vez de inventar la mañana.
 
 const LIMA_OFFSET_MS = 5 * 3_600_000
 const MIN_SAMPLES_PER_HOUR = 3

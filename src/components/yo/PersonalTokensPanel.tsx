@@ -159,7 +159,7 @@ export function PersonalTokensPanel() {
                 </div>
                 {copied && <p className="text-[10px] text-ok">Copiado ✓</p>}
                 <div className="rounded-md border border-border bg-background/60 p-2 mt-1">
-                  <p className="text-[10px] text-muted-foreground mb-1">Con esto, contale a SIR desde afuera (Claude, un atajo del cel, un script) y se llena solo:</p>
+                  <p className="text-[10px] text-muted-foreground mb-1">Con esto, cuéntale a SIR desde afuera (Claude, un atajo del cel, un script) y se llena solo:</p>
                   <code className="block text-[10px] font-mono text-foreground/80 whitespace-pre-wrap break-all leading-relaxed">
 {`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : ''}/api/relato/ingest \\
   -H "Authorization: Bearer <token>" \\

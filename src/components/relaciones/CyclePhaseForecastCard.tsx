@@ -9,7 +9,7 @@
 //
 // LÍNEA ÉTICA (doc 17 — CUIDAR, nunca descalificar): la proyección es un
 // promedio histórico, no un diagnóstico. El lenguaje es de timing y presencia
-// ("bajá la intensidad, sumá cuidado"), NUNCA "va a estar insoportable". Se
+// ("baja la intensidad, suma cuidado"), NUNCA "va a estar insoportable". Se
 // oculta entero si no hay un patrón real que anticipar.
 //
 // MOUNT-SAFE (fix #418): depende de "ahora".

@@ -145,7 +145,7 @@ export function ObjectivePlanPanel({ goalId }: { goalId: string }) {
                 <Input value={form.plan_if} onChange={(e) => setForm((f) => ({ ...f, plan_if: e.target.value }))} placeholder="Si pasa… (disparador)" className="text-[13px]" />
                 <Input value={form.plan_then} onChange={(e) => setForm((f) => ({ ...f, plan_then: e.target.value }))} placeholder="entonces hago…" className="text-[13px]" />
               </div>
-              {/* 12·M4 — propuesta de disparador fundada en cuándo completás, editable */}
+              {/* 12·M4 — propuesta de disparador fundada en cuándo completas, editable */}
               {contextProposal && !form.plan_if.trim() && (
                 <button
                   type="button"

@@ -54,7 +54,7 @@ export function RelationalEnergyCard({ person, embedded = false }: { person: Per
   const strong = effect.confidence === 'alta' || effect.confidence === 'media'
 
   const guidance = draining
-    ? `${first} tiende a drenarte${strong ? ' (se nota en tus ratings de interacción)' : ''}. No es para alejarte — cuidá tu estado antes de verlo/a y date permiso de espaciar o poner un límite, sin culpa aunque el vínculo importe.`
+    ? `${first} tiende a drenarte${strong ? ' (se nota en tus ratings de interacción)' : ''}. No es para alejarte — cuida tu estado antes de verlo/a y date permiso de espaciar o poner un límite, sin culpa aunque el vínculo importe.`
     : `${first} te sube el ánimo${strong ? ' (se nota en tus ratings)' : ''}. Cuando andes bajo, apoyarte en ese vínculo suele valer más que aguantar solo/a.`
 
   return (

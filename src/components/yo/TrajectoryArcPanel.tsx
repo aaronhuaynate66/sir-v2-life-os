@@ -1,6 +1,6 @@
 'use client'
 // SIR V2 — "Tu trayectoria" (E5, Life Direction). El arco SOSTENIDO de tus
-// objetivos: de todo lo que te propusiste, qué terminás y qué soltás, en qué
+// objetivos: de todo lo que te propusiste, qué terminas y qué soltas, en qué
 // áreas construís, y si esa proporción viene calentando o enfriándose.
 // Determinístico (buildTrajectoryArc). No moraliza: soltar es una elección válida.
 

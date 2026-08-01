@@ -1,7 +1,7 @@
 'use client'
 
 // SIR V2 — TrajectoryForecastCard (motor de predicción C2). Capa FORECAST de lo
-// relacional: NO dice "contactá a X ahora" (eso es el motor proactivo), sino que
+// relacional: NO dice "contacta a X ahora" (eso es el motor proactivo), sino que
 // PROYECTA qué vínculos se van a quedar dormidos —y en cuántas semanas— si sigue
 // el ritmo de silencio actual. Base: los lazos decaen sin mantenimiento. Se oculta
 // si no hay ninguno enfriándose. Orientativo: proyecta el silencio, no la relación.

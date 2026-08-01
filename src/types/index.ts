@@ -180,7 +180,7 @@ export interface Person {
   gender?: PersonGender
   relationship: RelationshipType
   category: PersonCategory
-  /** La LÍNEA: qué tipo de persona representa para vos. 'personal' (familia/
+  /** La LÍNEA: qué tipo de persona representa para ti. 'personal' (familia/
    *  amigos/pareja → lente afectivo), 'colega' (interno de tu trabajo), 'lead'
    *  (contacto/prospecto comercial → lente de oportunidad). Canonical en
    *  `people.ambito` (migración 0087). undefined = sin clasificar (legacy). */

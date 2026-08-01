@@ -5,7 +5,7 @@
 // desmentía — y el cerebro Q&A la contradecía. Regla: el brief solo debe empujar
 // señales que siguen siendo NOTICIA. Una señal no-crítica que lleva semanas
 // abierta sin resolverse ya no es "atención de hoy"; se deja para el panel, no
-// para el push. Las críticas SÍ persisten (esas querés verlas hasta resolverlas).
+// para el push. Las críticas SÍ persisten (esas quieres verlas hasta resolverlas).
 
 export interface RankableSignal {
   content: string

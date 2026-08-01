@@ -48,14 +48,14 @@ export async function POST(req: Request) {
   // 1) Refrescar token si hace falta.
   let accessToken = conn.access_token
   if (isExpired(conn.token_expires_at, Date.now())) {
-    if (!conn.refresh_token) return NextResponse.json({ error: 'Reconectá el correo (sin refresh token)' }, { status: 400 })
+    if (!conn.refresh_token) return NextResponse.json({ error: 'Reconecta el correo (sin refresh token)' }, { status: 400 })
     try {
       const r = await fetch(tokenEndpoint(cfg), {
         method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: tokenBodyForRefresh(cfg, conn.refresh_token),
       })
       const tok = (await r.json()) as TokenResponse & { error?: string }
-      if (!r.ok || !tok.access_token) return NextResponse.json({ error: 'No se pudo refrescar el token; reconectá' }, { status: 400 })
+      if (!r.ok || !tok.access_token) return NextResponse.json({ error: 'No se pudo refrescar el token; reconecta' }, { status: 400 })
       accessToken = tok.access_token
       await supabase.from('email_connections').update({
         access_token: tok.access_token,

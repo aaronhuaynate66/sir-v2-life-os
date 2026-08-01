@@ -66,7 +66,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     return errorJson(
       409,
       'No hay un Google Calendar conectado',
-      'Conectá tu Google Calendar desde el hub de calendarios y reinténtalo.',
+      'Conecta tu Google Calendar desde el hub de calendarios y reinténtalo.',
     )
   }
 
@@ -83,7 +83,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     reportApiError(e, { route: 'personal-events/[id]/push-to-google', stage: 'create' })
     const msg = e instanceof Error ? e.message : 'error desconocido'
     if (/403|insufficient|scope|permission/i.test(msg)) {
-      return errorJson(403, 'Sin permiso de escritura en Google', 'Reconectá tu Google Calendar para otorgar escritura.')
+      return errorJson(403, 'Sin permiso de escritura en Google', 'Reconecta tu Google Calendar para otorgar escritura.')
     }
     return errorJson(502, 'No se pudo crear el evento en Google', msg.slice(0, 160))
   }

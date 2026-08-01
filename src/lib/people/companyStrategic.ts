@@ -17,11 +17,11 @@ Devuelve EXCLUSIVAMENTE un objeto JSON (sin markdown):
 { "insight": "2 a 5 oraciones en español neutro, directo y sobrio" }
 
 REGLAS ESTRICTAS:
-- Usá SOLO la información provista. No inventes personas, cargos, vínculos ni hechos.
+- Usa SOLO la información provista. No inventes personas, cargos, vínculos ni hechos.
 - Inteligencia estratégica legítima: leer el tablero, intereses compartidos, vías de influencia, apoyarse en vínculos REALES. Esto NO es manipulación.
 - PROHIBIDO sugerir engaño, presión, coerción, o usar a alguien en contra de su propio interés. Si una jugada requeriría mentir o dañar a alguien, no la propongas.
 - La organización es CONTEXTO/tablero, no una persona: nada de "tu vínculo con la empresa" en sentido afectivo.
-- Si hay poca información, decilo y mantené la lectura corta. Tono de asesor sobrio, sin inflar.`
+- Si hay poca información, dilo y mantené la lectura corta. Tono de asesor sobrio, sin inflar.`
 
 export interface StrategicHubPerson {
   name: string

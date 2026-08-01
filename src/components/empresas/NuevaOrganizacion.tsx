@@ -1,6 +1,6 @@
 'use client'
 // SIR V2 — Crear una organización desde cero en /empresas.
-// Escribís el nombre → crea un org_profile (POST /api/empresas/profile) → te
+// Escribes el nombre → crea un org_profile (POST /api/empresas/profile) → te
 // lleva a su ficha vacía, lista para rellenar/autocompletar. No depende de que
 // haya personas con ese org_group.
 import { useState } from 'react'

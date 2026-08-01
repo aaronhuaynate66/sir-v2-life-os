@@ -1,5 +1,5 @@
 'use client'
-// SIR V2 — /sir · "Preguntá a SIR" (#86 conversacional, PR1 SOLO LECTURA).
+// SIR V2 — /sir · "Pregunta a SIR" (#86 conversacional, PR1 SOLO LECTURA).
 //
 // Chat aterrizado sobre la data de Aaron: responde preguntas como
 // "¿qué pasó con Dayana?" o "¿cómo me acerco a Francisco esta semana?".
@@ -334,7 +334,7 @@ export default function SirChatPage() {
   // Ola 2 — aprender de tus correcciones: al dar 👎, SIR pide "¿qué esperabas?"
   // y guarda tu respuesta como una PREFERENCIA (learnings kind='preference') que
   // se inyecta en el contexto de todas las próximas charlas. Es el "premio por
-  // respuesta acertada" al revés: le enseñas qué NO hacer / qué preferís.
+  // respuesta acertada" al revés: le enseñas qué NO hacer / qué prefieres.
   const [correctingIdx, setCorrectingIdx] = useState<number | null>(null)
   const [correctionDraft, setCorrectionDraft] = useState('')
   async function saveCorrection(idx: number) {

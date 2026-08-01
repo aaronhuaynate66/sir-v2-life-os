@@ -2,7 +2,7 @@
 //
 // ENSAMBLADOR puro: no reimplementa nada. Toma las salidas de los motores que ya
 // existen —trajectoryArc, lifeSeasons, lifeThread, coherence, year-compass— y las
-// hilvana en un único hilo de tres tramos: PASADO (de dónde venís, capítulos
+// hilvana en un único hilo de tres tramos: PASADO (de dónde vienes, capítulos
 // cerrados), PRESENTE (en qué capítulo estás + si tu foco acompaña lo declarado),
 // y FUTURO (el norte + una proyección honesta de si vas encaminado).
 //
@@ -21,7 +21,7 @@ import type { LifeMilestone } from './lifeThread'
 import type { LifeCoherence, CoherenceState, CoherenceTrend } from './coherence'
 import type { YearCompass } from '../year-compass/build'
 
-/** Tramo PASADO: de dónde venís. */
+/** Tramo PASADO: de dónde vienes. */
 export interface LifeDirectionPast {
   /** Capítulos (estaciones) ya cerrados —los que no son el actual. */
   closedSeasons: number
@@ -35,7 +35,7 @@ export interface LifeDirectionPast {
 
 /** Tramo PRESENTE: en qué capítulo estás y si tu foco lo acompaña. */
 export interface LifeDirectionPresent {
-  /** Rótulo del capítulo en curso, o null si venís en una pausa entre capítulos. */
+  /** Rótulo del capítulo en curso, o null si vienes en una pausa entre capítulos. */
   currentSeasonLabel: string | null
   currentSeasonSummary: string | null
   coherenceState: CoherenceState
@@ -47,7 +47,7 @@ export interface LifeDirectionPresent {
 /** Veredicto honesto de "hacia dónde vas" respecto del norte. */
 export type DirectionOutlook =
   | 'on_track' // patrón + foco acompañan el norte
-  | 'at_risk' // hay señal de que el norte se aleja (soltás más, foco fuera, desacelera)
+  | 'at_risk' // hay señal de que el norte se aleja (soltas más, foco fuera, desacelera)
   | 'steady_no_anchor' // vas sostenido pero no hay un norte declarado que enmarque
   | 'insufficient' // falta recorrido/datos para proyectar sin inventar
 

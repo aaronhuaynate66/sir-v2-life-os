@@ -6,7 +6,7 @@
 // devaluación — sobre TUS propias notas de person_logs.
 //
 // LÍNEA ÉTICA (doc 19): enfocado en TU seguridad, NO en rotular al otro. No es un
-// diagnóstico ni una etiqueta clínica; son patrones que VOS anotaste, para que te
+// diagnóstico ni una etiqueta clínica; son patrones que Tú anotaste, para que te
 // cuides. Exige RECURRENCIA (≥2 entradas) antes de encender una señal: una sola
 // mala nota no alcanza. Peligro real → hablarlo con alguien/un profesional, SIR
 // no "trata". 100% puro y determinístico (heurística ES+EN), corre client-side.
@@ -24,7 +24,7 @@ export interface RelationalFlagHit {
   label: string
   /** En cuántas entradas distintas apareció el patrón. */
   occurrences: number
-  /** Consejo de auto-protección — apunta a VOS, nunca a rotular al otro. */
+  /** Consejo de auto-protección — apunta a ti, nunca a rotular al otro. */
   care: string
 }
 

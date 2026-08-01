@@ -1,7 +1,7 @@
 'use client'
 
 // SIR V2 — Dinero real vinculado a un objetivo (rescate de finance_movements.
-// related_goal). Muestra cuánto llevás INVERTIDO (gasto/inversión/deuda) o
+// related_goal). Muestra cuánto llevas INVERTIDO (gasto/inversión/deuda) o
 // generado como INGRESO hacia este objetivo, desde los movimientos de /finanzas.
 // Invisible si no hay ninguno vinculado. Complementa a GoalCosts (presupuesto
 // planeado) con la plata que de verdad se movió.

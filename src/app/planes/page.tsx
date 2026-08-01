@@ -1,8 +1,8 @@
 'use client'
 // SIR V2 — /planes: agenda personal global.
 //
-// Vista de TODOS tus planes personales, donde marcás con quién es cada uno. Los
-// que ligás a tu pareja caen solos en su línea del ciclo (la ficha los filtra).
+// Vista de TODOS tus planes personales, donde marcas con quién es cada uno. Los
+// que ligas a tu pareja caen solos en su línea del ciclo (la ficha los filtra).
 
 import { CalendarDays } from 'lucide-react'
 

@@ -122,9 +122,9 @@ async function callExtractorVision(
 const TEXT_INPUT_EXTRA = `MODO TEXTO PEGADO (la fuente NO es una imagen):
 En vez de una captura, el usuario PEGÓ el TEXTO del perfil (copiado del navegador o la app). El texto es EXACTO y fiel — NO es OCR, no hay píxeles que adivinar. Reglas:
 - Extraé los campos del texto LITERAL. Mantené la regla anti-invención: si un dato no está en el texto, va null. Pero NO bajes la confianza por "imagen ilegible/borrosa": acá no hay imagen.
-- Como el texto es fiel, usá confidence='high' salvo que el texto esté realmente incompleto o no parezca un perfil.
+- Como el texto es fiel, usa confidence='high' salvo que el texto esté realmente incompleto o no parezca un perfil.
 - Si el esquema pide imageLegible, devolvé true (no hubo imagen que leer mal).
-- El texto puede traer ruido de UI (botones "Seguir"/"Mensaje", menús, "ver más", contadores, "· 3.º"). Ignorá el ruido y quedate con los datos del perfil.`
+- El texto puede traer ruido de UI (botones "Seguir"/"Mensaje", menús, "ver más", contadores, "· 3.º"). Ignora el ruido y quédate con los datos del perfil.`
 
 const MAX_TEXT_CHARS = 20_000
 const MIN_TEXT_CHARS = 12

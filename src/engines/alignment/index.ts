@@ -3,7 +3,7 @@
 // Detecta la BRECHA entre los objetivos DECLARADOS del usuario y su
 // COMPORTAMIENTO OBSERVADO. Ejemplo del roadmap: objetivo "ser mejor pareja"
 // + señales observadas (menos contacto, relación en tensión) → "tu
-// comportamiento reciente no acompaña la relación que decís querer construir".
+// comportamiento reciente no acompaña la relación que dices querer construir".
 //
 // MVP — alcance honesto y DETERMINÍSTICO:
 //   - Sólo objetivos con vínculo ESTRUCTURADO a personas (goal.relatedPersons).

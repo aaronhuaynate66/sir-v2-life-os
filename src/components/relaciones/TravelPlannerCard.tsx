@@ -1,8 +1,8 @@
 'use client'
 // SIR V2 — "Mejor fecha para un viaje/plan largo" con la persona.
 //
-// Elegís un mes + el largo del viaje y SIR rankea las ventanas por SU ciclo:
-// primero los tramos de más energía/resto. Tocás una → el briefing se mueve a esa
+// Eliges un mes + el largo del viaje y SIR rankea las ventanas por SU ciclo:
+// primero los tramos de más energía/resto. Tocas una → el briefing se mueve a esa
 // fecha. CUIDADO, no ventaja (doc 17): "¿cuándo la va a disfrutar más?", no
 // "cuándo dice que sí". Orientativo (±días), se recalibra con cada período.
 

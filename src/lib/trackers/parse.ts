@@ -141,7 +141,7 @@ export function extractDate(text: string, fallbackYear: number): string | null {
 
 /**
  * Fecha de una LECTURA de tracker. Regla: una observación se fecha CUÁNDO la
- * capturás, no por una fecha escrita dentro del contenido. En una captura de
+ * capturas, no por una fecha escrita dentro del contenido. En una captura de
  * precio de vuelo, la fecha del texto es la del VUELO (futura), no la de cuándo
  * miraste el precio — usarla ensuciaba la serie (puntos en el futuro/pasado
  * equivocado). Por eso la lectura SIEMPRE se fecha con la fecha de captura.

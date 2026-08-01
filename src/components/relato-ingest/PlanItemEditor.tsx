@@ -8,7 +8,7 @@
 //
 // Filosofía: dejar que Aaron corrija UN detalle sin tener que reescribir el
 // relato para que Claude lo cambie. No es un editor de features complejas —
-// es "cambiá la fecha, subí el value, corregí el título".
+// es "cambia la fecha, subí el value, corregí el título".
 
 import { useState } from 'react'
 import { Save, X } from 'lucide-react'

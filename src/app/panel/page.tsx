@@ -432,7 +432,7 @@ function DashboardContent() {
         <InboundFeedPanel limit={8} hideWhenEmpty />
       </div>
 
-      {/* "Reconectá con tu gente" (P0 backlog Clay — serendipia): 3-5 personas
+      {/* "Reconecta con tu gente" (P0 backlog Clay — serendipia): 3-5 personas
           que se están enfriando por silencio, sin fecha ni pendiente que ya las
           marque (las fechas viven en Próximo; los problemas, en Personas en
           riesgo). Reusa el motor de Daily Actions filtrado a proactivos. Se
@@ -458,7 +458,7 @@ function DashboardContent() {
         {/* Briefing diario (Fase 5): resumen accionable de hoy via LLM. */}
         <DailyBriefingCard />
         {/* SIR quiere saber (Knowledge Gap Engine): SIR te pregunta lo que le falta
-            —a vos, nunca a terceros—, aprende y no repite. */}
+            —a ti, nunca a terceros—, aprende y no repite. */}
         <KnowledgeGapPanel />
       </CollapsibleSection>
 

@@ -39,7 +39,7 @@ export interface InboundPersonMeta {
 /** Muestra de dirección: un mensaje del sustrato (chat_messages). */
 export interface InboundDirectionSample {
   personId: string
-  /** 'user' = vos; 'other' = la persona. */
+  /** 'user' = tú; 'other' = la persona. */
   sender: string
   /** ISO de `sent_at`. */
   sentAt: string
