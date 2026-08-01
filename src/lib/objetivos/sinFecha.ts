@@ -103,3 +103,66 @@ export function tareaInvisibleLine(t: TareaInvisible | null | undefined): string
   const titulo = t.title.length > 60 ? `${t.title.slice(0, 59)}…` : t.title
   return `📌 "${titulo}" (${t.objetivo}) lleva ${t.dias} días sin fecha, así que nunca te la muestro. ¿Para cuándo?`
 }
+
+// ─── Proponer la fecha, en vez de preguntarla ────────────────────────────────
+//
+// Aaron, 1-ago-2026: *"no veo productividad"*. La v1 de esta señal preguntaba
+// "¿para cuándo?" y le devolvía el trabajo de decidir. Proponer dos fechas
+// concretas convierte eso en un toque.
+//
+// Determinístico a propósito: no hay LLM acá. Elegir una fecha es aritmética
+// sobre el límite del objetivo, y un modelo solo agregaría latencia y la chance
+// de inventar un día que no existe.
+
+const DIAS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'] as const
+const MESES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const
+
+/** "mar 4 ago" a partir de 'YYYY-MM-DD'. PURA. '' si no parsea. */
+export function etiquetaDeFecha(iso: string): string {
+  const t = Date.parse(`${iso}T00:00:00Z`)
+  if (!Number.isFinite(t)) return ''
+  const d = new Date(t)
+  return `${DIAS_ES[d.getUTCDay()]} ${d.getUTCDate()} ${MESES_ES[d.getUTCMonth()]}`
+}
+
+/** Días de adelanto de cada propuesta: "esta semana" y "la próxima". */
+export const ADELANTOS = [3, 10] as const
+
+/**
+ * Dos fechas concretas para ofrecerle. PURA. [] si no se puede proponer.
+ *
+ * Nunca propone DESPUÉS del límite del objetivo: una tarea fechada más allá de
+ * su propia meta nace vencida. Si el límite está más cerca que el primer
+ * adelanto, ofrece el límite mismo y nada más — dos opciones que caen el mismo
+ * día serían un botón repetido.
+ */
+export function fechasPropuestas(hoy: string, limiteObjetivo?: string | null): string[] {
+  const base = Date.parse(`${hoy}T00:00:00Z`)
+  if (!Number.isFinite(base)) return []
+  const limite = limiteObjetivo ? Date.parse(`${String(limiteObjetivo).slice(0, 10)}T00:00:00Z`) : NaN
+  const hayLimite = Number.isFinite(limite)
+  // Un límite ya vencido no sirve de tope: se ignora y se proponen los adelantos.
+  const tope = hayLimite && limite > base ? limite : null
+
+  const out: string[] = []
+  for (const d of ADELANTOS) {
+    const cand = base + d * 86_400_000
+    const usar = tope !== null && cand > tope ? tope : cand
+    const iso = new Date(usar).toISOString().slice(0, 10)
+    if (!out.includes(iso)) out.push(iso)
+  }
+  return out
+}
+
+/** `ref` del botón de fecha: `<stepId>:<YYYY-MM-DD>`. PURA. */
+export function refDeFecha(stepId: string, iso: string): string {
+  return `${stepId}:${iso}`
+}
+
+/** Parsea la `ref`. PURA. null si viene mal — no se fecha nada a la adivinanza. */
+export function parseRefDeFecha(ref: string): { stepId: string; iso: string } | null {
+  const m = /^(.+):(\d{4}-\d{2}-\d{2})$/.exec(ref ?? '')
+  if (!m || !m[1]) return null
+  if (!Number.isFinite(Date.parse(`${m[2]}T00:00:00Z`))) return null
+  return { stepId: m[1], iso: m[2] }
+}

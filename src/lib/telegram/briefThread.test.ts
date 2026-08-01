@@ -255,3 +255,42 @@ describe('encuentro con deal → acción, no solo aviso', () => {
     expect(buildSectionButtons([sin]).flat().some((b) => b.callbackData.includes('deal_prep'))).toBe(false)
   })
 })
+
+// —— Los otros slots convertidos (1-ago-2026) ————————————————————————————
+describe('la señal llega con la acción, no con la pregunta', () => {
+  it('tarea sin fecha: PROPONE dos fechas en vez de preguntar "¿para cuándo?"', () => {
+    const rows = buildSectionButtons([{
+      slot: 'tareaInvisible', section: 'metas',
+      text: '📌 "Pedirle a Dayana…" lleva 14 días sin fecha. ¿Para cuándo?',
+      entity: { kind: 'task', id: 'step_x', name: 'Pedirle a Dayana', opciones: ['2026-08-04', '2026-08-11'] },
+    }])
+    const b = rows.flat()
+    expect(b).toHaveLength(2)
+    expect(b[0].text).toBe('📅 mar 4 ago')
+    expect(b[0].callbackData).toBe('br|task_date|step_x:2026-08-04')
+  })
+
+  it('sin fechas calculadas no inventa botones', () => {
+    const rows = buildSectionButtons([{
+      slot: 'tareaInvisible', section: 'metas', text: 'x',
+      entity: { kind: 'task', id: 'step_x' },
+    }])
+    expect(rows.flat().some((b) => b.callbackData.includes('task_date'))).toBe(false)
+  })
+
+  it('meta sin plan: ofrece armarlo, no "el próximo paso"', () => {
+    const rows = buildSectionButtons([{
+      slot: 'metaSinPlan', section: 'metas', text: 'x',
+      entity: { kind: 'goal', id: 'g1', name: 'Subir ingresos' },
+    }])
+    expect(rows.flat()[0].text).toBe('🚀 Ármame el plan')
+  })
+
+  it('evento con persona: ofrece el borrador', () => {
+    const rows = buildSectionButtons([{
+      slot: 'eventosProximos', section: 'hoy', text: 'x',
+      entity: { kind: 'person', id: 'per_1', name: 'Laura Alfaro' },
+    }])
+    expect(rows.flat()[0].text).toBe('✍️ Escríbele a Laura')
+  })
+})

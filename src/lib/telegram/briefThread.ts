@@ -11,6 +11,7 @@
 
 import { signalTopicKey, type MorningSignal, type BriefSection } from '@/lib/push/morning'
 import { CARITAS, refDeCarita } from '@/lib/relaciones/pedirRegistro'
+import { etiquetaDeFecha, refDeFecha } from '@/lib/objetivos/sinFecha'
 
 /** Un botón del hilo. Mismo shape que InlineButton del cliente de Telegram. */
 export interface BriefButton { text: string; callbackData: string }
@@ -24,7 +25,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan' | 'task_date'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -44,7 +45,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan', 'task_date']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }
@@ -113,6 +114,13 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
       // Nombrar el objetivo en el texto resuelve la ambigüedad sin partir el mensaje
       // en cinco (que sería el muro del que ya se quejó en #1039).
       push(btn(`✅ Hice: ${etiquetaCorta(e.name ?? s.text)}`, 'task_done', e.id), btn('⏰ Recuérdamelo 6pm', 'task_remind', e.id))
+    } else if (e?.kind === 'task' && s.slot === 'tareaInvisible') {
+      // PROPONE la fecha en vez de preguntarla. La v1 decía "¿para cuándo?" y le
+      // devolvía la decisión — el mismo error que hacía morir la conversación de
+      // las metas vacías. Las fechas vienen calculadas del límite del objetivo
+      // (`fechasPropuestas`), sin modelo: elegir una fecha es aritmética.
+      const ops = (e.opciones ?? []).slice(0, 2)
+      push(...ops.map((iso) => btn(`📅 ${etiquetaDeFecha(iso)}`, 'task_date', refDeFecha(e.id, iso))))
     } else if (e?.kind === 'persona_log') {
       // Las 5 caritas, iguales a las del panel de la ficha. En UNA fila: es un solo
       // gesto, y partirlas en varias filas lo haria parecer un formulario.
@@ -121,7 +129,9 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
       // El caso que lo destapó: "Se cortó tu racha de Tender la cama" solo ofrecía 🔕.
       // Podía CALLAR el recordatorio pero no marcar el hábito como hecho.
       push(btn(`✅ Hice: ${etiquetaCorta(e.name ?? s.text)}`, 'habit_done', e.id))
-    } else if (e?.kind === 'person' && s.slot === 'relationshipNudge') {
+    } else if (e?.kind === 'person' && (s.slot === 'relationshipNudge' || s.slot === 'eventosProximos')) {
+      // `eventosProximos` se sumó el 1-ago: un evento CON persona es la ventana
+      // natural para escribirle, y SIR ya sabía redactar — no lo ofrecía.
       const first = (e.name ?? '').split(/\s+/)[0]
       push(btn(first ? `✍️ Escríbele a ${first}` : '✍️ Escríbele', 'person_draft', e.id))
     } else if (e?.kind === 'moment') {

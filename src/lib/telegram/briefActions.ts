@@ -14,6 +14,7 @@ import { inferParentOrg, orgSlug } from '@/lib/social-reader/entityKind'
 import { parseRefDeCarita } from '@/lib/relaciones/pedirRegistro'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { MAX_PASOS, parsePlanPropuesto, fechaEnDias } from '@/lib/objetivos/metaSinPlan'
+import { parseRefDeFecha, etiquetaDeFecha } from '@/lib/objetivos/sinFecha'
 
 export interface BriefActionResult {
   /** Texto corto para el toast del botón (Telegram lo corta a ~200). */
@@ -324,6 +325,19 @@ export async function runBriefAction(
           + 'con a quién involucra si aplica. Sé breve.',
         )
         return { toast: '🚀 Ahí va el próximo paso', reply }
+      }
+      case 'task_date': {
+        // Fechar la tarea que estaba invisible. Determinístico: la fecha viene en
+        // la `ref` del botón que él tocó, no de una inferencia.
+        const parsed = parseRefDeFecha(ref)
+        if (!parsed) return { toast: 'No pude leer esa fecha.' }
+        const { data, error } = await supabase.from('objective_steps')
+          .update({ target_date: parsed.iso })
+          .eq('user_id', userId).eq('id', parsed.stepId)
+          .select('title').maybeSingle()
+        if (error || !data) return { toast: 'No pude fecharla, inténtalo desde la app.' }
+        const t = (data as { title: string }).title
+        return { toast: `📅 ${etiquetaDeFecha(parsed.iso)} — ${t.slice(0, 40)}` }
       }
       case 'goal_plan': {
         // Traer el PLAN, no la pregunta. Aaron tiene 5 metas activas con cero
