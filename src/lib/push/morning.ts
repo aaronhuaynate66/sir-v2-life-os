@@ -55,6 +55,8 @@ export interface MorningInput {
    * Cruce CRM x agenda x grafo. Idea de Aaron. Ver lib/crm/dealEnEvento.ts.
    */
   encuentroConDeal?: string
+  /** "Ayer viste a Diana, ¿cómo te fue?" con las 5 caritas. Ver lib/relaciones/pedirRegistro.ts. */
+  pedirRegistro?: string
   /** Cruce chat → tema abierto: un "momento/decisión" abierto que el chat
    *  reciente ya parece haber resuelto (el cron `moment-scan` lo precomputa).
    *  SIR sugiere cerrarlo; no cierra solo. Texto ya formado. */
@@ -141,7 +143,7 @@ export interface MorningSignal {
   /** Entidad concreta detrás de la señal, cuando el caller la conoce. Es lo que
    *  habilita los botones del hilo ("✅ Ya lo hice" necesita el id de la tarea).
    *  Sin ella la señal se muestra igual, solo que sin acción. */
-  entity?: { kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit'; id: string; name?: string }
+  entity?: { kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit' | 'persona_log'; id: string; name?: string }
 }
 
 /** Ids de las entidades detrás de las señales. Opcionales: el brief funciona
@@ -150,6 +152,8 @@ export interface MorningEntities {
   dueTask?: { id: string; name?: string }
   /** Hábito al que apunta el nudge, cuando apunta a uno solo. */
   habit?: { id: string; name?: string }
+  /** Persona sobre la que se pide el registro de la interacción. */
+  personaLog?: { id: string; name?: string }
   relationshipPerson?: { id: string; name?: string }
   moment?: { id: string; name?: string }
   goalNudgeGoal?: { id: string; name?: string }
@@ -345,6 +349,9 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // Un vínculo puede estar rompiéndose con el chat a full.
   // Un encuentro con alguien que te debe (o a quien le debes) algo es una VENTANA:
   // pasa el evento y se cerró. Va primero de lo relacional por eso.
+  // PEDIR el registro va primero de lo relacional: es lo unico que necesita que el
+  // conteste HOY, mientras se acuerda de como estuvo.
+  add(input.pedirRegistro, 'pedirRegistro', 'gente', ent.personaLog ? { kind: 'persona_log', ...ent.personaLog } : undefined)
   add(input.encuentroConDeal, 'encuentroConDeal', 'gente')
   add(input.afectoCaida, 'afectoCaida', 'gente')
   add(input.relationshipNudge, 'relationshipNudge', 'gente', ent.relationshipPerson ? { kind: 'person', ...ent.relationshipPerson } : undefined)
