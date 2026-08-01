@@ -4,7 +4,7 @@
 // Marlab llevaba 13 días; cuatro del Mundial, 59. Y 27 `key_result` sin fecha que
 // NO son un problema — confundirlas habría inflado el hallazgo por 6.
 import { describe, it, expect } from 'vitest'
-import { tareaInvisible, tareaInvisibleLine, DIAS_MINIMOS, type PasoSinFecha, type ObjetivoVivo } from './sinFecha'
+import { tareaInvisible, tareaInvisibleLine, DIAS_MINIMOS, fechasPropuestas, etiquetaDeFecha, refDeFecha, parseRefDeFecha, type PasoSinFecha, type ObjetivoVivo } from './sinFecha'
 
 const HOY = '2026-08-01'
 const MUNDIAL: ObjetivoVivo = { id: 'g_mundial', title: 'Ganar el Mundial de Bomberos', status: 'active' }
@@ -89,5 +89,49 @@ describe('no revienta', () => {
     // objetivo también entra y es de Aaron, no se recorta.
     expect(l.length).toBeLessThan(200)
     expect(l).toContain('…')
+  })
+})
+
+describe('proponer la fecha en vez de preguntarla', () => {
+  it('ofrece dos fechas concretas', () => {
+    const f = fechasPropuestas('2026-08-01', '2026-12-31')
+    expect(f).toEqual(['2026-08-04', '2026-08-11'])
+    expect(etiquetaDeFecha(f[0])).toBe('mar 4 ago')
+  })
+
+  it('NUNCA propone después del límite: nacería vencida', () => {
+    const f = fechasPropuestas('2026-08-01', '2026-08-06')
+    expect(f.every((d) => d <= '2026-08-06')).toBe(true)
+  })
+
+  it('si el límite está más cerca que el primer adelanto, ofrece UNA sola', () => {
+    // Dos botones con la misma fecha serían un botón repetido.
+    expect(fechasPropuestas('2026-08-01', '2026-08-02')).toEqual(['2026-08-02'])
+  })
+
+  it('sin límite propone los dos adelantos', () => {
+    expect(fechasPropuestas('2026-08-01', null)).toEqual(['2026-08-04', '2026-08-11'])
+  })
+
+  it('un límite ya VENCIDO no sirve de tope', () => {
+    expect(fechasPropuestas('2026-08-01', '2026-07-01')).toEqual(['2026-08-04', '2026-08-11'])
+  })
+
+  it('la ref sobrevive ida y vuelta y cabe en Telegram', () => {
+    const ref = refDeFecha('step_1782872297596_frsp3i', '2026-08-04')
+    expect(`br|task_date|${ref}`.length).toBeLessThanOrEqual(64)
+    expect(parseRefDeFecha(ref)).toEqual({ stepId: 'step_1782872297596_frsp3i', iso: '2026-08-04' })
+  })
+
+  it('una ref mala NO fecha nada a la adivinanza', () => {
+    expect(parseRefDeFecha('sin-fecha')).toBeNull()
+    expect(parseRefDeFecha('step_x:2026-13-45')).toBeNull()
+    expect(parseRefDeFecha(':2026-08-04')).toBeNull()
+    expect(parseRefDeFecha('')).toBeNull()
+  })
+
+  it('no revienta', () => {
+    expect(fechasPropuestas('no-es-fecha')).toEqual([])
+    expect(etiquetaDeFecha('no-es-fecha')).toBe('')
   })
 })

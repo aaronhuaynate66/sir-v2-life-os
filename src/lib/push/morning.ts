@@ -149,7 +149,15 @@ export interface MorningSignal {
   /** Entidad concreta detrás de la señal, cuando el caller la conoce. Es lo que
    *  habilita los botones del hilo ("✅ Ya lo hice" necesita el id de la tarea).
    *  Sin ella la señal se muestra igual, solo que sin acción. */
-  entity?: { kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit' | 'persona_log' | 'deal'; id: string; name?: string }
+  entity?: {
+    kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit' | 'persona_log' | 'deal'
+    id: string
+    name?: string
+    /** Valores que el botón ofrece (hoy: fechas ISO para una tarea sin fecha).
+     *  Van acá y no en el texto del slot porque los botones los arma
+     *  `buildSectionButtons`, que no conoce el "hoy" ni el límite del objetivo. */
+    opciones?: string[]
+  }
 }
 
 /** Ids de las entidades detrás de las señales. Opcionales: el brief funciona
@@ -172,6 +180,10 @@ export interface MorningEntities {
   encuentroDeal?: { id: string; name?: string }
   /** Meta sin plan → habilita "ármame el plan". */
   metaSinPlanGoal?: { id: string; name?: string }
+  /** Tarea sin fecha + las fechas que se le ofrecen. */
+  tareaInvisibleTask?: { id: string; name?: string; opciones?: string[] }
+  /** Persona del evento más próximo → habilita el borrador del mensaje. */
+  eventoPersona?: { id: string; name?: string }
 }
 
 export interface MorningPush {
@@ -349,7 +361,7 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //     puede requerir PREPARARSE (un regalo, ropa, mover la agenda). El hueco lo
   //     encontró Aaron: su boda de Laura del sábado estaba cargada y no aparecía en
   //     ningún lado, porque `personal_events` solo se leía por el cruce del ciclo.
-  add(input.eventosProximos, 'eventosProximos', 'hoy')
+  add(input.eventosProximos, 'eventosProximos', 'hoy', ent.eventoPersona ? { kind: 'person', ...ent.eventoPersona } : undefined)
 
   // 1. Aniversarios/fechas especiales: un aniversario HOY es time-critical (no se
   //    puede celebrar tarde) → se mantiene sobre lo relacional-no-urgente.
@@ -420,7 +432,7 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // Antes que el resto de METAS: una meta sin UN paso está más parada que
   // una con pasos atrasados, y traerle el plan es lo que la destraba.
   add(input.metaSinPlan, 'metaSinPlan', 'metas', ent.metaSinPlanGoal ? { kind: 'goal', ...ent.metaSinPlanGoal } : undefined)
-  add(input.tareaInvisible, 'tareaInvisible', 'metas')
+  add(input.tareaInvisible, 'tareaInvisible', 'metas', ent.tareaInvisibleTask ? { kind: 'task', ...ent.tareaInvisibleTask } : undefined)
   add(input.goalNudge, 'goalNudge', 'metas', ent.goalNudgeGoal ? { kind: 'goal', ...ent.goalNudgeGoal } : undefined)
 
   // 2.9 ¿Se está cumpliendo el plan de entrenamiento de la semana?

@@ -51,7 +51,7 @@ import { encuentrosConDeal, encuentroConDealLine, encuentroDestacado } from '@/l
 import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTANA_REGISTRO } from '@/lib/relaciones/pedirRegistro'
 import { encuentrosDePasos } from '@/lib/relaciones/encuentroDePaso'
 import { trabajosAtrasados, noVerificables, saludDeCronsLine } from '@/lib/cron/salud'
-import { tareaInvisible, tareaInvisibleLine } from '@/lib/objetivos/sinFecha'
+import { tareaInvisible, tareaInvisibleLine, fechasPropuestas } from '@/lib/objetivos/sinFecha'
 import { metaSinPlan, metaSinPlanLine } from '@/lib/objetivos/metaSinPlan'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
@@ -210,6 +210,11 @@ export async function GET(req: NextRequest) {
       // fecha y con Laura vinculada. El problema era que `personal_events` se leía SOLO
       // por el cruce del ciclo menstrual (#978), que surfacea un evento únicamente si la
       // persona está en ventana sensible. Faltaba el recordatorio a secas.
+      // Ids de las entidades detrás de las señales → habilitan los botones del
+      // hilo. Se declara ACÁ arriba y no junto a las tareas porque varios slots
+      // de más abajo (eventos, deal, meta sin plan) también adjuntan la suya.
+      const briefEntities: MorningEntities = {}
+
       let eventosProximosText: string | undefined
       // Se guardan para reusarlos en el cruce CRM × agenda × grafo de más abajo, en
       // vez de volver a pedir la misma tabla.
@@ -240,6 +245,16 @@ export async function GET(req: NextRequest) {
           personName: e.person_id ? nombrePorId.get(e.person_id) ?? null : null,
         }))
         eventosProximosText = eventosProximosLine(evs, today) ?? undefined
+        // Si el evento MÁS PRÓXIMO es con alguien, ofrecerle el borrador. Un evento
+        // con persona es la ventana natural para escribirle, y SIR ya sabe hacerlo
+        // (`person_draft`) — solo que esta señal nunca lo ofrecía.
+        const conPersona = crudos.find((e) => e.person_id && String(e.event_date).slice(0, 10) >= today)
+        if (eventosProximosText && conPersona?.person_id) {
+          briefEntities.eventoPersona = {
+            id: conPersona.person_id,
+            name: nombrePorId.get(conPersona.person_id) ?? undefined,
+          }
+        }
       } catch (e) {
         reportApiError(e, { route: 'cron/morning-push', step: 'eventosProximos', user: uid.slice(0, 8) })
       }
@@ -368,7 +383,6 @@ export async function GET(req: NextRequest) {
       // Ids de las entidades detrás de las señales → habilitan los botones del
       // hilo de Telegram ("✅ Ya lo hice" necesita saber QUÉ tarea marcar). Con
       // más de una tarea el botón sería ambiguo, así que solo va con exactamente una.
-      const briefEntities: MorningEntities = {}
       if (dueStepRows.length === 1) briefEntities.dueTask = { id: dueStepRows[0].id, name: dueStepRows[0].title }
 
       // Foco: ancla del año, o el próximo paso de un objetivo activo.
@@ -750,7 +764,7 @@ export async function GET(req: NextRequest) {
           .select('id, objective_id, title, kind, target_date, status, created_at')
           .eq('user_id', uid).is('target_date', null).eq('kind', 'task').limit(200)
         if (sfErr) throw new Error(sfErr.message)
-        tareaInvisibleText = tareaInvisibleLine(tareaInvisible(
+        const invisible = tareaInvisible(
           ((pasosSF ?? []) as Array<Record<string, unknown>>).map((r) => ({
             id: String(r.id), objectiveId: String(r.objective_id), title: String(r.title),
             kind: (r.kind as string) ?? null, targetDate: (r.target_date as string) ?? null,
@@ -758,7 +772,18 @@ export async function GET(req: NextRequest) {
           })),
           goals.map((g) => ({ id: g.id, title: g.title, status: 'active' })),
           today,
-        )) ?? undefined
+        )
+        tareaInvisibleText = tareaInvisibleLine(invisible) ?? undefined
+        if (invisible) {
+          // Las fechas salen del límite del OBJETIVO al que pertenece la tarea: una
+          // tarea fechada más allá de su propia meta nace vencida.
+          const suObjetivo = goals.find((g) => g.title === invisible.objetivo)
+          briefEntities.tareaInvisibleTask = {
+            id: invisible.id,
+            name: invisible.title,
+            opciones: fechasPropuestas(today, suObjetivo?.target_date ?? null),
+          }
+        }
       } catch (e) {
         reportApiError(e, { route: 'cron/morning-push', step: 'tareaInvisible', user: uid.slice(0, 8) })
       }
