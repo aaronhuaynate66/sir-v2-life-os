@@ -109,6 +109,8 @@ export interface MorningInput {
    *  porque cambia cómo hay que leer todo lo demás: si WhatsApp está caído, la
    *  ausencia de señales relacionales no significa que no pasó nada. */
   readerSilence?: string
+  /** Una tarea sin fecha que por eso nunca se muestra. Ver `lib/objetivos/sinFecha`. */
+  tareaInvisible?: string
   /** Un trabajo automático se quedó sin dejar evidencia. Ver `lib/cron/salud`. */
   cronsMudos?: string
   /**
@@ -401,6 +403,9 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   add(input.opportunity, 'opportunity', 'metas', ent.opportunity ? { kind: 'opportunity', ...ent.opportunity } : undefined)
 
   // 2.8 OBJETIVO que necesita atención (accionable, antes del foco genérico).
+  // Una tarea que Aaron escribió y el sistema se tragó por no tener fecha.
+  // Va en METAS y despues del nudge: es una pregunta, no una urgencia.
+  add(input.tareaInvisible, 'tareaInvisible', 'metas')
   add(input.goalNudge, 'goalNudge', 'metas', ent.goalNudgeGoal ? { kind: 'goal', ...ent.goalNudgeGoal } : undefined)
 
   // 2.9 ¿Se está cumpliendo el plan de entrenamiento de la semana?
