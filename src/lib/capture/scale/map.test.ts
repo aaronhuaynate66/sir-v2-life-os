@@ -36,11 +36,13 @@ describe('buildScaleHealthMetrics — mapeo', () => {
 
     const byType = Object.fromEntries(out.map((m) => [m.type, m]))
     expect(byType.weight).toMatchObject({ value: 81.85, unit: 'kg' })
-    expect(byType.bmi).toMatchObject({ value: 26.7, unit: '' })
+    // CAMBIO DELIBERADO (1-ago-2026): el IMC tenía la unidad vacía acá y 'kg/m2' en
+    // la base. La unidad ahora la manda la métrica, no el importador.
+    expect(byType.bmi).toMatchObject({ value: 26.7, unit: 'kg/m2' })
     expect(byType.body_fat_percent).toMatchObject({ value: 23.4, unit: '%' })
     expect(byType.muscle_mass_kg).toMatchObject({ value: 59.2, unit: 'kg' })
     expect(byType.visceral_fat_level).toMatchObject({ value: 9, unit: 'nivel' })
-    expect(byType.metabolic_rate_kcal).toMatchObject({ value: 1680, unit: 'kcal' })
+    expect(byType.metabolic_rate_kcal).toMatchObject({ value: 1680, unit: 'kcal/d' })
     expect(byType.water_percent).toMatchObject({ value: 54.1, unit: '%' })
     expect(byType.bone_mass_kg).toMatchObject({ value: 3.1, unit: 'kg' })
     expect(byType.protein_percent).toMatchObject({ value: 17.2, unit: '%' })

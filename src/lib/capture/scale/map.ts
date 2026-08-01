@@ -8,6 +8,7 @@
 // peso (type='weight') queda trackeable en el tiempo para el chart de
 // tendencia de /yo, que lee health_metrics filtrando por type.
 
+import { unidadDe } from '@/lib/health-metrics/unidades'
 import type { HealthMetric } from '@/types'
 import type { ScaleMetric } from './types'
 import { SCALE_METRICS_ORDER, SCALE_METRIC_MAPPING } from './types'
@@ -47,7 +48,10 @@ export function buildScaleHealthMetrics(args: BuildScaleMetricsArgs): HealthMetr
       id: `${args.captureId}__${key}`,
       type: mapping.healthType,
       value,
-      unit: mapping.unit,
+      // La unidad la manda la MÉTRICA, no el importador: cada uno declaraba la suya
+      // y en la base terminaron 8 métricas con unidades mezcladas (heart_rate con
+      // 'lpm', 'bpm' y 'ppm' a la vez). Fuente única: lib/health-metrics/unidades.
+      unit: unidadDe(mapping.healthType, mapping.unit),
       timestamp: args.measuredAt,
       captureId: args.captureId,
       sourceImagePath: args.sourceImagePath,
