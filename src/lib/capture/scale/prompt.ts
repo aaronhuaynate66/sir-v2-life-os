@@ -37,6 +37,14 @@ Reglas estrictas:
    fecha/hora visible, null y mencionarlo en raw_observations.
    Si solo hay fecha sin hora, usar T00:00:00 con offset de Lima (-05:00).
 3. Convertir unidades al schema (libras → kg, kcal nativo, etc.).
+3b. MÚSCULO: NO confundir los dos campos. El esquelético es una PARTE del total,
+   así que skeletal_muscle_mass_kg SIEMPRE es menor que muscle_mass_kg.
+   - muscle_mass_kg = músculo total / masa libre de grasa ("Masa muscular",
+     "Masa libre de grasa", "Fat-free mass"). Ronda el 60-90% del peso.
+   - skeletal_muscle_mass_kg = solo músculo esquelético ("Músculo esquelético",
+     "Masa musculoesquelética", "Skeletal muscle"). Ronda el 30-55% del peso.
+   Ej. con 82 kg de peso: muscle_mass_kg ≈ 61, skeletal_muscle_mass_kg ≈ 33.
+   Si tu lectura los deja al revés, está mal: revísala antes de responder.
 4. "confidence":
    - high: imagen nítida + todas las métricas legibles + sin ambigüedad
    - medium: algunas métricas legibles, otras ambiguas u omitidas

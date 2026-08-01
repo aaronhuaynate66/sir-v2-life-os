@@ -1,6 +1,7 @@
 // SIR V2 — Validación manual del JSON que devuelve Claude Vision.
 // Sin zod: type guard puro para no agregar dep.
 
+import { corregirConPeso } from './coherencia'
 import type { ScaleCaptureExtracted, ScaleMetric } from './types'
 import { SCALE_METRICS_ORDER } from './types'
 
@@ -53,13 +54,23 @@ export function sanitizeExtracted(raw: ScaleCaptureExtracted): ScaleCaptureExtra
     }
   }
 
+  // COHERENCIA FÍSICA antes de devolver. El prompt lista `muscle_mass_kg` y
+  // `skeletal_muscle_mass_kg` sin decir cuál es cuál, y el modelo las cruzaba
+  // leyendo el pantallazo — 46 filas invertidas en la base, TODAS con
+  // `confidence: "high"`. Con eso `askSir` reportaba la masa magra de Aaron como
+  // 33 kg o 61 kg según el día. Reforzar el prompt no alcanzaba (ya decía "high"
+  // mientras las invertía); esto sí, porque es aritmética y no criterio.
+  const { metrics: coherentes, correcciones } = corregirConPeso(cleanMetrics, cleanMetrics.weight_kg)
+
+  const observaciones = [
+    typeof raw.raw_observations === 'string' ? raw.raw_observations.trim() : '',
+    ...correcciones,
+  ].filter(Boolean).join(' · ').slice(0, 200).trim()
+
   return {
     measured_at: raw.measured_at,
-    metrics: cleanMetrics,
+    metrics: coherentes,
     confidence: raw.confidence,
-    raw_observations:
-      typeof raw.raw_observations === 'string'
-        ? raw.raw_observations.slice(0, 200).trim() || undefined
-        : undefined,
+    raw_observations: observaciones || undefined,
   }
 }
