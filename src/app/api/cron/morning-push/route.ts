@@ -49,6 +49,7 @@ import { examenRecienteLine } from '@/lib/health-exams/recentExam'
 import { cumpleanosProximos, esHitoDeAnticipacion } from '@/lib/push/cumpleanos'
 import { encuentrosConDeal, encuentroConDealLine } from '@/lib/crm/dealEnEvento'
 import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTANA_REGISTRO } from '@/lib/relaciones/pedirRegistro'
+import { encuentrosDePasos } from '@/lib/relaciones/encuentroDePaso'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -600,13 +601,46 @@ export async function GET(req: NextRequest) {
       // El camino para registrar YA existía (panel de la ficha, `registrar_interaccion`)
       // pero era PULL: había que acordarse. Esto lo da vuelta — si hubo un encuentro
       // AGENDADO que ya pasó y no dejó registro, SIR lo pregunta, con las 5 caritas.
+      //
+      // DOS FUENTES de encuentro, no una. La v1 (#1062) solo miraba
+      // `personal_events` y por eso se le escapaba el caso que la originó: la
+      // conversación de fondo con Diana del 31-jul estaba cargada como PASO DE
+      // OBJETIVO. Aaron tuvo que contarla a mano — justo el trabajo manual que
+      // pidió eliminar. La segunda fuente la agrega `encuentrosDePasos`.
       let pedirRegistroText: string | undefined
       try {
         const desdeReg = new Date(now.getTime() - (VENTANA_REGISTRO + 1) * 86_400_000).toISOString().slice(0, 10)
-        const conPersona = (evRowsParaCrm ?? []).filter((e) => e.person_id && e.title && e.event_date
+
+        // (A) Eventos personales con persona.
+        const evConPersona = (evRowsParaCrm ?? []).filter((e) => e.person_id && e.title && e.event_date
           && String(e.event_date).slice(0, 10) >= desdeReg)
-        if (conPersona.length > 0) {
-          const pids = [...new Set(conPersona.map((e) => e.person_id).filter(Boolean))] as string[]
+
+        // (B) Pasos de objetivo que SON un encuentro. La persona cuelga del
+        //     objetivo (`goals.related_persons`), no del paso, así que
+        //     `encuentrosDePasos` exige además que el título la nombre.
+        const vinculos = goals
+          .filter((g) => Array.isArray(g.related_persons) && g.related_persons.length > 0)
+          .map((g) => ({ objectiveId: g.id, personIds: g.related_persons as string[] }))
+        let pasosEnVentana: Array<{ objective_id: string; title: string; target_date: string }> = []
+        if (vinculos.length > 0) {
+          const { data: pasoRows, error: pasoErr } = await admin
+            .from('objective_steps')
+            .select('objective_id, title, target_date')
+            .eq('user_id', uid)
+            .gte('target_date', desdeReg).lte('target_date', today)
+            .limit(200)
+          // PostgREST no lanza: sin esto un nombre de columna malo daría "no hay
+          // encuentros" en silencio, que es exactamente el bug que se arregla acá.
+          if (pasoErr) throw new Error(pasoErr.message)
+          pasosEnVentana = (pasoRows ?? []) as typeof pasosEnVentana
+        }
+
+        const pids = [...new Set([
+          ...evConPersona.map((e) => e.person_id as string),
+          ...vinculos.flatMap((v) => v.personIds),
+        ].filter(Boolean))]
+
+        if (pids.length > 0) {
           const [{ data: pplReg }, { data: logsReg }] = await Promise.all([
             admin.from('people').select('id, name').eq('user_id', uid).in('id', pids),
             admin.from('person_logs').select('person_id, logged_at')
@@ -614,13 +648,23 @@ export async function GET(req: NextRequest) {
               .gte('logged_at', `${desdeReg}T00:00:00Z`).limit(200),
           ])
           const nombreReg = new Map(((pplReg ?? []) as Array<{ id: string; name: string }>).map((p) => [p.id, p.name]))
-          const pedido = pedidoDeRegistroPendiente(
-            conPersona.map((e) => ({
+          const encuentros = [
+            ...evConPersona.map((e) => ({
               personId: e.person_id as string,
               personName: nombreReg.get(e.person_id as string) ?? 'esa persona',
               date: String(e.event_date).slice(0, 10),
               title: e.title as string,
             })),
+            ...encuentrosDePasos(
+              pasosEnVentana.map((p) => ({
+                objectiveId: p.objective_id, title: p.title, targetDate: String(p.target_date).slice(0, 10),
+              })),
+              vinculos,
+              nombreReg,
+            ),
+          ]
+          const pedido = pedidoDeRegistroPendiente(
+            encuentros,
             ((logsReg ?? []) as Array<{ person_id: string; logged_at: string }>)
               .map((l) => ({ personId: l.person_id, loggedAt: l.logged_at })),
             today,
