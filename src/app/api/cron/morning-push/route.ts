@@ -51,6 +51,7 @@ import { encuentrosConDeal, encuentroConDealLine } from '@/lib/crm/dealEnEvento'
 import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTANA_REGISTRO } from '@/lib/relaciones/pedirRegistro'
 import { encuentrosDePasos } from '@/lib/relaciones/encuentroDePaso'
 import { trabajosAtrasados, noVerificables, saludDeCronsLine } from '@/lib/cron/salud'
+import { tareaInvisible, tareaInvisibleLine } from '@/lib/objetivos/sinFecha'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -713,6 +714,31 @@ export async function GET(req: NextRequest) {
         reportApiError(e, { route: 'cron/morning-push', step: 'pedirRegistro', user: uid.slice(0, 8) })
       }
 
+      // UNA TAREA QUE ESCRIBIÓ Y EL SISTEMA SE TRAGÓ. El brief surfacea por FECHA,
+      // así que una tarea sin `target_date` no entra en ninguna ventana y no
+      // aparece NUNCA. Medido el 1-ago: 6 así en objetivos activos, la más vieja
+      // de 59 días, y una de Marlab que llevaba 13.
+      // No se le inventa la fecha —planificar es decisión suya—: se le PIDE.
+      let tareaInvisibleText: string | undefined
+      try {
+        const { data: pasosSF, error: sfErr } = await admin
+          .from('objective_steps')
+          .select('id, objective_id, title, kind, target_date, status, created_at')
+          .eq('user_id', uid).is('target_date', null).eq('kind', 'task').limit(200)
+        if (sfErr) throw new Error(sfErr.message)
+        tareaInvisibleText = tareaInvisibleLine(tareaInvisible(
+          ((pasosSF ?? []) as Array<Record<string, unknown>>).map((r) => ({
+            id: String(r.id), objectiveId: String(r.objective_id), title: String(r.title),
+            kind: (r.kind as string) ?? null, targetDate: (r.target_date as string) ?? null,
+            status: String(r.status ?? ''), createdAt: String(r.created_at ?? ''),
+          })),
+          goals.map((g) => ({ id: g.id, title: g.title, status: 'active' })),
+          today,
+        )) ?? undefined
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'tareaInvisible', user: uid.slice(0, 8) })
+      }
+
       // NUDGE DE OBJETIVO: norte estancado o meta en riesgo. SIR ya lo computa
       // (norteDrift / goal engine) pero vivía en un panel; acá lo saca al push.
       const goalNudgeText = goalNudgeLine(
@@ -1292,7 +1318,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla
