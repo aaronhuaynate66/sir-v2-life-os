@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
-import { canalDe, chatMessageId, contenidoParaId, limaWallClock, minuteKey, toChatRows, type ChatMessageInput } from './append'
+import { canalDe, chatMessageId, mensajesSinFecha, contenidoParaId, limaWallClock, minuteKey, toChatRows, type ChatMessageInput } from './append'
 
 describe('minuteKey', () => {
   it('trunca a minuto en UTC', () => {
@@ -217,5 +217,39 @@ describe('toChatRows', () => {
     ])
     expect(rows[0].content.length).toBe(8000)
     expect(rows[0].author_name?.length).toBe(120)
+  })
+})
+
+// —— Mensajes SIN FECHA (1-ago-2026) ————————————————————————————————————
+// Medido en la base: 30 mensajes del reader con `sent_at: null`, de 5 personas.
+// Se guardaban en silencio y quedaban invisibles para el IAE, el detector de
+// caída de afecto y el "último contacto". No se pueden reparar a posteriori
+// (el desfase created_at−sent_at del reader tiene mediana de 3 días), así que
+// lo único honesto es CONTARLOS para que se vean.
+describe('mensajesSinFecha', () => {
+  it('cuenta los que se van a guardar sin fecha', () => {
+    expect(mensajesSinFecha([
+      { iso: '2026-07-30T10:00:00Z', sender: 'user', content: 'con fecha' },
+      { iso: null, sender: 'user', content: 'sin fecha' },
+      { iso: null as unknown as string, sender: 'other', content: 'nula' },
+    ])).toBe(2)
+  })
+
+  it('no cuenta los que ni se guardan (vacíos y no-media)', () => {
+    expect(mensajesSinFecha([{ iso: null, sender: 'user', content: '' }])).toBe(0)
+  })
+
+  it('un media sin texto SÍ se guarda, así que sí cuenta', () => {
+    expect(mensajesSinFecha([{ iso: null, sender: 'user', content: '', isMedia: true }])).toBe(1)
+  })
+
+  it('una fecha demasiado corta no es fecha', () => {
+    expect(mensajesSinFecha([{ iso: '2026', sender: 'user', content: 'x' }])).toBe(1)
+  })
+
+  it('cero cuando todos tienen fecha, y no revienta con basura', () => {
+    expect(mensajesSinFecha([{ iso: '2026-07-30T10:00:00Z', sender: 'user', content: 'x' }])).toBe(0)
+    expect(mensajesSinFecha([])).toBe(0)
+    expect(mensajesSinFecha(null as unknown as [])).toBe(0)
   })
 })

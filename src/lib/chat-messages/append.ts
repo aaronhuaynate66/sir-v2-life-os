@@ -10,6 +10,7 @@
 
 import { createHash } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 export type ChatSender = 'user' | 'other'
 
@@ -205,6 +206,34 @@ export function toChatRows(
   return rows
 }
 
+/**
+ * Cuántos mensajes del lote se van a guardar SIN FECHA. PURA.
+ *
+ * `toChatRows` deja `sent_at: null` cuando no puede leer el timestamp, y lo hace
+ * en silencio. El problema no es guardar el contenido —eso está bien, mejor
+ * tenerlo que perderlo— sino que **un mensaje sin fecha es invisible para todo el
+ * análisis temporal**: el IAE, el detector de caída de afecto, el "último
+ * contacto", la ventana de tono. No aparece y nadie sabe que existe.
+ *
+ * Medido el 1-ago-2026: **30 mensajes** del reader así, de 5 personas, todos
+ * ingeridos el 30-jul. Y no se pueden recuperar a posteriori: el desfase entre
+ * `created_at` y `sent_at` en el reader tiene una MEDIANA de 3 días (p90: 13),
+ * así que imputar la fecha de ingreso inventaría datos, no los repararía.
+ *
+ * Por eso esto no arregla nada: hace VISIBLE lo que se estaba perdiendo, para
+ * que el caller lo reporte y se pueda arreglar el parser en su origen.
+ */
+export function mensajesSinFecha(messages: readonly ChatMessageInput[]): number {
+  let n = 0
+  for (const m of messages ?? []) {
+    if (!m) continue
+    const content = (m.content ?? '').slice(0, MAX_CONTENT)
+    if (content.length === 0 && m.isMedia !== true) continue // ese ni se guarda
+    if (!(typeof m.iso === 'string' && m.iso.length >= 10)) n++
+  }
+  return n
+}
+
 /** Dedupe intra-lote por id (dos mensajes idénticos dentro del mismo import). */
 function dedupeById(rows: ChatMessageRow[]): ChatMessageRow[] {
   const seen = new Set<string>()
@@ -227,6 +256,16 @@ export async function appendChatMessages(
   params: { userId: string; personId: string; source: string; messages: ChatMessageInput[]; platform?: string | null },
 ): Promise<number> {
   const rows = dedupeById(toChatRows(params.userId, params.personId, params.source, params.messages, params.platform))
+  // Un mensaje sin fecha se guarda igual (mejor el contenido que nada) pero es
+  // INVISIBLE para todo el análisis temporal. Antes se perdía en silencio; ahora
+  // al menos queda en el log de la ruta. Ver `mensajesSinFecha`.
+  const sinFecha = mensajesSinFecha(params.messages)
+  if (sinFecha > 0) {
+    reportApiError(
+      new Error(`${sinFecha} mensaje(s) sin fecha de ${params.source}: se guardan pero no entran en ninguna ventana temporal`),
+      { route: 'chat-messages/append', personId: params.personId.slice(0, 12), source: params.source },
+    )
+  }
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const slice = rows.slice(i, i + UPSERT_BATCH)
     const { error } = await client.from('chat_messages').upsert(slice, { onConflict: 'id', ignoreDuplicates: true })
