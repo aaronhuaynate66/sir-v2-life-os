@@ -50,6 +50,7 @@ import { cumpleanosProximos, esHitoDeAnticipacion } from '@/lib/push/cumpleanos'
 import { encuentrosConDeal, encuentroConDealLine } from '@/lib/crm/dealEnEvento'
 import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTANA_REGISTRO } from '@/lib/relaciones/pedirRegistro'
 import { encuentrosDePasos } from '@/lib/relaciones/encuentroDePaso'
+import { trabajosAtrasados, noVerificables, saludDeCronsLine } from '@/lib/cron/salud'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -501,6 +502,40 @@ export async function GET(req: NextRequest) {
         }
       } catch (e) {
         reportApiError(e, { route: 'cron/morning-push', step: 'readerSilence', user: uid.slice(0, 8) })
+      }
+
+      // ¿ALGÚN TRABAJO MÍO SE QUEDÓ MUDO? Mira la EVIDENCIA que deja cada cron,
+      // no si "corrió": un cron puede responder 200 habiendo hecho nada (un
+      // `select` que falla deja `data` en null y PostgREST no lanza), y Vercel lo
+      // pinta verde. `status-diff` se saltó el 26, 30 y 31 de julio sin que nadie
+      // se enterara en 6 días.
+      //
+      // Cada medición marca `verificable`: si la consulta falla, el vigilante dice
+      // "no lo puedo verificar", NUNCA "está caído". Es la regla de honestidad de
+      // cobertura de CLAUDE.md aplicada a sí mismo.
+      let cronsMudosText: string | undefined
+      try {
+        const estados = await Promise.all([
+          (async () => {
+            const { data, error } = await admin
+              .from('person_status_snapshots').select('snapshot_date')
+              .eq('user_id', uid).order('snapshot_date', { ascending: false }).limit(1)
+            return { job: 'status-diff', verificable: !error, ultimoDia: data?.[0]?.snapshot_date ?? null }
+          })(),
+          (async () => {
+            const { data, error } = await admin
+              .from('brief_sent_signals').select('last_sent_day')
+              .eq('user_id', uid).not('last_sent_day', 'is', null)
+              .order('last_sent_day', { ascending: false }).limit(1)
+            return { job: 'morning-push', verificable: !error, ultimoDia: data?.[0]?.last_sent_day ?? null }
+          })(),
+        ])
+        cronsMudosText = saludDeCronsLine(
+          trabajosAtrasados(estados, today),
+          noVerificables(estados),
+        ) ?? undefined
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'cronsMudos', user: uid.slice(0, 8) })
       }
 
       // OPORTUNIDAD / ENFRIAMIENTO detectado en las conversaciones. Acá solo se
@@ -1257,7 +1292,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

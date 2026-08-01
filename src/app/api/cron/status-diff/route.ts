@@ -60,16 +60,32 @@ export async function GET(req: NextRequest) {
 
   // 1. Traer TODOS los usuarios con personas activas (importance_score >= 3).
   // Como es mono-usuario en la práctica, no aplicamos filtro pesado por user.
-  const { data: peopleRaw } = await supabase
+  // `.error` NO es opcional acá. PostgREST no lanza: si esta consulta falla,
+  // `peopleRaw` viene null, `people` queda vacío y el `return` de abajo responde
+  // **200 con cero trabajo hecho**. Vercel lo pinta verde y el cron parece sano.
+  // Así se saltó el 26, el 30 y el 31 de julio de 2026 sin que nadie se enterara.
+  // Un fallo tiene que verse como fallo. [[postgrest-columna-inexistente]]
+  const { data: peopleRaw, error: peopleErr } = await supabase
     .from('people').select('id, user_id, name, importance_score').gte('importance_score', 3)
+  if (peopleErr) {
+    return NextResponse.json({ error: `people: ${peopleErr.message}` }, { status: 500 })
+  }
   const people = (peopleRaw ?? []) as PersonRow[]
+  // Cero personas con esta consulta OK sí es un vacío legítimo (base nueva).
   if (people.length === 0) return NextResponse.json({ processed: 0, alerts: 0 })
 
   // 2. Cargar snapshots más recientes por (user, person) para comparación.
   const snapshotByKey = new Map<string, { label: EstadoLabel; snapshot_date: string }>()
-  const { data: snapsRaw } = await supabase
+  // Y acá el fallo silencioso es PEOR que no correr: sin snapshots previos no hay
+  // contra qué comparar, así que ninguna persona genera alerta — pero la ruta
+  // sigue escribiendo los snapshots de hoy y termina en 200. Resultado: el motor
+  // "corre bien" todos los días y NUNCA avisa de un cambio de estado.
+  const { data: snapsRaw, error: snapsErr } = await supabase
     .from('person_status_snapshots').select('user_id, person_id, label, snapshot_date')
     .order('snapshot_date', { ascending: false }).limit(2000)
+  if (snapsErr) {
+    return NextResponse.json({ error: `snapshots: ${snapsErr.message}` }, { status: 500 })
+  }
   for (const row of ((snapsRaw ?? []) as Array<{ user_id: string; person_id: string; label: string; snapshot_date: string }>)) {
     const key = `${row.user_id}:${row.person_id}`
     if (!snapshotByKey.has(key)) snapshotByKey.set(key, { label: row.label as EstadoLabel, snapshot_date: row.snapshot_date })
