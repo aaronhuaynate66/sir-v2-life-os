@@ -10,6 +10,7 @@
 // El push del navegador NO cambia: sigue usando push.body.
 
 import { signalTopicKey, type MorningSignal, type BriefSection } from '@/lib/push/morning'
+import { CARITAS, refDeCarita } from '@/lib/relaciones/pedirRegistro'
 
 /** Un botón del hilo. Mismo shape que InlineButton del cliente de Telegram. */
 export interface BriefButton { text: string; callbackData: string }
@@ -23,7 +24,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -43,7 +44,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }
@@ -112,6 +113,10 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
       // Nombrar el objetivo en el texto resuelve la ambigüedad sin partir el mensaje
       // en cinco (que sería el muro del que ya se quejó en #1039).
       push(btn(`✅ Hice: ${etiquetaCorta(e.name ?? s.text)}`, 'task_done', e.id), btn('⏰ Recuérdamelo 6pm', 'task_remind', e.id))
+    } else if (e?.kind === 'persona_log') {
+      // Las 5 caritas, iguales a las del panel de la ficha. En UNA fila: es un solo
+      // gesto, y partirlas en varias filas lo haria parecer un formulario.
+      push(...CARITAS.map((c) => btn(c.emoji, 'log_tono', refDeCarita(e.id, c.valor))))
     } else if (e?.kind === 'habit') {
       // El caso que lo destapó: "Se cortó tu racha de Tender la cama" solo ofrecía 🔕.
       // Podía CALLAR el recordatorio pero no marcar el hábito como hecho.

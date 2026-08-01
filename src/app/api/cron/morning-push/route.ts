@@ -48,6 +48,7 @@ import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
 import { examenRecienteLine } from '@/lib/health-exams/recentExam'
 import { cumpleanosProximos, esHitoDeAnticipacion } from '@/lib/push/cumpleanos'
 import { encuentrosConDeal, encuentroConDealLine } from '@/lib/crm/dealEnEvento'
+import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTANA_REGISTRO } from '@/lib/relaciones/pedirRegistro'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -585,6 +586,52 @@ export async function GET(req: NextRequest) {
         }
       } catch (e) {
         reportApiError(e, { route: 'cron/morning-push', step: 'encuentroConDeal', user: uid.slice(0, 8) })
+      }
+
+      // ═══ PEDIR EL REGISTRO DE LO PRESENCIAL ═══════════════════════════════
+      //
+      // Pedido de Aaron (31-jul-2026): *"todo esto se arrastra porque no tenemos un
+      // método más eficiente que te inyecte cada vez que tenga una conversación"*, con
+      // la prueba: *"sí hemos conversado el día lunes, solo que como fue verbal no hay
+      // registro de eso"*. El reader trae WhatsApp; **lo presencial no existe para
+      // SIR**, y ese día el motor de estado seguía leyendo el 29-jul y llamaba
+      // "estable" a la relación mientras discutían.
+      //
+      // El camino para registrar YA existía (panel de la ficha, `registrar_interaccion`)
+      // pero era PULL: había que acordarse. Esto lo da vuelta — si hubo un encuentro
+      // AGENDADO que ya pasó y no dejó registro, SIR lo pregunta, con las 5 caritas.
+      let pedirRegistroText: string | undefined
+      try {
+        const desdeReg = new Date(now.getTime() - (VENTANA_REGISTRO + 1) * 86_400_000).toISOString().slice(0, 10)
+        const conPersona = (evRowsParaCrm ?? []).filter((e) => e.person_id && e.title && e.event_date
+          && String(e.event_date).slice(0, 10) >= desdeReg)
+        if (conPersona.length > 0) {
+          const pids = [...new Set(conPersona.map((e) => e.person_id).filter(Boolean))] as string[]
+          const [{ data: pplReg }, { data: logsReg }] = await Promise.all([
+            admin.from('people').select('id, name').eq('user_id', uid).in('id', pids),
+            admin.from('person_logs').select('person_id, logged_at')
+              .eq('user_id', uid).eq('kind', 'interaction').in('person_id', pids)
+              .gte('logged_at', `${desdeReg}T00:00:00Z`).limit(200),
+          ])
+          const nombreReg = new Map(((pplReg ?? []) as Array<{ id: string; name: string }>).map((p) => [p.id, p.name]))
+          const pedido = pedidoDeRegistroPendiente(
+            conPersona.map((e) => ({
+              personId: e.person_id as string,
+              personName: nombreReg.get(e.person_id as string) ?? 'esa persona',
+              date: String(e.event_date).slice(0, 10),
+              title: e.title as string,
+            })),
+            ((logsReg ?? []) as Array<{ person_id: string; logged_at: string }>)
+              .map((l) => ({ personId: l.person_id, loggedAt: l.logged_at })),
+            today,
+          )
+          if (pedido) {
+            pedirRegistroText = pedidoDeRegistroLine(pedido) ?? undefined
+            briefEntities.personaLog = { id: pedido.personId, name: pedido.personName }
+          }
+        }
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'pedirRegistro', user: uid.slice(0, 8) })
       }
 
       // NUDGE DE OBJETIVO: norte estancado o meta en riesgo. SIR ya lo computa
@@ -1166,7 +1213,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

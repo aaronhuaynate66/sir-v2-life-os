@@ -11,6 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { BriefActionKind } from './briefThread'
 import { nombreDesdeHandle, parseOrgBatch } from '@/lib/social-reader/orgBatch'
 import { inferParentOrg, orgSlug } from '@/lib/social-reader/entityKind'
+import { parseRefDeCarita } from '@/lib/relaciones/pedirRegistro'
 
 export interface BriefActionResult {
   /** Texto corto para el toast del botón (Telegram lo corta a ~200). */
@@ -67,6 +68,44 @@ async function habitDone(
     .insert({ user_id: userId, habit_id: habitId, date: hoy })
   if (error) return { toast: 'No pude marcarlo, inténtalo desde la app.' }
   return { toast: `✅ ${titulo}` }
+}
+
+/**
+ * Una de las 5 caritas → escribe el `person_log` de la interacción.
+ *
+ * Cierra el pedido de Aaron del 31-jul-2026: *"todo esto se arrastra porque no tenemos
+ * un método más eficiente que te inyecte cada vez que tenga una conversación"*. El
+ * camino para registrar YA existía (el panel de la ficha, `registrar_interaccion` por
+ * chat) pero era PULL: había que acordarse. Hablaron en persona el lunes 27-jul, no
+ * quedó registro, y el motor de estado siguió leyendo el 29-jul llamando "estable" a
+ * la relación mientras discutían.
+ *
+ * Esto es el mismo dato, de UN toque, desde el brief que él sí lee.
+ */
+async function logInteraccion(
+  supabase: SupabaseClient, userId: string, ref: string, now: Date,
+): Promise<BriefActionResult> {
+  const parsed = parseRefDeCarita(ref)
+  // Sin ref válida NO se escribe nada: inventar un valor de tono es peor que no tener
+  // el dato, porque después alimenta el diagnóstico de la relación.
+  if (!parsed) return { toast: 'No pude leer ese botón.' }
+  const { personId, valor } = parsed
+
+  const { data: p } = await supabase
+    .from('people').select('name').eq('user_id', userId).eq('id', personId).maybeSingle()
+  const nombre = ((p as { name?: string } | null)?.name ?? 'esa persona').split(/\s+/)[0]
+
+  const { error } = await supabase.from('person_logs').insert({
+    user_id: userId, person_id: personId, kind: 'interaction',
+    value: valor, note: 'Registrado de un toque desde el brief de la mañana.',
+    logged_at: now.toISOString(),
+  })
+  if (error) return { toast: 'No pude anotarlo, inténtalo desde la ficha.' }
+
+  // Se devuelve el número para que él vea QUÉ quedó guardado. Un "listo" a secas deja
+  // la duda de si se anotó un 2 o un 4, y eso mueve el diagnóstico de la relación.
+  const eco = valor <= 2 ? 'anotado, gracias por decirlo' : valor === 3 ? 'anotado' : 'anotado 💚'
+  return { toast: `📝 ${nombre}: ${valor}/5 — ${eco}` }
 }
 
 /**
@@ -260,6 +299,7 @@ export async function runBriefAction(
     switch (kind) {
       case 'task_done': return await taskDone(supabase, userId, ref)
       case 'habit_done': return await habitDone(supabase, userId, ref, now)
+      case 'log_tono': return await logInteraccion(supabase, userId, ref, now)
       case 'task_remind': return await taskRemind(supabase, userId, ref, now)
       case 'moment_close': return await momentClose(supabase, userId, ref)
       case 'mute': return await mute(supabase, userId, ref)
