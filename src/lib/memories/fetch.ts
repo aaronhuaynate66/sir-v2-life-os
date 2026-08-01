@@ -8,6 +8,7 @@
 // del detail page lee SIEMPRE server-side; el store sigue siendo el path
 // local-first del resto de la app (creates manuales, sync engine, etc.).
 
+import { esColumnaInexistente } from '@/lib/supabase/columnaFaltante'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { Memory, MemoryType } from '@/types'
@@ -92,12 +93,17 @@ export async function getMemoriesForPerson(
     return q
   }
 
+  // El reintento es SOLO para la columna que todavía no existe. Antes era
+  // `if (error)` a secas, y eso incluía timeouts, cortes de red y 500 — o sea,
+  // cualquier error transitorio hacía que la consulta se repitiera **sin el
+  // filtro de privacidad**, justo lo que esta función promete garantizar.
+  // Una garantía de privacidad tiene que fallar CERRADA. [[columnaFaltante]]
   let { data, error } = await build(true, true)
-  if (error) {
+  if (esColumnaInexistente(error)) {
     // is_private ausente → reintentar sólo con is_obsolete.
     ;({ data, error } = await build(true, false))
   }
-  if (error) {
+  if (esColumnaInexistente(error)) {
     // is_obsolete ausente también → sin filtros opcionales.
     ;({ data, error } = await build(false, false))
   }
