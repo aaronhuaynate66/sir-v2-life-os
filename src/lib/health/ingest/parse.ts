@@ -17,6 +17,7 @@
 //   - métricas acumulativas del día (pasos, energía, distancia) → SUMA intradía.
 //   - métricas puntuales (peso, composición, VO2, SpO2) → ÚLTIMA lectura del día.
 
+import { unidadDe } from '@/lib/health-metrics/unidades'
 import type { HealthMetricType } from '@/types'
 import type {
   HAEDataPoint,
@@ -199,7 +200,9 @@ function mapScalarMetric(metric: HAEMetric, spec: MetricSpec, haeName: string): 
     out.push({
       type: spec.type,
       value: round2(value),
-      unit: spec.unit,
+      // Unidad canónica de la MÉTRICA, no la que declara este importador: acá decía
+      // 'lpm' y la captura de báscula 'ppm', y en la base convivían las dos.
+      unit: unidadDe(spec.type, spec.unit),
       measuredAt: d.measuredAt,
       day,
       externalId: `ah:${haeName}:${day}`,

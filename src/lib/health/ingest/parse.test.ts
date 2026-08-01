@@ -102,7 +102,9 @@ describe('mapHealthAutoExport — métricas escalares', () => {
     const m = r.healthMetrics[0]
     expect(m.type).toBe('heart_rate')
     expect(m.value).toBe(48)
-    expect(m.unit).toBe('lpm')
+    // CAMBIO DELIBERADO (1-ago-2026): la unidad canónica del pulso es 'ppm'
+    // (castellano). Este test congelaba la divergencia entre importadores.
+    expect(m.unit).toBe('ppm')
     expect(m.externalId).toBe('ah:resting_heart_rate:2026-06-02')
     expect(m.note).toContain('reposo')
   })
