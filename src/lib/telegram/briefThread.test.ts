@@ -222,3 +222,36 @@ describe('etiquetaCorta', () => {
     expect(etiquetaCorta('')).toBe('')
   })
 })
+
+// —— El botón del deal (1-ago-2026) ————————————————————————————————————
+// El caso: SIR avisó "hoy te cruzas con Miluska — «Web multiinformativa», la
+// acción lleva 3 días vencida" y no ofreció NADA que tocar. Aaron: "no veo
+// productividad". La capacidad de redactar ya existía; el botón no se adjuntaba.
+describe('encuentro con deal → acción, no solo aviso', () => {
+  const señal = (name: string): MorningSignal => ({
+    slot: 'encuentroConDeal', section: 'gente',
+    text: '🤝 hoy en "Boda de Laura" te cruzas con Miluska — «Web multiinformativa».',
+    entity: { kind: 'deal', id: 'deal_hikvision', name },
+  })
+
+  it('ofrece preparar el pedido, con el nombre de la persona', () => {
+    const rows = buildSectionButtons([señal('Miluska Castillo')])
+    const b = rows.flat().find((x) => x.callbackData.includes('deal_prep'))!
+    expect(b.text).toBe('🎯 Qué pedirle a Miluska')
+    expect(b.callbackData).toBe('br|deal_prep|deal_hikvision')
+  })
+
+  it('sin nombre igual ofrece la acción', () => {
+    const rows = buildSectionButtons([señal('')])
+    expect(rows.flat().find((x) => x.callbackData.includes('deal_prep'))!.text).toBe('🎯 Prepárame el pedido')
+  })
+
+  it('el callback sobrevive ida y vuelta', () => {
+    expect(parseBriefCallback('br|deal_prep|deal_hikvision')).toEqual({ kind: 'deal_prep', ref: 'deal_hikvision' })
+  })
+
+  it('una señal de deal SIN entidad no inventa botón', () => {
+    const sin: MorningSignal = { slot: 'encuentroConDeal', section: 'gente', text: 'algo' }
+    expect(buildSectionButtons([sin]).flat().some((b) => b.callbackData.includes('deal_prep'))).toBe(false)
+  })
+})

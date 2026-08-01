@@ -47,7 +47,7 @@ import { assembleDailyActions } from '@/lib/daily-actions/assemble'
 import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
 import { examenRecienteLine } from '@/lib/health-exams/recentExam'
 import { cumpleanosProximos, esHitoDeAnticipacion } from '@/lib/push/cumpleanos'
-import { encuentrosConDeal, encuentroConDealLine } from '@/lib/crm/dealEnEvento'
+import { encuentrosConDeal, encuentroConDealLine, encuentroDestacado } from '@/lib/crm/dealEnEvento'
 import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTANA_REGISTRO } from '@/lib/relaciones/pedirRegistro'
 import { encuentrosDePasos } from '@/lib/relaciones/encuentroDePaso'
 import { trabajosAtrasados, noVerificables, saludDeCronsLine } from '@/lib/cron/salud'
@@ -617,9 +617,11 @@ export async function GET(req: NextRequest) {
           const eventosLite = (evRowsParaCrm ?? [])
             .filter((e) => e.title && e.event_date)
             .map((e) => ({ title: e.title as string, date: String(e.event_date).slice(0, 10), personId: e.person_id }))
-          encuentroConDealText = encuentroConDealLine(
-            encuentrosConDeal(eventosLite, deals, links, nombrePorId, today), today,
-          ) ?? undefined
+          const encuentros = encuentrosConDeal(eventosLite, deals, links, nombrePorId, today)
+          encuentroConDealText = encuentroConDealLine(encuentros, today) ?? undefined
+          // La ENTIDAD para el botón, del MISMO encuentro del que habla la línea.
+          const destacado = encuentroDestacado(encuentros)
+          if (destacado) briefEntities.encuentroDeal = { id: destacado.deal.id, name: destacado.personName }
         }
       } catch (e) {
         reportApiError(e, { route: 'cron/morning-push', step: 'encuentroConDeal', user: uid.slice(0, 8) })

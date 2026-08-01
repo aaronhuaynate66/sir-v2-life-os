@@ -24,7 +24,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -44,7 +44,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }
@@ -128,6 +128,15 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
       push(btn('✅ Dar por cerrado', 'moment_close', e.id))
     } else if (e?.kind === 'goal') {
       push(btn('🚀 Dame el próximo paso', 'goal_next', e.id))
+    } else if (e?.kind === 'deal') {
+      // El caso que destapó todo el problema: el 1-ago SIR le avisó "hoy te
+      // cruzas con Miluska — «Web multiinformativa», la acción lleva 3 días
+      // vencida" y no le ofreció NADA que tocar. Aaron: *"no veo productividad"*.
+      // SIR ya sabía redactar (`person_draft`, `goal_next`); el botón nunca se
+      // adjuntaba a esta señal. Avisar de una oportunidad sin darle la acción es
+      // dejarle a él todo el trabajo que el sistema existe para quitarle.
+      const first = (e.name ?? '').split(/\s+/)[0]
+      push(btn(first ? `🎯 Qué pedirle a ${first}` : '🎯 Prepárame el pedido', 'deal_prep', e.id))
     } else if (e?.kind === 'opportunity') {
       // Las DOS salidas del loop, ambas de un toque. El "no es negocio" importa
       // tanto como el sí: sin él la señal volvería mañana y el detector se
