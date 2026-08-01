@@ -16,6 +16,7 @@
 // Auth: CRON_SECRET (mismo patrón que los otros crons).
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { filasOFalla } from '@/lib/cron/consulta'
 import { createClient } from '@supabase/supabase-js'
 
 import { reportApiError } from '@/lib/observability/reportApiError'
@@ -37,10 +38,18 @@ export async function GET(req: NextRequest) {
 
   try {
     // Los usuarios con una conexión de Google: no hay nada que sincronizar sin ella.
-    const { data: conns } = await admin
-      .from('calendar_connections')
-      .select('user_id').eq('provider', 'google').eq('enabled', true).limit(50)
-    const uids = [...new Set(((conns ?? []) as Array<{ user_id: string }>).map((c) => c.user_id))]
+    //
+    // `filasOFalla` en vez de `data ?? []`: si esta consulta falla, PostgREST no
+    // lanza y `uids` queda vacío, así que el cron respondía **200 con nota "sin
+    // conexiones de Google"** teniendo la cuenta conectada. Ese mensaje es peor que
+    // un error: manda a buscar el bug a la pantalla de conexión, que está bien.
+    // Ahora revienta y cae en el catch de abajo → 500 visible.
+    const uids = [...new Set(filasOFalla<{ user_id: string }>(
+      await admin.from('calendar_connections')
+        .select('user_id').eq('provider', 'google').eq('enabled', true).limit(50),
+      'conexiones de Google',
+    ).map((c) => c.user_id))]
+    // Cero conexiones con la consulta OK sí es legítimo (nunca conectó la cuenta).
     if (uids.length === 0) return NextResponse.json({ usuarios: 0, creados: 0, nota: 'sin conexiones de Google' })
 
     let creados = 0, fallidos = 0

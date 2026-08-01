@@ -12,6 +12,7 @@
 // de más. Auth: CRON_SECRET. Service-role. Telemetría por task='moment_resolution'.
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { filasOFalla } from '@/lib/cron/consulta'
 import { createClient } from '@supabase/supabase-js'
 
 import { complete } from '@/lib/llm'
@@ -43,10 +44,13 @@ export async function GET(req: NextRequest) {
   if (!url || !serviceKey) return NextResponse.json({ error: 'Faltan envs del server' }, { status: 500 })
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
 
-  // Usuarios con al menos un tema abierto.
-  const { data: userRows } = await admin
-    .from('relationship_moments').select('user_id').eq('status', 'abierto').limit(5000)
-  const userIds = [...new Set((userRows ?? []).map((r) => (r as { user_id: string }).user_id).filter(Boolean))]
+  // Usuarios con al menos un tema abierto. `filasOFalla` porque si esto falla la
+  // lista queda vacía y el cron responde 200 con `users: 0` — indistinguible de
+  // "no hay temas abiertos" y perfectamente verde en Vercel. [[postgrest-columna-inexistente]]
+  const userIds = [...new Set(filasOFalla<{ user_id: string }>(
+    await admin.from('relationship_moments').select('user_id').eq('status', 'abierto').limit(5000),
+    'usuarios con temas abiertos',
+  ).map((r) => r.user_id).filter(Boolean))]
 
   const tally = { users: 0, persons: 0, suggested: 0, cleared: 0, error: 0 }
   for (const userId of userIds) {

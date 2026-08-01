@@ -10,6 +10,7 @@
 // Auth: CRON_SECRET.
 
 import { NextResponse, type NextRequest } from 'next/server'
+import { filasOFalla } from '@/lib/cron/consulta'
 import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
 import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
@@ -54,11 +55,18 @@ export async function GET(req: NextRequest) {
   const LOOKAHEAD_HORAS = 36
   const hasta = new Date(nowMs + LOOKAHEAD_HORAS * 3_600_000).toISOString()
 
-  const { data } = await supabase
-    .from('reminders')
-    .select('id, user_id, text, related_person_id, due_at')
-    .lte('due_at', hasta).is('done_at', null).is('notified_at', null).limit(50)
-  const rows = (data ?? []) as Array<{ id: string; user_id: string; text: string; related_person_id: string | null; due_at: string | null }>
+  // `filasOFalla`, no `data ?? []`: si esta consulta falla, PostgREST no lanza y
+  // `rows` queda vacío, así que el cron responde **200 con `processed: 0`** — se ve
+  // idéntico a "hoy no vence nada". Y lo que vence acá son cosas como el examen del
+  // IPD del 7-ago a las 8:10 con 8 h de ayuno: un aviso perdido en silencio no se
+  // recupera al día siguiente. Ahora un fallo se ve como fallo. [[postgrest-columna-inexistente]]
+  const rows = filasOFalla<{ id: string; user_id: string; text: string; related_person_id: string | null; due_at: string | null }>(
+    await supabase.from('reminders')
+      .select('id, user_id, text, related_person_id, due_at')
+      .lte('due_at', hasta).is('done_at', null).is('notified_at', null).limit(50),
+    'recordatorios que vencen',
+  )
+  // Cero con la consulta OK sí es legítimo: hoy no vence nada.
   if (rows.length === 0) return NextResponse.json({ processed: 0 })
 
   // Traer person slug para deep-link.
