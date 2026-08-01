@@ -55,6 +55,8 @@ export interface MorningInput {
    * Cruce CRM x agenda x grafo. Idea de Aaron. Ver lib/crm/dealEnEvento.ts.
    */
   encuentroConDeal?: string
+  /** Una meta activa sin UNA sola tarea. Ver `lib/objetivos/metaSinPlan`. */
+  metaSinPlan?: string
   /** "Ayer viste a Diana, ¿cómo te fue?" con las 5 caritas. Ver lib/relaciones/pedirRegistro.ts. */
   pedirRegistro?: string
   /** Cruce chat → tema abierto: un "momento/decisión" abierto que el chat
@@ -168,6 +170,8 @@ export interface MorningEntities {
   /** Deal del encuentro que avisa `encuentroConDeal` → habilita "prepárame qué
    *  pedirle". `name` es la PERSONA, no el deal: el botón habla de a quién ve. */
   encuentroDeal?: { id: string; name?: string }
+  /** Meta sin plan → habilita "ármame el plan". */
+  metaSinPlanGoal?: { id: string; name?: string }
 }
 
 export interface MorningPush {
@@ -413,6 +417,9 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // 2.8 OBJETIVO que necesita atención (accionable, antes del foco genérico).
   // Una tarea que Aaron escribió y el sistema se tragó por no tener fecha.
   // Va en METAS y despues del nudge: es una pregunta, no una urgencia.
+  // Antes que el resto de METAS: una meta sin UN paso está más parada que
+  // una con pasos atrasados, y traerle el plan es lo que la destraba.
+  add(input.metaSinPlan, 'metaSinPlan', 'metas', ent.metaSinPlanGoal ? { kind: 'goal', ...ent.metaSinPlanGoal } : undefined)
   add(input.tareaInvisible, 'tareaInvisible', 'metas')
   add(input.goalNudge, 'goalNudge', 'metas', ent.goalNudgeGoal ? { kind: 'goal', ...ent.goalNudgeGoal } : undefined)
 

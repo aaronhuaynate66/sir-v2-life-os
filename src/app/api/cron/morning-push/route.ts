@@ -52,6 +52,7 @@ import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTAN
 import { encuentrosDePasos } from '@/lib/relaciones/encuentroDePaso'
 import { trabajosAtrasados, noVerificables, saludDeCronsLine } from '@/lib/cron/salud'
 import { tareaInvisible, tareaInvisibleLine } from '@/lib/objetivos/sinFecha'
+import { metaSinPlan, metaSinPlanLine } from '@/lib/objetivos/metaSinPlan'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -721,6 +722,27 @@ export async function GET(req: NextRequest) {
       // aparece NUNCA. Medido el 1-ago: 6 así en objetivos activos, la más vieja
       // de 59 días, y una de Marlab que llevaba 13.
       // No se le inventa la fecha —planificar es decisión suya—: se le PIDE.
+      // UNA META CON CERO TAREAS. Va con los pasos que ya se traen abajo para el
+      // avance, así que no cuesta una consulta extra. Aaron tiene 5 así.
+      let metaSinPlanText: string | undefined
+      try {
+        const { data: todosPasos, error: mpErr } = await admin
+          .from('objective_steps').select('objective_id, kind, status')
+          .eq('user_id', uid).limit(1000)
+        if (mpErr) throw new Error(mpErr.message)
+        const m = metaSinPlan(
+          goals.map((g) => ({ id: g.id, title: g.title, status: 'active', targetDate: g.target_date })),
+          ((todosPasos ?? []) as Array<Record<string, unknown>>).map((r) => ({
+            objectiveId: String(r.objective_id), kind: (r.kind as string) ?? null, status: String(r.status ?? ''),
+          })),
+          today,
+        )
+        metaSinPlanText = metaSinPlanLine(m) ?? undefined
+        if (m) briefEntities.metaSinPlanGoal = { id: m.id, name: m.title }
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'metaSinPlan', user: uid.slice(0, 8) })
+      }
+
       let tareaInvisibleText: string | undefined
       try {
         const { data: pasosSF, error: sfErr } = await admin
@@ -1320,7 +1342,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, metaSinPlan: metaSinPlanText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

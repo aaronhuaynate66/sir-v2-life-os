@@ -12,6 +12,8 @@ import type { BriefActionKind } from './briefThread'
 import { nombreDesdeHandle, parseOrgBatch } from '@/lib/social-reader/orgBatch'
 import { inferParentOrg, orgSlug } from '@/lib/social-reader/entityKind'
 import { parseRefDeCarita } from '@/lib/relaciones/pedirRegistro'
+import { todayLimaKey } from '@/lib/dates/limaDay'
+import { MAX_PASOS, parsePlanPropuesto, fechaEnDias } from '@/lib/objetivos/metaSinPlan'
 
 export interface BriefActionResult {
   /** Texto corto para el toast del botón (Telegram lo corta a ~200). */
@@ -322,6 +324,52 @@ export async function runBriefAction(
           + 'con a quién involucra si aplica. Sé breve.',
         )
         return { toast: '🚀 Ahí va el próximo paso', reply }
+      }
+      case 'goal_plan': {
+        // Traer el PLAN, no la pregunta. Aaron tiene 5 metas activas con cero
+        // tareas y se lo planteé dos veces sin que cerrara, porque lo que le
+        // llevaba era el problema. Acá toca un botón y quedan los pasos escritos.
+        if (!opts.askSirText) return { toast: 'No puedo armarlo ahora.' }
+        const { data, error } = await supabase.from('goals')
+          .select('title, why, target, target_date, description')
+          .eq('user_id', userId).eq('id', ref).maybeSingle()
+        if (error) return { toast: 'No pude leer la meta.' }
+        const g = (data ?? null) as null | Record<string, unknown>
+        if (!g) return { toast: 'Esa meta ya no está.' }
+        const limite = g.target_date ? ` El límite es ${String(g.target_date).slice(0, 10)}.` : ''
+        const texto = await opts.askSirText(
+          `Mi objetivo es "${g.title}".${g.target ? ` La meta concreta: ${String(g.target).slice(0, 150)}.` : ''}`
+          + `${g.why ? ` Por qué me importa: ${String(g.why).slice(0, 200)}.` : ''}${limite}`
+          + ` Dame entre 3 y ${MAX_PASOS} primeros pasos CONCRETOS y accionables, en orden.`
+          + ' Formato EXACTO, una línea por paso y nada más:'
+          + ' N. <qué hacer, empezando con un verbo> | <en cuántos días desde hoy>'
+          + ' Sin introducción, sin cierre, sin viñetas. Cada paso tiene que poder'
+          + ' hacerse en una sentada; nada de "definir la estrategia".',
+        )
+        const propuestos = parsePlanPropuesto(texto ?? '')
+        // Si el formato no vino claro NO se escribe nada: se le muestra el texto y
+        // decide él. Escribir un parseo dudoso le ensuciaría el plan de verdad.
+        if (propuestos.length === 0) {
+          return { toast: '🎯 Te propongo esto (no lo guardé)', reply: texto ?? 'No me salió un plan claro. Pídemelo por el chat.' }
+        }
+        const hoy = todayLimaKey(now.getTime())
+        const filas = propuestos.map((p, i) => ({
+          user_id: userId,
+          objective_id: ref,
+          title: p.title,
+          kind: 'task',
+          status: 'pendiente',
+          sort_order: i,
+          target_date: fechaEnDias(hoy, p.enDias),
+          description: 'Propuesto por SIR el ' + hoy + ' desde el brief. Bórralo si no va.',
+        }))
+        const { error: insErr } = await supabase.from('objective_steps').insert(filas)
+        if (insErr) return { toast: 'No pude guardarlos', reply: texto ?? undefined }
+        const lista = propuestos.map((p, i) => `${i + 1}. ${p.title} — ${fechaEnDias(hoy, p.enDias)}`).join('\n')
+        return {
+          toast: `🚀 Cargué ${propuestos.length} pasos`,
+          reply: `Listo, "${String(g.title).slice(0, 60)}" ya tiene plan:\n\n${lista}\n\nBorra el que no vaya.`,
+        }
       }
       case 'deal_prep': {
         // El pedido CONCRETO para un encuentro que ya va a pasar. Distinto de

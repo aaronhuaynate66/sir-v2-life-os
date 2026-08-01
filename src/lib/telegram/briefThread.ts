@@ -24,7 +24,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -44,7 +44,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }
@@ -126,6 +126,11 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
       push(btn(first ? `✍️ Escríbele a ${first}` : '✍️ Escríbele', 'person_draft', e.id))
     } else if (e?.kind === 'moment') {
       push(btn('✅ Dar por cerrado', 'moment_close', e.id))
+    } else if (e?.kind === 'goal' && s.slot === 'metaSinPlan') {
+      // Una meta con CERO tareas no necesita "el próximo paso": necesita el plan.
+      // Aaron tiene 5 así, dos vencen el 31-ago, y se lo planteé dos veces sin que
+      // cerrara — porque le llevaba el problema, no la solución.
+      push(btn('🚀 Ármame el plan', 'goal_plan', e.id))
     } else if (e?.kind === 'goal') {
       push(btn('🚀 Dame el próximo paso', 'goal_next', e.id))
     } else if (e?.kind === 'deal') {
