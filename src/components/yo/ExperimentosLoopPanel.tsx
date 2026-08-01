@@ -1,7 +1,7 @@
 'use client'
 // SIR V2 — Loop de Experimentos (Motor #2). La mitad del ciclo que faltaba:
-// SIR propone UN experimento conductual por semana (derivado del Espejo), vos lo
-// corrés, registrás el resultado Y SI TE FUNCIONÓ, y con el tiempo ves tu
+// SIR propone UN experimento conductual por semana (derivado del Espejo), tú lo
+// corres, registras el resultado Y SI TE FUNCIONÓ, y con el tiempo ves tu
 // historial de prueba y error. Activación conductual + aprendizaje, no archivo.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'

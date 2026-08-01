@@ -54,7 +54,7 @@ export async function extractSelfProfileImage(
 }
 
 /**
- * Extrae las anclas de un RELATO libre ("contale a SIR quién sos"): mismo
+ * Extrae las anclas de un RELATO libre ("cuéntale a SIR quién eres"): mismo
  * endpoint y misma extracción, pero por texto fiel (sin Visión/OCR).
  */
 export async function extractSelfProfileText(

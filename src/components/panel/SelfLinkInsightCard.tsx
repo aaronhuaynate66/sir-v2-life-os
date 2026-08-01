@@ -3,7 +3,7 @@
 // SIR V2 — SelfLinkInsightCard: el PAYOFF del check-in diario. Corre el motor
 // C1-cruzado (N-de-1) sobre tu sueño + tus registros de ánimo/energía y muestra TU
 // patrón personal ("dormir mejor te sube la energía al día siguiente"). Cierra el
-// loop: registrás → SIR aprende tu patrón → te da una razón para seguir. Si todavía
+// loop: registras → SIR aprende tu patrón → te da una razón para seguir. Si todavía
 // no hay pares suficientes, muestra un nudge honesto (cuánto falta), no un vacío.
 // Coincidencia, no causa — es tu correlación, no un diagnóstico.
 

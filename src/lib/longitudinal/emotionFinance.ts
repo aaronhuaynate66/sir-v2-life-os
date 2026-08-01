@@ -146,7 +146,7 @@ export function correlateStressVsNonEssentialSpend(
   }
 
   // Patrón: el gasto sube con el estrés con un margen CLARO (no ruido).
-  //   - si en estrés bajo gastás ~0, basta que en alto gastes algo notable.
+  //   - si en estrés bajo gastas ~0, basta que en alto gastes algo notable.
   //   - si no, exigimos ≥20% más en alto que en bajo.
   let hasPattern = false
   if (delta && delta.diffPEN > 0) {

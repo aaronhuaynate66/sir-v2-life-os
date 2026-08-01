@@ -107,7 +107,7 @@ function isPartnerKind(kind: HorizonEventKind): boolean {
  * fase, por si quieres coordinar cuidado o tiempo juntos alrededor. Neutral.
  */
 function calendarPhaseReading(phase: CyclePhaseId, isPms: boolean): string {
-  if (isPms) return 'Cae en su semana más sensible. Si puedes, dejá aire para un gesto simple; no sobrecargues esos días.'
+  if (isPms) return 'Cae en su semana más sensible. Si puedes, deja aire para un gesto simple; no sobrecargues esos días.'
   if (phase === 'menstrual') return 'Cae en sus días de recogimiento. Buen momento para un plan suave juntos si coordina.'
   if (phase === 'ovulation' || phase === 'follicular') return 'Cae en días de más energía — buen tramo para sumar algo lindo juntos si se puede.'
   return 'Ubica este compromiso en el ciclo para coordinar tiempo y cuidado; sin volverlo agenda.'

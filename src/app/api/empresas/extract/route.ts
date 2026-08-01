@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
   const text = typeof body.text === 'string' && body.text.trim().length > 0 ? body.text.trim() : null
   const url = typeof body.url === 'string' && body.url.trim().length > 0 ? body.url.trim() : null
   const label = typeof body.label === 'string' ? body.label.trim().slice(0, 160) : null
-  if (!text && !url) return errorJson(400, 'Mandá texto o una URL')
+  if (!text && !url) return errorJson(400, 'Manda texto o una URL')
 
   let website = ''
   let description = ''
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
   // 1) URL → meta prefill (best-effort, no fatal).
   if (url) {
     const u = isPublicHttpUrl(url)
-    if (!u) return errorJson(400, 'URL inválida', 'Usá una URL pública http(s).')
+    if (!u) return errorJson(400, 'URL inválida', 'Usa una URL pública http(s).')
     website = u.toString()
     const html = await fetchHtml(u)
     if (html) {

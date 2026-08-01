@@ -88,7 +88,7 @@ export function HypothesesExplorer({ personId, personName }: { personId: string;
                   <div className="rounded-md border border-warn/40 bg-warn-soft p-3 flex items-start gap-2">
                     <ShieldAlert size={15} strokeWidth={1.75} className="text-warn mt-0.5 flex-shrink-0" aria-hidden="true" />
                     <div>
-                      <div className="text-[11px] uppercase tracking-[0.07em] text-warn font-medium mb-0.5">Cuidate</div>
+                      <div className="text-[11px] uppercase tracking-[0.07em] text-warn font-medium mb-0.5">Cuídate</div>
                       <p className="text-[13px] text-foreground/90 leading-relaxed">{result.protect}</p>
                     </div>
                   </div>

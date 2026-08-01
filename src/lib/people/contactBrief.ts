@@ -59,7 +59,7 @@ export interface RecentActivitySignal {
 
 export interface ContactBrief {
   /** Lo último concreto que pasó con la persona (0–2 señales). Vacío = nada
-   *  reciente que mostrar (degradá con gracia: no muestres la sección). */
+   *  reciente que mostrar (degrada con gracia: no muestres la sección). */
   recentActivity: RecentActivitySignal[]
 }
 

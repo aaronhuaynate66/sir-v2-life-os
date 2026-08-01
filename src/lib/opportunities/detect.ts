@@ -118,7 +118,7 @@ export interface OpportunitySignal {
 //   - `precio` / `factur\w*` / `me interesa` sueltos cazaban charla interna y chisme.
 // La corrección de fondo: un pedido comercial tiene DIRECCIÓN — el otro le pide a
 // Aaron que HAGA algo. Solo cuenta como fuerte (a) un sustantivo comercial
-// inequívoco, o (b) verbo en 2ª persona + objeto en 1ª ("me cotizas", "pasame la
+// inequívoco, o (b) verbo en 2ª persona + objeto en 1ª ("me cotizas", "pásame la
 // propuesta"). Lo demás queda débil y NO va al brief.
 const INTENT_PATTERNS: Array<{ re: RegExp; label: string; strong: boolean }> = [
   // (a) Sustantivos que solo existen en contexto comercial.

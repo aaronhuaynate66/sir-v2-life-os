@@ -21,7 +21,7 @@ const STOP = new Set([
   'los', 'las', 'una', 'unos', 'unas', 'del', 'este', 'esta', 'esto', 'eso', 'esa',
   'mas', 'muy', 'pero', 'porque', 'sobre', 'entre', 'hasta', 'desde', 'ese', 'esos',
   'algo', 'todo', 'todos', 'nada', 'hace', 'hola', 'dime', 'dice', 'dijo', 'sabes',
-  'cuenta', 'contame', 'recuerdas', 'acuerdas', 'paso', 'pasa', 'tengo', 'tiene',
+  'cuenta', 'cuéntame', 'recuerdas', 'acuerdas', 'paso', 'pasa', 'tengo', 'tiene',
 ])
 
 /**

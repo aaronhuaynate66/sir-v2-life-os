@@ -89,7 +89,7 @@ function stateReadFor(phase: CyclePhaseId, isPms: boolean, isFertile: boolean, b
     partner: low ? ' Nada dramático, pero conviene llegar a cuidarla.' : ' Buen tramo para estar cerca.',
     family: low ? ' Un poco más de paciencia y presencia simple ayuda.' : ' Buen momento para una charla o un plan.',
     friend: low ? ' Un gesto simple suma; no la satures.' : ' Buen momento para juntarse.',
-    colleague: low ? ' Si puedes, tratá esos días con más aire y menos exigencia.' : ' Buen tramo para lo que requiera empuje.',
+    colleague: low ? ' Si puedes, trata esos días con más aire y menos exigencia.' : ' Buen tramo para lo que requiera empuje.',
   }
   return base + closing[bond]
 }

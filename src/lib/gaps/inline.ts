@@ -133,7 +133,7 @@ const CONTACT_INTENT = [
 const ADVICE_INTENT = [
   ...CONTACT_INTENT,
   'como esta', 'como anda', 'como va', 'como voy', 'voy con', 'como sigue', 'que hago con', 'que sabes de',
-  'contame de', 'que onda con', 'como la veo', 'como lo veo', 'que tal', 'novedad',
+  'cuéntame de', 'que onda con', 'como la veo', 'como lo veo', 'que tal', 'novedad',
   'como esta la cosa con', 'que pasa con',
 ]
 const STALE_DAYS = 30

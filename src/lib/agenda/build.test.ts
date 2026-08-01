@@ -590,14 +590,14 @@ describe('buildAgenda — orden por urgencia', () => {
 })
 
 describe('buildAgenda — anticipación (motor proactivo)', () => {
-  it('cumpleaños a <=14 días → actionHint "Prepará algo"', () => {
+  it('cumpleaños a <=14 días → actionHint "Prepara algo"', () => {
     const items = buildAgenda(
       { ...EMPTY, people: [person({ name: 'Diana', birthDate: '1995-06-10' })] }, // en 9 días
       {},
       NOW,
     )
     const bday = items.find((i) => i.kind === 'birthday')!
-    expect(bday.actionHint).toBe('Prepará algo con tiempo')
+    expect(bday.actionHint).toBe('Prepara algo con tiempo')
   })
 
   it('cumpleaños a <=3 días → actionHint más urgente', () => {
@@ -622,7 +622,7 @@ describe('buildAgenda — anticipación (motor proactivo)', () => {
 })
 
 describe('buildAgenda — fechas propias (identity_profile)', () => {
-  it('cumpleaños propio → item self con edad ("cumplís")', () => {
+  it('cumpleaños propio → item self con edad ("cumples")', () => {
     const items = buildAgenda(
       { ...EMPTY, identityProfile: identity({ birthDate: '1992-06-06' }) },
       {},
@@ -630,7 +630,7 @@ describe('buildAgenda — fechas propias (identity_profile)', () => {
     )
     const self = items.find((i) => i.kind === 'self_special_date')!
     expect(self.title).toBe('Tu cumpleaños')
-    expect(self.detail).toContain('cumplís 34')
+    expect(self.detail).toContain('cumples 34')
     expect(self.href).toBe('/yo')
   })
 
@@ -737,7 +737,7 @@ describe('buildAgenda — esfuerzo por parentesco (person_links)', () => {
     )
     const nc = items.find((i) => i.kind === 'no_contact')!
     expect(nc.daysUntil).toBe(-42)
-    expect(nc.title).toBe('Hace tiempo no contactás a Leo')
+    expect(nc.title).toBe('Hace tiempo no contactas a Leo')
   })
 })
 

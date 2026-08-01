@@ -1,6 +1,6 @@
 // SIR V2 — Aprender qué regulación te funciona (13·M4). PURO.
 //
-// Sobre los registros de estrategia aplicada + si ayudó, calcula (POR VOS, no en
+// Sobre los registros de estrategia aplicada + si ayudó, calcula (Por ti, no en
 // general) qué estrategia tiene mejor tasa de ayuda. Empieza `insufficient` y solo
 // afirma cuando el n PERSONAL por estrategia lo sostiene. Riesgo a vigilar
 // (explícito en la salida): es un patrón OBSERVADO, no una ley — correlación ≠ causa.

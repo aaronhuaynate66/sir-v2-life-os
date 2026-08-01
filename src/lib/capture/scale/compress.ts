@@ -229,7 +229,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = () =>
       reject(
         new Error(
-          'No se pudo leer la imagen. Probá con otro formato (JPEG, PNG o WebP).',
+          'No se pudo leer la imagen. Prueba con otro formato (JPEG, PNG o WebP).',
         ),
       )
     img.src = src

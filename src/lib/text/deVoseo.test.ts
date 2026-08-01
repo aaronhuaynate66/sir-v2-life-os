@@ -208,3 +208,59 @@ describe('detectVoseo — medir en vez de opinar', () => {
     expect(detectVoseo(deVoseo(sucio))).toEqual([])
   })
 })
+
+// —— "vos" como término de PREPOSICIÓN (1-ago-2026) ————————————————————————
+// Cazado barriendo el repo: un comentario decía "te pregunta —a vos, nunca a
+// terceros—" y el scrub lo dejaba en "a tú". Producir castellano roto es peor
+// que dejar el voseo, así que las preposiciones van resueltas aparte.
+describe('vos después de preposición → ti', () => {
+  it('no produce "a tú"', () => {
+    expect(deVoseo('te pregunta a vos, nunca a terceros')).toBe('te pregunta a ti, nunca a terceros')
+    expect(deVoseo('esto es para vos')).toBe('esto es para ti')
+    expect(deVoseo('depende de vos')).toBe('depende de ti')
+    expect(deVoseo('confío en vos')).toBe('confío en ti')
+    expect(deVoseo('lo hice por vos')).toBe('lo hice por ti')
+  })
+
+  it('"con vos" es "contigo", no "con ti"', () => {
+    expect(deVoseo('quiero hablar con vos')).toBe('quiero hablar contigo')
+  })
+
+  it('mantiene "vos" sujeto en tú', () => {
+    expect(deVoseo('vos sabés lo que hiciste')).toBe('tú sabes lo que hiciste')
+  })
+
+  it('respeta mayúsculas', () => {
+    expect(deVoseo('A VOS te lo digo')).toBe('A ti te lo digo')
+  })
+
+  it('sigue siendo idempotente', () => {
+    const una = deVoseo('esto es para vos y con vos')
+    expect(deVoseo(una)).toBe(una)
+  })
+})
+
+// —— Raíz en R (1-ago-2026) ——————————————————————————————————————————————
+// Medido con detectVoseo sobre TODO el repo: "registrás" pasaba 4 veces intacta.
+// El barrido generativo excluye las raíces en R a propósito (ahí viven los
+// futuros), así que estas van a mano — y el futuro tiene que seguir intacto.
+describe('voseo con raíz en R', () => {
+  it('corrige las que faltaban', () => {
+    expect(deVoseo('lo registrás acá')).toBe('lo registras acá')
+    expect(deVoseo('Registrá el gasto')).toBe('Registra el gasto')
+    expect(deVoseo('capturá la pantalla')).toBe('captura la pantalla')
+    expect(deVoseo('generás el reporte')).toBe('generas el reporte')
+    expect(deVoseo('arrastrá el archivo')).toBe('arrastra el archivo')
+  })
+
+  it('NO toca el futuro, que es castellano legítimo', () => {
+    for (const f of ['registrará', 'registrarás', 'generará', 'capturará',
+      'pagarás', 'tendrás', 'verás', 'será', 'agregará', 'recalculará']) {
+      expect(deVoseo(f)).toBe(f)
+    }
+  })
+
+  it('"detrás" no es voseo', () => {
+    expect(deVoseo('viene detrás de todo')).toBe('viene detrás de todo')
+  })
+})

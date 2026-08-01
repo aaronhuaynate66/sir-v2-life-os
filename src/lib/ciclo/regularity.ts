@@ -115,7 +115,7 @@ function noteFor(reg: CycleRegularity, mean: number, band: number, n: number): s
     case 'somewhat_regular':
       return `${base} Algo variable → la predicción es orientativa, con una banda de ±${band} días.`
     case 'irregular':
-      return `${base} Ciclo irregular → el próximo período es una estimación amplia (±${band} días); tomala con pinzas.`
+      return `${base} Ciclo irregular → el próximo período es una estimación amplia (±${band} días); tómala con pinzas.`
     default:
       return base
   }

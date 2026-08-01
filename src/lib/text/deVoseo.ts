@@ -102,6 +102,15 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['entrás', 'entras'], ['esperás', 'esperas'], ['guardás', 'guardas'],
   ['comprás', 'compras'], ['mejorás', 'mejoras'], ['demostrás', 'demuestras'],
   ['ahorrás', 'ahorras'], ['cobrás', 'cobras'],
+  // Raíz en R que faltaba, medida el 1-ago barriendo TODO el repo con detectVoseo:
+  // "registrás" aparecía 4 veces y "registrá" 2, y pasaban intactas. El futuro no
+  // colisiona ("registrará" no contiene "registrá": ahí va una R antes de la tilde).
+  ['registrá', 'registra'], ['registrás', 'registras'],
+  ['generás', 'generas'], ['capturá', 'captura'], ['capturás', 'capturas'],
+  ['arrastrá', 'arrastra'], ['arrastrás', 'arrastras'], ['repará', 'repara'],
+  ['integrá', 'integra'], ['integrás', 'integras'], ['filtrá', 'filtra'],
+  ['filtrás', 'filtras'], ['administrá', 'administra'], ['compará', 'compara'],
+  ['aclará', 'aclara'], ['explorá', 'explora'], ['valorá', 'valora'],
   // Imperativos -á con raíz en R que faltaban (mismo hueco del barrido).
   ['ahorrá', 'ahorra'], ['agarrá', 'agarra'], ['borrá', 'borra'],
   ['cobrá', 'cobra'], ['ignorá', 'ignora'], ['apurá', 'apura'],
@@ -133,7 +142,17 @@ const REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
   ['decí', 'di'],
   // Imperativos/presentes de 3 letras: por debajo del piso de largo del barrido.
   ['usá', 'usa'], ['usás', 'usas'],
-  // Pronombre
+  // Pronombre TÉRMINO DE PREPOSICIÓN: va ANTES de la regla suelta de abajo, que
+  // se aplica en orden. "a vos" no es "a tú" — es "a ti", y "con vos" es
+  // "contigo". Cazado el 1-ago barriendo el repo: un comentario decía "te
+  // pregunta —a vos, nunca a terceros—" y el scrub lo dejaba en "a tú", que no
+  // existe en ningún español. El voseo se corrige o no se toca; producir
+  // castellano roto es peor que dejar el voseo (misma lección que 'probá'→'proba').
+  ['con vos', 'contigo'], ['sin vos', 'sin ti'], ['a vos', 'a ti'],
+  ['para vos', 'para ti'], ['de vos', 'de ti'], ['en vos', 'en ti'],
+  ['por vos', 'por ti'], ['hacia vos', 'hacia ti'], ['sobre vos', 'sobre ti'],
+  ['contra vos', 'contra ti'], ['según vos', 'según tú'], ['hasta vos', 'hasta ti'],
+  // Pronombre en función de SUJETO ("vos sabés" → "tú sabes").
   ['vos', 'tú'],
 ]
 

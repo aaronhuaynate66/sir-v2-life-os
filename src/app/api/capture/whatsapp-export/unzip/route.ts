@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       413,
       'El .zip es demasiado grande para procesar en el servidor',
-      `Máx ${MAX_ZIP_BYTES / 1024 / 1024} MB. Exportá la conversación SIN archivos (.txt) o usá un navegador con soporte de descompresión.`,
+      `Máx ${MAX_ZIP_BYTES / 1024 / 1024} MB. Exporta la conversación SIN archivos (.txt) o usa un navegador con soporte de descompresión.`,
     )
   }
 

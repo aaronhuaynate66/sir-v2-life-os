@@ -2,7 +2,7 @@
 //
 // La "fuerza" = CERCANÍA ESTRUCTURAL (capa de Dunbar / categoría), no la salud
 // reciente ni la importancia manual. Razón: un vínculo fuerte al que no le
-// escribís hace un mes SIGUE siendo fuerte — eso es atención/salud (otro eje, ya
+// escribes hace un mes SIGUE siendo fuerte — eso es atención/salud (otro eje, ya
 // cubierto por el termómetro/ventana de contacto), no fuerza. Y la categoría está
 // seteada distinto por persona (íntimo/cercano/red/periférico), mientras que la
 // importancia quedó en el default 5 para casi todos → no diferenciaba. Determinístico.

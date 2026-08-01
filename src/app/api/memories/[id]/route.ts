@@ -72,7 +72,7 @@ export async function PATCH(
   const hasObsolete = typeof body.is_obsolete === 'boolean'
   const hasPrivate = typeof body.is_private === 'boolean'
   if (!hasObsolete && !hasPrivate) {
-    return errorJson(400, 'Enviá is_obsolete y/o is_private (boolean)')
+    return errorJson(400, 'Envia is_obsolete y/o is_private (boolean)')
   }
 
   const update: Record<string, unknown> = {}
@@ -109,14 +109,14 @@ export async function PATCH(
       return errorJson(
         503,
         'Falta correr la migración 0064',
-        'La columna memories.is_private no existe todavía. Corré supabase/migrations/0064_memories_is_private.sql y reinténtalo.',
+        'La columna memories.is_private no existe todavía. Corre supabase/migrations/0064_memories_is_private.sql y reinténtalo.',
       )
     }
     if (isMissingColumn(error.message, 'is_obsolete')) {
       return errorJson(
         503,
         'Falta correr la migración 0045',
-        'La columna memories.is_obsolete no existe todavía. Corré supabase/migrations/0045_memories_is_obsolete.sql y reinténtalo.',
+        'La columna memories.is_obsolete no existe todavía. Corre supabase/migrations/0045_memories_is_obsolete.sql y reinténtalo.',
       )
     }
     return errorJson(404, 'Memoria no encontrada o sin permiso', error.message)

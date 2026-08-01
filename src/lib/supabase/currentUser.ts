@@ -4,7 +4,7 @@
 // consumidores browser (sync engines, hooks). Antes de esto, cada uno de los
 // ~13 sync engines + hooks disparaba su propio getUser() al montar, generando
 // un N+1 real medido en prod: 11-13 GET /auth/v1/user por navegacion (~1.5s
-// de latencia extra solo verificando quien sos).
+// de latencia extra solo verificando quien eres).
 //
 // El helper reusa la misma promesa hasta que resuelve; despues, cachea el
 // resultado por AUTH_TTL_MS. onAuthStateChange invalida el cache para que

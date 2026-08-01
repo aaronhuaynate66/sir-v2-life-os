@@ -1,5 +1,5 @@
 'use client'
-// SIR V2 — LearningsPanel (Fase 3d): lo que SIR aprendió de vos.
+// SIR V2 — LearningsPanel (Fase 3d): lo que SIR aprendió de ti.
 //
 // Transparencia + control: Aaron VE las lecciones durables que SIR destiló de sus
 // relatos y las aplica al aconsejar, y puede archivarlas/borrarlas o agregar una a

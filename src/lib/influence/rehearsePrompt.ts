@@ -4,7 +4,7 @@
 // aterrizado en el contexto REAL de esa persona (memorias visibles + rol +
 // ámbito), le juega caminos plausibles, las objeciones que va a encontrar y qué
 // acciones mueven la aguja — como HIPÓTESIS para prepararse e influir mejor,
-// NUNCA como certeza ("ensayás, no adivinás; la gente real sorprende"). Surgió de evaluar
+// NUNCA como certeza ("ensayas, no adivinas; la gente real sorprende"). Surgió de evaluar
 // MiroFish (motor de enjambre): en vez de mil agentes genéricos, UN agente
 // aterrizado en la persona real.
 //

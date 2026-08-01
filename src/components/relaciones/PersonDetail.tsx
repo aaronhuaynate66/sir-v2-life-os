@@ -535,7 +535,7 @@ export function PersonDetail({
         {noteOpen && <div className="mt-3"><AnotarAhora personId={live.id} /></div>}
       </div>
 
-      {/* Q&A por persona: preguntá a SIR sobre esta persona, aterrizado en su
+      {/* Q&A por persona: pregunta a SIR sobre esta persona, aterrizado en su
           contexto (reusa /api/sir/ask con personId). */}
       <PreguntarSobrePersona personId={live.id} personName={live.name} />
 

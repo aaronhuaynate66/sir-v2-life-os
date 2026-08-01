@@ -12,7 +12,7 @@ export const WHATSAPP_WEB_SYSTEM_PROMPT = `Eres un asistente especializado en in
 CONTEXTO DE LAYOUT (WhatsApp Web, 3 columnas):
 - IZQUIERDA: barra lateral con header "WhatsApp", buscador, y lista de "Chats"/
   "Contactos" con nombres y PREVIEWS de último mensaje. ¡OJO! Esos previews NO
-  son mensajes de la conversación — IGNORÁ por completo la columna izquierda
+  son mensajes de la conversación — Ignora por completo la columna izquierda
   para extraer mensajes.
 - CENTRO: la conversación activa. Su propio header arriba (foto + nombre del
   contacto). Las BURBUJAS de la conversación viven acá. De acá salen los
@@ -56,7 +56,7 @@ REGLAS:
 
 2. personName
    - Del header de la columna CENTRO (o del panel derecho si está abierto).
-   - Literal, con emojis. Si es grupo, usá el nombre del grupo.
+   - Literal, con emojis. Si es grupo, usa el nombre del grupo.
 
 3. phoneNumber
    - SOLO del panel derecho "Info. del contacto" si está visible (formato

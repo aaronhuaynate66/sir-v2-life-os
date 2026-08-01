@@ -2,7 +2,7 @@
 //
 // El doc 11 dice que la ventana de foco (M5) debe "alimentar al planificador de
 // horario". Este módulo toma la salida de computeFocusWindow + computeChronotype y
-// arma una línea CORTA, orientada a agendar el día: "agendá foco 9–11h; dejá lo
+// arma una línea CORTA, orientada a agendar el día: "agenda foco 9–11h; deja lo
 // mecánico para el bajón". Puro formateo, sin lógica de inferencia nueva.
 //
 // Diferencia honesta con la card de /salud: `formatHourRanges` agrupa horas
@@ -70,7 +70,7 @@ export function buildPlanningHint(focus: FocusWindow, chrono: Chronotype): Plann
         : ''
 
   const restPart = restLabel ? ` Lo mecánico, mejor en el bajón (~${restLabel}).` : ''
-  const headline = `Agendá tu trabajo profundo cerca de ${focusLabel}.${restPart}${chronoNote}`.trim()
+  const headline = `Agenda tu trabajo profundo cerca de ${focusLabel}.${restPart}${chronoNote}`.trim()
 
   return { focusLabel, restLabel, headline, sufficient: true }
 }

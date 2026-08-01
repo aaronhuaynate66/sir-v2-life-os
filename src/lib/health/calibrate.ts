@@ -1,7 +1,7 @@
 // SIR V2 — Auto-calibración de umbrales de salud (mejora del monitoreo #789).
 //
 // vitalsAnomaly usaba umbrales FIJOS (el rango Zepp de Aaron). Esto los hace
-// PERSONALES y adaptativos: calcula qué es "normal para vos" desde tu propia
+// PERSONALES y adaptativos: calcula qué es "normal para ti" desde tu propia
 // historia (percentiles de las últimas N muestras) y flaggea solo los desvíos
 // reales para tu cuerpo. Con poca data cae a los umbrales por defecto. PURA.
 //

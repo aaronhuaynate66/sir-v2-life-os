@@ -1,7 +1,7 @@
 'use client'
 // SIR V2 — "SIR quiere saber": superficie AMBIENTE del Knowledge Gap Engine.
-// SIR detecta lo que le falta para ayudarte y te pregunta — A VOS, nunca a
-// terceros. Respondés → rellena el campo → el hueco desaparece. "No sé" →
+// SIR detecta lo que le falta para ayudarte y te pregunta — A ti, nunca a
+// terceros. Respondes → rellena el campo → el hueco desaparece. "No sé" →
 // no vuelve a preguntar (descarte persistido). Capa fina.
 
 import { useEffect, useMemo, useState } from 'react'

@@ -73,7 +73,7 @@ REGLAS:
    Si encontras inconsistencias, corregilas antes de responder.
 
 2. personName
-   - Copialo literal del header. Conservá los emojis ("Diana Carolina ❣️").
+   - Copialo literal del header. Conserva los emojis ("Diana Carolina ❣️").
    - Si el chat es de grupo y aparecen varios nombres, usa el nombre del grupo.
 
 3. conversationDate — REGLAS ESTRICTAS
@@ -120,7 +120,7 @@ REGLAS:
    - Narrativo, observacional, en español. NO judgmental.
    - Describi QUE paso, no si fue bueno o malo.
    - Max 280 chars (Twitter-size para que entre en cards del timeline).
-   - Mencioná a la otra persona por su nombre.
+   - Menciona a la otra persona por su nombre.
 
 6. emotionalStates
    - Inferi el estado emocional del INTERCAMBIO, no del individuo aislado.

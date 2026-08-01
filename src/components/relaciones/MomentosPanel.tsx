@@ -61,7 +61,7 @@ export function MomentosPanel({ personId }: { personId: string }) {
   }, [personId])
   useEffect(() => { void load() }, [load])
 
-  // Una vez cargados, si hay temas abiertos, preguntá al backend si el chat
+  // Una vez cargados, si hay temas abiertos, pregunta al backend si el chat
   // reciente ya resolvió alguno. Corre UNA vez por ficha. Fail-soft.
   useEffect(() => {
     if (checked || moments === null) return

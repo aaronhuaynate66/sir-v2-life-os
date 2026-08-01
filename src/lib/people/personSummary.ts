@@ -242,7 +242,7 @@ function computeNextAction(args: {
   const threshold = staleThresholdDays(person.importanceScore)
   if (lastInteraction && lastInteraction.days >= threshold) {
     return {
-      text: `${pluralDias(lastInteraction.days)} sin hablar → escribile`,
+      text: `${pluralDias(lastInteraction.days)} sin hablar → escríbele`,
       urgency: lastInteraction.days >= threshold * 2 ? 'now' : 'soon',
     }
   }
@@ -250,7 +250,7 @@ function computeNextAction(args: {
   // 3. Nunca hubo interacción registrada y tampoco un último contacto manual.
   if (!lastInteraction && !person.lastContact) {
     return {
-      text: 'Sin contacto registrado → registrá una interacción',
+      text: 'Sin contacto registrado → registra una interacción',
       urgency: 'info',
     }
   }

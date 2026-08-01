@@ -1,6 +1,6 @@
 // SIR V2 — Motor de predicción C1: modelo idiográfico del sueño (N-de-1). PURO.
 //
-// "C1 = vos": no compara contra normas poblacionales, sino contra TU PROPIO
+// "C1 = tú": no compara contra normas poblacionales, sino contra TU PROPIO
 // baseline. Base científica: modelado idiográfico (N-of-1) — el patrón que
 // importa es el tuyo, no el promedio de la gente. Sobre `sleep_records` (la
 // única serie diaria densa que tenemos hoy) computa, de forma determinística:
@@ -42,7 +42,7 @@ export interface SleepWeekly {
 }
 export interface SleepDebt {
   nights: number
-  hoursVsBaseline: number // negativo = venís durmiendo menos que tu normal
+  hoursVsBaseline: number // negativo = vienes durmiendo menos que tu normal
 }
 export interface SleepArchitecture {
   deepPct: number

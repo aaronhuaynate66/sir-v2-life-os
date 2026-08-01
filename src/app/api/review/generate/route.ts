@@ -9,7 +9,7 @@
 //              Solo personas con importance_score >= 6.
 //   memory   → memories con importance >= 7 y is_private = false.
 //              Solo personas con importance_score >= 6.
-//   identity → identity_profile.roles (siempre 1 card global "¿En qué roles trabajás?")
+//   identity → identity_profile.roles (siempre 1 card global "¿En qué roles trabajas?")
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
@@ -98,7 +98,7 @@ export async function POST() {
   if (idp?.roles && Array.isArray(idp.roles) && idp.roles.length > 0 && !existing.has('identity:roles')) {
     toInsert.push({
       user_id: userId,
-      question: '¿Qué roles / actividades definís como tuyos hoy?',
+      question: '¿Qué roles / actividades defines como tuyos hoy?',
       answer: (idp.roles as string[]).join(', '),
       source_kind: 'identity',
       source_ref: 'roles',

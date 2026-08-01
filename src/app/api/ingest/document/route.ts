@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     const docHash = typeof body.docHash === 'string' ? body.docHash.trim() : ''
     const title = typeof body.title === 'string' ? body.title.trim().slice(0, 160) : 'Documento'
     if (!/^[a-f0-9]{6,32}$/.test(docHash)) {
-      return errorJson(400, 'docHash inválido', 'Volvé a generar el preview y reinténtalo.')
+      return errorJson(400, 'docHash inválido', 'Vuelve a generar el preview y reinténtalo.')
     }
     const personId =
       typeof body.person_id === 'string' && body.person_id.length > 0 ? body.person_id : null

@@ -5,7 +5,7 @@
 // RECIENTE contra una BASELINE anterior para detectar que el vínculo se está
 // enfriando ANTES de que se corte — tres señales tempranas:
 //   1. responde más LENTO que antes (su latencia de respuesta crece),
-//   2. VOS iniciás/cargás más que antes (tu share de mensajes sube),
+//   2. Tú iniciás/cargás más que antes (tu share de mensajes sube),
 //   3. el volumen cae.
 // Es una tendencia, no un juicio: contexto para acercarte a tiempo, no alarma.
 // Determinístico, sobre los timestamps del sustrato (sin LLM).
@@ -107,7 +107,7 @@ export function assessCooling(
   ) {
     reasons.push('tarda más en responderte que antes')
   }
-  // 3. Vos cargás más la conversación.
+  // 3. Tú cargas más la conversación.
   if (recent.myShare - baseline.myShare >= SHARE_RISE) {
     reasons.push('estás iniciando/escribiendo tú más que antes')
   }

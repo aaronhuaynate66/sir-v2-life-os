@@ -143,7 +143,7 @@ function buildAlerts(layers: LayerStat[]): DunbarAlert[] {
       alerts.push({
         kind: 'over_capacity', category: l.category, severity: l.category === 'inner_circle' ? 'medium' : 'low',
         title: `${l.label}: ${l.count} personas (referencia ~${l.softCap})`,
-        detail: `Mantener ${l.count} vínculos a este nivel de intimidad cuesta. Si alguno ya no es tan cercano, quizás va en una capa más externa — así cuidás mejor a los que sí.`,
+        detail: `Mantener ${l.count} vínculos a este nivel de intimidad cuesta. Si alguno ya no es tan cercano, quizás va en una capa más externa — así cuidas mejor a los que sí.`,
       })
     }
   }

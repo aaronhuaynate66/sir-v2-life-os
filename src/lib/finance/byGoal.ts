@@ -1,7 +1,7 @@
 // SIR V2 — Dinero por objetivo: cruza los movimientos de finanzas con los
 // objetivos vía FinancialMovement.relatedGoal.
 //
-// Rescata un campo que se guardaba y nadie leía: cuánto llevás INVERTIDO (plata
+// Rescata un campo que se guardaba y nadie leía: cuánto llevas INVERTIDO (plata
 // que sale: gasto/inversión/deuda) o generado como INGRESO (plata que entra)
 // hacia cada objetivo. Alto valor para los objetivos de plata de Aaron (ingresos,
 // clientes de Marlab). PURO: trabaja sobre montos en PEN ya normalizados.

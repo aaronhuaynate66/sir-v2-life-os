@@ -38,7 +38,7 @@ export async function createVoiceNote(args: CreateVoiceNoteArgs): Promise<Observ
   const supabase = createClient()
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError || !authData?.user?.id) {
-    throw { status: 401, message: 'Sesión expirada. Recargá la página.' } as VoiceNoteError
+    throw { status: 401, message: 'Sesión expirada. Recarga la página.' } as VoiceNoteError
   }
   const userId = authData.user.id
   const ext = extForMime(args.mime)

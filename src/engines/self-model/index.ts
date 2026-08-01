@@ -1,7 +1,7 @@
 // SIR V2 — Modelo del self DINÁMICO (A7). PURO.
 //
 // La auditoría notó que el modelo del usuario era determinístico/ESTÁTICO. Esto
-// lo hace dinámico: infiere "cómo venís" AHORA a partir de hacia dónde se mueven
+// lo hace dinámico: infiere "cómo vienes" AHORA a partir de hacia dónde se mueven
 // tus series (las proyecciones de A5) + la tendencia de tu paz (A6). No es config
 // fija: evoluciona con los datos. Determinístico (sin LLM), componible.
 
@@ -59,7 +59,7 @@ export function deriveDynamicSelf(
 
   const momentum: DynamicSelfState['momentum'] = net > 0 ? 'rising' : net < 0 ? 'declining' : 'stable'
 
-  const parts: string[] = [`Venís ${MOM_LABEL[momentum]}`]
+  const parts: string[] = [`Vienes ${MOM_LABEL[momentum]}`]
   if (improving.length) parts.push(`mejora: ${improving.join(', ')}`)
   if (worsening.length) parts.push(`atención: ${worsening.join(', ')}`)
   const summary = parts.join(' · ') + '.'

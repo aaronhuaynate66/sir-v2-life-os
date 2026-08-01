@@ -3,8 +3,8 @@
 //
 // El gate de reversibilidad ya existe en evaluateDecision, pero solo mueve el
 // veredicto. Esto lo convierte en REGULADOR DE UX (Bezos): una puerta de dos vías
-// no se sobre-piensa (decidí y ajustá); una de una vía justifica cuidado. Y elige
-// el modo (Simon/Schwartz): maximizá lo irreversible-de-alto-sentido, satisficeá
+// no se sobre-piensa (decidí y ajusta); una de una vía justifica cuidado. Y elige
+// el modo (Simon/Schwartz): maximiza lo irreversible-de-alto-sentido, satisficea
 // el resto — contra la parálisis.
 //
 // También expone dos flags que consumen otros módulos: premortemRecommended
@@ -44,7 +44,7 @@ export function calibrateDecision(a: DecisionAssessment): DecisionCalibration {
 
   const effortGuidance =
     doorType === 'two_way'
-      ? 'Puerta de dos vías: equivocarte acá es barato porque volvés. No la sobre-pienses — decidí rápido y ajustá.'
+      ? 'Puerta de dos vías: equivocarte acá es barato porque vuelves. No la sobre-pienses — decidí rápido y ajusta.'
       : doorType === 'one_way'
         ? 'Puerta de una vía: cara de revertir. Acá sí vale tomarte el tiempo, mirar más dimensiones y pensar el peor caso.'
         : 'Reversibilidad poco clara: si puedes volver atrás sin gran costo, trátala como reversible y decidí; si no, anda con cuidado.'
@@ -56,7 +56,7 @@ export function calibrateDecision(a: DecisionAssessment): DecisionCalibration {
 
   const modeGuidance = highStakes
     ? 'Vale MAXIMIZAR: es irreversible y toca algo que te importa. Tomate el tiempo de buscar la mejor opción, no la primera.'
-    : 'SATISFICÉ: buscá una opción suficientemente buena y seguí. Maximizar acá te cuesta paz, no resultado (paradoja de la elección).'
+    : 'SATISFICÉ: busca una opción suficientemente buena y seguí. Maximizar acá te cuesta paz, no resultado (paradoja de la elección).'
 
   const valuesTension = values !== null && values < 0
 

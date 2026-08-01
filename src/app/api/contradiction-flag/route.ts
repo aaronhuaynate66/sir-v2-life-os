@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       422,
       'Sin notas manuales para contrastar',
-      'Agrega una nota (perfil, fricción/fortalezas, o "Anotar algo ahora") y volvé a revisar.',
+      'Agrega una nota (perfil, fricción/fortalezas, o "Anotar algo ahora") y vuelve a revisar.',
     )
   }
 
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     return errorJson(
       422,
       'Falta conversación para contrastar',
-      'Subí el export de WhatsApp de esta persona (o esperá a que el sustrato tenga su hilo) y volvé a revisar.',
+      'Subí el export de WhatsApp de esta persona (o espera a que el sustrato tenga su hilo) y vuelve a revisar.',
     )
   }
   const transcript = buildTranscript(subRows, personName)

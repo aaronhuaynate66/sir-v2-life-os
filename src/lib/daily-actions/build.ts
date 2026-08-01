@@ -30,7 +30,7 @@ export interface DailyAction {
   score: number
   /** Qué pasa ("Sin hablar hace 34 días"). */
   headline: string
-  /** Qué hacer ("Escribile para retomar"). */
+  /** Qué hacer ("Escríbele para retomar"). */
   action: string
   /** Reciprocidad 0-100 | null (GEMA C) — visible en la tarjeta. */
   reciprocidad: number | null
@@ -101,7 +101,7 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n))
 }
 
-// Acciones donde VOS salís a buscar a alguien → se atenúan si estás drenado.
+// Acciones donde Tú sales a buscar a alguien → se atenúan si estás drenado.
 // Las de fecha (birthday/special_date) no: un cumpleaños no espera tu energía.
 const PROACTIVE: ReadonlySet<DailyActionKind> = new Set<DailyActionKind>([
   'contact',
@@ -138,7 +138,7 @@ export interface BuildDailyActionsOptions {
   /** Filtro por tipo de acción, aplicado ANTES del dedup por persona. Si se
    *  pasa, sólo se consideran candidatos de estos kinds — así una persona cuya
    *  acción de más score es un cumpleaños igual aporta su acción de contacto en
-   *  una superficie enfocada. Útil para "Reconectá" (proactivos: contact /
+   *  una superficie enfocada. Útil para "Reconecta" (proactivos: contact /
    *  cooling / acknowledge, sin fechas). Default (undefined) → todos los kinds. */
   kinds?: readonly DailyActionKind[]
 }

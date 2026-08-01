@@ -5,7 +5,7 @@
 // El pipeline de captura de WhatsApp (Nivel C) genera hasta 3 preguntas
 // reflexivas por captura y las guarda en observation.data.reflectionQuestions —
 // pero hasta ahora NINGÚN componente las mostraba. Acá las surfaceamos: son
-// preguntas PARA VOS, para pensar el vínculo, no acciones ni tareas.
+// preguntas Para ti, para pensar el vínculo, no acciones ni tareas.
 
 import { useMemo } from 'react'
 import { HelpCircle } from 'lucide-react'

@@ -25,13 +25,13 @@ Reglas estrictas:
 1. Si un valor no es visible o ilegible, usar null. NUNCA inventar.
 
 2. La unidad SIEMPRE es MILISEGUNDOS (ms). Los valores de VFC humanos suelen ir
-   de ~10 a ~200 ms. Si el número viene con "ms", sacá solo el entero.
+   de ~10 a ~200 ms. Si el número viene con "ms", saca solo el entero.
 
 3. min_ms / max_ms: el RANGO mostrado como "Rango VFC 21-134 ms", "21–134 ms",
    "Mín 21 / Máx 134". min_ms = el menor, max_ms = el mayor.
 
 4. resting_ms: si el panel muestra una "VFC en reposo" / "VFC nocturna" /
-   "promedio en reposo" como UN valor destacado, ponelo acá. Si no, null.
+   "promedio en reposo" como UN valor destacado, ponlo acá. Si no, null.
 
 5. avg_ms: VFC promedio del día si aparece explícita, si no null.
 

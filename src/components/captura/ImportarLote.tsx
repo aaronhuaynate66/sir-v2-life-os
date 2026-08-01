@@ -2,7 +2,7 @@
 // SIR V2 — ImportarLote (#91): soltar VARIOS exports de WhatsApp de una.
 // Por cada archivo, SIR intenta rutear solo (alias de red → nombre del archivo;
 // si no, match difuso por nombre) y muestra un SEMÁFORO: verde = ruteado por
-// alias, amarillo = match por nombre (verificá), rojo = elegí/creá. Resueltos
+// alias, amarillo = match por nombre (verifica), rojo = elegí/creá. Resueltos
 // todos, "Procesar" corre la COLA reusando runWhatsappImport (mismo pipeline
 // que el import de a uno), secuencial, con progreso por chat. La media se
 // procesa en el navegador, con créditos — por eso es secuencial.
@@ -58,7 +58,7 @@ export function ImportarLote() {
         if (j.personId && j.personName) return { ...base, personId: j.personId, personName: j.personName, conf: 'green', reason: 'alias de WhatsApp' }
       }
     } catch { /* */ }
-    // 2) match difuso por nombre → pre-selecciona el mejor, amarillo (verificá)
+    // 2) match difuso por nombre → pre-selecciona el mejor, amarillo (verifica)
     try {
       const r = await searchPeople(waName, { captureType: 'whatsapp_chat' })
       const top = r.candidates[0]

@@ -17,10 +17,10 @@ import {
 
 const TRAITS: Trait[] = ['O', 'C', 'E', 'A', 'N']
 
-export function BigFiveCard({ subject, title = 'Perfil Big Five', whoAnswers = 'Respondé', }: {
+export function BigFiveCard({ subject, title = 'Perfil Big Five', whoAnswers = 'Responde', }: {
   subject: string
   title?: string
-  /** Framing de quién responde (ej. 'Respondé' o 'Que responda Diana'). */
+  /** Framing de quién responde (ej. 'Responde' o 'Que responda Diana'). */
   whoAnswers?: string
 }) {
   const [scores, setScores] = useState<BigFiveScores | null>(null)

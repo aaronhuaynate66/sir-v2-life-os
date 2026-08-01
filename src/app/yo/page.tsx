@@ -1,5 +1,5 @@
 'use client'
-// SIR V2 — /yo: IDENTIDAD (quién sos, anclas, autodiagnóstico). La salud y las
+// SIR V2 — /yo: IDENTIDAD (quién eres, anclas, autodiagnóstico). La salud y las
 // métricas viven en /salud (su propia página). Acá solo lo personal/identidad.
 import { Brain, ArrowRight, Heart } from 'lucide-react'
 import Link from 'next/link'

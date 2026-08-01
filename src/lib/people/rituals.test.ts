@@ -105,7 +105,7 @@ describe('generateRituals — fechas especiales', () => {
     )
     const sd = r.find((x) => x.type === 'special_date')!
     expect(sd).toBeDefined()
-    expect(sd.action).toBe('Planeá algo especial')
+    expect(sd.action).toBe('Planea algo especial')
   })
 })
 

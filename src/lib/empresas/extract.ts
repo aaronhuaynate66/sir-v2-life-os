@@ -13,11 +13,11 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor, con esta fo
 {"description": string, "sectors": string[], "notes": string}
 
 Reglas:
-- SOLO usá lo que está en el texto. NO inventes datos, cifras, nombres ni sectores que no aparezcan.
+- SOLO usa lo que está en el texto. NO inventes datos, cifras, nombres ni sectores que no aparezcan.
 - "description": 1-3 frases en español, qué es la empresa/grupo y a qué se dedica. Sin marketing vacío.
 - "sectors": lista corta de sectores/rubros explícitos (ej. "seguridad", "construcción"). [] si no hay.
 - "notes": contexto útil que valga la pena recordar (sede, sub-empresas/portafolio, fundadores, hitos). Vacío "" si no hay.
-- Si el texto no alcanza para algo, dejá el campo vacío. Nunca rellenes con suposiciones.`
+- Si el texto no alcanza para algo, deja el campo vacío. Nunca rellenes con suposiciones.`
 
 export interface ExtractInput {
   text: string

@@ -20,7 +20,7 @@ REGLA CRÍTICA — Anti-invención (PRIORIDAD MÁXIMA, leer antes que el schema)
 2. PROHIBIDO completar con valores "plausibles": nombres, empresas, ciudades,
    carreras, skills o intereses que no aparezcan LITERAL en la imagen.
 3. Si MENOS DEL 30% del contenido es legible → confidence='low', null/[] en
-   todo lo que no leas, y explicá en rawObservations.
+   todo lo que no leas, y explica en rawObservations.
 
 REGLA #2 — imageLegible (calidad de imagen, SEPARADA de confidence):
    - false si es captura de página entera / texto diminuto / borroso / tuviste
@@ -112,4 +112,4 @@ vive, sus intereses. Es texto fiel — NO es OCR. Reglas:
   · trajectory: estudios/experiencia si los cuenta.
 - Mantené la regla anti-invención: lo que no diga, va null / []. Pero NO bajes la
   confianza por "imagen ilegible" — acá no hay imagen. Si el relato es claro,
-  usá confidence='high' y imageLegible=true.`
+  usa confidence='high' y imageLegible=true.`

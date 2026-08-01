@@ -104,7 +104,7 @@ const PATTERNS: Record<ManipulationTactic, RegExp[]> = {
   ],
   commitment: [
     /\bya (dijiste|habias dicho|quedaste) que\b/g, /\bquedamos en que\b/g,
-    /\b(vos |tu )?prometiste\b/g, /\bno te eches para atras\b/g, /\bdiste tu palabra\b/g,
+    /\b(tú |tu )?prometiste\b/g, /\bno te eches para atras\b/g, /\bdiste tu palabra\b/g,
     /\byou already (agreed|said|promised)\b/g, /\byou said you would\b/g, /\bdon'?t back out\b/g,
   ],
 }
@@ -211,8 +211,8 @@ const RHETORIC_PATTERNS: Record<string, RegExp[]> = {
     /\bsolo hay dos (opciones|caminos|salidas)\b/g, /\bo aceptas o\b/g,
   ],
   whataboutism: [
-    /\by vos que\b/g, /\bmira quien habla\b/g, /\by que hay de\b/g, /\by cuando vos\b/g,
-    /\bvos (tambien )?hiciste lo mismo\b/g, /\by vos tampoco\b/g,
+    /\by tú que\b/g, /\bmira quien habla\b/g, /\by que hay de\b/g, /\by cuando tú\b/g,
+    /\bvos (tambien )?hiciste lo mismo\b/g, /\by tú tampoco\b/g,
   ],
   reductio_ad_hitlerum: [
     /\b(eso )?es (algo )?de (dictadores|nazis|comunistas|fascistas|tiranos)\b/g,
@@ -237,7 +237,7 @@ const RHETORIC_PATTERNS: Record<string, RegExp[]> = {
   ],
   ad_hominem: [
     /\bvos que sabes\b/g, /\bno tenes (la )?autoridad (moral )?para\b/g,
-    /\bmira como estas (vos )?para\b/g, /\bviniendo de vos\b/g, /\bquien sos vos para\b/g,
+    /\bmira como estas (tú )?para\b/g, /\bviniendo de ti\b/g, /\bquien eres tú para\b/g,
   ],
   thought_terminating: [
     /\bes lo que hay\b/g, /\basi son las cosas\b/g, /\bno hay nada que hacer\b/g,

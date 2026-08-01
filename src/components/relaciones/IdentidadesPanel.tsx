@@ -1,7 +1,7 @@
 'use client'
 // SIR V2 — IdentidadesPanel: cómo se llama esta persona en cada red (WhatsApp,
 // Instagram, etc.). Sirve para HOMOLOGAR zips/capturas a la persona correcta —
-// si le enseñás que en WhatsApp es "Papa", el próximo zip de "Papa" se rutea
+// si le enseñas que en WhatsApp es "Papa", el próximo zip de "Papa" se rutea
 // solo. Auto-rutear solo con alias EXACTO y ÚNICO (la API rechaza fusionar el
 // mismo alias en dos personas).
 

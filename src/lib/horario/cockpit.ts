@@ -53,7 +53,7 @@ export type Horizon = 'dia' | 'semana' | 'mes'
 export const HORIZON_WINDOW_DAYS: Record<Horizon, number> = { dia: 0, semana: 6, mes: 31 }
 
 /** Lead-time de avisos de fechas de la red (cumpleaños/aniversarios): cuántos
- *  días ANTES empezamos a empujar ("comprale algo / planeá un detalle"). El
+ *  días ANTES empezamos a empujar ("comprale algo / planea un detalle"). El
  *  pedido fue 1–2 semanas de anticipación → 14 días en Semana, el mes completo
  *  en Mes. */
 export const CONTACT_LEAD_DAYS: Record<Exclude<Horizon, 'dia'>, number> = { semana: 14, mes: 31 }
@@ -127,7 +127,7 @@ export interface CockpitDate {
   detail: string
   /** Días hasta la próxima ocurrencia (>= 0). */
   daysUntil: number
-  /** Empujón accionable según el lead-time ("Con tiempo: planeá un detalle"). */
+  /** Empujón accionable según el lead-time ("Con tiempo: planea un detalle"). */
   nudge: string
   personId?: string
   personSlug?: string

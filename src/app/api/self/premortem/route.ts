@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     if (titles.length) lines.push(`Conflictos/temas abiertos sin resolver: ${titles.join('; ')}.`)
   } catch { /* best-effort */ }
 
-  const context = lines.length ? lines.join('\n') : '(Sin objetivos ni conflictos cargados — avisá que la lectura es pobre por falta de data.)'
+  const context = lines.length ? lines.join('\n') : '(Sin objetivos ni conflictos cargados — avisa que la lectura es pobre por falta de data.)'
   const userContent = `DECISIÓN que estoy por tomar:\n${decision}\n\nMI CONTEXTO:\n${context}`
 
   try {

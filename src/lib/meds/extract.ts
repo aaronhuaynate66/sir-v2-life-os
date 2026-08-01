@@ -34,10 +34,10 @@ Extraé y devolvé EXCLUSIVAMENTE un JSON con estas claves:
 }
 
 Reglas:
-- Usá SOLO lo que ves en la imagen o lo que conocés con certeza del nombre. NO inventes dosis.
+- Usa SOLO lo que ves en la imagen o lo que conocés con certeza del nombre. NO inventes dosis.
 - Si un principio activo trata la migraña (ergotamina, triptanes), la clase es "antimigrañoso".
-- Si no estás seguro de un campo, ponelo en null y bajá "confidence".
-- Respondé SOLO el JSON, sin texto extra, sin markdown fences. Empieza con { y termina con }.`
+- Si no estás seguro de un campo, ponlo en null y baja "confidence".
+- Responde SOLO el JSON, sin texto extra, sin markdown fences. Empieza con { y termina con }.`
 
 function str(v: unknown, max: number): string | null {
   if (typeof v !== 'string') return null

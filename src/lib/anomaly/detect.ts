@@ -3,7 +3,7 @@
 // Detecta ANOMALÍAS en TU propia data: un gasto muy fuera de lo habitual, una
 // noche de sueño rarísima, una lectura de ánimo/estrés que se dispara. Es
 // auto-forense (Pathfinder sano): mirar TU vida para verte, no vigilar a nadie.
-// Honesto: marca lo que se SALE de tu patrón como "mirá si tiene sentido" — no
+// Honesto: marca lo que se SALE de tu patrón como "mira si tiene sentido" — no
 // es alarma ni veredicto, y correlación ≠ causa.
 //
 // PURO y determinístico. Usa mediana + MAD (desvío absoluto mediano) → robusto a

@@ -94,7 +94,7 @@ export function evaluateDecision(input: DecisionInput): DecisionAssessment {
   const weighted = w > 0 ? Math.round((wsum / w) * 100) / 100 : 0
 
   // Gate de reversibilidad: irreversible (<= -1) exige un ponderado claramente
-  // positivo para arriesgarse; si no, frená.
+  // positivo para arriesgarse; si no, frena.
   const rev = input.scores.reversibility?.score ?? 0
   const irreversible = rev <= -1
 

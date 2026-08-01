@@ -53,14 +53,14 @@ Reglas estrictas:
    hay fecha visible, null y mencionalo en raw_observations.
 
 7. p.p.m. = pulsaciones por minuto = lpm = bpm. Todos los valores son enteros
-   de pulsaciones por minuto; ignorá la unidad textual al extraer el número.
+   de pulsaciones por minuto; ignora la unidad textual al extraer el número.
 
 8. "confidence":
    - high   : imagen nítida + reposo/rango legibles + sin ambigüedad
    - medium : algunos datos legibles, otros ambiguos u omitidos
    - low    : imagen borrosa o sólo 1 dato legible
 
-9. raw_observations: máximo 200 chars en español. Mencioná qué app es, qué
+9. raw_observations: máximo 200 chars en español. Menciona qué app es, qué
    datos no se leyeron y observaciones de calidad de la imagen.
 
 10. Si la imagen NO es de una vista de frecuencia cardíaca o no contiene datos

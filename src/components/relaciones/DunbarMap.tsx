@@ -36,7 +36,7 @@ export function DunbarMap() {
         <SectionTitle icon={Network} label="Mapa de tu red · capas de Dunbar" count={result.total} />
         <p className="text-[11px] text-muted-foreground mb-4 leading-snug">
           Tu capacidad para relaciones es finita y se organiza en capas. Cada una pide una cadencia distinta —
-          al círculo íntimo lo cuidás seguido; a la periferia, de vez en cuando.
+          al círculo íntimo lo cuidas seguido; a la periferia, de vez en cuando.
         </p>
 
         {/* Capas */}

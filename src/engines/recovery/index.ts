@@ -75,8 +75,8 @@ const PRIORITY: Record<RecoveryTrigger, string> = {
   bad_sleep: 'Dormí 7-8 h hoy: es la palanca #1 de recuperación.',
   low_energy: 'Movimiento suave + comida real antes que cafeína.',
   high_stress: 'Elige UNA sola cosa importante hoy y suelta el resto.',
-  impulsive_spend: 'Pausá compras no-esenciales 48 h (regla de las 48 h).',
-  weak_week: 'Bajá la vara: metas mínimas esta semana, sin culpa.',
+  impulsive_spend: 'Pausa compras no-esenciales 48 h (regla de las 48 h).',
+  weak_week: 'Baja la vara: metas mínimas esta semana, sin culpa.',
 }
 
 // Orden canónico para presentar prioridades.

@@ -55,7 +55,7 @@ export function PatronesPanel() {
       { key: 'sleep', label: 'Sueño', unit: 'h', p: projectSeries(sleepHours, { flatThreshold: 0.3 }) },
       { key: 'hr', label: 'FC reposo', unit: ' lpm', p: projectSeries(restingHr, { flatThreshold: 2 }) },
     ].filter((x) => x.p.direction !== 'insufficient')
-    // A7 — modelo del self dinámico: "cómo venís" desde hacia dónde van tus series.
+    // A7 — modelo del self dinámico: "cómo vienes" desde hacia dónde van tus series.
     const selfState = deriveDynamicSelf(
       projections.map((x) => ({ label: x.label, direction: x.p.direction as 'rising' | 'falling' | 'flat', goodWhenRising: x.key !== 'hr' })),
     )
@@ -117,7 +117,7 @@ export function PatronesPanel() {
               <Info size={12} className="mt-0.5 shrink-0" /> Tendencia y proyección. <span className="font-medium text-foreground/80">Anticipación, no certeza</span> — la confianza sube con los días.
             </p>
 
-            {/* A7 — modelo del self dinámico: "cómo venís" inferido de la serie. */}
+            {/* A7 — modelo del self dinámico: "cómo vienes" inferido de la serie. */}
             {selfState.momentum !== 'insufficient' && (
               <div className={cn(
                 'mb-3 rounded-lg border px-3 py-2 text-sm',

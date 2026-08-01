@@ -56,7 +56,7 @@ REGLAS DURAS:
 - Una misma frase puede tener más de una técnica; no fuerces. Máximo ~8 findings.
 
 ACEPTACIÓN SELECTIVA (defensa del persuadido — lo más importante):
-Además de nombrar técnicas, ayudá a Aaron a decidir qué ACEPTAR y qué RESISTIR. La ciencia dice
+Además de nombrar técnicas, ayuda a Aaron a decidir qué ACEPTAR y qué RESISTIR. La ciencia dice
 que ni ceder para complacer/evitar conflicto (sycophancy) ni rechazar todo en bloque: DISCRIMINAR.
 - worthWeighing: separa el punto LEGÍTIMO si lo hay — un argumento válido, una emoción sincera, un
   pedido justo pueden convivir con técnicas manipuladoras. Reconócelo (que el otro use presión NO

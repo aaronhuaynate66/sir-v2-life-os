@@ -1,4 +1,4 @@
-// SIR V2 — Feedback loop store (A8). Registra las acciones sobre las que actuás
+// SIR V2 — Feedback loop store (A8). Registra las acciones sobre las que actuas
 // (recomendaciones completadas, decisiones) con la paz de ese momento, para que
 // SIR aprenda qué te funciona. Persistido en localStorage; el outcome (paz N
 // días después) se computa on-read desde el histórico de snapshots.

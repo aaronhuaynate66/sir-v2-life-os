@@ -87,7 +87,7 @@ export interface LifeSeason {
 export interface LifeSeasons {
   /** Estaciones de la más RECIENTE a la más antigua. */
   seasons: LifeSeason[]
-  /** La estación en curso, o null si venís en una pausa entre capítulos. */
+  /** La estación en curso, o null si vienes en una pausa entre capítulos. */
   current: LifeSeason | null
   message: string
 }

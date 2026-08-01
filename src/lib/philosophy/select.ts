@@ -86,7 +86,7 @@ export function selectStances(ctx: StanceContext): StanceResult {
   const hasKant = picks.some((p) => p.school.id === 'kant')
   if (hasPower && !hasKant) {
     const kant = schoolById('kant')!
-    picks.push({ school: kant, score: 0, reason: 'Freno ético sobre la lectura de poder: leé los incentivos, pero no cruces la línea de usar a nadie.', isCheck: true })
+    picks.push({ school: kant, score: 0, reason: 'Freno ético sobre la lectura de poder: lee los incentivos, pero no cruces la línea de usar a nadie.', isCheck: true })
   }
 
   return { tags, domain, picks, ethicalLine: ETHICAL_LINE }

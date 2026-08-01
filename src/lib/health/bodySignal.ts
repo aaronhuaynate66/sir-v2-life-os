@@ -27,5 +27,5 @@ export function bodySignal(input: BodySignalInput): string | null {
   const debt = Math.max(0, (TARGET_HOURS - avg) * hours.length)
   if (debt < DEBT_THRESHOLD) return null
   const debtRounded = Math.round(debt)
-  return `Venís arrastrando deuda de sueño (~${debtRounded}h en ${hours.length} noches). Si el día lo permite, bajá una marcha.`
+  return `Vienes arrastrando deuda de sueño (~${debtRounded}h en ${hours.length} noches). Si el día lo permite, baja una marcha.`
 }

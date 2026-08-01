@@ -82,7 +82,7 @@ REGLAS DE CONFIANZA:
 REGLAS GENERALES:
 
 - Si la imagen NO es la pantalla "Datos del contacto" de WhatsApp (puede ser
-  una conversacion u otra app), igual respondé el JSON, con displayName=""
+  una conversacion u otra app), igual responde el JSON, con displayName=""
   y confidence='low' y explicacion en rawObservations.
 - rawObservations: notas en español sobre ambiguedades, campos cortados o
   observaciones utiles para review humano. null si no hay nada que reportar.
@@ -105,7 +105,7 @@ Aplica tambien a displayName:
 
 Si MENOS del 50% de los campos son legibles:
 - confidence='low'
-- rawObservations: explicá EXACTAMENTE que partes son ilegibles
+- rawObservations: explica EXACTAMENTE que partes son ilegibles
   ("foto cortada, About no visible, telefono borroso").
 
 CRITICO:

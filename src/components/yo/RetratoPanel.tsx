@@ -1,5 +1,5 @@
 'use client'
-// SIR V2 — Retrato. SIR te devuelve quién sos HOY, sintetizado de lo que ya
+// SIR V2 — Retrato. SIR te devuelve quién eres HOY, sintetizado de lo que ya
 // sabe (identidad, norte, cómo viene la semana, vínculos, conflictos). Un espejo,
 // no un formulario. Se cachea en localStorage para no regenerar (ni gastar IA) en
 // cada carga; botón para actualizar.

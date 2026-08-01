@@ -4,7 +4,7 @@
 //
 // UN solo punto de IA conversacional en la ficha:
 //   - "Ponme al día": briefing contextual efímero (on-demand, no gasta al abrir).
-//   - Ask-box MULTI-TURNO: preguntá, y seguí preguntando — el hilo se mantiene y
+//   - Ask-box MULTI-TURNO: pregunta, y seguí preguntando — el hilo se mantiene y
 //     se manda como `history` a /api/sir/ask, así SIR entiende el "¿y eso por qué?"
 //     sin repetir contexto. Aterrizado en la persona (personId pre-scopea).
 // Los GENERADORES de contenido persistido (Lo personal, Perfil, Hipótesis…)

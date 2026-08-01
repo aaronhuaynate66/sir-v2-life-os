@@ -89,7 +89,7 @@ export async function executeProposedAction(
   if (action.kind === 'registrar_interaccion') {
     const personId = action.personId
     if (!personId) {
-      return { ok: false, message: `No encontré a ${action.persona || 'esa persona'} en tu red, así que no lo registré. Podés nombrarla distinto o crearla primero.` }
+      return { ok: false, message: `No encontré a ${action.persona || 'esa persona'} en tu red, así que no lo registré. Puedes nombrarla distinto o crearla primero.` }
     }
     // Ownership explícito (defensa sobre RLS; acá vamos con service-role).
     const { data: person } = await supabase
@@ -225,7 +225,7 @@ export async function executeProposedAction(
 
     const name = p.name || action.persona || 'esa persona'
     if (!okRel) {
-      return { ok: false, message: `No pude marcar el vínculo con ${name} como cerrado. Reinténtalo o hacelo desde la web.` }
+      return { ok: false, message: `No pude marcar el vínculo con ${name} como cerrado. Reinténtalo o hazlo desde la web.` }
     }
     return {
       ok: true,

@@ -1,14 +1,14 @@
 // SIR V2 — "Tu trayectoria": el ARCO de largo plazo de tus objetivos (E5, Life
 // Direction). Las otras capas de "Tu rumbo" miran el AHORA o el norte del año:
-//   - norteDrift  → ¿le prestás ATENCIÓN al norte ahora?
+//   - norteDrift  → ¿le prestas ATENCIÓN al norte ahora?
 //   - norteMomentum → ¿avanzaste el norte (pasos) en 30 días?
 //   - espejoSemanal → coherencia de los últimos 7 días.
 //   - lifeThread → la lista cruda de hitos.
 // Falta la lectura SOSTENIDA EN EL TIEMPO: de TODO lo que te propusiste en la
-// vida, ¿qué terminás, qué soltás, en qué áreas construís y en cuáles aflojás,
+// vida, ¿qué terminas, qué soltas, en qué áreas construís y en cuáles aflojas,
 // y esa proporción viene mejorando o enfriándose?
 //
-// Eso es "quién venís siendo" a escala de años — el corazón de la Etapa 5.
+// Eso es "quién vienes siendo" a escala de años — el corazón de la Etapa 5.
 //
 // PURO + determinístico, `now` inyectable. No inventa ni moraliza: cada número
 // sale de un cambio real de estado de un Goal. Soltar/pausar NO es fracaso — el
@@ -26,9 +26,9 @@ import type { Goal, GoalCategory } from '@/types'
 export type TrajectoryPattern =
   | 'nascent' // poco recorrido cerrado: todavía no hay arco para leer
   | 'exploring' // muchos frentes abiertos, pocos resueltos
-  | 'building' // cerrás bastante más de lo que soltás
-  | 'releasing' // soltás más de lo que cerrás
-  | 'steady' // equilibrado entre lo que cerrás y lo que soltás
+  | 'building' // cierras bastante más de lo que soltas
+  | 'releasing' // soltas más de lo que cierras
+  | 'steady' // equilibrado entre lo que cierras y lo que soltas
 
 export type TrajectoryMomentum = 'acelera' | 'estable' | 'desacelera' | 'sin_datos'
 

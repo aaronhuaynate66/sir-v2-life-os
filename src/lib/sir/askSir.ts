@@ -1220,7 +1220,7 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     openrouterKey: model.provider === 'openrouter' ? providerKey : undefined,
   })
   // Scrub DETERMINÍSTICO de voseo: el prompt lo prohíbe pero el modelo se resbala
-  // (el harness cazó "querés"). Esto garantiza tuteo peruano en la salida.
+  // (el harness cazó "quieres"). Esto garantiza tuteo peruano en la salida.
   let answer = deVoseo(rawAnswer)
 
   // GUARD DE FALSA ESCRITURA, por el mismo motivo que el scrub de arriba: el

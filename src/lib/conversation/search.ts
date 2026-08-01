@@ -1,6 +1,6 @@
 // SIR V2 — Búsqueda dentro del historial CRUDO de una conversación. PURO.
 // Dado el texto del export y una query, devuelve las líneas que matchean con su
-// fecha. Acento-insensible. Para la bitácora ("buscá en el historial de X").
+// fecha. Acento-insensible. Para la bitácora ("busca en el historial de X").
 
 export interface ArchiveHit {
   /** Fecha del mensaje si la línea trae prefijo [D/M/Y, hh:mm] o D/M/Y - ... */

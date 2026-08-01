@@ -3,7 +3,7 @@
 // SIR V2 — RelationalFlagsCard (19·M3): red flags de auto-protección.
 // Corre el motor puro detectRelationalFlags sobre las notas de person_logs y, si
 // hay patrones RECURRENTES en cómo te tratan, los muestra con foco en TU cuidado.
-// LÍNEA ÉTICA: no rotula a la persona, no diagnostica; son patrones que VOS
+// LÍNEA ÉTICA: no rotula a la persona, no diagnostica; son patrones que Tú
 // anotaste. Solo aparece con recurrencia (nunca por una nota suelta). Peligro
 // real → hablarlo con alguien/un profesional.
 

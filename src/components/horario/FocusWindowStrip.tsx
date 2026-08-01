@@ -5,7 +5,7 @@
 // El doc 11 pide que la ventana de foco "alimente al planificador de horario".
 // Este strip corre los MISMOS motores puros que la card de /salud
 // (chronotype + energyCurve + focusWindow) y los baja a una línea de agenda:
-// "agendá foco 9–11h; lo mecánico al bajón". Reusa buildPlanningHint (rangos
+// "agenda foco 9–11h; lo mecánico al bajón". Reusa buildPlanningHint (rangos
 // contiguos honestos). Invisible si falta data — nada de curvas inventadas.
 
 import { useMemo } from 'react'

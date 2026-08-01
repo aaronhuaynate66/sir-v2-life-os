@@ -79,7 +79,7 @@ export function dedupeSortMsgs(msgs: ConvMsg[]): ConvMsg[] {
 /** PURO: elige el set de mensajes MÁS RICO entre el sustrato y las observaciones.
  *  Si el sustrato está backfilleado tiene el hilo completo (texto entero) → gana;
  *  si aún está vacío/parcial, gana la observación (muestra). Garantiza cero
- *  regresión: siempre te quedás con el conjunto más grande. */
+ *  regresión: siempre te quedas con el conjunto más grande. */
 export function pickRicherMessages(fromSubstrate: ConvMsg[], fromObservations: ConvMsg[]): ConvMsg[] {
   return dedupeSortMsgs(fromSubstrate.length >= fromObservations.length ? fromSubstrate : fromObservations)
 }

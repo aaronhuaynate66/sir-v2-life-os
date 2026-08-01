@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   if (row.capture_type !== 'whatsapp_chat') return err(400, 'Solo aplicable a observations whatsapp_chat')
   const data = row.data ?? {}
   if (!force && !isPoorSummary(data.summary)) {
-    return NextResponse.json({ skipped: true, reason: 'summary ya parece bueno; pasá force:true si quieres regenerarlo igual' })
+    return NextResponse.json({ skipped: true, reason: 'summary ya parece bueno; pasa force:true si quieres regenerarlo igual' })
   }
   const rawMessages = Array.isArray(data.rawMessages) ? data.rawMessages : []
   if (rawMessages.length === 0) return err(422, 'Esta observation no tiene rawMessages persistidos — no puedo reconstruir')

@@ -1,5 +1,5 @@
 'use client'
-// SIR V2 — Página visual del motor "¿qué pasó el día X?". Elegís una fecha y SIR
+// SIR V2 — Página visual del motor "¿qué pasó el día X?". Eliges una fecha y SIR
 // cruza TODO lo de ese día (interacciones, capturas, deals, pasos OKR, salud,
 // score relacional, luna). Reusa GET /api/day. Complementa el chat.
 // Cabecera de ÁNIMO del día (dayMood, determinístico) para darle peso emocional.

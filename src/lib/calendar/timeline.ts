@@ -64,7 +64,7 @@ function computeOverload(blocks: TimelineBlock[]): OverloadInfo {
     reason = `Día sobrecargado: ${blockCount} bloques, ${busyHours} h ocupadas. Protegé tiempo de recuperación.`
   } else if (blockCount >= 4 || busyHours >= 6) {
     level = 'busy'
-    reason = `Día cargado: ${blockCount} bloques, ${busyHours} h. Dejá huecos para respirar.`
+    reason = `Día cargado: ${blockCount} bloques, ${busyHours} h. Deja huecos para respirar.`
   }
   return { level, blockCount, busyHours, reason }
 }

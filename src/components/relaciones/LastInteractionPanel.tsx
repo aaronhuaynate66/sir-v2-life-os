@@ -15,7 +15,7 @@
 // REGISTRO MANUAL (Sesion 6+): el usuario también puede loguear una
 // "interacción" a mano (person_logs, kind='interaction'). Eso NO es una
 // conversación real capturada, pero ES un dato de "cuándo interactué con
-// esta persona". Para no mentir ("sin interacciones" cuando acabás de
+// esta persona". Para no mentir ("sin interacciones" cuando acabas de
 // registrar una) recibimos también `lastManualInteraction` y mostramos el
 // MÁS RECIENTE entre captura y registro manual — el manual SIEMPRE
 // etiquetado con badge "registro manual" para preservar la distinción
@@ -150,7 +150,7 @@ function LastChatBody({ obs, personName = '' }: { obs: Observation; personName?:
     ? (obs.data.topics as unknown[]).filter((t): t is string => typeof t === 'string')
     : []
 
-  // Tono inferido por conversación (Nivel B): ella + vos. Antes se guardaba y no
+  // Tono inferido por conversación (Nivel B): ella + tú. Antes se guardaba y no
   // se mostraba en ningún lado. Es lectura, no diagnóstico.
   const emo = obs.data?.emotionalStates as { user?: string; otherPerson?: string } | undefined
   // El extractor guarda el tono como enum crudo en inglés ("affectionate_routine+

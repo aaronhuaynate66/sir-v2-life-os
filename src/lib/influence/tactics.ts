@@ -6,7 +6,7 @@
 // Cialdini / Harvard) le va a ESA persona, por qué (con la frase real que lo
 // sostiene), una línea para probar y cuándo rebotaría.
 //
-// Diferenciador: la técnica no se elige por molde ("para pedir un aumento usá X"),
+// Diferenciador: la técnica no se elige por molde ("para pedir un aumento usa X"),
 // sino por el patrón real de la contraparte en el sustrato vivo de SIR.
 //
 // GUARDRAIL: solo la versión HONESTA de cada técnica. Nada de escasez fabricada,

@@ -216,7 +216,7 @@ export default function DecidirPage() {
 
 // 14·M2 — premortem forzado. En decisiones que lo ameritan (irreversibles o
 // veredicto no-go), pide imaginar el fracaso ANTES de mostrar la recomendación
-// completa. Activa Sistema 2. El premortem es TUYO (lo escribís vos); "Pensarlo
+// completa. Activa Sistema 2. El premortem es TUYO (lo escribes tú); "Pensarlo
 // con SIR" corre el premortem asistido (reusa /api/self/premortem, grounded en
 // tu norte + objetivos + conflictos abiertos) para SEMBRAR el peor caso — no
 // para reemplazar tu pensamiento.

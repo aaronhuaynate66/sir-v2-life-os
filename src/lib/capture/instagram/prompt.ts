@@ -46,7 +46,7 @@ interesar", reels o barras de búsqueda. NADA de eso es parte del perfil.
 - Un texto tipo "Fandub @otra.cuenta" que está en una miniatura/post NO es la bio.
   La bio es SOLO la que está pegada debajo del displayName, arriba de los botones
   (Seguir/Mensaje) o de los contadores.
-- Si dudás si un texto es la bio o viene de un post -> es post -> IGNORALO ->
+- Si dudas si un texto es la bio o viene de un post -> es post -> IGNORALO ->
   bio=null antes que agarrar el equivocado.
 
 QUE BUSCAR EN LA IMAGEN:
@@ -96,10 +96,10 @@ QUE BUSCAR EN LA IMAGEN:
      * "234M" -> 234000000
    - null si el numero no es legible.
    - NO usar coma como separador en el JSON final (debe ser entero JSON).
-   - PRECISION DE DIGITOS: leé el número DÍGITO POR DÍGITO, no "de un vistazo".
+   - PRECISION DE DIGITOS: lee el número DÍGITO POR DÍGITO, no "de un vistazo".
      Un 3 y un 5, un 1 y un 7, un 0 y un 8 se confunden fácil en baja resolución.
-     Si CUALQUIER dígito es ambiguo, NO adivines: bajá confidence a 'medium' y
-     anotá en rawObservations cuál contador dudás ("followers 1?43 — 2do dígito
+     Si CUALQUIER dígito es ambiguo, NO adivines: baja confidence a 'medium' y
+     anota en rawObservations cuál contador dudás ("followers 1?43 — 2do dígito
      borroso"). NUNCA redondees ni "completes" un dígito que no ves nítido.
 
 8. isVerified
@@ -123,7 +123,7 @@ QUE BUSCAR EN LA IMAGEN:
       * ES: "its_almendrita, adrian.prog y 12 más siguen esta cuenta"
       * ES: "Seguido por its_almendrita y adrian.prog"
       * EN: "Followed by its_almendrita, adrian.prog and 12 others"
-    - Copiá esa línea COMPLETA y LITERAL (los handles nombrados + el "y N más").
+    - Copia esa línea COMPLETA y LITERAL (los handles nombrados + el "y N más").
     - NO la reescribas, NO la resumas, NO expandas el "N más" a una lista.
     - null si NO aparece esa línea (cuenta propia, sin seguidores en común,
       o no visible en el recorte). NUNCA inventes handles de seguidores en común.
@@ -137,7 +137,7 @@ REGLAS DE CONFIANZA:
 REGLAS GENERALES:
 
 - Si la imagen NO es un perfil de Instagram (puede ser un post, un story,
-  o una pantalla de busqueda), igual respondé el JSON, con handle=""
+  o una pantalla de busqueda), igual responde el JSON, con handle=""
   y confidence='low' y explicacion en rawObservations.
 - rawObservations: notas sobre campos cortados, ambiguedades, etc.
 
@@ -164,7 +164,7 @@ Aplica tambien a handle:
 
 Si MENOS del 50% de los campos son legibles:
 - confidence='low'
-- rawObservations: explicá EXACTAMENTE que partes son ilegibles
+- rawObservations: explica EXACTAMENTE que partes son ilegibles
   ("@handle borroso, contadores cortados, bio no visible").
 
 CRITICO:
