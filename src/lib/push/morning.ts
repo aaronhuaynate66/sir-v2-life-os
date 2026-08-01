@@ -147,7 +147,7 @@ export interface MorningSignal {
   /** Entidad concreta detrás de la señal, cuando el caller la conoce. Es lo que
    *  habilita los botones del hilo ("✅ Ya lo hice" necesita el id de la tarea).
    *  Sin ella la señal se muestra igual, solo que sin acción. */
-  entity?: { kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit' | 'persona_log'; id: string; name?: string }
+  entity?: { kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit' | 'persona_log' | 'deal'; id: string; name?: string }
 }
 
 /** Ids de las entidades detrás de las señales. Opcionales: el brief funciona
@@ -165,6 +165,9 @@ export interface MorningEntities {
   /** Señal de `opportunity_signals` detrás del slot `opportunity` → habilita los
    *  botones "registrar como oportunidad" / "no es negocio". */
   opportunity?: { id: string; name?: string }
+  /** Deal del encuentro que avisa `encuentroConDeal` → habilita "prepárame qué
+   *  pedirle". `name` es la PERSONA, no el deal: el botón habla de a quién ve. */
+  encuentroDeal?: { id: string; name?: string }
 }
 
 export interface MorningPush {
@@ -363,7 +366,12 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // PEDIR el registro va primero de lo relacional: es lo unico que necesita que el
   // conteste HOY, mientras se acuerda de como estuvo.
   add(input.pedirRegistro, 'pedirRegistro', 'gente', ent.personaLog ? { kind: 'persona_log', ...ent.personaLog } : undefined)
-  add(input.encuentroConDeal, 'encuentroConDeal', 'gente')
+  // Con la ENTIDAD del deal: sin ella esta señal era texto puro y CERO botones.
+  // Medido el 1-ago: le avisó "hoy te cruzas con Miluska — Web multiinformativa,
+  // la acción lleva 3 días vencida" y no le ofreció nada que tocar, aunque SIR ya
+  // sabe redactar. Avisar de una oportunidad sin darle la acción es el problema
+  // que Aaron nombró: *"no veo productividad"*.
+  add(input.encuentroConDeal, 'encuentroConDeal', 'gente', ent.encuentroDeal ? { kind: 'deal', ...ent.encuentroDeal } : undefined)
   add(input.afectoCaida, 'afectoCaida', 'gente')
   add(input.relationshipNudge, 'relationshipNudge', 'gente', ent.relationshipPerson ? { kind: 'person', ...ent.relationshipPerson } : undefined)
   add(input.momentResolution, 'momentResolution', 'gente', ent.moment ? { kind: 'moment', ...ent.moment } : undefined)

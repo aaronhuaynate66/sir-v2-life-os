@@ -323,6 +323,38 @@ export async function runBriefAction(
         )
         return { toast: '🚀 Ahí va el próximo paso', reply }
       }
+      case 'deal_prep': {
+        // El pedido CONCRETO para un encuentro que ya va a pasar. Distinto de
+        // `person_draft` a propósito: ahí SIR escribe un mensaje cálido para
+        // mandar; acá Aaron ya va a estar frente a la persona y lo que necesita
+        // es QUÉ pedirle y cómo aterrizarlo, no un saludo.
+        if (!opts.askSirText) return { toast: 'No puedo prepararlo ahora.' }
+        const { data, error } = await supabase
+          .from('deals')
+          .select('title, client_org, stage, next_action, amount, currency, scope, notes, contact_person_id')
+          .eq('user_id', userId).eq('id', ref).maybeSingle()
+        if (error) return { toast: 'No pude leer la oportunidad.' }
+        const d = (data ?? null) as null | Record<string, unknown>
+        if (!d) return { toast: 'Esa oportunidad ya no está.' }
+        let quien = 'esa persona'
+        if (d.contact_person_id) {
+          const { data: p } = await supabase.from('people').select('name')
+            .eq('user_id', userId).eq('id', d.contact_person_id as string).maybeSingle()
+          quien = ((p as { name?: string } | null)?.name) ?? quien
+        }
+        const monto = d.amount ? ` Valor estimado: ${d.currency ?? ''} ${d.amount}.` : ''
+        const reply = await opts.askSirText(
+          `Voy a cruzarme con ${quien} y tengo con ella la oportunidad "${d.title}"`
+          + `${d.client_org ? ` (${d.client_org})` : ''}, en etapa "${d.stage}".`
+          + `${d.next_action ? ` Lo que sigue es: ${String(d.next_action).slice(0, 200)}.` : ''}`
+          + `${d.scope ? ` Alcance: ${String(d.scope).slice(0, 200)}.` : ''}${monto}`
+          + ' Dame EXACTAMENTE: (1) la frase con la que le saco el tema sin que suene a venta,'
+          + ' (2) las 2 preguntas que necesito que me responda para poder avanzar,'
+          + ' (3) el compromiso concreto con el que quiero cerrar la conversación.'
+          + ' Breve, en mi voz, listo para usar hoy. Nada de teoría de ventas.',
+        )
+        return { toast: `🎯 Qué pedirle a ${quien.split(/\s+/)[0]}`, reply }
+      }
       case 'opp_reg': return await opportunityRegister(supabase, userId, ref, now)
       case 'opp_no': return await opportunityDismiss(supabase, userId, ref, now)
       // El lote de organizaciones lleva su estado en el TEXTO del mensaje, no en

@@ -159,11 +159,23 @@ function cuando(d: number, fechaRef: string): string {
  * ventana). Avisar "vas a ver a X y tienes un deal con ella" cuando no hay nada que
  * hacer es ruido; el valor está en "la vas a ver Y le debes algo".
  */
-export function encuentroConDealLine(encuentros: readonly Encuentro[], hoy: string): string | null {
+/**
+ * El encuentro del que HABLA la línea. PURO. null si la línea se calla.
+ *
+ * Existe para que el botón del brief apunte al MISMO encuentro que el texto. Si
+ * el caller volviera a filtrar por su cuenta, un cambio en el criterio de
+ * `encuentroConDealLine` dejaría el botón apuntando a otro deal — y un botón que
+ * hace algo distinto de lo que dice el mensaje es peor que no tener botón.
+ */
+export function encuentroDestacado(encuentros: readonly Encuentro[]): Encuentro | null {
   const conPendiente = (encuentros ?? []).filter((e) =>
     e.atraso !== null && e.atraso >= -VENTANA_DIAS)
-  if (conPendiente.length === 0) return null
-  const e = conPendiente[0]
+  return conPendiente[0] ?? null
+}
+
+export function encuentroConDealLine(encuentros: readonly Encuentro[], hoy: string): string | null {
+  const e = encuentroDestacado(encuentros)
+  if (!e) return null
 
   const fechaEvento = new Date(Date.parse(`${hoy}T00:00:00Z`) + e.dias * DAY).toISOString().slice(0, 10)
   const quien = e.via ? `${e.personName} (${e.via})` : e.personName
