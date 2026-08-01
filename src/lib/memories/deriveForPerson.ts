@@ -7,6 +7,7 @@
 // comportamiento respecto del original; solo devuelve un resultado tipado en
 // vez de NextResponse.
 
+import { esColumnaInexistente } from '@/lib/supabase/columnaFaltante'
 import { complete } from '@/lib/llm'
 
 import type { createClient } from '@/lib/supabase/server'
@@ -75,12 +76,16 @@ async function fetchExistingDerived(
   }
   let hasObsoleteCol = true
   let hasPrivateCol = true
+  // Mismo criterio que `memories/fetch.ts`: el reintento sin columna es SOLO
+  // para la columna que falta, no para cualquier error. Con `if (error)` a secas,
+  // un timeout marcaba `hasPrivateCol = false` y el resto de la función seguía
+  // creyendo que la privacidad no existe en el esquema.
   let { data, error } = await build(true, true)
-  if (error) {
+  if (esColumnaInexistente(error)) {
     hasPrivateCol = false
     ;({ data, error } = await build(true, false))
   }
-  if (error) {
+  if (esColumnaInexistente(error)) {
     hasObsoleteCol = false
     ;({ data, error } = await build(false, false))
   }
