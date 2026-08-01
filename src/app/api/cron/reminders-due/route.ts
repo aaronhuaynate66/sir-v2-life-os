@@ -11,6 +11,8 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { filasOFalla } from '@/lib/cron/consulta'
+import { puedeMarcarseAvisado, resumenDeEntrega, type Entrega } from '@/lib/push/entrega'
+import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
 import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
@@ -83,24 +85,65 @@ export async function GET(req: NextRequest) {
   const tgOwnerId = process.env.TELEGRAM_OWNER_USER_ID?.trim() || null
   const tgChat = process.env.TELEGRAM_ALLOWED_CHAT_ID?.trim() || null
 
+  // ═══ `notified_at` SIGNIFICA "SE LE DIJO", NO "SE INTENTÓ DECIRLE" ══════════
+  //
+  // Antes se marcaba SIEMPRE. La intención era no repetir el aviso, pero el efecto
+  // era que **un aviso que no llegó se cerraba para siempre**. Y no había forma de
+  // saberlo: `pushToUser` devuelve `{ sent, failed }` y se lo llamaba con `void`,
+  // y el envío de Telegram vivía en un `catch {}` que se comía el error.
+  //
+  // Medido el 1-ago-2026: la ÚNICA suscripción de Web Push es de Apple y es del
+  // 13-jun (esas caducan). Si esa falla y Telegram tropieza, el recordatorio del
+  // examen del IPD del 7-ago —8:10 am, ayuno de 8 h, Anexo 2 impreso— quedaba
+  // marcado como avisado y el examen se pasaba en silencio.
+  //
+  // Ahora: si ningún canal entregó, se deja ABIERTO y mañana se reintenta.
+  // Reintentar es molesto; perder el examen que habilita el Mundial no tiene
+  // arreglo. [[fechas-clave-de-aaron]]
   let notified = 0
+  let sinEntregar = 0
   for (const r of rows) {
     const slug = r.related_person_id ? slugById.get(r.related_person_id) : null
-    void pushToUser(r.user_id, {
-      title: 'SIR · Recordatorio',
-      body: textoRecordatorio(r.text, r.due_at, nowMs),
-      url: slug ? `/relaciones/${slug}` : '/panel',
-      tag: `reminder-${r.id}`,
-      requireInteraction: false,
-    })
-    // Telegram al dueño (fail-open: no rompe el cron si falla el envío).
-    if (tgReady && tgChat && tgOwnerId && r.user_id === tgOwnerId) {
-      try { await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${textoRecordatorio(r.text, r.due_at, nowMs)}`) } catch { /* fail-open */ }
+    const cuerpo = textoRecordatorio(r.text, r.due_at, nowMs)
+    const entregas: Entrega[] = []
+
+    try {
+      const res = await pushToUser(r.user_id, {
+        title: 'SIR · Recordatorio',
+        body: cuerpo,
+        url: slug ? `/relaciones/${slug}` : '/panel',
+        tag: `reminder-${r.id}`,
+        requireInteraction: false,
+      })
+      entregas.push({
+        canal: 'web-push',
+        entregado: res.sent > 0,
+        ...(res.sent > 0 ? {} : { detalle: `sent=0 failed=${res.failed} disabled=${res.disabled}` }),
+      })
+    } catch (e) {
+      entregas.push({ canal: 'web-push', entregado: false, detalle: String(e).slice(0, 100) })
     }
-    // Marcar como notificado inmediatamente para no re-disparar aunque el push falle.
-    await supabase.from('reminders').update({ notified_at: new Date().toISOString() }).eq('id', r.id)
-    notified++
+
+    if (tgReady && tgChat && tgOwnerId && r.user_id === tgOwnerId) {
+      try {
+        await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${cuerpo}`)
+        entregas.push({ canal: 'telegram', entregado: true })
+      } catch (e) {
+        entregas.push({ canal: 'telegram', entregado: false, detalle: String(e).slice(0, 100) })
+      }
+    }
+
+    const resumen = resumenDeEntrega(entregas)
+    if (resumen) reportApiError(new Error(`reminder ${r.id}: ${resumen}`), { route: 'cron/reminders-due' })
+
+    if (puedeMarcarseAvisado(entregas)) {
+      await supabase.from('reminders').update({ notified_at: new Date().toISOString() }).eq('id', r.id)
+      notified++
+    } else {
+      // Queda abierto a propósito: el próximo tick lo reintenta.
+      sinEntregar++
+    }
   }
 
-  return NextResponse.json({ processed: rows.length, notified })
+  return NextResponse.json({ processed: rows.length, notified, sinEntregar })
 }
