@@ -109,6 +109,8 @@ export interface MorningInput {
    *  porque cambia cómo hay que leer todo lo demás: si WhatsApp está caído, la
    *  ausencia de señales relacionales no significa que no pasó nada. */
   readerSilence?: string
+  /** Un trabajo automático se quedó sin dejar evidencia. Ver `lib/cron/salud`. */
+  cronsMudos?: string
   /**
    * TENDENCIA cardíaca. Solo el canal 'manana' de `cardioSurface` llega acá: lo
    * urgente ya se mandó solo, en el momento en que entró la medición, y no pasa
@@ -314,6 +316,13 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //      gente" no significa que no pasó nada — significa que SIR no está viendo.
   //      Nació de los 7 días ciegos del 22→29 jul.
   add(input.readerSilence, 'readerSilence', 'hoy')
+
+  // 0---. UN TRABAJO MÍO SE QUEDÓ MUDO. Va junto al silencio del reader y por la
+  //       misma razón: cambia cómo hay que leer el resto. Si el motor que vigila
+  //       las relaciones no corrió en 3 días, la ausencia de alertas sobre su
+  //       gente no es calma — es ceguera. `status-diff` se saltó el 26, 30 y 31
+  //       de julio de 2026 y nadie lo notó en 6 días. [[alarma-silencio-reader-apagada]]
+  add(input.cronsMudos, 'cronsMudos', 'hoy')
 
   // 0-. CÓMO VIENE EL CUERPO. Va primero porque enmarca todo lo demás: si hoy se
   //     pospuso algo por falta de combustible, hay que decirlo ANTES de la lista.
