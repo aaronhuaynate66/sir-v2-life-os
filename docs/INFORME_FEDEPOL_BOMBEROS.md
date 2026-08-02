@@ -37,25 +37,16 @@ estamos proponiéndole algo a bomberos — bomberos ya dijo que sí en principio
 través del jefe del área que corresponde. Lo que falta es la contraparte formal
 de FEDEPOL para que ese "sí" se pueda convertir en algo institucional.
 
-## 3. Por qué esto vale más que el camino formal
+## 3. Por qué conviene aprovechar esta ventana
 
-El procedimiento que ya conocíamos es lento y de abajo hacia arriba:
+El camino formal que ya conocemos es de abajo hacia arriba:
 
 > **carta de interés (FEDEPOL → Intendencia Nacional de Bomberos) → mesa de trabajo
 > → convenio marco.**
 
-Una reunión en el Comando General, con alguien cercano al Comandante General
-adentro, **entra por arriba**. No reemplaza al convenio —ese sigue siendo el
-instrumento formal— pero puede hacer que la mesa de trabajo se abra por decisión
-del comando en vez de por trámite acumulado.
-
-Y hay una razón concreta para que el destino sea ese nivel. El Capitán Iván lo
-explicó en 2025:
-
-> *"El cuerpo de bomberos como bomberos no tiene mucha partida. **Como intendencia
-> tiene un montón**, pero como bomberos no, y nosotros somos como bomberos."*
-
-**El presupuesto vive arriba.** Por eso importa quién nos recibe.
+Una reunión en el Comando General no reemplaza ese camino —el convenio sigue siendo
+el instrumento— pero permite presentarlo directamente a quien decide, en vez de
+esperar a que el trámite suba solo.
 
 ## 4. Con quién voy
 
@@ -105,6 +96,12 @@ abierta—. Si se enfría de nuevo, la próxima ventana no se sabe cuándo llega
 | **Delicia Paredes** | Mentora, taekwondo internacional | Va a la reunión |
 | Capitán Iván | Ex oficina CGBVP | **Ya no está en el puesto**; lo reemplazó William |
 | Shian Navarro | Presidente de FEDEPOL | Destinatario de este informe |
+
+**Por qué apuntar al comando y no más abajo (nota interna, no va en el envío):** el
+Capitán Iván te explicó en 2025 que "el cuerpo de bomberos como bomberos no tiene
+mucha partida; como intendencia tiene un montón". El presupuesto vive arriba, y la
+carta del convenio va justo a la Intendencia. Es TU razón para priorizar esta
+reunión — no hace falta explicársela a Shian, que conoce el terreno.
 
 Alta dirección verificada el 2-ago-2026 en
 <https://portal.bomberosperu.gob.pe/alta-direccion/>.
