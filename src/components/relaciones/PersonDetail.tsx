@@ -106,6 +106,7 @@ import { personLogsCsv } from '@/lib/export/adapters'
 import { QUALIFYING_CAPTURE_TYPES } from '@/lib/memories/deriveFromObservations'
 import { MemoriasAsociadasPanel } from './MemoriasAsociadasPanel'
 import { RehearsalHistoryPanel } from '@/components/ensayo/RehearsalHistoryPanel'
+import { DocumentosPanel } from '@/components/documentos/DocumentosPanel'
 import { WhatMattersChips } from './WhatMattersChips'
 import { TensionesFortalezas } from './TensionesFortalezas'
 import { ContradiceNotaCard } from './ContradiceNotaCard'
@@ -1093,6 +1094,11 @@ export function PersonDetail({
       {/* Ensayos anteriores CON esta persona (se auto-oculta si no hay). */}
       <RehearsalHistoryPanel personId={live.id} />
       </CollapsibleSection>
+
+      {/* Entregables: lo que Aaron le va a MANDAR a esta persona. Va ANTES de las
+          notas porque es accionable — un informe listo para copiar pesa más que
+          una descripción. Se auto-oculta si no hay ninguno. */}
+      <DocumentosPanel personId={live.id} />
 
       {live.notes && (
         <Card className="shadow-none mb-4">
