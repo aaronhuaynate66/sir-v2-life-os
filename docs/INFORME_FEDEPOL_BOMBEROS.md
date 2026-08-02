@@ -3,12 +3,11 @@
 **Para:** Shian Navarro, presidente de FEDEPOL
 **De:** Aaron Huaynate
 **Fecha:** lunes 3 de agosto de 2026
-**Asunto:** La Oficina de Deportes del CGBVP ofrece una reunión en el Comando
-General. Necesitamos definir con qué llegamos.
+**Asunto:** El CGBVP manifestó interés en apoyar institucionalmente el Mundial y
+ofrece una reunión en el Comando General. Necesitamos definir qué pone FEDEPOL.
 
-> Borrador armado por SIR (2-ago-2026) con lo que está en los chats de Aaron y con
-> el portal oficial del CGBVP. **Falta una sola cosa que SIR no puede saber: qué se
-> conversó en la llamada con el Teniente** — va en el punto 2, marcado.
+> Borrador armado por SIR (2-ago-2026) con lo que está en los chats de Aaron, lo que
+> él contó de la llamada, y el portal oficial del CGBVP. Revisar antes de enviar.
 
 ---
 
@@ -27,13 +26,16 @@ dijo Jorge, **es muy cercano al Comandante General**, el Brigadier General CBP
 
 ## 2. Qué se conversó con el Teniente
 
-> ⚠️ **COMPLETAR ANTES DE ENVIAR.** SIR no tiene el contenido de la llamada.
-> Conviene que estén tres cosas: qué ofreció o preguntó él, qué le dijiste que
-> FEDEPOL puede aportar, y si quedó algún compromiso de su lado.
+Le conté del Mundial —los **World Firefighters Games 2026**, del **5 al 13 de
+noviembre** en Al Khobar— y **le interesó apoyar institucionalmente**.
 
-También pidió los datos concretos de la competencia — cuándo, dónde y cómo se
-llama— y le compartí los **World Firefighters Games 2026**, del **5 al 13 de
-noviembre** en Al Khobar. Jorge me confirmó después: *"Le ha interesado el tema"*.
+Después me pidió por escrito los datos concretos: cuándo, dónde y cómo se llama.
+Se los mandé. Y Jorge me confirmó por su lado: *"Le ha interesado el tema"*.
+
+**Esto es lo que hay que leer bien: el CGBVP ya manifestó interés en apoyar.** No
+estamos proponiéndole algo a bomberos — bomberos ya dijo que sí en principio, y a
+través del jefe del área que corresponde. Lo que falta es la contraparte formal
+de FEDEPOL para que ese "sí" se pueda convertir en algo institucional.
 
 ## 3. Por qué esto vale más que el camino formal
 
@@ -64,16 +66,20 @@ números — que es exactamente lo que una comandancia va a preguntar.
 
 ## 5. Lo que necesito de FEDEPOL, antes de la reunión
 
-Para no llegar con las manos vacías a un despacho que se abre una vez:
+El CGBVP ya dijo que le interesa apoyar. Lo que puede matar esto no es la falta de
+voluntad de ellos — es que lleguemos al Comando General sin poder responder qué
+pone FEDEPOL. Cuatro definiciones:
 
 1. **¿FEDEPOL emite la carta de interés a la Intendencia Nacional de Bomberos?**
-   Si sí, ¿en qué plazo? Idealmente **antes** de la reunión, para llevarla.
+   Si sí, ¿en qué plazo? Idealmente **antes** de la reunión, para llevarla en mano.
 2. **¿Quién la firma y a quién va dirigida?**
 3. **¿Quién representa a FEDEPOL** en la mesa de trabajo — y ¿puede asistir a la
    reunión en el Comando General?
-4. **¿Qué está dispuesto a poner FEDEPOL sobre la mesa?** (aval institucional,
-   inscripción, cobertura, lo que sea). Una reunión al más alto nivel sin una
-   oferta concreta se agradece y no vuelve.
+4. **¿Qué pone FEDEPOL sobre la mesa?** Es la pregunta que nos van a hacer, porque
+   ellos ya ofrecieron su parte. Conviene tener definido qué significa "apoyo
+   institucional" en concreto y en las dos direcciones: aval y representación
+   oficial, inscripción, uniforme y acreditación, difusión, o gestión de pasajes.
+   Una reunión al más alto nivel sin una oferta concreta se agradece y no vuelve.
 
 ## 6. El antecedente que da la urgencia
 
@@ -92,7 +98,7 @@ abierta—. Si se enfría de nuevo, la próxima ventana no se sabe cuándo llega
 
 | Quién | Rol | Estado |
 |---|---|---|
-| **Tte. William Manuel Llatance** | Jefe, Oficina de Deportes Nacional CGBVP | Muy interesado. Ofreció la reunión. Cercano al Comandante General (según Jorge) |
+| **Tte. William Manuel Llatance** | Jefe, Oficina de Deportes Nacional CGBVP | **Interesado en apoyar institucionalmente.** Ofreció la reunión. Cercano al Comandante General (según Jorge) |
 | **Brig. Gral. Juan Carlos Morales Carpio** | **Comandante General del CGBVP** | Autoridad máxima. Sede: Av. Salaverry 2495, San Isidro |
 | Brig. Gral. José Germán Medina Arzola | Vicecomandante General | — |
 | **Jorge Atarama** | Jefe de la Compañía Salamanca | Hizo la presentación; espera el informe |
