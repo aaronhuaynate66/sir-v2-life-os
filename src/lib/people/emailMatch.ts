@@ -44,7 +44,51 @@ export function matchPersonIdByName(people: PersonMatchRow[], threadName: string
   const hits = people.filter(
     (p) => namesLooselyMatch(name, p.name) || (p.alias ? namesLooselyMatch(name, p.alias) : false),
   )
-  return hits.length === 1 ? hits[0].id : null
+  if (hits.length === 0) return null
+  if (hits.length === 1) return hits[0].id
+
+  // VARIAS COINCIDENCIAS → gana la MÁS ESPECÍFICA, no "ninguna".
+  //
+  // Antes se devolvía null en cuanto había empate, y eso lo rompía una persona
+  // registrada con un solo nombre común. Caso real (2-ago-2026): Aaron tiene un
+  // colega guardado como "William" a secas, y como `namesLooselyMatch` acepta que
+  // uno contenga al otro, ese registro matchea CUALQUIER hilo con "William"
+  // adentro. Al conocer al Tte. William Manuel Llatance, el hilo "William Deportes
+  // Nacional" pegaba con los dos → 2 hits → null → sus mensajes no se atribuían a
+  // nadie. Una persona con nombre de pila suelto se volvía un imán que bloqueaba a
+  // todos sus homónimos.
+  //
+  // La intención original (no atribuir a la ligera, bug "Carolina" del 16-jul) se
+  // conserva: si el mejor puntaje está EMPATADO sigue devolviendo null. Lo que
+  // cambia es que un match claramente mejor ya no queda anulado por uno vago.
+  let mejor: PersonMatchRow | null = null
+  let mejorPuntaje = -1
+  let empatado = false
+  for (const p of hits) {
+    const puntaje = Math.max(especificidad(name, p.name), p.alias ? especificidad(name, p.alias) : -1)
+    if (puntaje > mejorPuntaje) { mejorPuntaje = puntaje; mejor = p; empatado = false }
+    else if (puntaje === mejorPuntaje) empatado = true
+  }
+  return empatado || !mejor ? null : mejor.id
+}
+
+/**
+ * Cuán ESPECÍFICO es un candidato para un nombre de hilo. PURA. Mayor = mejor.
+ *
+ * Escala: igualdad exacta manda sobre todo; después, cuántos tokens comparten; y
+ * a igualdad de tokens, gana el nombre más completo (más tokens propios), porque
+ * "Tte. William Manuel Llatance" es una afirmación más fuerte que "William".
+ */
+export function especificidad(hilo: string, candidato: string): number {
+  const a = (hilo ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+  const b = (candidato ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+  if (!a || !b) return 0
+  if (a === b) return 1000
+  const ta = new Set(a.split(/[^a-z0-9]+/).filter((t) => t.length >= 3))
+  const tb = new Set(b.split(/[^a-z0-9]+/).filter((t) => t.length >= 3))
+  let compartidos = 0
+  for (const t of ta) if (tb.has(t)) compartidos++
+  return compartidos * 10 + Math.min(tb.size, 9)
 }
 
 /**
