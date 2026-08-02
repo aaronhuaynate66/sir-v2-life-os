@@ -15,6 +15,7 @@
 // SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL.
 
 import { NextResponse, type NextRequest, after } from 'next/server'
+import { guardarFotoTelegram } from '@/lib/capture/guardarFotoTelegram'
 import { createClient as createServiceClient, type SupabaseClient } from '@supabase/supabase-js'
 
 import { parseTelegramUpdate, parseTelegramCallback } from '@/lib/telegram/inbound'
@@ -69,7 +70,19 @@ async function handleSocialPhoto(
   let vis
   try { vis = await extractStoryVision({ supabase, userId: ownerId }, base64, normalizeImageMediaType(media.mimeType)) } catch { vis = null }
   if (!vis || !vis.isSocial) {
-    await sendTelegramMessage(chatId, 'Vi la imagen, pero no parece una story/perfil de Instagram o LinkedIn de alguien. Si es de un contacto, dime de quién y lo anoto.')
+    // NO ES UNA STORY → NO SE TIRA. Hasta el 2-ago-2026 acá se respondía "no
+    // parece una story/perfil…" y se hacía `return`: la imagen se descartaba sin
+    // guardarse, sin observación y sin rastro ni en `sir_messages`. Aaron:
+    // *"hay cosas que le envié a SIR por Telegram y no pudo identificar"*.
+    // Un documento, un examen, la báscula o una tarjeta de contacto se perdían.
+    //
+    // Ahora se clasifica y se guarda igual; si no se entiende, queda como
+    // `unknown` con el texto que se le haya podido sacar. No saber qué es NO
+    // puede seguir significando tirarlo. Ver `lib/capture/guardarFotoTelegram`.
+    const g = await guardarFotoTelegram(
+      { supabase, userId: ownerId }, media.bytes, normalizeImageMediaType(media.mimeType), caption, new Date(),
+    )
+    await sendTelegramMessage(chatId, g.respuesta)
     return
   }
 
