@@ -25,7 +25,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan' | 'task_date'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan' | 'task_date' | 'doc_sent'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -45,7 +45,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan', 'task_date']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan', 'task_date', 'doc_sent']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }
@@ -136,6 +136,11 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
       push(btn(first ? `✍️ Escríbele a ${first}` : '✍️ Escríbele', 'person_draft', e.id))
     } else if (e?.kind === 'moment') {
       push(btn('✅ Dar por cerrado', 'moment_close', e.id))
+    } else if (e?.kind === 'documento') {
+      // Un entregable listo y sin enviar es trabajo hecho que todavía no sirvió.
+      // El botón existe para poder APAGAR el reclamo: sin él, el aviso vuelve
+      // cada mañana para siempre y se convierte en ruido que se ignora.
+      push(btn('✅ Ya lo mandé', 'doc_sent', e.id))
     } else if (e?.kind === 'goal' && s.slot === 'metaSinPlan') {
       // Una meta con CERO tareas no necesita "el próximo paso": necesita el plan.
       // Aaron tiene 5 así, dos vencen el 31-ago, y se lo planteé dos veces sin que

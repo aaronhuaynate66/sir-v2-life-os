@@ -16,6 +16,7 @@ import { track, EVENTS } from '@/lib/analytics/track'
 import Link from 'next/link'
 import { ArrowLeft, Camera, Loader2, CheckCircle2, Scale, Moon, Heart, UserPlus, Users, X, UploadCloud, ClipboardPaste, FileText } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
+import { CapturasDeTelegram } from '@/components/captura/CapturasDeTelegram'
 import { RouteSkeleton } from '@/components/skeletons/RouteSkeleton'
 import { useHasHydrated } from '@/hooks/useHasHydrated'
 import { Card, CardContent } from '@/components/ui/card'
@@ -320,6 +321,10 @@ function CapturaIndexContent() {
         <ArrowLeft size={13} strokeWidth={1.75} aria-hidden="true" />
         Volver a Self
       </Link>
+
+      {/* Lo que llegó por Telegram y nadie miraba. Va ARRIBA del formulario
+          porque es lo que ya está esperando, no lo que él viene a subir. */}
+      <CapturasDeTelegram />
 
       <header className="mb-6 sm:mb-8">
         <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary font-sans mb-1">

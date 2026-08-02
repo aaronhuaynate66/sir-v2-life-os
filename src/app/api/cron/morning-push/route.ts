@@ -53,6 +53,7 @@ import { encuentrosDePasos } from '@/lib/relaciones/encuentroDePaso'
 import { trabajosAtrasados, noVerificables, saludDeCronsLine } from '@/lib/cron/salud'
 import { tareaInvisible, tareaInvisibleLine, fechasPropuestas } from '@/lib/objetivos/sinFecha'
 import { metaSinPlan, metaSinPlanLine } from '@/lib/objetivos/metaSinPlan'
+import { filaADocumento, entregablePendiente, entregablePendienteLine } from '@/lib/documentos/tipos'
 import { rowToHealthExam } from '@/lib/health-exams/types'
 import { rowToContactReminder, topContactReminderText } from '@/lib/contact-reminders/types'
 import { rowToContactSignal } from '@/lib/contact-timing/types'
@@ -738,6 +739,24 @@ export async function GET(req: NextRequest) {
       // No se le inventa la fecha —planificar es decisión suya—: se le PIDE.
       // UNA META CON CERO TAREAS. Va con los pasos que ya se traen abajo para el
       // avance, así que no cuesta una consulta extra. Aaron tiene 5 así.
+      // UN ENTREGABLE LISTO Y SIN ENVIAR. Trabajo ya hecho que todavía no sirvió
+      // de nada — el caso de la cotización de Hikvision, redactada hace semanas y
+      // frenada por un dato. Fail-soft: si la tabla 0182 no está aplicada todavía,
+      // el slot simplemente no sale.
+      let entregableText: string | undefined
+      try {
+        const { data: docsRows, error: docsErr } = await admin
+          .from('documents').select('*').eq('user_id', uid).eq('status', 'listo').limit(50)
+        if (docsErr) throw new Error(docsErr.message)
+        const pend = entregablePendiente(
+          ((docsRows ?? []) as Array<Record<string, unknown>>).map(filaADocumento), today,
+        )
+        entregableText = entregablePendienteLine(pend) ?? undefined
+        if (pend) briefEntities.entregable = { id: pend.doc.id, name: pend.doc.title }
+      } catch (e) {
+        reportApiError(e, { route: 'cron/morning-push', step: 'entregable', user: uid.slice(0, 8) })
+      }
+
       let metaSinPlanText: string | undefined
       try {
         const { data: todosPasos, error: mpErr } = await admin
@@ -1367,7 +1386,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, metaSinPlan: metaSinPlanText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, metaSinPlan: metaSinPlanText, entregablePendiente: entregableText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla

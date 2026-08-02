@@ -21,6 +21,7 @@ import dynamic from 'next/dynamic'
 const panelLoad = () => <div className="h-32 rounded-lg border border-border animate-pulse" />
 const GoalMeaning = dynamic(() => import('@/components/objetivos/GoalMeaning').then((m) => ({ default: m.GoalMeaning })), { ssr: false, loading: panelLoad })
 const ObjectivePlanPanel = dynamic(() => import('@/components/objetivos/ObjectivePlanPanel').then((m) => ({ default: m.ObjectivePlanPanel })), { ssr: false, loading: panelLoad })
+const DocumentosPanel = dynamic(() => import('@/components/documentos/DocumentosPanel').then((m) => ({ default: m.DocumentosPanel })), { ssr: false, loading: panelLoad })
 const ExternalSignalsPanel = dynamic(() => import('@/components/objetivos/ExternalSignalsPanel').then((m) => ({ default: m.ExternalSignalsPanel })), { ssr: false, loading: panelLoad })
 const GoalCosts = dynamic(() => import('@/components/objetivos/GoalCosts').then((m) => ({ default: m.GoalCosts })), { ssr: false, loading: panelLoad })
 const GoalMoneyLinked = dynamic(() => import('@/components/objetivos/GoalMoneyLinked').then((m) => ({ default: m.GoalMoneyLinked })), { ssr: false, loading: () => null })
@@ -173,6 +174,9 @@ export default function ObjetivoDetailPage() {
             </header>
 
             <ObjectivePlanPanel goalId={goal.id} />
+            {/* Entregables de este objetivo (el informe a FEDEPOL cuelga del
+                Mundial). Se auto-oculta si no hay ninguno. */}
+            <DocumentosPanel objectiveId={goal.id} />
             <ExternalSignalsPanel goalId={goal.id} />
             <GoalMeaning why={goal.why} milestones={milestones} />
             <GoalCosts goalId={goal.id} relationalNames={epNames} />

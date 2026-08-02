@@ -57,6 +57,8 @@ export interface MorningInput {
   encuentroConDeal?: string
   /** Una meta activa sin UNA sola tarea. Ver `lib/objetivos/metaSinPlan`. */
   metaSinPlan?: string
+  /** Un entregable LISTO que sigue sin enviarse. Ver `lib/documentos/tipos`. */
+  entregablePendiente?: string
   /** "Ayer viste a Diana, ¿cómo te fue?" con las 5 caritas. Ver lib/relaciones/pedirRegistro.ts. */
   pedirRegistro?: string
   /** Cruce chat → tema abierto: un "momento/decisión" abierto que el chat
@@ -150,7 +152,7 @@ export interface MorningSignal {
    *  habilita los botones del hilo ("✅ Ya lo hice" necesita el id de la tarea).
    *  Sin ella la señal se muestra igual, solo que sin acción. */
   entity?: {
-    kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit' | 'persona_log' | 'deal'
+    kind: 'task' | 'person' | 'moment' | 'goal' | 'opportunity' | 'habit' | 'persona_log' | 'deal' | 'documento'
     id: string
     name?: string
     /** Valores que el botón ofrece (hoy: fechas ISO para una tarea sin fecha).
@@ -184,6 +186,8 @@ export interface MorningEntities {
   tareaInvisibleTask?: { id: string; name?: string; opciones?: string[] }
   /** Persona del evento más próximo → habilita el borrador del mensaje. */
   eventoPersona?: { id: string; name?: string }
+  /** Entregable listo y sin enviar → habilita "ya lo mandé". */
+  entregable?: { id: string; name?: string }
 }
 
 export interface MorningPush {
@@ -431,6 +435,10 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // Va en METAS y despues del nudge: es una pregunta, no una urgencia.
   // Antes que el resto de METAS: una meta sin UN paso está más parada que
   // una con pasos atrasados, y traerle el plan es lo que la destraba.
+  // Trabajo YA HECHO que todavía no sirvió de nada: pesa más que una meta sin
+  // plan, porque solo falta apretar enviar. Caso real: la cotización de Hikvision,
+  // redactada hace semanas y frenada por un dato que faltaba.
+  add(input.entregablePendiente, 'entregablePendiente', 'metas', ent.entregable ? { kind: 'documento', ...ent.entregable } : undefined)
   add(input.metaSinPlan, 'metaSinPlan', 'metas', ent.metaSinPlanGoal ? { kind: 'goal', ...ent.metaSinPlanGoal } : undefined)
   add(input.tareaInvisible, 'tareaInvisible', 'metas', ent.tareaInvisibleTask ? { kind: 'task', ...ent.tareaInvisibleTask } : undefined)
   add(input.goalNudge, 'goalNudge', 'metas', ent.goalNudgeGoal ? { kind: 'goal', ...ent.goalNudgeGoal } : undefined)
