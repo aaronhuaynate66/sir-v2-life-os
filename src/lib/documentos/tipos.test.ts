@@ -95,3 +95,25 @@ describe('no revienta', () => {
     for (const [, v] of Object.entries(ETIQUETA_TIPO)) expect(v.length).toBeGreaterThan(3)
   })
 })
+
+// —— El botón del brief (2-ago-2026) ————————————————————————————————————
+// Sin forma de apagar el reclamo, el aviso vuelve cada mañana para siempre y se
+// convierte en el ruido que él ya ignora.
+describe('el entregable en el brief', () => {
+  it('lleva botón para apagarlo', async () => {
+    const { buildSectionButtons } = await import('@/lib/telegram/briefThread')
+    const rows = buildSectionButtons([{
+      slot: 'entregablePendiente', section: 'metas',
+      text: '📄 "Informe a FEDEPOL" está listo hace 3 días…',
+      entity: { kind: 'documento', id: 'doc_1', name: 'Informe a FEDEPOL' },
+    }])
+    const b = rows.flat()[0]
+    expect(b.text).toBe('✅ Ya lo mandé')
+    expect(b.callbackData).toBe('br|doc_sent|doc_1')
+  })
+
+  it('el callback sobrevive ida y vuelta', async () => {
+    const { parseBriefCallback } = await import('@/lib/telegram/briefThread')
+    expect(parseBriefCallback('br|doc_sent|doc_1')).toEqual({ kind: 'doc_sent', ref: 'doc_1' })
+  })
+})

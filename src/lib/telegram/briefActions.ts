@@ -326,6 +326,16 @@ export async function runBriefAction(
         )
         return { toast: '🚀 Ahí va el próximo paso', reply }
       }
+      case 'doc_sent': {
+        // Apagar el reclamo de un entregable. Sin esto el aviso volvería cada
+        // mañana para siempre y se convertiría en el ruido que él ya ignora.
+        const { data, error } = await supabase.from('documents')
+          .update({ status: 'enviado', sent_at: now.toISOString(), updated_at: now.toISOString() })
+          .eq('user_id', userId).eq('id', ref)
+          .select('title').maybeSingle()
+        if (error || !data) return { toast: 'No pude marcarlo, hazlo desde la ficha.' }
+        return { toast: `📤 Enviado: ${(data as { title: string }).title.slice(0, 50)}` }
+      }
       case 'task_date': {
         // Fechar la tarea que estaba invisible. Determinístico: la fecha viene en
         // la `ref` del botón que él tocó, no de una inferencia.
