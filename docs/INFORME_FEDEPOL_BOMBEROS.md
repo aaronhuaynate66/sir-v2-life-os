@@ -1,10 +1,10 @@
-# Informe a FEDEPOL — el CGBVP abrió una puerta arriba
+# Informe a FEDEPOL — acercamiento del CGBVP
 
 **Para:** Shian Navarro, presidente de FEDEPOL
 **De:** Aaron Huaynate
 **Fecha:** lunes 3 de agosto de 2026
-**Asunto:** El CGBVP manifestó interés en apoyar institucionalmente el Mundial y
-ofrece una reunión en el Comando General. Necesitamos definir qué pone FEDEPOL.
+**Asunto:** La Oficina de Deportes Nacional del CGBVP manifestó interés en apoyar
+institucionalmente el Mundial y ofrece una reunión en el Comando General.
 
 > Borrador armado por SIR (2-ago-2026) con lo que está en los chats de Aaron, lo que
 > él contó de la llamada, y el portal oficial del CGBVP. Revisar antes de enviar.
@@ -37,7 +37,7 @@ estamos proponiéndole algo a bomberos — bomberos ya dijo que sí en principio
 través del jefe del área que corresponde. Lo que falta es la contraparte formal
 de FEDEPOL para que ese "sí" se pueda convertir en algo institucional.
 
-## 3. Por qué conviene aprovechar esta ventana
+## 3. Sobre el camino formal
 
 El camino formal que ya conocemos es de abajo hacia arriba:
 
@@ -69,7 +69,7 @@ poder responder por FEDEPOL, necesito dos definiciones:
 Lo demás (quién firma, a quién va dirigida, quién nos representa en la mesa) lo
 vemos apenas tengamos definido esto.
 
-## 6. El antecedente que da la urgencia
+## 6. Antecedente
 
 **3 de julio de 2025** — hace trece meses:
 
