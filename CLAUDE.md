@@ -31,10 +31,24 @@ espera, y esta sesión la vacía.
 
 ## Cómo se trabaja acá
 
-- **Directo a prod**: rama → PR → CI verde → merge → Vercel. Nada de acumular
-  ramas. Las migraciones las aplica el workflow al mergear (esperar a que
-  "Migrate DB (Supabase)" termine antes de probar contra la base; PostgREST
-  tarda ~30 s más en refrescar su schema cache).
+- **Directo a prod**: rama → PR → CI verde → merge → Vercel → **verificar que
+  Vercel desplegó de verdad**. Nada de acumular ramas. Las migraciones las aplica
+  el workflow al mergear (esperar a que "Migrate DB (Supabase)" termine antes de
+  probar contra la base; PostgREST tarda ~30 s más en refrescar su schema cache).
+- **`mergeado` NO significa `en producción`.** El 1-ago-2026, tras varios merges
+  en el día, Vercel empezó a responder *"Deployment rate limited — retry in 24
+  hours"*: seis PRs quedaron en `main` con CI verde y producción se congeló en el
+  séptimo anterior. Los **previews seguían construyendo**, así que desde el PR
+  todo se veía normal. Decirle a Aaron "ya está arreglado" con el código sin
+  desplegar es exactamente el error que él viene marcando.
+  Se comprueba comparando el sha, no el color del check:
+  ```bash
+  gh api "repos/<owner>/<repo>/deployments?per_page=5" \
+    --jq '.[] | "\(.created_at) \(.environment) \(.sha[0:8])"'
+  git rev-parse --short HEAD
+  ```
+  Si el último `Production` no es el HEAD de `main`, **el código no está vivo**.
+  Y agrupar el trabajo del día en menos PRs es lo que evita llegar al tope.
 - **Verificar contra la data, no afirmar de memoria.** Antes de decir "esto está
   vacío / no existe / falta", consultarlo. Varios errores del día salieron de
   concluir desde una ventana parcial.
