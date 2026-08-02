@@ -55,22 +55,19 @@ en los **World Police and Fire Games Alabama 2025**, y armó conmigo el presupue
 de vuelos e inscripciones del Mundial. Aporta el antecedente internacional y los
 números — que es exactamente lo que una comandancia va a preguntar.
 
-## 5. Lo que necesito de FEDEPOL, antes de la reunión
+## 5. Lo que necesito definir con ustedes
 
-El CGBVP ya dijo que le interesa apoyar. Lo que puede matar esto no es la falta de
-voluntad de ellos — es que lleguemos al Comando General sin poder responder qué
-pone FEDEPOL. Cuatro definiciones:
+El CGBVP ya dijo que le interesa apoyar. Para no llegar al Comando General sin
+poder responder por FEDEPOL, necesito dos definiciones:
 
 1. **¿FEDEPOL emite la carta de interés a la Intendencia Nacional de Bomberos?**
-   Si sí, ¿en qué plazo? Idealmente **antes** de la reunión, para llevarla en mano.
-2. **¿Quién la firma y a quién va dirigida?**
-3. **¿Quién representa a FEDEPOL** en la mesa de trabajo — y ¿puede asistir a la
-   reunión en el Comando General?
-4. **¿Qué pone FEDEPOL sobre la mesa?** Es la pregunta que nos van a hacer, porque
-   ellos ya ofrecieron su parte. Conviene tener definido qué significa "apoyo
-   institucional" en concreto y en las dos direcciones: aval y representación
-   oficial, inscripción, uniforme y acreditación, difusión, o gestión de pasajes.
-   Una reunión al más alto nivel sin una oferta concreta se agradece y no vuelve.
+   Si sí, ¿en qué plazo? Lo ideal sería tenerla antes de la reunión.
+2. **¿Qué puede aportar FEDEPOL?** Es lo que nos van a preguntar, porque ellos ya
+   ofrecieron su parte. Puede ser aval y representación oficial, inscripción,
+   acreditación, difusión — lo que corresponda.
+
+Lo demás (quién firma, a quién va dirigida, quién nos representa en la mesa) lo
+vemos apenas tengamos definido esto.
 
 ## 6. El antecedente que da la urgencia
 
