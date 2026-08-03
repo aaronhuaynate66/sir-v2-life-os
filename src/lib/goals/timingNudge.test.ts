@@ -87,3 +87,52 @@ describe('un pendiente VIEJO no se presenta como fresco', () => {
     expect(r).not.toMatch(/hace \d+ días/)
   })
 })
+
+// ═══ EL "HOY" CONGELADO (3-ago-2026, medido en el brief real) ═══
+// `next_action` del objetivo de la relación, escrito el 31-jul: "Conversación con
+// Diana HOY 19:15 (ella te recoge en el Polo)...". La conversación ocurrió ESE día
+// (4/5, paso `hecho`), pero el brief citaba el campo literal y cada mañana le decía
+// que tenía pendiente algo "HOY". Los filtros de edad no lo cazaban: 3 días.
+describe('buildGoalTimingNudge — fechas relativas caducadas', () => {
+  const HOY = new Date('2026-08-03T14:00:00Z') // 09:00 en Lima
+  const diana = (updatedAt: string | null): GoalTimingCandidate => ({
+    personName: 'Diana Carolina',
+    goalTitle: 'Estabilidad emocional y rumbo de la relación',
+    pendingAction: 'Conversación con Diana HOY 19:15 (ella te recoge en el Polo). Antes: escribe tu lista.',
+    signalDetail: 'anda activa hoy',
+    observedAt: '2026-08-03T12:00:00Z',
+    goalUpdatedAt: updatedAt,
+  })
+
+  it('el caso real: avisa que ese "hoy" es del 31-jul y ya pasó', () => {
+    const r = buildGoalTimingNudge([diana('2026-07-31T23:30:00Z')], HOY)!
+    expect(r).toContain('ese "hoy" es del 31-jul')
+    expect(r).toContain('dime en qué quedó')
+    // Y NO se disfraza de aviso de edad genérico.
+    expect(r).not.toMatch(/hace \d+ días/)
+  })
+
+  it('un "hoy" escrito HOY sigue siendo verdad: no avisa nada', () => {
+    const r = buildGoalTimingNudge([diana('2026-08-03T11:00:00Z')], HOY)!
+    expect(r).not.toContain('ya pasó')
+  })
+
+  it('cerca de medianoche en Lima no confunde el día (offset -05:00)', () => {
+    // 2026-08-04T03:00:00Z son las 22:00 del 3-ago en Lima: MISMO día que HOY.
+    const r = buildGoalTimingNudge([diana('2026-08-04T03:00:00Z')], new Date('2026-08-04T04:00:00Z'))!
+    expect(r).not.toContain('ya pasó')
+  })
+
+  it('sin fecha relativa en el texto no inventa el aviso', () => {
+    const sinRelativo = { ...diana('2026-07-31T23:30:00Z'), pendingAction: 'Escribir la lista de límites' }
+    const r = buildGoalTimingNudge([sinRelativo], HOY)!
+    expect(r).not.toContain('ya pasó')
+  })
+
+  it('también caza "mañana" y "esta noche"', () => {
+    for (const txt of ['Verla mañana en el Polo', 'Llamarla esta noche']) {
+      const r = buildGoalTimingNudge([{ ...diana('2026-07-31T23:30:00Z'), pendingAction: txt }], HOY)!
+      expect(r).toContain('ya pasó')
+    }
+  })
+})
