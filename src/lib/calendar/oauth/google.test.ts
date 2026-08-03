@@ -1,7 +1,7 @@
 // SIR V2 — Tests del payload de creación + borrado de eventos de Google.
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { buildGoogleEventPayload, deleteGoogleEvent, updateGoogleEvent } from './google'
+import { buildGoogleEventPatchPayload, buildGoogleEventPayload, deleteGoogleEvent, updateGoogleEvent } from './google'
 
 describe('buildGoogleEventPayload', () => {
   it('día completo (fecha sin hora) → start.date + end.date EXCLUSIVO (+1 día)', () => {
@@ -87,5 +87,50 @@ describe('updateGoogleEvent', () => {
   })
   it('sin id → lanza', async () => {
     await expect(updateGoogleEvent('tok', '  ', { title: 'X', start: '2026-07-20' })).rejects.toThrow()
+  })
+
+  // El bug del 3-ago: la cita del maxilofacial de las 16:00 seguía saliendo como
+  // "todo el día" porque el PATCH no anulaba `start.date`. Google hace patch
+  // semántico y el objeto quedaba con `date` y `dateTime` a la vez.
+  it('convertir a cronometrado manda date:null para que Google borre la fecha', async () => {
+    const f = vi.fn(async (_url: string, init?: RequestInit) => { void init; return new Response(JSON.stringify({ id: 'ev1' }), { status: 200 }) })
+    vi.stubGlobal('fetch', f)
+    await updateGoogleEvent('tok', 'ev1', { title: 'Cirugía', start: '2026-08-03T16:00:00-05:00', end: '2026-08-03T17:00:00-05:00' })
+    const body = JSON.parse(String(f.mock.calls[0]?.[1]?.body))
+    expect(body.start).toEqual({ dateTime: '2026-08-03T16:00:00-05:00', timeZone: 'America/Lima', date: null })
+    expect(body.end.date).toBeNull()
+    // `date: null` tiene que viajar de verdad: si JSON.stringify lo omitiera, Google
+    // dejaría el evento de día completo y el bug volvería en silencio.
+    expect(String(f.mock.calls[0]?.[1]?.body)).toContain('"date":null')
+  })
+
+  it('volver a todo el día anula dateTime y timeZone', async () => {
+    const f = vi.fn(async (_url: string, init?: RequestInit) => { void init; return new Response(JSON.stringify({ id: 'ev1' }), { status: 200 }) })
+    vi.stubGlobal('fetch', f)
+    await updateGoogleEvent('tok', 'ev1', { title: 'Límite', start: '2026-08-10' })
+    const body = JSON.parse(String(f.mock.calls[0]?.[1]?.body))
+    expect(body.start).toEqual({ date: '2026-08-10', dateTime: null, timeZone: null })
+    expect(body.end).toEqual({ date: '2026-08-11', dateTime: null, timeZone: null })
+  })
+})
+
+describe('buildGoogleEventPatchPayload', () => {
+  it('no toca el payload de CREAR (ahí no hay nada que borrar)', () => {
+    const crear = buildGoogleEventPayload({ title: 'X', start: '2026-08-03T16:00:00-05:00' })
+    expect(crear.start).toEqual({ dateTime: '2026-08-03T16:00:00-05:00', timeZone: 'America/Lima' })
+    expect('date' in crear.start).toBe(false)
+  })
+
+  it('el de PATCH agrega el null excluyente', () => {
+    const patch = buildGoogleEventPatchPayload({ title: 'X', start: '2026-08-03T16:00:00-05:00' })
+    expect(patch.start.date).toBeNull()
+    expect(patch.start.dateTime).toBe('2026-08-03T16:00:00-05:00')
+  })
+
+  it('conserva título, descripción y recurrencia', () => {
+    const p = buildGoogleEventPatchPayload({ title: 'Aniversario', start: '2026-08-13', description: 'nota', recurring: true })
+    expect(p.summary).toBe('Aniversario')
+    expect(p.description).toBe('nota')
+    expect(p.recurrence).toEqual(['RRULE:FREQ=YEARLY'])
   })
 })
