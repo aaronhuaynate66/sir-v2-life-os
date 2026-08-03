@@ -20,6 +20,15 @@ export interface CalendarEvent {
   end?: string
   allDay: boolean
   location?: string
+  /**
+   * Descripción/notas del evento en el origen.
+   *
+   * Se propaga para poder distinguir los eventos que **creó SIR** (llevan la marca
+   * "— cargado por SIR" que pone `descripcionParaGoogle`) de los que Aaron hizo a
+   * mano. Eso es lo que autoriza a la limpieza de huérfanos a borrar con un criterio
+   * de título más amplio sin arriesgarse a tocar algo suyo. Ver `huerfanos.ts`.
+   */
+  description?: string
   /** true si la ocurrencia salió de expandir una RRULE. */
   recurring: boolean
   /** Id de la conexión de la que salió (multi-calendario). 'env' para el fallback. */

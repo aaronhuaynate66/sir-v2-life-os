@@ -153,6 +153,9 @@ export async function fetchGoogleCalendarEvents(accessToken: string, fromIso: st
       end: endIso ?? startIso,
       allDay,
       location: it.location?.trim() || undefined,
+      // Se propaga para que la limpieza de huérfanos pueda ver la marca "cargado por
+      // SIR" y así distinguir lo que creó SIR de lo que Aaron hizo a mano.
+      description: it.description?.trim() || undefined,
       recurring: false,
     })
   }
