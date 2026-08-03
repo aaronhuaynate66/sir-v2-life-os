@@ -1,8 +1,9 @@
 # Cotización — Portal de Trade Marketing + Web multiinformativa · Hikvision Perú
 
-> **LISTA PARA ENVIAR.** Aaron confirmó los tres puntos abiertos el 30-jul-2026:
-> **S/ 6,500** el alcance A, **3 semanas** de plazo, **hosting incluido**. Lo único que
-> queda por llenar es su teléfono y el número de cotización, que no están en la base.
+> **LISTA PARA ENVIAR — sin nada pendiente.** Aaron confirmó los tres puntos abiertos
+> el 30-jul-2026: **S/ 6,500** el alcance A, **3 semanas** de plazo, **hosting incluido**.
+> El 3-ago decidió que sale sin consecutivo y sin teléfono en la firma: Miluska ya tiene
+> su WhatsApp y es por ahí que se envía. Fechada 3-ago para que la validez corra completa.
 > Todo lo demás sale de la conversación real con Miluska (mensajes del 27-jul).
 >
 > **De dónde sale cada cosa** (para que no haya nada inventado):
@@ -28,7 +29,7 @@
 > material listo para vender, y tú publicas en el día sin depender de nadie.
 >
 > Te paso 3 alcances para que elijas por presupuesto. El primero se puede tener
-> andando en 3 semanas. ¿Lo vemos mañana o el lunes, como te quede mejor?
+> andando en 3 semanas. ¿Lo vemos esta semana? Dime qué día te queda mejor.
 
 ---
 
@@ -128,5 +129,5 @@ Corto y concreto, porque de esto depende el plazo:
 
 ---
 
-**Aaron Huaynate** · ⟨tu teléfono⟩ · ahuaynate@grupohng.com
-Cotización ⟨N°⟩ (poner el consecutivo) · 30 de julio de 2026
+**Aaron Huaynate** · ahuaynate@grupohng.com
+Cotización · 3 de agosto de 2026 · validez 15 días

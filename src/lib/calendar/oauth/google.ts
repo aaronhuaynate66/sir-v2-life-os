@@ -188,12 +188,22 @@ function addOneDay(dateOnly: string): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
 }
 
+/**
+ * Un extremo (start/end) del evento. `null` es SIGNIFICATIVO en un PATCH: le dice a
+ * Google que BORRE ese campo. Ver `buildGoogleEventPatchPayload`.
+ */
+export interface GoogleEventEnd {
+  date?: string | null
+  dateTime?: string | null
+  timeZone?: string | null
+}
+
 export interface GoogleEventPayload {
   summary: string
   description?: string
   location?: string
-  start: { date?: string; dateTime?: string; timeZone?: string }
-  end: { date?: string; dateTime?: string; timeZone?: string }
+  start: GoogleEventEnd
+  end: GoogleEventEnd
   /** RRULE de recurrencia (ej. ['RRULE:FREQ=YEARLY']). Ausente = evento único. */
   recurrence?: string[]
 }
@@ -235,6 +245,40 @@ export function buildGoogleEventPayload(ev: NewGoogleEvent): GoogleEventPayload 
 }
 
 /**
+ * Igual que `buildGoogleEventPayload`, pero para PATCH: anula EXPLÍCITAMENTE el campo
+ * contrario de `start` y `end`. PURO.
+ *
+ * ═══ POR QUÉ, con el caso real ════════════════════════════════════════════════
+ *
+ * Aaron, 3-ago-2026, con una captura de su Google Calendar: *"¿cómo es que en mi
+ * calendario no me sale la cita del cirujano maxilofacial hoy a las 4?"*.
+ *
+ * SIR la calculaba BIEN — `rangoHorarioDeNota` saca las 16:00 de la nota y
+ * `eventoParaGoogle` devuelve `allDay: false`. Lo que fallaba era el envío.
+ *
+ * Google hace un **patch semántico por objeto anidado**: los campos que no mandas
+ * quedan como estaban. El evento ya existía en Google como "todo el día", o sea con
+ * `start.date`. Al mandarle `start: { dateTime, timeZone }` **sin tocar `date`**, el
+ * objeto terminaba con `date` Y `dateTime` a la vez — y son mutuamente excluyentes.
+ * Google no convierte el evento: se queda de día completo **para siempre**.
+ *
+ * Por eso su examen del IPD del viernes SÍ aparecía a las 08:10 (ese se CREÓ nuevo,
+ * y en un POST no hay `date` previo que estorbe) y la cirugía del lunes no. El mismo
+ * código, dos resultados, según si el evento ya existía. El error subía a
+ * `SyncResult.errores`, que nadie lee.
+ *
+ * La cura es la documentada por Google: mandar `null` para borrar el campo contrario.
+ * Solo en PATCH — en un POST no hay nada que borrar.
+ */
+export function buildGoogleEventPatchPayload(ev: NewGoogleEvent): GoogleEventPayload {
+  const p = buildGoogleEventPayload(ev)
+  /** Si el extremo va con fecha, se anula la hora; si va con hora, se anula la fecha. */
+  const excluyente = (e: GoogleEventEnd): GoogleEventEnd =>
+    e.date !== undefined ? { date: e.date, dateTime: null, timeZone: null } : { ...e, date: null }
+  return { ...p, start: excluyente(p.start), end: excluyente(p.end) }
+}
+
+/**
  * Crea un evento en el calendario `primary` del usuario. Devuelve el id + link
  * de Google. Requiere un access_token con scope `calendar.events`. Lanza si la
  * API responde con error (el caller lo mapea a un mensaje al usuario).
@@ -259,8 +303,10 @@ export async function createGoogleEvent(
 
 /**
  * Actualiza un evento existente en `primary` (PATCH → reemplaza título/fecha/
- * descripción). Reusa el mismo armado de payload que createGoogleEvent. Lanza si
- * la API falla. Requiere scope `calendar.events`.
+ * descripción). Lanza si la API falla. Requiere scope `calendar.events`.
+ *
+ * Usa `buildGoogleEventPatchPayload`, **no** el de crear: sin los `null` explícitos un
+ * evento de "todo el día" no se puede convertir a cronometrado. Ver ahí el caso real.
  */
 export async function updateGoogleEvent(
   accessToken: string,
@@ -272,7 +318,7 @@ export async function updateGoogleEvent(
   const res = await fetch(`${EVENTS_URL}/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildGoogleEventPayload(ev)),
+    body: JSON.stringify(buildGoogleEventPatchPayload(ev)),
   })
   if (!res.ok) {
     const text = await res.text()

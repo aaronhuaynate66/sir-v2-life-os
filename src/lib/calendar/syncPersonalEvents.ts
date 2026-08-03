@@ -206,10 +206,18 @@ export async function syncPendingPersonalEvents(
       await updateGoogleEvent(fresh.token, r.gcal_event_id as string, eventoParaGoogle(r))
       out.actualizados++
     } catch (e) {
-      // Un evento borrado a mano en Google devuelve 404/410. NO se cuenta como fallo
-      // duro ni se limpia el `gcal_event_id`: si Aaron lo borró a propósito, volver a
-      // crearlo sería pelearse con él.
-      out.errores.push(`update ${r.id}: ${e instanceof Error ? e.message.slice(0, 120) : 'error'}`)
+      const msg = e instanceof Error ? e.message : 'error'
+      out.errores.push(`update ${r.id}: ${msg.slice(0, 120)}`)
+      // Un evento borrado a mano en Google devuelve 404/410. Eso NO es un fallo: si
+      // Aaron lo borró a propósito, volver a crearlo sería pelearse con él, y tampoco
+      // se limpia el `gcal_event_id`.
+      //
+      // Todo lo demás SÍ cuenta como fallo. Antes ningún error de update tocaba
+      // `fallidos`, y la ruta responde `ok: fallidos === 0`: el 3-ago los 17 eventos
+      // fueron rechazados con 401 por un token vencido y el endpoint contestó
+      // **`ok: true`**. Un calendario roto que se reporta sano es justo lo que la
+      // regla de honestidad de cobertura del repo prohíbe.
+      if (!/\b(404|410)\b/.test(msg)) out.fallidos++
     }
   }
 

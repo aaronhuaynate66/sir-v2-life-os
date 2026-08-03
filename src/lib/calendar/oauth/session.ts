@@ -75,11 +75,10 @@ export async function ensureFreshGoogleToken(
     return { token: currentPlain, connectionId: conn.id, accountEmail: conn.account_email }
   }
 
+  // A partir de acá el access_token NO sirve: o venció, o no se pudo descifrar. Todo
+  // camino que no consiga uno nuevo devuelve null — ver el porqué en el catch de abajo.
   const refreshPlain = decryptToken(conn.refresh_token)
-  if (!refreshPlain) {
-    // Sin refresh_token: devolvemos el que haya (Google dirá si murió).
-    return currentPlain ? { token: currentPlain, connectionId: conn.id, accountEmail: conn.account_email } : null
-  }
+  if (!refreshPlain) return null
   try {
     const tok = await refreshAccessToken(refreshPlain)
     const newExpiresAt = new Date(nowMs + Math.max(0, (tok.expires_in ?? 3600) - 30) * 1000).toISOString()
@@ -94,7 +93,25 @@ export async function ensureFreshGoogleToken(
       .eq('user_id', userId)
     return { token: tok.access_token, connectionId: conn.id, accountEmail: conn.account_email }
   } catch {
-    // Refresh falló: intenta con el viejo (mejor que nada); si tampoco, null.
-    return currentPlain ? { token: currentPlain, connectionId: conn.id, accountEmail: conn.account_email } : null
+    // ═══ POR QUÉ ACÁ NO SE DEVUELVE EL TOKEN VIEJO SI YA VENCIÓ ════════════════
+    //
+    // Antes este catch devolvía `currentPlain` siempre, "mejor que nada". No era
+    // mejor que nada: era PEOR que null.
+    //
+    // Caso real (3-ago-2026, Aaron: *"¿cómo es que en mi calendario no me sale la
+    // cita del cirujano maxilofacial hoy a las 4?"*). El refresh fallaba con
+    // `invalid_client`, este catch entregaba el access_token **ya expirado**, y
+    // `syncPendingPersonalEvents` salía a empujar 17 eventos que Google rechazó uno
+    // por uno con 401. El llamador nunca vio `sinConexion`, así que el diagnóstico
+    // apuntaba a los eventos en vez de a la credencial.
+    //
+    // Un token vencido no puede escribir nada. Devolver null hace que el llamador
+    // reporte "no hay conexión usable" — que es la verdad y manda a reconectar la
+    // cuenta, que es donde está el problema.
+    //
+    // Y no hay fallback posible: sólo se llega hasta acá cuando el token de arriba ya
+    // NO era vigente (si lo fuera, la función retornó en el early return). Un
+    // "si todavía sirve, úsalo" acá sería código muerto.
+    return null
   }
 }
