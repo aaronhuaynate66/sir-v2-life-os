@@ -573,6 +573,14 @@ export function PersonDetail({
       </div>
 
       {tab === 'hoy' && (<>
+      {/* ENTREGABLES: lo que Aaron le va a MANDAR a esta persona.
+          Va en "Hoy" y arriba de todo, no junto a las Notas. Lo puse ahí primero y
+          la verificación con navegador lo destapó: las Notas viven en la pestaña
+          "Perfil y memoria", así que el panel existía y quedaba escondido en una
+          pestaña que él no abre — el mismo bug que este panel vino a arreglar.
+          Un informe listo para copiar es lo más accionable de la ficha. */}
+      <DocumentosPanel personId={live.id} />
+
       {/* Registrar interacción a 1 TOQUE, en "Hoy" (UX audit hallazgo #6-resto):
           antes solo vivía en "Registro", pero la ficha aterriza en "Hoy" — si
           acabas de ver a la persona, el tono se marca acá mismo. Compacto (sin la
@@ -1094,11 +1102,6 @@ export function PersonDetail({
       {/* Ensayos anteriores CON esta persona (se auto-oculta si no hay). */}
       <RehearsalHistoryPanel personId={live.id} />
       </CollapsibleSection>
-
-      {/* Entregables: lo que Aaron le va a MANDAR a esta persona. Va ANTES de las
-          notas porque es accionable — un informe listo para copiar pesa más que
-          una descripción. Se auto-oculta si no hay ninguno. */}
-      <DocumentosPanel personId={live.id} />
 
       {live.notes && (
         <Card className="shadow-none mb-4">
