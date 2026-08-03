@@ -39,6 +39,7 @@ import { deriveSocialSignal } from '@/lib/social-reader/derive'
 import { buildPersonIndex, matchPerson, type PersonLite } from '@/lib/social-reader/match'
 import { parseWhoIsWhoReply, buildWhoIsWhoKeyboard } from '@/lib/social-reader/whoIsWho'
 import { parseIdentityCallback, handleFromCaption, orgNameFromHandle } from '@/lib/social-reader/askIdentity'
+import { handlePendiente, VENTANA_MINUTOS } from '@/lib/social-reader/preguntaAbierta'
 import { orgSlug, inferParentOrg } from '@/lib/social-reader/entityKind'
 import { parseBriefCallback } from '@/lib/telegram/briefThread'
 import { orgBatchApply, runBriefAction } from '@/lib/telegram/briefActions'
@@ -590,7 +591,37 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const citado = msg.replyTo?.fromBot ? handleFromCaption(msg.replyTo.text) : null
+      // El handle sale del mensaje CITADO… si él usó el gesto de responder.
+      let citado = msg.replyTo?.fromBot ? handleFromCaption(msg.replyTo.text) : null
+
+      // Y si NO lo usó, se reconstruye del hilo. El 2-ago-2026 SIR preguntó de
+      // quién era @pvalera24 y pidió "respóndeme a este mensaje con su nombre".
+      // Aaron escribió "Es pedro Valera" como mensaje normal, sin citar — hizo
+      // exactamente lo que le pidieron. Sin `replyTo` no había handle, el
+      // resolvedor no enganchó, la ficha nunca se creó, y el texto cayó al chat
+      // general donde SIR respondió que Pedro Valera era su médico maxilofacial.
+      // Inventado. Él tuvo que corregirlo: "no nada que ver, estás mezclando cosas".
+      //
+      // No se guarda estado (esa decisión del diseño original sigue en pie): se
+      // mira el hilo que ya existe y se exige que el último mensaje del bot sea
+      // la tarjeta, que sea reciente, y que lo escrito parezca un nombre.
+      if (!citado) {
+        try {
+          const desde = new Date(Date.now() - VENTANA_MINUTOS * 60_000).toISOString()
+          const { data: preg } = await supabase
+            .from('unmatched_social_activity')
+            .select('handle, asked_at')
+            .eq('user_id', ownerId).not('asked_at', 'is', null).gte('asked_at', desde)
+            .order('asked_at', { ascending: false }).limit(5)
+          const p = handlePendiente(
+            ((preg ?? []) as Array<{ handle: string; asked_at: string | null }>)
+              .map((r) => ({ handle: r.handle, askedAt: r.asked_at })),
+            text, new Date(),
+          )
+          if (p) citado = p.handle
+        } catch { /* fail-open: sigue el camino de siempre */ }
+      }
+
       const textoWhois = citado && !/@[a-zA-Z0-9._]{2,30}/.test(text) ? `@${citado} ${text}` : text
       const whois = await resolveWhoIsWho(supabase, ownerId, textoWhois)
       if (whois.handled) { await sendTelegramMessage(msg.chatId, whois.reply); return }
