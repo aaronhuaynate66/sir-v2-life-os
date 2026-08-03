@@ -5,7 +5,18 @@
 export type SuggestionSurface = 'chat' | 'momentos' | 'panel' | 'forecast'
 export type SuggestionStatus = 'pending' | 'accepted' | 'dismissed' | 'done'
 export type SuggestionFeedback = 'up' | 'down'
-export type SuggestionOutcome = 'worked' | 'didnt' | 'unknown'
+/**
+ * Cómo terminó una sugerencia.
+ *
+ * - `worked`  — Aaron la hizo y funcionó.
+ * - `didnt`   — la hizo y no funcionó. Habla del MUNDO.
+ * - `ignored` — no la hizo: pasó su plazo sin que actuara. Habla de la SUGERENCIA,
+ *   y es la señal más valiosa que hay para dejar de repetir lo que no le sirve.
+ *   Se cuenta aparte de `didnt` a propósito: mezclarlas hace que un mal consejo se
+ *   vea como mala suerte. Ver `src/lib/suggestions/outcome.ts`.
+ * - `unknown` — se resolvió pero no se pudo determinar.
+ */
+export type SuggestionOutcome = 'worked' | 'didnt' | 'ignored' | 'unknown'
 
 export interface Suggestion {
   id: string
@@ -37,7 +48,10 @@ export function normalizeFeedback(v: unknown): SuggestionFeedback | null {
   return v === 'up' || v === 'down' ? v : null
 }
 export function normalizeOutcome(v: unknown): SuggestionOutcome | null {
-  return v === 'worked' || v === 'didnt' || v === 'unknown' ? v : null
+  // OJO al agregar un outcome nuevo: si no se lista acá, esta función lo convierte en
+  // `null` EN SILENCIO y el valor llega a la base para que nadie lo lea. Pasó al
+  // sumar 'ignored' (3-ago): la escritura estaba lista y el lector la descartaba.
+  return v === 'worked' || v === 'didnt' || v === 'ignored' || v === 'unknown' ? v : null
 }
 
 /** Mapea una fila cruda de Supabase a Suggestion tipada (tolerante). */

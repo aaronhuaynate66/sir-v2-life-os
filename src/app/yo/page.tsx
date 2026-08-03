@@ -11,6 +11,7 @@ import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { IdentityProfilePanel } from '@/components/yo/IdentityProfilePanel'
 import { BigFiveCard } from '@/components/profiling/BigFiveCard'
 import { RetratoPanel } from '@/components/yo/RetratoPanel'
+import { ContaleASir } from '@/components/yo/ContaleASir'
 import { PersonalTokensPanel } from '@/components/yo/PersonalTokensPanel'
 import { ExportAllPanel } from '@/components/yo/ExportAllPanel'
 import { PushNotificationsPanel } from '@/components/yo/PushNotificationsPanel'
@@ -76,6 +77,13 @@ export default function SelfPage() {
         {/* Quién eres — lo primario, siempre visible. */}
         <RetratoPanel />
         <IdentityProfilePanel />
+        {/* ContaleASir: onboarding de identidad por TEXTO o DICTADO.
+            Estaba TERMINADO y sin montar en ninguna página — una feature completa
+            que nadie podía alcanzar (lo cazó la auditoría del 21-jul y seguía así el
+            3-ago). Va justo debajo del perfil de identidad porque es la forma de
+            LLENARLO: escribes o dictas un párrafo sobre quién eres y arma una
+            propuesta editable que suma a tus anclas sin pisar lo que pusiste a mano. */}
+        <ContaleASir />
         {/* 19·M5 — autoperfil de Aaron (Big Five, consentido por definición). */}
         <BigFiveCard subject="self" title="Tu perfil Big Five" whoAnswers="Responde tú" />
 

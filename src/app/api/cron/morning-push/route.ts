@@ -33,7 +33,7 @@ import { eventosProximosLine } from '@/lib/push/eventosProximos'
 import { detectAffectionDrop, affectionDropLine } from '@/lib/forecast-conductual/affectionDrop'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
-import { contactWasFollowed, contactSuggestionSeed } from '@/lib/suggestions/outcome'
+import { contactWasFollowed, contactSuggestionSeed, sugerenciasIgnoradas } from '@/lib/suggestions/outcome'
 import { sortSpecialDates, formatCountdownPhrase } from '@/lib/dates/specialDates'
 import type { SpecialDate } from '@/types'
 import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
@@ -1218,6 +1218,11 @@ export async function GET(req: NextRequest) {
           .select('id, payload, created_at')
           .eq('user_id', uid).eq('kind', 'contact').eq('status', 'pending')
           .limit(50)
+        // Las que NO se cumplieron se juntan acá para cerrarlas por antigüedad más
+        // abajo: que Aaron IGNORE una sugerencia es la señal de aprendizaje más
+        // valiosa, y hasta el 3-ago se perdía entera (15 filas en el ledger, `outcome`
+        // null en todas). Ver `sugerenciasIgnoradas`.
+        const sinCumplir: Array<{ id: string; createdAt: string }> = []
         for (const s of (pend ?? []) as Array<{ id: string; payload: { personId?: string } | null; created_at: string }>) {
           const pid = s.payload?.personId
           if (!pid) continue
@@ -1231,7 +1236,18 @@ export async function GET(req: NextRequest) {
           ]
           if (contactWasFollowed(s.created_at, times)) {
             await admin.from('suggestions').update({ status: 'done', outcome: 'worked', resolved_at: new Date().toISOString() }).eq('id', s.id)
+          } else {
+            sinCumplir.push({ id: s.id, createdAt: s.created_at })
           }
+        }
+        // Cierre del lado NEGATIVO. En un solo update: son varias y no hay nada que
+        // consultar por fila. `ignored` y no `didnt` — la primera habla de la
+        // sugerencia, la segunda del mundo, y confundirlas ensucia el aprendizaje.
+        const ignoradas = sugerenciasIgnoradas(sinCumplir, now)
+        if (ignoradas.length > 0) {
+          await admin.from('suggestions')
+            .update({ status: 'done', outcome: 'ignored', resolved_at: new Date().toISOString() })
+            .in('id', ignoradas)
         }
       } catch { /* fail-soft: tabla 0153 sin propagar */ }
 

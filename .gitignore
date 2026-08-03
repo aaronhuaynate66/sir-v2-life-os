@@ -50,3 +50,4 @@ identidades*.xlsx
 zz*
 !zz*.ts
 !zz*.tsx
+.gstack/
