@@ -166,8 +166,11 @@ export async function syncPendingPersonalEvents(
   try {
     const desde = new Date(Date.parse(`${desdeYmd(VENTANA_PASADA_DIAS, nowMs)}T00:00:00Z`)).toISOString()
     const hasta = new Date(nowMs + 400 * 86_400_000).toISOString()
+    // `description` viaja porque la limpieza de huérfanos la necesita: es donde está la
+    // marca "cargado por SIR" que distingue lo que creó SIR de lo que Aaron hizo a
+    // mano. Sin ella, el criterio del chip no puede aplicarse. Ver `huerfanos.ts`.
     const enGoogle = (await fetchGoogleCalendarEvents(fresh.token, desde, hasta, 250))
-      .map((e) => ({ id: e.id, title: e.title, start: e.start }))
+      .map((e) => ({ id: e.id, title: e.title, start: e.start, description: e.description }))
     const administrados = filas
       .filter((r) => r.title && r.event_date)
       .map((r) => ({ title: r.title as string, date: String(r.event_date).slice(0, 10), gcalEventId: r.gcal_event_id }))
