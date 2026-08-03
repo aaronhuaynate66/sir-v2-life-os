@@ -29,7 +29,7 @@
 > material listo para vender, y tú publicas en el día sin depender de nadie.
 >
 > Te paso 3 alcances para que elijas por presupuesto. El primero se puede tener
-> andando en 3 semanas. ¿Lo vemos mañana o el lunes, como te quede mejor?
+> andando en 3 semanas. ¿Lo vemos esta semana? Dime qué día te queda mejor.
 
 ---
 
