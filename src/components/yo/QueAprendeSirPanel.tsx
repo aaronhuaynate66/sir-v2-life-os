@@ -48,11 +48,25 @@ export function QueAprendeSirPanel() {
           SIR registra lo que te sugiere y aprende de lo que te sirve. Mientras más le des feedback (👍/👎, confirmar/descartar), mejor afina lo que te propone.
         </p>
 
+        {/* La tercera cifra es `followRate`, NO `workRate`. Al 3-ago el ledger tenía 15
+            sugerencias con 11 ignoradas hasta 12 días: `workRate` habría cantado
+            "100 % funcionaron" con un solo acierto, porque solo divide entre las que
+            tuvieron resultado medido. `followRate` mete en el divisor las que Aaron
+            nunca hizo, que es la verdad de si SIR está sugiriendo bien. */}
         <div className="grid grid-cols-3 gap-2 mb-3">
           <Stat value={sum.total} label="sugerencias" />
           <Stat value={sum.resolved} label="atendidas" />
-          <Stat value={sum.workRate !== null ? `${sum.workRate}%` : '—'} label="funcionaron" />
+          <Stat value={sum.followRate !== null ? `${sum.followRate}%` : '—'} label="las hiciste" />
         </div>
+
+        {sum.ignored > 0 && (
+          <p className="mb-3 text-[11px] text-muted-foreground/70 leading-snug">
+            {sum.ignored === 1
+              ? '1 sugerencia pasó de largo sin que actúes.'
+              : `${sum.ignored} sugerencias pasaron de largo sin que actúes.`}{' '}
+            Eso también le enseña: SIR baja lo que no te sirve.
+          </p>
+        )}
 
         {(sum.up > 0 || sum.down > 0) && (
           <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
@@ -75,9 +89,9 @@ export function QueAprendeSirPanel() {
           </div>
         )}
 
-        {sum.workRate === null && (
+        {sum.followRate === null && (
           <p className="mt-3 text-[11px] text-muted-foreground/60 leading-snug">
-            Todavía no hay resultados medidos — SIR recién empieza a cerrar el loop (se marca «funcionó» cuando actúas sobre una sugerencia).
+            Todavía no hay resultados medidos — SIR recién empieza a cerrar el loop (se marca «funcionó» cuando actúas sobre una sugerencia, y «pasó de largo» cuando se le vence el plazo).
           </p>
         )}
       </CardContent>

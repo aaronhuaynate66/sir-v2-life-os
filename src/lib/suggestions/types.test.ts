@@ -24,6 +24,11 @@ describe('normalizadores', () => {
   it('outcome válido', () => {
     expect(normalizeOutcome('worked')).toBe('worked')
     expect(normalizeOutcome('x')).toBeNull()
+    // 'ignored' TIENE que sobrevivir: si el normalizador no lo lista, el valor llega
+    // a la base y el lector lo convierte en null en silencio. Casi pasó el 3-ago.
+    expect(normalizeOutcome('ignored')).toBe('ignored')
+    expect(normalizeOutcome('didnt')).toBe('didnt')
+    expect(normalizeOutcome('unknown')).toBe('unknown')
   })
   it('isResolvedStatus', () => {
     expect(isResolvedStatus('done')).toBe(true)

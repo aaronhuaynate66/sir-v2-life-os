@@ -32,4 +32,28 @@ describe('summarizeLedger', () => {
     expect(r.total).toBe(0)
     expect(r.byKind).toEqual([])
   })
+
+  // El estado real al 3-ago: 15 sugerencias, 11 de ellas ignoradas hasta 12 días.
+  // `workRate` sola diría "100 % de acierto" con un solo hit; `followRate` no.
+  it('followRate cuenta las ignoradas; workRate no', () => {
+    const r = summarizeLedger([
+      s({ kind: 'contact', status: 'done', outcome: 'worked' }),
+      ...Array.from({ length: 3 }, () => s({ kind: 'contact', status: 'done', outcome: 'ignored' })),
+    ])
+    expect(r.worked).toBe(1)
+    expect(r.ignored).toBe(3)
+    expect(r.didnt).toBe(0)
+    expect(r.workRate).toBe(100) // 1/(1+0) — la vista optimista
+    expect(r.followRate).toBe(25) // 1/(1+0+3) — la honesta
+  })
+
+  it('ignored NO se mezcla con didnt', () => {
+    const r = summarizeLedger([s({ outcome: 'ignored' }), s({ outcome: 'didnt' })])
+    expect(r.ignored).toBe(1)
+    expect(r.didnt).toBe(1)
+  })
+
+  it('followRate null mientras nada se haya cerrado', () => {
+    expect(summarizeLedger([s({}), s({ feedback: 'up' })]).followRate).toBeNull()
+  })
 })
