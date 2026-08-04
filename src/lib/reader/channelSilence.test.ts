@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   diagnoseChannel, channelSilenceLine, HEARTBEAT_DEAD_HOURS, DATA_QUIET_DAYS,
-  type ChannelState,
+  tieneDiagnostico,
+  type ChannelState, type ChannelVerdict,
 } from './channelSilence'
 
 const NOW = new Date('2026-07-29T12:00:00Z')
@@ -152,5 +153,60 @@ describe('channelSilenceLine', () => {
     expect(line).toContain('WhatsApp')
     expect(line).toContain('LinkedIn')
     expect(line.split('📡').length).toBe(2) // una sola línea, un solo icono
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LA PREGUNTA DE AARON DEL 4-ago-2026
+//
+// El brief le dijo "Instagram está corriendo pero hace 4 día(s) que no trae nada"
+// y él contestó: "entonces no entiendo si sirve o no sirve, qué hacemos".
+//
+// La respuesta honesta es que el sistema NO PUEDE saberlo: `background.js` solo
+// hace probe de whatsapp, y el lector de Instagram es un interceptor pasivo que
+// captura únicamente cuando Aaron navega IG. El brief tenía que decirlo.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('canales sin diagnóstico: no insinuar que se vigila lo que no se vigila', () => {
+  const mudo = (channel: string, dias: number): ChannelVerdict => ({
+    channel, kind: 'sin_datos', hoursSinceHeartbeat: 0, daysSinceData: dias,
+  })
+
+  it('WhatsApp SÍ tiene diagnóstico y LinkedIn/Instagram no', () => {
+    expect(tieneDiagnostico('whatsapp')).toBe(true)
+    expect(tieneDiagnostico('teams')).toBe(true)
+    expect(tieneDiagnostico('instagram')).toBe(false)
+    expect(tieneDiagnostico('linkedin')).toBe(false)
+    expect(tieneDiagnostico('INSTAGRAM')).toBe(false)
+  })
+
+  it('el caso real: la línea de Instagram ahora admite que no puede saberlo', () => {
+    const l = channelSilenceLine([mudo('instagram', 4)])!
+    expect(l).toContain('Instagram no trae nada hace 4 día(s)')
+    expect(l).toContain('no se puede saber')
+    expect(l).toContain('pasivo')
+    // Y ya NO afirma que está corriendo y leyendo, que era lo engañoso.
+    expect(l).not.toContain('está corriendo pero')
+  })
+
+  it('WhatsApp mantiene su texto: ahí el latido SÍ significa algo', () => {
+    const l = channelSilenceLine([mudo('whatsapp', 5)])!
+    expect(l).toContain('WhatsApp está corriendo pero hace 5 día(s) que no trae nada')
+    expect(l).not.toContain('no se puede saber')
+  })
+
+  it('mezclados, cada uno con su verdad en la misma línea', () => {
+    const l = channelSilenceLine([mudo('whatsapp', 5), mudo('instagram', 4)])!
+    expect(l).toContain('WhatsApp está corriendo pero')
+    expect(l).toContain('Instagram no trae nada')
+    expect(l).toContain('no se puede saber')
+  })
+
+  it('no cambia nada de las otras ramas (caído, deslogueado, sin latido)', () => {
+    const caido = channelSilenceLine([{ channel: 'instagram', kind: 'caido', hoursSinceHeartbeat: 40, daysSinceData: 9 }])!
+    expect(caido).toContain('dejó de reportar')
+    expect(caido).not.toContain('no se puede saber')
+    const desl = channelSilenceLine([{ channel: 'whatsapp', kind: 'deslogueado', hoursSinceHeartbeat: 1, daysSinceData: 2 }])!
+    expect(desl).toContain('QR')
   })
 })
