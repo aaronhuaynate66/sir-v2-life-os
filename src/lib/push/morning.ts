@@ -33,6 +33,12 @@ export interface MorningInput {
    * Laura del sábado no aparecía. Ver `lib/push/eventosProximos.ts`.
    */
   eventosProximos?: string
+  /** Identidad de `eventosProximos`: el conjunto de eventos que la línea nombra
+   *  (`eventosProximosIdentity`). Sin esto el auto-snooze no puede distinguir
+   *  "la misma boda un día después" de "entró un compromiso nuevo". */
+  eventosProximosKey?: string
+  /** Hay un evento HOY o MAÑANA → la señal no se duerme por racha. */
+  eventosProximosInminente?: boolean
   /** A quién cuidar hoy: el vínculo más urgente de "Reconectar" (persona +
    *  razón, ya formado). SIR sabe a quién estás descuidando; esto lo dice sin
    *  que abras la app. Texto corto ya armado. */
@@ -160,6 +166,16 @@ export interface MorningSignal {
      *  `buildSectionButtons`, que no conoce el "hoy" ni el límite del objetivo. */
     opciones?: string[]
   }
+  /** Identidad EXPLÍCITA de la señal para el silencio, cuando el slot la sabe
+   *  mejor que su propio texto. La usa `eventosProximos`: su línea cambia de
+   *  palabras por el paso del tiempo ("el sábado" → "mañana") pero también
+   *  porque entró un evento nuevo, y hay que distinguir las dos cosas. Ver
+   *  `eventosProximosIdentity`. */
+  identity?: string
+  /** La señal NUNCA se duerme por racha. Para lo que es urgente por definición:
+   *  un compromiso datable que ocurre hoy o mañana no es ruido por más veces
+   *  que se haya dicho. */
+  neverSnooze?: boolean
 }
 
 /** Ids de las entidades detrás de las señales. Opcionales: el brief funciona
@@ -264,13 +280,20 @@ const AGGREGATE_SLOTS = new Set([
   'cycleWeekAhead',      // "coinciden Diana, Aeylin, Nicolle…" — la lista varía a diario
   'metricAlert', 'bodySignal', 'healthWatch',
   'cardioTrend',         // hay una sola por día y su texto lleva los valores del día
-  'eventosProximos',     // "la boda es el sábado" cambia de texto cada día que pasa
   'afectoCaida',         // los números del balance se mueven todos los días
   'examenReciente',      // el "hace N días" cambia cada día que pasa
   'encuentroConDeal',    // el "mañana/hoy" y los días de atraso cambian a diario
   'trainingAdherence',   // "2 de 3 de fuerza" cambia con cada sesión
   'energyNote',
 ])
+// `eventosProximos` ESTUVO acá y por eso se apagó 14 días encima de la semana más
+// cargada de fechas de Aaron (ver `eventosProximosIdentity`). Ahora trae su
+// identidad explícita: el conjunto de eventos que nombra. NO volver a agregarlo —
+// una clave fija por slot solo sirve cuando el contenido resume SIEMPRE el mismo
+// tema, y una agenda no: cambia porque hay compromisos nuevos.
+// Si algún caller olvidara la identidad, el fallback es `slot|topicKey(texto)`,
+// que repite más de lo ideal. Elegido a propósito: repetir es una molestia,
+// callarse le costó una reunión.
 
 /**
  * Identidad de una señal PARA EL SILENCIO. PURA.
@@ -282,8 +305,12 @@ const AGGREGATE_SLOTS = new Set([
  *
  * Para esos resúmenes la identidad es el SLOT. Para el resto, slot + tema, que
  * mantiene separadas dos señales del mismo tipo sobre personas distintas.
+ *
+ * `identity` gana sobre las dos: es para el slot que sabe describirse mejor de
+ * lo que su propio texto permite (`eventosProximos` y su conjunto de eventos).
  */
-export function signalTopicKey(slot: string, text: string): string {
+export function signalTopicKey(slot: string, text: string, identity?: string): string {
+  if (identity) return `slot:${slot}:${identity}`
   return AGGREGATE_SLOTS.has(slot) ? `slot:${slot}` : `${slot}|${topicKey(text)}`
 }
 
@@ -332,8 +359,14 @@ export function buildMorningPush(input: MorningInput): MorningPush {
     slot: string,
     section: BriefSection,
     entity?: MorningSignal['entity'],
+    extra?: { identity?: string; neverSnooze?: boolean },
   ) => {
-    if (s) collected.push({ slot, section, text: s, ...(entity ? { entity } : {}) })
+    if (s) collected.push({
+      slot, section, text: s,
+      ...(entity ? { entity } : {}),
+      ...(extra?.identity ? { identity: extra.identity } : {}),
+      ...(extra?.neverSnooze ? { neverSnooze: true } : {}),
+    })
   }
 
   // 0--. UN CANAL DEL READER ESTÁ MUDO. Va antes que TODO porque cambia cómo hay
@@ -365,7 +398,8 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //     puede requerir PREPARARSE (un regalo, ropa, mover la agenda). El hueco lo
   //     encontró Aaron: su boda de Laura del sábado estaba cargada y no aparecía en
   //     ningún lado, porque `personal_events` solo se leía por el cruce del ciclo.
-  add(input.eventosProximos, 'eventosProximos', 'hoy', ent.eventoPersona ? { kind: 'person', ...ent.eventoPersona } : undefined)
+  add(input.eventosProximos, 'eventosProximos', 'hoy', ent.eventoPersona ? { kind: 'person', ...ent.eventoPersona } : undefined,
+    { identity: input.eventosProximosKey, neverSnooze: input.eventosProximosInminente })
 
   // 1. Aniversarios/fechas especiales: un aniversario HOY es time-critical (no se
   //    puede celebrar tarde) → se mantiene sobre lo relacional-no-urgente.
@@ -464,7 +498,7 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   const muted = new Set(input.mutedTopics ?? [])
   const audible = muted.size === 0
     ? collected
-    : collected.filter((s) => !muted.has(signalTopicKey(s.slot, s.text)) && !muted.has(topicKey(s.text)))
+    : collected.filter((s) => !muted.has(signalTopicKey(s.slot, s.text, s.identity)) && !muted.has(topicKey(s.text)))
 
   const signals = dedupeSignals(audible).slice(0, MAX_PARTS_FULL)
   const parts = signals.map((s) => s.text)

@@ -74,15 +74,18 @@ export function daysBetweenKeys(a: string, b: string): number {
  * @param history   estado previo por `ref` (de brief_sent_signals)
  * @param todayKey  día de Lima YYYY-MM-DD
  * @param refOf     cómo obtener la ref corta de una señal (muteRef del hilo).
- *                  Recibe TEXTO y SLOT: hay señales agregadas (carga afectiva,
- *                  alertas de métrica) cuyo texto cambia cada día sin cambiar de
- *                  tema — sin el slot su ref bailaba y la racha nunca llegaba a 3.
+ *                  Recibe TEXTO, SLOT e IDENTIDAD: hay señales agregadas (carga
+ *                  afectiva, alertas de métrica) cuyo texto cambia cada día sin
+ *                  cambiar de tema — sin el slot su ref bailaba y la racha nunca
+ *                  llegaba a 3. Y hay una (`eventosProximos`) donde el slot solo
+ *                  no alcanza: su lista cambia por el paso del tiempo Y por
+ *                  compromisos nuevos, y esos dos casos deben distinguirse.
  */
 export function applyAutoSnooze(
   signals: MorningSignal[],
   history: BriefSignalHistory[],
   todayKey: string,
-  refOf: (text: string, slot: string) => string,
+  refOf: (text: string, slot: string, identity?: string) => string,
   opts: { maxStreak?: number; snoozeDays?: number } = {},
 ): AutoSnoozeResult {
   const maxStreak = opts.maxStreak ?? MAX_STREAK
@@ -95,9 +98,33 @@ export function applyAutoSnooze(
   const updates: BriefSignalHistory[] = []
 
   for (const s of signals) {
-    const ref = refOf(s.text, s.slot)
-    const key = signalTopicKey(s.slot, s.text)
+    const ref = refOf(s.text, s.slot, s.identity)
+    const key = signalTopicKey(s.slot, s.text, s.identity)
     const h = byRef.get(ref)
+
+    // ═══ LO QUE NO SE CALLA NUNCA ══════════════════════════════════════════
+    //
+    // Una señal marcada `neverSnooze` pasa siempre, incluso si ya estaba
+    // dormida. Es para lo urgente por definición: un compromiso datable que
+    // ocurre hoy o mañana no se vuelve ruido por haberse repetido.
+    //
+    // Nació del 4-ago-2026: el slot de eventos llevaba dormido desde el 3-ago y
+    // no despertaba hasta el 17 — con la reunión en el Comando General ese
+    // mismo día, el examen del IPD del 7 (ayuno de 8 h) y el aniversario con
+    // Diana del 13 adentro de la ventana muerta.
+    //
+    // Se sigue llevando la cuenta de la racha (la telemetría tiene que ser
+    // honesta sobre cuántas veces se dijo) pero `autoSnoozedAt` se limpia: si
+    // venía dormida, esta señal la despierta de verdad y no queda una fila que
+    // la vuelva a tapar mañana.
+    if (s.neverSnooze) {
+      const streak = h?.lastSentDay === todayKey
+        ? h.streakDays
+        : (h && h.lastSentDay === yesterday ? h.streakDays + 1 : 1)
+      visible.push(s)
+      updates.push({ ref, topicKey: key, streakDays: streak, lastSentDay: todayKey, autoSnoozedAt: null })
+      continue
+    }
 
     // ¿Sigue durmiendo? Se despierta cuando pasaron snoozeDays.
     if (h?.autoSnoozedAt) {

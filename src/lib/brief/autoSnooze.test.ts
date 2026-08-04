@@ -150,3 +150,129 @@ describe('applyAutoSnooze — idempotencia', () => {
     expect(segunda.updates[0].streakDays).toBe(2)
   })
 })
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EL FALLO REAL DEL 4-ago-2026, reproducido
+//
+// `slot:eventosProximos` se durmió el 3-ago por racha (streak 4). Con
+// SNOOZE_DAYS=14 no despertaba hasta el 17-ago. Adentro de esa ventana muerta:
+// la reunión en el Comando General del CGBVP (4-ago 11:00, el atajo al apoyo
+// institucional para el Mundial), el examen del IPD del 7-ago con ayuno de 8 h,
+// y el aniversario con Diana del 13-ago.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('eventosProximos: identidad por conjunto + lo inminente no se calla', () => {
+  const LINEA_VIEJA = '📅 Cirugía Maxilofacial — Dr. Campos Soto — mañana · PREPARAR el examen del IPD — el jueves · y 1 más esta semana.'
+  const LINEA_NUEVA = '📅 Reunión en el Comando General (Delicia + Tte. Llatance) — hoy · PREPARAR el examen del IPD — el jueves · y 2 más esta semana.'
+
+  const evSig = (text: string, identity: string, neverSnooze = false): MorningSignal => ({
+    slot: 'eventosProximos', section: 'hoy', text,
+    identity, ...(neverSnooze ? { neverSnooze: true } : {}),
+  })
+
+  /** La fila DORMIDA tal como estaba en prod el 4-ago. */
+  const dormida = (s: MorningSignal): BriefSignalHistory => ({
+    ref: muteRef(s.text, s.slot, s.identity),
+    topicKey: signalTopicKey(s.slot, s.text, s.identity),
+    streakDays: 4, lastSentDay: '2026-08-02', autoSnoozedAt: '2026-08-03',
+  })
+
+  it('el slot YA NO tiene clave fija: dos listas distintas no comparten identidad', () => {
+    // El bug era exactamente esto al revés: con `slot:eventosProximos` (clave fija
+    // por estar en AGGREGATE_SLOTS) estas dos refs eran IGUALES, así que la fila
+    // dormida de la lista vieja silenciaba a la nueva por 14 días.
+    const vieja: MorningSignal = { slot: 'eventosProximos', section: 'hoy', text: LINEA_VIEJA }
+    const nueva: MorningSignal = { slot: 'eventosProximos', section: 'hoy', text: LINEA_NUEVA }
+    expect(signalTopicKey(vieja.slot, vieja.text)).not.toBe('slot:eventosProximos')
+    expect(muteRef(nueva.text, nueva.slot)).not.toBe(muteRef(vieja.text, vieja.slot))
+  })
+
+  it('sin identidad degrada a REPETIR, nunca a callarse 14 días (la decisión, fijada)', () => {
+    // Si un caller olvidara pasar la identidad, el fallback es por contenido: el
+    // texto cambia cada día que pasa ⇒ la racha se reinicia ⇒ repite más de lo
+    // ideal pero NO desaparece. Elegido a propósito: repetir molesta, callarse le
+    // costó una reunión.
+    const ayer: MorningSignal = { slot: 'eventosProximos', section: 'hoy', text: '📅 Examen del IPD — mañana.' }
+    const hoy: MorningSignal = { slot: 'eventosProximos', section: 'hoy', text: '📅 Examen del IPD — hoy.' }
+    const h: BriefSignalHistory = {
+      ref: muteRef(ayer.text, ayer.slot),
+      topicKey: signalTopicKey(ayer.slot, ayer.text),
+      streakDays: 3, lastSentDay: '2026-08-03', autoSnoozedAt: null,
+    }
+    const r = run([hoy], [h], '2026-08-04')
+    expect(r.visible).toHaveLength(1)
+    expect(r.updates[0].streakDays).toBe(1)
+  })
+
+  it('AHORA la identidad separa las dos listas → la reunión del Comando General SALE', () => {
+    const vieja = evSig(LINEA_VIEJA, '2026-08-03~cirugia-maxilofacial|2026-08-06~preparar-examen+1')
+    const nueva = evSig(LINEA_NUEVA, '2026-08-04~reunion-comando-general|2026-08-06~preparar-examen+2')
+    expect(muteRef(nueva.text, nueva.slot, nueva.identity))
+      .not.toBe(muteRef(vieja.text, vieja.slot, vieja.identity))
+    const r = run([nueva], [dormida(vieja)], '2026-08-04')
+    expect(r.visible.map((s) => s.text)).toEqual([LINEA_NUEVA])
+    expect(r.silenced).toHaveLength(0)
+    // Racha desde 1: es una señal nueva, no la continuación de la vieja.
+    expect(r.updates[0].streakDays).toBe(1)
+  })
+
+  it('la MISMA lista un día después sigue contando racha y SÍ se duerme (el anti-repetición no se rompió)', () => {
+    const mismaIdentidad = '2026-08-06~preparar-examen|2026-08-07~examen-ipd+0'
+    const ayer = evSig('📅 … — mañana · … — el jueves.', mismaIdentidad)
+    const hoy = evSig('📅 … — hoy · … — el miércoles.', mismaIdentidad)
+    // Misma identidad ⇒ misma ref, aunque el texto haya cambiado de palabras.
+    expect(muteRef(hoy.text, hoy.slot, hoy.identity)).toBe(muteRef(ayer.text, ayer.slot, ayer.identity))
+    const h: BriefSignalHistory = {
+      ref: muteRef(ayer.text, ayer.slot, ayer.identity),
+      topicKey: signalTopicKey(ayer.slot, ayer.text, ayer.identity),
+      streakDays: 3, lastSentDay: '2026-08-03', autoSnoozedAt: null,
+    }
+    const r = run([hoy], [h], '2026-08-04')
+    expect(r.visible).toHaveLength(0)
+    expect(r.silenced[0].reason).toBe('racha')
+  })
+
+  it('LO INMINENTE NO SE CALLA: un evento de hoy pasa incluso sobre una fila dormida', () => {
+    // La segunda defensa. Aunque la identidad coincidiera con algo dormido, un
+    // compromiso de hoy/mañana tiene que salir.
+    const s = evSig(LINEA_NUEVA, 'misma-identidad+0', true)
+    const r = run([s], [dormida(s)], '2026-08-04')
+    expect(r.visible.map((x) => x.text)).toEqual([LINEA_NUEVA])
+    expect(r.silenced).toHaveLength(0)
+  })
+
+  it('lo inminente tampoco se duerme por racha, y DESPIERTA la fila (no queda tapada mañana)', () => {
+    const s = evSig(LINEA_NUEVA, 'examen-ipd+0', true)
+    const h: BriefSignalHistory = {
+      ref: muteRef(s.text, s.slot, s.identity),
+      topicKey: signalTopicKey(s.slot, s.text, s.identity),
+      streakDays: 9, lastSentDay: '2026-08-03', autoSnoozedAt: '2026-08-01',
+    }
+    const r = run([s], [h], '2026-08-04')
+    expect(r.visible).toHaveLength(1)
+    expect(r.silenced).toHaveLength(0)
+    expect(r.updates[0].autoSnoozedAt).toBeNull()
+    // La racha se sigue contando de verdad: la telemetría no debe mentir sobre
+    // cuántas mañanas seguidas se dijo.
+    expect(r.updates[0].streakDays).toBe(10)
+  })
+
+  it('re-corrida del mismo día no infla la racha de una señal inminente', () => {
+    const s = evSig(LINEA_NUEVA, 'examen-ipd+0', true)
+    const h: BriefSignalHistory = {
+      ref: muteRef(s.text, s.slot, s.identity),
+      topicKey: signalTopicKey(s.slot, s.text, s.identity),
+      streakDays: 2, lastSentDay: '2026-08-04', autoSnoozedAt: null,
+    }
+    const r = run([s], [h], '2026-08-04')
+    expect(r.visible).toHaveLength(1)
+    expect(r.updates[0].streakDays).toBe(2)
+  })
+
+  it('los demás slots agregados NO cambiaron de identidad (sin identidad siguen por slot)', () => {
+    const ciclo: MorningSignal = { slot: 'cycleWeekAhead', section: 'gente', text: 'Coinciden Diana y Aeylin' }
+    const otro: MorningSignal = { slot: 'cycleWeekAhead', section: 'gente', text: 'Coinciden Nicolle y Miluska' }
+    expect(signalTopicKey(ciclo.slot, ciclo.text)).toBe('slot:cycleWeekAhead')
+    expect(muteRef(otro.text, otro.slot)).toBe(muteRef(ciclo.text, ciclo.slot))
+  })
+})

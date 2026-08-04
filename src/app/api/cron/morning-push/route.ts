@@ -29,7 +29,7 @@ import { diagnoseChannel, channelSilenceLine } from '@/lib/reader/channelSilence
 import { evaluarCardio } from '@/lib/health/cardioNotify'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
 import { evaluarPrecondiciones, lineaTrabada } from '@/lib/goals/precondicion'
-import { eventosProximosLine } from '@/lib/push/eventosProximos'
+import { eventosProximosLine, eventosProximosIdentity, hayEventoInminente } from '@/lib/push/eventosProximos'
 import { detectAffectionDrop, affectionDropLine } from '@/lib/forecast-conductual/affectionDrop'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
 import { buildGoalTimingNudge } from '@/lib/goals/timingNudge'
@@ -217,6 +217,11 @@ export async function GET(req: NextRequest) {
       const briefEntities: MorningEntities = {}
 
       let eventosProximosText: string | undefined
+      // Identidad e inminencia van al lado del texto: sin ellas el auto-snooze
+      // apagó este slot 14 días encima de la semana más cargada de fechas del
+      // año (4-ago-2026). Ver `eventosProximosIdentity`.
+      let eventosProximosKey: string | undefined
+      let eventosProximosInminente = false
       // Se guardan para reusarlos en el cruce CRM × agenda × grafo de más abajo, en
       // vez de volver a pedir la misma tabla.
       let evRowsParaCrm: Array<{ title: string | null; event_date: string | null; person_id: string | null }> = []
@@ -246,6 +251,8 @@ export async function GET(req: NextRequest) {
           personName: e.person_id ? nombrePorId.get(e.person_id) ?? null : null,
         }))
         eventosProximosText = eventosProximosLine(evs, today) ?? undefined
+        eventosProximosKey = eventosProximosIdentity(evs, today) ?? undefined
+        eventosProximosInminente = hayEventoInminente(evs, today)
         // Si el evento MÁS PRÓXIMO es con alguien, ofrecerle el borrador. Un evento
         // con persona es la ventana natural para escribirle, y SIR ya sabe hacerlo
         // (`person_draft`) — solo que esta señal nunca lo ofrecía.
@@ -1402,7 +1409,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, metaSinPlan: metaSinPlanText, entregablePendiente: entregableText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, metaSinPlan: metaSinPlanText, entregablePendiente: entregableText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, eventosProximosKey, eventosProximosInminente, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla
@@ -1471,7 +1478,7 @@ export async function GET(req: NextRequest) {
             push = buildMorningPush({
               ...briefInput,
               energyNote: gate.note || undefined,
-              mutedTopics: [...mutedTopics, ...gate.deferred.map((s) => signalTopicKey(s.slot, s.text))],
+              mutedTopics: [...mutedTopics, ...gate.deferred.map((s) => signalTopicKey(s.slot, s.text, s.identity))],
             })
             energyDeferred += gate.deferred.length
           }
@@ -1518,11 +1525,11 @@ export async function GET(req: NextRequest) {
         const streakByRef = new Map(snoozeUpdates.map((u) => [u.ref, u]))
         const nowIso = new Date().toISOString()
         const rows = [...push.signals.map((s) => {
-          const ref = muteRef(s.text, s.slot)
+          const ref = muteRef(s.text, s.slot, s.identity)
           const st = streakByRef.get(ref)
           streakByRef.delete(ref)
           return {
-            user_id: uid, ref, topic_key: signalTopicKey(s.slot, s.text),
+            user_id: uid, ref, topic_key: signalTopicKey(s.slot, s.text, s.identity),
             sample_text: s.text.slice(0, 500), section: s.section, slot: s.slot,
             sent_at: nowIso,
             streak_days: st?.streakDays ?? 1,

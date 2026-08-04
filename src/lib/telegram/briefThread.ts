@@ -56,8 +56,8 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
  *  Toma el SLOT además del texto: sin él, la señal de carga afectiva cambiaba de
  *  ref cada día (su lista de nombres varía) y la racha del auto-snooze se
  *  reiniciaba sola. `slot` es opcional por compatibilidad con los tests viejos. */
-export function muteRef(text: string, slot = ''): string {
-  const key = slot ? signalTopicKey(slot, text) : signalTopicKey('', text)
+export function muteRef(text: string, slot = '', identity?: string): string {
+  const key = slot ? signalTopicKey(slot, text, identity) : signalTopicKey('', text, identity)
   let h = 0
   for (let i = 0; i < key.length; i++) h = (Math.imul(31, h) + key.charCodeAt(i)) | 0
   return (h >>> 0).toString(36)
@@ -169,7 +169,7 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
   // semanas y volver cada mañana. Una tarea con fecha o un cumpleaños se resuelven
   // solos — ofrecer callarlos sería ruido. Uno por mensaje: más botones, más ruido.
   const mutable = MUTABLE_SLOTS.map((slot) => signals.find((s) => s.slot === slot)).find(Boolean)
-  if (mutable) push(btn('🔕 No me lo repitas', 'mute', muteRef(mutable.text, mutable.slot)))
+  if (mutable) push(btn('🔕 No me lo repitas', 'mute', muteRef(mutable.text, mutable.slot, mutable.identity)))
   return rows
 }
 
