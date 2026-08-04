@@ -39,7 +39,7 @@ interface Status {
   threads: Thread[]
   byPlatform: Record<string, PlatformAgg>
   recent: Recent[]
-  totals: { threads: number; readerObservations: number; readerChatMessages: number }
+  totals: { threads: number; readerObservations: number; readerChatMessages: number; readerChatMessagesAprox?: boolean }
 }
 
 /** Veredicto en palabras, con el color que le corresponde. */
@@ -119,7 +119,9 @@ export default function ReaderStatusPage() {
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Hilos seguidos" value={data.totals.threads} />
               <Stat label="Observaciones" value={data.totals.readerObservations} />
-              <Stat label="Mensajes al hilo" value={data.totals.readerChatMessages} />
+              {/* "aprox." porque el conteo es la estimación del planificador: el
+                  exacto sobre 285k filas tardaba 20 s. Se dice, no se disimula. */}
+              <Stat label={data.totals.readerChatMessagesAprox ? 'Mensajes (aprox.)' : 'Mensajes al hilo'} value={data.totals.readerChatMessages} />
             </div>
 
             {data.totals.threads === 0 && (

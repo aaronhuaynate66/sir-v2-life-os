@@ -88,3 +88,63 @@ describe('parseProposedAction', () => {
     expect(parseProposedAction('otra_cosa', {})).toBeNull()
   })
 })
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LA TOOL 12 — el caso "Fernando me recomienda una panarteriografía"
+//
+// Aaron, 4-ago-2026: "le digo a SIR que le pedí a Fernando una segunda opinión
+// como médico a raíz de lo del aneurisma y me responde cualquier webada en lugar
+// de hacer algo productivo".
+//
+// No era el prompt (ya exige cerrar loops) ni el contexto (Fernando está en su
+// red): de las 11 tools ninguna podía sostener el HECHO.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('parseProposedAction · registrar_hecho_clinico', () => {
+  const T = 'proponer_registrar_hecho_clinico'
+
+  it('el caso real: la segunda opinión de Fernando queda parseada', () => {
+    expect(parseProposedAction(T, {
+      hecho: 'Fernando Brañes recomienda una panarteriografía en vez de la angio-resonancia porque es el gold standard',
+      quien: 'Fernando',
+      fecha: '2026-08-04',
+      relevancia: 'alta',
+    })).toEqual({
+      kind: 'registrar_hecho_clinico',
+      hecho: 'Fernando Brañes recomienda una panarteriografía en vez de la angio-resonancia porque es el gold standard',
+      quien: 'Fernando',
+      fecha: '2026-08-04',
+      relevancia: 'alta',
+    })
+  })
+
+  it('solo el hecho es obligatorio: un hallazgo de informe no tiene persona', () => {
+    expect(parseProposedAction(T, { hecho: 'La TC del 27-jul barrió la ATM y el informe no la menciona' }))
+      .toEqual({ kind: 'registrar_hecho_clinico', hecho: 'La TC del 27-jul barrió la ATM y el informe no la menciona', quien: '', fecha: '', relevancia: 'normal' })
+  })
+
+  it('sin hecho no hay acción (no se registra un vacío)', () => {
+    expect(parseProposedAction(T, { quien: 'Fernando', relevancia: 'alta' })).toBeNull()
+    expect(parseProposedAction(T, { hecho: '   ' })).toBeNull()
+    expect(parseProposedAction(T, {})).toBeNull()
+  })
+
+  it('una fecha inventada se descarta, no se adivina', () => {
+    expect(parseProposedAction(T, { hecho: 'algo clínico', fecha: 'la semana pasada' }))
+      .toMatchObject({ fecha: '' })
+    expect(parseProposedAction(T, { hecho: 'algo clínico', fecha: '2026-8-4' }))
+      .toMatchObject({ fecha: '' })
+  })
+
+  it('la relevancia cae a "normal" salvo que diga exactamente "alta"', () => {
+    expect(parseProposedAction(T, { hecho: 'x y z', relevancia: 'critica' })).toMatchObject({ relevancia: 'normal' })
+    expect(parseProposedAction(T, { hecho: 'x y z' })).toMatchObject({ relevancia: 'normal' })
+    expect(parseProposedAction(T, { hecho: 'x y z', relevancia: 'alta' })).toMatchObject({ relevancia: 'alta' })
+  })
+
+  it('el hecho se recorta pero no se pierde el sentido (600 caracteres)', () => {
+    const largo = 'a'.repeat(900)
+    const a = parseProposedAction(T, { hecho: largo }) as { hecho: string }
+    expect(a.hecho.length).toBe(600)
+  })
+})

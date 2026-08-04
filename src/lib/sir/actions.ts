@@ -167,6 +167,41 @@ export const SIR_ACTION_TOOLS = [
     },
   },
   {
+    name: 'proponer_registrar_hecho_clinico',
+    // ═══ POR QUÉ EXISTE ══════════════════════════════════════════════════════
+    //
+    // Aaron, 4-ago-2026: *"le digo a SIR que le pedí a Fernando una segunda opinión
+    // como médico a raíz de lo del aneurisma y se lo cuento, y me responde cualquier
+    // webada en lugar de hacer algo productivo"*.
+    //
+    // Le había escrito "Panangiografía, esto me dice Fernando que es mejor que me
+    // hagan" y SIR contestó una explicación enciclopédica de qué es una
+    // panarteriografía. Y el problema NO era el prompt: la regla de proactividad ya
+    // dice "computar el dato y no proponer nada es quedarte corto", y Fernando SÍ
+    // está en su red. El problema era que de las 11 tools ninguna podía sostener el
+    // HECHO — la opinión de un tercero sobre su salud no tenía dónde aterrizar.
+    //
+    // `registrar_interaccion` no sirve: pide una calidad de 1 a 5, que es para "cómo
+    // estuvo el encuentro", no para el contenido de una recomendación clínica.
+    //
+    // Esta tool escribe el hecho en `memories`, que es el corpus del que SIR hace
+    // recall — así la próxima vez que él pregunte por el aneurisma, la segunda
+    // opinión de Fernando está ahí. Sin tabla nueva: el hallazgo del cruce de
+    // exámenes ya vive así desde #1095.
+    description:
+      'Registra un HECHO médico que Aaron cuenta: una indicación, un hallazgo, una opinión de un médico, un síntoma, una segunda opinión, o lo que salió de una consulta. Úsalo SIEMPRE que Aaron mencione algo clínico nuevo — sobre todo si nombra a quién se lo dijo. NO expliques el término y te quedes ahí: primero REGISTRA el hecho, y después explica si aporta. Explicar sin registrar es exactamente quedarse corto. Si además hay una acción datable (pedir una orden, agendar un control), propón TAMBIÉN el recordatorio o el hito con su tool. NO uses esto para tus propias conclusiones ni para diagnosticar: solo para lo que Aaron reporta o lo que dice un informe. PROHIBIDO decir que lo registraste sin llamar a esta tool.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        hecho: { type: 'string', description: 'El hecho clínico en una o dos frases, concreto y con los datos que Aaron dio (ej. "Fernando Brañes recomienda una panarteriografía en vez de la angio-resonancia porque es el gold standard y define forma, tamaño y cuello del aneurisma").' },
+        quien: { type: 'string', description: 'Opcional: quién lo dijo o lo indicó — el médico, el informe, o la persona. Tal como Aaron lo nombró. Si es una persona de su red se vincula a su ficha.' },
+        fecha: { type: 'string', description: 'Opcional: cuándo ocurrió o se lo dijeron, en YYYY-MM-DD, calculada desde la fecha de hoy del contexto. NO la inventes: si Aaron no lo dice, omítela y se usa hoy.' },
+        relevancia: { type: 'string', enum: ['alta', 'normal'], description: 'Opcional: "alta" si cambia una conducta, contradice algo ya indicado, o toca un lazo médico abierto (ej. una interacción entre medicamentos). Por defecto "normal".' },
+      },
+      required: ['hecho'],
+    },
+  },
+  {
     name: 'proponer_cerrar_relacion',
     description:
       'Propón CERRAR un vínculo (NO lo cierres tú, solo propónlo para que Aaron confirme). Usa esto cuando Aaron dice que una relación se terminó/rompió/acabó. Cerrar marca el vínculo como terminado y hace que SIR deje de sugerir retomar contacto. NO borra a la persona ni su historia.',
@@ -261,7 +296,18 @@ export interface ProposedEntrenamiento {
    *  si el modelo tocara los números, la serie histórica quedaría envenenada. */
   ejercicios: string
 }
-export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio | ProposedEstado | ProposedAgregarHito | ProposedEntrenamiento
+export interface ProposedHechoClinico {
+  kind: 'registrar_hecho_clinico'
+  hecho: string
+  /** Quién lo dijo, tal como Aaron lo nombró; '' si no lo nombró. Se resuelve a
+   *  persona (y se vincula) en `askSir`, igual que el resto de las tools. */
+  quien: string
+  /** YYYY-MM-DD, o '' si el modelo no dio una fecha válida (→ hoy al ejecutar). */
+  fecha: string
+  relevancia: 'alta' | 'normal'
+}
+
+export type ProposedAction = ProposedInteraccion | ProposedObjetivo | ProposedPersona | ProposedCierre | ProposedHabito | ProposedTarea | ProposedPlan | ProposedRecordatorio | ProposedEstado | ProposedAgregarHito | ProposedEntrenamiento | ProposedHechoClinico
 
 function clampInt(v: unknown, lo: number, hi: number, fallback: number): number {
   const n = typeof v === 'number' ? Math.round(v) : parseInt(String(v), 10)
@@ -363,6 +409,18 @@ export function parseProposedAction(toolName: string, input: unknown): ProposedA
     const rawFecha = str(o.fecha, 10)
     const fecha = /^\d{4}-\d{2}-\d{2}$/.test(rawFecha) ? rawFecha : ''
     return { kind: 'agregar_hito', objetivo, hito, fecha }
+  }
+  if (toolName === 'proponer_registrar_hecho_clinico') {
+    const hecho = str(o.hecho, 600)
+    if (!hecho) return null
+    const rawFecha = str(o.fecha, 10)
+    return {
+      kind: 'registrar_hecho_clinico',
+      hecho,
+      quien: str(o.quien, 120),
+      fecha: /^\d{4}-\d{2}-\d{2}$/.test(rawFecha) ? rawFecha : '',
+      relevancia: str(o.relevancia, 10) === 'alta' ? 'alta' : 'normal',
+    }
   }
   if (toolName === 'proponer_crear_plan') {
     const titulo = str(o.titulo, 200)
