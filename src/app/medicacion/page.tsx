@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import { postJson, toApiError, type ApiError } from '@/lib/api/errors'
 import { classifyMed, type RegistryEntry } from '@/lib/meds/classify'
+import { TratamientosPanel } from '@/components/medicacion/TratamientosPanel'
 
 interface Intake { id: string; name: string; quantity: number; note: string | null; taken_at: string }
 interface RegMed { name: string; dose: string | null; component?: string | null; drug_class?: string | null; treats?: string | null }
@@ -80,6 +81,11 @@ export default function MedicacionPage() {
       </div>
 
       {error && <div className="mb-4"><ApiErrorNotice error={error} /></div>}
+
+      {/* TRATAMIENTOS primero: responde "a raíz de qué" y "cuánto me falta", que es
+          lo que Aaron pidió el 3-ago. Los botones de "tomé X" quedan abajo: sirven
+          para registrar, pero no explican nada. */}
+      <TratamientosPanel />
 
       {/* Mis medicamentos (registro) — un toque para marcar la toma */}
       {registry.length > 0 && (
