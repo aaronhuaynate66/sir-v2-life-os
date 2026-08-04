@@ -221,6 +221,10 @@ if (CON_RECORDATORIOS) {
   const plan = [...porMomento.values()]
     .sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora))
     .map((g) => ({
+      // MISMO FORMATO que `remIdDeToma` en src/lib/meds/telegramToma.ts. Se duplica
+      // porque un .mjs no puede importar el módulo TS, y el cron LEE la hora de este
+      // id para decidir si adjunta los botones. Si los dos formatos se separan, el
+      // aviso llega sin botones y en silencio — hay un test que fija el formato allá.
       id: `rem_med_${g.fecha}_${g.hora.replace(':', '')}`,
       user_id: UID,
       text: `💊 ${g.meds.join(' + ')}`,

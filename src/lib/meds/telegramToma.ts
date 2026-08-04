@@ -23,6 +23,36 @@
 export const MED_CB = 'med:'
 export const MED_ALL_CB = 'medall:'
 
+/** Prefijo de los ids de recordatorio que SON una toma de medicación. */
+const REM_TOMA = 'rem_med_'
+
+/** Id determinístico del recordatorio de la toma de `fecha` a `hora`. PURA. */
+export function remIdDeToma(fecha: string, hora: string): string {
+  return `${REM_TOMA}${fecha}_${(hora ?? '').replace(':', '')}`
+}
+
+/**
+ * ¿Este recordatorio ES una toma de medicación? Devuelve su hora, o null. PURA.
+ *
+ * ═══ POR QUÉ NO SE DERIVA DE `due_at` ═══
+ * El cron decidía si adjuntar botones mirando la HORA del `due_at` de cualquier
+ * recordatorio que tuviera `med_prescription_id`. Eso funcionaba de casualidad: el
+ * recordatorio de los 5 laboratorios del neurólogo también cuelga de esa receta (es su
+ * monitoreo) y si hubiera caído a una hora con medicamentos agendados, el cron le
+ * habría REEMPLAZADO el texto por el de la toma — el aviso de los laboratorios habría
+ * desaparecido sin dejar rastro.
+ *
+ * La intención tiene que estar en el id, no adivinarse de la hora.
+ */
+export function horaDeRecordatorioDeToma(reminderId: string | null | undefined): string | null {
+  const s = (reminderId ?? '').trim()
+  if (!s.startsWith(REM_TOMA)) return null
+  const m = s.slice(REM_TOMA.length).match(/^(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})$/)
+  if (!m) return null
+  if (Number(m[2]) > 23 || Number(m[3]) > 59) return null
+  return `${m[2]}:${m[3]}`
+}
+
 /** `med:<itemId>` para el botón de un medicamento. PURA. */
 export function medCallbackData(itemId: string): string {
   return `${MED_CB}${itemId}`

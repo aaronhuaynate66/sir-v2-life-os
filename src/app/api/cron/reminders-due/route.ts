@@ -15,10 +15,9 @@ import { puedeMarcarseAvisado, resumenDeEntrega, type Entrega } from '@/lib/push
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
-import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
+import { isTelegramConfigured, sendTelegramKeyboard, sendTelegramMessage } from '@/lib/telegram/client'
 import { textoRecordatorio } from '@/lib/push/cuandoVence'
-import { sendTelegramKeyboard } from '@/lib/telegram/client'
-import { botonesDeToma, textoDeToma } from '@/lib/meds/telegramToma'
+import { botonesDeToma, horaDeRecordatorioDeToma, textoDeToma } from '@/lib/meds/telegramToma'
 import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
 
 export const runtime = 'nodejs'
@@ -136,13 +135,15 @@ export async function GET(req: NextRequest) {
         // — el mismo hueco del 👍/👎, que se le pidió durante semanas cuando en
         // Telegram no había botón (#1030). Un tap = una toma.
         //
-        // La hora sale del `due_at` (Lima), y los medicamentos se resuelven por el
-        // `schedule` de los ítems, NO por el texto del mensaje. Si no se puede
-        // resolver ninguno, se manda el aviso de siempre: mejor un recordatorio sin
-        // botón que ningún recordatorio.
-        const hora = r.med_prescription_id && r.due_at
-          ? new Date(Date.parse(r.due_at) - 5 * 3_600_000).toISOString().slice(11, 16)
-          : null
+        // Los medicamentos se resuelven por el `schedule` de los ítems, NO por el texto
+        // del mensaje. Si no se puede resolver ninguno, se manda el aviso de siempre:
+        // mejor un recordatorio sin botón que ningún recordatorio.
+        //
+        // La hora sale del ID, no del `due_at`: sólo los recordatorios que SON una toma
+        // llevan botones. Otros recordatorios pueden colgar de la misma receta sin ser
+        // una toma —el de los 5 laboratorios del neurólogo es su monitoreo— y derivarlo
+        // de la hora les habría reemplazado el texto por el de la medicación.
+        const hora = horaDeRecordatorioDeToma(r.id)
         const meds = hora ? await medsDeLaToma(supabase, r.user_id, hora) : []
         const filas = meds.length > 0 ? botonesDeToma(meds, hora as string) : []
         if (filas.length > 0) {

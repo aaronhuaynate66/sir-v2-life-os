@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  botonesDeToma, medAllCallbackData, medCallbackData, parseMedAllCallback, parseMedCallback, textoDeToma,
+  botonesDeToma, horaDeRecordatorioDeToma, medAllCallbackData, medCallbackData, parseMedAllCallback,
+  parseMedCallback, remIdDeToma, textoDeToma,
   type MedDeToma,
 } from './telegramToma'
 
@@ -97,5 +98,39 @@ describe('textoDeToma', () => {
     const t = textoDeToma([med({ yaHoy: true }), med({ itemId: 'b', medName: 'Clonazepam', dose: '2 mg' })], '22:00')
     expect(t).toContain('Clonazepam 2 mg')
     expect(t).not.toContain('Orfenadrina')
+  })
+})
+
+// ═══ LA INTENCIÓN VA EN EL ID, NO EN LA HORA ═══
+// El cron decidía si adjuntar botones mirando la HORA de cualquier recordatorio con
+// `med_prescription_id`. Funcionaba de casualidad: el recordatorio de los 5 laboratorios
+// del neurólogo también cuelga de esa receta (es su monitoreo), y si hubiera caído a una
+// hora con medicamentos agendados, el cron le habría REEMPLAZADO el texto por el de la
+// toma — el aviso de los laboratorios habría desaparecido sin dejar rastro.
+describe('horaDeRecordatorioDeToma', () => {
+  it('el formato del id del cargador es el que el cron sabe leer', () => {
+    // Si esto cambia, hay que cambiar TAMBIÉN scripts/import-recetas.mjs, que lo duplica
+    // porque un .mjs no puede importar este módulo.
+    expect(remIdDeToma('2026-08-05', '22:00')).toBe('rem_med_2026-08-05_2200')
+    expect(horaDeRecordatorioDeToma(remIdDeToma('2026-08-05', '22:00'))).toBe('22:00')
+    expect(horaDeRecordatorioDeToma(remIdDeToma('2026-12-31', '08:30'))).toBe('08:30')
+  })
+
+  it('un recordatorio que NO es una toma devuelve null aunque cuelgue de la receta', () => {
+    // El caso real: el de los 5 laboratorios del neurólogo.
+    expect(horaDeRecordatorioDeToma('rem_labs_neuro_orden')).toBeNull()
+    expect(horaDeRecordatorioDeToma('rem_examen_ipd')).toBeNull()
+    expect(horaDeRecordatorioDeToma('cualquier-otro-id')).toBeNull()
+  })
+
+  it('no revienta con basura ni acepta ids a medias', () => {
+    for (const v of [null, undefined, '', 'rem_med_', 'rem_med_2026-08-05', 'rem_med_2026-08-05_22']) {
+      expect(horaDeRecordatorioDeToma(v)).toBeNull()
+    }
+  })
+
+  it('rechaza horas imposibles dentro de un id bien formado', () => {
+    expect(horaDeRecordatorioDeToma('rem_med_2026-08-05_2560')).toBeNull()
+    expect(horaDeRecordatorioDeToma('rem_med_2026-08-05_2359')).toBe('23:59')
   })
 })
