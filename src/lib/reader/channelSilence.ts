@@ -127,6 +127,38 @@ export function diagnoseChannel(c: ChannelState, now: Date = new Date()): Channe
   return { ...base, kind: 'ok' }
 }
 
+/**
+ * ═══ CANALES QUE NO PUEDEN AUTODIAGNOSTICARSE ════════════════════════════════
+ *
+ * Aaron, 4-ago-2026, sobre la línea "Instagram está corriendo pero hace 4 día(s)
+ * que no trae nada": *"entonces no entiendo si sirve o no sirve, qué hacemos"*.
+ *
+ * La pregunta era la correcta y la respuesta honesta es que **el sistema no puede
+ * saberlo**. Dos razones estructurales, verificadas en la extensión:
+ *
+ * · `background.js` arranca `probeCanal` con `if (channel !== 'whatsapp') return
+ *   null`. Solo WhatsApp tiene probe de salud. Para el resto, la columna
+ *   `reader_heartbeats.probe` es null siempre.
+ * · El lector de Instagram (`content/instagramReader.js`) es un INTERCEPTOR
+ *   PASIVO de fetch/XHR: captura lo que pasa cuando Aaron navega Instagram él
+ *   mismo. No hace backfill como WhatsApp contra su Store local. Así que "no
+ *   trajo nada en 4 días" puede ser, sin más, que no abrió Instagram.
+ *
+ * Y el latido no ayuda: `status:'ok'` significa "hay una pestaña abierta que
+ * matchea la URL", no "el lector está leyendo".
+ *
+ * Entonces para estos canales `sin_datos` es AMBIGUO por construcción, y el
+ * brief tiene que decirlo. Es la regla de honestidad de cobertura de CLAUDE.md
+ * aplicada al reader: si la ventana es parcial, se dice — no se insinúa que se
+ * está vigilando algo que no se vigila.
+ */
+export const CANALES_SIN_DIAGNOSTICO = new Set(['instagram', 'linkedin'])
+
+/** ¿Este canal puede distinguir "roto" de "sin novedad"? PURA. */
+export function tieneDiagnostico(channel: string): boolean {
+  return !CANALES_SIN_DIAGNOSTICO.has((channel ?? '').toLowerCase())
+}
+
 const NOMBRE: Record<string, string> = {
   whatsapp: 'WhatsApp', instagram: 'Instagram', teams: 'Teams',
   outlook: 'Outlook', linkedin: 'LinkedIn',
@@ -165,7 +197,17 @@ export function channelSilenceLine(verdicts: ChannelVerdict[], now: Date = new D
     partes.push(`${label(v.channel)} dejó de reportar (${cuando}) — probablemente la pestaña está cerrada`)
   }
   for (const v of mudos) {
-    partes.push(`${label(v.channel)} está corriendo pero hace ${v.daysSinceData} día(s) que no trae nada`)
+    // Un canal CON diagnóstico late y se le puede creer que está leyendo. Uno sin
+    // diagnóstico no: ahí "no trae nada" es ambiguo y hay que decirlo, en vez de
+    // dejarle a Aaron la pregunta de si sirve o no.
+    if (tieneDiagnostico(v.channel)) {
+      partes.push(`${label(v.channel)} está corriendo pero hace ${v.daysSinceData} día(s) que no trae nada`)
+    } else {
+      partes.push(
+        `${label(v.channel)} no trae nada hace ${v.daysSinceData} día(s), y no se puede saber si es falta de uso ` +
+        `o que se rompió: su lector es pasivo (captura solo cuando abres ${label(v.channel)}) y no tiene diagnóstico`,
+      )
+    }
   }
   // Se dice que TRAE DATOS antes de mencionar el problema: es una versión vieja,
   // no una caída, y confundirlas es lo que hace que un aviso pierda credibilidad.
