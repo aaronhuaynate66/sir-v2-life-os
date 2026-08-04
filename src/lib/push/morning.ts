@@ -39,6 +39,11 @@ export interface MorningInput {
   eventosProximosKey?: string
   /** Hay un evento HOY o MAÑANA → la señal no se duerme por racha. */
   eventosProximosInminente?: boolean
+  /** Identidad de `examenReciente`: QUÉ examen es. Mismo motivo que arriba —
+   *  sin esto, un examen nuevo entra a un slot dormido y no se nombra. */
+  examenRecienteKey?: string
+  /** El examen es de hoy o de ayer → no se calla por racha. */
+  examenRecienteImperdible?: boolean
   /** A quién cuidar hoy: el vínculo más urgente de "Reconectar" (persona +
    *  razón, ya formado). SIR sabe a quién estás descuidando; esto lo dice sin
    *  que abras la app. Texto corto ya armado. */
@@ -104,6 +109,10 @@ export interface MorningInput {
   weekFocus?: string
   /** Alerta de metrica dura (peso Mundial fuera de categoria, etc.). Texto ya formado. */
   metricAlert?: string
+  /** "Hace N días que no cargas datos de salud". Slot APARTE de `metricAlert` a
+   *  propósito: compartían clave y el silencio de la alerta de vitales tapaba este
+   *  aviso — Aaron pasó 4 días sin pesarse y el brief no lo mencionó (4-ago-2026). */
+  dataFaltante?: string
   /** Vigilancia de laboratorio: patrón de chequeos consistente que ya salió de
    *  rango (idea de Aaron: no dejarlo "al baúl"). NO es agudo → prioridad baja y
    *  el cron lo manda throttled (semanal). Texto ya formado. */
@@ -281,16 +290,24 @@ const AGGREGATE_SLOTS = new Set([
   'metricAlert', 'bodySignal', 'healthWatch',
   'cardioTrend',         // hay una sola por día y su texto lleva los valores del día
   'afectoCaida',         // los números del balance se mueven todos los días
-  'examenReciente',      // el "hace N días" cambia cada día que pasa
   'encuentroConDeal',    // el "mañana/hoy" y los días de atraso cambian a diario
   'trainingAdherence',   // "2 de 3 de fuerza" cambia con cada sesión
   'energyNote',
 ])
-// `eventosProximos` ESTUVO acá y por eso se apagó 14 días encima de la semana más
-// cargada de fechas de Aaron (ver `eventosProximosIdentity`). Ahora trae su
-// identidad explícita: el conjunto de eventos que nombra. NO volver a agregarlo —
-// una clave fija por slot solo sirve cuando el contenido resume SIEMPRE el mismo
-// tema, y una agenda no: cambia porque hay compromisos nuevos.
+// `eventosProximos` y `examenReciente` ESTUVIERON acá, y los dos se apagaron 14 días
+// por el mismo motivo: una clave fija por slot no distingue "lo mismo un día después"
+// de "entró algo NUEVO". El de eventos se apagó encima de la semana más cargada de
+// fechas de Aaron (#1092); el de exámenes se durmió el 4-ago y no despertaba hasta el
+// 18, con el examen del IPD el día 7 en medio.
+//
+// Los dos traen ahora su identidad explícita: el conjunto de eventos que nombra
+// (`eventosProximosIdentity`) y qué examen es (`examenRecienteIdentity`).
+//
+// REGLA: una clave fija por slot solo sirve cuando el contenido resume SIEMPRE el
+// mismo tema —el balance de afecto, los valores del día—. Si el slot puede hablar de
+// una COSA DISTINTA mañana, necesita identidad propia. NO volver a agregar ninguno
+// de los dos.
+//
 // Si algún caller olvidara la identidad, el fallback es `slot|topicKey(texto)`,
 // que repite más de lo ideal. Elegido a propósito: repetir es una molestia,
 // callarse le costó una reunión.
@@ -390,6 +407,12 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   //    lo urgente/time-sensitive del día, al frente.
   add(input.weekFocus, 'weekFocus', 'metas', ent.weekFocusGoal ? { kind: 'goal', ...ent.weekFocusGoal } : undefined)
   add(input.metricAlert, 'metricAlert', 'hoy')
+  // 0.55 LA DATA QUE FALTA. Va junto a la alerta de métrica porque es del mismo
+  //      tema, pero con SLOT PROPIO: cuando compartía el de `metricAlert`, el
+  //      silencio de la alerta de vitales silenciaba también este aviso — y Aaron
+  //      pasó 4 días sin pesarse sin que SIR dijera nada. Dos mensajes distintos
+  //      no pueden compartir una sola clave de silencio.
+  add(input.dataFaltante, 'dataFaltante', 'hoy')
   // 0.6 TENDENCIA CARDÍACA. Va en 'hoy' y cerca del tope porque es del cuerpo,
   //     pero NO interrumpe: lo que apremia se manda solo al entrar la medición.
   //     Acá llega lo que no se pierde nada esperando a la mañana.
@@ -454,7 +477,8 @@ export function buildMorningPush(input: MorningInput): MorningPush {
   // Un examen recién hecho va ANTES de la tendencia crónica: sus recomendaciones
   // pueden tener ventana de días (el hematoma septal de la tomografía del 27-jul),
   // mientras que un analito que deriva a lo largo de un año aguanta hasta el lunes.
-  add(input.examenReciente, 'examenReciente', 'hoy')
+  add(input.examenReciente, 'examenReciente', 'hoy', undefined,
+    { identity: input.examenRecienteKey, neverSnooze: input.examenRecienteImperdible })
   add(input.healthWatch, 'healthWatch', 'hoy')
 
   // 2.75 OPORTUNIDAD detectada en las conversaciones (lib/opportunities).

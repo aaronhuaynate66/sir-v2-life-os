@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildMorningPush, dedupeSignals, topicOverlap, topicKey } from './morning'
+import { buildMorningPush, dedupeSignals, topicOverlap, topicKey, signalTopicKey } from './morning'
 
 // Textos REALES del brief que Aaron recibió el 25-jul-2026.
 const BOTICAS_CORTO = 'Cerrar Boticas Jhodaal como cliente de Marlab · EN 6 DÍAS'
@@ -428,5 +428,71 @@ describe('🩺 examen reciente en el brief', () => {
 
   it('sin examen reciente no agrega nada', () => {
     expect(buildMorningPush({}).signals.some((s) => s.slot === 'examenReciente')).toBe(false)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DOS MENSAJES NO PUEDEN COMPARTIR UNA CLAVE DE SILENCIO
+//
+// Aaron, 4-ago-2026: "hace 3 días que no me subo a la balanza ni le mando esa
+// data de salud a SIR, ¿por qué ni me dice nada?".
+//
+// El aviso de data faltante escribía en `metricAlertText`, así que viajaba con la
+// identidad de la alerta de vitales. Esa se durmió el 30-jul por racha y con
+// SNOOZE_DAYS=14 el aviso de la báscula no podía salir hasta el 13-ago. Su último
+// peso era del 31-jul.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('dataFaltante: slot propio, no prestado', () => {
+  const GAP = 'Hace 4 días que no cargas datos de salud (última vez: 31 jul). Cuando puedas, mándame las capturas.'
+  const VITALES = 'Señales del cuerpo desviadas juntas: VFC baja y FC en reposo elevada.'
+
+  it('tiene identidad DISTINTA de la alerta de vitales', () => {
+    expect(signalTopicKey('dataFaltante', GAP)).not.toBe(signalTopicKey('metricAlert', VITALES))
+  })
+
+  it('NO es un slot agregado: su clave depende del contenido, no del slot', () => {
+    expect(signalTopicKey('dataFaltante', GAP)).not.toBe('slot:dataFaltante')
+  })
+
+  it('el número de días no mueve la clave (la racha puede correr)', () => {
+    // `topicKey` descarta los tokens que son solo dígitos, así que "4 días" y
+    // "6 días" son el mismo tema. Si no, la racha se reiniciaría cada mañana y el
+    // aviso nunca podría dormirse — el muro del que Aaron se quejó.
+    const a = 'Hace 4 días que no cargas datos de salud (última vez: 31 jul).'
+    const b = 'Hace 6 días que no cargas datos de salud (última vez: 31 jul).'
+    expect(signalTopicKey('dataFaltante', a)).toBe(signalTopicKey('dataFaltante', b))
+  })
+
+  it('sale en el brief y NO desplaza a la alerta de vitales: caben las dos', () => {
+    const push = buildMorningPush({ metricAlert: VITALES, dataFaltante: GAP })
+    const slots = push.signals.map((s) => s.slot)
+    expect(slots).toContain('metricAlert')
+    expect(slots).toContain('dataFaltante')
+  })
+
+  it('sin data faltante no inventa la señal', () => {
+    const push = buildMorningPush({ metricAlert: VITALES })
+    expect(push.signals.map((s) => s.slot)).not.toContain('dataFaltante')
+  })
+})
+
+describe('examenReciente ya NO es un slot agregado', () => {
+  const TXT = 'Tu "TEM de emergencia" de hace 8 días tiene 17 recomendaciones.'
+
+  it('con identidad explícita, dos exámenes distintos son señales distintas', () => {
+    const a = signalTopicKey('examenReciente', TXT, '2026-07-27~tem-de-emergencia+17')
+    const b = signalTopicKey('examenReciente', TXT, '2026-08-07~examen-epp-ipd+1')
+    expect(a).not.toBe(b)
+  })
+
+  it('ya no colapsa a la clave fija del slot', () => {
+    expect(signalTopicKey('examenReciente', TXT)).not.toBe('slot:examenReciente')
+  })
+
+  it('los slots que SÍ son resúmenes del mismo tema no cambiaron', () => {
+    expect(signalTopicKey('metricAlert', 'lo que sea')).toBe('slot:metricAlert')
+    expect(signalTopicKey('afectoCaida', 'lo que sea')).toBe('slot:afectoCaida')
+    expect(signalTopicKey('cycleWeekAhead', 'lo que sea')).toBe('slot:cycleWeekAhead')
   })
 })

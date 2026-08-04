@@ -74,6 +74,63 @@ export function examenRecienteConRecomendaciones(
 }
 
 /**
+ * ═══ IDENTIDAD DE LA SEÑAL — el mismo defecto que tenía el slot de eventos ════
+ *
+ * `examenReciente` vivía en `AGGREGATE_SLOTS`, así que su identidad para el
+ * anti-repetición era el SLOT: `slot:examenReciente`, una clave que no cambia
+ * nunca. El razonamiento era el de siempre y es correcto a medias — el texto
+ * cambia solo por el paso del tiempo ("de hace 8 días" → "de hace 9 días"), y
+ * hashear el texto rompía la racha cada mañana.
+ *
+ * Lo que no se vio es que el texto TAMBIÉN cambia porque entra un examen NUEVO.
+ * Y bajo una clave fija los dos casos son indistinguibles, exactamente como pasó
+ * con `eventosProximos` (#1092).
+ *
+ * Medido el 4-ago-2026: `slot:examenReciente` se durmió ese día por racha (4
+ * mañanas seguidas hablando de la tomografía del 27-jul) y con `SNOOZE_DAYS = 14`
+ * no despertaba hasta el **18-ago**. El examen médico del IPD es el **7-ago**: sus
+ * recomendaciones habrían entrado a un slot dormido y no se habrían nombrado en 11
+ * días. Un examen recién hecho es justo lo contrario de una repetición.
+ *
+ * La identidad es QUÉ examen es (fecha + título) más cuántas recomendaciones trae:
+ * el mismo examen contado día tras día conserva la clave y la racha corre como
+ * debe; un examen nuevo es una señal nueva.
+ */
+export function examenRecienteIdentity(
+  exams: readonly HealthExam[],
+  hoy: string,
+): string | null {
+  const r = examenRecienteConRecomendaciones(exams, hoy)
+  if (!r) return null
+  const slug = (r.exam.title ?? '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+  return `${r.exam.examDate}~${slug}+${r.recomendaciones.length}`
+}
+
+/** Días en los que un examen es tan fresco que su aviso no se puede callar. */
+export const RECIEN_HECHO_DIAS = 2
+
+/**
+ * ¿El examen es tan reciente que su aviso NO debe silenciarse? PURA.
+ *
+ * La segunda defensa, igual que con los eventos. Con la identidad arreglada la
+ * racha casi nunca llega a dormirse, pero "casi" no alcanza cuando lo que está en
+ * juego es una recomendación con ventana de días — la bandera roja del hematoma
+ * septal de la tomografía del 27-jul tenía ventana de 5 a 7.
+ */
+export function examenRecienImperdible(
+  exams: readonly HealthExam[],
+  hoy: string,
+): boolean {
+  const r = examenRecienteConRecomendaciones(exams, hoy)
+  return !!r && r.dias <= RECIEN_HECHO_DIAS
+}
+
+/**
  * La línea del brief. null si no hay examen reciente con recomendaciones. PURA.
  *
  * Dice CUÁNTAS son y muestra UNA — la primera, que es donde el cargador pone lo más
