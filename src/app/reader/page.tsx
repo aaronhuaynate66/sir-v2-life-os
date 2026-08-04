@@ -14,11 +14,42 @@ import { Card, CardContent } from '@/components/ui/card'
 interface Thread { platform: string; threadName: string; lastIngestAt: string | null; lastMessageAt: string | null }
 interface Recent { observedAt: string | null; platform: string; threadName: string; messageCount: number; matched: boolean }
 interface PlatformAgg { threads: number; observations: number; messages: number; matched: number; lastIngestAt: string | null }
+/** El estado REAL de un canal: el veredicto que usa el brief, más el diagnóstico
+ *  del lector (que existía escrito y no se leía en ninguna parte). */
+interface Canal {
+  channel: string
+  lastBeatAt: string | null
+  lastDataAt: string | null
+  status: string | null
+  detail: string | null
+  extVersion: string | null
+  sentCount: number | null
+  lastError: string | null
+  kind: 'ok' | 'caido' | 'deslogueado' | 'sin_datos' | 'sin_latido' | 'nunca_visto'
+  hoursSinceHeartbeat: number | null
+  daysSinceData: number | null
+  /** true = leyendo · false = abierto pero NO leyendo · null = no sé. */
+  lectorVivo: boolean | null
+  probeLine: string | null
+  /** false = este canal no puede autodiagnosticarse (lector pasivo, sin probe). */
+  tieneDiagnostico: boolean
+}
 interface Status {
+  canales?: Canal[]
   threads: Thread[]
   byPlatform: Record<string, PlatformAgg>
   recent: Recent[]
   totals: { threads: number; readerObservations: number; readerChatMessages: number }
+}
+
+/** Veredicto en palabras, con el color que le corresponde. */
+const VEREDICTO: Record<Canal['kind'], { label: string; cls: string }> = {
+  ok: { label: 'Andando', cls: 'text-good' },
+  sin_latido: { label: 'Trae datos, sin latido', cls: 'text-warn' },
+  sin_datos: { label: 'Late, no trae nada', cls: 'text-warn' },
+  deslogueado: { label: 'Deslogueado — escanear QR', cls: 'text-bad' },
+  caido: { label: 'Caído', cls: 'text-bad' },
+  nunca_visto: { label: 'Nunca trajo nada', cls: 'text-muted-foreground' },
 }
 
 function hoursSince(iso: string | null): number | null {
@@ -101,6 +132,60 @@ export default function ReaderStatusPage() {
               <Card className="border-warn/40 bg-warn-soft/30"><CardContent className="p-3 text-sm text-foreground flex items-start gap-2">
                 <AlertTriangle size={16} className="text-warn mt-0.5 shrink-0" />
                 <span><b>{unmatched}</b> de las ingestas recientes no se cruzaron con ninguna persona (el nombre del hilo no matchea un contacto cargado). Esa data queda como observación suelta, sin alimentar la ficha de nadie.</span>
+              </CardContent></Card>
+            )}
+
+            {/* ═══ ESTADO DE LOS CANALES ═══════════════════════════════════════
+                Aaron pidió esto el 4-ago-2026: *"se me ocurre crear una sección de
+                estatus en SIR que se sincronice con la extensión"*. Casi todo estaba
+                escrito y huérfano — `lectorVivo`/`probeLine` solo vivían en sus tests
+                y la columna `probe` se escribía sin que nadie la leyera. Y esta página
+                no consultaba `reader_heartbeats`, así que contaba una historia
+                distinta a la del brief. Ahora los dos usan `diagnoseChannel`. */}
+            {(data.canales?.length ?? 0) > 0 && (
+              <Card><CardContent className="p-4 space-y-3">
+                <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Estado de los canales</div>
+                {data.canales!.map((c) => {
+                  const v = VEREDICTO[c.kind] ?? VEREDICTO.nunca_visto
+                  return (
+                    <div key={c.channel} className="border-b border-border/40 last:border-0 pb-3 last:pb-0 space-y-1">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-medium capitalize text-sm">{c.channel}</span>
+                        <span className={`text-[12px] font-medium ${v.cls}`}>{v.label}</span>
+                      </div>
+                      <div className="text-[12px] text-muted-foreground tabular-nums">
+                        latido {freshness(c.lastBeatAt).label} · data {freshness(c.lastDataAt).label}
+                        {c.extVersion ? ` · v${c.extVersion}` : ''}
+                        {c.sentCount != null ? ` · ${c.sentCount.toLocaleString('es')} enviados` : ''}
+                      </div>
+
+                      {/* ¿Está LEYENDO, no solo abierto? Esta es la distinción que el
+                          latido no puede hacer: `status:'ok'` significa "hay una pestaña
+                          abierta", no "el lector produce". */}
+                      {c.probeLine && (
+                        <div className={`text-[12px] ${c.lectorVivo === true ? 'text-good' : c.lectorVivo === false ? 'text-bad' : 'text-muted-foreground'}`}>
+                          {c.probeLine}
+                        </div>
+                      )}
+
+                      {/* La verdad incómoda, dicha en vez de insinuada. */}
+                      {!c.tieneDiagnostico && (
+                        <div className="text-[12px] text-warn flex items-start gap-1.5">
+                          <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                          <span>
+                            Este canal <b>no puede autodiagnosticarse</b>: su lector es pasivo (captura solo cuando
+                            navegas {c.channel} en esa PC) y no tiene probe de salud. Si no trae nada, no se puede
+                            saber si es falta de uso o que se rompió.
+                          </span>
+                        </div>
+                      )}
+
+                      {c.lastError && (
+                        <div className="text-[12px] text-bad">último error: {c.lastError}</div>
+                      )}
+                    </div>
+                  )
+                })}
               </CardContent></Card>
             )}
 
