@@ -17,6 +17,9 @@ import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
 import { isTelegramConfigured, sendTelegramMessage } from '@/lib/telegram/client'
 import { textoRecordatorio } from '@/lib/push/cuandoVence'
+import { sendTelegramKeyboard } from '@/lib/telegram/client'
+import { botonesDeToma, textoDeToma } from '@/lib/meds/telegramToma'
+import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -62,9 +65,9 @@ export async function GET(req: NextRequest) {
   // idéntico a "hoy no vence nada". Y lo que vence acá son cosas como el examen del
   // IPD del 7-ago a las 8:10 con 8 h de ayuno: un aviso perdido en silencio no se
   // recupera al día siguiente. Ahora un fallo se ve como fallo. [[postgrest-columna-inexistente]]
-  const rows = filasOFalla<{ id: string; user_id: string; text: string; related_person_id: string | null; due_at: string | null }>(
+  const rows = filasOFalla<{ id: string; user_id: string; text: string; related_person_id: string | null; due_at: string | null; med_prescription_id: string | null }>(
     await supabase.from('reminders')
-      .select('id, user_id, text, related_person_id, due_at')
+      .select('id, user_id, text, related_person_id, due_at, med_prescription_id')
       .lte('due_at', hasta).is('done_at', null).is('notified_at', null).limit(50),
     'recordatorios que vencen',
   )
@@ -126,7 +129,27 @@ export async function GET(req: NextRequest) {
 
     if (tgReady && tgChat && tgOwnerId && r.user_id === tgOwnerId) {
       try {
-        await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${cuerpo}`)
+        // ═══ RECORDATORIO DE MEDICACIÓN: va CON BOTONES ═══
+        //
+        // Aaron pidió el aviso Y el conteo. Si para registrar la toma hay que abrir la
+        // app, el conteo queda en cero y el panel dice "falta la de hoy" para siempre
+        // — el mismo hueco del 👍/👎, que se le pidió durante semanas cuando en
+        // Telegram no había botón (#1030). Un tap = una toma.
+        //
+        // La hora sale del `due_at` (Lima), y los medicamentos se resuelven por el
+        // `schedule` de los ítems, NO por el texto del mensaje. Si no se puede
+        // resolver ninguno, se manda el aviso de siempre: mejor un recordatorio sin
+        // botón que ningún recordatorio.
+        const hora = r.med_prescription_id && r.due_at
+          ? new Date(Date.parse(r.due_at) - 5 * 3_600_000).toISOString().slice(11, 16)
+          : null
+        const meds = hora ? await medsDeLaToma(supabase, r.user_id, hora) : []
+        const filas = meds.length > 0 ? botonesDeToma(meds, hora as string) : []
+        if (filas.length > 0) {
+          await sendTelegramKeyboard(Number(tgChat), textoDeToma(meds, hora as string), filas)
+        } else {
+          await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${cuerpo}`)
+        }
         entregas.push({ canal: 'telegram', entregado: true })
       } catch (e) {
         entregas.push({ canal: 'telegram', entregado: false, detalle: String(e).slice(0, 100) })

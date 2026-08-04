@@ -24,6 +24,8 @@ import {
   answerCallbackQuery, editTelegramMessageText, sendTelegramKeyboard, editTelegramKeyboard,
 } from '@/lib/telegram/client'
 import { feedbackButtons, parseFeedbackCallback, handleFeedbackTap } from '@/lib/telegram/feedback'
+import { botonesDeToma, parseMedAllCallback, parseMedCallback, textoDeToma } from '@/lib/meds/telegramToma'
+import { marcarToma, medsDeLaToma } from '@/lib/meds/tomaPendiente'
 import { pendingDailyHabits, habitCallbackData, parseHabitCallback } from '@/lib/habits/checkinButtons'
 import { limaDayString } from '@/lib/habits/streak'
 import { toPlainText } from '@/lib/telegram/format'
@@ -181,6 +183,41 @@ async function handleHabitTap(
     const rows = pending.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
     await editTelegramKeyboard(chatId, messageId, `✓ ${title} marcado. ¿Cuáles más hiciste hoy? 👇`, rows)
   }
+}
+
+/**
+ * Tap de una toma de medicación. Registra e IDEMPOTENTE por día: si ya había una toma
+ * de hoy no inserta otra, porque dos taps no son dos dosis y para un fármaco con techo
+ * diario eso sería peor que no contar.
+ *
+ * Después reescribe el mensaje con el estado nuevo (los ya tomados con ✓), igual que el
+ * check-in de hábitos: así Aaron ve qué quedó registrado sin abrir la app.
+ */
+async function handleMedTap(
+  supabase: SupabaseClient, userId: string, chatId: number, messageId: number, callbackId: string,
+  itemIds: readonly string[], horaConocida?: string,
+): Promise<void> {
+  if (itemIds.length === 0) {
+    await answerCallbackQuery(callbackId, 'Ya estaba registrado ✓')
+    return
+  }
+  const nombres: string[] = []
+  let hora = horaConocida ?? null
+  for (const id of itemIds) {
+    const r = await marcarToma(supabase, userId, id)
+    if (r && !r.yaEstaba) nombres.push(r.medName)
+    if (!hora) {
+      // La hora del ítem, para poder rearmar el mensaje con toda la toma.
+      const { data } = await supabase.from('med_prescription_items').select('schedule').eq('id', id).maybeSingle()
+      const sch = (data as { schedule?: string[] | null } | null)?.schedule
+      if (sch && sch.length > 0) hora = String(sch[0]).slice(0, 5)
+    }
+  }
+  await answerCallbackQuery(callbackId, nombres.length > 0 ? `✓ ${nombres.join(', ')}` : 'Ya estaba registrado ✓')
+  if (!hora) return
+  const meds = await medsDeLaToma(supabase, userId, hora)
+  if (meds.length === 0) return
+  await editTelegramKeyboard(chatId, messageId, textoDeToma(meds, hora), botonesDeToma(meds, hora))
 }
 
 /** Tap "✕ No es contacto" del ¿quién es quién?: descarta la cuenta (reversible)
@@ -416,6 +453,22 @@ export async function POST(req: NextRequest) {
       const habitId = parseHabitCallback(cb.data)
       if (habitId) {
         await handleHabitTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, habitId)
+        return
+      }
+
+      // TOMA DE MEDICACIÓN: "med:<itemId>" (uno) o "medall:<HHMM>" (todos los de esa
+      // toma). Cierra el loop del recordatorio: avisar sin poder registrar dejaba el
+      // conteo en cero. Idempotente por día: dos taps no son dos dosis.
+      const medItem = parseMedCallback(cb.data)
+      if (medItem) {
+        await handleMedTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, [medItem])
+        return
+      }
+      const medHora = parseMedAllCallback(cb.data)
+      if (medHora) {
+        const meds = await medsDeLaToma(supabase, ownerId, medHora)
+        const pendientes = meds.filter((m) => !m.yaHoy).map((m) => m.itemId)
+        await handleMedTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, pendientes, medHora)
         return
       }
 
