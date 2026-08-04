@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   botonesDeToma, horaDeRecordatorioDeToma, medAllCallbackData, medCallbackData, parseMedAllCallback,
   parseMedCallback, remIdDeToma, textoDeToma,
+  fechaDeRecordatorioDeToma, cuandoDeLaToma,
   type MedDeToma,
 } from './telegramToma'
 
@@ -132,5 +133,102 @@ describe('horaDeRecordatorioDeToma', () => {
   it('rechaza horas imposibles dentro de un id bien formado', () => {
     expect(horaDeRecordatorioDeToma('rem_med_2026-08-05_2560')).toBeNull()
     expect(horaDeRecordatorioDeToma('rem_med_2026-08-05_2359')).toBe('23:59')
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EL RECLAMO DEL 4-ago-2026
+//
+// A las 06:32 de la mañana le llegó "💊 Toma de las 22:00 … Toca lo que ya
+// tomaste". Aaron: "qué sentido tiene que me pregunte en la mañana si las acabo
+// de tomar si el objetivo es tomarlas en la noche. A menos que la pregunta sea
+// si las tomé anoche, pero igual no es muy bueno porque podría olvidarme".
+//
+// Una hora sin día no se puede interpretar — y el día SIEMPRE estuvo en el id.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('fechaDeRecordatorioDeToma — el día que el id siempre trajo', () => {
+  it('saca la fecha del id real de producción', () => {
+    expect(fechaDeRecordatorioDeToma('rem_med_2026-08-04_2200')).toBe('2026-08-04')
+  })
+  it('mismo criterio que la hora: solo ids de toma', () => {
+    expect(fechaDeRecordatorioDeToma('rem_labs_neuro_orden')).toBeNull()
+    expect(fechaDeRecordatorioDeToma('rem_ipd_ayuno_20260806')).toBeNull()
+    expect(fechaDeRecordatorioDeToma('rem_med_no-es-fecha_2200')).toBeNull()
+    expect(fechaDeRecordatorioDeToma('rem_med_2026-08-04_2560')).toBeNull()
+    expect(fechaDeRecordatorioDeToma(null)).toBeNull()
+    expect(fechaDeRecordatorioDeToma(undefined)).toBeNull()
+  })
+  it('la hora y la fecha salen del MISMO id sin contradecirse', () => {
+    const id = 'rem_med_2026-08-04_2200'
+    expect(horaDeRecordatorioDeToma(id)).toBe('22:00')
+    expect(fechaDeRecordatorioDeToma(id)).toBe('2026-08-04')
+  })
+})
+
+describe('cuandoDeLaToma — distingue avisar de preguntar', () => {
+  it('la toma de hoy es "hoy"', () => {
+    expect(cuandoDeLaToma('2026-08-04', '2026-08-04')).toBe('hoy')
+  })
+  it('la de ayer es "anoche" — el caso que Aaron nombró', () => {
+    expect(cuandoDeLaToma('2026-08-03', '2026-08-04')).toBe('anoche')
+  })
+  it('más vieja que ayer es "atrasada"', () => {
+    expect(cuandoDeLaToma('2026-07-30', '2026-08-04')).toBe('atrasada')
+  })
+  it('cruza el mes sin equivocarse', () => {
+    expect(cuandoDeLaToma('2026-07-31', '2026-08-01')).toBe('anoche')
+  })
+  it('una toma futura se trata como la de "hoy" del día que toque', () => {
+    expect(cuandoDeLaToma('2026-08-05', '2026-08-04')).toBe('hoy')
+  })
+  it('sin fecha devuelve null y el texto queda como antes (sin día)', () => {
+    expect(cuandoDeLaToma(null, '2026-08-04')).toBeNull()
+    expect(cuandoDeLaToma('basura', '2026-08-04')).toBeNull()
+    expect(cuandoDeLaToma('2026-08-04', 'basura')).toBeNull()
+  })
+})
+
+describe('textoDeToma — avisar (futuro) y preguntar (pasado) son mensajes distintos', () => {
+  const meds = [
+    { itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaHoy: false },
+    { itemId: 'b', medName: 'Clonazepam', dose: '2 mg', yaHoy: false },
+  ]
+
+  it('la de HOY no dice "ya tomaste" — todavía no pasó', () => {
+    const t = textoDeToma(meds, '22:00', 'hoy')
+    expect(t).toContain('Toma de HOY a las 22:00')
+    expect(t).toContain('Cuando la tomes')
+    expect(t).not.toContain('ya tomaste')
+  })
+
+  it('la de ANOCHE es una PREGUNTA, que es lo que Aaron pedía distinguir', () => {
+    const t = textoDeToma(meds, '22:00', 'anoche')
+    expect(t).toContain('¿Tomaste la de ANOCHE (22:00)?')
+    expect(t).toContain('Si la tomaste')
+  })
+
+  it('una atrasada lo dice sin acusar', () => {
+    expect(textoDeToma(meds, '22:00', 'atrasada')).toContain('Quedó sin registrar')
+  })
+
+  it('sin `cuando` queda EXACTAMENTE el texto viejo (compatibilidad)', () => {
+    expect(textoDeToma(meds, '22:00')).toBe(textoDeToma(meds, '22:00', null))
+    expect(textoDeToma(meds, '22:00')).toContain('Toma de las 22:00')
+  })
+
+  it('todo registrado: felicita igual, sin importar el día', () => {
+    const ya = [{ itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaHoy: true }]
+    for (const c of ['hoy', 'anoche', 'atrasada', null] as const) {
+      expect(textoDeToma(ya, '22:00', c)).toContain('ya registraste todo')
+    }
+  })
+
+  it('siempre nombra los medicamentos con su dosis', () => {
+    for (const c of ['hoy', 'anoche', 'atrasada', null] as const) {
+      const t = textoDeToma(meds, '22:00', c)
+      expect(t).toContain('Topiramato 100 mg')
+      expect(t).toContain('Clonazepam 2 mg')
+    }
   })
 })

@@ -53,6 +53,48 @@ export function horaDeRecordatorioDeToma(reminderId: string | null | undefined):
   return `${m[2]}:${m[3]}`
 }
 
+/**
+ * La FECHA de la toma que el id codifica ('YYYY-MM-DD'), o null. PURA.
+ *
+ * `horaDeRecordatorioDeToma` devuelve solo la hora y DESCARTA esta fecha, que el
+ * id siempre trajo. Eso produjo el reclamo del 4-ago-2026: a las 06:32 de la
+ * mañana le llegó "💊 Toma de las 22:00 · … · Toca lo que ya tomaste", y Aaron
+ * preguntó lo obvio — *"¿qué sentido tiene que me pregunte en la mañana si las
+ * acabo de tomar si el objetivo es tomarlas en la noche? A menos que la pregunta
+ * sea si las tomé anoche, pero igual no es muy bueno porque podría olvidarme"*.
+ *
+ * Una hora sin día no se puede interpretar. El día estaba en el id.
+ */
+export function fechaDeRecordatorioDeToma(reminderId: string | null | undefined): string | null {
+  const s = (reminderId ?? '').trim()
+  if (!s.startsWith(REM_TOMA)) return null
+  const m = s.slice(REM_TOMA.length).match(/^(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})$/)
+  if (!m) return null
+  if (Number(m[2]) > 23 || Number(m[3]) > 59) return null
+  return m[1]
+}
+
+/** Cuándo es la toma respecto del día en que se avisa. PURA. */
+export type CuandoToma = 'hoy' | 'anoche' | 'atrasada'
+
+/**
+ * Cómo hay que referirse a la toma según el día en que se manda el aviso. PURA.
+ *
+ * `null` si no se puede saber (id sin fecha): ahí el texto se queda sin día, que
+ * es el comportamiento viejo — mejor un aviso ambiguo que ninguno.
+ */
+export function cuandoDeLaToma(
+  fechaToma: string | null | undefined,
+  hoyLima: string,
+): CuandoToma | null {
+  const f = (fechaToma ?? '').trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || !/^\d{4}-\d{2}-\d{2}$/.test(hoyLima)) return null
+  if (f === hoyLima) return 'hoy'
+  if (f > hoyLima) return 'hoy' // toma futura: se avisa como la de "hoy" del día que toque
+  const ayer = new Date(Date.parse(`${hoyLima}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  return f === ayer ? 'anoche' : 'atrasada'
+}
+
 /** `med:<itemId>` para el botón de un medicamento. PURA. */
 export function medCallbackData(itemId: string): string {
   return `${MED_CB}${itemId}`
@@ -116,13 +158,35 @@ export function botonesDeToma(meds: readonly MedDeToma[], hora: string): BotonFi
   return filas
 }
 
-/** El texto del aviso. PURA. */
-export function textoDeToma(meds: readonly MedDeToma[], hora: string): string {
+/**
+ * El texto del aviso. PURA.
+ *
+ * `cuando` decide si esto es un aviso ANTES de la toma o una pregunta DESPUÉS —
+ * dos mensajes distintos que antes se decían con las mismas palabras. Sin él, el
+ * texto queda como estaba (sin día).
+ */
+export function textoDeToma(
+  meds: readonly MedDeToma[],
+  hora: string,
+  cuando?: CuandoToma | null,
+): string {
   const lista = (meds ?? []).filter((m) => m?.itemId && m?.medName)
   const pendientes = lista.filter((m) => !m.yaHoy)
   if (pendientes.length === 0) {
     return `💊 ${hora} — ya registraste todo lo de esta toma. 👏`
   }
   const nombres = pendientes.map((m) => `${m.medName}${m.dose ? ` ${m.dose}` : ''}`).join('\n· ')
+  // ANOCHE / ATRASADA es una PREGUNTA sobre el pasado; HOY es un aviso de algo que
+  // todavía no pasó. Decir "toca lo que ya tomaste" para una toma que falta una
+  // hora es lo que volvía el mensaje incomprensible.
+  if (cuando === 'anoche') {
+    return `💊 ¿Tomaste la de ANOCHE (${hora})?\n\n· ${nombres}\n\nSi la tomaste, tócala 👇`
+  }
+  if (cuando === 'atrasada') {
+    return `💊 Quedó sin registrar la toma de las ${hora}\n\n· ${nombres}\n\nSi la tomaste, tócala 👇`
+  }
+  if (cuando === 'hoy') {
+    return `💊 Toma de HOY a las ${hora}\n\n· ${nombres}\n\nCuando la tomes, tócala 👇`
+  }
   return `💊 Toma de las ${hora}\n\n· ${nombres}\n\nToca lo que ya tomaste 👇`
 }

@@ -17,7 +17,8 @@ import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
 import { isTelegramConfigured, sendTelegramKeyboard, sendTelegramMessage } from '@/lib/telegram/client'
 import { textoRecordatorio } from '@/lib/push/cuandoVence'
-import { botonesDeToma, horaDeRecordatorioDeToma, textoDeToma } from '@/lib/meds/telegramToma'
+import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cuandoDeLaToma, textoDeToma } from '@/lib/meds/telegramToma'
+import { limaDayString } from '@/lib/habits/streak'
 import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
 
 export const runtime = 'nodejs'
@@ -104,7 +105,32 @@ export async function GET(req: NextRequest) {
   // arreglo. [[fechas-clave-de-aaron]]
   let notified = 0
   let sinEntregar = 0
+  let tomasDiferidas = 0
+  const hoyLima = limaDayString(new Date(nowMs))
   for (const r of rows) {
+    // ═══ UNA TOMA DE LA NOCHE NO SE ANUNCIA A LAS 6 DE LA MAÑANA ══════════════
+    //
+    // Aaron, 4-ago-2026: *"acá me pregunta si ya tomé todas estas pastillas, pero
+    // anoche te dije que la mayoría eran ANTES DE DORMIR, entonces qué sentido
+    // tiene que me pregunte en la mañana si las acabo de tomar si el objetivo es
+    // tomarlas en la noche"*.
+    //
+    // Tenía toda la razón. Este cron corre 06:00 de Lima y mira 36 h adelante, así
+    // que la toma de las 22:00 de HOY entraba con ~16 h de anticipación y se
+    // anunciaba con el texto de "toca lo que ya tomaste". Se cerraba con
+    // `notified_at` y no volvía nunca — el aviso útil, a su hora, no existía.
+    //
+    // Ahora la toma que todavía NO venció se la deja a `evening-push` (21:00 de
+    // Lima, una hora antes). No se marca `notified_at`: queda abierta a propósito.
+    // Y si esa corrida nocturna fallara, mañana este mismo cron la ve VENCIDA y
+    // pregunta "¿tomaste la de anoche?" — que es la pregunta correcta para el
+    // pasado. Ningún camino la pierde en silencio.
+    const horaToma = horaDeRecordatorioDeToma(r.id)
+    const vencida = r.due_at ? Date.parse(r.due_at) <= nowMs : true
+    if (horaToma && !vencida) {
+      tomasDiferidas++
+      continue
+    }
     const slug = r.related_person_id ? slugById.get(r.related_person_id) : null
     const cuerpo = textoRecordatorio(r.text, r.due_at, nowMs)
     const entregas: Entrega[] = []
@@ -143,11 +169,14 @@ export async function GET(req: NextRequest) {
         // llevan botones. Otros recordatorios pueden colgar de la misma receta sin ser
         // una toma —el de los 5 laboratorios del neurólogo es su monitoreo— y derivarlo
         // de la hora les habría reemplazado el texto por el de la medicación.
-        const hora = horaDeRecordatorioDeToma(r.id)
+        const hora = horaToma
         const meds = hora ? await medsDeLaToma(supabase, r.user_id, hora) : []
         const filas = meds.length > 0 ? botonesDeToma(meds, hora as string) : []
         if (filas.length > 0) {
-          await sendTelegramKeyboard(Number(tgChat), textoDeToma(meds, hora as string), filas)
+          // Acá solo llegan tomas YA VENCIDAS (las futuras se difirieron arriba), así
+          // que el texto pregunta por el pasado en vez de afirmar que "ya la tomaste".
+          const cuando = cuandoDeLaToma(fechaDeRecordatorioDeToma(r.id), hoyLima)
+          await sendTelegramKeyboard(Number(tgChat), textoDeToma(meds, hora as string, cuando), filas)
         } else {
           await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${cuerpo}`)
         }
@@ -169,5 +198,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ processed: rows.length, notified, sinEntregar })
+  return NextResponse.json({ processed: rows.length, notified, sinEntregar, tomasDiferidas })
 }
