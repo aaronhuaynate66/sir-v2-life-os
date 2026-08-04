@@ -146,10 +146,23 @@ export async function assembleDailyActions(
     }
   }
 
-  // Fechas próximas (cumple/especiales ≤14d) → set de personIds.
-  const upcomingPersonIds = new Set<string>()
+  // ═══ FECHAS PRÓXIMAS: EL DETALLE, NO UN BOOLEANO ══════════════════════════
+  //
+  // Acá vivía el bug que Aaron cazó el 4-ago-2026. Esto era un
+  // `Set<personId>`, así que `contactDatesInRange` calculaba etiqueta, días y
+  // empujón accionable para cada fecha y **todo eso se tiraba en la misma línea
+  // donde se consumía**. Aguas abajo solo quedaba `hasUpcomingDate: true/false`,
+  // y con un booleano lo único que se puede decir es lo que decía el brief:
+  // *"Tiene una fecha importante cerca — tu pareja"*. Sin nombre, sin fecha, sin
+  // qué hacer. Textual: *"esa información así vacía no me ayuda"*.
+  //
+  // Ahora viaja el detalle. `contactDatesInRange` ya viene ordenado por
+  // cercanía, así que la PRIMERA de cada persona es la más próxima — la que
+  // manda.
+  const upcomingByPerson = new Map<string, { label: string; daysUntil: number; nudge: string }>()
   for (const d of contactDatesInRange(people, UPCOMING_LEAD_DAYS, now)) {
-    if (d.personId) upcomingPersonIds.add(d.personId)
+    if (!d.personId || upcomingByPerson.has(d.personId)) continue
+    upcomingByPerson.set(d.personId, { label: d.label, daysUntil: d.daysUntil, nudge: d.nudge })
   }
 
   // Disponibilidad: self_metric más reciente por categoría (orden desc).
@@ -203,7 +216,8 @@ export async function assembleDailyActions(
       status: statusByPerson.get(person.id),
       daysSinceContact,
       contactFrequencyDays: cadenceDays,
-      hasUpcomingDate: upcomingPersonIds.has(person.id),
+      hasUpcomingDate: upcomingByPerson.has(person.id),
+      upcomingDate: upcomingByPerson.get(person.id) ?? null,
       recentSignals: signalsByPerson.get(person.id) ?? [],
     }
   })
