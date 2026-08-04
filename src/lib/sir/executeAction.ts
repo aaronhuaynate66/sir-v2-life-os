@@ -12,6 +12,8 @@
 // (person_logs → memories) para que el briefing de la persona lo vea. Los otros
 // kinds (crear_objetivo/persona/cerrar_relacion) quedan para el PR siguiente.
 
+import { createHash } from 'node:crypto'
+
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { ProposedActionResolved } from '@/lib/sir/askSir'
@@ -39,7 +41,8 @@ export function isExecutableByChat(kind: string): boolean {
     kind === 'crear_plan' ||
     kind === 'crear_recordatorio' ||
     kind === 'registrar_estado' ||
-    kind === 'registrar_entrenamiento'
+    kind === 'registrar_entrenamiento' ||
+    kind === 'registrar_hecho_clinico'
   )
 }
 
@@ -125,6 +128,68 @@ export async function executeProposedAction(
     return {
       ok: true,
       message: `✅ Registré la interacción con ${name} (tono ${value}/5)${note ? ` — "${note.slice(0, 90)}${note.length > 90 ? '…' : ''}"` : ''}.`,
+    }
+  }
+
+  // ═══ UN HECHO MÉDICO, GUARDADO DONDE SIR LO VUELVE A ENCONTRAR ═════════════
+  //
+  // Aaron le contó que Fernando le recomendó una panarteriografía y SIR respondió
+  // una clase de anatomía. No fue el prompt (ya exige cerrar loops) ni falta de
+  // contexto (Fernando está en su red): de las 11 tools ninguna podía sostener el
+  // HECHO, así que no había nada que hacer con la información.
+  //
+  // Se escribe en `memories` a propósito, sin tabla nueva: es el corpus del que SIR
+  // hace recall, así que el hecho sobrevive al cierre de la conversación y aparece
+  // la próxima vez que él pregunte. Es el mismo lugar donde vive el cruce de
+  // exámenes desde #1095, y por la misma razón.
+  if (action.kind === 'registrar_hecho_clinico') {
+    const hecho = (action.hecho || '').trim()
+    if (hecho.length < 5) return { ok: false, message: 'Faltó el hecho, no registré nada.' }
+
+    const quien = (action.quien || '').trim()
+    const hoy = new Date().toISOString().slice(0, 10)
+    const fecha = /^\d{4}-\d{2}-\d{2}$/.test(action.fecha || '') ? action.fecha : hoy
+    const alta = action.relevancia === 'alta'
+
+    // La persona solo se vincula si es de él. `personId` sin verificar sería confiar
+    // en la resolución por nombre para escribir una entidad ajena.
+    let personId: string | null = null
+    let personName: string | null = null
+    if (action.personId) {
+      const { data: p } = await supabase
+        .from('people').select('id, name').eq('user_id', userId).eq('id', action.personId).maybeSingle()
+      if (p) { personId = (p as { id: string }).id; personName = (p as { name?: string }).name ?? null }
+    }
+
+    // Id determinístico por (fecha + hecho): si Aaron lo cuenta dos veces, se
+    // actualiza en vez de duplicar. Es la misma disciplina que evitó las 700
+    // memorias basura de #1029.
+    const huella = createHash('sha1').update(`${userId}|${fecha}|${hecho.toLowerCase()}`).digest('hex').slice(0, 20)
+    const atribucion = quien ? `${quien}: ` : ''
+
+    const { error } = await supabase.from('memories').upsert([{
+      id: `mem_clin_${huella}`,
+      user_id: userId,
+      type: 'semantic',
+      title: `${quien ? `${quien} — ` : ''}${hecho.slice(0, 110)}`,
+      // El contenido lleva la atribución y la fecha DENTRO del texto: el recall busca
+      // sobre `content`, así que un dato que solo viva en una columna no se encuentra.
+      content: `Hecho médico reportado por Aaron el ${fecha}. ${atribucion}${hecho}`,
+      tags: ['salud', 'hecho_clinico', ...(alta ? ['relevancia_alta'] : [])],
+      importance: alta ? 9 : 7,
+      emotional_charge: 0,
+      decay_rate: 0.01,
+      source: 'hecho_clinico_chat',
+      occurred_at: `${fecha}T12:00:00Z`,
+      ...(personId ? { person_id: personId, entities: [personId] } : {}),
+    }], { onConflict: 'id' })
+
+    if (error) return { ok: false, message: 'Uf, no pude registrar el hecho. Reinténtalo en un momento.' }
+
+    const deQuien = personName ? ` (de ${personName})` : quien ? ` (de ${quien})` : ''
+    return {
+      ok: true,
+      message: `✅ Registré el hecho médico${deQuien}: "${hecho.slice(0, 110)}${hecho.length > 110 ? '…' : ''}". Ya lo tengo para cuando preguntes por esto.`,
     }
   }
 

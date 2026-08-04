@@ -57,11 +57,21 @@ export async function GET() {
   }
 
   // Mensajes canónicos que el reader appendeó (source='reader') — total.
+  //
+  // `count: 'exact'` acá costaba ~20 s: obliga a Postgres a contar filas sobre
+  // `chat_messages`, que pasa las 285.000, y esta página lo esperaba para pintar un
+  // número que nadie compara al dígito. `planned` usa la estimación del planificador
+  // y responde en milisegundos. Medido el 4-ago-2026, cuando el panel nuevo de
+  // canales hizo notoria la demora.
+  //
+  // Se acepta que el número sea aproximado A PROPÓSITO, y la respuesta lo declara
+  // (`readerChatMessagesAprox`) para que ninguna vista lo presente como exacto: un
+  // número redondo presentado como preciso es peor que un número redondo.
   let readerChatMessages = 0
   try {
     const { count } = await supabase
       .from('chat_messages')
-      .select('id', { count: 'exact', head: true })
+      .select('id', { count: 'planned', head: true })
       .eq('user_id', userId)
       .eq('source', 'reader')
     readerChatMessages = count ?? 0
@@ -157,6 +167,9 @@ export async function GET() {
       threads: threads.length,
       readerObservations: readerObs.length,
       readerChatMessages,
+      /** `true` porque el conteo es la estimación del planificador, no un conteo
+       *  exacto (ver arriba). Quien lo muestre debe decir que es aproximado. */
+      readerChatMessagesAprox: true,
     },
   })
 }

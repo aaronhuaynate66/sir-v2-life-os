@@ -1248,6 +1248,13 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     } else if (parsed?.kind === 'crear_objetivo') {
       const r = parsed.personaRelacionada ? resolvePersonId(parsed.personaRelacionada) : { id: null, name: null }
       proposedAction = { ...parsed, personaRelacionada: r.name, personId: r.id }
+    } else if (parsed?.kind === 'registrar_hecho_clinico') {
+      // `quien` es OPCIONAL y no bloquea: un hallazgo de un informe no tiene persona,
+      // y perder el hecho por no poder resolver un nombre sería el mismo error que
+      // esta tool viene a arreglar. Si la persona existe, se vincula; si no, el hecho
+      // se guarda igual con el nombre tal como Aaron lo dijo.
+      const r = parsed.quien ? resolvePersonId(parsed.quien) : { id: null, name: null }
+      proposedAction = { ...parsed, quien: r.name ?? parsed.quien, personId: r.id }
     } else if (parsed?.kind === 'crear_persona') {
       proposedAction = { ...parsed }
     } else if (parsed?.kind === 'marcar_habito') {
