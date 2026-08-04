@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ApiErrorNotice } from '@/components/ui/api-error-notice'
 import type { ApiError } from '@/lib/api/errors'
+import { TomaDeHoy } from './TomaDeHoy'
 
 interface ItemAPI {
   itemId: string
@@ -36,7 +37,12 @@ interface ItemAPI {
   terminado: boolean
   indication: string | null
   everyHours: number | null
+  timesPerDay: number | null
   durationDays: number | null
+  /** Cuántas unidades trae la receta. Llegaba del endpoint y se descartaba acá. */
+  totalUnits: number | null
+  /** Horas objetivo 'HH:MM'. El dato que hacía imposible responder "¿qué tomo ahora?". */
+  schedule: string[]
 }
 interface PrescAPI {
   id: string
@@ -111,8 +117,38 @@ export function TratamientosPanel() {
   }
   if (!data || data.length === 0) return null
 
+  // ═══ LO QUE VA ARRIBA: "¿qué tomo ahora y por qué?" ════════════════════════
+  //
+  // Se arma acá y no dentro de una receta porque la pregunta CRUZA recetas: el
+  // topiramato es del neurólogo y el etoricoxib del maxilofacial, y los dos caen a
+  // las 22:00. Agrupado por receta, esa coincidencia es invisible — que es
+  // exactamente por qué Aaron no entendía qué tomaba.
+  const itemsDeToma = data.flatMap((p) => p.items.map((i) => ({
+    itemId: i.itemId,
+    medName: i.medName,
+    dose: i.dose,
+    schedule: i.schedule ?? [],
+    indication: i.indication,
+    pendientesHoy: i.pendientesHoy,
+    tomadasHoy: i.tomadasHoy,
+    terminado: i.terminado,
+    reason: p.reason,
+    diagnosis: p.diagnosis,
+    status: p.status,
+  })))
+  // Los avisos de cruce solo de recetas ACTIVAS: una advertencia sobre un curso
+  // terminado es ruido con forma de alarma.
+  const avisos = data
+    .filter((p) => p.status === 'activa' && (p.note ?? '').trim())
+    .map((p) => ({ receta: p.reason ? p.reason.slice(0, 60) : null, texto: (p.note ?? '').trim() }))
+  // Hora de Lima con offset explícito: `toISOString()` da UTC y de 19:00 a medianoche
+  // eso corre el día. El mismo error que ya costó decir que una reunión había pasado.
+  const ahoraLima = new Date(Date.now() - 5 * 3_600_000).toISOString().slice(11, 16)
+
   return (
-    <Card className="shadow-none mb-4">
+    <>
+    <TomaDeHoy items={itemsDeToma} avisos={avisos} ahora={ahoraLima} />
+    <Card className="shadow-none mb-4 mt-4">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-1">
           <Stethoscope size={16} className="text-muted-foreground" />
@@ -137,9 +173,22 @@ export function TratamientosPanel() {
                 </div>
 
                 {p.reason && <p className="text-sm text-foreground/90 leading-snug mb-1">{p.reason}</p>}
+                {/* El DIAGNÓSTICO llegaba del endpoint y no se pintaba nunca. Es el
+                    dato formal detrás del motivo en prosa —"G43.0 · Migraña sin aura,
+                    DEFINITIVO"— y es lo que un médico reconoce de un vistazo. */}
+                {p.diagnosis && (
+                  <p className="text-[12px] text-foreground/75 leading-snug mb-1">
+                    <span className="text-text-tertiary">Dx:</span> {p.diagnosis}
+                  </p>
+                )}
                 {(p.prescribedBy || p.provider) && (
                   <p className="text-[11px] text-muted-foreground mb-2">
                     {[p.prescribedBy, p.provider].filter(Boolean).join(' · ')}
+                    {/* De dónde salió la fila: una receta reconstruida a mano no vale
+                        lo mismo que una cargada de un correo del médico. */}
+                    {p.source === 'retroactivo' && (
+                      <span className="text-warn"> · reconstruida, no es una receta original</span>
+                    )}
                   </p>
                 )}
 
@@ -153,6 +202,19 @@ export function TratamientosPanel() {
                         </span>
                         {i.dose && <span className="text-xs text-muted-foreground">{i.dose}</span>}
                         {pauta(i) && <span className="text-[11px] text-muted-foreground/80">{pauta(i)}</span>}
+                        {/* La HORA. Estaba en la tabla y el endpoint no la traía, así
+                            que la pantalla solo podía decir "cada 24 h". */}
+                        {(i.schedule ?? []).length > 0 && (
+                          <span className="text-[11px] font-medium text-brand tabular-nums">
+                            {i.schedule.join(' · ')}
+                          </span>
+                        )}
+                        {/* Las unidades de la caja: llegaban y se descartaban acá. */}
+                        {i.totalUnits != null && (
+                          <span className="text-[11px] text-muted-foreground/80 tabular-nums">
+                            {i.totalUnits} u
+                          </span>
+                        )}
                       </div>
 
                       {i.indication && (
@@ -215,5 +277,6 @@ export function TratamientosPanel() {
         </div>
       </CardContent>
     </Card>
+    </>
   )
 }

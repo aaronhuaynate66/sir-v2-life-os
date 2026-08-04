@@ -45,6 +45,7 @@ interface ItemRow {
   duration_days: number | null
   total_units: number | null
   indication: string | null
+  schedule: string[] | null
 }
 
 /** 'YYYY-MM-DD' de hoy en Lima (offset fijo −05:00: Perú no tiene horario de verano). */
@@ -66,6 +67,10 @@ export async function GET() {
       .from('med_prescriptions')
       .select('id, reason, diagnosis, prescribed_by, provider, source, started_on, ends_on, status, note')
       .eq('user_id', uid)
+      // Por ESTADO primero y después por fecha: una receta suspendida que empezó
+      // más tarde aparecía ANTES que una activa, en una lista plana. Lo que se toma
+      // hoy va arriba.
+      .order('status', { ascending: true })
       .order('started_on', { ascending: false })
       .limit(50)
     if (pErr) {
@@ -77,7 +82,11 @@ export async function GET() {
     const ids = recetas.map((r) => r.id)
     const { data: its, error: iErr } = await supabase
       .from('med_prescription_items')
-      .select('id, prescription_id, med_name, dose, every_hours, times_per_day, duration_days, total_units, indication')
+      //  NO se traía, y es el dato que más pesa: sin él la pantalla no
+      // puede decir 'a las 22:00' y solo dice 'cada 24 h'. Aaron, 4-ago-2026: *"no se
+      // entiende para nada lo que tomo ni para qué ni por qué"*. La hora estaba en la
+      // tabla desde #1087 y moría acá.
+      .select('id, prescription_id, med_name, dose, every_hours, times_per_day, duration_days, total_units, indication, schedule')
       .in('prescription_id', ids)
     if (iErr) {
       return NextResponse.json({ error: 'No se pudieron leer los medicamentos', detail: iErr.message.slice(0, 200) }, { status: 500 })
@@ -140,7 +149,10 @@ export async function GET() {
             indication: i.indication,
             totalUnits: i.total_units,
             everyHours: i.every_hours,
+            timesPerDay: i.times_per_day,
             durationDays: i.duration_days,
+            // Horas objetivo normalizadas a HH:MM. Postgres devuelve '22:00:00'.
+            schedule: (i.schedule ?? []).map((h) => String(h).slice(0, 5)),
           }
         }),
       }

@@ -198,8 +198,13 @@ function TrendTable({ exams }: { exams: HealthExam[] }) {
       <p className="text-[11px] text-muted-foreground leading-relaxed">
         Cada valor a través de tus exámenes. <Repeat size={10} className="inline -mt-0.5" /> = tendencia consistente (3+ mediciones siempre en la misma dirección) — lo que vale la pena vigilar.
       </p>
+      {/* `min-w-[420px]` en un teléfono de 390 px GARANTIZABA scroll horizontal, y
+          justo sobre el dato más delicado de la pantalla: valores de laboratorio
+          contra su rango, en alguien que se hace seguimiento por un aneurisma.
+          360 px cabe a 390 con el padding de la tarjeta; el `overflow-x-auto` queda
+          como red por si hay muchas columnas de fechas. */}
       <div className="overflow-x-auto rounded-lg border border-border/60">
-        <table className="w-full min-w-[420px] text-[12.5px]">
+        <table className="w-full min-w-[360px] text-[12.5px]">
           <thead>
             <tr className="bg-muted/20">
               <th className="text-left font-medium text-muted-foreground px-3 py-2">Analito</th>
