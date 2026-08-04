@@ -6,6 +6,9 @@
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { diagnoseChannel, tieneDiagnostico } from '@/lib/reader/channelSilence'
+import { lectorVivo, probeLine, normalizarProbe } from '@/lib/reader/comandos'
+import { ultimaDataPorCanal, type ClienteMinimo } from '@/lib/reader/ultimaData'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -64,6 +67,74 @@ export async function GET() {
     readerChatMessages = count ?? 0
   } catch { /* tabla puede no existir en algún entorno */ }
 
+  // ═══ ESTADO DE CADA CANAL: el veredicto, no solo el conteo ══════════════════
+  //
+  // Aaron, 4-ago-2026, sobre la línea del brief que decía que Instagram corría sin
+  // traer nada: *"no entiendo si sirve o no sirve, qué hacemos, se me ocurre crear
+  // una sección de estatus en SIR que se sincronice con la extensión"*.
+  //
+  // Era la pieza que faltaba, y casi todo estaba escrito y HUÉRFANO:
+  // `reader_heartbeats.probe` se escribía y no se leía en ningún lado, y
+  // `lectorVivo`/`probeLine` —que distinguen "la pestaña está abierta" de "el
+  // lector está leyendo"— solo aparecían en sus propios tests. Esta página
+  // contaba mensajes ingeridos y NO consultaba `reader_heartbeats`, así que el
+  // brief de Telegram y `/reader` contaban historias distintas con datos distintos.
+  //
+  // Ahora los dos usan el mismo veredicto: `diagnoseChannel`.
+  let canales: Array<Record<string, unknown>> = []
+  try {
+    const [{ data: hbRaw }, dataPorCanal] = await Promise.all([
+      supabase
+        .from('reader_heartbeats')
+        .select('channel, last_beat_at, last_data_at, status, detail, ext_version, sent_count, last_error, probe')
+        .eq('user_id', userId)
+        .order('last_beat_at', { ascending: false }),
+      // La MISMA fuente de verdad que usa el brief. Sin esto, este panel decía
+      // "Instagram nunca trajo nada" (porque `last_data_at` está en null) mientras
+      // el brief decía "hace 4 días que no trae nada" — mismo día, misma base.
+      ultimaDataPorCanal(supabase as unknown as ClienteMinimo, userId),
+    ])
+    const ahora = new Date()
+    const filas = (hbRaw ?? []) as Array<Record<string, unknown>>
+    // Un canal que trajo datos EXISTE aunque nunca haya latido: el latido refina el
+    // diagnóstico, no es la condición para tenerlo.
+    const nombres = new Set(filas.map((r) => String(r.channel ?? '')))
+    for (const [c, iso] of Object.entries(dataPorCanal)) if (iso) nombres.add(c)
+    const porCanal = new Map(filas.map((r) => [String(r.channel ?? ''), r]))
+
+    canales = [...nombres].map((channel) => {
+      const r = porCanal.get(channel) ?? {}
+      const probe = normalizarProbe(r.probe)
+      const lastDataAt = (r.last_data_at as string | null) ?? dataPorCanal[channel] ?? null
+      const veredicto = diagnoseChannel({
+        channel,
+        lastHeartbeatAt: (r.last_beat_at as string | null) ?? null,
+        lastDataAt,
+        status: (r.status as string | null) ?? null,
+      }, ahora)
+      return {
+        channel,
+        lastBeatAt: r.last_beat_at ?? null,
+        lastDataAt,
+        status: r.status ?? null,
+        detail: r.detail ?? null,
+        extVersion: r.ext_version ?? null,
+        sentCount: r.sent_count ?? null,
+        lastError: r.last_error ?? null,
+        // El veredicto compartido con el brief.
+        kind: veredicto.kind,
+        hoursSinceHeartbeat: veredicto.hoursSinceHeartbeat,
+        daysSinceData: veredicto.daysSinceData,
+        // Lo que estaba huérfano: ¿está LEYENDO, no solo abierto?
+        // `null` = "no sé", nunca "sano por defecto".
+        lectorVivo: lectorVivo(probe),
+        probeLine: probeLine(channel, probe),
+        // Y la verdad incómoda: para estos canales la pregunta no tiene respuesta.
+        tieneDiagnostico: tieneDiagnostico(channel),
+      }
+    })
+  } catch { /* 0175/0181 sin propagar → la página muestra el resto */ }
+
   const recent = readerObs.slice(0, 25).map((o) => ({
     observedAt: o.observed_at,
     platform: o.data?.platform ?? '?',
@@ -73,6 +144,7 @@ export async function GET() {
   }))
 
   return NextResponse.json({
+    canales,
     threads: threads.map((t) => ({
       platform: t.platform,
       threadName: t.thread_name ?? '(sin nombre)',

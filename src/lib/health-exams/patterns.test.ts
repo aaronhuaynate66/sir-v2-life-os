@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { labPatterns, labAlertPushLine, parseRange } from './patterns'
+import {
+  labPatterns, labAlertPushLine, parseRange,
+  meritaEmpujon, esUrgenteDeLab, patternMemoryId, patternMemoryContent,
+  type LabPattern,
+} from './patterns'
 import type { HealthExam } from './types'
 
 function exam(date: string, values: HealthExam['values']): HealthExam {
@@ -145,5 +149,109 @@ describe('parseRange — los formatos REALES de los laboratorios peruanos', () =
     expect(parseRange(undefined)).toEqual({ min: null, max: null })
     expect(parseRange('Negativo')).toEqual({ min: null, max: null })
     expect(parseRange('≈ control ± 10')).toEqual({ min: null, max: null })
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QUE EL HALLAZGO NO DEPENDA DE QUE ALGUIEN ESTÉ EN LA CONVERSACIÓN
+//
+// Aaron, 4-ago-2026: "lo cruzaste todo muy bien acá en la conversación de la
+// terminal pero ahora que se cerró ya no veo nada de eso ni acá ni en ninguna
+// parte, siento que todo eso se perdió".
+//
+// Medido ese día: `memories` tenía 1.000 filas y CERO sobre la serie roja.
+// El motor recalculaba el patrón y no lo escribía nunca.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('patternMemoryId — idempotente, para no repetir las 700 memorias basura', () => {
+  const hb = (over: Partial<LabPattern> = {}): LabPattern => ({
+    name: 'Hemoglobina', unit: 'g/dl', range: '13 – 19', direction: 'down',
+    values: ['16.8', '14.5', '13.9'], severity: 'watch', deltaPct: -17.3, nearEdge: false,
+    message: 'x', from: '2026-05-02', to: '2026-07-03', ...over,
+  })
+
+  it('el mismo patrón da la MISMA clave (el cron diario actualiza, no duplica)', () => {
+    expect(patternMemoryId(hb())).toBe(patternMemoryId(hb()))
+    expect(patternMemoryId(hb())).toBe('mem_lab_hemoglobina_2026-05-02_2026-07-03')
+  })
+
+  it('un examen nuevo mueve la ventana → memoria nueva (queda el rastro, no solo la última foto)', () => {
+    expect(patternMemoryId(hb({ to: '2026-08-11' }))).not.toBe(patternMemoryId(hb()))
+  })
+
+  it('analitos distintos no colisionan, y los acentos no rompen la clave', () => {
+    expect(patternMemoryId(hb({ name: 'Hematocrito' }))).not.toBe(patternMemoryId(hb()))
+    expect(patternMemoryId(hb({ name: 'Glóbulos rojos' }))).toContain('globulos-rojos')
+  })
+
+  it('la dirección opuesta del mismo analito es otro hallazgo', () => {
+    // Mismo nombre y ventana pero subiendo: la clave incluye la ventana, así que
+    // en la práctica no se pisan porque un tramo tiene una sola dirección.
+    expect(patternMemoryId(hb()).startsWith('mem_lab_hemoglobina_')).toBe(true)
+  })
+})
+
+describe('patternMemoryContent — explica POR QUÉ nadie lo vio', () => {
+  const hb: LabPattern = {
+    name: 'Hemoglobina', unit: 'g/dl', range: '13 – 19', direction: 'down',
+    values: ['16.8', '14.5', '13.9'], severity: 'watch', deltaPct: -17.3, nearEdge: false,
+    message: 'x', from: '2026-05-02', to: '2026-07-03',
+  }
+
+  it('el caso real: los números, la deriva y que ningún laboratorio lo marcó', () => {
+    const c = patternMemoryContent(hb)
+    expect(c).toContain('Hemoglobina')
+    expect(c).toContain('16.8 → 14.5 → 13.9 g/dl')
+    expect(c).toContain('-17.3%')
+    expect(c).toContain('2026-05-02')
+    expect(c).toContain('13 – 19')
+    // Lo que le da valor meses después:
+    expect(c).toContain('ningún laboratorio lo marcó')
+    expect(c).toContain('solo existe en la unión de los 3 exámenes')
+  })
+
+  it('si YA se salió de rango lo dice sin rodeos y no habla de "dentro de rango"', () => {
+    const c = patternMemoryContent({ ...hb, severity: 'alert' })
+    expect(c).toContain('YA está fuera de rango')
+    expect(c).not.toContain('sigue DENTRO')
+  })
+
+  it('menciona el borde solo cuando aplica', () => {
+    expect(patternMemoryContent({ ...hb, nearEdge: true })).toContain('pegado al borde')
+    expect(patternMemoryContent(hb)).not.toContain('pegado al borde')
+  })
+
+  it('sin deltaPct no inventa un porcentaje', () => {
+    const c = patternMemoryContent({ ...hb, deltaPct: null })
+    expect(c).not.toContain('%')
+    expect(c).toContain('Hemoglobina')
+  })
+})
+
+describe('esUrgenteDeLab — lo que no puede esperar hasta el lunes', () => {
+  const p = (over: Partial<LabPattern>): LabPattern => ({
+    name: 'X', direction: 'down', values: ['1', '2', '3'], severity: 'watch',
+    deltaPct: 0, nearEdge: false, message: '', from: '2026-05-01', to: '2026-07-01', ...over,
+  })
+
+  it('fuera de rango: cualquier día', () => {
+    expect(esUrgenteDeLab(p({ severity: 'alert' }))).toBe(true)
+  })
+  it('la hemoglobina de Aaron (−17,3%) entra aunque siga en rango', () => {
+    expect(esUrgenteDeLab(p({ deltaPct: -17.3 }))).toBe(true)
+  })
+  it('un vaivén de 5% NO interrumpe: eso sigue siendo del lunes', () => {
+    expect(esUrgenteDeLab(p({ deltaPct: 5 }))).toBe(false)
+    expect(esUrgenteDeLab(p({ deltaPct: -5 }))).toBe(false)
+  })
+  it('pegado al borde merece empujón pero NO rompe el gate semanal', () => {
+    // Distingue las dos preguntas: `meritaEmpujon` decide si vale decirlo,
+    // `esUrgenteDeLab` decide si vale decirlo HOY.
+    const borde = p({ nearEdge: true, deltaPct: 3 })
+    expect(meritaEmpujon(borde)).toBe(true)
+    expect(esUrgenteDeLab(borde)).toBe(false)
+  })
+  it('sin deltaPct y en rango no urge', () => {
+    expect(esUrgenteDeLab(p({ deltaPct: null }))).toBe(false)
   })
 })

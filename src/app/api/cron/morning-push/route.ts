@@ -26,6 +26,7 @@ import { buildCycleWeekAhead, buildCycleWeekAheadLine, type WomanCycleInput } fr
 import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agendaCross'
 import { goalNudgeLine } from '@/lib/push/goalNudge'
 import { diagnoseChannel, channelSilenceLine } from '@/lib/reader/channelSilence'
+import { ultimaDataPorCanal, type ClienteMinimo } from '@/lib/reader/ultimaData'
 import { evaluarCardio } from '@/lib/health/cardioNotify'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
 import { evaluarPrecondiciones, lineaTrabada } from '@/lib/goals/precondicion'
@@ -44,7 +45,7 @@ import { healthDataGap } from '@/lib/health/dataGap'
 import { parseWeightCategory } from '@/engines/targets'
 import { assessWeightTrend, renderWeightTrendLine } from '@/lib/targets/weightTrend'
 import { assembleDailyActions } from '@/lib/daily-actions/assemble'
-import { labPatterns, labAlertPushLine } from '@/lib/health-exams/patterns'
+import { labPatterns, labAlertPushLine, meritaEmpujon, esUrgenteDeLab, patternMemoryId, patternMemoryContent } from '@/lib/health-exams/patterns'
 import { examenRecienteLine } from '@/lib/health-exams/recentExam'
 import { cumpleanosProximos, esHitoDeAnticipacion } from '@/lib/push/cumpleanos'
 import { encuentrosConDeal, encuentroConDealLine, encuentroDestacado } from '@/lib/crm/dealEnEvento'
@@ -456,57 +457,20 @@ export async function GET(req: NextRequest) {
       // aplicada al propio detector: no concluir desde una vista vacía.)
       let readerSilenceText: string | undefined
       try {
-        const [{ data: hbRows }, { data: lastMsg }, { data: lastIg }, { data: lastPerfil }, { data: lastSeguidor }] = await Promise.all([
+        // La última data real por canal vive en `lib/reader/ultimaData`, y NO acá.
+        // Se extrajo el 4-ago-2026 porque el panel nuevo de `/reader` leyó solo
+        // `reader_heartbeats` y quedó diciendo "Instagram NUNCA trajo nada" mientras
+        // este brief decía "hace 4 días que no trae nada" — mismo día, misma base.
+        // Dos fuentes de verdad para la misma pregunta es justo lo que el panel
+        // venía a resolver. Si se agrega una fuente, se agrega allá y las dos
+        // superficies se enteran juntas.
+        const [{ data: hbRows }, dataPorCanal] = await Promise.all([
           admin.from('reader_heartbeats')
             .select('channel, last_beat_at, status, last_data_at')
             .eq('user_id', uid).limit(20),
-          admin.from('chat_messages').select('sent_at')
-            .eq('user_id', uid).eq('source', 'reader')
-            .not('sent_at', 'is', null)
-            .order('sent_at', { ascending: false }).limit(1),
-          admin.from('unmatched_social_activity').select('observed_at')
-            .eq('user_id', uid).eq('platform', 'instagram')
-            .order('observed_at', { ascending: false }).limit(1),
-          // `unmatched_social_activity` es una BANDEJA: sus filas se BORRAN al
-          // resolver la cuenta. Apoyar la frescura de Instagram solo en ella la
-          // hacía depender de que quedaran cuentas SIN resolver — y el brief
-          // nocturno le pide a Aaron resolverlas (30 por noche). O sea: mientras
-          // más hacía lo que SIR le pedía, más ciego quedaba este detector, y al
-          // vaciar la bandeja habría dicho "Instagram nunca trajo nada" con 11
-          // perfiles y 17 seguidores ahí al lado. Estas dos tablas SOBREVIVEN a
-          // la resolución, así que son la señal honesta.
-          admin.from('social_profiles').select('captured_at')
-            .eq('user_id', uid).eq('platform', 'instagram')
-            .order('captured_at', { ascending: false }).limit(1),
-          admin.from('social_page_followers').select('observed_at')
-            .eq('user_id', uid).eq('source', 'instagram')
-            .order('observed_at', { ascending: false }).limit(1),
+          ultimaDataPorCanal(admin as unknown as ClienteMinimo, uid),
         ])
         const hbs = (hbRows ?? []) as Array<{ channel: string; last_beat_at: string | null; status: string | null; last_data_at: string | null }>
-        // Última data REAL por canal, que es la verdad de campo. `last_data_at`
-        // de la tabla se usa si está, pero no se depende de él: la migración 0175
-        // dice que "lo actualiza el endpoint de ingesta" y hasta hoy nadie lo
-        // escribía (este PR lo arregla; las filas viejas siguen en null).
-        // De varias fuentes, la MÁS RECIENTE: cada una ve un pedazo distinto de lo
-        // que trajo el canal, y quedarse con la más vieja subdiagnosticaría.
-        const masReciente = (...isos: Array<string | null | undefined>): string | null => {
-          let mejor: string | null = null
-          for (const iso of isos) {
-            if (!iso) continue
-            const t = Date.parse(iso)
-            if (!Number.isFinite(t)) continue
-            if (mejor === null || t > Date.parse(mejor)) mejor = iso
-          }
-          return mejor
-        }
-        const dataPorCanal: Record<string, string | null> = {
-          whatsapp: ((lastMsg ?? []) as Array<{ sent_at: string | null }>)[0]?.sent_at ?? null,
-          instagram: masReciente(
-            ((lastIg ?? []) as Array<{ observed_at: string | null }>)[0]?.observed_at,
-            ((lastPerfil ?? []) as Array<{ captured_at: string | null }>)[0]?.captured_at,
-            ((lastSeguidor ?? []) as Array<{ observed_at: string | null }>)[0]?.observed_at,
-          ),
-        }
         // Canales a diagnosticar = los que latieron ∪ los que trajeron datos.
         const canales = new Set<string>(hbs.map((h) => h.channel))
         for (const [c, iso] of Object.entries(dataPorCanal)) if (iso) canales.add(c)
@@ -1132,10 +1096,55 @@ export async function GET(req: NextRequest) {
           .order('exam_date', { ascending: true })
           .limit(50)
         const exams = (examRows ?? []).map((r) => ({ ...rowToHealthExam(r as Record<string, unknown>), pdfUrl: null }))
-        // Crónico: tendencias entre exámenes. Semanal, y necesita al menos dos.
-        if (isMondayLima && exams.length >= 2) {
-          const line = labAlertPushLine(labPatterns(exams))
-          if (line) healthWatchText = line
+        // Crónico: tendencias entre exámenes. Necesita al menos dos.
+        //
+        // El gate de lunes se conserva SOLO para lo leve. Un analito que ya se salió
+        // de rango, o que se movió ≥15% sostenido, sale cualquier día: es el caso de
+        // la hemoglobina (−17,3%) y esperar hasta 6 días es la misma falla que tuvo
+        // `examenReciente` con la ventana de 5-7 días del hematoma septal.
+        if (exams.length >= 2) {
+          const patrones = labPatterns(exams)
+          const urgentes = patrones.filter(esUrgenteDeLab)
+          if (isMondayLima || urgentes.length > 0) {
+            const line = labAlertPushLine(patrones)
+            if (line) healthWatchText = line
+          }
+
+          // ═══ EL HALLAZGO SE ESCRIBE, NO SOLO SE DICE ══════════════════════════
+          //
+          // Aaron, 4-ago-2026: *"lo cruzaste todo muy bien acá en la conversación de
+          // la terminal pero ahora que se cerró ya no veo nada de eso ni acá ni en
+          // ninguna parte, siento que todo eso se perdió"*.
+          //
+          // El motor recalculaba el patrón en cada corrida y no lo guardaba en
+          // ningún lado: medido ese día, `memories` tenía 1.000 filas y CERO sobre
+          // la serie roja. Ahora cada patrón que merece empujón queda como memoria
+          // —el corpus del que SIR hace recall— así que sobrevive a que se cierre
+          // la conversación y se puede preguntar meses después.
+          //
+          // Idempotente por analito + ventana (`patternMemoryId`): actualiza, no
+          // duplica. Sin esa clave estable un cron diario llega a las 700 memorias
+          // basura que #1029 tuvo que purgar. Fail-soft: esto no puede tumbar el brief.
+          try {
+            const durables = patrones.filter(meritaEmpujon).slice(0, 6)
+            if (durables.length > 0) {
+              await admin.from('memories').upsert(durables.map((p) => ({
+                id: patternMemoryId(p),
+                user_id: uid,
+                type: 'semantic',
+                title: `${p.name} viene ${p.direction === 'up' ? 'subiendo' : 'bajando'} ${p.values.length} exámenes seguidos`,
+                content: patternMemoryContent(p),
+                tags: ['salud', 'cruce_de_examenes', 'laboratorio'],
+                importance: p.severity === 'alert' ? 9 : 7,
+                emotional_charge: 0,
+                decay_rate: 0.01,
+                source: 'cruce_examenes',
+                occurred_at: `${p.to}T12:00:00Z`,
+              })), { onConflict: 'id' })
+            }
+          } catch (e) {
+            reportApiError(e, { route: 'cron/morning-push', step: 'persistirPatronesLab', user: uid.slice(0, 8) })
+          }
         }
         // Agudo: un examen de los últimos 14 días con recomendaciones. Cualquier día,
         // y con UNO solo alcanza.

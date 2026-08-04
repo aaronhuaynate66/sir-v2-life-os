@@ -169,6 +169,79 @@ export function meritaEmpujon(p: LabPattern): boolean {
 }
 
 /**
+ * ═══ QUE EL HALLAZGO NO DEPENDA DE QUE ALGUIEN ESTÉ EN LA CONVERSACIÓN ═══════
+ *
+ * Aaron, 4-ago-2026: *"lo cruzaste todo muy bien acá en la conversación de la
+ * terminal pero ahora que se cerró y la volví a abrir ya no veo nada de eso ni
+ * acá ni en ninguna parte, entonces siento que todo eso se perdió. Y no veo cómo
+ * poder recuperarlo"*.
+ *
+ * Tenía razón, y la causa es precisa: este motor **recalcula** el patrón cada vez
+ * que alguien lo pide (brief, panel de salud, contexto del chat), pero **nunca lo
+ * escribe**. Medido ese día: `memories` tenía 1.000 filas y CERO sobre la serie
+ * roja, la hemoglobina o el hematocrito. Un hallazgo que solo existe mientras se
+ * está mirando no es un expediente — es una consulta.
+ *
+ * `patternMemoryId` es idempotente por analito + dirección + ventana: el mismo
+ * patrón se ACTUALIZA, no se duplica. Eso importa porque #1029 tuvo que purgar
+ * 700 memorias basura, y un cron diario escribiendo sin clave estable es
+ * exactamente cómo se llega ahí.
+ *
+ * La ventana va en la clave a propósito: cuando entra un examen nuevo, el patrón
+ * cubre otro tramo y merece su propia memoria — así queda el rastro de cómo
+ * evolucionó, no solo la última foto.
+ */
+export function patternMemoryId(p: LabPattern): string {
+  const slug = (p.name ?? '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+  return `mem_lab_${slug}_${p.from}_${p.to}`
+}
+
+/**
+ * El texto DURABLE del patrón. PURA.
+ *
+ * Distinto de `message` (que es para una línea de brief): acá se explica **por qué
+ * nadie lo vio**, que es lo que le da valor meses después. Un valor dentro de
+ * rango en cada planilla no lo marca ningún laboratorio; el patrón solo existe en
+ * la unión de los exámenes.
+ */
+export function patternMemoryContent(p: LabPattern): string {
+  const dir = p.direction === 'up' ? 'subiendo' : 'bajando'
+  const n = p.values.length
+  const unidad = p.unit ? ` ${p.unit}` : ''
+  const delta = p.deltaPct !== null ? ` (${p.deltaPct > 0 ? '+' : ''}${p.deltaPct}%)` : ''
+  const rango = p.range ? ` Rango de referencia: ${p.range}.` : ''
+  const estado = p.severity === 'alert'
+    ? 'El último valor YA está fuera de rango.'
+    : `El último valor sigue DENTRO de rango, así que ningún laboratorio lo marcó: el patrón solo existe en la unión de los ${n} exámenes.${p.nearEdge ? ' Y quedó pegado al borde al que se dirige.' : ''}`
+  return (
+    `Hallazgo del CRUCE de exámenes: ${p.name} viene ${dir} ${n} exámenes seguidos${delta}, ` +
+    `del ${p.from} al ${p.to}: ${p.values.join(' → ')}${unidad}.${rango} ${estado}`
+  )
+}
+
+/**
+ * ¿Este patrón puede esperar hasta el lunes? PURA.
+ *
+ * El brief gateaba TODA la vigilancia de laboratorio a los lunes ("recordatorio
+ * periódico, no alarma diaria"), y para lo crónico leve eso es correcto. Pero un
+ * analito que ya se salió de rango, o que se movió ≥15% de forma sostenida, no es
+ * ruido semanal: es el caso de la hemoglobina de Aaron (−17,3%), y esperar hasta
+ * seis días para nombrarlo es la misma falla que tuvo `examenReciente` con la
+ * ventana de 5-7 días del hematoma septal.
+ *
+ * Regla: lo que merece empujón sale CUALQUIER DÍA; el resto sigue siendo del lunes.
+ */
+export function esUrgenteDeLab(p: LabPattern): boolean {
+  if (p.severity === 'alert') return true
+  return p.deltaPct !== null && Math.abs(p.deltaPct) >= DERIVA_EMPUJABLE_PCT
+}
+
+/**
  * Línea compacta para el brief/push matutino, o null si no hay nada que empujar.
  * Prioriza el 'alert'; si no hay, el 'watch' que más se movió. PURA.
  *
