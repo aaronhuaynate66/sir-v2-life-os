@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 
-import { eventosProximosLine, cuando, VENTANA_DIAS, type EventoProximo } from './eventosProximos'
+import {
+  eventosProximosLine, cuando, VENTANA_DIAS,
+  eventosProximosIdentity, hayEventoInminente, eventosEnVentana,
+  type EventoProximo,
+} from './eventosProximos'
 
 const HOY = '2026-07-30' // jueves
 
@@ -89,5 +93,133 @@ describe('eventosProximosLine — qué entra y qué no', () => {
     expect(eventosProximosLine(null as unknown as EventoProximo[], HOY)).toBeNull()
     expect(eventosProximosLine([{ date: 'no-es-fecha', title: 'X' }], HOY)).toBeNull()
     expect(eventosProximosLine([{ date: HOY, title: '' }], HOY)).toBeNull()
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IDENTIDAD DE LA SEÑAL — el bug del 4-ago-2026
+//
+// El slot vivía en AGGREGATE_SLOTS, así que su identidad para el auto-snooze era
+// el slot (clave fija). Se durmió por racha el 3-ago y con SNOOZE_DAYS=14 no
+// despertaba hasta el 17 — con la reunión en el Comando General del 4-ago, el
+// examen del IPD del 7 (ayuno de 8 h) y el aniversario con Diana del 13 adentro.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('eventosProximosIdentity — distingue "un día después" de "evento nuevo"', () => {
+  const boda: EventoProximo = { date: '2026-08-01', title: 'Boda religiosa de Laura Alfaro' }
+
+  it('LA CLAVE DEL BUG: el paso del tiempo NO cambia la identidad', () => {
+    // El texto sí cambia ("el sábado" → "mañana" → "hoy"), y hashearlo rompía la
+    // racha todos los días. La identidad tiene que sobrevivir a eso, o el
+    // auto-snooze nunca se dispararía.
+    const jueves = eventosProximosIdentity([boda], '2026-07-30')
+    const viernes = eventosProximosIdentity([boda], '2026-07-31')
+    const sabado = eventosProximosIdentity([boda], '2026-08-01')
+    expect(eventosProximosLine([boda], '2026-07-30')).not.toBe(eventosProximosLine([boda], '2026-08-01'))
+    expect(jueves).toBe(viernes)
+    expect(viernes).toBe(sabado)
+  })
+
+  it('LA OTRA MITAD DEL BUG: un evento NUEVO sí cambia la identidad', () => {
+    // Esto es lo que la clave fija por slot no podía ver, y por eso la reunión
+    // en el Comando General entró a un slot dormido y murió ahí.
+    const solo = eventosProximosIdentity([boda], '2026-07-30')
+    const conReunion = eventosProximosIdentity([
+      boda,
+      { date: '2026-07-31', title: 'Reunión en el Comando General (Delicia + Tte. Llatance)' },
+    ], '2026-07-30')
+    expect(conReunion).not.toBe(solo)
+  })
+
+  it('el mismo título en otra fecha es OTRO compromiso', () => {
+    const a = eventosProximosIdentity([{ date: '2026-08-03', title: 'Control maxilofacial' }], '2026-08-02')
+    const b = eventosProximosIdentity([{ date: '2026-08-20', title: 'Control maxilofacial' }], '2026-08-19')
+    expect(a).not.toBe(b)
+  })
+
+  it('cambia si cambia CUÁNTOS quedaron sin nombrar (la línea también lo dice)', () => {
+    const tres = [boda, { date: '2026-08-02', title: 'Dos' }, { date: '2026-08-03', title: 'Tres' }]
+    const cuatro = [...tres, { date: '2026-08-04', title: 'Cuatro' }]
+    expect(eventosProximosIdentity(tres, '2026-07-30'))
+      .not.toBe(eventosProximosIdentity(cuatro, '2026-07-30'))
+  })
+
+  it('un evento que se fue de la ventana no arrastra la identidad vieja', () => {
+    // 30-jul mira hasta el 6-ago; 31-jul ya no ve nada del 30.
+    const pasado = eventosProximosIdentity([{ date: '2026-07-30', title: 'Algo de hoy' }, boda], '2026-07-30')
+    const despues = eventosProximosIdentity([{ date: '2026-07-30', title: 'Algo de hoy' }, boda], '2026-07-31')
+    expect(pasado).not.toBe(despues)
+  })
+
+  it('no depende del orden en que vengan de la base', () => {
+    const evs = [{ date: '2026-08-02', title: 'B' }, boda]
+    expect(eventosProximosIdentity(evs, '2026-07-30'))
+      .toBe(eventosProximosIdentity([...evs].reverse(), '2026-07-30'))
+  })
+
+  it('ignora acentos, mayúsculas y puntuación del título', () => {
+    expect(eventosProximosIdentity([{ date: '2026-08-01', title: 'Reunión, en el COMANDO General' }], '2026-07-30'))
+      .toBe(eventosProximosIdentity([{ date: '2026-08-01', title: 'reunion en el comando general' }], '2026-07-30'))
+  })
+
+  it('null cuando la línea también es null (no se inventa identidad sin señal)', () => {
+    expect(eventosProximosIdentity([], HOY)).toBeNull()
+    expect(eventosProximosIdentity([{ date: '2026-08-20', title: 'Lejano' }], HOY)).toBeNull()
+    expect(eventosProximosIdentity(null as unknown as EventoProximo[], HOY)).toBeNull()
+    expect(eventosProximosLine([{ date: '2026-08-20', title: 'Lejano' }], HOY)).toBeNull()
+  })
+})
+
+describe('hayEventoInminente — lo que no se calla nunca', () => {
+  it('la reunión del Comando General de HOY es inminente', () => {
+    expect(hayEventoInminente([{ date: HOY, title: 'Reunión en el Comando General' }], HOY)).toBe(true)
+  })
+
+  it('el examen del IPD de MAÑANA es inminente (ayuno de 8 h: avisar tarde es no avisar)', () => {
+    expect(hayEventoInminente([{ date: '2026-07-31', title: 'Examen médico EPP — IPD' }], HOY)).toBe(true)
+  })
+
+  it('en 2 días todavía no: ahí el anti-repetición sí puede opinar', () => {
+    expect(hayEventoInminente([{ date: '2026-08-01', title: 'Boda' }], HOY)).toBe(false)
+  })
+
+  it('basta UNO inminente aunque el resto esté lejos', () => {
+    expect(hayEventoInminente([
+      { date: '2026-08-05', title: 'Lejano' },
+      { date: HOY, title: 'Hoy' },
+    ], HOY)).toBe(true)
+  })
+
+  it('lo de ayer no cuenta (ya no se puede preparar)', () => {
+    expect(hayEventoInminente([{ date: '2026-07-29', title: 'Ayer' }], HOY)).toBe(false)
+  })
+
+  it('vacío y basura no rompen', () => {
+    expect(hayEventoInminente([], HOY)).toBe(false)
+    expect(hayEventoInminente(null as unknown as EventoProximo[], HOY)).toBe(false)
+    expect(hayEventoInminente([{ date: 'no-es-fecha', title: 'X' }], HOY)).toBe(false)
+  })
+})
+
+describe('eventosEnVentana — la línea y la identidad miran el MISMO conjunto', () => {
+  it('lo que entra a la ventana es exactamente lo que la línea puede nombrar', () => {
+    // Si estas dos se calcularan por separado, un día divergirían y la identidad
+    // dejaría de describir el texto — el modo de falla que causó todo esto.
+    const evs: EventoProximo[] = [
+      { date: '2026-07-29', title: 'Ayer, fuera' },
+      { date: HOY, title: 'Hoy, dentro' },
+      { date: '2026-08-06', title: 'Borde, dentro' },
+      { date: '2026-08-07', title: 'Pasado el borde, fuera' },
+    ]
+    const dentro = eventosEnVentana(evs, HOY)
+    expect(dentro.map((x) => x.e.title)).toEqual(['Hoy, dentro', 'Borde, dentro'])
+    const linea = eventosProximosLine(evs, HOY)!
+    expect(linea).toContain('Hoy, dentro')
+    expect(linea).not.toContain('Ayer, fuera')
+    expect(linea).not.toContain('Pasado el borde, fuera')
+    expect(dentro.length).toBe(2)
+    // El borde se afirma contra la constante, no contra un número a mano: si
+    // alguien mueve VENTANA_DIAS, este test tiene que seguir midiendo el borde.
+    expect(dentro[dentro.length - 1].dias).toBe(VENTANA_DIAS)
   })
 })
