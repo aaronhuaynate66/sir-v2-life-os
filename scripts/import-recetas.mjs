@@ -170,6 +170,10 @@ for (const r of RECETAS) {
       id: i.id, prescription_id: r.id, user_id: UID, med_name: i.med_name, dose: i.dose,
       every_hours: i.every_hours, times_per_day: i.times_per_day, duration_days: i.duration_days,
       total_units: i.total_units, indication: i.indication,
+      // `schedule` es de donde el botón de Telegram resuelve qué medicamentos entran en
+      // la toma de una hora. Sin esto el aviso llega SIN botones (y el cron cae al
+      // mensaje de texto de siempre, en silencio). Los de a demanda van sin horario.
+      schedule: i.hora ? [i.hora] : null,
     }, { onConflict: 'id' })
     if (ie) { console.log(`   ❌ ítem ${i.med_name}: ${ie.message}`); continue }
     nItems++
