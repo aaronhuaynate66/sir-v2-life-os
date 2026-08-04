@@ -1169,7 +1169,16 @@ export async function GET(req: NextRequest) {
           // X"). Antes prefijábamos `${nombre} — ${headline}` → el nombre salía
           // DOS veces. Ahora usamos el headline (nombre una vez) y adjuntamos el
           // parentesco como nota al final, que sí aporta ("— tu media hermana").
-          relationshipNudgeText = top.kinLabel ? `${top.headline} — ${top.kinLabel}` : top.headline
+          // Y si el headline NO la nombra, hay que nombrarla. El 4-ago-2026 salió
+          // "Tiene una fecha importante cerca — tu pareja": el nombre estaba en
+          // `top.personName` —se usa en la línea de abajo para el botón "Escríbele
+          // a Diana"— y el texto no lo tocaba. El botón sabía quién era y la frase
+          // no. Aaron: *"no me dices quién ni me dices qué hacer"*.
+          const primerNombre = (top.personName ?? '').trim().split(/\s+/)[0] ?? ''
+          const conNombre = primerNombre && !top.headline.includes(primerNombre)
+            ? `${top.headline} · ${primerNombre}`
+            : top.headline
+          relationshipNudgeText = top.kinLabel ? `${conNombre} — ${top.kinLabel}` : conNombre
           briefEntities.relationshipPerson = { id: top.personId, name: top.personName }
           // Si hay un recordatorio "antes de contactar" para ESTA persona, este es
           // EL momento de surgirlo: el push ya te empuja a escribirle. Es el punto

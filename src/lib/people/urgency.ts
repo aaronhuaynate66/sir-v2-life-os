@@ -115,6 +115,10 @@ export interface ContactUrgencyInput {
   contactFrequencyDays: number
   /** ¿Tiene una fecha de la red (cumple/aniversario) dentro del lead-time? */
   hasUpcomingDate: boolean
+  /** QUÉ fecha es, cuándo y qué conviene hacer. Opcional por compatibilidad,
+   *  pero sin esto la razón solo puede decir "tiene una fecha importante cerca"
+   *  — que es exactamente de lo que Aaron se quejó. Ver `buildReason`. */
+  upcomingDate?: { label: string; daysUntil: number; nudge: string } | null
   /** Señales recientes (≈30d) ligadas a esta persona. */
   recentSignalCount: number
 }
@@ -174,10 +178,36 @@ export function scoreContactUrgency(input: ContactUrgencyInput): ContactUrgency 
   }
 }
 
+/** "hoy" | "mañana" | "en N días". PURA. */
+function cuandoFalta(dias: number): string {
+  if (dias <= 0) return 'HOY'
+  if (dias === 1) return 'MAÑANA'
+  return `en ${dias} días`
+}
+
 function buildReason(
   args: ContactUrgencyInput & { relScore: number; freq: number },
 ): string {
-  const { daysSinceContact: days, freq, relScore, status, hasUpcomingDate, recentSignalCount } = args
+  const { daysSinceContact: days, freq, relScore, status, hasUpcomingDate, upcomingDate, recentSignalCount } = args
+  // ═══ QUÉ FECHA, CUÁNDO Y QUÉ HACER ════════════════════════════════════════
+  //
+  // Aaron, 4-ago-2026, sobre el brief de esa mañana: *"me hablas de una fecha
+  // importante con mi pareja, pero no me dices quién ni me dices qué hacer,
+  // entonces esa información así vacía no me ayuda"*.
+  //
+  // Tenía razón y el dato estaba: Diana tiene "Aniversario Aaron y Diana" el
+  // 13-ago cargado, y `contactDatesInRange` ya había calculado la etiqueta, los
+  // días y el empujón. Se perdían dos capas más arriba (ver `assemble.ts`), y
+  // acá abajo solo llegaba un booleano — con el que no se puede decir nada más
+  // que una generalidad.
+  if (upcomingDate) {
+    // Separador ` · ` y no ` — `: el brief le pega el parentesco al final con un
+    // guion largo ("— tu pareja"), y dos guiones largos en la misma línea la
+    // vuelven ilegible.
+    return `${upcomingDate.label} ${cuandoFalta(upcomingDate.daysUntil)} · ${upcomingDate.nudge.toLowerCase()}`
+  }
+  // Sin el detalle queda la frase vieja. Se conserva a propósito: es peor no
+  // avisar que avisar en general.
   if (hasUpcomingDate) return 'Tiene una fecha importante cerca'
   if (status === 'dormant') return 'Relación dormida — reactivala antes de que cueste'
   if (status === 'strained') return 'Relación tensa — un gesto a tiempo la destensa'

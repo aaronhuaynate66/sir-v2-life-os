@@ -122,3 +122,70 @@ describe('scoreContactUrgency (fórmula portada de v1)', () => {
     expect(high.urgency).toBe('high')
   })
 })
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EL CASO REAL DEL 4-ago-2026
+//
+// El brief le mandó, literal y nada más: "Tiene una fecha importante cerca — tu
+// pareja". Aaron: "no me dices quién ni me dices qué hacer, entonces esa
+// información así vacía no me ayuda". Y el dato estaba completo: Diana tiene
+// "Aniversario Aaron y Diana" el 13-ago (verificado en people.special_dates),
+// y contactDatesInRange ya había calculado la etiqueta, los días y el empujón.
+// Se perdía dos capas arriba, colapsado a un booleano.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('buildReason con fecha próxima: dice QUÉ, CUÁNDO y QUÉ HACER', () => {
+  const aniversario = { label: 'Aniversario Aaron y Diana', daysUntil: 9, nudge: 'Planea algo especial' }
+
+  it('el caso de Diana: ya no es una generalidad', () => {
+    const r = scoreContactUrgency(baseInput({
+      hasUpcomingDate: true, upcomingDate: aniversario, daysSinceContact: 5, category: 'inner_circle',
+    }))
+    expect(r.reason).toContain('Aniversario Aaron y Diana')   // QUÉ
+    expect(r.reason).toContain('en 9 días')                   // CUÁNDO
+    expect(r.reason).toContain('planea algo especial')        // QUÉ HACER
+    expect(r.reason).not.toBe('Tiene una fecha importante cerca')
+  })
+
+  it('HOY y MAÑANA se dicen con esas palabras, no con un número', () => {
+    const hoy = scoreContactUrgency(baseInput({
+      hasUpcomingDate: true, upcomingDate: { ...aniversario, daysUntil: 0, nudge: 'Es ya: confirma tu plan' },
+    }))
+    expect(hoy.reason).toContain('HOY')
+    expect(hoy.reason).not.toContain('en 0 días')
+    const manana = scoreContactUrgency(baseInput({
+      hasUpcomingDate: true, upcomingDate: { ...aniversario, daysUntil: 1, nudge: 'Es ya: confirma tu plan' },
+    }))
+    expect(manana.reason).toContain('MAÑANA')
+    expect(manana.reason).not.toContain('en 1 días')
+  })
+
+  it('la fecha le gana a los otros motivos (es lo más accionable que hay)', () => {
+    // Una relación dormida y sin contacto igual reporta la FECHA: es la que tiene
+    // vencimiento real. Antes también ganaba, pero para decir una generalidad.
+    const r = scoreContactUrgency(baseInput({
+      hasUpcomingDate: true, upcomingDate: aniversario, status: 'dormant', daysSinceContact: null,
+    }))
+    expect(r.reason).toContain('Aniversario Aaron y Diana')
+  })
+
+  it('sin el detalle NO se calla: cae a la frase vieja (avisar en general > no avisar)', () => {
+    const r = scoreContactUrgency(baseInput({ hasUpcomingDate: true, daysSinceContact: 5 }))
+    expect(r.reason).toBe('Tiene una fecha importante cerca')
+  })
+
+  it('el bonus de score de la fecha no cambió (no se tocó la priorización)', () => {
+    const conDetalle = scoreContactUrgency(baseInput({ hasUpcomingDate: true, upcomingDate: aniversario, daysSinceContact: 5 }))
+    const soloBool = scoreContactUrgency(baseInput({ hasUpcomingDate: true, daysSinceContact: 5 }))
+    expect(conDetalle.score).toBe(soloBool.score)
+  })
+
+  it('sin fecha próxima, los motivos de siempre siguen intactos', () => {
+    expect(scoreContactUrgency(baseInput({ status: 'dormant' })).reason)
+      .toContain('Relación dormida')
+    expect(scoreContactUrgency(baseInput({ daysSinceContact: null })).reason)
+      .toBe('Sin contacto registrado todavía')
+    expect(scoreContactUrgency(baseInput({ daysSinceContact: 60, contactFrequencyDays: 30 })).reason)
+      .toContain('Sin hablar hace 60 días')
+  })
+})

@@ -57,6 +57,9 @@ export interface DailyActionPersonInput {
   daysSinceContact: number | null
   contactFrequencyDays: number
   hasUpcomingDate: boolean
+  /** QUÉ fecha se viene, cuándo y qué hacer. Sin esto el motivo del contacto
+   *  queda en una generalidad sin nombre ni fecha. Ver `assemble.ts`. */
+  upcomingDate?: { label: string; daysUntil: number; nudge: string } | null
   recentSignals: RitualSignal[]
 }
 
@@ -176,6 +179,7 @@ export function buildDailyActions(
       daysSinceContact: i.daysSinceContact,
       contactFrequencyDays: i.contactFrequencyDays,
       hasUpcomingDate: i.hasUpcomingDate,
+      upcomingDate: i.upcomingDate ?? null,
       recentSignalCount: i.recentSignals.length,
     })
     // El contacto es una acción RELACIONAL → la pondera el parentesco: la
@@ -197,7 +201,10 @@ export function buildDailyActions(
       urgency: u.urgency,
       score: boosted * factor,
       headline: u.reason,
-      action: 'Escríbele para retomar el contacto',
+      // Con una fecha encima, "retomar el contacto" es el consejo equivocado: lo
+      // que toca es preparar ESA fecha. El empujón ya viene calibrado por el
+      // lead-time ("planea algo especial" a 9 días vs "es ya: confirma tu plan").
+      action: i.upcomingDate ? i.upcomingDate.nudge : 'Escríbele para retomar el contacto',
       reciprocidad: i.reciprocidad,
       fuerza: i.fuerza,
       daysSinceContact: i.daysSinceContact,

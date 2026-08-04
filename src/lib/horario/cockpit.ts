@@ -124,6 +124,12 @@ export interface CockpitDate {
   id: string
   kind: 'birthday' | 'special_date'
   title: string
+  /** La etiqueta CRUDA, sin el nombre pegado ("Cumpleaños", "Aniversario Aaron
+   *  y Diana"). `title` la mezcla con el nombre para la lista de la web; quien
+   *  arma una FRASE necesita las dos piezas por separado. Se agregó porque el
+   *  brief terminaba diciendo "Tiene una fecha importante cerca — tu pareja",
+   *  sin nombre ni fecha, teniendo todo esto a mano. */
+  label: string
   detail: string
   /** Días hasta la próxima ocurrencia (>= 0). */
   daysUntil: number
@@ -410,6 +416,7 @@ export function contactDatesInRange(
           id: `birthday_${p.id}`,
           kind: 'birthday',
           title: `Cumpleaños de ${p.name}`,
+          label: 'Cumpleaños',
           detail,
           daysUntil: cd.daysUntil,
           nudge: contactNudge('birthday', 'Cumpleaños', cd.daysUntil),
@@ -426,6 +433,7 @@ export function contactDatesInRange(
         id: `special_${p.id}_${sd.id}`,
         kind: 'special_date',
         title: `${sd.label} · ${p.name}`,
+        label: sd.label,
         detail: futurePhrase(cd.daysUntil),
         daysUntil: cd.daysUntil,
         nudge: contactNudge('special_date', sd.label, cd.daysUntil),

@@ -18,6 +18,8 @@ import { normalizeReaderProfile } from '@/lib/social-reader/igProfile'
 import { briefCallbackData } from '@/lib/telegram/briefThread'
 import { relacionesUrl } from '@/lib/app-url'
 import { limaDayString } from '@/lib/habits/streak'
+import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cuandoDeLaToma, textoDeToma } from '@/lib/meds/telegramToma'
+import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
 import { reportApiError } from '@/lib/observability/reportApiError'
 
 export const runtime = 'nodejs'
@@ -30,7 +32,17 @@ export async function GET(req: NextRequest) {
   if (req.headers.get('authorization') !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
-  if (!vapidReady()) return NextResponse.json({ error: 'VAPID no configurado' }, { status: 503 })
+  // ═══ VAPID NO PUEDE TUMBAR EL CANAL QUE SÍ FUNCIONA ═══════════════════════
+  //
+  // Esto era un `return 503`. Con la toma de medicación viviendo acá (ver abajo),
+  // eso significaba que una variable de entorno del Web Push —el canal cuya única
+  // suscripción es de Apple y del 13-jun, y esas caducan— podía apagar en silencio
+  // el aviso de las pastillas por Telegram, que está vivo.
+  //
+  // Ahora la falta de VAPID solo desactiva el Web Push. Es la misma lección de
+  // [[alarma-silencio-reader-apagada]]: no colgar algo que importa de una señal
+  // que puede faltar sin que nadie se entere.
+  const pushReady = vapidReady()
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -94,8 +106,8 @@ export async function GET(req: NextRequest) {
         )
       }
 
-      // Web Push: solo si hay pendientes (comportamiento original).
-      if (push) {
+      // Web Push: solo si hay pendientes (comportamiento original) y si VAPID está.
+      if (push && pushReady) {
         const payload: PushPayload = { title: push.title, body: push.body, url: '/habitos', tag: 'evening-habits' }
         const r = await sendPushToUser(sendClient, uid, payload)
         sent += r.sent
@@ -112,6 +124,47 @@ export async function GET(req: NextRequest) {
             await admin.from('sir_messages').insert({ user_id: uid, role: 'sir', content: chatText.slice(0, 4000), channel: 'telegram' })
           } catch { /* fail-open */ }
         }
+        // ═══ LA TOMA DE LA NOCHE, A SU HORA ══════════════════════════════════
+        //
+        // Aaron, 4-ago-2026: *"anoche te dije que la mayoría eran ANTES DE DORMIR,
+        // entonces qué sentido tiene que me pregunte en la mañana si las acabo de
+        // tomar si el objetivo es tomarlas en la noche"*.
+        //
+        // El aviso vivía SOLO en `reminders-due` (06:00 de Lima, con 36 h de
+        // anticipación), así que la toma de las 22:00 se anunciaba 16 h antes y se
+        // cerraba con `notified_at` sin volver. No había ningún cron entre las 21:00
+        // y las 03:00 que avisara cerca de la hora real: este es el que faltaba.
+        //
+        // Corre a las 21:00 de Lima → una hora antes de la toma de las 22:00. Se
+        // marca `notified_at` sólo si Telegram entregó; si no, `reminders-due`
+        // mañana la ve vencida y pregunta "¿tomaste la de anoche?".
+        try {
+          const desde = new Date(now.getTime() - 2 * 3_600_000).toISOString()
+          const hasta = new Date(now.getTime() + 4 * 3_600_000).toISOString()
+          const { data: remRows } = await admin
+            .from('reminders')
+            .select('id, due_at')
+            .eq('user_id', uid)
+            .is('done_at', null).is('notified_at', null)
+            .gte('due_at', desde).lte('due_at', hasta)
+            .limit(20)
+          const hoyLima = limaDayString(now)
+          for (const rem of (remRows ?? []) as Array<{ id: string; due_at: string | null }>) {
+            const hora = horaDeRecordatorioDeToma(rem.id)
+            if (!hora) continue // no es una toma: no es asunto de este bloque
+            const meds = await medsDeLaToma(admin, uid, hora)
+            const filas = meds.length > 0 ? botonesDeToma(meds, hora) : []
+            if (filas.length === 0) continue
+            const cuando = cuandoDeLaToma(fechaDeRecordatorioDeToma(rem.id), hoyLima)
+            const tg = await sendTelegramKeyboard(Number(tgChat), textoDeToma(meds, hora, cuando), filas)
+            if (tg.ok) {
+              await admin.from('reminders').update({ notified_at: new Date().toISOString() }).eq('id', rem.id)
+            }
+          }
+        } catch (e) {
+          reportApiError(e, { route: 'cron/evening-push', step: 'tomaDeLaNoche', user: uid.slice(0, 8) })
+        }
+
         // Check-in de hábitos por BOTONES (Aaron: más UX-friendly que escribir "ya
         // medité"). Un botón por hábito diario pendiente; el tap lo marca (callback
         // "hb|<id>" → webhook). Solo si quedan pendientes.
@@ -250,5 +303,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, users: userIds.length, sent, telegramBriefs, results }, { status: 200 })
+  return NextResponse.json({ ok: true, users: userIds.length, pushReady, sent, telegramBriefs, results }, { status: 200 })
 }

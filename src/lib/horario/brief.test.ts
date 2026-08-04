@@ -54,6 +54,7 @@ function cdate(over: Partial<CockpitDate> & { title: string; daysUntil: number }
   return {
     id: over.id ?? over.title,
     kind: over.kind ?? 'birthday',
+    label: over.label ?? over.title,
     detail: over.detail ?? '',
     nudge: over.nudge ?? 'Tenelo en el radar',
     href: over.href ?? '/relaciones/x',
