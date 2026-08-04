@@ -30,6 +30,8 @@ interface ItemAPI {
   tomadas: number
   esperadasHoy: number | null
   atrasadas: number | null
+  tomadasHoy: number
+  pendientesHoy: number | null
   diaActual: number | null
   terminado: boolean
   indication: string | null
@@ -170,11 +172,32 @@ export function TratamientosPanel() {
                             día {i.diaActual}{i.durationDays ? ` de ${i.durationDays}` : ''}
                           </span>
                         )}
-                        {i.atrasadas !== null && i.atrasadas > 0 && (
-                          <span className="inline-flex items-center gap-1 text-bad">
-                            <AlertCircle size={11} />
-                            {i.atrasadas === 1 ? 'falta 1' : `faltan ${i.atrasadas}`}
-                          </span>
+                        {/* QUÉ SE MARCA EN ROJO, y por qué así. Las dos reglas salieron
+                            de mirar la captura a 390 px, no de los tests:
+                            · Curso TERMINADO: nada en rojo. La receta de emergencia del
+                              27-jul decía "faltan 10" — cierto (nunca registró una toma)
+                              pero inútil: acabó hace una semana.
+                            · Curso CRÓNICO (sin fecha de fin): se muestra sólo la dosis
+                              de HOY. El topiramato daba "faltan 25" porque arrancó el
+                              10-jul y él no lo registra — ahí lo que falta es el
+                              registro, no el medicamento. Un crónico no acumula deuda. */}
+                        {p.status === 'activa' && !i.terminado && (
+                          i.durationDays === null
+                            ? i.pendientesHoy !== null && i.pendientesHoy > 0 && (
+                                <span className="inline-flex items-center gap-1 text-warn">
+                                  <AlertCircle size={11} />
+                                  falta la de hoy
+                                </span>
+                              )
+                            : i.atrasadas !== null && i.atrasadas > 0 && (
+                                <span className="inline-flex items-center gap-1 text-bad">
+                                  <AlertCircle size={11} />
+                                  {i.atrasadas === 1 ? 'falta 1' : `faltan ${i.atrasadas}`}
+                                </span>
+                              )
+                        )}
+                        {(i.terminado || p.status !== 'activa') && i.tomadas === 0 && (
+                          <span className="text-muted-foreground/60">sin registro de tomas</span>
                         )}
                       </div>
                     </div>
