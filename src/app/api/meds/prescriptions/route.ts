@@ -18,7 +18,7 @@ import { NextResponse } from 'next/server'
 
 import { createClient } from '@/lib/supabase/server'
 import { reportApiError } from '@/lib/observability/reportApiError'
-import { dedupeRafagas, progresoDeItem, type ItemCurso } from '@/lib/meds/curso'
+import { dedupeRafagas, progresoDeItem, tomasDeHoy, type ItemCurso } from '@/lib/meds/curso'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -102,12 +102,16 @@ export async function GET() {
       arr.push(t.taken_at)
       porItem.set(t.prescription_item_id, arr)
     }
-    const contadas = new Map<string, number>()
-    for (const [itemId, times] of porItem) {
-      contadas.set(itemId, dedupeRafagas(times.map((takenAt) => ({ name: itemId, takenAt }))).length)
-    }
-
     const hoy = hoyLima()
+    const contadas = new Map<string, number>()
+    const contadasHoy = new Map<string, number>()
+    for (const [itemId, times] of porItem) {
+      const limpias = dedupeRafagas(times.map((takenAt) => ({ name: itemId, takenAt })))
+      contadas.set(itemId, limpias.length)
+      // Las de HOY se cuentan sobre las YA dedupeadas: si no, un doble tap de esta
+      // noche haría creer que la dosis de hoy está cubierta dos veces.
+      contadasHoy.set(itemId, tomasDeHoy(limpias.map((l) => l.takenAt), hoy))
+    }
     const out = recetas.map((r) => {
       const mios = items.filter((i) => i.prescription_id === r.id)
       return {
@@ -132,7 +136,7 @@ export async function GET() {
             indication: i.indication,
           }
           return {
-            ...progresoDeItem(it, r.started_on, contadas.get(i.id) ?? 0, hoy),
+            ...progresoDeItem(it, r.started_on, contadas.get(i.id) ?? 0, hoy, contadasHoy.get(i.id) ?? 0),
             indication: i.indication,
             totalUnits: i.total_units,
             everyHours: i.every_hours,

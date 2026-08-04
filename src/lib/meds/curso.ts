@@ -33,6 +33,19 @@ export interface ProgresoItem {
   esperadasHoy: number | null
   /** esperadasHoy − tomadas, nunca negativo. null si no se puede calcular. */
   atrasadas: number | null
+  /** Tomas registradas HOY. */
+  tomadasHoy: number
+  /**
+   * Dosis de HOY que faltan. Es la métrica válida para un tratamiento CRÓNICO.
+   *
+   * ═══ POR QUÉ EXISTE, APARTE DE `atrasadas` ═══
+   * El topiramato de Aaron empezó el 10-jul y lo toma todas las noches, pero nunca lo
+   * registró en la app. `atrasadas` daba **25** y el panel lo pintaba en rojo, como si
+   * se hubiera saltado 25 dosis. Lo que falta ahí es el REGISTRO, no el medicamento.
+   * Un tratamiento sin fecha de fin no tiene deuda acumulada contra la cual atrasarse:
+   * la única pregunta útil es "¿ya tomaste la de hoy?".
+   */
+  pendientesHoy: number | null
   /** Día del curso en que estamos, 1-based. null si aún no empezó. */
   diaActual: number | null
   terminado: boolean
@@ -68,6 +81,7 @@ export function progresoDeItem(
   startedOn: string,
   tomadas: number,
   hoy: string,
+  tomadasHoy = 0,
 ): ProgresoItem {
   const porDia = tomasPorDia(item)
   const dia = diaDelCurso(startedOn, hoy)
@@ -75,6 +89,7 @@ export function progresoDeItem(
   const esperadas = porDia !== null && dur !== null ? Math.round(porDia * dur) : null
   const diasContables = dia === null ? null : dur === null ? dia : Math.min(dia, dur)
   const esperadasHoy = porDia !== null && diasContables !== null ? Math.round(porDia * diasContables) : null
+  const terminado = dur !== null && dia !== null && dia > dur
   return {
     itemId: item.id,
     medName: item.medName,
@@ -83,8 +98,12 @@ export function progresoDeItem(
     tomadas,
     esperadasHoy,
     atrasadas: esperadasHoy === null ? null : Math.max(0, esperadasHoy - tomadas),
+    tomadasHoy,
+    // Sólo si el curso está vivo y ya arrancó: pasado el final no falta nada hoy.
+    pendientesHoy:
+      porDia === null || dia === null || terminado ? null : Math.max(0, Math.round(porDia) - tomadasHoy),
     diaActual: dia,
-    terminado: dur !== null && dia !== null && dia > dur,
+    terminado,
   }
 }
 

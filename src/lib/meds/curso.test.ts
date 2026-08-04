@@ -89,6 +89,48 @@ describe('progresoDeItem — la receta REAL del 3-ago (etoricoxib 1 c/24h × 7 d
     expect(p.esperadas).toBeNull()
     expect(p.esperadasHoy).toBeNull()
     expect(p.atrasadas).toBeNull()
+    expect(p.pendientesHoy).toBeNull()
+  })
+})
+
+// ═══ EL CASO DEL TOPIRAMATO ═══
+// Empezó el 10-jul, lo toma todas las noches, y no lo registra en la app. `atrasadas`
+// daba 25 y el panel lo pintaba en rojo como si se hubiera saltado 25 dosis. Lo que
+// falta ahí es el REGISTRO. Un crónico no acumula deuda: la pregunta es la de hoy.
+describe('progresoDeItem — crónico: pendientesHoy, no deuda acumulada', () => {
+  const cronico = item({ medName: 'Topiramato', dose: '100 mg', durationDays: null, everyHours: 24 })
+
+  it('25 días sin registrar: atrasadas 25 pero pendientesHoy es 1', () => {
+    const p = progresoDeItem(cronico, '2026-07-10', 0, '2026-08-03', 0)
+    expect(p.atrasadas).toBe(25)   // el acumulado sigue disponible…
+    expect(p.pendientesHoy).toBe(1) // …pero lo accionable es UNA
+  })
+
+  it('si ya tomó la de hoy, no falta nada hoy', () => {
+    const p = progresoDeItem(cronico, '2026-07-10', 1, '2026-08-03', 1)
+    expect(p.pendientesHoy).toBe(0)
+  })
+
+  it('tres al día con una tomada → faltan 2 hoy', () => {
+    const p = progresoDeItem(item({ durationDays: null, everyHours: 8 }), '2026-07-10', 1, '2026-08-03', 1)
+    expect(p.pendientesHoy).toBe(2)
+  })
+
+  it('un curso TERMINADO no tiene pendientes de hoy', () => {
+    const p = progresoDeItem(item(), '2026-07-27', 0, '2026-08-03', 0)
+    expect(p.terminado).toBe(true)
+    expect(p.pendientesHoy).toBeNull()
+  })
+
+  it('antes de empezar no hay pendientes de hoy', () => {
+    const p = progresoDeItem(cronico, '2026-08-10', 0, '2026-08-03', 0)
+    expect(p.diaActual).toBeNull()
+    expect(p.pendientesHoy).toBeNull()
+  })
+
+  it('tomar de más hoy no da negativo', () => {
+    const p = progresoDeItem(cronico, '2026-07-10', 3, '2026-08-03', 3)
+    expect(p.pendientesHoy).toBe(0)
   })
 })
 
