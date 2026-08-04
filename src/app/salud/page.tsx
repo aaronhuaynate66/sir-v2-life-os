@@ -209,6 +209,24 @@ function SaludContent() {
           si Aaron está al día. Arriba porque es accionable (mandar la captura). */}
       <MissingDataCard />
 
+      {/* ═══ LO MÉDICO, PRIMERO ══════════════════════════════════════════════
+          Aaron, 4-ago-2026, después de entrar acá: *"ha quedado horroroso, cero UX
+          UI y orden, no se entiende para nada lo que tomo ni para qué ni por qué"*.
+
+          La auditoría de ese día encontró que este bloque estaba DESPUÉS de ~7
+          pantallas de análisis: el grid de stats, el control de tendencias, el
+          acordeón de registro, dos gráficos de línea y las dos familias completas de
+          tendencia corporal (hasta 8 tarjetas). Alguien con 4 recetas activas y un
+          examen médico en 3 días tenía que scrollear todo el ruido analítico para
+          llegar a sus medicamentos.
+
+          Ahora va arriba, junto a lo accionable, y antes de cualquier gráfico. El
+          análisis de tendencias no es urgente; saber qué tomar a las 22:00, sí. */}
+      <div className="mb-6 space-y-4">
+        <TratamientosPanel />
+        <LazosMedicosPanel />
+      </div>
+
       {/* Control GLOBAL de ventana temporal — aplica a Energía + Sueño +
           Tendencia corporal. Un solo toggle Semana/Mes + un solo par de chevrons. */}
       <Card className="shadow-none mb-3">
@@ -395,26 +413,7 @@ function SaludContent() {
         </CollapsibleSection>
       </div>
 
-      {/* ═══ LO MÉDICO, EN UNA SOLA PANTALLA ═══════════════════════════════════
-          Aaron, 4-ago-2026: *"conversamos bastante pero nada quedó tangibilizado,
-          sobre todo para darle seguimiento, que es lo que más me preocupa"*, y
-          después *"ya perdí el rastro de todo"*.
-
-          Estaba partido en tres: `/medicacion` tenía las recetas, `/objetivos`
-          tenía el expediente con el cruce de exámenes, y acá vivían los exámenes y
-          los patrones. Tres pantallas para una sola pregunta.
-
-          NO se movió nada de sitio (mover una vista que funciona es cómo se rompe
-          lo que ya andaba): se REÚSA el panel de tratamientos que ya existe y se
-          agrega el de lazos abiertos, que lee los stores ya cargados. Sin endpoint
-          nuevo y sin una segunda fuente de verdad que pueda contradecir la primera.
-
-          Van SIN colapsar y antes de lo analítico: el seguimiento es lo que él dijo
-          que le preocupa, y lo que se esconde detrás de un clic no se mira. */}
-      <div className="mb-6 space-y-4">
-        <LazosMedicosPanel />
-        <TratamientosPanel />
-      </div>
+      
 
       {/* Densidad: lo ANALÍTICO/secundario (patrones, aprendizajes, síntesis,
           chequeos, alertas de FC) arranca colapsado — el resumen y las tendencias

@@ -51,6 +51,10 @@ const NAV_GROUPS: readonly NavGroup[] = [
     title: 'Gente',
     items: [
       { href: '/relaciones', label: 'Relaciones', Icon: Users },
+      // Segundo de 'Gente' y con nombre de lo que responde. Estaba como 'Estado de
+      // ingesta' —jerga— y de último ítem de 'Archivo': Aaron lo pidió dos veces sin
+      // saber que ya existía. Va acá porque lo que el reader trae ES su gente.
+      { href: '/reader', label: '¿Qué está leyendo SIR?', Icon: Radio },
       { href: '/relato/ingest', label: 'Cuéntale a SIR', Icon: Wand2 },
       { href: '/plantear', label: 'Cómo plantear algo', Icon: MessagesSquare },
       { href: '/ensayo', label: 'Sala de ensayo', Icon: Drama },
@@ -81,7 +85,6 @@ const NAV_GROUPS: readonly NavGroup[] = [
       { href: '/historial', label: 'Historial', Icon: History },
       { href: '/resumen', label: 'Resumen', Icon: FileText },
       { href: '/consumo', label: 'Consumo IA', Icon: Gauge },
-      { href: '/reader', label: 'Estado de ingesta', Icon: Radio },
     ],
   },
 ] as const
