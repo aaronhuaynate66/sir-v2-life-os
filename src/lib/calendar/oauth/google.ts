@@ -209,6 +209,26 @@ export interface GoogleEventPayload {
   end: GoogleEventEnd
   /** RRULE de recurrencia (ej. ['RRULE:FREQ=YEARLY']). Ausente = evento único. */
   recurrence?: string[]
+  /**
+   * `transparent` = no ocupa el día · `opaque` = ocupado.
+   *
+   * ═══ POR QUÉ SE DECLARA EN VEZ DE DEJARLO AL DEFAULT ══════════════════════
+   *
+   * Aaron, 4-ago-2026, con una captura de su Google Calendar sobre el evento
+   * "LÍMITE: certificado médico deportivo": *"¿y por qué sale esto así?"*. Entre
+   * otras cosas, Google lo mostraba como **Ocupado**.
+   *
+   * Era el default: al no mandar el campo, Google asume `opaque`. Y eso está mal
+   * para lo que SIR carga como todo-el-día — un "LÍMITE:", un aniversario, un
+   * cumpleaños son MARCADORES, no bloques de tiempo ocupado. Con `opaque`, un día
+   * con tres límites se ve tan ocupado como un día con tres reuniones, y cualquier
+   * consulta de disponibilidad (la suya o la de quien le comparta el calendario)
+   * lo lee como no disponible.
+   *
+   * Un evento CRONOMETRADO sí ocupa: la cita con el neurólogo de las 16:40 es una
+   * hora que de verdad no está libre.
+   */
+  transparency?: 'transparent' | 'opaque'
 }
 
 /**
@@ -244,6 +264,9 @@ export function buildGoogleEventPayload(ev: NewGoogleEvent): GoogleEventPayload 
     start,
     end,
     recurrence: ev.recurring ? ['RRULE:FREQ=YEARLY'] : undefined,
+    // Todo-el-día = marcador (un LÍMITE, un aniversario) → NO ocupa el día.
+    // Cronometrado = tiempo que de verdad no está libre → ocupado.
+    transparency: allDay ? 'transparent' : 'opaque',
   }
 }
 

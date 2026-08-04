@@ -68,7 +68,11 @@ export function muteRef(text: string, slot = '', identity?: string): string {
 // `goalContactTiming` se sumó el 29-jul: era el ÚNICO slot repetible sin 🔕, y por
 // eso Aaron recibió 43 días una cotización que ya no existía sin poder callarla.
 // Si un slot puede volver mañana igual, tiene que poder silenciarse.
-const MUTABLE_SLOTS = ['momentResolution', 'relationshipNudge', 'cycleWeekAhead', 'goalNudge', 'weekFocus', 'healthWatch', 'habitNudge', 'goalContactTiming'] as const
+// `dataFaltante` es silenciable: es un recordatorio que puede volver mañana igual, y
+// la regla de arriba dice que todo lo repetible tiene que poder callarse. Si Aaron
+// decide no cargar salud por un rato, debe poder decirlo con un botón en vez de
+// aguantarlo cada mañana.
+const MUTABLE_SLOTS = ['momentResolution', 'relationshipNudge', 'cycleWeekAhead', 'goalNudge', 'weekFocus', 'healthWatch', 'habitNudge', 'goalContactTiming', 'dataFaltante'] as const
 
 /**
  * Botones de una sección, derivados de lo que las señales SABEN. Una señal sin

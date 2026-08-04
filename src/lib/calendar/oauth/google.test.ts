@@ -134,3 +134,46 @@ describe('buildGoogleEventPatchPayload', () => {
     expect(p.recurrence).toEqual(['RRULE:FREQ=YEARLY'])
   })
 })
+
+// ═══════════════════════════════════════════════════════════════════════════
+// "¿Y POR QUÉ SALE ESTO ASÍ?" — 4-ago-2026
+//
+// Aaron mandó una captura de su Google Calendar del evento "LÍMITE: certificado
+// médico deportivo": Google lo mostraba como **Ocupado**. Era el default (al no
+// mandar el campo, Google asume `opaque`), y está mal para lo que SIR carga como
+// todo-el-día: un LÍMITE o un aniversario es un MARCADOR, no un bloque de tiempo.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('buildGoogleEventPayload · transparency', () => {
+  it('todo-el-día NO ocupa el día: es un marcador', () => {
+    const p = buildGoogleEventPayload({
+      title: 'LÍMITE: certificado médico deportivo para el Mundial',
+      start: '2026-08-10', allDay: true,
+    })
+    expect(p.transparency).toBe('transparent')
+    expect(p.start.date).toBe('2026-08-10')
+  })
+
+  it('una fecha sin hora también se trata como marcador', () => {
+    expect(buildGoogleEventPayload({ title: 'Aniversario con Diana', start: '2026-08-13' }).transparency)
+      .toBe('transparent')
+  })
+
+  it('un evento CRONOMETRADO sí ocupa: la cita de las 16:40 no está libre', () => {
+    const p = buildGoogleEventPayload({
+      title: 'Cita con el Dr. Paz (neurología)',
+      start: '2026-08-12T21:40:00.000Z',
+      end: '2026-08-12T22:40:00.000Z',
+    })
+    expect(p.transparency).toBe('opaque')
+    expect(p.start.dateTime).toBeTruthy()
+  })
+
+  it('el recordatorio NO lo manda SIR: se deja el default del calendario de Aaron', () => {
+    // El "un día antes a las 23:30" de su captura es la configuración de SU Google,
+    // no algo que este payload defina. Se fija por test para que nadie lo agregue
+    // sin decidirlo: mandar `reminders` pisaría sus preferencias.
+    const p = buildGoogleEventPayload({ title: 'X', start: '2026-08-10', allDay: true }) as unknown as Record<string, unknown>
+    expect(p.reminders).toBeUndefined()
+  })
+})

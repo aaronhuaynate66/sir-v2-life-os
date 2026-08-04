@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   examenRecienteLine, examenRecienteConRecomendaciones, cuandoFue, VENTANA_RECIENTE_DIAS,
+  examenRecienteIdentity, examenRecienImperdible,
 } from './recentExam'
 import type { HealthExam } from './types'
 
@@ -106,5 +107,77 @@ describe('cuandoFue', () => {
     expect(cuandoFue(0)).toBe('de hoy')
     expect(cuandoFue(1)).toBe('de ayer')
     expect(cuandoFue(4)).toBe('de hace 4 días')
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EL MISMO DEFECTO QUE TENÍA EL SLOT DE EVENTOS (#1092)
+//
+// `examenReciente` vivía en AGGREGATE_SLOTS → identidad = el slot, clave fija.
+// Medido el 4-ago-2026: se durmió ese día por racha (4 mañanas hablando de la
+// tomografía del 27-jul) y no despertaba hasta el 18-ago. El examen del IPD es el
+// 7-ago: sus recomendaciones habrían entrado a un slot dormido.
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('examenRecienteIdentity — distingue "el mismo un día después" de "otro examen"', () => {
+  const tem = (over: Partial<HealthExam> = {}): HealthExam => exam({ examDate: '2026-07-27',
+    title: 'TEM de emergencia — encéfalo + macizo facial',
+    recommendations: ['Control con maxilofacial el 30-jul', 'Descartar hematoma septal'],
+    ...over,
+  })
+
+  it('el paso del tiempo NO cambia la identidad (la racha puede correr)', () => {
+    const a = examenRecienteIdentity([tem()], '2026-08-03')
+    const b = examenRecienteIdentity([tem()], '2026-08-04')
+    expect(examenRecienteLine([tem()], '2026-08-03')).not.toBe(examenRecienteLine([tem()], '2026-08-04'))
+    expect(a).toBe(b)
+    expect(a).not.toBeNull()
+  })
+
+  it('UN EXAMEN NUEVO sí cambia la identidad — el caso del IPD del 7-ago', () => {
+    const viejo = examenRecienteIdentity([tem()], '2026-08-07')
+    const conIpd = examenRecienteIdentity([
+      tem(),
+      exam({ examDate: '2026-08-07', title: 'Examen médico EPP — IPD San Luis', recommendations: ['Subir el certificado al portal'] }),
+    ], '2026-08-07')
+    expect(conIpd).not.toBe(viejo)
+  })
+
+  it('si cambian las recomendaciones del mismo examen, es otra señal', () => {
+    const a = examenRecienteIdentity([tem({ recommendations: ['una'] })], '2026-08-01')
+    const b = examenRecienteIdentity([tem({ recommendations: ['una', 'dos'] })], '2026-08-01')
+    expect(a).not.toBe(b)
+  })
+
+  it('null cuando la línea también es null', () => {
+    expect(examenRecienteIdentity([], '2026-08-04')).toBeNull()
+    expect(examenRecienteLine([], '2026-08-04')).toBeNull()
+    // Fuera de la ventana de 14 días.
+    expect(examenRecienteIdentity([tem()], '2026-09-01')).toBeNull()
+  })
+
+  it('los acentos del título no rompen la clave', () => {
+    expect(examenRecienteIdentity([tem({ title: 'Tomografía ÁÉÍ' })], '2026-08-01'))
+      .toBe(examenRecienteIdentity([tem({ title: 'tomografia aei' })], '2026-08-01'))
+  })
+})
+
+describe('examenRecienImperdible — un examen de hoy o ayer no se calla', () => {
+  const conRec = (fecha: string): HealthExam =>
+    exam({ examDate: fecha, title: 'Examen', recommendations: ['algo accionable'] })
+
+  it('de hoy y de ayer: imperdible', () => {
+    expect(examenRecienImperdible([conRec('2026-08-07')], '2026-08-07')).toBe(true)
+    expect(examenRecienImperdible([conRec('2026-08-06')], '2026-08-07')).toBe(true)
+  })
+  it('de hace 2 días todavía (la ventana del hematoma septal era de 5 a 7)', () => {
+    expect(examenRecienImperdible([conRec('2026-08-05')], '2026-08-07')).toBe(true)
+  })
+  it('de hace 8 días ya no interrumpe: ahí el anti-repetición puede opinar', () => {
+    expect(examenRecienImperdible([conRec('2026-07-30')], '2026-08-07')).toBe(false)
+  })
+  it('sin examen con recomendaciones, no hay nada que sea imperdible', () => {
+    expect(examenRecienImperdible([], '2026-08-07')).toBe(false)
+    expect(examenRecienImperdible([exam({ examDate: '2026-08-07', title: 'X', recommendations: [] })], '2026-08-07')).toBe(false)
   })
 })

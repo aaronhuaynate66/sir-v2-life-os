@@ -44,6 +44,16 @@ const HeartRateAlertsPanel = dynamic(
   () => import('@/components/salud/HeartRateAlertsPanel').then((m) => ({ default: m.HeartRateAlertsPanel })),
   { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
 )
+// Los dos que unifican lo médico. `TratamientosPanel` es EL MISMO componente que
+// usa /medicacion — se reúsa, no se duplica: si mañana cambia, cambia en las dos.
+const LazosMedicosPanel = dynamic(
+  () => import('@/components/salud/LazosMedicosPanel').then((m) => ({ default: m.LazosMedicosPanel })),
+  { ssr: false },
+)
+const TratamientosPanel = dynamic(
+  () => import('@/components/medicacion/TratamientosPanel').then((m) => ({ default: m.TratamientosPanel })),
+  { ssr: false, loading: () => <div className="h-32 rounded-lg border border-border animate-pulse" /> },
+)
 import { selfMetricSeries, sleepDurationSeries } from '@/lib/charts/adapters'
 import { rangeWindowLabel, type ChartRange } from '@/lib/charts/series'
 import { cn } from '@/lib/utils'
@@ -383,6 +393,27 @@ function SaludContent() {
           {/* 11·M5 — ventana óptima de foco (cruza cronotipo + curva de energía). */}
           <FocusWindowCard />
         </CollapsibleSection>
+      </div>
+
+      {/* ═══ LO MÉDICO, EN UNA SOLA PANTALLA ═══════════════════════════════════
+          Aaron, 4-ago-2026: *"conversamos bastante pero nada quedó tangibilizado,
+          sobre todo para darle seguimiento, que es lo que más me preocupa"*, y
+          después *"ya perdí el rastro de todo"*.
+
+          Estaba partido en tres: `/medicacion` tenía las recetas, `/objetivos`
+          tenía el expediente con el cruce de exámenes, y acá vivían los exámenes y
+          los patrones. Tres pantallas para una sola pregunta.
+
+          NO se movió nada de sitio (mover una vista que funciona es cómo se rompe
+          lo que ya andaba): se REÚSA el panel de tratamientos que ya existe y se
+          agrega el de lazos abiertos, que lee los stores ya cargados. Sin endpoint
+          nuevo y sin una segunda fuente de verdad que pueda contradecir la primera.
+
+          Van SIN colapsar y antes de lo analítico: el seguimiento es lo que él dijo
+          que le preocupa, y lo que se esconde detrás de un clic no se mira. */}
+      <div className="mb-6 space-y-4">
+        <LazosMedicosPanel />
+        <TratamientosPanel />
       </div>
 
       {/* Densidad: lo ANALÍTICO/secundario (patrones, aprendizajes, síntesis,

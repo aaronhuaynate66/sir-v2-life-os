@@ -46,7 +46,7 @@ import { parseWeightCategory } from '@/engines/targets'
 import { assessWeightTrend, renderWeightTrendLine } from '@/lib/targets/weightTrend'
 import { assembleDailyActions } from '@/lib/daily-actions/assemble'
 import { labPatterns, labAlertPushLine, meritaEmpujon, esUrgenteDeLab, patternMemoryId, patternMemoryContent } from '@/lib/health-exams/patterns'
-import { examenRecienteLine } from '@/lib/health-exams/recentExam'
+import { examenRecienteLine, examenRecienteIdentity, examenRecienImperdible } from '@/lib/health-exams/recentExam'
 import { cumpleanosProximos, esHitoDeAnticipacion } from '@/lib/push/cumpleanos'
 import { encuentrosConDeal, encuentroConDealLine, encuentroDestacado } from '@/lib/crm/dealEnEvento'
 import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTANA_REGISTRO } from '@/lib/relaciones/pedirRegistro'
@@ -861,6 +861,8 @@ export async function GET(req: NextRequest) {
       // ALERTA DE PESO MUNDIAL: si hay goal con "mundial/taekwondo/wfg" +
       // categoría en el target, y la última lectura de peso está fuera.
       let metricAlertText: string | undefined
+      // Slot propio: comparte el tema (el cuerpo) pero NO la identidad. Ver abajo.
+      let dataFaltanteText: string | undefined
       try {
         const mundialGoal = goals.find((g) =>
           /mundial|taekwondo|wfg/i.test(g.title + ' ' + (g.description ?? ''))
@@ -978,9 +980,24 @@ export async function GET(req: NextRequest) {
         /* fail-soft */
       }
 
-      // AVISO DE DATA FALTANTE: si NO hubo anomalía fresca y hace ≥3 días que no
-      // se carga salud, recordarlo (sin data SIR queda ciego). La salud entra por
-      // carga manual de capturas. Prioridad: anomalía > gap > peso.
+      // ═══ AVISO DE DATA FALTANTE: SLOT PROPIO, NO PRESTADO ═══════════════════
+      //
+      // Aaron, 4-ago-2026: *"hace 3 días que no me subo a la balanza ni le mando esa
+      // data de salud a SIR, ¿por qué ni me dice nada?"*.
+      //
+      // La causa: este aviso escribía en `metricAlertText`, o sea que viajaba con la
+      // identidad de OTRA señal — la alerta de vitales. Y `slot:metricAlert` se había
+      // dormido el 30-jul por racha (4 mañanas hablando de VFC baja y FC elevada),
+      // así que con `SNOOZE_DAYS = 14` el aviso de la báscula no podía salir hasta el
+      // 13-ago. Su último peso es del 31-jul (82.05 kg).
+      //
+      // Multiplexar dos mensajes distintos sobre una sola clave hace que el silencio
+      // de uno silencie al otro. Son señales distintas: ahora tiene su propio slot y
+      // su propia racha. Tercera vez hoy que aparece esta familia de bug —
+      // `eventosProximos` (#1092) y `examenReciente` fueron las otras dos.
+      //
+      // La prioridad se conserva: el gap solo habla si NO hubo anomalía fresca, que
+      // es lo correcto (una desviación del cuerpo pesa más que un dato que falta).
       if (!vitalsAlerted) {
         try {
           const [{ data: hmLast }, { data: slLast }] = await Promise.all([
@@ -992,7 +1009,7 @@ export async function GET(req: NextRequest) {
             ((slLast ?? [])[0] as { date?: string } | undefined)?.date?.slice(0, 10),
           ].filter((s): s is string => !!s).sort().at(-1) ?? null
           const gap = healthDataGap(last, now.toISOString().slice(0, 10))
-          if (gap) metricAlertText = gap
+          if (gap) dataFaltanteText = gap
         } catch {
           /* fail-soft */
         }
@@ -1088,6 +1105,8 @@ export async function GET(req: NextRequest) {
       // dos motivos a la vez. Ver `lib/health-exams/recentExam.ts`.
       let healthWatchText: string | undefined
       let examenRecienteText: string | undefined
+      let examenRecienteKey: string | undefined
+      let examenRecienteImperdible = false
       try {
         const { data: examRows } = await admin
           .from('health_exams')
@@ -1149,6 +1168,10 @@ export async function GET(req: NextRequest) {
         // Agudo: un examen de los últimos 14 días con recomendaciones. Cualquier día,
         // y con UNO solo alcanza.
         examenRecienteText = examenRecienteLine(exams, today) ?? undefined
+        // Identidad e imperdible: sin esto el slot se durmió el 4-ago hasta el 18,
+        // con el examen del IPD del día 7 en medio. Ver `examenRecienteIdentity`.
+        examenRecienteKey = examenRecienteIdentity(exams, today) ?? undefined
+        examenRecienteImperdible = examenRecienImperdible(exams, today)
       } catch {
         /* fail-soft: la tabla puede no haber propagado aún */
       }
@@ -1427,7 +1450,7 @@ export async function GET(req: NextRequest) {
         mutedTopics = (muteRows ?? []).map((r) => (r as { topic_key: string }).topic_key).filter(Boolean)
       } catch { /* tabla 0166 sin propagar */ }
 
-      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, metaSinPlan: metaSinPlanText, entregablePendiente: entregableText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, eventosProximosKey, eventosProximosInminente, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
+      const briefInput = { birthdays, importantDates, relationshipNudge: relationshipNudgeText, momentResolution: momentResolutionText, cycleWeekAhead: cycleWeekAheadText, cycleAgenda: cycleAgendaText, goalContactTiming: goalTimingText, dueTasks, focus, goalNudge: goalNudgeText, tareaInvisible: tareaInvisibleText, metaSinPlan: metaSinPlanText, entregablePendiente: entregableText, trainingAdherence: trainingAdherenceText, topSignal, habitNudge: habitNudgeText, bodySignal: bodySignalText, weekFocus: weekFocusText, metricAlert: metricAlertText, dataFaltante: dataFaltanteText, healthWatch: healthWatchText, opportunity: opportunityText, readerSilence: readerSilenceText, cronsMudos: cronsMudosText, cardioTrend: cardioTrendText, eventosProximos: eventosProximosText, eventosProximosKey, eventosProximosInminente, afectoCaida: afectoCaidaText, examenReciente: examenRecienteText, examenRecienteKey, examenRecienteImperdible, encuentroConDeal: encuentroConDealText, pedirRegistro: pedirRegistroText, entities: briefEntities }
       let push = buildMorningPush({ ...briefInput, mutedTopics })
 
       // AUTO-SNOOZE: lo que ya se dijo 3 mañanas seguidas sin cambiar se calla
