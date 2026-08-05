@@ -73,8 +73,29 @@ function relTime(h: number): string {
   return `hace ${Math.round(h / 24)} d`
 }
 
+/** Una fuente que NO es la extensión: calendario, correo, salud, mensajería, motores. */
+interface Fuente {
+  clave: string
+  nombre: string
+  grupo: string
+  vigilancia: 'caido' | 'atencion' | 'sin-vigilancia' | 'ok'
+  veredicto: string
+  detalle: string | null
+  limite: string | null
+  comoEntra: string
+}
+interface EstadoFuentes { fuentes: Fuente[]; resumen: { titular: string; sinVigilancia: number } }
+
+const VIG: Record<Fuente['vigilancia'], { cls: string; dot: string }> = {
+  caido: { cls: 'text-bad', dot: 'bg-bad' },
+  atencion: { cls: 'text-warn', dot: 'bg-warn' },
+  'sin-vigilancia': { cls: 'text-text-tertiary', dot: 'bg-text-tertiary' },
+  ok: { cls: 'text-good', dot: 'bg-good' },
+}
+
 export default function ReaderStatusPage() {
   const [data, setData] = useState<Status | null>(null)
+  const [fuentes, setFuentes] = useState<EstadoFuentes | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -86,7 +107,15 @@ export default function ReaderStatusPage() {
       setData((await r.json()) as Status)
     } catch { setError('Error de red') } finally { setLoading(false) }
   }
-  useEffect(() => { void load() }, [])
+  // Las otras fuentes van en su propio fetch: si `/api/reader/status` tarda (hace un
+  // count exacto sobre 286k filas), esta parte no tiene por qué esperarlo.
+  async function loadFuentes() {
+    try {
+      const r = await fetch('/api/estado')
+      if (r.ok) setFuentes((await r.json()) as EstadoFuentes)
+    } catch { /* la sección simplemente no aparece */ }
+  }
+  useEffect(() => { void load(); void loadFuentes() }, [])
 
   const platforms = data ? Object.entries(data.byPlatform).sort((a, b) => b[1].messages - a[1].messages) : []
   const unmatched = data ? data.recent.filter((r) => !r.matched).length : 0
@@ -188,6 +217,42 @@ export default function ReaderStatusPage() {
                     </div>
                   )
                 })}
+              </CardContent></Card>
+            )}
+
+            {/* ═══ LAS OTRAS FUENTES ═══════════════════════════════════════
+                Aaron pidió el monitor TRES veces. Esta página existía y solo
+                vigilaba los 5 canales de la extensión: calendario, correo, Apple
+                Health, Telegram y los 13 crons no estaban en ninguna pantalla.
+                Y dos de estos veredictos ya se calculaban sin que nadie los leyera
+                — los motores solo salían por Telegram a las 6 am. */}
+            {fuentes && fuentes.fuentes.length > 0 && (
+              <Card><CardContent className="p-4 space-y-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">Las otras fuentes</div>
+                  <div className="text-[12px] text-muted-foreground">{fuentes.resumen.titular}</div>
+                </div>
+                {fuentes.fuentes.map((f) => (
+                  <div key={f.clave} className="border-b border-border/40 last:border-0 pb-3 last:pb-0 space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${VIG[f.vigilancia].dot}`} />
+                        {f.nombre}
+                      </span>
+                      <span className={`text-[12px] font-medium ${VIG[f.vigilancia].cls}`}>{f.veredicto}</span>
+                    </div>
+                    {f.detalle && <div className="text-[12px] text-muted-foreground tabular-nums">{f.detalle}</div>}
+                    <div className="text-[12px] text-text-tertiary">entra por: {f.comoEntra}</div>
+                    {/* El límite se dice SIEMPRE que exista. Omitirlo insinuaría que
+                        la fuente está sana cuando lo que pasa es que no se puede ver. */}
+                    {f.limite && (
+                      <div className="text-[12px] text-warn flex items-start gap-1.5">
+                        <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                        <span>{f.limite}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </CardContent></Card>
             )}
 

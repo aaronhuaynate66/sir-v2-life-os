@@ -54,7 +54,14 @@ const NAV_GROUPS: readonly NavGroup[] = [
       // Segundo de 'Gente' y con nombre de lo que responde. Estaba como 'Estado de
       // ingesta' —jerga— y de último ítem de 'Archivo': Aaron lo pidió dos veces sin
       // saber que ya existía. Va acá porque lo que el reader trae ES su gente.
-      { href: '/reader', label: '¿Qué está leyendo SIR?', Icon: Radio },
+      //
+      // 5-ago-2026: lo pidió una TERCERA vez — *"no veo el monitor dentro de SIR
+      // para ver la data que está jalando de las otras aplicaciones"*. Dos cosas
+      // cambian por eso: la página ya no vigila solo la extensión (ahora también
+      // calendario, correo, Apple Health, mensajería y los motores de fondo), y el
+      // nombre usa **su** palabra. "¿Qué está leyendo SIR?" describía al reader; él
+      // venía buscando un "monitor", y con ese nombre pasó de largo tres veces.
+      { href: '/reader', label: 'Monitor de datos', Icon: Radio },
       { href: '/relato/ingest', label: 'Cuéntale a SIR', Icon: Wand2 },
       { href: '/plantear', label: 'Cómo plantear algo', Icon: MessagesSquare },
       { href: '/ensayo', label: 'Sala de ensayo', Icon: Drama },
