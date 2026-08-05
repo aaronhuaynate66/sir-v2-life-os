@@ -4,9 +4,17 @@ name: E2E — QA móvil (Playwright)
 # manual o nightly, porque necesita levantar el server + secrets de Supabase y es
 # más lento. NO bloquea PRs.
 #
-# GATE POR SECRETS: si faltan los de Supabase, se OMITE con un aviso (no es error).
+# GATE POR SECRETS: si faltan los de Supabase, se OMITE con un ::warning (no es
+# error, pero tiene que VERSE: el job termina verde sin haber probado nada).
 # Agregalos en Settings > Secrets and variables > Actions para activarlo:
 #   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
+#
+# Y SI LOS SECRETS ESTÁN, EL VERDE SIGNIFICA "SE PROBÓ" (5-ago-2026):
+# había un hueco entre las dos cosas — los secrets podían estar Y la sesión fallar
+# igual (service-role rotado, /api/dev-login apagado, el server que no levantó). Como
+# cada spec de la zona autenticada está guardado por `test.skip(!isAuthed())`, en ese
+# caso se saltaba TODA la suite privada y el job salía verde. `E2E_REQUIRE_AUTH=1`
+# convierte eso en una falla, y `global-setup` corta antes de gastar el runner.
 
 on:
   workflow_dispatch:
@@ -37,7 +45,16 @@ jobs:
         run: |
           if [ -z "$URL" ] || [ -z "$ANON" ] || [ -z "$SR" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice title=E2E omitido::Faltan secrets de Supabase (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) en Actions. No es un error: agregalos para activar el harness. Ver e2e/README.md."
+            # `warning` y no `notice`: sin secrets este job termina en VERDE sin haber
+            # probado una sola ruta, y ese verde se lee como cobertura. No es un error
+            # —el harness es opcional— pero tiene que verse, no susurrarse.
+            echo "::warning title=E2E NO probó nada::Faltan secrets de Supabase (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY). El check está verde porque no corrió, no porque haya pasado. Ver e2e/README.md."
+            {
+              echo "### ⚠️ E2E omitido — este verde NO es cobertura"
+              echo ""
+              echo "Faltan los secrets de Supabase en Actions, así que **no se probó ninguna ruta**."
+              echo "Agrégalos en Settings → Secrets and variables → Actions."
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
@@ -56,6 +73,18 @@ jobs:
         if: steps.secrets.outputs.ready == 'true'
         env:
           CI: 'true'
+          # ═══ ACÁ EL VERDE TIENE QUE SIGNIFICAR "SE PROBÓ" ══════════════════
+          #
+          # Los secrets pueden estar Y la sesión fallar igual (service-role rotado,
+          # /api/dev-login deshabilitado en ese build, el server que no levantó).
+          # En ese caso `global-setup` dejaba un console.warn y seguía, y como CADA
+          # spec de la zona autenticada está guardado por `test.skip(!isAuthed())`,
+          # **toda la suite privada se saltaba y el job salía verde**: nav, overflow,
+          # tap-targets y el smoke de las privadas.
+          #
+          # Un check verde que no probó nada es peor que no tener el check: se lee
+          # como cobertura. Con esta variable, no poder autenticar es una FALLA.
+          E2E_REQUIRE_AUTH: '1'
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
