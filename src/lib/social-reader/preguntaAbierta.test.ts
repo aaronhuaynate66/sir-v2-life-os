@@ -44,9 +44,12 @@ describe('cuándo NO se mete — vale más callarse que crear una ficha mala', (
 
 
   it('si pasó demasiado tiempo', () => {
-    expect(VENTANA_MINUTOS).toBe(30)
-    expect(handlePendiente([preguntado(45)], 'Pedro Valera', AHORA)).toBeNull()
-    expect(handlePendiente([preguntado(29)], 'Pedro Valera', AHORA)).not.toBeNull()
+    // Era 30 min y eso solo servía si respondía antes de dormirse: la tarjeta sale
+    // 21:00 y el 4-ago él contestó a las 08:44 del día siguiente. 48 h cubre
+    // "lo veo a la mañana" y "lo veo el finde".
+    expect(VENTANA_MINUTOS).toBe(48 * 60)
+    expect(handlePendiente([preguntado(49 * 60)], 'Pedro Valera', AHORA)).toBeNull()
+    expect(handlePendiente([preguntado(11 * 60 + 21)], 'Pedro Valera', AHORA)).not.toBeNull()
   })
 
   it('si el texto es una frase, no un nombre', () => {
