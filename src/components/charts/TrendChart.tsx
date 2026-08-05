@@ -71,6 +71,26 @@ export interface TrendChartProps {
   offset?: number
   onRangeChange?: (r: ChartRange) => void
   onOffsetChange?: (o: number) => void
+  /**
+   * Cuando no hay nada que graficar, no gastar una tarjeta entera.
+   *
+   * ═══ POR QUÉ ═══════════════════════════════════════════════════════════════
+   * Aaron, 4-ago-2026, sobre `/salud`: *"ha quedado horroroso, cero UX UI y
+   * orden"*. La auditoría contó **9 lugares** capaces de pintar un "sin datos"
+   * ocupando una tarjeta COMPLETA, y con la ventana global en "semana" por
+   * defecto basta con no haber registrado ESTA semana —aunque haya años de
+   * historia— para que 2 a 4 tarjetas del primer scroll queden en blanco pesando
+   * lo mismo que si tuvieran contenido.
+   *
+   * Con esto:
+   * · sin NINGÚN registro histórico → no se renderiza nada (la tarjeta no existe)
+   * · con historia pero nada en esta ventana → una línea compacta que además dice
+   *   que hay historia fuera de la ventana, en vez de un "sin datos" que se lee
+   *   como "nunca registraste"
+   *
+   * Es opt-in para no cambiar el comportamiento de los otros usos del chart.
+   */
+  compactWhenEmpty?: boolean
 }
 
 const VIEW_W = 320
@@ -91,6 +111,7 @@ export function TrendChart({
   offset: controlledOffset,
   onRangeChange,
   onOffsetChange,
+  compactWhenEmpty = false,
 }: TrendChartProps) {
   const [innerRange, setInnerRange] = useState<ChartRange>(defaultRange)
   const [innerOffset, setInnerOffset] = useState(0)
@@ -143,6 +164,23 @@ export function TrendChart({
 
   const hasData = geo.points.length > 0
   const delta = geo.delta
+
+  // Sin historia y sin ventana: la tarjeta no aporta nada, así que no existe.
+  // `points` es la serie COMPLETA (el filtro por ventana pasa después), así que
+  // esto distingue "nunca registró" de "no registró en esta ventana".
+  if (compactWhenEmpty && points.length === 0) return null
+
+  // Con historia pero nada en la ventana activa: una línea, no una tarjeta.
+  if (compactWhenEmpty && !hasData) {
+    return (
+      <div className={cn('flex items-center justify-between gap-2 rounded-lg border border-border/50 px-3 py-2', className)}>
+        <SectionTitle icon={icon} label={label} />
+        <span className="text-[12px] text-muted-foreground">
+          {points.length === 1 ? '1 registro' : `${points.length} registros`}, ninguno en {rangeWindowLabel(range, offset)}
+        </span>
+      </div>
+    )
+  }
 
   const TrendIcon: LucideIcon =
     delta == null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown

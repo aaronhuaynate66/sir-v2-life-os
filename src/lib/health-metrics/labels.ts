@@ -40,6 +40,7 @@ export const HEALTH_METRIC_LABELS: Record<HealthMetricType, string> = {
   heart_rate_max: 'FC máxima',
   heart_rate_avg: 'FC promedio',
   sleeping_heart_rate: 'FC durante el sueño',
+  resting_heart_rate: 'FC en reposo',
   // VFC / HRV en milisegundos (Migration 0079)
   hrv_min: 'VFC mínima',
   hrv_max: 'VFC máxima',

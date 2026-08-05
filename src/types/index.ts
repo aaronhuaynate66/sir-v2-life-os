@@ -142,6 +142,7 @@ export type HealthMetricType =
   | 'heart_rate_min'
   | 'heart_rate_max'
   | 'heart_rate_avg'
+  | 'resting_heart_rate'
   | 'sleeping_heart_rate'
   // VFC / HRV (variabilidad de la FC) en MILISEGUNDOS — métrica distinta de la FC.
   | 'hrv_min'

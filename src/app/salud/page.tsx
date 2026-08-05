@@ -287,7 +287,7 @@ function SaludContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
             <Card className={cardClass}>
               <CardContent className="p-4 sm:p-6">
-                <SectionTitle icon={Plus} label="Registrar métrica" />
+                <SectionTitle icon={Plus} label="Registrar métrica" level="tarjeta" />
                 <div className="space-y-2">
                   <Select value={mCat} onValueChange={(v) => setMCat(v as MetricCategory)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -325,7 +325,7 @@ function SaludContent() {
 
             <Card className={cardClass}>
               <CardContent className="p-4 sm:p-6">
-                <SectionTitle icon={Moon} label="Registrar sueño" />
+                <SectionTitle icon={Moon} label="Registrar sueño" level="tarjeta" />
                 <div className="space-y-2">
                   <Input type="number" aria-label="Horas dormidas" min="0" max="24" step="0.5" placeholder="Horas dormidas" value={sHours} onChange={e => setSHours(e.target.value)} className="font-mono tabular-nums" />
                   <div className="flex gap-2">
@@ -361,6 +361,7 @@ function SaludContent() {
           colorClass="text-brand"
           formatValue={(n) => n.toFixed(1)}
           emptyHint="Registra tu energía para ver la evolución."
+          compactWhenEmpty
         />
         <TrendChart
           label="Sueño (horas)"
@@ -372,13 +373,18 @@ function SaludContent() {
           colorClass="text-brand"
           formatValue={(n) => `${n.toFixed(1)}h`}
           emptyHint="Registra tus noches para ver la tendencia."
+          compactWhenEmpty
         />
       </div>
 
-      {/* Tendencia corporal: serie temporal de health_metrics (báscula) con
-          selector de métrica + stats del período. */}
+      {/* Tendencia corporal. Eran las DOS familias completas (Cuerpo y Corazón)
+          abiertas, hasta 8 tarjetas, en el primer scroll — parte de por qué la
+          pantalla se sentía interminable. Colapsada: es análisis, y el análisis no
+          es lo que uno viene a ver con 4 recetas activas. */}
       <div className="mb-6">
-        <BodyMetricsTrend metrics={healthMetrics} range={chartRange} offset={chartOffset} />
+        <CollapsibleSection title="Tendencia del cuerpo y del corazón" hint="peso · grasa · músculo · VFC · ritmo cardíaco">
+          <BodyMetricsTrend metrics={healthMetrics} range={chartRange} offset={chartOffset} />
+        </CollapsibleSection>
       </div>
 
       {/* DENSIDAD (#11): las 10 tarjetas de análisis profundo se agrupan en 2
@@ -431,7 +437,7 @@ function SaludContent() {
 
       <Card className={cn('mb-4', cardClass)}>
         <CardContent className="p-4 sm:p-6">
-          <SectionTitle icon={Activity} label="Ultimas metricas" count={recentMetrics.length} />
+          <SectionTitle icon={Activity} label="Ultimas metricas" count={recentMetrics.length} level="tarjeta" />
           {recentMetrics.length === 0 ? (
             <EmptyState
               icon={Activity}
@@ -461,7 +467,7 @@ function SaludContent() {
       {lastSleep && (
         <Card className={cn('mb-4', cardClass)}>
           <CardContent className="p-4 sm:p-6">
-            <SectionTitle icon={Clock} label="Ultima noche" />
+            <SectionTitle icon={Clock} label="Ultima noche" level="tarjeta" />
             <div className="flex gap-6 flex-wrap">
               <div><div className="text-[10px] text-muted-foreground/60">Fecha</div><div className="text-sm font-mono tabular-nums">{lastSleep.date}</div></div>
               <div><div className="text-[10px] text-muted-foreground/60">Duracion</div><div className="text-sm font-mono tabular-nums">{lastSleep.duration}h</div></div>
@@ -474,7 +480,7 @@ function SaludContent() {
 
       <Card className={cardClass}>
         <CardContent className="p-4 sm:p-6">
-          <SectionTitle icon={Heart} label="Salud básica" count={healthMetrics.length} />
+          <SectionTitle icon={Heart} label="Salud básica" count={healthMetrics.length} level="tarjeta" />
           <div className="flex flex-wrap gap-2 mb-3">
             <Select value={hType} onValueChange={(v) => setHType(v as HealthMetricType)}>
               <SelectTrigger className="flex-1 basis-full sm:basis-auto min-w-[120px]"><SelectValue /></SelectTrigger>

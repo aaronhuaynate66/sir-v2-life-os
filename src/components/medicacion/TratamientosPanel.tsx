@@ -151,8 +151,10 @@ export function TratamientosPanel() {
     <Card className="shadow-none mb-4 mt-4">
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-1">
-          <Stethoscope size={16} className="text-muted-foreground" />
-          <h2 className="text-sm font-semibold tracking-tight">Tus tratamientos</h2>
+          <Stethoscope size={17} className="text-muted-foreground" />
+          {/* Nivel SECCIÓN, igual que "Tu medicación de hoy": son los dos bloques
+              que uno viene a ver, y tienen que pesar más que una etiqueta de dato. */}
+          <h2 className="text-base font-semibold tracking-tight">Tus tratamientos</h2>
         </div>
         <p className="mb-4 text-xs text-muted-foreground leading-relaxed">
           Qué tomas, desde cuándo y <span className="text-foreground/80">a raíz de qué</span>. La indicación es la

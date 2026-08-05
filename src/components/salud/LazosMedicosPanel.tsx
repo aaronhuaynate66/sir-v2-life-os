@@ -78,10 +78,10 @@ export function LazosMedicosPanel() {
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
-            <HeartPulse size={16} className="text-brand" aria-hidden="true" />
-            <span className="text-[11px] uppercase tracking-[0.07em] text-text-tertiary">
-              Lazos médicos abiertos
-            </span>
+            <HeartPulse size={17} className="text-brand" aria-hidden="true" />
+            {/* Nivel SECCIÓN: es de lo poco que uno viene a ver acá. Antes era una
+                etiqueta gris de 11 px, idéntica a las otras veinte de la pantalla. */}
+            <h2 className="text-base font-semibold tracking-tight">Lazos médicos abiertos</h2>
           </div>
           {vencidos > 0 && (
             <span className="flex items-center gap-1 text-[12px] text-bad">
