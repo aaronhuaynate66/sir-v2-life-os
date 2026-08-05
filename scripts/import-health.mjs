@@ -29,6 +29,7 @@ const ALLOWED_TYPES = new Set([
   'active_energy', 'resting_energy', 'vo2_max', 'blood_oxygen', 'distance_km',
   'heart_rate_min', 'heart_rate_max', 'heart_rate_avg', 'sleeping_heart_rate',
   'hrv_min', 'hrv_max', 'hrv_avg', 'heart_rate_high_alerts', 'respiratory_rate',
+  'resting_heart_rate',
 ])
 const ALLOWED_CAPTURE = new Set(['scale', 'whatsapp']) // health_metrics.capture_type
 const ALLOWED_SOURCE = new Set(['manual', 'apple_health', 'scale', 'whatsapp'])
