@@ -168,6 +168,30 @@ async function opportunityDismiss(
   return { toast: '✕ Listo, no te la vuelvo a mostrar.' }
 }
 
+/**
+ * "✕ Ya no va" → el paso queda DESCARTADO: ni hecho ni pendiente.
+ *
+ * Hasta el 5-ago-2026 no existía ningún camino para que Aaron descartara una tarea —
+ * ni acá, ni en la app, ni en el chat. Solo un script `.mjs` corrido por alguien más,
+ * un objetivo a la vez. Por eso le quedó vivo el paso de Dayana en el objetivo de al
+ * lado, y volvía cada mañana.
+ *
+ * `task_status: null` va junto con el status, igual que en `scripts/descartar-pasos.mjs`:
+ * si se deja el `task_status` viejo, `taskStatusPatch()` mapea cualquier valor no-`done`
+ * a `pendiente` y la UI RESUCITA el paso en cuanto alguien toca su control de estado.
+ * Los dos campos se mueven juntos o el descarte no aguanta.
+ */
+async function taskDiscard(supabase: SupabaseClient, userId: string, taskId: string): Promise<BriefActionResult> {
+  const { data, error } = await supabase
+    .from('objective_steps')
+    .update({ status: 'descartado', task_status: null })
+    .eq('user_id', userId).eq('id', taskId)
+    .select('title')
+    .maybeSingle()
+  if (error || !data) return { toast: 'No pude descartarla, inténtalo desde la app.' }
+  return { toast: `✕ Fuera: ${(data as { title: string }).title}`.slice(0, 190) }
+}
+
 async function taskRemind(
   supabase: SupabaseClient, userId: string, taskId: string, now: Date,
 ): Promise<BriefActionResult> {
@@ -304,6 +328,7 @@ export async function runBriefAction(
       case 'habit_done': return await habitDone(supabase, userId, ref, now)
       case 'log_tono': return await logInteraccion(supabase, userId, ref, now)
       case 'task_remind': return await taskRemind(supabase, userId, ref, now)
+      case 'task_discard': return await taskDiscard(supabase, userId, ref)
       case 'moment_close': return await momentClose(supabase, userId, ref)
       case 'mute': return await mute(supabase, userId, ref)
       case 'person_draft': {

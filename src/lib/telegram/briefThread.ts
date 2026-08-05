@@ -25,7 +25,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan' | 'task_date' | 'doc_sent'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan' | 'task_date' | 'doc_sent' | 'task_discard'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -45,7 +45,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan', 'task_date', 'doc_sent']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan', 'task_date', 'doc_sent', 'task_discard']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }
@@ -117,7 +117,25 @@ export function buildSectionButtons(signals: MorningSignal[]): BriefButton[][] {
       // apuntaba a la tarea con fecha, y el hábito ("tender la cama") no tenía botón.
       // Nombrar el objetivo en el texto resuelve la ambigüedad sin partir el mensaje
       // en cinco (que sería el muro del que ya se quejó en #1039).
-      push(btn(`✅ Hice: ${etiquetaCorta(e.name ?? s.text)}`, 'task_done', e.id), btn('⏰ Recuérdamelo 6pm', 'task_remind', e.id))
+      // ═══ "✕ YA NO VA" — LA SALIDA QUE NO EXISTÍA ══════════════════════════
+      //
+      // Aaron, 5-ago-2026: *"me habla de Dayana, pero se suponía que eso ya lo había
+      // descartado"*. Al buscarlo: **no había NINGÚN camino** para que él descartara
+      // una tarea. Ni acá, ni en la app (el botón cicla pendiente → en progreso →
+      // hecho → pendiente y nunca pasa por descartado), ni en el chat. El único modo
+      // era que alguien corriera un script `.mjs` por él, un objetivo a la vez.
+      //
+      // Peor: de los dos botones que había, "✅ Hice" era mentir y "⏰ Recuérdamelo"
+      // COPIA el compromiso a `reminders` sin referencia al paso. O sea que el camino
+      // de menor resistencia lo DUPLICABA en vez de apagarlo.
+      //
+      // Un compromiso que no se puede cerrar vuelve cada mañana. Eso es lo que le hizo
+      // decir que hay desfase entre lo que SIR dice y lo que ya habíamos hablado.
+      push(
+        btn(`✅ Hice: ${etiquetaCorta(e.name ?? s.text)}`, 'task_done', e.id),
+        btn('⏰ Recuérdamelo 6pm', 'task_remind', e.id),
+        btn('✕ Ya no va', 'task_discard', e.id),
+      )
     } else if (e?.kind === 'task' && s.slot === 'tareaInvisible') {
       // PROPONE la fecha en vez de preguntarla. La v1 decía "¿para cuándo?" y le
       // devolvía la decisión — el mismo error que hacía morir la conversación de
