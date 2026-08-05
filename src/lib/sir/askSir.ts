@@ -94,7 +94,7 @@ import { computeRecomp, explainRecomp, partitionChange, explainComposition } fro
 import { parseWeightCategory } from '@/engines/targets'
 import { computeGoalAdvance, type GoalAdvance } from '@/lib/goals/advance'
 import { objectiveStepAdapter } from '@/lib/supabase/sync/adapters/objectiveSteps'
-import { nextPendingLeaf, stepsForObjective } from '@/lib/objectives/steps'
+import { estaAbierto, nextPendingLeaf, stepsForObjective } from '@/lib/objectives/steps'
 
 const MAX_PEOPLE = 5
 const MAX_MEM_PER_PERSON = 12
@@ -708,8 +708,15 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
     // 29-jul. La ventana mira atrás porque un pendiente vencido se sigue avisando.
     const desde = new Date(Date.parse(`${hoy}T00:00:00Z`) - 7 * 86_400_000).toISOString().slice(0, 10)
     const hasta = new Date(Date.parse(`${hoy}T00:00:00Z`) + 3 * 86_400_000).toISOString().slice(0, 10)
+    // `estaAbierto`, no `status !== 'hecho'`: un paso DESCARTADO también está
+    // cerrado. Con el filtro viejo el chat le daba por vivos los pasos que él ya
+    // había mandado descartar — medido el 5-ago-2026: 7 descartados caían dentro
+    // de esta misma ventana. El brief sí los filtraba, así que si Aaron respondía
+    // "¿de qué Dayana me hablas, si eso lo descarté?", el chat se lo CONFIRMABA
+    // en vez de desmentirlo. Ese es el desfase que él reportó entre lo que SIR
+    // dice y lo que ya habíamos hablado. [[descartar-tarea-no-tiene-salida]]
     const enVentana = steps
-      .filter((s) => s.status !== 'hecho' && s.targetDate && s.targetDate >= desde && s.targetDate <= hasta)
+      .filter((s) => estaAbierto(s) && s.targetDate && s.targetDate >= desde && s.targetDate <= hasta)
       .sort((a, b) => (a.targetDate ?? '').localeCompare(b.targetDate ?? ''))
 
     // Los objetivos padre se traen APARTE y sin filtrar por estado: el array
