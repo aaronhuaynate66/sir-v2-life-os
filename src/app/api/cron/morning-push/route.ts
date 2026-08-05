@@ -41,7 +41,7 @@ import { habitNudge, type NudgeHabit } from '@/lib/habits/nudge'
 import { bodySignal } from '@/lib/health/bodySignal'
 import { vitalsAnomaly, type DailyVitals, type VitalsContext } from '@/lib/health/vitalsAnomaly'
 import { calibrateRanges, type VitalsHistory } from '@/lib/health/calibrate'
-import { healthDataGap } from '@/lib/health/dataGap'
+import { computeMissingHealthData, dataFaltanteLine, SLEEP_TYPE, type Reading } from '@/lib/health/missingData'
 import { parseWeightCategory } from '@/engines/targets'
 import { assessWeightTrend, renderWeightTrendLine } from '@/lib/targets/weightTrend'
 import { assembleDailyActions } from '@/lib/daily-actions/assemble'
@@ -998,20 +998,38 @@ export async function GET(req: NextRequest) {
       //
       // La prioridad se conserva: el gap solo habla si NO hubo anomalía fresca, que
       // es lo correcto (una desviación del cuerpo pesa más que un dato que falta).
+      // ═══ Y POR GRUPO, NO POR "CUALQUIER DATA" ════════════════════════════════
+      //
+      // El detector anterior (`healthDataGap`) miraba la data de salud MÁS RECIENTE
+      // de cualquier tipo. Al simular el brief del 5-ago con la data real apareció el
+      // defecto: esa tarde Aaron mandó sueño y FC/VFC, así que el gap agregado bajó a
+      // 1 día y el aviso NO iba a sonar — mientras su peso llevaba 5 días sin
+      // actualizarse. "No cargas datos de salud" y "no te pesas" son cosas distintas,
+      // y el agregado tapa la que importa.
+      //
+      // `computeMissingHealthData` ya lo resuelve por GRUPO (báscula / sueño / FC-VFC
+      // del día) y solo de lo que él sube HABITUALMENTE, con umbral derivado de su
+      // propio historial. Es la misma función que usa la tarjeta de `/salud`: se
+      // reúsa en vez de mantener una segunda lógica que pueda contradecirla.
       if (!vitalsAlerted) {
         try {
-          const [{ data: hmLast }, { data: slLast }] = await Promise.all([
-            admin.from('health_metrics').select('measured_at').eq('user_id', uid).order('measured_at', { ascending: false }).limit(1),
-            admin.from('sleep_records').select('date').eq('user_id', uid).order('date', { ascending: false }).limit(1),
+          const [{ data: hmAll }, { data: slAll }] = await Promise.all([
+            admin.from('health_metrics').select('type, measured_at').eq('user_id', uid)
+              .gte('measured_at', new Date(now.getTime() - 20 * 86_400_000).toISOString()).limit(2000),
+            admin.from('sleep_records').select('date').eq('user_id', uid)
+              .gte('date', new Date(now.getTime() - 20 * 86_400_000).toISOString().slice(0, 10)).limit(60),
           ])
-          const last = [
-            ((hmLast ?? [])[0] as { measured_at?: string } | undefined)?.measured_at?.slice(0, 10),
-            ((slLast ?? [])[0] as { date?: string } | undefined)?.date?.slice(0, 10),
-          ].filter((s): s is string => !!s).sort().at(-1) ?? null
-          const gap = healthDataGap(last, now.toISOString().slice(0, 10))
-          if (gap) dataFaltanteText = gap
-        } catch {
-          /* fail-soft */
+          const readings: Reading[] = [
+            ...((hmAll ?? []) as Array<{ type: string; measured_at: string }>)
+              // `measured_at` es UTC real acá (lo escribe el importador convirtiendo
+              // desde Lima), así que el día local se saca restando el offset.
+              .map((m) => ({ type: m.type, day: new Date(Date.parse(m.measured_at) - 5 * 3_600_000).toISOString().slice(0, 10) })),
+            ...((slAll ?? []) as Array<{ date: string }>).map((s) => ({ type: SLEEP_TYPE, day: s.date.slice(0, 10) })),
+          ].filter((r) => !!r.day)
+          const { missing } = computeMissingHealthData(readings, today)
+          dataFaltanteText = dataFaltanteLine(missing, today) ?? undefined
+        } catch (e) {
+          reportApiError(e, { route: 'cron/morning-push', step: 'dataFaltante', user: uid.slice(0, 8) })
         }
       }
 
