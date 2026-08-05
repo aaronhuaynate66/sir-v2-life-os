@@ -3,6 +3,14 @@ name: Notify main (Telegram Dev)
 # Avisa por el bot de dev (@sir_aaron_dev_bot) en cada push a main (merge de PR).
 # Los commits del bot con [skip ci] NO disparan workflows → no generan ruido.
 # FAIL-OPEN: sin los secrets TELEGRAM_DEV_* simplemente no notifica (no rompe).
+#
+# ESTE AVISO ES DEL MERGE, NO DEL DEPLOY — Y TIENE QUE DECIRLO
+# Antes decía "🚀 main actualizado". El cohete se lee como "ya está vivo", y no
+# lo es: este workflow corre con el push, mucho antes de que Vercel termine (o
+# falle). El 4-ago llegó el cohete de #1100 mientras Vercel rechazaba el build en
+# el mismo minuto — "rate limited, retry in 24 hours". Aaron leyó "desplegado" y
+# el fix estuvo muerto 17 horas.
+# Quién avisa que SÍ llegó (o que no): el workflow `deploy-watch`.
 
 on:
   push:
@@ -30,7 +38,7 @@ jobs:
           # Solo la primera línea del mensaje de commit (evita cuerpos largos).
           TITLE=$(printf '%s' "$COMMIT_MSG" | head -n1)
           # printf con \n → una sola línea indentada (no rompe el YAML block).
-          TEXT=$(printf '🚀 main actualizado\n%s\n— %s · %s\n%s' "$TITLE" "$COMMIT_AUTHOR" "${SHA:0:7}" "$COMMIT_URL")
+          TEXT=$(printf '📦 Mergeado en main — desplegando\n%s\n— %s · %s\n%s\n\nTodavía no está en producción. Si el deploy no llega, te aviso.' "$TITLE" "$COMMIT_AUTHOR" "${SHA:0:7}" "$COMMIT_URL")
           curl -s "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${TG_CHAT}" \
             --data-urlencode "text=${TEXT}" \
