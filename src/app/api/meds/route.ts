@@ -6,6 +6,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolverItemPorNombre } from '@/lib/meds/vincular'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -56,14 +57,43 @@ export async function POST(req: NextRequest) {
   const note = typeof b.note === 'string' ? b.note.trim().slice(0, 240) : null
   // Hora elegida (ISO). Si no viene o es inválida → la DB usa el default (ahora).
   const takenAt = typeof b.taken_at === 'string' && !Number.isNaN(Date.parse(b.taken_at)) ? new Date(b.taken_at).toISOString() : null
+  // ═══ VINCULAR CON LA RECETA, SI SE PUEDE ══════════════════════════════════
+  //
+  // La adherencia se calcula filtrando por `prescription_item_id` (ver `medsDeLaToma`),
+  // así que una toma sin ese campo **no cuenta para nada**: no apaga el botón de
+  // Telegram, no llena la pauta, no aparece en el conteo. Medido el 5-ago-2026: 35 tomas
+  // registradas y 0 vinculadas, con tres recetas activas encima.
+  //
+  // Best-effort a propósito: si no hay match claro la toma se guarda igual, suelta,
+  // exactamente como antes. Registrar la toma nunca puede fallar por no poder vincularla.
+  let prescriptionItemId: string | null = null
+  try {
+    const { data: pres } = await supabase
+      .from('med_prescriptions').select('id').eq('user_id', auth.user.id).eq('status', 'activa')
+    const ids = ((pres as Array<{ id: string }>) ?? []).map((p) => p.id)
+    if (ids.length > 0) {
+      const { data: its } = await supabase
+        .from('med_prescription_items').select('id, med_name').in('prescription_id', ids)
+      prescriptionItemId = resolverItemPorNombre(
+        ((its as Array<{ id: string; med_name: string }>) ?? []).map((i) => ({ id: i.id, medName: i.med_name })),
+        name,
+      )
+    }
+  } catch { /* queda suelta */ }
+
   try {
     const { data, error } = await supabase
       .from('med_intakes')
-      .insert({ user_id: auth.user.id, name, quantity, note, ...(takenAt ? { taken_at: takenAt } : {}) })
+      .insert({
+        user_id: auth.user.id, name, quantity, note,
+        ...(prescriptionItemId ? { prescription_item_id: prescriptionItemId } : {}),
+        ...(takenAt ? { taken_at: takenAt } : {}),
+      })
       .select('id, name, quantity, note, taken_at')
       .single()
     if (error) return NextResponse.json({ error: 'No se pudo registrar', detail: error.message }, { status: 500 })
-    return NextResponse.json({ intake: data })
+    // `vinculada` le dice a la UI si esta toma va a contar para la adherencia.
+    return NextResponse.json({ intake: data, vinculada: prescriptionItemId !== null })
   } catch (e) {
     return NextResponse.json({ error: 'No se pudo registrar', detail: String(e).slice(0, 120) }, { status: 500 })
   }

@@ -20,6 +20,7 @@ import { textoRecordatorio } from '@/lib/push/cuandoVence'
 import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cuandoDeLaToma, textoDeToma } from '@/lib/meds/telegramToma'
 import { limaDayString } from '@/lib/habits/streak'
 import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
+import { materializarTomas } from '@/lib/meds/materializar'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -37,6 +38,36 @@ export async function GET(req: NextRequest) {
 
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
   const nowMs = Date.now()
+
+  // ═══ PRIMERO: RELLENAR LA COLA DE TOMAS ═══════════════════════════════════
+  //
+  // Los avisos de medicación son filas materializadas, y hasta el 5-ago-2026 las creaba
+  // un script a mano en ventanas de 14 días. Medido ese día contra producción: la última
+  // era `rem_med_2026-08-16_2200`. **Del 17-ago en adelante este cron no iba a encontrar
+  // ninguna fila, no iba a preguntar nada, y este endpoint iba a responder 200 OK** —
+  // sin error, sin telemetría. Adentro de esa ventana: topiramato y clonazepam, crónicos.
+  //
+  // Va ANTES de la consulta a propósito: lo que se cree acá ya entra en esta misma
+  // corrida si vence dentro del lookahead. Y va en este cron —no en uno nuevo— porque
+  // es el que ya vigila esta tabla y corre a diario: mientras él viva, la cola no se
+  // vacía. Un cron nuevo sería una pieza más que se puede morir aparte.
+  const tomas = { creadas: 0, cubiertoHasta: null as string | null }
+  try {
+    const { data: conRecetas } = await supabase
+      .from('med_prescriptions').select('user_id').eq('status', 'activa')
+    const uids = [...new Set(((conRecetas as Array<{ user_id: string }>) ?? []).map((r) => r.user_id))]
+    for (const uid of uids) {
+      const r = await materializarTomas(supabase, uid, limaDayString(new Date(nowMs)))
+      // Que falle es exactamente el silencio que esto vino a matar: se reporta.
+      if (r.error) reportApiError(new Error(`materializar tomas (${uid}): ${r.error}`), { route: 'cron/reminders-due' })
+      tomas.creadas += r.creadas
+      if (r.cubiertoHasta && (!tomas.cubiertoHasta || r.cubiertoHasta > tomas.cubiertoHasta)) {
+        tomas.cubiertoHasta = r.cubiertoHasta
+      }
+    }
+  } catch (e) {
+    reportApiError(e instanceof Error ? e : new Error(String(e)), { route: 'cron/reminders-due' })
+  }
 
   // ═══ MIRA HACIA ADELANTE, NO SOLO HACIA ATRÁS ═════════════════════════════
   //
@@ -72,7 +103,7 @@ export async function GET(req: NextRequest) {
     'recordatorios que vencen',
   )
   // Cero con la consulta OK sí es legítimo: hoy no vence nada.
-  if (rows.length === 0) return NextResponse.json({ processed: 0 })
+  if (rows.length === 0) return NextResponse.json({ processed: 0, tomas })
 
   // Traer person slug para deep-link.
   const pids = [...new Set(rows.map((r) => r.related_person_id).filter((v): v is string => v != null))]
@@ -198,5 +229,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ processed: rows.length, notified, sinEntregar, tomasDiferidas })
+  return NextResponse.json({ processed: rows.length, notified, sinEntregar, tomasDiferidas, tomas })
 }
