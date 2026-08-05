@@ -160,3 +160,49 @@ export function computeMissingHealthData(
 
   return { referenceDay, missing, habitual }
 }
+
+/**
+ * ═══ LA LÍNEA DEL BRIEF ═══════════════════════════════════════════════════════
+ *
+ * Aaron, 4-ago-2026: *"hace 3 días que no me subo a la balanza ni le mando esa data
+ * de salud a SIR, ¿por qué ni me dice nada?"*.
+ *
+ * Ese día se le dio al aviso su propio slot (antes compartía identidad con la alerta
+ * de vitales y el silencio de una silenciaba al otro). Pero al simular el brief del
+ * día siguiente apareció el segundo defecto, y más fino: el detector del brief
+ * (`healthDataGap`) mira **la data de salud más reciente de cualquier tipo**. Como
+ * esa tarde él mandó sueño y FC/VFC, el gap pasó a 1 día y el aviso **no iba a
+ * sonar** — mientras su PESO llevaba 5 días sin actualizarse.
+ *
+ * O sea: "no cargas datos de salud" y "no te pesas" son cosas distintas, y el
+ * agregado tapa la que importa.
+ *
+ * Esta pantalla (`MissingDataCard`) ya lo hacía bien: por GRUPO, y solo de lo que él
+ * sube habitualmente. Así que el brief usa ESTA función y no una segunda lógica
+ * paralela — la lección de la extracción de `ultimaData` el mismo día: dos fuentes
+ * de verdad para la misma pregunta terminan contradiciéndose.
+ *
+ * Devuelve null si no falta nada, o si lo que falta es de hoy/ayer (no vale
+ * molestar por un día). PURA.
+ */
+export function dataFaltanteLine(
+  missing: readonly MissingBundle[],
+  today: string,
+  minDias = 2,
+): string | null {
+  const relevantes = (missing ?? []).filter((m) => {
+    if (!m.lastSeen) return true // habitual y sin registro en la ventana: eso sí urge
+    const [ay, am, ad] = m.lastSeen.split('-').map(Number)
+    const [ty, tm, td] = today.split('-').map(Number)
+    if (!ay || !ty) return false
+    const dias = Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(ay, am - 1, ad)) / 86_400_000)
+    return dias >= minDias
+  })
+  if (relevantes.length === 0) return null
+  // Se NOMBRA cada grupo con su última vez: "falta data de salud" no dice qué mandar.
+  const partes = relevantes.map((m) => `${m.label} (${relativeDayLabel(m.lastSeen, today)})`)
+  const lista = partes.length <= 1
+    ? partes[0]
+    : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`
+  return `Te falta subir: ${lista}. Mándame la captura y la proceso.`
+}

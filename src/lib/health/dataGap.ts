@@ -1,5 +1,22 @@
 // SIR V2 — Aviso de data de salud faltante.
 //
+// ⚠️ SUPERADA el 4-ago-2026. NO volver a cablearla al brief.
+//
+// Este detector mira la data de salud MÁS RECIENTE DE CUALQUIER TIPO, y ese
+// agregado tapa lo que importa. El caso que lo jubiló: Aaron reclamó que llevaba
+// días sin pesarse y SIR no le decía nada; esa misma tarde mandó capturas de sueño y
+// de FC/VFC, así que el gap agregado bajó a 1 día y el aviso siguió sin sonar —
+// mientras su PESO llevaba 5 días sin actualizarse.
+//
+// "No cargas datos de salud" y "no te pesas" son preguntas distintas. Usar
+// `computeMissingHealthData` + `dataFaltanteLine` de `lib/health/missingData.ts`,
+// que ya razonan por GRUPO (báscula / sueño / FC-VFC del día) y solo sobre lo que él
+// sube habitualmente — y son las mismas que usa la tarjeta de `/salud`, así que no
+// hay dos fuentes de verdad que puedan contradecirse.
+//
+// Se deja el archivo y sus tests porque documentan el criterio de umbral; el que la
+// use para un aviso nuevo va a repetir el mismo agujero.
+//
 // La salud entra a SIR por carga MANUAL de capturas (báscula, sueño, FC). Si
 // Aaron deja de cargar unos días, SIR se queda ciego y no puede monitorear ni
 // detectar anomalías (justo lo que pasó: estuvo mal y no cargó nada). Esto lo
