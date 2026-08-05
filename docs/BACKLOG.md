@@ -5,7 +5,7 @@
 > tratar CUALQUIER cosa de acá como pendiente, verifícala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 31/07/2026 (agente automático de reconciliación — 1 ítem cerrado + 2 notas de blocker actualizadas, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-07-31" abajo; antes consolidaba los pases 25, 26, 27, 28 y 30/07).
+> **Última actualización:** 05/08/2026 (agente automático de reconciliación — 12 ítems re-verificados contra el código, 11 sin drift y 1 corregido a 🟡 parcial con evidencia nueva, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-08-05" abajo; antes consolidaba los pases hasta 31/07).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entra acá cuando quieras decidir qué priorizar en la próxima sesión.
@@ -193,6 +193,29 @@ memoria, que solo mira el texto de la nota.
 La recomendación es la **2** (y la 1 para lo que quede): sacar 154 filas de ruido de
 1,295 mejora el recall más que cualquier re-ranking — que es justo lo que la medición
 de arriba mostró que NO se puede mejorar tocando pesos.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-08-05
+
+Pase de mantenimiento contra el código real (agente automático). Ventana: los ~50 commits desde el pase 07-31 hasta `0b2daf6` (incluye trabajo de salud/medicación, brief, calendario, CRM, documentos, reader). Se re-verificaron 12 ítems marcados pendientes/parciales/bloqueados en distintas secciones del doc (no solo "PENDIENTES ACTUALES").
+
+- 🟡 **Auto-import desde calendario (Clay #6)** — corregido de "sin rastro en código" a **PARCIAL**. `src/lib/crm/dealEnEvento.ts` (commit `adc5946`, #1059, "cruzar deals x agenda x grafo") cruza `personal_events` × `person_links` × `deals` y avisa cuando un contacto con un deal abierto va a estar en un evento próximo (slot `encuentroConDeal` en el brief) — cubre la mitad "traer contexto antes de la reunión", con un mecanismo distinto al que el ítem original imaginaba (no es integración de calendario nueva, es cruce sobre la agenda que ya existe). **Sigue sin cubrirse:** crear/enriquecer un contacto automáticamente desde un evento de calendario — `dealEnEvento.ts` no inserta/actualiza `people` (0 resultados de `insert`/`upsert`/`create` sobre personas ahí). Corregido en su párrafo original (sección Clay, "Después / lift grande").
+
+**Verificado y quedó IGUAL (sin drift), los otros 11 ítems:**
+- **`sortLearnings`** (`src/lib/learnings/recall.ts:47`) sigue con pesos fijos por `kind` (`{principle:0, pattern:1, preference:2, fact:3}`), sin re-ranking dinámico/few-shot.
+- **Consolidar las 3 estructuras de sub-pasos** — `goals.milestones` (jsonb), `objective_steps` y `objective_blockers` siguen siendo estructuras separadas, cada una con su propio adapter/lectura activa; sin migración ni código que las unifique.
+- **Grafo /red → sigma.js** — confirmado sin dependencia `sigma` en `package.json` (correcto: sigue descartado por rendimiento, no reabrir por la ausencia de la dependencia).
+- **Ciclo Mem0-style extract→merge→olvido** — sin rastro de merge/dedupe/forgetting en `src/lib/memories/` (existen `extract.ts`/`deriveFromObservations.ts`/`deriveForPerson.ts`/`fromInteractionLog.ts`, ninguno fusiona con memorias existentes ni decae).
+- **`callLabel` sin fecha** (`src/lib/capture/whatsapp/export/calls.ts:50-54`) — sigue armando `📞 {tipo} perdida` sin usar `c.iso`/fecha. Decisión de Aaron sigue sin tomarse.
+- **Gantt del MASTER_PLAN** — sin componente "Gantt" ni referencia a `MASTER_PLAN` en `src/`.
+- **`eval/golden.jsonl`** — sigue en 8 líneas.
+- **Reconciliación temporal de hechos derivados** — `deriveFromObservations.ts` sigue sin usar `reconcile.ts`/reconciliación por atributo (memorias episódicas siguen sin ese tratamiento); `src/lib/facts/reconcile.ts` sigue con la regla "solo mudanza explícita" intacta.
+- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md:33` y `:126` siguen en "⬜ visión norte", sin alcance concreto.
+- **`objective_blockers`** — sigue existiendo como tabla propia (migración `0102_objective_plan.sql`), usada en `src/lib/objectives/plan.ts` y `ObjectivePlanPanel.tsx` — confirma que sigue siendo una de las 3 estructuras separadas del punto de arriba.
+- **Bloqueados por data/otra PC** (match por cara capa 2, reader LinkedIn, Teams, ingesta DMs IG) — el código soporte de cada uno sigue existiendo tal cual; no se evaluó si el bloqueo externo (fotos reales, login remoto, credenciales) se resolvió, porque no es verificable por grep.
+
+**No re-verificado este pase** (requieren decisión de Aaron o dato en vivo, no verificable por grep): si `chat_feedback` ya tiene filas para el golden-set/slice 4, las 6 validaciones manuales de captura (fecha explícita WhatsApp, asignación user/other Vision, BUG-004 Instagram), y todo lo demás ya reconciliado en pases anteriores sin señales nuevas de drift.
 
 ---
 
@@ -660,7 +683,7 @@ Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lóg
 - **Por qué:** lección de Clay — forzar una hora a todo recordatorio genera fricción y falsa precisión. Default = día; hora = opt-in.
 
 ### Después / lift grande
-**6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**.
+**6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**. 🟡 **PARCIAL (verificado 2026-08-05):** la mitad de "contexto antes de la reunión" tiene una solución — distinta a lo pedido, no una feature de calendario nueva. `src/lib/crm/dealEnEvento.ts` (commit `adc5946`, #1059) cruza `personal_events` (agenda) × `person_links` (grafo) × `deals` (CRM) y avisa cuando un contacto con un deal abierto va a estar en un evento próximo (directo o vía alguien vinculado en el grafo) — sale como slot `encuentroConDeal` en el brief. **Sigue sin cubrirse:** crear/enriquecer un contacto AUTOMÁTICAMENTE desde un evento del calendario — `dealEnEvento.ts` no inserta ni actualiza `people` (0 resultados de `insert`/`upsert`/`create` sobre personas). El grep original ("auto.import"/"autoImport") seguía dando 0 porque el feature real usa otro nombre; no volver a cerrar esto solo por ese grep.
 - **Esfuerzo: ALTO.** Integración externa (OAuth calendario, sync, matching a `people`). Backlog lejano.
 
 **7. Q&A por persona** — ✅ **CERRADO** (`0a106c2`). Ask-box `PreguntarSobrePersona` en la ficha: reusa `/api/sir/ask` (grounding + RAG, ya hechos) con un `personId` nuevo que pre-scopea el contexto ANTES del cap, así responde aterrizado en esa persona aunque no la nombres. Sugerencias rápidas + `skipInlineGaps`. El backend (name-resolution + memorias semánticas + recall C3) ya existía; esto agregó el scope explícito + la UI. ✅ **Multi-turno YA HECHO (verificado 2026-07-21):** `PreguntarSobrePersona.tsx` mantiene `thread`/historial de turnos y lo manda como `history` a `/api/sir/ask` ("Sigue preguntando…"); el backend (`src/lib/sir/askSir.ts` líneas ~116-121, 542-550 + `chatProvider.ts`) arma `chatHistory` real para el LLM, no lo ignora. La nota anterior ("hoy una pregunta por vez") quedó desactualizada. **Sigue pendiente (no verificable por grep):** validar en vivo con LLM real que las respuestas de seguimiento usan bien el hilo.
