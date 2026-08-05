@@ -332,7 +332,10 @@ export async function executeProposedAction(
     if (steps.length === 0) return { ok: false, message: 'No tienes tareas cargadas en tus objetivos.' }
     const hit = matchHabit(steps, query) // matcher genérico por título (exacto → inclusión, null si ambiguo)
     if (!hit) {
-      const pend = steps.filter((s) => s.status !== 'hecho').slice(0, 6).map((s) => s.title)
+      // Mismo criterio que el chat: un DESCARTADO está cerrado. Ofrecerlo como
+      // "pendiente" cuando no se encuentra la tarea buscada revive justo lo que
+      // Aaron mandó sacar. [[descartar-tarea-no-tiene-salida]]
+      const pend = steps.filter((s) => s.status !== 'hecho' && s.status !== 'descartado').slice(0, 6).map((s) => s.title)
       return { ok: false, message: `No encontré una tarea que matchee "${query.slice(0, 60)}".` + (pend.length ? ` Pendientes: ${pend.join(', ')}.` : '') }
     }
     const full = steps.find((s) => s.id === hit.id)
