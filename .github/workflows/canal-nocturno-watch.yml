@@ -1,0 +1,205 @@
+name: Canal nocturno (¿salió el cierre del día?)
+
+# POR QUÉ EXISTE
+# La noche del 5-ago-2026 `evening-push` no entregó NADA —ni el cierre del día ni el
+# aviso de la toma de las 22:00— y se descubrió a las 04:00 de la mañana, a mano,
+# razonando por descarte: no hay 🌙 en `sir_messages`, la toma sigue con
+# `notified_at` NULL, el bot responde `getMe` ok → entonces el cron no ejecutó.
+#
+# #1112 metió el cierre del día al vigilante de crons, pero ese vigilante habla por
+# el brief de la MAÑANA SIGUIENTE: hace visible la noche perdida, no la evita. Esto
+# es la otra mitad — avisar la misma noche, cuando todavía se puede tomar la pastilla.
+#
+# VIVE EN GITHUB ACTIONS, NO EN VERCEL — A PROPÓSITO
+# Un cron caído no puede avisar de su propia caída. Si esto fuera otro
+# `/api/cron/...`, la misma causa que apaga al canal nocturno (un deploy que
+# re-registra los crons, el rate limit, el plan Hobby) apagaría al vigilante en el
+# mismo momento en que hace falta. Misma lección que `deploy-watch`.
+#
+# HONESTIDAD DE COBERTURA
+# Si no puede leer la base, dice que está CIEGO. Nunca concluye "el canal no
+# entregó" desde una consulta que falló. Una falsa alarma acá enseña a ignorar el
+# aviso, y entonces el vigilante es peor que nada.
+
+on:
+  schedule:
+    # La ventana de disparo del cron de Vercel en plan Hobby es de UNA HORA: el
+    # nocturno está agendado 02:00 UTC y las noches medidas cayó 02:09 y 02:22, así
+    # que recién a las 03:00 se puede afirmar que no salió. Primer tick 03:20.
+    #
+    # Tres ticks y no uno porque el cron de Actions se atrasa fuerte: medido el
+    # 6-ago con `*/30`, los huecos reales fueron de 3 h 10 y 2 h 47. Con un solo
+    # tick, un atraso normal empuja el aviso a la madrugada y llega después de la
+    # hora en que servía. Los tres son idempotentes (ver `ya_avise`).
+    - cron: "20 3 * * *"
+    - cron: "10 4 * * *"
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: canal-nocturno
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: ¿Salió el cierre del día?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SB_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SB_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      TG_TOKEN: ${{ secrets.TELEGRAM_DEV_BOT_TOKEN }}
+      TG_CHAT: ${{ secrets.TELEGRAM_DEV_CHAT_ID }}
+      # Igual que en `deploy-watch`: el issue se identifica por el CUERPO, no por
+      # label. GitHub descarta `labels` en silencio si el token no tiene push
+      # access — pasó de verdad y tres pedidos quedaron invisibles 8 días.
+      MARKER: "<!-- canal-nocturno -->"
+
+    steps:
+      - name: ¿Entregó el canal nocturno de esta noche?
+        run: |
+          set -euo pipefail
+
+          notify() {
+            if [ -z "${TG_TOKEN:-}" ] || [ -z "${TG_CHAT:-}" ]; then
+              echo "TELEGRAM_DEV_* no configurados — skip (fail-open)"
+              return 0
+            fi
+            curl -s "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TG_CHAT}" \
+              --data-urlencode "text=$1" \
+              -d "disable_web_page_preview=true" \
+              -o /dev/null -w "telegram: HTTP %{http_code}\n"
+          }
+
+          # El issue abierto del vigilante, buscando por el cuerpo.
+          find_issue() {
+            gh issue list --repo "$REPO" --state open --limit 100 \
+              --json number,body \
+              --jq "[.[] | select(.body != null and (.body | contains(\"$MARKER\")))][0].number // empty"
+          }
+
+          # ── QUÉ NOCHE SE AUDITA ─────────────────────────────────────────────
+          #
+          # La noche de LIMA D tiene su ventana de disparo entre las 02:00Z y las
+          # 03:00Z del día D+1 (el cron está agendado 02:00Z y Hobby dispara dentro
+          # de la hora). O sea: la noche D solo se puede juzgar pasadas las 03:00Z
+          # del D+1.
+          #
+          # `-27 hours` da exactamente esa noche para cualquier corrida a partir de
+          # las 03:00Z: 03:20Z − 27 h = 00:20 del día anterior → D. Y sirve igual
+          # para los tres ticks, que por eso auditan LA MISMA noche (lo que hace que
+          # la idempotencia por issue funcione).
+          #
+          # OJO — el bug que esto evita, encontrado probando: con `-5 hours` el tick
+          # de las 05:00Z calculaba la noche que TODAVÍA NO HABÍA PASADO, y un
+          # `workflow_dispatch` a media mañana abría un issue falso sobre un canal
+          # sano. Una falsa alarma acá enseña a ignorar el aviso.
+          NOCHE=$(date -u -d '-27 hours' +%F)
+          # Medianoche de Lima del día D = D 05:00Z. El 🌙 de las 21:22 de Lima se
+          # guarda como 02:22Z del día siguiente y cae dentro de esta ventana;
+          # comparar contra el día UTC lo contaría en la fecha equivocada.
+          DESDE="${NOCHE}T05:00:00Z"
+          HASTA="$(date -u -d "$NOCHE +1 day" +%F)T05:00:00Z"
+          # La ventana de disparo de esa noche cierra a las 03:00Z del día siguiente.
+          CIERRA="$(date -u -d "$NOCHE +1 day" +%F)T03:00:00Z"
+          echo "Auditando la noche de Lima: $NOCHE  (ventana $DESDE → $HASTA · juzgable desde $CIERRA)"
+
+          # ── NO JUZGAR ANTES DE QUE CIERRE LA VENTANA ────────────────────────
+          # "Todavía no salió" y "no salió" son cosas distintas. Si el cron aún
+          # puede disparar, callarse es lo correcto.
+          if [ "$(date -u +%s)" -lt "$(date -u -d "$CIERRA" +%s)" ]; then
+            echo "::notice::La ventana de disparo de la noche del $NOCHE no cerró todavía (cierra $CIERRA). No se juzga."
+            exit 0
+          fi
+
+          if [ -z "${SB_URL:-}" ] || [ -z "${SB_KEY:-}" ]; then
+            echo "::warning title=Vigilante ciego::Faltan NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY. No puedo verificar el canal nocturno; esto NO significa que esté bien."
+            exit 0
+          fi
+
+          sb() {
+            curl -sS --max-time 25 \
+              -H "apikey: ${SB_KEY}" -H "Authorization: Bearer ${SB_KEY}" \
+              -H "Prefer: count=exact" -H "Range: 0-0" -D /tmp/h.txt \
+              "${SB_URL}/rest/v1/$1" -o /tmp/b.txt || return 1
+            grep -i '^content-range:' /tmp/h.txt | tr -d '\r' | sed 's/.*\///'
+          }
+
+          # El 🌙 es la huella INCONDICIONAL: el cierre del día se manda apenas la
+          # flag está activa, sin depender de que haya hábitos o tomas pendientes.
+          # (La marca vive en `lib/telegram/eveningBrief.ts` y hay un test que la ata
+          # al constructor del mensaje.)
+          LUNA_Q="sir_messages?select=id&role=eq.sir&channel=eq.telegram&content=like.%F0%9F%8C%99%25&created_at=gte.${DESDE}&created_at=lt.${HASTA}"
+          if ! LUNAS=$(sb "$LUNA_Q"); then
+            echo "::warning title=Vigilante ciego::No pude consultar sir_messages. NO concluyo que el canal falló."
+            exit 0
+          fi
+          case "$LUNAS" in ''|*[!0-9]*)
+            echo "::warning title=Vigilante ciego::Respuesta inesperada de PostgREST ('$LUNAS'). NO concluyo nada."
+            exit 0 ;;
+          esac
+
+          # La toma de la noche: su id es determinístico (`rem_med_<fecha>_2200`), así
+          # que se pregunta por LA fila exacta. `notified_at` no nulo = Telegram
+          # entregó (el cron solo lo marca si el envío salió bien).
+          TOMA_ID="rem_med_${NOCHE}_2200"
+          TOMA_AVISADA=$(sb "reminders?select=id&id=eq.${TOMA_ID}&notified_at=not.is.null" || echo "?")
+          TOMA_EXISTE=$(sb "reminders?select=id&id=eq.${TOMA_ID}" || echo "?")
+
+          echo "🌙 de la noche: $LUNAS · toma $TOMA_ID existe=$TOMA_EXISTE avisada=$TOMA_AVISADA"
+          ISSUE=$(find_issue)
+
+          # ── ENTREGÓ ─────────────────────────────────────────────────────────
+          if [ "$LUNAS" -gt 0 ]; then
+            echo "El canal nocturno entregó la noche del $NOCHE."
+            if [ -n "$ISSUE" ]; then
+              gh issue close "$ISSUE" --repo "$REPO" \
+                --comment "El canal nocturno volvió: la noche del \`$NOCHE\` sí entregó el cierre del día." >/dev/null
+              notify "$(printf '✅ El canal nocturno volvió\nLa noche del %s sí salió el cierre del día.' "$NOCHE")"
+            fi
+            exit 0
+          fi
+
+          # ── NO ENTREGÓ ──────────────────────────────────────────────────────
+          # Acá ya se sabe: la consulta funcionó y devolvió 0. Eso no es "no lo
+          # puedo ver", es "no salió".
+          echo "::error::El canal nocturno NO entregó la noche del $NOCHE."
+
+          if [ "$TOMA_EXISTE" = "1" ] && [ "$TOMA_AVISADA" = "0" ]; then
+            DETALLE_TOMA="Y **la toma de las 22:00 tampoco se avisó** (\`$TOMA_ID\`, \`notified_at\` NULL). Mañana a las 6 am el respaldo diario te va a preguntar \"¿tomaste la de anoche?\" — pero si la tomas ahora, tócala cuando llegue."
+            TG_TOMA=$(printf '\n\n💊 La toma de las 22:00 tampoco se avisó. Si la tomas, mañana 6 am te pregunto por anoche.')
+          else
+            DETALLE_TOMA="La toma de las 22:00 sí quedó avisada (o no había una agendada para hoy), así que el hueco es solo del cierre del día."
+            TG_TOMA=""
+          fi
+
+          if [ -z "$ISSUE" ]; then
+            BODY=$(printf '%s\n\n**El canal nocturno no entregó.**\n\n| | |\n|---|---|\n| noche (Lima) | `%s` |\n| ventana mirada | `%s` → `%s` |\n| cierres del día encontrados | `%s` |\n| toma de las 22:00 | existe=`%s` avisada=`%s` |\n\nEl 🌙 se manda **sin condiciones** una vez que la flag está activa, así que su ausencia en la noche entera significa que `/api/cron/evening-push` **no ejecutó** — no que no hubiera nada que decir.\n\n%s\n\nSospechas por orden, de lo medido el 5/6-ago:\n1. Un **deploy a producción dentro de la ventana de disparo** (21:00–22:00 de Lima) re-registra los crons de Vercel y se pierde el disparo pendiente. Revisar si hubo merges en esa franja.\n2. El cron de Hobby simplemente no disparó (es *best effort*).\n\nMirar la traza de la corrida: `events` con `type = evening-push` (la escribe #1112). Si tampoco hay fila ahí, no ejecutó.\n\n_Abierto por el workflow `canal-nocturno-watch`._' \
+              "$MARKER" "$NOCHE" "$DESDE" "$HASTA" "$LUNAS" "$TOMA_EXISTE" "$TOMA_AVISADA" "$DETALLE_TOMA")
+            gh issue create --repo "$REPO" \
+              --title "🌙 El canal nocturno no entregó ($NOCHE)" \
+              --body "$BODY" >/dev/null
+            # UN solo Telegram por episodio: el aviso es la transición, el issue es
+            # el estado. Tres ticks por noche gritando lo mismo se vuelven ruido.
+            notify "$(printf '🌙 No te llegó el cierre del día\nLa noche del %s el canal nocturno no entregó nada.%s\n\nTe dejé un issue con el detalle.' "$NOCHE" "$TG_TOMA")"
+          else
+            gh issue comment "$ISSUE" --repo "$REPO" \
+              --body "Sigue sin entregar: la noche del \`$NOCHE\` tampoco salió el cierre del día (cierres encontrados: \`$LUNAS\`)." >/dev/null
+          fi
+
+      - name: Resumen
+        if: always()
+        run: |
+          {
+            echo "### Canal nocturno"
+            echo ""
+            echo "Comprueba que \`/api/cron/evening-push\` entregó el cierre del día (el 🌙) en la noche de Lima que acaba de pasar."
+            echo "Corre en Actions a propósito: un cron caído no puede avisar de su propia caída."
+          } >> "$GITHUB_STEP_SUMMARY"
