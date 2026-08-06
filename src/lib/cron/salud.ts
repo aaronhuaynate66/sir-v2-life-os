@@ -72,6 +72,15 @@ const DAY = 86_400_000
 export const VIGILADOS: readonly TrabajoVigilado[] = [
   { job: 'status-diff', etiqueta: 'el motor que vigila cómo viene cada relación', cadaDias: 1 },
   { job: 'morning-push', etiqueta: 'tu brief de la mañana', cadaDias: 1 },
+  // ENTRA porque su evidencia SÍ es incondicional: el cierre del día (el 🌙) se
+  // manda apenas la flag está activa, sin depender de que haya hábitos o tomas
+  // pendientes. Lo que cuelga de ese cron sí es condicional —la toma de las
+  // 22:00, el check-in, el "¿quién es quién?"— pero el brief no, así que su
+  // ausencia en un día es prueba de que el cron no ejecutó.
+  //
+  // La noche del 5-ago-2026 no entregó NADA y se descubrió a las 04:00 a mano.
+  // Con esta línea, el brief de la mañana lo habría dicho solo.
+  { job: 'evening-push', etiqueta: 'el cierre de tu día por Telegram', cadaDias: 1 },
 ]
 
 /** Días enteros entre dos 'YYYY-MM-DD'. null si alguna no parsea. PURA. */

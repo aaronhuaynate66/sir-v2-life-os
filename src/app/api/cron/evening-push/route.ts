@@ -21,6 +21,7 @@ import { limaDayString } from '@/lib/habits/streak'
 import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cuandoDeLaToma, textoDeToma } from '@/lib/meds/telegramToma'
 import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
 import { reportApiError } from '@/lib/observability/reportApiError'
+import { logEvent } from '@/lib/observability/logEvent'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -305,6 +306,34 @@ export async function GET(req: NextRequest) {
       reportApiError(e, { route: 'cron/evening-push', user: uid.slice(0, 8) })
       results.push({ user: uid.slice(0, 8), sent: 0 })
     }
+  }
+
+  // ═══ LA TRAZA DE LA CORRIDA ═══════════════════════════════════════════════
+  //
+  // "¿Corrió el cron anoche?" no se podía responder desde la data. La noche del
+  // 5-ago-2026 este cron no entregó NADA y el diagnóstico salió a las 04:00 de la
+  // mañana razonando de forma indirecta: no hay 🌙 en `sir_messages`, la toma
+  // sigue con `notified_at` NULL, el bot responde `getMe` ok → entonces no
+  // ejecutó. Los logs de runtime de Vercel no se leen hacia atrás (el endpoint
+  // solo hace streaming hacia adelante), así que no había nada más que mirar.
+  //
+  // Una fila lo dice de frente, con lo que decidió y lo que mandó.
+  //
+  // Se atribuye al dueño de Telegram o al primer usuario porque `events.user_id`
+  // es obligatorio. Si no hay ninguno —el caso en que `push_subscriptions` está
+  // vacío Y la flag está apagada, o sea el bucle que no corre ni una vez— no
+  // queda traza, y ESE caso lo cubre el vigilante por la ausencia del 🌙
+  // (`lib/cron/evidencia`). Los dos se necesitan: la traza dice qué pasó adentro,
+  // la ausencia del 🌙 dice que no hubo adentro.
+  const trazaUid = tgOwnerId ?? userIds[0] ?? null
+  if (trazaUid) {
+    await logEvent(admin, trazaUid, {
+      type: 'evening-push',
+      ok: true,
+      route: 'cron/evening-push',
+      durationMs: Date.now() - now.getTime(),
+      meta: { users: userIds.length, briefEnabled, pushReady, sent, telegramBriefs },
+    })
   }
 
   return NextResponse.json({ ok: true, users: userIds.length, pushReady, sent, telegramBriefs, results }, { status: 200 })

@@ -25,6 +25,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCalendarEvents } from '@/lib/calendar/feed'
 import { noVerificables, trabajosAtrasados, VIGILADOS } from '@/lib/cron/salud'
+import { medirEvidenciaDeCrons } from '@/lib/cron/evidencia'
 import {
   estadoCalendario, estadoCorreo, estadoMotores, estadoSalud,
   fuentesSinInstrumentar, ordenarFuentes, resumirFuentes, type FuenteEstado,
@@ -92,24 +93,11 @@ export async function GET() {
   }
 
   // ── MOTORES DE FONDO ──────────────────────────────────────────────────────
-  // Mismas dos mediciones que hace `morning-push`; el juicio lo pone `lib/cron/salud`.
+  // Las MISMAS mediciones que hace `morning-push` — literalmente las mismas, no
+  // una copia: viven en `lib/cron/evidencia`. El juicio lo pone `lib/cron/salud`.
   try {
     const hoy = limaDayString(new Date(now))
-    const estados = await Promise.all([
-      (async () => {
-        const { data, error } = await supabase
-          .from('person_status_snapshots').select('snapshot_date')
-          .eq('user_id', uid).order('snapshot_date', { ascending: false }).limit(1)
-        return { job: 'status-diff', verificable: !error, ultimoDia: (data as Array<{ snapshot_date: string }>)?.[0]?.snapshot_date ?? null }
-      })(),
-      (async () => {
-        const { data, error } = await supabase
-          .from('brief_sent_signals').select('last_sent_day')
-          .eq('user_id', uid).not('last_sent_day', 'is', null)
-          .order('last_sent_day', { ascending: false }).limit(1)
-        return { job: 'morning-push', verificable: !error, ultimoDia: (data as Array<{ last_sent_day: string }>)?.[0]?.last_sent_day ?? null }
-      })(),
-    ])
+    const estados = await medirEvidenciaDeCrons(supabase, uid)
     fuentes.push(estadoMotores({
       atrasados: trabajosAtrasados(estados, hoy),
       noVerificables: noVerificables(estados),
