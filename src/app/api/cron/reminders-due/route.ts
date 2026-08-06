@@ -13,6 +13,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { filasOFalla } from '@/lib/cron/consulta'
 import { puedeMarcarseAvisado, resumenDeEntrega, type Entrega } from '@/lib/push/entrega'
 import { reportApiError } from '@/lib/observability/reportApiError'
+import { logEvent } from '@/lib/observability/logEvent'
 import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
 import { isTelegramConfigured, sendTelegramKeyboard, sendTelegramMessage } from '@/lib/telegram/client'
@@ -102,8 +103,30 @@ export async function GET(req: NextRequest) {
       .lte('due_at', hasta).is('done_at', null).is('notified_at', null).limit(50),
     'recordatorios que vencen',
   )
+  // ═══ LA TRAZA DE LA CORRIDA ═══════════════════════════════════════════════
+  //
+  // Misma razón que en `evening-push`: sin esto, "¿corrió?" solo se podía inferir
+  // de si dejó efectos, y este cron TIENE un camino legítimo en el que no deja
+  // ninguno ("hoy no vence nada"). Ahí la evidencia de dominio no alcanza y la
+  // fila es la única prueba de vida. Se traza en los DOS retornos a propósito:
+  // el `processed: 0` es justamente el que se veía igual que no haber corrido.
+  const trazaUid = process.env.TELEGRAM_OWNER_USER_ID?.trim() || rows[0]?.user_id || null
+  const traza = async (meta: Record<string, unknown>): Promise<void> => {
+    if (!trazaUid) return
+    await logEvent(supabase, trazaUid, {
+      type: 'reminders-due',
+      ok: true,
+      route: 'cron/reminders-due',
+      durationMs: Date.now() - nowMs,
+      meta,
+    })
+  }
+
   // Cero con la consulta OK sí es legítimo: hoy no vence nada.
-  if (rows.length === 0) return NextResponse.json({ processed: 0, tomas })
+  if (rows.length === 0) {
+    await traza({ processed: 0, tomas })
+    return NextResponse.json({ processed: 0, tomas })
+  }
 
   // Traer person slug para deep-link.
   const pids = [...new Set(rows.map((r) => r.related_person_id).filter((v): v is string => v != null))]
@@ -229,5 +252,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  await traza({ processed: rows.length, notified, sinEntregar, tomasDiferidas, tomas })
   return NextResponse.json({ processed: rows.length, notified, sinEntregar, tomasDiferidas, tomas })
 }

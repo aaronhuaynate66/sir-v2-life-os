@@ -56,7 +56,11 @@ describe('la regla dura: "no corrió" ≠ "no lo puedo verificar"', () => {
   })
 
   it('lo reporta aparte, y la línea dice que no lo VE, no que esté caído', () => {
-    const nv = noVerificables([roto, OK('morning-push', '2026-08-01')])
+    // Se miden TODOS los vigilados y solo uno viene roto: así el aparte de "no lo
+    // puedo verificar" queda con ése solo. Un trabajo sin medición también cae acá
+    // —eso lo cubre el test de más abajo— pero acá se aísla el caso de la consulta
+    // que falla.
+    const nv = noVerificables([roto, OK('morning-push', '2026-08-01'), OK('evening-push', '2026-08-01')])
     expect(nv.map((v) => v.job)).toEqual(['status-diff'])
     const l = saludDeCronsLine([], nv)!
     expect(l).toContain('No pude verificar')
@@ -78,12 +82,63 @@ describe('la regla dura: "no corrió" ≠ "no lo puedo verificar"', () => {
   })
 })
 
+// ═══ LA NOCHE DEL 5-ago-2026 ══════════════════════════════════════════════════
+//
+// `evening-push` no entregó NADA esa noche —ni el cierre del día ni el aviso de la
+// toma de las 22:00— y no había forma de notarlo: los logs de runtime de Vercel no
+// se leen hacia atrás. Se descubrió a las 04:00 de la mañana, a mano, mirando la
+// base. Estas fechas son las reales: hubo 🌙 el 3 y el 4 de agosto, y no el 5.
+describe('el canal nocturno mudo (5-ago-2026)', () => {
+  it('el 6-ago a la mañana, con el último 🌙 del 4-ago, canta 2 días', () => {
+    const a = trabajosAtrasados([
+      OK('status-diff', '2026-08-06'),
+      OK('morning-push', '2026-08-06'),
+      OK('evening-push', '2026-08-04'),
+    ], '2026-08-06')
+    expect(a).toHaveLength(1)
+    expect(a[0].job).toBe('evening-push')
+    expect(a[0].dias).toBe(2)
+    expect(saludDeCronsLine(a)!).toContain('el cierre de tu día por Telegram')
+  })
+
+  it('no se queja por la noche que TODAVÍA no llegó', () => {
+    // A la mañana del 6-ago, la última entrega es la noche del 5: eso es 1 día de
+    // deriva y es lo NORMAL — el cierre de hoy recién se manda a las 21:00. Si esto
+    // alarmara, alarmaría todas las mañanas y el aviso se volvería ruido.
+    const a = trabajosAtrasados([
+      OK('status-diff', '2026-08-06'),
+      OK('morning-push', '2026-08-06'),
+      OK('evening-push', '2026-08-05'),
+    ], '2026-08-06')
+    expect(a).toEqual([])
+    expect(saludDeCronsLine(a, [])).toBeNull()
+  })
+
+  it('si no se puede mirar el 🌙, dice "no lo veo" y NO que está caído', () => {
+    const estados: EstadoDeTrabajo[] = [
+      OK('status-diff', '2026-08-06'),
+      OK('morning-push', '2026-08-06'),
+      { job: 'evening-push', ultimoDia: null, verificable: false },
+    ]
+    expect(trabajosAtrasados(estados, '2026-08-06')).toEqual([])
+    const nv = noVerificables(estados)
+    expect(nv.map((v) => v.job)).toEqual(['evening-push'])
+    const l = saludDeCronsLine([], nv)!
+    expect(l).toContain('No digo que esté caído')
+    expect(l).toContain('el cierre de tu día por Telegram')
+  })
+})
+
 describe('a quién vigila', () => {
   it('solo trabajos con evidencia diaria INCONDICIONAL', () => {
     // moment-scan y opportunities quedan fuera: hay días en que legítimamente no
     // encuentran nada, y su silencio no prueba una falla.
+    //
+    // evening-push SÍ entra: el 🌙 se manda apenas la flag está activa, sin
+    // depender de que haya hábitos o tomas pendientes.
     const jobs = VIGILADOS.map((v) => v.job)
     expect(jobs).toContain('status-diff')
+    expect(jobs).toContain('evening-push')
     expect(jobs).not.toContain('moment-scan')
     expect(jobs).not.toContain('opportunities')
   })

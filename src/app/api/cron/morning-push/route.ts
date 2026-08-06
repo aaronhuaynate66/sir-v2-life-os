@@ -52,6 +52,7 @@ import { encuentrosConDeal, encuentroConDealLine, encuentroDestacado } from '@/l
 import { pedidoDeRegistroPendiente, pedidoDeRegistroLine, VENTANA_DIAS as VENTANA_REGISTRO } from '@/lib/relaciones/pedirRegistro'
 import { encuentrosDePasos } from '@/lib/relaciones/encuentroDePaso'
 import { trabajosAtrasados, noVerificables, saludDeCronsLine } from '@/lib/cron/salud'
+import { medirEvidenciaDeCrons } from '@/lib/cron/evidencia'
 import { tareaInvisible, tareaInvisibleLine, fechasPropuestas } from '@/lib/objetivos/sinFecha'
 import { metaSinPlan, metaSinPlanLine } from '@/lib/objetivos/metaSinPlan'
 import { filaADocumento, entregablePendiente, entregablePendienteLine } from '@/lib/documentos/tipos'
@@ -503,21 +504,10 @@ export async function GET(req: NextRequest) {
       // cobertura de CLAUDE.md aplicada a sí mismo.
       let cronsMudosText: string | undefined
       try {
-        const estados = await Promise.all([
-          (async () => {
-            const { data, error } = await admin
-              .from('person_status_snapshots').select('snapshot_date')
-              .eq('user_id', uid).order('snapshot_date', { ascending: false }).limit(1)
-            return { job: 'status-diff', verificable: !error, ultimoDia: data?.[0]?.snapshot_date ?? null }
-          })(),
-          (async () => {
-            const { data, error } = await admin
-              .from('brief_sent_signals').select('last_sent_day')
-              .eq('user_id', uid).not('last_sent_day', 'is', null)
-              .order('last_sent_day', { ascending: false }).limit(1)
-            return { job: 'morning-push', verificable: !error, ultimoDia: data?.[0]?.last_sent_day ?? null }
-          })(),
-        ])
+        // Las mediciones viven en `lib/cron/evidencia`, no acá: estaban copiadas
+        // también en `api/estado` y agregar un trabajo obligaba a tocar dos
+        // archivos y confiar en que no derivaran.
+        const estados = await medirEvidenciaDeCrons(admin, uid)
         cronsMudosText = saludDeCronsLine(
           trabajosAtrasados(estados, today),
           noVerificables(estados),
