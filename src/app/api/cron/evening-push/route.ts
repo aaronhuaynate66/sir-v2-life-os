@@ -180,11 +180,14 @@ export async function GET(req: NextRequest) {
         try {
           const { data: un } = await admin
             .from('unmatched_social_activity')
-            .select('id, handle, name, avatar_url, avatar_path, detail')
+            // `observed_at` se ORDENABA y no se LEÍA. Es el dato que dice de cuándo
+            // es la historia, y sin él la tarjeta decía "Vi una historia" sobre algo
+            // de hace seis días. Ver `cuandoLaVi`. [[aviso-sin-fecha-se-lee-como-ahora]]
+            .select('id, handle, name, avatar_url, avatar_path, detail, observed_at')
             .eq('user_id', uid).eq('platform', 'instagram').eq('kind', 'available')
             .is('asked_at', null).not('handle', 'is', null)
             .order('observed_at', { ascending: false }).limit(10)
-          const rows = (un ?? []) as Array<{ id: string; handle: string; name: string | null; avatar_url: string | null; avatar_path: string | null; detail: string | null }>
+          const rows = (un ?? []) as Array<{ id: string; handle: string; name: string | null; avatar_url: string | null; avatar_path: string | null; detail: string | null; observed_at: string | null }>
 
           // ── LOTE DE ORGANIZACIONES, antes que la tarjeta de a una ──────────
           //
@@ -267,6 +270,7 @@ export async function GET(req: NextRequest) {
               id: conFoto.id, handle: conFoto.handle,
               hint: pistas || null,
               followers: p?.followers_count ?? null,
+              observedAt: conFoto.observed_at,
             })
             // La URL de IG CADUCA (medido: hoy 200, mañana no). El snapshot en
             // Storage no expira pero el bucket es privado → hay que firmarlo.

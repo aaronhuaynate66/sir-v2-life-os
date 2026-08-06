@@ -152,12 +152,33 @@ export async function GET(req: NextRequest) {
           for (const r of (prev ?? []) as Array<{ id: string }>) yaVistos.add(String(r.id))
         }
 
-        let juzgados = 0
-        for (const c of candidatos) {
-          const id = signalId(userId, c.personId, c.kind, c.quoteAt)
-          if (yaVistos.has(id)) { out.skipped++; continue }
-          if (juzgados >= MAX_JUDGE) { out.skipped++; continue }
-          juzgados++
+        // ═══ EL JUEZ VA EN PARALELO, O EL CRON NO LLEGA AL FINAL ═════════════
+        //
+        // Replicado contra producción el 5-ago-2026 con la data real de Aaron:
+        //   19 páginas · 18.360 mensajes · 45 hilos · carga 11,7 s · detector 64 ms
+        //   · **8 candidatos reales** (Amira Laguna, Sasa Aimo, Diana…)
+        //
+        // O sea: el detector SIEMPRE funcionó. Lo que nunca pasó fue el insert —
+        // `opportunity_signals` tenía 0 filas de por vida. Ocho llamadas al juez
+        // EN SERIE a 3-6 s cada una son 24-48 s, y sumadas a los 11,7 s de carga
+        // dan 36-60 s. Vercel Hobby **corta a 60 s** (el `maxDuration = 300` de
+        // arriba es ficción, documentado en tres lugares del repo).
+        //
+        // El cron moría justo antes del primer upsert, y como la ruta devolvía
+        // `200 {ok:true}` pase lo que pase, nadie se enteró en semanas.
+        //
+        // En lotes y no todas de golpe: el proveedor barato tiene rate limit, y 25
+        // requests simultáneas se convierten en 25 errores. Con 4 en paralelo, ocho
+        // candidatos bajan de ~35 s a ~10 s.
+        const aJuzgar = candidatos
+          .map((c) => ({ c, id: signalId(userId, c.personId, c.kind, c.quoteAt) }))
+          .filter(({ id }) => { if (yaVistos.has(id)) { out.skipped++; return false } return true })
+        if (aJuzgar.length > MAX_JUDGE) out.skipped += aJuzgar.length - MAX_JUDGE
+        const lote = aJuzgar.slice(0, MAX_JUDGE)
+        const LOTE = 4
+
+        for (let i = 0; i < lote.length; i += LOTE) {
+          await Promise.all(lote.slice(i, i + LOTE).map(async ({ c, id }) => {
           out.judged++
 
           const th = threads.get(c.personId)
@@ -168,14 +189,18 @@ export async function GET(req: NextRequest) {
               system: JUDGE_SYSTEM,
               messages: [{ role: 'user', content: buildJudgePrompt(c, th ? contextFor(th, c) : []) }],
             })
+            // PENDIENTE (no entra acá): `complete()` no acepta hoy el cliente de
+            // Supabase en su `LlmRequest`, así que el juez no deja rastro en
+            // `ai_usage` y no se puede saber desde la base si llegó a llamarse.
+            // Cambiarlo toca la firma del LLM y va aparte.
             veredicto = parseJudgeVerdict(res.text)
           } catch (e) {
             // Sin juez no se inventa un veredicto: se saltea y se reintenta mañana.
             out.errors++
             reportApiError(e, { route: 'cron/opportunities', step: 'judge', person: c.personName })
-            continue
+            return
           }
-          if (!veredicto.isReal || !veredicto.what) continue
+          if (!veredicto.isReal || !veredicto.what) return
 
           const { error: insErr } = await admin.from('opportunity_signals').upsert({
             id, user_id: userId,
@@ -187,6 +212,7 @@ export async function GET(req: NextRequest) {
             state: 'pending', detected_at: now.toISOString(),
           }, { onConflict: 'id', ignoreDuplicates: false })
           if (insErr) { out.errors++; console.error(`${TAG} upsert: ${insErr.message}`) } else out.confirmed++
+          }))
         }
       } catch (e) {
         out.errors++
@@ -194,7 +220,17 @@ export async function GET(req: NextRequest) {
         reportApiError(e, { route: 'cron/opportunities', user: userId.slice(0, 8) })
       }
     }
-    return NextResponse.json({ ok: true, ...out })
+    // ═══ VERDE SOLO SI HIZO ALGO ══════════════════════════════════════════════
+    //
+    // Antes devolvía `200 {ok:true}` en sus cuatro modos de falla: sin usuarios, con
+    // errores, con el juez caído o muriéndose por timeout. Esa es la razón por la que
+    // esta feature pudo estar en CERO durante semanas sin que nada lo dijera — y es
+    // el mismo bug que hoy se arregló en el e2e y en el aviso de deploys.
+    //
+    // `salud.ts` excluye este cron del vigilante a propósito (hay días sin
+    // oportunidades legítimamente), así que si acá no se grita, no grita nadie.
+    const sano = out.users > 0 && out.errors === 0
+    return NextResponse.json({ ok: sano, ...out }, { status: sano ? 200 : 500 })
   } catch (e) {
     console.error(`${TAG} fallo general: ${(e as Error).message}`)
     reportApiError(e, { route: 'cron/opportunities' })

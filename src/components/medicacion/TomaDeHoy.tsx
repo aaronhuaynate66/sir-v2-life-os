@@ -28,6 +28,8 @@
 // El detalle por receta queda debajo, en `TratamientosPanel`.
 'use client'
 
+import { useState } from 'react'
+
 import { AlertTriangle, Clock, Pill } from 'lucide-react'
 
 import { Card, CardContent } from '@/components/ui/card'
@@ -41,9 +43,36 @@ export interface TomaDeHoyProps {
   avisos: AvisoDeCruce[]
   /** HH:MM de Lima. Se inyecta para que el render sea puro de reloj. */
   ahora: string
+  /** El padre recarga cuando se registra una toma. Opcional. */
+  onRegistrada?: () => void
 }
 
-export function TomaDeHoy({ items, avisos, ahora }: TomaDeHoyProps) {
+export function TomaDeHoy({ items, avisos, ahora, onRegistrada }: TomaDeHoyProps) {
+  const [enCurso, setEnCurso] = useState<string | null>(null)
+  // Optimista: la fila pasa a "registrada" apenas responde el server, sin esperar a
+  // que la página entera recargue. Si `onRegistrada` existe, el padre refresca de verdad.
+  const [recienMarcados, setRecienMarcados] = useState<Set<string>>(new Set())
+
+  async function marcar(itemId: string) {
+    if (enCurso) return
+    setEnCurso(itemId)
+    try {
+      const r = await fetch('/api/meds/toma', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId }),
+      })
+      // Un fallo NO puede pintar "registrada": eso sería exactamente el aviso que
+      // reporta un éxito que no ocurrió.
+      if (r.ok) {
+        setRecienMarcados((s) => new Set(s).add(itemId))
+        onRegistrada?.()
+      }
+    } catch { /* la fila se queda en "marcar tomada" — se puede reintentar */ } finally {
+      setEnCurso(null)
+    }
+  }
+
   const bloques = bloquesDeToma(items, ahora)
   const demanda = aDemanda(items)
   if (bloques.length === 0 && demanda.length === 0 && avisos.length === 0) return null
@@ -86,7 +115,7 @@ export function TomaDeHoy({ items, avisos, ahora }: TomaDeHoyProps) {
             <ul className="space-y-2">
               {b.meds.map((m) => {
                 const pq = porQueLoTomo(m)
-                const falta = faltaHoy(m)
+                const falta = faltaHoy(m) && !recienMarcados.has(m.itemId)
                 return (
                   <li key={m.itemId} className="text-[13.5px]">
                     <div className="flex items-baseline justify-between gap-3">
@@ -94,9 +123,26 @@ export function TomaDeHoy({ items, avisos, ahora }: TomaDeHoyProps) {
                         {m.medName}
                         {m.dose && <span className="text-muted-foreground font-normal"> {m.dose}</span>}
                       </span>
-                      <span className={`shrink-0 text-[12px] ${falta ? 'text-warn' : 'text-ok'}`}>
-                        {falta ? 'falta hoy' : 'registrada'}
-                      </span>
+                      {/* ═══ "falta hoy" ERA UNA ETIQUETA, NO UN BOTÓN ═══════
+                          En la captura de /salud a 390 px del 5-ago decía "falta hoy"
+                          cuatro veces y no había dónde tocar: para registrar había que
+                          bajar a un campo de texto y escribir el nombre a mano. Medido
+                          ese día: 35 tomas y 0 vinculadas a una receta.
+                          Área de toque ≥44 px (`py-1.5 -my-1.5 px-2 -mr-2`): es la
+                          misma regla que verifica el spec de tap-targets. */}
+                      {falta ? (
+                        <button
+                          type="button"
+                          onClick={() => void marcar(m.itemId)}
+                          disabled={enCurso === m.itemId}
+                          aria-label={`Registrar que tomaste ${m.medName}`}
+                          className="shrink-0 -my-2 -mr-2 inline-flex min-h-[44px] items-center rounded-md px-3 text-[12px] font-medium text-warn transition-colors hover:bg-warn/10 active:bg-warn/20 disabled:opacity-50"
+                        >
+                          {enCurso === m.itemId ? 'guardando…' : 'marcar tomada'}
+                        </button>
+                      ) : (
+                        <span className="shrink-0 text-[12px] text-ok">registrada</span>
+                      )}
                     </div>
                     {pq && <div className="text-[12.5px] text-muted-foreground leading-snug">{pq}</div>}
                   </li>

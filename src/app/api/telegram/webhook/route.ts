@@ -48,6 +48,11 @@ import { orgBatchApply, runBriefAction } from '@/lib/telegram/briefActions'
 import { parseExclusiones, parseOrgBatch } from '@/lib/social-reader/orgBatch'
 import { relacionesUrl } from '@/lib/app-url'
 import type { LlmImageMediaType } from '@/lib/llm/types'
+// El webhook no tenía UN SOLO reportApiError, mientras el cron de al lado sí
+// instrumenta. Por eso los tres cortes del flujo de identidad pudieron convivir
+// meses sin dejar rastro: cuando algo fallaba, el texto caía al chat genérico y eso
+// se ve idéntico a "no era una respuesta a la tarjeta".
+import { reportApiError } from '@/lib/observability/reportApiError'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -278,6 +283,26 @@ async function handleIdentityAnswer(
   if (action === 'person') {
     // No se crea nada todavía: sin nombre, crear la ficha sería inventarla. Se le
     // pide, y su respuesta cae en `resolveWhoIsWho`, que ya sabe asignar o crear.
+    //
+    // ═══ PERO SÍ SE REABRE LA VENTANA ════════════════════════════════════════
+    //
+    // `resolveWhoIsWho` solo mira las tarjetas preguntadas dentro de `VENTANA_MINUTOS`
+    // contados desde `asked_at`, y `asked_at` se sella cuando el cron MANDA la tarjeta
+    // (21:00 de Lima). Este handler no lo tocaba, así que el reloj venía corriendo
+    // desde la noche anterior aunque él acabara de tocar el botón.
+    //
+    // Medido el 5-ago-2026: tarjeta 21:23, tap y respuesta a las 08:44. Once horas.
+    // Tocar "es una persona" es la señal MÁS fuerte de que lo próximo que escriba es
+    // el nombre — y era justo el momento en que el reloj ya había vencido.
+    //
+    // El error se reporta en vez de tragarse: si esto falla, la respuesta se pierde
+    // en silencio y es indistinguible de "no era una respuesta".
+    const { error: reabrir } = await supabase
+      .from('unmatched_social_activity')
+      .update({ asked_at: new Date().toISOString() })
+      .eq('user_id', userId).eq('id', unmatchedId)
+    if (reabrir) reportApiError(new Error(`no se pudo reabrir la ventana de @${handle}: ${reabrir.message}`), { route: 'telegram/webhook', step: 'identity_person' })
+
     await answerCallbackQuery(callbackId, 'Dale, ¿cómo se llama?')
     await sendTelegramMessage(
       chatId,
@@ -672,13 +697,23 @@ export async function POST(req: NextRequest) {
             text, new Date(),
           )
           if (p) citado = p.handle
-        } catch { /* fail-open: sigue el camino de siempre */ }
+        } catch (e) {
+          // Fail-open sigue estando bien: perder la respuesta es mejor que romperle
+          // el chat. Pero en SILENCIO no — este catch envuelve el mismo bloque que
+          // BORRA filas de la bandeja, así que un fallo a mitad dejaba a la cuenta
+          // sin ficha, sin fila y sin rastro. Indistinguible de "no era un nombre".
+          reportApiError(e instanceof Error ? e : new Error(String(e)), { route: 'telegram/webhook', step: 'whois_pendiente' })
+        }
       }
 
       const textoWhois = citado && !/@[a-zA-Z0-9._]{2,30}/.test(text) ? `@${citado} ${text}` : text
       const whois = await resolveWhoIsWho(supabase, ownerId, textoWhois)
       if (whois.handled) { await sendTelegramMessage(msg.chatId, whois.reply); return }
-    } catch { /* fail-open: si algo falla, cae al chat normal */ }
+    } catch (e) {
+      // Ídem: cae al chat normal, pero deja traza. Es el catch que hacía invisibles
+      // los tres cortes del flujo de identidad.
+      reportApiError(e instanceof Error ? e : new Error(String(e)), { route: 'telegram/webhook', step: 'whois' })
+    }
 
     try {
       // Hilo unificado (Fase 2): traigo el historial cross-canal para continuidad

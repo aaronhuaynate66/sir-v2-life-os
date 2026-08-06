@@ -16,6 +16,7 @@ import { mapMomentRow } from '@/lib/moments/types'
 import { mapPersonCycleRow } from '@/lib/person-cycles/types'
 import type { PersonLog } from '@/lib/person-logs/types'
 import type { Memory } from '@/types'
+import { debeAvisar } from '@/lib/status/debeAvisar'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -137,12 +138,22 @@ export async function GET(req: NextRequest) {
     const key = `${person.user_id}:${person.id}`
     const prev = snapshotByKey.get(key)
     if (prev && LABEL_RANK[insights.overallLabel] > LABEL_RANK[prev.label] && insights.overallLabel !== 'sin_data' && prev.label !== 'sin_data') {
-      // Empeoramiento. Crear alerta (skip si ya hay una activa por el mismo par).
+      // Empeoramiento. Se calla solo si YA se avisó por este estado o por uno PEOR.
+      //
+      // Antes bastaba con que hubiera UNA alerta viva —sin mirar de qué— para dejar a
+      // esa persona muda para siempre. Medido el 5-ago-2026: **35 alertas sin
+      // descartar**, o sea 35 personas que podían caer a `en_tension` o peor sin
+      // generar un solo aviso, mientras el snapshot del día se seguía escribiendo y
+      // el cron devolvía 200.
+      //
+      // Es la misma familia que el silencio por slot: la identidad del aviso tiene que
+      // ser el CONTENIDO (a qué estado cayó), no el contenedor (que exista algo
+      // abierto). [[identidad-del-silencio-por-slot]]
       const { data: existing } = await supabase
-        .from('person_status_alerts').select('id')
+        .from('person_status_alerts').select('to_label')
         .eq('user_id', person.user_id).eq('person_id', person.id)
-        .is('dismissed_at', null).limit(1)
-      if ((existing ?? []).length === 0) {
+        .is('dismissed_at', null).limit(20)
+      if (debeAvisar((existing ?? []) as Array<{ to_label: string | null }>, insights.overallLabel, LABEL_RANK)) {
         const message = buildAlertMessage(person.name, prev.label, insights.overallLabel, insights.overdueCount, insights.recentAvg)
         await supabase.from('person_status_alerts').insert({
           user_id: person.user_id, person_id: person.id,

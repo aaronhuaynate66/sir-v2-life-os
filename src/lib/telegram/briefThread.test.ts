@@ -178,6 +178,30 @@ describe('🎯 botones que DICEN a qué apuntan (la queja del 31-jul)', () => {
     expect(labels(rows)).toContainEqual(expect.stringContaining('Pre-registrarme'))
   })
 
+  // Aaron, 5-ago-2026: "me habla de Dayana, pero se suponía que eso ya lo había
+  // descartado". No existía NINGÚN camino para que él descartara una tarea — ni acá,
+  // ni en la app, ni en el chat: solo un script corrido por alguien más. De los dos
+  // botones que había, "✅ Hice" era mentir y "⏰ Recuérdamelo" DUPLICA el compromiso
+  // en `reminders`. O sea que el camino de menor resistencia lo multiplicaba.
+  it('una tarea con fecha se puede DESCARTAR, no solo marcar hecha o posponer', () => {
+    const rows = buildSectionButtons([
+      { slot: 'dueTask', section: 'hoy', text: 'Hoy vence: Pedirle a Dayana el contacto', entity: { kind: 'task', id: 't1', name: 'Pedirle a Dayana el contacto' } },
+    ])
+    const l = labels(rows)
+    expect(l).toContainEqual(expect.stringContaining('✕ Ya no va'))
+    // Y los otros dos siguen: descartar es una salida MÁS, no un reemplazo.
+    expect(l.some((x) => x.startsWith('✅ Hice:'))).toBe(true)
+    expect(l.some((x) => x.includes('Recuérdamelo'))).toBe(true)
+  })
+
+  it('el botón de descarte apunta a la tarea, no a otra cosa', () => {
+    const rows = buildSectionButtons([
+      { slot: 'dueTask', section: 'hoy', text: 'x', entity: { kind: 'task', id: 'step_dayana', name: 'Pedirle a Dayana el contacto' } },
+    ])
+    const b = rows.flat().find((x) => x.text.includes('Ya no va'))
+    expect(parseBriefCallback(b?.callbackData ?? '')).toEqual({ kind: 'task_discard', ref: 'step_dayana' })
+  })
+
   it('el HÁBITO ahora tiene botón de hecho, no solo 🔕', () => {
     const rows = buildSectionButtons([
       { slot: 'habitNudge', section: 'hoy', text: 'Se cortó tu racha de "Tender la cama". Un día no la define — retómala hoy.', entity: { kind: 'habit', id: 'h1', name: 'Tender la cama' } },
