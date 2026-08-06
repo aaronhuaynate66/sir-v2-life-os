@@ -18,7 +18,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { detectVoseo } from './deVoseo'
+import { detectVoseo, tieneVoseo } from './deVoseo'
 
 /** `deVoseo.ts` ENUMERA las formas de voseo: son sus datos, no un error. */
 const EXENTOS = ['src/lib/text/deVoseo.ts']
@@ -78,7 +78,13 @@ describe('el fuente está libre de voseo', () => {
       const contenido = readFileSync(f, 'utf8')
       // Pre-filtro por archivo: correr el detector línea por línea sobre todo el
       // repo tarda ~20 s. Por archivo, la mayoría sale limpia en una pasada.
-      if (detectVoseo(contenido).length === 0) continue
+      //
+      // `tieneVoseo` y no `detectVoseo(...).length === 0`: acá solo importa el SÍ/NO
+      // y el booleano corta al primer hallazgo, sin armar la lista de coincidencias
+      // ni correr el barrido generativo sobre el contenido completo. Junto con dejar
+      // de recompilar las 94 reglas en cada llamada, es lo que saca a este test del
+      // borde del timeout de 60 s que lo hacía fallar en CI.
+      if (!tieneVoseo(contenido)) continue
       contenido.split(/\r?\n/).forEach((line, i) => {
         if (esLaRegla(line)) return
         const v = detectVoseo(line).filter((x) => !esCodigo(line, x))
