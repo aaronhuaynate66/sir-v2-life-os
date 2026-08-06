@@ -41,9 +41,25 @@
     if (pending.length || pendingFollowing.length) timer = setTimeout(flush, 1200);
   }
 
+  // ═══ EL PEDIDO DE DIAGNÓSTICO, IDA Y VUELTA ═════════════════════════════════
+  //
+  // El lector de IG corre en MAIN y no tiene `chrome.*`; este puente sí. El latido
+  // pregunta por acá (`sir-ig-probe`), se reenvía a MAIN por postMessage y se espera
+  // la respuesta con un id de correlación.
+  //
+  // Si MAIN no contesta en 4 s se devuelve `null`, y `null` significa "no sé" —
+  // nunca "está bien". Es la misma regla que en el probe de WhatsApp.
+  let probeSeq = 0;
+  const probesEnVuelo = new Map();
+
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
     const d = e.data;
+    if (d && d.__sirIgProbeRes === true) {
+      const pend = probesEnVuelo.get(d.id);
+      if (pend) { probesEnVuelo.delete(d.id); pend(d.probe || null); }
+      return;
+    }
     if (!d || d.__sirSocial !== true) return;
     if (Array.isArray(d.items)) {
       for (const it of d.items) {
@@ -68,4 +84,28 @@
     }
     if ((pending.length || pendingFollowing.length) && !timer) timer = setTimeout(flush, 3000);
   });
+
+  // El latido pide el diagnóstico por acá. `sendResponse` asíncrono ⇒ `return true`.
+  try {
+    chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+      if (!msg || msg.type !== 'sir-ig-probe') return undefined;
+      const id = ++probeSeq;
+      let contestado = false;
+      const responder = (probe) => {
+        if (contestado) return;
+        contestado = true;
+        try { sendResponse(probe); } catch (_) {}
+      };
+      probesEnVuelo.set(id, responder);
+      // 4 s: el probe solo lee contadores en memoria y una cookie, no la red.
+      setTimeout(() => { probesEnVuelo.delete(id); responder(null); }, 4000);
+      try {
+        window.postMessage({ __sirIgProbeReq: true, id }, '*');
+      } catch (_) {
+        probesEnVuelo.delete(id);
+        responder(null);
+      }
+      return true;
+    });
+  } catch (_) { /* sin contexto de extensión: el latido devuelve null y dice "no sé" */ }
 })();

@@ -246,9 +246,20 @@ async function postHeartbeat(channel, status, detail, probe) {
  * expone diagnóstico — y null significa "no sé", no "está bien".
  */
 async function probeCanal(channel, tabId) {
-  if (channel !== 'whatsapp' || tabId == null) return null;
+  if (tabId == null) return null;
+  // Un mensaje POR CANAL, no uno solo: cada lector diagnostica lo suyo y sus
+  // payloads no se parecen. WhatsApp lee su Store (¿cargó wa-js? ¿cuántos chats?);
+  // Instagram es un interceptor pasivo y lo que puede afirmar es si sus hooks están
+  // puestos, si la sesión vive y cuánto hace que capturó algo.
+  //
+  // Antes acá había `if (channel !== 'whatsapp') return null`, y esa línea era todo
+  // el motivo por el que el brief no podía distinguir "Instagram se rompió" de "no
+  // abriste Instagram" — la pregunta que Aaron hizo el 4-ago y que no tenía respuesta.
+  const TIPO = { whatsapp: 'sir-wa-probe', instagram: 'sir-ig-probe' };
+  const tipo = TIPO[channel];
+  if (!tipo) return null; // canal sin lector con diagnóstico: null = "no sé"
   try {
-    return await chrome.tabs.sendMessage(tabId, { type: 'sir-wa-probe' });
+    return await chrome.tabs.sendMessage(tabId, { type: tipo });
   } catch (_) {
     return null; // el content script no respondió
   }

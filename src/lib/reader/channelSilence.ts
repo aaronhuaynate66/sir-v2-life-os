@@ -154,8 +154,25 @@ export function diagnoseChannel(c: ChannelState, now: Date = new Date()): Channe
  */
 export const CANALES_SIN_DIAGNOSTICO = new Set(['instagram', 'linkedin'])
 
-/** ¿Este canal puede distinguir "roto" de "sin novedad"? PURA. */
-export function tieneDiagnostico(channel: string): boolean {
+/**
+ * ¿Este canal puede distinguir "roto" de "sin novedad"? PURA.
+ *
+ * ═══ EL PROBE MANDA SOBRE LA LISTA ════════════════════════════════════════════
+ *
+ * `CANALES_SIN_DIAGNOSTICO` es una lista escrita a mano, y una lista a mano se
+ * vuelve mentira sola: el día que el lector de Instagram aprenda a diagnosticarse,
+ * esta función seguiría diciendo que no puede y el brief seguiría dándole a Aaron la
+ * respuesta ambigua — con el diagnóstico ya llegando en el latido, ignorado.
+ *
+ * Así que **si llegó un probe, el canal SÍ se autodiagnostica**, sin importar la
+ * lista. La lista queda solo como el default para cuando no hay probe: describe lo
+ * que se sabe HOY, y deja de poder contradecir a la evidencia.
+ *
+ * Es la misma idea que "data fresca es prueba de vida" de
+ * [[alarma-silencio-reader-apagada]]: la evidencia le gana a la configuración.
+ */
+export function tieneDiagnostico(channel: string, probe?: unknown): boolean {
+  if (probe !== undefined && probe !== null) return true
   return !CANALES_SIN_DIAGNOSTICO.has((channel ?? '').toLowerCase())
 }
 

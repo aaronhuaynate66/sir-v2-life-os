@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizarComando, esCanal, elegirParaEntregar, normalizarProbe,
   lectorVivo, probeLine, MAX_DIAS, DIAS_POR_DEFECTO, MAX_POR_LATIDO,
-  type Comando,
+  type Comando, type Probe,
 } from './comandos'
 
 describe('normalizarComando', () => {
@@ -160,5 +160,59 @@ describe('probeLine', () => {
   it('nombra el motivo cuando lo hay', () => {
     expect(probeLine('WhatsApp', { lib: 'object', ready: true, chats: 211, error: 'boom' })).toMatch(/boom/)
     expect(probeLine('WhatsApp', { lib: 'object', ready: true, chats: 0 })).toMatch(/0 chats/)
+  })
+})
+
+// ═══ LECTORES PASIVOS (Instagram) ═══════════════════════════════════════════
+//
+// Aaron, 4-ago-2026, sobre "Instagram está corriendo pero hace 4 días que no trae
+// nada": *"entonces no entiendo si sirve o no sirve, qué hacemos"*. La pregunta era
+// correcta y el sistema no podía responderla. Estos casos son las TRES causas que
+// antes se veían idénticas desde afuera.
+describe('probe de un lector PASIVO: separa "roto" de "no lo abriste"', () => {
+  const ig = (over: Record<string, unknown> = {}) =>
+    ({ reader: 'instagram-pasivo', hooked: true, loggedIn: true, vistos: 0, desdeMin: 120, haceMin: null, ...over }) as Probe
+
+  it('hooks caídos → NO está vivo, y lo dice como falla', () => {
+    expect(lectorVivo(ig({ hooked: false }))).toBe(false)
+    const l = probeLine('Instagram', ig({ hooked: false }))!
+    expect(l).toContain('NO está enganchado')
+    expect(l).toContain('recargar')
+  })
+
+  it('sesión caída → NO está vivo, y manda a iniciar sesión', () => {
+    expect(lectorVivo(ig({ loggedIn: false }))).toBe(false)
+    expect(probeLine('Instagram', ig({ loggedIn: false }))!).toContain('iniciar sesión')
+  })
+
+  it('enganchado y capturando → leyendo, con cuántas y hace cuánto', () => {
+    expect(lectorVivo(ig({ vistos: 12, haceMin: 3 }))).toBe(true)
+    const l = probeLine('Instagram', ig({ vistos: 12, haceMin: 3 }))!
+    expect(l).toContain('leyendo (12 capturas')
+    expect(l).toContain('hace 3 min')
+  })
+
+  it('EL CASO QUE MOTIVÓ TODO: sano, 0 capturas → "no es una falla"', () => {
+    // Antes esto salía como "corriendo pero hace 4 días que no trae nada", que no
+    // distinguía nada. Ahora dice la causa y que no hay que arreglar nada.
+    expect(lectorVivo(ig({ vistos: 0 }))).toBe(true)
+    const l = probeLine('Instagram', ig({ vistos: 0 }))!
+    expect(l).toContain('no has abierto Instagram')
+    expect(l).toContain('No es una falla')
+    expect(l).toContain('hace 120 min')
+  })
+
+  it('loggedIn null es "no sé": no lo declara caído por no poder mirar la cookie', () => {
+    expect(lectorVivo(ig({ loggedIn: null }))).toBe(true)
+  })
+
+  it('un error reportado gana sobre todo lo demás', () => {
+    expect(lectorVivo(ig({ error: 'algo explotó' }))).toBe(false)
+  })
+
+  it('no rompe el probe de WhatsApp: sin `hooked` sigue el camino de wa-js', () => {
+    expect(lectorVivo({ lib: 'object', ready: true, chats: 1127 } as Probe)).toBe(true)
+    expect(probeLine('WhatsApp', { lib: 'object', ready: true, chats: 1127 } as Probe))
+      .toContain('1127 chats a la vista')
   })
 })

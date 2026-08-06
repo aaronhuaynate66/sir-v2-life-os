@@ -180,6 +180,24 @@ describe('canales sin diagnóstico: no insinuar que se vigila lo que no se vigil
     expect(tieneDiagnostico('INSTAGRAM')).toBe(false)
   })
 
+  // La lista `CANALES_SIN_DIAGNOSTICO` está escrita a mano, y una lista a mano se
+  // vuelve mentira sola: el día que el lector de Instagram aprenda a diagnosticarse,
+  // el brief seguiría dando la respuesta ambigua con el diagnóstico ya llegando en el
+  // latido. El probe le gana a la lista.
+  it('si LLEGÓ un probe, el canal se autodiagnostica aunque esté en la lista', () => {
+    expect(tieneDiagnostico('instagram', { hooked: true, vistos: 12 })).toBe(true)
+    expect(tieneDiagnostico('linkedin', { hooked: false })).toBe(true)
+    // Incluso un probe "vacío" es evidencia de que el canal responde la pregunta.
+    expect(tieneDiagnostico('instagram', {})).toBe(true)
+  })
+
+  it('null y undefined NO cuentan como probe: "no sé" no es un diagnóstico', () => {
+    expect(tieneDiagnostico('instagram', null)).toBe(false)
+    expect(tieneDiagnostico('instagram', undefined)).toBe(false)
+    // Y no altera a los que ya tenían diagnóstico.
+    expect(tieneDiagnostico('whatsapp', null)).toBe(true)
+  })
+
   it('el caso real: la línea de Instagram ahora admite que no puede saberlo', () => {
     const l = channelSilenceLine([mudo('instagram', 4)])!
     expect(l).toContain('Instagram no trae nada hace 4 día(s)')
