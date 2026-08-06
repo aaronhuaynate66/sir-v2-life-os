@@ -25,7 +25,7 @@ export interface BriefMessage {
 }
 
 /** Acciones que un botón del brief puede disparar. El webhook las rutea. */
-export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan' | 'task_date' | 'doc_sent' | 'task_discard'
+export type BriefActionKind = 'task_done' | 'task_remind' | 'person_draft' | 'moment_close' | 'goal_next' | 'mute' | 'opp_reg' | 'opp_no' | 'org_ok' | 'org_no' | 'habit_done' | 'log_tono' | 'deal_prep' | 'goal_plan' | 'task_date' | 'doc_sent' | 'task_discard' | 'enc_slot' | 'enc_no'
 
 export const BRIEF_CALLBACK_PREFIX = 'br|'
 /** Telegram corta callback_data en 64 bytes. */
@@ -45,7 +45,7 @@ export function parseBriefCallback(data: string): { kind: BriefActionKind; ref: 
   if (sep <= 0) return null
   const kind = rest.slice(0, sep) as BriefActionKind
   const ref = rest.slice(sep + 1)
-  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan', 'task_date', 'doc_sent', 'task_discard']
+  const known: BriefActionKind[] = ['task_done', 'task_remind', 'person_draft', 'moment_close', 'goal_next', 'mute', 'opp_reg', 'opp_no', 'habit_done', 'log_tono', 'deal_prep', 'goal_plan', 'task_date', 'doc_sent', 'task_discard', 'enc_slot', 'enc_no']
   if (!known.includes(kind) || !ref) return null
   return { kind, ref }
 }

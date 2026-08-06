@@ -22,6 +22,11 @@ import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cua
 import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { logEvent } from '@/lib/observability/logEvent'
+import { detectarCompromisoSinFecha } from '@/lib/relaciones/compromisoSinFecha'
+import { construirPropuestaDeEncuentro } from '@/lib/relaciones/proponerEncuentro'
+import { huecosLibres } from '@/lib/agenda/huecos'
+import { TOPIC_ENCUENTRO } from '@/lib/telegram/briefActions'
+import { fetchCalendarEvents } from '@/lib/calendar/feed'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -172,6 +177,119 @@ export async function GET(req: NextRequest) {
         if (pendingHabits.length > 0) {
           const rows = pendingHabits.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
           await sendTelegramKeyboard(Number(tgChat), '¿Cuáles de tus hábitos hiciste hoy? Toca los que sí 👇', rows)
+        }
+
+        // ═══ EL COMPROMISO DE VERSE QUE QUEDÓ SIN FECHA ══════════════════════
+        //
+        // En la nota de Diana del 1-ago quedó textual: *"fue un 4, hablamos bien y
+        // quedamos en vernos"*. Cinco días después seguía ahí. SIR tenía las DOS
+        // mitades —el compromiso y la agenda— y nunca las juntaba; lo único que
+        // hacía era recitarlo, que es la "información vacía" que Aaron rechazó.
+        //
+        // Va en el push de la noche y NO en el brief de la mañana por decisión suya
+        // (6-ago): el brief topea en 8 señales y no se sube, así que una señal nueva
+        // competiría y podría quedar bajo la línea de corte — computada y nunca
+        // entregada. Acá no le compite a nada, y sale solo cuando hay compromiso.
+        //
+        // DOS frenos distintos, a propósito:
+        //   · `brief_mutes` → él tocó "ahora no" (o ya lo agendó): silencio.
+        //   · `brief_sent_signals` → ya se preguntó hace poco: no repetir a diario.
+        try {
+          const { data: mutRows } = await admin
+            .from('brief_mutes').select('topic_key').eq('user_id', uid).limit(500)
+          const callados = new Set(((mutRows ?? []) as Array<{ topic_key: string }>).map((r) => r.topic_key))
+
+          // El sustrato: lo último que se anotó de cada persona.
+          const { data: logRows } = await admin
+            .from('person_logs')
+            .select('person_id, note, created_at')
+            .eq('user_id', uid)
+            .order('created_at', { ascending: false })
+            .limit(80)
+          const candidatos = (logRows ?? []) as Array<{ person_id: string | null; note: string | null; created_at: string }>
+
+          let yaMandado = false
+          for (const c of candidatos) {
+            if (yaMandado) break
+            if (!c.person_id || !c.note) continue
+            if (callados.has(TOPIC_ENCUENTRO(c.person_id))) continue
+            // ═══ TOPE DE ANTIGÜEDAD ═════════════════════════════════════════
+            //
+            // Un compromiso de hace más de 3 semanas no es un pendiente: es
+            // arqueología. Si siguiera vivo, habría vuelto a aparecer en una nota
+            // nueva. Desenterrarlo es el mismo defecto que un `next_action` con un
+            // "HOY" congelado, que miente cada mañana.
+            //
+            // Medido: en la data real había un *"quedamos en vernos"* de hace 41
+            // días. La frase ya la descarta el detector (era un "más tarde"), pero
+            // el tope existe igual porque el detector no puede saber la EDAD.
+            const edadDias = (now.getTime() - Date.parse(c.created_at)) / 86_400_000
+            if (!Number.isFinite(edadDias) || edadDias > 21) continue
+            const hit = detectarCompromisoSinFecha(c.note)
+            if (!hit) continue
+
+            // ¿Ya se preguntó hace poco? 3 días de gracia: insistir cada noche por
+            // lo mismo es el ruido que él ya ignora.
+            const refSenal = `enc-${c.person_id.slice(0, 8)}`
+            const { data: prev } = await admin
+              .from('brief_sent_signals').select('sent_at')
+              .eq('user_id', uid).eq('ref', refSenal).maybeSingle()
+            const sentAt = (prev as { sent_at?: string } | null)?.sent_at
+            if (sentAt && now.getTime() - Date.parse(sentAt) < 3 * 86_400_000) continue
+
+            // Si ya hay algo agendado con esa persona hacia adelante, el compromiso
+            // está resuelto y preguntar sería contradecir su propia agenda.
+            const { data: futuros } = await admin
+              .from('personal_events').select('id')
+              .eq('user_id', uid).eq('person_id', c.person_id)
+              .gte('event_date', limaDayString(now)).limit(1)
+            if ((futuros ?? []).length > 0) continue
+
+            const { data: per } = await admin
+              .from('people').select('name').eq('user_id', uid).eq('id', c.person_id).maybeSingle()
+            const nombre = (per as { name?: string } | null)?.name
+            if (!nombre) continue
+
+            // La agenda es BEST EFFORT: si no se puede leer, el mensaje lo DICE en
+            // vez de afirmar que hay horarios libres.
+            let huecos: ReturnType<typeof huecosLibres> = []
+            let agendaLegible = false
+            try {
+              const feed = await fetchCalendarEvents({ horizonDays: 9, limit: 200, nowMs: now.getTime() })
+              agendaLegible = feed.configured === true && !feed.error
+              if (agendaLegible) huecos = huecosLibres(feed.events ?? [], now.getTime(), { dias: 7, max: 2 })
+            } catch {
+              agendaLegible = false
+            }
+
+            const diasDesde = Math.max(0, Math.round((now.getTime() - Date.parse(c.created_at)) / 86_400_000))
+            const propuesta = construirPropuestaDeEncuentro({
+              personId: c.person_id,
+              nombre,
+              frase: hit.frase,
+              diasDesde: Number.isFinite(diasDesde) ? diasDesde : null,
+              huecos,
+              agendaLegible,
+              hoyLima: limaDayString(now),
+            })
+            if (!propuesta) continue
+
+            const tg = await sendTelegramKeyboard(Number(tgChat), propuesta.text, propuesta.filas)
+            if (tg.ok) {
+              yaMandado = true
+              await admin.from('brief_sent_signals').upsert({
+                user_id: uid,
+                ref: refSenal,
+                topic_key: TOPIC_ENCUENTRO(c.person_id),
+                sample_text: hit.frase.slice(0, 200),
+                section: 'gente',
+                slot: 'encuentroSinFecha',
+                sent_at: new Date().toISOString(),
+              }, { onConflict: 'user_id,ref' })
+            }
+          }
+        } catch (e) {
+          reportApiError(e, { route: 'cron/evening-push', step: 'compromisoSinFecha', user: uid.slice(0, 8) })
         }
 
         // "¿QUIÉN ES QUIÉN?": handles de IG que el reader vio pero no están

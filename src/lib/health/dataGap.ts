@@ -1,4 +1,8 @@
-// SIR V2 — Aviso de data de salud faltante.
+// SIR V2 — ⚠️ SUPERADA · NO USAR · el aviso bueno es `lib/health/missingData.ts`.
+//
+// (Antes este encabezado decía "Aviso de data de salud faltante", así que ganaba el
+// grep contra el módulo que sí hay que usar: quien buscara el aviso de data de salud
+// caía primero acá. El título ahora dice a dónde ir.)
 //
 // ⚠️ SUPERADA el 4-ago-2026. NO volver a cablearla al brief.
 //

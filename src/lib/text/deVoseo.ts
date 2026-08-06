@@ -217,6 +217,37 @@ const COMPILED = REPLACEMENTS.map(([from, to]) =>
 )
 
 /**
+ * Las MISMAS reglas sin la bandera 'g', solo para `.test()`.
+ *
+ * Un regex global guarda `lastIndex` y `.test()` lo AVANZA: usar los de `COMPILED`
+ * para preguntar "¿hay voseo?" dejaría el índice sucio y la próxima corrida
+ * empezaría a mitad del texto, así que el detector se volvería intermitente. Estas
+ * copias existen para poder cortar al primer hallazgo sin ese riesgo.
+ */
+const COMPILED_TEST = REPLACEMENTS.map(([from]) =>
+  new RegExp(`(?<![${LETTER}])(?:${from.replace(/\s+/g, '\\s+')})(?![${LETTER}])`, 'i'),
+)
+
+/**
+ * ¿Hay voseo en este texto? PURA. Corta al primer hallazgo.
+ *
+ * Mismo criterio que `detectVoseo`, pero sin construir la lista: para un
+ * PRE-FILTRO (¿vale la pena mirar este archivo línea por línea?) armar el arreglo
+ * de coincidencias y correr el barrido generativo sobre todo el contenido es
+ * trabajo tirado. La guarda de `sinVoseo.test.ts` recorre 1,763 archivos y la
+ * enorme mayoría sale limpia.
+ */
+export function tieneVoseo(text: string): boolean {
+  if (!text) return false
+  for (const re of COMPILED_TEST) {
+    if (re.test(text)) return true
+  }
+  // La cola larga regular (-á/-ás) no está enumerada: se detecta porque el barrido
+  // CAMBIA el texto. Va al final porque es la parte cara.
+  return scrubGenerativeVoseo(text) !== text
+}
+
+/**
  * Formas de voseo que quedan en un texto, sin corregirlo. PURA.
  *
  * Es el MISMO criterio que usa el scrub, así que si esto devuelve [] el texto ya
@@ -229,7 +260,14 @@ export function detectVoseo(text: string): string[] {
   if (!text) return []
   const found = new Set<string>()
   for (const [re] of COMPILED) {
-    for (const m of text.matchAll(new RegExp(re.source, 'gi'))) found.add(m[0].toLowerCase())
+    // `COMPILED` YA está compilado con 'gi'. Antes acá había un
+    // `new RegExp(re.source, 'gi')` que recreaba un regex idéntico en cada
+    // llamada: sobre las 94 reglas y los 1,763 archivos que recorre la guarda de
+    // `sinVoseo.test.ts` eso son ~166,000 compilaciones por corrida, y es la razón
+    // por la que ese test tardaba ~19 s y hacía timeout en CI con la máquina
+    // cargada. `matchAll` no muta el `lastIndex` del original, así que reusarlo es
+    // seguro mientras no se lo mezcle con `.test()`/`.exec()` (ver COMPILED_TEST).
+    for (const m of text.matchAll(re)) found.add(m[0].toLowerCase())
   }
   // El barrido generativo: si cambia algo, había voseo regular (-á/-ás).
   const scrubbed = scrubGenerativeVoseo(text)
