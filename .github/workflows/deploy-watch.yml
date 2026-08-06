@@ -21,10 +21,20 @@ name: Deploy watch (main vs producción)
 # "todo bien" desde una vista vacía.
 
 on:
+  # EL MOMENTO QUE IMPORTA ES EL MERGE, NO LA MEDIA HORA SIGUIENTE
+  # Vercel escribe el rechazo del rate limit en el status del commit dentro del
+  # minuto del push (medido el 5-ago: merge 19:48, status `failure` 19:47:41Z).
+  # Con solo el cron, ese rechazo esperaba a la próxima corrida para verse: el
+  # 5-ago el merge fue a las 19:48 y el aviso salió 20:44 — 56 min tarde.
+  push:
+    branches: [main]
   schedule:
-    # Cada 30 min. El cron de Actions es best-effort y puede atrasarse; para este
-    # aviso (deriva de horas) esa imprecisión no importa.
-    - cron: "*/30 * * * *"
+    # Cada 30 min, a los 9 y los 39. NO a los :00 — GitHub documenta que las
+    # corridas programadas se atrasan en los picos de carga y "el inicio de cada
+    # hora" es el pico. Medido el 5-ago con `*/30`: los intervalos REALES fueron
+    # 101, 90, 76 y 88 min, o sea que se saltaban corridas enteras. Un vigilante
+    # que llega cada hora y media llega tarde.
+    - cron: "9,39 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -41,7 +51,9 @@ jobs:
   watch:
     name: ¿Está vivo lo que mergeamos?
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # 10, no 5: la espera del veredicto de Vercel puede sumar 2 min a lo que ya
+    # tardaba recorrer los deployments.
+    timeout-minutes: 10
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -147,17 +159,46 @@ jobs:
           MAIN_TS=$(date -u -d "$MAIN_DATE" +%s)
           AGE_MIN=$(( (NOW_TS - MAIN_TS) / 60 ))
 
-          if [ "$AGE_MIN" -lt "$GRACE_MINUTES" ]; then
-            echo "Deriva de $AGE_MIN min — dentro de la gracia ($GRACE_MINUTES). Probablemente esté desplegando."
+          # El motivo real, en las palabras de Vercel. Se lee ANTES de la gracia a
+          # propósito (antes se leía después): un `failure` de Vercel no es
+          # ambiguo, y esperar la gracia para reportar algo que ya se sabe es
+          # regalarle esos minutos al silencio.
+          #
+          # Se toma el status MÁS RECIENTE, no el primero del array: en un mismo
+          # commit puede haber más de un status de Vercel, y quedarse con uno
+          # viejo hace avisar de un episodio ya cerrado o perderse el fresco.
+          leer_estado() {
+            gh api "repos/$REPO/commits/$MAIN_SHA/status" \
+              --jq '[.statuses[] | select(.context | test("vercel"; "i"))]
+                    | sort_by(.updated_at) | last | .state // "sin-status"'
+          }
+          leer_desc() {
+            gh api "repos/$REPO/commits/$MAIN_SHA/status" \
+              --jq '[.statuses[] | select(.context | test("vercel"; "i"))]
+                    | sort_by(.updated_at) | last | .description // "sin descripción"'
+          }
+
+          # En la corrida por `push` el veredicto de Vercel todavía no existe: primero
+          # escribe `pending` ("Vercel is deploying your app") y recién dentro del
+          # minuto siguiente aparece el `failure` del rate limit. Sin esta espera, la
+          # corrida del merge veía `pending`, se iba por la gracia, y el rechazo
+          # quedaba esperando al cron. Hasta 2 min; si sigue ambiguo, se sale
+          # tranquilo y el cron se encarga.
+          V_STATE=$(leer_estado)
+          for _ in 1 2 3 4 5 6; do
+            case "$V_STATE" in
+              failure|error|success) break ;;
+              *) sleep 20; V_STATE=$(leer_estado) ;;
+            esac
+          done
+          V_DESC=$(leer_desc)
+
+          # La gracia solo cubre lo AMBIGUO. Si Vercel ya dijo que falló, la deriva
+          # no es "está desplegando": es que NO va a desplegar.
+          if [ "$AGE_MIN" -lt "$GRACE_MINUTES" ] && [ "$V_STATE" != "failure" ] && [ "$V_STATE" != "error" ]; then
+            echo "Deriva de $AGE_MIN min — dentro de la gracia ($GRACE_MINUTES) y Vercel dice '$V_STATE'. Probablemente esté desplegando."
             exit 0
           fi
-
-          # El motivo real, en las palabras de Vercel. Sin esto el aviso dice
-          # "algo pasó" y hay que ir a buscar a mano qué.
-          V_STATE=$(gh api "repos/$REPO/commits/$MAIN_SHA/status" \
-            --jq '[.statuses[] | select(.context | test("vercel"; "i"))][0].state // "sin-status"')
-          V_DESC=$(gh api "repos/$REPO/commits/$MAIN_SHA/status" \
-            --jq '[.statuses[] | select(.context | test("vercel"; "i"))][0].description // "sin descripción"')
 
           AGE_LABEL=$(human_age "$AGE_MIN")
           echo "::error::Producción está atrás de main hace ${AGE_LABEL}. Vercel: $V_STATE — $V_DESC"
