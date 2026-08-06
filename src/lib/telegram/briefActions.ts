@@ -12,6 +12,7 @@ import type { BriefActionKind } from './briefThread'
 import { nombreDesdeHandle, parseOrgBatch } from '@/lib/social-reader/orgBatch'
 import { inferParentOrg, orgSlug } from '@/lib/social-reader/entityKind'
 import { parseRefDeCarita } from '@/lib/relaciones/pedirRegistro'
+import { parseRefDeEncuentro } from '@/lib/relaciones/proponerEncuentro'
 import { todayLimaKey } from '@/lib/dates/limaDay'
 import { MAX_PASOS, parsePlanPropuesto, fechaEnDias } from '@/lib/objetivos/metaSinPlan'
 import { parseRefDeFecha, etiquetaDeFecha } from '@/lib/objetivos/sinFecha'
@@ -314,6 +315,96 @@ export async function orgBatchDismiss(
  * depende del cerebro ni de HTTP. `messageText` lo inyecta también el webhook,
  * para las acciones cuyo estado vive en el texto del mensaje (el lote de orgs).
  */
+/**
+ * Agenda el encuentro que estaba sin fecha. El tap cierra el loop.
+ *
+ * ═══ POR QUÉ `personal_events` Y CON LA HORA EN LA NOTA ═════════════════════
+ *
+ * `gcal-sync` ya sube `personal_events` a Google Calendar, así que esta fila
+ * termina en su calendario sin escribir una línea nueva de integración.
+ *
+ * Y la hora va **en la nota** porque `personal_events.event_date` es un DATE sin
+ * hora: el pipeline saca el horario del texto con `rangoHorarioDeNota` y así crea
+ * un evento CRONOMETRADO en vez de una banderita de todo el día. Aaron ya reclamó
+ * eso con una captura ("mira cómo se ve en el calendario la agenda de la hora").
+ * Tiene que ser `HH:MM` en 24 h — verificado: "a las 7 pm" no parsea.
+ */
+async function agendarEncuentro(
+  supabase: SupabaseClient,
+  userId: string,
+  ref: string,
+  now: Date,
+): Promise<BriefActionResult> {
+  const p = parseRefDeEncuentro(ref)
+  if (!p) return { toast: 'No pude leer ese horario.' }
+  const { data: per } = await supabase.from('people')
+    .select('name').eq('user_id', userId).eq('id', p.personId).maybeSingle()
+  const nombre = (per as { name?: string } | null)?.name
+  // Sin la persona NO se inventa el evento: sería una cita con nadie.
+  if (!nombre) return { toast: 'No encontré a esa persona.' }
+
+  const { error } = await supabase.from('personal_events').insert({
+    user_id: userId,
+    person_id: p.personId,
+    title: `Ver a ${nombre}`,
+    event_date: p.diaLima,
+    all_day: false,
+    // La hora, en 24 h, para que el sync la levante.
+    note: `Encuentro acordado con ${nombre} · ${p.horaLima}`,
+    source: 'telegram',
+  })
+  if (error) return { toast: 'No pude agendarlo, intento de nuevo mañana.' }
+
+  // Se apaga el pedido para que no vuelva a preguntar por lo mismo.
+  await marcarEncuentroResuelto(supabase, userId, p.personId, now)
+  return { toast: `📅 Agendado: ${nombre}, ${p.diaLima} ${p.horaLima}` }
+}
+
+/**
+ * "Ahora no": no se agenda nada y se calla por 14 días.
+ *
+ * La salida existe porque un aviso sin salida vuelve cada noche y se convierte en
+ * el ruido que Aaron ya ignora. Es el mismo reclamo que dio origen al `✕ Ya no va`.
+ */
+async function posponerEncuentro(
+  supabase: SupabaseClient,
+  userId: string,
+  personId: string,
+  now: Date,
+): Promise<BriefActionResult> {
+  await marcarEncuentroResuelto(supabase, userId, personId, now)
+  return { toast: '🔕 Listo, no te lo vuelvo a mencionar por un rato.' }
+}
+
+/**
+ * Apaga el pedido de encuentro de esa persona. Idempotente.
+ *
+ * Va a `brief_mutes` y NO a `brief_sent_signals`: la primera es la tabla de "no me
+ * lo repitas" y su clave es `(user_id, topic_key)`, que es justo lo que hace falta
+ * para un upsert por persona. La segunda tiene clave `(user_id, ref)` — usarla
+ * habría hecho fallar el upsert **en silencio** (el `catch` se lo comía) y el aviso
+ * volvería cada noche. Es el mismo mecanismo que ya usa el botón 🔕.
+ */
+export const TOPIC_ENCUENTRO = (personId: string) => `encuentro-sin-fecha:${personId}`
+
+async function marcarEncuentroResuelto(
+  supabase: SupabaseClient,
+  userId: string,
+  personId: string,
+  _now: Date,
+): Promise<void> {
+  try {
+    await supabase.from('brief_mutes').upsert({
+      user_id: userId,
+      topic_key: TOPIC_ENCUENTRO(personId),
+      sample_text: 'compromiso de verse sin fecha',
+      section: 'gente',
+    }, { onConflict: 'user_id,topic_key' })
+  } catch {
+    // Fail-open: que no se pueda apagar el pedido no debe tumbar el tap.
+  }
+}
+
 export async function runBriefAction(
   supabase: SupabaseClient,
   userId: string,
@@ -329,6 +420,8 @@ export async function runBriefAction(
       case 'log_tono': return await logInteraccion(supabase, userId, ref, now)
       case 'task_remind': return await taskRemind(supabase, userId, ref, now)
       case 'task_discard': return await taskDiscard(supabase, userId, ref)
+      case 'enc_slot': return await agendarEncuentro(supabase, userId, ref, now)
+      case 'enc_no': return await posponerEncuentro(supabase, userId, ref, now)
       case 'moment_close': return await momentClose(supabase, userId, ref)
       case 'mute': return await mute(supabase, userId, ref)
       case 'person_draft': {

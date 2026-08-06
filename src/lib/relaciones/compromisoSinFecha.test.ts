@@ -57,6 +57,18 @@ describe('NO inventa reuniones — los negativos son lo que más importa', () =>
     expect(detectarCompromisoSinFecha('Hay que conversar sobre el presupuesto')).toBeNull()
   })
 
+  it('un "ahora" no es un compromiso abierto — el falso positivo real de 41 días', () => {
+    // Texto REAL de un log de hace 41 días. "Más tarde" era esa misma tarde: el
+    // compromiso venció el mismo día, y proponerlo después es tratar un "ahora"
+    // viejo como si siguiera vivo. Los tests unitarios no lo vieron; salió al
+    // correr el detector contra la data de producción.
+    expect(detectarCompromisoSinFecha('Quedamos en vernos mas tarde')).toBeNull()
+    expect(detectarCompromisoSinFecha('Quedamos en vernos luego')).toBeNull()
+    expect(detectarCompromisoSinFecha('Hay que juntarnos al rato')).toBeNull()
+    expect(detectarCompromisoSinFecha('Nos vemos en la noche')).toBeNull()
+    expect(detectarCompromisoSinFecha('Quedamos en vernos saliendo del trabajo')).toBeNull()
+  })
+
   it('no revienta con basura', () => {
     expect(detectarCompromisoSinFecha('')).toBeNull()
     expect(detectarCompromisoSinFecha('   ')).toBeNull()

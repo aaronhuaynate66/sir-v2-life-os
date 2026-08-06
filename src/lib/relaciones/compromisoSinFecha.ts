@@ -74,6 +74,19 @@ const TIENE_FECHA =
  */
 const ES_PASADO = /\b(nos vimos|nos juntamos|nos reunimos|nos encontramos|ya nos vimos|ayer|anteayer|la semana pasada|el mes pasado|anoche)\b/
 
+/**
+ * Marcas de MISMO DÍA. Esto no es un compromiso abierto: es un "ahora".
+ *
+ * ═══ EL FALSO POSITIVO QUE LO MOTIVA ═════════════════════════════════════════
+ * Encontrado el 6-ago-2026 corriendo el detector contra la data real —los tests
+ * unitarios pasaban y esto solo apareció ahí—: en un log de hace **41 días** decía
+ * *"Quedamos en vernos mas tarde"*. "Más tarde" era esa misma tarde; el compromiso
+ * venció el mismo día. Proponer agendarlo 41 días después es exactamente el bug de
+ * [[aviso-sin-fecha-se-lee-como-ahora]] al revés: tratar un "ahora" viejo como si
+ * siguiera abierto.
+ */
+const ES_MISMO_DIA = /\b(mas tarde|mas tardecito|luego|al rato|en un rato|ahorita|ahora|en la noche|en la tarde|saliendo)\b/
+
 export interface CompromisoSinFecha {
   /** El fragmento exacto donde está el compromiso, para poder citarlo. */
   frase: string
@@ -103,6 +116,7 @@ export function detectarCompromisoSinFecha(texto: string): CompromisoSinFecha | 
     const n = norm(frag)
     if (ES_PASADO.test(n)) continue
     if (TIENE_FECHA.test(n)) continue
+    if (ES_MISMO_DIA.test(n)) continue
     for (const re of ENCUENTRO) {
       const m = n.match(re)
       if (m) return { frase: frag, senal: m[0] }
