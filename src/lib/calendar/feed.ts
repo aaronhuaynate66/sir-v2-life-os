@@ -227,6 +227,43 @@ async function fetchGoogleFeed(
   conn: EnabledOAuthConnection,
   w: FeedWindow,
 ): Promise<IcsFetchResult> {
+  return conGoogle(supabase, conn, w)
+}
+
+/**
+ * Por qué no hay token utilizable. PURA.
+ *
+ * ═══ EL MENSAJE VIEJO MEZCLABA TRES COSAS ════════════════════════════════════
+ *
+ * Decía siempre *"sin token válido — reconecta el calendario"*, para tres causas con
+ * acciones distintas — y **solo una se arregla reconectando**:
+ *
+ *   1. NUNCA se conectó (no hay refresh_token) → sí, hay que conectar.
+ *   2. Google revocó el permiso → hay que reconectar.
+ *   3. **El token está guardado pero no se pudo DESCIFRAR** → no se toca nada: es
+ *      que `CALENDAR_TOKEN_ENCRYPTION_KEY` de este entorno no es la que lo cifró.
+ *
+ * El 5-ago-2026 el caso 3 me costó caro: leyendo desde local vi ese error, le dije a
+ * Aaron que su calendario estaba roto y lo hice **reconectar el OAuth para nada**.
+ * Su `/horario` mostraba todo perfecto, incluida la reunión que yo decía que no
+ * existía. Le afirmé dos falsedades seguidas sobre su propia data.
+ *
+ * Un mensaje que manda a hacer algo tiene que estar seguro de que ese algo sirve.
+ * [[no-puedo-leer-el-calendario-desde-local]]
+ */
+export function motivoSinToken(conn: { refreshToken?: string | null }): string {
+  if (!conn.refreshToken) return 'nunca se completó la conexión — conéctalo desde /horario'
+  // Hay refresh_token guardado y aun así no salió un access token usable. O no se
+  // pudo descifrar (clave distinta) o Google lo revocó. No se puede distinguir sin
+  // intentar el refresh, así que se dicen las DOS y no se ordena una sola cosa.
+  return 'hay un token guardado que no se pudo usar: puede ser que Google revocara el permiso (reconéctalo) o que este entorno no tenga la clave con la que se cifró (entonces no hay nada que reconectar)'
+}
+
+async function conGoogle(
+  supabase: ServerSupabase,
+  conn: EnabledOAuthConnection,
+  w: FeedWindow,
+): Promise<IcsFetchResult> {
   const dayBucket = Math.floor(w.nowMs / 86_400_000)
   const cacheKey = `google:${conn.id}|${dayBucket}|${w.fromMs}|${w.toMs}|${w.limit}`
   if (!w.noCache) {
@@ -235,7 +272,7 @@ async function fetchGoogleFeed(
   }
   try {
     const token = await ensureFreshAccessToken(supabase, conn, w.nowMs)
-    if (!token) return { events: [], error: 'sin token válido — reconecta el calendario' }
+    if (!token) return { events: [], error: motivoSinToken(conn) }
     const events = await fetchGoogleCalendarEvents(
       token,
       new Date(w.fromMs).toISOString(),
