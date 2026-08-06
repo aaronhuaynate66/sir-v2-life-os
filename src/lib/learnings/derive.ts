@@ -12,6 +12,7 @@
 
 import type { LearningKind, LearningConfidence } from './types'
 import { normalizeLearningKind, normalizeLearningConfidence } from './types'
+import { esAprendizajeObvio } from './obvio'
 
 export interface DerivedLearning {
   text: string
@@ -89,6 +90,14 @@ export function parseDerivedLearnings(raw: string): DerivedLearning[] {
     const key = text.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)
+    // ═══ LO QUE EL SISTEMA YA AFIRMA NO ES UNA LECCIÓN ═══════════════════════
+    //
+    // El prompt de arriba YA pide "NO repitas lecciones que Aaron YA sabe", y aun
+    // así 5 de las 6 filas que había en producción el 6-ago eran obviedades ("es
+    // peruano, no argentino", "tiene una pareja llamada Diana"). Pedírselo al
+    // modelo no alcanza: cuando la corrección es mecánica se hace determinística,
+    // igual que el scrub de voseo. Ver `learnings/obvio.ts`.
+    if (esAprendizajeObvio(text)) continue
     // Auto-derivado: la confianza nunca sube de 'medium'.
     const conf = normalizeLearningConfidence(rec.confidence)
     const capped: LearningConfidence = conf === 'high' ? 'medium' : conf
