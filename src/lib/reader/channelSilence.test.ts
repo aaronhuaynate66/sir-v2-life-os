@@ -200,7 +200,10 @@ describe('canales sin diagnóstico: no insinuar que se vigila lo que no se vigil
 
   it('el caso real: la línea de Instagram ahora admite que no puede saberlo', () => {
     const l = channelSilenceLine([mudo('instagram', 4)])!
-    expect(l).toContain('Instagram no trae nada hace 4 día(s)')
+    // El texto dice "nada NUEVO" desde el 6-ago: sin eso, este aviso parecía desmentir
+    // a la tarjeta del ¿quién es quién? que llega esa misma noche con una historia vieja.
+    expect(l).toContain('Instagram no trae nada NUEVO hace 4 día(s)')
+    expect(l).toContain('bandeja vieja')
     expect(l).toContain('no se puede saber')
     expect(l).toContain('pasivo')
     // Y ya NO afirma que está corriendo y leyendo, que era lo engañoso.

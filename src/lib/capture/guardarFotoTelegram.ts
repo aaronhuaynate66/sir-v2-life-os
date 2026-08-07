@@ -18,6 +18,7 @@ import {
   CLASIFICAR_FOTO_PROMPT, parseFotoClasificada, necesitaRevision, respuestaDeFoto,
   type FotoClasificada,
 } from './clasificarFoto'
+import { procesarFotoDeBascula, type MetricasDeFoto } from './fotoDeSalud'
 
 /** Bucket donde caen las capturas sueltas de Telegram. */
 export const BUCKET_FOTOS = 'person-documents'
@@ -29,6 +30,8 @@ export interface FotoGuardada {
   observacionId: string | null
   /** Lo que hay que responderle en Telegram. */
   respuesta: string
+  /** Si era báscula: qué métricas se escribieron. null si no aplicaba. */
+  salud?: MetricasDeFoto | null
 }
 
 /** Ruta determinística: `{userId}/telegram/{ts}-{rand}.{ext}` (el bucket exige el userId al inicio). */
@@ -106,9 +109,37 @@ export async function guardarFotoTelegram(
     if (!error) observacionId = id
   } catch { /* se responde igual: al menos la imagen está en el bucket */ }
 
+  // 4. ═══ SI ES LA BÁSCULA, ADEMÁS SE PROCESA ═══════════════════════════════
+  //
+  // El brief le promete todas las mañanas *"mándame la captura y la proceso"*, y
+  // hasta el 6-ago-2026 esa promesa terminaba acá: la foto quedaba guardada como
+  // observación y `health_metrics` no se tocaba. Verificado en producción: 0 filas de
+  // los tipos de salud, o sea que el camino nunca se ejerció.
+  //
+  // Va DESPUÉS de la observación a propósito: si el extractor falla, la imagen y la
+  // observación ya están, y lo único que se pierde es el número — no la foto.
+  let salud: MetricasDeFoto | null = null
+  if (clasificada.tipo === 'scale') {
+    salud = await procesarFotoDeBascula(
+      ctx,
+      Buffer.from(buf).toString('base64'),
+      mediaType as LlmImageMediaType,
+      ahora,
+      `tg_${ahora.getTime()}_${rand}`,
+      rutaImagen,
+    )
+  }
+
   const base = respuestaDeFoto({ ...clasificada, texto })
+  // Se le dice QUÉ quedó guardado, no un "listo" a secas: la duda de si se anotó el
+  // peso o nada es exactamente el reclamo que dejó el conteo de la medicación.
+  const extra = salud === null
+    ? ''
+    : salud.escritas > 0
+      ? `\n\n⚖️ Anotado: ${salud.resumen}. Ya cuenta para tu seguimiento.`
+      : `\n\n⚠️ La guardé, pero no pude sacarle los números${salud.motivo ? ` — ${salud.motivo}` : ''}. Si la mandas más de frente o con mejor luz, lo intento de nuevo.`
   const respuesta = observacionId === null && rutaImagen === null
     ? '😕 No pude guardar la imagen. Reintenta, y si sigue fallando avísame — es un bug mío, no tuyo.'
-    : base
-  return { clasificada, rutaImagen, observacionId, respuesta }
+    : `${base}${extra}`
+  return { clasificada, rutaImagen, observacionId, respuesta, salud }
 }

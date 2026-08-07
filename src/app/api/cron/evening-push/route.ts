@@ -386,11 +386,20 @@ export async function GET(req: NextRequest) {
               .eq('user_id', uid).eq('handle', conFoto.handle).maybeSingle()
             const p = perfil.data as { full_name: string | null; category: string | null; followers_count: number | null } | null
             const pistas = [conFoto.name, p?.full_name, p?.category, conFoto.detail].filter(Boolean).join(' · ')
+            // El tamaño de la cola, para que la tarjeta pueda decir que sale de la
+            // bandeja VIEJA. Sin eso, este mensaje parece desmentir al brief de la
+            // mañana que dijo "Instagram no trae nada nuevo hace N días".
+            const { count: pendientesEnBandeja } = await admin
+              .from('unmatched_social_activity')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', uid).eq('platform', 'instagram').eq('kind', 'available')
+              .is('asked_at', null).not('handle', 'is', null)
             const { caption, keyboard } = buildIdentityCard({
               id: conFoto.id, handle: conFoto.handle,
               hint: pistas || null,
               followers: p?.followers_count ?? null,
               observedAt: conFoto.observed_at,
+              pendientesEnBandeja: pendientesEnBandeja ?? 0,
             })
             // La URL de IG CADUCA (medido: hoy 200, mañana no). El snapshot en
             // Storage no expira pero el bucket es privado → hay que firmarlo.

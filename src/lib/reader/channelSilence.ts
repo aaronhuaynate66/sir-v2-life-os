@@ -220,9 +220,14 @@ export function channelSilenceLine(verdicts: ChannelVerdict[], now: Date = new D
     if (tieneDiagnostico(v.channel)) {
       partes.push(`${label(v.channel)} está corriendo pero hace ${v.daysSinceData} día(s) que no trae nada`)
     } else {
+      // Y se dice que la BANDEJA VIEJA sigue viva, porque si no este aviso parece
+      // desmentir a la tarjeta del "¿quién es quién?" que llega esa misma noche con
+      // una historia. Aaron lo leyó como contradicción el 6-ago; los dos mensajes
+      // eran verdaderos y ninguno mencionaba al otro. Ver `lineaDeBandejaVieja`.
       partes.push(
-        `${label(v.channel)} no trae nada hace ${v.daysSinceData} día(s), y no se puede saber si es falta de uso ` +
-        `o que se rompió: su lector es pasivo (captura solo cuando abres ${label(v.channel)}) y no tiene diagnóstico`,
+        `${label(v.channel)} no trae nada NUEVO hace ${v.daysSinceData} día(s), y no se puede saber si es falta ` +
+        `de uso o que se rompió: su lector es pasivo (captura solo cuando abres ${label(v.channel)}) y no tiene ` +
+        `diagnóstico. Lo que sí tengo es bandeja vieja por identificar, y de ahí sale la tarjeta de cada noche`,
       )
     }
   }
