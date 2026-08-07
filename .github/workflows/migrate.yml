@@ -56,7 +56,25 @@ jobs:
         if: steps.secrets.outputs.ready == 'true'
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # VERSIÓN FIJA, NO `latest`. El 7-ago-2026 este workflow se puso rojo en
+          # main tres corridas seguidas sin que nadie tocara una migración: el CLI
+          # reventaba en `supabase link` con
+          #   failed to get api keys: SchemaError(Expected a string matching the
+          #   RegExp ^...T...Z$ at [2]["inserted_at"])
+          # o sea, su propio schema exige que el timestamp termine en `Z` y la API
+          # de Supabase le devuelve `+00:00`. Es un bug del CLI contra su servidor,
+          # no de este repo.
+          #
+          # Se fecha solo: v2.112.0 salió ese día 10:08 UTC; la última corrida verde
+          # fue 04:28 UTC (con v2.111.0) y las rojas 22:37 UTC. `latest` nos cambió
+          # la herramienta abajo nuestro entre dos merges del mismo día.
+          #
+          # Es exactamente el problema que el lockfile de pnpm vino a resolver para
+          # las deps (#1074): un build no es reproducible si una pieza se resuelve
+          # a "lo último que haya". Al subir esta versión, correr el workflow a mano
+          # (`gh workflow run "Migrate DB (Supabase)"`) ANTES de confiar en ella —
+          # con cero migraciones pendientes `db push` es no-op y la prueba es gratis.
+          version: 2.111.0
 
       - name: Link al proyecto
         if: steps.secrets.outputs.ready == 'true'
