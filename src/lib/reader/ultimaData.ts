@@ -77,10 +77,31 @@ export async function ultimaDataPorCanal(
     try { return (await fn()).data } catch { return null }
   }
 
-  const [msg, ig, perfil, seguidor] = await Promise.all([
-    safe(() => db.from('chat_messages').select('sent_at')
-      .eq('user_id', userId).eq('source', 'reader')
-      .order('sent_at', { ascending: false }).limit(1)),
+  // ═══ POR PLATAFORMA, NO "TODO LO DEL READER" ══════════════════════════════
+  //
+  // Acá había UNA consulta a `chat_messages` con `source='reader'` cuyo resultado
+  // se devolvía como la frescura de **whatsapp**. Y `chat_messages` NO tiene columna
+  // `platform`: los mensajes que el reader trae de Teams caen en la misma tabla con
+  // el mismo `source`. O sea que **Teams hacía parecer vivo a WhatsApp**, y al revés,
+  // el silencio de un canal quedaba tapado por el otro.
+  //
+  // El costo real, medido el 7-ago-2026: Teams dejó de leer el **30-jul** (Aaron
+  // cerró la pestaña) y **nadie avisó en 8 días**. Él se enteró solo, y de la peor
+  // manera: *"si estuvieras leyendo Teams supieras que ya estamos en la última
+  // etapa"* — una negociación entera que SIR no vio.
+  //
+  // `observations.data->>platform` sí distingue, y es más completo que
+  // `chat_messages`: `reader/persist` escribe SIEMPRE una observación, mientras que
+  // en `chat_messages` solo entra lo que se pudo atribuir a una persona.
+  const obsDe = (plataforma: string) => safe(() => db.from('observations').select('observed_at')
+    .eq('user_id', userId).eq('data->>platform', plataforma)
+    .order('observed_at', { ascending: false }).limit(1))
+
+  const [wa, teams, outlook, linkedinObs, ig, perfil, seguidor] = await Promise.all([
+    obsDe('whatsapp'),
+    obsDe('teams'),
+    obsDe('outlook'),
+    obsDe('linkedin'),
     safe(() => db.from('unmatched_social_activity').select('observed_at')
       .eq('user_id', userId).eq('platform', 'instagram')
       .order('observed_at', { ascending: false }).limit(1)),
@@ -92,12 +113,22 @@ export async function ultimaDataPorCanal(
       .order('observed_at', { ascending: false }).limit(1)),
   ])
 
-  return {
-    whatsapp: primero(msg, 'sent_at'),
+  // Solo se devuelven los canales que ALGUNA VEZ trajeron algo. Un canal que nunca
+  // produjo no está "caído": no está en uso, y decirle que dejó de reportar algo que
+  // nunca funcionó es ruido con forma de alarma (ver `diagnoseChannel`).
+  const out: Record<string, string | null> = {
+    whatsapp: primero(wa, 'observed_at'),
     instagram: masReciente(
       primero(ig, 'observed_at'),
       primero(perfil, 'captured_at'),
       primero(seguidor, 'observed_at'),
     ),
   }
+  const teamsIso = primero(teams, 'observed_at')
+  if (teamsIso) out.teams = teamsIso
+  const outlookIso = primero(outlook, 'observed_at')
+  if (outlookIso) out.outlook = outlookIso
+  const linkedinIso = primero(linkedinObs, 'observed_at')
+  if (linkedinIso) out.linkedin = linkedinIso
+  return out
 }
