@@ -33,8 +33,26 @@ const q = async (p) => {
 }
 const L = (iso) => new Date(Date.parse(iso) - 5 * 3600000).toISOString().replace('T', ' ').slice(0, 16)
 const now = new Date()
-const noche = new Date(now.getTime() - 5 * 3600000).toISOString().slice(0, 10)
+// ═══ QUÉ NOCHE SE AUDITA ═════════════════════════════════════════════════════
+//
+// `-5 h` daba el día de Lima de AHORA, y a las 06:57 de la mañana eso es la noche
+// que TODAVÍA NO PASÓ: el script decía "no salió" de las cuatro cosas sobre una
+// noche que faltaba. Es el mismo bug que ya se había cazado en
+// `canal-nocturno-watch.yml` y que acá se quedó sin arreglar.
+//
+// La noche de Lima D tiene su ventana de disparo entre las 02:00Z y las 03:00Z del
+// D+1 (Hobby dispara dentro de la hora), así que solo se puede juzgar pasadas las
+// 03:00Z del día siguiente. `-27 h` da exactamente esa noche desde las 03:00Z.
+const noche = new Date(now.getTime() - 27 * 3600000).toISOString().slice(0, 10)
 const desde = `${noche}T05:00:00Z`
+// Y si la ventana de ESA noche todavía no cerró, no se juzga: "todavía no salió" y
+// "no salió" son cosas distintas.
+const cierra = Date.parse(`${new Date(Date.parse(`${noche}T00:00:00Z`) + 86400000).toISOString().slice(0, 10)}T03:00:00Z`)
+if (now.getTime() < cierra) {
+  console.log(`La ventana de disparo de la noche del ${noche} no cerró todavía (cierra ${new Date(cierra).toISOString()}).`)
+  console.log('No se juzga: "todavía no salió" no es "no salió".')
+  process.exit(0)
+}
 
 console.log(`== LA NOCHE DEL ${noche} (Lima) · foto tomada ${L(now.toISOString())} ==\n`)
 
