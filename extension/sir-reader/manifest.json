@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SIR Reader",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Lee las conversaciones de la sesión ya abierta. En WhatsApp lee el Store interno (wa-js) y hace backfill solo; en el resto, lo renderizado. Nunca envía mensajes ni abre historias.",
   "permissions": ["storage", "alarms", "tabs"],
   "host_permissions": [

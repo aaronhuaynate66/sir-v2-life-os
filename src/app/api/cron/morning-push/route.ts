@@ -27,6 +27,7 @@ import { crossAgendaWithCycles, renderCycleAgendaLine } from '@/lib/ciclo/agenda
 import { goalNudgeLine } from '@/lib/push/goalNudge'
 import { diagnoseChannel, channelSilenceLine } from '@/lib/reader/channelSilence'
 import { ultimaDataPorCanal, type ClienteMinimo } from '@/lib/reader/ultimaData'
+import { estadoDeVersion, lineaDeVersionVieja } from '@/lib/reader/versionExtension'
 import { evaluarCardio } from '@/lib/health/cardioNotify'
 import { goalAdvanceMap, effectiveGoalProgress, lastMovementISO, type GoalAdvance } from '@/lib/goals/advance'
 import { evaluarPrecondiciones, lineaTrabada } from '@/lib/goals/precondicion'
@@ -467,11 +468,11 @@ export async function GET(req: NextRequest) {
         // superficies se enteran juntas.
         const [{ data: hbRows }, dataPorCanal] = await Promise.all([
           admin.from('reader_heartbeats')
-            .select('channel, last_beat_at, status, last_data_at')
+            .select('channel, last_beat_at, status, last_data_at, ext_version')
             .eq('user_id', uid).limit(20),
           ultimaDataPorCanal(admin as unknown as ClienteMinimo, uid),
         ])
-        const hbs = (hbRows ?? []) as Array<{ channel: string; last_beat_at: string | null; status: string | null; last_data_at: string | null }>
+        const hbs = (hbRows ?? []) as Array<{ channel: string; last_beat_at: string | null; status: string | null; last_data_at: string | null; ext_version: string | null }>
         // Canales a diagnosticar = los que latieron ∪ los que trajeron datos.
         const canales = new Set<string>(hbs.map((h) => h.channel))
         for (const [c, iso] of Object.entries(dataPorCanal)) if (iso) canales.add(c)
@@ -488,6 +489,24 @@ export async function GET(req: NextRequest) {
             }, now)
           })
           readerSilenceText = channelSilenceLine(verdicts, now) ?? undefined
+        }
+
+        // ═══ ¿Y EL CÓDIGO QUE ARREGLAMOS, ESTÁ CORRIENDO ALLÁ? ════════════════
+        //
+        // Va acá y no en `channelSilence` porque no es una pregunta sobre un canal:
+        // la extensión es UNA sola y sirve a los cinco. Un canal puede estar
+        // perfecto y aun así correr un build de hace ocho días.
+        //
+        // El 7-ago esto costó una respuesta entera: #1115 puso en el lector de IG
+        // el probe que separa "roto" de "no lo abriste", y en producción ese probe
+        // llegaba null. La otra PC nunca instaló el arreglo, y como #1115 no subió
+        // la versión del manifest, `ext_version` decía lo mismo antes y después.
+        // Entre `main` y el navegador de Aaron hay un paso MANUAL que nadie
+        // registraba: mergeado, desplegado, tests verdes, y sin correr.
+        const vExt = estadoDeVersion(hbs.map((h) => h.ext_version))
+        const lineaVersion = lineaDeVersionVieja(vExt)
+        if (lineaVersion) {
+          readerSilenceText = readerSilenceText ? `${readerSilenceText}\n${lineaVersion}` : lineaVersion
         }
       } catch (e) {
         reportApiError(e, { route: 'cron/morning-push', step: 'readerSilence', user: uid.slice(0, 8) })
