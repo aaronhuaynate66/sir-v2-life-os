@@ -16,10 +16,74 @@
   const TEXT_KEYS = new Set(['accessibility_caption', 'text']);
   const MAX_DEPTH = 8;
 
+  // ═══ DIAGNÓSTICO DEL LECTOR ═════════════════════════════════════════════════
+  //
+  // Aaron, 4-ago-2026, sobre la línea "Instagram está corriendo pero hace 4 día(s)
+  // que no trae nada": *"entonces no entiendo si sirve o no sirve, qué hacemos"*.
+  //
+  // La pregunta era la correcta y el sistema no podía responderla: este lector es un
+  // INTERCEPTOR PASIVO, así que "no trajo nada" puede ser que no abrió Instagram o
+  // que el lector se rompió, y desde afuera se ven idénticos. El latido tampoco
+  // ayudaba: `status:'ok'` significa "hay una pestaña con esta URL", no "está
+  // leyendo".
+  //
+  // Estos contadores son lo que un interceptor pasivo SÍ puede saber, y con eso los
+  // tres casos se separan:
+  //   · hooked=false                      → el lector está roto.
+  //   · hooked=true, loggedIn=false       → la sesión de IG se cayó.
+  //   · hooked=true, loggedIn=true, 0 vistos con el lector arriba hace rato
+  //                                       → simplemente no navegó Instagram.
+  const diag = {
+    hookFetch: false,
+    hookXhr: false,
+    desdeTs: Date.now(),
+    vistos: 0,
+    ultimoVistoTs: null,
+  };
+
   function emit(items) {
     if (!items || !items.length) return;
+    try {
+      diag.vistos += items.length;
+      diag.ultimoVistoTs = Date.now();
+    } catch (_) { /* el contador NUNCA puede impedir la emisión */ }
     try { window.postMessage({ __sirSocial: true, items }, '*'); } catch (_) {}
   }
+
+  /**
+   * Lo que se puede afirmar del lector. `loggedIn` sale de la cookie `ds_user_id`,
+   * que es la que IG usa para la sesión — se lee, no se pide nada a la red.
+   *
+   * Todo va en try/catch: un probe que lanza sería peor que no tener probe, porque
+   * se llama desde el latido.
+   */
+  function probe() {
+    const out = { reader: 'instagram-pasivo', hooked: false, loggedIn: null, vistos: 0, desdeMin: null, haceMin: null, error: null };
+    try {
+      out.hooked = !!(diag.hookFetch && diag.hookXhr);
+      out.vistos = diag.vistos;
+      out.desdeMin = Math.round((Date.now() - diag.desdeTs) / 60000);
+      out.haceMin = diag.ultimoVistoTs === null ? null : Math.round((Date.now() - diag.ultimoVistoTs) / 60000);
+      try {
+        out.loggedIn = /(^|;\s*)ds_user_id=/.test(document.cookie || '');
+      } catch (_) { out.loggedIn = null; } // null = "no sé", nunca "sí"
+    } catch (e) {
+      out.error = (e && e.message ? e.message : String(e)).slice(0, 200);
+    }
+    return out;
+  }
+  window.__sirIgProbe = probe;
+
+  // Puente de vuelta ISOLATED → MAIN → ISOLATED. El de las capturas va en un solo
+  // sentido (`__sirSocial`), así que el pedido de diagnóstico necesita el suyo.
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    const d = e.data;
+    if (!d || d.__sirIgProbeReq !== true) return;
+    try {
+      window.postMessage({ __sirIgProbeRes: true, id: d.id, probe: probe() }, '*');
+    } catch (_) {}
+  });
 
   function emitFollowing(following) {
     if (!following || !following.length) return;
@@ -632,6 +696,7 @@
 
   // ── Patch fetch ──────────────────────────────────────────────────────────
   const origFetch = window.fetch;
+  diag.hookFetch = true;
   window.fetch = function (...args) {
     const p = origFetch.apply(this, args);
     try {
@@ -650,6 +715,7 @@
   // ── Patch XHR ────────────────────────────────────────────────────────────
   const origOpen = XMLHttpRequest.prototype.open;
   const origSend = XMLHttpRequest.prototype.send;
+  diag.hookXhr = true;
   XMLHttpRequest.prototype.open = function (method, url) { this.__sirUrl = url; return origOpen.apply(this, arguments); };
   XMLHttpRequest.prototype.send = function () {
     this.addEventListener('load', function () {

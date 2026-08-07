@@ -140,7 +140,10 @@ export async function GET() {
         lectorVivo: lectorVivo(probe),
         probeLine: probeLine(channel, probe),
         // Y la verdad incómoda: para estos canales la pregunta no tiene respuesta.
-        tieneDiagnostico: tieneDiagnostico(channel),
+        // Se le pasa el `probe`: si el canal mandó diagnóstico, la lista escrita a
+        // mano no puede seguir diciendo que no puede diagnosticarse. La evidencia
+        // le gana a la configuración.
+        tieneDiagnostico: tieneDiagnostico(channel, probe),
       }
     })
   } catch { /* 0175/0181 sin propagar → la página muestra el resto */ }

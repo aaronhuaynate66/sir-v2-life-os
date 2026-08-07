@@ -81,6 +81,31 @@ export interface Probe {
   lee?: string | null
   /** Cuántos mensajes trajo la prueba de lectura. 0 con `lee` seteado = API movida. */
   leeCuantos?: number | null
+
+  // ── LECTORES PASIVOS (Instagram / LinkedIn) ────────────────────────────────
+  //
+  // No hacen backfill: interceptan lo que pasa cuando Aaron navega. Así que su
+  // diagnóstico NO puede ser "cuántos chats veo" sino "¿estoy enganchado, vive la
+  // sesión, y hace cuánto capturé algo?". Con esos tres, las tres causas de "no
+  // trae nada" se separan — que es la pregunta que Aaron hizo el 4-ago y que el
+  // sistema no podía responder.
+  /** Identifica la FORMA del probe. 'instagram-pasivo' hoy. */
+  reader?: string | null
+  /** ¿Están puestos los hooks de fetch/XHR? false = el lector se rompió. */
+  hooked?: boolean | null
+  /** ¿Vive la sesión del sitio? null = no se pudo saber, nunca "sí". */
+  loggedIn?: boolean | null
+  /** Capturas emitidas desde que cargó el lector. */
+  vistos?: number | null
+  /** Minutos desde que cargó el lector (para no alarmar por "0 en 2 min"). */
+  desdeMin?: number | null
+  /** Minutos desde la última captura. null = ninguna todavía. */
+  haceMin?: number | null
+}
+
+/** ¿Este probe viene de un lector PASIVO? PURA. */
+function esPasivo(p: Probe): boolean {
+  return p.hooked !== undefined && p.hooked !== null
 }
 
 const esEntero = (v: unknown): v is number =>
@@ -156,6 +181,19 @@ export function normalizarProbe(entrada: unknown): Probe | null {
 export function lectorVivo(probe: Probe | null | undefined): boolean | null {
   if (!probe) return null
   if (probe.error) return false
+  // ── LECTOR PASIVO ──────────────────────────────────────────────────────────
+  // Va ANTES de las ramas de wa-js: sus campos (`lib`, `ready`, `chats`) no existen
+  // acá, y sin esta rama un probe pasivo perfectamente sano caía al `return null`
+  // final — o sea "no reporta diagnóstico", con el diagnóstico en la mano.
+  //
+  // "Vivo" para un interceptor NO es "capturó algo": es estar enganchado con la
+  // sesión viva. Que no haya capturado nada puede ser, simplemente, que Aaron no
+  // abrió Instagram — y confundir eso con una falla es lo que volvía inútil el aviso.
+  if (esPasivo(probe)) {
+    if (probe.hooked !== true) return false
+    if (probe.loggedIn === false) return false
+    return true
+  }
   // NO PUEDE LEER MENSAJES = no está vivo, aunque liste chats y diga ready.
   // Es el caso exacto del 30-jul: 196 chats recorridos, 0 mensajes enviados, y todo
   // lo demás en verde. Ver el comentario de `Probe.lee`.
@@ -174,6 +212,26 @@ export function lectorVivo(probe: Probe | null | undefined): boolean | null {
 export function probeLine(canal: string, probe: Probe | null | undefined): string | null {
   const vivo = lectorVivo(probe)
   if (vivo === null) return `${canal}: no reporta diagnóstico — no sé si está leyendo.`
+
+  // ── LECTOR PASIVO: la línea tiene que separar las TRES causas ──────────────
+  // Es la respuesta a *"entonces no entiendo si sirve o no sirve, qué hacemos"*.
+  if (probe && esPasivo(probe)) {
+    if (probe.hooked !== true) {
+      return `${canal}: el lector NO está enganchado — se rompió la interceptación, hay que recargar la pestaña en esa PC.`
+    }
+    if (probe.loggedIn === false) {
+      return `${canal}: enganchado, pero la sesión se cayó — hay que volver a iniciar sesión en esa PC.`
+    }
+    const n = probe.vistos ?? 0
+    if (n > 0) {
+      const cuando = probe.haceMin != null ? `, la última hace ${probe.haceMin} min` : ''
+      return `${canal}: leyendo (${n} captura${n === 1 ? '' : 's'}${cuando}).`
+    }
+    // Enganchado, sesión viva y CERO capturas: no es una falla, es que no lo abrió.
+    const desde = probe.desdeMin != null ? ` desde que arrancó (hace ${probe.desdeMin} min)` : ''
+    return `${canal}: el lector está bien, pero no has abierto ${canal}${desde} — por eso no trae nada. No es una falla.`
+  }
+
   if (vivo) return `${canal}: leyendo${probe?.chats != null ? ` (${probe.chats} chats a la vista)` : ''}.`
   const por = probe?.error
     ? probe.error
