@@ -231,3 +231,49 @@ describe('canales sin diagnóstico: no insinuar que se vigila lo que no se vigil
     expect(desl).toContain('QR')
   })
 })
+
+// ═══ EL CANAL QUE MURIÓ 8 DÍAS SIN QUE NADIE AVISARA (7-ago-2026) ════════════
+//
+// Aaron: *"me acabo de enterar que el correo y Teams está cerrado en la otra pc"*, y
+// después: *"si estuvieras leyendo Teams supieras que ya estamos en la última etapa"*
+// — una negociación entera (Sienna Minerals) que SIR no vio.
+//
+// Teams dejó de leer el 30-jul y el brief nunca lo mencionó. La causa no estaba en
+// `diagnoseChannel` —que lo clasifica bien— sino en QUIÉN LLEGA a diagnosticarse: la
+// lista salía de "los que latieron ∪ los que trajeron datos", y `ultimaDataPorCanal`
+// solo conocía whatsapp e instagram. Teams no tiene fila de latido, así que era
+// invisible para el vigilante.
+describe('un canal SIN fila de latido pero con historia', () => {
+  const AHORA = new Date('2026-08-07T22:40:00-05:00')
+
+  it('Teams, con data del 30-jul y sin latido, sale CAÍDO', () => {
+    const v = diagnoseChannel(
+      { channel: 'teams', lastHeartbeatAt: null, lastDataAt: '2026-07-30T19:06:00Z' },
+      AHORA,
+    )
+    expect(v.kind).toBe('caido')
+    expect(v.daysSinceData).toBe(8)
+  })
+
+  it('y la línea del brief manda a abrir la pestaña, que es la acción real', () => {
+    const v = diagnoseChannel(
+      { channel: 'teams', lastHeartbeatAt: null, lastDataAt: '2026-07-30T19:06:00Z' },
+      AHORA,
+    )
+    const l = channelSilenceLine([v], AHORA)!
+    expect(l).toContain('Teams dejó de reportar')
+    expect(l).toContain('8 día(s)')
+    expect(l).toContain('pestaña está cerrada')
+  })
+
+  it('pero uno que NUNCA trajo nada sigue callado: no está caído, no está en uso', () => {
+    // Outlook tiene fila de latido del 30-jul y CERO datos de por vida. Decirle que
+    // "dejó de reportar" algo que nunca funcionó es ruido con forma de alarma.
+    const v = diagnoseChannel(
+      { channel: 'outlook', lastHeartbeatAt: '2026-07-30T20:20:00Z', lastDataAt: null },
+      AHORA,
+    )
+    expect(v.kind).toBe('nunca_visto')
+    expect(channelSilenceLine([v], AHORA)).toBeNull()
+  })
+})
