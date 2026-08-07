@@ -112,7 +112,12 @@ export async function procesarFotoDeBascula(
       unit: m.unit,
       note: m.note ?? null,
       measured_at: m.timestamp,
-      source: 'telegram_scale',
+      // 'scale' y NO 'telegram_scale': la tabla tiene un CHECK que solo acepta
+      // manual|apple_health|scale|whatsapp (mig 0049). Un valor nuevo habría hecho
+      // fallar el insert la PRIMERA vez que Aaron mandara una foto — y el fail-soft
+      // lo habría convertido en "no pude sacarle los números", que manda a mirar la
+      // foto en vez del bug. Cazado escribiendo su peso a mano el 7-ago.
+      source: 'scale',
       external_id: `tg_${captureId}_${m.type}`,
     }))
     const { error } = await supabase
