@@ -76,6 +76,7 @@ import { buildMemoryFtsQuery } from '@/lib/sir/hybridRecall'
 import { renderLearningsBlock, rowToLearning, type LearningRow } from '@/lib/learnings/recall'
 import { todayLimaKey, limaDayKey } from '@/lib/dates/limaDay'
 import { computeMissingHealthData, renderMissingDataBlock, SLEEP_TYPE, type Reading } from '@/lib/health/missingData'
+import { contactoMasReciente } from '@/lib/relaciones/contacto'
 import { extractDayRef, renderDayContext } from '@/lib/day/dayContext'
 import { fetchDayContext } from '@/lib/day/fetch'
 import { selectInlineGap, detectContextualGap, detectDealGap, type ContextualSignal, type DealSignal } from '@/lib/gaps/inline'
@@ -531,7 +532,23 @@ export async function askSir(params: AskSirParams): Promise<AskSirResult> {
       const score = computeRelationalScore({
         importanceScore: Number(row.importance_score) || 5,
         trustLevel: Number(row.trust_level) || 5,
-        lastChatObservedAt: (row.last_contact as string | null) ?? null,
+        // ═══ EL SUSTRATO GANA SOBRE `last_contact` ═════════════════════════════
+        //
+        // `lastChatAt` se calculó cuatro líneas arriba desde los mensajes REALES y
+        // se usaba solo para `ctxSignal` — el score seguía comiendo `last_contact`,
+        // que hasta hoy el reader nunca escribía. Computar el dato bueno y pasarle
+        // el viejo al cálculo es [[sir-computa-y-descarta]] dentro de una misma
+        // función.
+        //
+        // Medido el 6-ago con Diana: `last_contact` = 29-jul (8 días atrasado) y su
+        // último mensaje era de esa noche a las 22:32. El score la castigaba por
+        // una semana de silencio que no existió.
+        //
+        // Se toma el MÁS RECIENTE de los dos, no `lastChatAt` a secas: la ventana
+        // reciente de `getPersonConversation` es acotada, así que para alguien con
+        // quien no habla desde hace meses puede venir vacía, y ahí `last_contact`
+        // sigue siendo el mejor dato que hay.
+        lastChatObservedAt: contactoMasReciente(lastChatAt, row.last_contact as string | null),
         interactionEvents,
       })
 
