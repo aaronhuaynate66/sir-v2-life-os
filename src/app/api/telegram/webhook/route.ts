@@ -24,7 +24,7 @@ import {
   answerCallbackQuery, editTelegramMessageText, sendTelegramKeyboard, editTelegramKeyboard,
 } from '@/lib/telegram/client'
 import { feedbackButtons, parseFeedbackCallback, handleFeedbackTap } from '@/lib/telegram/feedback'
-import { botonesDeToma, parseMedAllCallback, parseMedCallback, textoDeToma } from '@/lib/meds/telegramToma'
+import { botonesDeToma, parseMedAllCallback, parseMedCallback, textoDeToma, cuandoDeLaToma } from '@/lib/meds/telegramToma'
 import { marcarToma, medsDeLaToma } from '@/lib/meds/tomaPendiente'
 import { pendingDailyHabits, habitCallbackData, parseHabitCallback } from '@/lib/habits/checkinButtons'
 import { limaDayString } from '@/lib/habits/streak'
@@ -158,7 +158,7 @@ async function loadPendingHabits(supabase: SupabaseClient, userId: string, now: 
 async function sendHabitCheckin(supabase: SupabaseClient, userId: string, chatId: number, now: Date): Promise<number> {
   const pending = await loadPendingHabits(supabase, userId, now)
   if (pending.length === 0) return 0
-  const rows = pending.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
+  const rows = pending.slice(0, 8).map((h) => [{ text: `Marcar: ${h.title}`, callbackData: habitCallbackData(h.id) }])
   await sendTelegramKeyboard(chatId, '¿Cuáles de tus hábitos hiciste hoy? Toca los que sí 👇', rows)
   return pending.length
 }
@@ -185,7 +185,7 @@ async function handleHabitTap(
   if (pending.length === 0) {
     await editTelegramKeyboard(chatId, messageId, `✅ Listo — marqué todos tus hábitos de hoy. Bien ahí, Aaron 🙌`, [])
   } else {
-    const rows = pending.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
+    const rows = pending.slice(0, 8).map((h) => [{ text: `Marcar: ${h.title}`, callbackData: habitCallbackData(h.id) }])
     await editTelegramKeyboard(chatId, messageId, `✓ ${title} marcado. ¿Cuáles más hiciste hoy? 👇`, rows)
   }
 }
@@ -200,16 +200,16 @@ async function handleHabitTap(
  */
 async function handleMedTap(
   supabase: SupabaseClient, userId: string, chatId: number, messageId: number, callbackId: string,
-  itemIds: readonly string[], horaConocida?: string,
+  itemIds: readonly string[], horaConocida?: string, slot?: string | null,
 ): Promise<void> {
   if (itemIds.length === 0) {
     await answerCallbackQuery(callbackId, 'Ya estaba registrado ✓')
     return
   }
   const nombres: string[] = []
-  let hora = horaConocida ?? null
+  let hora = horaConocida ?? (slot ? slot.slice(11) : null)
   for (const id of itemIds) {
-    const r = await marcarToma(supabase, userId, id)
+    const r = await marcarToma(supabase, userId, id, Date.now(), slot)
     if (r && !r.yaEstaba) nombres.push(r.medName)
     if (!hora) {
       // La hora del ítem, para poder rearmar el mensaje con toda la toma.
@@ -220,9 +220,20 @@ async function handleMedTap(
   }
   await answerCallbackQuery(callbackId, nombres.length > 0 ? `✓ ${nombres.join(', ')}` : 'Ya estaba registrado ✓')
   if (!hora) return
-  const meds = await medsDeLaToma(supabase, userId, hora)
+  const meds = await medsDeLaToma(supabase, userId, hora, Date.now(), slot)
   if (meds.length === 0) return
-  await editTelegramKeyboard(chatId, messageId, textoDeToma(meds, hora), botonesDeToma(meds, hora))
+  // ═══ EL MENSAJE REESCRITO CONSERVA EL "¿DE ANOCHE?" ════════════════════════
+  //
+  // Acá faltaba `cuando`, así que al tocar un botón el mensaje se rearmaba con el
+  // texto GENÉRICO ("Toca lo que ya tomaste") y perdía la distinción anoche/hoy que
+  // se había arreglado el 4-ago. Una regresión del mismo arreglo, dentro del flujo
+  // que lo usa. La fecha sale del slot; sin slot se queda sin día, como antes.
+  const cuando = slot ? cuandoDeLaToma(slot.slice(0, 10), limaDayString(new Date())) : null
+  await editTelegramKeyboard(
+    chatId, messageId,
+    textoDeToma(meds, hora, cuando),
+    botonesDeToma(meds, hora, slot),
+  )
 }
 
 /** Tap "✕ No es contacto" del ¿quién es quién?: descarta la cuenta (reversible)
@@ -486,14 +497,20 @@ export async function POST(req: NextRequest) {
       // conteo en cero. Idempotente por día: dos taps no son dos dosis.
       const medItem = parseMedCallback(cb.data)
       if (medItem) {
-        await handleMedTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, [medItem])
+        await handleMedTap(
+          supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId,
+          [medItem.itemId], undefined, medItem.slot,
+        )
         return
       }
-      const medHora = parseMedAllCallback(cb.data)
-      if (medHora) {
-        const meds = await medsDeLaToma(supabase, ownerId, medHora)
-        const pendientes = meds.filter((m) => !m.yaHoy).map((m) => m.itemId)
-        await handleMedTap(supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId, pendientes, medHora)
+      const medAll = parseMedAllCallback(cb.data)
+      if (medAll) {
+        const meds = await medsDeLaToma(supabase, ownerId, medAll.hora, Date.now(), medAll.slot)
+        const pendientes = meds.filter((m) => !m.yaRegistrada).map((m) => m.itemId)
+        await handleMedTap(
+          supabase, ownerId, cb.chatId, cb.messageId, cb.callbackId,
+          pendientes, medAll.hora, medAll.slot,
+        )
         return
       }
 

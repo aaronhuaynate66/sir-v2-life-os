@@ -2,22 +2,22 @@ import { describe, expect, it } from 'vitest'
 
 import {
   botonesDeToma, horaDeRecordatorioDeToma, medAllCallbackData, medCallbackData, parseMedAllCallback,
-  parseMedCallback, remIdDeToma, textoDeToma,
+  parseMedCallback, remIdDeToma, textoDeToma, slotDeDosis,
   fechaDeRecordatorioDeToma, cuandoDeLaToma,
   type MedDeToma,
 } from './telegramToma'
 
 const med = (o: Partial<MedDeToma> = {}): MedDeToma => ({
-  itemId: 'presci_maxilo_orfenadrina', medName: 'Orfenadrina', dose: '100 mg', yaHoy: false, ...o,
+  itemId: 'presci_maxilo_orfenadrina', medName: 'Orfenadrina', dose: '100 mg', yaRegistrada: false, ...o,
 })
 
 describe('callback data', () => {
   it('ida y vuelta del individual', () => {
-    expect(parseMedCallback(medCallbackData('presci_neuro_topiramato'))).toBe('presci_neuro_topiramato')
+    expect(parseMedCallback(medCallbackData('presci_neuro_topiramato'))).toEqual({ itemId: 'presci_neuro_topiramato', slot: null })
   })
   it('ida y vuelta del "todas"', () => {
-    expect(parseMedAllCallback(medAllCallbackData('22:00'))).toBe('22:00')
-    expect(parseMedAllCallback(medAllCallbackData('08:30'))).toBe('08:30')
+    expect(parseMedAllCallback(medAllCallbackData('22:00'))).toEqual({ hora: '22:00', slot: null })
+    expect(parseMedAllCallback(medAllCallbackData('08:30'))).toEqual({ hora: '08:30', slot: null })
   })
   it('no confunde un callback con el otro', () => {
     expect(parseMedCallback(medAllCallbackData('22:00'))).toBeNull()
@@ -25,7 +25,7 @@ describe('callback data', () => {
   })
   it('ignora callbacks ajenos y basura', () => {
     for (const v of ['habit:123', 'feedback:up', '', null, undefined, 'med:', 'medall:', 'medall:99:99']) {
-      expect(parseMedCallback(v)).not.toBe('')
+      expect(parseMedCallback(v)?.itemId ?? null).not.toBe('')
       expect(parseMedAllCallback(v)).toBeNull()
     }
     expect(parseMedCallback('med:')).toBeNull()
@@ -33,7 +33,7 @@ describe('callback data', () => {
   it('rechaza horas imposibles', () => {
     expect(parseMedAllCallback('medall:2560')).toBeNull()
     expect(parseMedAllCallback('medall:2399')).toBeNull()
-    expect(parseMedAllCallback('medall:2359')).toBe('23:59')
+    expect(parseMedAllCallback('medall:2359')).toEqual({ hora: '23:59', slot: null })
   })
   // El límite de la Bot API. Si esto se rompe, el botón no funciona en producción.
   it('cabe en los 64 bytes de callback_data', () => {
@@ -50,8 +50,11 @@ describe('botonesDeToma', () => {
       med({ itemId: 'presci_maxilo_etoricoxib', medName: 'Etoricoxib', dose: '120 mg' }),
     ], '22:00')
     expect(f).toHaveLength(3)
-    expect(f[0][0].text).toBe('✅ Orfenadrina')
-    expect(f[2][0].text).toBe('✅ Todas (2)')
+    // El texto cambió el 6-ago-2026 de `✅ Orfenadrina` a `Marcar: Orfenadrina`:
+    // Aaron creyó que SIR le había marcado un hábito solo porque el botón con ✅ se
+    // lee igual que un recibo de algo ya hecho. El ✅/✓ queda para lo YA registrado.
+    expect(f[0][0].text).toBe('Marcar: Orfenadrina')
+    expect(f[2][0].text).toBe('Marcar todas (2)')
   })
 
   it('con UNA sola pendiente no ofrece "Todas": sería ruido', () => {
@@ -62,8 +65,8 @@ describe('botonesDeToma', () => {
 
   it('lo ya tomado hoy se marca con ✓ y no cuenta para "Todas"', () => {
     const f = botonesDeToma([
-      med({ yaHoy: true }),
-      med({ itemId: 'b', medName: 'Etoricoxib', yaHoy: true }),
+      med({ yaRegistrada: true }),
+      med({ itemId: 'b', medName: 'Etoricoxib', yaRegistrada: true }),
       med({ itemId: 'c', medName: 'Clonazepam' }),
     ], '22:00')
     expect(f[0][0].text).toBe('✓ Orfenadrina')
@@ -91,12 +94,12 @@ describe('textoDeToma', () => {
     expect(t).toContain('Topiramato 100 mg')
   })
   it('si ya está todo tomado, lo dice y no pide nada', () => {
-    const t = textoDeToma([med({ yaHoy: true })], '22:00')
+    const t = textoDeToma([med({ yaRegistrada: true })], '22:00')
     expect(t).toContain('ya registraste todo')
     expect(t).not.toContain('Toca lo que')
   })
   it('no muestra los ya tomados en la lista de pendientes', () => {
-    const t = textoDeToma([med({ yaHoy: true }), med({ itemId: 'b', medName: 'Clonazepam', dose: '2 mg' })], '22:00')
+    const t = textoDeToma([med({ yaRegistrada: true }), med({ itemId: 'b', medName: 'Clonazepam', dose: '2 mg' })], '22:00')
     expect(t).toContain('Clonazepam 2 mg')
     expect(t).not.toContain('Orfenadrina')
   })
@@ -191,8 +194,8 @@ describe('cuandoDeLaToma — distingue avisar de preguntar', () => {
 
 describe('textoDeToma — avisar (futuro) y preguntar (pasado) son mensajes distintos', () => {
   const meds = [
-    { itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaHoy: false },
-    { itemId: 'b', medName: 'Clonazepam', dose: '2 mg', yaHoy: false },
+    { itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaRegistrada: false },
+    { itemId: 'b', medName: 'Clonazepam', dose: '2 mg', yaRegistrada: false },
   ]
 
   it('la de HOY no dice "ya tomaste" — todavía no pasó', () => {
@@ -218,7 +221,7 @@ describe('textoDeToma — avisar (futuro) y preguntar (pasado) son mensajes dist
   })
 
   it('todo registrado: felicita igual, sin importar el día', () => {
-    const ya = [{ itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaHoy: true }]
+    const ya = [{ itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaRegistrada: true }]
     for (const c of ['hoy', 'anoche', 'atrasada', null] as const) {
       expect(textoDeToma(ya, '22:00', c)).toContain('ya registraste todo')
     }
@@ -230,5 +233,95 @@ describe('textoDeToma — avisar (futuro) y preguntar (pasado) son mensajes dist
       expect(t).toContain('Topiramato 100 mg')
       expect(t).toContain('Clonazepam 2 mg')
     }
+  })
+})
+
+// ═══ LA DOSIS TIENE FECHA Y HORA (6-ago-2026) ════════════════════════════════
+//
+// Aaron: *"hoy solo tomé clonazepam y topiramato, le marqué pero no parece que haya
+// cambiado algo, no sé si quedó bien registrado"*. La cadena medida fue: a las 09:31
+// tocó "Todas" respondiendo al aviso de la noche del 5, se guardó como del día 6, y a
+// las 21:22 SIR le dijo "ya registraste todo lo de esta toma" con las 4 en ✓ sin que
+// hubiera tomado nada. El candado era por (ítem, DÍA); ahora es por DOSIS.
+describe('slotDeDosis', () => {
+  it('arma la etiqueta de la dosis en hora de Lima, sin offset', () => {
+    expect(slotDeDosis('2026-08-03', '08:00')).toBe('2026-08-03T08:00')
+    expect(slotDeDosis('2026-08-06', '22:00')).toBe('2026-08-06T22:00')
+  })
+
+  it('null si falta la fecha o la hora, o si no son válidas', () => {
+    expect(slotDeDosis(null, '08:00')).toBeNull()
+    expect(slotDeDosis('2026-08-03', null)).toBeNull()
+    expect(slotDeDosis('2026-08-03', '25:00')).toBeNull()
+    expect(slotDeDosis('2026-08-03', '08:75')).toBeNull()
+    expect(slotDeDosis('03-08-2026', '08:00')).toBeNull()
+    expect(slotDeDosis('', '')).toBeNull()
+  })
+})
+
+describe('el callback lleva la dosis, y acepta los viejos', () => {
+  const SLOT = '2026-08-05T22:00'
+
+  it('ida y vuelta con slot', () => {
+    expect(parseMedCallback(medCallbackData('presci_neuro_topiramato', SLOT)))
+      .toEqual({ itemId: 'presci_neuro_topiramato', slot: SLOT })
+    expect(parseMedAllCallback(medAllCallbackData('22:00', SLOT)))
+      .toEqual({ hora: '22:00', slot: SLOT })
+  })
+
+  // OBLIGATORIO: los avisos del 3 al 6 de agosto siguen vivos en el chat de Aaron con
+  // los callbacks viejos. Si dejaran de parsear, cada uno de esos botones moriría en
+  // silencio — que es exactamente el reclamo del que venimos.
+  it('RETROCOMPAT: los callbacks viejos siguen funcionando, con slot null', () => {
+    expect(parseMedCallback('med:presci_clonazepam')).toEqual({ itemId: 'presci_clonazepam', slot: null })
+    expect(parseMedAllCallback('medall:2200')).toEqual({ hora: '22:00', slot: null })
+  })
+
+  it('cabe en los 64 bytes con el itemId más largo de producción', () => {
+    const largo = medCallbackData('presci_emerg_paracetramadol', SLOT)
+    expect(Buffer.byteLength(largo, 'utf8')).toBeLessThanOrEqual(64)
+    expect(parseMedCallback(largo)?.slot).toBe(SLOT)
+    expect(Buffer.byteLength(medAllCallbackData('22:00', SLOT), 'utf8')).toBeLessThanOrEqual(64)
+  })
+
+  it('si un slot inválido se cuela, se cae al callback viejo en vez de romper', () => {
+    const d = medCallbackData('presci_clonazepam', 'no-es-slot')
+    expect(d).toBe('med:presci_clonazepam')
+    expect(parseMedCallback(d)).toEqual({ itemId: 'presci_clonazepam', slot: null })
+  })
+
+  it('un slot con hora imposible se rechaza entero, no a medias', () => {
+    expect(parseMedCallback('med:2026-08-05T25:00:presci_clonazepam')).toBeNull()
+    expect(parseMedAllCallback('medall:2026-08-05T24:61')).toBeNull()
+  })
+})
+
+describe('los botones dicen la ACCIÓN, no un recibo', () => {
+  // Aaron creyó que SIR le había marcado "Tender la cama" solo, porque el botón
+  // `✅ Tender la cama` se lee igual que algo ya hecho. Acá el ✅ queda para lo YA
+  // registrado (✓) y el pendiente dice qué hace el tap.
+  it('lo pendiente dice "Marcar:", lo registrado lleva ✓', () => {
+    const filas = botonesDeToma([
+      { itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaRegistrada: false },
+      { itemId: 'b', medName: 'Clonazepam', dose: '2 mg', yaRegistrada: true },
+    ], '22:00', '2026-08-06T22:00')
+    expect(filas[0][0].text).toBe('Marcar: Topiramato')
+    expect(filas[1][0].text).toBe('✓ Clonazepam')
+  })
+
+  it('los botones propagan el slot', () => {
+    const filas = botonesDeToma([
+      { itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaRegistrada: false },
+      { itemId: 'b', medName: 'Clonazepam', dose: '2 mg', yaRegistrada: false },
+    ], '22:00', '2026-08-06T22:00')
+    expect(parseMedCallback(filas[0][0].callbackData)?.slot).toBe('2026-08-06T22:00')
+    // La fila de "todas" también.
+    expect(parseMedAllCallback(filas[2][0].callbackData)?.slot).toBe('2026-08-06T22:00')
+  })
+
+  it('sin slot los botones siguen saliendo (comportamiento viejo)', () => {
+    const filas = botonesDeToma([{ itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaRegistrada: false }], '22:00')
+    expect(filas).toHaveLength(1)
+    expect(parseMedCallback(filas[0][0].callbackData)).toEqual({ itemId: 'a', slot: null })
   })
 })

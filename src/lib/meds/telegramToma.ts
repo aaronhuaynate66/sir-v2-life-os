@@ -95,42 +95,99 @@ export function cuandoDeLaToma(
   return f === ayer ? 'anoche' : 'atrasada'
 }
 
-/** `med:<itemId>` para el botón de un medicamento. PURA. */
-export function medCallbackData(itemId: string): string {
-  return `${MED_CB}${itemId}`
+/**
+ * La ETIQUETA de una dosis: '2026-08-03T08:00' en hora de Lima. PURA.
+ *
+ * Identifica QUÉ toma es, que es distinto de cuándo se tocó el botón. Sin esto, el
+ * candado de idempotencia era por (ítem, DÍA) y el 6-ago pasó lo siguiente: el tap de
+ * las 09:31 respondía al aviso de la noche del 5, se guardó como del día 6, y esa
+ * noche la dosis REAL del 6 salió como "ya registrada". Con dos tomas por día —el
+ * suplemento de calcio— el mismo candado habría tapado la del almuerzo.
+ *
+ * No lleva offset a propósito: no es un instante, es "la toma de las 08:00 del 3".
+ */
+export function slotDeDosis(fecha: string | null | undefined, hora: string | null | undefined): string | null {
+  const f = (fecha ?? '').trim()
+  const h = (hora ?? '').trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || !/^\d{2}:\d{2}$/.test(h)) return null
+  if (Number(h.slice(0, 2)) > 23 || Number(h.slice(3, 5)) > 59) return null
+  return `${f}T${h}`
 }
 
-/** `medall:2200` para "tomé todas las de esta toma". PURA. */
-export function medAllCallbackData(hora: string): string {
+/** ¿Tiene forma de slot? PURA. */
+const esSlot = (s: string): boolean => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s)
+
+/**
+ * `med:<slot>:<itemId>` — o `med:<itemId>` si no se sabe la dosis. PURA.
+ *
+ * ═══ RETROCOMPATIBILIDAD OBLIGATORIA ════════════════════════════════════════
+ * Los avisos del 3 al 6 de agosto siguen vivos en el chat de Aaron con los callbacks
+ * viejos. Si el parser dejara de aceptarlos, cada uno de esos botones moriría en
+ * silencio — y "el botón no hace nada" es exactamente el reclamo del que venimos.
+ *
+ * Cabe de sobra: `med:2026-08-03T08:00:presci_emerg_paracetramadol` = 44 bytes de los
+ * 64 que permite Telegram (ese es el itemId más largo que hay en producción).
+ */
+export function medCallbackData(itemId: string, slot?: string | null): string {
+  const s = (slot ?? '').trim()
+  const data = s && esSlot(s) ? `${MED_CB}${s}:${itemId}` : `${MED_CB}${itemId}`
+  return Buffer.byteLength(data, 'utf8') <= 64 ? data : `${MED_CB}${itemId}`
+}
+
+/** `medall:<slot>` — o `medall:2200` si no se sabe la dosis. PURA. */
+export function medAllCallbackData(hora: string, slot?: string | null): string {
+  const s = (slot ?? '').trim()
+  if (s && esSlot(s)) return `${MED_ALL_CB}${s}`
   return `${MED_ALL_CB}${(hora ?? '').replace(':', '')}`
 }
 
-/** Devuelve el itemId si el callback es de un medicamento. null si no. PURA. */
-export function parseMedCallback(data: string | null | undefined): string | null {
+/**
+ * Parsea el botón de UN medicamento. null si no es uno. PURA.
+ *
+ * `slot` viene null con los callbacks viejos — y ahí el llamador cae al
+ * comportamiento anterior (la dosis de hoy), bit por bit.
+ */
+export function parseMedCallback(data: string | null | undefined): { itemId: string; slot: string | null } | null {
   const s = (data ?? '').trim()
   if (!s.startsWith(MED_CB)) return null
-  const id = s.slice(MED_CB.length).trim()
-  return id.length > 0 ? id : null
+  const resto = s.slice(MED_CB.length).trim()
+  if (resto.length === 0) return null
+  // Forma nueva: `<slot>:<itemId>`. El slot tiene 16 chars y ningún itemId de
+  // producción empieza con un año, así que no hay ambigüedad.
+  const m = resto.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}):(.+)$/)
+  if (m) {
+    const [, slot, itemId] = m
+    if (!esSlot(slot) || Number(slot.slice(11, 13)) > 23 || Number(slot.slice(14, 16)) > 59) return null
+    return itemId.trim().length > 0 ? { itemId: itemId.trim(), slot } : null
+  }
+  return { itemId: resto, slot: null }
 }
 
-/** Devuelve 'HH:MM' si el callback es el de "todas". null si no. PURA. */
-export function parseMedAllCallback(data: string | null | undefined): string | null {
+/** Parsea el botón de "todas". null si no es uno. PURA. */
+export function parseMedAllCallback(data: string | null | undefined): { hora: string; slot: string | null } | null {
   const s = (data ?? '').trim()
   if (!s.startsWith(MED_ALL_CB)) return null
   const raw = s.slice(MED_ALL_CB.length).trim()
+  // Forma nueva: el slot completo.
+  if (esSlot(raw)) {
+    const hora = raw.slice(11)
+    if (Number(hora.slice(0, 2)) > 23 || Number(hora.slice(3, 5)) > 59) return null
+    return { hora, slot: raw }
+  }
+  // Forma vieja: solo `HHMM`.
   if (!/^\d{4}$/.test(raw)) return null
   const hh = raw.slice(0, 2)
   const mm = raw.slice(2, 4)
   if (Number(hh) > 23 || Number(mm) > 59) return null
-  return `${hh}:${mm}`
+  return { hora: `${hh}:${mm}`, slot: null }
 }
 
 export interface MedDeToma {
   itemId: string
   medName: string
   dose: string | null
-  /** true si YA se registró hoy: el botón cambia de texto y no se ofrece de nuevo. */
-  yaHoy: boolean
+  /** true si esta DOSIS ya se registró: el botón cambia de texto y no se ofrece de nuevo. */
+  yaRegistrada: boolean
 }
 
 export interface BotonFila {
@@ -143,17 +200,25 @@ export interface BotonFila {
  * Los ya tomados se muestran con ✓ y SIN callback nuevo (se manda el mismo, el
  * handler es idempotente) para que Aaron vea el estado y no dude si tocó o no. PURA.
  */
-export function botonesDeToma(meds: readonly MedDeToma[], hora: string): BotonFila[][] {
+export function botonesDeToma(
+  meds: readonly MedDeToma[],
+  hora: string,
+  slot?: string | null,
+): BotonFila[][] {
   const lista = (meds ?? []).filter((m) => m?.itemId && m?.medName)
   if (lista.length === 0) return []
   const filas: BotonFila[][] = lista.map((m) => [{
-    text: m.yaHoy ? `✓ ${m.medName}` : `✅ ${m.medName}`,
-    callbackData: medCallbackData(m.itemId),
+    // "Marcar:" y no un ✅ pelado. Aaron, 6-ago: creyó que SIR le había marcado
+    // "Tender la cama" solo, porque el botón `✅ Tender la cama` se lee igual que un
+    // recibo de algo ya hecho. Acá aplica idéntico: el ✅ queda para lo YA
+    // registrado (✓) y el pendiente dice qué acción hace.
+    text: m.yaRegistrada ? `✓ ${m.medName}` : `Marcar: ${m.medName}`,
+    callbackData: medCallbackData(m.itemId, slot),
   }])
-  const pendientes = lista.filter((m) => !m.yaHoy)
+  const pendientes = lista.filter((m) => !m.yaRegistrada)
   // "Todas" sólo si de verdad ahorra taps: con una sola pendiente es ruido.
   if (pendientes.length >= 2) {
-    filas.push([{ text: `✅ Todas (${pendientes.length})`, callbackData: medAllCallbackData(hora) }])
+    filas.push([{ text: `Marcar todas (${pendientes.length})`, callbackData: medAllCallbackData(hora, slot) }])
   }
   return filas
 }
@@ -171,7 +236,7 @@ export function textoDeToma(
   cuando?: CuandoToma | null,
 ): string {
   const lista = (meds ?? []).filter((m) => m?.itemId && m?.medName)
-  const pendientes = lista.filter((m) => !m.yaHoy)
+  const pendientes = lista.filter((m) => !m.yaRegistrada)
   if (pendientes.length === 0) {
     return `💊 ${hora} — ya registraste todo lo de esta toma. 👏`
   }

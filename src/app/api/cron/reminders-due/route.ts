@@ -18,7 +18,7 @@ import { createClient } from '@supabase/supabase-js'
 import { pushToUser } from '@/lib/push/notify'
 import { isTelegramConfigured, sendTelegramKeyboard, sendTelegramMessage } from '@/lib/telegram/client'
 import { textoRecordatorio } from '@/lib/push/cuandoVence'
-import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cuandoDeLaToma, textoDeToma } from '@/lib/meds/telegramToma'
+import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cuandoDeLaToma, textoDeToma, slotDeDosis } from '@/lib/meds/telegramToma'
 import { limaDayString } from '@/lib/habits/streak'
 import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
 import { materializarTomas } from '@/lib/meds/materializar'
@@ -224,8 +224,12 @@ export async function GET(req: NextRequest) {
         // una toma —el de los 5 laboratorios del neurólogo es su monitoreo— y derivarlo
         // de la hora les habría reemplazado el texto por el de la medicación.
         const hora = horaToma
-        const meds = hora ? await medsDeLaToma(supabase, r.user_id, hora) : []
-        const filas = meds.length > 0 ? botonesDeToma(meds, hora as string) : []
+        // El SLOT identifica la dosis (fecha + hora). Sin esto, el tap de la mañana
+        // sobre "¿tomaste la de anoche?" se guardaba en el día de HOY y tapaba la
+        // dosis real de esta noche. Ver .
+        const slot = slotDeDosis(fechaDeRecordatorioDeToma(r.id), hora)
+        const meds = hora ? await medsDeLaToma(supabase, r.user_id, hora, nowMs, slot) : []
+        const filas = meds.length > 0 ? botonesDeToma(meds, hora as string, slot) : []
         if (filas.length > 0) {
           // Acá solo llegan tomas YA VENCIDAS (las futuras se difirieron arriba), así
           // que el texto pregunta por el pasado en vez de afirmar que "ya la tomaste".
