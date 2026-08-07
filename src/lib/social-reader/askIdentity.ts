@@ -25,6 +25,8 @@
 import type { InlineButton } from '@/lib/telegram/client'
 
 export interface IdentityCandidate {
+  /** Cuántas cuentas quedan sin identificar. Para decir que sale de la bandeja vieja. */
+  pendientesEnBandeja?: number | null
   /** id de `unmatched_social_activity`. */
   id: string
   handle: string
@@ -104,14 +106,46 @@ export function parseIdentityCallback(data: string): { action: IdentityAction; i
  * es lo que permite resolver una respuesta sin guardar estado: si Aaron responde
  * al mensaje con un nombre, el webhook saca el handle de la cita.
  */
+/**
+ * La cláusula que evita que esta tarjeta parezca desmentir al brief. PURA.
+ *
+ * ═══ LA CONTRADICCIÓN QUE ARREGLA ════════════════════════════════════════════
+ *
+ * El 6-ago-2026 el brief de la mañana dijo *"Instagram no trae nada hace 6 días"* y
+ * esa misma noche llegó esta tarjeta con una historia. Aaron, textual: *"por un lado
+ * me dice que no le anda el de Instagram pero por otro al final me manda una historia
+ * de una persona"*.
+ *
+ * Los dos mensajes eran VERDADEROS y hasta compatibles: la cola tenía 69 cuentas y lo
+ * más nuevo era del 30-jul, o sea que "no trae nada nuevo" y "acá va una vieja" dicen
+ * lo mismo. Pero ninguno mencionaba al otro, y leídos juntos se peleaban.
+ *
+ * Con decir de dónde sale la tarjeta, la contradicción desaparece sin cambiar ningún
+ * dato. Es el mismo criterio que [[aviso-sin-fecha-se-lee-como-ahora]]: el dato estaba
+ * bien, faltaba el contexto que lo hace interpretable.
+ */
+export function lineaDeBandejaVieja(pendientes: number, esNueva: boolean): string | null {
+  if (esNueva) return null
+  if (!Number.isFinite(pendientes) || pendientes <= 1) {
+    return 'Sale de la bandeja vieja, no es material nuevo.'
+  }
+  return `Sale de la bandeja vieja: me quedan ${pendientes - 1} cuentas por identificar y te paso una por noche. No es material nuevo.`
+}
+
 export function buildIdentityCard(c: IdentityCandidate, nowMs: number = Date.now()): { caption: string; keyboard: InlineButton[][] } {
   // La fecha va PEGADA al verbo, no en una línea aparte: es lo que evita que "Vi"
   // se lea como "acabo de ver". Sin `observed_at` se omite en vez de inventarla.
   const cuando = cuandoLaVi(c.observedAt, nowMs)
+  // "Nueva" = de las últimas 48 h. Si la historia es de hace días, la tarjeta tiene
+  // que decir que sale de la bandeja vieja — si no, contradice al brief de la mañana
+  // que dijo "no trae nada nuevo hace 6 días".
+  const ms = c.observedAt ? Date.parse(c.observedAt) : NaN
+  const esNueva = Number.isFinite(ms) && nowMs - ms < 48 * 3_600_000
   const partes = [
     `👀 Vi ${cuando ? `${cuando} ` : ''}una historia de @${c.handle} y no sé de quién es.`,
     c.hint ? `Lo que tengo: ${c.hint}` : null,
     typeof c.followers === 'number' ? `Seguidores: ${c.followers.toLocaleString('es-PE')}` : null,
+    lineaDeBandejaVieja(c.pendientesEnBandeja ?? 0, esNueva),
     '¿Es una persona de tu círculo o una empresa/página?',
     'Si es persona, respóndeme a este mensaje con su nombre y le creo la ficha.',
   ].filter(Boolean)

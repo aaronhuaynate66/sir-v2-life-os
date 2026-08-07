@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildIdentityCard, identityCallback, parseIdentityCallback,
-  handleFromCaption, orgNameFromHandle, pickPhoto,
+  handleFromCaption, orgNameFromHandle, pickPhoto, lineaDeBandejaVieja,
 } from './askIdentity'
 
 describe('buildIdentityCard', () => {
@@ -100,5 +100,61 @@ describe('pickPhoto', () => {
   it('null si no hay ninguna — el caller no manda tarjeta sin cara', () => {
     expect(pickPhoto({})).toBeNull()
     expect(pickPhoto({ signedSnapshotUrl: '', avatarUrl: '' })).toBeNull()
+  })
+})
+
+// ═══ LA CONTRADICCIÓN DEL 6-ago-2026 ════════════════════════════════════════
+//
+// Aaron: *"por un lado me dice que no le anda el de Instagram pero por otro al final
+// me manda una historia de una persona"*. Los dos mensajes eran verdaderos —la cola
+// tenía 69 cuentas y lo más nuevo era del 30-jul— y ninguno mencionaba al otro.
+describe('lineaDeBandejaVieja', () => {
+  it('en una historia VIEJA dice de dónde sale y cuántas quedan', () => {
+    const l = lineaDeBandejaVieja(69, false)!
+    expect(l).toContain('bandeja vieja')
+    expect(l).toContain('68 cuentas') // se descuenta la que se está preguntando
+    expect(l).toContain('una por noche')
+  })
+
+  it('en una historia NUEVA no dice nada: ahí no hay contradicción que explicar', () => {
+    expect(lineaDeBandejaVieja(69, true)).toBeNull()
+  })
+
+  it('con la última de la cola no promete que quedan más', () => {
+    expect(lineaDeBandejaVieja(1, false)).not.toContain('cuentas por identificar')
+    expect(lineaDeBandejaVieja(0, false)).toContain('bandeja vieja')
+  })
+
+  it('no revienta con basura', () => {
+    expect(lineaDeBandejaVieja(NaN, false)).toContain('bandeja vieja')
+  })
+})
+
+describe('la tarjeta dice de dónde sale cuando la historia es vieja', () => {
+  const AHORA = Date.parse('2026-08-06T21:22:00-05:00')
+
+  it('el caso real: @aixafranke, historia del 30-jul, preguntada el 6-ago', () => {
+    const { caption } = buildIdentityCard({
+      id: 'x', handle: 'aixafranke', observedAt: '2026-07-30T14:06:35Z', pendientesEnBandeja: 69,
+    }, AHORA)
+    expect(caption).toContain('el 30 de julio')
+    expect(caption).toContain('bandeja vieja')
+    expect(caption).toContain('68')
+  })
+
+  it('una historia de hoy NO trae la cláusula: sería ruido', () => {
+    const { caption } = buildIdentityCard({
+      id: 'x', handle: 'alguien', observedAt: '2026-08-06T18:00:00-05:00', pendientesEnBandeja: 69,
+    }, AHORA)
+    expect(caption).toContain('hoy')
+    expect(caption).not.toContain('bandeja vieja')
+  })
+
+  it('sin el conteo sigue avisando que es vieja, sin inventar un número', () => {
+    const { caption } = buildIdentityCard({
+      id: 'x', handle: 'alguien', observedAt: '2026-07-30T14:06:35Z',
+    }, AHORA)
+    expect(caption).toContain('bandeja vieja')
+    expect(caption).not.toMatch(/\d+ cuentas/)
   })
 })
