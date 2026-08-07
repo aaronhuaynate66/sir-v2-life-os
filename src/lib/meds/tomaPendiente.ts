@@ -36,6 +36,7 @@ export async function medsDeLaToma(
   userId: string,
   hora: string,
   nowMs: number = Date.now(),
+  slot?: string | null,
 ): Promise<MedDeToma[]> {
   try {
     const { data: pres, error: pe } = await supabase
@@ -60,16 +61,22 @@ export async function medsDeLaToma(
     // Las tomas de hoy de esos ítems, dedupeadas: un doble tap no cubre dos dosis.
     const { data: tk } = await supabase
       .from('med_intakes')
-      .select('taken_at, prescription_item_id')
+      .select('taken_at, prescription_item_id, dose_slot')
       .eq('user_id', userId)
       .in('prescription_item_id', delaHora.map((i) => i.id))
       .limit(500)
     const porItem = new Map<string, string[]>()
-    for (const t of (tk as Array<{ taken_at: string; prescription_item_id: string | null }>) ?? []) {
+    const slotsPorItem = new Map<string, Set<string>>()
+    for (const t of (tk as Array<{ taken_at: string; prescription_item_id: string | null; dose_slot: string | null }>) ?? []) {
       if (!t.prescription_item_id) continue
       const arr = porItem.get(t.prescription_item_id) ?? []
       arr.push(t.taken_at)
       porItem.set(t.prescription_item_id, arr)
+      if (t.dose_slot) {
+        const s = slotsPorItem.get(t.prescription_item_id) ?? new Set<string>()
+        s.add(t.dose_slot)
+        slotsPorItem.set(t.prescription_item_id, s)
+      }
     }
     const hoy = hoyLima(nowMs)
     return delaHora.map((i) => {
@@ -79,7 +86,20 @@ export async function medsDeLaToma(
         itemId: i.id,
         medName: i.med_name,
         dose: i.dose,
-        yaHoy: tomasDeHoy(limpias.map((l) => l.takenAt), hoy) > 0,
+        // ═══ SE PREGUNTA POR LA DOSIS, NO POR EL DÍA ═════════════════════════
+        //
+        // Con `slot` la pregunta es "¿ya se registró LA TOMA de las 08:00 del 3?".
+        // Antes era "¿hay alguna toma de este ítem HOY?", y eso produjo dos fallas:
+        //   · 6-ago: el tap de las 09:31 respondía al aviso de la noche del 5, y esa
+        //     noche las 4 salieron como "ya registradas" sin que hubiera tomado nada;
+        //   · con dos tomas al día —el suplemento de calcio— marcar la del desayuno
+        //     habría tapado la del almuerzo.
+        //
+        // Sin `slot` cae al comportamiento viejo, para que los avisos que ya están en
+        // el chat con callbacks viejos sigan funcionando igual.
+        yaRegistrada: slot
+          ? (slotsPorItem.get(i.id)?.has(slot) ?? false)
+          : tomasDeHoy(limpias.map((l) => l.takenAt), hoy) > 0,
       }
     })
   } catch {
@@ -96,6 +116,7 @@ export async function marcarToma(
   userId: string,
   itemId: string,
   nowMs: number = Date.now(),
+  slot?: string | null,
 ): Promise<{ medName: string; yaEstaba: boolean } | null> {
   const { data: item } = await supabase
     .from('med_prescription_items')
@@ -110,23 +131,49 @@ export async function marcarToma(
   const hoy = hoyLima(nowMs)
   const { data: previas } = await supabase
     .from('med_intakes')
-    .select('taken_at')
+    .select('taken_at, dose_slot')
     .eq('user_id', userId)
     .eq('prescription_item_id', itemId)
     .limit(50)
-  const yaEstaba = tomasDeHoy(
-    ((previas as Array<{ taken_at: string }>) ?? []).map((p) => p.taken_at),
-    hoy,
-  ) > 0
+  const filas = ((previas as Array<{ taken_at: string; dose_slot: string | null }>) ?? [])
+
+  // El candado: con `slot`, por DOSIS; sin él, el de siempre (por día).
+  const yaEstaba = slot
+    ? filas.some((p) => p.dose_slot === slot)
+    : tomasDeHoy(filas.map((p) => p.taken_at), hoy) > 0
+
   if (!yaEstaba) {
-    await supabase.from('med_intakes').insert({
+    // ═══ `taken_at` HÍBRIDO ═══════════════════════════════════════════════════
+    //
+    // Si la dosis es de HOY, se guarda la hora real del tap: es dato bueno y no hay
+    // razón para tirarlo. Si es de otro día —el caso "¿tomaste la de anoche?"— se
+    // guarda el instante de la PAUTA, porque escribir la hora del tap metía la dosis
+    // del 5 en el día 6, que es el bug que originó todo esto.
+    //
+    // El momento real del registro no se pierde: va en la nota.
+    const fechaSlot = slot ? slot.slice(0, 10) : null
+    const horaSlot = slot ? slot.slice(11) : null
+    const diferido = !!fechaSlot && fechaSlot !== hoy
+    const takenAt = diferido
+      ? new Date(`${fechaSlot}T${horaSlot}:00-05:00`).toISOString()
+      : new Date(nowMs).toISOString()
+    const nota = diferido
+      ? `Registrado desde Telegram el ${hoy} · dosis del ${fechaSlot} ${horaSlot}`
+      : 'Registrado desde Telegram'
+
+    const { error } = await supabase.from('med_intakes').insert({
       user_id: userId,
       name: it.med_name,
       quantity: 1,
       prescription_item_id: itemId,
-      note: 'Registrado desde Telegram',
-      taken_at: new Date(nowMs).toISOString(),
+      note: nota,
+      taken_at: takenAt,
+      dose_slot: slot ?? null,
     })
+    // El índice único de la mig 0185 es la red final: si dos taps llegan a la vez, el
+    // segundo choca acá en vez de duplicar la dosis. Un choque NO es un error para
+    // Aaron — significa "ya estaba", que es justo lo que hay que responderle.
+    if (error) return { medName: it.med_name, yaEstaba: true }
   }
   return { medName: it.med_name, yaEstaba }
 }

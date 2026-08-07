@@ -18,7 +18,7 @@ import { normalizeReaderProfile } from '@/lib/social-reader/igProfile'
 import { briefCallbackData } from '@/lib/telegram/briefThread'
 import { relacionesUrl } from '@/lib/app-url'
 import { limaDayString } from '@/lib/habits/streak'
-import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cuandoDeLaToma, textoDeToma } from '@/lib/meds/telegramToma'
+import { botonesDeToma, horaDeRecordatorioDeToma, fechaDeRecordatorioDeToma, cuandoDeLaToma, textoDeToma, slotDeDosis } from '@/lib/meds/telegramToma'
 import { medsDeLaToma } from '@/lib/meds/tomaPendiente'
 import { reportApiError } from '@/lib/observability/reportApiError'
 import { logEvent } from '@/lib/observability/logEvent'
@@ -158,8 +158,9 @@ export async function GET(req: NextRequest) {
           for (const rem of (remRows ?? []) as Array<{ id: string; due_at: string | null }>) {
             const hora = horaDeRecordatorioDeToma(rem.id)
             if (!hora) continue // no es una toma: no es asunto de este bloque
-            const meds = await medsDeLaToma(admin, uid, hora)
-            const filas = meds.length > 0 ? botonesDeToma(meds, hora) : []
+            const slot = slotDeDosis(fechaDeRecordatorioDeToma(rem.id), hora)
+            const meds = await medsDeLaToma(admin, uid, hora, now.getTime(), slot)
+            const filas = meds.length > 0 ? botonesDeToma(meds, hora, slot) : []
             if (filas.length === 0) continue
             const cuando = cuandoDeLaToma(fechaDeRecordatorioDeToma(rem.id), hoyLima)
             const tg = await sendTelegramKeyboard(Number(tgChat), textoDeToma(meds, hora, cuando), filas)
@@ -175,7 +176,7 @@ export async function GET(req: NextRequest) {
         // medité"). Un botón por hábito diario pendiente; el tap lo marca (callback
         // "hb|<id>" → webhook). Solo si quedan pendientes.
         if (pendingHabits.length > 0) {
-          const rows = pendingHabits.slice(0, 8).map((h) => [{ text: `✅ ${h.title}`, callbackData: habitCallbackData(h.id) }])
+          const rows = pendingHabits.slice(0, 8).map((h) => [{ text: `Marcar: ${h.title}`, callbackData: habitCallbackData(h.id) }])
           await sendTelegramKeyboard(Number(tgChat), '¿Cuáles de tus hábitos hiciste hoy? Toca los que sí 👇', rows)
         }
 
