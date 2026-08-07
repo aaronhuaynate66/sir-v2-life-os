@@ -69,7 +69,30 @@ export async function assembleDailyActions(
       .from('observations')
       .select('person_id, observed_at')
       .eq('user_id', userId)
-      .in('capture_type', ['whatsapp_chat', 'whatsapp_web'])
+      // ═══ `dm_conversation` ES EL READER, Y ERA INVISIBLE ═══════════════════
+      //
+      // Aaron, 6-ago-2026: *"me dice que no sé nada de Diana pero sí lee mis
+      // WhatsApp con Diana, prácticamente me he visto con ella todos los días,
+      // así que no está cruzando esa información"*.
+      //
+      // Tenía razón y la causa era este filtro. El reader de la otra PC escribe
+      // `capture_type: 'dm_conversation'` (`lib/reader/persist.ts`), y acá solo se
+      // pedían los dos tipos de la captura MANUAL. Medido ese día para Diana:
+      //   · `dm_conversation` → 1.016 observaciones, la última de ESA NOCHE 22:33
+      //   · `whatsapp_chat`   → 6 observaciones, la última del 12-jul
+      // Así que `lastChatByPerson` devolvía el 12-jul y de ahí en cascada:
+      // `daysSinceContact` daba 5 días (era 0), la Fuerza de la relación quedaba
+      // castigada 25 días, y `suggestCadenceDays` inventaba un ritmo con 6 fechas
+      // en vez de contacto diario.
+      //
+      // Con eso, lo ÚNICO que el brief podía decir de su pareja salía de
+      // `special_dates` — y por eso su sección "TU GENTE" del 6-ago decía solo
+      // *"Aniversario Aaron y Diana en 7 días"*. No es que el brief se callara: es
+      // que la única fuente que la vio fue un calendario de cumpleaños.
+      //
+      // El sustrato creció a 286k mensajes y los motores seguían leyendo la tabla
+      // de apuntes a mano. [[sir-computa-y-descarta]]
+      .in('capture_type', ['whatsapp_chat', 'whatsapp_web', 'dm_conversation'])
       .eq('is_obsolete', false)
       .not('person_id', 'is', null)
       .order('observed_at', { ascending: false }),

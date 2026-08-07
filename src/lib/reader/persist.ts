@@ -99,6 +99,32 @@ export async function ingestReaderBatch(client: SupabaseClient, userId: string, 
     } catch { /* best-effort */ }
   }
 
+  // ═══ `people.last_contact`: EL READER NUNCA LO ESCRIBIÓ ════════════════════
+  //
+  // Medido el 6-ago-2026: Diana tenía `last_contact` en el **29-jul** —ocho días
+  // atrasado— mientras el reader traía sus mensajes a diario y el último era de esa
+  // misma noche a las 22:32. Los únicos escritores del campo en todo el repo eran
+  // la captura MANUAL (`capture/process`, `capture/whatsapp-export`), el script de
+  // import y un backfill one-shot de la migración 0075. O sea: la fuente que hoy
+  // está viva era la única que no lo tocaba, y ese campo lo leen el score
+  // relacional, la lista de "Reconectar" y `askSir`.
+  //
+  // SOLO AVANZA, nunca retrocede: un `resync` de 400 días trae mensajes VIEJOS y
+  // `plan.latestTs` de ese lote puede ser anterior al último contacto real.
+  // Moverlo hacia atrás diría que dejó de hablarle a alguien con quien habló ayer.
+  // La condición va en el filtro (no en un read-then-write) para que dos lotes
+  // concurrentes no se pisen.
+  if (personId && observedAt) {
+    try {
+      await client
+        .from('people')
+        .update({ last_contact: observedAt })
+        .eq('id', personId)
+        .eq('user_id', userId)
+        .or(`last_contact.is.null,last_contact.lt.${observedAt}`)
+    } catch { /* best-effort: no debe romper el ingest */ }
+  }
+
   const merged = [...seen, ...plan.newHashes].slice(-HASH_WINDOW)
   await client.from('reader_threads').upsert({
     user_id: userId, platform: batch.platform, thread_id: batch.threadId, thread_name: batch.threadName,
