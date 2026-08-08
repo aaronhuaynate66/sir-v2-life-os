@@ -120,9 +120,35 @@ export async function ultimaDataPorCanal(
     outlook: 'email',
   }
 
-  const obsDe = (canal: string) => safe(() => db.from('observations').select('observed_at')
+  // ═══ SE MIDE CUÁNDO LLEGÓ, NO CUÁNDO PASÓ ═════════════════════════════════
+  //
+  // Todas estas consultas leían `observed_at` / `captured_at`, o sea CUÁNDO OCURRIÓ
+  // el hecho. La pregunta de este módulo es otra: *"¿hace cuánto que este canal no
+  // trae nada?"* — y eso es CUÁNDO ENTRÓ, que es `created_at`.
+  //
+  // Confundirlas rompía en las dos direcciones, y las dos se midieron el 7-ago-2026:
+  //
+  //   whatsapp   n=200  el desfase created_at − observed_at es 5.00 h en las 200
+  //                     (min 5.00, max 5.00). No es demora: `observed_at` de WhatsApp
+  //                     es hora de LIMA etiquetada como UTC, igual que
+  //                     `chat_messages.sent_at`. WhatsApp se veía 5 h más viejo
+  //                     SIEMPRE, y en un borde de día eso es un día entero de más.
+  //   teams      n=102  mediana 500 h, máximo 4291 h. Teams hace backfill de
+  //                     conversaciones viejas: un mensaje de hace seis meses entra
+  //                     HOY. Con `observed_at`, el canal más activo del día se
+  //                     reportaría como caído hace medio año.
+  //   email      n= 60  97% a ~0 h. Este andaba bien de casualidad.
+  //
+  // `created_at` no tiene ninguno de los dos problemas: lo pone la base al insertar,
+  // es UTC de verdad en todas las tablas, y significa exactamente lo que se pregunta.
+  //
+  // OJO: esto NO arregla la convención de `observed_at` de WhatsApp, que sigue en
+  // hora de Lima. Se deja como está a propósito — es la convención del corpus, no un
+  // bug de una fila, y reescribirla sin revisar quién más la lee es como se corrompen
+  // mil filas. Acá simplemente se dejó de preguntarle a la columna equivocada.
+  const obsDe = (canal: string) => safe(() => db.from('observations').select('created_at')
     .eq('user_id', userId).eq('data->>platform', PLATAFORMA_EN_OBSERVACIONES[canal] ?? canal)
-    .order('observed_at', { ascending: false }).limit(1))
+    .order('created_at', { ascending: false }).limit(1))
 
   const [wa, teams, outlook, linkedinAct, ig, perfil, seguidor] = await Promise.all([
     obsDe('whatsapp'),
@@ -132,36 +158,36 @@ export async function ultimaDataPorCanal(
     // sale por `/api/social/ingest`. Buscarlo en observations daba null para siempre
     // — hoy da null igual porque nunca capturó nada, y esa coincidencia es justo lo
     // que habría escondido el bug el día que empiece a funcionar.
-    safe(() => db.from('unmatched_social_activity').select('observed_at')
+    safe(() => db.from('unmatched_social_activity').select('created_at')
       .eq('user_id', userId).eq('platform', 'linkedin')
-      .order('observed_at', { ascending: false }).limit(1)),
-    safe(() => db.from('unmatched_social_activity').select('observed_at')
+      .order('created_at', { ascending: false }).limit(1)),
+    safe(() => db.from('unmatched_social_activity').select('created_at')
       .eq('user_id', userId).eq('platform', 'instagram')
-      .order('observed_at', { ascending: false }).limit(1)),
-    safe(() => db.from('social_profiles').select('captured_at')
+      .order('created_at', { ascending: false }).limit(1)),
+    safe(() => db.from('social_profiles').select('created_at')
       .eq('user_id', userId).eq('platform', 'instagram')
-      .order('captured_at', { ascending: false }).limit(1)),
-    safe(() => db.from('social_page_followers').select('observed_at')
+      .order('created_at', { ascending: false }).limit(1)),
+    safe(() => db.from('social_page_followers').select('created_at')
       .eq('user_id', userId).eq('source', 'instagram')
-      .order('observed_at', { ascending: false }).limit(1)),
+      .order('created_at', { ascending: false }).limit(1)),
   ])
 
   // Solo se devuelven los canales que ALGUNA VEZ trajeron algo. Un canal que nunca
   // produjo no está "caído": no está en uso, y decirle que dejó de reportar algo que
   // nunca funcionó es ruido con forma de alarma (ver `diagnoseChannel`).
   const out: Record<string, string | null> = {
-    whatsapp: primero(wa, 'observed_at'),
+    whatsapp: primero(wa, 'created_at'),
     instagram: masReciente(
-      primero(ig, 'observed_at'),
-      primero(perfil, 'captured_at'),
-      primero(seguidor, 'observed_at'),
+      primero(ig, 'created_at'),
+      primero(perfil, 'created_at'),
+      primero(seguidor, 'created_at'),
     ),
   }
-  const teamsIso = primero(teams, 'observed_at')
+  const teamsIso = primero(teams, 'created_at')
   if (teamsIso) out.teams = teamsIso
-  const outlookIso = primero(outlook, 'observed_at')
+  const outlookIso = primero(outlook, 'created_at')
   if (outlookIso) out.outlook = outlookIso
-  const linkedinIso = primero(linkedinAct, 'observed_at')
+  const linkedinIso = primero(linkedinAct, 'created_at')
   if (linkedinIso) out.linkedin = linkedinIso
   return out
 }
