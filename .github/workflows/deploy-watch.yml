@@ -203,22 +203,43 @@ jobs:
           AGE_LABEL=$(human_age "$AGE_MIN")
           echo "::error::Producción está atrás de main hace ${AGE_LABEL}. Vercel: $V_STATE — $V_DESC"
 
+          # El cuerpo se arma SIEMPRE, exista o no el issue. Antes se armaba dentro
+          # del `if [ -z "$ISSUE" ]`, así que un episodio abierto congelaba su título
+          # y su tabla en el sha del primer minuto y no se movían más.
+          #
+          # Costó una lectura falsa el 7-ago-2026: el issue seguía titulado
+          # "🔴 Producción está atrás de main (5a763ba5 no está vivo)" horas después
+          # de que 5a763ba5 estuviera vivo. El episodio SÍ seguía abierto —main había
+          # avanzado— pero el commit que el título acusaba ya había desplegado. Leído
+          # de la lista de issues, decía exactamente lo contrario de la verdad.
+          #
+          # Es el mismo comentario de tres líneas más abajo, ahora cumplido: el aviso
+          # es la TRANSICIÓN (Telegram, una vez) y el issue es el ESTADO (se reescribe
+          # en cada corrida). Va con la hora de la última revisión, porque un aviso sin
+          # fecha se lee como "ahora".
+          REVISADO=$(date -u '+%Y-%m-%d %H:%M UTC')
+          BODY=$(printf '%s\n\n**Producción está atrás de `main`.**\n\n| | |\n|---|---|\n| `main` | `%s` — %s |\n| sirviendo | `%s` (desde %s) |\n| deriva | %s |\n| Vercel dice | `%s` — %s |\n| última revisión | %s |\n\nEl código está mergeado y con CI verde, pero **no está vivo**. Este issue se reescribe en cada corrida y se cierra solo cuando producción se ponga al día.\n\n_Abierto por el workflow `deploy-watch`._' \
+            "$MARKER" "${MAIN_SHA:0:8}" "$MAIN_TITLE" "${PROD_SHA:0:8}" "$PROD_AT" "$AGE_LABEL" "$V_STATE" "$V_DESC" "$REVISADO")
+          TITULO="🔴 Producción está atrás de main (${MAIN_SHA:0:8} no está vivo)"
+
           if [ -z "$ISSUE" ]; then
-            BODY=$(printf '%s\n\n**Producción está atrás de `main`.**\n\n| | |\n|---|---|\n| `main` | `%s` — %s |\n| sirviendo | `%s` (desde %s) |\n| deriva | %s |\n| Vercel dice | `%s` — %s |\n\nEl código está mergeado y con CI verde, pero **no está vivo**. Este issue se cierra solo cuando producción se ponga al día.\n\n_Abierto por el workflow `deploy-watch`._' \
-              "$MARKER" "${MAIN_SHA:0:8}" "$MAIN_TITLE" "${PROD_SHA:0:8}" "$PROD_AT" "$AGE_LABEL" "$V_STATE" "$V_DESC")
-            gh issue create --repo "$REPO" \
-              --title "🔴 Producción está atrás de main (${MAIN_SHA:0:8} no está vivo)" \
-              --body "$BODY" >/dev/null
+            gh issue create --repo "$REPO" --title "$TITULO" --body "$BODY" >/dev/null
             # Un solo Telegram por episodio: el aviso es la transición, el issue
             # es el estado. Si esto avisara en cada corrida, 17 horas trabado
             # serían 34 mensajes y el aviso se volvería ruido que se ignora.
             notify "$(printf '🔴 Mergeado NO está en producción\n%s\n%s\n\nVercel: %s — %s\nSirviendo todavía: %s (hace %s)\n\nTe dejé un issue en el repo con el detalle.' \
               "${MAIN_SHA:0:8}" "$MAIN_TITLE" "$V_STATE" "$V_DESC" "${PROD_SHA:0:8}" "$AGE_LABEL")"
           else
-            # Ya hay un episodio abierto. Se deja constancia del sha nuevo sin
-            # volver a sonar el teléfono.
-            gh issue comment "$ISSUE" --repo "$REPO" \
-              --body "Sigue trabado. \`main\` = \`${MAIN_SHA:0:8}\`, sirviendo \`${PROD_SHA:0:8}\`, deriva ${AGE_LABEL}. Vercel: \`${V_STATE}\` — ${V_DESC}" >/dev/null
+            PREV=$(gh issue view "$ISSUE" --repo "$REPO" --json body --jq '.body // ""')
+            gh issue edit "$ISSUE" --repo "$REPO" --title "$TITULO" --body "$BODY" >/dev/null
+            # Se comenta SOLO cuando se sumó un commit nuevo a la espera. Comentar en
+            # cada corrida serían 34 comentarios en 17 horas trabado: el mismo ruido
+            # que el Telegram evita, mudado al issue. El cuerpo ya lleva el estado.
+            case "$PREV" in
+              *"${MAIN_SHA:0:8}"*) echo "Mismo sha que la corrida anterior: cuerpo actualizado, sin comentario." ;;
+              *) gh issue comment "$ISSUE" --repo "$REPO" \
+                   --body "Se sumó \`${MAIN_SHA:0:8}\` a la espera — ${MAIN_TITLE}. Sirviendo todavía \`${PROD_SHA:0:8}\`, deriva ${AGE_LABEL}. Vercel: \`${V_STATE}\` — ${V_DESC}" >/dev/null ;;
+            esac
           fi
 
       - name: Resumen
