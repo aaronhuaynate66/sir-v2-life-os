@@ -5,7 +5,7 @@
 > tratar CUALQUIER cosa de acá como pendiente, verifícala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 31/07/2026 (agente automático de reconciliación — 1 ítem cerrado + 2 notas de blocker actualizadas, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-07-31" abajo; antes consolidaba los pases 25, 26, 27, 28 y 30/07).
+> **Última actualización:** 07/08/2026 (agente automático de reconciliación — 1 ítem cerrado por medición (reranker de learnings) + golden-set actualizado, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-08-07" abajo; consolida además los pases 04/08 y 05/08, que quedaron sin mergear; antes, hasta 31/07).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entra acá cuando quieras decidir qué priorizar en la próxima sesión.
@@ -79,11 +79,11 @@ reemplaza):** https://claude.ai/code/artifact/c282d44e-4797-41a5-8a73-deef6c8b03
 
   **Cómo re-medir si vuelve la sensación** (30 s, sin harness): contar el largo de
   `sir_messages` con `role='sir'` agrupado por día. Si la mediana sube de ~500, volvió.
-- **[alta] Ola 2 · slice 4 — loop de aprendizaje** — **sigue pendiente** (re-verificado 31/07): `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con `{ principle: 0, pattern: 1, preference: 2, fact: 3 }` y no hay rastro de few-shot dinámico. **El motivo del bloqueo cambió (31/07):** ya NO es que falte dónde calificar — `83947f7` (#1030, 30/07) agregó botones 👍/👎 reales a Telegram (no existían) y los hizo visibles en la web (eran íconos fantasma al 50% opacidad). El bloqueo de código/UI está resuelto. **Lo que sigue sin verificarse (no por grep, requiere consulta en vivo a `chat_feedback`):** si Aaron ya generó filas desde que existen los botones. Re-chequear la tabla antes de dar esto por destrabado.
+- ~~**[alta] Ola 2 · slice 4 — loop de aprendizaje**~~ ❌ **CERRADO POR MEDICIÓN (06/08/2026), ver detalle abajo.** `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con pesos fijos por `kind` — eso no cambió — pero PR #1113 (`3f8dc52`) midió los dos mecanismos candidatos contra producción y **ninguno se construyó, por buena razón**: `learnings` tiene 6 filas y `renderLearningsBlock` topea en 20 (las 6 entran siempre, el orden no decide nada — mismo patrón que el re-ranking del recall, más abajo), y `chat_feedback` tiene 3 filas, las 3 `up`, las 3 con `correction` NULL (no hay señal negativa de la cual aprender). Lo que sí salió de esa medición: `src/lib/learnings/obvio.ts`, filtro determinístico que descarta lecciones que el prompt ya afirma por su cuenta (5 de las 6 filas reales lo eran). Ver sección dedicada más abajo.
 - ~~**[media] Que `askSir` VEA los sub-pasos de los objetivos**~~ ✅ **HECHO (reconciliado 30/07/2026).** `src/lib/sir/askSir.ts` líneas 679-762: ahora lee `objective_steps` (línea 692, hasta 1000 filas), computa `advanceByGoal`/`nextStepByGoal` (`computeGoalAdvance`, `nextPendingLeaf`) y arma `goalsCtx` con `progress`/`stepsDone`/`stepsTotal`/`overdue`/`nextStep`/`nextStepDue`/`nextStepDetail` que sí llega al prompt del modelo. Comentario in situ del propio código: "hasta el 28-jul el chat era ciego a `objective_steps` — 151 pasos en la base y no podía responder '¿cómo voy con Boticas?'". Fail-soft si la lectura falla. Sigue sin leer `goals.milestones` (JSON) — ese sub-punto de la consolidación de estructuras (más abajo) sigue abierto.
 
 **🟡 Necesita input/decisión de Aaron:**
-- **[media] Golden-set del harness** — sumar casos a `eval/golden.jsonl` (**8 líneas**, verificado 31/07 — sigue chico) O usar SIR con 👍/👎+corrección → `npm run eval:sir --from-feedback 20` (script existe, `scripts/eval-sir.ts`). Mismo combustible que el slice 4: el bloqueo de UI ya no existe (`83947f7`, ver slice 4 arriba), pero sigue sin verificarse si ya hay filas en `chat_feedback` para alimentar el `--from-feedback`.
+- 🟡 **[media] Golden-set del harness** — **parcialmente hecho (06/08/2026).** `eval/golden.jsonl` pasó de 8 a **14 líneas** (PR #1113, `3f8dc52`): los 6 casos nuevos son fallas MEDIDAS de este repo (`cobertura-ventana-parcial`, `descartado-no-se-confirma`, `apunte-viejo-dice-cuando`, `medico-ordena-no-indica`, `canal-sin-diagnostico`, `adherencia-lo-que-hay`), no inventadas. **La otra vía (`--from-feedback`) sigue sin combustible, y ahora es una razón medida, no una tabla sin consultar:** `chat_feedback` tiene 3 filas, las 3 `up`, las 3 sin `correction` — un 👍 pelado no dice QUÉ estuvo bien, así que no hay de dónde sacar un caso todavía. Re-chequear cuando aparezca un 👎 con corrección.
 - **[alta] Consolidar las 3 estructuras de sub-pasos** — nuevo (28/07). Los sub-pasos de un objetivo viven en TRES lugares: `goals.milestones` (JSON), `objective_steps` (la viva) y `objective_blockers` (todas del Mundial). El Mundial tiene los mismos ítems escritos en los tres. Consolidar toca data de Aaron → requiere su OK. **Sigue sin decidirse** (verificado 31/07: las 3 estructuras siguen separadas en el código, sin trabajo de unificación).
 - ~~**[media] Purgar los planes de junio**~~ ✅ **HECHO (30/07/2026).** Aaron decidió y se ejecutó: commit `b11b035` (#1031) — `scripts/descartar-pasos.mjs` purgó completos los planes "Subir ingresos a S/ 15,000/mes" (20 pasos) y "Cliente recurrente de S/ 5,000/mes" (13 pasos) a `descartado` (mig 0178, reversible); el plan del Mundial (vivo) se re-fechó en 2 pasos con `scripts/refechar-pasos.mjs` nuevo, dry-run por default. Resultado medido en el propio commit: `objective_steps` 130→95 pendientes, vencidos 38→17.
 - ~~**[media] Activar `looksLikeOrg`**~~ ✅ **HECHO (reconciliado 30/07/2026).** Nuevo `src/lib/social-reader/orgVerdict.ts` (`clasificarCuenta`/`repartirLote`, PURO, con tests en `orgVerdict.test.ts`) junta `looksLikeOrg` + el nombre escrito por Aaron + el léxico del handle en un solo veredicto, y decide "sugiere, no descarta": confianza 'alta' se propone en lote, 'media' se pregunta de a una — nunca auto-clasifica en silencio. Cableado en vivo en `src/app/api/cron/evening-push/route.ts` (líneas 156-171): trae `social_profiles`, llama `repartirLote` y arma el batch de Telegram. Comentario in situ fecha esto el 29/07/2026 ("`looksLikeOrg` estaba escrita y testeada desde el 28-jul y NADIE la llamaba — quedó a medias dos veces").
@@ -99,7 +99,7 @@ reemplaza):** https://claude.ai/code/artifact/c282d44e-4797-41a5-8a73-deef6c8b03
 
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
-**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — ~~**re-ranking**~~ ❌ **CERRADO SIN CONSTRUIR (30/07/2026), ver abajo**; el ciclo Mem0-style extract→merge→olvido sigue sin empezar.
+**🧭 Fondo / roadmap grande (no urgente):** ~~grafo /red → sigma.js~~ ❌ **MEDIDO Y DESCARTADO (30/07/2026), ver bloque abajo** — esta línea seguía diciendo "sigue pendiente" por `grep` de "sigma" vacío, pero eso solo prueba que falta la LIBRERÍA, no la feature: el grafo ya existe y está trabajado (`src/components/red/GraphCanvas.tsx`, react-force-graph-2d) y sigma.js es una migración de rendimiento sin beneficio con los ~250 nodos actuales de Aaron (ver "Grafo /red → sigma.js — MEDIDO Y DESCARTADO"); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — ~~**re-ranking**~~ ❌ **CERRADO SIN CONSTRUIR (30/07/2026), ver abajo**; el ciclo Mem0-style extract→merge→olvido sigue sin empezar.
 
 ### ❌ Re-ranking del recall — MEDIDO Y DESCARTADO (30/07/2026)
 
@@ -161,6 +161,35 @@ si el grafo pasa de ~2,000 nodos; hasta entonces el pendiente correcto no es la
 librería, es qué aristas le faltan al grafo (intereses en común, que está bloqueado
 por `social_profiles` vacía).
 
+### ❌ Reranker de learnings (Ola 2 · slice 4) — MEDIDO Y DESCARTADO (06/08/2026)
+
+El ítem era "el orden de `learnings` está hardcodeado, falta few-shot dinámico".
+PR #1113 (`3f8dc52`) **midió antes de construir** los dos mecanismos candidatos y
+cerró los dos, por la misma razón de fondo que el re-ranking del recall arriba: no
+hay margen visible con la data real de Aaron.
+
+**Por qué NO se construyó el reranker por orden:** `learnings` tiene **6 filas** y
+`renderLearningsBlock` topea el bloque en **20** — las 6 entran siempre al prompt,
+así que el orden no decide nada. Reordenar una lista que cabe entera es trabajo sin
+efecto observable.
+
+**Por qué NO se construyó "aprender del feedback":** `chat_feedback` tiene **3
+filas, las 3 `up`, las 3 con `correction` NULL**. No hay un solo 👎 ni una
+corrección: no hay señal negativa de la cual derivar una lección. Sacar una lección
+de un 👍 pelado sería inventar qué estuvo bien — inventar es exactamente lo que el
+prompt de derive prohíbe.
+
+**Lo que sí era el defecto real, y sí se construyó:** de las 6 filas que hay hoy,
+**5 son obviedades que el sistema ya afirma por su cuenta** (idioma, que Aaron tiene
+pareja llamada Diana, etc.) — ocupan lugar en cada prompt sin cambiar ninguna
+respuesta, pese a que `DERIVE_SYSTEM_PROMPT` ya pide "no repitas lecciones que Aaron
+YA sabe" (pedírselo al modelo no alcanza, misma lección que el scrub de voseo).
+`src/lib/learnings/obvio.ts` (PURO, con `obvio.test.ts`) filtra esas obviedades de
+forma determinística, corto a propósito para no comerse lecciones de verdad por error.
+
+**Veredicto:** no reabrir el reranker/few-shot sin una medición nueva que muestre que
+`learnings` pasó de 6 filas o que `chat_feedback` ya tiene 👎 con corrección.
+
 ### 🆕 Memorias basura: 17% del store son registros de llamadas sin fecha (30/07/2026)
 
 Buscando duplicados para el ciclo Mem0 apareció algo distinto y real. Medido sobre
@@ -193,6 +222,52 @@ memoria, que solo mira el texto de la nota.
 La recomendación es la **2** (y la 1 para lo que quede): sacar 154 filas de ruido de
 1,295 mejora el recall más que cualquier re-ranking — que es justo lo que la medición
 de arriba mostró que NO se puede mejorar tocando pesos.
+
+---
+
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-08-07
+
+Pase de mantenimiento contra el código real (agente automático), sobre la sección "PENDIENTES ACTUALES" de arriba. Ventana revisada: ~50 commits entre la reconciliación 07-31 (`8cb126c`) y el HEAD actual (`5850efc`, 06/08/2026).
+
+- ❌ **Ola 2 · slice 4 — loop de aprendizaje (reranker/few-shot)** — CERRADO POR MEDICIÓN, no construido. PR #1113 (`3f8dc52`, 06/08): `learnings` tiene 6 filas contra un tope de 20 en `renderLearningsBlock` (el orden no decide nada) y `chat_feedback` tiene 3 filas, las 3 `up` sin `correction` (no hay señal negativa de la que aprender). Corregido arriba en "Listo para construir" + sección dedicada nueva "❌ Reranker de learnings — MEDIDO Y DESCARTADO". Lo que sí se construyó de esa medición: `src/lib/learnings/obvio.ts`, filtro determinístico de lecciones obvias.
+- 🟡 **Golden-set del harness** — parcialmente hecho. `eval/golden.jsonl` pasó de 8 a **14 líneas** en el mismo PR #1113, con 6 casos nuevos que son fallas medidas del repo (no inventadas). La vía `--from-feedback` sigue bloqueada, y ahora por un motivo medido (3 filas en `chat_feedback`, todas sin corrección) en vez de "sin verificar". Corregido arriba.
+
+**Verificado y quedó IGUAL (sin drift):**
+- **`callLabel`** (`src/lib/capture/whatsapp/export/calls.ts:50-54`) sigue armando el string sin fecha. Sigue pendiente la decisión de Aaron (memorias basura, más abajo).
+- **Consolidar las 3 estructuras de sub-pasos** (`goals.milestones`/`objective_steps`/`objective_blockers`) — las tres siguen usándose por separado en el código (`grep` de cada una sigue devolviendo call-sites distintos). Sigue requiriendo el OK de Aaron.
+- **Gantt fix del MASTER_PLAN** — sigue no verificable en este repo: no hay componente "Gantt" ni referencias a él en `src/`.
+- **Auto-import desde calendario (Clay #6)** — sigue sin rastro en código (`grep` de "auto.import" sin resultados).
+- **Etapa 6 (AI-Native Human OS)** — sigue en visión norte, sin alcance concreto en el repo.
+
+**No re-verificado este pase** (requieren decisión de Aaron, dato en vivo fuera de lo que da grep, o acceso a otra PC/login): lo bloqueado por data (match por cara capa 2, reader LinkedIn, Teams, ingesta de DMs de IG), y todo lo ya reconciliado en pases anteriores. Nota: los ~50 commits de esta ventana entregaron bastante trabajo nuevo (medicación, canal nocturno, agendamiento por chat, fixes de brief/salud) que no corresponde a ningún ítem previamente listado como "pendiente" en este doc — no se agregó como reconciliación porque no había nada que reconciliar contra ellos, son features nuevas, no drift de estado.
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-08-05
+
+Pase de mantenimiento contra el código real (agente automático). Ventana: los ~50 commits desde el pase 07-31 hasta `0b2daf6` (incluye trabajo de salud/medicación, brief, calendario, CRM, documentos, reader). Se re-verificaron 12 ítems marcados pendientes/parciales/bloqueados en distintas secciones del doc (no solo "PENDIENTES ACTUALES").
+
+- 🟡 **Auto-import desde calendario (Clay #6)** — corregido de "sin rastro en código" a **PARCIAL**. `src/lib/crm/dealEnEvento.ts` (commit `adc5946`, #1059, "cruzar deals x agenda x grafo") cruza `personal_events` × `person_links` × `deals` y avisa cuando un contacto con un deal abierto va a estar en un evento próximo (slot `encuentroConDeal` en el brief) — cubre la mitad "traer contexto antes de la reunión", con un mecanismo distinto al que el ítem original imaginaba (no es integración de calendario nueva, es cruce sobre la agenda que ya existe). **Sigue sin cubrirse:** crear/enriquecer un contacto automáticamente desde un evento de calendario — `dealEnEvento.ts` no inserta/actualiza `people` (0 resultados de `insert`/`upsert`/`create` sobre personas ahí). Corregido en su párrafo original (sección Clay, "Después / lift grande").
+
+**Verificado y quedó IGUAL (sin drift), los otros 11 ítems:**
+- **`sortLearnings`** (`src/lib/learnings/recall.ts:47`) sigue con pesos fijos por `kind` (`{principle:0, pattern:1, preference:2, fact:3}`), sin re-ranking dinámico/few-shot.
+- **Consolidar las 3 estructuras de sub-pasos** — `goals.milestones` (jsonb), `objective_steps` y `objective_blockers` siguen siendo estructuras separadas, cada una con su propio adapter/lectura activa; sin migración ni código que las unifique.
+- **Grafo /red → sigma.js** — confirmado sin dependencia `sigma` en `package.json` (correcto: sigue descartado por rendimiento, no reabrir por la ausencia de la dependencia).
+- **Ciclo Mem0-style extract→merge→olvido** — sin rastro de merge/dedupe/forgetting en `src/lib/memories/` (existen `extract.ts`/`deriveFromObservations.ts`/`deriveForPerson.ts`/`fromInteractionLog.ts`, ninguno fusiona con memorias existentes ni decae).
+- **`callLabel` sin fecha** (`src/lib/capture/whatsapp/export/calls.ts:50-54`) — sigue armando `📞 {tipo} perdida` sin usar `c.iso`/fecha. Decisión de Aaron sigue sin tomarse.
+- **Gantt del MASTER_PLAN** — sin componente "Gantt" ni referencia a `MASTER_PLAN` en `src/`.
+- **`eval/golden.jsonl`** — sigue en 8 líneas.
+- **Reconciliación temporal de hechos derivados** — `deriveFromObservations.ts` sigue sin usar `reconcile.ts`/reconciliación por atributo (memorias episódicas siguen sin ese tratamiento); `src/lib/facts/reconcile.ts` sigue con la regla "solo mudanza explícita" intacta.
+- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md:33` y `:126` siguen en "⬜ visión norte", sin alcance concreto.
+- **`objective_blockers`** — sigue existiendo como tabla propia (migración `0102_objective_plan.sql`), usada en `src/lib/objectives/plan.ts` y `ObjectivePlanPanel.tsx` — confirma que sigue siendo una de las 3 estructuras separadas del punto de arriba.
+- **Bloqueados por data/otra PC** (match por cara capa 2, reader LinkedIn, Teams, ingesta DMs IG) — el código soporte de cada uno sigue existiendo tal cual; no se evaluó si el bloqueo externo (fotos reales, login remoto, credenciales) se resolvió, porque no es verificable por grep.
+
+**No re-verificado este pase** (requieren decisión de Aaron o dato en vivo, no verificable por grep): si `chat_feedback` ya tiene filas para el golden-set/slice 4, las 6 validaciones manuales de captura (fecha explícita WhatsApp, asignación user/other Vision, BUG-004 Instagram), y todo lo demás ya reconciliado en pases anteriores sin señales nuevas de drift.
+## 🔁 RECONCILIACIÓN AUTOMÁTICA 2026-08-04
+
+Pase de mantenimiento contra el código real (agente automático). Ventana revisada: los 50 commits entre `122a83a` (reconciliación 07-31) y `8c48736` (último commit al momento de este pase).
+
+- ⚠️ **Corregido: "inferencia LLM de dominio para objetivos de texto libre" — 3 menciones sueltas seguían diciendo que no estaba hecho, y sí lo está.** `src/lib/objectives/smartPrompt.ts` línea 70 el prompt pide explícitamente `"category" (dominio): infiere el dominio del objetivo desde el texto...`, `parseSmart` (líneas 136-138) lo parsea, y `SmartWizard.tsx` línea 168 lo aplica en modo dictado. Esto ya lo había encontrado #988 (26/07, ver la reconciliación consolidada 07-28 más abajo — "ya estaba hecha desde el 20/07"), pero esa corrección nunca llegó a las 3 menciones sueltas de las reconciliaciones 07-20, 07-21 y 06-08, que seguían afirmando lo contrario y se re-verificaban a sí mismas sin volver a mirar el código. Corregidas in situ con tachado + nota, arriba.
+- **Ninguna otra verificación de la sección "PENDIENTES ACTUALES" cambió de estado.** Re-chequeados contra los 50 commits nuevos: `sortLearnings` (`src/lib/learnings/recall.ts:48`) sigue con pesos fijos por `kind`, sin few-shot dinámico. `eval/golden.jsonl` sigue en 8 líneas. `objective_blockers`/`goals.milestones`/`objective_steps` siguen sin consolidar. `callLabel` (`src/lib/capture/whatsapp/export/calls.ts:50-54`) sigue armando el string de llamada perdida sin fecha. `STRATEGIC_ROADMAP.md` línea 33 (Etapa 6) sigue "⬜ visión norte".
+- **Casi-drift descartado tras revisar el código, no solo el commit:** `adc5946` (#1059, 31/07) agrega `lib/crm/dealEnEvento.ts` — cruza `deals` × `personal_events` × `person_links` para avisar "vas a ver a X y tienes un deal pendiente" en el brief. Es adyacente a **"Auto-import desde calendario (Clay #6)"** (crear/enriquecer contacto automáticamente desde el calendario + contexto pre-reunión) pero NO es lo mismo: no crea ni enriquece personas, solo cruza data que ya existe. Clay #6 sigue genuinamente pendiente — no marcarlo hecho por esto.
+- **No verificable por grep este pase** (dato en vivo o decisión de Aaron): filas nuevas en `chat_feedback` desde los botones 👍/👎, drift de migraciones `0046`-`0050` contra prod, los 4 bloqueados por data/otra PC.
 
 ---
 
@@ -262,9 +337,9 @@ Pase de mantenimiento contra el código real (agente automático). Poco drift nu
 - ✅ **Clay #7 — Q&A por persona, sub-punto "multi-turno"** — ya HECHO, contra la nota "pendiente futuro… hoy una pregunta por vez" que quedaba en la sección Clay (más abajo). `src/components/relaciones/PreguntarSobrePersona.tsx` mantiene un `thread` de turnos y lo manda como `history` a `/api/sir/ask` (placeholder "Sigue preguntando…" tras la primera pregunta); el backend `src/lib/sir/askSir.ts` arma `chatHistory` real (líneas ~116-121 y 542-550) que pasa a `chatProvider.ts`, o sea el LLM sí recibe el hilo — no es solo UI. Corregido in situ, dejando como pendiente real solo la validación en vivo (no verificable por grep).
 
 **Verificado y quedó IGUAL (sin drift), re-chequeado este pase:**
-- **Inferencia LLM de dominio para objetivos de texto libre** — sigue igual: `category` en `smartPrompt.ts`/`/api/objectives/smart` sigue siendo un INPUT, no algo inferido del párrafo libre.
+- ~~**Inferencia LLM de dominio para objetivos de texto libre** — sigue igual: `category` en `smartPrompt.ts`/`/api/objectives/smart` sigue siendo un INPUT, no algo inferido del párrafo libre.~~ ⚠️ **ESTA LÍNEA ESTÁ MAL (corregido por reconciliación automática, 2026-08-04).** El pase 07-21 no encontró la inferencia; hoy sí está: `src/lib/objectives/smartPrompt.ts` línea 70 el prompt pide explícitamente `"category" (dominio): infiere el dominio del objetivo desde el texto...`, `parseSmart` (líneas 136-138) lo parsea de la respuesta del LLM, y `SmartWizard.tsx` línea 168 lo aplica en modo dictado (`if (s.category) setInferredCategory(s.category) // dominio inferido del dictado`). Coincide con lo que ya había encontrado #988 (ver nota de la reconciliación 07-28 más abajo) — esta línea suelta había quedado sin corregir.
 - **Auto-import desde calendario (Clay #6)** — sigue sin rastro en código (`grep` de "auto.import"/"autoImport" sin resultados).
-- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte", sin alcance concreto.
+- **Etapa 6 (AI-Native Human OS)** — `STRATEGIC_ROADMAP.md` línea 33 sigue en "⬜ visión norte", sin alcance concreto (verificado 2026-08-04).
 - **Gantt fix del MASTER_PLAN** — sigue no verificable en este repo (sin componente "Gantt" ni referencias a `MASTER_PLAN` en `src/`).
 - **Split-brain / last-write-wins por fila** — sigue igual: `engine.ts` sigue haciendo `upsert(..., { onConflict: 'id' })` (pisa la fila entera, no merge por campo).
 
@@ -283,7 +358,7 @@ Pase de mantenimiento contra el código real (agente automático). Esta vez el d
 - 🟡 **Clay #8 (cross-referencing por ubicación) y #9 (Familia persona↔persona)** — los párrafos de esos ítems en la sección "BACKLOG inspirado en Clay" (más abajo) seguían redactados como "no implementar aún" / "DIFERIDO... hoy NO existe modelo persona↔persona", pero **ambos ya están hechos** y la reconciliación 07-14 (arriba) ya lo decía. Confirmado de nuevo en código: `lib/agenda/build.ts` (`buildProximity`, comentario explícito "Cross-referencing por UBICACIÓN (Clay #8)") + `ProximoPanel.tsx`; y `person_links` (migraciones 0035/0052/0058/0107/0128) + `FamiliaPanel.tsx` + `buildGraphData` con soporte de aristas `personLinks` (`src/lib/graph/builder.ts` + tests). Se dejó nota en los párrafos para no reabrirlos por error — el texto original queda como registro histórico del planteo.
 
 **Verificado y quedó IGUAL (sin drift):**
-- **Inferencia LLM de dominio para objetivos de texto libre** — sigue en el mismo estado incierto ("revisar"). `src/lib/objectives/smartPrompt.ts`: el schema de salida del helper SMART (`ProposedSmart`) NO incluye `category`/dominio — `category` es un INPUT que ya trae el usuario, no algo que el modelo infiera del párrafo dictado. No se encontró código que infiera el dominio desde texto libre. Se mantiene la nota "revisar" sin marcarlo hecho.
+- ~~**Inferencia LLM de dominio para objetivos de texto libre** — sigue en el mismo estado incierto ("revisar"). `src/lib/objectives/smartPrompt.ts`: el schema de salida del helper SMART (`ProposedSmart`) NO incluye `category`/dominio — `category` es un INPUT que ya trae el usuario, no algo que el modelo infiera del párrafo dictado. No se encontró código que infiera el dominio desde texto libre. Se mantiene la nota "revisar" sin marcarlo hecho.~~ ⚠️ **ESTA LÍNEA ESTÁ MAL (corregido por reconciliación automática, 2026-08-04) — ver la corrección ya hecha en la reconciliación 07-21 de arriba, con la evidencia completa** (`smartPrompt.ts` líneas 57-59/70/136-138 + `SmartWizard.tsx` línea 168). `ProposedSmart.category` sí existe (tipado `GoalCategory`, línea 59) y sí se infiere del párrafo dictado — este pase 07-20 no lo encontró por error.
 - **Auto-import desde calendario (Clay #6)** — sigue genuinamente pendiente, sin rastro en código (`grep` de "auto.import"/contexto-pre-reunión sin resultados).
 - **Gantt fix del MASTER_PLAN** — no verificable en este repo: no hay componente "Gantt" ni referencias a `MASTER_PLAN` en `src/`; `MASTER_PLAN.md` es regenerado por un bot externo (sir-bot), fuera del alcance de este grep. Se deja como estaba.
 - **Re-validar Captura WhatsApp con fecha explícita** y **Ajuste prompt Vision user/other (re-validación)** — son tareas de validación manual (subir un screenshot de prueba), no features de código; no verificables por grep. Sin cambios.
@@ -424,7 +499,7 @@ Verificado contra el código en vivo. Varios ítems listados abajo como "grandes
 **Pendiente real (lo que NO está hecho):**
 - ~~**Activar Fase 3b (búsqueda semántica)**~~ ✅ **HECHO (2026-06-08):** `OPENAI_API_KEY` cargada en Vercel (Production), 23 memorias indexadas (`/api/memories/embed`), `/buscar` validado. **Cobertura cerrada** con el botón "Actualizar índice completo" (PR #100): deriva todas las personas + indexa en un click. **Decisión:** NO embeddear `observations` crudas (ruido/duplicación; contradice la vista curada) — la cobertura se logra derivando.
 - **Fase 3d** — memoria que aprende (RAG cross-session).
-- **Etapa 4 follow-ups:** ~~Human OKRs estructurados~~ ✅ **HECHO** (migraciones `0040_objective_steps.sql`/`0041_objective_steps_okr.sql`: modelo KR→tarea de 2 niveles, `ObjectiveSteps.tsx`); ~~delta de relationship score (necesita snapshots históricos)~~ ✅ **HECHO** (`/api/person-score/snapshot` + cron `score-snapshots` + `BondEvolutionPanel.tsx`/`src/lib/people/bondEvolution.ts`); ~~tono de interacción desde `person_logs` en el engine~~ ✅ **HECHO** (`src/engines/alignment/index.ts` y `src/engines/relational-flags/index.ts` ya leen `person_logs`). Verificado 2026-07-17. **Siguen pendientes de verdad:** inferencia LLM de dominio para objetivos de texto libre (hay inferencia SMART vía `SmartAssist.tsx`/`/api/objectives/smart`, pero no confirmé que infiera el DOMINIO desde texto libre — marcar "revisar" antes de darlo por hecho; re-verificado 2026-07-20, `smartPrompt.ts` sigue sin inferir `category`). ~~Narrative Intelligence (sin rastro en el código — no encontrado)~~ ✅ **corregido 2026-07-20:** SÍ existe — carpeta `src/app/api/self/` completa (rumbo/coherencia/arquetipo/retrato/premortem/espejo-*) + `src/lib/self/rumboPrompt.ts` — este pase 07-17 no lo encontró por error (ya lo documentaba `docs/STRATEGIC_ROADMAP.md` como CONSTRUIDO).
+- **Etapa 4 follow-ups:** ~~Human OKRs estructurados~~ ✅ **HECHO** (migraciones `0040_objective_steps.sql`/`0041_objective_steps_okr.sql`: modelo KR→tarea de 2 niveles, `ObjectiveSteps.tsx`); ~~delta de relationship score (necesita snapshots históricos)~~ ✅ **HECHO** (`/api/person-score/snapshot` + cron `score-snapshots` + `BondEvolutionPanel.tsx`/`src/lib/people/bondEvolution.ts`); ~~tono de interacción desde `person_logs` en el engine~~ ✅ **HECHO** (`src/engines/alignment/index.ts` y `src/engines/relational-flags/index.ts` ya leen `person_logs`). Verificado 2026-07-17. **Siguen pendientes de verdad:** ~~inferencia LLM de dominio para objetivos de texto libre (hay inferencia SMART vía `SmartAssist.tsx`/`/api/objectives/smart`, pero no confirmé que infiera el DOMINIO desde texto libre — marcar "revisar" antes de darlo por hecho; re-verificado 2026-07-20, `smartPrompt.ts` sigue sin inferir `category`).~~ ✅ **CORREGIDO (reconciliación automática, 2026-08-04) — esta línea estaba mal.** Sí infiere `category`: ver la evidencia completa en la corrección de la reconciliación 07-21 más arriba (`smartPrompt.ts` + `SmartWizard.tsx`). ~~Narrative Intelligence (sin rastro en el código — no encontrado)~~ ✅ **corregido 2026-07-20:** SÍ existe — carpeta `src/app/api/self/` completa (rumbo/coherencia/arquetipo/retrato/premortem/espejo-*) + `src/lib/self/rumboPrompt.ts` — este pase 07-17 no lo encontró por error (ya lo documentaba `docs/STRATEGIC_ROADMAP.md` como CONSTRUIDO).
 - **Etapas 5–6** (Life Direction System / AI-Native Human OS): 🟡 **corregido 2026-07-20** — E5 (Life Direction System) YA está "en marcha (artefacto real)" según `docs/STRATEGIC_ROADMAP.md` (línea 32): su núcleo es Narrative Intelligence (`src/app/api/self/*`, "Tu rumbo" en `/yo`). Solo **E6 (AI-Native Human OS)** sigue genuinamente sin iniciar ("⬜ visión norte", sin alcance concreto).
 - **Decisión de scope finanzas/salud** (tensión con principio #4 — ver `STRATEGIC_ROADMAP.md`).
 - ~~**Refactor split-brain → Supabase única fuente**~~ ✅ RESUELTO (verificado 07-07; ver deuda arquitectónica más abajo). Único residual menor: last-write-wins por fila.
@@ -660,7 +735,7 @@ Ideas tomadas de una reseña de **Clay**. Hilo conductor: SIR ya tiene la **lóg
 - **Por qué:** lección de Clay — forzar una hora a todo recordatorio genera fricción y falsa precisión. Default = día; hora = opt-in.
 
 ### Después / lift grande
-**6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**.
+**6. Auto-import desde calendario** — crear/enriquecer contacto automáticamente desde eventos del calendario y **traer contexto antes de la reunión**. 🟡 **PARCIAL (verificado 2026-08-05):** la mitad de "contexto antes de la reunión" tiene una solución — distinta a lo pedido, no una feature de calendario nueva. `src/lib/crm/dealEnEvento.ts` (commit `adc5946`, #1059) cruza `personal_events` (agenda) × `person_links` (grafo) × `deals` (CRM) y avisa cuando un contacto con un deal abierto va a estar en un evento próximo (directo o vía alguien vinculado en el grafo) — sale como slot `encuentroConDeal` en el brief. **Sigue sin cubrirse:** crear/enriquecer un contacto AUTOMÁTICAMENTE desde un evento del calendario — `dealEnEvento.ts` no inserta ni actualiza `people` (0 resultados de `insert`/`upsert`/`create` sobre personas). El grep original ("auto.import"/"autoImport") seguía dando 0 porque el feature real usa otro nombre; no volver a cerrar esto solo por ese grep.
 - **Esfuerzo: ALTO.** Integración externa (OAuth calendario, sync, matching a `people`). Backlog lejano.
 
 **7. Q&A por persona** — ✅ **CERRADO** (`0a106c2`). Ask-box `PreguntarSobrePersona` en la ficha: reusa `/api/sir/ask` (grounding + RAG, ya hechos) con un `personId` nuevo que pre-scopea el contexto ANTES del cap, así responde aterrizado en esa persona aunque no la nombres. Sugerencias rápidas + `skipInlineGaps`. El backend (name-resolution + memorias semánticas + recall C3) ya existía; esto agregó el scope explícito + la UI. ✅ **Multi-turno YA HECHO (verificado 2026-07-21):** `PreguntarSobrePersona.tsx` mantiene `thread`/historial de turnos y lo manda como `history` a `/api/sir/ask` ("Sigue preguntando…"); el backend (`src/lib/sir/askSir.ts` líneas ~116-121, 542-550 + `chatProvider.ts`) arma `chatHistory` real para el LLM, no lo ignora. La nota anterior ("hoy una pregunta por vez") quedó desactualizada. **Sigue pendiente (no verificable por grep):** validar en vivo con LLM real que las respuestas de seguimiento usan bien el hilo.
