@@ -93,15 +93,48 @@ export async function ultimaDataPorCanal(
   // `observations.data->>platform` sí distingue, y es más completo que
   // `chat_messages`: `reader/persist` escribe SIEMPRE una observación, mientras que
   // en `chat_messages` solo entra lo que se pudo atribuir a una persona.
-  const obsDe = (plataforma: string) => safe(() => db.from('observations').select('observed_at')
-    .eq('user_id', userId).eq('data->>platform', plataforma)
+  // ═══ EL CANAL NO SE LLAMA IGUAL QUE SU PLATAFORMA ═══════════════════════════
+  //
+  // Esta tabla se midió contra producción el 7-ago-2026 DESPUÉS de que dos de las
+  // cinco filas estuvieran mal en el primer intento. Los nombres no coinciden y no
+  // hay forma de deducirlo leyendo el código del canal: hay que ir a mirar el dato.
+  //
+  //   canal      →  dónde aterriza
+  //   whatsapp      observations  platform 'whatsapp'
+  //   teams         observations  platform 'teams'
+  //   outlook       observations  platform 'email'      ← NO 'outlook'
+  //   instagram     unmatched_social_activity + social_profiles + social_page_followers
+  //   linkedin      unmatched_social_activity  platform 'linkedin'  (0 filas de por vida)
+  //
+  // El de Outlook costó una afirmación falsa: buscando `platform='outlook'` daba
+  // cero y le dije a Aaron que ese lector *"nunca funcionó, 0 enviados de por
+  // vida"*. Había capturado seis correos esa misma tarde. Outlook no pasa por el
+  // reader: va por `/api/email/ingest` → `ingestEmailMessages`, que arma el batch
+  // con `platform: 'email'` porque el mismo camino sirve a Graph y al scrape de OWA.
+  //
+  // Es la regla de honestidad de cobertura mordiéndome a mí: **una consulta que
+  // devuelve cero prueba que la consulta no encontró nada, no que no exista.**
+  const PLATAFORMA_EN_OBSERVACIONES: Record<string, string> = {
+    whatsapp: 'whatsapp',
+    teams: 'teams',
+    outlook: 'email',
+  }
+
+  const obsDe = (canal: string) => safe(() => db.from('observations').select('observed_at')
+    .eq('user_id', userId).eq('data->>platform', PLATAFORMA_EN_OBSERVACIONES[canal] ?? canal)
     .order('observed_at', { ascending: false }).limit(1))
 
-  const [wa, teams, outlook, linkedinObs, ig, perfil, seguidor] = await Promise.all([
+  const [wa, teams, outlook, linkedinAct, ig, perfil, seguidor] = await Promise.all([
     obsDe('whatsapp'),
     obsDe('teams'),
     obsDe('outlook'),
-    obsDe('linkedin'),
+    // LinkedIn NO va a `observations`: su lector comparte el puente con Instagram y
+    // sale por `/api/social/ingest`. Buscarlo en observations daba null para siempre
+    // — hoy da null igual porque nunca capturó nada, y esa coincidencia es justo lo
+    // que habría escondido el bug el día que empiece a funcionar.
+    safe(() => db.from('unmatched_social_activity').select('observed_at')
+      .eq('user_id', userId).eq('platform', 'linkedin')
+      .order('observed_at', { ascending: false }).limit(1)),
     safe(() => db.from('unmatched_social_activity').select('observed_at')
       .eq('user_id', userId).eq('platform', 'instagram')
       .order('observed_at', { ascending: false }).limit(1)),
@@ -128,7 +161,7 @@ export async function ultimaDataPorCanal(
   if (teamsIso) out.teams = teamsIso
   const outlookIso = primero(outlook, 'observed_at')
   if (outlookIso) out.outlook = outlookIso
-  const linkedinIso = primero(linkedinObs, 'observed_at')
+  const linkedinIso = primero(linkedinAct, 'observed_at')
   if (linkedinIso) out.linkedin = linkedinIso
   return out
 }

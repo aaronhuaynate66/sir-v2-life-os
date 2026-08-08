@@ -184,13 +184,50 @@ async function refreshIgTray() {
 const HB_ALARM = 'sir-heartbeat';
 const HB_MIN = 10;
 
-/** Canales que miramos, con el patrón de URL de su pestaña. */
+/**
+ * Canales que miramos, con los patrones de URL de su pestaña.
+ *
+ * ═══ ESTA LISTA TIENE QUE ESPEJAR EL MANIFEST ═══════════════════════════════
+ *
+ * Acá había UN patrón por canal, y para los dos de Microsoft eran los viejos:
+ * `teams.microsoft.com` y `outlook.office.com`. El manifest, en cambio, ya
+ * inyectaba también en `teams.cloud.microsoft` y `outlook.cloud.microsoft`, que es
+ * a donde Microsoft movió las apps.
+ *
+ * El resultado fue un lector que anda y un vigilante ciego, que es la peor
+ * combinación porque se lee como lo contrario:
+ *
+ *   · `chrome.tabs.query` no encontraba la pestaña → `continue` → NO se late.
+ *   · El content script SÍ estaba inyectado (el manifest lo cubre) y SÍ capturaba.
+ *
+ * Medido el 7-ago-2026: Teams **no tenía ni una fila** en `reader_heartbeats` y el
+ * latido de Outlook estaba congelado desde el 30-jul con `sent_count: 0`, mientras
+ * Outlook capturaba seis correos esa misma tarde. Con esa foto le dije a Aaron que
+ * el lector de Outlook *"nunca funcionó"*. Funcionaba; el que nunca funcionó era el
+ * latido que lo vigila.
+ *
+ * `chrome.tabs.query` acepta `url` como arreglo, así que un canal puede tener
+ * varios dominios sin código extra.
+ *
+ * OJO con `https://*.cloud.microsoft/*`: el manifest lo usa para Teams, pero ese
+ * comodín también matchea `outlook.cloud.microsoft`. Acá NO se usa — un latido de
+ * "teams" disparado por la pestaña de Outlook sería un canal reportando la vida de
+ * otro, que es exactamente la clase de bug que este arreglo viene a cerrar.
+ */
 const CANALES = [
-  { channel: 'whatsapp', match: 'https://web.whatsapp.com/*' },
-  { channel: 'instagram', match: 'https://www.instagram.com/*' },
-  { channel: 'linkedin', match: 'https://www.linkedin.com/*' },
-  { channel: 'teams', match: 'https://teams.microsoft.com/*' },
-  { channel: 'outlook', match: 'https://outlook.office.com/*' },
+  { channel: 'whatsapp', match: ['https://web.whatsapp.com/*'] },
+  { channel: 'instagram', match: ['https://www.instagram.com/*'] },
+  { channel: 'linkedin', match: ['https://www.linkedin.com/*'] },
+  { channel: 'teams', match: [
+    'https://teams.microsoft.com/*',
+    'https://*.teams.microsoft.com/*',
+    'https://teams.cloud.microsoft/*',
+  ] },
+  { channel: 'outlook', match: [
+    'https://outlook.office.com/*',
+    'https://outlook.office365.com/*',
+    'https://outlook.cloud.microsoft/*',
+  ] },
 ];
 
 /** Resultado del último comando ejecutado, para acusarlo en el próximo latido. */

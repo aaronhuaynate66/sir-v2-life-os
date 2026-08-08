@@ -50,7 +50,7 @@
  * los dos números se separan, así que **subir el manifest sin subir esta constante
  * pone el CI en rojo**. Que es justo lo que faltó en #1115.
  */
-export const VERSION_EXTENSION = '0.10.0'
+export const VERSION_EXTENSION = '0.11.0'
 
 /**
  * Compara dos versiones tipo `0.10.0`. Devuelve <0, 0 o >0.
