@@ -63,6 +63,12 @@ export interface ChannelVerdict {
 /** Sin latido por más de esto, el canal se considera CAÍDO. El reader late cada
  *  ~10 min; 6 h de margen absorbe una PC apagada un rato sin gritar. */
 export const HEARTBEAT_DEAD_HOURS = 6
+/**
+ * Latido más viejo que esto (o inexistente) mientras siguen llegando datos = el
+ * latido está ROTO, no la PC apagada. Ninguna PC manda correos de las 18:23 estando
+ * apagada; a las 48 h la excusa de "estuvo apagada un rato" ya no se sostiene.
+ */
+export const LATIDO_ROTO_HORAS = 48
 /** Con latido pero sin traer nada por más de esto, vale mencionarlo (puede ser
  *  silencio real, pero en WhatsApp una semana sin un solo mensaje es raro). */
 export const DATA_QUIET_DAYS = 4
@@ -239,9 +245,35 @@ export function channelSilenceLine(verdicts: ChannelVerdict[], now: Date = new D
     // empezó a mandar su versión (v0.9.0): un latido viejo con datos frescos también
     // pasa cuando esa PC estuvo apagada un rato, que es lo normal de madrugada. Se
     // describe lo que se ve y se ofrecen las dos causas, sin elegir una.
-    const nombres = lista(sinLatido.map((v) => label(v.channel)))
-    const pl = sinLatido.length > 1
-    partes.push(`${nombres} ${pl ? 'traen' : 'trae'} datos pero ahora mismo no ${pl ? 'reportan' : 'reporta'} latido — puede ser que esa PC esté apagada, o que la extensión no esté corriendo`)
+    // ═══ DOS COSAS DISTINTAS SE VEÍAN IGUAL ACÁ ═══════════════════════════════
+    //
+    // "PC apagada un rato" y "el latido está roto" son el mismo veredicto pero NO
+    // el mismo mensaje, y el de arriba solo servía para el primero. El 7-ago-2026
+    // Outlook y Teams entraron por esta rama trayendo datos **de esa misma tarde**
+    // con el latido de hace ocho días (Teams sin fila de latido siquiera), y el
+    // texto decía *"puede ser que esa PC esté apagada"* — contradicho por los seis
+    // correos que acababan de llegar de esa PC. Un aviso que se desmiente solo en
+    // su propia frase es peor que no avisar.
+    //
+    // Lo que separa los dos casos es la DISTANCIA entre el latido y el dato: unas
+    // horas es una PC que estuvo apagada; días con datos de hoy es imposible de
+    // explicar por la PC, y solo queda que el latido no esté mirando ese canal.
+    const roto = sinLatido.filter((v) => v.hoursSinceHeartbeat === null || v.hoursSinceHeartbeat >= LATIDO_ROTO_HORAS)
+    const dormida = sinLatido.filter((v) => !(v.hoursSinceHeartbeat === null || v.hoursSinceHeartbeat >= LATIDO_ROTO_HORAS))
+    if (roto.length) {
+      const nombres = lista(roto.map((v) => label(v.channel)))
+      const pl = roto.length > 1
+      partes.push(
+        `${nombres} ${pl ? 'están trayendo' : 'está trayendo'} datos frescos pero ${pl ? 'sus latidos llevan' : 'su latido lleva'} ` +
+        `días sin reportar: ${pl ? 'los lectores están andando' : 'el lector está andando'} —por eso llegan los datos— y lo que no ` +
+        `reporta es el latido. No hay nada que reabrir en esa PC`,
+      )
+    }
+    if (dormida.length) {
+      const nombres = lista(dormida.map((v) => label(v.channel)))
+      const pl = dormida.length > 1
+      partes.push(`${nombres} ${pl ? 'traen' : 'trae'} datos pero ahora mismo no ${pl ? 'reportan' : 'reporta'} latido — puede ser que esa PC esté apagada, o que la extensión no esté corriendo`)
+    }
   }
   // Se dice qué SÍ funciona: sin eso parece que "el reader está roto" cuando lo
   // que hay es un canal caído entre varios vivos — que fue justo la confusión.

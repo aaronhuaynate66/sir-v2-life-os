@@ -94,11 +94,18 @@ describe('channelSilenceLine', () => {
       { channel: 'instagram', lastHeartbeatAt: null, lastDataAt: haceHoras(1) },
     ]), NOW)!
     expect(line).toContain('Instagram')
-    expect(line).toMatch(/trae datos/)
-    // NO afirma la causa. La copy anterior decía "la extensión es una versión vieja",
-    // y eso se volvió FALSO en cuanto la extensión empezó a mandar su versión: un
-    // latido viejo con datos frescos también es "esa PC estuvo apagada un rato".
-    expect(line).toMatch(/PC esté apagada/)
+    expect(line).toMatch(/datos fresc/)
+    // NO afirma una causa que no se puede probar. La copy original decía "la
+    // extensión es una versión vieja", y eso se volvió FALSO en cuanto la extensión
+    // empezó a mandar su versión.
+    //
+    // Después decía "puede ser que esa PC esté apagada", y ESO era falso acá: sin
+    // NINGÚN latido pero con datos de hace una hora, la PC está evidentemente
+    // prendida (este caso es el del 30-jul, cuando `reader_heartbeats` tenía 0 filas
+    // porque la extensión todavía no mandaba latidos). Lo único que queda en pie es
+    // que el latido no está reportando, y eso sí se puede afirmar.
+    expect(line).toMatch(/no reporta es el latido/)
+    expect(line).not.toMatch(/apagada/)
     expect(line).not.toMatch(/versión vieja/)
     expect(line).not.toMatch(/dejó de reportar/)
     expect(line).not.toMatch(/pestaña está cerrada/)
@@ -111,7 +118,7 @@ describe('channelSilenceLine', () => {
     ]), NOW)!
     expect(line).toMatch(/WhatsApp dejó de reportar/)
     expect(line).toMatch(/hace 5 día/)
-    expect(line).toMatch(/Instagram trae datos pero ahora mismo no reporta latido/)
+    expect(line).toMatch(/Instagram está trayendo datos fresc/)
   })
 
   it('un canal que NUNCA trajo nada no es una caída, aunque tenga latido', () => {
@@ -275,5 +282,59 @@ describe('un canal SIN fila de latido pero con historia', () => {
     )
     expect(v.kind).toBe('nunca_visto')
     expect(channelSilenceLine([v], AHORA)).toBeNull()
+  })
+})
+
+// ═══ "LA PC ESTÁ APAGADA" DICHO SOBRE DATOS DE HACE UNA HORA (7-ago-2026) ════
+//
+// Outlook y Teams entraron por la rama `sin_latido` trayendo datos de esa misma
+// tarde con el latido de hace ocho días (Teams sin fila de latido siquiera), y el
+// aviso decía *"puede ser que esa PC esté apagada"* — contradicho por los seis
+// correos que acababan de llegar DE esa PC. Un aviso que se desmiente solo en su
+// propia frase es peor que no avisar.
+describe('latido roto vs PC dormida: el mismo veredicto, dos mensajes', () => {
+  const AHORA = new Date('2026-08-07T23:40:00Z')
+
+  it('datos de hoy con latido de hace 8 días: el roto es el LATIDO, no la PC', () => {
+    const v = diagnoseChannel(
+      { channel: 'outlook', lastHeartbeatAt: '2026-07-30T20:20:00Z', lastDataAt: '2026-08-07T23:23:00Z' },
+      AHORA,
+    )
+    expect(v.kind).toBe('sin_latido')
+    const l = channelSilenceLine([v], AHORA)!
+    expect(l).toContain('el lector está andando')
+    expect(l).toContain('no reporta es el latido')
+    expect(l).toContain('No hay nada que reabrir')
+    expect(l).not.toContain('apagada') // la frase que se desmentía sola
+  })
+
+  it('sin NINGÚN latido y con datos frescos, mismo mensaje (el caso de Teams)', () => {
+    const v = diagnoseChannel(
+      { channel: 'teams', lastHeartbeatAt: null, lastDataAt: '2026-08-07T20:18:00Z' },
+      AHORA,
+    )
+    expect(v.kind).toBe('sin_latido')
+    expect(channelSilenceLine([v], AHORA)!).not.toContain('apagada')
+  })
+
+  it('pero un latido de hace 8 HORAS con datos frescos sigue siendo la PC dormida', () => {
+    // Acá "estuvo apagada un rato" sí explica lo que se ve, y es lo normal de
+    // madrugada. No hay que gritar "el latido está roto" por eso.
+    const v = diagnoseChannel(
+      { channel: 'whatsapp', lastHeartbeatAt: '2026-08-07T15:40:00Z', lastDataAt: '2026-08-07T23:00:00Z' },
+      AHORA,
+    )
+    expect(v.kind).toBe('sin_latido')
+    const l = channelSilenceLine([v], AHORA)!
+    expect(l).toContain('esa PC esté apagada')
+    expect(l).not.toContain('no reporta es el latido')
+  })
+
+  it('los dos casos a la vez no se pisan', () => {
+    const rotos = diagnoseChannel({ channel: 'teams', lastHeartbeatAt: null, lastDataAt: '2026-08-07T20:18:00Z' }, AHORA)
+    const dormido = diagnoseChannel({ channel: 'whatsapp', lastHeartbeatAt: '2026-08-07T15:40:00Z', lastDataAt: '2026-08-07T23:00:00Z' }, AHORA)
+    const l = channelSilenceLine([rotos, dormido], AHORA)!
+    expect(l).toContain('no reporta es el latido')
+    expect(l).toContain('esa PC esté apagada')
   })
 })
