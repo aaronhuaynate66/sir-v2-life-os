@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
             const meds = await medsDeLaToma(admin, uid, hora, now.getTime(), slot)
             const filas = meds.length > 0 ? botonesDeToma(meds, hora, slot) : []
             if (filas.length === 0) continue
-            const cuando = cuandoDeLaToma(fechaDeRecordatorioDeToma(rem.id), hoyLima)
+            const cuando = cuandoDeLaToma(fechaDeRecordatorioDeToma(rem.id), hoyLima, hora)
             const tg = await sendTelegramKeyboard(Number(tgChat), textoDeToma(meds, hora, cuando), filas)
             if (tg.ok) {
               await admin.from('reminders').update({ notified_at: new Date().toISOString() }).eq('id', rem.id)

@@ -174,13 +174,13 @@ describe('cuandoDeLaToma — distingue avisar de preguntar', () => {
     expect(cuandoDeLaToma('2026-08-04', '2026-08-04')).toBe('hoy')
   })
   it('la de ayer es "anoche" — el caso que Aaron nombró', () => {
-    expect(cuandoDeLaToma('2026-08-03', '2026-08-04')).toBe('anoche')
+    expect(cuandoDeLaToma('2026-08-03', '2026-08-04', '22:00')).toBe('anoche')
   })
   it('más vieja que ayer es "atrasada"', () => {
     expect(cuandoDeLaToma('2026-07-30', '2026-08-04')).toBe('atrasada')
   })
   it('cruza el mes sin equivocarse', () => {
-    expect(cuandoDeLaToma('2026-07-31', '2026-08-01')).toBe('anoche')
+    expect(cuandoDeLaToma('2026-07-31', '2026-08-01', '22:00')).toBe('anoche')
   })
   it('una toma futura se trata como la de "hoy" del día que toque', () => {
     expect(cuandoDeLaToma('2026-08-05', '2026-08-04')).toBe('hoy')
@@ -323,5 +323,51 @@ describe('los botones dicen la ACCIÓN, no un recibo', () => {
     const filas = botonesDeToma([{ itemId: 'a', medName: 'Topiramato', dose: '100 mg', yaRegistrada: false }], '22:00')
     expect(filas).toHaveLength(1)
     expect(parseMedCallback(filas[0][0].callbackData)).toEqual({ itemId: 'a', slot: null })
+  })
+})
+
+// ═══ "¿TOMASTE LA DE ANOCHE (08:00)?" ════════════════════════════════════════
+//
+// 8-ago-2026, 06:04. Le llegaron a Aaron dos mensajes que se contradecían en su
+// propio título: "¿Tomaste la de ANOCHE (08:00)?" y "¿Tomaste la de ANOCHE
+// (13:00)?", los dos del calcio. Las 08:00 no son de noche.
+//
+// `cuandoDeLaToma` decidía mirando SOLO el día. Era correcto mientras la única toma
+// fuera la de las 22:00 —"la de ayer" y "la de anoche" eran lo mismo—. El calcio
+// (08:00 y 13:00, desde el 3-ago) rompió esa suposición y la etiqueta quedó
+// mintiendo sin que nada fallara.
+describe('la de ayer no es necesariamente la de anoche', () => {
+  const HOY = '2026-08-08'
+  const med = [{ itemId: 'i', medName: 'Solgar Calcium', dose: '1 tableta', yaRegistrada: false }]
+
+  it('la de ayer a las 08:00 es de AYER, no de anoche', () => {
+    expect(cuandoDeLaToma('2026-08-07', HOY, '08:00')).toBe('ayer')
+    expect(textoDeToma(med, '08:00', 'ayer')).toContain('¿Tomaste la de AYER a las 08:00?')
+  })
+
+  it('la de ayer a las 13:00 tampoco', () => {
+    expect(cuandoDeLaToma('2026-08-07', HOY, '13:00')).toBe('ayer')
+  })
+
+  it('la de ayer a las 22:00 SÍ es de anoche', () => {
+    expect(cuandoDeLaToma('2026-08-07', HOY, '22:00')).toBe('anoche')
+    expect(textoDeToma(med, '22:00', 'anoche')).toContain('ANOCHE')
+  })
+
+  it('el corte es a las 18:00', () => {
+    expect(cuandoDeLaToma('2026-08-07', HOY, '17:59')).toBe('ayer')
+    expect(cuandoDeLaToma('2026-08-07', HOY, '18:00')).toBe('anoche')
+  })
+
+  it('SIN hora dice "ayer", que es verdad en los dos casos', () => {
+    expect(cuandoDeLaToma('2026-08-07', HOY)).toBe('ayer')
+    expect(cuandoDeLaToma('2026-08-07', HOY, '')).toBe('ayer')
+    expect(cuandoDeLaToma('2026-08-07', HOY, 'basura')).toBe('ayer')
+  })
+
+  it('lo de hoy y lo más viejo no cambian', () => {
+    expect(cuandoDeLaToma(HOY, HOY, '08:00')).toBe('hoy')
+    expect(cuandoDeLaToma('2026-08-01', HOY, '08:00')).toBe('atrasada')
+    expect(cuandoDeLaToma(null, HOY, '08:00')).toBeNull()
   })
 })

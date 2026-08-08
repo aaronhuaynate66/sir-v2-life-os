@@ -75,10 +75,25 @@ export function fechaDeRecordatorioDeToma(reminderId: string | null | undefined)
 }
 
 /** Cuándo es la toma respecto del día en que se avisa. PURA. */
-export type CuandoToma = 'hoy' | 'anoche' | 'atrasada'
+export type CuandoToma = 'hoy' | 'anoche' | 'ayer' | 'atrasada'
 
 /**
- * Cómo hay que referirse a la toma según el día en que se manda el aviso. PURA.
+ * Desde qué hora una toma del día anterior se puede llamar "anoche".
+ *
+ * Existe por la captura que mandó Aaron el 8-ago-2026 a las 09:59: a las 06:04 le
+ * habían llegado dos mensajes que se contradecían en su propio título —
+ * **"¿Tomaste la de ANOCHE (08:00)?"** y **"¿Tomaste la de ANOCHE (13:00)?"**, los
+ * dos del calcio. Las 08:00 no son de noche y las 13:00 tampoco.
+ *
+ * La causa: esta función decidía mirando SOLO el día. Era correcto mientras la única
+ * toma del sistema fuera la de las 22:00 — "la de ayer" y "la de anoche" eran la
+ * misma cosa. El calcio (08:00 y 13:00, desde el 3-ago) rompió esa suposición y la
+ * etiqueta quedó mintiendo sin que nada fallara.
+ */
+export const HORA_ES_DE_NOCHE = 18
+
+/**
+ * Cómo hay que referirse a la toma según CUÁNDO fue, no solo qué día. PURA.
  *
  * `null` si no se puede saber (id sin fecha): ahí el texto se queda sin día, que
  * es el comportamiento viejo — mejor un aviso ambiguo que ninguno.
@@ -86,13 +101,20 @@ export type CuandoToma = 'hoy' | 'anoche' | 'atrasada'
 export function cuandoDeLaToma(
   fechaToma: string | null | undefined,
   hoyLima: string,
+  horaToma?: string | null,
 ): CuandoToma | null {
   const f = (fechaToma ?? '').trim()
   if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || !/^\d{4}-\d{2}-\d{2}$/.test(hoyLima)) return null
   if (f === hoyLima) return 'hoy'
   if (f > hoyLima) return 'hoy' // toma futura: se avisa como la de "hoy" del día que toque
   const ayer = new Date(Date.parse(`${hoyLima}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
-  return f === ayer ? 'anoche' : 'atrasada'
+  if (f !== ayer) return 'atrasada'
+  // De ayer: "anoche" SOLO si de verdad fue de noche. Sin hora no se puede afirmar
+  // que lo fue, y 'ayer' es verdadera en los dos casos — entre una etiqueta que
+  // puede mentir y una que no, gana la que no.
+  const h = /^(\d{1,2}):\d{2}$/.exec((horaToma ?? '').trim())
+  if (!h) return 'ayer'
+  return Number(h[1]) >= HORA_ES_DE_NOCHE ? 'anoche' : 'ayer'
 }
 
 /**
@@ -246,6 +268,11 @@ export function textoDeToma(
   // hora es lo que volvía el mensaje incomprensible.
   if (cuando === 'anoche') {
     return `💊 ¿Tomaste la de ANOCHE (${hora})?\n\n· ${nombres}\n\nSi la tomaste, tócala 👇`
+  }
+  // "Ayer a las 08:00" en vez de "ANOCHE (08:00)": la de la mañana también se
+  // pregunta al día siguiente cuando quedó sin marcar, pero no es de anoche.
+  if (cuando === 'ayer') {
+    return `💊 ¿Tomaste la de AYER a las ${hora}?\n\n· ${nombres}\n\nSi la tomaste, tócala 👇`
   }
   if (cuando === 'atrasada') {
     return `💊 Quedó sin registrar la toma de las ${hora}\n\n· ${nombres}\n\nSi la tomaste, tócala 👇`

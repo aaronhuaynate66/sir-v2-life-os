@@ -1,5 +1,30 @@
 // SIR V2 — GET /api/cron/reminders-due
 //
+// ═══ TRES TICKS, UNO POR HORA DE TOMA (8-ago-2026) ══════════════════════════
+//
+// Esto corría UNA vez al día, 06:00 de Lima, y alcanzaba mientras la única toma del
+// sistema fuera la de las 22:00 — de esa se encarga `evening-push` a las 21:00, a su
+// hora. El calcio (Solgar Ca+Mg+Zn, 08:00 y 13:00, desde el 3-ago) no tenía a nadie
+// que lo avisara a SU hora, así que caía en el barrido del día siguiente.
+//
+// Aaron, 8-ago 09:59, con la captura: *"me pregunta si tomé el calcio en la noche,
+// pero la idea es que si tengo que tomarlo en la mañana en el desayuno y en el
+// almuerzo, me pregunte a esas horas"*. Tenía razón: preguntar al día siguiente por
+// una toma de las 08:00 no es un recordatorio, es una auditoría.
+//
+// Ahora hay tres entradas en `vercel.json` apuntando acá:
+//   0 11 * * *  → 06:00 Lima  barrido de lo que quedó sin registrar de ayer
+//   0 13 * * *  → 08:00 Lima  la toma del desayuno, a su hora
+//   0 18 * * *  → 13:00 Lima  la del almuerzo, a su hora
+// El `?tick=` es solo para que Vercel las trate como entradas distintas; el endpoint
+// NO lo lee — cada corrida manda lo que esté vencido y nada más. Que el parámetro no
+// signifique nada es a propósito: tres caminos de código distintos serían tres
+// lugares donde el aviso puede morir por separado.
+//
+// Sigue en pie el filtro de más abajo: una toma que TODAVÍA no vence no se avisa, se
+// deja para el tick que le toca. Por eso el de las 08:00 no adelanta la de las 13:00,
+// y ninguno pisa la de las 22:00.
+//
 // Respaldo diario (vercel.json: 0 11 * * * ≈ 6am Lima) para app CERRADA. El
 // camino primario es el watcher client-side /api/reminders/fire-due (app abierta).
 // LIMITACIÓN (plan Hobby): con la app cerrada, un recordatorio con hora solo se
@@ -233,7 +258,7 @@ export async function GET(req: NextRequest) {
         if (filas.length > 0) {
           // Acá solo llegan tomas YA VENCIDAS (las futuras se difirieron arriba), así
           // que el texto pregunta por el pasado en vez de afirmar que "ya la tomaste".
-          const cuando = cuandoDeLaToma(fechaDeRecordatorioDeToma(r.id), hoyLima)
+          const cuando = cuandoDeLaToma(fechaDeRecordatorioDeToma(r.id), hoyLima, horaToma)
           await sendTelegramKeyboard(Number(tgChat), textoDeToma(meds, hora as string, cuando), filas)
         } else {
           await sendTelegramMessage(Number(tgChat), `⏰ Recordatorio: ${cuerpo}`)

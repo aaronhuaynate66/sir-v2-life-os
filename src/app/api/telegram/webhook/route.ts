@@ -228,7 +228,7 @@ async function handleMedTap(
   // texto GENÉRICO ("Toca lo que ya tomaste") y perdía la distinción anoche/hoy que
   // se había arreglado el 4-ago. Una regresión del mismo arreglo, dentro del flujo
   // que lo usa. La fecha sale del slot; sin slot se queda sin día, como antes.
-  const cuando = slot ? cuandoDeLaToma(slot.slice(0, 10), limaDayString(new Date())) : null
+  const cuando = slot ? cuandoDeLaToma(slot.slice(0, 10), limaDayString(new Date()), slot.slice(11, 16)) : null
   await editTelegramKeyboard(
     chatId, messageId,
     textoDeToma(meds, hora, cuando),
