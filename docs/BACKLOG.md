@@ -5,7 +5,7 @@
 > tratar CUALQUIER cosa de acá como pendiente, verifícala contra el código** (grep de la
 > feature/tabla/endpoint). Reconciliar primero, listar después — nunca al revés.
 >
-> **Última actualización:** 07/08/2026 (agente automático de reconciliación — 1 ítem cerrado por medición (reranker de learnings) + golden-set actualizado, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-08-07" abajo; antes consolidaba los pases hasta 31/07).
+> **Última actualización:** 07/08/2026 (agente automático de reconciliación — 1 ítem cerrado por medición (reranker de learnings) + golden-set actualizado, ver bloque "RECONCILIACIÓN AUTOMÁTICA 2026-08-07" abajo; consolida además los pases 04/08 y 05/08, que quedaron sin mergear; antes, hasta 31/07).
 > **Source of truth:** este archivo, NO `MASTER_PLAN.md` (regenerado por bot).
 > **Roadmap estratégico (6 etapas + estado):** [`STRATEGIC_ROADMAP.md`](./STRATEGIC_ROADMAP.md).
 > **Cómo usar:** entra acá cuando quieras decidir qué priorizar en la próxima sesión.
