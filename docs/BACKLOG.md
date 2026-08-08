@@ -99,7 +99,7 @@ reemplaza):** https://claude.ai/code/artifact/c282d44e-4797-41a5-8a73-deef6c8b03
 
 **👁 Verificar (Aaron):** "¿quién es quién?" con botones nuevos → próximo brief nocturno (o reset a pedido); si algo se ve viejo en /panel · /horario · /red · caras en la lista → caché PWA, refresco fuerte.
 
-**🧭 Fondo / roadmap grande (no urgente):** grafo /red → sigma.js (sin rastro en código, `grep` de "sigma" vacío — sigue pendiente); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — ~~**re-ranking**~~ ❌ **CERRADO SIN CONSTRUIR (30/07/2026), ver abajo**; el ciclo Mem0-style extract→merge→olvido sigue sin empezar.
+**🧭 Fondo / roadmap grande (no urgente):** ~~grafo /red → sigma.js~~ ❌ **MEDIDO Y DESCARTADO (30/07/2026), ver bloque abajo** — esta línea seguía diciendo "sigue pendiente" por `grep` de "sigma" vacío, pero eso solo prueba que falta la LIBRERÍA, no la feature: el grafo ya existe y está trabajado (`src/components/red/GraphCanvas.tsx`, react-force-graph-2d) y sigma.js es una migración de rendimiento sin beneficio con los ~250 nodos actuales de Aaron (ver "Grafo /red → sigma.js — MEDIDO Y DESCARTADO"); Ola 3 — memoria que consolida: ~~hybrid search vector+BM25~~ ✅ **HECHO** (mig `0164_memories_hybrid_recall`, RPC `match_memories_hybrid` vector+FTS con RRF, `src/lib/sir/hybridRecall.ts`, PR #946 `c34ed7e`, cableado en `askSir.ts` con fallback) — ~~**re-ranking**~~ ❌ **CERRADO SIN CONSTRUIR (30/07/2026), ver abajo**; el ciclo Mem0-style extract→merge→olvido sigue sin empezar.
 
 ### ❌ Re-ranking del recall — MEDIDO Y DESCARTADO (30/07/2026)
 
